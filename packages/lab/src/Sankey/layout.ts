@@ -3,16 +3,18 @@
  * @output Pure layout algorithm — computes node and link positions
  * @position Core logic; consumed by XDSSankeyChart during render
  *
- * Simplified Sankey layout: nodes placed in explicit columns,
- * vertical positions centered per column, link offsets cumulative.
- * Reserves top margin for labels above the topmost node.
+ * Accepts columns as either string[][] (simple) or SankeyColumnDef[]
+ * (with labels). Reserves margin for labels and column headers.
  */
 
 import type {
   SankeyNode,
   SankeyLink,
+  SankeyColumn,
+  SankeyColumnDef,
   SankeyNodeLayout,
   SankeyLinkLayout,
+  SankeyColumnLayout,
 } from './types';
 
 const DEFAULT_PALETTE: Array<[number, number, number]> = [
@@ -31,12 +33,19 @@ export interface LayoutOptions {
   height: number;
   nodeWidth?: number;
   nodeGap?: number;
-  /** Top margin reserved for labels above the topmost node */
   labelMargin?: number;
-  columns?: string[][];
+  columns?: SankeyColumn[];
 }
 
-function autoColumns(nodes: SankeyNode[], links: SankeyLink[]): string[][] {
+/** Normalize column input to the rich format */
+function normalizeColumns(cols: SankeyColumn[]): SankeyColumnDef[] {
+  return cols.map(c => (Array.isArray(c) ? {ids: c} : c));
+}
+
+function autoColumns(
+  nodes: SankeyNode[],
+  links: SankeyLink[],
+): SankeyColumnDef[] {
   const inDegree = new Map<string, number>();
   const outEdges = new Map<string, string[]>();
   nodes.forEach(n => {
@@ -69,9 +78,11 @@ function autoColumns(nodes: SankeyNode[], links: SankeyLink[]): string[][] {
   }
 
   const maxCol = Math.max(...Array.from(colMap.values()), 0);
-  const columns: string[][] = Array.from({length: maxCol + 1}, () => []);
+  const columns: SankeyColumnDef[] = Array.from({length: maxCol + 1}, () => ({
+    ids: [] as string[],
+  }));
   nodes.forEach(n => {
-    columns[colMap.get(n.id) || 0].push(n.id);
+    columns[colMap.get(n.id) || 0].ids.push(n.id);
   });
   return columns;
 }
@@ -79,7 +90,7 @@ function autoColumns(nodes: SankeyNode[], links: SankeyLink[]): string[][] {
 export interface LayoutResult {
   nodes: SankeyNodeLayout[];
   links: SankeyLinkLayout[];
-  columnXs: number[];
+  columns: SankeyColumnLayout[];
   valueScale: number;
   maxValue: number;
 }
@@ -96,42 +107,50 @@ export function computeLayout(
     nodeGap = 14,
     labelMargin = 28,
   } = options;
-  const columns = options.columns || autoColumns(nodes, links);
-  const colCount = columns.length;
+
+  const colDefs = options.columns
+    ? normalizeColumns(options.columns)
+    : autoColumns(nodes, links);
+  const colCount = colDefs.length;
+  const hasHeaders = colDefs.some(c => c.label);
+  const headerMargin = hasHeaders ? 20 : 0;
 
   const nodeMap = new Map<string, SankeyNode>();
   nodes.forEach(n => nodeMap.set(n.id, n));
 
-  // Usable height after reserving space for labels above and below
-  const usableHeight = height - labelMargin - 16; // 16px bottom for percentages
+  // Usable height after reserving space for labels and headers
+  const usableHeight = height - labelMargin - 16 - headerMargin;
 
   // Scale based on largest column
   let maxColValue = 0;
-  columns.forEach(col => {
-    const total = col.reduce((s, id) => s + (nodeMap.get(id)?.value || 0), 0);
+  colDefs.forEach(col => {
+    const total = col.ids.reduce(
+      (s, id) => s + (nodeMap.get(id)?.value || 0),
+      0,
+    );
     if (total > maxColValue) maxColValue = total;
   });
 
-  const maxNodes = Math.max(...columns.map(c => c.length));
+  const maxNodes = Math.max(...colDefs.map(c => c.ids.length));
   const valueScale = (usableHeight - (maxNodes - 1) * nodeGap) / maxColValue;
   const colSpacing = colCount > 1 ? (width - nodeWidth) / (colCount - 1) : 0;
 
-  const columnXs: number[] = [];
+  const columnLayouts: SankeyColumnLayout[] = [];
   const layoutNodes = new Map<string, SankeyNodeLayout>();
   let colorIdx = 0;
 
-  columns.forEach((col, ci) => {
+  colDefs.forEach((col, ci) => {
     const x = ci * colSpacing;
-    columnXs.push(x);
-    const totalH = col.reduce(
+    columnLayouts.push({x, label: col.label, ids: col.ids});
+
+    const totalH = col.ids.reduce(
       (s, id) => s + (nodeMap.get(id)?.value || 0) * valueScale,
       0,
     );
-    const totalGap = (col.length - 1) * nodeGap;
-    // Center vertically within usable area, offset by labelMargin
+    const totalGap = (col.ids.length - 1) * nodeGap;
     let y = labelMargin + (usableHeight - totalH - totalGap) / 2;
 
-    col.forEach(id => {
+    col.ids.forEach(id => {
       const node = nodeMap.get(id);
       if (!node) return;
       const h = node.value * valueScale;
@@ -177,7 +196,7 @@ export function computeLayout(
   return {
     nodes: Array.from(layoutNodes.values()),
     links: layoutLinks,
-    columnXs,
+    columns: columnLayouts,
     valueScale,
     maxValue: maxColValue,
   };

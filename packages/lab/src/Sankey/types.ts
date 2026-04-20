@@ -26,6 +26,21 @@ export interface SankeyLink {
   value: number;
 }
 
+/**
+ * Column definition.
+ * Simple form: string[] (just node IDs).
+ * Rich form: object with IDs, optional label, and type.
+ */
+export interface SankeyColumnDef {
+  /** Node IDs in this column */
+  ids: string[];
+  /** Column header label (rendered below the column) */
+  label?: string;
+}
+
+/** Columns can be simple string arrays or rich definitions */
+export type SankeyColumn = string[] | SankeyColumnDef;
+
 /** Computed layout position for a node */
 export interface SankeyNodeLayout {
   id: string;
@@ -51,16 +66,24 @@ export interface SankeyLinkLayout {
   targetY: number;
 }
 
+/** Resolved column info exposed to children */
+export interface SankeyColumnLayout {
+  /** X position of this column */
+  x: number;
+  /** Column header label (if provided) */
+  label?: string;
+  /** Node IDs in this column */
+  ids: string[];
+}
+
 /** Context provided by XDSSankeyChart to children */
 export interface SankeyContext {
   nodes: SankeyNodeLayout[];
   links: SankeyLinkLayout[];
-  /** X position of each column's node bar */
-  columnXs: number[];
+  columns: SankeyColumnLayout[];
   width: number;
   height: number;
   valueScale: number;
   maxValue: number;
-  /** Node bar width */
   nodeWidth: number;
 }

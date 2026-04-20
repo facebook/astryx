@@ -321,3 +321,58 @@ export const BusinessFunnel: Story = {
     </XDSStack>
   ),
 };
+
+// --- Art Deco style: wider bars with rotated labels + column headers ---
+
+const demoNodes: SankeyNode[] = [
+  {id: 'single', label: 'Single', value: 48, color: [0.62, 0.16, 30]},
+  {id: 'married', label: 'Married', value: 35, color: [0.58, 0.14, 180]},
+  {id: 'divorced', label: 'Divorced', value: 17, color: [0.55, 0.12, 300]},
+  {id: 'male', label: 'Male', value: 55, color: [0.57, 0.15, 240]},
+  {id: 'female', label: 'Female', value: 45, color: [0.6, 0.16, 340]},
+  {id: 'happy', label: 'Happy', value: 62, color: [0.64, 0.18, 150]},
+  {id: 'unhappy', label: 'Unhappy', value: 38, color: [0.52, 0.14, 25]},
+];
+
+const demoLinks: SankeyLink[] = [
+  {source: 'single', target: 'male', value: 26},
+  {source: 'single', target: 'female', value: 22},
+  {source: 'married', target: 'male', value: 20},
+  {source: 'married', target: 'female', value: 15},
+  {source: 'divorced', target: 'male', value: 9},
+  {source: 'divorced', target: 'female', value: 8},
+  {source: 'male', target: 'happy', value: 34},
+  {source: 'male', target: 'unhappy', value: 21},
+  {source: 'female', target: 'happy', value: 28},
+  {source: 'female', target: 'unhappy', value: 17},
+];
+
+const demoColumns = [
+  {ids: ['single', 'married', 'divorced'], label: 'Relationship'},
+  {ids: ['male', 'female'], label: 'Gender'},
+  {ids: ['happy', 'unhappy'], label: 'Outcome'},
+];
+
+/** Wide bars with rotated labels and column headers — art deco style */
+export const WideBarStyle: Story = {
+  render: () => (
+    <XDSStack direction="vertical" gap={4}>
+      <XDSHeading level={3}>Survey Flow</XDSHeading>
+      <XDSText type="body" color="secondary">
+        Wider node bars with rotated text labels
+      </XDSText>
+      <XDSSankeyChart
+        nodes={demoNodes}
+        links={demoLinks}
+        columns={demoColumns}
+        height={380}
+        nodeWidth={20}
+        nodeGap={8}>
+        <XDSSankeyGrid />
+        <XDSSankeyLink opacity={0.5} tension={0.5} />
+        <XDSSankeyNode />
+        <XDSSankeyLabel />
+      </XDSSankeyChart>
+    </XDSStack>
+  ),
+};

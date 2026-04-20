@@ -1,10 +1,12 @@
 /**
  * @file XDSSankeyLabel.tsx
- * @output Renders labels above each node with optional background for contrast
- * @position Visual layer — positioned above nodes with guaranteed readability
+ * @output Renders node labels — horizontal above thin bars, rotated on wider bars
+ * @position Visual layer — adapts layout based on node bar width
  *
- * Labels sit above each node bar. An optional background pill ensures
- * text never competes with ribbon colors for contrast.
+ * Two rendering modes based on nodeWidth:
+ * - Thin bars (< 16px): labels above the node bar horizontally
+ * - Wide bars (≥ 16px): labels rotated -90° on the node bar with a
+ *   white background pill for contrast over ribbon colors
  */
 
 import {useSankey} from './SankeyContext';
@@ -17,9 +19,10 @@ export interface XDSSankeyLabelProps {
   /**
    * Show a background behind labels for contrast over ribbons.
    * - `true` — surface-colored pill behind all labels
-   * - `false` — no background (default)
+   * - `'auto'` — only when nodeWidth ≥ 16 (default)
+   * - `false` — no background
    */
-  background?: boolean;
+  background?: boolean | 'auto';
 }
 
 function defaultFormat(value: number): string {
@@ -29,18 +32,21 @@ function defaultFormat(value: number): string {
 }
 
 /**
- * Renders labels for all nodes in the Sankey chart.
+ * Renders labels for all nodes.
  *
- * Positioned above each node bar within the reserved label margin.
- * When `background` is enabled, a subtle pill renders behind each
- * label group so text stays readable over ribbon colors.
+ * Adapts rendering based on node bar width:
+ * - **Thin** (< 16px): value + label above the bar, percentage below
+ * - **Wide** (≥ 16px): rotated label centered on the bar with a
+ *   background pill. Value sits above, percentage below.
  */
 export function XDSSankeyLabel({
   showPercent = true,
   formatValue = defaultFormat,
-  background = false,
+  background = 'auto',
 }: XDSSankeyLabelProps) {
-  const {nodes, maxValue, height} = useSankey();
+  const {nodes, maxValue, height, nodeWidth} = useSankey();
+  const isWide = nodeWidth >= 16;
+  const showBg = background === true || (background === 'auto' && isWide);
 
   return (
     <g>
@@ -48,12 +54,26 @@ export function XDSSankeyLabel({
         const pct = (node.value / maxValue) * 100;
         const pctStr = pct >= 10 ? Math.round(pct) + '%' : pct.toFixed(1) + '%';
 
-        // Label sits above the node bar, clamped within chart
+        if (isWide) {
+          return (
+            <WideLabel
+              key={node.id}
+              node={node}
+              nodeWidth={nodeWidth}
+              pctStr={pctStr}
+              showPercent={showPercent}
+              showBg={showBg}
+              formatValue={formatValue}
+              height={height}
+            />
+          );
+        }
+
+        // Thin mode: horizontal labels above
         const labelY = Math.max(24, node.y - 5);
         const valueY = Math.max(12, labelY - 12);
         const pctY = Math.min(height - 2, node.y + node.height + 12);
 
-        // Background pill dimensions (approximate text bounds)
         const bgX = node.x - 4;
         const bgY = valueY - 11;
         const bgW = Math.max(node.label.length * 6, 40) + 8;
@@ -61,7 +81,7 @@ export function XDSSankeyLabel({
 
         return (
           <g key={node.id}>
-            {background && (
+            {showBg && (
               <rect
                 x={bgX}
                 y={bgY}
@@ -107,6 +127,101 @@ export function XDSSankeyLabel({
           </g>
         );
       })}
+    </g>
+  );
+}
+
+/** Rotated label rendering for wide node bars */
+function WideLabel({
+  node,
+  nodeWidth,
+  pctStr,
+  showPercent,
+  showBg,
+  formatValue,
+  height,
+}: {
+  node: import('./types').SankeyNodeLayout;
+  nodeWidth: number;
+  pctStr: string;
+  showPercent: boolean;
+  showBg: boolean;
+  formatValue: (v: number) => string;
+  height: number;
+}) {
+  const cx = node.x + nodeWidth / 2;
+  const cy = node.y + node.height / 2;
+
+  // Combine label and value for the rotated text
+  const text = `${node.label} = ${formatValue(node.value)}`;
+
+  // Background pill — rotated with the text
+  const pillW = text.length * 6.5 + 12;
+  const pillH = 16;
+
+  // Only show rotated label if bar is tall enough for text
+  const minHeight = 20;
+  const showRotated = node.height >= minHeight;
+
+  if (!showRotated) {
+    // Fall back to value above for very short bars
+    return (
+      <g>
+        <text
+          x={cx}
+          y={node.y - 6}
+          textAnchor="middle"
+          style={{
+            font: '500 9px/1 system-ui',
+            fill: 'var(--color-text-primary, #1c1c1e)',
+          }}>
+          {formatValue(node.value)}
+        </text>
+      </g>
+    );
+  }
+
+  return (
+    <g>
+      {/* Rotated label on the bar */}
+      <g transform={`translate(${cx}, ${cy}) rotate(-90)`}>
+        {showBg && (
+          <rect
+            x={-pillW / 2}
+            y={-pillH / 2}
+            width={pillW}
+            height={pillH}
+            rx={3}
+            fill="var(--color-background-surface, #fff)"
+            fillOpacity={0.9}
+          />
+        )}
+        <text
+          x={0}
+          y={0}
+          textAnchor="middle"
+          dominantBaseline="central"
+          style={{
+            font: '600 10px/1 system-ui',
+            fill: 'var(--color-text-primary, #1c1c1e)',
+            letterSpacing: '-0.01em',
+          }}>
+          {text}
+        </text>
+      </g>
+      {/* Percentage below */}
+      {showPercent && node.column > 0 && (
+        <text
+          x={cx}
+          y={Math.min(height - 2, node.y + node.height + 12)}
+          textAnchor="middle"
+          style={{
+            font: '500 9px/1 system-ui',
+            fill: 'var(--color-text-tertiary, #8e8ea0)',
+          }}>
+          {pctStr}
+        </text>
+      )}
     </g>
   );
 }

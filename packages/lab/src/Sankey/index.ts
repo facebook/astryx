@@ -7,7 +7,10 @@ export {useSankey} from './SankeyContext';
 export type {
   SankeyNode,
   SankeyLink,
+  SankeyColumn,
+  SankeyColumnDef,
   SankeyNodeLayout,
   SankeyLinkLayout,
+  SankeyColumnLayout,
   SankeyContext,
 } from './types';

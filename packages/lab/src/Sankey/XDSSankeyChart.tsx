@@ -16,15 +16,27 @@ import {
 } from 'react';
 import {SankeyProvider} from './SankeyContext';
 import {computeLayout} from './layout';
-import type {SankeyNode, SankeyLink} from './types';
+import type {
+  SankeyNode,
+  SankeyLink,
+  SankeyColumn,
+  SankeyColumnDef,
+} from './types';
 
 export interface XDSSankeyChartProps {
   /** Node definitions */
   nodes: SankeyNode[];
   /** Link definitions */
   links: SankeyLink[];
-  /** Explicit column assignment — array of arrays of node IDs */
-  columns?: string[][];
+  /**
+   * Column definitions. Accepts either:
+   * - Simple: `string[][]` — arrays of node IDs per column
+   * - Rich: `SankeyColumnDef[]` — objects with `ids`, optional `label`
+   * - Mixed: any combination
+   *
+   * If omitted, columns are auto-detected via topological sort.
+   */
+  columns?: SankeyColumn[];
   /** Chart height in px (default: 320) */
   height?: number;
   /** Node bar width in px (default: 3) */
@@ -40,16 +52,61 @@ export interface XDSSankeyChartProps {
   children: ReactNode;
 }
 
+/** Resolve column count from raw column input or auto-detect from graph */
+function resolveColumnCount(
+  columns: SankeyColumn[] | undefined,
+  nodes: SankeyNode[],
+  links: SankeyLink[],
+): number {
+  if (columns) return columns.length;
+  // Quick topological column count
+  const inDegree = new Map<string, number>();
+  const outEdges = new Map<string, string[]>();
+  nodes.forEach(n => {
+    inDegree.set(n.id, 0);
+    outEdges.set(n.id, []);
+  });
+  links.forEach(l => {
+    inDegree.set(l.target, (inDegree.get(l.target) || 0) + 1);
+    outEdges.get(l.source)?.push(l.target);
+  });
+  const colMap = new Map<string, number>();
+  const queue: string[] = [];
+  nodes.forEach(n => {
+    if (inDegree.get(n.id) === 0) {
+      queue.push(n.id);
+      colMap.set(n.id, 0);
+    }
+  });
+  while (queue.length) {
+    const id = queue.shift()!;
+    const col = colMap.get(id)!;
+    for (const tgt of outEdges.get(id) || []) {
+      colMap.set(tgt, Math.max(colMap.get(tgt) || 0, col + 1));
+      inDegree.set(tgt, (inDegree.get(tgt) || 0) - 1);
+      if (inDegree.get(tgt) === 0) queue.push(tgt);
+    }
+  }
+  return Math.max(...Array.from(colMap.values()), 0) + 1;
+}
+
 /**
  * Root component for Sankey/flow diagrams.
  *
  * Computes layout from nodes + links, exposes positions via context.
- * Width is responsive (fills container) but enforces minColumnWidth
- * to prevent squished layouts — scrolls horizontally when needed.
+ * Width is responsive but enforces minColumnWidth — scrolls when needed.
  *
  * @example
  * ```tsx
- * <XDSSankeyChart nodes={nodes} links={links} columns={columns}>
+ * <XDSSankeyChart
+ *   nodes={nodes}
+ *   links={links}
+ *   columns={[
+ *     {ids: ['a', 'b'], label: 'Source'},
+ *     {ids: ['c', 'd'], label: 'Target'},
+ *   ]}
+ * >
+ *   <XDSSankeyGrid />
  *   <XDSSankeyLink />
  *   <XDSSankeyNode />
  *   <XDSSankeyLabel />
@@ -80,46 +137,11 @@ export function XDSSankeyChart({
     return () => ro.disconnect();
   }, []);
 
-  const resolvedColumns = useMemo(() => {
-    if (columns) return columns;
-    // Compute once for column count — layout.ts will also compute but
-    // we need the count here for min-width calculation
-    const inDegree = new Map<string, number>();
-    const outEdges = new Map<string, string[]>();
-    nodes.forEach(n => {
-      inDegree.set(n.id, 0);
-      outEdges.set(n.id, []);
-    });
-    links.forEach(l => {
-      inDegree.set(l.target, (inDegree.get(l.target) || 0) + 1);
-      outEdges.get(l.source)?.push(l.target);
-    });
-    const colMap = new Map<string, number>();
-    const queue: string[] = [];
-    nodes.forEach(n => {
-      if (inDegree.get(n.id) === 0) {
-        queue.push(n.id);
-        colMap.set(n.id, 0);
-      }
-    });
-    while (queue.length) {
-      const id = queue.shift()!;
-      const col = colMap.get(id)!;
-      for (const tgt of outEdges.get(id) || []) {
-        colMap.set(tgt, Math.max(colMap.get(tgt) || 0, col + 1));
-        inDegree.set(tgt, (inDegree.get(tgt) || 0) - 1);
-        if (inDegree.get(tgt) === 0) queue.push(tgt);
-      }
-    }
-    const maxCol = Math.max(...Array.from(colMap.values()), 0);
-    const cols: string[][] = Array.from({length: maxCol + 1}, () => []);
-    nodes.forEach(n => {
-      cols[colMap.get(n.id) || 0].push(n.id);
-    });
-    return cols;
-  }, [nodes, links, columns]);
+  const colCount = useMemo(
+    () => resolveColumnCount(columns, nodes, links),
+    [columns, nodes, links],
+  );
 
-  const colCount = resolvedColumns.length;
   const minWidth = colCount * minColumnWidth;
   const chartWidth = Math.max(containerWidth, minWidth);
   const needsScroll = containerWidth > 0 && chartWidth > containerWidth;
@@ -131,7 +153,7 @@ export function XDSSankeyChart({
       height,
       nodeWidth,
       nodeGap,
-      columns: resolvedColumns,
+      columns,
     });
   }, [
     nodes,
@@ -140,7 +162,7 @@ export function XDSSankeyChart({
     height,
     nodeWidth,
     nodeGap,
-    resolvedColumns,
+    columns,
     containerWidth,
   ]);
 
@@ -149,7 +171,7 @@ export function XDSSankeyChart({
     return {
       nodes: layout.nodes,
       links: layout.links,
-      columnXs: layout.columnXs,
+      columns: layout.columns,
       width: chartWidth,
       height,
       valueScale: layout.valueScale,
