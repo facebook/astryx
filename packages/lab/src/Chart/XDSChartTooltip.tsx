@@ -133,37 +133,78 @@ export function XDSChartTooltip({
 
   const layer = useXDSLayer({mode: 'fixed'});
 
-  // Find nearest data index by x-pixel distance
+  // Find nearest data point. Uses Euclidean distance for scatter (linear x)
+  // and x-only distance for categorical/time series (band x).
   const findNearest = useCallback(
-    (px: number): {index: number; point: DataPoint} | null => {
+    (px: number, py: number): {index: number; point: DataPoint} | null => {
       if (data.length === 0) return null;
 
       let closestIdx = 0;
       let minDist = Infinity;
 
+      // Determine y keys (all numeric keys that aren't xKey)
+      const yKeys =
+        data.length > 0
+          ? Object.keys(data[0]).filter(
+              k => k !== xKey && typeof data[0][k] === 'number',
+            )
+          : [];
+
       for (let i = 0; i < data.length; i++) {
-        const datumPx = xPixel(data[i], xKey, xScale);
-        const dist = Math.abs(datumPx - px);
-        if (dist < minDist) {
-          minDist = dist;
+        const datum = data[i];
+        const datumPx = xPixel(datum, xKey, xScale);
+        const dx = datumPx - px;
+
+        // For each y key, compute distance to that point
+        let bestDistForDatum = Infinity;
+        let bestYKey = yKeys[0];
+
+        for (const yk of yKeys) {
+          const yv = datum[yk];
+          if (typeof yv !== 'number') continue;
+          const datumPy = yScale(yv);
+          const dy = datumPy - py;
+          const dist = dx * dx + dy * dy; // squared euclidean
+          if (dist < bestDistForDatum) {
+            bestDistForDatum = dist;
+            bestYKey = yk;
+          }
+        }
+
+        if (bestDistForDatum < minDist) {
+          minDist = bestDistForDatum;
           closestIdx = i;
         }
       }
 
       const datum = data[closestIdx];
       const dpx = xPixel(datum, xKey, xScale);
-      const yVals = Object.entries(datum)
-        .filter(([k, v]) => k !== xKey && typeof v === 'number')
-        .map(([, v]) => v as number);
-      const dpy = yVals.length > 0 ? yScale(Math.max(...yVals)) : height / 2;
+
+      // Use the y value of the closest key for this datum
+      let bestY = 0;
+      let bestPy = height / 2;
+      let bestDist = Infinity;
+      for (const yk of yKeys) {
+        const yv = datum[yk];
+        if (typeof yv !== 'number') continue;
+        const dpy = yScale(yv);
+        const dx = dpx - px;
+        const dy = dpy - py;
+        const dist = dx * dx + dy * dy;
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestY = yv;
+          bestPy = dpy;
+        }
+      }
 
       return {
         index: closestIdx,
         point: {
           x: datum[xKey] as number | string | null,
-          y: yVals.length > 0 ? Math.max(...yVals) : 0,
+          y: bestY,
           px: dpx,
-          py: dpy,
+          py: bestPy,
         },
       };
     },
@@ -177,7 +218,7 @@ export function XDSChartTooltip({
       let result: {index: number; point: DataPoint} | null = null;
 
       if (snap) {
-        result = findNearest(dataPoint.px);
+        result = findNearest(dataPoint.px, dataPoint.py);
       } else {
         result = {index: -1, point: dataPoint};
       }
