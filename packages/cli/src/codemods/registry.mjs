@@ -12,7 +12,7 @@ const registry = new Map([
   ['0.0.8', () => import('./transforms/v0.0.8/index.mjs')],
   ['0.0.10', () => import('./transforms/v0.0.10/index.mjs')],
   ['0.0.12', () => import('./transforms/v0.0.12/index.mjs')],
-  ['0.0.14', () => import('./transforms/v0.0.14/index.mjs')],
+  ['0.0.13', () => import('./transforms/v0.0.13/index.mjs')],
 ]);
 
 /**
@@ -24,8 +24,8 @@ const registry = new Map([
  * @returns {number}
  */
 function semverCompare(a, b) {
-  const pa = a.split('.').map(Number);
-  const pb = b.split('.').map(Number);
+  const pa = a.split('-')[0].split('.').map(Number);
+  const pb = b.split('-')[0].split('.').map(Number);
   for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
     const na = pa[i] ?? 0;
     const nb = pb[i] ?? 0;

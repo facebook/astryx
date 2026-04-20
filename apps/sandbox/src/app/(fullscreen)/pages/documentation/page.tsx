@@ -1,6 +1,7 @@
 'use client';
 
 import {useState} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
@@ -14,6 +15,13 @@ import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSTooltip} from '@xds/core/Tooltip';
 import {XDSTable} from '@xds/core/Table';
+
+const localStyles = stylex.create({
+  previewCard: {
+    borderRadius: 12,
+    cursor: 'pointer',
+  },
+});
 
 // ---------------------------------------------------------------------------
 // Icons (Lucide-style inline SVGs)
@@ -985,33 +993,19 @@ export default function DocumentationPage() {
                       }}
                       style={{cursor: 'pointer'}}>
                       <XDSCard
+                        variant="muted"
                         padding={0}
-                        style={{
-                          border: 'none',
-                          boxShadow: 'none',
-                          outline: 'none',
-                        }}>
-                        {/* Preview area */}
-                        <div
-                          style={{
-                            height: 160,
-                            backgroundColor:
-                              'var(--color-background-muted, #c4cdd5)',
-                            borderRadius: 12,
-                          }}
-                        />
-                        {/* Card body */}
-                        <div style={{padding: '12px 0 0'}}>
-                          <XDSText type="body" style={{fontWeight: 700}}>
-                            {item.name}
-                          </XDSText>
-                          <div style={{marginTop: 0}}>
-                            <XDSText type="body" color="secondary">
-                              {item.desc}
-                            </XDSText>
-                          </div>
-                        </div>
-                      </XDSCard>
+                        minHeight={160}
+                        xstyle={localStyles.previewCard}
+                      />
+                      <div style={{paddingTop: 12}}>
+                        <XDSText type="body" style={{fontWeight: 700}}>
+                          {item.name}
+                        </XDSText>
+                        <XDSText type="body" color="secondary">
+                          {item.desc}
+                        </XDSText>
+                      </div>
                     </div>
                   ))}
                 </div>

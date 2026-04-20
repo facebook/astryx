@@ -40,10 +40,11 @@ import {
 } from '@heroicons/react/24/outline';
 
 const styles = stylex.create({
-  whiteSpaceNormal: {whiteSpace: 'normal'},
   tabListFlush: {marginInlineStart: '-12px'},
-  narrowContent: {maxWidth: 640},
-  fullWidth: {width: '100%'},
+  previewCard: {
+    borderRadius: 12,
+    cursor: 'pointer',
+  },
 });
 
 // ---------------------------------------------------------------------------
@@ -583,72 +584,71 @@ function OverviewView({
   onSelectComponent: (key: string) => void;
 }) {
   return (
-    <XDSSection padding={8} maxWidth={1200} xstyle={styles.fullWidth}>
-      <XDSVStack gap={10}>
-        {/* Hero banner */}
-        <XDSCard variant="blue" padding={10}>
-          <XDSHStack gap={8} vAlign="center">
-            <XDSStackItem size="fill">
-              <XDSVStack gap={4}>
-                <XDSText type="supporting" color="secondary">
-                  Product Name Design System
-                </XDSText>
-                <XDSText type="display-1">Web overview</XDSText>
-                <XDSText type="large" color="secondary">
-                  An open-source UI library to help developers quickly build
-                  beautiful, accessible products.
-                </XDSText>
-                <XDSHStack>
-                  <XDSButton
-                    label="Get started"
-                    variant="primary"
-                    size="lg"
-                    onClick={() => onSelectComponent('getting-started')}
-                  />
-                </XDSHStack>
-              </XDSVStack>
-            </XDSStackItem>
-            <XDSStackItem size="fill" />
-          </XDSHStack>
-        </XDSCard>
+    <XDSCenter axis="horizontal">
+      <XDSSection padding={8} maxWidth={1200} width="100%">
+        <XDSVStack gap={10}>
+          {/* Hero banner */}
+          <XDSCard variant="cyan" padding={10}>
+            <XDSHStack gap={8} vAlign="center">
+              <XDSStackItem size="fill">
+                <XDSVStack gap={4}>
+                  <XDSText type="display-1">Web overview</XDSText>
+                  <XDSText type="large" weight="normal" color="secondary">
+                    An open-source UI library to help developers quickly build
+                    beautiful, accessible products.
+                  </XDSText>
+                  <XDSHStack>
+                    <XDSButton
+                      label="Get started"
+                      variant="primary"
+                      size="lg"
+                      onClick={() => onSelectComponent('getting-started')}
+                    />
+                  </XDSHStack>
+                </XDSVStack>
+              </XDSStackItem>
+              <XDSStackItem size="fill" />
+            </XDSHStack>
+          </XDSCard>
 
-        {/* Category sections */}
-        {COMPONENT_CATEGORIES.map(category => (
-          <XDSVStack key={category.label} gap={4}>
-            <XDSText type="display-2">{category.label}</XDSText>
-            <XDSGrid columns={{minWidth: 260}} gap={8}>
-              {category.items.map(item => (
-                <XDSCard
-                  key={item.key}
-                  padding={0}
-                  onClick={() => onSelectComponent(item.key)}>
-                  <XDSVStack gap={2}>
-                    <XDSSection variant="wash" padding={0} minHeight={160} />
-                    <XDSSection padding={3} variant="transparent">
-                      <XDSVStack gap={0.5}>
-                        <XDSText type="body" weight="bold">
-                          {item.name}
-                        </XDSText>
-                        <XDSText type="body" color="secondary">
-                          {item.desc}
-                        </XDSText>
-                      </XDSVStack>
-                    </XDSSection>
+          {/* Category sections */}
+          {COMPONENT_CATEGORIES.map(category => (
+            <XDSVStack key={category.label} gap={4}>
+              <XDSText type="display-2">{category.label}</XDSText>
+              <XDSGrid columns={{minWidth: 260}} gap={8}>
+                {category.items.map(item => (
+                  <XDSVStack key={item.key} gap={3}>
+                    <XDSCard
+                      variant="muted"
+                      padding={0}
+                      minHeight={160}
+                      xstyle={styles.previewCard}
+                      onClick={() => onSelectComponent(item.key)}
+                    />
+                    <XDSVStack gap={0.5}>
+                      <XDSText type="body" weight="bold">
+                        {item.name}
+                      </XDSText>
+                      <XDSText type="body" color="secondary">
+                        {item.desc}
+                      </XDSText>
+                    </XDSVStack>
                   </XDSVStack>
-                </XDSCard>
-              ))}
-            </XDSGrid>
-          </XDSVStack>
-        ))}
-      </XDSVStack>
-    </XDSSection>
+                ))}
+              </XDSGrid>
+            </XDSVStack>
+          ))}
+        </XDSVStack>
+      </XDSSection>
+    </XDSCenter>
   );
 }
 
 function GettingStartedView() {
   return (
-    <XDSSection padding={8} maxWidth={740}>
-      <XDSVStack gap={8}>
+    <XDSCenter axis="horizontal">
+      <XDSSection padding={8} maxWidth={740} width="100%">
+        <XDSVStack gap={8}>
         {/* Header */}
         <XDSVStack gap={2}>
           <XDSText type="display-1">
@@ -819,7 +819,8 @@ export default function App({ children }) {
           </XDSList>
         </XDSVStack>
       </XDSVStack>
-    </XDSSection>
+      </XDSSection>
+    </XDSCenter>
   );
 }
 
@@ -879,76 +880,77 @@ function ComponentDetailView({activeNav}: {activeNav: string}) {
   const previews = EXAMPLE_PREVIEWS[activeNav] ?? [];
 
   return (
-    <XDSSection padding={8} maxWidth={960}>
-      <XDSVStack gap={8}>
-        {/* Header */}
-        <XDSVStack gap={2}>
-          <XDSText type="display-1">{getComponentName(activeNav)}</XDSText>
-          <XDSText type="supporting" color="secondary">
-            March 30, 2026 · Updated 5:40 p.m. PST
-          </XDSText>
-        </XDSVStack>
-
-        <XDSDivider />
-
-        {/* Live Preview Card */}
-        <XDSCard variant="muted" padding={0}>
-          <XDSCenter height={360}>
-            {COMPONENT_PREVIEWS[activeNav] ?? (
-              <XDSText type="supporting" color="secondary">
-                Preview coming soon
-              </XDSText>
-            )}
-          </XDSCenter>
-        </XDSCard>
-
-        {/* Usage & Best Practices */}
-        <XDSVStack gap={4} xstyle={styles.narrowContent}>
-          <XDSHeading level={2}>Usage</XDSHeading>
-          <XDSText type="large" weight="normal">
-            {docs.usage}
-          </XDSText>
-          <XDSHeading level={3}>Best practices</XDSHeading>
-          <XDSTable
-            data={docs.bestPractices as Record<string, unknown>[]}
-            columns={[
-              {
-                key: 'type',
-                header: 'Guidance',
-                width: pixel(125),
-                renderCell: (item: Record<string, unknown>) => (
-                  <XDSBadge
-                    label={item.type === 'do' ? 'Do' : 'Dont'}
-                    variant={item.type === 'do' ? 'success' : 'error'}
-                  />
-                ),
-              },
-              {
-                key: 'text',
-                header: 'Practices',
-                renderCell: (item: Record<string, unknown>) => (
-                  <XDSText type="body" xstyle={styles.whiteSpaceNormal}>
-                    {item.text as string}
-                  </XDSText>
-                ),
-              },
-            ]}
-            density="spacious"
-            dividers="rows"
-          />
-        </XDSVStack>
-
-        <XDSDivider />
-
-        {/* Examples */}
-        <XDSVStack gap={4} xstyle={styles.narrowContent}>
-          <XDSHeading level={2}>Examples</XDSHeading>
-          <XDSText type="large" weight="normal">
-            Explore common configurations, variations, and states for this
-            component.
-          </XDSText>
-        </XDSVStack>
+    <XDSCenter axis="horizontal">
+      <XDSSection padding={8} maxWidth={960} width="100%">
         <XDSVStack gap={8}>
+          {/* Header */}
+          <XDSVStack gap={2}>
+            <XDSText type="display-1">{getComponentName(activeNav)}</XDSText>
+            <XDSText type="supporting" color="secondary">
+              March 30, 2026 · Updated 5:40 p.m. PST
+            </XDSText>
+          </XDSVStack>
+
+          <XDSDivider />
+
+          {/* Live Preview Card */}
+          <XDSCard variant="muted" padding={0}>
+            <XDSCenter height={360}>
+              {COMPONENT_PREVIEWS[activeNav] ?? (
+                <XDSText type="supporting" color="secondary">
+                  Preview coming soon
+                </XDSText>
+              )}
+            </XDSCenter>
+          </XDSCard>
+
+          {/* Usage & Best Practices */}
+          <XDSVStack gap={4}>
+            <XDSHeading level={2}>Usage</XDSHeading>
+            <XDSText type="large" weight="normal">
+              {docs.usage}
+            </XDSText>
+            <XDSHeading level={3}>Best practices</XDSHeading>
+            <XDSTable
+              data={docs.bestPractices as Record<string, unknown>[]}
+              columns={[
+                {
+                  key: 'type',
+                  header: 'Guidance',
+                  width: pixel(125),
+                  renderCell: (item: Record<string, unknown>) => (
+                    <XDSBadge
+                      label={item.type === 'do' ? 'Do' : 'Dont'}
+                      variant={item.type === 'do' ? 'success' : 'error'}
+                    />
+                  ),
+                },
+                {
+                  key: 'text',
+                  header: 'Practices',
+                  renderCell: (item: Record<string, unknown>) => (
+                    <XDSText type="body" textWrap="wrap">
+                      {item.text as string}
+                    </XDSText>
+                  ),
+                },
+              ]}
+              density="spacious"
+              dividers="rows"
+            />
+          </XDSVStack>
+
+          <XDSDivider />
+
+          {/* Examples */}
+          <XDSVStack gap={4}>
+            <XDSHeading level={2}>Examples</XDSHeading>
+            <XDSText type="large" weight="normal">
+              Explore common configurations, variations, and states for this
+              component.
+            </XDSText>
+          </XDSVStack>
+          <XDSVStack gap={8}>
           {docs.examples.map((example, i) => {
             const tabKey = `${activeNav}-${i}`;
             const activeTab = exampleTabs[tabKey] ?? 'description';
@@ -1017,9 +1019,10 @@ function ComponentDetailView({activeNav}: {activeNav: string}) {
               </XDSCard>
             );
           })}
+          </XDSVStack>
         </XDSVStack>
-      </XDSVStack>
-    </XDSSection>
+      </XDSSection>
+    </XDSCenter>
   );
 }
 
@@ -1028,15 +1031,7 @@ function ComponentDetailView({activeNav}: {activeNav: string}) {
 // ---------------------------------------------------------------------------
 
 export default function DocumentationPage() {
-  const [activeNav, setActiveNav] = useState('button');
-  const [selectedComponent, setSelectedComponent] = useState<string | null>(
-    null,
-  );
-
-  const handleSelectComponent = (key: string) => {
-    setSelectedComponent(key);
-    setActiveNav(key);
-  };
+  const [activePage, setActivePage] = useState<string>('home');
 
   return (
     <XDSAppShell
@@ -1047,38 +1042,43 @@ export default function DocumentationPage() {
           header={
             <XDSSideNavHeading heading="Product Name" />
           }>
-          <XDSSideNavItem
-            label="Overview"
-            isSelected={selectedComponent === null}
-            onClick={() => setSelectedComponent(null)}
-          />
-          <XDSSideNavItem
-            label="Getting started"
-            isSelected={activeNav === 'getting-started'}
-            onClick={() => handleSelectComponent('getting-started')}
-          />
+          <XDSSideNavSection title="Navigation" isHeaderHidden>
+            <XDSSideNavItem
+              label="Home"
+              isSelected={activePage === 'home'}
+              onClick={() => setActivePage('home')}
+            />
+            <XDSSideNavItem
+              label="Getting started"
+              isSelected={activePage === 'getting-started'}
+              onClick={() => setActivePage('getting-started')}
+            />
+          </XDSSideNavSection>
+
           {COMPONENT_CATEGORIES.map(category => (
             <XDSSideNavSection key={category.label} title={category.label}>
               {category.items.map(item => (
                 <XDSSideNavItem
                   key={item.key}
                   label={item.name}
-                  isSelected={
-                    selectedComponent !== null && activeNav === item.key
+                  isSelected={activePage === item.key}
+                  onClick={
+                    item.key === 'button'
+                      ? () => setActivePage(item.key)
+                      : undefined
                   }
-                  onClick={() => handleSelectComponent(item.key)}
                 />
               ))}
             </XDSSideNavSection>
           ))}
         </XDSSideNav>
       }>
-      {selectedComponent === null ? (
-        <OverviewView onSelectComponent={handleSelectComponent} />
-      ) : activeNav === 'getting-started' ? (
+      {activePage === 'home' ? (
+        <OverviewView onSelectComponent={setActivePage} />
+      ) : activePage === 'getting-started' ? (
         <GettingStartedView />
       ) : (
-        <ComponentDetailView activeNav={activeNav} />
+        <ComponentDetailView activeNav={activePage} />
       )}
     </XDSAppShell>
   );
