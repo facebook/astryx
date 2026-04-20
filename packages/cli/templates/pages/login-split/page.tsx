@@ -19,7 +19,9 @@ import {
   radiusVars,
 } from '@xds/core/theme/tokens.stylex';
 
-const COVER_IMAGE_URL = '/templates/light-working-vertical-1.png';
+// colorful-lifestyle-vertical-1 from xds_oss asset set
+const COVER_IMAGE_URL =
+  'https://scontent.xx.fbcdn.net/v/t39.6806-6/670480937_2502078110200666_6842204180822201520_n.png?_nc_cat=100&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=CkjsPqmDibQQ7kNvwGqbpNN&_nc_oc=Adp5jI8z5m0aqhA07RtwoFUrqqr3jc6tQshxd5Hr5UyL_DIkFt0wEIQwLeKgXOg1lTBG_Ncth9lSFM0vmPqMxbfx&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=eCyOnLSq2cMADZiwJgLJaQ&_nc_ss=7a30f&oh=00_Af2sEmvEqZa5nd1SqocypZQnRh_FLwZHEBOrG0LTR7tfdA&oe=69E852F4';
 
 const AppleIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="currentColor" width={16} height={16} {...props}>
