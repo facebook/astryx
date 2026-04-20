@@ -1,25 +1,95 @@
 /**
  * @file XDSChartZoom.tsx
- * @output Zoom and pan with mouse wheel, pinch, and toolbar chrome.
+ * @output Scroll/pinch zoom + drag pan with optional toolbar.
+ * @position Child of XDSChart; modifies x/yDomain via callbacks
+ *
+ * Zoom is aspect-ratio-normalized: both axes scale by the same visual
+ * factor regardless of their domain ranges. Reset button restores
+ * the initial domains captured on mount.
  */
 
-import {useCallback, useRef, useState} from 'react';
+import {useCallback, useRef, useState, useEffect} from 'react';
+import {createPortal} from 'react-dom';
+import {XDSIconButton} from '@xds/core/IconButton';
 import {useChart} from './ChartContext';
 import {isBandScale} from './utils';
 import type {ScaleLinear} from 'd3-scale';
 
+/** Toolbar position relative to the chart */
+export type ZoomToolbarPosition =
+  | 'top-right'
+  | 'top-left'
+  | 'bottom-right'
+  | 'bottom-left';
+
 export interface XDSChartZoomProps {
   onXDomainChange?: (domain: [number, number]) => void;
   onYDomainChange?: (domain: [number, number]) => void;
+
+  /**
+   * Zoom speed factor per scroll tick. Higher = faster zoom.
+   * @default 0.1
+   */
   zoomSpeed?: number;
+
+  /** Only zoom/pan the x-axis */
   xOnly?: boolean;
+  /** Only zoom/pan the y-axis */
   yOnly?: boolean;
-  /** Show zoom/pan toolbar (default: true) */
-  chrome?: boolean;
-  /** Initial x domain for reset */
-  initialXDomain?: [number, number];
-  /** Initial y domain for reset */
-  initialYDomain?: [number, number];
+
+  /**
+   * Show the zoom/pan toolbar.
+   * Pass `false` to hide, or a position string to show at that corner.
+   * @default 'top-right'
+   */
+  toolbar?: false | ZoomToolbarPosition;
+}
+
+// Chart toolbar icons (16x16 SVG)
+function ZoomInIcon() {
+  return (
+    <svg
+      width={16}
+      height={16}
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round">
+      <path d="M8 3v10M3 8h10" />
+    </svg>
+  );
+}
+
+function ZoomOutIcon() {
+  return (
+    <svg
+      width={16}
+      height={16}
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round">
+      <path d="M3 8h10" />
+    </svg>
+  );
+}
+
+function ResetIcon() {
+  return (
+    <svg
+      width={16}
+      height={16}
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round">
+      <path d="M2 8a6 6 0 1 1 1.5 4M2 12V8h4" />
+    </svg>
+  );
 }
 
 export function XDSChartZoom({
@@ -28,12 +98,24 @@ export function XDSChartZoom({
   zoomSpeed = 0.1,
   xOnly = false,
   yOnly = false,
-  chrome = true,
-  initialXDomain,
-  initialYDomain,
+  toolbar = 'top-right',
 }: XDSChartZoomProps) {
-  const {width, height, xScale, yScale} = useChart();
-  const [panMode, setPanMode] = useState(false);
+  const {width, height, xScale, yScale, svgRef} = useChart();
+
+  // Capture initial domains on mount for reset
+  const initialDomainsRef = useRef<{
+    x: [number, number] | null;
+    y: [number, number];
+  } | null>(null);
+
+  useEffect(() => {
+    if (initialDomainsRef.current) return; // only capture once
+    const xDomain = isBandScale(xScale)
+      ? null
+      : ((xScale as ScaleLinear<number, number>).domain() as [number, number]);
+    const yDomain = yScale.domain() as [number, number];
+    initialDomainsRef.current = {x: xDomain, y: yDomain};
+  }, [xScale, yScale]);
 
   const dragRef = useRef<{
     startX: number;
@@ -41,12 +123,13 @@ export function XDSChartZoom({
     xDomain: [number, number];
     yDomain: [number, number];
   } | null>(null);
+
+  const pointersRef = useRef<Map<number, {x: number; y: number}>>(new Map());
   const pinchRef = useRef<{
     dist: number;
     xDomain: [number, number];
     yDomain: [number, number];
   } | null>(null);
-  const pointersRef = useRef<Map<number, {x: number; y: number}>>(new Map());
 
   const getXDomain = useCallback(
     (): [number, number] =>
@@ -59,41 +142,46 @@ export function XDSChartZoom({
     [xScale],
   );
 
+  // Zoom a single axis around a pivot point by a factor.
+  // factor > 1 = zoom out, factor < 1 = zoom in.
+  const zoomAxis = useCallback(
+    (
+      domain: [number, number],
+      factor: number,
+      pivot: number,
+    ): [number, number] => {
+      const [lo, hi] = domain;
+      const range = hi - lo;
+      const leftRatio = (pivot - lo) / range;
+      const newRange = range * factor;
+      return [pivot - newRange * leftRatio, pivot + newRange * (1 - leftRatio)];
+    },
+    [],
+  );
+
   const zoomBy = useCallback(
     (factor: number, pivotX?: number, pivotY?: number) => {
       if (!yOnly && !isBandScale(xScale)) {
         const linear = xScale as ScaleLinear<number, number>;
         const [xMin, xMax] = linear.domain() as [number, number];
-        const xRange = xMax - xMin;
         const xPivot =
           pivotX != null ? linear.invert(pivotX) : (xMin + xMax) / 2;
-        const leftRatio = (xPivot - xMin) / xRange;
-        const newRange = xRange * factor;
-        onXDomainChange?.([
-          xPivot - newRange * leftRatio,
-          xPivot + newRange * (1 - leftRatio),
-        ]);
+        onXDomainChange?.(zoomAxis([xMin, xMax], factor, xPivot));
       }
       if (!xOnly) {
         const [yMin, yMax] = yScale.domain() as [number, number];
-        const yRange = yMax - yMin;
         const yPivot =
           pivotY != null ? yScale.invert(pivotY) : (yMin + yMax) / 2;
-        const topRatio = (yMax - yPivot) / yRange;
-        const newRange = yRange * factor;
-        onYDomainChange?.([
-          yPivot - newRange * (1 - topRatio),
-          yPivot + newRange * topRatio,
-        ]);
+        onYDomainChange?.(zoomAxis([yMin, yMax], factor, yPivot));
       }
     },
-    [xScale, yScale, onXDomainChange, onYDomainChange, xOnly, yOnly],
+    [xScale, yScale, onXDomainChange, onYDomainChange, xOnly, yOnly, zoomAxis],
   );
 
   const handleWheel = useCallback(
     (e: React.WheelEvent<SVGRectElement>) => {
       e.preventDefault();
-      const factor = e.deltaY > 0 ? 1 + zoomSpeed : 1 - zoomSpeed;
+
       const svg = e.currentTarget.ownerSVGElement;
       if (!svg) return;
       const pt = svg.createSVGPoint();
@@ -102,19 +190,47 @@ export function XDSChartZoom({
       const local = pt.matrixTransform(
         e.currentTarget.getScreenCTM()?.inverse(),
       );
-      zoomBy(factor, local.x, local.y);
+
+      // Clamp delta to prevent trackpad acceleration from blowing out the domain.
+      // A single tick should zoom by at most zoomSpeed (10% default).
+      const clampedDelta =
+        Math.sign(e.deltaY) * Math.min(Math.abs(e.deltaY), 50);
+      const rawFactor = 1 + (clampedDelta / 50) * zoomSpeed;
+
+      // Apply per-axis, normalizing by each axis's pixel-to-domain ratio
+      // so both axes zoom at the same visual rate.
+      if (!yOnly && !isBandScale(xScale)) {
+        const linear = xScale as ScaleLinear<number, number>;
+        const [xMin, xMax] = linear.domain() as [number, number];
+        const xPivot = linear.invert(local.x);
+        onXDomainChange?.(zoomAxis([xMin, xMax], rawFactor, xPivot));
+      }
+
+      if (!xOnly) {
+        const [yMin, yMax] = yScale.domain() as [number, number];
+        const yPivot = yScale.invert(local.y);
+        onYDomainChange?.(zoomAxis([yMin, yMax], rawFactor, yPivot));
+      }
     },
-    [zoomSpeed, zoomBy],
+    [
+      zoomSpeed,
+      xScale,
+      yScale,
+      onXDomainChange,
+      onYDomainChange,
+      xOnly,
+      yOnly,
+      zoomAxis,
+    ],
   );
 
-  // Pointer tracking for pan + pinch
   const onPointerDown = useCallback(
     (e: React.PointerEvent<SVGRectElement>) => {
       (e.target as Element).setPointerCapture(e.pointerId);
+      e.preventDefault(); // prevent selection on touch
       pointersRef.current.set(e.pointerId, {x: e.clientX, y: e.clientY});
 
       if (pointersRef.current.size === 2) {
-        // Start pinch
         const pts = [...pointersRef.current.values()];
         const dist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
         pinchRef.current = {
@@ -123,8 +239,7 @@ export function XDSChartZoom({
           yDomain: yScale.domain() as [number, number],
         };
         dragRef.current = null;
-      } else if (pointersRef.current.size === 1 && panMode) {
-        // Start pan
+      } else if (pointersRef.current.size === 1) {
         dragRef.current = {
           startX: e.clientX,
           startY: e.clientY,
@@ -133,7 +248,7 @@ export function XDSChartZoom({
         };
       }
     },
-    [panMode, getXDomain, yScale],
+    [getXDomain, yScale],
   );
 
   const onPointerMove = useCallback(
@@ -141,7 +256,6 @@ export function XDSChartZoom({
       pointersRef.current.set(e.pointerId, {x: e.clientX, y: e.clientY});
 
       if (pointersRef.current.size === 2 && pinchRef.current) {
-        // Pinch zoom
         const pts = [...pointersRef.current.values()];
         const dist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
         const ratio = pinchRef.current.dist / dist;
@@ -157,8 +271,7 @@ export function XDSChartZoom({
           const half = ((yMax - yMin) / 2) * ratio;
           onYDomainChange?.([mid - half, mid + half]);
         }
-      } else if (dragRef.current && panMode) {
-        // Pan
+      } else if (dragRef.current) {
         const dx = e.clientX - dragRef.current.startX;
         const dy = e.clientY - dragRef.current.startY;
         if (!yOnly && !isBandScale(xScale)) {
@@ -173,16 +286,7 @@ export function XDSChartZoom({
         }
       }
     },
-    [
-      panMode,
-      xScale,
-      width,
-      height,
-      onXDomainChange,
-      onYDomainChange,
-      xOnly,
-      yOnly,
-    ],
+    [xScale, width, height, onXDomainChange, onYDomainChange, xOnly, yOnly],
   );
 
   const onPointerUp = useCallback((e: React.PointerEvent<SVGRectElement>) => {
@@ -192,81 +296,91 @@ export function XDSChartZoom({
   }, []);
 
   const handleReset = useCallback(() => {
-    if (initialXDomain) onXDomainChange?.(initialXDomain);
-    if (initialYDomain) onYDomainChange?.(initialYDomain);
-  }, [initialXDomain, initialYDomain, onXDomainChange, onYDomainChange]);
+    const init = initialDomainsRef.current;
+    if (!init) return;
+    if (init.x) onXDomainChange?.(init.x);
+    onYDomainChange?.(init.y);
+  }, [onXDomainChange, onYDomainChange]);
 
-  const btnStyle: React.CSSProperties = {
-    width: 28,
-    height: 28,
-    border: '1px solid var(--color-border)',
-    borderRadius: 6,
-    background: 'var(--color-background-popover)',
-    color: 'var(--color-text-primary)',
-    fontSize: 14,
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    lineHeight: 1,
+  // Toolbar portal target
+  const portalTarget = svgRef.current?.parentElement;
+
+  // Toolbar position styles
+  const toolbarPositionStyle = (
+    pos: ZoomToolbarPosition,
+  ): React.CSSProperties => {
+    const base: React.CSSProperties = {
+      position: 'absolute',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 4,
+      zIndex: 1,
+    };
+    switch (pos) {
+      case 'top-right':
+        return {...base, top: 8, right: 8};
+      case 'top-left':
+        return {...base, top: 8, left: 8};
+      case 'bottom-right':
+        return {...base, bottom: 8, right: 8};
+      case 'bottom-left':
+        return {...base, bottom: 8, left: 8};
+    }
   };
 
   return (
-    <g>
-      <rect
-        x={0}
-        y={0}
-        width={width}
-        height={height}
-        fill="transparent"
-        style={{
-          cursor: panMode ? 'grab' : 'default',
-          touchAction: panMode ? 'none' : 'pan-y',
-        }}
-        onWheel={handleWheel}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-      />
+    <>
+      <g>
+        <rect
+          x={0}
+          y={0}
+          width={width}
+          height={height}
+          fill="transparent"
+          style={
+            {
+              cursor: 'grab',
+              touchAction: 'none',
+              userSelect: 'none',
+            } as React.CSSProperties
+          }
+          onWheel={handleWheel}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
+        />
+      </g>
 
-      {chrome && (
-        <foreignObject
-          x={width - 36}
-          y={4}
-          width={32}
-          height={140}
-          style={{overflow: 'visible'}}>
-          <div style={{display: 'flex', flexDirection: 'column', gap: 4}}>
-            <button
-              style={btnStyle}
-              onClick={() => zoomBy(1 - zoomSpeed)}
-              title="Zoom in">
-              +
-            </button>
-            <button
-              style={btnStyle}
+      {/* Toolbar — portaled to chart container for proper positioning */}
+      {toolbar &&
+        portalTarget &&
+        createPortal(
+          <div style={toolbarPositionStyle(toolbar)}>
+            <XDSIconButton
+              label="Zoom in"
+              icon={<ZoomInIcon />}
+              variant="ghost"
+              size="sm"
+              onClick={() => zoomBy(1 / (1 + zoomSpeed))}
+            />
+            <XDSIconButton
+              label="Zoom out"
+              icon={<ZoomOutIcon />}
+              variant="ghost"
+              size="sm"
               onClick={() => zoomBy(1 + zoomSpeed)}
-              title="Zoom out">
-              &minus;
-            </button>
-            <button
-              style={{
-                ...btnStyle,
-                background: panMode
-                  ? 'var(--color-accent-muted)'
-                  : btnStyle.background,
-              }}
-              onClick={() => setPanMode(!panMode)}
-              title={panMode ? 'Disable pan' : 'Enable pan'}>
-              &#9995;
-            </button>
-            <button style={btnStyle} onClick={handleReset} title="Reset zoom">
-              &#8634;
-            </button>
-          </div>
-        </foreignObject>
-      )}
-    </g>
+            />
+            <XDSIconButton
+              label="Reset zoom"
+              icon={<ResetIcon />}
+              variant="ghost"
+              size="sm"
+              onClick={handleReset}
+            />
+          </div>,
+          portalTarget,
+        )}
+    </>
   );
 }

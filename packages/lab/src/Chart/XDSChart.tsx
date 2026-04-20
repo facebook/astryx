@@ -167,17 +167,10 @@ export function XDSChart({
 
   const yScale = useMemo((): ScaleLinear<number, number> => {
     if (yDomainProp) {
-      // Explicit domain is authoritative — apply baseline logic but don't expand from data
-      let [min, max] = yDomainProp;
-      if (yBaseline === 'zero') {
-        const abs = Math.max(Math.abs(min), Math.abs(max));
-        min = -abs;
-        max = abs;
-      } else if (yBaseline === 'auto') {
-        if (min > 0) min = 0;
-        if (max < 0) max = 0;
-      }
-      return scaleLinear().domain([min, max]).range([innerHeight, 0]).nice();
+      // Explicit domain is authoritative — use as-is.
+      // No baseline adjustment, no .nice(). The caller owns the domain
+      // (e.g. zoom/pan controls) and rounding would cause ratcheting.
+      return scaleLinear().domain(yDomainProp).range([innerHeight, 0]);
     }
 
     // Auto-compute from data
