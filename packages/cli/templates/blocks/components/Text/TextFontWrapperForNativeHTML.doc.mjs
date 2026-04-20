@@ -5,5 +5,5 @@ export const doc = {
   description: 'Font wrapper for native HTML',
   isReady: true,
   aspectRatio: 1,
-  componentsUsed: ['Text'],
+  componentsUsed: [],
 };

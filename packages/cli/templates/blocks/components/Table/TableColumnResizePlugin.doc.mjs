@@ -5,5 +5,5 @@ export const doc = {
   description: 'Column resize plugin',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['TableColumnResize', 'Table'],
+  componentsUsed: ['Table'],
 };

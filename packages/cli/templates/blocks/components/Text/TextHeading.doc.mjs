@@ -5,5 +5,5 @@ export const doc = {
   description: 'Heading',
   isReady: true,
   aspectRatio: 1,
-  componentsUsed: ['Text', 'Heading'],
+  componentsUsed: ['Text'],
 };

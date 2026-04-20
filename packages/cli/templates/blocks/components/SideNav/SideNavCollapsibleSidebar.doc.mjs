@@ -5,5 +5,5 @@ export const doc = {
   description: 'Collapsible sidebar',
   isReady: true,
   aspectRatio: 3 / 4,
-  componentsUsed: ['AppShell', 'SideNav', 'SideNavHeading', 'SideNavCollapseButton', 'SideNavSection', 'SideNavItem'],
+  componentsUsed: ['AppShell', 'SideNav'],
 };

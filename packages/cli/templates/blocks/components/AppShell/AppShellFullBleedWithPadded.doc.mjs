@@ -5,5 +5,5 @@ export const doc = {
   description: 'Full-bleed layout with a padded details section below.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['AppShell', 'TopNav', 'Heading', 'Text', 'Section'],
+  componentsUsed: ['AppShell', 'Section', 'Text', 'TopNav'],
 };

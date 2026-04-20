@@ -5,5 +5,5 @@ export const doc = {
   description: 'Standalone (no TopNav)',
   isReady: true,
   aspectRatio: 3 / 4,
-  componentsUsed: ['AppShell', 'SideNav', 'SideNavHeading', 'Button', 'SideNavSection', 'SideNavItem', 'Badge'],
+  componentsUsed: ['AppShell', 'Badge', 'SideNav'],
 };

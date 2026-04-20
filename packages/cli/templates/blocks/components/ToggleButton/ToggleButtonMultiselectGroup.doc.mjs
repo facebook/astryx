@@ -5,5 +5,5 @@ export const doc = {
   description: 'Multi-select group',
   isReady: true,
   aspectRatio: 1,
-  componentsUsed: ['ToggleButtonGroup', 'ToggleButton'],
+  componentsUsed: ['ToggleButton'],
 };

@@ -5,5 +5,5 @@ export const doc = {
   description: 'Error',
   isReady: true,
   aspectRatio: 1,
-  componentsUsed: ['Toast'],
+  componentsUsed: ['Button', 'Toast'],
 };

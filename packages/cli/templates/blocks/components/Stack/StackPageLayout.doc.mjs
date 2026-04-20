@@ -5,5 +5,5 @@ export const doc = {
   description: 'Page layout',
   isReady: true,
   aspectRatio: 1,
-  componentsUsed: ['Stack', 'VStack', 'StackItem'],
+  componentsUsed: ['Layout'],
 };

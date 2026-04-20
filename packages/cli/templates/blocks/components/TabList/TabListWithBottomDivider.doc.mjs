@@ -5,5 +5,5 @@ export const doc = {
   description: 'With bottom divider',
   isReady: true,
   aspectRatio: 16 / 4,
-  componentsUsed: ['TabList', 'Tab'],
+  componentsUsed: ['TabList'],
 };

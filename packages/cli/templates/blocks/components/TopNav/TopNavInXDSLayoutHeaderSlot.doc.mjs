@@ -5,5 +5,5 @@ export const doc = {
   description: 'In XDSLayout header slot',
   isReady: true,
   aspectRatio: 16 / 4,
-  componentsUsed: ['Layout', 'TopNav', 'TopNavHeading', 'TopNavItem', 'LayoutContent'],
+  componentsUsed: ['Layout', 'TopNav'],
 };
