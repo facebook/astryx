@@ -311,9 +311,6 @@ const editorStyles = stylex.create({
     paddingInline: 0,
   },
   iconCircle: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
     width: 40,
     height: 40,
     borderRadius: '50%',
@@ -620,9 +617,9 @@ function BlockPreview({
           xstyle={cardXstyle}
           onClick={onSelect}>
           <XDSHStack gap={4} vAlign="start">
-            <div {...stylex.props(editorStyles.iconCircle)}>
+            <XDSCenter xstyle={editorStyles.iconCircle}>
               <XDSIcon icon={LockClosedIcon} color="secondary" />
-            </div>
+            </XDSCenter>
             <XDSVStack gap={1}>
               <XDSText type="label" weight="semibold">
                 {(props.heading as string) || 'Notice'}

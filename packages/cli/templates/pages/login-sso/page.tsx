@@ -20,7 +20,9 @@ import {shadowVars} from '@xds/core/theme/tokens.stylex';
 // Styles
 // ---------------------------------------------------------------------------
 
-const BG_URL = '/templates/login-sso-bg.jpg';
+// moody-scene-horizontal-1 from xds_oss asset set
+const BG_URL =
+  'https://scontent.xx.fbcdn.net/v/t39.6806-6/672863405_1398068472358179_8859473259447111379_n.png?_nc_cat=100&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=-wV2jHO2HVUQ7kNvwHGzCzr&_nc_oc=AdrxH65fOWB9AYbTJt499HTYmTlEoQ2-Gq4v0HixJT92Mz5awWgcZNSxSTRZJPypWIDapoCWcQ2JcNruqRd9ovzp&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=ak5CKQPy-Mq6Vm7qld0MTw&_nc_ss=7a30f&oh=00_Af03yc18QziUpPjAs6EJMXwjb9gx2bfazL1ccL5840WQdw&oe=69E8390A';
 
 const styles = stylex.create({
   page: {
@@ -38,18 +40,15 @@ const styles = stylex.create({
   },
 });
 
-const META_LOGO_URL = '/templates/meta-logo.svg';
-
 type SSOProvider = {
   name: string;
   abbr: string;
-  logoUrl?: string;
 };
 const SSO_PROVIDERS: Record<string, SSOProvider> = {
   'google.com': {name: 'Google Workspace', abbr: 'G'},
   'microsoft.com': {name: 'Microsoft Entra ID', abbr: 'M'},
   'okta.com': {name: 'Okta', abbr: 'O'},
-  'meta.com': {name: 'Meta SSO', abbr: 'M', logoUrl: META_LOGO_URL},
+  'meta.com': {name: 'Meta SSO', abbr: 'M'},
   'apple.com': {name: 'Apple Business', abbr: 'A'},
 };
 
@@ -168,11 +167,7 @@ export default function LoginSSO() {
                 {step === 'sso-confirm' && provider && (
                   <>
                     <XDSVStack gap={2} hAlign="center">
-                      {provider.logoUrl ? (
-                        <img src={provider.logoUrl} width={48} height={48} alt="" />
-                      ) : (
-                        <XDSAvatar name={provider.name} size={48} />
-                      )}
+                      <XDSAvatar name={provider.name} size={48} />
                       <XDSText type="display-3" as="h2">
                         Sign in with {provider.name}
                       </XDSText>
