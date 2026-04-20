@@ -24,7 +24,11 @@ export {
   type XDSChartStreamGLProps,
   type XDSChartStreamGLHandle,
 } from './XDSChartStreamGL';
-export {XDSChartTooltip, type XDSChartTooltipProps} from './XDSChartTooltip';
+export {
+  XDSChartTooltip,
+  type XDSChartTooltipProps,
+  type ChartCrosshairMode,
+} from './XDSChartTooltip';
 export {
   XDSChartLegend,
   type XDSChartLegendProps,
@@ -59,11 +63,12 @@ export {
   CIRCLE_FRAG_BODY,
   POINT_SIZE_COMPENSATION,
 } from './webgl';
-export {XDSChartBrush, type XDSChartBrushProps} from './XDSChartBrush';
 export {
-  XDSChartCrosshair,
-  type XDSChartCrosshairProps,
-} from './XDSChartCrosshair';
+  XDSChartBrush,
+  type XDSChartBrushProps,
+  type BrushMode,
+  type BrushRange,
+} from './XDSChartBrush';
 export {XDSChartZoom, type XDSChartZoomProps} from './XDSChartZoom';
 export {XDSChartSelect, type XDSChartSelectProps} from './XDSChartSelect';
 export {

@@ -145,7 +145,7 @@ export const ScatterPlot: StoryObj = {
           color={colors.categorical(1)[0]}
           radius={3}
         />
-        <XDSChartTooltip />
+        <XDSChartTooltip crosshair="xy" />
       </XDSChart>
     );
   },
