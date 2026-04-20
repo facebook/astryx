@@ -4,6 +4,7 @@ export {XDSChartGrid, type XDSChartGridProps} from './XDSChartGrid';
 export {XDSChartBar, type XDSChartBarProps} from './XDSChartBar';
 export {XDSChartLine, type XDSChartLineProps} from './XDSChartLine';
 export {XDSChartArea, type XDSChartAreaProps} from './XDSChartArea';
+export {XDSChartBand, type XDSChartBandProps} from './XDSChartBand';
 export {XDSChartErrorBar, type XDSChartErrorBarProps} from './XDSChartErrorBar';
 export {
   XDSChartCandlestick,
@@ -31,7 +32,8 @@ export {
   type XDSChartLegendItem,
 } from './XDSChartLegend';
 export {useChart} from './ChartContext';
-export type {ChartContext, ChartMargin, ChartScale, DataPoint} from './types';
+export {useStack} from './useStack';
+export type {ChartContext, ChartMargin, ChartScale, DataPoint, StackedSeries} from './types';
 export {m4Reduce, type M4Point} from './m4';
 export {isBandScale, xPixel} from './utils';
 export {useXDSChartColors} from './useXDSChartColors';

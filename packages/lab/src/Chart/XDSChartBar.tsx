@@ -1,10 +1,11 @@
 /**
  * @file XDSChartBar.tsx
- * @output Renders vertical bars for a data key
+ * @output Renders bars (vertical or horizontal) for a data key
  * @position Child of XDSChart; reads scales from context
  */
 
 import {useChart} from './ChartContext';
+import {useStack} from './useStack';
 import {isBandScale} from './utils';
 
 export interface XDSChartBarProps {
@@ -14,45 +15,115 @@ export interface XDSChartBarProps {
   color: string;
   /** Corner radius on bar tops */
   radius?: number;
+  /** Stack group — bars with same stack render on top of each other */
+  stack?: string;
+  /** Opacity (default: 1) */
+  opacity?: number;
 }
 
 /**
- * Bar marks. Requires a band xScale (categorical x-axis).
- * Bars grow from the zero line — handles both positive and negative values.
+ * Bar marks. Supports vertical/horizontal orientation, stacking, and automatic grouping.
+ *
+ * - Stacking: set `stack` prop to a group ID; bars accumulate on each other.
+ * - Grouping: when multiple unstacked bars exist, they auto-subdivide the band width.
+ * - Horizontal: when XDSChart has `orientation="horizontal"`, bars render horizontally.
  *
  * @example
  * ```
- * <XDSChartBar dataKey="revenue" color={useXDSChartColors().categorical(1)[0]} />
+ * <XDSChartBar dataKey="revenue" color="#3b82f6" />
+ * <XDSChartBar dataKey="costs" color="#ef4444" stack="totals" />
  * ```
  */
-export function XDSChartBar({dataKey, color, radius = 4}: XDSChartBarProps) {
-  const {data, xKey, xScale, yScale} = useChart();
+export function XDSChartBar({
+  dataKey,
+  color,
+  radius = 4,
+  stack: stackGroup,
+  opacity = 1,
+}: XDSChartBarProps) {
+  const {data, xKey, xScale, yScale, orientation, barGroup} = useChart();
+  const {y0, y1, isStacked} = useStack(stackGroup, dataKey);
 
+  if (orientation === 'horizontal') {
+    // Horizontal bars: yScale is band (categories), xScale is linear (values)
+    if (!isBandScale(yScale as never)) return null;
+    const bandScale = yScale as unknown as import('d3-scale').ScaleBand<string>;
+    const valueScale = xScale as unknown as import('d3-scale').ScaleLinear<number, number>;
+
+    const zeroX = valueScale(0);
+    const bandwidth = bandScale.bandwidth();
+
+    // Grouping for horizontal bars
+    const group = !isStacked && barGroup ? barGroup.get(dataKey) : undefined;
+    const barWidth = group ? bandwidth / group.count : bandwidth;
+    const barOffset = group ? group.index * barWidth : 0;
+
+    return (
+      <g opacity={opacity}>
+        {data.map((d, i) => {
+          const yVal = bandScale(String(d[xKey]));
+          if (yVal == null) return null;
+
+          const val = typeof d[dataKey] === 'number' ? (d[dataKey] as number) : 0;
+          const xPos = valueScale(val);
+          const barX = Math.min(xPos, zeroX);
+          const barW = Math.abs(xPos - zeroX);
+
+          return (
+            <rect
+              key={i}
+              x={barX}
+              y={yVal + barOffset}
+              width={Math.max(0, barW)}
+              height={barWidth}
+              fill={color}
+              rx={radius}
+              ry={radius}
+            />
+          );
+        })}
+      </g>
+    );
+  }
+
+  // Vertical bars (default)
   if (!isBandScale(xScale)) return null;
 
-  // Zero line position — bars grow from here
-  const zeroY = yScale(0);
+  const bandwidth = xScale.bandwidth();
+
+  // Grouping: subdivide band width among ungrouped bars
+  const group = !isStacked && barGroup ? barGroup.get(dataKey) : undefined;
+  const barWidth = group ? bandwidth / group.count : bandwidth;
+  const barOffset = group ? group.index * barWidth : 0;
 
   return (
-    <g>
+    <g opacity={opacity}>
       {data.map((d, i) => {
         const xVal = xScale(String(d[xKey]));
         if (xVal == null) return null;
 
-        const yVal =
-          typeof d[dataKey] === 'number' ? (d[dataKey] as number) : 0;
-        const yPos = yScale(yVal);
+        let barY: number;
+        let barHeight: number;
 
-        // Bar grows from zero line toward the value
-        const barY = Math.min(yPos, zeroY);
-        const barHeight = Math.abs(yPos - zeroY);
+        if (isStacked) {
+          const top = y1(i);
+          const bottom = y0(i);
+          barY = Math.min(top, bottom);
+          barHeight = Math.abs(bottom - top);
+        } else {
+          const yVal = typeof d[dataKey] === 'number' ? (d[dataKey] as number) : 0;
+          const yPos = yScale(yVal);
+          const zeroY = yScale(0);
+          barY = Math.min(yPos, zeroY);
+          barHeight = Math.abs(yPos - zeroY);
+        }
 
         return (
           <rect
             key={i}
-            x={xVal}
+            x={xVal + barOffset}
             y={barY}
-            width={xScale.bandwidth()}
+            width={barWidth}
             height={Math.max(0, barHeight)}
             fill={color}
             rx={radius}

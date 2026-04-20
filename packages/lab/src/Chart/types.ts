@@ -32,6 +32,12 @@ export interface DataPoint {
   py: number;
 }
 
+/** Stacked series layout — y0/y1 arrays indexed by data point */
+export interface StackedSeries {
+  y0: number[];
+  y1: number[];
+}
+
 /** Scale context provided by XDSChart to children */
 export interface ChartContext {
   /** Inner width (SVG width minus margins) */
@@ -59,4 +65,10 @@ export interface ChartContext {
    * Convert pixel coordinates (relative to plot area) to data values.
    */
   pixelToData: (px: number, py: number) => DataPoint;
+  /** Stacked layout computed from yKeys via d3-stack */
+  stackLayout?: Map<string, StackedSeries>;
+  /** Chart orientation — 'vertical' (default) or 'horizontal' */
+  orientation: 'vertical' | 'horizontal';
+  /** Bar grouping info keyed by dataKey — index and count for grouped bars */
+  barGroup?: Map<string, {index: number; count: number}>;
 }

@@ -9,17 +9,21 @@
 
 import {
   type ReactNode,
+  type ReactElement,
   useMemo,
   useRef,
   useState,
   useCallback,
   useLayoutEffect,
+  Children,
+  isValidElement,
 } from 'react';
 import {scaleLinear, scaleBand} from 'd3-scale';
+import {stack as d3Stack, stackOrderNone, stackOffsetNone} from 'd3-shape';
 import type {ScaleLinear} from 'd3-scale';
 import {isBandScale} from './utils';
 import {ChartProvider} from './ChartContext';
-import type {ChartMargin, ChartScale} from './types';
+import type {ChartMargin, ChartScale, StackedSeries} from './types';
 
 /**
  * Controls how the y-axis domain is computed:
@@ -72,6 +76,11 @@ export interface XDSChartProps {
    * interference on mobile.
    */
   interactive?: boolean;
+  /**
+   * Chart orientation — 'vertical' (default) or 'horizontal' (swaps x/y axes).
+   * Horizontal orientation places categories on the y-axis and values on the x-axis.
+   */
+  orientation?: 'vertical' | 'horizontal';
   /** Chart contents — axes, marks, tooltips */
   children: ReactNode;
 }
@@ -100,6 +109,7 @@ export function XDSChart({
   yDomain: yDomainProp,
   xDomain: xDomainProp,
   interactive = false,
+  orientation = 'vertical',
   children,
 }: XDSChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -139,6 +149,30 @@ export function XDSChart({
   const innerHeight = Math.max(0, height - margin.top - margin.bottom);
 
   const xScale = useMemo((): ChartScale => {
+    if (orientation === 'horizontal') {
+      // Horizontal: x-axis is the value (linear) axis
+      let min = Infinity;
+      let max = -Infinity;
+      for (const d of data) {
+        for (const key of yKeys) {
+          const v = d[key];
+          if (typeof v === 'number') {
+            if (v < min) min = v;
+            if (v > max) max = v;
+          }
+        }
+      }
+      if (yBaseline === 'zero') {
+        const abs = Math.max(Math.abs(min), Math.abs(max));
+        min = -abs;
+        max = abs;
+      } else if (yBaseline === 'auto') {
+        if (min > 0) min = 0;
+        if (max < 0) max = 0;
+      }
+      return scaleLinear().domain([min, max]).range([0, innerWidth]).nice();
+    }
+
     const xValues = data.map(d => d[xKey]);
     const isNumeric = xValues.every(v => typeof v === 'number');
 
@@ -163,9 +197,19 @@ export function XDSChart({
       .domain(xValues.map(String))
       .range([0, innerWidth])
       .padding(0.2);
-  }, [data, xKey, innerWidth, xDomainProp]);
+  }, [data, xKey, yKeys, innerWidth, xDomainProp, orientation, yBaseline]);
 
   const yScale = useMemo((): ScaleLinear<number, number> => {
+    if (orientation === 'horizontal') {
+      // Horizontal: y-axis is the category (band) axis
+      // We cast to ScaleLinear for the type, but XDSChartBar handles it specially
+      const categories = data.map(d => String(d[xKey]));
+      return scaleBand<string>()
+        .domain(categories)
+        .range([0, innerHeight])
+        .padding(0.2) as unknown as ScaleLinear<number, number>;
+    }
+
     if (yDomainProp) {
       // Explicit domain is authoritative — apply baseline logic but don't expand from data
       let [min, max] = yDomainProp;
@@ -203,7 +247,49 @@ export function XDSChart({
     }
 
     return scaleLinear().domain([min, max]).range([innerHeight, 0]).nice();
-  }, [data, yKeys, innerHeight, yBaseline, yDomainProp]);
+  }, [data, xKey, yKeys, innerHeight, yBaseline, yDomainProp, orientation]);
+
+  // Compute stack layout from yKeys using d3-stack
+  const stackLayout = useMemo((): Map<string, StackedSeries> | undefined => {
+    if (yKeys.length < 2) return undefined;
+    const stackGen = d3Stack<Record<string, unknown>>()
+      .keys(yKeys)
+      .order(stackOrderNone)
+      .offset(stackOffsetNone);
+    const stacked = stackGen(data);
+    const layout = new Map<string, StackedSeries>();
+    for (const series of stacked) {
+      layout.set(series.key, {
+        y0: series.map(d => d[0]),
+        y1: series.map(d => d[1]),
+      });
+    }
+    return layout;
+  }, [data, yKeys]);
+
+  // Compute bar grouping — count Bar children without stack prop and assign indices
+  const barGroup = useMemo((): Map<string, {index: number; count: number}> | undefined => {
+    const barDataKeys: string[] = [];
+    Children.forEach(children, child => {
+      if (
+        isValidElement(child) &&
+        (child as ReactElement<{dataKey?: string; stack?: string}>).props.dataKey &&
+        !(child as ReactElement<{stack?: string}>).props.stack &&
+        typeof child.type === 'function' &&
+        (child.type as {name?: string}).name === 'XDSChartBar'
+      ) {
+        barDataKeys.push(
+          (child as ReactElement<{dataKey: string}>).props.dataKey,
+        );
+      }
+    });
+    if (barDataKeys.length <= 1) return undefined;
+    const map = new Map<string, {index: number; count: number}>();
+    barDataKeys.forEach((key, idx) => {
+      map.set(key, {index: idx, count: barDataKeys.length});
+    });
+    return map;
+  }, [children]);
 
   const pixelToData = useCallback(
     (px: number, py: number) => {
@@ -250,8 +336,11 @@ export function XDSChart({
       svgRef,
       pointerToData,
       pixelToData,
+      stackLayout,
+      orientation,
+      barGroup,
     }),
-    [innerWidth, innerHeight, margin, xKey, data, xScale, yScale, pointerToData, pixelToData],
+    [innerWidth, innerHeight, margin, xKey, data, xScale, yScale, pointerToData, pixelToData, stackLayout, orientation, barGroup],
   );
 
   return (
