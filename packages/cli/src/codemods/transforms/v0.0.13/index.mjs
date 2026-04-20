@@ -1,7 +1,7 @@
 /**
- * @file v0.0.14 transform manifest
+ * @file v0.0.13 transform manifest
  *
- * Lists all codemods for the v0.0.14 release in the order they should run.
+ * Lists all codemods for the v0.0.13 release in the order they should run.
  */
 
 import toolbarDensityToSize, {

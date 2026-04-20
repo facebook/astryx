@@ -4,7 +4,7 @@ import {versions, getTransformsBetween} from '../registry.mjs';
 describe('registry', () => {
   describe('versions', () => {
     test('are sorted in ascending semver order across digit boundaries', () => {
-      expect(versions).toEqual(['0.0.2', '0.0.6', '0.0.7', '0.0.8', '0.0.10', '0.0.12', '0.0.14']);
+      expect(versions).toEqual(['0.0.2', '0.0.6', '0.0.7', '0.0.8', '0.0.10', '0.0.12', '0.0.13']);
     });
   });
 
