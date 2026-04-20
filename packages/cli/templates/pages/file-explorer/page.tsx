@@ -340,9 +340,7 @@ export default function FileExplorerPage() {
         <XDSToolbar
             label="File Explorer"
             size="sm"
-            padding={0}
             dividers={['bottom']}
-            style={{paddingBlock: 4}}
             startContent={
               <>
                 <XDSIconButton
