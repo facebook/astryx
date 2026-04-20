@@ -354,7 +354,7 @@ describe('XDSToken focus outline', () => {
     const button = screen.getByRole('button', {name: 'Focusable'});
     await user.tab();
     expect(button).toHaveFocus();
-    // The container should handle focus outline via :focus-within,
+    // The container should handle focus outline via :has(:focus-visible),
     // not the button itself
     const container = screen.getByTestId('focus-token');
     expect(container.tagName).toBe('SPAN');

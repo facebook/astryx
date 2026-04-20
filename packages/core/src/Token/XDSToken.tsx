@@ -205,14 +205,14 @@ const styles = stylex.create({
     overflow: 'hidden',
     minWidth: 0,
   },
-  focusWithinOutline: {
+  focusVisibleOutline: {
     outline: {
       default: null,
-      ':focus-within': `2px solid ${colorVars['--color-accent']}`,
+      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
       default: '0',
-      ':focus-within': '2px',
+      ':has(:focus-visible)': '2px',
     },
   },
   removeButton: {
@@ -413,7 +413,7 @@ export function XDSToken({
             sizeStyles[size],
             colorStyles[color],
             styles.interactive,
-            styles.focusWithinOutline,
+            styles.focusVisibleOutline,
             isDisabled && styles.disabled,
             xstyle,
           ),
