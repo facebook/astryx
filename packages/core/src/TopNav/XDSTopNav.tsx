@@ -17,7 +17,6 @@ import {type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
-import {edgeInset} from '../Layout/edgeCompensation.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSTopNavSlotContext} from './TopNavContext';
 import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
@@ -254,7 +253,7 @@ export function XDSTopNav({
         style,
       )}
       {...props}>
-      <div {...stylex.props(styles.leftSection, edgeInset.start1)}>
+      <div {...stylex.props(styles.leftSection)}>
         {heading && <div {...stylex.props(styles.heading)}>{heading}</div>}
         {startContent && (
           <XDSTopNavSlotContext value="start">
