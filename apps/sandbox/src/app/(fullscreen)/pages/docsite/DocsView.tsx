@@ -1,6 +1,7 @@
 'use client';
 
 import React, {useState} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
 import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
@@ -26,6 +27,13 @@ import {
   getComponentName,
   getComponentDocs,
 } from './docsview-data';
+
+const localStyles = stylex.create({
+  previewCard: {
+    borderRadius: 12,
+    cursor: 'pointer',
+  },
+});
 
 const XDS_WORDMARK = (
   <svg
@@ -216,31 +224,19 @@ export function DocsView({
                       }}
                       style={{cursor: 'pointer'}}>
                       <XDSCard
+                        variant="muted"
                         padding={0}
-                        style={{
-                          border: 'none',
-                          boxShadow: 'none',
-                          outline: 'none',
-                        }}>
-                        <div
-                          style={{
-                            height: 160,
-                            backgroundColor:
-                              'var(--color-background-muted, #c4cdd5)',
-                            borderRadius: 12,
-                          }}
-                        />
-                        <div style={{padding: '12px 0 0'}}>
-                          <XDSText type="body" style={{fontWeight: 700}}>
-                            {item.name}
-                          </XDSText>
-                          <div style={{marginTop: 0}}>
-                            <XDSText type="body" color="secondary">
-                              {item.desc}
-                            </XDSText>
-                          </div>
-                        </div>
-                      </XDSCard>
+                        minHeight={160}
+                        xstyle={localStyles.previewCard}
+                      />
+                      <div style={{paddingTop: 12}}>
+                        <XDSText type="body" style={{fontWeight: 700}}>
+                          {item.name}
+                        </XDSText>
+                        <XDSText type="body" color="secondary">
+                          {item.desc}
+                        </XDSText>
+                      </div>
                     </div>
                   ))}
                 </div>
