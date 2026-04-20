@@ -3,7 +3,7 @@
 import {useState} from 'react';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSVStack, XDSHStack, XDSStackItem} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSText, XDSHeading} from '@xds/core/Text';
@@ -18,139 +18,48 @@ import {XDSBadge} from '@xds/core/Badge';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSCollapsible, XDSCollapsibleGroup} from '@xds/core/Collapsible';
 import {XDSNavIcon} from '@xds/core/NavIcon';
-
-// ─── Icons ──────────────────────────────────────────────────────────────────
-const BagIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0" />
-  </svg>
-);
-
-const UserIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-    <circle cx="12" cy="7" r="4" />
-  </svg>
-);
-
-const SearchIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <circle cx="11" cy="11" r="8" />
-    <path d="M21 21l-4.35-4.35" />
-  </svg>
-);
-
-const HeartIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-  </svg>
-);
-
-const MinusIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    {...props}>
-    <line x1="5" y1="12" x2="19" y2="12" />
-  </svg>
-);
-
-const PlusIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    {...props}>
-    <line x1="12" y1="5" x2="12" y2="19" />
-    <line x1="5" y1="12" x2="19" y2="12" />
-  </svg>
-);
+import {
+  ShoppingBagIcon,
+  UserIcon,
+  MagnifyingGlassIcon,
+  HeartIcon,
+  MinusIcon,
+  PlusIcon,
+  StarIcon,
+} from '@heroicons/react/24/outline';
+import {StarIcon as StarIconSolid} from '@heroicons/react/24/solid';
 
 // ─── Star Rating ─────────────────────────────────────────────────────────────
 function StarRating({rating, count}: {rating: number; count: number}) {
   const full = Math.floor(rating);
   const partial = rating - full;
   const empty = 5 - full - (partial > 0 ? 1 : 0);
-  const starSize = 16;
 
   return (
-    <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
+    <XDSHStack gap={1} vAlign="center">
       {Array.from({length: full}, (_, i) => (
-        <svg
-          key={`full-${i}`}
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          style={{
-            width: starSize,
-            height: starSize,
-            color: 'var(--color-icon-primary)',
-          }}>
-          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-        </svg>
+        <XDSIcon key={`full-${i}`} icon={StarIconSolid} size="sm" />
       ))}
       {partial > 0 && (
-        <svg
-          key="partial"
-          viewBox="0 0 24 24"
-          style={{width: starSize, height: starSize}}>
-          <defs>
-            <clipPath id="star-clip">
-              <rect x="0" y="0" width={24 * partial} height="24" />
-            </clipPath>
-          </defs>
-          <path
-            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-            fill="var(--color-icon-primary)"
-            clipPath="url(#star-clip)"
-          />
-          <path
-            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-            fill="none"
-            stroke="var(--color-icon-primary)"
-            strokeWidth={1.5}
-          />
-        </svg>
+        <XDSHStack style={{position: 'relative'}}>
+          <XDSIcon icon={StarIcon} size="sm" />
+          <XDSHStack
+            style={{
+              position: 'absolute',
+              inset: 0,
+              clipPath: `inset(0 ${Math.round((1 - partial) * 100)}% 0 0)`,
+            }}>
+            <XDSIcon icon={StarIconSolid} size="sm" />
+          </XDSHStack>
+        </XDSHStack>
       )}
       {Array.from({length: empty}, (_, i) => (
-        <svg
-          key={`empty-${i}`}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="var(--color-icon-primary)"
-          strokeWidth={1.5}
-          style={{width: starSize, height: starSize}}>
-          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-        </svg>
+        <XDSIcon key={`empty-${i}`} icon={StarIcon} size="sm" />
       ))}
       <XDSText type="body" color="secondary">
         {rating} ({count})
       </XDSText>
-    </div>
+    </XDSHStack>
   );
 }
 
@@ -174,11 +83,11 @@ const PRODUCT = {
   price: 89.0,
   originalPrice: 119.0,
   description:
-    'A hand-thrown mug and plate set that brings quiet warmth to every meal. The mug sits easy in the hand with a generous 12 oz capacity, while the 8-inch plate works for everything from toast to tapas. Each piece is kiln-fired at 2,300°F for a finish that resists chips and stains. Subtle variations in the reactive glaze mean no two sets are exactly alike. Dishwasher and microwave safe.',
+    'A hand-thrown mug and plate set that brings quiet warmth to every meal. The mug sits easy in the hand with a generous 12 oz capacity, while the 8-inch plate works for everything from toast to tapas. Each piece is kiln-fired at 2,300\u00B0F for a finish that resists chips and stains. Subtle variations in the reactive glaze mean no two sets are exactly alike. Dishwasher and microwave safe.',
   composition:
-    'High-fire stoneware clay, wheel-thrown and trimmed by hand. Reactive glaze applied by dipping — color pools and breaks naturally over the clay body. Lead-free and food-safe. Unglazed foot ring reveals the raw clay underneath. Each piece is bisque-fired, glazed, then fired again to cone 10 in a gas reduction kiln.',
+    'High-fire stoneware clay, wheel-thrown and trimmed by hand. Reactive glaze applied by dipping \u2014 color pools and breaks naturally over the clay body. Lead-free and food-safe. Unglazed foot ring reveals the raw clay underneath. Each piece is bisque-fired, glazed, then fired again to cone 10 in a gas reduction kiln.',
   deliveryReturns:
-    'Free shipping on all ceramics orders over $75. Each piece is individually wrapped in recycled kraft paper and cushioned for transit. Returns accepted within 30 days — items must be unused and in original packaging. Replacement pieces available individually.',
+    'Free shipping on all ceramics orders over $75. Each piece is individually wrapped in recycled kraft paper and cushioned for transit. Returns accepted within 30 days \u2014 items must be unused and in original packaging. Replacement pieces available individually.',
   dimensions:
     'Mug height: 9.5 cm / 3.75 in. Mug diameter: 8.5 cm / 3.35 in. Capacity: 350 ml / 12 oz. Plate diameter: 20 cm / 8 in. Plate height: 2 cm / 0.75 in. Weight: 680 g / 1.5 lb (set).',
 };
@@ -207,7 +116,9 @@ function StoreTopNav() {
         <XDSTopNavHeading
           heading="Kiln & Table"
           logo={
-            <XDSNavIcon icon={<XDSIcon icon={BagIcon} size="sm" />} />
+            <XDSNavIcon
+              icon={<XDSIcon icon={ShoppingBagIcon} size="sm" />}
+            />
           }
           href="#"
         />
@@ -226,7 +137,7 @@ function StoreTopNav() {
           <XDSButton
             label="Search"
             variant="ghost"
-            icon={<XDSIcon icon={SearchIcon} size="sm" />}
+            icon={<XDSIcon icon={MagnifyingGlassIcon} size="sm" />}
             isIconOnly
           />
           <XDSButton
@@ -244,7 +155,7 @@ function StoreTopNav() {
           <XDSButton
             label="Cart"
             variant="ghost"
-            icon={<XDSIcon icon={BagIcon} size="sm" />}
+            icon={<XDSIcon icon={ShoppingBagIcon} size="sm" />}
             isIconOnly
           />
         </>
@@ -265,8 +176,7 @@ function ImageGallery({
   const thumbnails = IMAGES.slice(1);
 
   return (
-    <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
-      {/* Hero image */}
+    <XDSVStack gap={3}>
       <img
         src={heroSrc}
         alt={PRODUCT.name}
@@ -275,10 +185,8 @@ function ImageGallery({
           aspectRatio: '4 / 5',
           objectFit: 'cover',
           borderRadius: 'var(--radius-container, 12px)',
-          backgroundColor: 'var(--color-surface-secondary)',
         }}
       />
-      {/* Thumbnail grid */}
       <XDSGrid columns={3} gap={2}>
         {thumbnails.map((src, i) => (
           <img
@@ -289,7 +197,6 @@ function ImageGallery({
               width: '100%',
               aspectRatio: '1 / 1',
               objectFit: 'cover',
-              cursor: 'pointer',
               borderRadius: 'var(--radius-element, 8px)',
               outline:
                 selected === i
@@ -309,7 +216,7 @@ function ImageGallery({
           />
         ))}
       </XDSGrid>
-    </div>
+    </XDSVStack>
   );
 }
 
@@ -324,11 +231,10 @@ function ProductInfo() {
 
   return (
     <XDSVStack gap={5}>
-      {/* Title & Rating */}
       <XDSVStack gap={2}>
         <XDSHeading level={1}>{PRODUCT.name}</XDSHeading>
         <StarRating rating={4.3} count={128} />
-        <XDSHStack gap={2} style={{alignItems: 'center'}}>
+        <XDSHStack gap={2} vAlign="center">
           <XDSText type="large" weight="bold">
             {fmt(PRODUCT.price)}
           </XDSText>
@@ -338,10 +244,10 @@ function ProductInfo() {
           <XDSBadge variant="error" label="Sale" />
         </XDSHStack>
       </XDSVStack>
-      {/* Glaze Selector */}
+
       <XDSVStack gap={2}>
         <XDSText type="label">Glaze</XDSText>
-        <div style={{width: 'fit-content'}}>
+        <XDSVStack hAlign="start">
           <XDSSegmentedControl value={color} onChange={setColor} label="Glaze">
             {COLORS.map(c => (
               <XDSSegmentedControlItem
@@ -351,12 +257,12 @@ function ProductInfo() {
               />
             ))}
           </XDSSegmentedControl>
-        </div>
+        </XDSVStack>
       </XDSVStack>
-      {/* Finish Selector */}
+
       <XDSVStack gap={2}>
         <XDSText type="label">Finish</XDSText>
-        <div style={{width: 'fit-content'}}>
+        <XDSVStack hAlign="start">
           <XDSSegmentedControl
             value={finish}
             onChange={setFinish}
@@ -369,9 +275,9 @@ function ProductInfo() {
               />
             ))}
           </XDSSegmentedControl>
-        </div>
+        </XDSVStack>
       </XDSVStack>
-      {/* Quantity */}
+
       <XDSHStack gap={1} vAlign="center">
         <XDSButton
           label="Decrease quantity"
@@ -381,7 +287,7 @@ function ProductInfo() {
           isDisabled={(quantity ?? 1) <= 1}
           isIconOnly
         />
-        <div style={{width: 100}}>
+        <XDSCenter width={100}>
           <XDSNumberInput
             label="Quantity"
             isLabelHidden
@@ -391,7 +297,7 @@ function ProductInfo() {
             max={10}
             isIntegerOnly
           />
-        </div>
+        </XDSCenter>
         <XDSButton
           label="Increase quantity"
           variant="ghost"
@@ -401,25 +307,13 @@ function ProductInfo() {
           isIconOnly
         />
       </XDSHStack>
-      {/* Add to Cart + Buy it now (8px gap between them) */}
-      <XDSVStack gap={2}>
-        <XDSButton
-          label="Add to Cart"
-          variant="primary"
-          size="lg"
-          style={{display: 'flex', width: '100%'}}>
-          Add to Cart
-        </XDSButton>
 
-        {/* Buy it now + Wishlist */}
+      <XDSVStack gap={2}>
+        <XDSButton label="Add to Cart" variant="primary" size="lg" />
         <XDSHStack gap={2}>
-          <XDSButton
-            label="Buy it now"
-            variant="secondary"
-            size="lg"
-            style={{display: 'flex', flex: 1}}>
-            Buy it now
-          </XDSButton>
+          <XDSStackItem size="fill">
+            <XDSButton label="Buy it now" variant="secondary" size="lg" />
+          </XDSStackItem>
           <XDSButton
             label="Add to wishlist"
             variant="ghost"
@@ -429,9 +323,9 @@ function ProductInfo() {
           />
         </XDSHStack>
       </XDSVStack>
-      {/* Description */}
+
       <XDSText type="body">{PRODUCT.description}</XDSText>
-      {/* Collapsible Sections */}
+
       <XDSCollapsibleGroup type="multiple" defaultValue={['composition']}>
         <XDSDivider />
         <XDSCollapsible
@@ -443,7 +337,9 @@ function ProductInfo() {
         <XDSCollapsible
           value="delivery"
           defaultIsOpen={false}
-          trigger={<XDSHeading level={3}>Delivery &amp; Returns</XDSHeading>}>
+          trigger={
+            <XDSHeading level={3}>Delivery &amp; Returns</XDSHeading>
+          }>
           <XDSText type="body">{PRODUCT.deliveryReturns}</XDSText>
         </XDSCollapsible>
         <XDSDivider />
@@ -470,30 +366,21 @@ export default function ProductDetailTemplate() {
       contentPadding={0}
       variant="surface">
       <XDSCenter axis="horizontal">
-        <div
-          style={{
-            maxWidth: 1200,
-            width: '100%',
-            padding: '32px 24px',
-          }}>
-          <XDSGrid columns={2} gap={5}>
-            <div style={{minWidth: 0}}>
-              <ImageGallery
-                selected={selectedThumb}
-                onSelect={setSelectedThumb}
-              />
-            </div>
-            <div
-              style={{
-                minWidth: 0,
-                position: 'sticky',
-                top: 64,
-                alignSelf: 'start',
-              }}>
+        <XDSVStack
+          gap={0}
+          style={{maxWidth: 1200, width: '100%', padding: '32px 24px'}}>
+          <XDSGrid minChildWidth={400} gap={5}>
+            <ImageGallery
+              selected={selectedThumb}
+              onSelect={setSelectedThumb}
+            />
+            <XDSVStack
+              gap={0}
+              style={{position: 'sticky', top: 64, alignSelf: 'start'}}>
               <ProductInfo />
-            </div>
+            </XDSVStack>
           </XDSGrid>
-        </div>
+        </XDSVStack>
       </XDSCenter>
     </XDSAppShell>
   );
