@@ -274,9 +274,17 @@ const editorStyles = stylex.create({
   },
   floatingPanelCollapsed: {
     bottom: 'auto',
+    paddingBlockEnd: 16,
   },
   panelScroll: {
     overflowY: 'auto',
+  },
+  tabListWrapper: {
+    paddingInline: 4,
+  },
+  panelContentPadding: {
+    paddingInline: 16,
+    paddingBlockEnd: 16,
   },
   previewArea: {
     flex: 1,
@@ -871,22 +879,27 @@ export default function EditorPage() {
 
             {!isPanelCollapsed && (
               <>
+              <XDSVStack gap={0} xstyle={editorStyles.tabListWrapper}>
                 <XDSTabList
                   value={sidebarTab}
                   onChange={(v: string) => setSidebarTab(v as SidebarTab)}
-                  layout="fill"
-                  hasDivider>
+                  layout="fill">
                   <XDSTab value="blocks" label="Blocks" />
                   <XDSTab value="properties" label="Properties" />
                 </XDSTabList>
-                <XDSSection
-                  variant="transparent"
-                  padding={4}
-                  xstyle={editorStyles.panelScroll}>
-                  {sidebarTab === 'blocks'
-                    ? blocksTabContent
-                    : propertiesTabContent}
-                </XDSSection>
+                <XDSDivider />
+              </XDSVStack>
+              <XDSSection
+                variant="transparent"
+                padding={0}
+                xstyle={[
+                  editorStyles.panelScroll,
+                  editorStyles.panelContentPadding,
+                ]}>
+                {sidebarTab === 'blocks'
+                  ? blocksTabContent
+                  : propertiesTabContent}
+              </XDSSection>
               </>
             )}
           </XDSVStack>
