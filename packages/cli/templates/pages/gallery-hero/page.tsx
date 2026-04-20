@@ -50,7 +50,6 @@ const styles = stylex.create({
   },
   galleryPadding: {
     paddingInline: 'var(--spacing-6)',
-    paddingBottom: 'var(--spacing-10)',
   },
 });
 
