@@ -21,9 +21,12 @@ import {
   XDSSideNavItem,
 } from '@xds/core/SideNav';
 import {XDSNavIcon} from '@xds/core/NavIcon';
+import {XDSIcon} from '@xds/core/Icon';
+import {XDSCenter} from '@xds/core/Center';
 import {
   HomeIcon,
   BookOpenIcon,
+  CubeIcon,
   Squares2X2Icon,
   WrenchScrewdriverIcon,
   MagnifyingGlassIcon,
@@ -351,13 +354,7 @@ const styles = stylex.create({
     height: '100%',
     objectFit: 'cover',
   },
-  cardBody: {
-    padding: spacingVars['--spacing-4'],
-  },
-  emptyState: {
-    padding: spacingVars['--spacing-12'],
-    textAlign: 'center',
-  },
+
   hideOnSmall: {
     display: {
       default: 'none',
@@ -383,10 +380,10 @@ function LibraryNav() {
         <XDSSideNavHeading
           icon={
             <XDSNavIcon
-              icon={<Squares2X2Icon style={{width: 16, height: 16}} />}
+              icon={<XDSIcon icon={CubeIcon} size="sm" color="inverse" />}
             />
           }
-          heading="XDS Library"
+          heading="My App"
           headingHref="/"
         />
       }>
@@ -431,7 +428,7 @@ function LibraryCard({item}: {item: LibraryItem}) {
           alt={item.name}
         />
       </XDSAspectRatio>
-      <XDSVStack gap={1} xstyle={styles.cardBody}>
+      <XDSVStack gap={1} padding={4}>
         <XDSHeading level={3}>{item.name}</XDSHeading>
         <XDSText type="body" size="sm" color="secondary">
           {item.description}
@@ -550,11 +547,11 @@ export default function LibraryPage() {
               </XDSVStack>
 
               {filtered.length === 0 ? (
-                <div {...stylex.props(styles.emptyState)}>
+                <XDSCenter>
                   <XDSText type="supporting" color="secondary">
                     No results found.
                   </XDSText>
-                </div>
+                </XDSCenter>
               ) : groupedSections != null ? (
                 <XDSVStack gap={6}>
                   {groupedSections.flatMap(section => [
