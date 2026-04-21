@@ -135,7 +135,7 @@ export const docs = {
     },
   ],
   usage: {
-    description: 'HoverCard shows a rich preview when the user hovers or focuses a trigger element. Use it for profile previews, link previews, or inline definitions where the user needs more context without navigating away.',
+    description: 'HoverCard shows additional information when the user hovers or focuses a trigger element. Use it for profile cards, link summaries, or inline definitions where the user needs more context without navigating away.',
     bestPractices: [
       { guidance: true, description: 'Keep content supplementary — hover cards should enhance understanding without blocking the primary workflow.' },
       { guidance: true, description: 'Provide a dashed underline on text triggers so users know the element is hoverable.' },
@@ -289,7 +289,7 @@ export const docsZh = {
     },
   ],
   usage: {
-    description: 'HoverCard shows a rich preview when the user hovers or focuses a trigger element. Use it for profile previews, link previews, or inline definitions where the user needs more context without navigating away.',
+    description: 'HoverCard shows additional information when the user hovers or focuses a trigger element. Use it for profile cards, link summaries, or inline definitions where the user needs more context without navigating away.',
     bestPractices: [
       { guidance: true, description: 'Keep content supplementary — hover cards should enhance understanding without blocking the primary workflow.' },
       { guidance: true, description: 'Provide a dashed underline on text triggers so users know the element is hoverable.' },
@@ -306,7 +306,7 @@ export const docsDense = {
   description:
     'Hover/focus triggered overlay for displaying rich, interactive content anchored to trigger element.',
   usage: {
-    description: 'HoverCard shows a rich preview on hover/focus. Use for profile previews, link previews, inline definitions.',
+    description: 'HoverCard shows additional info on hover/focus. Use for profile cards, link summaries, inline definitions.',
     bestPractices: [
       { guidance: true, description: 'Supplementary content only. Dashed underline on text triggers. Hook API for custom control.' },
       { guidance: false, description: 'No critical actions — content disappears on cursor leave. Use Tooltip/Popover when simpler.' },
