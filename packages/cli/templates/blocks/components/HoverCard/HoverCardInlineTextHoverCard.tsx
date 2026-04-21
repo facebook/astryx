@@ -2,7 +2,7 @@
 
 import {XDSHoverCard} from '@xds/core/HoverCard';
 import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSVStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
 export default function HoverCardInlineTextHoverCard() {
@@ -11,15 +11,13 @@ export default function HoverCardInlineTextHoverCard() {
       The project is maintained by{' '}
       <XDSHoverCard
         content={
-          <XDSHStack gap={3} vAlign="start">
+          <XDSVStack gap={2}>
             <XDSAvatar name="Jane Doe" size="md" />
-            <XDSVStack gap={1}>
-              <XDSText type="label">Jane Doe</XDSText>
-              <XDSText type="supporting" color="secondary">
-                Software Engineer
-              </XDSText>
-            </XDSVStack>
-          </XDSHStack>
+            <XDSText type="label">Jane Doe</XDSText>
+            <XDSText type="supporting" color="secondary">
+              Software Engineer
+            </XDSText>
+          </XDSVStack>
         }
         placement="above">
         Jane Doe
@@ -27,15 +25,13 @@ export default function HoverCardInlineTextHoverCard() {
       ,{' '}
       <XDSHoverCard
         content={
-          <XDSHStack gap={3} vAlign="start">
+          <XDSVStack gap={2}>
             <XDSAvatar name="John Smith" size="md" />
-            <XDSVStack gap={1}>
-              <XDSText type="label">John Smith</XDSText>
-              <XDSText type="supporting" color="secondary">
-                Product Manager
-              </XDSText>
-            </XDSVStack>
-          </XDSHStack>
+            <XDSText type="label">John Smith</XDSText>
+            <XDSText type="supporting" color="secondary">
+              Product Manager
+            </XDSText>
+          </XDSVStack>
         }
         placement="above">
         John Smith

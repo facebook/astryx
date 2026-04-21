@@ -12,15 +12,13 @@ export default function HoverCardInteractiveContent() {
       placement="below"
       content={
         <XDSVStack gap={3}>
-          <XDSHStack gap={3} vAlign="start">
-            <XDSAvatar name="John Smith" size="lg" />
-            <XDSVStack gap={1}>
-              <XDSText type="label">John Smith</XDSText>
-              <XDSText type="supporting" color="secondary">
-                Product Manager · New York
-              </XDSText>
-            </XDSVStack>
-          </XDSHStack>
+          <XDSAvatar name="John Smith" size="lg" />
+          <XDSVStack gap={1}>
+            <XDSText type="label">John Smith</XDSText>
+            <XDSText type="supporting" color="secondary">
+              Product Manager · New York
+            </XDSText>
+          </XDSVStack>
           <XDSText type="body">
             Leading the design systems team. Open to collaboration on component
             libraries.
