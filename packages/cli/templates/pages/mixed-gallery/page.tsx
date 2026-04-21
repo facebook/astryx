@@ -1,13 +1,12 @@
 'use client';
 
 import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSVStack, XDSStackItem} from '@xds/core/Layout';
+import {XDSVStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSSection} from '@xds/core/Section';
-import {XDSGrid} from '@xds/core/Grid';
+import {XDSGrid, XDSGridSpan} from '@xds/core/Grid';
 import {XDSButton} from '@xds/core/Button';
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSMediaTheme} from '@xds/core/theme';
 import {ArrowRightIcon} from '@heroicons/react/24/outline';
@@ -15,43 +14,21 @@ import * as stylex from '@stylexjs/stylex';
 
 // ─── Styles ────────────────────────────────────────────────────────────────
 
-const layoutStyles = stylex.create({
-  fullHeight: {
-    height: '100%',
-  },
-  minHeightZero: {
-    minHeight: 0,
-  },
+const styles = stylex.create({
   textCenter: {
     textAlign: 'center',
   },
-  desktopOnly: {
-    display: {
-      default: 'flex',
-      '@media (max-width: 767px)': 'none',
-    },
-  },
-  mobileOnly: {
-    display: {
-      default: 'none',
-      '@media (max-width: 767px)': 'flex',
-    },
-  },
-  mobileGap: {
-    gap: {
-      default: null,
-      '@media (max-width: 767px)': 'var(--spacing-3)',
-    },
-  },
-});
-
-const overlayStyles = stylex.create({
   card: {
     position: 'relative',
     width: '100%',
     height: '100%',
     overflow: 'clip',
     borderRadius: 'var(--radius-element)',
+  },
+  img: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
   },
   overlay: {
     position: 'absolute',
@@ -115,27 +92,17 @@ const IMAGES: GalleryImage[] = [
   },
 ];
 
-const imgStyles = stylex.create({
-  cover: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-    display: 'block',
-    minHeight: 0,
-  },
-});
-
 // ─── Gallery Card with Hover Overlay ────────────────────────────────────────
 
 function GalleryCard({image}: {image: GalleryImage}) {
   return (
-    <div {...stylex.props(overlayStyles.card)}>
+    <div {...stylex.props(styles.card)}>
       <img
         src={image.src}
         alt={image.title}
-        {...stylex.props(imgStyles.cover)}
+        {...stylex.props(styles.img)}
       />
-      <div {...stylex.props(overlayStyles.overlay)}>
+      <div {...stylex.props(styles.overlay)}>
         <XDSMediaTheme mode="dark">
           <XDSVStack gap={3}>
             <XDSHeading level={2}>{image.title}</XDSHeading>
@@ -156,21 +123,14 @@ function GalleryCard({image}: {image: GalleryImage}) {
 
 export default function MixedGalleryTemplate() {
   return (
-    <XDSAppShell height="fill" contentPadding={6} variant="surface">
-      <XDSCenter axis="horizontal" height="100%">
-        <XDSSection
-          variant="transparent"
-          maxWidth={1400}
-          width="100%"
-          height="100%"
-          padding={0}>
-          <XDSVStack
-            gap={6}
-            xstyle={[layoutStyles.fullHeight, layoutStyles.mobileGap]}>
+    <XDSAppShell height="auto" contentPadding={6} variant="surface">
+      <XDSCenter axis="horizontal">
+        <XDSSection variant="transparent" maxWidth={1400} padding={0}>
+          <XDSVStack gap={6}>
             {/* Header — capped with XDSSection maxWidth */}
             <XDSCenter axis="horizontal">
               <XDSSection variant="transparent" maxWidth={680}>
-                <XDSVStack gap={2} xstyle={layoutStyles.textCenter}>
+                <XDSVStack gap={2} xstyle={styles.textCenter}>
                   <XDSHeading level={1}>
                     Make every day a little more delightful, one detail at a
                     time.
@@ -178,48 +138,36 @@ export default function MixedGalleryTemplate() {
                   <XDSText type="body">
                     We believe the smallest details are the ones that matter
                     most. A little color, a thoughtful touch, a moment that
-                    catches your eye and makes you pause; that's what turns an
-                    ordinary day into something worth remembering.
+                    catches your eye and makes you pause; that&apos;s what turns
+                    an ordinary day into something worth remembering.
                   </XDSText>
                 </XDSVStack>
               </XDSSection>
             </XDSCenter>
 
-            {/* Gallery — desktop: 3-col masonry, mobile: single column */}
+            {/* Masonry gallery — 3 cols with row spans */}
+            <XDSGrid columns={3} rowHeight={80} gap={4}>
+              {/* Column 1: 3 + 3 = 6 rows */}
+              <XDSGridSpan rows={3}>
+                <GalleryCard image={IMAGES[0]} />
+              </XDSGridSpan>
+              <XDSGridSpan rows={3}>
+                <GalleryCard image={IMAGES[1]} />
+              </XDSGridSpan>
 
-            {/* Desktop layout (hidden on mobile) */}
-            <XDSStackItem size="fill" xstyle={layoutStyles.desktopOnly}>
-              <XDSGrid columns={3} gap={4} height="100%">
-                <XDSVStack gap={4} xstyle={layoutStyles.minHeightZero}>
-                  <XDSStackItem size="fill">
-                    <GalleryCard image={IMAGES[0]} />
-                  </XDSStackItem>
-                  <XDSStackItem size="fill">
-                    <GalleryCard image={IMAGES[1]} />
-                  </XDSStackItem>
-                </XDSVStack>
-
+              {/* Column 2: 6 rows (tall center) */}
+              <XDSGridSpan rows={6}>
                 <GalleryCard image={IMAGES[2]} />
+              </XDSGridSpan>
 
-                <XDSVStack gap={4} xstyle={layoutStyles.minHeightZero}>
-                  <XDSStackItem size="fill">
-                    <GalleryCard image={IMAGES[3]} />
-                  </XDSStackItem>
-                  <XDSStackItem size="fill">
-                    <GalleryCard image={IMAGES[4]} />
-                  </XDSStackItem>
-                </XDSVStack>
-              </XDSGrid>
-            </XDSStackItem>
-
-            {/* Mobile layout (hidden on desktop) */}
-            <XDSVStack gap={4} xstyle={layoutStyles.mobileOnly}>
-              {IMAGES.map((image, i) => (
-                <XDSAspectRatio key={i} ratio={16 / 9}>
-                  <GalleryCard image={image} />
-                </XDSAspectRatio>
-              ))}
-            </XDSVStack>
+              {/* Column 3: 3 + 3 = 6 rows */}
+              <XDSGridSpan rows={3}>
+                <GalleryCard image={IMAGES[3]} />
+              </XDSGridSpan>
+              <XDSGridSpan rows={3}>
+                <GalleryCard image={IMAGES[4]} />
+              </XDSGridSpan>
+            </XDSGrid>
           </XDSVStack>
         </XDSSection>
       </XDSCenter>
