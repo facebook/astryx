@@ -14,7 +14,7 @@ import {XDSStack, XDSText} from '@xds/core';
 import {XDSHeading} from '@xds/core/Text';
 import {useDataset} from './useDataset';
 
-const meta: Meta = {title: 'Lab/XDSChart Interactions/Coordinated Views'};
+const meta: Meta = {title: 'Lab/Chart Interactions/Coordinated Views'};
 export default meta;
 
 type Car = {

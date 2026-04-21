@@ -5,7 +5,7 @@ import type {ISODateString} from '@xds/core/Calendar';
 import {XDSLayout, XDSLayoutContent} from '@xds/core/Layout';
 
 const meta: Meta<typeof XDSDateInput> = {
-  title: 'Form/XDSDateInput',
+  title: 'Core/Inputs/DateInput',
   component: XDSDateInput,
   tags: ['autodocs'],
   argTypes: {

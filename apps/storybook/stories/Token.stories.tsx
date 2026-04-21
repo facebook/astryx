@@ -2,7 +2,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {XDSToken, type XDSTokenColor} from '@xds/core/Token';
 
 const meta: Meta<typeof XDSToken> = {
-  title: 'Core/XDSToken',
+  title: 'Core/Token',
   component: XDSToken,
   tags: ['autodocs'],
   argTypes: {

@@ -2,6 +2,7 @@
 
 export const docs = {
   name: 'CheckboxList',
+  group: 'Inputs',
   keywords: ["checkboxlist","checkbox","checkboxgroup","multichoice","multiselect","checklist"],
   components: [
     {

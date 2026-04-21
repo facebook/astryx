@@ -2,7 +2,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
 
 const meta: Meta<typeof XDSProgressBar> = {
-  title: 'Core/XDSProgressBar',
+  title: 'Core/ProgressBar',
   component: XDSProgressBar,
   tags: ['autodocs'],
   argTypes: {

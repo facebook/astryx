@@ -2,7 +2,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {XDSText} from '@xds/core/Text';
 
 const meta: Meta<typeof XDSText> = {
-  title: 'Typography/XDSText',
+  title: 'Core/Text',
   component: XDSText,
   tags: ['autodocs'],
   argTypes: {

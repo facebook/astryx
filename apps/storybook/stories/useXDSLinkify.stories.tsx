@@ -66,7 +66,7 @@ function LinkifyDemo({
 // ---------------------------------------------------------------------------
 
 const meta: Meta<typeof LinkifyDemo> = {
-  title: 'Hooks/useXDSLinkify',
+  title: 'Core/Hooks/useXDSLinkify',
   component: LinkifyDemo,
   tags: ['autodocs'],
   argTypes: {

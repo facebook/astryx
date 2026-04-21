@@ -27,7 +27,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSToolbar> = {
-  title: 'Layout/XDSToolbar',
+  title: 'Core/Toolbar',
   component: XDSToolbar,
   tags: ['autodocs'],
   parameters: {

@@ -71,7 +71,7 @@ const columns: XDSTableColumn<User>[] = [
 // =============================================================================
 
 const meta: Meta = {
-  title: 'Core/XDSTable/ColumnResize',
+  title: 'Core/Table/ColumnResize',
   tags: ['autodocs'],
 };
 

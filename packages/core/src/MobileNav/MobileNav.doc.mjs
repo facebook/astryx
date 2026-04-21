@@ -2,6 +2,7 @@
 
 export const docs = {
   name: 'MobileNav',
+  group: 'Navigation',
   keywords: ["mobilenav","drawer","sidebar","navigation","hamburger","menu","offcanvas","slideout","navdrawer"],
   props: [
     {

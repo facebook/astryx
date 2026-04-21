@@ -3,7 +3,7 @@ import {XDSTimestamp} from '@xds/core/Timestamp';
 import {XDSText} from '@xds/core/Text';
 
 const meta: Meta<typeof XDSTimestamp> = {
-  title: 'Core/XDSTimestamp',
+  title: 'Core/Timestamp',
   component: XDSTimestamp,
   tags: ['autodocs'],
   argTypes: {

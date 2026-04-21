@@ -46,7 +46,7 @@ const styles = stylex.create({
 });
 
 const meta: Meta<typeof XDSCard> = {
-  title: 'Layout/XDSCard',
+  title: 'Core/Card',
   component: XDSCard,
   tags: ['autodocs'],
   decorators: [

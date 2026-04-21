@@ -5,7 +5,7 @@ import {XDSStack} from '@xds/core/Stack';
 import {XDSLink} from '@xds/core/Link';
 
 const meta: Meta<typeof XDSCode> = {
-  title: 'Components/XDSCode',
+  title: 'Core/Code',
   component: XDSCode,
   tags: ['autodocs'],
   argTypes: {

@@ -2,6 +2,7 @@
 
 export const docs = {
   name: 'Field',
+  group: 'Inputs',
   keywords: ["field","formfield","formgroup","formcontrol","label","input","required","optional","helpertext","hint"],
   theming: {
     targets: [

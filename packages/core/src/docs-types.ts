@@ -268,6 +268,16 @@ interface BaseDoc {
    *  Lowercase only. Used by `xds component <term>` for fuzzy matching.
    *  e.g. `['accordion', 'expand', 'toggle', 'disclosure']` for Collapsible */
   keywords?: string[];
+  /** Optional group for sidebar/docs organization.
+   *  Components without a group appear flat in alphabetical order.
+   *  Groups cluster related components that are always used together
+   *  or are variants of each other. */
+  group?:
+    | 'Buttons'
+    | 'Chat'
+    | 'Dialogs'
+    | 'Inputs'
+    | 'Navigation';
   /** Theming configuration. Documents the stable CSS class names
    *  rendered by this component that themes can target via `@scope`
    *  selectors in `defineTheme`. */

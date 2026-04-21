@@ -2,6 +2,7 @@
 
 export const docs = {
   name: 'NumberInput',
+  group: 'Inputs',
   keywords: ["numberinput","numberfield","stepper","spinner","counter","increment","decrement","quantity","numberpicker"],
   props: [
     {

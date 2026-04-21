@@ -66,7 +66,7 @@ const IMAGES = [
 ];
 
 const meta: Meta<typeof XDSCarousel> = {
-  title: 'Core/XDSCarousel',
+  title: 'Core/Carousel',
   component: XDSCarousel,
   tags: ['autodocs'],
   argTypes: {

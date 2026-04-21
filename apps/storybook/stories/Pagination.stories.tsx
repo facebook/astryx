@@ -3,7 +3,7 @@ import {useState} from 'react';
 import {XDSPagination} from '@xds/core/Pagination';
 
 const meta: Meta<typeof XDSPagination> = {
-  title: 'Core/XDSPagination',
+  title: 'Core/Pagination',
   component: XDSPagination,
   tags: ['autodocs'],
   argTypes: {

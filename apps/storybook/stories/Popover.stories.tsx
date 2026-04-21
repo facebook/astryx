@@ -9,7 +9,7 @@ import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
 import {XDSDivider} from '@xds/core/Divider';
 
 const meta: Meta<typeof XDSPopover> = {
-  title: 'Core/XDSPopover',
+  title: 'Core/Popover',
   component: XDSPopover,
   tags: ['autodocs'],
   argTypes: {

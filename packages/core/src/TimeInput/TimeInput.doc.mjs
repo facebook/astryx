@@ -2,6 +2,7 @@
 
 export const docs = {
   name: 'TimeInput',
+  group: 'Inputs',
   keywords: ["timeinput","timepicker","time","clock","hour","minute","ampm","timeselect","timefield"],
   props: [
     {

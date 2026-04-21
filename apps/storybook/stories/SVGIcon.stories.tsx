@@ -19,7 +19,7 @@ import {
 import {XDSStack, XDSText, XDSDivider} from '@xds/core';
 
 const meta: Meta<typeof XDSSVGIcon> = {
-  title: 'Lab/XDSSVGIcon',
+  title: 'Lab/SVGIcon',
   component: XDSSVGIcon,
   argTypes: {
     variation: {

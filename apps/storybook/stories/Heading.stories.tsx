@@ -3,7 +3,7 @@ import {XDSHeading} from '@xds/core/Text';
 import {XDSText} from '@xds/core/Text';
 
 const meta: Meta<typeof XDSHeading> = {
-  title: 'Typography/XDSHeading',
+  title: 'Core/Heading',
   component: XDSHeading,
   tags: ['autodocs'],
   argTypes: {
