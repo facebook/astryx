@@ -6,17 +6,14 @@ import {XDSSection} from '@xds/core/Section';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
-export default function DividerFullBleed() {
+export default function DividerWithLabel() {
   return (
     <XDSSection variant="wash">
       <XDSCard>
         <XDSVStack gap={3}>
-          <XDSText type="label">Full bleed divider</XDSText>
-          <XDSText type="body">
-            The divider extends to container edges, ignoring padding.
-          </XDSText>
-          <XDSDivider isFullBleed />
-          <XDSText type="body">Content below the divider.</XDSText>
+          <XDSText type="body">Content above</XDSText>
+          <XDSDivider label="or" />
+          <XDSText type="body">Content below</XDSText>
         </XDSVStack>
       </XDSCard>
     </XDSSection>

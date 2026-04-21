@@ -2,9 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'Divider — Vertical',
-  description:
-    'Vertical dividers separating side-by-side metrics. Use between stat cards, toolbar groups, or any horizontal layout where you need a visual boundary between sections.',
+  description: 'Vertical divider separating side-by-side content.',
   isReady: true,
-  aspectRatio: 16 / 9,
-  componentsUsed: ['Divider', 'Card', 'Section', 'Layout', 'Text'],
+  aspectRatio: 4 / 3,
+  componentsUsed: ['Divider'],
 };
