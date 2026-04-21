@@ -5,40 +5,41 @@ import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSStack} from '@xds/core/Layout';
 
 export default function TextInputStates() {
-  const [name, setName] = useState('Sarah Chen');
+  const [text, setText] = useState('Sarah Chen');
   const [password, setPassword] = useState('hunter42');
   const [email, setEmail] = useState('sarah@example.com');
 
   return (
     <XDSStack direction="vertical" gap={3}>
       <XDSTextInput
-        label="Full name"
-        value={name}
-        onChange={setName}
-        placeholder="Enter your name"
+        label="Default field"
+        value={text}
+        onChange={setText}
+        placeholder="Enter a value"
       />
       <XDSTextInput
         type="password"
-        label="Password"
+        label="Password field"
         value={password}
         onChange={setPassword}
-        placeholder="Enter your password"
+        placeholder="Enter a value"
       />
       <XDSTextInput
         type="email"
-        label="Email address"
+        label="Email field"
         value={email}
         onChange={setEmail}
-        placeholder="you@company.com"
+        placeholder="Enter a value"
       />
       <XDSTextInput
-        label="Full name (disabled)"
-        value="Sarah Chen"
+        label="Disabled field"
+        value=""
         onChange={() => {}}
+        placeholder="Enter a value"
         isDisabled
       />
       <XDSTextInput
-        label="Username (loading)"
+        label="Loading field"
         value="sarahc"
         onChange={() => {}}
         isLoading
