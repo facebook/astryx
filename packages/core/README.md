@@ -18,6 +18,8 @@ Building a full page? Start with a template rather than composing from scratch.
 Templates show how to combine `XDSAppShell`, `XDSLayout`, `XDSTopNav`, and `XDSSideNav`
 into common page patterns (dashboards, settings, forms, detail pages).
 
+Requires `@xds/cli` (`npm install -D @xds/cli`):
+
 ```bash
 npx xds template --list              # browse all page and block templates
 npx xds template dashboard           # emit full page source
@@ -26,13 +28,11 @@ npx xds template settings --skeleton # layout skeleton with spatial annotations
 
 ## XDS CLI
 
-For richer documentation including templates, scaffolding, and tooling utilities, install the XDS CLI:
+The CLI (`@xds/cli`) provides additional tooling beyond templates:
 
 ```bash
 npx xds --help                      # full listing of CLI capabilities
-npx xds component Button           # full docs + related templates
-npx xds template --list             # browse page and block templates
-npx xds template Dashboard --skeleton  # scaffold a template
+npx xds component Button           # full docs + related block templates
 npx xds docs                        # principles, tokens, theming, and styling reference
 ```
 

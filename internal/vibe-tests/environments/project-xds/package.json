@@ -2,13 +2,13 @@
   "name": "my-app",
   "private": true,
   "dependencies": {
-    "@xds/core": "^0.0.11",
-    "@xds/theme-default": "^0.0.11",
+    "@xds/core": "*",
+    "@xds/theme-default": "*",
     "@stylexjs/stylex": "^0.10",
     "react": "^19",
     "react-dom": "^19"
   },
   "devDependencies": {
-    "@xds/cli": "^0.0.11"
+    "@xds/cli": "*"
   }
 }
