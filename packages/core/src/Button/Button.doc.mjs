@@ -9,9 +9,10 @@ export const docs = {
     description:
       'Button triggers an action when clicked. Use it for form submissions, confirmations, navigation, or any interaction that needs a clear call to action.',
     bestPractices: [
-      {guidance: true, description: 'Use secondary for most actions. Reserve primary for the single most important action in the view.'},
-      {guidance: true, description: 'Write labels as short verbs — "Save", "Delete", "Send invite" — so the user knows what will happen.'},
+      {guidance: true, description: 'Reserve primary for the single most important action in the view. Use secondary, ghost, or destructive for everything else based on emphasis.'},
+      {guidance: true, description: 'Write labels that describe the action — "Save changes", "Delete account", "Send invite" — not vague labels like "OK" or "Click here".'},
       {guidance: true, description: 'Show a loading state for actions that take time, like saving or submitting, so the user knows it is working.'},
+      {guidance: true, description: 'Always provide a label for icon-only buttons so screen readers can announce what the button does. Add a tooltip for sighted users.'},
       {guidance: false, description: 'Place more than one primary button in the same view — this dilutes the visual hierarchy.'},
       {guidance: false, description: 'Use the destructive variant without a confirmation step for irreversible actions like deleting data.'},
       {guidance: false, description: 'Use a button when a link would do — if it just navigates to another page with no side effects, use a link.'},
@@ -144,9 +145,10 @@ export const docsZh = {
     description:
       'Button triggers an action when clicked. Use it for form submissions, confirmations, navigation, or any interaction that needs a clear call to action.',
     bestPractices: [
-      {guidance: true, description: 'Use secondary for most actions. Reserve primary for the single most important action in the view.'},
-      {guidance: true, description: 'Write labels as short verbs — "Save", "Delete", "Send invite" — so the user knows what will happen.'},
+      {guidance: true, description: 'Reserve primary for the single most important action in the view. Use secondary, ghost, or destructive for everything else based on emphasis.'},
+      {guidance: true, description: 'Write labels that describe the action — "Save changes", "Delete account", "Send invite" — not vague labels like "OK" or "Click here".'},
       {guidance: true, description: 'Show a loading state for actions that take time, like saving or submitting, so the user knows it is working.'},
+      {guidance: true, description: 'Always provide a label for icon-only buttons so screen readers can announce what the button does. Add a tooltip for sighted users.'},
       {guidance: false, description: 'Place more than one primary button in the same view — this dilutes the visual hierarchy.'},
       {guidance: false, description: 'Use the destructive variant without a confirmation step for irreversible actions like deleting data.'},
       {guidance: false, description: 'Use a button when a link would do — if it just navigates to another page with no side effects, use a link.'},
@@ -224,9 +226,10 @@ export const docsDense = {
     description:
       'Button triggers an action when clicked. Use for form submissions, confirmations, navigation, or any interaction needing a clear CTA.',
     bestPractices: [
-      {guidance: true, description: 'Secondary for most actions. Primary for the single most important action.'},
-      {guidance: true, description: 'Labels as short verbs — "Save", "Delete", "Send invite".'},
+      {guidance: true, description: 'Primary for the single most important action. Secondary/ghost/destructive for the rest.'},
+      {guidance: true, description: 'Labels that describe the action — "Save changes" not "OK" or "Click here".'},
       {guidance: true, description: 'Show loading state for async actions so the user knows it is working.'},
+      {guidance: true, description: 'Icon-only buttons need a label for screen readers and a tooltip for sighted users.'},
       {guidance: false, description: 'Multiple primary buttons in one view — dilutes hierarchy.'},
       {guidance: false, description: 'Destructive without confirmation for irreversible actions.'},
       {guidance: false, description: 'Button for pure navigation — use a link instead.'},
