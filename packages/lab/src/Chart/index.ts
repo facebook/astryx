@@ -33,7 +33,14 @@ export {
 } from './XDSChartLegend';
 export {useChart} from './ChartContext';
 export {useXDSChartStack} from './useXDSChartStack';
-export type {ChartContext, ChartMargin, ChartScale, DataPoint, StackedSeries} from './types';
+export {XDSChartBarGroup, type XDSChartBarGroupProps} from './XDSChartBarGroup';
+export type {
+  ChartContext,
+  ChartMargin,
+  ChartScale,
+  DataPoint,
+  StackedSeries,
+} from './types';
 export {m4Reduce, type M4Point} from './m4';
 export {isBandScale, xPixel} from './utils';
 export {useXDSChartColors} from './useXDSChartColors';

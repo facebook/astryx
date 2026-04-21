@@ -4,6 +4,7 @@ import {
   XDSChartAxis,
   XDSChartGrid,
   XDSChartBar,
+  XDSChartBarGroup,
   XDSChartLine,
   XDSChartArea,
   XDSChartBand,
@@ -76,17 +77,31 @@ export const StackedBars: StoryObj = {
   render: () => {
     const colors = useXDSChartColors();
     return (
-      <XDSChart data={monthlyRevenue} xKey="month" yKeys={['revenue', 'costs']} height={300}>
+      <XDSChart
+        data={monthlyRevenue}
+        xKey="month"
+        yKeys={['revenue', 'costs']}
+        height={300}>
         <XDSChartGrid horizontal />
         <XDSChartAxis position="bottom" />
         <XDSChartAxis position="left" />
-        <XDSChartBar dataKey="revenue" color={colors.categorical(2)[0]} stack="total" />
-        <XDSChartBar dataKey="costs" color={colors.categorical(2)[1]} stack="total" />
+        <XDSChartBar
+          dataKey="revenue"
+          color={colors.categorical(2)[0]}
+          stack="total"
+        />
+        <XDSChartBar
+          dataKey="costs"
+          color={colors.categorical(2)[1]}
+          stack="total"
+        />
         <XDSChartTooltip />
-        <XDSChartLegend items={[
-          {label: 'Revenue', color: colors.categorical(2)[0]},
-          {label: 'Costs', color: colors.categorical(2)[1]},
-        ]} />
+        <XDSChartLegend
+          items={[
+            {label: 'Revenue', color: colors.categorical(2)[0]},
+            {label: 'Costs', color: colors.categorical(2)[1]},
+          ]}
+        />
       </XDSChart>
     );
   },
@@ -97,19 +112,27 @@ export const GroupedBars: StoryObj = {
   render: () => {
     const colors = useXDSChartColors();
     return (
-      <XDSChart data={quarterlyData} xKey="quarter" yKeys={['product', 'services', 'support']} height={300}>
+      <XDSChart
+        data={quarterlyData}
+        xKey="quarter"
+        yKeys={['product', 'services', 'support']}
+        height={300}>
         <XDSChartGrid horizontal />
         <XDSChartAxis position="bottom" />
         <XDSChartAxis position="left" />
-        <XDSChartBar dataKey="product" color={colors.categorical(3)[0]} />
-        <XDSChartBar dataKey="services" color={colors.categorical(3)[1]} />
-        <XDSChartBar dataKey="support" color={colors.categorical(3)[2]} />
+        <XDSChartBarGroup>
+          <XDSChartBar dataKey="product" color={colors.categorical(3)[0]} />
+          <XDSChartBar dataKey="services" color={colors.categorical(3)[1]} />
+          <XDSChartBar dataKey="support" color={colors.categorical(3)[2]} />
+        </XDSChartBarGroup>
         <XDSChartTooltip />
-        <XDSChartLegend items={[
-          {label: 'Product', color: colors.categorical(3)[0]},
-          {label: 'Services', color: colors.categorical(3)[1]},
-          {label: 'Support', color: colors.categorical(3)[2]},
-        ]} />
+        <XDSChartLegend
+          items={[
+            {label: 'Product', color: colors.categorical(3)[0]},
+            {label: 'Services', color: colors.categorical(3)[1]},
+            {label: 'Support', color: colors.categorical(3)[2]},
+          ]}
+        />
       </XDSChart>
     );
   },
@@ -120,7 +143,12 @@ export const HorizontalBars: StoryObj = {
   render: () => {
     const colors = useXDSChartColors();
     return (
-      <XDSChart data={categories} xKey="category" yKeys={['value']} height={300} orientation="horizontal">
+      <XDSChart
+        data={categories}
+        xKey="category"
+        yKeys={['value']}
+        height={300}
+        orientation="horizontal">
         <XDSChartGrid vertical />
         <XDSChartAxis position="bottom" />
         <XDSChartAxis position="left" />
@@ -140,7 +168,11 @@ export const AreaGradient: StoryObj = {
         <XDSChartGrid horizontal />
         <XDSChartAxis position="bottom" />
         <XDSChartAxis position="left" />
-        <XDSChartArea dataKey="price" color={colors.categorical(1)[0]} gradient />
+        <XDSChartArea
+          dataKey="price"
+          color={colors.categorical(1)[0]}
+          gradient
+        />
         <XDSChartLine dataKey="price" color={colors.categorical(1)[0]} />
         <XDSChartTooltip />
       </XDSChart>
@@ -153,19 +185,37 @@ export const StackedAreas: StoryObj = {
   render: () => {
     const colors = useXDSChartColors();
     return (
-      <XDSChart data={trafficData} xKey="month" yKeys={['mobile', 'desktop', 'tablet']} height={300}>
+      <XDSChart
+        data={trafficData}
+        xKey="month"
+        yKeys={['mobile', 'desktop', 'tablet']}
+        height={300}>
         <XDSChartGrid horizontal />
         <XDSChartAxis position="bottom" />
         <XDSChartAxis position="left" />
-        <XDSChartArea dataKey="mobile" color={colors.categorical(3)[0]} stack="traffic" />
-        <XDSChartArea dataKey="desktop" color={colors.categorical(3)[1]} stack="traffic" />
-        <XDSChartArea dataKey="tablet" color={colors.categorical(3)[2]} stack="traffic" />
+        <XDSChartArea
+          dataKey="mobile"
+          color={colors.categorical(3)[0]}
+          stack="traffic"
+        />
+        <XDSChartArea
+          dataKey="desktop"
+          color={colors.categorical(3)[1]}
+          stack="traffic"
+        />
+        <XDSChartArea
+          dataKey="tablet"
+          color={colors.categorical(3)[2]}
+          stack="traffic"
+        />
         <XDSChartTooltip />
-        <XDSChartLegend items={[
-          {label: 'Mobile', color: colors.categorical(3)[0]},
-          {label: 'Desktop', color: colors.categorical(3)[1]},
-          {label: 'Tablet', color: colors.categorical(3)[2]},
-        ]} />
+        <XDSChartLegend
+          items={[
+            {label: 'Mobile', color: colors.categorical(3)[0]},
+            {label: 'Desktop', color: colors.categorical(3)[1]},
+            {label: 'Tablet', color: colors.categorical(3)[2]},
+          ]}
+        />
       </XDSChart>
     );
   },
@@ -177,11 +227,20 @@ export const ConfidenceBandStory: StoryObj = {
   render: () => {
     const colors = useXDSChartColors();
     return (
-      <XDSChart data={stockData} xKey="day" yKeys={['price', 'upper', 'lower']} height={300}>
+      <XDSChart
+        data={stockData}
+        xKey="day"
+        yKeys={['price', 'upper', 'lower']}
+        height={300}>
         <XDSChartGrid horizontal />
         <XDSChartAxis position="bottom" />
         <XDSChartAxis position="left" />
-        <XDSChartBand yUpper="upper" yLower="lower" color={colors.categorical(1)[0]} opacity={0.15} />
+        <XDSChartBand
+          yUpper="upper"
+          yLower="lower"
+          color={colors.categorical(1)[0]}
+          opacity={0.15}
+        />
         <XDSChartLine dataKey="price" color={colors.categorical(1)[0]} />
         <XDSChartTooltip />
       </XDSChart>
@@ -196,15 +255,29 @@ export const StackedWithLine: StoryObj = {
     const colors = useXDSChartColors();
     const data = monthlyRevenue.map((d, i, arr) => ({
       ...d,
-      runningAvg: Math.round(arr.slice(0, i + 1).reduce((s, v) => s + v.revenue, 0) / (i + 1)),
+      runningAvg: Math.round(
+        arr.slice(0, i + 1).reduce((s, v) => s + v.revenue, 0) / (i + 1),
+      ),
     }));
     return (
-      <XDSChart data={data} xKey="month" yKeys={['revenue', 'costs', 'runningAvg']} height={300}>
+      <XDSChart
+        data={data}
+        xKey="month"
+        yKeys={['revenue', 'costs', 'runningAvg']}
+        height={300}>
         <XDSChartGrid horizontal />
         <XDSChartAxis position="bottom" />
         <XDSChartAxis position="left" />
-        <XDSChartBar dataKey="revenue" color={colors.categorical(3)[0]} stack="total" />
-        <XDSChartBar dataKey="costs" color={colors.categorical(3)[1]} stack="total" />
+        <XDSChartBar
+          dataKey="revenue"
+          color={colors.categorical(3)[0]}
+          stack="total"
+        />
+        <XDSChartBar
+          dataKey="costs"
+          color={colors.categorical(3)[1]}
+          stack="total"
+        />
         <XDSChartLine dataKey="runningAvg" color={colors.categorical(3)[2]} />
         <XDSChartTooltip />
       </XDSChart>

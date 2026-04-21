@@ -6,7 +6,7 @@
 
 import {useChart} from './ChartContext';
 import {useXDSChartStack} from './useXDSChartStack';
-import {useBarGroup} from './BarRegistry';
+import {useBarGroupInfo} from './XDSChartBarGroup';
 import {isBandScale} from './utils';
 
 export interface XDSChartBarProps {
@@ -44,13 +44,16 @@ export function XDSChartBar({
 }: XDSChartBarProps) {
   const {data, xKey, xScale, yScale, orientation} = useChart();
   const {y0, y1, isStacked} = useXDSChartStack(stackGroup, dataKey);
-  const group = useBarGroup(dataKey, isStacked);
+  const group = useBarGroupInfo();
 
   if (orientation === 'horizontal') {
     // Horizontal bars: yScale is band (categories), xScale is linear (values)
     if (!isBandScale(yScale as never)) return null;
     const bandScale = yScale as unknown as import('d3-scale').ScaleBand<string>;
-    const valueScale = xScale as unknown as import('d3-scale').ScaleLinear<number, number>;
+    const valueScale = xScale as unknown as import('d3-scale').ScaleLinear<
+      number,
+      number
+    >;
 
     const zeroX = valueScale(0);
     const bandwidth = bandScale.bandwidth();
@@ -65,7 +68,8 @@ export function XDSChartBar({
           const yVal = bandScale(String(d[xKey]));
           if (yVal == null) return null;
 
-          const val = typeof d[dataKey] === 'number' ? (d[dataKey] as number) : 0;
+          const val =
+            typeof d[dataKey] === 'number' ? (d[dataKey] as number) : 0;
           const xPos = valueScale(val);
           const barX = Math.min(xPos, zeroX);
           const barW = Math.abs(xPos - zeroX);
@@ -111,7 +115,8 @@ export function XDSChartBar({
           barY = Math.min(top, bottom);
           barHeight = Math.abs(bottom - top);
         } else {
-          const yVal = typeof d[dataKey] === 'number' ? (d[dataKey] as number) : 0;
+          const yVal =
+            typeof d[dataKey] === 'number' ? (d[dataKey] as number) : 0;
           const yPos = yScale(yVal);
           const zeroY = yScale(0);
           barY = Math.min(yPos, zeroY);

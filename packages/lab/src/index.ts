@@ -65,6 +65,8 @@ export {
   XDSChartGrid,
   type XDSChartGridProps,
   XDSChartBar,
+  XDSChartBarGroup,
+  type XDSChartBarGroupProps,
   type XDSChartBarProps,
   XDSChartLine,
   type XDSChartLineProps,

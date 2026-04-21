@@ -9,20 +9,17 @@
 
 import {
   type ReactNode,
-
   useMemo,
   useRef,
   useState,
   useCallback,
   useLayoutEffect,
-
 } from 'react';
 import {scaleLinear, scaleBand} from 'd3-scale';
 import {stack as d3Stack, stackOrderNone, stackOffsetNone} from 'd3-shape';
 import type {ScaleLinear} from 'd3-scale';
 import {isBandScale} from './utils';
 import {ChartProvider} from './ChartContext';
-import {BarRegistryProvider} from './BarRegistry';
 import type {ChartMargin, ChartScale, StackedSeries} from './types';
 
 /**
@@ -274,7 +271,10 @@ export function XDSChart({
       if (isBandScale(xScale)) {
         const domain = xScale.domain();
         const step = xScale.step();
-        const idx = Math.min(domain.length - 1, Math.max(0, Math.floor(px / step)));
+        const idx = Math.min(
+          domain.length - 1,
+          Math.max(0, Math.floor(px / step)),
+        );
         x = domain[idx];
       } else {
         x = (xScale as ScaleLinear<number, number>).invert(px);
@@ -315,22 +315,44 @@ export function XDSChart({
       stackLayout,
       orientation,
     }),
-    [innerWidth, innerHeight, margin, xKey, data, xScale, yScale, pointerToData, pixelToData, stackLayout, orientation],
+    [
+      innerWidth,
+      innerHeight,
+      margin,
+      xKey,
+      data,
+      xScale,
+      yScale,
+      pointerToData,
+      pixelToData,
+      stackLayout,
+      orientation,
+    ],
   );
 
   return (
-    <div ref={containerRef} style={{width: '100%', touchAction: interactive ? 'none' : undefined, userSelect: interactive ? 'none' : undefined} as React.CSSProperties}>
+    <div
+      ref={containerRef}
+      style={
+        {
+          width: '100%',
+          touchAction: interactive ? 'none' : undefined,
+          userSelect: interactive ? 'none' : undefined,
+        } as React.CSSProperties
+      }>
       {containerWidth > 0 && (
-        <svg ref={svgRef} width={containerWidth} height={height} style={interactive ? {touchAction: 'none'} : undefined}>
+        <svg
+          ref={svgRef}
+          width={containerWidth}
+          height={height}
+          style={interactive ? {touchAction: 'none'} : undefined}>
           <defs>
             <clipPath id="xds-chart-plot">
               <rect x={0} y={0} width={innerWidth} height={innerHeight} />
             </clipPath>
           </defs>
           <g transform={`translate(${margin.left},${margin.top})`}>
-            <ChartProvider value={ctx}>
-              <BarRegistryProvider>{children}</BarRegistryProvider>
-            </ChartProvider>
+            <ChartProvider value={ctx}>{children}</ChartProvider>
           </g>
         </svg>
       )}

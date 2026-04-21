@@ -69,5 +69,4 @@ export interface ChartContext {
   stackLayout?: Map<string, StackedSeries>;
   /** Chart orientation — 'vertical' (default) or 'horizontal' */
   orientation: 'vertical' | 'horizontal';
-
 }
