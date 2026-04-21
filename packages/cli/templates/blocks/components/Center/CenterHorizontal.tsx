@@ -3,7 +3,7 @@
 import {XDSCenter} from '@xds/core/Center';
 import {XDSCard} from '@xds/core/Card';
 import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {XDSHeading} from '@xds/core/Text';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSIconButton} from '@xds/core/IconButton';
 import {
@@ -19,9 +19,7 @@ export default function CenterHorizontal() {
   return (
     <XDSCard width={520} padding={2}>
       <XDSStack direction="horizontal" vAlign="center">
-        <XDSText type="body" weight="bold">
-          Untitled Document
-        </XDSText>
+        <XDSHeading level={2}>Untitled Document</XDSHeading>
         <XDSStack direction="horizontal" gap={0} hAlign="end">
           <XDSIconButton
             label="Bold"
