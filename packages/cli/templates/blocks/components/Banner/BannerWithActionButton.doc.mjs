@@ -4,6 +4,6 @@ export const doc = {
   name: 'Banner — Action',
   description: 'Add a button to a banner so the user can act on the message. Use for trial expirations, payment failures, or anything that needs a response.',
   isReady: true,
-  aspectRatio: 16 / 4,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Banner', 'Button', 'Layout'],
 };
