@@ -3,8 +3,9 @@
  * @output Click/tap to select data points. Pointer events.
  */
 
-import {useCallback} from 'react';
+import {useCallback, useEffect} from 'react';
 import {useChart} from './ChartContext';
+import {useInteraction} from './InteractionContext';
 import {xPixel} from './utils';
 
 export interface XDSChartSelectProps {
@@ -22,9 +23,11 @@ export function XDSChartSelect({
   color = 'var(--color-accent)',
   radius = 6,
 }: XDSChartSelectProps) {
-  const {width, height, data, xKey, xScale, yScale} = useChart();
+  const {data, xKey, xScale, yScale} = useChart();
 
-  const handlePointerUp = useCallback(
+  const {register} = useInteraction();
+
+  const handleClick = useCallback(
     (e: React.PointerEvent<SVGRectElement>) => {
       const svg = e.currentTarget.ownerSVGElement;
       if (!svg) return;
@@ -66,17 +69,13 @@ export function XDSChartSelect({
     [data, xKey, xScale, yScale, selected, onSelect, onSelectionChange],
   );
 
+  useEffect(
+    () => register('select', {onClick: handleClick}),
+    [register, handleClick],
+  );
+
   return (
     <g>
-      <rect
-        x={0}
-        y={0}
-        width={width}
-        height={height}
-        fill="transparent"
-        style={{cursor: 'pointer'}}
-        onPointerUp={handlePointerUp}
-      />
       {selected.map(idx => {
         if (idx < 0 || idx >= data.length) return null;
         const d = data[idx];

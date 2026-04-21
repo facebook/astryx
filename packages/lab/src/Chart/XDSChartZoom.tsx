@@ -12,6 +12,7 @@ import {useCallback, useRef, useState, useEffect} from 'react';
 import {createPortal} from 'react-dom';
 import {XDSIconButton} from '@xds/core/IconButton';
 import {useChart} from './ChartContext';
+import {useInteraction} from './InteractionContext';
 import {isBandScale} from './utils';
 import type {ScaleLinear} from 'd3-scale';
 import type {ZoomToolbarPosition} from './types';
@@ -97,6 +98,7 @@ export function XDSChartZoom({
   toolbar = 'top-right',
 }: XDSChartZoomProps) {
   const {width, height, xScale, yScale, svgRef} = useChart();
+  const {register} = useInteraction();
 
   // Capture initial domains on mount for reset
   const initialDomainsRef = useRef<{
@@ -112,31 +114,6 @@ export function XDSChartZoom({
     const yDomain = yScale.domain() as [number, number];
     initialDomainsRef.current = {x: xDomain, y: yDomain};
   }, [xScale, yScale]);
-
-  const dragRef = useRef<{
-    startX: number;
-    startY: number;
-    xDomain: [number, number];
-    yDomain: [number, number];
-  } | null>(null);
-
-  const pointersRef = useRef<Map<number, {x: number; y: number}>>(new Map());
-  const pinchRef = useRef<{
-    dist: number;
-    xDomain: [number, number];
-    yDomain: [number, number];
-  } | null>(null);
-
-  const getXDomain = useCallback(
-    (): [number, number] =>
-      isBandScale(xScale)
-        ? [0, 0]
-        : ((xScale as ScaleLinear<number, number>).domain() as [
-            number,
-            number,
-          ]),
-    [xScale],
-  );
 
   // Zoom a single axis around a pivot point by a factor.
   // factor > 1 = zoom out, factor < 1 = zoom in.
@@ -220,76 +197,11 @@ export function XDSChartZoom({
     ],
   );
 
-  const onPointerDown = useCallback(
-    (e: React.PointerEvent<SVGRectElement>) => {
-      (e.target as Element).setPointerCapture(e.pointerId);
-      e.preventDefault(); // prevent selection on touch
-      pointersRef.current.set(e.pointerId, {x: e.clientX, y: e.clientY});
-
-      if (pointersRef.current.size === 2) {
-        const pts = [...pointersRef.current.values()];
-        const dist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
-        pinchRef.current = {
-          dist,
-          xDomain: getXDomain(),
-          yDomain: yScale.domain() as [number, number],
-        };
-        dragRef.current = null;
-      } else if (pointersRef.current.size === 1) {
-        dragRef.current = {
-          startX: e.clientX,
-          startY: e.clientY,
-          xDomain: getXDomain(),
-          yDomain: yScale.domain() as [number, number],
-        };
-      }
-    },
-    [getXDomain, yScale],
+  // Register with shared event layer
+  useEffect(
+    () => register('zoom', {onWheel: handleWheel}),
+    [register, handleWheel],
   );
-
-  const onPointerMove = useCallback(
-    (e: React.PointerEvent<SVGRectElement>) => {
-      pointersRef.current.set(e.pointerId, {x: e.clientX, y: e.clientY});
-
-      if (pointersRef.current.size === 2 && pinchRef.current) {
-        const pts = [...pointersRef.current.values()];
-        const dist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
-        const ratio = pinchRef.current.dist / dist;
-        if (!yOnly && !isBandScale(xScale)) {
-          const [xMin, xMax] = pinchRef.current.xDomain;
-          const mid = (xMin + xMax) / 2;
-          const half = ((xMax - xMin) / 2) * ratio;
-          onXDomainChange?.([mid - half, mid + half]);
-        }
-        if (!xOnly) {
-          const [yMin, yMax] = pinchRef.current.yDomain;
-          const mid = (yMin + yMax) / 2;
-          const half = ((yMax - yMin) / 2) * ratio;
-          onYDomainChange?.([mid - half, mid + half]);
-        }
-      } else if (dragRef.current) {
-        const dx = e.clientX - dragRef.current.startX;
-        const dy = e.clientY - dragRef.current.startY;
-        if (!yOnly && !isBandScale(xScale)) {
-          const [xMin, xMax] = dragRef.current.xDomain;
-          const xShift = -(dx / width) * (xMax - xMin);
-          onXDomainChange?.([xMin + xShift, xMax + xShift]);
-        }
-        if (!xOnly) {
-          const [yMin, yMax] = dragRef.current.yDomain;
-          const yShift = (dy / height) * (yMax - yMin);
-          onYDomainChange?.([yMin + yShift, yMax + yShift]);
-        }
-      }
-    },
-    [xScale, width, height, onXDomainChange, onYDomainChange, xOnly, yOnly],
-  );
-
-  const onPointerUp = useCallback((e: React.PointerEvent<SVGRectElement>) => {
-    pointersRef.current.delete(e.pointerId);
-    if (pointersRef.current.size < 2) pinchRef.current = null;
-    if (pointersRef.current.size === 0) dragRef.current = null;
-  }, []);
 
   const handleReset = useCallback(() => {
     const init = initialDomainsRef.current;
@@ -326,28 +238,6 @@ export function XDSChartZoom({
 
   return (
     <>
-      <g>
-        <rect
-          x={0}
-          y={0}
-          width={width}
-          height={height}
-          fill="transparent"
-          style={
-            {
-              cursor: 'grab',
-              touchAction: 'none',
-              userSelect: 'none',
-            } as React.CSSProperties
-          }
-          onWheel={handleWheel}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
-        />
-      </g>
-
       {/* Toolbar — portaled to chart container for proper positioning */}
       {toolbar &&
         portalTarget &&

@@ -32,6 +32,8 @@ export {
 } from './XDSChartLegend';
 export {useChart} from './ChartContext';
 export {useBrush} from './BrushContext';
+export {useInteraction} from './InteractionContext';
+export {EventLayer, type GestureHandlers} from './EventLayer';
 export type {
   ChartContext,
   ChartMargin,

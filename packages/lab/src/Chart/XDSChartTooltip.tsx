@@ -10,10 +10,11 @@
 
 'use client';
 
-import {useState, useCallback, useRef, type ReactNode} from 'react';
+import {useState, useCallback, useRef, useEffect, type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
 import {useXDSLayer} from '@xds/core/Layer';
 import {useChart} from './ChartContext';
+import {useInteraction} from './InteractionContext';
 import {xPixel} from './utils';
 import type {DataPoint, ChartCrosshairMode} from './types';
 
@@ -150,7 +151,6 @@ export function XDSChartTooltip({
 
         // For each y key, compute distance to that point
         let bestDistForDatum = Infinity;
-        let bestYKey = yKeys[0];
 
         for (const yk of yKeys) {
           const yv = datum[yk];
@@ -160,7 +160,6 @@ export function XDSChartTooltip({
           const dist = dx * dx + dy * dy; // squared euclidean
           if (dist < bestDistForDatum) {
             bestDistForDatum = dist;
-            bestYKey = yk;
           }
         }
 
@@ -230,42 +229,23 @@ export function XDSChartTooltip({
     [pointerToData, findNearest, snap, layer, svgRef],
   );
 
-  // Touch: tap to show, drag to scrub
-  const handlePointerDown = useCallback(
-    (e: React.PointerEvent<SVGRectElement>) => {
-      if (e.pointerType !== 'mouse') {
-        e.preventDefault(); // blocks text selection on touch
-        active.current = true;
-        updateTooltip(e);
-      }
-    },
-    [updateTooltip],
-  );
-
-  // Mouse: hover to show. Touch: drag to scrub (only if active).
-  const handlePointerMove = useCallback(
-    (e: React.PointerEvent<SVGRectElement>) => {
-      if (e.pointerType !== 'mouse' && !active.current) return;
-      updateTooltip(e);
-    },
-    [updateTooltip],
-  );
-
-  // Touch: lift to dismiss
-  const handlePointerUp = useCallback(() => {
-    if (active.current) {
-      active.current = false;
-      setHoverState(null);
-      layer.hide();
-    }
-  }, [layer]);
-
   const handlePointerLeave = useCallback(() => {
     if (!active.current) {
       setHoverState(null);
       layer.hide();
     }
   }, [layer]);
+
+  // Register with shared event layer
+  const {register} = useInteraction();
+  useEffect(
+    () =>
+      register('tooltip', {
+        onHover: updateTooltip,
+        onHoverEnd: handlePointerLeave,
+      }),
+    [register, updateTooltip, handlePointerLeave],
+  );
 
   const fmtX =
     xFormat ??
@@ -298,21 +278,6 @@ export function XDSChartTooltip({
   return (
     <>
       <g>
-        {/* Event capture rect — pointer events only, no capture/selection */}
-        <rect
-          x={0}
-          y={0}
-          width={width}
-          height={height}
-          fill="transparent"
-          style={{touchAction: 'none'}}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-          onPointerLeave={handlePointerLeave}
-        />
-
         {point && (
           <>
             {/* Vertical crosshair line */}

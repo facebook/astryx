@@ -20,6 +20,11 @@ import type {ScaleLinear} from 'd3-scale';
 import {isBandScale} from './utils';
 import {ChartProvider} from './ChartContext';
 import {BrushProvider} from './BrushContext';
+import {
+  InteractionProvider,
+  useInteractionRegistry,
+} from './InteractionContext';
+import {EventLayer} from './EventLayer';
 import type {ChartMargin, ChartScale, BrushRange} from './types';
 
 /**
@@ -268,12 +273,16 @@ export function XDSChart({
     [brushRange],
   );
 
+  // Interaction registry — one EventLayer dispatches to all registered handlers
+  const interactionRegistry = useInteractionRegistry();
+
   return (
     <div
       ref={containerRef}
       style={
         {
           width: '100%',
+          position: 'relative',
           touchAction: interactive ? 'none' : undefined,
           userSelect: interactive ? 'none' : undefined,
         } as React.CSSProperties
@@ -290,9 +299,14 @@ export function XDSChart({
             </clipPath>
           </defs>
           <g transform={`translate(${margin.left},${margin.top})`}>
-            <BrushProvider value={brushState}>
-              <ChartProvider value={ctx}>{children}</ChartProvider>
-            </BrushProvider>
+            <InteractionProvider value={interactionRegistry}>
+              <BrushProvider value={brushState}>
+                <ChartProvider value={ctx}>
+                  {children}
+                  <EventLayer handlers={interactionRegistry.getHandlers()} />
+                </ChartProvider>
+              </BrushProvider>
+            </InteractionProvider>
           </g>
         </svg>
       )}

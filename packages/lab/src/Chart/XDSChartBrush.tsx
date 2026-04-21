@@ -4,9 +4,10 @@
  * @position Child of XDSChart; reads scales from context
  */
 
-import React, {useState, useCallback, useRef} from 'react';
+import React, {useState, useCallback, useRef, useEffect} from 'react';
 import {useChart} from './ChartContext';
 import {useBrush} from './BrushContext';
+import {useInteraction} from './InteractionContext';
 import {isBandScale} from './utils';
 import type {ScaleLinear} from 'd3-scale';
 import type {BrushMode, BrushRange} from './types';
@@ -79,7 +80,7 @@ export function XDSChartBrush({
   color = 'var(--color-accent)',
   opacity = 0.15,
 }: XDSChartBrushProps) {
-  const {width, height, data, xKey, xScale, yScale} = useChart();
+  const {height, data, xKey, xScale, yScale} = useChart();
   const {setRange} = useBrush();
   const [brush, setBrush] = useState<{
     x0: number;
@@ -89,8 +90,9 @@ export function XDSChartBrush({
   } | null>(null);
   const dragging = useRef(false);
   const startRef = useRef({x: 0, y: 0});
+  const {register} = useInteraction();
 
-  const onPointerDown = useCallback((e: React.PointerEvent<SVGRectElement>) => {
+  const onDragStart = useCallback((e: React.PointerEvent<SVGRectElement>) => {
     (e.target as Element).setPointerCapture(e.pointerId);
     dragging.current = true;
     const {x, y} = localCoords(e);
@@ -98,7 +100,7 @@ export function XDSChartBrush({
     setBrush({x0: x, y0: y, x1: x, y1: y});
   }, []);
 
-  const onPointerMove = useCallback(
+  const onDragMove = useCallback(
     (e: React.PointerEvent<SVGRectElement>) => {
       if (!dragging.current) return;
       const {x, y} = localCoords(e);
@@ -123,7 +125,7 @@ export function XDSChartBrush({
     [mode, height],
   );
 
-  const onPointerUp = useCallback(() => {
+  const onDragEnd = useCallback(() => {
     dragging.current = false;
     if (!brush) return;
 
@@ -176,6 +178,17 @@ export function XDSChartBrush({
     onBrush?.(range, selected);
   }, [brush, mode, xScale, yScale, data, xKey, onBrush, onClear, setRange]);
 
+  // Register with shared event layer
+  useEffect(
+    () =>
+      register('brush', {
+        onDragStart: onDragStart,
+        onDragMove: onDragMove,
+        onDragEnd: onDragEnd,
+      }),
+    [register, onDragStart, onDragMove, onDragEnd],
+  );
+
   const rectX = brush ? brush.x0 : 0;
   const rectY = brush ? brush.y0 : 0;
   const rectW = brush ? brush.x1 - brush.x0 : 0;
@@ -183,24 +196,6 @@ export function XDSChartBrush({
 
   return (
     <g>
-      <rect
-        x={0}
-        y={0}
-        width={width}
-        height={height}
-        fill="transparent"
-        style={
-          {
-            cursor: 'crosshair',
-            touchAction: 'none',
-            userSelect: 'none',
-          } as React.CSSProperties
-        }
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-      />
       {brush && (rectW > 1 || rectH > 1) && (
         <rect
           x={rectX}
