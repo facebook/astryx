@@ -4,6 +4,6 @@ export const doc = {
   name: 'Calendar — Single',
   description: 'Pick one date from a month grid. Use for appointment dates, due dates, or any field that needs a single date.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Calendar', 'Layout', 'Text'],
 };

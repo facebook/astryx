@@ -4,6 +4,6 @@ export const doc = {
   name: 'Calendar — Range',
   description: 'Pick a start and end date with the range highlighted between them. Use for booking dates, time-off requests, or report filters.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Calendar', 'Layout', 'Text'],
 };
