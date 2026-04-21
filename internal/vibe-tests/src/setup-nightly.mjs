@@ -80,7 +80,7 @@ function samplePrompts(prompts, n) {
 function generateXdsTaskPrompt(prompt, iterDir) {
   return `You are generating React/TSX code using the XDS design system.
 
-Read the package README at node_modules/@xds/core/README.md for how to look up
+Read the package README at ${path.resolve(VIBE_DIR, '../../packages/core/README.md')} for how to look up
 component docs. Use what you find there to discover the components you need.
 
 ## Task
@@ -99,8 +99,8 @@ Write ONLY valid TSX. No markdown fences, no explanation.`;
 function generateBaselineTaskPrompt(prompt, iterDir) {
   return `You are generating React/TSX code using shadcn/ui components with Tailwind CSS.
 
-Read the baseline docs at ${VIBE_DIR}/.baseline-docs/ 
-and ${VIBE_DIR}/AGENTS.baseline.md for component guidance.
+Read the README at ${VIBE_DIR}/.baseline/README.md for component guidance.
+The actual component sources are in ${VIBE_DIR}/.baseline/components/ui/.
 
 ## Task
 
