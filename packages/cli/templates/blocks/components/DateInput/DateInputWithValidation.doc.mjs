@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'DateInput — Validation',
   description:
-    'Date input showing an error status with a message. Use to surface validation issues like unavailable dates or out-of-range selections.',
+    'Date input in all three status states: error, warning, and success. Use to surface validation issues, caution the user, or confirm a valid selection.',
   isReady: true,
   aspectRatio: 16 / 9,
   componentsUsed: ['DateInput', 'Layout', 'Text'],
