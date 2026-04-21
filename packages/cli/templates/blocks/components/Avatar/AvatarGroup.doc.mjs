@@ -2,7 +2,7 @@
 export const doc = {
   type: 'block',
   name: 'Avatar — Group Stack',
-  description: 'Stack avatars with negative margin and a border ring to create an overlapping group. Use a "+N" overflow avatar at the end to indicate additional members. Common for team lists, PR reviewers, and participant counts.',
+  description: 'Overlap multiple avatars in a row to represent a group of people, like team members or reviewers. A "+N" avatar at the end shows how many more people are in the group.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['Avatar'],

@@ -2,7 +2,7 @@
 export const doc = {
   type: 'block',
   name: 'Avatar — With Status Indicators',
-  description: 'Use the status prop with XDSAvatarStatusDot to show presence indicators. Three variants are available: positive (online/active), neutral (away/idle), and negative (busy/do not disturb). The dot scales automatically with the avatar size.',
+  description: 'Add a small dot to an avatar to show whether someone is online, away, or busy. The dot resizes automatically to match the avatar.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['Avatar'],

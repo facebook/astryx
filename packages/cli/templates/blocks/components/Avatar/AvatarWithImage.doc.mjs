@@ -2,7 +2,7 @@
 export const doc = {
   type: 'block',
   name: 'Avatar — With Images',
-  description: 'Pass a src URL to display a profile photo. The name prop provides accessible alt text and serves as the initials fallback if the image fails to load. Shown here at tiny, small, medium, and large sizes.',
+  description: 'Show a profile photo at different sizes. If the image cannot load, the avatar falls back to showing initials from the name.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['Avatar'],

@@ -2,7 +2,7 @@
 export const doc = {
   type: 'block',
   name: 'Avatar — User Card',
-  description: 'Pair an avatar with name and role text in a horizontal layout for user lists, comment headers, or contact cards. Combines src, name, size, and status props in the most common real-world avatar composition.',
+  description: 'Place an avatar next to a name and role to create a user card row. This is the most common way avatars are used — in comment headers, contact lists, and profile sections.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['Avatar'],
