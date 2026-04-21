@@ -3,16 +3,17 @@
 import {useState} from 'react';
 import {XDSTypeahead} from '@xds/core/Typeahead';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
+import {XDSCenter} from '@xds/core/Center';
 
 const items: XDSSearchableItem[] = [
-  {id: '1', label: 'Apple'},
-  {id: '2', label: 'Banana'},
-  {id: '3', label: 'Cherry'},
-  {id: '4', label: 'Date'},
-  {id: '5', label: 'Elderberry'},
-  {id: '6', label: 'Fig'},
-  {id: '7', label: 'Grape'},
-  {id: '8', label: 'Honeydew'},
+  {id: '1', label: 'United States'},
+  {id: '2', label: 'United Kingdom'},
+  {id: '3', label: 'Canada'},
+  {id: '4', label: 'Australia'},
+  {id: '5', label: 'Germany'},
+  {id: '6', label: 'France'},
+  {id: '7', label: 'Japan'},
+  {id: '8', label: 'Brazil'},
 ];
 
 const searchSource: XDSSearchSource = {
@@ -24,16 +25,16 @@ const searchSource: XDSSearchSource = {
 export default function TypeaheadLimitedResults() {
   const [value, setValue] = useState<XDSSearchableItem | null>(null);
   return (
-    <div style={{width: 320}}>
+    <XDSCenter width={320}>
       <XDSTypeahead
-        label="Fruit"
-        placeholder="Search fruits..."
+        label="Country"
+        placeholder="Search countries..."
         searchSource={searchSource}
         value={value}
         onChange={setValue}
         hasEntriesOnFocus
         maxMenuItems={3}
       />
-    </div>
+    </XDSCenter>
   );
 }

@@ -3,8 +3,8 @@ export const doc = {
   type: 'block',
   name: 'Typeahead — With Validation',
   description:
-    'Typeahead field displaying an error validation message, useful in form contexts requiring selection.',
+    'Typeahead with an error validation message.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Typeahead'],
+  componentsUsed: ['Typeahead', 'Center'],
 };
