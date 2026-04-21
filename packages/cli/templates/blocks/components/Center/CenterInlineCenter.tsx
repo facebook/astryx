@@ -5,26 +5,53 @@ import {XDSCard} from '@xds/core/Card';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
-import {CheckCircleIcon, XCircleIcon} from '@heroicons/react/24/outline';
+import {
+  CheckCircleIcon,
+  XCircleIcon,
+  ClockIcon,
+  ArrowPathIcon,
+} from '@heroicons/react/24/outline';
+
+const STEPS = [
+  {
+    icon: CheckCircleIcon,
+    color: 'positive' as const,
+    text: 'Dependencies installed',
+  },
+  {icon: CheckCircleIcon, color: 'positive' as const, text: 'Linting passed'},
+  {
+    icon: CheckCircleIcon,
+    color: 'positive' as const,
+    text: 'Tests passed (47/47)',
+  },
+  {
+    icon: ArrowPathIcon,
+    color: 'secondary' as const,
+    text: 'Building production bundle...',
+  },
+  {icon: ClockIcon, color: 'secondary' as const, text: 'Deploy to staging'},
+  {
+    icon: XCircleIcon,
+    color: 'negative' as const,
+    text: 'Deploy to production — blocked',
+  },
+];
 
 export default function CenterInlineCenter() {
   return (
-    <XDSCard width={400}>
-      <XDSStack direction="vertical" gap={3}>
-        <XDSText type="body">
-          Build passed{' '}
-          <XDSCenter isInline>
-            <XDSIcon icon={CheckCircleIcon} size="sm" color="positive" />
-          </XDSCenter>{' '}
-          — all 47 tests green.
+    <XDSCard width={360}>
+      <XDSStack direction="vertical" gap={2}>
+        <XDSText type="body" weight="bold">
+          Pipeline Status
         </XDSText>
-        <XDSText type="body">
-          Deploy failed{' '}
-          <XDSCenter isInline>
-            <XDSIcon icon={XCircleIcon} size="sm" color="negative" />
-          </XDSCenter>{' '}
-          — check the logs for details.
-        </XDSText>
+        {STEPS.map(step => (
+          <XDSText key={step.text} type="body">
+            <XDSCenter isInline>
+              <XDSIcon icon={step.icon} size="sm" color={step.color} />
+            </XDSCenter>{' '}
+            {step.text}
+          </XDSText>
+        ))}
       </XDSStack>
     </XDSCard>
   );
