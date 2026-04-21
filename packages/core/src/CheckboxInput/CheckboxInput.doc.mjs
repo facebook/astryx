@@ -105,12 +105,19 @@ export const docs = {
     ],
   },
   usage: {
-    description: 'CheckboxInput is a form control for toggling a single boolean value. Use it for standalone on/off settings, terms acceptance, or as a building block inside CheckboxList for multi-select groups.',
+    description: 'CheckboxInput toggles a single on/off value. Use it for settings like "Enable notifications", terms acceptance, or opt-in choices. For multiple checkboxes in a group, use CheckboxList instead.',
     bestPractices: [
-      { guidance: true, description: 'Always provide a visible label for context. Use isLabelHidden only when surrounding UI already makes the purpose clear.' },
-      { guidance: true, description: 'Use the indeterminate state for "select all" checkboxes that represent a partial selection.' },
-      { guidance: false, description: 'Use a checkbox for mutually exclusive choices — use RadioList or a toggle switch instead.' },
-      { guidance: false, description: 'Hide the label without an equivalent accessible alternative nearby.' },
+      { guidance: true, description: 'Always provide a visible label so the user knows what they are toggling. Use isLabelHidden only when surrounding context makes it obvious.' },
+      { guidance: true, description: 'Add a description for choices that need extra context, like explaining what "Share usage data" actually shares.' },
+      { guidance: true, description: 'Use the indeterminate state for "select all" checkboxes when only some items in a group are selected.' },
+      { guidance: false, description: 'Use a checkbox for mutually exclusive choices — use RadioList when only one option can be selected.' },
+      { guidance: false, description: 'Use a checkbox for actions that take effect immediately — use a toggle switch or button instead.' },
+    ],
+    anatomy: [
+      { name: 'Checkbox', required: true, description: 'The check box itself — unchecked, checked, or indeterminate.' },
+      { name: 'Label', required: true, description: 'Text describing what the checkbox controls. Always present for accessibility.' },
+      { name: 'Description', required: false, description: 'Helper text below the label with additional context.' },
+      { name: 'Status message', required: false, description: 'An error, warning, or success message below the checkbox.' },
     ],
   },
 };
@@ -119,12 +126,13 @@ export const docs = {
 export const docsZh = {
   name: 'CheckboxInput',
   usage: {
-    description: 'CheckboxInput is a form control for toggling a single boolean value. Use it for standalone on/off settings, terms acceptance, or as a building block inside CheckboxList for multi-select groups.',
+    description: 'CheckboxInput toggles a single on/off value. Use it for settings like "Enable notifications", terms acceptance, or opt-in choices. For multiple checkboxes in a group, use CheckboxList instead.',
     bestPractices: [
-      { guidance: true, description: 'Always provide a visible label for context. Use isLabelHidden only when surrounding UI already makes the purpose clear.' },
-      { guidance: true, description: 'Use the indeterminate state for "select all" checkboxes that represent a partial selection.' },
-      { guidance: false, description: 'Use a checkbox for mutually exclusive choices — use RadioList or a toggle switch instead.' },
-      { guidance: false, description: 'Hide the label without an equivalent accessible alternative nearby.' },
+      { guidance: true, description: 'Always provide a visible label so the user knows what they are toggling. Use isLabelHidden only when surrounding context makes it obvious.' },
+      { guidance: true, description: 'Add a description for choices that need extra context, like explaining what "Share usage data" actually shares.' },
+      { guidance: true, description: 'Use the indeterminate state for "select all" checkboxes when only some items in a group are selected.' },
+      { guidance: false, description: 'Use a checkbox for mutually exclusive choices — use RadioList when only one option can be selected.' },
+      { guidance: false, description: 'Use a checkbox for actions that take effect immediately — use a toggle switch or button instead.' },
     ],
   },
   props: [
@@ -169,14 +177,12 @@ export const docsZh = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'checkbox for toggling boolean values',
+  description: 'single on/off toggle for settings, terms, and opt-in choices',
   usage: {
-    description: 'CheckboxInput is a form control for toggling a single boolean value. Use it for standalone on/off settings, terms acceptance, or as a building block inside CheckboxList for multi-select groups.',
+    description: 'CheckboxInput toggles a single on/off value. Use for settings, terms acceptance, opt-in choices. Use CheckboxList for groups.',
     bestPractices: [
-      { guidance: true, description: 'Always provide a visible label for context. Use isLabelHidden only when surrounding UI already makes the purpose clear.' },
-      { guidance: true, description: 'Use the indeterminate state for "select all" checkboxes that represent a partial selection.' },
-      { guidance: false, description: 'Use a checkbox for mutually exclusive choices — use RadioList or a toggle switch instead.' },
-      { guidance: false, description: 'Hide the label without an equivalent accessible alternative nearby.' },
+      { guidance: true, description: 'Always provide a visible label. Add description for context. Use indeterminate for partial "select all".' },
+      { guidance: false, description: 'Use for mutually exclusive choices (use RadioList). Use for immediate actions (use toggle/button).' },
     ],
   },
   propDescriptions: {

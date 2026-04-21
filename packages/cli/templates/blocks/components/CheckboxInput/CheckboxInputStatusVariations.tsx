@@ -2,32 +2,42 @@
 
 import {useState} from 'react';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
+import {XDSStack} from '@xds/core/Layout';
 
 export default function CheckboxInputStatusVariations() {
-  const [value1, setValue1] = useState<boolean | 'indeterminate'>(false);
-  const [value2, setValue2] = useState<boolean | 'indeterminate'>(true);
-  const [value3, setValue3] = useState<boolean | 'indeterminate'>(true);
+  const [error, setError] = useState<boolean | 'indeterminate'>(false);
+  const [warning, setWarning] = useState<boolean | 'indeterminate'>(true);
+  const [success, setSuccess] = useState<boolean | 'indeterminate'>(true);
+
   return (
-    <div style={{display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 400}}>
+    <XDSStack direction="vertical" gap={4}>
       <XDSCheckboxInput
-        label="Accept terms and conditions"
-        value={value1}
-        onChange={setValue1}
-        status={{type: 'error', message: 'You must accept the terms to continue'}}
+        label="Error"
+        description="Required field that has not been accepted."
+        value={error}
+        onChange={setError}
+        status={{
+          type: 'error',
+          message: 'You must accept the terms to continue',
+        }}
       />
       <XDSCheckboxInput
-        label="Share usage data"
-        description="Help us improve by sharing anonymous usage statistics"
-        value={value2}
-        onChange={setValue2}
-        status={{type: 'warning', message: 'This data may be shared with partners'}}
+        label="Warning"
+        description="Enabled setting with a side effect to be aware of."
+        value={warning}
+        onChange={setWarning}
+        status={{
+          type: 'warning',
+          message: 'This data may be shared with partners',
+        }}
       />
       <XDSCheckboxInput
-        label="Email verified"
-        value={value3}
-        onChange={setValue3}
+        label="Success"
+        description="Confirmed setting that has been verified."
+        value={success}
+        onChange={setSuccess}
         status={{type: 'success', message: 'Your email has been verified'}}
       />
-    </div>
+    </XDSStack>
   );
 }
