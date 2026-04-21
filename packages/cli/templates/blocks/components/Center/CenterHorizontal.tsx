@@ -17,50 +17,50 @@ import {
 
 export default function CenterHorizontal() {
   return (
-    <XDSCard width={480} padding={2}>
+    <XDSCard width={520} padding={2}>
       <XDSStack direction="horizontal" vAlign="center">
-        <XDSStack direction="horizontal" gap={0}>
-          <XDSIconButton
-            label="Bold"
-            icon={<XDSIcon icon={BoldIcon} />}
-            variant="ghost"
-            size="sm"
-          />
-          <XDSIconButton
-            label="Italic"
-            icon={<XDSIcon icon={ItalicIcon} />}
-            variant="ghost"
-            size="sm"
-          />
-          <XDSIconButton
-            label="Underline"
-            icon={<XDSIcon icon={UnderlineIcon} />}
-            variant="ghost"
-            size="sm"
-          />
-          <XDSIconButton
-            label="List"
-            icon={<XDSIcon icon={ListBulletIcon} />}
-            variant="ghost"
-            size="sm"
-          />
-          <XDSIconButton
-            label="Link"
-            icon={<XDSIcon icon={LinkIcon} />}
-            variant="ghost"
-            size="sm"
-          />
-          <XDSIconButton
-            label="Image"
-            icon={<XDSIcon icon={PhotoIcon} />}
-            variant="ghost"
-            size="sm"
-          />
-        </XDSStack>
+        <XDSText type="body" weight="bold">
+          Untitled Document
+        </XDSText>
         <XDSCenter axis="horizontal">
-          <XDSText type="supporting" color="secondary">
-            Draft — Untitled Document
-          </XDSText>
+          <XDSStack direction="horizontal" gap={0}>
+            <XDSIconButton
+              label="Bold"
+              icon={<XDSIcon icon={BoldIcon} />}
+              variant="ghost"
+              size="sm"
+            />
+            <XDSIconButton
+              label="Italic"
+              icon={<XDSIcon icon={ItalicIcon} />}
+              variant="ghost"
+              size="sm"
+            />
+            <XDSIconButton
+              label="Underline"
+              icon={<XDSIcon icon={UnderlineIcon} />}
+              variant="ghost"
+              size="sm"
+            />
+            <XDSIconButton
+              label="List"
+              icon={<XDSIcon icon={ListBulletIcon} />}
+              variant="ghost"
+              size="sm"
+            />
+            <XDSIconButton
+              label="Link"
+              icon={<XDSIcon icon={LinkIcon} />}
+              variant="ghost"
+              size="sm"
+            />
+            <XDSIconButton
+              label="Image"
+              icon={<XDSIcon icon={PhotoIcon} />}
+              variant="ghost"
+              size="sm"
+            />
+          </XDSStack>
         </XDSCenter>
       </XDSStack>
     </XDSCard>
