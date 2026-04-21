@@ -11,10 +11,14 @@ import {
 } from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
+import {XDSTextInput} from '@xds/core/TextInput';
+import {XDSTextArea} from '@xds/core/TextArea';
 import {XDSCard} from '@xds/core/Card';
 
 export default function DialogFormDialog() {
   const [isOpen, setIsOpen] = useState(false);
+  const [name, setName] = useState('Ruby Cheung');
+  const [bio, setBio] = useState('Design systems engineer');
 
   return (
     <XDSCard>
@@ -46,15 +50,19 @@ export default function DialogFormDialog() {
           }
           content={
             <XDSLayoutContent>
-              <XDSVStack gap={3}>
-                <XDSText type="body">
-                  This dialog uses purpose=&quot;form&quot;. Clicking the
-                  backdrop will not close it, preventing accidental data loss.
-                  Escape still works.
-                </XDSText>
-                <XDSText type="supporting" color="secondary">
-                  Form fields would go here — TextInput, TextArea, etc.
-                </XDSText>
+              <XDSVStack gap={4}>
+                <XDSTextInput
+                  label="Display name"
+                  value={name}
+                  onChange={setName}
+                  placeholder="Enter your name"
+                />
+                <XDSTextArea
+                  label="Bio"
+                  value={bio}
+                  onChange={setBio}
+                  placeholder="Tell us about yourself"
+                />
               </XDSVStack>
             </XDSLayoutContent>
           }
