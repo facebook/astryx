@@ -14,6 +14,12 @@ import * as stylex from '@stylexjs/stylex';
 // ─── Styles ─────────────────────────────────────────────────────────────────
 
 const styles = stylex.create({
+  outer: {
+    maxWidth: 1200,
+    width: '100%',
+    paddingInline: 'var(--spacing-6)',
+    paddingBlock: 'var(--spacing-8)',
+  },
   imageWrapper: {
     borderRadius: 'var(--radius-container)',
     overflow: 'clip',
@@ -114,7 +120,7 @@ export default function ClassicGalleryTemplate() {
   return (
     <XDSAppShell height="auto" contentPadding={0} variant="surface">
       <XDSCenter axis="horizontal">
-        <XDSSection variant="transparent" maxWidth={1200} width="100%" padding={6}>
+        <div {...stylex.props(styles.outer)}>
           <XDSVStack gap={8}>
             {/* Header */}
             <XDSCenter axis="horizontal">
@@ -158,7 +164,7 @@ export default function ClassicGalleryTemplate() {
               ))}
             </XDSGrid>
           </XDSVStack>
-        </XDSSection>
+        </div>
       </XDSCenter>
     </XDSAppShell>
   );
