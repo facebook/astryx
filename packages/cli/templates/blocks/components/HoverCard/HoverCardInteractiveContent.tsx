@@ -8,7 +8,6 @@ import {XDSText} from '@xds/core/Text';
 import {LinkIcon} from '@heroicons/react/24/outline';
 
 const styles = stylex.create({
-  icon: {flexShrink: 0},
   content: {maxWidth: 280},
 });
 
@@ -21,12 +20,7 @@ export default function HoverCardInteractiveContent() {
         content={
           <XDSVStack gap={2} xstyle={styles.content}>
             <XDSHStack gap={2} vAlign="start">
-              <XDSIcon
-                icon={LinkIcon}
-                size="sm"
-                color="secondary"
-                xstyle={styles.icon}
-              />
+              <XDSIcon icon={LinkIcon} size="sm" color="secondary" />
               <XDSVStack gap={1}>
                 <XDSText type="label">Getting Started Guide</XDSText>
                 <XDSText type="body" color="secondary">
