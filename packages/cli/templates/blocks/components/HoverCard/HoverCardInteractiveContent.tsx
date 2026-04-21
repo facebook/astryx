@@ -12,7 +12,7 @@ export default function HoverCardInteractiveContent() {
       placement="below"
       content={
         <XDSVStack gap={3}>
-          <XDSHStack gap={3}>
+          <XDSHStack gap={3} vAlign="start">
             <XDSAvatar name="John Smith" size="lg" />
             <XDSVStack gap={1}>
               <XDSText type="label">John Smith</XDSText>

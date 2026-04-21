@@ -11,7 +11,7 @@ export default function HoverCardProfileHoverCard() {
     <XDSHoverCard
       placement="below"
       content={
-        <XDSHStack gap={3}>
+        <XDSHStack gap={3} vAlign="start">
           <XDSAvatar name="Jane Doe" size="lg" />
           <XDSVStack gap={1}>
             <XDSText type="label">Jane Doe</XDSText>
