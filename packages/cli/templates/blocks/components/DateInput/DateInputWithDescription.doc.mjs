@@ -5,6 +5,6 @@ export const doc = {
   description:
     'Date input with helper text below the label explaining what the field expects. Use when the purpose of the date is not obvious from the label alone.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['DateInput', 'Layout', 'Text'],
 };
