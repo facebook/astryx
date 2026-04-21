@@ -34,7 +34,7 @@ export function BlockPreview({
             width: '100%',
             aspectRatio: String(ar),
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'stretch',
             justifyContent: 'center',
             border: '1px solid var(--color-border)',
             borderRadius: 12,
@@ -45,6 +45,9 @@ export function BlockPreview({
           <div
             style={{
               width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               transform: scale !== 1 ? `scale(${scale})` : undefined,
               transformOrigin: 'center center',
             }}>
