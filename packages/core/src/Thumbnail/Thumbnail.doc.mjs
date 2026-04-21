@@ -69,13 +69,13 @@ export const docs = {
   },
   usage: {
     description:
-      'Thumbnail is a square preview card for image attachments. It shows a skeleton shimmer while uploading, the image on success, and a placeholder icon when no source is set. Use it in chat composers, file upload lists, or anywhere you need a compact image preview with optional remove and click actions.',
+      'Thumbnail displays a compact, square preview of an image attachment. It shows a shimmer effect while uploading, the image on success, and a placeholder icon when no source is set. Use it in chat composers, file upload lists, or anywhere you need a small image preview with optional remove and click actions.',
     bestPractices: [
       {guidance: true, description: 'Always provide a label prop with the file name so the thumbnail and its remove button are accessible to screen readers and show a tooltip on hover.'},
       {guidance: true, description: 'Use isLoading without a src to show a skeleton during initial upload, and isLoading with a src to show a spinner overlay once a preview URL is available.'},
       {guidance: true, description: 'Pair onClick with a lightbox or detail view so users can inspect the full image — the thumbnail adds button semantics and a hover shadow automatically.'},
-      {guidance: false, description: 'Use Thumbnail for non-image file types like PDFs or spreadsheets — use a file attachment component with an appropriate icon instead.'},
-      {guidance: false, description: 'Omit alt text when a src is provided — screen readers need a description of the image content, not just the file name from label.'},
+      {guidance: false, description: "Don't use Thumbnail for non-image file types like PDFs or spreadsheets — use a file attachment component with an appropriate icon instead."},
+      {guidance: false, description: "Don't omit alt text when a src is provided — screen readers need a description of the image content, not just the file name from label."},
     ],
     anatomy: [
       {name: 'Image', required: false, description: 'The preview image, displayed as a square with cover fit.'},
@@ -121,13 +121,13 @@ export const docsDense = {
   kw: ['thumbnail', 'attachment', 'preview', 'image', 'upload', 'dismiss', 'remove', 'loading'],
   usage: {
     description:
-      'Square image preview card. Skeleton while uploading, image on success, placeholder when empty. Use in chat composers, file lists, or compact media previews.',
+      'Compact square image preview. Shimmer while uploading, image on success, placeholder when empty. Use in chat composers, file lists, or small media previews.',
     bestPractices: [
       {guidance: true, description: 'Always set label (file name) for a11y \u2014 powers screen reader announce + hover tooltip.'},
       {guidance: true, description: 'isLoading w/o src \u2192 skeleton; isLoading w/ src \u2192 spinner overlay. Two distinct loading states.'},
       {guidance: true, description: 'onClick adds button semantics + hover shadow \u2014 pair with lightbox for full preview.'},
-      {guidance: false, description: 'Non-image files (PDF, xlsx) \u2014 use file attachment component with icon instead.'},
-      {guidance: false, description: 'Omit alt when src present \u2014 screen readers need image content description, not just label.'},
+      {guidance: false, description: "Don't use for non-image files (PDF, xlsx) \u2014 use file attachment component with icon instead."},
+      {guidance: false, description: "Don't omit alt when src present \u2014 screen readers need image content description, not just label."},
     ],
   },
   p: {
