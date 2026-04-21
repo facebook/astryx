@@ -158,7 +158,7 @@ function SearchableFilterDropdown({
 
 export default function DocsiteLandingPage() {
   return (
-    <Suspense>
+    <Suspense fallback={null}>
       <DocsiteLandingTemplate />
     </Suspense>
   );
@@ -398,6 +398,7 @@ function DocsiteLandingTemplate() {
     }
 
     const qs = params.toString();
+    if (qs === window.location.search.slice(1)) return;
     router.replace(`/pages/docsite/${qs ? '?' + qs : ''}`, {scroll: false});
   }, [
     previewTarget,
