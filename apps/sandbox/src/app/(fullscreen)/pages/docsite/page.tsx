@@ -28,6 +28,7 @@ import {SharePopoverContent} from './SharePopover';
 import {TemplatePreviewModal} from './TemplatePreviewModal';
 import {AppTopNav} from './AppTopNav';
 import {DocsView} from './DocsView';
+import {ThemeEditorView} from './ThemeEditorView';
 import {ProfileView} from './ProfileView';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSAvatar} from '@xds/core/Avatar';
@@ -202,7 +203,7 @@ function DocsiteLandingTemplate() {
     // Tab values like "theme", "components", "templates" are tabs within the
     // craft view, not standalone pages. Map them so ?page=theme opens the craft
     // view with the correct tab pre-selected.
-    const CRAFT_TABS = ['all', 'templates', 'theme', 'components'];
+    const CRAFT_TABS = ['all', 'templates', 'components'];
     const isCraftTab = page !== null && CRAFT_TABS.includes(page);
 
     return {
@@ -211,7 +212,7 @@ function DocsiteLandingTemplate() {
       query: q,
       page: isCraftTab
         ? ('craft' as const)
-        : (page as 'craft' | 'explore' | 'docs' | 'profile' | null),
+        : (page as 'craft' | 'explore' | 'docs' | 'profile' | 'theme' | null),
       craftTab: isCraftTab ? page : null,
       tab:
         tab && ['Crafted', 'Used', 'Bookmarks'].includes(tab)
@@ -770,6 +771,12 @@ function DocsiteLandingTemplate() {
   }
 
   // All card previews are handled as a bottom drawer overlay on the craft grid below.
+
+  if (activeView === 'theme') {
+    return (
+      <ThemeEditorView activeView={activeView} setActiveView={setActiveView} />
+    );
+  }
 
   if (activeView === 'docs') {
     return <DocsView activeView={activeView} setActiveView={setActiveView} />;
