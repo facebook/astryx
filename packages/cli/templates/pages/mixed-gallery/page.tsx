@@ -145,27 +145,30 @@ export default function MixedGalleryTemplate() {
               </XDSSection>
             </XDSCenter>
 
-            {/* Masonry gallery — 3 cols with row spans */}
-            <XDSGrid columns={3} rowHeight={80} gap={4}>
-              {/* Column 1: 3 + 3 = 6 rows */}
-              <XDSGridSpan rows={3}>
+            {/* Featured masonry — hero + sidebar + bottom row */}
+            <XDSGrid columns={3} rowHeight={70} gap={3}>
+              {/* Hero — 2 cols × 5 rows */}
+              <XDSGridSpan columns={2} rows={5}>
                 <GalleryCard image={IMAGES[0]} />
               </XDSGridSpan>
+
+              {/* Sidebar items */}
               <XDSGridSpan rows={3}>
+                <GalleryCard image={IMAGES[2]} />
+              </XDSGridSpan>
+              <XDSGridSpan rows={2}>
                 <GalleryCard image={IMAGES[1]} />
               </XDSGridSpan>
 
-              {/* Column 2: 6 rows (tall center) */}
-              <XDSGridSpan rows={6}>
-                <GalleryCard image={IMAGES[2]} />
-              </XDSGridSpan>
-
-              {/* Column 3: 3 + 3 = 6 rows */}
+              {/* Bottom row */}
               <XDSGridSpan rows={3}>
                 <GalleryCard image={IMAGES[3]} />
               </XDSGridSpan>
               <XDSGridSpan rows={3}>
                 <GalleryCard image={IMAGES[4]} />
+              </XDSGridSpan>
+              <XDSGridSpan rows={3}>
+                <GalleryCard image={IMAGES[1]} />
               </XDSGridSpan>
             </XDSGrid>
           </XDSVStack>
