@@ -1,10 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Breadcrumbs — Custom Separator',
-  description:
-    'Breadcrumbs trail using a custom separator character between items.',
+  name: 'Breadcrumbs — Separators',
+  description: 'Swap the default "/" for a different character like chevrons, arrows, or dots. Use when the visual style of the page calls for a different separator.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['Breadcrumbs'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Breadcrumbs', 'Layout', 'Text'],
 };
