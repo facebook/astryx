@@ -1,6 +1,9 @@
 'use client';
 
 import {XDSAvatar} from '@xds/core/Avatar';
+import {XDSStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
+import * as stylex from '@stylexjs/stylex';
 
 const USERS = [
   {
@@ -25,63 +28,51 @@ const USERS = [
   },
 ];
 
-export default function AvatarGroup() {
-  const overlapOffset = -10;
+const groupStyles = stylex.create({
+  overlap: (offset: number) => ({
+    marginLeft: offset,
+    borderRadius: '50%',
+    border: '2px solid var(--color-background-surface, #fff)',
+  }),
+});
 
+export default function AvatarGroup() {
   return (
-    <div style={{display: 'flex', flexDirection: 'column', gap: 32}}>
-      <div>
-        <p style={{margin: '0 0 12px', fontSize: 13, color: '#666'}}>
+    <XDSStack direction="vertical" gap={8}>
+      <XDSStack direction="vertical" gap={3}>
+        <XDSText type="supporting" color="secondary">
           Team members
-        </p>
-        <div style={{display: 'flex', alignItems: 'center'}}>
+        </XDSText>
+        <XDSStack direction="horizontal" vAlign="center">
           {USERS.map((user, i) => (
-            <div
+            <XDSStack
               key={user.name}
-              style={{
-                marginLeft: i === 0 ? 0 : overlapOffset,
-                borderRadius: '50%',
-                border: '2px solid var(--color-background-surface, #fff)',
-              }}>
+              {...stylex.props(groupStyles.overlap(i === 0 ? 0 : -10))}>
               <XDSAvatar src={user.src} name={user.name} size="small" />
-            </div>
+            </XDSStack>
           ))}
-          <div
-            style={{
-              marginLeft: overlapOffset,
-              borderRadius: '50%',
-              border: '2px solid var(--color-background-surface, #fff)',
-            }}>
+          <XDSStack {...stylex.props(groupStyles.overlap(-10))}>
             <XDSAvatar name="+3" size="small" />
-          </div>
-        </div>
-      </div>
-      <div>
-        <p style={{margin: '0 0 12px', fontSize: 13, color: '#666'}}>
+          </XDSStack>
+        </XDSStack>
+      </XDSStack>
+      <XDSStack direction="vertical" gap={3}>
+        <XDSText type="supporting" color="secondary">
           Larger group
-        </p>
-        <div style={{display: 'flex', alignItems: 'center'}}>
+        </XDSText>
+        <XDSStack direction="horizontal" vAlign="center">
           {USERS.slice(0, 3).map((user, i) => (
-            <div
+            <XDSStack
               key={user.name}
-              style={{
-                marginLeft: i === 0 ? 0 : -14,
-                borderRadius: '50%',
-                border: '2px solid var(--color-background-surface, #fff)',
-              }}>
+              {...stylex.props(groupStyles.overlap(i === 0 ? 0 : -14))}>
               <XDSAvatar src={user.src} name={user.name} size="medium" />
-            </div>
+            </XDSStack>
           ))}
-          <div
-            style={{
-              marginLeft: -14,
-              borderRadius: '50%',
-              border: '2px solid var(--color-background-surface, #fff)',
-            }}>
+          <XDSStack {...stylex.props(groupStyles.overlap(-14))}>
             <XDSAvatar name="+8" size="medium" />
-          </div>
-        </div>
-      </div>
-    </div>
+          </XDSStack>
+        </XDSStack>
+      </XDSStack>
+    </XDSStack>
   );
 }
