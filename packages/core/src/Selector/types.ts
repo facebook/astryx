@@ -41,13 +41,3 @@ export type XDSSelectorOptionType =
   | XDSSelectorOptionData
   | XDSSelectorDivider
   | XDSSelectorSection;
-
-/**
- * @deprecated Use XDSSelectorOptionType instead
- */
-export type XDSSelectorOption = XDSSelectorOptionType;
-
-/**
- * @deprecated Use XDSSelectorOptionData instead
- */
-export type XDSSelectorItemData = XDSSelectorOptionData;

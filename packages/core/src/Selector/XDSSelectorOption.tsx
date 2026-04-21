@@ -134,8 +134,3 @@ export function XDSSelectorOption({
 }
 
 XDSSelectorOption.displayName = 'XDSSelectorOption';
-
-/**
- * @deprecated Use XDSSelectorOption instead (renamed from XDSSelectorItem)
- */
-export const XDSSelectorItem = XDSSelectorOption;
