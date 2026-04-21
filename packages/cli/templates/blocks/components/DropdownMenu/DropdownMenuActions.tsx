@@ -5,19 +5,20 @@ import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
-export default function DropdownMenuWithDisabledItems() {
+export default function DropdownMenuActions() {
   const [lastAction, setLastAction] = useState<string | null>(null);
 
   return (
     <XDSVStack gap={3}>
       <XDSDropdownMenu
-        button={{label: 'Manage team'}}
+        button={{label: 'Actions'}}
         items={[
-          {label: 'Invite member', onClick: () => setLastAction('Invite')},
-          {label: 'Edit roles', onClick: () => setLastAction('Edit roles')},
+          {label: 'Edit', onClick: () => setLastAction('Edit')},
+          {label: 'Duplicate', onClick: () => setLastAction('Duplicate')},
+          {label: 'Move to folder', onClick: () => setLastAction('Move')},
           {type: 'divider'},
-          {label: 'Transfer ownership', isDisabled: true},
-          {label: 'Delete team', isDisabled: true},
+          {label: 'Archive', onClick: () => setLastAction('Archive')},
+          {label: 'Delete', onClick: () => setLastAction('Delete')},
         ]}
       />
       {lastAction && (
@@ -25,9 +26,6 @@ export default function DropdownMenuWithDisabledItems() {
           Last action: {lastAction}
         </XDSText>
       )}
-      <XDSText type="supporting" color="secondary">
-        Destructive actions are disabled for non-admin users
-      </XDSText>
     </XDSVStack>
   );
 }
