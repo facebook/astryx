@@ -1,9 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Divider — Vertical',
+  name: 'Divider — Variants',
   description:
-    'Vertical dividers separating side-by-side metrics. Use between stat cards, toolbar groups, or any horizontal layout where you need a visual boundary between sections.',
+    'Subtle, labeled, and strong dividers in a single card. Use subtle between related sections, labeled for alternatives like "or", and strong for high-contrast boundaries.',
   isReady: true,
   aspectRatio: 16 / 9,
   componentsUsed: ['Divider', 'Card', 'Section', 'Layout', 'Text'],
