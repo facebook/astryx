@@ -458,7 +458,7 @@ const componentAdoptionData: ComponentAdoptionRow[] = [
   },
   {
     id: '7',
-    component: 'XDSSelectorItem',
+    component: 'XDSSelectorOption',
     usages: 57513,
     files: 19649,
     oncalls: 50,
