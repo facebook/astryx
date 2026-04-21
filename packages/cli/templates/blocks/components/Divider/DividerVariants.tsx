@@ -29,7 +29,7 @@ export default function DividerVariants() {
               Use your company credentials to sign in automatically.
             </XDSText>
           </XDSVStack>
-          <XDSDivider variant="strong" />
+          <XDSDivider variant="strong" label="Strong" />
           <XDSText type="supporting" color="secondary">
             By signing in, you agree to our Terms of Service and Privacy Policy.
           </XDSText>
