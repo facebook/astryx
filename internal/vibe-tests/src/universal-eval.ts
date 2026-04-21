@@ -104,22 +104,272 @@ function scoreTscErrors(tscResult: TscResult): {
 }
 
 // ============================================================
-// 1. Correctness (tsc-based)
+// Known component catalogs
 // ============================================================
 
-function analyzeCorrectness(
+/**
+ * Auto-discover XDS components from the core package source.
+ * Falls back to a hardcoded list if the source isn't available.
+ */
+function discoverXDSComponents(): Set<string> {
+  try {
+    const candidates = [
+      _path.resolve(import.meta.dirname, '../../../packages/core/src'),
+      _path.resolve(import.meta.dirname, '../../../../packages/core/src'),
+    ];
+    for (const srcDir of candidates) {
+      if (_fs.existsSync(srcDir)) {
+        const components = new Set<string>();
+        function scan(dir: string) {
+          for (const entry of _fs.readdirSync(dir, {withFileTypes: true})) {
+            if (
+              entry.isDirectory() &&
+              !entry.name.startsWith('_') &&
+              entry.name !== 'node_modules'
+            ) {
+              scan(_path.join(dir, entry.name));
+            } else if (
+              /^XDS[A-Z]\w+\.tsx$/.test(entry.name) &&
+              !entry.name.includes('.test.')
+            ) {
+              components.add(entry.name.replace('.tsx', ''));
+            }
+          }
+        }
+        scan(srcDir);
+        components.add('Theme');
+        components.add('defaultTheme');
+        components.add('darkTheme');
+        return components;
+      }
+    }
+  } catch {
+    // Fall through to hardcoded list
+  }
+  return new Set([
+    'XDSAspectRatio',
+    'XDSAvatar',
+    'XDSBadge',
+    'XDSBanner',
+    'XDSBaseTable',
+    'XDSBreadcrumbs',
+    'XDSBreadcrumbItem',
+    'XDSButton',
+    'XDSCalendar',
+    'XDSCard',
+    'XDSCenter',
+    'XDSCheckboxInput',
+    'XDSDateInput',
+    'XDSDialog',
+    'XDSDialogHeader',
+    'XDSDivider',
+    'XDSDropdownMenu',
+    'XDSDropdownMenuItem',
+    'XDSEmptyState',
+    'XDSField',
+    'XDSFieldLabel',
+    'XDSFieldStatus',
+    'XDSFontWrapper',
+    'XDSGrid',
+    'XDSGridSpan',
+    'XDSHStack',
+    'XDSHeading',
+    'XDSHoverCard',
+    'XDSIcon',
+    'XDSLayer',
+    'XDSLayout',
+    'XDSLayoutContent',
+    'XDSLayoutFooter',
+    'XDSLayoutHeader',
+    'XDSLayoutPanel',
+    'XDSLink',
+    'XDSNumberInput',
+    'XDSProgressBar',
+    'XDSRadioList',
+    'XDSRadioListItem',
+    'XDSSection',
+    'XDSSelector',
+    'XDSSelectorOption',
+    'XDSSkeleton',
+    'XDSSlider',
+    'XDSSpinner',
+    'XDSStack',
+    'XDSStackItem',
+    'XDSStatusDot',
+    'XDSSwitch',
+    'XDSTab',
+    'XDSTabList',
+    'XDSTabMenu',
+    'XDSTable',
+    'XDSTableCell',
+    'XDSTableHeaderCell',
+    'XDSTableRow',
+    'XDSText',
+    'XDSTextArea',
+    'XDSTextInput',
+    'XDSTheme',
+    'XDSTimeInput',
+    'XDSTooltip',
+    'XDSTopNav',
+    'XDSTopNavItem',
+    'XDSTopNavMenu',
+    'XDSTopNavHeading',
+    'XDSNavIcon',
+    'XDSVStack',
+    'Theme',
+    'defaultTheme',
+    'darkTheme',
+  ]);
+}
+
+const KNOWN_XDS_COMPONENTS = discoverXDSComponents();
+
+const KNOWN_BASELINE_COMPONENTS = new Set([
+  'Button',
+  'Input',
+  'Label',
+  'Card',
+  'CardHeader',
+  'CardTitle',
+  'CardDescription',
+  'CardContent',
+  'CardFooter',
+  'Table',
+  'TableHeader',
+  'TableBody',
+  'TableRow',
+  'TableHead',
+  'TableCell',
+  'TableCaption',
+  'Dialog',
+  'DialogTrigger',
+  'DialogContent',
+  'DialogHeader',
+  'DialogTitle',
+  'DialogDescription',
+  'DialogFooter',
+  'Popover',
+  'PopoverTrigger',
+  'PopoverContent',
+  'Select',
+  'SelectTrigger',
+  'SelectValue',
+  'SelectContent',
+  'SelectItem',
+  'Checkbox',
+  'Badge',
+  'Avatar',
+  'AvatarImage',
+  'AvatarFallback',
+  'Tabs',
+  'TabsList',
+  'TabsTrigger',
+  'TabsContent',
+  'Command',
+  'CommandInput',
+  'CommandList',
+  'CommandEmpty',
+  'CommandGroup',
+  'CommandItem',
+  'DropdownMenu',
+  'DropdownMenuTrigger',
+  'DropdownMenuContent',
+  'DropdownMenuItem',
+  'DropdownMenuLabel',
+  'DropdownMenuSeparator',
+  'Tooltip',
+  'TooltipProvider',
+  'TooltipTrigger',
+  'TooltipContent',
+  'Switch',
+  'Slider',
+  'Progress',
+  'Skeleton',
+  'Textarea',
+  'HoverCard',
+  'HoverCardTrigger',
+  'HoverCardContent',
+  'Sheet',
+  'SheetTrigger',
+  'SheetContent',
+  'ScrollArea',
+  'Separator',
+  'Collapsible',
+  'CollapsibleTrigger',
+  'CollapsibleContent',
+]);
+
+// ============================================================
+// 1. Correctness (regex-based, with tsc as supplementary)
+// ============================================================
+
+/**
+ * Regex-based correctness checks — the primary correctness scorer.
+ * Detects hallucinated components and CSS tokens.
+ */
+function analyzeCorrectnessRegex(
   code: string,
-  _target: string,
-  tscResult?: TscResult | null,
-): DimensionScore {
-  // tsc results are the sole correctness signal
-  if (tscResult) {
-    const {score, findings} = scoreTscErrors(tscResult);
-    return {score: clamp(score), findings};
+  target: string,
+): {score: number; findings: UniversalFinding[]} {
+  const findings: UniversalFinding[] = [];
+
+  if (target === 'xds') {
+    // Flag unknown XDS components
+    const seen = new Set<string>();
+    const xdsRe = /\bXDS\w+/g;
+    let m: RegExpExecArray | null;
+    while ((m = xdsRe.exec(code)) !== null) {
+      const name = m[0];
+      if (!seen.has(name) && !KNOWN_XDS_COMPONENTS.has(name)) {
+        seen.add(name);
+        findings.push({
+          rule: 'unknown-component',
+          severity: 'critical',
+          detail: `Unknown XDS component: ${name}`,
+          line: code.slice(0, m.index).split('\n').length,
+        });
+      }
+    }
+
+    // Flag hallucinated CSS variables
+    const hallVarRe =
+      /var\((--xds-[\w-]+|--font-size-[\w-]+|--font-family-[\w-]+|--border-[\w-]+|--shadow-[\w-]+)\)/g;
+    const seenVars = new Set<string>();
+    while ((m = hallVarRe.exec(code)) !== null) {
+      if (!seenVars.has(m[1])) {
+        seenVars.add(m[1]);
+        findings.push({
+          rule: 'hallucinated-token',
+          severity: 'critical',
+          detail: `Hallucinated CSS variable: ${m[1]}`,
+          line: code.slice(0, m.index).split('\n').length,
+        });
+      }
+    }
+  } else if (target === 'baseline') {
+    // Flag unknown baseline components
+    const uiImportRe =
+      /import\s*\{([^}]+)\}\s*from\s*['"]@\/components\/ui\/[^'"]+['"]/g;
+    let m: RegExpExecArray | null;
+    while ((m = uiImportRe.exec(code)) !== null) {
+      const names = m[1]
+        .split(',')
+        .map(s => s.replace(/\s+as\s+\w+/, '').trim())
+        .filter(Boolean);
+      for (const name of names) {
+        if (!KNOWN_BASELINE_COMPONENTS.has(name)) {
+          findings.push({
+            rule: 'unknown-component',
+            severity: 'critical',
+            detail: `Unknown baseline component: ${name}`,
+            line: code.slice(0, m.index).split('\n').length,
+          });
+        }
+      }
+    }
   }
 
-  // No tsc data available — check for missing export only
-  const findings: UniversalFinding[] = [];
+  // Missing export
   if (!/export\s+(default|function|const|class)/.test(code)) {
     findings.push({
       rule: 'missing-export',
@@ -128,11 +378,49 @@ function analyzeCorrectness(
     });
   }
 
-  // Without tsc data, assume code is correct (backwards compat for old iterations)
+  // Score
   let score = 100;
   for (const f of findings) {
-    score -= f.severity === 'minor' ? 3 : 0;
+    switch (f.severity) {
+      case 'critical':
+        score -= 20;
+        break;
+      case 'moderate':
+        score -= 8;
+        break;
+      case 'minor':
+        score -= 3;
+        break;
+    }
   }
+
+  return {score, findings};
+}
+
+function analyzeCorrectness(
+  code: string,
+  target: string,
+  tscResult?: TscResult | null,
+): DimensionScore {
+  // Regex-based scoring is the primary correctness signal —
+  // checks for hallucinated components and CSS tokens.
+  const {score, findings} = analyzeCorrectnessRegex(code, target);
+
+  // If tsc results are available, include them as supplementary findings
+  // but don't use them for scoring (tsc is too punitive for naive personas
+  // and not yet stable enough for data continuity).
+  if (tscResult) {
+    const {findings: tscFindings} = scoreTscErrors(tscResult);
+    for (const f of tscFindings) {
+      // Downgrade tsc findings to informational — don't affect score
+      findings.push({
+        ...f,
+        rule: `tsc-${f.rule}`,
+        severity: 'minor' as const,
+      });
+    }
+  }
+
   return {score: clamp(score), findings};
 }
 
