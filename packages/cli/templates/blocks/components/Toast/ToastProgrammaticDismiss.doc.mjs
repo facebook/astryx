@@ -1,10 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Toast — Programmatic Dismiss',
-  description:
-    'Show a persistent toast and dismiss it programmatically using the returned dismiss function.',
+  name: 'Toast — Dismiss',
+  description: 'Show a persistent toast and dismiss it programmatically using the function returned by useXDSToast. Use for long-running operations that need manual cleanup.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['Toast', 'Button', 'Stack'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Toast', 'Button', 'Layout', 'Text'],
 };
