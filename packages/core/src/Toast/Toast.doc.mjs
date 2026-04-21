@@ -57,12 +57,20 @@ export const docs = {
 
   usage: {
     description:
-      'Toast is a transient notification that appears briefly to confirm an action or surface non-critical information. Use it for save confirmations, undo opportunities, or status updates that do not require user interaction.',
+      'Toast shows a brief, non-blocking notification to confirm an action or present temporary information. Use it for scenarios where the user needs feedback but not a decision, such as saving, deleting, or changing a status.',
     bestPractices: [
-      { guidance: true, description: 'Keep toast messages short and actionable so users can read them before they auto-dismiss.' },
-      { guidance: true, description: 'Include an undo action in the endContent slot for reversible operations.' },
-      { guidance: false, description: 'Use a toast for critical errors or information that requires user acknowledgment — use Banner instead.' },
-      { guidance: false, description: 'Stack multiple toasts for the same event — use uniqueID to deduplicate.' },
+      {guidance: true, description: 'Keep messages short - only a few words that tell the user what happened, like "Changes saved" or "Message sent".'},
+      {guidance: true, description: 'Add an undo action in the endContent slot for reversible operations like deleting an item, so the user can recover without navigating away.'},
+      {guidance: true, description: 'Use uniqueID to deduplicate toasts that fire from repeated actions, like clicking a save button multiple times.'},
+      {guidance: true, description: 'Use error type for failures that need attention but not immediate action — it persists until dismissed so the user won\'t miss it.'},
+      {guidance: false, description: 'Don\'t use a toast for critical errors that block the user — use Banner for persistent, in-context messaging that requires acknowledgment.'},
+      {guidance: false, description: 'Don\'t put long or multi-line content in a toast — it disappears after 5 seconds and the user may not finish reading.'},
+      {guidance: false, description: 'Don\'t show form validation errors as toasts — use inline field validation so the user can see exactly which field needs fixing.'},
+    ],
+    anatomy: [
+      {name: 'Body', required: true, description: 'The primary message text describing what happened or what the user should know.'},
+      {name: 'End content', required: false, description: 'A trailing action like an Undo button or a link, placed after the body text.'},
+      {name: 'Dismiss button', required: true, description: 'A close button that lets the user manually dismiss the toast before auto-hide.'},
     ],
   },
 };
@@ -87,12 +95,20 @@ export const docsZh = {
   },
   usage: {
     description:
-      'Toast is a transient notification that appears briefly to confirm an action or surface non-critical information. Use it for save confirmations, undo opportunities, or status updates that do not require user interaction.',
+      'Toast 显示简短的非阻塞通知，用于确认操作或呈现临时信息。适用于用户需要反馈但不需要做决定的场景，如保存、删除或状态变更。',
     bestPractices: [
-      { guidance: true, description: 'Keep toast messages short and actionable so users can read them before they auto-dismiss.' },
-      { guidance: true, description: 'Include an undo action in the endContent slot for reversible operations.' },
-      { guidance: false, description: 'Use a toast for critical errors or information that requires user acknowledgment — use Banner instead.' },
-      { guidance: false, description: 'Stack multiple toasts for the same event — use uniqueID to deduplicate.' },
+      {guidance: true, description: '保持消息简短——只需几个词告诉用户发生了什么，如"更改已保存"或"消息已发送"。'},
+      {guidance: true, description: '在 endContent 插槽中添加撤销操作，用于可逆操作如删除项目，让用户无需导航即可恢复。'},
+      {guidance: true, description: '使用 uniqueID 去重重复操作触发的 toast，如多次点击保存按钮。'},
+      {guidance: true, description: '对需要关注但不需要立即操作的错误使用 error 类型——它会持续显示直到关闭。'},
+      {guidance: false, description: '不要对阻塞用户的严重错误使用 toast——使用 Banner 进行持久的上下文消息传递。'},
+      {guidance: false, description: '不要在 toast 中放置长内容或多行内容——它会在5秒后消失，用户可能来不及阅读。'},
+      {guidance: false, description: '不要将表单验证错误显示为 toast——使用内联字段验证让用户看到具体哪个字段需要修复。'},
+    ],
+    anatomy: [
+      {name: '正文', required: true, description: '描述发生了什么或用户应该知道什么的主要消息文本。'},
+      {name: '尾部内容', required: false, description: '正文后的尾随操作，如撤销按钮或链接。'},
+      {name: '关闭按钮', required: true, description: '让用户在自动隐藏前手动关闭 toast 的关闭按钮。'},
     ],
   },
 };
@@ -103,12 +119,15 @@ export const docsDense = {
     'toast notification w/ auto-dismiss, stacking, dedup, smooth animations; XDSMediaTheme inverted surface',
   usage: {
     description:
-      'Toast is a transient notification that appears briefly to confirm an action or surface non-critical information. Use it for save confirmations, undo opportunities, or status updates that do not require user interaction.',
+      'Brief non-blocking notification for action confirmations and temporary info. Use where user needs feedback not decisions — saves, deletes, status changes.',
     bestPractices: [
-      { guidance: true, description: 'Keep toast messages short and actionable so users can read them before they auto-dismiss.' },
-      { guidance: true, description: 'Include an undo action in the endContent slot for reversible operations.' },
-      { guidance: false, description: 'Use a toast for critical errors or information that requires user acknowledgment — use Banner instead.' },
-      { guidance: false, description: 'Stack multiple toasts for the same event — use uniqueID to deduplicate.' },
+      {guidance: true, description: 'Short messages — a few words: "Changes saved", "Message sent".'},
+      {guidance: true, description: 'Undo action in endContent for reversible ops like deletes.'},
+      {guidance: true, description: 'uniqueID to dedup repeated action toasts.'},
+      {guidance: true, description: 'Error type for failures needing attention — persists until dismissed.'},
+      {guidance: false, description: 'Don\'t use for critical blocking errors — use Banner for persistent in-context messaging.'},
+      {guidance: false, description: 'Don\'t put long/multi-line content — disappears in 5s, user may not finish reading.'},
+      {guidance: false, description: 'Don\'t show form validation errors — use inline field validation instead.'},
     ],
   },
   propDescriptions: {
