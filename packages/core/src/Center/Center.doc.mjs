@@ -45,11 +45,17 @@ export const docs = {
   },
   usage: {
     description:
-      'Center is a layout primitive that centers its children horizontally and/or vertically using flexbox. Use it to quickly align content within a container without writing custom centering styles.',
+      'Center aligns content to the middle of its container. Use it for empty states, loading screens, login forms, or any content that should sit in the center of the available space.',
     bestPractices: [
-      {guidance: true, description: 'Use the axis prop to center only in the direction you need — avoid unnecessary centering on both axes.'},
-      {guidance: true, description: 'Set isInline when centering small inline content like icons or text within a line.'},
-      {guidance: false, description: 'Wrap large page sections in Center — use XDSLayout for page-level structure instead.'},
+      {guidance: true, description: 'Use axis="horizontal" or axis="vertical" when you only need one direction — both axes is the default but not always needed.'},
+      {guidance: true, description: 'Set a height when centering vertically — Center needs a defined height to know what space to center within.'},
+      {guidance: true, description: 'Use isInline to center small elements like icons or badges within a line of text without breaking the text flow.'},
+      {guidance: false, description: 'Wrap large page sections in Center — use XDSLayout or XDSAppShell for page-level structure.'},
+      {guidance: false, description: 'Use Center for horizontal lists of items — use XDSStack with hAlign="center" instead.'},
+    ],
+    anatomy: [
+      {name: 'Container', required: true, description: 'A flexbox wrapper that aligns its children to the center along the chosen axis.'},
+      {name: 'Content', required: true, description: 'Any children passed to Center. Typically a card, form, spinner, or empty state message.'},
     ],
   },
 };
@@ -59,11 +65,13 @@ export const docsZh = {
   name: 'Center',
   usage: {
     description:
-      'Center is a layout primitive that centers its children horizontally and/or vertically using flexbox. Use it to quickly align content within a container without writing custom centering styles.',
+      'Center aligns content to the middle of its container. Use it for empty states, loading screens, login forms, or any content that should sit in the center of the available space.',
     bestPractices: [
-      {guidance: true, description: 'Use the axis prop to center only in the direction you need — avoid unnecessary centering on both axes.'},
-      {guidance: true, description: 'Set isInline when centering small inline content like icons or text within a line.'},
-      {guidance: false, description: 'Wrap large page sections in Center — use XDSLayout for page-level structure instead.'},
+      {guidance: true, description: 'Use axis="horizontal" or axis="vertical" when you only need one direction — both axes is the default but not always needed.'},
+      {guidance: true, description: 'Set a height when centering vertically — Center needs a defined height to know what space to center within.'},
+      {guidance: true, description: 'Use isInline to center small elements like icons or badges within a line of text without breaking the text flow.'},
+      {guidance: false, description: 'Wrap large page sections in Center — use XDSLayout or XDSAppShell for page-level structure.'},
+      {guidance: false, description: 'Use Center for horizontal lists of items — use XDSStack with hAlign="center" instead.'},
     ],
   },
   props: [
@@ -93,14 +101,13 @@ export const docsZh = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'centers children horizontally+vertically via flexbox',
+  description: 'centers content horizontally and/or vertically via flexbox',
   usage: {
     description:
-      'Center is a layout primitive that centers its children horizontally and/or vertically using flexbox. Use it to quickly align content within a container without writing custom centering styles.',
+      'Center aligns content to the middle of its container. Use for empty states, loading screens, login forms.',
     bestPractices: [
-      {guidance: true, description: 'Use the axis prop to center only in the direction you need — avoid unnecessary centering on both axes.'},
-      {guidance: true, description: 'Set isInline when centering small inline content like icons or text within a line.'},
-      {guidance: false, description: 'Wrap large page sections in Center — use XDSLayout for page-level structure instead.'},
+      {guidance: true, description: 'Set axis when you only need one direction. Set height for vertical centering. Use isInline for icons in text.'},
+      {guidance: false, description: 'Wrap page sections — use XDSLayout. Use for horizontal lists — use XDSStack with hAlign="center".'},
     ],
   },
   propDescriptions: {
