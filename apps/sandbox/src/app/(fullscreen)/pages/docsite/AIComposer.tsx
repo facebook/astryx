@@ -62,7 +62,7 @@ export function AIComposer({
           value={prompt}
           onChange={setPrompt}
           placeholder={PLACEHOLDER[mode]}
-          headerActions={
+          footerActions={
             <XDSSegmentedControl
               value={mode}
               onChange={v => onModeChange(v as ComposerMode)}
