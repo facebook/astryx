@@ -16,12 +16,17 @@ export default function CheckboxInputBasic() {
         description="Receive weekly updates about new features and announcements."
         value={newsletter}
         onChange={setNewsletter}
+        status={{type: 'success', message: 'You are subscribed'}}
       />
       <XDSCheckboxInput
         label="Share usage analytics"
         description="Help us improve by sharing anonymous usage data."
         value={analytics}
         onChange={setAnalytics}
+        status={{
+          type: 'warning',
+          message: 'This data may be shared with partners',
+        }}
       />
       <XDSCheckboxInput
         label="Premium features"
