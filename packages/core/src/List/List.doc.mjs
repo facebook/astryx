@@ -113,12 +113,13 @@ export const docs = {
   ],
   usage: {
     description:
-      'List renders a vertical collection of items with consistent spacing, dividers, and optional marker styles. Use it to display ordered or unordered groups of related content within cards, dialogs, or panels.',
+      'A vertical collection of items with consistent spacing, dividers, and optional markers. Supports headers, icons, avatars, badges, and interactive items with click or link behavior. Use it to display ordered or unordered groups of related content.',
     bestPractices: [
-      { guidance: true, description: 'Provide a header to label the list and give context to screen readers via aria-labelledby.' },
-      { guidance: true, description: 'Use startContent and endContent slots to add visual context like icons, avatars, or badges to each item.' },
+      { guidance: true, description: 'Provide a header to label the list and give context to screen readers.' },
+      { guidance: true, description: 'Use start and end content slots to add icons, avatars, or badges to each item.' },
       { guidance: false, description: 'Place interactive elements inside an interactive list item — it creates nested click targets and confusing focus behavior.' },
       { guidance: false, description: 'Use a list for a single item or for laying out unrelated content — lists imply a meaningful collection.' },
+      { guidance: false, description: 'Mix clickable and non-clickable items in the same list without clear visual distinction.' },
     ],
     anatomy: [
       {name: 'List title', required: true, description: 'Heading that labels the list.'},
@@ -242,12 +243,13 @@ export const docsZh = {
   ],
   usage: {
     description:
-      'List renders a vertical collection of items with consistent spacing, dividers, and optional marker styles. Use it to display ordered or unordered groups of related content within cards, dialogs, or panels.',
+      'A vertical collection of items with consistent spacing, dividers, and optional markers. Supports headers, icons, avatars, badges, and interactive items with click or link behavior. Use it to display ordered or unordered groups of related content.',
     bestPractices: [
-      { guidance: true, description: 'Provide a header to label the list and give context to screen readers via aria-labelledby.' },
-      { guidance: true, description: 'Use startContent and endContent slots to add visual context like icons, avatars, or badges to each item.' },
+      { guidance: true, description: 'Provide a header to label the list and give context to screen readers.' },
+      { guidance: true, description: 'Use start and end content slots to add icons, avatars, or badges to each item.' },
       { guidance: false, description: 'Place interactive elements inside an interactive list item — it creates nested click targets and confusing focus behavior.' },
       { guidance: false, description: 'Use a list for a single item or for laying out unrelated content — lists imply a meaningful collection.' },
+      { guidance: false, description: 'Mix clickable and non-clickable items in the same list without clear visual distinction.' },
     ],
     anatomy: [
       {name: 'List title', required: true, description: 'Heading that labels the list.'},
@@ -264,12 +266,13 @@ export const docsDense = {
     'Vertical list for rendering item collections w/ consistent spacing, dividers, marker styles. Composition model: XDSList wraps XDSListItem sub-components.',
   usage: {
     description:
-      'List renders a vertical collection of items with consistent spacing, dividers, and optional marker styles. Use it to display ordered or unordered groups of related content within cards, dialogs, or panels.',
+      'A vertical collection of items with consistent spacing, dividers, and optional markers. Supports headers, icons, avatars, badges, and interactive items with click or link behavior. Use it to display ordered or unordered groups of related content.',
     bestPractices: [
-      { guidance: true, description: 'Provide a header to label the list and give context to screen readers via aria-labelledby.' },
-      { guidance: true, description: 'Use startContent and endContent slots to add visual context like icons, avatars, or badges to each item.' },
+      { guidance: true, description: 'Provide a header to label the list and give context to screen readers.' },
+      { guidance: true, description: 'Use start and end content slots to add icons, avatars, or badges to each item.' },
       { guidance: false, description: 'Place interactive elements inside an interactive list item — it creates nested click targets and confusing focus behavior.' },
       { guidance: false, description: 'Use a list for a single item or for laying out unrelated content — lists imply a meaningful collection.' },
+      { guidance: false, description: 'Mix clickable and non-clickable items in the same list without clear visual distinction.' },
     ],
     anatomy: [
       {name: 'List title', required: true, description: 'Heading that labels the list.'},
