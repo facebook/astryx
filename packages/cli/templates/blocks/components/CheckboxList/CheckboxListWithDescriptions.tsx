@@ -3,9 +3,8 @@
 import {useState} from 'react';
 import {XDSCheckboxList, XDSCheckboxListItem} from '@xds/core/CheckboxList';
 
-export default function CheckboxInputGroup() {
-  const [value, setValue] = useState<string[]>(['email']);
-
+export default function CheckboxListWithDescriptions() {
+  const [value, setValue] = useState<string[]>([]);
   return (
     <XDSCheckboxList
       label="Notification preferences"
@@ -16,23 +15,17 @@ export default function CheckboxInputGroup() {
       <XDSCheckboxListItem
         label="Email"
         value="email"
-        description="Receive a weekly digest of activity"
+        description="Receive notifications via email"
       />
       <XDSCheckboxListItem
         label="SMS"
         value="sms"
-        description="Standard messaging rates may apply"
+        description="Standard messaging rates apply"
       />
       <XDSCheckboxListItem
         label="Push notification"
         value="push"
-        description="Instant alerts on your mobile device"
-      />
-      <XDSCheckboxListItem
-        label="Slack"
-        value="slack"
-        description="Messages sent to your workspace channel"
-        isDisabled
+        description="Instant alerts on your device"
       />
     </XDSCheckboxList>
   );

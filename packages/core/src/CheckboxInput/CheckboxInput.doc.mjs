@@ -2,232 +2,100 @@
 
 export const docs = {
   name: 'CheckboxInput',
-  keywords: ["checkbox","check","toggle","tick","indeterminate","boolean","tristate","checkboxlist","checkboxgroup","multichoice","multiselect","checklist"],
-  components: [
+  keywords: ["checkbox","check","toggle","tick","indeterminate","boolean","tristate"],
+  props: [
     {
-      name: 'XDSCheckboxInput',
+      name: 'ref',
+      type: 'React.Ref<HTMLInputElement>',
       description:
-        'Single checkbox for toggling a boolean value. Use for standalone on/off settings, terms acceptance, or opt-in choices.',
-      props: [
-        {
-          name: 'ref',
-          type: 'React.Ref<HTMLInputElement>',
-          description:
-            'Ref forwarded to the underlying <input> element.',
-        },
-        {
-          name: 'label',
-          type: 'string',
-          description:
-            'Label text for the checkbox (always rendered for accessibility).',
-          required: true,
-        },
-        {
-          name: 'isLabelHidden',
-          type: 'boolean',
-          description: 'Whether to visually hide the label (still accessible to screen readers).',
-          default: 'false',
-        },
-        {
-          name: 'description',
-          type: 'string',
-          description: 'Description text displayed below the label.',
-        },
-        {
-          name: 'value',
-          type: "boolean | 'indeterminate'",
-          description:
-            'Whether the checkbox is checked, unchecked, or indeterminate.',
-          required: true,
-        },
-        {
-          name: 'onChange',
-          type: '(checked: boolean, e: ChangeEvent<HTMLInputElement>) => void',
-          description: 'Callback fired when the checkbox state changes.',
-        },
-        {
-          name: 'onChangeAction',
-          type: '(checked: boolean, e: ChangeEvent<HTMLInputElement>) => void | Promise<void>',
-          description:
-            'Async action on change. Fires after onChange if not prevented. Shows loading spinner while pending.',
-        },
-        {
-          name: 'isLoading',
-          type: 'boolean',
-          description: 'Whether the checkbox is in a loading state. Shows spinner and prevents interaction.',
-          default: 'false',
-        },
-        {
-          name: 'isDisabled',
-          type: 'boolean',
-          description: 'Whether the checkbox is disabled.',
-          default: 'false',
-        },
-        {
-          name: 'isOptional',
-          type: 'boolean',
-          description: 'Whether the field is optional. Mutually exclusive with isRequired.',
-          default: 'false',
-        },
-        {
-          name: 'isRequired',
-          type: 'boolean',
-          description: 'Whether the checkbox is required. Mutually exclusive with isOptional.',
-          default: 'false',
-        },
-        {
-          name: 'size',
-          type: "'sm' | 'md'",
-          description: 'The size of the checkbox. sm for compact layouts, md for default.',
-          default: "'md'",
-        },
-        {
-          name: 'onFocus',
-          type: '(e: FocusEvent<HTMLInputElement>) => void',
-          description: 'Callback fired when the checkbox receives focus.',
-        },
-        {
-          name: 'onBlur',
-          type: '(e: FocusEvent<HTMLInputElement>) => void',
-          description: 'Callback fired when the checkbox loses focus.',
-        },
-        {
-          name: 'labelIcon',
-          type: 'XDSIconType',
-          description: 'Icon to display before the label text. See `npx xds docs icons` for valid semantic names.',
-        },
-        {
-          name: 'status',
-          type: "{ type: 'error' | 'warning' | 'success', message: string }",
-          description:
-            'Status indicator. Displays a colored message box below the checkbox and sets aria-invalid for errors.',
-        },
-      ],
+        'Ref forwarded to the underlying <input> element.',
     },
     {
-      name: 'XDSCheckboxList',
+      name: 'label',
+      type: 'string',
       description:
-        'Checkbox group container with field integration for label, description, and status. Use for selecting multiple options from a visible list.',
-      props: [
-        {
-          name: 'label',
-          type: 'string',
-          description:
-            'Label text for the checkbox group (always rendered for accessibility).',
-          required: true,
-        },
-        {
-          name: 'children',
-          type: 'ReactNode',
-          description: 'XDSCheckboxListItem elements.',
-          required: true,
-        },
-        {
-          name: 'value',
-          type: 'string[]',
-          description: 'The currently selected values (collection mode).',
-        },
-        {
-          name: 'onChange',
-          type: '(values: string[]) => void',
-          description: 'Callback fired when the selected values change.',
-        },
-        {
-          name: 'onChangeAction',
-          type: '(values: string[]) => void | Promise<void>',
-          description: 'Async action on change with optimistic updates.',
-        },
-        {
-          name: 'isLoading',
-          type: 'boolean',
-          description: 'External loading state.',
-          default: 'false',
-        },
-        {
-          name: 'isLabelHidden',
-          type: 'boolean',
-          description: 'Whether to visually hide the label.',
-          default: 'false',
-        },
-        {
-          name: 'description',
-          type: 'string',
-          description: 'Description text displayed below the label.',
-        },
-        {
-          name: 'density',
-          type: "'compact' | 'balanced' | 'spacious'",
-          description: 'Spacing density for list items.',
-          default: "'balanced'",
-        },
-        {
-          name: 'hasDividers',
-          type: 'boolean',
-          description: 'Whether to show dividers between items.',
-          default: 'false',
-        },
-        {
-          name: 'isDisabled',
-          type: 'boolean',
-          description: 'Whether all checkbox items are disabled.',
-          default: 'false',
-        },
-        {
-          name: 'status',
-          type: 'XDSInputStatus',
-          description: 'Status indicator ({ type, message }).',
-        },
-        {
-          name: 'xstyle',
-          type: 'StyleXStyles',
-          description:
-            'StyleX styles for layout customization. Must be a stylex.create() value.',
-        },
-      ],
+        'Label text for the checkbox (always rendered for accessibility).',
+      required: true,
     },
     {
-      name: 'XDSCheckboxListItem',
+      name: 'isLabelHidden',
+      type: 'boolean',
+      description: 'Whether to visually hide the label (still accessible to screen readers).',
+      default: 'false',
+    },
+    {
+      name: 'description',
+      type: 'string',
+      description: 'Description text displayed below the label.',
+    },
+    {
+      name: 'value',
+      type: "boolean | 'indeterminate'",
       description:
-        'Individual checkbox item with label, description, and end content slot. Works in collection mode (inside XDSCheckboxList) or standalone mode (inside XDSList).',
-      props: [
-        {
-          name: 'label',
-          type: 'string',
-          description: 'Primary text label for the item.',
-          required: true,
-        },
-        {
-          name: 'value',
-          type: 'string',
-          description: 'Identity key (required inside XDSCheckboxList).',
-        },
-        {
-          name: 'description',
-          type: 'string',
-          description: 'Secondary text below the label.',
-        },
-        {
-          name: 'endContent',
-          type: 'ReactNode',
-          description: 'Content rendered after the label area.',
-        },
-        {
-          name: 'isDisabled',
-          type: 'boolean',
-          description: 'Whether this individual item is disabled.',
-          default: 'false',
-        },
-        {
-          name: 'isChecked',
-          type: "boolean | 'indeterminate'",
-          description: 'Direct checked state (standalone mode only).',
-        },
-        {
-          name: 'onCheck',
-          type: '(checked: boolean) => void',
-          description: 'Direct check handler (standalone mode only).',
-        },
-      ],
+        'Whether the checkbox is checked, unchecked, or indeterminate.',
+      required: true,
+    },
+    {
+      name: 'onChange',
+      type: '(checked: boolean, e: ChangeEvent<HTMLInputElement>) => void',
+      description: 'Callback fired when the checkbox state changes.',
+    },
+    {
+      name: 'onChangeAction',
+      type: '(checked: boolean, e: ChangeEvent<HTMLInputElement>) => void | Promise<void>',
+      description:
+        'Async action on change. Fires after onChange if not prevented. Shows loading spinner while pending.',
+    },
+    {
+      name: 'isLoading',
+      type: 'boolean',
+      description: 'Whether the checkbox is in a loading state. Shows spinner and prevents interaction.',
+      default: 'false',
+    },
+    {
+      name: 'isDisabled',
+      type: 'boolean',
+      description: 'Whether the checkbox is disabled.',
+      default: 'false',
+    },
+    {
+      name: 'isOptional',
+      type: 'boolean',
+      description: 'Whether the field is optional. Mutually exclusive with isRequired.',
+      default: 'false',
+    },
+    {
+      name: 'isRequired',
+      type: 'boolean',
+      description: 'Whether the checkbox is required. Mutually exclusive with isOptional.',
+      default: 'false',
+    },
+    {
+      name: 'size',
+      type: "'sm' | 'md'",
+      description: 'The size of the checkbox. sm for compact layouts, md for default.',
+      default: "'md'",
+    },
+    {
+      name: 'onFocus',
+      type: '(e: FocusEvent<HTMLInputElement>) => void',
+      description: 'Callback fired when the checkbox receives focus.',
+    },
+    {
+      name: 'onBlur',
+      type: '(e: FocusEvent<HTMLInputElement>) => void',
+      description: 'Callback fired when the checkbox loses focus.',
+    },
+    {
+      name: 'labelIcon',
+      type: 'XDSIconType',
+      description: 'Icon to display before the label text. See `npx xds docs icons` for valid semantic names.',
+    },
+    {
+      name: 'status',
+      type: "{ type: 'error' | 'warning' | 'success', message: string }",
+      description:
+        'Status indicator. Displays a colored message box below the checkbox and sets aria-invalid for errors.',
     },
   ],
   theming: {
@@ -237,11 +105,10 @@ export const docs = {
     ],
   },
   usage: {
-    description: 'CheckboxInput toggles a single on/off value — use it for settings, terms acceptance, or opt-in choices. For selecting multiple options from a list, use CheckboxList with CheckboxListItem instead. CheckboxList manages group state as a string array and provides built-in field integration (label, description, status).',
+    description: 'CheckboxInput toggles a single on/off value. Use it for settings like "Enable notifications", terms acceptance, or opt-in choices. For multiple checkboxes in a group, use CheckboxList instead.',
     bestPractices: [
       { guidance: true, description: 'Always provide a visible label so the user knows what they are toggling. Use isLabelHidden only when surrounding context makes it obvious.' },
       { guidance: true, description: 'Add a description for choices that need extra context, like explaining what "Share usage data" actually shares.' },
-      { guidance: true, description: 'Use CheckboxList with value/onChange for multi-select groups — it manages selected values as a string array.' },
       { guidance: true, description: 'Use the indeterminate state for "select all" checkboxes when only some items in a group are selected.' },
       { guidance: false, description: 'Use a checkbox for mutually exclusive choices — use RadioList when only one option can be selected.' },
       { guidance: false, description: 'Use a checkbox for actions that take effect immediately — use a toggle switch or button instead.' },
@@ -251,8 +118,6 @@ export const docs = {
       { name: 'Label', required: true, description: 'Text describing what the checkbox controls. Always present for accessibility.' },
       { name: 'Description', required: false, description: 'Helper text below the label with additional context.' },
       { name: 'Status message', required: false, description: 'An error, warning, or success message below the checkbox.' },
-      { name: 'Group container', required: false, description: 'XDSCheckboxList wraps multiple items with a shared label and optional dividers.' },
-      { name: 'End content', required: false, description: 'Slot after the label area on each CheckboxListItem for metadata like pricing.' },
     ],
   },
 };
@@ -261,83 +126,50 @@ export const docs = {
 export const docsZh = {
   name: 'CheckboxInput',
   usage: {
-    description: 'CheckboxInput toggles a single on/off value — use it for settings, terms acceptance, or opt-in choices. For selecting multiple options from a list, use CheckboxList with CheckboxListItem instead. CheckboxList manages group state as a string array and provides built-in field integration (label, description, status).',
+    description: 'CheckboxInput toggles a single on/off value. Use it for settings like "Enable notifications", terms acceptance, or opt-in choices. For multiple checkboxes in a group, use CheckboxList instead.',
     bestPractices: [
       { guidance: true, description: 'Always provide a visible label so the user knows what they are toggling. Use isLabelHidden only when surrounding context makes it obvious.' },
       { guidance: true, description: 'Add a description for choices that need extra context, like explaining what "Share usage data" actually shares.' },
-      { guidance: true, description: 'Use CheckboxList with value/onChange for multi-select groups — it manages selected values as a string array.' },
       { guidance: true, description: 'Use the indeterminate state for "select all" checkboxes when only some items in a group are selected.' },
       { guidance: false, description: 'Use a checkbox for mutually exclusive choices — use RadioList when only one option can be selected.' },
       { guidance: false, description: 'Use a checkbox for actions that take effect immediately — use a toggle switch or button instead.' },
     ],
   },
-  components: [
+  props: [
+    {name: 'ref', type: 'React.Ref<HTMLInputElement>', description: '转发至底层 <input> 元素的 ref。'},
+    {name: 'label', type: 'string', description: '复选框的标签文本（始终为无障碍性而渲染）。', required: true},
+    {name: 'isLabelHidden', type: 'boolean', description: '是否视觉隐藏标签（屏幕阅读器仍可访问）。', default: 'false'},
+    {name: 'description', type: 'string', description: '显示在标签下方的描述文本。'},
+    {name: 'value', type: "boolean | 'indeterminate'", description: '复选框是否为选中、未选中或不确定状态。', required: true},
+    {name: 'onChange', type: '(checked: boolean, e: ChangeEvent<HTMLInputElement>) => void', description: '复选框状态变更时触发的回调。'},
     {
-      name: 'XDSCheckboxInput',
-      description: '单个复选框，用于切换布尔值。用于独立的开/关设置、条款接受或选择加入。',
-      props: [
-        {name: 'ref', type: 'React.Ref<HTMLInputElement>', description: '转发至底层 <input> 元素的 ref。'},
-        {name: 'label', type: 'string', description: '复选框的标签文本（始终为无障碍性而渲染）。', required: true},
-        {name: 'isLabelHidden', type: 'boolean', description: '是否视觉隐藏标签（屏幕阅读器仍可访问）。', default: 'false'},
-        {name: 'description', type: 'string', description: '显示在标签下方的描述文本。'},
-        {name: 'value', type: "boolean | 'indeterminate'", description: '复选框是否为选中、未选中或不确定状态。', required: true},
-        {name: 'onChange', type: '(checked: boolean, e: ChangeEvent<HTMLInputElement>) => void', description: '复选框状态变更时触发的回调。'},
-        {
-          name: 'onChangeAction',
-          type: '(checked: boolean, e: ChangeEvent<HTMLInputElement>) => void | Promise<void>',
-          description: '异步变更操作。在 onChange 之后触发（未被阻止时）。等待期间显示加载旋转器。',
-        },
-        {name: 'isLoading', type: 'boolean', description: '复选框是否处于加载状态。显示旋转器并阻止交互。', default: 'false'},
-        {name: 'isDisabled', type: 'boolean', description: '复选框是否禁用。', default: 'false'},
-        {name: 'isOptional', type: 'boolean', description: '字段是否可选。与 isRequired 互斥。', default: 'false'},
-        {name: 'isRequired', type: 'boolean', description: '复选框是否必填。与 isOptional 互斥。', default: 'false'},
-        {name: 'size', type: "'sm' | 'md'", description: '复选框尺寸。sm 用于紧凑布局，md 为默认。', default: "'md'"},
-        {name: 'onFocus', type: '(e: FocusEvent<HTMLInputElement>) => void', description: '复选框获得焦点时触发的回调。'},
-        {name: 'onBlur', type: '(e: FocusEvent<HTMLInputElement>) => void', description: '复选框失去焦点时触发的回调。'},
-        {name: 'labelIcon', type: 'XDSIconType', description: '标签文本前显示的图标。'},
-        {
-          name: 'status',
-          type: "{ type: 'error' | 'warning' | 'success', message: string }",
-          description: '状态指示器。在复选框下方显示彩色消息框，错误时设置 aria-invalid。',
-        },
-      ],
+      name: 'onChangeAction',
+      type:
+        '(checked: boolean, e: ChangeEvent<HTMLInputElement>) => void | Promise<void>',
+      description: '异步变更操作。在 onChange 之后触发（未被阻止时）。等待期间显示加载旋转器。',
     },
+    {name: 'isLoading', type: 'boolean', description: '复选框是否处于加载状态。显示旋转器并阻止交互。', default: 'false'},
+    {name: 'isDisabled', type: 'boolean', description: '复选框是否禁用。', default: 'false'},
+    {name: 'isOptional', type: 'boolean', description: '字段是否可选。与 isRequired 互斥。', default: 'false'},
+    {name: 'isRequired', type: 'boolean', description: '复选框是否必填。与 isOptional 互斥。', default: 'false'},
+    {name: 'size', type: "'sm' | 'md'", description: '复选框尺寸。sm 用于紧凑布局，md 为默认。', default: "'md'"},
+    {name: 'onFocus', type: '(e: FocusEvent<HTMLInputElement>) => void', description: '复选框获得焦点时触发的回调。'},
+    {name: 'onBlur', type: '(e: FocusEvent<HTMLInputElement>) => void', description: '复选框失去焦点时触发的回调。'},
+    {name: 'labelIcon', type: 'XDSIconType', description: '标签文本前显示的图标。'},
     {
-      name: 'XDSCheckboxList',
-      description: '复选框组容器，集成字段功能，支持标签、描述和状态。',
-      props: [
-        {name: 'label', type: 'string', description: '复选框组的标签文本（始终渲染以确保无障碍可访问性）。', required: true},
-        {name: 'children', type: 'ReactNode', description: 'XDSCheckboxListItem 元素。', required: true},
-        {name: 'value', type: 'string[]', description: '当前选中的值（集合模式）。'},
-        {name: 'onChange', type: '(values: string[]) => void', description: '选中值变更时触发的回调函数。'},
-        {name: 'onChangeAction', type: '(values: string[]) => void | Promise<void>', description: '变更时的异步操作，配合乐观更新。'},
-        {name: 'isLoading', type: 'boolean', description: '外部加载状态。', default: 'false'},
-        {name: 'isLabelHidden', type: 'boolean', description: '是否在视觉上隐藏标签。', default: 'false'},
-        {name: 'description', type: 'string', description: '显示在标签下方的描述文本。'},
-        {name: 'density', type: "'compact' | 'balanced' | 'spacious'", description: '列表项的间距密度。', default: "'balanced'"},
-        {name: 'hasDividers', type: 'boolean', description: '是否在选项之间显示分隔线。', default: 'false'},
-        {name: 'isDisabled', type: 'boolean', description: '是否禁用所有复选框选项。', default: 'false'},
-        {name: 'status', type: 'XDSInputStatus', description: '状态指示器（{ type, message }）。'},
-        {name: 'xstyle', type: 'StyleXStyles', description: '用于布局自定义的 StyleX 样式。必须是 stylex.create() 的值。'},
-      ],
-    },
-    {
-      name: 'XDSCheckboxListItem',
-      description: '单个复选框选项，包含标签、描述和尾部内容插槽。可在集合模式或独立模式下使用。',
-      props: [
-        {name: 'label', type: 'string', description: '选项的主要文本标签。', required: true},
-        {name: 'value', type: 'string', description: '标识键（在 XDSCheckboxList 内为必填）。'},
-        {name: 'description', type: 'string', description: '标签下方的辅助文本。'},
-        {name: 'endContent', type: 'ReactNode', description: '在标签区域后渲染的内容。'},
-        {name: 'isDisabled', type: 'boolean', description: '是否禁用此单个选项。', default: 'false'},
-        {name: 'isChecked', type: "boolean | 'indeterminate'", description: '直接选中状态（仅独立模式）。'},
-        {name: 'onCheck', type: '(checked: boolean) => void', description: '直接选中处理器（仅独立模式）。'},
-      ],
+      name: 'status',
+      type: "{ type: 'error' | 'warning' | 'success', message: string }",
+      description: '状态指示器。在复选框下方显示彩色消息框，错误时设置 aria-invalid。',
     },
   ],
   theming: {
     targets: [
-      {className: 'xds-checkbox-input', visualProps: ['size']},
+      {
+        className: 'xds-checkbox-input',
+        visualProps: [
+          'size',
+        ],
+      },
       {className: 'xds-checkbox'},
     ],
   },
@@ -345,68 +177,30 @@ export const docsZh = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'Single checkbox toggle and multi-select checkbox group. Use CheckboxInput for one on/off value, CheckboxList for selecting multiple options.',
+  description: 'single on/off toggle for settings, terms, and opt-in choices',
   usage: {
-    description: 'CheckboxInput toggles a single on/off value. CheckboxList groups multiple checkboxes with shared state as a string array. Use RadioList for single selection.',
+    description: 'CheckboxInput toggles a single on/off value. Use for settings, terms acceptance, opt-in choices. Use CheckboxList for groups.',
     bestPractices: [
-      { guidance: true, description: 'Always provide a visible label. Add description for context. Use CheckboxList for groups. Use indeterminate for partial "select all".' },
+      { guidance: true, description: 'Always provide a visible label. Add description for context. Use indeterminate for partial "select all".' },
       { guidance: false, description: 'Use for mutually exclusive choices (use RadioList). Use for immediate actions (use toggle/button).' },
     ],
   },
-  components: [
-    {
-      name: 'XDSCheckboxInput',
-      description: 'Single checkbox for toggling a boolean value.',
-      propDescriptions: {
-        ref: 'ref forwarded to underlying <input>',
-        label: 'label text; always rendered for a11y',
-        isLabelHidden: 'visually hide label (still accessible to screen readers)',
-        description: 'text below label',
-        value: 'checked, unchecked, or indeterminate',
-        onChange: 'callback on state change',
-        onChangeAction: 'async action; fires after onChange, shows spinner while pending',
-        isLoading: 'shows spinner + prevents interaction',
-        isDisabled: 'disable checkbox',
-        isOptional: 'mark field as optional (mutually exclusive w/ isRequired)',
-        isRequired: 'mark field as required (mutually exclusive w/ isOptional)',
-        size: 'sm (compact) or md (default)',
-        onFocus: 'callback on focus',
-        onBlur: 'callback on blur',
-        labelIcon: 'icon before label text',
-        status: 'error/warning/success with message; sets aria-invalid on error',
-      },
-    },
-    {
-      name: 'XDSCheckboxList',
-      description: 'Checkbox group container w/ field integration for label, description, status.',
-      propDescriptions: {
-        label: 'Label text for checkbox group (always rendered for accessibility).',
-        children: 'XDSCheckboxListItem elements.',
-        value: 'Currently selected values (collection mode).',
-        onChange: 'Callback fired when selected values change.',
-        onChangeAction: 'Async action on change w/ optimistic updates.',
-        isLoading: 'External loading state.',
-        isLabelHidden: 'Whether to visually hide label.',
-        description: 'Description text below label.',
-        density: 'Spacing density for list items.',
-        hasDividers: 'Whether to show dividers between items.',
-        isDisabled: 'Whether all checkbox items disabled.',
-        status: 'Status indicator ({ type, message }).',
-        xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
-      },
-    },
-    {
-      name: 'XDSCheckboxListItem',
-      description: 'Individual checkbox item w/ label, description, end content slot.',
-      propDescriptions: {
-        label: 'Primary text label for item.',
-        value: 'Identity key (required inside XDSCheckboxList).',
-        description: 'Secondary text below label.',
-        endContent: 'Content rendered after label area.',
-        isDisabled: 'Whether this individual item disabled.',
-        isChecked: 'Direct checked state (standalone mode only).',
-        onCheck: 'Direct check handler (standalone mode only).',
-      },
-    },
-  ],
+  propDescriptions: {
+    ref: 'ref forwarded to underlying <input>',
+    label: 'label text; always rendered for a11y',
+    isLabelHidden: 'visually hide label (still accessible to screen readers)',
+    description: 'text below label',
+    value: 'checked, unchecked, or indeterminate',
+    onChange: 'callback on state change',
+    onChangeAction: 'async action; fires after onChange, shows spinner while pending',
+    isLoading: 'shows spinner + prevents interaction',
+    isDisabled: 'disable checkbox',
+    isOptional: 'mark field as optional (mutually exclusive w/ isRequired)',
+    isRequired: 'mark field as required (mutually exclusive w/ isOptional)',
+    size: 'sm (compact) or md (default)',
+    onFocus: 'callback on focus',
+    onBlur: 'callback on blur',
+    labelIcon: 'icon before label text',
+    status: 'error/warning/success with message; sets aria-invalid on error',
+  },
 };

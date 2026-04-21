@@ -1,68 +1,62 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSCheckboxList, XDSCheckboxListItem} from '@xds/core/CheckboxList';
-
-const allItems = ['email', 'sms', 'push', 'slack'];
+import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
+import {XDSStack} from '@xds/core/Layout';
+import {XDSDivider} from '@xds/core/Divider';
 
 export default function CheckboxInputIndeterminateState() {
-  const [selected, setSelected] = useState<string[]>(['email', 'push']);
+  const [items, setItems] = useState({
+    email: true,
+    push: false,
+    sms: true,
+    slack: false,
+  });
 
-  const allChecked = allItems.every(item => selected.includes(item));
-  const noneChecked = selected.length === 0;
-  const selectAllState = allChecked
-    ? true
-    : noneChecked
+  const checkedCount = Object.values(items).filter(Boolean).length;
+  const totalCount = Object.keys(items).length;
+  const selectAllValue =
+    checkedCount === 0
       ? false
-      : ('indeterminate' as const);
+      : checkedCount === totalCount
+        ? true
+        : ('indeterminate' as const);
 
   const handleSelectAll = (checked: boolean) => {
-    setSelected(checked ? [...allItems] : []);
+    setItems({email: checked, push: checked, sms: checked, slack: checked});
   };
 
   return (
-    <XDSCheckboxList label="Notifications" hasDividers>
-      <XDSCheckboxListItem
-        label="Select all"
-        isChecked={selectAllState}
-        onCheck={handleSelectAll}
+    <XDSStack direction="vertical" gap={3}>
+      <XDSCheckboxInput
+        label="Select all notifications"
+        description={`${checkedCount} of ${totalCount} enabled`}
+        value={selectAllValue}
+        onChange={handleSelectAll}
       />
-      <XDSCheckboxListItem
-        label="Email"
-        isChecked={selected.includes('email')}
-        onCheck={checked =>
-          setSelected(prev =>
-            checked ? [...prev, 'email'] : prev.filter(v => v !== 'email'),
-          )
-        }
-      />
-      <XDSCheckboxListItem
-        label="SMS"
-        isChecked={selected.includes('sms')}
-        onCheck={checked =>
-          setSelected(prev =>
-            checked ? [...prev, 'sms'] : prev.filter(v => v !== 'sms'),
-          )
-        }
-      />
-      <XDSCheckboxListItem
-        label="Push"
-        isChecked={selected.includes('push')}
-        onCheck={checked =>
-          setSelected(prev =>
-            checked ? [...prev, 'push'] : prev.filter(v => v !== 'push'),
-          )
-        }
-      />
-      <XDSCheckboxListItem
-        label="Slack"
-        isChecked={selected.includes('slack')}
-        onCheck={checked =>
-          setSelected(prev =>
-            checked ? [...prev, 'slack'] : prev.filter(v => v !== 'slack'),
-          )
-        }
-      />
-    </XDSCheckboxList>
+      <XDSDivider />
+      <XDSStack direction="vertical" gap={3}>
+        <XDSCheckboxInput
+          label="Email notifications"
+          value={items.email}
+          onChange={v => setItems(prev => ({...prev, email: v}))}
+        />
+        <XDSCheckboxInput
+          label="Push notifications"
+          value={items.push}
+          onChange={v => setItems(prev => ({...prev, push: v}))}
+        />
+        <XDSCheckboxInput
+          label="SMS alerts"
+          value={items.sms}
+          onChange={v => setItems(prev => ({...prev, sms: v}))}
+        />
+        <XDSCheckboxInput
+          label="Slack messages"
+          value={items.slack}
+          onChange={v => setItems(prev => ({...prev, slack: v}))}
+        />
+      </XDSStack>
+    </XDSStack>
   );
 }
