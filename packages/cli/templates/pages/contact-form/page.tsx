@@ -147,17 +147,9 @@ export default function FormSimplePage() {
         <XDSVStack gap={6}>
           {/* Header */}
           <XDSVStack gap={2} hAlign="center">
-            <div
-              style={{
-                fontSize: 64,
-                fontWeight: 700,
-                lineHeight: 1.05,
-                letterSpacing: '-0.03em',
-                margin: 0,
-                textAlign: 'center',
-              }}>
+            <XDSText type="display-1" weight="bold">
               Let's work together
-            </div>
+            </XDSText>
             <XDSText type="body" color="secondary">
               Tell us a bit about what you're working on — we'd love to help.
             </XDSText>
