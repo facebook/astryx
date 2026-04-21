@@ -19,6 +19,7 @@ import {
   PROFILE_CRAFT_ITEMS,
   THEME_PICKER_ENTRIES,
 } from './constants';
+import type {ThemePickerEntry} from './constants';
 import {TemplateCard} from './TemplateCard';
 import {AIComposer} from './AIComposer';
 
@@ -151,6 +152,120 @@ function SearchableFilterDropdown({
         endContent={<XDSIcon icon="chevronDown" size="sm" color="inherit" />}
       />
     </XDSPopover>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ThemeCard — mirrors TemplateCard layout for visual consistency
+// ---------------------------------------------------------------------------
+
+function ThemeCard({
+  theme,
+  index,
+  onCustomize,
+}: {
+  theme: ThemePickerEntry;
+  index: number;
+  onCustomize: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <div
+      style={{
+        animation: `craftCardFadeIn 400ms ${index * 60}ms cubic-bezier(0.16, 1, 0.3, 1) both`,
+      }}>
+      <XDSCard padding={0}>
+        <div
+          style={{
+            position: 'relative',
+            cursor: 'pointer',
+            overflow: 'hidden',
+          }}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+          onClick={onCustomize}>
+          <div
+            style={{
+              aspectRatio: '1920 / 1205',
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gridTemplateRows: '1fr 1fr',
+            }}>
+            <div style={{backgroundColor: theme.preview.bg}} />
+            <div style={{backgroundColor: theme.preview.surface}} />
+            <div style={{backgroundColor: theme.preview.accent}} />
+            <div style={{backgroundColor: theme.preview.text}} />
+          </div>
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundColor: 'var(--color-overlay, rgba(0,0,0,0.5))',
+              opacity: hovered ? 1 : 0,
+              transition: 'opacity 300ms ease',
+            }}>
+            <div
+              style={{
+                position: 'absolute',
+                top: 12,
+                right: 12,
+              }}>
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  padding: '2px 8px',
+                  borderRadius: 9999,
+                  backgroundColor: 'rgba(255,255,255,0.9)',
+                  color: '#333',
+                }}>
+                {theme.category === 'official' ? 'Official' : 'Community'}
+              </span>
+            </div>
+            <div
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                padding: 16,
+                background:
+                  'linear-gradient(to top, rgba(0,0,0,0.6), transparent)',
+                display: 'flex',
+                alignItems: 'flex-end',
+                justifyContent: 'space-between',
+              }}>
+              <XDSStack direction="vertical" gap={0}>
+                <XDSHeading level={3} style={{color: '#fff'}}>
+                  {theme.name}
+                </XDSHeading>
+                {theme.description && (
+                  <XDSText
+                    type="supporting"
+                    style={{color: 'rgba(255,255,255,0.7)'}}>
+                    {theme.description}
+                  </XDSText>
+                )}
+              </XDSStack>
+              <XDSButton
+                label="Customize"
+                variant="secondary"
+                size="sm"
+                style={{
+                  backgroundColor: 'var(--color-background-surface)',
+                  flexShrink: 0,
+                }}
+                onClick={e => {
+                  e.stopPropagation();
+                  onCustomize();
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </XDSCard>
+    </div>
   );
 }
 
@@ -1331,211 +1446,22 @@ function DocsiteLandingTemplate() {
                   style={{
                     maxWidth: 2000,
                     margin: '0 auto',
+                    display: 'grid',
+                    gridTemplateColumns: isMobile
+                      ? '1fr'
+                      : isTablet
+                        ? 'repeat(2, 1fr)'
+                        : 'repeat(3, 1fr)',
+                    gap: 16,
                   }}>
-                  <XDSCard
-                    padding={0}
-                    style={{
-                      marginBottom: 32,
-                      overflow: 'hidden',
-                    }}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 32,
-                        padding: '40px 48px',
-                        background:
-                          'linear-gradient(135deg, var(--color-background-surface, #f5f5f5) 0%, var(--color-background-muted, #e8e8e8) 100%)',
-                      }}>
-                      <div style={{flex: 1}}>
-                        <XDSHeading level={2}>Make it yours</XDSHeading>
-                        <XDSText
-                          type="body"
-                          color="secondary"
-                          style={{marginTop: 8, maxWidth: 480}}>
-                          Customize colors, typography, spacing, and more to
-                          match your brand. Start from an official theme or
-                          build one from scratch.
-                        </XDSText>
-                        <div style={{marginTop: 20}}>
-                          <XDSButton
-                            label="Open Theme Editor"
-                            icon={<PaletteIcon />}
-                            onClick={() => setActiveView('theme')}
-                          />
-                        </div>
-                      </div>
-                      <div
-                        style={{
-                          display: 'flex',
-                          gap: 6,
-                          flexShrink: 0,
-                        }}>
-                        {['#0066FF', '#1DAA61', '#E5484D', '#818CF8'].map(
-                          color => (
-                            <div
-                              key={color}
-                              style={{
-                                width: 32,
-                                height: 64,
-                                borderRadius: 8,
-                                backgroundColor: color,
-                              }}
-                            />
-                          ),
-                        )}
-                      </div>
-                    </div>
-                  </XDSCard>
-
-                  <div style={{marginBottom: 16}}>
-                    <XDSText type="label" color="secondary">
-                      Official
-                    </XDSText>
-                  </div>
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: isMobile
-                        ? '1fr'
-                        : isTablet
-                          ? 'repeat(2, 1fr)'
-                          : 'repeat(3, 1fr)',
-                      gap: 16,
-                      marginBottom: 32,
-                    }}>
-                    {THEME_PICKER_ENTRIES.filter(
-                      t => t.category === 'official',
-                    ).map((theme, i) => (
-                      <XDSCard
-                        key={theme.key}
-                        padding={0}
-                        style={{
-                          overflow: 'hidden',
-                          cursor: 'pointer',
-                          animation: `craftCardFadeIn 400ms ${i * 60}ms cubic-bezier(0.16, 1, 0.3, 1) both`,
-                        }}
-                        onClick={() => setActiveView('theme')}>
-                        <div
-                          style={{
-                            height: 80,
-                            display: 'flex',
-                          }}>
-                          <div
-                            style={{
-                              flex: 1,
-                              backgroundColor: theme.preview.bg,
-                            }}
-                          />
-                          <div
-                            style={{
-                              flex: 1,
-                              backgroundColor: theme.preview.surface,
-                            }}
-                          />
-                          <div
-                            style={{
-                              flex: 1,
-                              backgroundColor: theme.preview.accent,
-                            }}
-                          />
-                          <div
-                            style={{
-                              flex: 1,
-                              backgroundColor: theme.preview.text,
-                            }}
-                          />
-                        </div>
-                        <div style={{padding: '12px 16px'}}>
-                          <XDSText type="body" weight="bold">
-                            {theme.name}
-                          </XDSText>
-                          {theme.description && (
-                            <XDSText
-                              type="supporting"
-                              color="secondary"
-                              style={{marginTop: 2}}>
-                              {theme.description}
-                            </XDSText>
-                          )}
-                        </div>
-                      </XDSCard>
-                    ))}
-                  </div>
-
-                  <div style={{marginBottom: 16}}>
-                    <XDSText type="label" color="secondary">
-                      Community
-                    </XDSText>
-                  </div>
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: isMobile
-                        ? '1fr'
-                        : isTablet
-                          ? 'repeat(2, 1fr)'
-                          : 'repeat(3, 1fr)',
-                      gap: 16,
-                    }}>
-                    {THEME_PICKER_ENTRIES.filter(
-                      t => t.category === 'community',
-                    ).map((theme, i) => (
-                      <XDSCard
-                        key={theme.key}
-                        padding={0}
-                        style={{
-                          overflow: 'hidden',
-                          cursor: 'pointer',
-                          animation: `craftCardFadeIn 400ms ${i * 60}ms cubic-bezier(0.16, 1, 0.3, 1) both`,
-                        }}
-                        onClick={() => setActiveView('theme')}>
-                        <div
-                          style={{
-                            height: 80,
-                            display: 'flex',
-                          }}>
-                          <div
-                            style={{
-                              flex: 1,
-                              backgroundColor: theme.preview.bg,
-                            }}
-                          />
-                          <div
-                            style={{
-                              flex: 1,
-                              backgroundColor: theme.preview.surface,
-                            }}
-                          />
-                          <div
-                            style={{
-                              flex: 1,
-                              backgroundColor: theme.preview.accent,
-                            }}
-                          />
-                          <div
-                            style={{
-                              flex: 1,
-                              backgroundColor: theme.preview.text,
-                            }}
-                          />
-                        </div>
-                        <div style={{padding: '12px 16px'}}>
-                          <XDSText type="body" weight="bold">
-                            {theme.name}
-                          </XDSText>
-                          {theme.description && (
-                            <XDSText
-                              type="supporting"
-                              color="secondary"
-                              style={{marginTop: 2}}>
-                              {theme.description}
-                            </XDSText>
-                          )}
-                        </div>
-                      </XDSCard>
-                    ))}
-                  </div>
+                  {THEME_PICKER_ENTRIES.map((theme, i) => (
+                    <ThemeCard
+                      key={theme.key}
+                      theme={theme}
+                      index={i}
+                      onCustomize={() => setActiveView('theme')}
+                    />
+                  ))}
                 </div>
               )}
 
