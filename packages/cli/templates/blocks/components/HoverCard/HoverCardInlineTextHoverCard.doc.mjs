@@ -3,8 +3,8 @@ export const doc = {
   type: 'block',
   name: 'HoverCard — Inline Text',
   description:
-    'Hover cards wrapping inline text nodes within a paragraph, useful for user mentions or link previews.',
+    'Hover cards on inline text within a paragraph. Use for user mentions, contributor names, or any inline reference where the user may want to preview more info without leaving the page.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['HoverCard', 'VStack'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['HoverCard', 'Layout', 'Text'],
 };

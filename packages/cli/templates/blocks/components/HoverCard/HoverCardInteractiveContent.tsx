@@ -3,27 +3,31 @@
 import {XDSHoverCard} from '@xds/core/HoverCard';
 import {XDSButton} from '@xds/core/Button';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
 
 export default function HoverCardInteractiveContent() {
   return (
-    <div style={{padding: 80}}>
-      <XDSHoverCard
-        placement="below"
-        content={
-          <XDSVStack gap={2}>
-            <div>Interactive hover card content</div>
-            <XDSHStack gap={2}>
-              <XDSButton label="Follow" variant="primary">
-                Follow
-              </XDSButton>
-              <XDSButton label="Message">Message</XDSButton>
-            </XDSHStack>
+    <XDSHoverCard
+      placement="below"
+      content={
+        <XDSVStack gap={3}>
+          <XDSVStack gap={1}>
+            <XDSText type="label">John Smith</XDSText>
+            <XDSText type="supporting" color="secondary">
+              Product Manager · New York
+            </XDSText>
           </XDSVStack>
-        }>
-        <XDSButton label="Hover for interactive content">
-          Hover for interactive content
-        </XDSButton>
-      </XDSHoverCard>
-    </div>
+          <XDSText type="body">
+            Leading the design systems team. Open to collaboration on component
+            libraries.
+          </XDSText>
+          <XDSHStack gap={2}>
+            <XDSButton label="Follow" variant="primary" size="sm" />
+            <XDSButton label="Message" variant="secondary" size="sm" />
+          </XDSHStack>
+        </XDSVStack>
+      }>
+      <XDSButton label="John Smith" variant="ghost" />
+    </XDSHoverCard>
   );
 }

@@ -1,10 +1,10 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'HoverCard — Interactive Content',
+  name: 'HoverCard — Interactive',
   description:
-    'A hover card with interactive buttons inside, allowing users to take actions without navigating away.',
+    'Hover card with action buttons inside so the user can follow or message without navigating away. Use when the preview needs actionable next steps beyond just reading.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['HoverCard', 'Button', 'VStack', 'HStack'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['HoverCard', 'Button', 'Layout', 'Text'],
 };

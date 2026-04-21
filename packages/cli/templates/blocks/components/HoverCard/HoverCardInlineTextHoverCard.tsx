@@ -2,44 +2,41 @@
 
 import {XDSHoverCard} from '@xds/core/HoverCard';
 import {XDSVStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
 
 export default function HoverCardInlineTextHoverCard() {
   return (
-    <div style={{padding: 80}}>
-      <p>
-        The project is maintained by{' '}
-        <XDSHoverCard
-          content={
-            <div style={{width: 200}}>
-              <XDSVStack gap={2}>
-                <div style={{fontWeight: 600}}>Jane Doe</div>
-                <div style={{fontSize: 14, opacity: 0.7}}>
-                  Software Engineer
-                </div>
-                <div style={{fontSize: 13}}>
-                  Building great products with great people.
-                </div>
-              </XDSVStack>
-            </div>
-          }
-          placement="above">
-          Jane Doe
-        </XDSHoverCard>
-        ,{' '}
-        <XDSHoverCard
-          content={
-            <div style={{width: 200}}>
-              <XDSVStack gap={2}>
-                <div style={{fontWeight: 600}}>John Smith</div>
-                <div style={{fontSize: 14, opacity: 0.7}}>Product Manager</div>
-              </XDSVStack>
-            </div>
-          }
-          placement="above">
-          John Smith
-        </XDSHoverCard>
-        , and others.
-      </p>
-    </div>
+    <XDSText type="body">
+      The project is maintained by{' '}
+      <XDSHoverCard
+        content={
+          <XDSVStack gap={1}>
+            <XDSText type="label">Jane Doe</XDSText>
+            <XDSText type="supporting" color="secondary">
+              Software Engineer
+            </XDSText>
+            <XDSText type="body">
+              Building great products with great people.
+            </XDSText>
+          </XDSVStack>
+        }
+        placement="above">
+        Jane Doe
+      </XDSHoverCard>
+      ,{' '}
+      <XDSHoverCard
+        content={
+          <XDSVStack gap={1}>
+            <XDSText type="label">John Smith</XDSText>
+            <XDSText type="supporting" color="secondary">
+              Product Manager
+            </XDSText>
+          </XDSVStack>
+        }
+        placement="above">
+        John Smith
+      </XDSHoverCard>
+      , and others.
+    </XDSText>
   );
 }
