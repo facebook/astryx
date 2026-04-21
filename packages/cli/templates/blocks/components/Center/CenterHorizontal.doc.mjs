@@ -1,7 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Center — Horizontal',
+  name: 'Center — Horizontal Center',
   description: 'Center a title in a toolbar between left and right actions. Use axis="horizontal" to keep the title centered regardless of how many actions are on each side.',
   isReady: true,
   aspectRatio: 16 / 9,
