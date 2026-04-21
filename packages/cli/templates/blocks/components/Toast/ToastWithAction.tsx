@@ -8,7 +8,7 @@ import {XDSStack} from '@xds/core/Stack';
 export default function ToastWithAction() {
   const toast = useXDSToast();
   return (
-    <XDSStack direction="row" gap={2}>
+    <XDSStack direction="horizontal" gap={2}>
       <XDSButton
         label="With button"
         onClick={() =>
@@ -34,7 +34,7 @@ export default function ToastWithAction() {
             body: 'Your report is ready.',
             isAutoHide: false,
             endContent: (
-              <XDSLink href="#" hasUnderline>
+              <XDSLink href="#" label="View report" hasUnderline>
                 View report
               </XDSLink>
             ),

@@ -10,7 +10,7 @@ export default function ToastProgrammaticDismiss() {
   const dismissRef = useRef<(() => void) | null>(null);
 
   return (
-    <XDSStack direction="row" gap={2}>
+    <XDSStack direction="horizontal" gap={2}>
       <XDSButton
         label="Show persistent toast"
         onClick={() => {

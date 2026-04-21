@@ -2,11 +2,11 @@
 
 import {XDSCode} from '@xds/core/CodeBlock';
 import {XDSText} from '@xds/core/Text';
-import {XDSStack} from '@xds/core/Stack';
+import {XDSVStack} from '@xds/core/Stack';
 
 export default function CodeVariousContent() {
   return (
-    <XDSStack gap="sm">
+    <XDSVStack gap={3}>
       <XDSText type="body">
         Variable: <XDSCode>const count = 0</XDSCode>
       </XDSText>
@@ -22,6 +22,6 @@ export default function CodeVariousContent() {
       <XDSText type="body">
         Keyboard shortcut: <XDSCode>Ctrl+Shift+P</XDSCode>
       </XDSText>
-    </XDSStack>
+    </XDSVStack>
   );
 }

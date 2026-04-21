@@ -3,8 +3,10 @@
 import {useState} from 'react';
 import {XDSDateInput} from '@xds/core/DateInput';
 
+type DateString = `${number}${number}${number}${number}-${number}${number}-${number}${number}`;
+
 export default function DateInputClearable() {
-  const [value, setValue] = useState<string | undefined>('2026-04-06');
+  const [value, setValue] = useState<DateString | undefined>('2026-04-06' as DateString);
 
   return (
     <XDSDateInput

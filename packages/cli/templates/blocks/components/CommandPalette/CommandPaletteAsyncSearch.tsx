@@ -17,13 +17,7 @@ export default function CommandPaletteAsyncSearch() {
   const [isOpen, setIsOpen] = useState(false);
   const source = useMemo<XDSSearchSource>(
     () => ({
-      _controller: null as AbortController | null,
-      cancel() {
-        this._controller?.abort();
-      },
       async search(query: string) {
-        this.cancel();
-        this._controller = new AbortController();
         await new Promise(r => setTimeout(r, 400));
         return allFiles.filter(f =>
           f.label.toLowerCase().includes(query.toLowerCase()),

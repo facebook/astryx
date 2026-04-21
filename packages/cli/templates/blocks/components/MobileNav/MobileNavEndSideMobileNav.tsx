@@ -29,7 +29,7 @@ export default function MobileNavEndSideMobileNav() {
       <XDSMobileNav
         isOpen={isOpen}
         onOpenChange={open => setIsOpen(open)}
-        title="Settings"
+        header="Settings"
         side="end">
         <XDSSideNavSection title="Settings">
           <XDSSideNavItem

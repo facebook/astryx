@@ -18,10 +18,12 @@ export default function ToolbarTableToolbar() {
               isLabelHidden
               placeholder="Search..."
               size="sm"
+              value=""
+              onChange={() => {}}
             />
-            <XDSButton label="Status" variant="outline" size="sm" />
-            <XDSButton label="Priority" variant="outline" size="sm" />
-            <XDSButton label="Assignee" variant="outline" size="sm" />
+            <XDSButton label="Status" variant="secondary" size="sm" />
+            <XDSButton label="Priority" variant="secondary" size="sm" />
+            <XDSButton label="Assignee" variant="secondary" size="sm" />
           </>
         }
         endContent={

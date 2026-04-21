@@ -55,7 +55,7 @@ export default function MobileNavBasicMobileNav() {
       <XDSMobileNav
         isOpen={isOpen}
         onOpenChange={open => setIsOpen(open)}
-        title="Navigation">
+        header="Navigation">
         <XDSSideNavSection title="Main">
           <XDSSideNavItem
             label="Dashboard"

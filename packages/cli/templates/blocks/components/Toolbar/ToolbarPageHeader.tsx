@@ -41,7 +41,7 @@ export default function ToolbarPageHeader() {
         }
       />
       <XDSSection>
-        <XDSText>Settings form content...</XDSText>
+        <XDSText type="body">Settings form content...</XDSText>
       </XDSSection>
     </XDSCard>
   );

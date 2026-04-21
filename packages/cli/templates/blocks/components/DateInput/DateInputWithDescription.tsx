@@ -1,10 +1,13 @@
 'use client';
 
 import {useState} from 'react';
+
+type DateString = `${number}${number}${number}${number}-${number}${number}-${number}${number}`;
+
 import {XDSDateInput} from '@xds/core/DateInput';
 
 export default function DateInputWithDescription() {
-  const [value, setValue] = useState<string | undefined>(undefined);
+  const [value, setValue] = useState<DateString | undefined>(undefined);
 
   return (
     <XDSDateInput

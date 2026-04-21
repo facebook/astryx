@@ -10,7 +10,7 @@ export default function DividerVertical() {
   return (
     <XDSSection variant="wash">
       <XDSCard height={200}>
-        <XDSHStack gap={4} xstyle={{height: '100%'}}>
+        <XDSHStack gap={4} style={{height: '100%'}}>
           <XDSText type="body">Left content</XDSText>
           <XDSDivider orientation="vertical" />
           <XDSText type="body">Right content</XDSText>

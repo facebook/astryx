@@ -18,7 +18,7 @@ export default function PopoverConfirmAction() {
       onOpenChange={setIsOpen}
       content={
         <XDSVStack gap={3}>
-          <XDSHeading level={4} tabIndex={-1}>
+          <XDSHeading level={4}>
             Delete project?
           </XDSHeading>
           <XDSText type="body">

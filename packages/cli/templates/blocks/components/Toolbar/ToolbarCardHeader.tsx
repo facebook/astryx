@@ -56,7 +56,7 @@ export default function ToolbarCardHeader() {
         }
       />
       <XDSSection>
-        <XDSText>Table rows go here...</XDSText>
+        <XDSText type="body">Table rows go here...</XDSText>
       </XDSSection>
     </XDSCard>
   );

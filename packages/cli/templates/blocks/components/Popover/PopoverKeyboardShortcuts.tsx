@@ -20,7 +20,7 @@ export default function PopoverKeyboardShortcuts() {
       width={260}
       content={
         <XDSVStack gap={2}>
-          <XDSHeading level={4} tabIndex={-1}>
+          <XDSHeading level={4}>
             Keyboard shortcuts
           </XDSHeading>
           <XDSDivider />

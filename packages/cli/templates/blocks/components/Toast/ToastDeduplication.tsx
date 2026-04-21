@@ -7,7 +7,7 @@ import {XDSStack} from '@xds/core/Stack';
 export default function ToastDeduplication() {
   const toast = useXDSToast();
   return (
-    <XDSStack direction="row" gap={2}>
+    <XDSStack direction="horizontal" gap={2}>
       <XDSButton
         label="Offline (ignore)"
         onClick={() =>

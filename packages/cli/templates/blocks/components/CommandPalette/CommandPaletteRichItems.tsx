@@ -3,37 +3,34 @@
 import {useState, useMemo} from 'react';
 import {XDSCommandPalette} from '@xds/core/CommandPalette';
 import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
 import {createStaticSource} from '@xds/core/Typeahead';
 import type {XDSSearchableItem} from '@xds/core/Typeahead';
 
 type RichCommand = XDSSearchableItem<{
-  icon?: string;
   group?: string;
   shortcut?: string;
-  keywords?: string[];
 }>;
 
 const commands: RichCommand[] = [
   {
     id: 'dashboard',
     label: 'Go to Dashboard',
-    auxiliaryData: {icon: 'home', group: 'Navigation'},
+    auxiliaryData: {group: 'Navigation'},
   },
   {
     id: 'settings',
     label: 'Open Settings',
-    auxiliaryData: {icon: 'settings', group: 'Navigation', shortcut: '⌘,'},
+    auxiliaryData: {group: 'Navigation', shortcut: '⌘,'},
   },
   {
     id: 'profile',
     label: 'View Profile',
-    auxiliaryData: {icon: 'user', group: 'Navigation'},
+    auxiliaryData: {group: 'Navigation'},
   },
   {
     id: 'dark-mode',
     label: 'Toggle Dark Mode',
-    auxiliaryData: {group: 'Actions', keywords: ['theme', 'appearance']},
+    auxiliaryData: {group: 'Actions'},
   },
   {
     id: 'new-file',
@@ -43,19 +40,13 @@ const commands: RichCommand[] = [
   {
     id: 'search',
     label: 'Search Files',
-    auxiliaryData: {icon: 'search', group: 'Actions', shortcut: '⌘P'},
+    auxiliaryData: {group: 'Actions', shortcut: '⌘P'},
   },
 ];
 
 export default function CommandPaletteRichItems() {
   const [isOpen, setIsOpen] = useState(false);
-  const source = useMemo(
-    () =>
-      createStaticSource(commands, {
-        keywords: item => item.auxiliaryData?.keywords ?? [],
-      }),
-    [],
-  );
+  const source = useMemo(() => createStaticSource(commands), []);
 
   return (
     <>
@@ -67,9 +58,6 @@ export default function CommandPaletteRichItems() {
         renderItem={(item: RichCommand) => (
           <span
             style={{display: 'flex', alignItems: 'center', gap: 8, flex: 1}}>
-            {item.auxiliaryData?.icon && (
-              <XDSIcon icon={item.auxiliaryData.icon} size="sm" />
-            )}
             <span style={{flex: 1}}>{item.label}</span>
             {item.auxiliaryData?.shortcut && (
               <span style={{fontSize: 12, opacity: 0.5}}>

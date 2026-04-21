@@ -20,7 +20,7 @@ export default function PopoverSettingsPanel() {
       width={280}
       content={
         <XDSVStack gap={3}>
-          <XDSHeading level={4} tabIndex={-1}>
+          <XDSHeading level={4}>
             Settings
           </XDSHeading>
           <XDSDivider />

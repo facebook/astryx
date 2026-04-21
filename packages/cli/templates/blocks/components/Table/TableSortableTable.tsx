@@ -36,7 +36,7 @@ export default function TableSortableTable() {
     defaultSort: [{sortKey: 'name', direction: 'ascending'}],
   });
 
-  const sortablePlugin = useXDSTableSortable(sortConfig);
+  const sortablePlugin = useXDSTableSortable<Employee>(sortConfig);
 
   return (
     <XDSTable

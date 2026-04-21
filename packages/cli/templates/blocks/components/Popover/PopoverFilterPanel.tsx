@@ -29,7 +29,7 @@ export default function PopoverFilterPanel() {
       onOpenChange={setIsOpen}
       content={
         <XDSVStack gap={3}>
-          <XDSHeading level={4} tabIndex={-1}>
+          <XDSHeading level={4}>
             Filter by status
           </XDSHeading>
           <XDSDivider />

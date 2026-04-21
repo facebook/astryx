@@ -2,11 +2,11 @@
 
 import {XDSCode} from '@xds/core/CodeBlock';
 import {XDSText} from '@xds/core/Text';
-import {XDSStack} from '@xds/core/Stack';
+import {XDSVStack} from '@xds/core/Stack';
 
 export default function CodeInstructionalText() {
   return (
-    <XDSStack gap="md">
+    <XDSVStack gap={4}>
       <XDSText type="body">
         Install the package with <XDSCode>npm install @xds/core</XDSCode>, then
         import the component:
@@ -16,6 +16,6 @@ export default function CodeInstructionalText() {
         your JSX. The <XDSCode>label</XDSCode> prop is required for
         accessibility.
       </XDSText>
-    </XDSStack>
+    </XDSVStack>
   );
 }
