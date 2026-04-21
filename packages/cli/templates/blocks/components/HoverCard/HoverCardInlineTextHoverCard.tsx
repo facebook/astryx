@@ -1,45 +1,48 @@
 'use client';
 
+import * as stylex from '@stylexjs/stylex';
 import {XDSHoverCard} from '@xds/core/HoverCard';
 import {XDSVStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
+
+const styles = stylex.create({
+  content: {maxWidth: 200},
+});
 
 export default function HoverCardInlineTextHoverCard() {
   return (
-    <div style={{padding: 80}}>
-      <p>
-        The project is maintained by{' '}
-        <XDSHoverCard
-          content={
-            <div style={{width: 200}}>
-              <XDSVStack gap={2}>
-                <div style={{fontWeight: 600}}>Jane Doe</div>
-                <div style={{fontSize: 14, opacity: 0.7}}>
-                  Software Engineer
-                </div>
-                <div style={{fontSize: 13}}>
-                  Building great products with great people.
-                </div>
-              </XDSVStack>
-            </div>
-          }
-          placement="above">
-          Jane Doe
-        </XDSHoverCard>
-        ,{' '}
-        <XDSHoverCard
-          content={
-            <div style={{width: 200}}>
-              <XDSVStack gap={2}>
-                <div style={{fontWeight: 600}}>John Smith</div>
-                <div style={{fontSize: 14, opacity: 0.7}}>Product Manager</div>
-              </XDSVStack>
-            </div>
-          }
-          placement="above">
-          John Smith
-        </XDSHoverCard>
-        , and others.
-      </p>
-    </div>
+    <XDSText type="body">
+      The component uses a{' '}
+      <XDSHoverCard
+        content={
+          <XDSVStack gap={1} xstyle={styles.content}>
+            <XDSText type="label">Focus trap</XDSText>
+            <XDSText type="body" color="secondary">
+              A pattern that keeps keyboard focus inside a container, preventing
+              it from moving to elements outside. Used in dialogs and modals to
+              ensure accessibility.
+            </XDSText>
+          </XDSVStack>
+        }
+        placement="above">
+        focus trap
+      </XDSHoverCard>{' '}
+      to keep keyboard navigation inside the{' '}
+      <XDSHoverCard
+        content={
+          <XDSVStack gap={1} xstyle={styles.content}>
+            <XDSText type="label">Modal dialog</XDSText>
+            <XDSText type="body" color="secondary">
+              An overlay that blocks interaction with the rest of the page until
+              the user responds. Uses the native HTML dialog element for
+              built-in accessibility and backdrop support.
+            </XDSText>
+          </XDSVStack>
+        }
+        placement="above">
+        modal dialog
+      </XDSHoverCard>
+      .
+    </XDSText>
   );
 }

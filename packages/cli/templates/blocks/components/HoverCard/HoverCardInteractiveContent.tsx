@@ -1,29 +1,42 @@
 'use client';
 
+import * as stylex from '@stylexjs/stylex';
 import {XDSHoverCard} from '@xds/core/HoverCard';
-import {XDSButton} from '@xds/core/Button';
+import {XDSIcon} from '@xds/core/Icon';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
+import {LinkIcon} from '@heroicons/react/24/outline';
+
+const styles = stylex.create({
+  content: {maxWidth: 280},
+});
 
 export default function HoverCardInteractiveContent() {
   return (
-    <div style={{padding: 80}}>
+    <XDSText type="body">
+      Read more in the{' '}
       <XDSHoverCard
         placement="below"
         content={
-          <XDSVStack gap={2}>
-            <div>Interactive hover card content</div>
-            <XDSHStack gap={2}>
-              <XDSButton label="Follow" variant="primary">
-                Follow
-              </XDSButton>
-              <XDSButton label="Message">Message</XDSButton>
+          <XDSVStack gap={2} xstyle={styles.content}>
+            <XDSHStack gap={2} vAlign="start">
+              <XDSIcon icon={LinkIcon} size="sm" color="secondary" />
+              <XDSVStack gap={1}>
+                <XDSText type="label">Getting Started Guide</XDSText>
+                <XDSText type="body" color="secondary">
+                  Learn how to set up your first project, invite team members,
+                  and configure your workspace.
+                </XDSText>
+                <XDSText type="supporting" color="secondary">
+                  docs.example.com/getting-started
+                </XDSText>
+              </XDSVStack>
             </XDSHStack>
           </XDSVStack>
         }>
-        <XDSButton label="Hover for interactive content">
-          Hover for interactive content
-        </XDSButton>
+        Getting Started Guide
       </XDSHoverCard>
-    </div>
+      .
+    </XDSText>
   );
 }
