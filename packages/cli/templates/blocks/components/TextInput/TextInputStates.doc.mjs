@@ -5,5 +5,5 @@ export const doc = {
   description: 'Text, password, and email inputs in default, disabled, and loading states. Shows the three input types side by side with realistic data.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['TextInput', 'Layout', 'Text'],
+  componentsUsed: ['TextInput', 'Layout'],
 };

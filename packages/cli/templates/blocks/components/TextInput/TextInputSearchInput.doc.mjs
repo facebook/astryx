@@ -4,6 +4,6 @@ export const doc = {
   name: 'TextInput — Search',
   description: 'Search input with a hidden label, start icon, and clear button. Use for toolbar and header search bars where the icon provides sufficient context.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['TextInput', 'Layout', 'Text'],
 };
