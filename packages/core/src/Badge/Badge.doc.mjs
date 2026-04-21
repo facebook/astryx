@@ -29,15 +29,16 @@ export const docs = {
   },
   usage: {
     description:
-      'Badge displays system or categorical information such as status indicators, counts, or labels. Use semantic color variants for system status and non-semantic colors for categorization and tagging.',
+      'Badge shows a short label like a status, count, or category. Use it in table rows, list items, navigation, and anywhere you need to call out a state or group at a glance.',
     bestPractices: [
-      {guidance: true, description: 'Use semantic variants (success, warning, error) to communicate system status and non-semantic colors for categorization.'},
-      {guidance: true, description: 'Keep badge labels concise — ideally one or two words — and always pair icons with a text label.'},
-      {guidance: false, description: 'Use badges as interactive elements — they are informational only and should not be clickable.'},
+      {guidance: true, description: 'Use success, warning, and error variants for system status like "Active", "Pending", or "Failed". Use color variants like blue, purple, or teal for categories and tags.'},
+      {guidance: true, description: 'Keep labels to one or two words. If you need more detail, put it in surrounding text instead of the badge.'},
+      {guidance: true, description: 'Add an icon when it helps identify the badge type quickly, but always include a text label alongside it.'},
+      {guidance: false, description: 'Make badges clickable — they are read-only indicators. Use a button or link if the user needs to take action.'},
     ],
     anatomy: [
-      {name: 'Icon', required: false, description: 'A visual indicator that helps users identify the type of badge.'},
-      {name: 'Label', required: true, description: 'A text or numerical label that provides additional context.'},
+      {name: 'Icon', required: false, description: 'An optional leading icon that helps identify the badge type at a glance.'},
+      {name: 'Label', required: true, description: 'The text or number shown inside the badge.'},
     ],
   },
 };
@@ -47,15 +48,16 @@ export const docsZh = {
   name: 'Badge',
   usage: {
     description:
-      'Badge displays system or categorical information such as status indicators, counts, or labels. Use semantic color variants for system status and non-semantic colors for categorization and tagging.',
+      'Badge shows a short label like a status, count, or category. Use it in table rows, list items, navigation, and anywhere you need to call out a state or group at a glance.',
     bestPractices: [
-      {guidance: true, description: 'Use semantic variants (success, warning, error) to communicate system status and non-semantic colors for categorization.'},
-      {guidance: true, description: 'Keep badge labels concise — ideally one or two words — and always pair icons with a text label.'},
-      {guidance: false, description: 'Use badges as interactive elements — they are informational only and should not be clickable.'},
+      {guidance: true, description: 'Use success, warning, and error variants for system status like "Active", "Pending", or "Failed". Use color variants like blue, purple, or teal for categories and tags.'},
+      {guidance: true, description: 'Keep labels to one or two words. If you need more detail, put it in surrounding text instead of the badge.'},
+      {guidance: true, description: 'Add an icon when it helps identify the badge type quickly, but always include a text label alongside it.'},
+      {guidance: false, description: 'Make badges clickable — they are read-only indicators. Use a button or link if the user needs to take action.'},
     ],
     anatomy: [
-      {name: 'Icon', required: false, description: 'A visual indicator that helps users identify the type of badge.'},
-      {name: 'Label', required: true, description: 'A text or numerical label that provides additional context.'},
+      {name: 'Icon', required: false, description: 'An optional leading icon that helps identify the badge type at a glance.'},
+      {name: 'Label', required: true, description: 'The text or number shown inside the badge.'},
     ],
   },
   props: [
@@ -83,18 +85,18 @@ export const docsZh = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'badge for status indicators, counts, or labels',
+  description: 'short label for status, counts, or categories',
   usage: {
     description:
-      'Badge displays system or categorical information such as status indicators, counts, or labels. Use semantic color variants for system status and non-semantic colors for categorization and tagging.',
+      'Badge shows a short label like a status, count, or category. Use in table rows, list items, navigation, or anywhere you need to call out a state or group.',
     bestPractices: [
-      {guidance: true, description: 'Use semantic variants (success, warning, error) to communicate system status and non-semantic colors for categorization.'},
-      {guidance: true, description: 'Keep badge labels concise — ideally one or two words — and always pair icons with a text label.'},
-      {guidance: false, description: 'Use badges as interactive elements — they are informational only and should not be clickable.'},
+      {guidance: true, description: 'Use success/warning/error for system status. Use color variants for categories and tags.'},
+      {guidance: true, description: 'Keep labels to one or two words. Add an icon only when it helps identify the badge type.'},
+      {guidance: false, description: 'Make badges clickable — they are read-only. Use a button or link for actions.'},
     ],
     anatomy: [
-      {name: 'Icon', required: false, description: 'A visual indicator that helps users identify the type of badge.'},
-      {name: 'Label', required: true, description: 'A text or numerical label that provides additional context.'},
+      {name: 'Icon', required: false, description: 'Optional leading icon.'},
+      {name: 'Label', required: true, description: 'Text or number shown inside the badge.'},
     ],
   },
   propDescriptions: {

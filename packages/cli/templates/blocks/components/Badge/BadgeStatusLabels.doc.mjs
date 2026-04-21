@@ -1,9 +1,10 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Badge — Status Labels',
-  description: 'Badges as status indicators showing active, pending, failed, and draft states.',
+  name: 'Badge — Status',
+  description: 'Show the state of an item like Active, Pending, or Failed. Use in table rows, list items, or detail pages where users need to see status at a glance.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['Badge'],
+  aspectRatio: 1,
+  scale: 2,
+  componentsUsed: ['Badge', 'Layout', 'Text'],
 };
