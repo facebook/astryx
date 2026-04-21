@@ -1,11 +1,12 @@
 'use client';
 
 import {XDSBanner} from '@xds/core/Banner';
+import {XDSButton} from '@xds/core/Button';
 import {XDSStack} from '@xds/core/Layout';
 
 export default function BannerSectionVariant() {
   return (
-    <XDSStack direction="vertical" gap={4}>
+    <XDSStack direction="vertical" gap={3}>
       <XDSBanner
         status="warning"
         title="Scheduled downtime"
@@ -18,6 +19,9 @@ export default function BannerSectionVariant() {
         title="Welcome to the new dashboard"
         description="We have redesigned the layout based on your feedback."
         container="section"
+        endContent={
+          <XDSButton label="Take a tour" variant="secondary" size="sm" />
+        }
       />
     </XDSStack>
   );

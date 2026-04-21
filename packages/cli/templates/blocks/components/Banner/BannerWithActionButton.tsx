@@ -6,12 +6,20 @@ import {XDSStack} from '@xds/core/Layout';
 
 export default function BannerWithActionButton() {
   return (
-    <XDSStack direction="vertical" gap={4}>
+    <XDSStack direction="vertical" gap={3}>
       <XDSBanner
         status="info"
         title="Your trial expires in 3 days"
         description="Upgrade now to keep access to all features."
         endContent={<XDSButton label="Upgrade" variant="secondary" size="sm" />}
+      />
+      <XDSBanner
+        status="warning"
+        title="API key expires soon"
+        description="Generate a new key before December 1 to avoid service interruption."
+        endContent={
+          <XDSButton label="Renew key" variant="secondary" size="sm" />
+        }
       />
       <XDSBanner
         status="error"

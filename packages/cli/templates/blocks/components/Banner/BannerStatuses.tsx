@@ -5,7 +5,7 @@ import {XDSStack} from '@xds/core/Layout';
 
 export default function BannerStatuses() {
   return (
-    <XDSStack direction="vertical" gap={4}>
+    <XDSStack direction="vertical" gap={3}>
       <XDSBanner
         status="info"
         title="A new software update is available"
@@ -23,8 +23,8 @@ export default function BannerStatuses() {
       />
       <XDSBanner
         status="error"
-        title="Payment failed"
-        description="We could not process your last payment. Please update your billing details."
+        title="Build failed"
+        description="3 tests did not pass. Check the logs for details."
       />
     </XDSStack>
   );
