@@ -6,7 +6,7 @@ import {XDSText} from '@xds/core/Text';
 
 export default function DividerVariants() {
   return (
-    <XDSVStack gap={4}>
+    <XDSVStack gap={6}>
       <XDSVStack gap={2}>
         <XDSText type="supporting" color="secondary">
           Subtle (default)
