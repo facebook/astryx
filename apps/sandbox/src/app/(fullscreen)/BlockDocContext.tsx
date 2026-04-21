@@ -44,6 +44,7 @@ export function BlockPreview({
           }}>
           <div
             style={{
+              width: '100%',
               transform: scale !== 1 ? `scale(${scale})` : undefined,
               transformOrigin: 'center center',
             }}>
