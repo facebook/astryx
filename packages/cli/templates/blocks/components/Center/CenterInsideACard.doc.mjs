@@ -2,7 +2,7 @@
 export const doc = {
   type: 'block',
   name: 'Center — Vertical & Horizontal Center',
-  description: 'Center content inside a card to create an empty state. Use for inbox zero, no-results screens, or any placeholder that should sit in the middle of a container. Set a height so Center knows what space to center within.',
+  description: 'An empty state with an icon, heading, and description centered both vertically and horizontally inside a card. This is the most common use of Center — placing content in the middle of a fixed-height area like a panel, card, or content region. The height prop defines the centering space.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['Center', 'Card', 'Icon', 'Layout', 'Text'],
