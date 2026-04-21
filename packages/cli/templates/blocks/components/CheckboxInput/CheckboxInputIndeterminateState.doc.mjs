@@ -1,10 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'CheckboxInput — Indeterminate State',
-  description:
-    'Checkbox in the indeterminate state, useful for "select all" patterns with partial selection.',
+  name: 'CheckboxInput — Indeterminate',
+  description: 'A checkbox in the indeterminate state, showing a dash instead of a checkmark. Use for "select all" controls when only some items in a group are selected. Clicking toggles between fully checked and unchecked.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['CheckboxInput'],
+  componentsUsed: ['CheckboxInput', 'Layout', 'Text'],
 };
