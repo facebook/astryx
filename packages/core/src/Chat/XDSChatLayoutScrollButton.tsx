@@ -86,6 +86,14 @@ const styles = stylex.create({
 // Component
 // =============================================================================
 
+/**
+ * Floating scroll-to-bottom button for use inside XDSChatLayout.
+ *
+ * @example
+ * ```
+ * <XDSChatLayoutScrollButton isVisible={!isAtBottom} onClick={scrollToBottom} />
+ * ```
+ */
 export function XDSChatLayoutScrollButton({
   isVisible,
   label,

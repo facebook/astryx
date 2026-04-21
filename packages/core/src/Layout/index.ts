@@ -42,6 +42,7 @@ export type {
 export {XDSStack, XDSHStack, XDSVStack, XDSStackItem} from '../Stack';
 export type {
   XDSStackProps,
+  XDSStackAlignment,
   StackAlignment,
   XDSHStackProps,
   XDSVStackProps,

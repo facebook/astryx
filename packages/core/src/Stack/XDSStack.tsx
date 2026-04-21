@@ -40,7 +40,10 @@ import {xdsClassName, mergeProps} from '../utils';
  * - Cross axis (vAlign for horizontal, hAlign for vertical):
  *   `'start' | 'center' | 'end' | 'stretch'`
  */
-export type StackAlignment = StackMainAlignment | StackCrossAlignment;
+export type XDSStackAlignment = StackMainAlignment | StackCrossAlignment;
+
+/** @deprecated Use `XDSStackAlignment` instead. */
+export type StackAlignment = XDSStackAlignment;
 
 export interface XDSStackProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
@@ -59,7 +62,7 @@ export interface XDSStackProps extends XDSBaseProps<HTMLDivElement> {
    * - When `direction='vertical'`: controls cross-axis (align-items).
    *   Accepts: `'start' | 'center' | 'end' | 'stretch'`
    */
-  hAlign?: StackAlignment;
+  hAlign?: XDSStackAlignment;
 
   /**
    * Vertical alignment of items.
@@ -68,7 +71,7 @@ export interface XDSStackProps extends XDSBaseProps<HTMLDivElement> {
    * - When `direction='vertical'`: controls main-axis (justify-content).
    *   Accepts: `'start' | 'center' | 'end' | 'between' | 'around' | 'evenly'`
    */
-  vAlign?: StackAlignment;
+  vAlign?: XDSStackAlignment;
 
   /**
    * Spacing between items.
