@@ -1,19 +1,23 @@
 'use client';
 
 import {XDSBanner} from '@xds/core/Banner';
+import {XDSButton} from '@xds/core/Button';
+import {XDSList, XDSListItem} from '@xds/core/List';
 
 export default function BannerErrorList() {
   return (
     <XDSBanner
       status="error"
-      title="Multiple errors found"
-      description="The following issues need to be resolved:"
+      title="4 errors found"
+      description="Fix the following before submitting:"
+      endContent={<XDSButton label="Fix all" variant="secondary" size="sm" />}
       defaultIsExpanded>
-      <ul style={{margin: 0, paddingInlineStart: 20, fontSize: 13}}>
-        <li>Email address is invalid</li>
-        <li>Password must be at least 8 characters</li>
-        <li>Username is already taken</li>
-      </ul>
+      <XDSList density="compact">
+        <XDSListItem label="Email address is invalid" />
+        <XDSListItem label="Password must be at least 8 characters" />
+        <XDSListItem label="Username is already taken" />
+        <XDSListItem label="Terms of service must be accepted" />
+      </XDSList>
     </XDSBanner>
   );
 }

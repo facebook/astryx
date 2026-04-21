@@ -1,9 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Banner — Dismissable Warning',
-  description: 'Warning banner that can be dismissed by the user.',
+  name: 'Banner — Dismiss',
+  description: 'Let the user close a banner after reading it. Use for maintenance notices, feature tips, or any non-critical message the user can acknowledge.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['Banner'],
+  aspectRatio: 16 / 4,
+  componentsUsed: ['Banner', 'Layout'],
 };

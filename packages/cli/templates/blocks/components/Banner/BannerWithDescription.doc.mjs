@@ -1,9 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Banner — With Description',
-  description: 'Info banner with a title and extended description text.',
+  name: 'Banner — Info',
+  description: 'Show a message with a title and description. Use for system updates, feature announcements, or success confirmations.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['Banner'],
+  aspectRatio: 16 / 4,
+  componentsUsed: ['Banner', 'Layout'],
 };

@@ -1,9 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Banner — Error List',
-  description: 'Error banner with an expanded content area listing validation errors.',
+  name: 'Banner — Errors',
+  description: 'Show a list of errors inside an expandable banner. Use at the top of a form to summarize all validation problems at once.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['Banner'],
+  aspectRatio: 16 / 4,
+  componentsUsed: ['Banner', 'Button', 'List'],
 };

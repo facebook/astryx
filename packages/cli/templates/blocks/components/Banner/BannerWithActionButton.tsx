@@ -2,14 +2,23 @@
 
 import {XDSBanner} from '@xds/core/Banner';
 import {XDSButton} from '@xds/core/Button';
+import {XDSStack} from '@xds/core/Layout';
 
 export default function BannerWithActionButton() {
   return (
-    <XDSBanner
-      status="info"
-      title="New update available"
-      description="Version 2.0 is ready to install."
-      endContent={<XDSButton label="Update now" variant="primary" size="sm" />}
-    />
+    <XDSStack direction="vertical" gap={4}>
+      <XDSBanner
+        status="info"
+        title="Your trial expires in 3 days"
+        description="Upgrade now to keep access to all features."
+        endContent={<XDSButton label="Upgrade" variant="secondary" size="sm" />}
+      />
+      <XDSBanner
+        status="error"
+        title="Payment failed"
+        description="We could not process your last payment."
+        endContent={<XDSButton label="Retry" variant="secondary" size="sm" />}
+      />
+    </XDSStack>
   );
 }

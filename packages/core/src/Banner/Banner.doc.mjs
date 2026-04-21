@@ -5,21 +5,20 @@ export const docs = {
   keywords: ["banner","alert","notification","callout","notice","status","message","info","warning","error","success","toast"],
   usage: {
     description:
-      'Banner is a persistent status notification that displays a prominent message with related actions. Use it to communicate critical or non-critical information for info, warning, error, or success scenarios at the page or section level.',
+      'Banner shows a persistent message at the top of a page or section. Use it for form errors, system updates, maintenance notices, or success confirmations that the user needs to see until they act on it.',
     bestPractices: [
-      {guidance: true, description: 'Keep titles and descriptions to 1–2 lines and choose the appropriate status variant to match the severity of the message.'},
-      {guidance: true, description: 'Use the card container for inline contextual messages and the section container for full-width page-level notifications.'},
-      {guidance: false, description: 'Use a Banner for transient notifications that should auto-dismiss — use a Toast instead.'},
-      {guidance: false, description: 'Stack multiple Banners of the same status — consolidate related messages into a single Banner.'},
+      {guidance: true, description: 'Pick a status that matches the message: info for updates, warning for caution, error for problems, success for confirmations.'},
+      {guidance: true, description: 'Use the card container inside page content and the section container for full-width messages that span the entire page.'},
+      {guidance: false, description: 'Use Banner for short-lived messages that disappear on their own — use Toast instead.'},
+      {guidance: false, description: 'Stack multiple banners with the same status — combine related messages into one banner.'},
     ],
     anatomy: [
-      {name: 'Icon', required: true, description: 'Visual indicator for the banner type.'},
-      {name: 'Heading', required: false, description: 'Required if no description is provided.'},
-      {name: 'Description', required: false, description: 'Required if no heading is provided.'},
-      {name: 'Action Button', required: false, description: 'Actionable button related to the banner message.'},
-      {name: 'Expand/Collapse Button', required: false, description: 'Toggles additional banner content.'},
-      {name: 'Dismissible Button', required: false, description: 'Dismisses the banner. Not available for critical banners.'},
-      {name: 'Flex Space', required: false, description: 'Additional space for supplementary info.'},
+      {name: 'Icon', required: true, description: 'Automatically set based on the status (info, warning, error, success).'},
+      {name: 'Title', required: false, description: 'The main message. Required if no description is provided.'},
+      {name: 'Description', required: false, description: 'Additional detail below the title. Required if no title is provided.'},
+      {name: 'Action button', required: false, description: 'A button for the user to act on the message, like "Review" or "Retry".'},
+      {name: 'Dismiss button', required: false, description: 'Lets the user close the banner. Enabled by setting isDismissable.'},
+      {name: 'Collapsible content', required: false, description: 'Extra detail that expands below the banner header, like a list of errors.'},
     ],
   },
 
@@ -104,21 +103,20 @@ export const docsZh = {
   name: 'Banner',
   usage: {
     description:
-      'Banner is a persistent status notification that displays a prominent message with related actions. Use it to communicate critical or non-critical information for info, warning, error, or success scenarios at the page or section level.',
+      'Banner shows a persistent message at the top of a page or section. Use it for form errors, system updates, maintenance notices, or success confirmations that the user needs to see until they act on it.',
     bestPractices: [
-      {guidance: true, description: 'Keep titles and descriptions to 1–2 lines and choose the appropriate status variant to match the severity of the message.'},
-      {guidance: true, description: 'Use the card container for inline contextual messages and the section container for full-width page-level notifications.'},
-      {guidance: false, description: 'Use a Banner for transient notifications that should auto-dismiss — use a Toast instead.'},
-      {guidance: false, description: 'Stack multiple Banners of the same status — consolidate related messages into a single Banner.'},
+      {guidance: true, description: 'Pick a status that matches the message: info for updates, warning for caution, error for problems, success for confirmations.'},
+      {guidance: true, description: 'Use the card container inside page content and the section container for full-width messages that span the entire page.'},
+      {guidance: false, description: 'Use Banner for short-lived messages that disappear on their own — use Toast instead.'},
+      {guidance: false, description: 'Stack multiple banners with the same status — combine related messages into one banner.'},
     ],
     anatomy: [
-      {name: 'Icon', required: true, description: 'Visual indicator for the banner type.'},
-      {name: 'Heading', required: false, description: 'Required if no description is provided.'},
-      {name: 'Description', required: false, description: 'Required if no heading is provided.'},
-      {name: 'Action Button', required: false, description: 'Actionable button related to the banner message.'},
-      {name: 'Expand/Collapse Button', required: false, description: 'Toggles additional banner content.'},
-      {name: 'Dismissible Button', required: false, description: 'Dismisses the banner. Not available for critical banners.'},
-      {name: 'Flex Space', required: false, description: 'Additional space for supplementary info.'},
+      {name: 'Icon', required: true, description: 'Automatically set based on the status (info, warning, error, success).'},
+      {name: 'Title', required: false, description: 'The main message. Required if no description is provided.'},
+      {name: 'Description', required: false, description: 'Additional detail below the title. Required if no title is provided.'},
+      {name: 'Action button', required: false, description: 'A button for the user to act on the message, like "Review" or "Retry".'},
+      {name: 'Dismiss button', required: false, description: 'Lets the user close the banner. Enabled by setting isDismissable.'},
+      {name: 'Collapsible content', required: false, description: 'Extra detail that expands below the banner header, like a list of errors.'},
     ],
   },
   props: [
@@ -165,24 +163,23 @@ export const docsZh = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'persistent status notification for info, warning, error, success messages',
+  description: 'persistent message for errors, updates, warnings, or confirmations',
   usage: {
     description:
-      'Banner is a persistent status notification that displays a prominent message with related actions. Use it to communicate critical or non-critical information for info, warning, error, or success scenarios at the page or section level.',
+      'Banner shows a persistent message at the top of a page or section. Use for form errors, system updates, maintenance notices, or success confirmations.',
     bestPractices: [
-      {guidance: true, description: 'Keep titles and descriptions to 1–2 lines and choose the appropriate status variant to match the severity of the message.'},
-      {guidance: true, description: 'Use the card container for inline contextual messages and the section container for full-width page-level notifications.'},
-      {guidance: false, description: 'Use a Banner for transient notifications that should auto-dismiss — use a Toast instead.'},
-      {guidance: false, description: 'Stack multiple Banners of the same status — consolidate related messages into a single Banner.'},
+      {guidance: true, description: 'Match status to message: info for updates, warning for caution, error for problems, success for confirmations.'},
+      {guidance: true, description: 'Card container for inline content, section container for full-width page-level messages.'},
+      {guidance: false, description: 'Use for auto-dismissing messages — use Toast instead.'},
+      {guidance: false, description: 'Stack multiple banners of the same status — combine into one.'},
     ],
     anatomy: [
-      {name: 'Icon', required: true, description: 'Visual indicator for the banner type.'},
-      {name: 'Heading', required: false, description: 'Required if no description is provided.'},
-      {name: 'Description', required: false, description: 'Required if no heading is provided.'},
-      {name: 'Action Button', required: false, description: 'Actionable button related to the banner message.'},
-      {name: 'Expand/Collapse Button', required: false, description: 'Toggles additional banner content.'},
-      {name: 'Dismissible Button', required: false, description: 'Dismisses the banner. Not available for critical banners.'},
-      {name: 'Flex Space', required: false, description: 'Additional space for supplementary info.'},
+      {name: 'Icon', required: true, description: 'Set automatically from status.'},
+      {name: 'Title', required: false, description: 'Main message text.'},
+      {name: 'Description', required: false, description: 'Detail below title.'},
+      {name: 'Action button', required: false, description: 'CTA like Review or Retry.'},
+      {name: 'Dismiss button', required: false, description: 'Close button via isDismissable.'},
+      {name: 'Collapsible content', required: false, description: 'Expandable detail area.'},
     ],
   },
   propDescriptions: {

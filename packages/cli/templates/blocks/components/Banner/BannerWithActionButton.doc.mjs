@@ -1,9 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Banner — With Action Button',
-  description: 'Banner with a call-to-action button in the end slot.',
+  name: 'Banner — Action',
+  description: 'Add a button to a banner so the user can act on the message. Use for trial expirations, payment failures, or anything that needs a response.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['Banner', 'Button'],
+  aspectRatio: 16 / 4,
+  componentsUsed: ['Banner', 'Button', 'Layout'],
 };

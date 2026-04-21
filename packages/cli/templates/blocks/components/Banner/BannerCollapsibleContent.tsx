@@ -2,6 +2,9 @@
 
 import {XDSBanner} from '@xds/core/Banner';
 import {XDSButton} from '@xds/core/Button';
+import {XDSList, XDSListItem} from '@xds/core/List';
+import {XDSStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
 
 export default function BannerCollapsibleContent() {
   return (
@@ -12,13 +15,15 @@ export default function BannerCollapsibleContent() {
       endContent={<XDSButton label="Review" variant="secondary" size="sm" />}
       isDismissable
       defaultIsExpanded>
-      <div style={{fontSize: 13}}>
-        <p style={{margin: '0 0 8px'}}>Changed settings:</p>
-        <ul style={{margin: 0, paddingInlineStart: 20}}>
-          <li>Authentication method updated</li>
-          <li>Rate limits modified</li>
-        </ul>
-      </div>
+      <XDSStack direction="vertical" gap={2}>
+        <XDSText type="supporting" color="secondary">
+          Changed settings:
+        </XDSText>
+        <XDSList density="compact">
+          <XDSListItem label="Authentication method updated" />
+          <XDSListItem label="Rate limits modified" />
+        </XDSList>
+      </XDSStack>
     </XDSBanner>
   );
 }
