@@ -84,6 +84,15 @@ const SIZE_CONFIG = {
 // Component
 // =============================================================================
 
+/**
+ * Microphone button for voice input in a chat composer.
+ * Requires the return value of useXDSChatDictation.
+ *
+ * @example
+ * ```
+ * <XDSChatDictationButton dictation={dictation} />
+ * ```
+ */
 export function XDSChatDictationButton({
   dictation,
   size = 'md',
@@ -117,18 +126,22 @@ export function XDSChatDictationButton({
       {isListening && (
         <span
           aria-hidden
-          {...mergeProps(stylex.props(styles.barsContainer), {style: {gap: barGap, height: barMaxHeight}})}>
+          {...mergeProps(stylex.props(styles.barsContainer), {
+            style: {gap: barGap, height: barMaxHeight},
+          })}>
           {boostedBands.slice(0, BAR_COUNT).map((level, i) => {
             const scale = BAR_MIN_SCALE + level * (1 - BAR_MIN_SCALE);
             return (
               <span
                 key={i}
-                {...mergeProps(stylex.props(styles.bar), {style: {
-                  width: barWidth,
-                  height: '100%',
-                  backgroundColor: barColor,
-                  transform: `scaleY(${scale})`,
-                }})}
+                {...mergeProps(stylex.props(styles.bar), {
+                  style: {
+                    width: barWidth,
+                    height: '100%',
+                    backgroundColor: barColor,
+                    transform: `scaleY(${scale})`,
+                  },
+                })}
               />
             );
           })}

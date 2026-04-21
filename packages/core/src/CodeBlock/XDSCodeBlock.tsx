@@ -511,6 +511,15 @@ function RangeCodeContent({
 // Main component
 // ---------------------------------------------------------------------------
 
+/**
+ * Read-only code display with syntax highlighting, line numbers,
+ * and optional copy button.
+ *
+ * @example
+ * ```
+ * <XDSCodeBlock code="const x = 42;" language="javascript" />
+ * ```
+ */
 export function XDSCodeBlock({
   code,
   language = 'plaintext',
