@@ -9,7 +9,12 @@
 import {scaleLinear, scaleBand} from 'd3-scale';
 import {stack as d3Stack, stackOrderNone, stackOffsetNone} from 'd3-shape';
 import type {SeriesConfig, BarConfig, DotConfig, AreaConfig} from './series';
-import type {ChartScale, ResolvedPositions, ResolvedPoint, ChartMargin} from './types';
+import type {
+  ChartScale,
+  ResolvedPositions,
+  ResolvedPoint,
+  ChartMargin,
+} from './types';
 
 export interface LayoutInput {
   data: Record<string, unknown>[];
@@ -27,10 +32,17 @@ export interface LayoutResult {
   barGroups: Map<string, {keys: string[]; barWidth: number}>;
 }
 
-export function computeLayout({data, xKey, series, width, height}: LayoutInput): LayoutResult {
+export function computeLayout({
+  data,
+  xKey,
+  series,
+  width,
+  height,
+}: LayoutInput): LayoutResult {
   // ─── 1. Determine x scale ────────────────────────────────────────────
   const xValues = data.map(d => d[xKey]);
-  const isNumericX = xValues.length > 0 && xValues.every(v => typeof v === 'number');
+  const isNumericX =
+    xValues.length > 0 && xValues.every(v => typeof v === 'number');
 
   let xScale: ChartScale;
   if (isNumericX) {
@@ -39,7 +51,10 @@ export function computeLayout({data, xKey, series, width, height}: LayoutInput):
     const xMax = Math.max(...nums);
     xScale = scaleLinear().domain([xMin, xMax]).range([0, width]).nice();
   } else {
-    xScale = scaleBand<string>().domain(xValues.map(String)).range([0, width]).padding(0.2);
+    xScale = scaleBand<string>()
+      .domain(xValues.map(String))
+      .range([0, width])
+      .padding(0.2);
   }
 
   // ─── 2. Collect all y keys and compute y domain ───────────────────────
@@ -86,7 +101,10 @@ export function computeLayout({data, xKey, series, width, height}: LayoutInput):
       .offset(stackOffsetNone);
     const stacked = stackGen(data);
     for (const layer of stacked) {
-      stackedData.set(layer.key, layer.map(d => ({y0: d[0], y1: d[1]})));
+      stackedData.set(
+        layer.key,
+        layer.map(d => ({y0: d[0], y1: d[1]})),
+      );
     }
   }
 
@@ -124,22 +142,28 @@ export function computeLayout({data, xKey, series, width, height}: LayoutInput):
 
         for (let i = 0; i < data.length; i++) {
           const d = data[i];
-          const xPos = (xScale(String(d[xKey])) ?? 0) + barIndex * barWidth + barWidth / 2;
+          const xPos =
+            (xScale(String(d[xKey])) ?? 0) + barIndex * barWidth + barWidth / 2;
           let yPos: number;
+          let y0Pos: number;
           if (stacked) {
             yPos = yScale(stacked[i].y1);
+            y0Pos = yScale(stacked[i].y0);
           } else {
-            const v = typeof d[s.dataKey] === 'number' ? (d[s.dataKey] as number) : 0;
+            const v =
+              typeof d[s.dataKey] === 'number' ? (d[s.dataKey] as number) : 0;
             yPos = yScale(v);
+            y0Pos = yScale(0);
           }
-          points.push({px: xPos, py: yPos, dataIndex: i});
+          points.push({px: xPos, py: yPos, py0: y0Pos, dataIndex: i});
         }
         break;
       }
 
       case 'line':
       case 'area': {
-        const stacked = s.type === 'area' && s.stack ? stackedData.get(s.dataKey) : undefined;
+        const stacked =
+          s.type === 'area' && s.stack ? stackedData.get(s.dataKey) : undefined;
         for (let i = 0; i < data.length; i++) {
           const d = data[i];
           let px: number;
@@ -149,13 +173,17 @@ export function computeLayout({data, xKey, series, width, height}: LayoutInput):
             px = xScale(d[xKey] as number);
           }
           let py: number;
+          let py0: number;
           if (stacked) {
             py = yScale(stacked[i].y1);
+            py0 = yScale(stacked[i].y0);
           } else {
-            const v = typeof d[s.dataKey] === 'number' ? (d[s.dataKey] as number) : 0;
+            const v =
+              typeof d[s.dataKey] === 'number' ? (d[s.dataKey] as number) : 0;
             py = yScale(v);
+            py0 = yScale(0);
           }
-          points.push({px, py, dataIndex: i});
+          points.push({px, py, py0, dataIndex: i});
         }
         break;
       }
@@ -170,8 +198,9 @@ export function computeLayout({data, xKey, series, width, height}: LayoutInput):
           } else {
             px = xScale(d[xKey] as number);
           }
-          const v = typeof d[s.dataKey] === 'number' ? (d[s.dataKey] as number) : 0;
-          points.push({px, py: yScale(v), dataIndex: i});
+          const v =
+            typeof d[s.dataKey] === 'number' ? (d[s.dataKey] as number) : 0;
+          points.push({px, py: yScale(v), py0: yScale(0), dataIndex: i});
         }
         break;
       }
@@ -187,7 +216,7 @@ export function computeLayout({data, xKey, series, width, height}: LayoutInput):
             px = xScale(d[xKey] as number);
           }
           const v = typeof d[s.upper] === 'number' ? (d[s.upper] as number) : 0;
-          points.push({px, py: yScale(v), dataIndex: i});
+          points.push({px, py: yScale(v), py0: yScale(0), dataIndex: i});
         }
         break;
       }
@@ -201,15 +230,17 @@ export function computeLayout({data, xKey, series, width, height}: LayoutInput):
           } else {
             px = xScale(d[xKey] as number);
           }
-          const close = typeof d[s.close] === 'number' ? (d[s.close] as number) : 0;
-          points.push({px, py: yScale(close), dataIndex: i});
+          const close =
+            typeof d[s.close] === 'number' ? (d[s.close] as number) : 0;
+          points.push({px, py: yScale(close), py0: yScale(0), dataIndex: i});
         }
         break;
       }
     }
 
     // Use dataKey or a generated key for series that don't have one
-    const seriesKey = 'dataKey' in s ? s.dataKey : `${s.type}-${s.keys.join('-')}`;
+    const seriesKey =
+      'dataKey' in s ? s.dataKey : `${s.type}-${s.keys.join('-')}`;
     resolved.set(seriesKey, points);
   }
 

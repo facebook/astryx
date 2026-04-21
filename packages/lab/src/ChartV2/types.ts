@@ -19,8 +19,10 @@ export interface ChartMargin {
 export interface ResolvedPoint {
   /** Pixel x in plot area coordinates */
   px: number;
-  /** Pixel y in plot area coordinates */
+  /** Pixel y in plot area coordinates (top of mark) */
   py: number;
+  /** Pixel y baseline (bottom of mark) — differs from py only when stacked */
+  py0: number;
   /** Index into the data array */
   dataIndex: number;
 }
