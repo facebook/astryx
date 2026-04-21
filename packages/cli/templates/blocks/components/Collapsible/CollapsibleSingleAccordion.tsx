@@ -9,7 +9,7 @@ export default function CollapsibleSingleAccordion() {
   return (
     <XDSCollapsibleGroup type="single" defaultValue="general">
       <XDSVStack gap={2}>
-        <XDSSection variant="wash">
+        <XDSSection>
           <XDSCollapsible trigger="General Settings" value="general">
             <XDSText type="body">
               Configure your general preferences including language, timezone,
@@ -17,7 +17,7 @@ export default function CollapsibleSingleAccordion() {
             </XDSText>
           </XDSCollapsible>
         </XDSSection>
-        <XDSSection variant="wash">
+        <XDSSection>
           <XDSCollapsible trigger="Privacy Settings" value="privacy">
             <XDSText type="body">
               Manage who can see your profile, activity, and personal
@@ -25,7 +25,7 @@ export default function CollapsibleSingleAccordion() {
             </XDSText>
           </XDSCollapsible>
         </XDSSection>
-        <XDSSection variant="wash">
+        <XDSSection>
           <XDSCollapsible trigger="Notification Settings" value="notifications">
             <XDSText type="body">
               Choose which notifications you receive and how they are delivered.
