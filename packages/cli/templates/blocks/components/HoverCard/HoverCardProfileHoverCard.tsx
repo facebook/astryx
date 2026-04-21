@@ -11,6 +11,7 @@ import {CalendarIcon} from '@heroicons/react/24/outline';
 
 const styles = stylex.create({
   avatar: {flexShrink: 0},
+  content: {maxWidth: 280},
 });
 
 export default function HoverCardProfileHoverCard() {
@@ -18,7 +19,7 @@ export default function HoverCardProfileHoverCard() {
     <XDSHoverCard
       placement="below"
       content={
-        <XDSHStack gap={3} vAlign="start">
+        <XDSHStack gap={3} vAlign="start" xstyle={styles.content}>
           <XDSAvatar name="Jane Doe" size={48} xstyle={styles.avatar} />
           <XDSVStack gap={1}>
             <XDSHeading level={3}>@janedoe</XDSHeading>
