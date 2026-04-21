@@ -1,10 +1,10 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'CodeBlock — Bash Command',
+  name: 'Code — Snippet',
   description:
-    'Minimal single-line bash command with a copy button.',
+    'Short terminal commands with a copy button and no line numbers. Use for install instructions or one-liner commands that readers will paste directly.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['CodeBlock'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['CodeBlock', 'Stack'],
 };
