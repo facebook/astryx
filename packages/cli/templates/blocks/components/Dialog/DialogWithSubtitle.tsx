@@ -41,17 +41,10 @@ export default function DialogWithSubtitle() {
           }
           content={
             <XDSLayoutContent>
-              <XDSVStack gap={2}>
-                <XDSText type="body">
-                  You are about to transfer &quot;Marketing Dashboard&quot; to
-                  Sarah Chen. Once accepted, you will lose admin access.
-                </XDSText>
-                <XDSText type="supporting" color="secondary">
-                  This dialog uses purpose=&quot;required&quot; — neither Escape
-                  nor the backdrop can dismiss it. The user must choose an
-                  action.
-                </XDSText>
-              </XDSVStack>
+              <XDSText type="body">
+                You are about to transfer &quot;Marketing Dashboard&quot; to
+                Sarah Chen. Once accepted, you will lose admin access.
+              </XDSText>
             </XDSLayoutContent>
           }
           footer={
