@@ -5,35 +5,39 @@ import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
 import {XDSStack} from '@xds/core/Layout';
 
 export default function CheckboxInputBasic() {
-  const [newsletter, setNewsletter] = useState<boolean | 'indeterminate'>(true);
-  const [analytics, setAnalytics] = useState<boolean | 'indeterminate'>(false);
-  const [premium, setPremium] = useState<boolean | 'indeterminate'>(false);
+  const [checked, setChecked] = useState<boolean | 'indeterminate'>(true);
+  const [unchecked, setUnchecked] = useState<boolean | 'indeterminate'>(false);
+  const [disabled, setDisabled] = useState<boolean | 'indeterminate'>(false);
+  const [indeterminate, setIndeterminate] = useState<boolean | 'indeterminate'>(
+    'indeterminate',
+  );
 
   return (
     <XDSStack direction="vertical" gap={4}>
       <XDSCheckboxInput
-        label="Subscribe to newsletter"
-        description="Receive weekly updates about new features and announcements."
-        value={newsletter}
-        onChange={setNewsletter}
-        status={{type: 'success', message: 'You are subscribed'}}
+        label="Checked"
+        description="This checkbox is currently on."
+        value={checked}
+        onChange={setChecked}
       />
       <XDSCheckboxInput
-        label="Share usage analytics"
-        description="Help us improve by sharing anonymous usage data."
-        value={analytics}
-        onChange={setAnalytics}
-        status={{
-          type: 'warning',
-          message: 'This data may be shared with partners',
-        }}
+        label="Unchecked"
+        description="This checkbox is currently off."
+        value={unchecked}
+        onChange={setUnchecked}
       />
       <XDSCheckboxInput
-        label="Premium features"
-        description="Upgrade your plan to enable this option."
-        value={premium}
-        onChange={setPremium}
+        label="Disabled"
+        description="This checkbox cannot be changed."
+        value={disabled}
+        onChange={setDisabled}
         isDisabled
+      />
+      <XDSCheckboxInput
+        label="Indeterminate"
+        description="This checkbox represents a partial selection."
+        value={indeterminate}
+        onChange={setIndeterminate}
       />
     </XDSStack>
   );
