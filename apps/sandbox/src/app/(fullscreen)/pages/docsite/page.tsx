@@ -202,16 +202,18 @@ function ThemeCard({
                 padding: '3% 4%',
                 borderBottom: `1px solid ${theme.preview.surface}`,
               }}>
-              <div
+              <span
                 style={{
-                  width: '5%',
-                  height: 0,
-                  paddingBottom: '5%',
-                  borderRadius: '50%',
-                  backgroundColor: theme.preview.accent,
+                  fontSize: 9,
+                  fontWeight: 700,
+                  letterSpacing: '0.04em',
+                  color: theme.preview.text,
+                  opacity: 0.7,
                   flexShrink: 0,
-                }}
-              />
+                  lineHeight: 1,
+                }}>
+                {theme.name}
+              </span>
               <div
                 style={{
                   flex: 1,
