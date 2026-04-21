@@ -46,8 +46,9 @@ export function BlockPreview({
             style={{
               width: '100%',
               display: 'flex',
-              alignItems: 'center',
+              flexDirection: 'column',
               justifyContent: 'center',
+              flex: 1,
               transform: scale !== 1 ? `scale(${scale})` : undefined,
               transformOrigin: 'center center',
             }}>
