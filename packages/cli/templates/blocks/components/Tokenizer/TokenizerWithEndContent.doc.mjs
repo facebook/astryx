@@ -1,10 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Tokenizer — With End Content',
-  description:
-    'Tokenizer with an action button in the end slot for inline actions.',
+  name: 'Tokenizer \u2014 End Content',
+  description: 'Tokenizer with an action button in the end slot. Use for inline actions like applying selections or showing a count alongside the input.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['Tokenizer', 'Button'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Tokenizer', 'Button', 'Layout', 'Text'],
 };

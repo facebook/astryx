@@ -2,6 +2,8 @@
 
 import {useState} from 'react';
 import {XDSTokenizer} from '@xds/core/Tokenizer';
+import {XDSStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
 
 const emptySource: XDSSearchSource = {
@@ -10,9 +12,16 @@ const emptySource: XDSSearchSource = {
 };
 
 export default function TokenizerCreatableTags() {
-  const [tags, setTags] = useState<XDSSearchableItem[]>([]);
+  const [tags, setTags] = useState<XDSSearchableItem[]>([
+    {id: 'urgent', label: 'Urgent'},
+    {id: 'frontend', label: 'Frontend'},
+  ]);
+
   return (
-    <div>
+    <XDSStack direction="vertical" gap={2}>
+      <XDSText type="supporting" color="secondary">
+        Type any value and press Enter to create a tag
+      </XDSText>
       <XDSTokenizer
         label="Tags"
         searchSource={emptySource}
@@ -21,9 +30,6 @@ export default function TokenizerCreatableTags() {
         hasCreate
         placeholder="Type a tag and press Enter..."
       />
-      <p style={{marginTop: 8, fontSize: 14, color: '#666'}}>
-        {tags.length} tag{tags.length !== 1 ? 's' : ''} added
-      </p>
-    </div>
+    </XDSStack>
   );
 }

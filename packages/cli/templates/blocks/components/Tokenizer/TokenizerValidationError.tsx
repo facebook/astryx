@@ -2,6 +2,8 @@
 
 import {useState} from 'react';
 import {XDSTokenizer} from '@xds/core/Tokenizer';
+import {XDSStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
 
 const users: XDSSearchableItem[] = [
@@ -15,19 +17,47 @@ const users: XDSSearchableItem[] = [
 const userSource: XDSSearchSource = {
   search: (query: string) =>
     users.filter(u => u.label.toLowerCase().includes(query.toLowerCase())),
-  bootstrap: () => users.slice(0, 5),
+  bootstrap: () => users,
 };
 
 export default function TokenizerValidationError() {
-  const [value, setValue] = useState<XDSSearchableItem[]>([]);
+  const [errorValue, setErrorValue] = useState<XDSSearchableItem[]>([]);
+  const [warningValue, setWarningValue] = useState<XDSSearchableItem[]>([
+    users[0],
+  ]);
+
   return (
-    <XDSTokenizer
-      label="Team Members"
-      placeholder="Search people..."
-      searchSource={userSource}
-      value={value}
-      onChange={items => setValue(items)}
-      status={{type: 'error', message: 'At least one member is required'}}
-    />
+    <XDSStack direction="vertical" gap={4}>
+      <XDSStack direction="vertical" gap={1}>
+        <XDSText type="supporting" color="secondary">
+          Error state
+        </XDSText>
+        <XDSTokenizer
+          label="Reviewers"
+          placeholder="Search people..."
+          searchSource={userSource}
+          value={errorValue}
+          onChange={items => setErrorValue(items)}
+          isRequired
+          status={{type: 'error', message: 'At least one reviewer is required'}}
+        />
+      </XDSStack>
+      <XDSStack direction="vertical" gap={1}>
+        <XDSText type="supporting" color="secondary">
+          Warning state
+        </XDSText>
+        <XDSTokenizer
+          label="Approvers"
+          placeholder="Search people..."
+          searchSource={userSource}
+          value={warningValue}
+          onChange={items => setWarningValue(items)}
+          status={{
+            type: 'warning',
+            message: 'Consider adding at least 2 approvers',
+          }}
+        />
+      </XDSStack>
+    </XDSStack>
   );
 }
