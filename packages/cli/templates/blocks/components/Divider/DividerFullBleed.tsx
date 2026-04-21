@@ -1,13 +1,18 @@
 'use client';
 
+import * as stylex from '@stylexjs/stylex';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSCard} from '@xds/core/Card';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
+const styles = stylex.create({
+  wide: {width: '100%'},
+});
+
 export default function DividerFullBleed() {
   return (
-    <XDSCard>
+    <XDSCard xstyle={styles.wide}>
       <XDSVStack gap={3}>
         <XDSText type="label">Order Summary</XDSText>
         <XDSHStack hAlign="space-between">
