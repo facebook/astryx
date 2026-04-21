@@ -19,12 +19,16 @@ import {
   fontWeightVars,
 } from '@xds/core/theme/tokens.stylex';
 
+// light-scene-vertical-2 from xds_oss asset set
 const BANNER_URL =
-  'https://images.unsplash.com/photo-1557683316-973673baf926?w=1600&q=80';
+  'https://lookaside.facebook.com/assets/xds_oss/light-scene-vertical-2.jpg';
 const WHY_US_IMAGES = [
-  'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&q=80',
-  'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=600&q=80',
-  'https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&q=80',
+  // light-working-horizontal-3 from xds_oss asset set
+  'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-3.jpg',
+  // light-working-horizontal-2 from xds_oss asset set
+  'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-2.jpg',
+  // light-working-vertical-1 from xds_oss asset set
+  'https://lookaside.facebook.com/assets/xds_oss/light-working-vertical-1.jpg',
 ];
 
 const CAMPAIGN_GOALS = [
