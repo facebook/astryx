@@ -9,12 +9,13 @@ import {XDSText} from '@xds/core/Text';
 
 const styles = stylex.create({
   fill: {minHeight: '100%'},
+  fullWidth: {width: '100%'},
 });
 
 export default function DividerFullBleed() {
   return (
     <XDSSection variant="wash" xstyle={styles.fill}>
-      <XDSCard>
+      <XDSCard xstyle={styles.fullWidth}>
         <XDSVStack gap={3}>
           <XDSText type="label">Order Summary</XDSText>
           <XDSHStack hAlign="space-between">
