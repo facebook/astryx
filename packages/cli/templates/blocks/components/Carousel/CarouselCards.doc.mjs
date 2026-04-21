@@ -5,5 +5,5 @@ export const doc = {
   description: 'A horizontally scrollable row of cards with snap scrolling enabled. Use for feature grids, product lists, or any set of cards that overflows the available width. The carousel adds fade edges and navigation buttons automatically.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['Carousel', 'Badge', 'Card', 'Layout', 'Text'],
+  componentsUsed: ['Carousel', 'Card', 'Layout', 'Text'],
 };
