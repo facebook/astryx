@@ -3,8 +3,8 @@ export const doc = {
   type: 'block',
   name: 'EmptyState — Compact',
   description:
-    'Compact variant with reduced spacing for tight spaces. Use inside cards, sidebars, or panels where the full-size empty state would be too large.',
+    'Smaller empty state with reduced spacing for constrained areas. Use inside sidebar panels, card widgets, or notification drawers where a full-size empty state would overwhelm the layout.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['EmptyState', 'Button', 'Icon'],
+  componentsUsed: ['EmptyState', 'Button', 'Layout', 'Icon'],
 };
