@@ -5,6 +5,6 @@ export const doc = {
   description:
     'Full-viewport dialog for complex content like documentation, editors, or multi-section forms that need more space.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Dialog', 'Layout', 'Button', 'Text'],
 };
