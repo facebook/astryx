@@ -17,6 +17,7 @@ node node_modules/@xds/core/docs.mjs --list --brief  # brief summaries
 For richer documentation including templates, scaffolding, and tooling utilities, install the XDS CLI:
 
 ```bash
+npx xds --help                      # full listing of CLI capabilities
 npx xds component Button           # full docs + related templates
 npx xds template --list             # browse page and block templates
 npx xds template Dashboard --skeleton  # scaffold a template
