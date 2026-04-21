@@ -13,11 +13,7 @@ import {XDSToken} from '@xds/core/Token';
 import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSTextArea} from '@xds/core/TextArea';
 import {XDSDivider} from '@xds/core/Divider';
-import {
-  colorVars,
-  typeScaleVars,
-  fontWeightVars,
-} from '@xds/core/theme/tokens.stylex';
+import {colorVars} from '@xds/core/theme/tokens.stylex';
 
 // light-scene-vertical-2 from xds_oss asset set
 const BANNER_URL =
@@ -85,31 +81,7 @@ const styles = stylex.create({
   fullWidth: {
     width: '100%',
   },
-  errorText: {
-    color: colorVars['--color-error'],
-    fontSize: typeScaleVars['--text-supporting-size'],
-  },
-  displayHeading: {
-    fontSize: '56px',
-    fontWeight: fontWeightVars['--font-weight-bold'],
-    lineHeight: '1.05',
-    letterSpacing: '-0.03em',
-    margin: 0,
-    textAlign: 'center',
-  },
 
-  whyGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: 16,
-  },
-  sectionLabel: {
-    fontSize: typeScaleVars['--text-supporting-size'],
-    fontWeight: fontWeightVars['--font-weight-semibold'],
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase',
-    color: colorVars['--color-text-secondary'],
-  },
 });
 
 /**
@@ -308,7 +280,7 @@ export default function FormSimplePage() {
                 ))}
               </div>
               {errors.goals && (
-                <span {...stylex.props(styles.errorText)}>{errors.goals}</span>
+                <XDSText type="supporting" color="error">{errors.goals}</XDSText>
               )}
             </XDSVStack>
 
