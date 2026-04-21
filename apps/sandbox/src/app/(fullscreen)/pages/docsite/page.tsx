@@ -1793,7 +1793,7 @@ function DocsiteLandingTemplate() {
       </div>
       {!chatOpen && (
         <AIComposer
-          mode={activeTab === 'theme' ? 'theme' : 'template'}
+          tabMode={activeTab === 'theme' ? 'theme' : 'template'}
           onThemeMode={() => setActiveView('theme')}
         />
       )}
