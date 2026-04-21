@@ -157,5 +157,4 @@ export type {
   ComponentVar,
   DerivedVar,
   TranslationDoc,
-  ComponentShowcaseDoc,
 } from './docs-types';
