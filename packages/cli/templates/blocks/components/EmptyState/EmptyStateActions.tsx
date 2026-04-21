@@ -2,13 +2,15 @@
 
 import {XDSEmptyState} from '@xds/core/EmptyState';
 import {XDSButton} from '@xds/core/Button';
+import {XDSIcon} from '@xds/core/Icon';
+import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 
-export default function EmptyStateWithActions() {
+export default function EmptyStateActions() {
   return (
     <XDSEmptyState
-      icon={<span style={{fontSize: '48px'}}>🔍</span>}
+      icon={<XDSIcon icon={MagnifyingGlassIcon} size="lg" />}
       title="No results found"
-      description="Try adjusting your search or filters."
+      description="Try adjusting your search terms or clearing filters to see more results."
       actions={
         <>
           <XDSButton label="Go back" variant="secondary" />

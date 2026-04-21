@@ -88,7 +88,7 @@ export const docs = {
         },
         {
           name: 'children',
-          type: '(item: XDSSelectorItemData) => ReactNode',
+          type: '(item: XDSSelectorOptionData) => ReactNode',
           description: 'Custom render function for each item in the dropdown.',
         },
         {
@@ -100,7 +100,7 @@ export const docs = {
       ],
     },
     {
-      name: 'XDSSelectorItem',
+      name: 'XDSSelectorOption',
       description:
         'Helper component for custom item rendering inside an XDSSelector children render prop.',
       props: [
@@ -230,7 +230,7 @@ export const docsZh = {
         },
         {
           name: 'children',
-          type: '(item: XDSSelectorItemData) => ReactNode',
+          type: '(item: XDSSelectorOptionData) => ReactNode',
           description: '下拉菜单中每个选项的自定义渲染函数。',
         },
         {
@@ -242,7 +242,7 @@ export const docsZh = {
       ],
     },
     {
-      name: 'XDSSelectorItem',
+      name: 'XDSSelectorOption',
       description:
         '用于在 XDSSelector 的 children 渲染函数中自定义选项渲染的辅助组件。',
       props: [
@@ -328,7 +328,7 @@ export const docsDense = {
       },
     },
     {
-      name: 'XDSSelectorItem',
+      name: 'XDSSelectorOption',
       description:
         'Helper component for custom item rendering inside XDSSelector children render prop.',
       propDescriptions: {

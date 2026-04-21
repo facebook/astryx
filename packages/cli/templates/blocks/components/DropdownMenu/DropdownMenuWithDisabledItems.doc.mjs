@@ -1,9 +1,10 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'DropdownMenu — With Disabled Items',
-  description: 'Dropdown menu with selectively disabled menu items.',
+  name: 'DropdownMenu — Disabled',
+  description:
+    'Menu with selectively disabled items based on permissions. Use when some actions require higher privileges, like admin-only operations.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['DropdownMenu'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['DropdownMenu', 'Layout', 'Text'],
 };

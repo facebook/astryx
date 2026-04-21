@@ -79,18 +79,3 @@ export function getSelectableOptions(
 
   return result;
 }
-
-/**
- * @deprecated Use isOptionData instead
- */
-export const isItemData = isOptionData;
-
-/**
- * @deprecated Use normalizeOption instead
- */
-export const normalizeItem = normalizeOption;
-
-/**
- * @deprecated Use getSelectableOptions instead
- */
-export const getSelectableItems = getSelectableOptions;

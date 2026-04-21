@@ -22,6 +22,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const VIBE_DIR = path.resolve(__dirname, '..');
 const RESULTS_DIR = path.join(VIBE_DIR, 'results');
 
+import {createAgentProject} from './setup-environment.mjs';
+
 // ── Helpers ──────────────────────────────────────────────────────────
 
 function generateId() {
@@ -77,37 +79,9 @@ function samplePrompts(prompts, n) {
 
 // ── Task prompt templates ────────────────────────────────────────────
 
-function generateXdsTaskPrompt(prompt, iterDir) {
-  const componentNames = (prompt.expectedComponents || []).map(c =>
-    c.replace(/^XDS/, ''),
-  );
-
-  const cliCommands = componentNames
-    .map(c => `npx xds component ${c}`)
-    .join('\n');
-
+function generateXdsTaskPrompt(prompt, projectDir) {
   return `You are generating React/TSX code using the XDS design system.
-
-## IMPORTANT: Read component docs FIRST
-
-You MUST run the following commands on the MacBook CLI node (node: "cli:MacBook-Pro-2") 
-to read the component API docs BEFORE writing any code:
-
-cd ~/xds/worktrees/main
-${cliCommands}
-
-Read the output carefully. Use ONLY the props documented in the CLI output.
-Do NOT guess prop names or values. If you need additional components beyond
-the ones listed above, look them up too: npx xds component <Name>
-
-## Rules
-
-1. Import from '@xds/core' (e.g. import { XDSButton } from '@xds/core')
-2. Use StyleX for custom styling (import * as stylex from '@stylexjs/stylex')
-3. Use CSS variables for tokens: var(--color-*), var(--spacing-*), var(--radius-*)
-4. Form inputs are controlled: value + onChange
-5. No <div> for layout — use XDSVStack, XDSHStack, XDSGrid
-6. Export default a single React component
+Your project is at ${projectDir}. Explore it to find how to look up component docs.
 
 ## Task
 
@@ -115,23 +89,16 @@ ${prompt.prompt}
 
 ## Output
 
-Write the TSX code to: ${path.join(iterDir, 'results', `${prompt.id}.tsx`)}
-Write metadata to: ${path.join(iterDir, 'results', `${prompt.id}.json`)}
+Write the TSX code to: ${path.join(projectDir, `${prompt.id}.tsx`)}
+Write metadata to: ${path.join(projectDir, `${prompt.id}.json`)}
 
-The metadata JSON should contain:
-{
-  "completedAt": "<current ISO timestamp>",
-  "docsRead": [<list of component names you looked up via CLI>]
+Metadata: {"completedAt": "<ISO timestamp>", "docsRead": [<component names you looked up>]}
+Write ONLY valid TSX. No markdown fences, no explanation.`;
 }
 
-Write ONLY valid TSX in the .tsx file. No markdown fences, no explanation.`;
-}
-
-function generateBaselineTaskPrompt(prompt, iterDir) {
+function generateBaselineTaskPrompt(prompt, projectDir) {
   return `You are generating React/TSX code using shadcn/ui components with Tailwind CSS.
-
-Read the baseline docs at ${VIBE_DIR}/.baseline-docs/ 
-and ${VIBE_DIR}/AGENTS.baseline.md for component guidance.
+Your project is at ${projectDir}. Explore it to find available components.
 
 ## Task
 
@@ -139,17 +106,17 @@ ${prompt.prompt}
 
 ## Output
 
-Write the TSX code to: ${path.join(iterDir, 'results', `${prompt.id}.tsx`)}
-Write metadata to: ${path.join(iterDir, 'results', `${prompt.id}.json`)}
+Write the TSX code to: ${path.join(projectDir, `${prompt.id}.tsx`)}
+Write metadata to: ${path.join(projectDir, `${prompt.id}.json`)}
 
 Metadata: {"completedAt": "<ISO timestamp>", "docsRead": [<docs you read>]}
 Write ONLY valid TSX. No markdown fences, no explanation.`;
 }
 
-function generateHtmlTaskPrompt(prompt, iterDir) {
+function generateHtmlTaskPrompt(prompt, projectDir) {
   return `You are generating React/TSX code using ONLY plain HTML elements and inline CSS.
-Do NOT use any component library. Use standard HTML elements (div, button, input, etc.)
-with inline styles or a styles object.
+Your project is at ${projectDir}. Do NOT use any component library.
+Use standard HTML elements (div, button, input, etc.) with inline styles or a styles object.
 
 ## Task
 
@@ -157,8 +124,8 @@ ${prompt.prompt}
 
 ## Output
 
-Write the TSX code to: ${path.join(iterDir, 'results', `${prompt.id}.tsx`)}
-Write metadata to: ${path.join(iterDir, 'results', `${prompt.id}.json`)}
+Write the TSX code to: ${path.join(projectDir, `${prompt.id}.tsx`)}
+Write metadata to: ${path.join(projectDir, `${prompt.id}.json`)}
 
 Metadata: {"completedAt": "<ISO timestamp>", "docsRead": []}
 Write ONLY valid TSX. No markdown fences, no explanation.`;
@@ -196,7 +163,8 @@ function createIteration(target, prompts, generateFn) {
   );
 
   for (const prompt of prompts) {
-    const taskPrompt = generateFn(prompt, iterDir);
+    const agentProject = createAgentProject(target, iterDir, prompt.id);
+    const taskPrompt = generateFn(prompt, agentProject);
     const task = {
       promptId: prompt.id,
       category: prompt.category,
@@ -279,6 +247,11 @@ for (const p of prompts) {
 }
 
 console.log(`\n## After all agents complete:\n`);
+console.log(`  # Collect results from agent project dirs`);
+console.log(`  node src/collect-results.mjs ${xds.iterationId}`);
+console.log(`  node src/collect-results.mjs ${baseline.iterationId}`);
+console.log(`  node src/collect-results.mjs ${html.iterationId}`);
+console.log(``);
 console.log(`  # tsc type-checking`);
 console.log(`  npx tsx src/build-previews.ts --iterations "${xds.iterationId},${baseline.iterationId},${html.iterationId}" --tsc-only`);
 console.log(`\n  # Evaluation`);

@@ -62,7 +62,7 @@ const STATIC_EXPORTS = {
     import: './dist/theme/syntax/index.mjs',
     require: './dist/theme/syntax/index.js',
   },
-  './xds.md': './xds.md',
+  './docs.mjs': './docs.mjs',
 };
 
 /**

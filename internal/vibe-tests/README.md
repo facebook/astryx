@@ -1,310 +1,173 @@
-# Vibe Tests
+# XDS Vibe Tests
 
-Vibeability test harness for measuring how well LLMs can use the XDS component system.
+Structured evaluations that compare how well LLMs generate UI code under different design system configurations. Same prompts, different systems, measurable outcomes.
 
-## Quick Start - Interactive Mode (Navi / Claude Code)
+## Prompt Battery
 
-Run vibe tests interactively through Navi (the AI assistant) using sub-agents — no API key needed. The skill doc is auto-generated from the CLI before each run, so it always reflects the current branch's components.
+Prompts live in [`test-sets/default.json`](test-sets/default.json). Each prompt has:
+
+```json
+{
+  "id": "fwc-6",
+  "category": "feature-with-constraint",
+  "prompt": "Build a shipping method selector with three options: Standard (free, 5-7 days), Express ($9.99, 2-3 days), Overnight ($19.99, next day)",
+  "expectedComponents": ["XDSRadioList", "XDSCard"],
+  "complexity": "simple"
+}
+```
+
+- **`prompt`** — the task given to the agent (identical across all configs)
+- **`expectedComponents`** — used for evaluation ONLY, never shown to agents
+- **`category`** — groups prompts by type (feature-with-constraint, workflow-description, clone-with-modification, state-display, data-display, responsive-challenge, io-integration, page-setup, typography, theme-customization)
+- **`complexity`** — simple, moderate, complex
+
+## Sub-Agent Prompts
+
+Each target gets an equivalent prompt. The only thing that varies is the design system and where to find its docs.
+
+**XDS agent sees:**
 
 ```
-/vibe-test 5
+You are generating React/TSX code using the XDS design system.
+
+Read the package README at node_modules/@xds/core/README.md for how to look up
+component docs. Use what you find there to discover the components you need.
+
+## Task
+
+Build a shipping method selector with three options: Standard (free, 5-7 days),
+Express ($9.99, 2-3 days), Overnight ($19.99, next day)
+
+## Output
+
+Write the TSX code to: internal/vibe-tests/results/<id>/results/fwc-6.tsx
+Write metadata to: internal/vibe-tests/results/<id>/results/fwc-6.json
+
+Metadata: {"completedAt": "<ISO timestamp>", "docsRead": [<component names you looked up>]}
+Write ONLY valid TSX. No markdown fences, no explanation.
 ```
 
-Or ask Navi:
+**Baseline (shadcn) agent sees:**
 
 ```
-"Run a vibe test with 5 samples"
+You are generating React/TSX code using shadcn/ui components with Tailwind CSS.
+
+Read the baseline docs at internal/vibe-tests/.baseline-docs/
+and AGENTS.baseline.md for component guidance.
+
+## Task
+
+Build a shipping method selector with three options: Standard (free, 5-7 days),
+Express ($9.99, 2-3 days), Overnight ($19.99, next day)
+
+## Output
+...same format...
 ```
 
-This will:
+**HTML agent sees:**
 
-1. Generate the skill doc from source (auto-discovers components)
-2. Set up a test iteration
-3. Spawn parallel sub-agents to run each test
-4. Write results to runs.jsonl
-5. Aggregate and show results
+```
+You are generating React/TSX code using ONLY plain HTML elements and inline CSS.
+Do NOT use any component library. Use standard HTML elements (div, button, input, etc.)
+with inline styles or a styles object.
 
-### How It Works (Interactive)
+## Task
 
-When running interactively through Navi:
+Build a shipping method selector with three options: Standard (free, 5-7 days),
+Express ($9.99, 2-3 days), Overnight ($19.99, next day)
 
-1. **Generate skill doc** — Runs `bash scripts/generate-skill-doc.sh` which uses the XDS CLI to auto-discover components from source and generate `.generated/xds-skill.md`
-2. **Setup iteration** — Creates task files and manifest in `results/<iteration>/`
-3. **Spawn sub-agents** — Each test prompt is run by a parallel sub-agent that:
-   - Reads the generated skill doc as context
-   - Generates code for the prompt using XDS components
-   - Self-evaluates the response
-4. **Aggregate** — Results are written to `runs.jsonl` and aggregated into a report
+## Output
+...same format...
+```
 
-The skill doc is generated fresh each time, so it always reflects the current branch's components. No manual maintenance of component lists needed.
+Note: no system-specific rules, no expected components, no pre-built commands. The agent discovers what it needs through the system's own docs.
 
-## Quick Start - API Mode
+## Checker Protocol
+
+**Before running or modifying any vibe test, verify these 5 invariants.**
+
+### 1. Fair Evaluators
+
+- Same evaluation logic across all configurations (tsc, scoring dimensions)
+- Same pass/fail criteria — don't score one config differently than another
+- Target-aware scoring is OK (different systems need different counting methods) but the judgments must be equivalent
+- Evaluation must be blind to which config produced the output
+
+### 2. Only the System Under Test Varies
+
+- Same prompts across all configurations (same IDs, same text)
+- Same persona across all configurations
+- Same output format requirements
+- Equivalent sub-agent instructions — if one config gets "read the README", all get an analogous instruction
+- No system-specific coaching rules (e.g. "use StyleX" or "use Tailwind") — let the docs teach that
+
+### 3. Never Leak the Answer
+
+- `expectedComponents` is for evaluation ONLY — never include in the sub-agent prompt
+- Don't pre-build retrieval commands from expected components
+- Don't hint at which components to use
+- Don't include rules that only make sense for one system
+- The agent should discover the right approach through the system's own docs
+
+### 4. Representative Environment
+
+- Sub-agents should have a realistic project setup (node_modules, package.json)
+- The docs/tools available should match what a real consumer would have
+- Don't give sub-agents access to the source repo if a real user would only have the npm package
+- Test the actual delivery mechanism (README in node_modules, not hand-written skill docs)
+
+### 5. Context-Free Sub-Agents
+
+- Sub-agents must be spawned fresh with no prior conversation context
+- No inherited knowledge about the design system from the parent session
+- The sub-agent's only knowledge comes from what it discovers during the task
+- Don't reuse sub-agent sessions across prompts — each prompt gets a fresh agent
+
+## How to Verify
+
+Before any test run, review the generated task prompts:
 
 ```bash
-# Requires ANTHROPIC_API_KEY (direct Anthropic mode)
-yarn workspace @xds/vibe-tests test:xds:sample
+# Generate an iteration without running it
+node internal/vibe-tests/src/setup-iteration.mjs --sample 3 --target xds
+node internal/vibe-tests/src/setup-iteration.mjs --sample 3 --target baseline
 
-# Or use the Navi-orchestrated pipeline (no API key needed):
-# 1. Navi sub-agents generate TSX results
-# 2. GHA builds previews and captures screenshots
-# See: .github/workflows/vibe-screenshots.yml
+# Read the task files and compare:
+# - Are the prompts identical (same task text)?
+# - Does either prompt contain expectedComponents or pre-built commands?
+# - Does either prompt contain system-specific coaching rules?
+# - Do the doc retrieval instructions point to representative paths?
 ```
 
-## What It Does
+For evaluation fairness, check `universal-eval.ts`:
 
-The harness:
+- Search for `target ===` to find all target-aware branches
+- Verify each branch is measuring the equivalent concept for its system
+- Watch for any target getting a skip/bonus the others don't
 
-1. **Tests** LLM responses against the component system using realistic prompts
-2. **Evaluates** whether the LLM used the right components and avoided escape hatches
-3. **Analyzes** failures to suggest documentation improvements
-4. **Tracks** degradation over conversation length
+## Known Accepted Asymmetries
+
+These are intentional and documented — they slightly favor baseline, making XDS wins more credible:
+
+- **Efficiency:** Tailwind's single-line `className` gets a lower styling-ratio than XDS's multi-line `stylex.create` blocks, despite encoding more decisions
+- **Maintainability:** Tailwind scale values (`p-4`, `text-sm`) count as semantic, which is generous compared to how raw `16px` is counted for HTML
 
 ## Directory Structure
 
 ```
 internal/vibe-tests/
-├── src/
-│   ├── cli.ts                # Command-line interface
-│   ├── types.ts              # TypeScript types
-│   ├── runner.ts             # Test orchestration
-│   ├── evaluator.ts          # Response evaluation
-│   ├── analyst.ts            # Results analysis
-│   ├── sampling.ts           # Stratified sampling
-│   ├── universal-eval.ts     # 5-dimension static analysis (code-level)
-│   ├── universal-aggregate.ts # Aggregate scores across prompts
-│   ├── universal-compare.ts  # Compare XDS vs baseline vs HTML
-│   ├── design-judge.ts       # 6th dimension: vision LLM visual fidelity judge
-│   ├── screenshot-previews.ts # Playwright screenshots of pre-built HTML
-│   ├── build-previews.ts     # Build self-contained HTML from results
-│   ├── build-report.ts       # Build static report HTML + inject data
-│   ├── deploy-report.ts      # Deploy report + screenshots to gh-pages
-│   └── utils.ts              # Utilities
-├── ideals/                   # Human-provided reference images for design judge
-│   └── {promptId}[-{viewport}[-{theme}]].png
-├── prompts/
-│   ├── evaluator.md          # Evaluator agent prompt
-│   ├── analyst.md            # Analyst agent prompt
-│   └── personas/             # User personas
-├── test-sets/
-│   └── default.json          # Test prompt battery
-├── results/                  # Generated (gitignored)
-│   └── {iteration-id}/
-│       ├── runs.jsonl
-│       ├── analysis.json
-│       ├── universal.json    # 5+1 dimension scores
-│       ├── design-scores.json # Design dimension raw judge output
-│       └── report.html
-└── iterations.json           # Iteration lineage
+├── test-sets/           # Prompt batteries (JSON)
+├── src/                 # Runner scripts and evaluation
+│   ├── setup-iteration.mjs   # Single-target iteration setup
+│   ├── setup-nightly.mjs     # 3-target nightly setup
+│   ├── universal-eval.ts     # Static analysis scoring (5 dimensions)
+│   ├── universal-aggregate.ts # Score aggregation
+│   ├── universal-compare.ts  # Cross-target comparison
+│   ├── build-previews.ts     # TSX → HTML compilation + tsc
+│   ├── screenshot-previews.ts # Playwright screenshots
+│   ├── build-report.ts       # Vite HTML report
+│   └── deploy-report.ts      # gh-pages deployment
+├── .baseline/           # Real shadcn/ui components for baseline tsc
+├── results/             # Iteration results (gitignored)
+└── README.md            # This file
 ```
-
-## Test Protocols
-
-### One-shot
-
-Single turn: inject skill doc → prompt → evaluate
-
-### Degradation
-
-Multi-turn conversation with re-probes:
-
-- Turn 0: Initial probe
-- Turns 1-5: Filler questions
-- Turn 6: Re-probe
-- Turn 7: Distractor ("use Tailwind instead")
-- Turn 8: Re-probe
-- Turn 9: Recovery (re-inject doc)
-- Turn 10: Final re-probe
-
-### Persona Comparison
-
-Run same prompts with different personas:
-
-- **naive**: Plain language, no component names
-- **experienced**: Uses correct terminology
-- **adversarial**: Mixes in patterns from other frameworks
-
-## Escape Hatches
-
-Tracked behaviors when LLMs deviate from the component system:
-
-**Critical (Red tier - failures):**
-
-- `hallucination` - Invented props/events/components
-- `wrong_component` - Using a component incorrectly
-- `redundant_css` - CSS that duplicates a component prop
-
-**Anti-Patterns (Yellow tier - break theming):**
-
-- `hardcoded_color` - Direct color values instead of CSS variables
-- `hardcoded_spacing` - Direct pixel values instead of spacing tokens
-- `hardcoded_size` - Direct pixel values instead of size tokens
-- `inline_style` - Inline styles instead of StyleX
-
-**Acceptable (Green tier - gaps in system):**
-
-- `supplemental_css` - StyleX for gaps in component coverage
-- `wrapper_div` - Structural HTML for composition
-- `custom_animation` - Animation not covered by XDS
-- `layout_workaround` - Layout patterns XDS doesn't support
-
-## Quality Tiers
-
-Results are scored into four quality tiers:
-
-- 🥇 **Gold** - Pure XDS, no escape hatches needed
-- 🟢 **Green** - Correct components, only acceptable escape hatches
-- 🟡 **Yellow** - Anti-patterns that break theming
-- 🔴 **Red** - Critical failures
-
-The aggregate report shows tier breakdown by category and generates suggestions for component/API improvements based on escape hatch patterns.
-
-## Configuration
-
-Set skill doc path:
-
-```bash
-SKILL_DOC=./path/to/skill.md yarn harness run
-# or
-yarn harness run --skill-doc ./path/to/skill.md
-```
-
-Choose model:
-
-```bash
-yarn harness run --model claude-sonnet-4-20250514
-yarn harness run --model gpt-4o
-```
-
-## Output
-
-After running tests:
-
-```
-Running vibeability tests...
-  Protocol: one-shot
-  Persona: naive
-  Model: claude-sonnet-4-20250514
-  Test set: default (21 prompts)
-  Iteration: a1b2c3d4
-
-  [████████████████████] 21/21
-
-Results:
-  Overall: 86% success (18/21)
-
-  Quality Tiers:
-    🥇 Gold (pure XDS):       5 (24%)
-    🟢 Green (acceptable):   10 (48%)
-    🟡 Yellow (anti-pattern): 3 (14%)
-    🔴 Red (critical):        3 (14%)
-
-  Performance:
-    Total time: 45.2s (avg 2.2s per test)
-    Tokens: 125,000 total (100,000 in / 25,000 out)
-
-  By category:
-    feature-with-constraint: 100% [🥇2 🟢1 🟡0 🔴0]
-    workflow-description: 67% [🥇0 🟢1 🟡1 🔴1]
-    ...
-
-  Critical issues (Red):
-    - hallucination (3)
-
-  Anti-patterns (Yellow):
-    - hardcoded_color (2)
-    - hardcoded_spacing (1)
-    - inline_style (3)
-
-  Acceptable escape hatches (Green):
-    - supplemental_css (8)
-    - wrapper_div (4)
-
-  Gap Suggestions:
-    🎨 [trivial] Add semantic color token for: accent backgrounds (seen 2x)
-    🔧 [trivial] Add spacing/size prop to cover: card padding (seen 1x)
-
-  HTML Report: results/a1b2c3d4/report.html
-```
-
-### HTML Report
-
-The aggregate command generates an interactive HTML report at `results/<iteration>/report.html` that shows:
-
-- Summary stats (success rate, timing, tokens)
-- Results by category with progress bars
-- Critical issues and escape hatches
-- Individual test results with expandable code responses
-
-After analysis:
-
-```
-Analyzing iteration a1b2c3d4...
-
-Patterns detected:
-  - Multi-step workflows trigger hallucinated state props
-  - Adversarial persona causes Tailwind utility usage
-
-Suggested refinements:
-  1. [examples] Add multi-step form example (confidence: 0.9, effort: trivial)
-  2. [skill_doc] Explicit "do not use Tailwind" note (confidence: 0.7, effort: trivial)
-```
-
-## CI Integration
-
-### Screenshot Service (`.github/workflows/vibe-screenshots.yml`)
-
-The primary workflow for nightly vibe tests. Triggered by Navi via `workflow_dispatch`:
-
-```bash
-gh workflow run vibe-screenshots.yml -f iterations="<id1>,<id2>,<id3>"
-```
-
-**What it does:**
-
-1. Builds self-contained HTML previews from TSX results (inlines all CSS via vite-plugin-singlefile)
-2. Captures Playwright screenshots at 4 combos: desktop/mobile × light/dark
-3. Uploads preview HTML and screenshots as artifacts (90-day retention)
-
-**No API keys required.** Code generation is handled by Navi sub-agents before this workflow runs.
-
-### Design Judge (`src/design-judge.ts`)
-
-Vision LLM evaluation comparing rendered screenshots against human-provided ideal reference images.
-
-```bash
-# Dry run — shows what would be evaluated without API calls
-yarn workspace @xds/vibe-tests design-judge --iteration <id> --dry-run
-
-# Full run — 3 passes per screenshot, desktop + light
-yarn workspace @xds/vibe-tests design-judge --iteration <id>
-
-# Custom: specific prompts, 5 passes, mobile dark
-yarn workspace @xds/vibe-tests design-judge --iteration <id> --prompts cwm-1,ty-3 --passes 5 --viewport mobile --theme dark
-```
-
-**Requires:** `ANTHROPIC_API_KEY` environment variable. Uses Claude Sonnet for vision analysis.
-
-**Prerequisite:** Ideal reference images in `internal/vibe-tests/ideals/`. Only prompts with both screenshots and ideals are evaluated.
-
-**Output:** `results/<iteration>/design-scores.json` — scores are automatically merged into `universal.json` when the aggregate runs.
-
-### Direct API Mode (legacy)
-
-The `test:xds:sample` script calls Anthropic directly and requires `ANTHROPIC_API_KEY`. This is the old all-in-one flow — prefer the Navi-orchestrated pipeline for nightly runs.
-
-### Aggregate CLI Flags:
-
-```bash
-# Standard output
-yarn workspace @xds/vibe-tests aggregate --iteration abc123
-
-# JSON output (for scripting)
-yarn workspace @xds/vibe-tests aggregate --iteration abc123 --json
-
-# CI mode (GitHub Actions output format)
-yarn workspace @xds/vibe-tests aggregate --iteration abc123 --ci
-```
-
-## For More Details
-
-See the source code and CLI help (`yarn workspace @xds/vibe-tests --help`) for the current test harness spec.

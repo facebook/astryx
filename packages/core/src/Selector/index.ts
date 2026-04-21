@@ -13,10 +13,7 @@ export {
   type XDSSelectorStatus,
   type XDSSelectorStatusType,
 } from './XDSSelector';
-export {
-  XDSSelectorOption,
-  type XDSSelectorOptionProps,
-} from './XDSSelectorOption';
+export {XDSSelectorOption} from './XDSSelectorOption';
 export type {
   XDSSelectorOptionType,
   XDSSelectorOptionData,
@@ -31,11 +28,3 @@ export {
   getSelectableOptions,
 } from './utils';
 export {useCombobox, useSelectedItemOffset} from './hooks';
-
-// Backward compatibility — deprecated exports
-export {XDSSelectorItem, type XDSSelectorItemProps} from './XDSSelectorItem';
-export type {
-  XDSSelectorOption as XDSSelectorOptionLegacy,
-  XDSSelectorItemData,
-} from './types';
-export {isItemData, normalizeItem, getSelectableItems} from './utils';

@@ -115,19 +115,21 @@ export const docs = {
     },
   ],
   usage: {
-    description: 'A modal dialog that interrupts the user workflow to communicate important information or request a decision. Use for confirmations before destructive actions, multi-step workflows, or content that requires acknowledgement before proceeding.',
+    description: 'Dialog displays a modal overlay that blocks interaction with the page until the user responds. Use it for delete confirmations, edit forms, terms acceptance, or any decision that should not be skipped.',
     bestPractices: [
-      { guidance: true, description: 'Choose the right purpose (required, form, info) to match the importance of the content.' },
-      { guidance: true, description: 'Include a clear title in the header so users immediately understand the dialog context.' },
+      { guidance: true, description: 'Choose the right purpose: info for dismissable content, form to prevent accidental backdrop dismissal, required when the user must respond.' },
+      { guidance: true, description: 'Include a clear title in the header so users immediately understand what the dialog is asking.' },
+      { guidance: true, description: 'Use purpose="form" for dialogs with inputs so the user can\'t accidentally lose data by clicking the backdrop.' },
+      { guidance: true, description: 'Keep dialogs focused on a single task — if the content grows beyond what fits, consider a full page instead.' },
       { guidance: false, description: 'Use a dialog for simple messages that could be shown inline or as a toast notification.' },
       { guidance: false, description: 'Nest dialogs inside other dialogs — restructure the flow into steps within a single dialog instead.' },
+      { guidance: false, description: 'Use the fullscreen variant for simple confirmations — it is meant for complex content like editors or long forms.' },
     ],
     anatomy: [
-      {name: 'Body', required: true, description: 'The main content area of the dialog.'},
-      {name: 'Header', required: true, description: 'Contains the title, actions, and close button.'},
-      {name: 'Footer', required: true, description: 'Contains action buttons, links, and page count.'},
-      {name: 'Left Panel', required: false, description: 'Used for navigation or completion stages.'},
-      {name: 'Right Panel', required: false, description: 'Used for supplementary information.'},
+      {name: 'Header', required: true, description: 'Title, optional subtitle, and close button. The title receives focus on open for accessibility.'},
+      {name: 'Body', required: true, description: 'The main content area — text, forms, lists, or any layout.'},
+      {name: 'Footer', required: false, description: 'Action buttons like Save/Cancel or Accept/Decline, aligned to the end.'},
+      {name: 'Backdrop', required: true, description: 'Semi-transparent overlay behind the dialog that blocks page interaction.'},
     ],
   },
 };
@@ -248,40 +250,35 @@ export const docsZh = {
     },
   ],
   usage: {
-    description: 'A modal dialog that interrupts the user workflow to communicate important information or request a decision. Use for confirmations before destructive actions, multi-step workflows, or content that requires acknowledgement before proceeding.',
+    description: 'Dialog displays a modal overlay that blocks interaction with the page until the user responds. Use it for delete confirmations, edit forms, terms acceptance, or any decision that should not be skipped.',
     bestPractices: [
-      { guidance: true, description: 'Choose the right purpose (required, form, info) to match the importance of the content.' },
-      { guidance: true, description: 'Include a clear title in the header so users immediately understand the dialog context.' },
+      { guidance: true, description: 'Choose the right purpose: info for dismissable content, form to prevent accidental backdrop dismissal, required when the user must respond.' },
+      { guidance: true, description: 'Include a clear title in the header so users immediately understand what the dialog is asking.' },
+      { guidance: true, description: 'Use purpose="form" for dialogs with inputs so the user can\'t accidentally lose data by clicking the backdrop.' },
+      { guidance: true, description: 'Keep dialogs focused on a single task — if the content grows beyond what fits, consider a full page instead.' },
       { guidance: false, description: 'Use a dialog for simple messages that could be shown inline or as a toast notification.' },
       { guidance: false, description: 'Nest dialogs inside other dialogs — restructure the flow into steps within a single dialog instead.' },
+      { guidance: false, description: 'Use the fullscreen variant for simple confirmations — it is meant for complex content like editors or long forms.' },
     ],
     anatomy: [
-      {name: 'Body', required: true, description: 'The main content area of the dialog.'},
-      {name: 'Header', required: true, description: 'Contains the title, actions, and close button.'},
-      {name: 'Footer', required: true, description: 'Contains action buttons, links, and page count.'},
-      {name: 'Left Panel', required: false, description: 'Used for navigation or completion stages.'},
-      {name: 'Right Panel', required: false, description: 'Used for supplementary information.'},
+      {name: 'Header', required: true, description: 'Title, optional subtitle, and close button. The title receives focus on open for accessibility.'},
+      {name: 'Body', required: true, description: 'The main content area — text, forms, lists, or any layout.'},
+      {name: 'Footer', required: false, description: 'Action buttons like Save/Cancel or Accept/Decline, aligned to the end.'},
+      {name: 'Backdrop', required: true, description: 'Semi-transparent overlay behind the dialog that blocks page interaction.'},
     ],
   },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'modal dialog using native <dialog> w/ auto focus trapping, backdrop, purpose-based dismissal',
+  description: 'modal overlay that blocks page interaction until the user responds',
   usage: {
-    description: 'A modal dialog that interrupts the user workflow to communicate important information or request a decision. Use for confirmations before destructive actions, multi-step workflows, or content that requires acknowledgement before proceeding.',
+    description: 'Dialog displays a modal overlay that blocks page interaction. Use for delete confirmations, edit forms, terms acceptance.',
     bestPractices: [
-      { guidance: true, description: 'Choose the right purpose (required, form, info) to match the importance of the content.' },
-      { guidance: true, description: 'Include a clear title in the header so users immediately understand the dialog context.' },
-      { guidance: false, description: 'Use a dialog for simple messages that could be shown inline or as a toast notification.' },
-      { guidance: false, description: 'Nest dialogs inside other dialogs — restructure the flow into steps within a single dialog instead.' },
-    ],
-    anatomy: [
-      {name: 'Body', required: true, description: 'The main content area of the dialog.'},
-      {name: 'Header', required: true, description: 'Contains the title, actions, and close button.'},
-      {name: 'Footer', required: true, description: 'Contains action buttons, links, and page count.'},
-      {name: 'Left Panel', required: false, description: 'Used for navigation or completion stages.'},
-      {name: 'Right Panel', required: false, description: 'Used for supplementary information.'},
+      { guidance: true, description: 'Pick the right purpose: info=dismissable, form=no backdrop dismiss, required=must respond.' },
+      { guidance: true, description: 'Clear title in header. Use purpose="form" for dialogs with inputs.' },
+      { guidance: false, description: 'Use for simple messages — use inline or toast instead. Don\'t nest dialogs.' },
+      { guidance: false, description: 'Fullscreen for simple confirmations — it\'s for complex content like editors.' },
     ],
   },
   components: [
