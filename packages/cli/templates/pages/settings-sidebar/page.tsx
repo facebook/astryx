@@ -3,7 +3,13 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSVStack, XDSHStack, XDSStackItem} from '@xds/core/Layout';
+import {
+  XDSVStack,
+  XDSHStack,
+  XDSStackItem,
+  XDSLayout,
+  XDSLayoutContent,
+} from '@xds/core/Layout';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSLink} from '@xds/core/Link';
@@ -44,12 +50,6 @@ const styles = stylex.create({
   },
   cardContentPadding: {
     paddingInline: spacingVars['--spacing-4'],
-  },
-  contentCenter: {
-    maxWidth: 700,
-    minWidth: 0,
-    width: '100%',
-    paddingInline: spacingVars['--spacing-12'],
   },
   sideNavPadding: {
     paddingBlock: spacingVars['--spacing-4'],
@@ -264,8 +264,9 @@ export default function SettingsSecurityTemplate() {
             </XDSList>
         </XDSVStack>
       }>
-      <XDSCenter axis="horizontal">
-      <XDSVStack gap={0} xstyle={styles.contentCenter}>
+      <XDSLayout contentWidth={700} content={
+        <XDSLayoutContent padding={4}>
+        <XDSVStack gap={0}>
         {activeNav === 'Login & security' && (
           <XDSVStack gap={6}>
             <XDSHeading level={2}>Login &amp; security</XDSHeading>
@@ -791,7 +792,8 @@ export default function SettingsSecurityTemplate() {
           </XDSVStack>
         )}
       </XDSVStack>
-      </XDSCenter>
+        </XDSLayoutContent>
+      } />
     </XDSAppShell>
   );
 }
