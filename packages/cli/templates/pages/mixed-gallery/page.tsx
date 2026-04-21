@@ -117,9 +117,8 @@ export default function MixedGalleryTemplate() {
                   </XDSHeading>
                   <XDSText type="body">
                     We believe the smallest details are the ones that matter
-                    most. A little color, a thoughtful touch, a moment that
-                    catches your eye and makes you pause; that&apos;s what turns
-                    an ordinary day into something worth remembering.
+                    most. That&apos;s what turns an ordinary day into something
+                    worth remembering.
                   </XDSText>
                 </XDSVStack>
               </XDSSection>
