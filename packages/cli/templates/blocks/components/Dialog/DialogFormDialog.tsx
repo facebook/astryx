@@ -7,6 +7,7 @@ import {
   XDSLayoutContent,
   XDSLayoutFooter,
   XDSHStack,
+  XDSVStack,
 } from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
@@ -15,9 +16,9 @@ export default function DialogFormDialog() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <>
+    <XDSVStack gap={3}>
       <XDSButton
-        label="Open Form Modal"
+        label="Edit profile"
         variant="secondary"
         onClick={() => setIsOpen(true)}
       />
@@ -25,21 +26,27 @@ export default function DialogFormDialog() {
         isOpen={isOpen}
         onOpenChange={setIsOpen}
         purpose="form"
-        width={500}>
+        width={480}>
         <XDSLayout
           header={
             <XDSDialogHeader
-              title="Edit Profile"
+              title="Edit profile"
+              subtitle="Update your display name and bio"
               onOpenChange={setIsOpen}
             />
           }
           content={
             <XDSLayoutContent>
-              <XDSText type="body">
-                This modal uses purpose=&quot;form&quot;. Clicking outside
-                won&apos;t close it to prevent accidental data loss, but you can
-                still press Escape.
-              </XDSText>
+              <XDSVStack gap={3}>
+                <XDSText type="body">
+                  This dialog uses purpose=&quot;form&quot;. Clicking the
+                  backdrop will not close it, preventing accidental data loss.
+                  Escape still works.
+                </XDSText>
+                <XDSText type="supporting" color="secondary">
+                  Form fields would go here — TextInput, TextArea, etc.
+                </XDSText>
+              </XDSVStack>
             </XDSLayoutContent>
           }
           footer={
@@ -60,6 +67,6 @@ export default function DialogFormDialog() {
           }
         />
       </XDSDialog>
-    </>
+    </XDSVStack>
   );
 }

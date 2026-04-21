@@ -7,17 +7,41 @@ import {
   XDSLayoutContent,
   XDSLayoutFooter,
   XDSHStack,
+  XDSVStack,
 } from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
+
+const SECTIONS = [
+  {
+    title: 'Getting started',
+    body: 'Create your first project by clicking New Project in the sidebar. Choose a template or start from scratch.',
+  },
+  {
+    title: 'Team members',
+    body: 'Invite collaborators from Settings > Team. Each member can have Admin, Editor, or Viewer permissions.',
+  },
+  {
+    title: 'Billing',
+    body: 'Free plans include up to 3 projects. Upgrade to Pro for unlimited projects and priority support.',
+  },
+  {
+    title: 'API access',
+    body: 'Generate API keys from Settings > Developer. Rate limits are 1,000 requests per minute on free plans.',
+  },
+  {
+    title: 'Data export',
+    body: 'Export your data anytime from Settings > Data. Exports are available as CSV or JSON within 24 hours.',
+  },
+];
 
 export default function DialogFullscreenDialog() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <>
+    <XDSVStack gap={3}>
       <XDSButton
-        label="Open Fullscreen Modal"
+        label="Open documentation"
         variant="secondary"
         onClick={() => setIsOpen(true)}
       />
@@ -25,26 +49,21 @@ export default function DialogFullscreenDialog() {
         <XDSLayout
           header={
             <XDSDialogHeader
-              title="Fullscreen Modal"
+              title="Documentation"
+              subtitle="Everything you need to get started"
               onOpenChange={setIsOpen}
             />
           }
           content={
             <XDSLayoutContent>
-              <div
-                style={{display: 'flex', flexDirection: 'column', gap: 12}}>
-                <XDSText type="body">
-                  This modal takes up the entire viewport. The width, maxHeight,
-                  and position props are ignored in fullscreen mode.
-                </XDSText>
-                {Array.from({length: 10}, (_, i) => (
-                  <XDSText type="body" key={i}>
-                    {i + 1}. Lorem ipsum dolor sit amet, consectetur adipiscing
-                    elit. Sed do eiusmod tempor incididunt ut labore et dolore
-                    magna aliqua.
-                  </XDSText>
+              <XDSVStack gap={4}>
+                {SECTIONS.map(({title, body}) => (
+                  <XDSVStack key={title} gap={1}>
+                    <XDSText type="bodyBold">{title}</XDSText>
+                    <XDSText type="body">{body}</XDSText>
+                  </XDSVStack>
                 ))}
-              </div>
+              </XDSVStack>
             </XDSLayoutContent>
           }
           footer={
@@ -60,6 +79,6 @@ export default function DialogFullscreenDialog() {
           }
         />
       </XDSDialog>
-    </>
+    </XDSVStack>
   );
 }

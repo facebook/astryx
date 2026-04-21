@@ -7,6 +7,7 @@ import {
   XDSLayoutContent,
   XDSLayoutFooter,
   XDSHStack,
+  XDSVStack,
 } from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
@@ -21,34 +22,31 @@ export default function DialogConfirmationDialog() {
   };
 
   return (
-    <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
+    <XDSVStack gap={3}>
       <XDSButton
-        label="Delete Item"
+        label="Delete project"
         variant="destructive"
         onClick={() => setIsOpen(true)}
       />
       {deleted && (
         <XDSText type="body" color="primary">
-          Item deleted (demo)
+          Project deleted (demo)
         </XDSText>
       )}
       <XDSDialog
         isOpen={isOpen}
         onOpenChange={setIsOpen}
-        width={350}
+        width={400}
         purpose="form">
         <XDSLayout
           header={
-            <XDSDialogHeader
-              title="Confirm Delete"
-              onOpenChange={setIsOpen}
-            />
+            <XDSDialogHeader title="Delete project?" onOpenChange={setIsOpen} />
           }
           content={
             <XDSLayoutContent>
               <XDSText type="body">
-                Are you sure you want to delete this item? This action cannot be
-                undone.
+                This will permanently delete &quot;Marketing Dashboard&quot; and
+                all of its data. This action cannot be undone.
               </XDSText>
             </XDSLayoutContent>
           }
@@ -70,6 +68,6 @@ export default function DialogConfirmationDialog() {
           }
         />
       </XDSDialog>
-    </div>
+    </XDSVStack>
   );
 }

@@ -7,6 +7,7 @@ import {
   XDSLayoutContent,
   XDSLayoutFooter,
   XDSHStack,
+  XDSVStack,
 } from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
@@ -15,27 +16,33 @@ export default function DialogWithSubtitle() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <>
+    <XDSVStack gap={3}>
       <XDSButton
-        label="Open Modal with Subtitle"
+        label="Transfer ownership"
         variant="secondary"
         onClick={() => setIsOpen(true)}
       />
-      <XDSDialog isOpen={isOpen} onOpenChange={setIsOpen}>
+      <XDSDialog isOpen={isOpen} onOpenChange={setIsOpen} purpose="required">
         <XDSLayout
           header={
             <XDSDialogHeader
-              title="Edit User Profile"
-              subtitle="Make changes to your account settings"
-              onOpenChange={setIsOpen}
+              title="Transfer project ownership"
+              subtitle="This action requires confirmation from the new owner"
             />
           }
           content={
             <XDSLayoutContent>
-              <XDSText type="body">
-                The subtitle appears below the title in smaller, secondary text.
-                It provides additional context about the dialog&apos;s purpose.
-              </XDSText>
+              <XDSVStack gap={2}>
+                <XDSText type="body">
+                  You are about to transfer &quot;Marketing Dashboard&quot; to
+                  Sarah Chen. Once accepted, you will lose admin access.
+                </XDSText>
+                <XDSText type="supporting" color="secondary">
+                  This dialog uses purpose=&quot;required&quot; — neither Escape
+                  nor the backdrop can dismiss it. The user must choose an
+                  action.
+                </XDSText>
+              </XDSVStack>
             </XDSLayoutContent>
           }
           footer={
@@ -47,7 +54,7 @@ export default function DialogWithSubtitle() {
                   onClick={() => setIsOpen(false)}
                 />
                 <XDSButton
-                  label="Save Changes"
+                  label="Transfer"
                   variant="primary"
                   onClick={() => setIsOpen(false)}
                 />
@@ -56,6 +63,6 @@ export default function DialogWithSubtitle() {
           }
         />
       </XDSDialog>
-    </>
+    </XDSVStack>
   );
 }
