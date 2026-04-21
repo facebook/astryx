@@ -9,6 +9,7 @@ import {XDSText} from '@xds/core/Text';
 
 const styles = stylex.create({
   fill: {minHeight: '100%'},
+  divider: {alignSelf: 'stretch'},
 });
 
 export default function DividerVertical() {
@@ -23,7 +24,7 @@ export default function DividerVertical() {
               +12% vs last month
             </XDSText>
           </XDSVStack>
-          <XDSDivider orientation="vertical" />
+          <XDSDivider orientation="vertical" xstyle={styles.divider} />
           <XDSVStack gap={1}>
             <XDSText type="label">Users</XDSText>
             <XDSText type="bodyBold">1,240</XDSText>
@@ -31,7 +32,7 @@ export default function DividerVertical() {
               +8% vs last month
             </XDSText>
           </XDSVStack>
-          <XDSDivider orientation="vertical" />
+          <XDSDivider orientation="vertical" xstyle={styles.divider} />
           <XDSVStack gap={1}>
             <XDSText type="label">Conversion</XDSText>
             <XDSText type="bodyBold">3.2%</XDSText>
