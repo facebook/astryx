@@ -106,12 +106,15 @@ function GalleryCard({image}: {image: GalleryImage}) {
       />
       <div {...stylex.props(styles.overlay)}>
         <XDSMediaTheme mode="dark">
-          <XDSVStack gap={3}>
-            <XDSHeading level={2}>{image.title}</XDSHeading>
-            <XDSText type="body">{image.description}</XDSText>
+          <XDSVStack gap={2}>
+            <XDSHeading level={3}>{image.title}</XDSHeading>
+            <XDSText type="body">
+              One small thing to turn your day around.
+            </XDSText>
             <XDSButton
               label="Read more"
               variant="secondary"
+              size="sm"
               endContent={<XDSIcon icon={ArrowRightIcon} />}
             />
           </XDSVStack>
