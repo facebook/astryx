@@ -2,8 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'Field — Required',
-  description: 'Form field showing a "Required" indicator next to the label.',
+  description: 'Text input marked as required with a visual indicator',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Field'],
+  componentsUsed: ['TextInput'],
 };

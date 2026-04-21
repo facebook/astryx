@@ -98,6 +98,21 @@ export interface XDSGridProps extends XDSBaseProps<HTMLDivElement> {
   columnGap?: SpacingStep;
 
   /**
+   * Height of each implicit row track in pixels.
+   * Sets `grid-auto-rows` — use with `XDSGridSpan rows={N}` to create
+   * masonry-style layouts where items span varying numbers of rows.
+   *
+   * @example
+   * ```
+   * <XDSGrid columns={3} rowHeight={80} gap={3}>
+   *   <XDSGridSpan rows={4}>Tall</XDSGridSpan>
+   *   <XDSGridSpan rows={2}>Short</XDSGridSpan>
+   * </XDSGrid>
+   * ```
+   */
+  rowHeight?: number;
+
+  /**
    * Vertical alignment of grid items (align-items).
    * @default 'stretch'
    */
@@ -336,6 +351,7 @@ function calculateMaxWidth(
 export function XDSGrid({
   columns,
   minChildWidth = 0,
+  rowHeight,
   width,
   height,
   gap,
@@ -391,6 +407,7 @@ export function XDSGrid({
   // Build inline style for dynamic values
   const inlineStyle: React.CSSProperties = {
     gridTemplateColumns,
+    ...(rowHeight != null && {gridAutoRows: `${rowHeight}px`}),
     ...(calculatedMaxWidth != null && {maxWidth: `${calculatedMaxWidth}px`}),
     ...(width != null && {
       width: typeof width === 'number' ? `${width}px` : width,

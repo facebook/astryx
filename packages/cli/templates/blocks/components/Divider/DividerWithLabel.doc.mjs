@@ -2,8 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'Divider — With Label',
-  description: 'Divider with a centered text label.',
+  description: 'Horizontal divider with a centered text label.',
   isReady: true,
-  aspectRatio: 16 / 4,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Divider'],
 };

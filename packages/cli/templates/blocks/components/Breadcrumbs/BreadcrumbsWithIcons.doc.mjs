@@ -2,8 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'Breadcrumbs — With Icons',
-  description: 'Breadcrumbs with a leading icon on the home item.',
+  description: 'Breadcrumbs with leading icons on each navigation item.',
   isReady: true,
-  aspectRatio: 16 / 4,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Breadcrumbs'],
 };

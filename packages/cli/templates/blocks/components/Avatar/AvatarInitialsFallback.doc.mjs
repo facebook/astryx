@@ -2,8 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'Avatar — Initials Fallback',
-  description: 'Avatar showing auto-generated initials when no image is provided.',
+  description: 'Avatars rendering initials from user names when no image is available.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Avatar'],
 };

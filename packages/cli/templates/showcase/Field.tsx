@@ -1,11 +1,9 @@
 'use client';
 
-import {XDSField} from '@xds/core/Field';
+import {XDSTextInput} from '@xds/core/TextInput';
 
 export default function FieldShowcase() {
   return (
-    <XDSField label="Name">
-      <input />
-    </XDSField>
+    <XDSTextInput label="Email" value="" onChange={() => {}} placeholder="you@example.com" />
   );
 }

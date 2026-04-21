@@ -1,0 +1,55 @@
+'use client';
+
+import {XDSMarkdown} from '@xds/core/Markdown';
+
+const content = [
+  '# XDSMarkdown Demo',
+  '',
+  'Renders **markdown** with *design-system-consistent* styling.',
+  '',
+  '## Features',
+  '',
+  '- Headings mapped to XDS type scale',
+  '- **Bold**, *italic*, and ~~strikethrough~~ text',
+  '- [Links](https://example.com) with external detection',
+  '- Inline `code` and fenced code blocks',
+  '',
+  '### Code Block',
+  '',
+  '```typescript',
+  'interface User {',
+  '  id: string;',
+  '  name: string;',
+  '}',
+  '',
+  'function greet(user: User) {',
+  '  return `Hello, ${user.name}!`;',
+  '}',
+  '```',
+  '',
+  '### Blockquote',
+  '',
+  '> Design systems free teams to focus on problems that matter.',
+  '',
+  '### Table',
+  '',
+  '| Component | Status | Tests |',
+  '|:----------|:------:|------:|',
+  '| XDSMarkdown | Active | 73 |',
+  '| XDSCodeBlock | Active | 44 |',
+  '',
+  '### Task List',
+  '',
+  '- [x] Parser',
+  '- [x] Renderer',
+  '- [ ] Storybook stories',
+  '',
+  '---',
+  '',
+  '1. First ordered item',
+  '2. Second ordered item',
+].join('\n');
+
+export default function MarkdownRichContent() {
+  return <XDSMarkdown>{content}</XDSMarkdown>;
+}

@@ -2,8 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'Divider — Full Bleed',
-  description: 'Divider extending to container edges with negative margins.',
+  description: 'Full-bleed divider that extends past container padding.',
   isReady: true,
-  aspectRatio: 16 / 4,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Divider'],
 };

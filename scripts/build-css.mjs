@@ -5,10 +5,10 @@
  *
  * Usage: node scripts/build-css.mjs
  *
- * Compiles all source files with classNamePrefix: 'xds' to match the
- * JS dist output. The resulting CSS uses xds-prefixed class names
- * (e.g. .xds78zum5) which are distinct from product-level styles
- * that use the default 'x' prefix.
+ * This script:
+ * 1. Runs Babel with the StyleX plugin over all source files
+ * 2. Collects all StyleX rules
+ * 3. Outputs a combined xds.css with all rules in @layer xds-base
  *
  * Dist consumers import the full stylesheet:
  *   import '@xds/core/xds.css';
@@ -26,7 +26,7 @@ const ROOT = path.resolve(__dirname, '..');
 const CORE_SRC = path.resolve(ROOT, 'packages/core/src');
 const CORE_DIST = path.resolve(ROOT, 'packages/core/dist');
 
-async function collectStyleXRules() {
+async function collectStyleXCSS() {
   const files = await glob('**/*.{ts,tsx}', {
     cwd: CORE_SRC,
     absolute: true,
@@ -60,7 +60,6 @@ async function collectStyleXRules() {
               runtimeInjection: false,
               genConditionalClasses: true,
               treeshakeCompensation: true,
-              classNamePrefix: 'xds',
               unstable_moduleResolution: {
                 type: 'commonJS',
                 rootDir: ROOT,
@@ -81,11 +80,12 @@ async function collectStyleXRules() {
   }
 
   console.log(`Collected ${allRules.length} StyleX rules`);
+
   return allRules;
 }
 
 async function main() {
-  const allRules = await collectStyleXRules();
+  const allRules = await collectStyleXCSS();
 
   if (allRules.length === 0) {
     console.error('No StyleX rules found!');

@@ -2,8 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'Token — Clickable',
-  description: 'Clickable',
+  description: 'Interactive tokens that respond to click events.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Token'],
 };

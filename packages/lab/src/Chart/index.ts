@@ -69,7 +69,7 @@ export {
   type BrushMode,
   type BrushRange,
 } from './XDSChartBrush';
-export {XDSChartZoom, type XDSChartZoomProps} from './XDSChartZoom';
+export {XDSChartZoom, type XDSChartZoomProps, type ZoomToolbarPosition} from './XDSChartZoom';
 export {XDSChartSelect, type XDSChartSelectProps} from './XDSChartSelect';
 export {
   XDSChartReferenceLine,

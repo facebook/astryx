@@ -3,5 +3,5 @@
 import {XDSAvatar} from '@xds/core/Avatar';
 
 export default function AvatarShowcase() {
-  return <XDSAvatar name="Jane Doe" />;
+  return <XDSAvatar name="John Doe" size="medium" />;
 }

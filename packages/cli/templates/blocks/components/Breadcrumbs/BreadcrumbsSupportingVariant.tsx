@@ -6,7 +6,8 @@ export default function BreadcrumbsSupportingVariant() {
   return (
     <XDSBreadcrumbs variant="supporting">
       <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
-      <XDSBreadcrumbItem isCurrent>Page</XDSBreadcrumbItem>
+      <XDSBreadcrumbItem href="/projects">Projects</XDSBreadcrumbItem>
+      <XDSBreadcrumbItem isCurrent>My Project</XDSBreadcrumbItem>
     </XDSBreadcrumbs>
   );
 }

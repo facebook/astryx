@@ -2,7 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'CheckboxList — With Descriptions',
-  description: 'Checkbox group with secondary text and dividers between items.',
+  description:
+    'Checkbox list with item descriptions and dividers for a notification preferences form.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['CheckboxList'],

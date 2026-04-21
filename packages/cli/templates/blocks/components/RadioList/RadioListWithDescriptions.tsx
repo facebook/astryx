@@ -4,19 +4,28 @@ import {useState} from 'react';
 import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 
 export default function RadioListWithDescriptions() {
-  const [plan, setPlan] = useState('free');
+  const [value, setValue] = useState('');
 
   return (
-    <XDSRadioList label="Plan" value={plan} onChange={setPlan}>
+    <XDSRadioList
+      label="Notification preference"
+      description="Choose how you would like to be notified"
+      value={value}
+      onChange={setValue}>
       <XDSRadioListItem
-        label="Free"
-        value="free"
-        description="Basic features, limited usage"
+        label="Email"
+        value="email"
+        description="Receive notifications via email"
       />
       <XDSRadioListItem
-        label="Pro"
-        value="pro"
-        description="All features, unlimited usage"
+        label="SMS"
+        value="sms"
+        description="Standard messaging rates apply"
+      />
+      <XDSRadioListItem
+        label="Push notification"
+        value="push"
+        description="Instant alerts on your device"
       />
     </XDSRadioList>
   );

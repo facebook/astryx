@@ -2,8 +2,9 @@
 export const doc = {
   type: 'block',
   name: 'Breadcrumbs — Supporting Variant',
-  description: 'Smaller breadcrumbs with secondary text styling.',
+  description:
+    'Breadcrumbs using the supporting variant with smaller, muted text.',
   isReady: true,
-  aspectRatio: 16 / 4,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Breadcrumbs'],
 };

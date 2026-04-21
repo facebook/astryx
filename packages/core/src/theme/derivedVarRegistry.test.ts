@@ -31,6 +31,8 @@ const STRUCTURAL_VARS = new Set([
   '--container-padding-inline',
   '--container-padding-inline-start',
   '--container-padding-inline-end',
+  '--edge-inset-start',
+  '--edge-inset-end',
   '--container-padding-block-start',
   '--container-padding-block-end',
   '--container-max-height',
@@ -39,9 +41,6 @@ const STRUCTURAL_VARS = new Set([
   '--layout-padding-outer-x',
   '--layout-padding-outer-y',
   '--layout-content-width',
-  '--edge-start',
-  '--edge-end',
-  '--component-padding-inline',
   '--appshell-header-height',
   '--dialog-dir-x',
   '--dialog-dir-y',
@@ -65,11 +64,18 @@ function extractComponentVars(filePath: string): string[] {
   while ((match = varPattern.exec(content)) !== null) {
     const varName = match[1];
     // Skip token vars (--color-*, --spacing-*, --radius-*, etc.)
-    if (/^--(color|spacing|radius|shadow|duration|ease|transition|font|text|size)-/.test(varName)) continue;
+    if (
+      /^--(color|spacing|radius|shadow|duration|ease|transition|font|text|size)-/.test(
+        varName,
+      )
+    )
+      continue;
     // Skip structural vars
     if (STRUCTURAL_VARS.has(varName)) continue;
     // Skip vars that start with structural prefixes
     if (/^--(container-|layout-|edge-|component-)/.test(varName)) continue;
+    // Skip private vars (--_ prefix = internal, not themeable)
+    if (varName.startsWith('--_')) continue;
     vars.add(varName);
   }
   return [...vars];
@@ -96,7 +102,13 @@ function discoverComponents(): ComponentInfo[] {
     const dirPath = join(SRC_DIR, dir);
     // Find source files with component vars (.tsx and .ts, excluding tests/docs)
     const sourceFiles = readdirSync(dirPath)
-      .filter(f => (f.endsWith('.tsx') || f.endsWith('.ts')) && !f.includes('.test.') && !f.endsWith('.doc.mjs') && !f.endsWith('.d.ts'))
+      .filter(
+        f =>
+          (f.endsWith('.tsx') || f.endsWith('.ts')) &&
+          !f.includes('.test.') &&
+          !f.endsWith('.doc.mjs') &&
+          !f.endsWith('.d.ts'),
+      )
       .map(f => join(dirPath, f));
 
     const allVars = new Set<string>();
@@ -117,7 +129,9 @@ function discoverComponents(): ComponentInfo[] {
       const mod = require(docPath);
       docVars = (mod.docs?.theming?.vars || []).map((v: any) => v.name);
       docDerived = mod.docs?.theming?.derived || [];
-    } catch { /* skip */ }
+    } catch {
+      /* skip */
+    }
 
     results.push({
       dir,
@@ -178,8 +192,8 @@ describe('component CSS vars are documented and themeable', () => {
       expect(
         undocumented,
         `${dir} has undocumented CSS vars in source: ${undocumented.join(', ')}. ` +
-        `Add them to ${dir}.doc.mjs theming.vars[] and add a derived[] ` +
-        `entry mapping the standard CSS property to the internal var.`,
+          `Add them to ${dir}.doc.mjs theming.vars[] and add a derived[] ` +
+          `entry mapping the standard CSS property to the internal var.`,
       ).toEqual([]);
     });
 
@@ -215,8 +229,8 @@ describe('component CSS vars are documented and themeable', () => {
       expect(
         themeableVars,
         `${dir} has vars that should be themeable via derived[]: ${themeableVars.join(', ')}. ` +
-        `Add derived[] entries in ${dir}.doc.mjs mapping standard CSS ` +
-        `properties (borderRadius, padding) to these internal vars.`,
+          `Add derived[] entries in ${dir}.doc.mjs mapping standard CSS ` +
+          `properties (borderRadius, padding) to these internal vars.`,
       ).toEqual([]);
     });
   }
@@ -245,7 +259,7 @@ describe('derivedVarRegistry ↔ doc file consistency', () => {
       if (!key) {
         missing.push(
           `${dir}: has theming.derived but no DIR_TO_REGISTRY_KEY mapping. ` +
-          `Add the mapping and a derivedVarRegistry entry.`,
+            `Add the mapping and a derivedVarRegistry entry.`,
         );
       } else if (!derivedVarRegistry[key]) {
         missing.push(
@@ -258,7 +272,9 @@ describe('derivedVarRegistry ↔ doc file consistency', () => {
 
   it('registry has no orphan entries', () => {
     const validKeys = new Set(Object.values(DIR_TO_REGISTRY_KEY));
-    const orphans = Object.keys(derivedVarRegistry).filter(k => !validKeys.has(k));
+    const orphans = Object.keys(derivedVarRegistry).filter(
+      k => !validKeys.has(k),
+    );
     expect(orphans).toEqual([]);
   });
 });

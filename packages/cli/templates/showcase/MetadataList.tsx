@@ -1,7 +1,13 @@
 'use client';
 
-import {XDSMetadataList} from '@xds/core/MetadataList';
+import {XDSMetadataList, XDSMetadataListItem} from '@xds/core/MetadataList';
 
 export default function MetadataListShowcase() {
-  return <XDSMetadataList items={[{label: 'Status', value: 'Active'}]} />;
+  return (
+    <XDSMetadataList>
+      <XDSMetadataListItem label="Name">XDSMetadataList</XDSMetadataListItem>
+      <XDSMetadataListItem label="Status">Active</XDSMetadataListItem>
+      <XDSMetadataListItem label="Owner">Joey</XDSMetadataListItem>
+    </XDSMetadataList>
+  );
 }

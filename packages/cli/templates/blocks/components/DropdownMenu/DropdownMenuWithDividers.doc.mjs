@@ -2,7 +2,7 @@
 export const doc = {
   type: 'block',
   name: 'DropdownMenu — With Dividers',
-  description: 'Dropdown menu with visual dividers separating item groups.',
+  description: 'Dropdown menu with divider lines separating action groups.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['DropdownMenu'],

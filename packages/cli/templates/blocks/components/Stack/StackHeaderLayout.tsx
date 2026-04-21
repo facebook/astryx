@@ -1,31 +1,37 @@
 'use client';
 
-import {XDSHStack, XDSStackItem} from '@xds/core/Layout';
+import {XDSStack, XDSStackItem} from '@xds/core/Layout';
 
-function Logo() {
-  return <div style={{padding: 8}}>Logo</div>;
-}
+const sideStyle = {
+  padding: '8px 16px',
+  borderRadius: 6,
+  backgroundColor: '#f3f4f6',
+  color: '#4b5563',
+  border: '1px solid #d1d5db',
+  fontWeight: 500,
+} as const;
 
-function Navigation() {
-  return <div style={{padding: 8}}>Navigation</div>;
-}
-
-function UserMenu() {
-  return <div style={{padding: 8}}>UserMenu</div>;
-}
+const mainStyle = {
+  padding: '8px 16px',
+  borderRadius: 6,
+  backgroundColor: '#e8f0fe',
+  color: '#1a73e8',
+  border: '1px solid #c6dafc',
+  fontWeight: 500,
+} as const;
 
 export default function StackHeaderLayout() {
   return (
-    <XDSHStack element="header" gap={2}>
+    <XDSStack direction="horizontal" gap={2}>
       <XDSStackItem size="static">
-        <Logo />
+        <div style={sideStyle}>Logo</div>
       </XDSStackItem>
       <XDSStackItem size="fill">
-        <Navigation />
+        <div style={mainStyle}>Navigation</div>
       </XDSStackItem>
       <XDSStackItem size="static">
-        <UserMenu />
+        <div style={sideStyle}>Actions</div>
       </XDSStackItem>
-    </XDSHStack>
+    </XDSStack>
   );
 }

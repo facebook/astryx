@@ -2,8 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'Calendar — Two Months',
-  description: 'Two-month calendar display with date constraints and Monday start.',
+  description: 'Calendar displaying two months side by side for easier date selection.',
   isReady: true,
-  aspectRatio: 3 / 4,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Calendar'],
 };

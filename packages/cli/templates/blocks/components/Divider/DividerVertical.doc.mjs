@@ -4,6 +4,6 @@ export const doc = {
   name: 'Divider — Vertical',
   description: 'Vertical divider separating side-by-side content.',
   isReady: true,
-  aspectRatio: 16 / 4,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Divider'],
 };

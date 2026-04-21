@@ -5,11 +5,10 @@ import {XDSBanner} from '@xds/core/Banner';
 export default function BannerDismissable() {
   return (
     <XDSBanner
-      status="error"
-      title="Something went wrong"
-      description="Please try again later."
+      status="warning"
+      title="Your session will expire soon."
+      description="Please save your work to avoid losing changes."
       isDismissable
-      onDismiss={() => console.log('dismissed')}
     />
   );
 }

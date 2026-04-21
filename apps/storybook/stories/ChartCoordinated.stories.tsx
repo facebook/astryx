@@ -115,7 +115,7 @@ export const CoordinatedViews: StoryObj = {
             <XDSChartAxis position="left" />
             <XDSChartDot dataKey="mpg" color={c[0]} radius={3} />
             <XDSChartBrush
-              onBrush={range => setBrushRange(range)}
+              onBrush={range => setBrushRange(range.x)}
               onClear={() => setBrushRange(null)}
             />
             {brushRange && (

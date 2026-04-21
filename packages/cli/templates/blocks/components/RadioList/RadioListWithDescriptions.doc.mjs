@@ -2,7 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'RadioList — With Descriptions',
-  description: 'Radio group with description text for each option.',
+  description:
+    'Radio list with description text on both the group and each individual item.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['RadioList'],
