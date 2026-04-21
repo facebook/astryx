@@ -5,10 +5,10 @@ import {XDSStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
 const VARIANTS = [
-  {variant: 'primary' as const, label: 'Save changes'},
-  {variant: 'secondary' as const, label: 'Cancel'},
-  {variant: 'ghost' as const, label: 'Learn more'},
-  {variant: 'destructive' as const, label: 'Delete account'},
+  {variant: 'primary' as const, label: 'Primary'},
+  {variant: 'secondary' as const, label: 'Secondary'},
+  {variant: 'ghost' as const, label: 'Ghost'},
+  {variant: 'destructive' as const, label: 'Destructive'},
 ];
 
 export default function ButtonVariants() {
