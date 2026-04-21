@@ -28,12 +28,20 @@ npx xds template settings --skeleton # layout skeleton with spatial annotations
 
 ## XDS CLI
 
-The CLI (`@xds/cli`) provides additional tooling beyond templates:
+The CLI (`@xds/cli`) provides additional tooling:
 
 ```bash
-npx xds --help                      # full listing of CLI capabilities
-npx xds component Button           # full docs + related block templates
-npx xds docs                        # principles, tokens, theming, and styling reference
+npx xds --help                       # full listing of all commands
+npx xds component Button             # full docs + related block templates
+npx xds docs                         # reference docs (principles, tokens, theming, styling)
+npx xds docs theme                   # theming guide (XDSTheme, defineTheme, light/dark)
+npx xds docs tokens                  # spacing, color, radius, typography token reference
+npx xds init                         # initialize XDS in your project
+npx xds theme build                  # build theme CSS for production
+npx xds swizzle Button               # eject component source for customization
+npx xds upgrade --apply              # run codemods to migrate between versions
+npx xds discover                     # discover external XDS packages
+npx xds gap-report                   # report a missing capability
 ```
 
 ## Resources
