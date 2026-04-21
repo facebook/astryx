@@ -9,7 +9,7 @@ export default function CollapsibleMultipleAccordion() {
   return (
     <XDSCollapsibleGroup type="multiple" defaultValue={['features', 'pricing']}>
       <XDSVStack gap={2}>
-        <XDSCard width="100%">
+        <XDSCard>
           <XDSCollapsible trigger="Features" value="features">
             <XDSText type="body">
               Includes real-time collaboration, version history, and granular
@@ -17,7 +17,7 @@ export default function CollapsibleMultipleAccordion() {
             </XDSText>
           </XDSCollapsible>
         </XDSCard>
-        <XDSCard width="100%">
+        <XDSCard>
           <XDSCollapsible trigger="Pricing" value="pricing">
             <XDSText type="body">
               Free for up to 5 users. Pro plans start at $12/user/month with
@@ -25,7 +25,7 @@ export default function CollapsibleMultipleAccordion() {
             </XDSText>
           </XDSCollapsible>
         </XDSCard>
-        <XDSCard width="100%">
+        <XDSCard>
           <XDSCollapsible trigger="Integrations" value="integrations">
             <XDSText type="body">
               Connect with Slack, GitHub, Jira, and 40+ other tools through our
