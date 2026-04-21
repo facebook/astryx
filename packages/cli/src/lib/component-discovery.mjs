@@ -41,6 +41,12 @@ function readDocMeta(docPath) {
 }
 
 /**
+ * Sub-components that are documented within their parent's .doc.mjs
+ * and should not appear as separate entries in the component list.
+ */
+const MERGED_SUB_COMPONENTS = new Set(['AvatarStatusDot']);
+
+/**
  * Auto-discover components by scanning for XDS*.tsx files in core/src/.
  *
  * Returns an ordered Record where:
@@ -96,6 +102,7 @@ export function discoverComponents(coreDir) {
     for (const fileName of xdsFiles) {
       const componentName = fileName.replace(/^XDS/, '').replace(/\.tsx$/, '');
       if (hiddenComponents.has(componentName)) continue;
+      if (MERGED_SUB_COMPONENTS.has(componentName)) continue;
 
       // Check for a per-component doc file that overrides the directory group
       let compGroup = group;
