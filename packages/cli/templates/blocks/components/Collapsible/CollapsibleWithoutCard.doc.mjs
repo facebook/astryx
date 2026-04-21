@@ -1,10 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Collapsible — Without Card',
-  description:
-    'Standalone collapsible sections used without card wrappers.',
+  name: 'Collapsible — Standalone',
+  description: 'Collapsible sections without card wrappers. Use for inline disclosure in detail panels or sidebar content where cards would add too much weight.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Collapsible', 'Layout'],
+  componentsUsed: ['Collapsible', 'Text', 'Layout'],
 };

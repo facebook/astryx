@@ -2,6 +2,7 @@
 
 import {XDSCollapsible, XDSCollapsibleGroup} from '@xds/core/Collapsible';
 import {XDSCard} from '@xds/core/Card';
+import {XDSText} from '@xds/core/Text';
 import {XDSVStack} from '@xds/core/Layout';
 
 export default function CollapsibleSingleAccordion() {
@@ -10,25 +11,25 @@ export default function CollapsibleSingleAccordion() {
       <XDSVStack gap={2}>
         <XDSCard>
           <XDSCollapsible trigger="General Settings" value="general">
-            <p style={{margin: 0}}>
+            <XDSText type="body">
               Configure your general preferences including language, timezone,
               and display options.
-            </p>
+            </XDSText>
           </XDSCollapsible>
         </XDSCard>
         <XDSCard>
           <XDSCollapsible trigger="Privacy Settings" value="privacy">
-            <p style={{margin: 0}}>
+            <XDSText type="body">
               Manage who can see your profile, activity, and personal
               information.
-            </p>
+            </XDSText>
           </XDSCollapsible>
         </XDSCard>
         <XDSCard>
           <XDSCollapsible trigger="Notification Settings" value="notifications">
-            <p style={{margin: 0}}>
+            <XDSText type="body">
               Choose which notifications you receive and how they are delivered.
-            </p>
+            </XDSText>
           </XDSCollapsible>
         </XDSCard>
       </XDSVStack>

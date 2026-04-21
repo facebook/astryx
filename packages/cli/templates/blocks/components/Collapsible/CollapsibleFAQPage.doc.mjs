@@ -1,10 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Collapsible — FAQ Page',
-  description:
-    'Frequently asked questions layout using single-mode accordion with card-wrapped sections.',
+  name: 'Collapsible — FAQ',
+  description: 'Question-and-answer layout with single-mode accordion. Use for help centers, support pages, or onboarding guides.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Collapsible', 'Card', 'Layout'],
+  componentsUsed: ['Collapsible', 'Card', 'Text', 'Layout'],
 };
