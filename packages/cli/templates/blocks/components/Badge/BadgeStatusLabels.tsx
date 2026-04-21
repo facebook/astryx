@@ -4,24 +4,27 @@ import {XDSBadge} from '@xds/core/Badge';
 import {XDSStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
-const STATUSES = [
-  {variant: 'success' as const, label: 'Active'},
-  {variant: 'warning' as const, label: 'Pending'},
-  {variant: 'error' as const, label: 'Failed'},
-  {variant: 'neutral' as const, label: 'Draft'},
-  {variant: 'info' as const, label: 'In Review'},
-];
-
 export default function BadgeStatusLabels() {
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSText type="supporting" color="secondary">
-        Use semantic variants to show system status
-      </XDSText>
-      <XDSStack direction="horizontal" gap={2} vAlign="center">
-        {STATUSES.map(({variant, label}) => (
-          <XDSBadge key={label} variant={variant} label={label} />
-        ))}
+    <XDSStack direction="vertical" gap={6}>
+      <XDSStack direction="vertical" gap={2}>
+        <XDSText type="supporting" color="secondary">
+          System status
+        </XDSText>
+        <XDSStack direction="horizontal" gap={2} vAlign="center">
+          <XDSBadge variant="success" label="Active" />
+          <XDSBadge variant="warning" label="Pending" />
+          <XDSBadge variant="error" label="Failed" />
+        </XDSStack>
+      </XDSStack>
+      <XDSStack direction="vertical" gap={2}>
+        <XDSText type="supporting" color="secondary">
+          Workflow
+        </XDSText>
+        <XDSStack direction="horizontal" gap={2} vAlign="center">
+          <XDSBadge variant="neutral" label="Draft" />
+          <XDSBadge variant="info" label="In Review" />
+        </XDSStack>
       </XDSStack>
     </XDSStack>
   );

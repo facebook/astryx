@@ -13,20 +13,15 @@ const COUNTS = [
 
 export default function BadgeCountBadges() {
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSText type="supporting" color="secondary">
-        Use badges as numeric counters
-      </XDSText>
-      <XDSStack direction="horizontal" gap={3} vAlign="center">
-        {COUNTS.map(({variant, label, note}) => (
-          <XDSStack key={note} direction="vertical" gap={1} hAlign="center">
-            <XDSBadge variant={variant} label={label} />
-            <XDSText type="supporting" color="secondary">
-              {note}
-            </XDSText>
-          </XDSStack>
-        ))}
-      </XDSStack>
+    <XDSStack direction="horizontal" gap={8} hAlign="center" vAlign="center">
+      {COUNTS.map(({variant, label, note}) => (
+        <XDSStack key={note} direction="vertical" gap={2} hAlign="center">
+          <XDSBadge variant={variant} label={label} />
+          <XDSText type="supporting" color="secondary">
+            {note}
+          </XDSText>
+        </XDSStack>
+      ))}
     </XDSStack>
   );
 }
