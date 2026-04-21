@@ -105,7 +105,7 @@ export default function MixedGalleryTemplate() {
   return (
     <XDSAppShell height="auto" contentPadding={6} variant="surface">
       <XDSCenter axis="horizontal">
-        <XDSSection variant="transparent" maxWidth={1400} width="100%" padding={0}>
+        <XDSSection variant="transparent" maxWidth={1400} width="100%" padding={6}>
           <XDSVStack gap={6}>
             {/* Header — capped with XDSSection maxWidth */}
             <XDSCenter axis="horizontal">
