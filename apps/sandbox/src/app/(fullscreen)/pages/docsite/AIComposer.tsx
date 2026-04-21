@@ -2,7 +2,7 @@
 
 import React, {useState} from 'react';
 import {XDSChatComposer, XDSChatComposerInput} from '@xds/core/Chat';
-import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
+import {XDSButton} from '@xds/core/Button';
 import {GridIcon, PaletteIcon} from './docsite-icons';
 
 export type ComposerMode = 'template' | 'theme';
@@ -19,11 +19,9 @@ const MODE_ICON: Record<ComposerMode, React.ReactNode> = {
 
 export function AIComposer({
   mode,
-  onModeChange,
   onThemeMode,
 }: {
   mode: ComposerMode;
-  onModeChange: (mode: ComposerMode) => void;
   onThemeMode?: () => void;
 }) {
   const [prompt, setPrompt] = useState('');
@@ -73,25 +71,12 @@ export function AIComposer({
             onChange={setPrompt}
             placeholder={PLACEHOLDER[mode]}
             footerActions={
-              <XDSDropdownMenu
-                button={{
-                  label: mode === 'template' ? 'Template' : 'Theme',
-                  icon: MODE_ICON[mode],
-                  variant: 'ghost',
-                  size: 'sm',
-                }}
-                items={[
-                  {
-                    label: 'Template',
-                    icon: GridIcon,
-                    onClick: () => onModeChange('template'),
-                  },
-                  {
-                    label: 'Theme',
-                    icon: PaletteIcon,
-                    onClick: () => onModeChange('theme'),
-                  },
-                ]}
+              <XDSButton
+                label={mode === 'template' ? 'Template' : 'Theme'}
+                icon={MODE_ICON[mode]}
+                variant="ghost"
+                size="sm"
+                isDisabled
               />
             }
             input={<XDSChatComposerInput placeholder={PLACEHOLDER[mode]} />}
