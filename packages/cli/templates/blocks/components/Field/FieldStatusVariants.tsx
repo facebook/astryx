@@ -2,20 +2,15 @@
 
 import {useState} from 'react';
 import {XDSTextInput} from '@xds/core/TextInput';
+import {XDSVStack} from '@xds/core/Layout';
 
 export default function FieldStatusVariants() {
   const [email, setEmail] = useState('bad-email');
   const [username, setUsername] = useState('admin');
-  const [apiKey, setApiKey] = useState('valid-user');
+  const [apiKey, setApiKey] = useState('sk-live-abc123');
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 24,
-        maxWidth: 400,
-      }}>
+    <XDSVStack gap={4}>
       <XDSTextInput
         label="Email"
         description="Enter your work email"
@@ -40,6 +35,6 @@ export default function FieldStatusVariants() {
         onChange={setApiKey}
         status={{type: 'success', message: 'API key is valid and active'}}
       />
-    </div>
+    </XDSVStack>
   );
 }
