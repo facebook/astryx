@@ -14,7 +14,7 @@ export default function CodeBlockScrollableBlock() {
       language="typescript"
       title="many-lines.ts"
       hasLineNumbers
-      maxHeight={200}
+      maxHeight="100%"
     />
   );
 }
