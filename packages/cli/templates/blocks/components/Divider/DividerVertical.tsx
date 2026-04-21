@@ -13,7 +13,7 @@ export default function DividerVertical() {
         <XDSHStack gap={4}>
           <XDSVStack gap={1}>
             <XDSText type="label">Revenue</XDSText>
-            <XDSText type="bodyBold">$24,500</XDSText>
+            <XDSText type="label">$24,500</XDSText>
             <XDSText type="supporting" color="secondary">
               +12% vs last month
             </XDSText>
@@ -21,7 +21,7 @@ export default function DividerVertical() {
           <XDSDivider orientation="vertical" />
           <XDSVStack gap={1}>
             <XDSText type="label">Users</XDSText>
-            <XDSText type="bodyBold">1,240</XDSText>
+            <XDSText type="label">1,240</XDSText>
             <XDSText type="supporting" color="secondary">
               +8% vs last month
             </XDSText>
@@ -29,7 +29,7 @@ export default function DividerVertical() {
           <XDSDivider orientation="vertical" />
           <XDSVStack gap={1}>
             <XDSText type="label">Conversion</XDSText>
-            <XDSText type="bodyBold">3.2%</XDSText>
+            <XDSText type="label">3.2%</XDSText>
             <XDSText type="supporting" color="secondary">
               -0.5% vs last month
             </XDSText>
