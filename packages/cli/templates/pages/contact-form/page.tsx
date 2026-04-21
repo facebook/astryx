@@ -21,14 +21,14 @@ import {
 
 // light-scene-vertical-2 from xds_oss asset set
 const BANNER_URL =
-  'https://lookaside.facebook.com/assets/xds_oss/light-scene-vertical-2.png';
+  'https://scontent.xx.fbcdn.net/v/t39.6806-6/671579969_940118178649402_4522511104889080862_n.png?_nc_cat=111&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=RCyQPbhkcRgQ7kNvwF-OGEo&_nc_oc=AdpVzfEVYzLa3On55PG39wuc6G12OiJgEk4bEcgUU2Snr8k3Rrnv3QXE5zZWik7GRURHeIXzRStoqpcF-KZ0FQNu&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=j_DOcV4CdxvzKQgE-8uISA&_nc_ss=7a30f&oh=00_Af3UJlrvjAxkM-Bh2PYYScECcPLx4rY3_6IqN_DodbQ2TQ&oe=69EDD2E8';
 const WHY_US_IMAGES = [
   // light-working-horizontal-3 from xds_oss asset set
-  'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-3.png',
+  'https://scontent.xx.fbcdn.net/v/t39.6806-6/673941911_26516873217954372_8426801068656596725_n.png?_nc_cat=103&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=kYrBxMsu-XIQ7kNvwG0ALRc&_nc_oc=AdpsvOk_GSeqDZMYyu9XgEXC6sRbDYgskKJ1JIE9ApV4mBEUNtq3UCNLxTd0ziNf8f3rgqqorSiHzRJ3F7Xgwg7U&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=SbFeOZvlQWiw07UnEj8Zwg&_nc_ss=7a30f&oh=00_Af086zBs2S-XGPwqm5wll6ZtPx2l6kbWPvXNCWpFeM4Dzg&oe=69EDBB11',
   // light-working-horizontal-2 from xds_oss asset set
-  'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-2.png',
+  'https://scontent.xx.fbcdn.net/v/t39.6806-6/671588323_987740997112258_5691335682748609046_n.png?_nc_cat=105&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=70KiHu940UwQ7kNvwENkvYe&_nc_oc=Adq-J4tZtztsbv8L7ox4LlF6y1zqwbYmj04smI8hLr6IK5yUCXx0rA8XmCE8G8PUX_ohTPGJrYRdv-_ICWaiFN25&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=-trYwHT8jeTOMvEVq5OLaQ&_nc_ss=7a30f&oh=00_Af3iOmD3mzznUjBacG_SWE8xS6nKOK94TM6KXjNoQZvWjg&oe=69EDE288',
   // light-working-vertical-1 from xds_oss asset set
-  'https://lookaside.facebook.com/assets/xds_oss/light-working-vertical-1.png',
+  'https://scontent.xx.fbcdn.net/v/t39.6806-6/671925666_4495480327349179_31826850576590602_n.png?_nc_cat=108&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=X4C5kh2r28cQ7kNvwGHycKu&_nc_oc=Adpv6qCiJDDR4DiXZs3DxC9Vns7qO5aV7ToJRiBNE4xzoxd1qwsVePyQ5JO4-bLKKVFpbodppT49JO_-17Z4pSWO&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=yG3_e3LinVYmZOdiA1SQ4w&_nc_ss=7a30f&oh=00_Af1l2Wt6krp_KY7fcPU9hhvzl48uJ0TnKpUKDjwOVk2iOw&oe=69EDB7EB',
 ];
 
 const CAMPAIGN_GOALS = [
