@@ -1,10 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Text — Product Card',
-  description:
-    'Card-like layout using text hierarchy with label, truncated body, and supporting timestamp.',
+  name: 'Text — Card',
+  description: 'Card layout with a label title, truncated body, and a supporting timestamp showing text hierarchy in a contained space.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Text'],
+  componentsUsed: ['Text', 'Card', 'Stack'],
 };

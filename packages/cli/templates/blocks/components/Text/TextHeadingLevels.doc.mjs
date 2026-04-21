@@ -1,9 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Text — Metrics',
-  description: 'Dashboard-style metrics using tabular numbers for consistent digit alignment across values.',
+  name: 'Text — Heading Levels',
+  description: 'All 6 heading levels (h1 through h6) rendered with XDSHeading to show the full type scale.',
   isReady: true,
-  aspectRatio: 16 / 9,
+  aspectRatio: 3 / 4,
   componentsUsed: ['Text', 'Stack'],
 };

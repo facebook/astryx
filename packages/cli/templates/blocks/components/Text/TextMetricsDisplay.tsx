@@ -1,34 +1,32 @@
 'use client';
 
 import {XDSText} from '@xds/core/Text';
+import {XDSStack} from '@xds/core/Stack';
+
+const METRICS = [
+  {label: 'Revenue', value: '$1,234,567.89'},
+  {label: 'Active users', value: '12,345'},
+  {label: 'Conversion', value: '23.4%', color: 'active' as const},
+];
 
 export default function TextMetricsDisplay() {
   return (
-    <div style={{display: 'flex', gap: 24}}>
-      <div style={{textAlign: 'start'}}>
-        <XDSText type="body" color="secondary" display="block">
-          Revenue
-        </XDSText>
-        <XDSText type="large" weight="bold" hasTabularNumbers>
-          $1,234,567.89
-        </XDSText>
-      </div>
-      <div style={{textAlign: 'start'}}>
-        <XDSText type="body" color="secondary" display="block">
-          Users
-        </XDSText>
-        <XDSText type="large" weight="bold" hasTabularNumbers>
-          12,345
-        </XDSText>
-      </div>
-      <div style={{textAlign: 'start'}}>
-        <XDSText type="body" color="secondary" display="block">
-          Conversion
-        </XDSText>
-        <XDSText type="large" weight="bold" color="active" hasTabularNumbers>
-          23.4%
-        </XDSText>
-      </div>
-    </div>
+    <XDSStack direction="horizontal" gap={6}>
+      {METRICS.map(({label, value, color}) => (
+        <XDSStack key={label} direction="vertical" gap={0}>
+          <XDSText type="supporting" color="secondary" display="block">
+            {label}
+          </XDSText>
+          <XDSText
+            type="large"
+            weight="bold"
+            color={color}
+            hasTabularNumbers
+          >
+            {value}
+          </XDSText>
+        </XDSStack>
+      ))}
+    </XDSStack>
   );
 }
