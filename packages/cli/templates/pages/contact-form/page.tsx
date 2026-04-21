@@ -81,6 +81,9 @@ const styles = stylex.create({
   fullWidth: {
     width: '100%',
   },
+  errorColor: {
+    color: colorVars['--color-error'],
+  },
 
 });
 
@@ -280,7 +283,7 @@ export default function FormSimplePage() {
                 ))}
               </div>
               {errors.goals && (
-                <XDSText type="supporting" color="error">{errors.goals}</XDSText>
+                <XDSText type="supporting" xstyle={styles.errorColor}>{errors.goals}</XDSText>
               )}
             </XDSVStack>
 
