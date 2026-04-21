@@ -2,9 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'TextArea — Character Count',
-  description:
-    'Textarea with a maximum character limit and live counter display.',
+  description: 'Textareas with maxLength and a live character counter. The counter turns red when the limit is exceeded.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['TextArea'],
 };
