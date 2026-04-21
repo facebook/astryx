@@ -2,7 +2,7 @@
 export const doc = {
   type: 'block',
   name: 'Avatar — Group Stack',
-  description: 'Overlap multiple avatars in a row to represent a group of people, like team members or reviewers. A "+N" avatar at the end shows how many more people are in the group.',
+  description: 'Overlap multiple avatars in a row to represent a group of people. Use for team lists, PR reviewers, or participant counts where you want to show faces without taking up much space.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['Avatar'],

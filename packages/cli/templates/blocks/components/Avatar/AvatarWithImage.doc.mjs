@@ -2,7 +2,7 @@
 export const doc = {
   type: 'block',
   name: 'Avatar — With Images',
-  description: 'Show a profile photo at different sizes. If the image cannot load, the avatar falls back to showing initials from the name.',
+  description: 'Show a profile photo at different sizes. Use when you have a user photo URL and want a graceful fallback to initials if it fails to load.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['Avatar'],
