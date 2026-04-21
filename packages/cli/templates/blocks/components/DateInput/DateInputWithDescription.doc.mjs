@@ -1,9 +1,10 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'DateInput — With Description',
-  description: 'Date input with a helper description below the label.',
+  name: 'DateInput — Description',
+  description:
+    'Date input with helper text below the label explaining what the field expects. Use when the purpose of the date is not obvious from the label alone.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['DateInput'],
+  componentsUsed: ['DateInput', 'Layout', 'Text'],
 };
