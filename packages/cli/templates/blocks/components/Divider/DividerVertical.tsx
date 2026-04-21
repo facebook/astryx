@@ -6,7 +6,7 @@ import {XDSHStack, XDSVStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
 const styles = stylex.create({
-  divider: {alignSelf: 'stretch'},
+  divider: {height: 'auto', alignSelf: 'stretch'},
 });
 
 export default function DividerVertical() {
