@@ -46,12 +46,15 @@ export default function AvatarGroup() {
         <XDSStack direction="horizontal" vAlign="center">
           {USERS.map((user, i) => (
             <XDSStack
+              direction="vertical"
               key={user.name}
               {...stylex.props(groupStyles.overlap(i === 0 ? 0 : -10))}>
               <XDSAvatar src={user.src} name={user.name} size="small" />
             </XDSStack>
           ))}
-          <XDSStack {...stylex.props(groupStyles.overlap(-10))}>
+          <XDSStack
+            direction="vertical"
+            {...stylex.props(groupStyles.overlap(-10))}>
             <XDSAvatar name="+3" size="small" />
           </XDSStack>
         </XDSStack>
@@ -63,12 +66,15 @@ export default function AvatarGroup() {
         <XDSStack direction="horizontal" vAlign="center">
           {USERS.slice(0, 3).map((user, i) => (
             <XDSStack
+              direction="vertical"
               key={user.name}
               {...stylex.props(groupStyles.overlap(i === 0 ? 0 : -14))}>
               <XDSAvatar src={user.src} name={user.name} size="medium" />
             </XDSStack>
           ))}
-          <XDSStack {...stylex.props(groupStyles.overlap(-14))}>
+          <XDSStack
+            direction="vertical"
+            {...stylex.props(groupStyles.overlap(-14))}>
             <XDSAvatar name="+8" size="medium" />
           </XDSStack>
         </XDSStack>
