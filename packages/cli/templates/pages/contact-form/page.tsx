@@ -208,7 +208,7 @@ export default function FormSimplePage() {
                       alt={item.title}
                       style={{
                         width: '100%',
-                        height: 'auto',
+                        height: 200,
                         objectFit: 'cover',
                         borderRadius: 8,
                       }}
