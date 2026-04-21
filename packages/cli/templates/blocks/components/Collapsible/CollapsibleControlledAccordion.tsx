@@ -9,11 +9,7 @@ import {XDSVStack} from '@xds/core/Layout';
 export default function CollapsibleControlledAccordion() {
   const [open, setOpen] = useState<string | string[]>('profile');
   return (
-    <XDSVStack gap={3}>
-      <XDSText type="body" color="secondary">
-        Currently open: {String(open) || '(none)'}
-      </XDSText>
-      <XDSCollapsibleGroup type="single" value={open} onChange={setOpen}>
+    <XDSCollapsibleGroup type="single" value={open} onChange={setOpen}>
         <XDSVStack gap={2}>
           <XDSCard>
             <XDSCollapsible trigger="Profile Information" value="profile">
@@ -40,7 +36,6 @@ export default function CollapsibleControlledAccordion() {
             </XDSCollapsible>
           </XDSCard>
         </XDSVStack>
-      </XDSCollapsibleGroup>
-    </XDSVStack>
+    </XDSCollapsibleGroup>
   );
 }
