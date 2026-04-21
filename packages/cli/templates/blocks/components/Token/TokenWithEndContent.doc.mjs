@@ -2,8 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'Token — End Content',
-  description: 'Tokens with trailing content such as counts or status indicators.',
+  description: 'Tokens with trailing content like a count badge or status indicator after the label. Use for notification counts, item quantities, or compact status info.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['Token'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Token', 'Badge', 'Layout', 'Text'],
 };

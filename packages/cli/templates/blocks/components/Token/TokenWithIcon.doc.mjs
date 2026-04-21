@@ -1,9 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Token — With Icon',
-  description: 'Tokens with leading icon elements for visual context.',
+  name: 'Token — Icon',
+  description: 'Tokens with a leading icon that identifies the entity type. Use when the icon helps users recognize the token category faster, like a user icon for people or a tag icon for labels.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['Token'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Token', 'Icon', 'Layout', 'Text'],
 };

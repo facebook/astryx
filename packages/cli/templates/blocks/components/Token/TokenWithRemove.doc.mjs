@@ -2,8 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'Token — Removable',
-  description: 'Tokens with a remove button for dismissible tags and filters.',
+  description: 'Tokens with a dismiss button for selections the user can undo. Use in multi-select fields, active filters, or any list of user-chosen items.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['Token'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Token', 'Layout', 'Text'],
 };
