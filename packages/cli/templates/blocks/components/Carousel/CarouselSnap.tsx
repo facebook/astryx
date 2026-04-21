@@ -21,7 +21,7 @@ export default function CarouselSnap() {
       </XDSText>
       <XDSCarousel gap={2} hasSnap hasButtons aria-label="Team members">
         {TEAM.map(person => (
-          <XDSCard key={person.name} width={180}>
+          <XDSCard key={person.name} width={180} minHeight={140}>
             <XDSStack direction="vertical" gap={3} hAlign="center">
               <XDSAvatar name={person.name} size="medium" />
               <XDSStack direction="vertical" gap={1} hAlign="center">

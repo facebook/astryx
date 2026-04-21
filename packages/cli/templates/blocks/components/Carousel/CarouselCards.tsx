@@ -28,7 +28,7 @@ export default function CarouselCards() {
       </XDSText>
       <XDSCarousel gap={2} hasSnap aria-label="Feature cards">
         {FEATURES.map(item => (
-          <XDSCard key={item.title} width={200}>
+          <XDSCard key={item.title} width={200} minHeight={100}>
             <XDSStack direction="vertical" gap={1}>
               <XDSText type="body" weight="bold">
                 {item.title}
