@@ -7,48 +7,51 @@ import {
   XDSLayoutContent,
   XDSLayoutFooter,
   XDSHStack,
+  XDSVStack,
 } from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
+import {XDSCard} from '@xds/core/Card';
 
 export default function DialogConfirmationDialog() {
   const [isOpen, setIsOpen] = useState(false);
-  const [deleted, setDeleted] = useState(false);
 
   const handleDelete = () => {
-    setDeleted(true);
     setIsOpen(false);
   };
 
   return (
-    <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
-      <XDSButton
-        label="Delete Item"
-        variant="destructive"
-        onClick={() => setIsOpen(true)}
-      />
-      {deleted && (
-        <XDSText type="body" color="primary">
-          Item deleted (demo)
-        </XDSText>
-      )}
+    <XDSCard>
+      <XDSVStack gap={3}>
+        <XDSVStack gap={1}>
+          <XDSText type="body" weight="bold">Marketing Dashboard</XDSText>
+          <XDSText type="supporting" color="secondary">
+            Created Jan 12, 2026 · 14 pages · 3 collaborators
+          </XDSText>
+        </XDSVStack>
+        <XDSHStack gap={2}>
+          <XDSButton label="Edit" variant="secondary" onClick={() => {}} />
+          <XDSButton
+            label="Delete project"
+            variant="destructive"
+            onClick={() => setIsOpen(true)}
+          />
+        </XDSHStack>
+      </XDSVStack>
       <XDSDialog
         isOpen={isOpen}
         onOpenChange={setIsOpen}
-        width={350}
+        width={400}
         purpose="form">
         <XDSLayout
           header={
-            <XDSDialogHeader
-              title="Confirm Delete"
-              onOpenChange={setIsOpen}
-            />
+            <XDSDialogHeader title="Delete project?" onOpenChange={setIsOpen} />
           }
           content={
             <XDSLayoutContent>
               <XDSText type="body">
-                Are you sure you want to delete this item? This action cannot be
-                undone.
+                This will permanently delete &quot;Marketing Dashboard&quot; and
+                all of its data. This action cannot be undone.
               </XDSText>
             </XDSLayoutContent>
           }
@@ -70,6 +73,6 @@ export default function DialogConfirmationDialog() {
           }
         />
       </XDSDialog>
-    </div>
+    </XDSCard>
   );
 }

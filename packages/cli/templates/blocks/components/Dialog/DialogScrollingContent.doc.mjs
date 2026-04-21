@@ -1,10 +1,10 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Dialog — Scrolling Content',
+  name: 'Dialog — Scrollable',
   description:
-    'Dialog with constrained max height and scrollable body content.',
+    'Constrains the dialog height and scrolls the body when content overflows. Use for terms and conditions, license agreements, changelogs, or any long-form content the user needs to review before accepting.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['Dialog', 'Layout', 'Button', 'Text'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Dialog', 'Layout', 'Button', 'Text', 'Card'],
 };
