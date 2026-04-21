@@ -36,7 +36,7 @@ export default function ThumbnailGallery() {
         ))}
       </XDSStack>
       {selected != null && (
-        <XDSText type="supporting" color="accent">
+        <XDSText type="supporting" color="active">
           Previewing: {selected}
         </XDSText>
       )}
