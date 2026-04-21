@@ -27,8 +27,8 @@ export default function DividerFullBleed() {
           </XDSHStack>
           <XDSDivider isFullBleed />
           <XDSHStack hAlign="between">
-            <XDSText type="bodyBold">Total</XDSText>
-            <XDSText type="bodyBold">$145.15</XDSText>
+            <XDSText type="label">Total</XDSText>
+            <XDSText type="label">$145.15</XDSText>
           </XDSHStack>
         </XDSVStack>
       </XDSCard>
