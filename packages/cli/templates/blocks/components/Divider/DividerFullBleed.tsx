@@ -23,8 +23,12 @@ export default function DividerFullBleed() {
       </XDSHStack>
       <XDSDivider />
       <XDSHStack hAlign="between">
-<XDSText type="body" weight="bold">Total</XDSText>
-            <XDSText type="body" weight="bold">$145.15</XDSText>
+        <XDSText type="body" weight="bold">
+          Total
+        </XDSText>
+        <XDSText type="body" weight="bold">
+          $145.15
+        </XDSText>
       </XDSHStack>
     </XDSVStack>
   );
