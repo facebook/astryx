@@ -185,7 +185,7 @@ export interface XDSIconProps extends Omit<
   icon: XDSIconType | XDSIconName;
   /**
    * The color variant of the icon.
-   * @default 'primary'
+   * @default 'inherit'
    */
   color?: XDSIconColor;
   /**
@@ -213,7 +213,7 @@ export interface XDSIconProps extends Omit<
  */
 export function XDSIcon({
   icon,
-  color = 'primary',
+  color = 'inherit',
   size = 'md',
   ref,
   ...props
