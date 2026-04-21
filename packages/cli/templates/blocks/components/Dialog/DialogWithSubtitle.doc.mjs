@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'Dialog — Required',
   description:
-    'Required-purpose dialog that cannot be dismissed by Escape or backdrop click. Use when the user must explicitly choose an action, like ownership transfers.',
+    'Cannot be dismissed by Escape or backdrop click — the user must explicitly choose an action. Uses purpose="required". Use for ownership transfers, legal acknowledgements, or critical decisions where skipping is not an option.',
   isReady: true,
   aspectRatio: 16 / 9,
   componentsUsed: ['Dialog', 'Layout', 'Button', 'Text', 'Card'],
