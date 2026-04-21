@@ -78,12 +78,12 @@ export function AIComposer({
               items={[
                 {
                   label: 'Template',
-                  icon: <GridIcon width={16} height={16} />,
+                  icon: GridIcon,
                   onClick: () => onModeChange('template'),
                 },
                 {
                   label: 'Theme',
-                  icon: <PaletteIcon width={16} height={16} />,
+                  icon: PaletteIcon,
                   onClick: () => onModeChange('theme'),
                 },
               ]}
