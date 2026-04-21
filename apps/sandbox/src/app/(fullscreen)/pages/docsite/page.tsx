@@ -208,6 +208,7 @@ function ThemeCard({
                   fontSize: 18,
                   fontWeight: 700,
                   letterSpacing: '0.04em',
+                  fontFamily: theme.preview.font ?? 'system-ui, sans-serif',
                   color: theme.preview.text,
                   opacity: 0.7,
                   flexShrink: 0,

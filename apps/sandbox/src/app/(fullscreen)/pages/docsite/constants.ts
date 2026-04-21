@@ -787,6 +787,7 @@ export type ThemePickerEntry = {
     accent: string;
     text: string;
     radius?: number;
+    font?: string;
   };
 };
 
@@ -805,6 +806,7 @@ export const THEME_PICKER_ENTRIES: ThemePickerEntry[] = [
       accent: '#0066FF',
       text: '#111111',
       radius: 8,
+      font: 'system-ui, sans-serif',
     },
   },
   {
@@ -819,6 +821,7 @@ export const THEME_PICKER_ENTRIES: ThemePickerEntry[] = [
       accent: '#0064E0',
       text: '#111112',
       radius: 10,
+      font: 'Figtree, sans-serif',
     },
   },
   {
@@ -833,6 +836,7 @@ export const THEME_PICKER_ENTRIES: ThemePickerEntry[] = [
       accent: '#1DAA61',
       text: '#111B21',
       radius: 12,
+      font: 'Helvetica Neue, sans-serif',
     },
   },
   {
@@ -847,6 +851,7 @@ export const THEME_PICKER_ENTRIES: ThemePickerEntry[] = [
       accent: '#000000',
       text: '#111111',
       radius: 16,
+      font: 'system-ui, sans-serif',
     },
   },
   {
@@ -861,6 +866,7 @@ export const THEME_PICKER_ENTRIES: ThemePickerEntry[] = [
       accent: '#1877F2',
       text: '#1C1E21',
       radius: 8,
+      font: 'Helvetica, Arial, sans-serif',
     },
   },
   // Community — future user-contributed themes
@@ -876,6 +882,7 @@ export const THEME_PICKER_ENTRIES: ThemePickerEntry[] = [
       accent: '#2D8A4E',
       text: '#1A2E1A',
       radius: 6,
+      font: 'Georgia, serif',
     },
   },
   {
@@ -890,6 +897,7 @@ export const THEME_PICKER_ENTRIES: ThemePickerEntry[] = [
       accent: '#E5484D',
       text: '#2D1515',
       radius: 12,
+      font: 'Avenir Next, sans-serif',
     },
   },
   {
@@ -904,6 +912,7 @@ export const THEME_PICKER_ENTRIES: ThemePickerEntry[] = [
       accent: '#818CF8',
       text: '#E2E8F0',
       radius: 4,
+      font: 'SF Mono, monospace',
     },
   },
 ];
