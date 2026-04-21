@@ -425,3 +425,73 @@ jobs:
                 body: body
               });
             }
+
+  # Publish canary versions to Metaccio after test + build pass.
+  # Every PR commit gets a canary like 0.0.12-canary.fd7c751 under the
+  # @canary dist-tag so consumers can test unreleased changes:
+  #   npm install @xds/core@canary --registry https://registry.facebook.net
+  canary:
+    if: github.event_name == 'pull_request'
+    needs: [test, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build all packages
+        run: yarn build
+
+      - name: Configure Metaccio registry
+        run: |
+          echo "@xds:registry=https://registry.facebook.net" >> .npmrc
+          echo "//registry.facebook.net/:_authToken=${{ secrets.METACCIO_PUBLISH_TOKEN }}" >> .npmrc
+
+      - name: Publish canary versions
+        run: |
+          SHORT_SHA="${{ github.event.pull_request.head.sha }}"
+          SHORT_SHA="${SHORT_SHA:0:7}"
+          BASE_VERSION=$(node -p "require('./packages/core/package.json').version")
+          CANARY_VERSION="${BASE_VERSION}-canary.${SHORT_SHA}"
+
+          echo "Publishing canary ${CANARY_VERSION}"
+
+          # Stamp canary version into all publishable packages
+          for pkg in packages/*/package.json packages/themes/*/package.json; do
+            node -e "
+              const fs = require('fs');
+              const p = JSON.parse(fs.readFileSync('$pkg','utf8'));
+              if (p.private || !p.name?.startsWith('@xds/')) process.exit(0);
+              p.version = '${CANARY_VERSION}';
+              // Update internal @xds/* dep versions too
+              for (const dt of ['dependencies','peerDependencies','devDependencies']) {
+                if (!p[dt]) continue;
+                for (const [k,v] of Object.entries(p[dt])) {
+                  if (k.startsWith('@xds/')) p[dt][k] = '${CANARY_VERSION}';
+                }
+              }
+              fs.writeFileSync('$pkg', JSON.stringify(p, null, 2) + '\n');
+              console.log('  ' + p.name + ' → ${CANARY_VERSION}');
+            "
+          done
+
+          # Publish each package with --tag canary
+          for pkg_dir in packages/* packages/themes/*; do
+            [ -f "$pkg_dir/package.json" ] || continue
+            IS_PUBLISHABLE=$(node -p "const p=require('./$pkg_dir/package.json'); !p.private && p.name?.startsWith('@xds/') ? 'yes' : 'no'")
+            if [ "$IS_PUBLISHABLE" = "yes" ]; then
+              NAME=$(node -p "require('./$pkg_dir/package.json').name")
+              echo "Publishing ${NAME}@${CANARY_VERSION}"
+              npm publish "$pkg_dir" --tag canary --registry https://registry.facebook.net || true
+            fi
+          done
+
+          echo "✅ Canary published: npm install @xds/core@${CANARY_VERSION} --registry https://registry.facebook.net"

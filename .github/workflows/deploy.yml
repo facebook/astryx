@@ -1,5 +1,5 @@
-# Deploy Storybook + Sandbox to GitHub Pages
-# Only runs on push to main — simple and sequential: sync → test → deploy
+# Deploy Storybook + Sandbox to GitHub Pages, and publish packages to Metaccio.
+# Only runs on push to main — simple and sequential: sync → test → deploy + publish
 #
 # Deployment layout on gh-pages:
 #   /storybook/    — stable Storybook (always latest main)
@@ -244,3 +244,37 @@ jobs:
           publish_dir: ./deploy
           keep_files: false
           destination_dir: .
+
+  # Publish @xds/* packages to Metaccio (Meta's internal npm registry).
+  # Runs in parallel with deploy — both gate on test passing.
+  # changeset publish checks each package: if the version in package.json
+  # is not yet on the registry, it publishes. Already-published versions
+  # are skipped (npm 409 Conflict → no-op).
+  publish:
+    name: Publish to Metaccio
+    needs: test
+    if: always() && !cancelled() && needs.test.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build all packages
+        run: yarn build
+
+      - name: Configure Metaccio registry
+        run: |
+          echo "@xds:registry=https://registry.facebook.net" >> .npmrc
+          echo "//registry.facebook.net/:_authToken=${{ secrets.METACCIO_PUBLISH_TOKEN }}" >> .npmrc
+
+      - name: Publish changed packages
+        run: yarn changeset publish
