@@ -22,6 +22,7 @@ import {XDSBanner} from '@xds/core/Banner';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSHStack, XDSVStack, XDSStackItem} from '@xds/core/Stack';
+import {XDSLayout, XDSLayoutContent} from '@xds/core/Layout';
 import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSTooltip} from '@xds/core/Tooltip';
@@ -585,8 +586,8 @@ function OverviewView({
   onSelectComponent: (key: string) => void;
 }) {
   return (
-    <XDSCenter axis="horizontal">
-      <XDSSection padding={8} maxWidth={1200} width="100%">
+    <XDSLayout contentWidth={1200} content={
+      <XDSLayoutContent padding={8}>
         <XDSVStack gap={10}>
           {/* Hero banner */}
           <XDSCard variant="cyan" padding={10}>
@@ -640,15 +641,15 @@ function OverviewView({
             </XDSVStack>
           ))}
         </XDSVStack>
-      </XDSSection>
-    </XDSCenter>
+      </XDSLayoutContent>
+    } />
   );
 }
 
 function GettingStartedView() {
   return (
-    <XDSCenter axis="horizontal">
-      <XDSSection padding={8} maxWidth={740} width="100%">
+    <XDSLayout contentWidth={960} content={
+      <XDSLayoutContent padding={8}>
         <XDSVStack gap={8}>
         {/* Header */}
         <XDSVStack gap={2}>
@@ -820,8 +821,8 @@ export default function App({ children }) {
           </XDSList>
         </XDSVStack>
       </XDSVStack>
-      </XDSSection>
-    </XDSCenter>
+      </XDSLayoutContent>
+    } />
   );
 }
 
@@ -881,8 +882,8 @@ function ComponentDetailView({activeNav}: {activeNav: string}) {
   const previews = EXAMPLE_PREVIEWS[activeNav] ?? [];
 
   return (
-    <XDSCenter axis="horizontal">
-      <XDSSection padding={8} maxWidth={960} width="100%">
+    <XDSLayout contentWidth={960} content={
+      <XDSLayoutContent padding={8}>
         <XDSVStack gap={8}>
           {/* Header */}
           <XDSVStack gap={2}>
@@ -1022,8 +1023,8 @@ function ComponentDetailView({activeNav}: {activeNav: string}) {
           })}
           </XDSVStack>
         </XDSVStack>
-      </XDSSection>
-    </XDSCenter>
+      </XDSLayoutContent>
+    } />
   );
 }
 
