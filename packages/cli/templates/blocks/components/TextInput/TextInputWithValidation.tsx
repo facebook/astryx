@@ -12,21 +12,21 @@ export default function TextInputWithValidation() {
   return (
     <XDSStack direction="vertical" gap={3}>
       <XDSTextInput
-        label="Field with error message"
+        label="Error message"
         value={error}
         onChange={setError}
         placeholder="Enter a value"
         status={{type: 'error', message: 'Please enter a valid email address.'}}
       />
       <XDSTextInput
-        label="Field with warning message"
+        label="Warning message"
         value={warning}
         onChange={setWarning}
         placeholder="Enter a value"
         status={{type: 'warning', message: 'This username is already taken — try adding a number.'}}
       />
       <XDSTextInput
-        label="Field with success message"
+        label="Success message"
         value={success}
         onChange={setSuccess}
         placeholder="Enter a value"
