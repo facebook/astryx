@@ -145,6 +145,12 @@ export const categories: SandboxCategory[] = [
         description:
           'Test voice dictation, tune sound effects, and explore animation',
       },
+      {
+        name: 'Navi Theme',
+        href: '/pages/navi-theme/',
+        description:
+          'Preview the Navi achromatic theme applied to a chat interface',
+      },
     ],
   },
 ];
