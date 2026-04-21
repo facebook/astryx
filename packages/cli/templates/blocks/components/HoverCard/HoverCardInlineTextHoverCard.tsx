@@ -5,7 +5,7 @@ import {XDSHoverCard} from '@xds/core/HoverCard';
 import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
+import {XDSText} from '@xds/core/Text';
 import {CalendarIcon} from '@heroicons/react/24/outline';
 
 const styles = stylex.create({
@@ -19,10 +19,10 @@ export default function HoverCardInlineTextHoverCard() {
       <XDSHoverCard
         content={
           <XDSVStack gap={2}>
-            <XDSHStack gap={3} vAlign="start">
-              <XDSAvatar name="Jane Doe" size="medium" xstyle={styles.avatar} />
-              <XDSVStack gap={1}>
-                <XDSHeading level={3}>@janedoe</XDSHeading>
+            <XDSHStack gap={2} vAlign="center">
+              <XDSAvatar name="Jane Doe" size={32} xstyle={styles.avatar} />
+              <XDSVStack gap={0}>
+                <XDSText type="label">@janedoe</XDSText>
                 <XDSText type="supporting" color="secondary">
                   Software Engineer
                 </XDSText>
@@ -43,14 +43,10 @@ export default function HoverCardInlineTextHoverCard() {
       <XDSHoverCard
         content={
           <XDSVStack gap={2}>
-            <XDSHStack gap={3} vAlign="start">
-              <XDSAvatar
-                name="John Smith"
-                size="medium"
-                xstyle={styles.avatar}
-              />
-              <XDSVStack gap={1}>
-                <XDSHeading level={3}>@johnsmith</XDSHeading>
+            <XDSHStack gap={2} vAlign="center">
+              <XDSAvatar name="John Smith" size={32} xstyle={styles.avatar} />
+              <XDSVStack gap={0}>
+                <XDSText type="label">@johnsmith</XDSText>
                 <XDSText type="supporting" color="secondary">
                   Product Manager
                 </XDSText>

@@ -6,7 +6,7 @@ import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
+import {XDSText} from '@xds/core/Text';
 import {CalendarIcon} from '@heroicons/react/24/outline';
 
 const styles = stylex.create({
@@ -18,18 +18,18 @@ export default function HoverCardProfileHoverCard() {
     <XDSHoverCard
       placement="below"
       content={
-        <XDSVStack gap={3}>
-          <XDSHStack gap={3} vAlign="start">
-            <XDSAvatar name="Jane Doe" size="large" xstyle={styles.avatar} />
-            <XDSVStack gap={1}>
-              <XDSHeading level={3}>@janedoe</XDSHeading>
-              <XDSText type="body">
+        <XDSVStack gap={2}>
+          <XDSHStack gap={2} vAlign="center">
+            <XDSAvatar name="Jane Doe" size={40} xstyle={styles.avatar} />
+            <XDSVStack gap={0}>
+              <XDSText type="label">@janedoe</XDSText>
+              <XDSText type="supporting" color="secondary">
                 Crafting accessible, scalable design systems for modern teams.
               </XDSText>
             </XDSVStack>
           </XDSHStack>
           <XDSHStack gap={1} vAlign="center">
-            <XDSIcon icon={CalendarIcon} size="sm" color="secondary" />
+            <XDSIcon icon={CalendarIcon} size="xsm" color="secondary" />
             <XDSText type="supporting" color="secondary">
               Joined March 2024
             </XDSText>
