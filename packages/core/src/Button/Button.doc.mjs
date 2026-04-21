@@ -9,7 +9,7 @@ export const docs = {
     description:
       'Button triggers an action when clicked. Use it for form submissions, confirmations, navigation, or any interaction that needs a clear call to action.',
     bestPractices: [
-      {guidance: true, description: 'Reserve primary for the single most important action in the view. Use secondary, ghost, or destructive for everything else based on emphasis.'},
+      {guidance: true, description: 'Reserve primary for the single most important action in the view. Use secondary or ghost for everything else based on emphasis.'},
       {guidance: true, description: 'Write labels that describe the action — "Save changes", "Delete account", "Send invite" — not vague labels like "OK" or "Click here".'},
       {guidance: true, description: 'Show a loading state for actions that take time, like saving or submitting, so the user knows it is working.'},
       {guidance: true, description: 'Always provide a label for icon-only buttons so screen readers can announce what the button does. Add a tooltip for sighted users.'},
@@ -145,7 +145,7 @@ export const docsZh = {
     description:
       'Button triggers an action when clicked. Use it for form submissions, confirmations, navigation, or any interaction that needs a clear call to action.',
     bestPractices: [
-      {guidance: true, description: 'Reserve primary for the single most important action in the view. Use secondary, ghost, or destructive for everything else based on emphasis.'},
+      {guidance: true, description: 'Reserve primary for the single most important action in the view. Use secondary or ghost for everything else based on emphasis.'},
       {guidance: true, description: 'Write labels that describe the action — "Save changes", "Delete account", "Send invite" — not vague labels like "OK" or "Click here".'},
       {guidance: true, description: 'Show a loading state for actions that take time, like saving or submitting, so the user knows it is working.'},
       {guidance: true, description: 'Always provide a label for icon-only buttons so screen readers can announce what the button does. Add a tooltip for sighted users.'},
@@ -226,7 +226,7 @@ export const docsDense = {
     description:
       'Button triggers an action when clicked. Use for form submissions, confirmations, navigation, or any interaction needing a clear CTA.',
     bestPractices: [
-      {guidance: true, description: 'Primary for the single most important action. Secondary/ghost/destructive for the rest.'},
+      {guidance: true, description: 'Primary for the single most important action. Secondary or ghost for the rest.'},
       {guidance: true, description: 'Labels that describe the action — "Save changes" not "OK" or "Click here".'},
       {guidance: true, description: 'Show loading state for async actions so the user knows it is working.'},
       {guidance: true, description: 'Icon-only buttons need a label for screen readers and a tooltip for sighted users.'},
