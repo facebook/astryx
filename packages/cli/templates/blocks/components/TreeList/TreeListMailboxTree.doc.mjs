@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'TreeList — Mailbox Tree',
   description:
-    'Email folder hierarchy with badge counts showing unread messages per folder.',
+    'Email folder tree with unread badge counts.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['TreeList', 'Badge'],
