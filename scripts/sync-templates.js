@@ -232,11 +232,11 @@ import Component from '${componentRel}';
 import {doc} from '${docRel}';
 import {BlockPreview} from '${contextRel}';
 
-const d = doc as {aspectRatio?: number; scale?: number};
+const d = doc as {aspectRatio?: number; scale?: number; name?: string; description?: string};
 
 export default function Page() {
   return (
-    <BlockPreview meta={{aspectRatio: d.aspectRatio ?? 4 / 3, scale: d.scale ?? 1}}>
+    <BlockPreview meta={{aspectRatio: d.aspectRatio ?? 4 / 3, scale: d.scale ?? 1, name: d.name, description: d.description}}>
       <Component />
     </BlockPreview>
   );

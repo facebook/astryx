@@ -9,6 +9,8 @@ import {XDSVStack} from '@xds/core/Layout';
 export interface BlockDocMeta {
   aspectRatio: number;
   scale: number;
+  name?: string;
+  description?: string;
 }
 
 export function ShowcasePreview({children}: {children: React.ReactNode}) {
@@ -49,6 +51,16 @@ export function BlockPreview({
             </XDSCenter>
           </XDSAspectRatio>
         </XDSCard>
+        {meta.name && (
+          <XDSText type="body" weight="bold" style={{textAlign: 'center'}}>
+            {meta.name}
+          </XDSText>
+        )}
+        {meta.description && (
+          <XDSText type="supporting" color="secondary" style={{textAlign: 'center', maxWidth: 480, margin: '0 auto'}}>
+            {meta.description}
+          </XDSText>
+        )}
         <XDSVStack gap={0} style={{textAlign: 'center'}}>
           <XDSText type="supporting" color="secondary">
             aspect-ratio:{' '}
