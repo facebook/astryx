@@ -33,6 +33,7 @@ type TemplateRow = {
   codePath: string;
   docPath: string;
   isReady: boolean;
+  isShowcase: boolean;
 };
 
 const rows: TemplateRow[] = [
@@ -46,6 +47,7 @@ const rows: TemplateRow[] = [
     codePath: `packages/cli/templates/pages/${t.slug}/page.tsx`,
     docPath: `packages/cli/templates/pages/${t.slug}/template.doc.mjs`,
     isReady: t.isReady,
+    isShowcase: false,
   })),
   ...blocks.map(b => ({
     id: `block-${b.slug}`,
@@ -57,6 +59,7 @@ const rows: TemplateRow[] = [
     codePath: `packages/cli/templates/blocks/components/${b.component}/${b.slug}.tsx`,
     docPath: `packages/cli/templates/blocks/components/${b.component}/${b.slug}.doc.mjs`,
     isReady: b.isReady,
+    isShowcase: b.isShowcase,
   })),
 ];
 
@@ -177,6 +180,7 @@ const fieldDefs = [
       ...uniqueComponents.map(c => ({value: c, label: c})),
     ],
   },
+  {key: 'isShowcase', type: 'boolean', label: 'Showcase'},
 ] as const;
 
 const columns: XDSTableColumn<TemplateRow>[] = [
@@ -211,6 +215,17 @@ const columns: XDSTableColumn<TemplateRow>[] = [
     sortable: true,
     filter: 'component',
     width: pixel(150),
+  },
+  {
+    key: 'isShowcase',
+    header: 'Showcase',
+    sortable: true,
+    filter: 'isShowcase',
+    width: pixel(100),
+    renderCell: (row: TemplateRow) =>
+      row.isShowcase ? (
+        <XDSBadge label="Showcase" variant="info" />
+      ) : null,
   },
   {
     key: 'description',

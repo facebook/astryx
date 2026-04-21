@@ -468,11 +468,11 @@ interface BaseTemplateDoc {
   name: string;
 
   /** One-sentence description of what the template provides. */
-  description: string;
+  description?: string;
 
   /** Whether this template is ready for use. Templates with
    *  isReady: false show as "(WIP)" in the gallery and CLI. */
-  isReady: boolean;
+  isReady?: boolean;
 }
 
 export interface PageTemplateDoc extends BaseTemplateDoc {
@@ -486,25 +486,10 @@ export interface BlockTemplateDoc extends BaseTemplateDoc {
   /** Scale factor for the block preview (default 1). */
   scale?: number;
   /** Component names this block uses, for cross-referencing. */
-  componentsUsed: string[];
+  componentsUsed?: string[];
+  /** When true this block is the canonical "hero" showcase for a component. */
+  isShowcase?: boolean;
 }
 
 export type TemplateDoc = PageTemplateDoc | BlockTemplateDoc;
 
-/**
- * Showcase metadata for a component.
- *
- * Each component can have a showcase file in `packages/cli/templates/showcase/`
- * consisting of a `{Name}.doc.mjs` (this type) and a `{Name}.tsx` (the component).
- *
- *   /\*\* \@type \{import('@xds/core').ComponentShowcaseDoc\} *\/
- *   export const doc = \{ name: 'Button', aspectRatio: 1 \};
- */
-export interface ComponentShowcaseDoc {
-  /** Component name (matches the directory name).
-   *  e.g. `"Button"`, `"Layout"`, `"Dialog"` */
-  name: string;
-  /** Width-to-height ratio for the preview container.
-   *  e.g. `1`, `16 / 9`, `4 / 3` */
-  aspectRatio: number;
-}
