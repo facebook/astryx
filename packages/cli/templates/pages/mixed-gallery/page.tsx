@@ -126,7 +126,7 @@ export default function MixedGalleryTemplate() {
             </XDSCenter>
 
             {/* Featured masonry — hero + sidebar + bottom row */}
-            <XDSGrid columns={3} rowHeight={70} gap={3}>
+            <XDSGrid columns={3} rowHeight={90} gap={3}>
               {/* Hero — 2 cols × 5 rows */}
               <XDSGridSpan columns={2} rows={5}>
                 <GalleryCard image={IMAGES[0]} />
@@ -146,17 +146,6 @@ export default function MixedGalleryTemplate() {
               </XDSGridSpan>
               <XDSGridSpan rows={3}>
                 <GalleryCard image={IMAGES[1]} />
-              </XDSGridSpan>
-
-              {/* Second bottom row — 3 equal items */}
-              <XDSGridSpan rows={3}>
-                <GalleryCard image={IMAGES[5]} />
-              </XDSGridSpan>
-              <XDSGridSpan rows={3}>
-                <GalleryCard image={IMAGES[6]} />
-              </XDSGridSpan>
-              <XDSGridSpan rows={3}>
-                <GalleryCard image={IMAGES[7]} />
               </XDSGridSpan>
             </XDSGrid>
           </XDSVStack>
