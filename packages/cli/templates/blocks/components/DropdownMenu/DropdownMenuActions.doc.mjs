@@ -1,9 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'DropdownMenu — Disabled',
+  name: 'DropdownMenu — Actions',
   description:
-    'Menu with selectively disabled items based on permissions. Use when some actions require higher privileges, like admin-only operations.',
+    'Action menu with dividers separating safe and destructive operations. Use for row-level actions on items like documents, projects, or records.',
   isReady: true,
   aspectRatio: 16 / 9,
   componentsUsed: ['DropdownMenu', 'Layout', 'Text'],
