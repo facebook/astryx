@@ -3,8 +3,8 @@ export const doc = {
   type: 'block',
   name: 'Selector — Clearable',
   description:
-    'Selector with a clear button to reset the selection back to empty.',
+    'Selector with a clear button to reset the selected value.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Selector'],
+  componentsUsed: ['Selector', 'Center'],
 };
