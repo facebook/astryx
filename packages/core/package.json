@@ -39,7 +39,7 @@
       "import": "./dist/theme/syntax/index.mjs",
       "require": "./dist/theme/syntax/index.js"
     },
-    "./xds.md": "./xds.md",
+    "./docs.mjs": "./docs.mjs",
     "./AlertDialog": {
       "source": "./src/AlertDialog/index.ts",
       "types": "./dist/AlertDialog/index.d.ts",
@@ -524,7 +524,8 @@
   "files": [
     "dist",
     "src",
-    "xds.md"
+    "docs.mjs",
+    "README.md"
   ],
   "scripts": {
     "prepack": "yarn build",

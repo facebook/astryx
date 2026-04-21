@@ -190,19 +190,14 @@ function analyzeAccessibility(code: string): DimensionScore {
 
     // Form inputs without labels (skip XDS inputs with built-in labels)
     if (line.match(/<(input|Input)\b/) && !line.includes('type="hidden"')) {
-      const isXdsInput = /XDS(TextInput|NumberInput|DateInput|TimeInput)/.test(
-        nearby,
-      );
-      if (!isXdsInput) {
-        const hasLabel = /(label|Label|aria-label|ariaLabel)/.test(nearby);
-        if (!hasLabel) {
-          findings.push({
-            rule: 'input-no-label',
-            severity: 'critical',
-            detail: 'Form input without associated label',
-            line: lineNum,
-          });
-        }
+      const hasLabel = /(label|Label|aria-label|ariaLabel)/.test(nearby);
+      if (!hasLabel) {
+        findings.push({
+          rule: 'input-no-label',
+          severity: 'critical',
+          detail: 'Form input without associated label',
+          line: lineNum,
+        });
       }
     }
 
@@ -793,18 +788,6 @@ function analyzeMaintainability(
     });
   }
 
-  // --- Dark mode support ---
-  let darkModeSupport = false;
-  if (target === 'xds') {
-    darkModeSupport = /dark(Theme|Mode|_mode)|mode\s*=\s*["']dark/i.test(code);
-  } else if (target === 'baseline') {
-    darkModeSupport = /\bdark:|\buseTheme\b|ThemeProvider|data-theme/i.test(
-      code,
-    );
-  } else {
-    darkModeSupport = /prefers-color-scheme|dark-mode|data-theme/i.test(code);
-  }
-
   // --- State spread (locality) ---
   const avgStateSpread = measureStateSpread(code);
 
@@ -827,11 +810,10 @@ function analyzeMaintainability(
     magicValueCount: magic,
     semanticValueCount: semantic,
     avgStateSpread,
-    darkModeSupport,
   };
 
   // Score: semantic ratio is the primary signal (0-60 points),
-  // locality adds up to 20, dark mode adds 10, findings subtract
+  // locality adds up to 20, findings subtract
   const semanticScore = semanticRatio * 60;
   const localityScore =
     avgStateSpread < 30
@@ -841,8 +823,7 @@ function analyzeMaintainability(
         : avgStateSpread < 100
           ? 6
           : 0;
-  const darkModeScore = darkModeSupport ? 10 : 0;
-  const baseScore = semanticScore + localityScore + darkModeScore + 10; // 10 free points
+  const baseScore = semanticScore + localityScore + 20; // 20 base points (was 10 + 10 dark mode)
 
   const findingPenalty = findings.reduce((s, f) => {
     switch (f.severity) {
