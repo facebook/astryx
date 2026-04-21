@@ -30,7 +30,7 @@ const RAW_HTML_TAGS = new Set([
 ]);
 
 const SVG_ELEMENT_TAGS = new Set([
-  'svg', 'path', 'circle', 'rect', 'line', 'polyline', 'polygon', 'ellipse',
+  'svg', 'path', 'circle', 'rect', 'line', 'polyline', 'polygon', 'ellipse', 'g',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -47,8 +47,11 @@ function countRawHtmlElements(source) {
 
     // Necessary exceptions per rubric
     if (tag === 'img') {
+      // Check surrounding context and file-wide for xds_oss CDN URLs
+      // (img src may reference a variable whose value is defined elsewhere)
       const ctx = source.slice(match.index, match.index + 300);
-      if (/xds[_-]oss/i.test(ctx)) continue;
+      if (/xds[_-]oss/i.test(ctx) || /scontent\.xx\.fbcdn/i.test(ctx)) continue;
+      if (/xds[_-]oss/i.test(source) || /scontent\.xx\.fbcdn/i.test(source)) continue;
     }
     if (tag === 'form' && /XDSFormLayout/.test(source)) continue;
     if (tag === 'input') {
@@ -118,7 +121,19 @@ function countCustomCssDeclarations(source) {
     for (const line of block.split('\n')) {
       const t = line.trim();
       if (!t || t.startsWith('//') || t === '}' || t === '},' || t === '{') continue;
-      if (/^\w+\s*:\s*[{(]/.test(t)) continue; // style-object name or dynamic fn
+      if (/^\w+\s*:\s*\(/.test(t)) continue; // dynamic fn: style: (arg) => ({...})
+      if (/^\w+\s*:\s*\{/.test(t)) {
+        // Style-object name — check if it's a single-line object like `name: {prop: val},`
+        if (/\}/.test(t)) {
+          // Single-line object: count properties inside the braces
+          const inner = t.replace(/^\w+\s*:\s*\{/, '').replace(/\},?\s*$/, '');
+          count += inner.split(',').filter(p => {
+            const pt = p.trim();
+            return pt && /^[a-zA-Z]/.test(pt);
+          }).length;
+        }
+        continue;
+      }
       if (/^[a-zA-Z]\w*\s*:/.test(t)) count++;
     }
     idx = end + 1;
@@ -149,11 +164,36 @@ function scoreCustomCss(cssCount) {
 // 4. Layout & Structure (15 pts)
 // ---------------------------------------------------------------------------
 
+function findRootElement(source) {
+  // Take the last `export default function` (earlier ones may be code-example strings)
+  // Then take the first `return (<Tag` after it (the main component return)
+  const allMatches = [...source.matchAll(/export\s+default\s+function\s+\w+/g)];
+  if (allMatches.length === 0) return null;
+  const lastMatch = allMatches[allMatches.length - 1];
+  const afterExport = source.slice(lastMatch.index);
+  const returnMatch = afterExport.match(/return\s*\(\s*\n?\s*<(\w+)/);
+  if (returnMatch) return returnMatch[1];
+  const inlineReturn = afterExport.match(/return\s+<(\w+)/);
+  if (inlineReturn) return inlineReturn[1];
+  return null;
+}
+
+const VALID_PAGE_ROOTS = new Set(['XDSAppShell', 'XDSLayout', 'XDSCenter']);
+
+function hasFixedGridColumns(source) {
+  // Match columns={2} (fixed number) but not columns={{minWidth: 260}} (responsive object)
+  return /XDSGrid[^>]*\bcolumns\s*=\s*\{[0-9]/.test(source);
+}
+
 function scoreLayout(source, type) {
   if (type === 'page') {
-    if (/XDSAppShell|XDSLayout|XDSCenter/.test(source)) return 15;
-    if (/<div/.test(source)) return 0;
-    return 8;
+    const root = findRootElement(source);
+    if (!root || !VALID_PAGE_ROOTS.has(root)) {
+      if (/<div/.test(source)) return 0;
+      return 8;
+    }
+    if (hasFixedGridColumns(source)) return 8;
+    return 15;
   }
   // Block
   if (/XDSAppShell/.test(source)) return 0;
@@ -189,10 +229,12 @@ function scoreDocMetadata(doc, type) {
 // ---------------------------------------------------------------------------
 
 function scoreImageHandling(source) {
-  const imgs = source.match(/<img\b[^>]*>/g) || [];
-  if (imgs.length === 0) return 5;
-  if (imgs.every(tag => /xds[_-]oss/i.test(tag))) return 5;
-  if (imgs.some(tag => /placeholder|picsum|unsplash/i.test(tag))) return 2;
+  const hasImgTag = /<img\b/.test(source);
+  const hasBgImage = /backgroundImage\s*:/.test(source);
+  if (!hasImgTag && !hasBgImage) return 5;
+  // Check file-wide for CDN URLs (img src may be a variable reference)
+  if (/scontent\.xx\.fbcdn|xds[_-]oss/i.test(source)) return 5;
+  if (/placeholder|picsum|unsplash/i.test(source)) return 2;
   return 0;
 }
 
@@ -219,6 +261,7 @@ function scoreCodeQuality(source) {
       pkg.startsWith('.') ||
       pkg.startsWith('@xds/core/') ||
       pkg.startsWith('@heroicons/react/') ||
+      pkg.startsWith('@stylexjs/') ||
       pkg === 'react' ||
       pkg.startsWith('next/')
     ) continue;
