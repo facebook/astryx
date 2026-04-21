@@ -20,7 +20,7 @@ export default function CenterHorizontal() {
     <XDSCard width={520} padding={2}>
       <XDSStack direction="horizontal" vAlign="center">
         <XDSHeading level={2}>Untitled Document</XDSHeading>
-        <XDSStack direction="horizontal" gap={0} hAlign="end">
+        <XDSStack direction="horizontal" gap={0} hAlign="end" style={{flex: 1}}>
           <XDSIconButton
             label="Bold"
             icon={<XDSIcon icon={BoldIcon} />}
