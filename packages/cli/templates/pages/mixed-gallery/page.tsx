@@ -103,7 +103,7 @@ function GalleryCard({image}: {image: GalleryImage}) {
 
 export default function MixedGalleryTemplate() {
   return (
-    <XDSAppShell height="auto" contentPadding={6} variant="surface">
+    <XDSAppShell height="auto" contentPadding={8} variant="surface">
       <XDSCenter axis="horizontal">
         <XDSSection variant="transparent" maxWidth={1400} width="100%" padding={0}>
           <XDSVStack gap={6}>
