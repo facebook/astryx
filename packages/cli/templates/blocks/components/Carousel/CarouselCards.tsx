@@ -25,24 +25,6 @@ const FEATURES = [
     count: 86,
     badge: 'purple' as const,
   },
-  {
-    title: 'Theme Config',
-    desc: 'Token overrides and branding',
-    count: 12,
-    badge: 'orange' as const,
-  },
-  {
-    title: 'CLI Tools',
-    desc: 'Scaffolding and code generation',
-    count: 9,
-    badge: 'teal' as const,
-  },
-  {
-    title: 'Accessibility',
-    desc: 'ARIA patterns and audits',
-    count: 31,
-    badge: 'cyan' as const,
-  },
 ];
 
 export default function CarouselCards() {
