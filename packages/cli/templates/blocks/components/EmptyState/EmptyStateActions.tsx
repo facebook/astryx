@@ -8,7 +8,7 @@ import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 export default function EmptyStateActions() {
   return (
     <XDSEmptyState
-      icon={<XDSIcon icon={MagnifyingGlassIcon} size="xl" />}
+      icon={<XDSIcon icon={MagnifyingGlassIcon} size="lg" />}
       title="No results found"
       description="Try adjusting your search terms or clearing filters to see more results."
       actions={

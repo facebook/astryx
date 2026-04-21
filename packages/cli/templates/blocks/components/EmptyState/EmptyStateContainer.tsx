@@ -10,7 +10,7 @@ export default function EmptyStateContainer() {
   return (
     <XDSCard>
       <XDSEmptyState
-        icon={<XDSIcon icon={FolderPlusIcon} size="xl" />}
+        icon={<XDSIcon icon={FolderPlusIcon} size="lg" />}
         title="No projects yet"
         description="Create your first project to start organizing your work. You can invite team members after."
         actions={
