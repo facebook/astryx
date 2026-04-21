@@ -1,13 +1,14 @@
 'use client';
 
 import {XDSStatusDot} from '@xds/core/StatusDot';
+import {XDSHStack} from '@xds/core/Layout';
 
 export default function StatusDotPulsing() {
   return (
-    <div style={{display: 'flex', gap: 8, alignItems: 'center'}}>
+    <XDSHStack gap={2} vAlign="center">
       <XDSStatusDot variant="positive" label="Live" isPulsing />
       <XDSStatusDot variant="warning" label="Processing" isPulsing />
       <XDSStatusDot variant="negative" label="Error" isPulsing />
-    </div>
+    </XDSHStack>
   );
 }

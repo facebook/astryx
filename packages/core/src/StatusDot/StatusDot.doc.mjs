@@ -37,12 +37,12 @@ export const docs = {
   },
   usage: {
     description:
-      'StatusDot is a small colored dot indicator that communicates status through semantic color variants. Use it alongside text labels to convey states like online/offline presence or severity levels, as color alone should not carry meaning.',
+      'A small colored dot that communicates status like online/offline presence or severity levels. Supports five semantic variants and an optional pulse animation. Always pair with a visible text label, as color alone should not carry meaning.',
     bestPractices: [
       { guidance: true, description: 'Always pair with a visible text label so status is not conveyed by color alone.' },
-      { guidance: true, description: 'Provide a descriptive label prop for screen reader accessibility.' },
-      { guidance: false, description: 'Use StatusDot as the sole indicator of status without an accompanying text label.' },
-      { guidance: false, description: 'Enable the pulse animation for purely decorative purposes — reserve it for states that require immediate attention.' },
+      { guidance: true, description: 'Provide a descriptive `label` prop for screen reader accessibility.' },
+      { guidance: false, description: 'Use the pulse animation for purely decorative purposes — reserve it for states that require immediate attention.' },
+      { guidance: false, description: 'Rely on color alone to communicate status — always include text.' },
     ],
   },
 };
@@ -84,12 +84,12 @@ export const docsZh = {
   },
   usage: {
     description:
-      'StatusDot is a small colored dot indicator that communicates status through semantic color variants. Use it alongside text labels to convey states like online/offline presence or severity levels, as color alone should not carry meaning.',
+      'A small colored dot that communicates status like online/offline presence or severity levels. Supports five semantic variants and an optional pulse animation. Always pair with a visible text label, as color alone should not carry meaning.',
     bestPractices: [
       { guidance: true, description: 'Always pair with a visible text label so status is not conveyed by color alone.' },
-      { guidance: true, description: 'Provide a descriptive label prop for screen reader accessibility.' },
-      { guidance: false, description: 'Use StatusDot as the sole indicator of status without an accompanying text label.' },
-      { guidance: false, description: 'Enable the pulse animation for purely decorative purposes — reserve it for states that require immediate attention.' },
+      { guidance: true, description: 'Provide a descriptive `label` prop for screen reader accessibility.' },
+      { guidance: false, description: 'Use the pulse animation for purely decorative purposes — reserve it for states that require immediate attention.' },
+      { guidance: false, description: 'Rely on color alone to communicate status — always include text.' },
     ],
   },
 };
@@ -99,12 +99,12 @@ export const docsDense = {
   description: 'Small colored dot indicator for status display (online/offline, severity, etc).',
   usage: {
     description:
-      'StatusDot is a small colored dot indicator that communicates status through semantic color variants. Use it alongside text labels to convey states like online/offline presence or severity levels, as color alone should not carry meaning.',
+      'A small colored dot that communicates status like online/offline presence or severity levels. Supports five semantic variants and an optional pulse animation. Always pair with a visible text label, as color alone should not carry meaning.',
     bestPractices: [
       { guidance: true, description: 'Always pair with a visible text label so status is not conveyed by color alone.' },
-      { guidance: true, description: 'Provide a descriptive label prop for screen reader accessibility.' },
-      { guidance: false, description: 'Use StatusDot as the sole indicator of status without an accompanying text label.' },
-      { guidance: false, description: 'Enable the pulse animation for purely decorative purposes — reserve it for states that require immediate attention.' },
+      { guidance: true, description: 'Provide a descriptive `label` prop for screen reader accessibility.' },
+      { guidance: false, description: 'Use the pulse animation for purely decorative purposes — reserve it for states that require immediate attention.' },
+      { guidance: false, description: 'Rely on color alone to communicate status — always include text.' },
     ],
   },
   propDescriptions: {
