@@ -4,6 +4,6 @@ export const doc = {
   name: 'Card — Simple',
   description: 'A card with a heading and body text. Use for summaries, descriptions, or any grouped content that needs visual separation.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Card', 'Layout', 'Text'],
 };

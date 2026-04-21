@@ -7,21 +7,19 @@ import {XDSHeading, XDSText} from '@xds/core/Text';
 export default function CardCallout() {
   return (
     <XDSStack direction="horizontal" gap={4}>
-      <XDSCard width={320} variant="muted">
+      <XDSCard width={270} variant="muted">
         <XDSStack direction="vertical" gap={2}>
           <XDSHeading level={3}>Tip</XDSHeading>
           <XDSText type="body" color="secondary">
-            Use the muted variant for callouts, tips, or supplementary
-            information that should be visually distinct but not prominent.
+            Use the muted variant for callouts or supplementary information.
           </XDSText>
         </XDSStack>
       </XDSCard>
-      <XDSCard width={320} variant="muted">
+      <XDSCard width={270} variant="muted">
         <XDSStack direction="vertical" gap={2}>
           <XDSHeading level={3}>Note</XDSHeading>
           <XDSText type="body" color="secondary">
-            Muted cards work well in sidebars, help panels, or anywhere you want
-            to de-emphasize content without hiding it.
+            Muted cards work well in sidebars or help panels.
           </XDSText>
         </XDSStack>
       </XDSCard>

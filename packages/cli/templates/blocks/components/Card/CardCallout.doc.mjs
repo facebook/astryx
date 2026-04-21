@@ -4,6 +4,6 @@ export const doc = {
   name: 'Card — Callout',
   description: 'Muted-variant cards for tips, notes, or supplementary information. Use when content should be visually distinct but not prominent.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Card', 'Layout', 'Text'],
 };
