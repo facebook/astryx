@@ -5,7 +5,6 @@ import {XDSPopover} from '@xds/core/Popover';
 import {XDSButton} from '@xds/core/Button';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSHeading, XDSText} from '@xds/core/Text';
-
 export default function PopoverConfirmAction() {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -18,9 +17,7 @@ export default function PopoverConfirmAction() {
       onOpenChange={setIsOpen}
       content={
         <XDSVStack gap={3}>
-          <XDSHeading level={4}>
-            Delete project?
-          </XDSHeading>
+          <XDSHeading level={4}>Delete project?</XDSHeading>
           <XDSText type="body">
             This will permanently delete the project and all its data. This
             action cannot be undone.

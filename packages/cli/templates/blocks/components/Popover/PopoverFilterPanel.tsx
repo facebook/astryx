@@ -7,7 +7,6 @@ import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSHeading} from '@xds/core/Text';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
 import {XDSDivider} from '@xds/core/Divider';
-
 export default function PopoverFilterPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const [filters, setFilters] = useState({
@@ -29,9 +28,7 @@ export default function PopoverFilterPanel() {
       onOpenChange={setIsOpen}
       content={
         <XDSVStack gap={3}>
-          <XDSHeading level={4}>
-            Filter by status
-          </XDSHeading>
+          <XDSHeading level={4}>Filter by status</XDSHeading>
           <XDSDivider />
           <XDSCheckboxInput
             label="Active"

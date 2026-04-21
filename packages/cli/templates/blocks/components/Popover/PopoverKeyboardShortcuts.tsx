@@ -5,7 +5,6 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSDivider} from '@xds/core/Divider';
-
 const shortcuts = [
   {key: '⌘K', action: 'Command palette'},
   {key: '⌘/', action: 'Toggle sidebar'},
@@ -20,9 +19,7 @@ export default function PopoverKeyboardShortcuts() {
       width={260}
       content={
         <XDSVStack gap={2}>
-          <XDSHeading level={4}>
-            Keyboard shortcuts
-          </XDSHeading>
+          <XDSHeading level={4}>Keyboard shortcuts</XDSHeading>
           <XDSDivider />
           {shortcuts.map(s => (
             <XDSHStack key={s.key} gap={3}>

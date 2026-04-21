@@ -7,7 +7,6 @@ import {XDSVStack} from '@xds/core/Layout';
 import {XDSHeading} from '@xds/core/Text';
 import {XDSSwitch} from '@xds/core/Switch';
 import {XDSDivider} from '@xds/core/Divider';
-
 export default function PopoverSettingsPanel() {
   const [notifications, setNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
@@ -20,9 +19,7 @@ export default function PopoverSettingsPanel() {
       width={280}
       content={
         <XDSVStack gap={3}>
-          <XDSHeading level={4}>
-            Settings
-          </XDSHeading>
+          <XDSHeading level={4}>Settings</XDSHeading>
           <XDSDivider />
           <XDSSwitch
             label="Notifications"
