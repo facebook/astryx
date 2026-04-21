@@ -11,17 +11,26 @@ import {
 } from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
+import {XDSCard} from '@xds/core/Card';
 
 export default function DialogFormDialog() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <XDSVStack gap={3}>
-      <XDSButton
-        label="Edit profile"
-        variant="secondary"
-        onClick={() => setIsOpen(true)}
-      />
+    <XDSCard>
+      <XDSVStack gap={3}>
+        <XDSVStack gap={1}>
+          <XDSText type="bodyBold">Profile Settings</XDSText>
+          <XDSText type="supporting" color="secondary">
+            Display name, bio, and avatar
+          </XDSText>
+        </XDSVStack>
+        <XDSButton
+          label="Edit profile"
+          variant="secondary"
+          onClick={() => setIsOpen(true)}
+        />
+      </XDSVStack>
       <XDSDialog
         isOpen={isOpen}
         onOpenChange={setIsOpen}
@@ -67,6 +76,6 @@ export default function DialogFormDialog() {
           }
         />
       </XDSDialog>
-    </XDSVStack>
+    </XDSCard>
   );
 }

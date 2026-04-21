@@ -6,5 +6,5 @@ export const doc = {
     'Form-purpose dialog that prevents backdrop dismissal to protect unsaved data. Use for editing profiles, settings, or any dialog with inputs.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['Dialog', 'Layout', 'Button', 'Text'],
+  componentsUsed: ['Dialog', 'Layout', 'Button', 'Text', 'Card'],
 };

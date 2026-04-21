@@ -11,6 +11,7 @@ import {
 } from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
+import {XDSCard} from '@xds/core/Card';
 
 const SECTIONS = [
   {
@@ -39,12 +40,20 @@ export default function DialogFullscreenDialog() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <XDSVStack gap={3}>
-      <XDSButton
-        label="Open documentation"
-        variant="secondary"
-        onClick={() => setIsOpen(true)}
-      />
+    <XDSCard>
+      <XDSVStack gap={3}>
+        <XDSVStack gap={1}>
+          <XDSText type="bodyBold">Help &amp; Documentation</XDSText>
+          <XDSText type="supporting" color="secondary">
+            5 articles · Last updated Apr 2026
+          </XDSText>
+        </XDSVStack>
+        <XDSButton
+          label="Open documentation"
+          variant="secondary"
+          onClick={() => setIsOpen(true)}
+        />
+      </XDSVStack>
       <XDSDialog isOpen={isOpen} onOpenChange={setIsOpen} variant="fullscreen">
         <XDSLayout
           header={
@@ -79,6 +88,6 @@ export default function DialogFullscreenDialog() {
           }
         />
       </XDSDialog>
-    </XDSVStack>
+    </XDSCard>
   );
 }

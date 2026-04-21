@@ -11,28 +11,33 @@ import {
 } from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
+import {XDSCard} from '@xds/core/Card';
 
 export default function DialogConfirmationDialog() {
   const [isOpen, setIsOpen] = useState(false);
-  const [deleted, setDeleted] = useState(false);
 
   const handleDelete = () => {
-    setDeleted(true);
     setIsOpen(false);
   };
 
   return (
-    <XDSVStack gap={3}>
-      <XDSButton
-        label="Delete project"
-        variant="destructive"
-        onClick={() => setIsOpen(true)}
-      />
-      {deleted && (
-        <XDSText type="body" color="primary">
-          Project deleted (demo)
-        </XDSText>
-      )}
+    <XDSCard>
+      <XDSVStack gap={3}>
+        <XDSVStack gap={1}>
+          <XDSText type="bodyBold">Marketing Dashboard</XDSText>
+          <XDSText type="supporting" color="secondary">
+            Created Jan 12, 2026 · 14 pages · 3 collaborators
+          </XDSText>
+        </XDSVStack>
+        <XDSHStack gap={2}>
+          <XDSButton label="Edit" variant="secondary" onClick={() => {}} />
+          <XDSButton
+            label="Delete project"
+            variant="destructive"
+            onClick={() => setIsOpen(true)}
+          />
+        </XDSHStack>
+      </XDSVStack>
       <XDSDialog
         isOpen={isOpen}
         onOpenChange={setIsOpen}
@@ -68,6 +73,6 @@ export default function DialogConfirmationDialog() {
           }
         />
       </XDSDialog>
-    </XDSVStack>
+    </XDSCard>
   );
 }

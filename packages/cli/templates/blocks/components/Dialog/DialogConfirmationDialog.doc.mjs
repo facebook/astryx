@@ -6,5 +6,5 @@ export const doc = {
     'Destructive action confirmation with cancel and delete buttons. Use before permanently deleting data or revoking access.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['Dialog', 'Layout', 'Button', 'Text'],
+  componentsUsed: ['Dialog', 'Layout', 'Button', 'Text', 'Card'],
 };

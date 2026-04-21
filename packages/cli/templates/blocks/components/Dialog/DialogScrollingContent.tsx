@@ -11,6 +11,7 @@ import {
 } from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
+import {XDSCard} from '@xds/core/Card';
 
 const TERMS = [
   'You agree to use the service only for lawful purposes and in compliance with all applicable laws.',
@@ -27,12 +28,20 @@ export default function DialogScrollingContent() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <XDSVStack gap={3}>
-      <XDSButton
-        label="Review terms"
-        variant="secondary"
-        onClick={() => setIsOpen(true)}
-      />
+    <XDSCard>
+      <XDSVStack gap={3}>
+        <XDSVStack gap={1}>
+          <XDSText type="bodyBold">Terms and Conditions</XDSText>
+          <XDSText type="supporting" color="secondary">
+            Last updated March 2026 · 8 clauses
+          </XDSText>
+        </XDSVStack>
+        <XDSButton
+          label="Review terms"
+          variant="secondary"
+          onClick={() => setIsOpen(true)}
+        />
+      </XDSVStack>
       <XDSDialog isOpen={isOpen} onOpenChange={setIsOpen} maxHeight="50vh">
         <XDSLayout
           header={
@@ -70,6 +79,6 @@ export default function DialogScrollingContent() {
           }
         />
       </XDSDialog>
-    </XDSVStack>
+    </XDSCard>
   );
 }
