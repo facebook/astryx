@@ -5,7 +5,7 @@ import {XDSHoverCard} from '@xds/core/HoverCard';
 import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSButton} from '@xds/core/Button';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {XDSText, XDSHeading} from '@xds/core/Text';
 
 const styles = stylex.create({
   avatar: {flexShrink: 0},
@@ -20,7 +20,7 @@ export default function HoverCardInteractiveContent() {
           <XDSHStack gap={3} vAlign="start">
             <XDSAvatar name="John Smith" size="lg" xstyle={styles.avatar} />
             <XDSVStack gap={1}>
-              <XDSText type="label">John Smith</XDSText>
+              <XDSHeading level={2}>John Smith</XDSHeading>
               <XDSText type="supporting" color="secondary">
                 Product Manager · New York
               </XDSText>
