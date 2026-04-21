@@ -154,12 +154,9 @@ export default function MixedGalleryTemplate() {
                 <GalleryCard image={IMAGES[0]} />
               </XDSGridSpan>
 
-              {/* Sidebar items */}
-              <XDSGridSpan rows={3}>
+              {/* Sidebar — full height */}
+              <XDSGridSpan rows={5}>
                 <GalleryCard image={IMAGES[2]} />
-              </XDSGridSpan>
-              <XDSGridSpan rows={2}>
-                <GalleryCard image={IMAGES[1]} />
               </XDSGridSpan>
 
               {/* Bottom row */}
