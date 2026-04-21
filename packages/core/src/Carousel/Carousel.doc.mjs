@@ -5,12 +5,20 @@ export const docs = {
   keywords: ['carousel', 'slider', 'scroll', 'gallery', 'filmstrip', 'swiper', 'horizontal', 'overflow', 'snap'],
   usage: {
     description:
-      'Carousel is a horizontal scroll container with fade-edge overflow indication and optional navigation buttons. Use to present a set of items that exceeds the available width, such as a gallery or filmstrip of cards.',
+      'Carousel scrolls a row of items horizontally when they overflow the available width. Use it for card grids, image galleries, product lists, or any set of items that should be browsable without taking up the full page.',
     bestPractices: [
-      {guidance: true, description: 'Enable scroll-snap when each item should be viewed individually rather than as a continuous strip.'},
-      {guidance: true, description: 'Provide a descriptive aria-label so assistive technology users understand the carousel\'s content.'},
-      {guidance: false, description: 'Use a carousel for critical content that users must see — not all users scroll horizontally.'},
-      {guidance: false, description: 'Auto-advance carousel items — let the user control scrolling at their own pace.'},
+      {guidance: true, description: 'Enable scroll-snap when each item should land precisely at the start edge, like a gallery or product list.'},
+      {guidance: true, description: 'Always provide an aria-label that describes what the carousel contains, like "Featured products" or "Team members".'},
+      {guidance: true, description: 'Use a consistent gap and item width so the carousel looks intentional, not like content overflowing by accident.'},
+      {guidance: false, description: 'Use a carousel for content every user must see — not everyone scrolls horizontally. Put critical content above the fold.'},
+      {guidance: false, description: 'Auto-advance items — let the user scroll at their own pace.'},
+      {guidance: false, description: 'Nest carousels — a carousel inside a carousel is confusing and breaks keyboard navigation.'},
+    ],
+    anatomy: [
+      {name: 'Scroll container', required: true, description: 'The horizontal overflow area that holds all items.'},
+      {name: 'Items', required: true, description: 'The children rendered in a row. Each item is animated with a scroll-driven scale effect.'},
+      {name: 'Fade edges', required: true, description: 'Gradient fades on the left and right edges that indicate more content is available.'},
+      {name: 'Navigation buttons', required: false, description: 'Prev/next buttons that appear on hover. Enabled by default, disable with hasButtons={false}.'},
     ],
   },
   props: [
@@ -36,12 +44,14 @@ export const docs = {
 export const docsZh = {
   usage: {
     description:
-      'Carousel is a horizontal scroll container with fade-edge overflow indication and optional navigation buttons. Use to present a set of items that exceeds the available width, such as a gallery or filmstrip of cards.',
+      'Carousel scrolls a row of items horizontally when they overflow the available width. Use it for card grids, image galleries, product lists, or any set of items that should be browsable without taking up the full page.',
     bestPractices: [
-      {guidance: true, description: 'Enable scroll-snap when each item should be viewed individually rather than as a continuous strip.'},
-      {guidance: true, description: 'Provide a descriptive aria-label so assistive technology users understand the carousel\'s content.'},
-      {guidance: false, description: 'Use a carousel for critical content that users must see — not all users scroll horizontally.'},
-      {guidance: false, description: 'Auto-advance carousel items — let the user control scrolling at their own pace.'},
+      {guidance: true, description: 'Enable scroll-snap when each item should land precisely at the start edge, like a gallery or product list.'},
+      {guidance: true, description: 'Always provide an aria-label that describes what the carousel contains, like "Featured products" or "Team members".'},
+      {guidance: true, description: 'Use a consistent gap and item width so the carousel looks intentional, not like content overflowing by accident.'},
+      {guidance: false, description: 'Use a carousel for content every user must see — not everyone scrolls horizontally. Put critical content above the fold.'},
+      {guidance: false, description: 'Auto-advance items — let the user scroll at their own pace.'},
+      {guidance: false, description: 'Nest carousels — a carousel inside a carousel is confusing and breaks keyboard navigation.'},
     ],
   },
   propDescriptions: {
@@ -55,15 +65,13 @@ export const docsZh = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'horizontal scroll container w/ fade-edge overflow, optional prev/next nav buttons on top layer, scroll-snap',
+  description: 'horizontal scroll container w/ fade edges, nav buttons, scroll-snap',
   usage: {
     description:
-      'Carousel is a horizontal scroll container with fade-edge overflow indication and optional navigation buttons. Use to present a set of items that exceeds the available width, such as a gallery or filmstrip of cards.',
+      'Carousel scrolls items horizontally when they overflow. Use for card grids, galleries, product lists.',
     bestPractices: [
-      {guidance: true, description: 'Enable scroll-snap when each item should be viewed individually rather than as a continuous strip.'},
-      {guidance: true, description: 'Provide a descriptive aria-label so assistive technology users understand the carousel\'s content.'},
-      {guidance: false, description: 'Use a carousel for critical content that users must see — not all users scroll horizontally.'},
-      {guidance: false, description: 'Auto-advance carousel items — let the user control scrolling at their own pace.'},
+      {guidance: true, description: 'Scroll-snap for precise alignment. Always set aria-label. Consistent gap and item width.'},
+      {guidance: false, description: 'Critical content in carousels. Auto-advance. Nested carousels.'},
     ],
   },
   propDescriptions: {
