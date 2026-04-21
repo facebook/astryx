@@ -204,7 +204,7 @@ function ThemeCard({
               }}>
               <span
                 style={{
-                  fontSize: 9,
+                  fontSize: 18,
                   fontWeight: 700,
                   letterSpacing: '0.04em',
                   color: theme.preview.text,
