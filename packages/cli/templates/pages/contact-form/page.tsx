@@ -21,14 +21,14 @@ import {
 
 // light-scene-vertical-2 from xds_oss asset set
 const BANNER_URL =
-  'https://lookaside.facebook.com/assets/xds_oss/light-scene-vertical-2.jpg';
+  'https://lookaside.facebook.com/assets/xds_oss/light-scene-vertical-2.png';
 const WHY_US_IMAGES = [
   // light-working-horizontal-3 from xds_oss asset set
-  'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-3.jpg',
+  'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-3.png',
   // light-working-horizontal-2 from xds_oss asset set
-  'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-2.jpg',
+  'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-2.png',
   // light-working-vertical-1 from xds_oss asset set
-  'https://lookaside.facebook.com/assets/xds_oss/light-working-vertical-1.jpg',
+  'https://lookaside.facebook.com/assets/xds_oss/light-working-vertical-1.png',
 ];
 
 const CAMPAIGN_GOALS = [
