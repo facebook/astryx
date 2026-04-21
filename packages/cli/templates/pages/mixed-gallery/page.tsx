@@ -78,6 +78,11 @@ const IMAGES: GalleryImage[] = [
     src: 'https://lookaside.facebook.com/assets/xds_oss/light-lifestyle-vertical-4.png',
     title: 'Taking it easy',
   },
+  {
+    // light-working-horizontal-2 from xds_oss asset set
+    src: 'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-2.png',
+    title: 'Getting things done',
+  },
 ];
 
 // ─── Gallery Card with Hover Overlay ────────────────────────────────────────
@@ -143,12 +148,15 @@ export default function MixedGalleryTemplate() {
                 <GalleryCard image={IMAGES[1]} />
               </XDSGridSpan>
 
-              {/* Flipped row — small + large */}
-              <XDSGridSpan rows={5}>
+              {/* Second bottom row — 3 equal items */}
+              <XDSGridSpan rows={3}>
                 <GalleryCard image={IMAGES[5]} />
               </XDSGridSpan>
-              <XDSGridSpan columns={2} rows={5}>
+              <XDSGridSpan rows={3}>
                 <GalleryCard image={IMAGES[6]} />
+              </XDSGridSpan>
+              <XDSGridSpan rows={3}>
+                <GalleryCard image={IMAGES[7]} />
               </XDSGridSpan>
             </XDSGrid>
           </XDSVStack>
