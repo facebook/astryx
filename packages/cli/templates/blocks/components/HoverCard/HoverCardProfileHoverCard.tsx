@@ -1,28 +1,33 @@
 'use client';
 
+import * as stylex from '@stylexjs/stylex';
 import {XDSHoverCard} from '@xds/core/HoverCard';
 import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSButton} from '@xds/core/Button';
-import {XDSVStack} from '@xds/core/Layout';
+import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
+
+const styles = stylex.create({
+  avatar: {flexShrink: 0},
+});
 
 export default function HoverCardProfileHoverCard() {
   return (
     <XDSHoverCard
       placement="below"
       content={
-        <XDSVStack gap={3}>
-          <XDSAvatar name="Jane Doe" size="lg" />
+        <XDSHStack gap={3} vAlign="start">
+          <XDSAvatar name="Jane Doe" size="lg" xstyle={styles.avatar} />
           <XDSVStack gap={1}>
             <XDSText type="label">Jane Doe</XDSText>
             <XDSText type="supporting" color="secondary">
               Software Engineer · San Francisco
             </XDSText>
+            <XDSText type="body">
+              Building great products with great people.
+            </XDSText>
           </XDSVStack>
-          <XDSText type="body">
-            Building great products with great people. Previously at Acme Corp.
-          </XDSText>
-        </XDSVStack>
+        </XDSHStack>
       }>
       <XDSButton label="Jane Doe" variant="ghost" />
     </XDSHoverCard>
