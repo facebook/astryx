@@ -12,6 +12,18 @@ node node_modules/@xds/core/docs.mjs --list         # list all components
 node node_modules/@xds/core/docs.mjs --list --brief  # brief summaries
 ```
 
+## Page Layouts
+
+Building a full page? Start with a template rather than composing from scratch.
+Templates show how to combine `XDSAppShell`, `XDSLayout`, `XDSTopNav`, and `XDSSideNav`
+into common page patterns (dashboards, settings, forms, detail pages).
+
+```bash
+npx xds template --list              # browse all page and block templates
+npx xds template dashboard           # emit full page source
+npx xds template settings --skeleton # layout skeleton with spatial annotations
+```
+
 ## XDS CLI
 
 For richer documentation including templates, scaffolding, and tooling utilities, install the XDS CLI:
