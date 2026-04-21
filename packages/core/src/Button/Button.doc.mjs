@@ -15,7 +15,7 @@ export const docs = {
       {guidance: true, description: 'Always provide a label for icon-only buttons so screen readers can announce what the button does. Add a tooltip for sighted users.'},
       {guidance: false, description: 'Place more than one primary button in the same view — this dilutes the visual hierarchy.'},
       {guidance: false, description: 'Use the destructive variant without a confirmation step for irreversible actions like deleting data.'},
-      {guidance: false, description: 'Use a button when a link would do — if it just navigates to another page with no side effects, use a link.'},
+      {guidance: false, description: 'Use a button for navigation — if it only takes the user to another page, use a link instead. Buttons are for actions like saving, deleting, or submitting.'},
     ],
     anatomy: [
       {name: 'Icon', required: false, description: 'A leading icon that reinforces the label, like a trash icon on a Delete button.'},
@@ -151,7 +151,7 @@ export const docsZh = {
       {guidance: true, description: 'Always provide a label for icon-only buttons so screen readers can announce what the button does. Add a tooltip for sighted users.'},
       {guidance: false, description: 'Place more than one primary button in the same view — this dilutes the visual hierarchy.'},
       {guidance: false, description: 'Use the destructive variant without a confirmation step for irreversible actions like deleting data.'},
-      {guidance: false, description: 'Use a button when a link would do — if it just navigates to another page with no side effects, use a link.'},
+      {guidance: false, description: 'Use a button for navigation — if it only takes the user to another page, use a link instead. Buttons are for actions like saving, deleting, or submitting.'},
     ],
     anatomy: [
       {name: 'Icon', required: false, description: 'A leading icon that reinforces the label, like a trash icon on a Delete button.'},
@@ -232,7 +232,7 @@ export const docsDense = {
       {guidance: true, description: 'Icon-only buttons need a label for screen readers and a tooltip for sighted users.'},
       {guidance: false, description: 'Multiple primary buttons in one view — dilutes hierarchy.'},
       {guidance: false, description: 'Destructive without confirmation for irreversible actions.'},
-      {guidance: false, description: 'Button for pure navigation — use a link instead.'},
+      {guidance: false, description: 'Button for navigation — use a link if it only takes the user to another page.'},
     ],
   },
   propDescriptions: {
