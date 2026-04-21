@@ -188,14 +188,151 @@ function ThemeCard({
           <div
             style={{
               aspectRatio: '1920 / 1205',
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gridTemplateRows: '1fr 1fr',
+              backgroundColor: theme.preview.bg,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
             }}>
-            <div style={{backgroundColor: theme.preview.bg}} />
-            <div style={{backgroundColor: theme.preview.surface}} />
-            <div style={{backgroundColor: theme.preview.accent}} />
-            <div style={{backgroundColor: theme.preview.text}} />
+            {/* Top nav bar */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '3%',
+                padding: '3% 4%',
+                borderBottom: `1px solid ${theme.preview.surface}`,
+              }}>
+              <div
+                style={{
+                  width: '5%',
+                  height: 0,
+                  paddingBottom: '5%',
+                  borderRadius: '50%',
+                  backgroundColor: theme.preview.accent,
+                  flexShrink: 0,
+                }}
+              />
+              <div
+                style={{
+                  flex: 1,
+                  height: 0,
+                  paddingBottom: '4%',
+                  borderRadius: 999,
+                  backgroundColor: theme.preview.surface,
+                }}
+              />
+              <div
+                style={{
+                  width: '5%',
+                  height: 0,
+                  paddingBottom: '5%',
+                  borderRadius: '50%',
+                  backgroundColor: theme.preview.surface,
+                  flexShrink: 0,
+                }}
+              />
+            </div>
+            {/* Body: sidebar + content */}
+            <div style={{flex: 1, display: 'flex', minHeight: 0}}>
+              {/* Sidebar */}
+              <div
+                style={{
+                  width: '22%',
+                  padding: '4% 3%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '6%',
+                  borderRight: `1px solid ${theme.preview.surface}`,
+                }}>
+                {[true, false, false, false].map((active, j) => (
+                  <div
+                    key={j}
+                    style={{
+                      height: 0,
+                      paddingBottom: '16%',
+                      borderRadius: 3,
+                      backgroundColor: active
+                        ? theme.preview.accent
+                        : theme.preview.text,
+                      opacity: active ? 1 : 0.15,
+                    }}
+                  />
+                ))}
+              </div>
+              {/* Content area */}
+              <div
+                style={{
+                  flex: 1,
+                  padding: '4%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4%',
+                }}>
+                {/* Content cards 2x2 */}
+                <div
+                  style={{
+                    flex: 1,
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gridTemplateRows: '1fr 1fr',
+                    gap: '4%',
+                  }}>
+                  {[0, 1, 2, 3].map(j => (
+                    <div
+                      key={j}
+                      style={{
+                        backgroundColor: theme.preview.surface,
+                        borderRadius: 4,
+                        padding: '10%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8%',
+                      }}>
+                      <div
+                        style={{
+                          height: 0,
+                          paddingBottom: '12%',
+                          width: '60%',
+                          borderRadius: 2,
+                          backgroundColor: theme.preview.text,
+                          opacity: 0.7,
+                        }}
+                      />
+                      <div
+                        style={{
+                          height: 0,
+                          paddingBottom: '8%',
+                          width: '90%',
+                          borderRadius: 2,
+                          backgroundColor: theme.preview.text,
+                          opacity: 0.15,
+                        }}
+                      />
+                      <div
+                        style={{
+                          height: 0,
+                          paddingBottom: '8%',
+                          width: '70%',
+                          borderRadius: 2,
+                          backgroundColor: theme.preview.text,
+                          opacity: 0.15,
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+                {/* CTA button */}
+                <div
+                  style={{
+                    height: 0,
+                    paddingBottom: '5%',
+                    width: '30%',
+                    borderRadius: 4,
+                    backgroundColor: theme.preview.accent,
+                  }}
+                />
+              </div>
+            </div>
           </div>
           <div
             style={{
