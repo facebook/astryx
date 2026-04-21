@@ -21,7 +21,7 @@ npx xds --help                      # full listing of CLI capabilities
 npx xds component Button           # full docs + related templates
 npx xds template --list             # browse page and block templates
 npx xds template Dashboard --skeleton  # scaffold a template
-npx xds docs                        # principles and tokens reference
+npx xds docs                        # principles, tokens, theming, and styling reference
 ```
 
 ## Resources
