@@ -24,7 +24,7 @@ export default function DialogFormDialog() {
     <XDSCard>
       <XDSVStack gap={3}>
         <XDSVStack gap={1}>
-          <XDSText type="bodyBold">Profile Settings</XDSText>
+          <XDSText type="body" weight="bold">Profile Settings</XDSText>
           <XDSText type="supporting" color="secondary">
             Display name, bio, and avatar
           </XDSText>

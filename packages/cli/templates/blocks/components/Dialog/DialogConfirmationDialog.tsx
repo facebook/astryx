@@ -24,7 +24,7 @@ export default function DialogConfirmationDialog() {
     <XDSCard>
       <XDSVStack gap={3}>
         <XDSVStack gap={1}>
-          <XDSText type="bodyBold">Marketing Dashboard</XDSText>
+          <XDSText type="body" weight="bold">Marketing Dashboard</XDSText>
           <XDSText type="supporting" color="secondary">
             Created Jan 12, 2026 · 14 pages · 3 collaborators
           </XDSText>

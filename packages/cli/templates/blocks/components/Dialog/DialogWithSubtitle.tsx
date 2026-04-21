@@ -20,7 +20,7 @@ export default function DialogWithSubtitle() {
     <XDSCard>
       <XDSVStack gap={3}>
         <XDSVStack gap={1}>
-          <XDSText type="bodyBold">Project Ownership</XDSText>
+          <XDSText type="body" weight="bold">Project Ownership</XDSText>
           <XDSText type="supporting" color="secondary">
             Marketing Dashboard · Owner: You
           </XDSText>

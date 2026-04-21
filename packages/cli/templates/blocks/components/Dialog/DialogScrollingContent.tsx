@@ -31,7 +31,7 @@ export default function DialogScrollingContent() {
     <XDSCard>
       <XDSVStack gap={3}>
         <XDSVStack gap={1}>
-          <XDSText type="bodyBold">Terms and Conditions</XDSText>
+          <XDSText type="body" weight="bold">Terms and Conditions</XDSText>
           <XDSText type="supporting" color="secondary">
             Last updated March 2026 · 8 clauses
           </XDSText>

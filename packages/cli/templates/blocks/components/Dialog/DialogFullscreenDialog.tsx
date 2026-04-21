@@ -43,7 +43,7 @@ export default function DialogFullscreenDialog() {
     <XDSCard>
       <XDSVStack gap={3}>
         <XDSVStack gap={1}>
-          <XDSText type="bodyBold">Help &amp; Documentation</XDSText>
+          <XDSText type="body" weight="bold">Help &amp; Documentation</XDSText>
           <XDSText type="supporting" color="secondary">
             5 articles · Last updated Apr 2026
           </XDSText>
@@ -68,7 +68,7 @@ export default function DialogFullscreenDialog() {
               <XDSVStack gap={4}>
                 {SECTIONS.map(({title, body}) => (
                   <XDSVStack key={title} gap={1}>
-                    <XDSText type="bodyBold">{title}</XDSText>
+                    <XDSText type="body" weight="bold">{title}</XDSText>
                     <XDSText type="body">{body}</XDSText>
                   </XDSVStack>
                 ))}
