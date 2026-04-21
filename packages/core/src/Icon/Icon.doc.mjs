@@ -14,7 +14,7 @@ export const docs = {
       name: 'color',
       type: "'primary' | 'secondary' | 'tertiary' | 'disabled' | 'accent' | 'positive' | 'negative' | 'warning' | 'inherit'",
       description: 'Color variant mapped to XDS icon color tokens.',
-      default: "'primary'",
+      default: "'inherit'",
     },
     {
       name: 'size',
@@ -52,7 +52,7 @@ export const docsZh = {
       name: 'color',
       type: "'primary' | 'secondary' | 'tertiary' | 'disabled' | 'accent' | 'positive' | 'negative' | 'warning' | 'inherit'",
       description: '映射到 XDS 图标颜色令牌的颜色变体。',
-      default: "'primary'",
+      default: "'inherit'",
     },
     {
       name: 'size',
