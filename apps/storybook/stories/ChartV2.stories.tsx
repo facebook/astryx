@@ -1,5 +1,5 @@
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSChart, bar, line, dot, area, band} from '../../packages/lab/src/ChartV2';
+import {XDSChartV2 as XDSChart, bar, line, dot, area, band} from '@xds/lab';
 import {XDSChartGrid, XDSChartAxis} from '@xds/lab';
 
 const meta: Meta<typeof XDSChart> = {
@@ -25,7 +25,12 @@ export const SimpleBar: StoryObj = {
       xKey="month"
       series={[bar('revenue', {color: '#3b82f6'})]}
       grid={<XDSChartGrid horizontal />}
-      axes={<><XDSChartAxis position="bottom" /><XDSChartAxis position="left" /></>}
+      axes={
+        <>
+          <XDSChartAxis position="bottom" />
+          <XDSChartAxis position="left" />
+        </>
+      }
       height={300}
     />
   ),
@@ -42,7 +47,12 @@ export const StackedBars: StoryObj = {
         bar('costs', {color: '#ef4444', stack: 'totals'}),
       ]}
       grid={<XDSChartGrid horizontal />}
-      axes={<><XDSChartAxis position="bottom" /><XDSChartAxis position="left" /></>}
+      axes={
+        <>
+          <XDSChartAxis position="bottom" />
+          <XDSChartAxis position="left" />
+        </>
+      }
       height={300}
     />
   ),
@@ -59,7 +69,12 @@ export const GroupedBars: StoryObj = {
         bar('costs', {color: '#ef4444', group: 'compare'}),
       ]}
       grid={<XDSChartGrid horizontal />}
-      axes={<><XDSChartAxis position="bottom" /><XDSChartAxis position="left" /></>}
+      axes={
+        <>
+          <XDSChartAxis position="bottom" />
+          <XDSChartAxis position="left" />
+        </>
+      }
       height={300}
     />
   ),
@@ -76,7 +91,12 @@ export const MixedMarks: StoryObj = {
         line('trend', {color: '#f59e0b'}),
       ]}
       grid={<XDSChartGrid horizontal />}
-      axes={<><XDSChartAxis position="bottom" /><XDSChartAxis position="left" /></>}
+      axes={
+        <>
+          <XDSChartAxis position="bottom" />
+          <XDSChartAxis position="left" />
+        </>
+      }
       height={300}
     />
   ),
@@ -93,7 +113,12 @@ export const AreaGradient: StoryObj = {
         line('revenue', {color: '#3b82f6'}),
       ]}
       grid={<XDSChartGrid horizontal />}
-      axes={<><XDSChartAxis position="bottom" /><XDSChartAxis position="left" /></>}
+      axes={
+        <>
+          <XDSChartAxis position="bottom" />
+          <XDSChartAxis position="left" />
+        </>
+      }
       height={300}
     />
   ),
@@ -110,7 +135,12 @@ export const StackedAreas: StoryObj = {
         area('costs', {color: '#ef4444', stack: 'total'}),
       ]}
       grid={<XDSChartGrid horizontal />}
-      axes={<><XDSChartAxis position="bottom" /><XDSChartAxis position="left" /></>}
+      axes={
+        <>
+          <XDSChartAxis position="bottom" />
+          <XDSChartAxis position="left" />
+        </>
+      }
       height={300}
     />
   ),
