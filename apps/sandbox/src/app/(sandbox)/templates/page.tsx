@@ -164,7 +164,7 @@ function CopyPath({path}: {path: string}) {
 const uniqueComponents = [...new Set(blocks.map(b => b.component))].sort();
 
 const GRADE_VARIANT: Record<string, 'success' | 'info' | 'warning' | 'error' | 'neutral'> = {
-  A: 'success',
+  A: 'neutral',
   B: 'info',
   C: 'warning',
   D: 'error',
