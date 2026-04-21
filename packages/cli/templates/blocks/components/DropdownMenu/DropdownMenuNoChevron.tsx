@@ -17,7 +17,7 @@ export default function DropdownMenuNoChevron() {
           label: 'More actions',
           icon: <XDSIcon icon={EllipsisHorizontalIcon} />,
           variant: 'ghost',
-          hideLabel: true,
+          isLabelHidden: true,
         }}
         hasChevron={false}
         items={[
