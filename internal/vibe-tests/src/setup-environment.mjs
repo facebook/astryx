@@ -44,7 +44,7 @@ export function createAgentProject(target, iterDir, promptId) {
   const projectDir = path.join(iterDir, 'projects', promptId);
   ensureDir(projectDir);
 
-  const templateMap = {xds: 'project-a', baseline: 'project-b', html: 'project-c'};
+  const templateMap = {xds: 'project-xds', baseline: 'project-baseline', html: 'project-html'};
   const template = templateMap[target];
   if (!template) throw new Error(`Unknown target: ${target}`);
 

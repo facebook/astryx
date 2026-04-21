@@ -7,5 +7,8 @@
     "@stylexjs/stylex": "^0.10",
     "react": "^19",
     "react-dom": "^19"
+  },
+  "devDependencies": {
+    "@xds/cli": "^0.0.11"
   }
 }
