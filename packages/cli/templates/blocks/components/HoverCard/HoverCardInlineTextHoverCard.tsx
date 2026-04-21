@@ -3,8 +3,10 @@
 import * as stylex from '@stylexjs/stylex';
 import {XDSHoverCard} from '@xds/core/HoverCard';
 import {XDSAvatar} from '@xds/core/Avatar';
+import {XDSIcon} from '@xds/core/Icon';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {XDSText, XDSHeading} from '@xds/core/Text';
+import {CalendarIcon} from '@heroicons/react/24/outline';
 
 const styles = stylex.create({
   avatar: {flexShrink: 0},
@@ -16,34 +18,54 @@ export default function HoverCardInlineTextHoverCard() {
       The project is maintained by{' '}
       <XDSHoverCard
         content={
-          <XDSHStack gap={3} vAlign="start">
-            <XDSAvatar name="Jane Doe" size="medium" xstyle={styles.avatar} />
-            <XDSVStack gap={1}>
-              <XDSText type="label">Jane Doe</XDSText>
+          <XDSVStack gap={2}>
+            <XDSHStack gap={3} vAlign="start">
+              <XDSAvatar name="Jane Doe" size="medium" xstyle={styles.avatar} />
+              <XDSVStack gap={1}>
+                <XDSHeading level={3}>@janedoe</XDSHeading>
+                <XDSText type="supporting" color="secondary">
+                  Software Engineer
+                </XDSText>
+              </XDSVStack>
+            </XDSHStack>
+            <XDSHStack gap={1} vAlign="center">
+              <XDSIcon icon={CalendarIcon} size="xsm" color="secondary" />
               <XDSText type="supporting" color="secondary">
-                Software Engineer
+                Joined March 2024
               </XDSText>
-            </XDSVStack>
-          </XDSHStack>
+            </XDSHStack>
+          </XDSVStack>
         }
         placement="above">
-        Jane Doe
+        @janedoe
       </XDSHoverCard>
       ,{' '}
       <XDSHoverCard
         content={
-          <XDSHStack gap={3} vAlign="start">
-            <XDSAvatar name="John Smith" size="medium" xstyle={styles.avatar} />
-            <XDSVStack gap={1}>
-              <XDSText type="label">John Smith</XDSText>
+          <XDSVStack gap={2}>
+            <XDSHStack gap={3} vAlign="start">
+              <XDSAvatar
+                name="John Smith"
+                size="medium"
+                xstyle={styles.avatar}
+              />
+              <XDSVStack gap={1}>
+                <XDSHeading level={3}>@johnsmith</XDSHeading>
+                <XDSText type="supporting" color="secondary">
+                  Product Manager
+                </XDSText>
+              </XDSVStack>
+            </XDSHStack>
+            <XDSHStack gap={1} vAlign="center">
+              <XDSIcon icon={CalendarIcon} size="xsm" color="secondary" />
               <XDSText type="supporting" color="secondary">
-                Product Manager
+                Joined January 2025
               </XDSText>
-            </XDSVStack>
-          </XDSHStack>
+            </XDSHStack>
+          </XDSVStack>
         }
         placement="above">
-        John Smith
+        @johnsmith
       </XDSHoverCard>
       , and others.
     </XDSText>
