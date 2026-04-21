@@ -1,14 +1,19 @@
 'use client';
 
+import * as stylex from '@stylexjs/stylex';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSCard} from '@xds/core/Card';
 import {XDSSection} from '@xds/core/Section';
 import {XDSHStack, XDSVStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
+const styles = stylex.create({
+  fill: {minHeight: '100%'},
+});
+
 export default function DividerVertical() {
   return (
-    <XDSSection variant="wash">
+    <XDSSection variant="wash" xstyle={styles.fill}>
       <XDSCard>
         <XDSHStack gap={4}>
           <XDSVStack gap={1}>
