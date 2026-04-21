@@ -215,7 +215,7 @@ const columns: XDSTableColumn<TemplateRow>[] = [
     renderCell: (row: TemplateRow) => (
       <XDSBadge
         label={row.type}
-        variant={row.type === 'Page' ? 'info' : 'neutral'}
+        variant={row.type === 'Page' ? 'cyan' : 'neutral'}
       />
     ),
   },
