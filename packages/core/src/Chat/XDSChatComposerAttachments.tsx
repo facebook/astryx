@@ -188,6 +188,18 @@ const styles = stylex.create({
   },
 });
 
+/**
+ * Container for attachment previews inside a chat composer.
+ * Supports collapsible behavior with a count badge.
+ *
+ * @example
+ * ```
+ * <XDSChatComposerAttachments count={3}>
+ *   <AttachmentThumbnail />
+ *   <AttachmentThumbnail />
+ * </XDSChatComposerAttachments>
+ * ```
+ */
 export function XDSChatComposerAttachments({
   ref,
   children,

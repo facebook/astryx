@@ -249,6 +249,18 @@ const styles = stylex.create({
 // Component
 // =============================================================================
 
+/**
+ * Layout shell for a chat composer with slots for attachments, input,
+ * actions, and a send button.
+ *
+ * @example
+ * ```
+ * <XDSChatComposer
+ *   onSubmit={(value) => console.log(value)}
+ *   placeholder="Type a message..."
+ * />
+ * ```
+ */
 export function XDSChatComposer(props: XDSChatComposerProps) {
   const {
     onSubmit,
