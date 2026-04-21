@@ -5,5 +5,5 @@ export const doc = {
   description: 'Scroll-snap carousel with navigation buttons and team member cards. Each card snaps to the start edge on scroll. Use when items should be viewed one at a time rather than as a continuous strip.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['Carousel', 'Badge', 'Card', 'Layout', 'Text'],
+  componentsUsed: ['Carousel', 'Avatar', 'Badge', 'Card', 'Layout', 'Text'],
 };
