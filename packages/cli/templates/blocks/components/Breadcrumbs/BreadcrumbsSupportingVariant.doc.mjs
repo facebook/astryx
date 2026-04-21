@@ -1,10 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Breadcrumbs — Supporting Variant',
-  description:
-    'Breadcrumbs using the supporting variant with smaller, muted text.',
+  name: 'Breadcrumbs — Variants',
+  description: 'Compare the default and supporting variants side by side. Use the supporting variant in dense UIs like admin panels where the breadcrumb should be subtle.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['Breadcrumbs'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Breadcrumbs', 'Layout', 'Text'],
 };
