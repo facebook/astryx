@@ -122,11 +122,15 @@ export default function FormSimplePage() {
       {...stylex.props(styles.pageBg)}
       style={{minHeight: '100svh', display: 'flex', flexDirection: 'column'}}>
       {/* Full-bleed banner */}
-      <div
+      <img
+        // light-scene-horizontal-1 from xds_oss asset set
+        src="https://lookaside.facebook.com/assets/xds_oss/light-scene-horizontal-1.png"
+        alt="Decorative banner"
         style={{
           width: '100%',
           height: '15vh',
-          background: 'linear-gradient(135deg, #f5f0eb 0%, #e0d5c8 100%)',
+          objectFit: 'cover',
+          objectPosition: 'center',
         }}
       />
 
@@ -256,9 +260,7 @@ export default function FormSimplePage() {
             </div>
           </XDSVStack>
 
-          <div style={{paddingTop: 10, paddingBottom: 10}}>
-            <XDSDivider />
-          </div>
+          <XDSDivider />
 
           {/* Your project */}
           <XDSVStack gap={5}>
