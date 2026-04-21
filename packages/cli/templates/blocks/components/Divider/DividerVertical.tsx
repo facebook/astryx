@@ -11,7 +11,7 @@ const styles = stylex.create({
 
 export default function DividerVertical() {
   return (
-    <XDSHStack gap={4}>
+    <XDSHStack gap={4} hAlign="center">
       <XDSVStack gap={1}>
         <XDSText type="label">Revenue</XDSText>
         <XDSText type="bodyBold">$24,500</XDSText>
