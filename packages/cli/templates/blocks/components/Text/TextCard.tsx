@@ -4,7 +4,7 @@ import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSCard} from '@xds/core/Card';
 import {XDSStack} from '@xds/core/Stack';
 
-export default function TextProductCard() {
+export default function TextCard() {
   return (
     <XDSCard padding={4}>
       <XDSStack direction="vertical" gap={1}>

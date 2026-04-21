@@ -9,7 +9,7 @@ const METRICS = [
   {label: 'Conversion', value: '23.4%', color: 'active' as const},
 ];
 
-export default function TextMetricsDisplay() {
+export default function TextMetrics() {
   return (
     <XDSStack direction="horizontal" gap={6}>
       {METRICS.map(({label, value, color}) => (

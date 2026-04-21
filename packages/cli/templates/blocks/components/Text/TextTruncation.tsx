@@ -13,7 +13,7 @@ const LINES = [
   {maxLines: 3, label: '3 lines'},
 ];
 
-export default function TextTruncatedContent() {
+export default function TextTruncation() {
   return (
     <XDSStack direction="vertical" gap={3}>
       {LINES.map(({maxLines, label}) => (
