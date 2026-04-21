@@ -56,7 +56,7 @@ if (shaIdx !== -1) {
 
 // ─── Registry ───────────────────────────────────────────────
 
-const REGISTRY = 'https://npm-internal.thefacebook.com';
+const REGISTRY = 'https://registry.facebook.net';
 
 // ─── Discover publishable packages ──────────────────────────
 
