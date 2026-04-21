@@ -30,12 +30,15 @@ Then follow the [setup guide](packages/core/README.md#quick-start) to import sty
 
 ## Packages
 
-| Package                                         | Description                                         | README                            |
-| ----------------------------------------------- | --------------------------------------------------- | --------------------------------- |
-| [`@xds/core`](packages/core)                    | Components, theme system, and utilities             | [README](packages/core/README.md) |
-| [`@xds/cli`](packages/cli)                      | CLI tooling — component docs, scaffolding, codemods | [README](packages/cli/README.md)  |
-| [`@xds/theme-default`](packages/themes/default) | Clean, professional default theme                   |                                   |
-| [`@xds/theme-neutral`](packages/themes/neutral) | Muted, minimal aesthetic theme                      |                                   |
+| Package                                         | Description                                           | README                                       |
+| ----------------------------------------------- | ----------------------------------------------------- | -------------------------------------------- |
+| [`@xds/core`](packages/core)                    | Components, theme system, and utilities               | [README](packages/core/README.md)            |
+| [`@xds/cli`](packages/cli)                      | CLI tooling — component docs, scaffolding, codemods   | [README](packages/cli/README.md)             |
+| [`@xds/build`](packages/build)                  | Build plugins for StyleX source builds                | [README](packages/build/README.md)           |
+| [`@xds/vega`](packages/vega)                    | Vega/Vega-Lite chart wrapper                          | [README](packages/vega/README.md)            |
+| [`@xds/theme-default`](packages/themes/default) | Clean, professional default theme                     | [README](packages/themes/default/README.md)  |
+| [`@xds/theme-neutral`](packages/themes/neutral) | Muted, minimal aesthetic theme                        | [README](packages/themes/neutral/README.md)  |
+| [`@xds/theme-daily`](packages/themes/daily)     | Warm, productivity-focused theme                      | [README](packages/themes/daily/README.md)    |
 
 ## Philosophy
 
