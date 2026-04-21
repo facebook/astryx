@@ -2,14 +2,15 @@
 
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 
-export default function DropdownMenuWithDisabledItems() {
+export default function DropdownMenuWithDividers() {
   return (
     <XDSDropdownMenu
       button={{label: 'Actions'}}
       items={[
         {label: 'Edit', onClick: () => {}},
         {label: 'Duplicate', onClick: () => {}},
-        {label: 'Delete (disabled)', isDisabled: true},
+        {type: 'divider'},
+        {label: 'Delete', onClick: () => {}},
       ]}
     />
   );
