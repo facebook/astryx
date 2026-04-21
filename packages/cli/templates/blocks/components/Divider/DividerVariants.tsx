@@ -11,23 +11,22 @@ export default function DividerVariants() {
     <XDSSection variant="wash">
       <XDSCard>
         <XDSVStack gap={3}>
-          <XDSText type="label">Account Settings</XDSText>
-          <XDSText type="body">
-            Manage your profile, security, and notification preferences.
-          </XDSText>
-          <XDSDivider />
-          <XDSText type="label">Security</XDSText>
-          <XDSText type="body">
-            Two-factor authentication is enabled. Last login: Apr 18, 2026.
-          </XDSText>
+          <XDSVStack gap={1}>
+            <XDSText type="label">Sign in with email</XDSText>
+            <XDSText type="body">
+              Enter your email and password to access your account.
+            </XDSText>
+          </XDSVStack>
           <XDSDivider label="or" />
-          <XDSText type="body">
-            Sign in with a different method to verify your identity.
-          </XDSText>
+          <XDSVStack gap={1}>
+            <XDSText type="label">Sign in with SSO</XDSText>
+            <XDSText type="body">
+              Use your company credentials to sign in automatically.
+            </XDSText>
+          </XDSVStack>
           <XDSDivider variant="strong" />
           <XDSText type="supporting" color="secondary">
-            Subtle dividers separate related sections. Labeled dividers mark
-            alternatives. Strong dividers create high-contrast boundaries.
+            By signing in, you agree to our Terms of Service and Privacy Policy.
           </XDSText>
         </XDSVStack>
       </XDSCard>
