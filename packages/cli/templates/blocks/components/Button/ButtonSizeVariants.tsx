@@ -13,13 +13,30 @@ const SIZES = [
 export default function ButtonSizeVariants() {
   return (
     <XDSStack direction="vertical" gap={4}>
-      <XDSText type="supporting" color="secondary">
-        Pick a size that matches the context
-      </XDSText>
-      <XDSStack direction="horizontal" gap={3} vAlign="center">
-        {SIZES.map(({size, label}) => (
-          <XDSButton key={size} label={label} variant="primary" size={size} />
-        ))}
+      <XDSStack direction="vertical" gap={1}>
+        <XDSText type="supporting" color="secondary">
+          Primary
+        </XDSText>
+        <XDSStack direction="horizontal" gap={3} vAlign="center">
+          {SIZES.map(({size, label}) => (
+            <XDSButton key={size} label={label} variant="primary" size={size} />
+          ))}
+        </XDSStack>
+      </XDSStack>
+      <XDSStack direction="vertical" gap={1}>
+        <XDSText type="supporting" color="secondary">
+          Secondary
+        </XDSText>
+        <XDSStack direction="horizontal" gap={3} vAlign="center">
+          {SIZES.map(({size, label}) => (
+            <XDSButton
+              key={size}
+              label={label}
+              variant="secondary"
+              size={size}
+            />
+          ))}
+        </XDSStack>
       </XDSStack>
     </XDSStack>
   );

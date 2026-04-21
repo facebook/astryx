@@ -20,6 +20,11 @@ export default function ButtonWithEndSlot() {
         <XDSButton
           label="Notifications"
           variant="secondary"
+          endContent={<XDSBadge variant="warning" label={12} />}
+        />
+        <XDSButton
+          label="Updates"
+          variant="ghost"
           endContent={<XDSBadge variant="neutral" label="New" />}
         />
       </XDSStack>
