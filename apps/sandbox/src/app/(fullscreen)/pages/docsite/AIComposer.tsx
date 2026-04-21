@@ -72,9 +72,7 @@ export function AIComposer({
                 icon: MODE_ICON[mode],
                 variant: 'ghost',
                 size: 'sm',
-                isIconOnly: true,
               }}
-              hasChevron={false}
               items={[
                 {
                   label: 'Template',
