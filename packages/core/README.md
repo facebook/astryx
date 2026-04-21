@@ -12,16 +12,36 @@ node node_modules/@xds/core/docs.mjs --list         # list all components
 node node_modules/@xds/core/docs.mjs --list --brief  # brief summaries
 ```
 
-## XDS CLI
+## Page Layouts
 
-For richer documentation including templates, scaffolding, and tooling utilities, install the XDS CLI:
+Building a full page? Start with a template rather than composing from scratch.
+Templates show how to combine `XDSAppShell`, `XDSLayout`, `XDSTopNav`, and `XDSSideNav`
+into common page patterns (dashboards, settings, forms, detail pages).
+
+Requires `@xds/cli` (`npm install -D @xds/cli`):
 
 ```bash
-npx xds --help                      # full listing of CLI capabilities
-npx xds component Button           # full docs + related templates
-npx xds template --list             # browse page and block templates
-npx xds template Dashboard --skeleton  # scaffold a template
-npx xds docs                        # principles, tokens, theming, and styling reference
+npx xds template --list              # browse all page and block templates
+npx xds template dashboard           # emit full page source
+npx xds template settings --skeleton # layout skeleton with spatial annotations
+```
+
+## XDS CLI
+
+The CLI (`@xds/cli`) provides additional tooling:
+
+```bash
+npx xds --help                       # full listing of all commands
+npx xds component Button             # full docs + related block templates
+npx xds docs                         # reference docs (principles, tokens, theming, styling)
+npx xds docs theme                   # theming guide (XDSTheme, defineTheme, light/dark)
+npx xds docs tokens                  # spacing, color, radius, typography token reference
+npx xds init                         # initialize XDS in your project
+npx xds theme build                  # build theme CSS for production
+npx xds swizzle Button               # eject component source for customization
+npx xds upgrade --apply              # run codemods to migrate between versions
+npx xds discover                     # discover external XDS packages
+npx xds gap-report                   # report a missing capability
 ```
 
 ## Resources
