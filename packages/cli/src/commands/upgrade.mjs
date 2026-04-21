@@ -104,16 +104,18 @@ function bumpXdsDeps(targetVersion) {
 
 /**
  * Get the install command for the detected package manager.
+ * @param {boolean} force — pass --force to bust stale lockfile resolutions
  * @returns {string}
  */
-function getInstallCommand() {
+function getInstallCommand(force = false) {
   const pm = detectPackageManager();
+  const forceFlag = force ? ' --force' : '';
   switch (pm) {
-    case 'yarn': return 'yarn install';
-    case 'pnpm': return 'pnpm install';
-    case 'bun': return 'bun install';
+    case 'yarn': return `yarn install${forceFlag}`;
+    case 'pnpm': return `pnpm install${force ? ' --force' : ''}`;
+    case 'bun': return `bun install${force ? ' --force' : ''}`;
     case 'npm':
-    default: return 'npm install';
+    default: return `npm install${force ? ' --force' : ''}`;
   }
 }
 
@@ -141,6 +143,8 @@ export function registerUpgrade(program) {
     .option('--force', 'Run codemods even if versions appear up to date', false)
     .option('--codemod <name>', 'Run a specific transform only')
     .option('--codemod-only', 'Skip version bump and install, run codemods only', false)
+    .option('--skip-install', 'Skip package manager install after bumping deps', false)
+    .option('--force-install', 'Pass --force to package manager install (busts stale lockfile resolutions)', false)
     .option('--path <dir>', 'Source directory to scan', './src')
     .option('--install-deps', 'Auto-install jscodeshift without prompting', false)
     .option('--list', 'List available codemods', false)
@@ -261,13 +265,17 @@ export function registerUpgrade(program) {
           receipt.depsUpdated = result.bumped;
           if (!json) p.log.info(`Bumped ${result.bumped.join(', ')} → ${targetVersion}`);
 
-          const installCmd = getInstallCommand();
-          if (!json) p.log.step(`Running ${installCmd}...`);
-          try {
-            execSync(installCmd, {stdio: 'inherit', cwd: process.cwd()});
-            if (!json) p.log.success('Dependencies installed.');
-          } catch {
-            if (!json) p.log.warn('Install failed — codemods will still run against existing code.');
+          const installCmd = getInstallCommand(options.forceInstall);
+          if (options.skipInstall) {
+            if (!json) p.log.info('Skipping install (--skip-install). Run your package manager manually.');
+          } else {
+            if (!json) p.log.step(`Running ${installCmd}...`);
+            try {
+              execSync(installCmd, {stdio: 'inherit', cwd: process.cwd()});
+              if (!json) p.log.success('Dependencies installed.');
+            } catch {
+              if (!json) p.log.warn('Install failed — codemods will still run against existing code.');
+            }
           }
         }
       }
