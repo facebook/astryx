@@ -11,12 +11,15 @@ export default function DividerFullBleed() {
     <XDSSection variant="wash">
       <XDSCard>
         <XDSVStack gap={3}>
-          <XDSText type="label">Full bleed divider</XDSText>
+          <XDSText type="label">Order Summary</XDSText>
+          <XDSText type="body">3 items · Subtotal: $127.00</XDSText>
+          <XDSDivider isFullBleed />
+          <XDSText type="label">Shipping</XDSText>
           <XDSText type="body">
-            The divider extends to container edges, ignoring padding.
+            Standard delivery — estimated Apr 25, 2026
           </XDSText>
           <XDSDivider isFullBleed />
-          <XDSText type="body">Content below the divider.</XDSText>
+          <XDSText type="bodyBold">Total: $134.99</XDSText>
         </XDSVStack>
       </XDSCard>
     </XDSSection>
