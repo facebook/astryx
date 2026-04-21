@@ -18,6 +18,7 @@ import {
   FILTER_COLUMNS,
   PROFILE_CRAFT_ITEMS,
   THEME_PICKER_ENTRIES,
+  basePath,
 } from './constants';
 import type {ThemePickerEntry} from './constants';
 import {TemplateCard} from './TemplateCard';
@@ -169,7 +170,6 @@ function ThemeCard({
   onCustomize: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
-  const r = theme.preview.radius ?? 8;
 
   return (
     <div
@@ -188,155 +188,54 @@ function ThemeCard({
           onClick={onCustomize}>
           <div
             style={{
+              position: 'relative',
               aspectRatio: '1920 / 1205',
-              backgroundColor: theme.preview.bg,
-              display: 'flex',
-              flexDirection: 'column',
               overflow: 'hidden',
+              backgroundColor: theme.preview.bg,
             }}>
-            {/* Top nav bar */}
+            <img
+              src={`${basePath}/templates/theme-preview.png`}
+              alt={theme.name}
+              style={{
+                display: 'block',
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+              }}
+            />
             <div
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '3%',
-                padding: '3% 4%',
-                borderBottom: `1px solid ${theme.preview.surface}`,
+                position: 'absolute',
+                inset: 0,
+                backgroundColor: theme.preview.accent,
+                mixBlendMode: 'color',
+                opacity: 0.35,
+              }}
+            />
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                backgroundColor: theme.preview.bg,
+                mixBlendMode: 'overlay',
+                opacity: 0.4,
+              }}
+            />
+            <span
+              style={{
+                position: 'absolute',
+                top: 12,
+                left: 16,
+                fontSize: 18,
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+                fontFamily: theme.preview.font ?? 'system-ui, sans-serif',
+                color: theme.preview.text,
+                lineHeight: 1,
+                textShadow: '0 1px 3px rgba(0,0,0,0.15)',
               }}>
-              <span
-                style={{
-                  fontSize: 18,
-                  fontWeight: 700,
-                  letterSpacing: '0.04em',
-                  fontFamily: theme.preview.font ?? 'system-ui, sans-serif',
-                  color: theme.preview.text,
-                  opacity: 0.7,
-                  flexShrink: 0,
-                  lineHeight: 1,
-                }}>
-                {theme.name}
-              </span>
-              <div
-                style={{
-                  flex: 1,
-                  height: 0,
-                  paddingBottom: '4%',
-                  borderRadius: 999,
-                  backgroundColor: theme.preview.surface,
-                }}
-              />
-              <div
-                style={{
-                  width: '5%',
-                  height: 0,
-                  paddingBottom: '5%',
-                  borderRadius: '50%',
-                  backgroundColor: theme.preview.surface,
-                  flexShrink: 0,
-                }}
-              />
-            </div>
-            {/* Body: sidebar + content */}
-            <div style={{flex: 1, display: 'flex', minHeight: 0}}>
-              {/* Sidebar */}
-              <div
-                style={{
-                  width: '22%',
-                  padding: '4% 3%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '6%',
-                  borderRight: `1px solid ${theme.preview.surface}`,
-                }}>
-                {[true, false, false, false].map((active, j) => (
-                  <div
-                    key={j}
-                    style={{
-                      height: 0,
-                      paddingBottom: '16%',
-                      borderRadius: Math.max(r * 0.4, 2),
-                      backgroundColor: active
-                        ? theme.preview.accent
-                        : theme.preview.text,
-                      opacity: active ? 1 : 0.15,
-                    }}
-                  />
-                ))}
-              </div>
-              {/* Content area */}
-              <div
-                style={{
-                  flex: 1,
-                  padding: '4%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '4%',
-                }}>
-                {/* Content cards 2x2 */}
-                <div
-                  style={{
-                    flex: 1,
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gridTemplateRows: '1fr 1fr',
-                    gap: '4%',
-                  }}>
-                  {[0, 1, 2, 3].map(j => (
-                    <div
-                      key={j}
-                      style={{
-                        backgroundColor: theme.preview.surface,
-                        borderRadius: r,
-                        padding: '10%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '8%',
-                      }}>
-                      <div
-                        style={{
-                          height: 0,
-                          paddingBottom: '12%',
-                          width: '60%',
-                          borderRadius: Math.max(r * 0.25, 1),
-                          backgroundColor: theme.preview.text,
-                          opacity: 0.7,
-                        }}
-                      />
-                      <div
-                        style={{
-                          height: 0,
-                          paddingBottom: '8%',
-                          width: '90%',
-                          borderRadius: Math.max(r * 0.25, 1),
-                          backgroundColor: theme.preview.text,
-                          opacity: 0.15,
-                        }}
-                      />
-                      <div
-                        style={{
-                          height: 0,
-                          paddingBottom: '8%',
-                          width: '70%',
-                          borderRadius: Math.max(r * 0.25, 1),
-                          backgroundColor: theme.preview.text,
-                          opacity: 0.15,
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
-                {/* CTA button */}
-                <div
-                  style={{
-                    height: 0,
-                    paddingBottom: '5%',
-                    width: '30%',
-                    borderRadius: Math.max(r * 0.5, 2),
-                    backgroundColor: theme.preview.accent,
-                  }}
-                />
-              </div>
-            </div>
+              {theme.name}
+            </span>
           </div>
           <div
             style={{
