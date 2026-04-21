@@ -6,7 +6,7 @@ import {XDSVStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
 const styles = stylex.create({
-  content: {maxWidth: 260},
+  content: {maxWidth: 200},
 });
 
 export default function HoverCardInlineTextHoverCard() {
