@@ -2,9 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'ToggleButton — Icon Swap',
-  description:
-    'Icon-only toggle buttons that swap between outline and solid icons when pressed.',
+  description: 'Icon-only toggle buttons that swap between outline and solid icons when pressed. Use for actions like favorite, bookmark, or mute where the icon itself communicates the state.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['ToggleButton'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['ToggleButton', 'Layout', 'Text', 'Icon'],
 };

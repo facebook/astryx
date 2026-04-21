@@ -1,10 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'ToggleButton — Single-Select Group',
-  description:
-    'Single-select toggle button group acting as a view mode switcher between list and grid.',
+  name: 'ToggleButton — Single Select',
+  description: 'Single-select toggle group acting as a view mode switcher. Only one option can be active at a time — clicking the active button deselects it.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['ToggleButton', 'ToggleButtonGroup'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['ToggleButton', 'ToggleButtonGroup', 'Layout', 'Text', 'Icon'],
 };
