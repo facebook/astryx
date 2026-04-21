@@ -1,8 +1,8 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'TextInput — Validation',
-  description: 'Error, warning, and success validation states with status messages. Use to show users what went wrong and how to fix it.',
+  name: 'TextInput — States',
+  description: 'Text, password, and email inputs in default, disabled, and loading states. Shows the three input types side by side with realistic data.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['TextInput', 'Layout'],

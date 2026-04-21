@@ -2,28 +2,36 @@
 
 import {useState} from 'react';
 import {XDSTextInput} from '@xds/core/TextInput';
+import {XDSStack} from '@xds/core/Layout';
 
 export default function TextInputWithValidation() {
-  const [value, setValue] = useState('');
-
-  const getStatus = () => {
-    if (value.length === 0) return undefined;
-    if (!value.includes('@')) {
-      return {
-        type: 'error' as const,
-        message: 'Please enter a valid email address',
-      };
-    }
-    return {type: 'success' as const, message: 'Email looks good!'};
-  };
+  const [error, setError] = useState('sarah@');
+  const [warning, setWarning] = useState('sarah_chen');
+  const [success, setSuccess] = useState('https://sarahchen.dev');
 
   return (
-    <XDSTextInput
-      label="Email"
-      value={value}
-      onChange={setValue}
-      placeholder="Enter your email"
-      status={getStatus()}
-    />
+    <XDSStack direction="vertical" gap={3}>
+      <XDSTextInput
+        label="Error message"
+        value={error}
+        onChange={setError}
+        placeholder="Enter a value"
+        status={{type: 'error', message: 'Please enter a valid email address.'}}
+      />
+      <XDSTextInput
+        label="Warning message"
+        value={warning}
+        onChange={setWarning}
+        placeholder="Enter a value"
+        status={{type: 'warning', message: 'This username is already taken — try adding a number.'}}
+      />
+      <XDSTextInput
+        label="Success message"
+        value={success}
+        onChange={setSuccess}
+        placeholder="Enter a value"
+        status={{type: 'success', message: 'URL is valid and reachable.'}}
+      />
+    </XDSStack>
   );
 }
