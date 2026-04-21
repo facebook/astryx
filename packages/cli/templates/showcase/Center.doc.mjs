@@ -1,2 +1,2 @@
 /** @type {import('@xds/core').ComponentShowcaseDoc} */
-export const doc = {name: 'Center', aspectRatio: 1};
+export const doc = {name: 'Center', aspectRatio: 4 / 3};

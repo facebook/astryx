@@ -3,5 +3,14 @@
 import {XDSAlertDialog} from '@xds/core/AlertDialog';
 
 export default function AlertDialogShowcase() {
-  return <XDSAlertDialog title="Confirm" description="Are you sure?" />;
+  return (
+    <XDSAlertDialog
+      isOpen={true}
+      onOpenChange={() => {}}
+      title="Delete item?"
+      description="This action cannot be undone. The item and all its data will be permanently removed."
+      actionLabel="Delete"
+      onAction={() => {}}
+    />
+  );
 }

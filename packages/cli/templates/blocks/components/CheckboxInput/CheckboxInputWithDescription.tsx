@@ -1,16 +1,16 @@
 'use client';
 
-import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
 import {useState} from 'react';
+import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
 
 export default function CheckboxInputWithDescription() {
-  const [subscribed, setSubscribed] = useState(false);
+  const [value, setValue] = useState<boolean | 'indeterminate'>(false);
   return (
     <XDSCheckboxInput
       label="Subscribe to newsletter"
-      description="Receive weekly updates about new features"
-      value={subscribed}
-      onChange={setSubscribed}
+      description="Receive weekly updates about new features and announcements."
+      value={value}
+      onChange={setValue}
     />
   );
 }

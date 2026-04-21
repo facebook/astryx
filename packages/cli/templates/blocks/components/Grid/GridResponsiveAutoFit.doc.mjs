@@ -2,7 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'Grid — Responsive Auto-Fit',
-  description: 'Responsive grid with auto-fit columns that wrap based on available space.',
+  description:
+    'Responsive grid using minChildWidth so items stretch to fill available space',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['Grid'],

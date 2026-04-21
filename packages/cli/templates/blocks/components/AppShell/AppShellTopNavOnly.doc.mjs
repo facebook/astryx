@@ -1,9 +1,10 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'AppShell — TopNav Only',
-  description: 'Layout with only a top navigation bar and no side navigation.',
+  name: 'AppShell — Top Nav Only',
+  description:
+    'Simple layout with TopNav and no side navigation, suitable for landing pages.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['AppShell', 'TopNav'],
+  componentsUsed: ['AppShell', 'TopNav', 'Text', 'NavIcon'],
 };

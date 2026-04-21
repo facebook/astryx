@@ -1,9 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'AspectRatio — Widescreen',
-  description: 'Widescreen 16:9 aspect ratio container for images.',
+  name: 'AspectRatio — 16:9 Widescreen Image',
+  description: 'Standard 16:9 widescreen aspect ratio wrapping an image.',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 4 / 3,
   componentsUsed: ['AspectRatio'],
 };

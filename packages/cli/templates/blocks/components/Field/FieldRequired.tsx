@@ -1,14 +1,19 @@
 'use client';
 
-import {useId} from 'react';
-import {XDSField} from '@xds/core/Field';
+import {useState} from 'react';
+import {XDSTextInput} from '@xds/core/TextInput';
 
 export default function FieldRequired() {
-  const usernameId = useId();
-
+  const [value, setValue] = useState('');
   return (
-    <XDSField label="Username" isRequired inputID={usernameId}>
-      <input id={usernameId} placeholder="Enter your username" />
-    </XDSField>
+    <div style={{maxWidth: 320}}>
+      <XDSTextInput
+        label="Username"
+        isRequired
+        value={value}
+        onChange={setValue}
+        placeholder="Enter your username"
+      />
+    </div>
   );
 }

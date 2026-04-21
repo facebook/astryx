@@ -1,7 +1,16 @@
 'use client';
 
-import {XDSSegmentedControl} from '@xds/core/SegmentedControl';
+import {
+  XDSSegmentedControl,
+  XDSSegmentedControlItem,
+} from '@xds/core/SegmentedControl';
 
 export default function SegmentedControlShowcase() {
-  return <XDSSegmentedControl items={[{label: 'Tab 1', value: '1'}]} />;
+  return (
+    <XDSSegmentedControl value="grid" onChange={() => {}} label="View mode">
+      <XDSSegmentedControlItem value="grid" label="Grid" />
+      <XDSSegmentedControlItem value="list" label="List" />
+      <XDSSegmentedControlItem value="table" label="Table" />
+    </XDSSegmentedControl>
+  );
 }

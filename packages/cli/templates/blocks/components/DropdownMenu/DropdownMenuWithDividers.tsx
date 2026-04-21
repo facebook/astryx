@@ -7,9 +7,10 @@ export default function DropdownMenuWithDividers() {
     <XDSDropdownMenu
       button={{label: 'Actions'}}
       items={[
-        {label: 'Edit', onClick: () => console.log('edit')},
+        {label: 'Edit', onClick: () => {}},
+        {label: 'Duplicate', onClick: () => {}},
         {type: 'divider'},
-        {label: 'Delete', onClick: () => console.log('delete')},
+        {label: 'Delete', onClick: () => {}},
       ]}
     />
   );

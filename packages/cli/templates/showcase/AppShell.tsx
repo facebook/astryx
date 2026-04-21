@@ -1,11 +1,12 @@
 'use client';
 
 import {XDSAppShell} from '@xds/core/AppShell';
+import {XDSText} from '@xds/core/Text';
 
 export default function AppShellShowcase() {
   return (
-    <XDSAppShell>
-      <div>Content</div>
+    <XDSAppShell contentPadding={6}>
+      <XDSText type="large">Page Content</XDSText>
     </XDSAppShell>
   );
 }

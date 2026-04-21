@@ -2,8 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'Field — With Description',
-  description: 'Form field with helper description text below the label.',
+  description: 'Text input field with a helper description below the label',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Field'],
+  componentsUsed: ['TextInput'],
 };

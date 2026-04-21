@@ -2,7 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'CheckboxInput — With Description',
-  description: 'Checkbox with descriptive helper text below the label.',
+  description:
+    'Checkbox with a descriptive helper text below the label.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['CheckboxInput'],

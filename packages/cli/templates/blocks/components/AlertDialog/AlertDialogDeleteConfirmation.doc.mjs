@@ -2,7 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'AlertDialog — Delete Confirmation',
-  description: 'Confirmation dialog triggered by a danger button for destructive actions.',
+  description:
+    'Destructive confirmation dialog triggered by a button, the most common alert dialog pattern.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['AlertDialog', 'Button'],

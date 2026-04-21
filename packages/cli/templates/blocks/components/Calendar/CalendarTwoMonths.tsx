@@ -1,14 +1,17 @@
 'use client';
 
-import {XDSCalendar} from '@xds/core/Calendar';
+import {useState} from 'react';
+import {XDSCalendar, type ISODateString} from '@xds/core/Calendar';
 
 export default function CalendarTwoMonths() {
+  const [value, setValue] = useState<ISODateString | undefined>(undefined);
   return (
     <XDSCalendar
+      mode="single"
       numberOfMonths={2}
-      min="2026-01-01"
-      max="2026-12-31"
-      weekStartsOn={1}
+      value={value}
+      onChange={val => setValue(val)}
+      focusDate="2026-01-01"
     />
   );
 }

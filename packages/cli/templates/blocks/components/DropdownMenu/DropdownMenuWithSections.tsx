@@ -11,16 +11,16 @@ export default function DropdownMenuWithSections() {
           type: 'section',
           title: 'Create',
           items: [
-            {label: 'New File', onClick: () => console.log('new file')},
-            {label: 'New Folder', onClick: () => console.log('new folder')},
+            {label: 'New File', onClick: () => {}},
+            {label: 'New Folder', onClick: () => {}},
           ],
         },
         {
           type: 'section',
-          title: 'Manage',
+          title: 'Share',
           items: [
-            {label: 'Rename', onClick: () => console.log('rename')},
-            {label: 'Delete', isDisabled: true},
+            {label: 'Share', onClick: () => {}},
+            {label: 'Archive', onClick: () => {}},
           ],
         },
       ]}
