@@ -2,7 +2,7 @@
 export const doc = {
   type: 'block',
   name: 'CheckboxInput — Indeterminate',
-  description: 'A checkbox in the indeterminate state, showing a dash instead of a checkmark. Use for "select all" controls when only some items in a group are selected. Clicking toggles between fully checked and unchecked.',
+  description: 'A "select all" checkbox that controls a group of options. When only some options are checked, it shows a dash instead of a checkmark. Clicking it checks or unchecks everything.',
   isReady: true,
   aspectRatio: 16 / 9,
   componentsUsed: ['CheckboxInput', 'Divider', 'Layout'],
