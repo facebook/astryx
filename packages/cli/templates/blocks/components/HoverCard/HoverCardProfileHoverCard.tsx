@@ -6,7 +6,7 @@ import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {XDSText, XDSHeading} from '@xds/core/Text';
 import {CalendarIcon} from '@heroicons/react/24/outline';
 
 const styles = stylex.create({
@@ -21,7 +21,7 @@ export default function HoverCardProfileHoverCard() {
         <XDSHStack gap={3} vAlign="start">
           <XDSAvatar name="Jane Doe" size={48} xstyle={styles.avatar} />
           <XDSVStack gap={1}>
-            <XDSText type="label">@janedoe</XDSText>
+            <XDSHeading level={3}>@janedoe</XDSHeading>
             <XDSText type="body" color="secondary">
               Crafting accessible, scalable design systems for modern teams.
             </XDSText>
