@@ -2,7 +2,8 @@
 
 import {useState} from 'react';
 import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSVStack, XDSCenter} from '@xds/core/Layout';
+import {XDSVStack} from '@xds/core/Layout';
+import {XDSCenter} from '@xds/core/Center';
 import {XDSText} from '@xds/core/Text';
 
 export default function FieldWithDescription() {
