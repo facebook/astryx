@@ -4,46 +4,35 @@ import {XDSCenter} from '@xds/core/Center';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
 import {XDSStack} from '@xds/core/Layout';
-import {XDSHeading, XDSText} from '@xds/core/Text';
+import {XDSText} from '@xds/core/Text';
 import {XDSIcon} from '@xds/core/Icon';
 import {
-  PencilSquareIcon,
-  TrashIcon,
-  ShareIcon,
+  ArrowLeftIcon,
+  EllipsisHorizontalIcon,
 } from '@heroicons/react/24/outline';
+import {XDSIconButton} from '@xds/core/IconButton';
 
 export default function CenterHorizontal() {
   return (
-    <XDSCard width={440}>
-      <XDSStack direction="vertical" gap={4}>
-        <XDSStack direction="horizontal" gap={2} hAlign="end">
-          <XDSButton
-            label="Edit"
-            variant="ghost"
-            size="sm"
-            icon={<XDSIcon icon={PencilSquareIcon} />}
-          />
-          <XDSButton
-            label="Share"
-            variant="ghost"
-            size="sm"
-            icon={<XDSIcon icon={ShareIcon} />}
-          />
-          <XDSButton
-            label="Delete"
-            variant="destructive"
-            size="sm"
-            icon={<XDSIcon icon={TrashIcon} />}
-          />
-        </XDSStack>
+    <XDSCard width={440} padding={0}>
+      <XDSStack direction="horizontal" gap={2} vAlign="center">
+        <XDSIconButton
+          label="Back"
+          icon={<XDSIcon icon={ArrowLeftIcon} />}
+          variant="ghost"
+          size="sm"
+        />
         <XDSCenter axis="horizontal">
-          <XDSStack direction="vertical" gap={1} hAlign="center">
-            <XDSHeading level={2}>Q2 Performance Review</XDSHeading>
-            <XDSText type="supporting" color="secondary">
-              Updated 3 days ago by Alice Chen
-            </XDSText>
-          </XDSStack>
+          <XDSText type="body" weight="bold">
+            Q2 Performance Review
+          </XDSText>
         </XDSCenter>
+        <XDSIconButton
+          label="More options"
+          icon={<XDSIcon icon={EllipsisHorizontalIcon} />}
+          variant="ghost"
+          size="sm"
+        />
       </XDSStack>
     </XDSCard>
   );

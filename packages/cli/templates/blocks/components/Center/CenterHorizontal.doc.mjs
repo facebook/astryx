@@ -2,8 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'Center — Horizontal',
-  description: 'Center a heading horizontally below a toolbar of actions. Use axis="horizontal" when content should be centered in one direction while other elements align independently above or below.',
+  description: 'Center a title in a toolbar between left and right actions. Use axis="horizontal" to keep the title centered regardless of how many actions are on each side.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['Center', 'Button', 'Card', 'Icon', 'Layout', 'Text'],
+  componentsUsed: ['Center', 'Card', 'Icon', 'IconButton', 'Layout', 'Text'],
 };
