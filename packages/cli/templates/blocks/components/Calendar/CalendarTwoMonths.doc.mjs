@@ -2,8 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'Calendar — Two Months',
-  description: 'Calendar displaying two months side by side for easier date selection.',
+  description: 'Two months side by side for selecting ranges that span a month boundary. Use in booking or travel UIs where check-in and check-out often fall in different months.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Calendar'],
+  componentsUsed: ['Calendar', 'Layout', 'Text'],
 };

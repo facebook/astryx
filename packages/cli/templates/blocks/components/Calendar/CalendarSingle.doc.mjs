@@ -1,8 +1,8 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Calendar — Range',
-  description: 'Pick a start and end date with the range highlighted between them. Use for booking dates, time-off requests, or report filters.',
+  name: 'Calendar — Single',
+  description: 'Pick one date from a month grid. Use for appointment dates, due dates, or any field that needs a single date.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['Calendar', 'Layout', 'Text'],
