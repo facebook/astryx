@@ -62,6 +62,12 @@ jobs:
               'packages/cli/templates/',
             ];
 
+            // File patterns that design owners can also merge (glob-style)
+            // .doc.mjs files are doc metadata, not component logic
+            const DESIGN_FILE_PATTERNS = [
+              /\.doc\.mjs$/,
+            ];
+
             // --- Resolve PR context ---
             const pr = context.payload.pull_request;
             const prNumber = pr.number;
@@ -83,9 +89,10 @@ jobs:
               f.previous_filename ? [f.filename, f.previous_filename] : [f.filename]
             );
             const changedFiles = files.map(f => f.filename);
-            const onlyDesignPaths = allPaths.length > 0 && allPaths.every(
-              p => DESIGN_PATHS.some(prefix => p.startsWith(prefix))
-            );
+            const isDesignOwned = (p) =>
+              DESIGN_PATHS.some(prefix => p.startsWith(prefix)) ||
+              DESIGN_FILE_PATTERNS.some(re => re.test(p));
+            const onlyDesignPaths = allPaths.length > 0 && allPaths.every(isDesignOwned);
 
             // --- Determine result ---
             let conclusion = 'failure';
