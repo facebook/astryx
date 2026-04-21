@@ -1,12 +1,17 @@
 'use client';
 
+import * as stylex from '@stylexjs/stylex';
 import {XDSCollapsible} from '@xds/core/Collapsible';
 import {XDSText} from '@xds/core/Text';
 import {XDSVStack} from '@xds/core/Layout';
 
+const styles = stylex.create({
+  fullWidth: {width: '100%'},
+});
+
 export default function CollapsibleWithoutCard() {
   return (
-    <XDSVStack gap={2}>
+    <XDSVStack gap={2} xstyle={styles.fullWidth}>
       <XDSCollapsible trigger="Deployment Details">
         <XDSText type="body">
           Last deployed on April 18, 2026 at 3:42 PM by Sarah Chen. Build

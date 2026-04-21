@@ -9,7 +9,7 @@ export default function CollapsibleFAQPage() {
   return (
     <XDSCollapsibleGroup type="single">
       <XDSVStack gap={2}>
-        <XDSCard>
+        <XDSCard width="100%">
           <XDSCollapsible trigger="How do I reset my password?" value="q1">
             <XDSText type="body">
               Go to Settings, then Security, then Change Password. You will
@@ -17,7 +17,7 @@ export default function CollapsibleFAQPage() {
             </XDSText>
           </XDSCollapsible>
         </XDSCard>
-        <XDSCard>
+        <XDSCard width="100%">
           <XDSCollapsible trigger="Can I change my username?" value="q2">
             <XDSText type="body">
               Usernames can be changed once every 30 days from your profile
@@ -25,7 +25,7 @@ export default function CollapsibleFAQPage() {
             </XDSText>
           </XDSCollapsible>
         </XDSCard>
-        <XDSCard>
+        <XDSCard width="100%">
           <XDSCollapsible trigger="How do I delete my account?" value="q3">
             <XDSText type="body">
               Account deletion is permanent. Go to Settings, then Account, then
@@ -33,7 +33,7 @@ export default function CollapsibleFAQPage() {
             </XDSText>
           </XDSCollapsible>
         </XDSCard>
-        <XDSCard>
+        <XDSCard width="100%">
           <XDSCollapsible
             trigger="What payment methods are accepted?"
             value="q4">

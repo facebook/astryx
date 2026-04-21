@@ -15,7 +15,7 @@ export default function CollapsibleControlledAccordion() {
       </XDSText>
       <XDSCollapsibleGroup type="single" value={open} onChange={setOpen}>
         <XDSVStack gap={2}>
-          <XDSCard>
+          <XDSCard width="100%">
             <XDSCollapsible trigger="Profile Information" value="profile">
               <XDSText type="body">
                 Update your name, email, and profile photo. Changes are saved
@@ -23,7 +23,7 @@ export default function CollapsibleControlledAccordion() {
               </XDSText>
             </XDSCollapsible>
           </XDSCard>
-          <XDSCard>
+          <XDSCard width="100%">
             <XDSCollapsible trigger="Security" value="security">
               <XDSText type="body">
                 Manage two-factor authentication, active sessions, and login
@@ -31,7 +31,7 @@ export default function CollapsibleControlledAccordion() {
               </XDSText>
             </XDSCollapsible>
           </XDSCard>
-          <XDSCard>
+          <XDSCard width="100%">
             <XDSCollapsible trigger="Billing" value="billing">
               <XDSText type="body">
                 View invoices, update payment method, and manage your
