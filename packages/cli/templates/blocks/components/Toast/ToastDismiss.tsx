@@ -6,7 +6,7 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
-export default function ToastProgrammaticDismiss() {
+export default function ToastDismiss() {
   const toast = useXDSToast();
   const dismissRef = useRef<(() => void) | null>(null);
 

@@ -6,7 +6,7 @@ import {XDSLink} from '@xds/core/Link';
 import {XDSStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
-export default function ToastWithAction() {
+export default function ToastAction() {
   const toast = useXDSToast();
 
   return (
