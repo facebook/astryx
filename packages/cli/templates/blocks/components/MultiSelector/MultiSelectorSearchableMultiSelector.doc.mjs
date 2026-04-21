@@ -3,8 +3,8 @@ export const doc = {
   type: 'block',
   name: 'MultiSelector — Searchable',
   description:
-    'Multi-select with search filtering and select-all for long option lists.',
+    'Multi-select with search filtering and select-all.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['MultiSelector'],
+  componentsUsed: ['MultiSelector', 'Center'],
 };

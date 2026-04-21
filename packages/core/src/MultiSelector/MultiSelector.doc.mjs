@@ -141,12 +141,13 @@ export const docs = {
   ],
   usage: {
     description:
-      'MultiSelector is a dropdown with checkboxes for selecting multiple items from a finite list. Use it for filter facets, column toggles, or any small set of options where multiple choices are needed.',
+      'A checkbox dropdown for selecting multiple values from a list. Selected items can display as a count, labels, or badges. Use it for filtering or when presenting a finite set of options where multiple choices are needed.',
     bestPractices: [
-      { guidance: true, description: 'Use for small, finite option sets where users need to select multiple items at once.' },
-      { guidance: true, description: 'Enable search filtering when the list exceeds 10–15 options to help users find items quickly.' },
-      { guidance: false, description: 'Use MultiSelector as a replacement for Tokenizer — Tokenizer is better suited for large or dynamic datasets.' },
-      { guidance: false, description: 'Omit the label — every MultiSelector needs a visible or visually hidden label for accessibility.' },
+      { guidance: true, description: 'Use for a moderate, finite set of options where multiple choices are needed.' },
+      { guidance: true, description: 'Enable search filtering when the list exceeds ~15 options.' },
+      { guidance: true, description: 'Enable select-all when most users will want all or nearly all options selected.' },
+      { guidance: false, description: 'Use for single-value selection — use Selector instead.' },
+      { guidance: false, description: 'Show more than ~20 options without enabling search.' },
     ],
   },
 };
@@ -185,12 +186,13 @@ export const docsZh = {
   ],
   usage: {
     description:
-      'MultiSelector is a dropdown with checkboxes for selecting multiple items from a finite list. Use it for filter facets, column toggles, or any small set of options where multiple choices are needed.',
+      'A checkbox dropdown for selecting multiple values from a list. Selected items can display as a count, labels, or badges. Use it for filtering or when presenting a finite set of options where multiple choices are needed.',
     bestPractices: [
-      { guidance: true, description: 'Use for small, finite option sets where users need to select multiple items at once.' },
-      { guidance: true, description: 'Enable search filtering when the list exceeds 10–15 options to help users find items quickly.' },
-      { guidance: false, description: 'Use MultiSelector as a replacement for Tokenizer — Tokenizer is better suited for large or dynamic datasets.' },
-      { guidance: false, description: 'Omit the label — every MultiSelector needs a visible or visually hidden label for accessibility.' },
+      { guidance: true, description: 'Use for a moderate, finite set of options where multiple choices are needed.' },
+      { guidance: true, description: 'Enable search filtering when the list exceeds ~15 options.' },
+      { guidance: true, description: 'Enable select-all when most users will want all or nearly all options selected.' },
+      { guidance: false, description: 'Use for single-value selection — use Selector instead.' },
+      { guidance: false, description: 'Show more than ~20 options without enabling search.' },
     ],
   },
 };
@@ -200,12 +202,13 @@ export const docsDense = {
   description: 'checkbox multi-select dropdown for finite sets like column toggles or filter facets',
   usage: {
     description:
-      'MultiSelector is a dropdown with checkboxes for selecting multiple items from a finite list. Use it for filter facets, column toggles, or any small set of options where multiple choices are needed.',
+      'A checkbox dropdown for selecting multiple values from a list. Selected items can display as a count, labels, or badges. Use it for filtering or when presenting a finite set of options where multiple choices are needed.',
     bestPractices: [
-      { guidance: true, description: 'Use for small, finite option sets where users need to select multiple items at once.' },
-      { guidance: true, description: 'Enable search filtering when the list exceeds 10–15 options to help users find items quickly.' },
-      { guidance: false, description: 'Use MultiSelector as a replacement for Tokenizer — Tokenizer is better suited for large or dynamic datasets.' },
-      { guidance: false, description: 'Omit the label — every MultiSelector needs a visible or visually hidden label for accessibility.' },
+      { guidance: true, description: 'Use for a moderate, finite set of options where multiple choices are needed.' },
+      { guidance: true, description: 'Enable search filtering when the list exceeds ~15 options.' },
+      { guidance: true, description: 'Enable select-all when most users will want all or nearly all options selected.' },
+      { guidance: false, description: 'Use for single-value selection — use Selector instead.' },
+      { guidance: false, description: 'Show more than ~20 options without enabling search.' },
     ],
   },
   components: [
