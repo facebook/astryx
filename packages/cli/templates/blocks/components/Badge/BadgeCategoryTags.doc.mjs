@@ -4,7 +4,6 @@ export const doc = {
   name: 'Badge — Colors',
   description: 'Tag items with color-coded categories like teams, priorities, or topics. Use the 9 non-semantic color variants when you need to distinguish groups visually.',
   isReady: true,
-  aspectRatio: 1,
-  scale: 2,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Badge', 'Layout', 'Text'],
 };

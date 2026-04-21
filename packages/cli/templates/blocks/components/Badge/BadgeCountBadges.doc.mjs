@@ -4,7 +4,6 @@ export const doc = {
   name: 'Badge — Counts',
   description: 'Show a number inside a badge for notification counts, unread messages, or task totals. Use next to icons, nav items, or list labels.',
   isReady: true,
-  aspectRatio: 1,
-  scale: 2,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Badge', 'Layout', 'Text'],
 };
