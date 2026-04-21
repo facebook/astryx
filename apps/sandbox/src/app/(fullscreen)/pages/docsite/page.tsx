@@ -1855,7 +1855,9 @@ function DocsiteLandingTemplate() {
                       ];
                       if (activeTab === 'all' && i === 2) {
                         items.push(
-                          ...THEME_PICKER_ENTRIES.slice(0, 2).map((t, ti) => (
+                          ...THEME_PICKER_ENTRIES.filter(
+                            t => t.key === 'forest' || t.key === 'midnight',
+                          ).map((t, ti) => (
                             <ThemeCard
                               key={`theme-${t.key}`}
                               theme={t}
