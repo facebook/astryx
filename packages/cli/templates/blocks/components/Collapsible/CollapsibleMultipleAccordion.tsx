@@ -2,31 +2,35 @@
 
 import {XDSCollapsible, XDSCollapsibleGroup} from '@xds/core/Collapsible';
 import {XDSCard} from '@xds/core/Card';
+import {XDSText} from '@xds/core/Text';
 import {XDSVStack} from '@xds/core/Layout';
 
 export default function CollapsibleMultipleAccordion() {
   return (
-    <XDSCollapsibleGroup type="multiple" defaultValue={['faq1', 'faq3']}>
+    <XDSCollapsibleGroup type="multiple" defaultValue={['features', 'pricing']}>
       <XDSVStack gap={2}>
         <XDSCard>
-          <XDSCollapsible trigger="What is XDS?" value="faq1">
-            <p style={{margin: 0}}>
-              XDS is a design system for building internal tools and products.
-            </p>
+          <XDSCollapsible trigger="Features" value="features">
+            <XDSText type="body">
+              Includes real-time collaboration, version history, and granular
+              permissions for teams of any size.
+            </XDSText>
           </XDSCollapsible>
         </XDSCard>
         <XDSCard>
-          <XDSCollapsible trigger="How do I install it?" value="faq2">
-            <p style={{margin: 0}}>
-              Run <code>npm install @xds/core</code> to get started.
-            </p>
+          <XDSCollapsible trigger="Pricing" value="pricing">
+            <XDSText type="body">
+              Free for up to 5 users. Pro plans start at $12/user/month with
+              annual billing.
+            </XDSText>
           </XDSCollapsible>
         </XDSCard>
         <XDSCard>
-          <XDSCollapsible trigger="Is it open source?" value="faq3">
-            <p style={{margin: 0}}>
-              Yes! XDS is open source and available on GitHub.
-            </p>
+          <XDSCollapsible trigger="Integrations" value="integrations">
+            <XDSText type="body">
+              Connect with Slack, GitHub, Jira, and 40+ other tools through our
+              REST API and pre-built connectors.
+            </XDSText>
           </XDSCollapsible>
         </XDSCard>
       </XDSVStack>

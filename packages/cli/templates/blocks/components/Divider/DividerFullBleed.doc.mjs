@@ -2,8 +2,9 @@
 export const doc = {
   type: 'block',
   name: 'Divider — Full Bleed',
-  description: 'Full-bleed divider that extends past container padding.',
+  description:
+    'Divider that extends past container padding to span the full width. Use inside cards or panels when you want a clean edge-to-edge separation, like between an order summary and total.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['Divider'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Divider', 'Card', 'Section', 'Layout', 'Text'],
 };
