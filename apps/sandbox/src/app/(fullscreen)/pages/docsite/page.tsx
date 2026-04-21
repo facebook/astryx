@@ -1809,49 +1809,64 @@ function DocsiteLandingTemplate() {
                           : 'repeat(3, 1fr)',
                       gap: 16,
                     }}>
-                    {filteredTemplates.map((template, i) => (
-                      <div
-                        key={`${template.name}-${template.originalIndex}`}
-                        style={{
-                          ...(craftTitle
-                            ? {
-                                animation: `craftCardFadeIn 400ms ${i * 50}ms cubic-bezier(0.16, 1, 0.3, 1) both`,
-                              }
-                            : undefined),
-                          filter: previewImageFilter,
-                          transition: 'filter 300ms ease',
-                        }}>
-                        <TemplateCard
-                          src={template.src}
-                          slug={template.slug}
-                          name={template.name}
-                          isSelected={selected.has(template.originalIndex)}
-                          isGenerating={
-                            isGenerating &&
-                            generatingSource !== template.originalIndex
-                          }
-                          cardSize={template.size}
-                          onSelect={() =>
-                            setSelected(prev => {
-                              const next = new Set(prev);
-                              if (next.has(template.originalIndex)) {
-                                next.delete(template.originalIndex);
-                              } else {
-                                next.add(template.originalIndex);
-                              }
-                              return next;
-                            })
-                          }
-                          onMoreLikeThis={() =>
-                            handleMoreLikeThis(template.originalIndex)
-                          }
-                          onUse={() => handleUse(template.originalIndex)}
-                          onPreview={() =>
-                            handlePreview(template.originalIndex)
-                          }
-                        />
-                      </div>
-                    ))}
+                    {filteredTemplates.flatMap((template, i) => {
+                      const items = [
+                        <div
+                          key={`${template.name}-${template.originalIndex}`}
+                          style={{
+                            ...(craftTitle
+                              ? {
+                                  animation: `craftCardFadeIn 400ms ${i * 50}ms cubic-bezier(0.16, 1, 0.3, 1) both`,
+                                }
+                              : undefined),
+                            filter: previewImageFilter,
+                            transition: 'filter 300ms ease',
+                          }}>
+                          <TemplateCard
+                            src={template.src}
+                            slug={template.slug}
+                            name={template.name}
+                            isSelected={selected.has(template.originalIndex)}
+                            isGenerating={
+                              isGenerating &&
+                              generatingSource !== template.originalIndex
+                            }
+                            cardSize={template.size}
+                            onSelect={() =>
+                              setSelected(prev => {
+                                const next = new Set(prev);
+                                if (next.has(template.originalIndex)) {
+                                  next.delete(template.originalIndex);
+                                } else {
+                                  next.add(template.originalIndex);
+                                }
+                                return next;
+                              })
+                            }
+                            onMoreLikeThis={() =>
+                              handleMoreLikeThis(template.originalIndex)
+                            }
+                            onUse={() => handleUse(template.originalIndex)}
+                            onPreview={() =>
+                              handlePreview(template.originalIndex)
+                            }
+                          />
+                        </div>,
+                      ];
+                      if (activeTab === 'all' && i === 2) {
+                        items.push(
+                          ...THEME_PICKER_ENTRIES.slice(0, 2).map((t, ti) => (
+                            <ThemeCard
+                              key={`theme-${t.key}`}
+                              theme={t}
+                              index={i + ti + 1}
+                              onCustomize={() => setActiveView('theme')}
+                            />
+                          )),
+                        );
+                      }
+                      return items;
+                    })}
                   </div>
                 ))}
             </div>
