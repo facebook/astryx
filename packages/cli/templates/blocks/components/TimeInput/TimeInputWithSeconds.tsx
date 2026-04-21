@@ -10,8 +10,8 @@ export default function TimeInputWithSeconds() {
     <XDSTimeInput
       label="Precise time"
       hasSeconds
-      value={value as any}
-      onChange={setValue as any}
+      value={value as never}
+      onChange={setValue as never}
     />
   );
 }

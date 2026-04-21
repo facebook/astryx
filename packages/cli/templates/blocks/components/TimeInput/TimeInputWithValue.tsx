@@ -9,8 +9,8 @@ export default function TimeInputWithValue() {
   return (
     <XDSTimeInput
       label="Meeting time"
-      value={value as any}
-      onChange={setValue as any}
+      value={value as never}
+      onChange={setValue as never}
     />
   );
 }

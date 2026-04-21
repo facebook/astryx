@@ -9,12 +9,12 @@ export default function TimeInputWithMinMax() {
   return (
     <XDSTimeInput
       label="Appointment time"
-      min={'09:00' as any}
-      max={'17:00' as any}
+      min={'09:00' as never}
+      max={'17:00' as never}
       description="Business hours: 9 AM – 5 PM"
       placeholder="Select appointment time"
-      value={value as any}
-      onChange={setValue as any}
+      value={value as never}
+      onChange={setValue as never}
     />
   );
 }

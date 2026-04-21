@@ -9,8 +9,8 @@ export default function TimeInputWithError() {
   return (
     <XDSTimeInput
       label="Event time"
-      value={value as any}
-      onChange={setValue as any}
+      value={value as never}
+      onChange={setValue as never}
       status={{
         type: 'error',
         message: 'Time must be during business hours',

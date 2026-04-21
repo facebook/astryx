@@ -10,8 +10,8 @@ export default function TimeInputTwentyFourHour() {
     <XDSTimeInput
       label="Time (24h)"
       hourFormat="24h"
-      value={value as any}
-      onChange={setValue as any}
+      value={value as never}
+      onChange={setValue as never}
     />
   );
 }
