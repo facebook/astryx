@@ -5,7 +5,7 @@ import {XDSStack} from '@xds/core/Stack';
 import {XDSSection} from '@xds/core/Section';
 
 const LONG_TEXT =
-  'The design system provides a consistent set of typography tokens, spacing scales, and color palettes that ensure every surface in the product feels cohesive regardless of which team built it.';
+  'The design system provides a consistent set of typography tokens, spacing scales, and color palettes that ensure every surface in the product feels cohesive regardless of which team built it. Components inherit these tokens automatically so teams can build new features without manually matching fonts, colors, or spacing values across different surfaces and breakpoints.';
 
 const LINES = [
   {maxLines: 1, label: '1 line'},
