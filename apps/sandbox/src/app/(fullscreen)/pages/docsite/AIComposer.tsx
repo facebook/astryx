@@ -7,16 +7,23 @@ import {
   XDSSegmentedControlItem,
 } from '@xds/core/SegmentedControl';
 
-type ComposerMode = 'template' | 'theme';
+export type ComposerMode = 'template' | 'theme';
 
 const PLACEHOLDER: Record<ComposerMode, string> = {
   template: 'What should we build?',
   theme: 'Describe your brand or style...',
 };
 
-export function AIComposer({onThemeMode}: {onThemeMode?: () => void}) {
+export function AIComposer({
+  mode,
+  onModeChange,
+  onThemeMode,
+}: {
+  mode: ComposerMode;
+  onModeChange: (mode: ComposerMode) => void;
+  onThemeMode?: () => void;
+}) {
   const [prompt, setPrompt] = useState('');
-  const [mode, setMode] = useState<ComposerMode>('template');
 
   const handleSubmit = () => {
     if (mode === 'theme' && onThemeMode) {
@@ -58,7 +65,7 @@ export function AIComposer({onThemeMode}: {onThemeMode?: () => void}) {
           headerActions={
             <XDSSegmentedControl
               value={mode}
-              onChange={v => setMode(v as ComposerMode)}
+              onChange={v => onModeChange(v as ComposerMode)}
               size="sm">
               <XDSSegmentedControlItem value="template" label="Template" />
               <XDSSegmentedControlItem value="theme" label="Theme" />

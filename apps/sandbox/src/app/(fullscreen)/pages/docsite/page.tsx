@@ -21,6 +21,7 @@ import {
 } from './constants';
 import {TemplateCard} from './TemplateCard';
 import {AIComposer} from './AIComposer';
+import type {ComposerMode} from './AIComposer';
 import {ChatPanel} from './ChatPanel';
 import type {PanelTab, PointedElement} from './ChatPanel';
 import {InlinePublishPanel} from './InlinePublishPanel';
@@ -1790,7 +1791,15 @@ function DocsiteLandingTemplate() {
           </div>
         </div>
       </div>
-      {!chatOpen && <AIComposer onThemeMode={() => setActiveView('theme')} />}
+      {!chatOpen && (
+        <AIComposer
+          mode={activeTab === 'theme' ? 'theme' : 'template'}
+          onModeChange={(m: ComposerMode) =>
+            setActiveTab(m === 'theme' ? 'theme' : 'all')
+          }
+          onThemeMode={() => setActiveView('theme')}
+        />
+      )}
       {/* Bottom drawer overlay */}
       {previewTarget !== null &&
         (() => {
