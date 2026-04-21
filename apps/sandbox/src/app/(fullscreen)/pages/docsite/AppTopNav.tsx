@@ -89,10 +89,6 @@ export function AppTopNav({
     <XDSList density="spacious" style={{minWidth: 240}}>
       <XDSListItem label="Craft" onClick={() => setActiveView('craft')} />
       <XDSListItem label="Library" onClick={() => setActiveView('docs')} />
-      <XDSListItem
-        label="Theme Editor"
-        onClick={() => setActiveView('theme')}
-      />
     </XDSList>
   );
 
