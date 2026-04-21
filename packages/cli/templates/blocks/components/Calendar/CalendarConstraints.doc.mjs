@@ -4,6 +4,6 @@ export const doc = {
   name: 'Calendar — Constraints',
   description: 'Limit which dates can be selected using min/max bounds and custom rules like weekdays only. Use for scheduling UIs where certain dates are unavailable.',
   isReady: true,
-  aspectRatio: 3 / 4,
+  aspectRatio: 1,
   componentsUsed: ['Calendar', 'Layout', 'Text'],
 };
