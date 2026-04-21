@@ -18,7 +18,7 @@ export default function HoverCardInteractiveContent() {
       content={
         <XDSVStack gap={3}>
           <XDSHStack gap={3} vAlign="start">
-            <XDSAvatar name="John Smith" size="lg" xstyle={styles.avatar} />
+            <XDSAvatar name="John Smith" size="large" xstyle={styles.avatar} />
             <XDSVStack gap={1}>
               <XDSHeading level={2}>John Smith</XDSHeading>
               <XDSText type="supporting" color="secondary">

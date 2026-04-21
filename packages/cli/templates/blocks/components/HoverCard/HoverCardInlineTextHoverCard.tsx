@@ -17,7 +17,7 @@ export default function HoverCardInlineTextHoverCard() {
       <XDSHoverCard
         content={
           <XDSHStack gap={3} vAlign="start">
-            <XDSAvatar name="Jane Doe" size="md" xstyle={styles.avatar} />
+            <XDSAvatar name="Jane Doe" size="medium" xstyle={styles.avatar} />
             <XDSVStack gap={1}>
               <XDSText type="label">Jane Doe</XDSText>
               <XDSText type="supporting" color="secondary">
@@ -33,7 +33,7 @@ export default function HoverCardInlineTextHoverCard() {
       <XDSHoverCard
         content={
           <XDSHStack gap={3} vAlign="start">
-            <XDSAvatar name="John Smith" size="md" xstyle={styles.avatar} />
+            <XDSAvatar name="John Smith" size="medium" xstyle={styles.avatar} />
             <XDSVStack gap={1}>
               <XDSText type="label">John Smith</XDSText>
               <XDSText type="supporting" color="secondary">
