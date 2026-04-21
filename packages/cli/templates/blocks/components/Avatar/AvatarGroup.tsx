@@ -3,11 +3,11 @@
 import {XDSAvatar} from '@xds/core/Avatar';
 
 const USERS = [
-  {name: 'Alice Chen', img: 1},
-  {name: 'Bob Smith', img: 2},
-  {name: 'Carol Davis', img: 3},
-  {name: 'Dan Wilson', img: 4},
-  {name: 'Eve Park', img: 5},
+  'Alice Chen',
+  'Bob Smith',
+  'Carol Davis',
+  'Dan Wilson',
+  'Eve Park',
 ];
 
 export default function AvatarGroup() {
@@ -20,19 +20,15 @@ export default function AvatarGroup() {
           Team members
         </p>
         <div style={{display: 'flex', alignItems: 'center'}}>
-          {USERS.map((user, i) => (
+          {USERS.map((name, i) => (
             <div
-              key={user.name}
+              key={name}
               style={{
                 marginLeft: i === 0 ? 0 : overlapOffset,
                 borderRadius: '50%',
                 border: '2px solid var(--color-background-surface, #fff)',
               }}>
-              <XDSAvatar
-                src={`https://i.pravatar.cc/150?img=${user.img}`}
-                name={user.name}
-                size="small"
-              />
+              <XDSAvatar name={name} size="small" />
             </div>
           ))}
           <div
@@ -50,19 +46,15 @@ export default function AvatarGroup() {
           Larger group
         </p>
         <div style={{display: 'flex', alignItems: 'center'}}>
-          {USERS.slice(0, 3).map((user, i) => (
+          {USERS.slice(0, 3).map((name, i) => (
             <div
-              key={user.name}
+              key={name}
               style={{
                 marginLeft: i === 0 ? 0 : -14,
                 borderRadius: '50%',
                 border: '2px solid var(--color-background-surface, #fff)',
               }}>
-              <XDSAvatar
-                src={`https://i.pravatar.cc/150?img=${user.img}`}
-                name={user.name}
-                size="medium"
-              />
+              <XDSAvatar name={name} size="medium" />
             </div>
           ))}
           <div

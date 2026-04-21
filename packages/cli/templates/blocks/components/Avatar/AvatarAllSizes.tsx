@@ -3,11 +3,11 @@
 import {XDSAvatar} from '@xds/core/Avatar';
 
 const SIZES = [
-  {size: 'tiny' as const, label: 'Tiny (20px)'},
-  {size: 'xsmall' as const, label: 'XSmall (24px)'},
-  {size: 'small' as const, label: 'Small (36px)'},
-  {size: 'medium' as const, label: 'Medium (48px)'},
-  {size: 'large' as const, label: 'Large (128px)'},
+  {size: 'tiny' as const, label: 'Tiny (20px)', name: 'Alice Chen'},
+  {size: 'xsmall' as const, label: 'XSmall (24px)', name: 'Bob Smith'},
+  {size: 'small' as const, label: 'Small (36px)', name: 'Carol Davis'},
+  {size: 'medium' as const, label: 'Medium (48px)', name: 'Dan Wilson'},
+  {size: 'large' as const, label: 'Large (128px)', name: 'Eve Park'},
 ];
 
 export default function AvatarAllSizes() {
@@ -19,7 +19,7 @@ export default function AvatarAllSizes() {
         gap: 24,
         flexWrap: 'wrap',
       }}>
-      {SIZES.map(({size, label}) => (
+      {SIZES.map(({size, label, name}) => (
         <div
           key={size}
           style={{
@@ -28,11 +28,7 @@ export default function AvatarAllSizes() {
             alignItems: 'center',
             gap: 8,
           }}>
-          <XDSAvatar
-            src={`https://i.pravatar.cc/150?u=${size}`}
-            name="Jane Doe"
-            size={size}
-          />
+          <XDSAvatar name={name} size={size} />
           <span style={{fontSize: 12, color: '#666'}}>{label}</span>
         </div>
       ))}

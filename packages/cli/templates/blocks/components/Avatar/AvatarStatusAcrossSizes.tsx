@@ -12,32 +12,27 @@ export default function AvatarStatusAcrossSizes() {
         flexWrap: 'wrap',
       }}>
       <XDSAvatar
-        src="https://i.pravatar.cc/150?img=30"
-        name="Tiny"
+        name="Alice Chen"
         size="tiny"
         status={<XDSAvatarStatusDot variant="positive" label="Online" />}
       />
       <XDSAvatar
-        src="https://i.pravatar.cc/150?img=31"
-        name="XSmall"
+        name="Bob Smith"
         size="xsmall"
         status={<XDSAvatarStatusDot variant="positive" label="Online" />}
       />
       <XDSAvatar
-        src="https://i.pravatar.cc/150?img=32"
-        name="Small"
+        name="Carol Davis"
         size="small"
         status={<XDSAvatarStatusDot variant="neutral" label="Away" />}
       />
       <XDSAvatar
-        src="https://i.pravatar.cc/150?img=33"
-        name="Medium"
+        name="Dan Wilson"
         size="medium"
         status={<XDSAvatarStatusDot variant="negative" label="Busy" />}
       />
       <XDSAvatar
-        src="https://i.pravatar.cc/150?img=34"
-        name="Large"
+        name="Eve Park"
         size="large"
         status={<XDSAvatarStatusDot variant="positive" label="Online" />}
       />
