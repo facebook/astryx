@@ -47,7 +47,7 @@ const FEATURES = [
 
 export default function CarouselCards() {
   return (
-    <XDSStack direction="vertical" gap={3}>
+    <XDSStack direction="vertical" gap={3} style={{maxWidth: 520, padding: 8}}>
       <XDSText type="body" weight="bold">
         Browse features
       </XDSText>
