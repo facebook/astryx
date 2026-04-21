@@ -1790,7 +1790,7 @@ function DocsiteLandingTemplate() {
           </div>
         </div>
       </div>
-      {!chatOpen && <AIComposer />}
+      {!chatOpen && <AIComposer onThemeMode={() => setActiveView('theme')} />}
       {/* Bottom drawer overlay */}
       {previewTarget !== null &&
         (() => {

@@ -2,9 +2,28 @@
 
 import React, {useState} from 'react';
 import {XDSChatComposer, XDSChatComposerInput} from '@xds/core/Chat';
+import {
+  XDSSegmentedControl,
+  XDSSegmentedControlItem,
+} from '@xds/core/SegmentedControl';
 
-export function AIComposer() {
+type ComposerMode = 'template' | 'theme';
+
+const PLACEHOLDER: Record<ComposerMode, string> = {
+  template: 'What should we build?',
+  theme: 'Describe your brand or style...',
+};
+
+export function AIComposer({onThemeMode}: {onThemeMode?: () => void}) {
   const [prompt, setPrompt] = useState('');
+  const [mode, setMode] = useState<ComposerMode>('template');
+
+  const handleSubmit = () => {
+    if (mode === 'theme' && onThemeMode) {
+      onThemeMode();
+    }
+    setPrompt('');
+  };
 
   return (
     <>
@@ -32,11 +51,20 @@ export function AIComposer() {
           zIndex: 100,
         }}>
         <XDSChatComposer
-          onSubmit={() => setPrompt('')}
+          onSubmit={handleSubmit}
           value={prompt}
           onChange={setPrompt}
-          placeholder="What should we build?"
-          input={<XDSChatComposerInput placeholder="What should we build?" />}
+          placeholder={PLACEHOLDER[mode]}
+          headerActions={
+            <XDSSegmentedControl
+              value={mode}
+              onChange={v => setMode(v as ComposerMode)}
+              size="sm">
+              <XDSSegmentedControlItem value="template" label="Template" />
+              <XDSSegmentedControlItem value="theme" label="Theme" />
+            </XDSSegmentedControl>
+          }
+          input={<XDSChatComposerInput placeholder={PLACEHOLDER[mode]} />}
         />
       </div>
     </>
