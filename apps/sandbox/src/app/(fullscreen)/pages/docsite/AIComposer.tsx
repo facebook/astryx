@@ -54,41 +54,49 @@ export function AIComposer({
         style={{
           position: 'fixed',
           bottom: 24,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 680,
-          maxWidth: 'calc(100% - 48px)',
+          left: 0,
+          right: 0,
+          display: 'flex',
+          justifyContent: 'center',
+          pointerEvents: 'none',
           zIndex: 100,
         }}>
-        <XDSChatComposer
-          onSubmit={handleSubmit}
-          value={prompt}
-          onChange={setPrompt}
-          placeholder={PLACEHOLDER[mode]}
-          footerActions={
-            <XDSDropdownMenu
-              button={{
-                label: mode === 'template' ? 'Template' : 'Theme',
-                icon: MODE_ICON[mode],
-                variant: 'ghost',
-                size: 'sm',
-              }}
-              items={[
-                {
-                  label: 'Template',
-                  icon: GridIcon,
-                  onClick: () => onModeChange('template'),
-                },
-                {
-                  label: 'Theme',
-                  icon: PaletteIcon,
-                  onClick: () => onModeChange('theme'),
-                },
-              ]}
-            />
-          }
-          input={<XDSChatComposerInput placeholder={PLACEHOLDER[mode]} />}
-        />
+        <div
+          style={{
+            width: 680,
+            maxWidth: 'calc(100% - 48px)',
+            pointerEvents: 'auto',
+          }}>
+          <XDSChatComposer
+            onSubmit={handleSubmit}
+            value={prompt}
+            onChange={setPrompt}
+            placeholder={PLACEHOLDER[mode]}
+            footerActions={
+              <XDSDropdownMenu
+                button={{
+                  label: mode === 'template' ? 'Template' : 'Theme',
+                  icon: MODE_ICON[mode],
+                  variant: 'ghost',
+                  size: 'sm',
+                }}
+                items={[
+                  {
+                    label: 'Template',
+                    icon: GridIcon,
+                    onClick: () => onModeChange('template'),
+                  },
+                  {
+                    label: 'Theme',
+                    icon: PaletteIcon,
+                    onClick: () => onModeChange('theme'),
+                  },
+                ]}
+              />
+            }
+            input={<XDSChatComposerInput placeholder={PLACEHOLDER[mode]} />}
+          />
+        </div>
       </div>
     </>
   );
