@@ -1,6 +1,6 @@
-# XDS
+# @xds/core
 
-XDS is a design system for building internal tools and products.
+Core UI components, theme system, and utilities for the XDS design system. For project setup, see [Quick Start](#quick-start) below.
 
 ## Component Docs
 
@@ -44,7 +44,152 @@ npx xds discover                     # discover external XDS packages
 npx xds gap-report                   # report a missing capability
 ```
 
+## Related Packages
+
+| Package | Description |
+|---------|-------------|
+| [`@xds/cli`](https://github.com/facebookexperimental/xds/tree/main/packages/cli) | CLI tooling — component docs, templates, scaffolding, codemods |
+| [`@xds/build`](https://github.com/facebookexperimental/xds/tree/main/packages/build) | Build plugins for StyleX source builds (Babel, PostCSS, Vite) |
+| [`@xds/theme-default`](https://github.com/facebookexperimental/xds/tree/main/packages/themes/default) | Default theme (Heroicons) |
+| [`@xds/theme-neutral`](https://github.com/facebookexperimental/xds/tree/main/packages/themes/neutral) | Muted, minimal theme (Lucide icons) |
+| [`@xds/theme-daily`](https://github.com/facebookexperimental/xds/tree/main/packages/themes/daily) | Warm, productivity-focused theme (Lucide icons) |
+
 ## Resources
 
 - [Component Storybook](https://facebookexperimental.github.io/xds/)
 - [GitHub Repository](https://github.com/facebookexperimental/xds)
+
+---
+
+## Quick Start
+
+Install XDS and a theme:
+
+```bash
+npm install @xds/core @xds/theme-default
+```
+
+Then pick your setup below based on your framework and styling approach.
+
+### Next.js + Tailwind (simplest)
+
+No build plugins needed — XDS ships pre-built CSS that works alongside Tailwind.
+
+**`src/app/globals.css`**
+
+```css
+@layer reset, theme, base, xds-base, xds-theme, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "@xds/core/reset.css";
+@import "@xds/core/xds.css";
+@import "@xds/theme-default/theme.css";
+@import "tailwindcss/utilities.css" layer(utilities);
+```
+
+**`src/app/providers.tsx`**
+
+```tsx
+'use client';
+
+import Link from 'next/link';
+import {XDSTheme} from '@xds/core/theme';
+import {XDSLinkProvider} from '@xds/core/Link';
+import {defaultTheme} from '@xds/theme-default/built';
+
+export function Providers({children}: {children: React.ReactNode}) {
+  return (
+    <XDSTheme theme={defaultTheme}>
+      <XDSLinkProvider component={Link}>{children}</XDSLinkProvider>
+    </XDSTheme>
+  );
+}
+```
+
+**`src/app/layout.tsx`**
+
+```tsx
+import './globals.css';
+import {Providers} from './providers';
+
+export default function RootLayout({children}: {children: React.ReactNode}) {
+  return (
+    <html lang="en">
+      <body>
+        <Providers>{children}</Providers>
+      </body>
+    </html>
+  );
+}
+```
+
+That's it — start using components:
+
+```tsx
+import {XDSButton} from '@xds/core/Button';
+
+export default function Page() {
+  return <XDSButton label="Hello XDS" variant="primary" />;
+}
+```
+
+### Next.js + StyleX (source build)
+
+Compiles XDS from TypeScript source for tree-shaking and custom StyleX overrides.
+
+```bash
+npm install @xds/core @xds/theme-default
+npm install -D @xds/build @stylexjs/babel-plugin @babel/core
+```
+
+See the [`@xds/build` README](../build/README.md) for full `babel.config.js`, `postcss.config.js`, and `next.config.mjs` setup. The key difference from the Tailwind path is that `@xds/build` compiles StyleX from source with split CSS layer prefixes.
+
+**`src/app/globals.css`**
+
+```css
+@import './layers.css';
+@import '@xds/core/reset.css';
+@import '@xds/theme-default/theme.css';
+
+@stylex;
+```
+
+**`src/app/layers.css`**
+
+```css
+@layer reset, xds-base, xds-theme, product;
+```
+
+The providers file is the same as above, but import theme from `@xds/theme-default` (not `/built`):
+
+```tsx
+import {defaultTheme} from '@xds/theme-default';
+```
+
+### Vite + StyleX
+
+```bash
+npm install @xds/core @xds/theme-default
+npm install -D @xds/build @stylexjs/unplugin @vitejs/plugin-react
+```
+
+See the [`@xds/build` README](../build/README.md) for full `vite.config.ts` setup with `xdsStylex()`.
+
+### Next.js (dist, no Tailwind, no StyleX)
+
+The lightest path — no build plugins at all.
+
+```bash
+npm install @xds/core @xds/theme-default
+```
+
+**`src/app/globals.css`**
+
+```css
+@import "@xds/core/reset.css";
+@import "@xds/core/xds.css";
+@import "@xds/theme-default/theme.css";
+```
+
+Providers and layout are the same as the Tailwind example (use `@xds/theme-default/built`).
