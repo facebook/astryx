@@ -1,10 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Button — Link Buttons',
-  description:
-    'Buttons rendering as anchor elements when an href prop is provided.',
+  name: 'Button — Link',
+  description: 'Buttons that navigate by rendering as anchor elements when href is provided. Use when you need button styling but the action is navigation.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['Button'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Button', 'Layout', 'Text'],
 };
