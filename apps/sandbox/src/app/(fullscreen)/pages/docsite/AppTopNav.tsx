@@ -8,7 +8,7 @@ import {XDSStack} from '@xds/core/Layout';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSCommandPalette} from '@xds/core/CommandPalette';
-import {XDSText} from '@xds/core/Text';
+
 import {SearchIcon, ProfileIcon, FilterIcon} from './docsite-icons';
 import {SEARCH_COMMANDS} from './constants';
 
@@ -92,11 +92,6 @@ export function AppTopNav({
       <XDSListItem
         label="Theme Editor"
         onClick={() => setActiveView('theme')}
-        endContent={
-          <XDSText type="label" color="secondary" size="sm">
-            Temporary
-          </XDSText>
-        }
       />
     </XDSList>
   );
