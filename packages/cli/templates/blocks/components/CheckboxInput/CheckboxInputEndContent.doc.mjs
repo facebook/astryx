@@ -2,7 +2,7 @@
 export const doc = {
   type: 'block',
   name: 'Checkbox — End Content',
-  description: 'Checkbox list items with pricing labels in the end content slot. Use endContent on CheckboxListItem to display metadata like cost, badges, or counts alongside each option.',
+  description: 'A pricing plan selector where each option shows its cost on the right side. Use endContent to display metadata like pricing, badges, or counts alongside each option.',
   isReady: true,
   aspectRatio: 16 / 9,
   componentsUsed: ['CheckboxInput', 'CheckboxList', 'Text'],

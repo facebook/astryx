@@ -78,7 +78,7 @@ export const docs = {
       { guidance: true, description: 'Use the indeterminate state for "select all" checkboxes when only some items in a group are selected.' },
       { guidance: false, description: 'Use a checkbox for mutually exclusive choices \u2014 use RadioList when only one option can be selected.' },
       { guidance: false, description: 'Use a checkbox for actions that take effect immediately \u2014 use a toggle switch or button instead.' },
-      { guidance: false, description: 'Place interactive elements in endContent that conflict with the full-row click target on CheckboxListItem.' },
+      { guidance: false, description: 'Put buttons or links in endContent — they conflict with the row’s click target.' },
     ],
     anatomy: [
       { name: 'Checkbox', required: true, description: 'The check box itself \u2014 unchecked, checked, or indeterminate.' },
@@ -104,7 +104,7 @@ export const docsZh = {
       { guidance: true, description: 'Use the indeterminate state for "select all" checkboxes when only some items in a group are selected.' },
       { guidance: false, description: 'Use a checkbox for mutually exclusive choices \u2014 use RadioList when only one option can be selected.' },
       { guidance: false, description: 'Use a checkbox for actions that take effect immediately \u2014 use a toggle switch or button instead.' },
-      { guidance: false, description: 'Place interactive elements in endContent that conflict with the full-row click target on CheckboxListItem.' },
+      { guidance: false, description: 'Put buttons or links in endContent — they conflict with the row’s click target.' },
     ],
   },
   components: [
