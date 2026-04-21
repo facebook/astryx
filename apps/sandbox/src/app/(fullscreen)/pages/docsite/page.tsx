@@ -169,6 +169,7 @@ function ThemeCard({
   onCustomize: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
+  const r = theme.preview.radius ?? 8;
 
   return (
     <div
@@ -252,7 +253,7 @@ function ThemeCard({
                     style={{
                       height: 0,
                       paddingBottom: '16%',
-                      borderRadius: 3,
+                      borderRadius: Math.max(r * 0.4, 2),
                       backgroundColor: active
                         ? theme.preview.accent
                         : theme.preview.text,
@@ -284,7 +285,7 @@ function ThemeCard({
                       key={j}
                       style={{
                         backgroundColor: theme.preview.surface,
-                        borderRadius: 4,
+                        borderRadius: r,
                         padding: '10%',
                         display: 'flex',
                         flexDirection: 'column',
@@ -295,7 +296,7 @@ function ThemeCard({
                           height: 0,
                           paddingBottom: '12%',
                           width: '60%',
-                          borderRadius: 2,
+                          borderRadius: Math.max(r * 0.25, 1),
                           backgroundColor: theme.preview.text,
                           opacity: 0.7,
                         }}
@@ -305,7 +306,7 @@ function ThemeCard({
                           height: 0,
                           paddingBottom: '8%',
                           width: '90%',
-                          borderRadius: 2,
+                          borderRadius: Math.max(r * 0.25, 1),
                           backgroundColor: theme.preview.text,
                           opacity: 0.15,
                         }}
@@ -315,7 +316,7 @@ function ThemeCard({
                           height: 0,
                           paddingBottom: '8%',
                           width: '70%',
-                          borderRadius: 2,
+                          borderRadius: Math.max(r * 0.25, 1),
                           backgroundColor: theme.preview.text,
                           opacity: 0.15,
                         }}
@@ -329,7 +330,7 @@ function ThemeCard({
                     height: 0,
                     paddingBottom: '5%',
                     width: '30%',
-                    borderRadius: 4,
+                    borderRadius: Math.max(r * 0.5, 2),
                     backgroundColor: theme.preview.accent,
                   }}
                 />
