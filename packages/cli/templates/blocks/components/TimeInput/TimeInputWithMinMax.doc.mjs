@@ -2,9 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'TimeInput — Constrained Range',
-  description:
-    'Time input with min/max constraints limiting selection to business hours.',
+  description: 'Time inputs with min/max constraints limiting selection to specific windows. Use to prevent out-of-bounds selections for appointments, reservations, or shift scheduling.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['TimeInput'],
+  componentsUsed: ['TimeInput', 'Layout', 'Text'],
 };
