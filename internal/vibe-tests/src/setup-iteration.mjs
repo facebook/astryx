@@ -76,35 +76,10 @@ function samplePrompts(prompts, n) {
 // ── Task prompt templates ────────────────────────────────────────────
 
 function generateXdsTaskPrompt(prompt, iterDir) {
-  const componentNames = (prompt.expectedComponents || [])
-    .map(c => c.replace(/^XDS/, ''));
-  
-  const cliCommands = componentNames
-    .map(c => `npx xds component ${c}`)
-    .join('\n');
-
   return `You are generating React/TSX code using the XDS design system.
 
-## IMPORTANT: Read component docs FIRST
-
-You MUST run the following commands on the MacBook CLI node (node: "cli:MacBook-Pro-2") 
-to read the component API docs BEFORE writing any code:
-
-cd ~/xds/worktrees/main
-${cliCommands}
-
-Read the output carefully. Use ONLY the props documented in the CLI output.
-Do NOT guess prop names or values. If you need additional components beyond
-the ones listed above, look them up too: npx xds component <Name>
-
-## Rules
-
-1. Import from '@xds/core' (e.g. import { XDSButton } from '@xds/core')
-2. Use StyleX for custom styling (import * as stylex from '@stylexjs/stylex')
-3. Use CSS variables for tokens: var(--color-*), var(--spacing-*), var(--radius-*)
-4. Form inputs are controlled: value + onChange
-5. No <div> for layout — use XDSVStack, XDSHStack, XDSGrid
-6. Export default a single React component
+Read the package README at node_modules/@xds/core/README.md for how to look up
+component docs. Use what you find there to discover the components you need.
 
 ## Task
 
@@ -115,13 +90,8 @@ ${prompt.prompt}
 Write the TSX code to: ${path.join(iterDir, 'results', `${prompt.id}.tsx`)}
 Write metadata to: ${path.join(iterDir, 'results', `${prompt.id}.json`)}
 
-The metadata JSON should contain:
-{
-  "completedAt": "<current ISO timestamp>",
-  "docsRead": [<list of component names you looked up via CLI>]
-}
-
-Write ONLY valid TSX in the .tsx file. No markdown fences, no explanation.`;
+Metadata: {"completedAt": "<ISO timestamp>", "docsRead": [<component names you looked up>]}
+Write ONLY valid TSX. No markdown fences, no explanation.`;
 }
 
 function generateBaselineTaskPrompt(prompt, iterDir) {

@@ -524,7 +524,8 @@
   "files": [
     "dist",
     "src",
-    "xds.md"
+    "docs.mjs",
+    "README.md"
   ],
   "scripts": {
     "prepack": "yarn build",
