@@ -7,18 +7,21 @@ export const docs = {
 
   usage: {
     description:
-      'Buttons provide visual cues for actions and events. These fundamental components allow users to commit actions and navigate a page flow. Use a Button when a user needs to submit a form, start a new task or action, or trigger a new UI element to appear on the page.',
+      'Button triggers an action when clicked. Use it for form submissions, confirmations, navigation, or any interaction that needs a clear call to action.',
     bestPractices: [
-      {guidance: true, description: 'Use secondary for most actions and reserve primary for a single emphasized action per layout.'},
-      {guidance: true, description: 'Include a clear, concise label that describes the action the button performs.'},
+      {guidance: true, description: 'Reserve primary for the single most important action in the view. Use secondary or ghost for everything else based on emphasis.'},
+      {guidance: true, description: 'Write labels that describe the action — "Save changes", "Delete account", "Send invite" — not vague labels like "OK" or "Click here".'},
+      {guidance: true, description: 'Show a loading state for actions that take time, like saving or submitting, so the user knows it is working.'},
+      {guidance: true, description: 'Always provide a label for icon-only buttons so screen readers can announce what the button does. Add a tooltip for sighted users.'},
       {guidance: false, description: 'Place more than one primary button in the same view — this dilutes the visual hierarchy.'},
-      {guidance: false, description: 'Use the destructive variant without a confirmation step for irreversible actions.'},
+      {guidance: false, description: 'Use the destructive variant without a confirmation step for irreversible actions like deleting data.'},
+      {guidance: false, description: 'Use a button for navigation — if it only takes the user to another page, use a link instead. Buttons are for actions like saving, deleting, or submitting.'},
     ],
     anatomy: [
-      {name: 'Icon', required: false, description: 'A leading icon that visually represents the meaning of the button label.'},
-      {name: 'Label', required: true, description: 'A text label describing the button action. Required for accessibility.'},
-      {name: 'End content', required: false, description: 'Trailing content that provides affordance to the type of action performed. Recommended when the expected action is non-obvious.'},
-      {name: 'Spinner', required: false, description: 'Indicates a loading state when the button action is not immediate.'},
+      {name: 'Icon', required: false, description: 'A leading icon that reinforces the label, like a trash icon on a Delete button.'},
+      {name: 'Label', required: true, description: 'The visible text describing the action. Also used as the accessible name.'},
+      {name: 'End content', required: false, description: 'A trailing badge or icon after the label, like a notification count or dropdown arrow.'},
+      {name: 'Spinner', required: false, description: 'Replaces the icon during loading to show the action is in progress.'},
     ],
   },
 
@@ -140,18 +143,21 @@ export const docsZh = {
   name: 'Button',
   usage: {
     description:
-      'Buttons provide visual cues for actions and events. These fundamental components allow users to commit actions and navigate a page flow. Use a Button when a user needs to submit a form, start a new task or action, or trigger a new UI element to appear on the page.',
+      'Button triggers an action when clicked. Use it for form submissions, confirmations, navigation, or any interaction that needs a clear call to action.',
     bestPractices: [
-      {guidance: true, description: 'Use secondary for most actions and reserve primary for a single emphasized action per layout.'},
-      {guidance: true, description: 'Include a clear, concise label that describes the action the button performs.'},
+      {guidance: true, description: 'Reserve primary for the single most important action in the view. Use secondary or ghost for everything else based on emphasis.'},
+      {guidance: true, description: 'Write labels that describe the action — "Save changes", "Delete account", "Send invite" — not vague labels like "OK" or "Click here".'},
+      {guidance: true, description: 'Show a loading state for actions that take time, like saving or submitting, so the user knows it is working.'},
+      {guidance: true, description: 'Always provide a label for icon-only buttons so screen readers can announce what the button does. Add a tooltip for sighted users.'},
       {guidance: false, description: 'Place more than one primary button in the same view — this dilutes the visual hierarchy.'},
-      {guidance: false, description: 'Use the destructive variant without a confirmation step for irreversible actions.'},
+      {guidance: false, description: 'Use the destructive variant without a confirmation step for irreversible actions like deleting data.'},
+      {guidance: false, description: 'Use a button for navigation — if it only takes the user to another page, use a link instead. Buttons are for actions like saving, deleting, or submitting.'},
     ],
     anatomy: [
-      {name: 'Icon', required: false, description: 'A leading icon that visually represents the meaning of the button label.'},
-      {name: 'Label', required: true, description: 'A text label describing the button action. Required for accessibility.'},
-      {name: 'End content', required: false, description: 'Trailing content that provides affordance to the type of action performed. Recommended when the expected action is non-obvious.'},
-      {name: 'Spinner', required: false, description: 'Indicates a loading state when the button action is not immediate.'},
+      {name: 'Icon', required: false, description: 'A leading icon that reinforces the label, like a trash icon on a Delete button.'},
+      {name: 'Label', required: true, description: 'The visible text describing the action. Also used as the accessible name.'},
+      {name: 'End content', required: false, description: 'A trailing badge or icon after the label, like a notification count or dropdown arrow.'},
+      {name: 'Spinner', required: false, description: 'Replaces the icon during loading to show the action is in progress.'},
     ],
   },
   props: [
@@ -215,21 +221,18 @@ export const docsZh = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'button w/ multiple variants, sizes, loading state',
+  description: 'action trigger w/ 4 variants, 3 sizes, loading state',
   usage: {
     description:
-      'Buttons provide visual cues for actions and events. These fundamental components allow users to commit actions and navigate a page flow. Use a Button when a user needs to submit a form, start a new task or action, or trigger a new UI element to appear on the page.',
+      'Button triggers an action when clicked. Use for form submissions, confirmations, navigation, or any interaction needing a clear CTA.',
     bestPractices: [
-      {guidance: true, description: 'Use secondary for most actions and reserve primary for a single emphasized action per layout.'},
-      {guidance: true, description: 'Include a clear, concise label that describes the action the button performs.'},
-      {guidance: false, description: 'Place more than one primary button in the same view — this dilutes the visual hierarchy.'},
-      {guidance: false, description: 'Use the destructive variant without a confirmation step for irreversible actions.'},
-    ],
-    anatomy: [
-      {name: 'Icon', required: false, description: 'A leading icon that visually represents the meaning of the button label.'},
-      {name: 'Label', required: true, description: 'A text label describing the button action. Required for accessibility.'},
-      {name: 'End content', required: false, description: 'Trailing content that provides affordance to the type of action performed. Recommended when the expected action is non-obvious.'},
-      {name: 'Spinner', required: false, description: 'Indicates a loading state when the button action is not immediate.'},
+      {guidance: true, description: 'Primary for the single most important action. Secondary or ghost for the rest.'},
+      {guidance: true, description: 'Labels that describe the action — "Save changes" not "OK" or "Click here".'},
+      {guidance: true, description: 'Show loading state for async actions so the user knows it is working.'},
+      {guidance: true, description: 'Icon-only buttons need a label for screen readers and a tooltip for sighted users.'},
+      {guidance: false, description: 'Multiple primary buttons in one view — dilutes hierarchy.'},
+      {guidance: false, description: 'Destructive without confirmation for irreversible actions.'},
+      {guidance: false, description: 'Button for navigation — use a link if it only takes the user to another page.'},
     ],
   },
   propDescriptions: {

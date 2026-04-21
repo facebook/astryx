@@ -1,9 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Button — Size Variants',
-  description: 'Primary buttons in small, medium, and large sizes side by side.',
+  name: 'Button — Sizes',
+  description: 'Small, medium, and large buttons side by side. Use small in dense UIs like toolbars, medium for most cases, and large for prominent CTAs.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['Button'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Button', 'Layout', 'Text'],
 };
