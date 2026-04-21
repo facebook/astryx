@@ -5,5 +5,5 @@ export const doc = {
   description: 'Error, warning, and success validation states with status messages. Use to show users what went wrong and how to fix it.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['TextInput', 'Layout', 'Text'],
+  componentsUsed: ['TextInput', 'Layout'],
 };
