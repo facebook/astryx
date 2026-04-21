@@ -1,9 +1,10 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Field — Required',
-  description: 'Text input marked as required with a visual indicator',
+  name: 'Field — Required & Optional',
+  description:
+    'Required and optional field indicators side by side. Use isRequired on fields the user must fill in, and isOptional to clarify which fields can be skipped.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['TextInput'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['TextInput', 'Layout', 'Text'],
 };
