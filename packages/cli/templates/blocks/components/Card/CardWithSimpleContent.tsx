@@ -1,19 +1,22 @@
 'use client';
 
 import {XDSCard} from '@xds/core/Card';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSHeading} from '@xds/core/Text';
+import {XDSStack} from '@xds/core/Layout';
+import {XDSHeading, XDSText} from '@xds/core/Text';
 
 export default function CardWithSimpleContent() {
   return (
-    <XDSCard width={320}>
-      <XDSVStack gap={2}>
-        <XDSHeading level={3}>Card Title</XDSHeading>
-        <p style={{margin: 0, fontSize: 14, color: '#666'}}>
-          This card contains simple content with a heading and body text. The
-          container padding is applied automatically.
-        </p>
-      </XDSVStack>
+    <XDSCard width={360}>
+      <XDSStack direction="vertical" gap={2}>
+        <XDSHeading level={3}>Project Overview</XDSHeading>
+        <XDSText type="body" color="secondary">
+          This project tracks the redesign of the onboarding flow. The goal is
+          to reduce drop-off by 15% in Q2.
+        </XDSText>
+        <XDSText type="supporting" color="secondary">
+          Last updated 2 hours ago
+        </XDSText>
+      </XDSStack>
     </XDSCard>
   );
 }
