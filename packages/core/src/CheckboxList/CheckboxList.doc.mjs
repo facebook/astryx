@@ -130,13 +130,7 @@ export const docs = {
     },
   ],
   usage: {
-    description: 'CheckboxList is a grouped set of checkboxes for selecting multiple options from a visible list. Use it when users need to pick several items at once. For single selection use RadioList; for long option sets consider MultiSelector.',
-    bestPractices: [
-      { guidance: true, description: 'Provide a clear group label that describes what the options represent.' },
-      { guidance: true, description: 'Use collection mode (value/onChange on the group) to let the parent manage selected state as a string array.' },
-      { guidance: false, description: 'Use CheckboxList when only one option can be selected — use RadioList instead.' },
-      { guidance: false, description: 'Place interactive elements in endContent that conflict with the full-row click target.' },
-    ],
+    description: 'CheckboxList is documented together with CheckboxInput. See the CheckboxInput page for usage, best practices, anatomy, and block templates.',
   },
 };
 
@@ -144,13 +138,7 @@ export const docs = {
 export const docsZh = {
   name: 'CheckboxList',
   usage: {
-    description: 'CheckboxList is a grouped set of checkboxes for selecting multiple options from a visible list. Use it when users need to pick several items at once. For single selection use RadioList; for long option sets consider MultiSelector.',
-    bestPractices: [
-      { guidance: true, description: 'Provide a clear group label that describes what the options represent.' },
-      { guidance: true, description: 'Use collection mode (value/onChange on the group) to let the parent manage selected state as a string array.' },
-      { guidance: false, description: 'Use CheckboxList when only one option can be selected — use RadioList instead.' },
-      { guidance: false, description: 'Place interactive elements in endContent that conflict with the full-row click target.' },
-    ],
+    description: 'CheckboxList is documented together with CheckboxInput. See the CheckboxInput page for usage, best practices, anatomy, and block templates.',
   },
   components: [
     {
@@ -191,15 +179,9 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description:
-    'Checkbox group component for multi-value selection. Collection mode (parent state) + standalone mode (per-item state).',
+    'Checkbox group for multi-value selection. Documented with CheckboxInput — see that page for full docs.',
   usage: {
-    description: 'CheckboxList is a grouped set of checkboxes for selecting multiple options from a visible list. Use it when users need to pick several items at once. For single selection use RadioList; for long option sets consider MultiSelector.',
-    bestPractices: [
-      { guidance: true, description: 'Provide a clear group label that describes what the options represent.' },
-      { guidance: true, description: 'Use collection mode (value/onChange on the group) to let the parent manage selected state as a string array.' },
-      { guidance: false, description: 'Use CheckboxList when only one option can be selected — use RadioList instead.' },
-      { guidance: false, description: 'Place interactive elements in endContent that conflict with the full-row click target.' },
-    ],
+    description: 'CheckboxList is documented together with CheckboxInput. See the CheckboxInput page for usage, best practices, anatomy, and block templates.',
   },
   components: [
     {
