@@ -3,17 +3,21 @@
 import * as stylex from '@stylexjs/stylex';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSCard} from '@xds/core/Card';
-import {XDSSection} from '@xds/core/Section';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
+import {colorVars, spacingVars} from '@xds/core/theme';
 
 const styles = stylex.create({
-  fill: {minHeight: '100%'},
+  container: {
+    backgroundColor: colorVars['--color-background-body'],
+    padding: spacingVars['--spacing-5'],
+    minHeight: '100%',
+  },
 });
 
 export default function DividerVariants() {
   return (
-    <XDSSection variant="wash" xstyle={styles.fill}>
+    <div {...stylex.props(styles.container)}>
       <XDSCard>
         <XDSVStack gap={3}>
           <XDSVStack gap={1}>
@@ -35,6 +39,6 @@ export default function DividerVariants() {
           </XDSText>
         </XDSVStack>
       </XDSCard>
-    </XDSSection>
+    </div>
   );
 }
