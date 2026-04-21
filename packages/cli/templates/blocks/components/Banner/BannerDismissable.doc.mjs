@@ -4,6 +4,6 @@ export const doc = {
   name: 'Banner — Dismiss',
   description: 'Let the user close a banner after reading it. Use for maintenance notices, feature tips, or any non-critical message the user can acknowledge.',
   isReady: true,
-  aspectRatio: 16 / 4,
+  aspectRatio: 3 / 4,
   componentsUsed: ['Banner', 'Layout'],
 };

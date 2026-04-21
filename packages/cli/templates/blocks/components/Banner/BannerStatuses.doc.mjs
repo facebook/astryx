@@ -4,6 +4,6 @@ export const doc = {
   name: 'Banner — Statuses',
   description: 'All 4 banner statuses: info, success, warning, and error. Use to show persistent messages like updates, confirmations, cautions, or problems at the top of a page or section.',
   isReady: true,
-  aspectRatio: 16 / 9,
+  aspectRatio: 3 / 4,
   componentsUsed: ['Banner', 'Layout'],
 };
