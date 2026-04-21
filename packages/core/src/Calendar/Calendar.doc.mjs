@@ -5,12 +5,20 @@ export const docs = {
   keywords: ["calendar","datepicker","date picker","rangepicker","date range","monthview","daypicker"],
   usage: {
     description:
-      'Calendar displays a month-view grid for selecting dates, supporting single and range selection modes. Use when users need to pick a specific date or date range within a constrained set of options.',
+      'Calendar lets the user pick a date or date range from a month grid. Use it in booking flows, scheduling UIs, date filters, or anywhere the user needs to see surrounding dates for context.',
     bestPractices: [
-      {guidance: true, description: 'Set min and max dates to constrain selection to a valid range for the task.'},
-      {guidance: true, description: 'Use range mode for start/end date scenarios like booking or scheduling.'},
-      {guidance: false, description: 'Use a calendar for selecting dates far in the past or future — prefer a date input for open-ended entry.'},
-      {guidance: false, description: 'Disable large blocks of dates without explaining why they are unavailable.'},
+      {guidance: true, description: 'Set min and max dates to limit selection to a valid window — like only future dates for a booking or the current quarter for a report.'},
+      {guidance: true, description: 'Use range mode when the user needs to pick a start and end date, like a trip or a time-off request.'},
+      {guidance: true, description: 'Use dateConstraints to disable specific dates like weekends or holidays, and explain why they are unavailable.'},
+      {guidance: true, description: 'Show two months side by side when the user frequently selects dates that span a month boundary.'},
+      {guidance: false, description: 'Use a calendar for dates far in the past or future like a birth date — a text input is faster for open-ended entry.'},
+      {guidance: false, description: 'Disable large blocks of dates without context — the user should understand why dates are unavailable.'},
+    ],
+    anatomy: [
+      {name: 'Month header', required: true, description: 'The month name and year with navigation arrows to move between months.'},
+      {name: 'Day grid', required: true, description: 'A 7-column grid of days with column headers for the day names.'},
+      {name: 'Selected day', required: false, description: 'The currently selected date, highlighted. In range mode, the start and end dates plus the days between them.'},
+      {name: 'Today marker', required: false, description: 'A subtle indicator on the current date for orientation.'},
     ],
   },
   props: [
@@ -104,12 +112,14 @@ export const docsZh = {
   name: 'Calendar',
   usage: {
     description:
-      'Calendar displays a month-view grid for selecting dates, supporting single and range selection modes. Use when users need to pick a specific date or date range within a constrained set of options.',
+      'Calendar lets the user pick a date or date range from a month grid. Use it in booking flows, scheduling UIs, date filters, or anywhere the user needs to see surrounding dates for context.',
     bestPractices: [
-      {guidance: true, description: 'Set min and max dates to constrain selection to a valid range for the task.'},
-      {guidance: true, description: 'Use range mode for start/end date scenarios like booking or scheduling.'},
-      {guidance: false, description: 'Use a calendar for selecting dates far in the past or future — prefer a date input for open-ended entry.'},
-      {guidance: false, description: 'Disable large blocks of dates without explaining why they are unavailable.'},
+      {guidance: true, description: 'Set min and max dates to limit selection to a valid window — like only future dates for a booking or the current quarter for a report.'},
+      {guidance: true, description: 'Use range mode when the user needs to pick a start and end date, like a trip or a time-off request.'},
+      {guidance: true, description: 'Use dateConstraints to disable specific dates like weekends or holidays, and explain why they are unavailable.'},
+      {guidance: true, description: 'Show two months side by side when the user frequently selects dates that span a month boundary.'},
+      {guidance: false, description: 'Use a calendar for dates far in the past or future like a birth date — a text input is faster for open-ended entry.'},
+      {guidance: false, description: 'Disable large blocks of dates without context — the user should understand why dates are unavailable.'},
     ],
   },
   props: [
@@ -151,15 +161,15 @@ export const docsZh = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'calendar for date selection w/ single+range modes',
+  description: 'month grid for picking a date or date range',
   usage: {
     description:
-      'Calendar displays a month-view grid for selecting dates, supporting single and range selection modes. Use when users need to pick a specific date or date range within a constrained set of options.',
+      'Calendar lets the user pick a date or date range from a month grid. Use in booking, scheduling, date filters.',
     bestPractices: [
-      {guidance: true, description: 'Set min and max dates to constrain selection to a valid range for the task.'},
-      {guidance: true, description: 'Use range mode for start/end date scenarios like booking or scheduling.'},
-      {guidance: false, description: 'Use a calendar for selecting dates far in the past or future — prefer a date input for open-ended entry.'},
-      {guidance: false, description: 'Disable large blocks of dates without explaining why they are unavailable.'},
+      {guidance: true, description: 'Set min/max to limit selection. Use range mode for start + end dates.'},
+      {guidance: true, description: 'Use dateConstraints to disable weekends/holidays. Show two months for cross-month selections.'},
+      {guidance: false, description: 'Use for dates far in the past/future — text input is faster.'},
+      {guidance: false, description: 'Disable dates without explaining why.'},
     ],
   },
   propDescriptions: {
