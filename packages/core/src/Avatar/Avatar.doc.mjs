@@ -6,7 +6,7 @@ export const docs = {
   keywords: ["avatar","profile","user","photo","thumbnail","initials","gravatar","pfp","userpic"],
   usage: {
     description:
-      'Avatar represents a person or team with a profile photo, initials, or a default icon. It automatically falls back through each option if the previous one is unavailable. Use it in comment headers, contact lists, chat messages, user cards, and anywhere you need to identify someone visually.',
+      'Avatar represents a person or team with a profile photo, initials, or a default icon. Use it in comment headers, contact lists, chat messages, user cards, and anywhere you need to identify someone visually.',
     bestPractices: [
       {guidance: true, description: 'Always pass a name so the avatar can show initials if the photo fails to load, and so screen readers can announce who it represents.'},
       {guidance: true, description: 'Pick a size that matches the context — tiny or xsmall for inline mentions, small or medium for lists and cards, large for profile headers.'},
