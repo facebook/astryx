@@ -20,7 +20,7 @@ const VARIANTS = [
 export default function CardVariants() {
   return (
     <XDSStack direction="horizontal" gap={3} style={{flexWrap: 'wrap'}}>
-      {VARIANTS.map(({variant, label}) => (
+      {VARIANTS.map(({variant, label, note}) => (
         <XDSCard key={variant} variant={variant} width={160}>
           <XDSStack direction="vertical" gap={1}>
             <XDSText type="body" weight="bold">
