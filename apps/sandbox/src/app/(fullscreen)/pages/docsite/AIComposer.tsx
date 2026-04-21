@@ -2,16 +2,19 @@
 
 import React, {useState} from 'react';
 import {XDSChatComposer, XDSChatComposerInput} from '@xds/core/Chat';
-import {
-  XDSSegmentedControl,
-  XDSSegmentedControlItem,
-} from '@xds/core/SegmentedControl';
+import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
+import {GridIcon, PaletteIcon} from './docsite-icons';
 
 export type ComposerMode = 'template' | 'theme';
 
 const PLACEHOLDER: Record<ComposerMode, string> = {
   template: 'What should we build?',
   theme: 'Describe your brand or style...',
+};
+
+const MODE_ICON: Record<ComposerMode, React.ReactNode> = {
+  template: <GridIcon width={16} height={16} />,
+  theme: <PaletteIcon width={16} height={16} />,
 };
 
 export function AIComposer({
@@ -63,13 +66,28 @@ export function AIComposer({
           onChange={setPrompt}
           placeholder={PLACEHOLDER[mode]}
           footerActions={
-            <XDSSegmentedControl
-              value={mode}
-              onChange={v => onModeChange(v as ComposerMode)}
-              size="sm">
-              <XDSSegmentedControlItem value="template" label="Template" />
-              <XDSSegmentedControlItem value="theme" label="Theme" />
-            </XDSSegmentedControl>
+            <XDSDropdownMenu
+              button={{
+                label: mode === 'template' ? 'Template' : 'Theme',
+                icon: MODE_ICON[mode],
+                variant: 'ghost',
+                size: 'sm',
+                isIconOnly: true,
+              }}
+              hasChevron={false}
+              items={[
+                {
+                  label: 'Template',
+                  icon: <GridIcon width={16} height={16} />,
+                  onClick: () => onModeChange('template'),
+                },
+                {
+                  label: 'Theme',
+                  icon: <PaletteIcon width={16} height={16} />,
+                  onClick: () => onModeChange('theme'),
+                },
+              ]}
+            />
           }
           input={<XDSChatComposerInput placeholder={PLACEHOLDER[mode]} />}
         />
