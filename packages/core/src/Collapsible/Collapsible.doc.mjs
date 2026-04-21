@@ -13,6 +13,11 @@ export const docs = {
       name: 'XDSCollapsible',
       description:
         'A primitive that makes any content collapsible — a trigger button toggles visibility of the content area, managing its own state or deferring to a parent XDSCollapsibleGroup.',
+      anatomy: [
+        {name: 'Trigger', required: true, description: 'Always-visible button with a chevron indicator. Clicking toggles content visibility.'},
+        {name: 'Chevron', required: false, description: 'Animated rotation indicator showing open/closed state.'},
+        {name: 'Content', required: false, description: 'The collapsible area that hides or shows based on state.'},
+      ],
       props: [
         {
           name: 'trigger',
@@ -47,7 +52,8 @@ export const docs = {
           description:
             'Identifier used for group coordination. Required when placed inside an XDSCollapsibleGroup.',
         },
-      ],    },
+      ],
+    },
     {
       name: 'XDSCollapsibleGroup',
       description:
@@ -89,6 +95,8 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Use XDSCollapsibleGroup with type="single" for accordion-style patterns where only one section should be open at a time.' },
       { guidance: true, description: 'Start sections open (defaultIsOpen) when the content is likely needed on first view.' },
+      { guidance: true, description: 'Wrap each XDSCollapsible in an XDSCard for visual separation in accordion layouts.' },
+      { guidance: true, description: 'Use type="multiple" when users need to compare content across sections simultaneously.' },
       { guidance: false, description: 'Hide critical or required content behind a collapsible — users may not discover it.' },
       { guidance: false, description: 'Nest collapsibles deeply — more than two levels makes content hard to discover and navigate.' },
     ],
@@ -103,6 +111,8 @@ export const docsZh = {
     bestPractices: [
       { guidance: true, description: 'Use XDSCollapsibleGroup with type="single" for accordion-style patterns where only one section should be open at a time.' },
       { guidance: true, description: 'Start sections open (defaultIsOpen) when the content is likely needed on first view.' },
+      { guidance: true, description: 'Wrap each XDSCollapsible in an XDSCard for visual separation in accordion layouts.' },
+      { guidance: true, description: 'Use type="multiple" when users need to compare content across sections simultaneously.' },
       { guidance: false, description: 'Hide critical or required content behind a collapsible — users may not discover it.' },
       { guidance: false, description: 'Nest collapsibles deeply — more than two levels makes content hard to discover and navigate.' },
     ],
@@ -117,6 +127,11 @@ export const docsZh = {
       name: 'XDSCollapsible',
       description:
         '使任何内容可折叠的原语——触发按钮切换内容区域的可见性，自行管理状态或委托给父级 XDSCollapsibleGroup。',
+      anatomy: [
+        {name: 'Trigger', required: true, description: '始终可见的按钮，带有箭头指示器。点击切换内容可见性。'},
+        {name: 'Chevron', required: false, description: '显示展开/折叠状态的旋转动画指示器。'},
+        {name: 'Content', required: false, description: '根据状态隐藏或显示的可折叠区域。'},
+      ],
       props: [
         {name: 'trigger', type: 'ReactNode', description: '触发区域中显示的内容（始终可见）。', required: true},
         {name: 'children', type: 'ReactNode', description: '可折叠和展开的内容。'},
@@ -149,6 +164,8 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Use XDSCollapsibleGroup with type="single" for accordion-style patterns where only one section should be open at a time.' },
       { guidance: true, description: 'Start sections open (defaultIsOpen) when the content is likely needed on first view.' },
+      { guidance: true, description: 'Wrap each XDSCollapsible in an XDSCard for visual separation in accordion layouts.' },
+      { guidance: true, description: 'Use type="multiple" when users need to compare content across sections simultaneously.' },
       { guidance: false, description: 'Hide critical or required content behind a collapsible — users may not discover it.' },
       { guidance: false, description: 'Nest collapsibles deeply — more than two levels makes content hard to discover and navigate.' },
     ],

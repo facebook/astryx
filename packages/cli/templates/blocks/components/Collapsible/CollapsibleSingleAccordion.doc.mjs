@@ -6,5 +6,5 @@ export const doc = {
     'Accordion group in single mode where only one section can be open at a time.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Collapsible', 'Card', 'Layout'],
+  componentsUsed: ['Collapsible', 'Card', 'Text', 'Layout'],
 };

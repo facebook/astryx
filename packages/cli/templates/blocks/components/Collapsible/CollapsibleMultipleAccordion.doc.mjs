@@ -6,5 +6,5 @@ export const doc = {
     'Accordion group in multiple mode allowing several sections to be open simultaneously.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Collapsible', 'Card', 'Layout'],
+  componentsUsed: ['Collapsible', 'Card', 'Text', 'Layout'],
 };

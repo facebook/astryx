@@ -6,5 +6,5 @@ export const doc = {
     'Frequently asked questions layout using single-mode accordion with card-wrapped sections.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Collapsible', 'Card', 'Layout'],
+  componentsUsed: ['Collapsible', 'Card', 'Text', 'Layout'],
 };

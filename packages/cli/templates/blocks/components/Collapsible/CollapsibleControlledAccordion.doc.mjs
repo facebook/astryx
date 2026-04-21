@@ -6,5 +6,5 @@ export const doc = {
     'Accordion with externally controlled open state that displays which section is active.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Collapsible', 'Card', 'Layout'],
+  componentsUsed: ['Collapsible', 'Card', 'Text', 'Layout'],
 };

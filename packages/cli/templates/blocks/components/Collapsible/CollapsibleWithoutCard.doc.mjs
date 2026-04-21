@@ -3,8 +3,8 @@ export const doc = {
   type: 'block',
   name: 'Collapsible — Without Card',
   description:
-    'Standalone collapsible sections used without card wrappers.',
+    'Standalone collapsible sections used without card wrappers for inline disclosure.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Collapsible', 'Layout'],
+  componentsUsed: ['Collapsible', 'Text', 'Layout'],
 };
