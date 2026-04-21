@@ -1,10 +1,11 @@
 'use client';
 
 import {XDSAvatar} from '@xds/core/Avatar';
+import {XDSStack} from '@xds/core/Layout';
 
 export default function AvatarWithImage() {
   return (
-    <div style={{display: 'flex', alignItems: 'center', gap: 16}}>
+    <XDSStack direction="horizontal" gap={4} vAlign="center">
       <XDSAvatar
         src="https://scontent.xx.fbcdn.net/v/t39.6806-6/125033562_1327282494287626_2042282178258670185_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=vzgGdeIjaAsQ7kNvwFHfGzn&_nc_oc=AdpvH47kr5fnEWv9bZm7Cgz4YGzVh-jP4pivdmuJu-Ym8LrqtoxumbG4EBHaKE3sP5Yc3G7mzmC2FJZNCNzcmtvt&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=GLOQe78SvUVPef1glEtmsQ&_nc_ss=7a3a8&oh=00_Af3P1YVawrU1yM6TH5D3g9KoFJafkwfn6Jyb6U_sBYC0Xg&oe=69ECC34D"
         name="Alice Chen"
@@ -25,6 +26,6 @@ export default function AvatarWithImage() {
         name="Dan Wilson"
         size="large"
       />
-    </div>
+    </XDSStack>
   );
 }
