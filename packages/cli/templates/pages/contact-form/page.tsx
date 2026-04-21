@@ -15,9 +15,6 @@ import {XDSTextArea} from '@xds/core/TextArea';
 import {XDSDivider} from '@xds/core/Divider';
 import {colorVars} from '@xds/core/theme/tokens.stylex';
 
-// light-scene-vertical-2 from xds_oss asset set
-const BANNER_URL =
-  'https://lookaside.facebook.com/assets/xds_oss/light-scene-vertical-2.png';
 const WHY_US_IMAGES = [
   // light-working-horizontal-3 from xds_oss asset set
   'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-3.png',
@@ -125,18 +122,13 @@ export default function FormSimplePage() {
       {...stylex.props(styles.pageBg)}
       style={{minHeight: '100svh', display: 'flex', flexDirection: 'column'}}>
       {/* Full-bleed banner */}
-      <div style={{width: '100%', maxHeight: '15vh', overflow: 'hidden'}}>
-        <img
-          src={BANNER_URL}
-          alt="Decorative banner"
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            objectPosition: 'center',
-          }}
-        />
-      </div>
+      <div
+        style={{
+          width: '100%',
+          height: '15vh',
+          background: 'linear-gradient(135deg, #f5f0eb 0%, #e0d5c8 100%)',
+        }}
+      />
 
       <div
         style={{
