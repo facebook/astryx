@@ -2,7 +2,7 @@
 
 import {useState} from 'react';
 import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSVStack} from '@xds/core/Layout';
+import {XDSVStack, XDSCenter} from '@xds/core/Layout';
 
 export default function FieldStatusVariants() {
   const [email, setEmail] = useState('bad-email');
@@ -10,31 +10,36 @@ export default function FieldStatusVariants() {
   const [apiKey, setApiKey] = useState('sk-live-abc123');
 
   return (
-    <XDSVStack gap={4}>
-      <XDSTextInput
-        label="Email"
-        description="Enter your work email"
-        value={email}
-        onChange={setEmail}
-        status={{type: 'error', message: 'Please enter a valid email address'}}
-      />
-      <XDSTextInput
-        label="Username"
-        description="Choose a unique username"
-        value={username}
-        onChange={setUsername}
-        status={{
-          type: 'warning',
-          message: 'This username is reserved for administrators',
-        }}
-      />
-      <XDSTextInput
-        label="API Key"
-        description="Paste your API key"
-        value={apiKey}
-        onChange={setApiKey}
-        status={{type: 'success', message: 'API key is valid and active'}}
-      />
-    </XDSVStack>
+    <XDSCenter>
+      <XDSVStack gap={4}>
+        <XDSTextInput
+          label="Email"
+          description="Enter your work email"
+          value={email}
+          onChange={setEmail}
+          status={{
+            type: 'error',
+            message: 'Please enter a valid email address',
+          }}
+        />
+        <XDSTextInput
+          label="Username"
+          description="Choose a unique username"
+          value={username}
+          onChange={setUsername}
+          status={{
+            type: 'warning',
+            message: 'This username is reserved for administrators',
+          }}
+        />
+        <XDSTextInput
+          label="API Key"
+          description="Paste your API key"
+          value={apiKey}
+          onChange={setApiKey}
+          status={{type: 'success', message: 'API key is valid and active'}}
+        />
+      </XDSVStack>
+    </XDSCenter>
   );
 }
