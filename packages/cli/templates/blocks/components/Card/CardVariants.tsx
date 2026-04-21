@@ -5,12 +5,16 @@ import {XDSStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
 const VARIANTS = [
-  {variant: 'default' as const, label: 'Default'},
-  {variant: 'muted' as const, label: 'Muted'},
-  {variant: 'blue' as const, label: 'Blue'},
-  {variant: 'green' as const, label: 'Green'},
-  {variant: 'orange' as const, label: 'Orange'},
-  {variant: 'purple' as const, label: 'Purple'},
+  {variant: 'default' as const, label: 'General', note: '4 tasks due today'},
+  {
+    variant: 'muted' as const,
+    label: 'Archived',
+    note: 'No activity in 30 days',
+  },
+  {variant: 'blue' as const, label: 'Engineering', note: '12 open issues'},
+  {variant: 'green' as const, label: 'Marketing', note: '3 campaigns active'},
+  {variant: 'orange' as const, label: 'Urgent', note: '2 items need review'},
+  {variant: 'purple' as const, label: 'Design', note: '5 drafts in progress'},
 ];
 
 export default function CardVariants() {
@@ -23,7 +27,7 @@ export default function CardVariants() {
               {label}
             </XDSText>
             <XDSText type="supporting" color="secondary">
-              {variant}
+              {note}
             </XDSText>
           </XDSStack>
         </XDSCard>
