@@ -1,10 +1,11 @@
 'use client';
 
 import {XDSTooltip} from '@xds/core/Tooltip';
+import {XDSText} from '@xds/core/Text';
 
 export default function TooltipInlineTextTooltips() {
   return (
-    <p>
+    <XDSText type="body">
       Learn more about our{' '}
       <XDSTooltip
         content="Your data is encrypted and never shared"
@@ -16,6 +17,6 @@ export default function TooltipInlineTextTooltips() {
         terms of service
       </XDSTooltip>
       .
-    </p>
+    </XDSText>
   );
 }

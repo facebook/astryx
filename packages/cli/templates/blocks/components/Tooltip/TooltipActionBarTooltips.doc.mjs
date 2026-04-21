@@ -3,8 +3,8 @@ export const doc = {
   type: 'block',
   name: 'Tooltip — Action Bar',
   description:
-    'Multiple tooltips on an action button bar with contextual descriptions.',
+    'Tooltips on an action button bar with contextual descriptions.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Tooltip', 'Button', 'HStack'],
+  componentsUsed: ['Tooltip', 'Button', 'HStack', 'Center'],
 };
