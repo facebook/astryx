@@ -1,35 +1,41 @@
 import {useState} from 'react';
-import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
+import {XDSToggleButton} from '@xds/core/ToggleButton';
+import {XDSStack} from '@xds/core/Layout';
 import {XDSIcon} from '@xds/core/Icon';
-import {BoldIcon, ItalicIcon, UnderlineIcon} from '@heroicons/react/24/outline';
+import {StarIcon as StarOutline, BookmarkIcon as BookmarkOutline, BellIcon, BellSlashIcon} from '@heroicons/react/24/outline';
+import {StarIcon as StarSolid, BookmarkIcon as BookmarkSolid} from '@heroicons/react/24/solid';
 
 export default function ToggleButtonShowcase() {
-  const [formats, setFormats] = useState<string[]>(['bold']);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
 
   return (
-    <XDSToggleButtonGroup
-      type="multiple"
-      value={formats}
-      onChange={setFormats}
-      label="Text formatting">
+    <XDSStack direction="horizontal" gap={3} vAlign="center">
       <XDSToggleButton
-        value="bold"
-        label="Bold"
-        icon={<XDSIcon icon={BoldIcon} />}
+        label="Favorite"
+        icon={<XDSIcon icon={StarOutline} />}
+        pressedIcon={<XDSIcon icon={StarSolid} />}
+        isPressed={isFavorited}
+        onPressedChange={setIsFavorited}
         isIconOnly
       />
       <XDSToggleButton
-        value="italic"
-        label="Italic"
-        icon={<XDSIcon icon={ItalicIcon} />}
+        label="Bookmark"
+        icon={<XDSIcon icon={BookmarkOutline} />}
+        pressedIcon={<XDSIcon icon={BookmarkSolid} />}
+        isPressed={isBookmarked}
+        onPressedChange={setIsBookmarked}
         isIconOnly
       />
       <XDSToggleButton
-        value="underline"
-        label="Underline"
-        icon={<XDSIcon icon={UnderlineIcon} />}
-        isIconOnly
-      />
-    </XDSToggleButtonGroup>
+        label="Notifications"
+        icon={<XDSIcon icon={BellIcon} />}
+        pressedIcon={<XDSIcon icon={BellSlashIcon} />}
+        isPressed={isMuted}
+        onPressedChange={setIsMuted}>
+        Notifications
+      </XDSToggleButton>
+    </XDSStack>
   );
 }
