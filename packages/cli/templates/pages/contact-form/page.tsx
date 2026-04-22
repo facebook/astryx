@@ -4,6 +4,7 @@ import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
+import {XDSSection} from '@xds/core/Section';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
@@ -87,6 +88,12 @@ const styles = stylex.create({
   fullWidth: {
     width: '100%',
   },
+  cardImage: {
+    width: '100%',
+    height: 200,
+    objectFit: 'cover',
+    borderRadius: 8,
+  },
   errorColor: {
     color: colorVars['--color-error'],
   },
@@ -129,16 +136,7 @@ export default function FormSimplePage() {
   return (
     <XDSCenter axis="horizontal" xstyle={styles.pageBg}>
 
-      <div
-        style={{
-          maxWidth: 800,
-          margin: '0 auto',
-          width: '100%',
-          paddingTop: 48,
-          paddingBottom: 48,
-          paddingLeft: 24,
-          paddingRight: 24,
-        }}>
+      <XDSSection maxWidth={800} padding={6} paddingBlock={10} variant="transparent">
         <XDSVStack gap={6}>
           {/* Header */}
           <XDSVStack gap={2} hAlign="center">
@@ -159,12 +157,7 @@ export default function FormSimplePage() {
                     <img
                       src={item.image}
                       alt={item.title}
-                      style={{
-                        width: '100%',
-                        height: 200,
-                        objectFit: 'cover',
-                        borderRadius: 8,
-                      }}
+                      {...stylex.props(styles.cardImage)}
                     />
                     <XDSVStack gap={1}>
                       <XDSText type="body" weight="bold">
@@ -324,7 +317,7 @@ export default function FormSimplePage() {
             </XDSHStack>
           </XDSVStack>
         </XDSVStack>
-      </div>
+      </XDSSection>
     </XDSCenter>
   );
 }
