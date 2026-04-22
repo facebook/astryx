@@ -106,7 +106,7 @@ export default function FormTwoColumnPage() {
       <XDSSection
         maxWidth={1100}
         width="100%"
-        padding={12}
+        padding={10}
         variant="transparent">
         <XDSVStack gap={10}>
           {/* ── Top: two-column ── */}
