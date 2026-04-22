@@ -123,12 +123,12 @@ export const docs = {
   },
   usage: {
     description:
-      'Switch is a toggle control for boolean on/off states that take effect immediately. Use it for settings or preferences that apply instantly upon toggling. For changes requiring a separate submit step, use a checkbox instead.',
+      'A toggle control for on/off states that take effect immediately. Supports labels, descriptions, loading states, and validation. Use it for settings or preferences that apply instantly. For changes requiring a form submission, use a checkbox instead.',
     bestPractices: [
       { guidance: true, description: 'Use for settings that apply immediately — the toggle should take effect without a separate save action.' },
       { guidance: true, description: 'Pair with a clear, concise label that describes the setting being controlled.' },
-      { guidance: false, description: 'Use a switch for options that require a form submission to take effect — use a checkbox instead.' },
-      { guidance: false, description: 'Hide the label without providing accessible text — use isLabelHidden only when context makes the purpose obvious.' },
+      { guidance: false, description: 'Use for options that require a form submission to take effect — use a checkbox instead.' },
+      { guidance: false, description: 'Use a switch for multi-state values — it\'s strictly on/off.' },
     ],
   },
 };
@@ -256,12 +256,12 @@ export const docsZh = {
   },
   usage: {
     description:
-      'Switch is a toggle control for boolean on/off states that take effect immediately. Use it for settings or preferences that apply instantly upon toggling. For changes requiring a separate submit step, use a checkbox instead.',
+      'A toggle control for on/off states that take effect immediately. Supports labels, descriptions, loading states, and validation. Use it for settings or preferences that apply instantly. For changes requiring a form submission, use a checkbox instead.',
     bestPractices: [
       { guidance: true, description: 'Use for settings that apply immediately — the toggle should take effect without a separate save action.' },
       { guidance: true, description: 'Pair with a clear, concise label that describes the setting being controlled.' },
-      { guidance: false, description: 'Use a switch for options that require a form submission to take effect — use a checkbox instead.' },
-      { guidance: false, description: 'Hide the label without providing accessible text — use isLabelHidden only when context makes the purpose obvious.' },
+      { guidance: false, description: 'Use for options that require a form submission to take effect — use a checkbox instead.' },
+      { guidance: false, description: 'Use a switch for multi-state values — it\'s strictly on/off.' },
     ],
   },
 };
@@ -271,12 +271,12 @@ export const docsDense = {
   description: 'Toggle switch for boolean values w/ integrated label support.',
   usage: {
     description:
-      'Switch is a toggle control for boolean on/off states that take effect immediately. Use it for settings or preferences that apply instantly upon toggling. For changes requiring a separate submit step, use a checkbox instead.',
+      'A toggle control for on/off states that take effect immediately. Supports labels, descriptions, loading states, and validation. Use it for settings or preferences that apply instantly. For changes requiring a form submission, use a checkbox instead.',
     bestPractices: [
       { guidance: true, description: 'Use for settings that apply immediately — the toggle should take effect without a separate save action.' },
       { guidance: true, description: 'Pair with a clear, concise label that describes the setting being controlled.' },
-      { guidance: false, description: 'Use a switch for options that require a form submission to take effect — use a checkbox instead.' },
-      { guidance: false, description: 'Hide the label without providing accessible text — use isLabelHidden only when context makes the purpose obvious.' },
+      { guidance: false, description: 'Use for options that require a form submission to take effect — use a checkbox instead.' },
+      { guidance: false, description: 'Use a switch for multi-state values — it\'s strictly on/off.' },
     ],
   },
   propDescriptions: {
