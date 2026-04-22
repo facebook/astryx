@@ -41,8 +41,7 @@ const styles = stylex.create({
   overlay: {
     position: 'absolute',
     inset: 0,
-    background:
-      'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%)',
+    background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%)',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'flex-end',
@@ -56,8 +55,7 @@ const styles = stylex.create({
   overlayAlwaysOn: {
     position: 'absolute',
     inset: 0,
-    background:
-      'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%)',
+    background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%)',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'flex-end',
