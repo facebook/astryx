@@ -38,7 +38,7 @@ const columns: XDSTableColumn<User>[] = [
 export default function TableResizableTable() {
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
 
-  const resizePlugin = useXDSTableColumnResize<User>({
+  const resizePlugin = useXDSTableColumnResize({
     columnWidths,
     columns,
     onColumnResizeEnd: updates => {
