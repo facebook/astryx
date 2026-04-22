@@ -135,7 +135,7 @@ export const COMPONENT_PREVIEW_LIST: {
             {label: 'Edit'},
             {label: 'Duplicate'},
             {label: 'Archive'},
-            {label: 'Delete', variant: 'destructive'},
+            {label: 'Delete'},
           ]}
         />
         <XDSDropdownMenu
