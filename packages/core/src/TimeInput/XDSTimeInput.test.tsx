@@ -101,14 +101,14 @@ describe('XDSTimeInput', () => {
       />,
     );
     expect(
-      screen.getByRole('button', {name: 'Clear time'}),
+      screen.getByRole('button', {name: 'Clear Time'}),
     ).toBeInTheDocument();
   });
 
   it('does not show clear button when value is empty', () => {
     render(<XDSTimeInput label="Time" onChange={() => {}} hasClear />);
     expect(
-      screen.queryByRole('button', {name: 'Clear time'}),
+      screen.queryByRole('button', {name: 'Clear Time'}),
     ).not.toBeInTheDocument();
   });
 
@@ -124,7 +124,7 @@ describe('XDSTimeInput', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', {name: 'Clear time'}));
+    await user.click(screen.getByRole('button', {name: 'Clear Time'}));
     expect(onChange).toHaveBeenCalledWith(undefined);
   });
 
