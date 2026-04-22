@@ -4,27 +4,27 @@ import {XDSTimestamp} from '@xds/core/Timestamp';
 import {XDSStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
-export default function TimestampAutoFormat() {
-  const now = Date.now() / 1000;
+const DATE = '2026-02-19T17:00:00Z';
+
+export default function TimestampTimezone() {
   return (
     <XDSStack direction="vertical" gap={4}>
       <XDSStack direction="vertical" gap={1}>
         <XDSText type="supporting" color="secondary">
-          Recent — renders as relative
+          User-facing with timezone
         </XDSText>
         <XDSStack direction="horizontal" gap={4} vAlign="center">
-          <XDSTimestamp value={now - 300} format="auto" color="primary" />
-          <XDSTimestamp value={now - 7200} format="auto" color="primary" />
-          <XDSTimestamp value={now - 86400} format="auto" color="primary" />
+          <XDSTimestamp value={DATE} format="date_time" isTimezoneShown color="primary" />
+          <XDSTimestamp value={DATE} format="time" isTimezoneShown color="primary" />
         </XDSStack>
       </XDSStack>
       <XDSStack direction="vertical" gap={1}>
         <XDSText type="supporting" color="secondary">
-          Older than 7 days — renders as date_time
+          System formats with timezone
         </XDSText>
         <XDSStack direction="horizontal" gap={4} vAlign="center">
-          <XDSTimestamp value="2025-01-15T09:30:00Z" format="auto" color="primary" />
-          <XDSTimestamp value="2024-06-01T14:00:00Z" format="auto" color="primary" />
+          <XDSTimestamp value={DATE} format="system_date_time" isTimezoneShown type="code" color="primary" />
+          <XDSTimestamp value={DATE} format="system_time" isTimezoneShown type="code" color="primary" />
         </XDSStack>
       </XDSStack>
     </XDSStack>

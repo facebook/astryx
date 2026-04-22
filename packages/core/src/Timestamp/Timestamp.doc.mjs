@@ -43,7 +43,7 @@ export const docs = {
       name: 'isLive',
       type: 'boolean',
       description:
-        'Whether the relative time should update live (e.g. "2 min ago" → "3 min ago").',
+        'Whether the relative time should update live (e.g. "2 min ago" \u2192 "3 min ago").',
       default: 'false',
     },
     {
@@ -76,16 +76,19 @@ export const docs = {
   },
   usage: {
     description:
-      'Timestamp displays a date or time value as human-readable text with optional tooltip and live updates. Use it to show when content was created, updated, or is scheduled, choosing a format that fits the context — relative for recency, absolute for precision.',
+      'Timestamp formats a date or time value into human-readable text. Use it to show when something was created, updated, or is scheduled \u2014 picking relative for recency, absolute for precision, or auto to let the component decide.',
     bestPractices: [
-      { guidance: true, description: 'Use the auto format to let the component switch between relative and absolute based on recency.' },
-      { guidance: true, description: 'Keep timestamp formatting consistent within the same view or list to avoid confusion.' },
-      { guidance: false, description: 'Display raw Unix timestamps or ISO strings directly — use Timestamp to format them for users.' },
+      {guidance: true, description: 'Use the auto format in feeds and lists so recent items show \u201c2 hours ago\u201d and older items show the full date automatically.'},
+      {guidance: true, description: 'Keep formatting consistent within the same list or table \u2014 mixing relative and absolute timestamps in the same column confuses scanning.'},
+      {guidance: true, description: 'Enable isTimezoneShown when the audience spans multiple time zones, like a global team calendar or audit log.'},
+      {guidance: true, description: 'Use isLive for active dashboards or real-time feeds so the relative time stays accurate without a page refresh.'},
+      {guidance: false, description: 'Don\u2019t display raw Unix timestamps or ISO strings to users \u2014 always pass them through Timestamp to get a human-readable format.'},
+      {guidance: false, description: 'Avoid system_date or system_time formats in user-facing UI \u2014 they are meant for developer tools, logs, and machine-readable contexts.'},
+      {guidance: false, description: 'Don\u2019t disable the tooltip on relative timestamps \u2014 users expect to hover for the full date when they see \u201c3 hours ago\u201d.'},
     ],
     anatomy: [
-      {name: 'Time or Duration Value', required: true, description: 'The displayed time, date, or duration text.'},
-      {name: 'Hover Indication', required: false, description: 'Visual cue indicating additional detail is available on hover.'},
-      {name: 'Hover Card', required: false, description: 'Floating card showing timezone, full date, or additional details on hover.'},
+      {name: 'Formatted text', required: true, description: 'The rendered date, time, or relative label like \u201c2 hours ago\u201d or \u201cMar 21, 2025\u201d.'},
+      {name: 'Tooltip', required: false, description: 'A hover card showing the full absolute date and time when the display is relative.'},
     ],
   },
 };
@@ -93,54 +96,56 @@ export const docs = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsZh = {
   propDescriptions: {
-    value: '要显示的日期/时间。接受 Unix 时间戳（秒）或 ISO 8601 字符串。',
-    format: "显示格式。'relative' 显示 '2小时前'，'date' 显示日期，'auto' 根据时间近远自动切换。",
-    autoThreshold: "auto 格式从相对时间切换到 date_time 的阈值秒数。",
-    hasTooltip: '悬停时是否显示包含完整日期/时间的工具提示（相对时间模式）。',
-    isTimezoneShown: '是否附加时区缩写。',
-    isLive: '相对时间是否实时更新。',
-    type: '来自 XDSText 的语义文本类型。',
-    size: '显式字体大小覆盖。',
-    color: '文字颜色。',
-    weight: '字体粗细覆盖。',
+    value: '\u8981\u663e\u793a\u7684\u65e5\u671f/\u65f6\u95f4\u3002\u63a5\u53d7 Unix \u65f6\u95f4\u6233\uff08\u79d2\uff09\u6216 ISO 8601 \u5b57\u7b26\u4e32\u3002',
+    format: "\u663e\u793a\u683c\u5f0f\u3002'relative' \u663e\u793a '2\u5c0f\u65f6\u524d'\uff0c'date' \u663e\u793a\u65e5\u671f\uff0c'auto' \u6839\u636e\u65f6\u95f4\u8fdc\u8fd1\u81ea\u52a8\u5207\u6362\u3002",
+    autoThreshold: "auto \u683c\u5f0f\u4ece\u76f8\u5bf9\u65f6\u95f4\u5207\u6362\u5230 date_time \u7684\u9608\u503c\u79d2\u6570\u3002",
+    hasTooltip: '\u60ac\u505c\u65f6\u662f\u5426\u663e\u793a\u5305\u542b\u5b8c\u6574\u65e5\u671f/\u65f6\u95f4\u7684\u5de5\u5177\u63d0\u793a\uff08\u76f8\u5bf9\u65f6\u95f4\u6a21\u5f0f\uff09\u3002',
+    isTimezoneShown: '\u662f\u5426\u9644\u52a0\u65f6\u533a\u7f29\u5199\u3002',
+    isLive: '\u76f8\u5bf9\u65f6\u95f4\u662f\u5426\u5b9e\u65f6\u66f4\u65b0\u3002',
+    type: '\u6765\u81ea XDSText \u7684\u8bed\u4e49\u6587\u672c\u7c7b\u578b\u3002',
+    size: '\u663e\u5f0f\u5b57\u4f53\u5927\u5c0f\u8986\u76d6\u3002',
+    color: '\u6587\u5b57\u989c\u8272\u3002',
+    weight: '\u5b57\u4f53\u7c97\u7ec6\u8986\u76d6\u3002',
   },
   usage: {
     description:
-      'Timestamp displays a date or time value as human-readable text with optional tooltip and live updates. Use it to show when content was created, updated, or is scheduled, choosing a format that fits the context — relative for recency, absolute for precision.',
+      'Timestamp formats a date or time value into human-readable text. Use it to show when something was created, updated, or is scheduled \u2014 picking relative for recency, absolute for precision, or auto to let the component decide.',
     bestPractices: [
-      { guidance: true, description: 'Use the auto format to let the component switch between relative and absolute based on recency.' },
-      { guidance: true, description: 'Keep timestamp formatting consistent within the same view or list to avoid confusion.' },
-      { guidance: false, description: 'Display raw Unix timestamps or ISO strings directly — use Timestamp to format them for users.' },
+      {guidance: true, description: 'Use the auto format in feeds and lists so recent items show \u201c2 hours ago\u201d and older items show the full date automatically.'},
+      {guidance: true, description: 'Keep formatting consistent within the same list or table \u2014 mixing relative and absolute timestamps in the same column confuses scanning.'},
+      {guidance: true, description: 'Enable isTimezoneShown when the audience spans multiple time zones, like a global team calendar or audit log.'},
+      {guidance: true, description: 'Use isLive for active dashboards or real-time feeds so the relative time stays accurate without a page refresh.'},
+      {guidance: false, description: 'Don\u2019t display raw Unix timestamps or ISO strings to users \u2014 always pass them through Timestamp to get a human-readable format.'},
+      {guidance: false, description: 'Avoid system_date or system_time formats in user-facing UI \u2014 they are meant for developer tools, logs, and machine-readable contexts.'},
+      {guidance: false, description: 'Don\u2019t disable the tooltip on relative timestamps \u2014 users expect to hover for the full date when they see \u201c3 hours ago\u201d.'},
     ],
     anatomy: [
-      {name: 'Time or Duration Value', required: true, description: 'The displayed time, date, or duration text.'},
-      {name: 'Hover Indication', required: false, description: 'Visual cue indicating additional detail is available on hover.'},
-      {name: 'Hover Card', required: false, description: 'Floating card showing timezone, full date, or additional details on hover.'},
+      {name: 'Formatted text', required: true, description: 'The rendered date, time, or relative label like \u201c2 hours ago\u201d or \u201cMar 21, 2025\u201d.'},
+      {name: 'Tooltip', required: false, description: 'A hover card showing the full absolute date and time when the display is relative.'},
     ],
   },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'formatted timestamp display with relative/absolute/auto modes via XDSText',
+  description: 'formatted timestamp with relative/absolute/auto modes, live updates, timezone display',
   usage: {
     description:
-      'Timestamp displays a date or time value as human-readable text with optional tooltip and live updates. Use it to show when content was created, updated, or is scheduled, choosing a format that fits the context — relative for recency, absolute for precision.',
+      'Timestamp formats a date or time into readable text. Use for creation dates, update times, or schedules \u2014 relative for recency, absolute for precision, auto to switch automatically.',
     bestPractices: [
-      { guidance: true, description: 'Use the auto format to let the component switch between relative and absolute based on recency.' },
-      { guidance: true, description: 'Keep timestamp formatting consistent within the same view or list to avoid confusion.' },
-      { guidance: false, description: 'Display raw Unix timestamps or ISO strings directly — use Timestamp to format them for users.' },
-    ],
-    anatomy: [
-      {name: 'Time or Duration Value', required: true, description: 'The displayed time, date, or duration text.'},
-      {name: 'Hover Indication', required: false, description: 'Visual cue indicating additional detail is available on hover.'},
-      {name: 'Hover Card', required: false, description: 'Floating card showing timezone, full date, or additional details on hover.'},
+      {guidance: true, description: 'Auto format in feeds and lists \u2014 recent shows relative, older shows date_time.'},
+      {guidance: true, description: 'Consistent formatting within the same list or table column.'},
+      {guidance: true, description: 'isTimezoneShown for multi-timezone audiences.'},
+      {guidance: true, description: 'isLive for dashboards so relative time stays current.'},
+      {guidance: false, description: 'Don\u2019t show raw Unix timestamps or ISO strings \u2014 always use Timestamp.'},
+      {guidance: false, description: 'Avoid system_* formats in user-facing UI \u2014 those are for dev tools and logs.'},
+      {guidance: false, description: 'Don\u2019t disable tooltip on relative timestamps \u2014 users expect the full date on hover.'},
     ],
   },
   propDescriptions: {
     value: 'date/time as unix seconds or ISO string',
     format: "display mode: 'relative', 'auto', 'date', 'date_time', 'time', 'system_date', 'system_date_time', 'system_time'",
-    autoThreshold: 'seconds threshold for auto relative→date_time switch',
+    autoThreshold: 'seconds threshold for auto relative\u2192date_time switch',
     hasTooltip: 'show full time tooltip on hover (relative mode)',
     isTimezoneShown: 'append timezone abbreviation',
     isLive: 'live-update relative time',
