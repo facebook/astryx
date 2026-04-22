@@ -5,6 +5,7 @@ export const doc = {
   description:
     'Labeled status dot list for presence indicators like online, away, and offline.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['StatusDot'],
+  aspectRatio: 1,
+  scale: 2,
+  componentsUsed: ['StatusDot', 'VStack', 'HStack', 'Text'],
 };

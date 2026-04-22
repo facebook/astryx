@@ -1,6 +1,8 @@
 'use client';
 
 import {XDSStatusDot} from '@xds/core/StatusDot';
+import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
 
 const statuses = [
   {variant: 'positive', label: 'Online'},
@@ -11,15 +13,13 @@ const statuses = [
 
 export default function StatusDotStatusIndicators() {
   return (
-    <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
+    <XDSVStack gap={2}>
       {statuses.map(({variant, label}) => (
-        <div
-          key={variant}
-          style={{display: 'flex', gap: 8, alignItems: 'center'}}>
+        <XDSHStack key={variant} gap={2} vAlign="center">
           <XDSStatusDot variant={variant} label={label} />
-          <span>{label}</span>
-        </div>
+          <XDSText type="body">{label}</XDSText>
+        </XDSHStack>
       ))}
-    </div>
+    </XDSVStack>
   );
 }
