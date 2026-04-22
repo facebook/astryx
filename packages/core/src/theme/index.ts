@@ -51,7 +51,7 @@ export {
 } from './domainTokens';
 
 // Syntax theme API
-export {defineSyntaxTheme, syntaxThemeStyle, syntaxThemeToCSS} from './syntax';
+export {defineSyntaxTheme} from './syntax';
 export type {
   SyntaxTheme,
   SyntaxThemeInput,
@@ -133,12 +133,7 @@ export type {
 export {useXDSTheme} from './useXDSTheme';
 export type {UseXDSThemeReturn} from './useXDSTheme';
 
-export {
-  defaultOnDarkTokens,
-  defaultOnLightTokens,
-  resolveOnMedia,
-} from './onMediaTokens';
-export type {OnMediaOverrides, ResolvedOnMedia} from './onMediaTokens';
+
 
 export type {
   ThemeMode,
@@ -153,8 +148,4 @@ export type {
   FontWeight,
 } from './types';
 
-export {
-  derivedVarRegistry,
-  getDerivedVars,
-  type DerivedVarEntry,
-} from './derivedVarRegistry';
+

@@ -38,6 +38,13 @@ const CHECK_MODE = process.argv.includes('--check');
 const UTILITY_DIRS = new Set(['hooks', 'theme', 'utils']);
 
 /**
+ * Internal directories that have an index.ts but should NOT be
+ * publicly exported. These are shared implementation details
+ * consumed by other components via relative imports.
+ */
+const INTERNAL_DIRS = new Set(['NavItem']);
+
+/**
  * Additional exports that can't be auto-discovered from directory structure.
  * These are maintained manually here as the single source of truth.
  */
@@ -75,6 +82,7 @@ function discoverExportDirs() {
 
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
+    if (INTERNAL_DIRS.has(entry.name)) continue;
 
     const indexPath = path.join(SRC_DIR, entry.name, 'index.ts');
     if (fs.existsSync(indexPath)) {
