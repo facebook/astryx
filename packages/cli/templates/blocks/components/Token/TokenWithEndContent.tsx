@@ -20,7 +20,7 @@ export default function TokenWithEndContent() {
         <XDSToken
           label="Reviews"
           color="purple"
-          endContent={<XDSBadge variant="warning" label={3} />}
+          endContent={<XDSBadge variant="purple" label={3} />}
         />
         <XDSToken
           label="Resolved"
