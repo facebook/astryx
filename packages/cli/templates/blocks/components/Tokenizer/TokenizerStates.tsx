@@ -20,7 +20,7 @@ const userSource: XDSSearchSource = {
   bootstrap: () => users,
 };
 
-export default function TokenizerValidation() {
+export default function TokenizerStates() {
   const [errorValue, setErrorValue] = useState<XDSSearchableItem[]>([]);
   const [warningValue, setWarningValue] = useState<XDSSearchableItem[]>([
     users[0],
@@ -30,7 +30,19 @@ export default function TokenizerValidation() {
     <XDSStack direction="vertical" gap={4}>
       <XDSStack direction="vertical" gap={1}>
         <XDSText type="supporting" color="secondary">
-          Error state
+          Disabled
+        </XDSText>
+        <XDSTokenizer
+          label="Assigned Reviewers"
+          searchSource={userSource}
+          value={[users[0], users[2]]}
+          onChange={() => {}}
+          isDisabled
+        />
+      </XDSStack>
+      <XDSStack direction="vertical" gap={1}>
+        <XDSText type="supporting" color="secondary">
+          Error
         </XDSText>
         <XDSTokenizer
           label="Reviewers"
@@ -44,7 +56,7 @@ export default function TokenizerValidation() {
       </XDSStack>
       <XDSStack direction="vertical" gap={1}>
         <XDSText type="supporting" color="secondary">
-          Warning state
+          Warning
         </XDSText>
         <XDSTokenizer
           label="Approvers"
