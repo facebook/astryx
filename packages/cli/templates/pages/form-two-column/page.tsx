@@ -20,7 +20,7 @@ import {
 
 // illustration-horizontal-1 from xds_oss asset set
 const ILLUSTRATION_URL =
-  'https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-1.jpg';
+  'https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-1.png';
 
 // ─────────────────────────────────────────────────────────────
 // Constants
