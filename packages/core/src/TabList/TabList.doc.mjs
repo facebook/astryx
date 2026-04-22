@@ -2,6 +2,7 @@
 
 export const docs = {
   name: 'TabList',
+  group: 'TabList',
   keywords: ["tabs","tabbar","tabstrip","navigation","tabpanel","tabgroup","segmented","navtabs","tab"],
   theming: {
     targets: [
@@ -147,6 +148,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'TabList',
+  group: 'TabList',
   theming: {
     targets: [
       {className: 'xds-tab-list', visualProps: ['size']},

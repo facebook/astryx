@@ -2,6 +2,7 @@
 
 export const docs = {
   name: 'Grid',
+  group: 'Grid',
   keywords: ["grid","columns","responsive","auto-fill","auto-fit","masonry","tiles","row","col","simplegrid","responsive grid","card grid"],
   usage: {
     description:
@@ -112,6 +113,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Grid',
+  group: 'Grid',
   theming: {
     targets: [
       {className: 'xds-grid', visualProps: ['align', 'columns', 'gap', 'justify']},

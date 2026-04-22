@@ -475,8 +475,11 @@ export async function formatBriefAll(coreDir, {zh = false, lang, themeData = nul
   const components = discoverComponents(coreDir);
   const output = [];
 
-  for (const [category, comps] of Object.entries(components)) {
-    output.push(`## ${category}\n`);
+  for (const [key, comps] of Object.entries(components)) {
+    const isUngrouped = comps.length === 1 && comps[0] === key;
+    if (!isUngrouped) {
+      output.push(`## ${key}\n`);
+    }
     for (const comp of comps) {
       const readmePath = findComponentReadme(coreDir, comp);
       if (readmePath && readmePath.endsWith('.doc.mjs')) {

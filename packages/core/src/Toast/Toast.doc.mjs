@@ -2,6 +2,8 @@
 
 export const docs = {
   name: 'Toast',
+  group: 'Toast',
+  internalComponents: ['ToastViewport'],
   keywords: ["toast","notification","snackbar","alert","message","feedback","status"],
 
   props: [

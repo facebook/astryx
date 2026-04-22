@@ -2,7 +2,6 @@
 
 export const docs = {
   name: 'Tokenizer',
-  group: 'Inputs',
   keywords: ["tokenizer","multiselect","multi-select","chips","tags","combobox","autocomplete","taginput","chipinput"],
   props: [
     {

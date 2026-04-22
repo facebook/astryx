@@ -1,6 +1,7 @@
 /** @type {import('../docs-types').ComponentDoc} */
 export const docs = {
   name: 'CommandPalette',
+  group: 'CommandPalette',
   keywords: [
     'command',
     'spotlight',

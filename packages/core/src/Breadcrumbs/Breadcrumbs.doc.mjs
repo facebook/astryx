@@ -2,6 +2,7 @@
 
 export const docs = {
   name: 'Breadcrumbs',
+  group: 'Breadcrumbs',
   keywords: ["breadcrumbs","breadcrumb","navigation","nav","crumbs","trail","path","hierarchy","wayfinding","steps"],
   usage: {
     description:
@@ -115,6 +116,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Breadcrumbs',
+  group: 'Breadcrumbs',
   usage: {
     description:
       'Breadcrumbs show a trail of links from the root to the current page. Use them at the top of detail pages, settings panels, or anywhere the user needs to see where they are and navigate back up.',

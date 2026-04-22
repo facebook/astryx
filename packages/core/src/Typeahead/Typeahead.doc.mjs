@@ -2,7 +2,7 @@
 
 export const docs = {
   name: 'Typeahead',
-  group: 'Inputs',
+  group: 'Typeahead',
   keywords: ["typeahead","autocomplete","combobox","searchbox","autosuggest","select","dropdown","lookup","searchable","suggestion","picker"],
   components: [
     {

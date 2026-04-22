@@ -2,7 +2,7 @@
 
 export const docs = {
   name: 'IconButton',
-  group: 'Buttons',
+  group: 'Button',
   keywords: ['icon-button', 'icon', 'button', 'toolbar', 'action', 'compact'],
 
   props: [

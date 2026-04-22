@@ -2,6 +2,7 @@
 
 export const docs = {
   name: 'TreeList',
+  group: 'TreeList',
   keywords: ['tree', 'hierarchy', 'nested', 'accordion', 'folder', 'expand', 'collapse', 'treeview', 'outline'],
   theming: {
     targets: [
@@ -62,6 +63,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'TreeList',
+  group: 'TreeList',
   theming: {
     targets: [
       {className: 'xds-tree-list', visualProps: ['density']},

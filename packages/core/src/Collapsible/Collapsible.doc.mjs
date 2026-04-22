@@ -2,6 +2,7 @@
 
 export const docs = {
   name: 'Collapsible',
+  group: 'Collapsible',
   keywords: ["accordion","collapse","expandable","disclosure","toggle","panel","foldable","expander","expand"],
   theming: {
     targets: [
@@ -106,6 +107,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Collapsible',
+  group: 'Collapsible',
   usage: {
     description: 'Collapsible hides and reveals content behind a trigger button. Use it in settings panels, FAQ pages, or detail views to keep the page scannable while letting users drill into sections they care about. Wrap multiple collapsibles in XDSCollapsibleGroup for accordion behavior.',
     bestPractices: [

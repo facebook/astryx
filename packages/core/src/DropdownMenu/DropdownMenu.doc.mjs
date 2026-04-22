@@ -2,6 +2,7 @@
 
 export const docs = {
   name: 'DropdownMenu',
+  group: 'DropdownMenu',
   keywords: ["dropdown","menu","popover","select","actions","contextmenu","overflow","kebab","menubutton"],
   theming: {
     targets: [
