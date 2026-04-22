@@ -861,22 +861,6 @@ export const THEME_PICKER_ENTRIES: ThemePickerEntry[] = [
     },
   },
   {
-    key: 'sunset',
-    name: 'Sunset',
-    category: 'community',
-    accent: '#E5484D',
-    description: 'Warm reds and golden highlights',
-    preview: {
-      bg: '#FFF5F5',
-      surface: '#FDE8E8',
-      accent: '#E5484D',
-      text: '#2D1515',
-      radius: 12,
-      font: 'Avenir Next, sans-serif',
-      img: 'theme-preview-sunset.png',
-    },
-  },
-  {
     key: 'midnight',
     name: 'Midnight',
     category: 'community',
