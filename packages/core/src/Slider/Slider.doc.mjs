@@ -131,11 +131,11 @@ export const docs = {
   },
   usage: {
     description:
-      'A slider component for selecting a numeric value or range within defined bounds. Use Slider when users need to explore and choose from a continuous range, such as volume, price, or percentage values.',
+      'A draggable control for selecting a numeric value or range within defined bounds. Supports single value and range selection, tick marks, custom value formatting, and vertical orientation. Use it when users need to explore a continuous range, such as volume, price, or percentage.',
     bestPractices: [
       {guidance: true, description: 'Always provide a label, even if visually hidden, so the slider is accessible to screen readers.'},
-      {guidance: true, description: 'Use formatValue to display meaningful units such as "$50" or "75%" instead of raw numbers.'},
-      {guidance: false, description: 'Use for precise numeric entry — pair with a text input or use TextInput alone instead.'},
+      {guidance: true, description: 'Format values with meaningful units like "$50" or "75%" instead of raw numbers.'},
+      {guidance: false, description: 'Use for precise numeric entry — pair with a text input or use NumberInput instead.'},
       {guidance: false, description: 'Set a step size so large that only a few positions are possible — use SegmentedControl or radio buttons instead.'},
     ],
   },
@@ -272,11 +272,11 @@ export const docsZh = {
   },
   usage: {
     description:
-      'A slider component for selecting a numeric value or range within defined bounds. Use Slider when users need to explore and choose from a continuous range, such as volume, price, or percentage values.',
+      'A draggable control for selecting a numeric value or range within defined bounds. Supports single value and range selection, tick marks, custom value formatting, and vertical orientation. Use it when users need to explore a continuous range, such as volume, price, or percentage.',
     bestPractices: [
       {guidance: true, description: 'Always provide a label, even if visually hidden, so the slider is accessible to screen readers.'},
-      {guidance: true, description: 'Use formatValue to display meaningful units such as "$50" or "75%" instead of raw numbers.'},
-      {guidance: false, description: 'Use for precise numeric entry — pair with a text input or use TextInput alone instead.'},
+      {guidance: true, description: 'Format values with meaningful units like "$50" or "75%" instead of raw numbers.'},
+      {guidance: false, description: 'Use for precise numeric entry — pair with a text input or use NumberInput instead.'},
       {guidance: false, description: 'Set a step size so large that only a few positions are possible — use SegmentedControl or radio buttons instead.'},
     ],
   },
@@ -286,11 +286,11 @@ export const docsZh = {
 export const docsDense = {
   usage: {
     description:
-      'A slider component for selecting a numeric value or range within defined bounds. Use Slider when users need to explore and choose from a continuous range, such as volume, price, or percentage values.',
+      'A draggable control for selecting a numeric value or range within defined bounds. Supports single value and range selection, tick marks, custom value formatting, and vertical orientation. Use it when users need to explore a continuous range, such as volume, price, or percentage.',
     bestPractices: [
       {guidance: true, description: 'Always provide a label, even if visually hidden, so the slider is accessible to screen readers.'},
-      {guidance: true, description: 'Use formatValue to display meaningful units such as "$50" or "75%" instead of raw numbers.'},
-      {guidance: false, description: 'Use for precise numeric entry — pair with a text input or use TextInput alone instead.'},
+      {guidance: true, description: 'Format values with meaningful units like "$50" or "75%" instead of raw numbers.'},
+      {guidance: false, description: 'Use for precise numeric entry — pair with a text input or use NumberInput instead.'},
       {guidance: false, description: 'Set a step size so large that only a few positions are possible — use SegmentedControl or radio buttons instead.'},
     ],
   },
