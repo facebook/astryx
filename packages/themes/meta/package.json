@@ -28,7 +28,7 @@
     "src"
   ],
   "scripts": {
-    "build": "xds theme build src/metaTheme.ts -o dist/theme.css && node scripts/gen-compat-css.mjs && tsup && tsc --project tsconfig.build.json"
+    "build": "xds theme build src/metaTheme.ts -o dist/theme.css && tsup && tsc --project tsconfig.build.json"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0"
