@@ -2,9 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'Thumbnail — Removable',
-  description:
-    'Thumbnail with a remove button that hides the image and offers an undo action.',
+  description: 'Thumbnails with a remove button overlay. The close button uses APCA luminance detection to stay visible on both dark and light images.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['Thumbnail'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Thumbnail', 'Layout', 'Text'],
 };

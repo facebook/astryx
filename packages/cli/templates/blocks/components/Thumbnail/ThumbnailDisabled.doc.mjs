@@ -1,8 +1,8 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Thumbnail — Gallery',
-  description: 'A row of clickable thumbnails with labels that open a detail view. Use for image attachment lists where users need to preview and manage uploads.',
+  name: 'Thumbnail — Disabled',
+  description: 'Thumbnails in the disabled state with reduced opacity. The remove button and click handler are suppressed when disabled.',
   isReady: true,
   aspectRatio: 16 / 9,
   componentsUsed: ['Thumbnail', 'Layout', 'Text'],
