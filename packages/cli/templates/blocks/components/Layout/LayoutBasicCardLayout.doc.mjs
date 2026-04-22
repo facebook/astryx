@@ -6,5 +6,5 @@ export const doc = {
     'A card layout with header, scrollable content area, and footer with action buttons.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Layout', 'LayoutHeader', 'LayoutContent', 'LayoutFooter', 'Card', 'Button', 'HStack'],
+  componentsUsed: ['Layout', 'LayoutHeader', 'LayoutContent', 'LayoutFooter', 'Card', 'Button', 'HStack', 'VStack', 'Text', 'Heading'],
 };

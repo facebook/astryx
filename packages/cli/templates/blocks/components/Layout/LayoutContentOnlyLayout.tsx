@@ -1,7 +1,8 @@
 'use client';
 
-import {XDSLayout, XDSLayoutContent} from '@xds/core/Layout';
+import {XDSLayout, XDSLayoutContent, XDSVStack} from '@xds/core/Layout';
 import {XDSCard} from '@xds/core/Card';
+import {XDSHeading, XDSText} from '@xds/core/Text';
 
 export default function LayoutContentOnlyLayout() {
   return (
@@ -9,14 +10,14 @@ export default function LayoutContentOnlyLayout() {
       <XDSLayout
         content={
           <XDSLayoutContent>
-            <div style={{fontWeight: 600, fontSize: 18, marginBottom: 12}}>
-              Simple Content
-            </div>
-            <p style={{fontSize: 14, lineHeight: 1.5, margin: 0}}>
-              A layout can have just content without header or footer. This is
-              useful for simple cards or content blocks that don't need
-              structured sections.
-            </p>
+            <XDSVStack gap={3}>
+              <XDSHeading level={4}>Simple Content</XDSHeading>
+              <XDSText type="body">
+                A layout can have just content without header or footer. This
+                is useful for simple cards or content blocks that don&apos;t need
+                structured sections.
+              </XDSText>
+            </XDSVStack>
           </XDSLayoutContent>
         }
       />
