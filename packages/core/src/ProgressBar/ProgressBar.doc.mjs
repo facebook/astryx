@@ -67,11 +67,14 @@ export const docs = {
   },
   usage: {
     description:
-      'ProgressBar displays the completion progress of a process as a horizontal bar. Use it for determinate operations where the duration is known, or as an indeterminate indicator when progress cannot be calculated.',
+      'A horizontal bar showing the completion progress of a task. Use it for operations where the duration is known, or as an animated indicator when progress can't be calculated. Supports semantic color variants, value labels, and custom formatting.',
     bestPractices: [
-      { guidance: true, description: 'Use a determinate bar when the total amount of work is known, and switch to indeterminate only when it is not.' },
-      { guidance: true, description: 'Choose a semantic color variant that reflects the nature of the process — accent for neutral, positive for success, warning or negative for alerts.' },
-      { guidance: false, description: 'Add custom label placements or status icons inside the bar — compose them alongside using layout components.' },
+      { guidance: true, description: "Use a determinate bar when the total amount of work is known, and indeterminate when it's not." },
+      { guidance: true, description: 'Choose a color variant that matches the context — accent for general progress, positive for success, warning or negative for alerts.' },
+      { guidance: true, description: "Always provide a label, even if hidden — screen readers need it to announce what's loading." },
+      { guidance: false, description: 'Place icons or labels inside the bar — compose them alongside it using layout components.' },
+      { guidance: false, description: "Use a progress bar for instant actions — it's meant for operations that take noticeable time." },
+      { guidance: false, description: 'Use multiple progress bars stacked together for the same operation — use one bar with a value label instead.' },
     ],
   },
 };
@@ -143,11 +146,14 @@ export const docsZh = {
   },
   usage: {
     description:
-      'ProgressBar displays the completion progress of a process as a horizontal bar. Use it for determinate operations where the duration is known, or as an indeterminate indicator when progress cannot be calculated.',
+      'A horizontal bar showing the completion progress of a task. Use it for operations where the duration is known, or as an animated indicator when progress can't be calculated. Supports semantic color variants, value labels, and custom formatting.',
     bestPractices: [
-      { guidance: true, description: 'Use a determinate bar when the total amount of work is known, and switch to indeterminate only when it is not.' },
-      { guidance: true, description: 'Choose a semantic color variant that reflects the nature of the process — accent for neutral, positive for success, warning or negative for alerts.' },
-      { guidance: false, description: 'Add custom label placements or status icons inside the bar — compose them alongside using layout components.' },
+      { guidance: true, description: "Use a determinate bar when the total amount of work is known, and indeterminate when it's not." },
+      { guidance: true, description: 'Choose a color variant that matches the context — accent for general progress, positive for success, warning or negative for alerts.' },
+      { guidance: true, description: "Always provide a label, even if hidden — screen readers need it to announce what's loading." },
+      { guidance: false, description: 'Place icons or labels inside the bar — compose them alongside it using layout components.' },
+      { guidance: false, description: "Use a progress bar for instant actions — it's meant for operations that take noticeable time." },
+      { guidance: false, description: 'Use multiple progress bars stacked together for the same operation — use one bar with a value label instead.' },
     ],
   },
 };
@@ -158,11 +164,14 @@ export const docsDense = {
     'Progress bar for displaying determinate or indeterminate progress.',
   usage: {
     description:
-      'ProgressBar displays the completion progress of a process as a horizontal bar. Use it for determinate operations where the duration is known, or as an indeterminate indicator when progress cannot be calculated.',
+      'A horizontal bar showing the completion progress of a task. Use it for operations where the duration is known, or as an animated indicator when progress can't be calculated. Supports semantic color variants, value labels, and custom formatting.',
     bestPractices: [
-      { guidance: true, description: 'Use a determinate bar when the total amount of work is known, and switch to indeterminate only when it is not.' },
-      { guidance: true, description: 'Choose a semantic color variant that reflects the nature of the process — accent for neutral, positive for success, warning or negative for alerts.' },
-      { guidance: false, description: 'Add custom label placements or status icons inside the bar — compose them alongside using layout components.' },
+      { guidance: true, description: "Use a determinate bar when the total amount of work is known, and indeterminate when it's not." },
+      { guidance: true, description: 'Choose a color variant that matches the context — accent for general progress, positive for success, warning or negative for alerts.' },
+      { guidance: true, description: "Always provide a label, even if hidden — screen readers need it to announce what's loading." },
+      { guidance: false, description: 'Place icons or labels inside the bar — compose them alongside it using layout components.' },
+      { guidance: false, description: "Use a progress bar for instant actions — it's meant for operations that take noticeable time." },
+      { guidance: false, description: 'Use multiple progress bars stacked together for the same operation — use one bar with a value label instead.' },
     ],
   },
   propDescriptions: {
