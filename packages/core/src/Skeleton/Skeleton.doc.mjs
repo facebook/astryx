@@ -36,12 +36,13 @@ export const docs = {
   },
   usage: {
     description:
-      'A placeholder loading component that displays an animated shimmer effect while content is loading. Use Skeleton to build loading screens that match the layout of the content being loaded. For content of unknown dimensions, use Spinner instead.',
+      'An animated shimmer placeholder that previews the shape of content while it loads. Use it to build loading screens that match the layout of the real content. For content with unknown dimensions, use Spinner instead.',
     bestPractices: [
       {guidance: true, description: 'Match the size and shape of the content being loaded to create a realistic placeholder.'},
-      {guidance: true, description: 'Use the index prop to stagger multiple skeletons for a natural wave animation.'},
+      {guidance: true, description: 'Stagger multiple skeletons with the `index` prop for a natural wave animation.'},
       {guidance: false, description: 'Use when the content dimensions are unknown — use Spinner instead.'},
       {guidance: false, description: 'Combine with a Spinner on the same content area — pick one loading pattern.'},
+      {guidance: false, description: 'Show skeletons indefinitely — if loading takes too long, show an error or empty state instead.'},
     ],
   },
 };
@@ -83,12 +84,13 @@ export const docsZh = {
   },
   usage: {
     description:
-      'A placeholder loading component that displays an animated shimmer effect while content is loading. Use Skeleton to build loading screens that match the layout of the content being loaded. For content of unknown dimensions, use Spinner instead.',
+      'An animated shimmer placeholder that previews the shape of content while it loads. Use it to build loading screens that match the layout of the real content. For content with unknown dimensions, use Spinner instead.',
     bestPractices: [
       {guidance: true, description: 'Match the size and shape of the content being loaded to create a realistic placeholder.'},
-      {guidance: true, description: 'Use the index prop to stagger multiple skeletons for a natural wave animation.'},
+      {guidance: true, description: 'Stagger multiple skeletons with the `index` prop for a natural wave animation.'},
       {guidance: false, description: 'Use when the content dimensions are unknown — use Spinner instead.'},
       {guidance: false, description: 'Combine with a Spinner on the same content area — pick one loading pattern.'},
+      {guidance: false, description: 'Show skeletons indefinitely — if loading takes too long, show an error or empty state instead.'},
     ],
   },
 };
@@ -97,12 +99,13 @@ export const docsZh = {
 export const docsDense = {
   usage: {
     description:
-      'A placeholder loading component that displays an animated shimmer effect while content is loading. Use Skeleton to build loading screens that match the layout of the content being loaded. For content of unknown dimensions, use Spinner instead.',
+      'An animated shimmer placeholder that previews the shape of content while it loads. Use it to build loading screens that match the layout of the real content. For content with unknown dimensions, use Spinner instead.',
     bestPractices: [
       {guidance: true, description: 'Match the size and shape of the content being loaded to create a realistic placeholder.'},
-      {guidance: true, description: 'Use the index prop to stagger multiple skeletons for a natural wave animation.'},
+      {guidance: true, description: 'Stagger multiple skeletons with the `index` prop for a natural wave animation.'},
       {guidance: false, description: 'Use when the content dimensions are unknown — use Spinner instead.'},
       {guidance: false, description: 'Combine with a Spinner on the same content area — pick one loading pattern.'},
+      {guidance: false, description: 'Show skeletons indefinitely — if loading takes too long, show an error or empty state instead.'},
     ],
   },
   propDescriptions: {
