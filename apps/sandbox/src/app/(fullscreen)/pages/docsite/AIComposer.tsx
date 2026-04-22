@@ -9,7 +9,7 @@ export type ComposerMode = 'template' | 'theme';
 
 const PLACEHOLDER: Record<ComposerMode, string> = {
   template: 'What should we build?',
-  theme: 'Describe your brand or style...',
+  theme: 'Describe or drop in a screenshot of your brand...',
 };
 
 const MODE_ICON: Record<ComposerMode, React.ReactNode> = {

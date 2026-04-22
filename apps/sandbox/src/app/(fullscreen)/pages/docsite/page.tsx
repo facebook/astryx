@@ -60,6 +60,8 @@ import {
   MoonIcon,
   VerifiedIcon,
   FilterIcon,
+  BookmarkIcon,
+  BookmarkFilledIcon,
 } from './docsite-icons';
 
 const popoverStyles = stylex.create({
@@ -164,12 +166,15 @@ function ThemeCard({
   theme,
   index,
   onCustomize,
+  onEdit,
 }: {
   theme: ThemePickerEntry;
   index: number;
   onCustomize: () => void;
+  onEdit: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
+  const [bookmarked, setBookmarked] = useState(false);
 
   return (
     <div
@@ -186,57 +191,109 @@ function ThemeCard({
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
           onClick={onCustomize}>
-          <div
-            style={{
-              position: 'relative',
-              aspectRatio: '1920 / 1205',
-              overflow: 'hidden',
-              backgroundColor: theme.preview.bg,
-            }}>
+          {theme.preview.img ? (
             <img
-              src={`${basePath}/templates/theme-preview.png`}
+              src={`${basePath}/templates/${theme.preview.img}`}
               alt={theme.name}
               style={{
                 display: 'block',
                 width: '100%',
-                height: '100%',
+                aspectRatio: '1920 / 1205',
                 objectFit: 'cover',
               }}
             />
+          ) : (
             <div
               style={{
-                position: 'absolute',
-                inset: 0,
-                backgroundColor: theme.preview.accent,
-                mixBlendMode: 'color',
-                opacity: 0.35,
-              }}
-            />
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
+                aspectRatio: '1920 / 1205',
                 backgroundColor: theme.preview.bg,
-                mixBlendMode: 'overlay',
-                opacity: 0.4,
-              }}
-            />
-            <span
-              style={{
-                position: 'absolute',
-                top: 12,
-                left: 16,
-                fontSize: 18,
-                fontWeight: 700,
-                letterSpacing: '0.04em',
+                padding: '6% 7%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
                 fontFamily: theme.preview.font ?? 'system-ui, sans-serif',
-                color: theme.preview.text,
-                lineHeight: 1,
-                textShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                overflow: 'hidden',
               }}>
-              {theme.name}
-            </span>
-          </div>
+              {/* Brand name + accent dot */}
+              <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                <div
+                  style={{
+                    width: 14,
+                    height: 14,
+                    borderRadius: theme.preview.radius ?? 4,
+                    backgroundColor: theme.preview.accent,
+                    flexShrink: 0,
+                  }}
+                />
+                <span
+                  style={{
+                    fontSize: 20,
+                    fontWeight: 700,
+                    color: theme.preview.text,
+                    lineHeight: 1,
+                  }}>
+                  {theme.name}
+                </span>
+              </div>
+              {/* Color palette */}
+              <div style={{display: 'flex', gap: '3%'}}>
+                {[
+                  {color: theme.preview.accent, label: 'Accent'},
+                  {color: theme.preview.bg, label: 'Background'},
+                  {color: theme.preview.surface, label: 'Surface'},
+                  {color: theme.preview.text, label: 'Text'},
+                ].map(swatch => (
+                  <div key={swatch.label} style={{flex: 1}}>
+                    <div
+                      style={{
+                        aspectRatio: '1',
+                        borderRadius: theme.preview.radius ?? 8,
+                        backgroundColor: swatch.color,
+                        border:
+                          swatch.color === theme.preview.bg
+                            ? `1px solid ${theme.preview.surface}`
+                            : 'none',
+                      }}
+                    />
+                    <div
+                      style={{
+                        fontSize: 7,
+                        color: theme.preview.text,
+                        opacity: 0.5,
+                        marginTop: 3,
+                        textAlign: 'center',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                      }}>
+                      {swatch.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Font + description */}
+              <div>
+                <div
+                  style={{
+                    fontSize: 28,
+                    fontWeight: 300,
+                    color: theme.preview.text,
+                    lineHeight: 1,
+                    opacity: 0.8,
+                  }}>
+                  Aa
+                </div>
+                <div
+                  style={{
+                    fontSize: 8,
+                    color: theme.preview.text,
+                    opacity: 0.4,
+                    marginTop: 2,
+                  }}>
+                  {(theme.preview.font ?? 'System UI').split(',')[0].trim()}
+                </div>
+              </div>
+            </div>
+          )}
           <div
             style={{
               position: 'absolute',
@@ -250,18 +307,17 @@ function ThemeCard({
                 position: 'absolute',
                 top: 12,
                 right: 12,
-              }}>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  padding: '2px 8px',
-                  borderRadius: 9999,
-                  backgroundColor: 'rgba(255,255,255,0.9)',
-                  color: '#333',
-                }}>
-                {theme.category === 'official' ? 'Official' : 'Community'}
-              </span>
+              }}
+              onClick={e => e.stopPropagation()}>
+              <XDSButton
+                label="Bookmark"
+                variant="ghost"
+                size="sm"
+                isIconOnly
+                icon={bookmarked ? <BookmarkFilledIcon /> : <BookmarkIcon />}
+                style={{color: '#fff'}}
+                onClick={() => setBookmarked(prev => !prev)}
+              />
             </div>
             <div
               style={{
@@ -288,19 +344,28 @@ function ThemeCard({
                   </XDSText>
                 )}
               </XDSStack>
-              <XDSButton
-                label="Customize"
-                variant="secondary"
-                size="sm"
-                style={{
-                  backgroundColor: 'var(--color-background-surface)',
-                  flexShrink: 0,
-                }}
-                onClick={e => {
-                  e.stopPropagation();
-                  onCustomize();
-                }}
-              />
+              <XDSStack direction="horizontal" gap={2}>
+                <XDSButton
+                  label="Use"
+                  variant="secondary"
+                  size="sm"
+                  style={{backgroundColor: 'var(--color-background-surface)'}}
+                  onClick={e => {
+                    e.stopPropagation();
+                    onCustomize();
+                  }}
+                />
+                <XDSButton
+                  label="Craft"
+                  variant="secondary"
+                  size="sm"
+                  style={{backgroundColor: 'var(--color-background-surface)'}}
+                  onClick={e => {
+                    e.stopPropagation();
+                    onEdit();
+                  }}
+                />
+              </XDSStack>
             </div>
           </div>
         </div>
@@ -487,6 +552,7 @@ function DocsiteLandingTemplate() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
   const [card4Bookmarked, setCard4Bookmarked] = useState(false);
+  const [themePreviewKey, setThemePreviewKey] = useState<string | null>(null);
 
   const handleEditorResizeStart = useCallback(
     (e: React.MouseEvent) => {
@@ -971,6 +1037,11 @@ function DocsiteLandingTemplate() {
     <XDSAppShell
       variant="surface"
       height="fill"
+      style={
+        {
+          '--color-border-emphasized': 'var(--color-border)',
+        } as React.CSSProperties
+      }
       topNav={
         <AppTopNav
           activeView={activeView}
@@ -1208,13 +1279,13 @@ function DocsiteLandingTemplate() {
                             />
                             <XDSDropdownMenu
                               button={{
-                                label: 'Theme',
+                                label:
+                                  previewTheme.charAt(0).toUpperCase() +
+                                  previewTheme.slice(1),
                                 variant: 'ghost',
                                 size: 'sm',
-                                isIconOnly: true,
                                 icon: <PaletteIcon />,
                               }}
-                              hasChevron={false}
                               menuWidth={160}
                               items={[
                                 {
@@ -1494,14 +1565,34 @@ function DocsiteLandingTemplate() {
                         : 'repeat(3, 1fr)',
                     gap: 16,
                   }}>
-                  {THEME_PICKER_ENTRIES.map((theme, i) => (
-                    <ThemeCard
-                      key={theme.key}
-                      theme={theme}
-                      index={i}
-                      onCustomize={() => setActiveView('theme')}
-                    />
-                  ))}
+                  {[...THEME_PICKER_ENTRIES]
+                    .sort((a, b) => {
+                      const imgOrder = [
+                        'forest',
+                        'daily',
+                        'midnight',
+                        'sunset',
+                      ];
+                      const ai = a.preview.img
+                        ? imgOrder.indexOf(a.key)
+                        : imgOrder.length;
+                      const bi = b.preview.img
+                        ? imgOrder.indexOf(b.key)
+                        : imgOrder.length;
+                      return (
+                        (ai === -1 ? imgOrder.length : ai) -
+                        (bi === -1 ? imgOrder.length : bi)
+                      );
+                    })
+                    .map((theme, i) => (
+                      <ThemeCard
+                        key={theme.key}
+                        theme={theme}
+                        index={i}
+                        onCustomize={() => setThemePreviewKey(theme.key)}
+                        onEdit={() => setActiveView('theme')}
+                      />
+                    ))}
                 </div>
               )}
 
@@ -1755,13 +1846,14 @@ function DocsiteLandingTemplate() {
                       if (activeTab === 'all' && i === 2) {
                         items.push(
                           ...THEME_PICKER_ENTRIES.filter(
-                            t => t.key === 'forest' || t.key === 'midnight',
+                            t => t.key === 'daily' || t.key === 'forest',
                           ).map((t, ti) => (
                             <ThemeCard
                               key={`theme-${t.key}`}
                               theme={t}
                               index={i + ti + 1}
-                              onCustomize={() => setActiveView('theme')}
+                              onCustomize={() => setThemePreviewKey(t.key)}
+                              onEdit={() => setActiveView('theme')}
                             />
                           )),
                         );
@@ -1841,6 +1933,307 @@ function DocsiteLandingTemplate() {
               ]}
               onComponentTagClick={handleTokenClick}
             />
+          );
+        })()}
+      {/* Theme preview modal */}
+      {themePreviewKey !== null &&
+        (() => {
+          const t = THEME_PICKER_ENTRIES.find(e => e.key === themePreviewKey);
+          if (!t) return null;
+          const r = t.preview.radius ?? 8;
+          const font = t.preview.font ?? 'system-ui, sans-serif';
+          return (
+            <XDSDialog
+              isOpen={true}
+              onOpenChange={open => {
+                if (!open) setThemePreviewKey(null);
+              }}
+              width="90vw"
+              maxHeight="90vh"
+              purpose="info"
+              style={
+                {
+                  padding: 0,
+                  overflow: 'visible',
+                  maxWidth: 900,
+                  '--xds-dialog-padding': '0px',
+                } as React.CSSProperties
+              }>
+              <div
+                style={{position: 'absolute', top: 0, right: -40, zIndex: 1}}>
+                <XDSCard padding={0} style={{borderRadius: '50%'}}>
+                  <XDSButton
+                    label="Close"
+                    variant="ghost"
+                    size="sm"
+                    isIconOnly
+                    icon={<span style={{fontSize: 16, lineHeight: 1}}>✕</span>}
+                    onClick={() => setThemePreviewKey(null)}
+                  />
+                </XDSCard>
+              </div>
+              <div style={{overflowY: 'auto', maxHeight: '85vh'}}>
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: 32,
+                    padding: 32,
+                    fontFamily: font,
+                  }}>
+                  {/* Left — brand moodboard */}
+                  <div style={{flex: 1, minWidth: 0}}>
+                    {/* Header */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        marginBottom: 24,
+                      }}>
+                      <div
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: r,
+                          backgroundColor: t.preview.accent,
+                        }}
+                      />
+                      <XDSHeading level={2}>{t.name}</XDSHeading>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          padding: '2px 10px',
+                          borderRadius: 9999,
+                          backgroundColor: 'var(--color-background-muted)',
+                          color: 'var(--color-text-secondary)',
+                        }}>
+                        {t.category === 'official' ? 'Official' : 'Community'}
+                      </span>
+                    </div>
+                    {t.description && (
+                      <XDSText
+                        type="body"
+                        color="secondary"
+                        style={{marginBottom: 24}}>
+                        {t.description}
+                      </XDSText>
+                    )}
+                    {/* Color palette */}
+                    <XDSText
+                      type="label"
+                      color="secondary"
+                      style={{marginBottom: 12, display: 'block'}}>
+                      Colors
+                    </XDSText>
+                    <div style={{display: 'flex', gap: 12, marginBottom: 28}}>
+                      {[
+                        {
+                          color: t.preview.accent,
+                          label: 'Accent',
+                          hex: t.preview.accent,
+                        },
+                        {
+                          color: t.preview.bg,
+                          label: 'Background',
+                          hex: t.preview.bg,
+                        },
+                        {
+                          color: t.preview.surface,
+                          label: 'Surface',
+                          hex: t.preview.surface,
+                        },
+                        {
+                          color: t.preview.text,
+                          label: 'Text',
+                          hex: t.preview.text,
+                        },
+                      ].map(swatch => (
+                        <div
+                          key={swatch.label}
+                          style={{flex: 1, textAlign: 'center'}}>
+                          <div
+                            style={{
+                              aspectRatio: '1',
+                              borderRadius: r,
+                              backgroundColor: swatch.color,
+                              border:
+                                swatch.color.toUpperCase() === '#FFFFFF'
+                                  ? '1px solid var(--color-border-default)'
+                                  : 'none',
+                              marginBottom: 6,
+                            }}
+                          />
+                          <XDSText type="supporting" style={{display: 'block'}}>
+                            {swatch.label}
+                          </XDSText>
+                          <XDSText
+                            type="supporting"
+                            color="secondary"
+                            style={{display: 'block', fontSize: 10}}>
+                            {swatch.hex}
+                          </XDSText>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Typography */}
+                    <XDSText
+                      type="label"
+                      color="secondary"
+                      style={{marginBottom: 12, display: 'block'}}>
+                      Typography
+                    </XDSText>
+                    <div
+                      style={{
+                        padding: 20,
+                        borderRadius: r,
+                        backgroundColor: 'var(--color-background-muted)',
+                        marginBottom: 28,
+                      }}>
+                      <div
+                        style={{
+                          fontSize: 48,
+                          fontWeight: 300,
+                          lineHeight: 1,
+                          marginBottom: 8,
+                        }}>
+                        Aa
+                      </div>
+                      <XDSText type="body" color="secondary">
+                        {font.split(',')[0].trim()}
+                      </XDSText>
+                      <div
+                        style={{
+                          marginTop: 12,
+                          fontSize: 13,
+                          lineHeight: 1.6,
+                          opacity: 0.6,
+                        }}>
+                        ABCDEFGHIJKLMNOPQRSTUVWXYZ
+                        <br />
+                        abcdefghijklmnopqrstuvwxyz
+                        <br />
+                        0123456789
+                      </div>
+                    </div>
+                    {/* Radius */}
+                    <XDSText
+                      type="label"
+                      color="secondary"
+                      style={{marginBottom: 12, display: 'block'}}>
+                      Border Radius
+                    </XDSText>
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: 12,
+                        alignItems: 'flex-end',
+                        marginBottom: 28,
+                      }}>
+                      {[r * 0.5, r, r * 1.5, r * 2].map((rv, i) => (
+                        <div key={i} style={{textAlign: 'center'}}>
+                          <div
+                            style={{
+                              width: 40 + i * 8,
+                              height: 40 + i * 8,
+                              borderRadius: rv,
+                              backgroundColor:
+                                i === 1
+                                  ? t.preview.accent
+                                  : 'var(--color-background-muted)',
+                              border:
+                                i !== 1
+                                  ? '1px solid var(--color-border-default)'
+                                  : 'none',
+                            }}
+                          />
+                          <XDSText
+                            type="supporting"
+                            color="secondary"
+                            style={{
+                              display: 'block',
+                              marginTop: 4,
+                              fontSize: 10,
+                            }}>
+                            {Math.round(rv)}px
+                          </XDSText>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Right — actions */}
+                  <div style={{width: 220, flexShrink: 0, paddingTop: 8}}>
+                    <XDSButton
+                      label="Customize theme"
+                      onClick={() => {
+                        setThemePreviewKey(null);
+                        setActiveView('theme');
+                      }}
+                      style={{width: '100%', marginBottom: 12}}
+                    />
+                    <XDSButton
+                      label="Close"
+                      variant="secondary"
+                      onClick={() => setThemePreviewKey(null)}
+                      style={{width: '100%', marginBottom: 24}}
+                    />
+                    {/* More themes */}
+                    <XDSText
+                      type="label"
+                      color="secondary"
+                      style={{marginBottom: 12, display: 'block'}}>
+                      More themes
+                    </XDSText>
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 8,
+                      }}>
+                      {THEME_PICKER_ENTRIES.filter(
+                        e => e.key !== themePreviewKey,
+                      )
+                        .slice(0, 4)
+                        .map(other => (
+                          <div
+                            key={other.key}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 10,
+                              padding: '8px 10px',
+                              borderRadius: 8,
+                              cursor: 'pointer',
+                              transition: 'background-color 150ms',
+                            }}
+                            onClick={() => setThemePreviewKey(other.key)}
+                            onMouseEnter={e =>
+                              (e.currentTarget.style.backgroundColor =
+                                'var(--color-background-muted)')
+                            }
+                            onMouseLeave={e =>
+                              (e.currentTarget.style.backgroundColor =
+                                'transparent')
+                            }>
+                            <div
+                              style={{
+                                width: 20,
+                                height: 20,
+                                borderRadius: other.preview.radius ?? 4,
+                                backgroundColor: other.preview.accent,
+                                flexShrink: 0,
+                              }}
+                            />
+                            <XDSText type="body" style={{fontSize: 13}}>
+                              {other.name}
+                            </XDSText>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </XDSDialog>
           );
         })()}
       {/* Settings dialog */}
