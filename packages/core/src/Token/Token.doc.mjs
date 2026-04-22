@@ -84,7 +84,7 @@ export const docs = {
   },
   usage: {
     description:
-      'Token is a compact chip for displaying tags, categories, or selections inline. Use it to label content, show active filters, or represent removable items like selected recipients in a compose field.',
+      'Token is a small, inline element for representing discrete pieces of associated data — like tags, categories, or selections. Use it to label content, show active filters, or represent removable items like selected recipients in a compose field.',
     bestPractices: [
       {guidance: true, description: 'Use color to distinguish categories — for example, green for "Active", red for "Blocked", blue for "In Review" — so users can scan status at a glance.'},
       {guidance: true, description: 'Provide an onRemove callback when tokens represent user selections that can be undone, like filters or multi-select values.'},
@@ -188,7 +188,7 @@ export const docsZh = {
   },
   usage: {
     description:
-      'Token is a compact chip for displaying tags, categories, or selections inline. Use it to label content, show active filters, or represent removable items like selected recipients in a compose field.',
+      'Token is a small, inline element for representing discrete pieces of associated data — like tags, categories, or selections. Use it to label content, show active filters, or represent removable items like selected recipients in a compose field.',
     bestPractices: [
       {guidance: true, description: 'Use color to distinguish categories — for example, green for "Active", red for "Blocked", blue for "In Review" — so users can scan status at a glance.'},
       {guidance: true, description: 'Provide an onRemove callback when tokens represent user selections that can be undone, like filters or multi-select values.'},
@@ -212,7 +212,7 @@ export const docsDense = {
   description: 'compact chip/tag for inline metadata, filters, selections. 11 colors, 2 sizes, removable, clickable, linkable.',
   usage: {
     description:
-      'Token is a compact chip for displaying tags, categories, or selections inline. Use for labeling content, showing active filters, or representing removable items.',
+      'Token is a small, inline element for representing discrete pieces of associated data — like tags, categories, or selections. Use for labeling content, showing active filters, or representing removable items.',
     bestPractices: [
       {guidance: true, description: 'Color-code categories — green for active, red for blocked, blue for review — for fast scanning.'},
       {guidance: true, description: 'Provide onRemove when tokens represent dismissible user selections like filters or multi-select values.'},
