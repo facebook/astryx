@@ -8,7 +8,7 @@ import {XDSText} from '@xds/core/Text';
 import * as stylex from '@stylexjs/stylex';
 
 const meta: Meta<typeof XDSFormLayout> = {
-  title: 'Form/XDSFormLayout',
+  title: 'Inputs/FormLayout',
   component: XDSFormLayout,
   tags: ['autodocs'],
   args: {

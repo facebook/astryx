@@ -74,7 +74,7 @@ const unsupportedDictation: UseSpeechRecognitionReturn = {
 // =============================================================================
 
 const meta: Meta<typeof XDSChatDictationButton> = {
-  title: 'Chat/XDSChatDictationButton',
+  title: 'Chat/DictationButton',
   component: XDSChatDictationButton,
   tags: ['autodocs'],
   parameters: {

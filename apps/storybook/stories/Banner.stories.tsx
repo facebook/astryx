@@ -5,7 +5,7 @@ import {XDSIcon} from '@xds/core/Icon';
 import {ShieldCheckIcon} from '@heroicons/react/24/solid';
 
 const meta: Meta<typeof XDSBanner> = {
-  title: 'Core/XDSBanner',
+  title: 'Display/Banner',
   component: XDSBanner,
   tags: ['autodocs'],
   argTypes: {

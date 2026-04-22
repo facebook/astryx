@@ -117,7 +117,7 @@ const Box = ({
 );
 
 const meta: Meta<typeof XDSStack> = {
-  title: 'Layout/XDSStack',
+  title: 'Layout/Stack',
   component: XDSStack,
   tags: ['autodocs'],
   argTypes: {

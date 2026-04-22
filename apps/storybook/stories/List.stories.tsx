@@ -14,7 +14,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSList> = {
-  title: 'Core/XDSList',
+  title: 'Collections/List',
   component: XDSList,
   tags: ['autodocs'],
   argTypes: {

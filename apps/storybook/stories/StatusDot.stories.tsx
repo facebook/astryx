@@ -2,7 +2,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {XDSStatusDot} from '@xds/core/StatusDot';
 
 const meta: Meta<typeof XDSStatusDot> = {
-  title: 'Core/XDSStatusDot',
+  title: 'Display/StatusDot',
   component: XDSStatusDot,
   tags: ['autodocs'],
   argTypes: {

@@ -9,7 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSMetadataList> = {
-  title: 'Core/XDSMetadataList',
+  title: 'Collections/MetadataList',
   component: XDSMetadataList,
   tags: ['autodocs'],
   argTypes: {

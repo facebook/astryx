@@ -72,7 +72,7 @@ const radialPlotSpec: AnySpec = {
 };
 
 const meta: Meta<typeof XDSVegaChart> = {
-  title: 'Vega/XDSVegaChart',
+  title: 'Vega/VegaChart',
   component: XDSVegaChart,
   tags: ['autodocs'],
   parameters: {

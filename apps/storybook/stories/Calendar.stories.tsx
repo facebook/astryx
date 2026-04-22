@@ -7,7 +7,7 @@ import {
 } from '@xds/core/Calendar';
 
 const meta: Meta<typeof XDSCalendar> = {
-  title: 'Core/XDSCalendar',
+  title: 'Display/Calendar',
   component: XDSCalendar,
   tags: ['autodocs'],
 };

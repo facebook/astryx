@@ -4,7 +4,7 @@ import {useState, useCallback} from 'react';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 
 const meta: Meta<typeof XDSChatToolCalls> = {
-  title: 'Chat/XDSChatToolCalls',
+  title: 'Chat/ToolCalls',
   component: XDSChatToolCalls,
   tags: ['autodocs'],
   parameters: {

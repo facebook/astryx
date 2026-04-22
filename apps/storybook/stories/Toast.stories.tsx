@@ -9,7 +9,7 @@ import {XDSStack} from '@xds/core/Stack';
 import {XDSDialog} from '@xds/core/Dialog';
 
 const meta: Meta = {
-  title: 'Core/XDSToast',
+  title: 'Overlays/Toast',
   tags: ['autodocs'],
   parameters: {
     docs: {

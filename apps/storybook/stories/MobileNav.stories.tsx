@@ -29,7 +29,7 @@ import {
 // =============================================================================
 
 const meta: Meta<typeof XDSMobileNav> = {
-  title: 'Navigation/XDSMobileNav',
+  title: 'Navigation/MobileNav',
   component: XDSMobileNav,
   tags: ['autodocs'],
   parameters: {

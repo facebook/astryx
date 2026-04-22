@@ -68,7 +68,7 @@ const columns: XDSTableColumn<User>[] = [
 // =============================================================================
 
 const meta: Meta = {
-  title: 'Core/XDSTable/Selection',
+  title: 'Collections/Table/Selection',
   tags: ['autodocs'],
 };
 

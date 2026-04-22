@@ -19,7 +19,7 @@ import {
 } from '@heroicons/react/24/solid';
 
 const meta: Meta<typeof XDSIcon> = {
-  title: 'Core/XDSIcon',
+  title: 'Display/Icon',
   component: XDSIcon,
   tags: ['autodocs'],
   argTypes: {

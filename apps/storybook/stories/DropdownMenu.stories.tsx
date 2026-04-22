@@ -17,7 +17,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSDropdownMenu> = {
-  title: 'Core/XDSDropdownMenu',
+  title: 'Actions/DropdownMenu',
   component: XDSDropdownMenu,
   tags: ['autodocs'],
   parameters: {

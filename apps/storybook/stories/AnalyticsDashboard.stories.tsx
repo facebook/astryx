@@ -1385,7 +1385,7 @@ function AnalyticsDashboard() {
 // =============================================================================
 
 const meta: Meta = {
-  title: 'Pages/Analytics Dashboard',
+  title: 'Patterns/Analytics Dashboard',
   parameters: {
     layout: 'fullscreen',
   },

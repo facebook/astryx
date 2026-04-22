@@ -47,7 +47,7 @@ const styles = stylex.create({
 });
 
 const meta: Meta<typeof XDSGrid> = {
-  title: 'Layout/XDSGrid',
+  title: 'Layout/Grid',
   component: XDSGrid,
   tags: ['autodocs'],
   argTypes: {

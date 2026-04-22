@@ -25,7 +25,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSToolbar> = {
-  title: 'Layout/XDSToolbar/Edge Compensation',
+  title: 'Layout/Toolbar/Edge Compensation',
   component: XDSToolbar,
   parameters: {
     layout: 'padded',

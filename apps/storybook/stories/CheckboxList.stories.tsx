@@ -5,7 +5,7 @@ import {XDSList} from '@xds/core/List';
 import {XDSCard} from '@xds/core/Card';
 
 const meta: Meta<typeof XDSCheckboxList> = {
-  title: 'Form/XDSCheckboxList',
+  title: 'Inputs/CheckboxList',
   component: XDSCheckboxList,
   tags: ['autodocs'],
   argTypes: {

@@ -43,7 +43,7 @@ const Box = ({children}: {children: React.ReactNode}) => (
 );
 
 const meta: Meta<typeof XDSCenter> = {
-  title: 'Layout/XDSCenter',
+  title: 'Layout/Center',
   component: XDSCenter,
   tags: ['autodocs'],
   argTypes: {

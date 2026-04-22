@@ -24,7 +24,7 @@ import {useDataset} from './useDataset';
  * Datasets from [vega-datasets](https://github.com/vega/vega-datasets) (CDN).
  */
 const meta: Meta<typeof XDSChart> = {
-  title: 'Lab/XDSChart',
+  title: 'Lab/Chart',
   component: XDSChart,
   tags: ['autodocs'],
 };

@@ -65,7 +65,7 @@ const styles = stylex.create({
 });
 
 const meta: Meta<typeof XDSAspectRatio> = {
-  title: 'Layout/XDSAspectRatio',
+  title: 'Layout/AspectRatio',
   component: XDSAspectRatio,
   tags: ['autodocs'],
   argTypes: {

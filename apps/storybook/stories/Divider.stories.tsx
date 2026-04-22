@@ -19,7 +19,7 @@ const styles = stylex.create({
 });
 
 const meta: Meta<typeof XDSDivider> = {
-  title: 'Layout/XDSDivider',
+  title: 'Layout/Divider',
   component: XDSDivider,
   tags: ['autodocs'],
   argTypes: {

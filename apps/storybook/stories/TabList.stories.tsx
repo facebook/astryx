@@ -8,7 +8,7 @@ import {XDSStackItem} from '@xds/core/Stack';
 import {PlusIcon, FunnelIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSTabList> = {
-  title: 'Navigation/XDSTabList',
+  title: 'Navigation/TabList',
   component: XDSTabList,
   tags: ['autodocs'],
   argTypes: {

@@ -7,7 +7,7 @@ import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSTextInput} from '@xds/core/TextInput';
 
 const meta: Meta<typeof XDSOverflowList> = {
-  title: 'Core/XDSOverflowList',
+  title: 'Layout/OverflowList',
   component: XDSOverflowList,
   tags: ['autodocs'],
   argTypes: {

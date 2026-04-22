@@ -12,7 +12,7 @@ import {
 } from '@xds/core/theme/tokens.stylex';
 
 const meta: Meta = {
-  title: 'Layout/XDSGrid/Masonry Gallery',
+  title: 'Layout/Grid/Masonry Gallery',
   tags: ['autodocs'],
 };
 

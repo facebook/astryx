@@ -23,7 +23,7 @@ const fruitSource: XDSSearchSource = {
 };
 
 const meta: Meta<typeof XDSTypeahead> = {
-  title: 'Form/XDSTypeahead',
+  title: 'Inputs/Typeahead',
   component: XDSTypeahead,
   tags: ['autodocs'],
   argTypes: {

@@ -29,7 +29,7 @@ const styles = stylex.create({
 });
 
 const meta: Meta<typeof XDSCollapsibleGroup> = {
-  title: 'Components/XDSCollapsible',
+  title: 'Layout/Collapsible',
   component: XDSCollapsibleGroup,
   tags: ['autodocs'],
   decorators: [

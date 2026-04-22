@@ -77,7 +77,7 @@ const columns: XDSTableColumn<Employee>[] = [
 // =============================================================================
 
 const meta: Meta = {
-  title: 'Core/XDSTable/Sortable',
+  title: 'Collections/Table/Sortable',
   tags: ['autodocs'],
 };
 

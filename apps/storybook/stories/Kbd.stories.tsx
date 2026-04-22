@@ -3,7 +3,7 @@ import {XDSKbd} from '@xds/core/Kbd';
 import {XDSText} from '@xds/core/Text';
 
 const meta: Meta<typeof XDSKbd> = {
-  title: 'Core/XDSKbd',
+  title: 'Display/Kbd',
   component: XDSKbd,
   tags: ['autodocs'],
   argTypes: {

@@ -55,7 +55,7 @@ const MicIcon = (
 );
 
 const meta: Meta<typeof XDSChatComposer> = {
-  title: 'Chat/XDSChatComposer',
+  title: 'Chat/Composer',
   component: XDSChatComposer,
   tags: ['autodocs'],
   parameters: {

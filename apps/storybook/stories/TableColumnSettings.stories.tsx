@@ -100,7 +100,7 @@ const defaultActiveKeys: UserColumnKey[] = [
 // =============================================================================
 
 const meta: Meta = {
-  title: 'Core/XDSTable/ColumnSettings',
+  title: 'Collections/Table/ColumnSettings',
   tags: ['autodocs'],
 };
 

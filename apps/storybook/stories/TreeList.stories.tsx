@@ -13,7 +13,7 @@ import {
 const noop = () => {};
 
 const meta: Meta<typeof XDSTreeList> = {
-  title: 'Core/XDSTreeList',
+  title: 'Collections/TreeList',
   component: XDSTreeList,
   tags: ['autodocs'],
   argTypes: {

@@ -48,7 +48,7 @@ const styles = stylex.create({
 });
 
 const meta: Meta<typeof XDSSection> = {
-  title: 'Layout/XDSSection',
+  title: 'Layout/Section',
   component: XDSSection,
   tags: ['autodocs'],
   decorators: [

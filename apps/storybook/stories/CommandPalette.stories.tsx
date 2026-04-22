@@ -20,7 +20,7 @@ import {createStaticSource} from '@xds/core/Typeahead';
 import type {XDSSearchSource, XDSSearchableItem} from '@xds/core/Typeahead';
 
 const meta: Meta<typeof XDSCommandPalette> = {
-  title: 'CommandPalette/XDSCommandPalette',
+  title: 'Actions/CommandPalette',
   component: XDSCommandPalette,
   tags: ['autodocs'],
 };

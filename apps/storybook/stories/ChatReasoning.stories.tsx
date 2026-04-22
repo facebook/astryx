@@ -10,7 +10,7 @@ import {XDSMarkdown} from '@xds/core/Markdown';
 import {useState, useEffect} from 'react';
 
 const meta: Meta = {
-  title: 'Lab/XDSChatReasoning',
+  title: 'Lab/ChatReasoning',
   component: XDSChatReasoning,
   tags: ['autodocs'],
   parameters: {

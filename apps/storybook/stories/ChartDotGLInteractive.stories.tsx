@@ -9,7 +9,7 @@ import {
 import {XDSStack, XDSText} from '@xds/core';
 import {XDSHeading} from '@xds/core/Text';
 
-const meta: Meta = {title: 'Lab/XDSChartDotGLInteractive'};
+const meta: Meta = {title: 'Lab/ChartDotGLInteractive'};
 export default meta;
 
 const scatterData = Array.from({length: 5000}, () => ({

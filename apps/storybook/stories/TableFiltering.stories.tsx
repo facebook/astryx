@@ -97,7 +97,7 @@ const fieldDefs = [
 ] as const;
 
 const meta: Meta = {
-  title: 'Core/XDSTable/Filtering',
+  title: 'Collections/Table/Filtering',
   tags: ['autodocs'],
 };
 

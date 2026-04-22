@@ -62,7 +62,7 @@ const sampleCode = [
 ].join('\n');
 
 const meta: Meta = {
-  title: 'Theme/XDSSyntaxTheme',
+  title: 'Theme/SyntaxTheme',
   tags: ['autodocs'],
   parameters: {
     docs: {

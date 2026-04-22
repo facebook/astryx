@@ -4,7 +4,7 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 
 const meta: Meta<typeof XDSHoverCard> = {
-  title: 'Core/XDSHoverCard',
+  title: 'Overlays/HoverCard',
   component: XDSHoverCard,
   tags: ['autodocs'],
   argTypes: {

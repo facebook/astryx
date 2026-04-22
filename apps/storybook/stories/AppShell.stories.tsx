@@ -224,7 +224,7 @@ function SideNavWithHeader() {
 // =============================================================================
 
 const meta: Meta<typeof XDSAppShell> = {
-  title: 'Core/XDSAppShell',
+  title: 'Layout/AppShell',
   component: XDSAppShell,
   tags: ['autodocs'],
   parameters: {

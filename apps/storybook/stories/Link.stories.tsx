@@ -3,7 +3,7 @@ import {XDSLink} from '@xds/core/Link';
 import {XDSText} from '@xds/core/Text';
 
 const meta: Meta<typeof XDSLink> = {
-  title: 'Core/XDSLink',
+  title: 'Display/Link',
   component: XDSLink,
   tags: ['autodocs'],
   argTypes: {

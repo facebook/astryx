@@ -10,7 +10,7 @@ import {
 import {XDSStack, XDSText} from '@xds/core';
 import {XDSHeading} from '@xds/core/Text';
 
-const meta: Meta = {title: 'Lab/XDSChartDotGL'};
+const meta: Meta = {title: 'Lab/ChartDotGL'};
 export default meta;
 
 const smallData = Array.from({length: 30}, (_, i) => ({
