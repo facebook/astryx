@@ -288,16 +288,8 @@ function SwitchPreview() {
         gap: 12,
         maxWidth: 240,
       }}>
-      <XDSSwitch
-        label="Notifications"
-        value={a}
-        onChange={checked => setA(checked)}
-      />
-      <XDSSwitch
-        label="Dark mode"
-        value={b}
-        onChange={checked => setB(checked)}
-      />
+      <XDSSwitch label="Notifications" value={a} onChange={v => setA(v)} />
+      <XDSSwitch label="Dark mode" value={b} onChange={v => setB(v)} />
     </div>
   );
 }
@@ -322,18 +314,14 @@ function CheckboxPreview() {
       <XDSCheckboxInput
         label="Accept terms"
         value={a}
-        onChange={checked => setA(checked)}
+        onChange={v => setA(v)}
       />
       <XDSCheckboxInput
         label="Subscribe to newsletter"
         value={b}
-        onChange={checked => setB(checked)}
+        onChange={v => setB(v)}
       />
-      <XDSCheckboxInput
-        label="Remember me"
-        value={c}
-        onChange={checked => setC(checked)}
-      />
+      <XDSCheckboxInput label="Remember me" value={c} onChange={v => setC(v)} />
     </div>
   );
 }
