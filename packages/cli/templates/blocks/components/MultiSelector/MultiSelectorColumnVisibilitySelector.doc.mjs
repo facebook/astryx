@@ -3,8 +3,8 @@ export const doc = {
   type: 'block',
   name: 'MultiSelector — Column Visibility',
   description:
-    'Table column visibility toggle with hidden label, search, select-all, and count display.',
+    'Column visibility toggle with hidden label, search, select-all, and selection count.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['MultiSelector'],
+  componentsUsed: ['MultiSelector', 'Center'],
 };

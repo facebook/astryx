@@ -2,6 +2,7 @@
 
 import {useState} from 'react';
 import {XDSMultiSelector} from '@xds/core/MultiSelector';
+import {XDSCenter} from '@xds/core/Center';
 
 const allColumns = [
   {value: 'name', label: 'Name'},
@@ -21,7 +22,7 @@ export default function MultiSelectorColumnVisibilitySelector() {
     'status',
   ]);
   return (
-    <div style={{width: 300}}>
+    <XDSCenter width={300}>
       <XDSMultiSelector
         label="Columns"
         isLabelHidden
@@ -33,6 +34,6 @@ export default function MultiSelectorColumnVisibilitySelector() {
         triggerDisplay="count"
         placeholder="Columns"
       />
-    </div>
+    </XDSCenter>
   );
 }
