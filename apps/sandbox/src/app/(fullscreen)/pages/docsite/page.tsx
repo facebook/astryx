@@ -900,7 +900,7 @@ function DocsiteLandingTemplate() {
                       <XDSTab value="properties" label="Properties" />
                     </XDSTabList>
                   </XDSStack>
-                  <XDSDivider />
+                  <XDSDivider variant="strong" />
                 </XDSStack>
               )}
               {showPublishCard1 ? (
@@ -1037,11 +1037,7 @@ function DocsiteLandingTemplate() {
     <XDSAppShell
       variant="surface"
       height="fill"
-      style={
-        {
-          '--color-border-emphasized': 'var(--color-border)',
-        } as React.CSSProperties
-      }
+      style={{} as React.CSSProperties}
       topNav={
         <AppTopNav
           activeView={activeView}
@@ -1319,8 +1315,8 @@ function DocsiteLandingTemplate() {
                             sortOption === 'trending'
                               ? 'Trending'
                               : sortOption === 'newest'
-                                ? 'Newest first'
-                                : 'Oldest first',
+                                ? 'Newest'
+                                : 'Oldest',
                           variant: 'ghost',
                           size: 'sm',
                         }}
@@ -1330,11 +1326,11 @@ function DocsiteLandingTemplate() {
                             onClick: () => setSortOption('trending'),
                           },
                           {
-                            label: 'Newest first',
+                            label: 'Newest',
                             onClick: () => setSortOption('newest'),
                           },
                           {
-                            label: 'Oldest first',
+                            label: 'Oldest',
                             onClick: () => setSortOption('oldest'),
                           },
                         ]}
@@ -1422,8 +1418,8 @@ function DocsiteLandingTemplate() {
                               sortOption === 'trending'
                                 ? 'Trending'
                                 : sortOption === 'newest'
-                                  ? 'Newest first'
-                                  : 'Oldest first',
+                                  ? 'Newest'
+                                  : 'Oldest',
                             variant: 'ghost',
                             size: 'sm',
                           }}
@@ -1433,11 +1429,11 @@ function DocsiteLandingTemplate() {
                               onClick: () => setSortOption('trending'),
                             },
                             {
-                              label: 'Newest first',
+                              label: 'Newest',
                               onClick: () => setSortOption('newest'),
                             },
                             {
-                              label: 'Oldest first',
+                              label: 'Oldest',
                               onClick: () => setSortOption('oldest'),
                             },
                           ]}
@@ -2261,7 +2257,7 @@ function DocsiteLandingTemplate() {
               }
             />
           </XDSStack>
-          <XDSDivider />
+          <XDSDivider variant="strong" />
           <XDSStack direction="horizontal" hAlign="between" vAlign="center">
             <XDSStack direction="vertical" gap={1}>
               <XDSText type="body" style={{fontWeight: 600}}>
@@ -2290,7 +2286,7 @@ function DocsiteLandingTemplate() {
               ]}
             />
           </XDSStack>
-          <XDSDivider />
+          <XDSDivider variant="strong" />
           <XDSStack direction="horizontal" hAlign="between" vAlign="center">
             <XDSStack direction="vertical" gap={1}>
               <XDSText type="body" style={{fontWeight: 600}}>
@@ -2306,15 +2302,15 @@ function DocsiteLandingTemplate() {
                   sortOption === 'trending'
                     ? 'Trending'
                     : sortOption === 'newest'
-                      ? 'Newest first'
-                      : 'Oldest first',
+                      ? 'Newest'
+                      : 'Oldest',
                 variant: 'secondary',
                 size: 'sm',
               }}
               items={[
                 {label: 'Trending', onClick: () => setSortOption('trending')},
-                {label: 'Newest first', onClick: () => setSortOption('newest')},
-                {label: 'Oldest first', onClick: () => setSortOption('oldest')},
+                {label: 'Newest', onClick: () => setSortOption('newest')},
+                {label: 'Oldest', onClick: () => setSortOption('oldest')},
               ]}
             />
           </XDSStack>

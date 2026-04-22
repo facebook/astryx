@@ -142,8 +142,8 @@ export function AppTopNav({
                       sortOption === 'trending'
                         ? 'Trending'
                         : sortOption === 'newest'
-                          ? 'Newest first'
-                          : 'Oldest first',
+                          ? 'Newest'
+                          : 'Oldest',
                     variant: 'ghost',
                     size: 'sm',
                     style: {marginRight: -8},
@@ -154,11 +154,11 @@ export function AppTopNav({
                       onClick: () => onSortChange?.('trending'),
                     },
                     {
-                      label: 'Newest first',
+                      label: 'Newest',
                       onClick: () => onSortChange?.('newest'),
                     },
                     {
-                      label: 'Oldest first',
+                      label: 'Oldest',
                       onClick: () => onSortChange?.('oldest'),
                     },
                   ]}
