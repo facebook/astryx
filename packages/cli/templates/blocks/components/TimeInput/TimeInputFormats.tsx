@@ -6,7 +6,6 @@ import {XDSStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
 export default function TimeInputFormats() {
-  const [time12h, setTime12h] = useState('14:30');
   const [time24h, setTime24h] = useState('14:30');
   const [timeSec, setTimeSec] = useState('14:30:45');
 
@@ -16,12 +15,6 @@ export default function TimeInputFormats() {
         Format variations for different contexts
       </XDSText>
       <XDSStack direction="vertical" gap={3}>
-        <XDSTimeInput
-          label="12-hour (AM/PM)"
-          value={time12h as never}
-          onChange={setTime12h as never}
-          hourFormat="12h"
-        />
         <XDSTimeInput
           label="24-hour"
           value={time24h as never}

@@ -5,7 +5,7 @@ import {XDSTimeInput} from '@xds/core/TimeInput';
 import {XDSStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
-export default function TimeInputWithSeconds() {
+export default function TimeInputSeconds() {
   const [countdown, setCountdown] = useState('14:30:00');
   const [logEntry, setLogEntry] = useState('09:15:30');
 

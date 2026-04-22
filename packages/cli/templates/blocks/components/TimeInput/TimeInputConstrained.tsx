@@ -5,7 +5,7 @@ import {XDSTimeInput} from '@xds/core/TimeInput';
 import {XDSStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
-export default function TimeInputWithMinMax() {
+export default function TimeInputConstrained() {
   const [appointment, setAppointment] = useState(undefined);
   const [evening, setEvening] = useState(undefined);
 
