@@ -200,12 +200,15 @@ export const docs = {
   ],
   usage: {
     description:
-      'Text provides typography primitives for the design system, including body text via XDSText and headings via XDSHeading. Use XDSText for all body copy with semantic type variants, and XDSHeading for section headings that render the correct h1–h6 element.',
+      'Text renders styled body text and headings from the theme. Use XDSText with a semantic type for body copy, labels, and captions, and XDSHeading for section titles that output the correct h1\u2013h6 element.',
     bestPractices: [
-      { guidance: true, description: 'Use the type prop on XDSText to select a semantic text style rather than manually setting size and weight.' },
-      { guidance: true, description: 'Set accessibilityLevel on XDSHeading when the visual heading level differs from the document outline hierarchy.' },
-      { guidance: false, description: 'Override size and weight on XDSText when a semantic type already matches your use case.' },
-      { guidance: false, description: 'Skip heading levels in the document outline — maintain a logical h1 through h6 hierarchy for accessibility.' },
+      { guidance: true, description: 'Pick a semantic type (body, label, supporting, large, code) instead of manually setting size and weight \u2014 the theme handles the details.' },
+      { guidance: true, description: 'Set accessibilityLevel on XDSHeading when the visual level differs from the document outline so screen readers announce the correct hierarchy.' },
+      { guidance: true, description: 'Use maxLines with a number to truncate long content \u2014 a tooltip appears automatically on hover so no text is lost.' },
+      { guidance: true, description: 'Enable hasTabularNumbers for columns of numeric data so digits align vertically across rows.' },
+      { guidance: false, description: 'Override size and weight when a semantic type already matches \u2014 extra overrides fight the theme and break when themes change.' },
+      { guidance: false, description: 'Skip heading levels in the document outline \u2014 go h1 then h2 then h3, never h1 then h3.' },
+      { guidance: false, description: 'Use raw HTML tags like <p>, <h1>\u2013<h6>, or <span> for text \u2014 XDSText and XDSHeading apply the correct theme tokens automatically.' },
     ],
   },
 };
@@ -411,27 +414,33 @@ export const docsZh = {
   ],
   usage: {
     description:
-      'Text provides typography primitives for the design system, including body text via XDSText and headings via XDSHeading. Use XDSText for all body copy with semantic type variants, and XDSHeading for section headings that render the correct h1–h6 element.',
+      'Text renders styled body text and headings from the theme. Use XDSText with a semantic type for body copy, labels, and captions, and XDSHeading for section titles that output the correct h1\u2013h6 element.',
     bestPractices: [
-      { guidance: true, description: 'Use the type prop on XDSText to select a semantic text style rather than manually setting size and weight.' },
-      { guidance: true, description: 'Set accessibilityLevel on XDSHeading when the visual heading level differs from the document outline hierarchy.' },
-      { guidance: false, description: 'Override size and weight on XDSText when a semantic type already matches your use case.' },
-      { guidance: false, description: 'Skip heading levels in the document outline — maintain a logical h1 through h6 hierarchy for accessibility.' },
+      { guidance: true, description: 'Pick a semantic type (body, label, supporting, large, code) instead of manually setting size and weight \u2014 the theme handles the details.' },
+      { guidance: true, description: 'Set accessibilityLevel on XDSHeading when the visual level differs from the document outline so screen readers announce the correct hierarchy.' },
+      { guidance: true, description: 'Use maxLines with a number to truncate long content \u2014 a tooltip appears automatically on hover so no text is lost.' },
+      { guidance: true, description: 'Enable hasTabularNumbers for columns of numeric data so digits align vertically across rows.' },
+      { guidance: false, description: 'Override size and weight when a semantic type already matches \u2014 extra overrides fight the theme and break when themes change.' },
+      { guidance: false, description: 'Skip heading levels in the document outline \u2014 go h1 then h2 then h3, never h1 then h3.' },
+      { guidance: false, description: 'Use raw HTML tags like <p>, <h1>\u2013<h6>, or <span> for text \u2014 XDSText and XDSHeading apply the correct theme tokens automatically.' },
     ],
   },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'Typography components: semantic body text, headings, wrapper for applying typography styles to native HTML.',
+  description: 'semantic body text + headings w/ theme-driven type scale, truncation, tabular numbers',
   usage: {
     description:
-      'Text provides typography primitives for the design system, including body text via XDSText and headings via XDSHeading. Use XDSText for all body copy with semantic type variants, and XDSHeading for section headings that render the correct h1–h6 element.',
+      'Text renders styled body text and headings. XDSText for body copy with semantic types, XDSHeading for h1\u2013h6 with theme tokens.',
     bestPractices: [
-      { guidance: true, description: 'Use the type prop on XDSText to select a semantic text style rather than manually setting size and weight.' },
-      { guidance: true, description: 'Set accessibilityLevel on XDSHeading when the visual heading level differs from the document outline hierarchy.' },
-      { guidance: false, description: 'Override size and weight on XDSText when a semantic type already matches your use case.' },
-      { guidance: false, description: 'Skip heading levels in the document outline — maintain a logical h1 through h6 hierarchy for accessibility.' },
+      { guidance: true, description: 'Semantic type (body, label, supporting, large, code) instead of manual size/weight.' },
+      { guidance: true, description: 'accessibilityLevel on XDSHeading when visual level differs from document outline.' },
+      { guidance: true, description: 'maxLines for truncation \u2014 tooltip shows full text on hover.' },
+      { guidance: true, description: 'hasTabularNumbers for aligned numeric columns.' },
+      { guidance: false, description: 'Override size/weight when a semantic type already matches.' },
+      { guidance: false, description: 'Skip heading levels \u2014 sequential h1 \u2192 h2 \u2192 h3.' },
+      { guidance: false, description: 'Raw <p>/<h1>/<span> \u2014 use XDSText/XDSHeading for theme tokens.' },
     ],
   },
   components: [
