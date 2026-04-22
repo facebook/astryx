@@ -45,11 +45,12 @@ export const docs = {
   ],
   usage: {
     description:
-      'TreeList displays hierarchical data as an expandable and collapsible tree structure with branch connector lines. Use TreeList for file explorers, nested category browsers, or any interface that visualizes parent-child relationships.',
+      'An expandable tree structure for displaying hierarchical data with branch connector lines. Use it for file explorers, nested category browsers, or any interface that visualizes parent-child relationships.',
     bestPractices: [
       {guidance: true, description: 'Provide meaningful labels and icons for each node to make the hierarchy easy to scan.'},
-      {guidance: true, description: 'Pre-expand important branches using isExpanded so users see key content immediately.'},
-      {guidance: false, description: 'Avoid deeply nesting more than 4-5 levels — flatten the structure or use a different pattern for very deep hierarchies.'},
+      {guidance: true, description: 'Pre-expand important branches so users see key content immediately.'},
+      {guidance: false, description: 'Nest more than 4–5 levels deep — flatten the structure or use a different pattern.'},
+      {guidance: false, description: 'Use a tree for flat, non-hierarchical data — use a List instead.'},
     ],
   },
 };
@@ -106,11 +107,12 @@ export const docsZh = {
   ],
   usage: {
     description:
-      'TreeList displays hierarchical data as an expandable and collapsible tree structure with branch connector lines. Use TreeList for file explorers, nested category browsers, or any interface that visualizes parent-child relationships.',
+      'An expandable tree structure for displaying hierarchical data with branch connector lines. Use it for file explorers, nested category browsers, or any interface that visualizes parent-child relationships.',
     bestPractices: [
       {guidance: true, description: 'Provide meaningful labels and icons for each node to make the hierarchy easy to scan.'},
-      {guidance: true, description: 'Pre-expand important branches using isExpanded so users see key content immediately.'},
-      {guidance: false, description: 'Avoid deeply nesting more than 4-5 levels — flatten the structure or use a different pattern for very deep hierarchies.'},
+      {guidance: true, description: 'Pre-expand important branches so users see key content immediately.'},
+      {guidance: false, description: 'Nest more than 4–5 levels deep — flatten the structure or use a different pattern.'},
+      {guidance: false, description: 'Use a tree for flat, non-hierarchical data — use a List instead.'},
     ],
   },
 };
@@ -121,11 +123,12 @@ export const docsDense = {
     'Data-driven tree list for hierarchical data w/ expand/collapse, branch lines, interactive items. Flat items array w/ recursive children, no composition, no cloneElement.',
   usage: {
     description:
-      'TreeList displays hierarchical data as an expandable and collapsible tree structure with branch connector lines. Use TreeList for file explorers, nested category browsers, or any interface that visualizes parent-child relationships.',
+      'An expandable tree structure for displaying hierarchical data with branch connector lines. Use it for file explorers, nested category browsers, or any interface that visualizes parent-child relationships.',
     bestPractices: [
       {guidance: true, description: 'Provide meaningful labels and icons for each node to make the hierarchy easy to scan.'},
-      {guidance: true, description: 'Pre-expand important branches using isExpanded so users see key content immediately.'},
-      {guidance: false, description: 'Avoid deeply nesting more than 4-5 levels — flatten the structure or use a different pattern for very deep hierarchies.'},
+      {guidance: true, description: 'Pre-expand important branches so users see key content immediately.'},
+      {guidance: false, description: 'Nest more than 4–5 levels deep — flatten the structure or use a different pattern.'},
+      {guidance: false, description: 'Use a tree for flat, non-hierarchical data — use a List instead.'},
     ],
   },
   propDescriptions: {
