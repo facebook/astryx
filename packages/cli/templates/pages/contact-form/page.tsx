@@ -77,13 +77,12 @@ const WHY_US = [
 const styles = stylex.create({
   pageBg: {
     backgroundColor: colorVars['--color-background-surface'],
-    // illustration-horizontal-2 from xds_oss asset set
-    backgroundImage:
-      'url(https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-2.png)',
-    backgroundSize: '100% auto',
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: 'top center',
-    paddingTop: '15vh',
+  },
+  bannerImage: {
+    width: '100%',
+    height: '15vh',
+    objectFit: 'cover',
+    objectPosition: 'center',
   },
   fullWidth: {
     width: '100%',
@@ -135,9 +134,17 @@ export default function FormSimplePage() {
 
   return (
     <XDSCenter axis="horizontal" xstyle={styles.pageBg}>
+      <XDSVStack>
+        {/* Full-bleed banner */}
+        <img
+          // illustration-horizontal-2 from xds_oss asset set
+          src="https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-2.png"
+          alt="Decorative banner"
+          {...stylex.props(styles.bannerImage)}
+        />
 
-      <XDSSection maxWidth={800} padding={6} paddingBlock={10} variant="transparent">
-        <XDSVStack gap={6}>
+        <XDSSection maxWidth={800} padding={6} paddingBlock={10} variant="transparent">
+          <XDSVStack gap={6}>
           {/* Header */}
           <XDSVStack gap={2} hAlign="center">
             <XDSText type="display-1" weight="bold">
@@ -316,6 +323,7 @@ export default function FormSimplePage() {
           </XDSVStack>
         </XDSVStack>
       </XDSSection>
+      </XDSVStack>
     </XDSCenter>
   );
 }
