@@ -195,12 +195,17 @@ export const TEMPLATES: {
   },
   {
 <<<<<<< HEAD
+<<<<<<< HEAD
     name: 'Landing Page',
     src: `${basePath}/docsite/card4-preview.png`,
 =======
     name: 'Settings Page',
     src: `${basePath}/templates/card4-preview.png`,
 >>>>>>> 5855021fe59 (fix(sandbox): enhance docsite editor panel and template preview interactions)
+=======
+    name: 'Landing Page',
+    src: `${basePath}/docsite/card4-preview.png`,
+>>>>>>> c0436714ed3 (fix(sandbox): move docsite images to public/docsite and rename Settings Page to Landing Page)
     size: 'small',
     author: 'XDS Design',
     isOfficial: true,
