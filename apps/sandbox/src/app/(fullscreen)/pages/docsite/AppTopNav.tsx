@@ -86,7 +86,7 @@ export function AppTopNav({
   }, []);
 
   const headingMenu = (
-    <XDSList density="spacious" style={{minWidth: 240}}>
+    <XDSList density="spacious" style={{width: 240}}>
       <XDSListItem label="Craft" onClick={() => setActiveView('craft')} />
       <XDSListItem label="Library" onClick={() => setActiveView('docs')} />
     </XDSList>
