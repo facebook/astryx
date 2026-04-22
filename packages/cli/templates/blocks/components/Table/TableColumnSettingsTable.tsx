@@ -93,7 +93,7 @@ export default function TableColumnSettingsTable() {
   const state = useXDSTableColumnSettingsState<ColumnKey>({
     columns: columnOptions,
     activeColumnKeys: activeKeys,
-    onChangeActiveColumnKeys: setActiveKeys,
+    onChangeActiveColumnKeys: (keys) => setActiveKeys([...keys]),
   });
 
   const plugin = useXDSTableColumnSettings<User>(state.columnSettingsConfig);
