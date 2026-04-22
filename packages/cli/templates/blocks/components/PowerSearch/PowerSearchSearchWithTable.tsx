@@ -5,14 +5,14 @@ import {XDSPowerSearch, usePowerSearchConfig} from '@xds/core/PowerSearch';
 import type {PowerSearchFilter} from '@xds/core/PowerSearch';
 import {XDSTable, pixel, proportional} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
+import {XDSVStack} from '@xds/core/Layout';
 
 const genreValues = [
-  {value: 'fiction', label: 'Fiction'},
-  {value: 'non-fiction', label: 'Non-Fiction'},
   {value: 'sci-fi', label: 'Science Fiction'},
   {value: 'fantasy', label: 'Fantasy'},
-  {value: 'mystery', label: 'Mystery'},
+  {value: 'non-fiction', label: 'Non-Fiction'},
   {value: 'romance', label: 'Romance'},
+  {value: 'mystery', label: 'Mystery'},
 ];
 
 const fieldDefs = [
@@ -31,14 +31,41 @@ interface Book extends Record<string, unknown> {
 }
 
 const books: Book[] = [
-  {id: '1', title: 'Dune', author: 'Frank Herbert', year: 1965, genre: 'sci-fi'},
-  {id: '2', title: 'Pride and Prejudice', author: 'Jane Austen', year: 1813, genre: 'romance'},
-  {id: '3', title: 'The Great Gatsby', author: 'F. Scott Fitzgerald', year: 1925, genre: 'fiction'},
-  {id: '4', title: '1984', author: 'George Orwell', year: 1949, genre: 'sci-fi'},
-  {id: '5', title: 'To Kill a Mockingbird', author: 'Harper Lee', year: 1960, genre: 'fiction'},
-  {id: '6', title: 'The Hobbit', author: 'J.R.R. Tolkien', year: 1937, genre: 'fantasy'},
-  {id: '7', title: 'Sapiens', author: 'Yuval Noah Harari', year: 2011, genre: 'non-fiction'},
-  {id: '8', title: 'Gone Girl', author: 'Gillian Flynn', year: 2012, genre: 'mystery'},
+  {
+    id: '1',
+    title: 'Dune',
+    author: 'Frank Herbert',
+    year: 1965,
+    genre: 'sci-fi',
+  },
+  {
+    id: '2',
+    title: 'Pride and Prejudice',
+    author: 'Jane Austen',
+    year: 1813,
+    genre: 'romance',
+  },
+  {
+    id: '3',
+    title: '1984',
+    author: 'George Orwell',
+    year: 1949,
+    genre: 'sci-fi',
+  },
+  {
+    id: '4',
+    title: 'The Hobbit',
+    author: 'J.R.R. Tolkien',
+    year: 1937,
+    genre: 'fantasy',
+  },
+  {
+    id: '5',
+    title: 'Sapiens',
+    author: 'Yuval Noah Harari',
+    year: 2011,
+    genre: 'non-fiction',
+  },
 ];
 
 const columns: XDSTableColumn<Book>[] = [
@@ -60,7 +87,7 @@ export default function PowerSearchSearchWithTable() {
   const filteredBooks = applyFilters(filters, books);
 
   return (
-    <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+    <XDSVStack gap={4}>
       <XDSPowerSearch
         config={config}
         filters={filters}
@@ -69,6 +96,6 @@ export default function PowerSearchSearchWithTable() {
         resultCount={filteredBooks.length}
       />
       <XDSTable data={filteredBooks} columns={columns} idKey="id" hasHover />
-    </div>
+    </XDSVStack>
   );
 }

@@ -1,5 +1,8 @@
+'use client';
+
+import {useState} from 'react';
 import {XDSPowerSearch} from '@xds/core/PowerSearch';
-import type {PowerSearchConfig} from '@xds/core/PowerSearch';
+import type {PowerSearchConfig, PowerSearchFilter} from '@xds/core/PowerSearch';
 
 const config: PowerSearchConfig = {
   name: 'BasicSearch',
@@ -34,12 +37,23 @@ const config: PowerSearchConfig = {
   ],
 };
 
+const initialFilters: PowerSearchFilter[] = [
+  {field: 'status', operator: 'is', value: {type: 'enum', value: 'open'}},
+  {
+    field: 'title',
+    operator: 'contains',
+    value: {type: 'string', value: 'dashboard'},
+  },
+];
+
 export default function PowerSearchShowcase() {
+  const [filters, setFilters] = useState<PowerSearchFilter[]>(initialFilters);
+
   return (
     <XDSPowerSearch
       config={config}
-      filters={[]}
-      onChange={() => {}}
+      filters={filters}
+      onChange={newFilters => setFilters([...newFilters])}
       placeholder="Search by status, title..."
     />
   );
