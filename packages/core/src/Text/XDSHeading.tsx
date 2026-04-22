@@ -16,7 +16,6 @@
 
 import {lazy, Suspense, useCallback, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import type {
   XDSTextColor,
   XDSTextDisplay,
@@ -36,6 +35,7 @@ import {
 import {useTruncation} from './useTruncation';
 import type {LayerPlacement} from '../Layer';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 const LazyXDSTooltip = lazy(() =>
   import('../Tooltip/XDSTooltip').then(mod => ({default: mod.XDSTooltip})),
@@ -46,7 +46,7 @@ const LazyXDSTooltip = lazy(() =>
  */
 export type XDSHeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
 
-export interface XDSHeadingProps {
+export interface XDSHeadingProps extends Omit<XDSBaseProps<HTMLHeadingElement>, 'children'> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLHeadingElement>;
   /**
@@ -123,34 +123,9 @@ export interface XDSHeadingProps {
   hasStrikethrough?: boolean;
 
   /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
-
-  /**
    * Heading content
    */
   children: ReactNode;
-
-  'data-testid'?: string;
-  id?: string;
 }
 
 const levelToTag = {
