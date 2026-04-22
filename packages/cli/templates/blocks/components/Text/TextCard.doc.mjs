@@ -4,6 +4,6 @@ export const doc = {
   name: 'Text — Card',
   description: 'Card layout with a label title, truncated body, and a supporting timestamp showing text hierarchy in a contained space.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Text', 'Card', 'Stack'],
 };
