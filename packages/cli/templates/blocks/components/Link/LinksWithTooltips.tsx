@@ -1,10 +1,11 @@
 'use client';
 
 import {XDSLink} from '@xds/core/Link';
+import {XDSHStack} from '@xds/core/Layout';
 
 export default function LinksWithTooltips() {
   return (
-    <div style={{display: 'flex', gap: 16, alignItems: 'center'}}>
+    <XDSHStack gap={4} vAlign="center">
       <XDSLink
         label="Settings"
         href="/settings"
@@ -27,6 +28,6 @@ export default function LinksWithTooltips() {
         isStandalone>
         Help
       </XDSLink>
-    </div>
+    </XDSHStack>
   );
 }

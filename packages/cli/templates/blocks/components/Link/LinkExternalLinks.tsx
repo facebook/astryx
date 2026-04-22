@@ -1,10 +1,11 @@
 'use client';
 
 import {XDSLink} from '@xds/core/Link';
+import {XDSVStack} from '@xds/core/Layout';
 
 export default function LinkExternalLinks() {
   return (
-    <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
+    <XDSVStack gap={2}>
       <XDSLink
         label="GitHub"
         href="https://github.com"
@@ -27,6 +28,6 @@ export default function LinkExternalLinks() {
         isStandalone>
         React Documentation
       </XDSLink>
-    </div>
+    </XDSVStack>
   );
 }
