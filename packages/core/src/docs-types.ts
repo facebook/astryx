@@ -268,16 +268,39 @@ interface BaseDoc {
    *  Lowercase only. Used by `xds component <term>` for fuzzy matching.
    *  e.g. `['accordion', 'expand', 'toggle', 'disclosure']` for Collapsible */
   keywords?: string[];
+  /** Sub-component names to hide from discovery. Use when the directory's
+   *  doc covers a group but some XDS*.tsx files are internal. */
+  internalComponents?: string[];
   /** Optional group for sidebar/docs organization.
    *  Components without a group appear flat in alphabetical order.
    *  Groups cluster related components that are always used together
    *  or are variants of each other. */
   group?:
-    | 'Buttons'
+    | 'Avatar'
+    | 'Breadcrumbs'
+    | 'Button'
     | 'Chat'
-    | 'Dialogs'
-    | 'Inputs'
-    | 'Navigation';
+    | 'CheckboxList'
+    | 'Collapsible'
+    | 'CommandPalette'
+    | 'Dialog'
+    | 'DropdownMenu'
+    | 'Field'
+    | 'Grid'
+    | 'Layout'
+    | 'List'
+    | 'MetadataList'
+    | 'Navigation'
+    | 'RadioList'
+    | 'SegmentedControl'
+    | 'Selector'
+    | 'Stack'
+    | 'TabList'
+    | 'Table'
+    | 'Toast'
+    | 'TreeList'
+    | 'Typeahead'
+    | 'Utility';
   /** Theming configuration. Documents the stable CSS class names
    *  rendered by this component that themes can target via `@scope`
    *  selectors in `defineTheme`. */
@@ -502,4 +525,3 @@ export interface BlockTemplateDoc extends BaseTemplateDoc {
 }
 
 export type TemplateDoc = PageTemplateDoc | BlockTemplateDoc;
-

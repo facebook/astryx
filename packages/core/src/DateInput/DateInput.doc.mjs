@@ -2,7 +2,6 @@
 
 export const docs = {
   name: 'DateInput',
-  group: 'Inputs',
   keywords: ["dateinput","datepicker","datefield","calendar","dateselect","dateentry","datechooser"],
   props: [
     {

@@ -2,7 +2,7 @@
 
 export const docs = {
   name: 'AlertDialog',
-  group: 'Dialogs',
+  group: 'Dialog',
   keywords: [
     'alert',
     'alertdialog',

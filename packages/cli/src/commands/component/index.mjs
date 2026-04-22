@@ -89,11 +89,16 @@ export function registerComponent(program) {
             console.log('');
           } else {
             console.log('');
-            for (const [cat, comps] of Object.entries(result.data)) {
-              console.log(`${cat}:`);
-              for (const comp of comps) console.log(`  ${comp}`);
-              console.log('');
+            for (const [key, comps] of Object.entries(result.data)) {
+              const isUngrouped = comps.length === 1 && comps[0] === key;
+              if (isUngrouped) {
+                console.log(key);
+              } else {
+                console.log(key);
+                for (const comp of comps) console.log(`  ${comp}`);
+              }
             }
+            console.log('');
             console.log(`Usage: ${run} xds component <name>`);
             console.log('');
           }

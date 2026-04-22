@@ -5,58 +5,52 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-const DIR_TO_CATEGORY = {
-  // Layout
-  AspectRatio: 'Layout',
-  Center: 'Layout',
-  CollapsibleGroup: 'Layout',
-  Grid: 'Layout',
-  Layout: 'Layout',
-  Stack: 'Layout',
-  // Display
-  Avatar: 'Display',
-  Badge: 'Display',
-  Divider: 'Display',
-  Icon: 'Display',
-  Skeleton: 'Display',
-  Table: 'Display',
-  Text: 'Display',
-  // Form
-  CheckboxInput: 'Form',
-  DateInput: 'Form',
-  Field: 'Form',
-  NumberInput: 'Form',
-  RadioList: 'Form',
-  Selector: 'Form',
-  Slider: 'Form',
-  Switch: 'Form',
-  TextArea: 'Form',
-  TextInput: 'Form',
-  TimeInput: 'Form',
-  // Action
-  Button: 'Action',
-  CloseButton: 'Action',
-  DropdownMenu: 'Action',
-  Link: 'Action',
-  // Navigation
-  TabList: 'Navigation',
-  TopNav: 'Navigation',
-  // Overlay
-  Calendar: 'Overlay',
-  Dialog: 'Overlay',
-  Layer: 'Overlay',
-};
+const SKIP_DIRS = new Set(['hooks', 'utils', '__tests__', 'node_modules']);
 
-const CATEGORY_ORDER = ['Layout', 'Display', 'Form', 'Action', 'Navigation', 'Overlay'];
-const SKIP_DIRS = new Set(['theme', 'hooks', 'utils', '__tests__', 'node_modules']);
+// Matches the top-level `group: 'GroupName'` field in a .doc.mjs file.
+// Only matches at shallow indentation (≤ 4 spaces from line start) to avoid
+// picking up nested `group:` fields inside prop descriptions.
+const GROUP_RE = /(?:^|\n) {0,4}group:\s*['"]([^'"]+)['"]/;
+const INTERNAL_COMPONENTS_RE = /(?:^|\n) {0,4}internalComponents:\s*\[([^\]]*)\]/;
+
+/**
+ * Read the `group` and `internalComponents` fields from a
+ * component's .doc.mjs file (synchronous).
+ */
+function readDocMeta(docPath) {
+  try {
+    const content = fs.readFileSync(docPath, 'utf-8');
+    const groupMatch = GROUP_RE.exec(content);
+    const internalCompsMatch = INTERNAL_COMPONENTS_RE.exec(content);
+    const hiddenSet = new Set();
+    if (internalCompsMatch) {
+      for (const m of internalCompsMatch[1].matchAll(/['"]([^'"]+)['"]/g)) {
+        hiddenSet.add(m[1]);
+      }
+    }
+    return {
+      group: groupMatch ? groupMatch[1] : null,
+      internalComponents: hiddenSet,
+    };
+  } catch {
+    return {group: null, internalComponents: new Set()};
+  }
+}
 
 /**
  * Auto-discover components by scanning for XDS*.tsx files in core/src/.
- * Groups them by category using the DIR_TO_CATEGORY mapping.
+ *
+ * Returns an ordered Record where:
+ * - Grouped components use the group name as key: `'Buttons': ['Button', 'IconButton']`
+ * - Ungrouped components use their own name as key: `'Avatar': ['Avatar']`
+ *
+ * Keys are sorted alphabetically (groups and ungrouped components interleaved).
+ * Components within each group are also sorted alphabetically.
  */
 export function discoverComponents(coreDir) {
   const srcDir = path.join(coreDir, 'src');
-  const categories = {};
+  /** @type {Map<string, string|null>} componentName → group */
+  const componentGroups = new Map();
 
   function collectXDSFiles(dirPath) {
     const results = [];
@@ -80,31 +74,75 @@ export function discoverComponents(coreDir) {
   for (const entry of topEntries) {
     if (!entry.isDirectory() || SKIP_DIRS.has(entry.name)) continue;
 
-    const category = DIR_TO_CATEGORY[entry.name] || 'Other';
-    const xdsFiles = collectXDSFiles(path.join(srcDir, entry.name));
+    const dirPath = path.join(srcDir, entry.name);
+    const xdsFiles = collectXDSFiles(dirPath);
+
+    // Read the group from the directory's .doc.mjs file (if it exists)
+    // Check both {Name}.doc.mjs and XDS{Name}.doc.mjs naming conventions
+    let docFile = path.join(dirPath, `${entry.name}.doc.mjs`);
+    if (!fs.existsSync(docFile)) {
+      docFile = path.join(dirPath, `XDS${entry.name}.doc.mjs`);
+    }
+    const {group, internalComponents} = fs.existsSync(docFile)
+      ? readDocMeta(docFile)
+      : {group: null, internalComponents: new Set()};
 
     for (const fileName of xdsFiles) {
       const componentName = fileName.replace(/^XDS/, '').replace(/\.tsx$/, '');
-      if (!categories[category]) categories[category] = [];
-      if (!categories[category].includes(componentName)) {
-        categories[category].push(componentName);
+      if (internalComponents.has(componentName)) continue;
+
+      // Check for a per-component doc file that overrides the directory group
+      let compGroup = group;
+      let compDoc = path.join(dirPath, `${componentName}.doc.mjs`);
+      if (!fs.existsSync(compDoc)) {
+        compDoc = path.join(dirPath, `XDS${componentName}.doc.mjs`);
+      }
+      if (fs.existsSync(compDoc)) {
+        const compMeta = readDocMeta(compDoc);
+        if (compMeta.group) compGroup = compMeta.group;
+      }
+
+      if (!componentGroups.has(componentName)) {
+        componentGroups.set(componentName, compGroup);
       }
     }
   }
 
-  // Sort components within each category
-  for (const cat of Object.keys(categories)) {
-    categories[cat].sort();
+  // Build the result: group name → sorted members, or component name → [self]
+  /** @type {Map<string, string[]>} */
+  const groups = new Map();
+  /** @type {string[]} ungrouped component names */
+  const ungrouped = [];
+
+  for (const [name, group] of componentGroups) {
+    if (group) {
+      if (!groups.has(group)) groups.set(group, []);
+      groups.get(group).push(name);
+    } else {
+      ungrouped.push(name);
+    }
   }
 
-  // Return in defined order
-  const ordered = {};
-  for (const cat of CATEGORY_ORDER) {
-    if (categories[cat]) ordered[cat] = categories[cat];
+  // Sort members within each group
+  for (const members of groups.values()) {
+    members.sort();
   }
-  // Append any categories not in CATEGORY_ORDER (e.g. "Other")
-  for (const cat of Object.keys(categories)) {
-    if (!ordered[cat]) ordered[cat] = categories[cat];
+
+  // Merge groups and ungrouped into a single alphabetically-ordered record
+  /** @type {Array<{key: string, values: string[]}>} */
+  const entries = [];
+  for (const [groupName, members] of groups) {
+    entries.push({key: groupName, values: members});
+  }
+  for (const name of ungrouped) {
+    entries.push({key: name, values: [name]});
+  }
+  entries.sort((a, b) => a.key.localeCompare(b.key));
+
+  /** @type {Record<string, string[]>} */
+  const ordered = {};
+  for (const {key, values} of entries) {
+    ordered[key] = values;
   }
 
   return ordered;
@@ -118,17 +156,31 @@ export function discoverComponents(coreDir) {
 export function findComponentReadme(coreDir, name) {
   const srcDir = path.join(coreDir, 'src');
   const exactDoc = `${name}.doc.mjs`;
+  const xdsDoc = `XDS${name}.doc.mjs`;
 
-  // Direct match: src/{name}/{Name}.doc.mjs
+  // Direct match: src/{name}/{Name}.doc.mjs or src/{name}/XDS{Name}.doc.mjs
   const direct = path.join(srcDir, name, exactDoc);
   if (fs.existsSync(direct)) return direct;
+  const directXds = path.join(srcDir, name, xdsDoc);
+  if (fs.existsSync(directXds)) return directXds;
 
-  // Nested match: src/*/{name}/{Name}.doc.mjs
+  // Nested match: src/*/{name}/{Name}.doc.mjs or src/*/{name}/XDS{Name}.doc.mjs
   const entries = fs.readdirSync(srcDir, {withFileTypes: true});
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     const nested = path.join(srcDir, entry.name, name, exactDoc);
     if (fs.existsSync(nested)) return nested;
+    const nestedXds = path.join(srcDir, entry.name, name, xdsDoc);
+    if (fs.existsSync(nestedXds)) return nestedXds;
+  }
+
+  // Per-component doc in a parent directory: src/*/{Name}.doc.mjs or src/*/XDS{Name}.doc.mjs
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const perComp = path.join(srcDir, entry.name, exactDoc);
+    if (fs.existsSync(perComp)) return perComp;
+    const perCompXds = path.join(srcDir, entry.name, xdsDoc);
+    if (fs.existsSync(perCompXds)) return perCompXds;
   }
 
   // Sub-component fallback: find the source file, then walk up

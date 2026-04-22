@@ -2,7 +2,7 @@
 
 export const docs = {
   name: 'Dialog',
-  group: 'Dialogs',
+  group: 'Dialog',
   keywords: ["dialog","modal","popup","overlay","lightbox","alert","confirm","prompt","backdrop","focus trap"],
   theming: {
     container: true,

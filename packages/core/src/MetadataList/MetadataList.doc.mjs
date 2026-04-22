@@ -2,6 +2,7 @@
 
 export const docs = {
   name: 'MetadataList',
+  group: 'MetadataList',
   keywords: ["metadata","description","definition","keyvalue","properties","details","attributes","summary"],
   theming: {
     targets: [

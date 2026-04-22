@@ -2,7 +2,6 @@
 
 export const docs = {
   name: 'MultiSelector',
-  group: 'Inputs',
   keywords: ['multiselect', 'checkbox', 'dropdown', 'multi', 'picker', 'checklist', 'facet', 'filter', 'select'],
   theming: {
     targets: [

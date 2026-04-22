@@ -2,7 +2,7 @@
 
 export const docs = {
   name: 'ToggleButton',
-  group: 'Buttons',
+  group: 'Button',
   keywords: ["toggle","togglebutton","pressed","toolbar","formatting","segmented","button-group","exclusive","multi-select"],
   theming: {
     targets: [

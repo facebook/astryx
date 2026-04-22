@@ -2,7 +2,6 @@
 
 export const docs = {
   name: 'TextInput',
-  group: 'Inputs',
   keywords: ["textinput","textfield","input","search","clearable","prefix","suffix","adornment","validation"],
   props: [
     {

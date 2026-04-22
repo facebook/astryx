@@ -2,6 +2,7 @@
 
 export const docs = {
   name: 'List',
+  group: 'List',
   keywords: ["list","listitem","listbox","menu","collection","items","ul","navlist"],
   theming: {
     targets: [
@@ -131,6 +132,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'List',
+  group: 'List',
   theming: {
     targets: [
       {className: 'xds-list', visualProps: ['density', 'listStyle']},

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * @file XDSAppShellSlotPresence.tsx
+ * @file useXDSSlotPresence.tsx
  * @input Uses React useCallback, useLayoutEffect, useRef, useState
  * @output Exports useXDSSlotPresence hook
  * @position Internal hook for detecting whether slot containers have rendered content.

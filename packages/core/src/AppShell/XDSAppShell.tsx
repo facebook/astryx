@@ -45,7 +45,7 @@ import {XDSSideNavRenderContext} from '../SideNav/XDSSideNavRenderContext';
 import {XDSTopNavRenderContext} from '../TopNav/XDSTopNavRenderContext';
 import {XDSTopNavMobileContentContext} from '../TopNav/XDSTopNavMobileContentContext';
 import {XDSAppShellMobileContext} from './XDSAppShellMobileContext';
-import {useXDSSlotPresence} from './XDSAppShellSlotPresence';
+import {useXDSSlotPresence} from './useXDSSlotPresence';
 import type {XDSAppShellMobileContextValue} from './XDSAppShellMobileContext';
 import type {SpacingStep} from '../utils/types';
 import {xdsClassName, mergeProps} from '../utils';

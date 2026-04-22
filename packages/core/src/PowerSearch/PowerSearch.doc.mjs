@@ -2,7 +2,6 @@
 
 export const docs = {
   name: 'PowerSearch',
-  group: 'Inputs',
   keywords: ["powersearch","search","searchbar","filter","filterbar","faceted","querybuilder","structured","omnibar"],
   props: [
     {
