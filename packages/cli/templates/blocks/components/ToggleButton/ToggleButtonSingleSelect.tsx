@@ -7,7 +7,7 @@ import {XDSText} from '@xds/core/Text';
 import {XDSIcon} from '@xds/core/Icon';
 import {ListBulletIcon, Squares2X2Icon, TableCellsIcon} from '@heroicons/react/24/outline';
 
-export default function ToggleButtonGroupSingle() {
+export default function ToggleButtonSingleSelect() {
   const [view, setView] = useState<string | null>('list');
 
   return (

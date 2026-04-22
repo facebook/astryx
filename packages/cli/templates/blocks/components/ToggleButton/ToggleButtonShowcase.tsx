@@ -1,20 +1,35 @@
-import {XDSToggleButton} from '@xds/core/ToggleButton';
-
-const BoldIcon = (
-  <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-    <path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z" />
-    <path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z" />
-  </svg>
-);
+import {useState} from 'react';
+import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
+import {XDSIcon} from '@xds/core/Icon';
+import {BoldIcon, ItalicIcon, UnderlineIcon} from '@heroicons/react/24/outline';
 
 export default function ToggleButtonShowcase() {
+  const [formats, setFormats] = useState<string[]>(['bold']);
+
   return (
-    <XDSToggleButton
-      label="Bold"
-      icon={BoldIcon}
-      isPressed={false}
-      onPressedChange={() => {}}
-      isIconOnly
-    />
+    <XDSToggleButtonGroup
+      type="multiple"
+      value={formats}
+      onChange={setFormats}
+      label="Text formatting">
+      <XDSToggleButton
+        value="bold"
+        label="Bold"
+        icon={<XDSIcon icon={BoldIcon} />}
+        isIconOnly
+      />
+      <XDSToggleButton
+        value="italic"
+        label="Italic"
+        icon={<XDSIcon icon={ItalicIcon} />}
+        isIconOnly
+      />
+      <XDSToggleButton
+        value="underline"
+        label="Underline"
+        icon={<XDSIcon icon={UnderlineIcon} />}
+        isIconOnly
+      />
+    </XDSToggleButtonGroup>
   );
 }

@@ -7,7 +7,7 @@ import {XDSText} from '@xds/core/Text';
 import {XDSIcon} from '@xds/core/Icon';
 import {BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon} from '@heroicons/react/24/outline';
 
-export default function ToggleButtonGroupMultiple() {
+export default function ToggleButtonMultiSelect() {
   const [formats, setFormats] = useState<string[]>(['bold']);
 
   return (
