@@ -114,8 +114,8 @@ export const COMPONENT_PREVIEW_LIST: {
           gap: 12,
           maxWidth: 320,
         }}>
-        <XDSTextInput label="Name" placeholder="Enter your name" />
-        <XDSTextInput label="Email" placeholder="you@example.com" />
+        <XDSTextInput label="Name" placeholder="Enter your name" value="" />
+        <XDSTextInput label="Email" placeholder="you@example.com" value="" />
       </div>
     ),
   },
