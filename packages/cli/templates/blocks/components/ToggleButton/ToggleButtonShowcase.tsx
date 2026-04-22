@@ -1,3 +1,5 @@
+'use client';
+
 import {useState} from 'react';
 import {XDSToggleButton} from '@xds/core/ToggleButton';
 import {XDSStack} from '@xds/core/Layout';
