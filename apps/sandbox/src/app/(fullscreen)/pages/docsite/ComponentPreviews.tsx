@@ -114,8 +114,8 @@ export const COMPONENT_PREVIEW_LIST: {
           gap: 12,
           maxWidth: 320,
         }}>
-        <XDSTextInput label="Name" placeholder="Enter your name" />
-        <XDSTextInput label="Email" placeholder="you@example.com" />
+        <XDSTextInput label="Name" placeholder="Enter your name" value="" />
+        <XDSTextInput label="Email" placeholder="you@example.com" value="" />
       </div>
     ),
   },
@@ -135,7 +135,7 @@ export const COMPONENT_PREVIEW_LIST: {
             {label: 'Edit'},
             {label: 'Duplicate'},
             {label: 'Archive'},
-            {label: 'Delete', variant: 'destructive'},
+            {label: 'Delete'},
           ]}
         />
         <XDSDropdownMenu
@@ -177,7 +177,7 @@ export const COMPONENT_PREVIEW_LIST: {
             25%
           </XDSText>
           <div style={{marginTop: 6, width: '100%'}}>
-            <XDSProgressBar value={25} />
+            <XDSProgressBar value={25} label="Progress" isLabelHidden />
           </div>
         </div>
         <div style={{width: '100%'}}>
@@ -185,7 +185,7 @@ export const COMPONENT_PREVIEW_LIST: {
             60%
           </XDSText>
           <div style={{marginTop: 6, width: '100%'}}>
-            <XDSProgressBar value={60} />
+            <XDSProgressBar value={60} label="Progress" isLabelHidden />
           </div>
         </div>
         <div style={{width: '100%'}}>
@@ -193,7 +193,7 @@ export const COMPONENT_PREVIEW_LIST: {
             100%
           </XDSText>
           <div style={{marginTop: 6, width: '100%'}}>
-            <XDSProgressBar value={100} />
+            <XDSProgressBar value={100} label="Progress" isLabelHidden />
           </div>
         </div>
       </div>
@@ -264,7 +264,11 @@ export const COMPONENT_PREVIEW_LIST: {
     label: 'TextArea',
     preview: (
       <div style={{width: '100%'}}>
-        <XDSTextArea label="Message" placeholder="Write something..." />
+        <XDSTextArea
+          label="Message"
+          placeholder="Write something..."
+          value=""
+        />
       </div>
     ),
   },
@@ -284,8 +288,16 @@ function SwitchPreview() {
         gap: 12,
         maxWidth: 240,
       }}>
-      <XDSSwitch label="Notifications" isSelected={a} onChange={setA} />
-      <XDSSwitch label="Dark mode" isSelected={b} onChange={setB} />
+      <XDSSwitch
+        label="Notifications"
+        value={a}
+        onChange={checked => setA(checked)}
+      />
+      <XDSSwitch
+        label="Dark mode"
+        value={b}
+        onChange={checked => setB(checked)}
+      />
     </div>
   );
 }
@@ -307,13 +319,21 @@ function CheckboxPreview() {
   const [c, setC] = useState(false);
   return (
     <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
-      <XDSCheckboxInput label="Accept terms" isSelected={a} onChange={setA} />
+      <XDSCheckboxInput
+        label="Accept terms"
+        value={a}
+        onChange={checked => setA(checked)}
+      />
       <XDSCheckboxInput
         label="Subscribe to newsletter"
-        isSelected={b}
-        onChange={setB}
+        value={b}
+        onChange={checked => setB(checked)}
       />
-      <XDSCheckboxInput label="Remember me" isSelected={c} onChange={setC} />
+      <XDSCheckboxInput
+        label="Remember me"
+        value={c}
+        onChange={checked => setC(checked)}
+      />
     </div>
   );
 }
