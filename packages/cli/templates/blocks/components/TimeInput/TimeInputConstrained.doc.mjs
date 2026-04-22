@@ -5,5 +5,5 @@ export const doc = {
   description: 'Time inputs with min/max constraints limiting selection to specific windows. Use to prevent out-of-bounds selections for appointments, reservations, or shift scheduling.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['TimeInput', 'Layout', 'Text'],
+  componentsUsed: ['TimeInput', 'Layout'],
 };
