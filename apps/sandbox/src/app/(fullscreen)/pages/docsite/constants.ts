@@ -194,8 +194,13 @@ export const TEMPLATES: {
     isOfficial: true,
   },
   {
+<<<<<<< HEAD
     name: 'Landing Page',
     src: `${basePath}/docsite/card4-preview.png`,
+=======
+    name: 'Settings Page',
+    src: `${basePath}/templates/card4-preview.png`,
+>>>>>>> 5855021fe59 (fix(sandbox): enhance docsite editor panel and template preview interactions)
     size: 'small',
     author: 'XDS Design',
     isOfficial: true,

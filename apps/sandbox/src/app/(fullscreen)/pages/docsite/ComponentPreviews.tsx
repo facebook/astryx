@@ -177,7 +177,11 @@ export const COMPONENT_PREVIEW_LIST: {
             25%
           </XDSText>
           <div style={{marginTop: 6, width: '100%'}}>
+<<<<<<< HEAD
             <XDSProgressBar value={25} label="Progress" isLabelHidden />
+=======
+            <XDSProgressBar value={25} />
+>>>>>>> 5855021fe59 (fix(sandbox): enhance docsite editor panel and template preview interactions)
           </div>
         </div>
         <div style={{width: '100%'}}>
@@ -185,7 +189,11 @@ export const COMPONENT_PREVIEW_LIST: {
             60%
           </XDSText>
           <div style={{marginTop: 6, width: '100%'}}>
+<<<<<<< HEAD
             <XDSProgressBar value={60} label="Progress" isLabelHidden />
+=======
+            <XDSProgressBar value={60} />
+>>>>>>> 5855021fe59 (fix(sandbox): enhance docsite editor panel and template preview interactions)
           </div>
         </div>
         <div style={{width: '100%'}}>
@@ -193,7 +201,11 @@ export const COMPONENT_PREVIEW_LIST: {
             100%
           </XDSText>
           <div style={{marginTop: 6, width: '100%'}}>
+<<<<<<< HEAD
             <XDSProgressBar value={100} label="Progress" isLabelHidden />
+=======
+            <XDSProgressBar value={100} />
+>>>>>>> 5855021fe59 (fix(sandbox): enhance docsite editor panel and template preview interactions)
           </div>
         </div>
       </div>
