@@ -194,14 +194,6 @@ export const TEMPLATES: {
     isOfficial: true,
   },
   {
-    name: 'Product Detail',
-    src: DUMMY_IMAGE,
-    slug: 'product-detail',
-    size: 'large',
-    author: 'XDS Design',
-    isOfficial: true,
-  },
-  {
     name: 'Settings Page',
     src: `${basePath}/templates/card4-preview.png`,
     size: 'small',
@@ -788,6 +780,7 @@ export const THEME_PICKER_ENTRIES: ThemePickerEntry[] = [
     name: 'Meta',
     category: 'official',
     accent: '#0064E0',
+    isPinnedByDefault: true,
     description: 'Meta brand with Figtree typography',
     preview: {
       bg: '#FFFFFF',
@@ -818,6 +811,7 @@ export const THEME_PICKER_ENTRIES: ThemePickerEntry[] = [
     name: 'Threads',
     category: 'official',
     accent: '#000000',
+    isPinnedByDefault: true,
     description: 'Threads brand with clean monochrome palette',
     preview: {
       bg: '#FFFFFF',

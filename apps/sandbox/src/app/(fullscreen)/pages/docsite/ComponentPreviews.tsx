@@ -170,28 +170,29 @@ export const COMPONENT_PREVIEW_LIST: {
           flexDirection: 'column',
           gap: 16,
           width: '100%',
+          minWidth: 280,
         }}>
-        <div>
+        <div style={{width: '100%'}}>
           <XDSText type="supporting" color="secondary">
             25%
           </XDSText>
-          <div style={{marginTop: 6}}>
+          <div style={{marginTop: 6, width: '100%'}}>
             <XDSProgressBar value={25} />
           </div>
         </div>
-        <div>
+        <div style={{width: '100%'}}>
           <XDSText type="supporting" color="secondary">
             60%
           </XDSText>
-          <div style={{marginTop: 6}}>
+          <div style={{marginTop: 6, width: '100%'}}>
             <XDSProgressBar value={60} />
           </div>
         </div>
-        <div>
+        <div style={{width: '100%'}}>
           <XDSText type="supporting" color="secondary">
             100%
           </XDSText>
-          <div style={{marginTop: 6}}>
+          <div style={{marginTop: 6, width: '100%'}}>
             <XDSProgressBar value={100} />
           </div>
         </div>
