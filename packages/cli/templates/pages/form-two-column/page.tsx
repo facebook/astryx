@@ -3,6 +3,8 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSCenter} from '@xds/core/Center';
+import {XDSGrid} from '@xds/core/Grid';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
@@ -54,18 +56,12 @@ const CONTACT_COLUMNS = [
 const styles = stylex.create({
   page: {
     backgroundColor: colorVars['--color-background-surface'],
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
     minHeight: '100svh',
     padding: 48,
   },
   inner: {
     maxWidth: 1100,
     width: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 56,
   },
   topGrid: {
     display: 'grid',
@@ -83,18 +79,6 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  inlineGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 12,
-  },
-  footerGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr',
-    gap: 32,
-    paddingTop: 32,
-    textAlign: 'center',
   },
   fullWidth: {
     width: '100%',
@@ -136,8 +120,8 @@ export default function FormTwoColumnPage() {
   const handleSubmit = () => setSubmitted(true);
 
   return (
-    <div {...stylex.props(styles.page)}>
-      <div {...stylex.props(styles.inner)}>
+    <XDSCenter height="100svh" xstyle={styles.page}>
+      <XDSVStack gap={10} xstyle={styles.inner}>
         {/* ── Top: two-column ── */}
         <div {...stylex.props(styles.topGrid)}>
           {/* Left: headline + description + illustration */}
@@ -176,7 +160,7 @@ export default function FormTwoColumnPage() {
                     : undefined
                 }
               />
-              <div {...stylex.props(styles.inlineGrid)}>
+              <XDSGrid columns={2} gap={3}>
                 <XDSTextInput
                   label="Email"
                   isLabelHidden
@@ -196,8 +180,8 @@ export default function FormTwoColumnPage() {
                   value={company}
                   onChange={setCompany}
                 />
-              </div>
-              <div {...stylex.props(styles.inlineGrid)}>
+              </XDSGrid>
+              <XDSGrid columns={2} gap={3}>
                 <XDSTextInput
                   label="Job title"
                   isLabelHidden
@@ -212,7 +196,7 @@ export default function FormTwoColumnPage() {
                   value={phone}
                   onChange={setPhone}
                 />
-              </div>
+              </XDSGrid>
 
               <XDSVStack gap={2}>
                 <XDSText type="label">What are you reaching out about?</XDSText>
@@ -263,7 +247,7 @@ export default function FormTwoColumnPage() {
         {/* ── Bottom: contact strip ── */}
         <XDSVStack gap={6}>
           <XDSDivider />
-          <div {...stylex.props(styles.footerGrid)}>
+          <XDSGrid columns={3} gap={6}>
             {CONTACT_COLUMNS.map(col => (
               <XDSVStack key={col.label} gap={1} hAlign="center">
                 <XDSText type="supporting" color="secondary">
@@ -278,9 +262,9 @@ export default function FormTwoColumnPage() {
                 </XDSLink>
               </XDSVStack>
             ))}
-          </div>
+          </XDSGrid>
         </XDSVStack>
-      </div>
-    </div>
+      </XDSVStack>
+    </XDSCenter>
   );
 }
