@@ -84,8 +84,33 @@ No build plugins needed — XDS ships pre-built CSS that works alongside Tailwin
 @import "@xds/core/reset.css";
 @import "@xds/core/xds.css";
 @import "@xds/theme-default/theme.css";
+@import "@xds/core/tailwind-theme.css";
 @import "tailwindcss/utilities.css" layer(utilities);
 ```
+
+The `tailwind-theme.css` import maps XDS tokens to Tailwind utilities via `@theme inline`:
+
+```tsx
+// Without the bridge — verbose:
+<div className="rounded-[var(--radius-container)] bg-[var(--color-background-surface)] text-[var(--color-text-primary)]">
+
+// With the bridge — just works:
+<div className="rounded-lg bg-surface text-primary">
+```
+
+Some useful mappings:
+
+| Tailwind class | XDS token |
+|---|---|
+| `text-primary` / `text-secondary` | `--color-text-primary` / `--color-text-secondary` |
+| `bg-surface` / `bg-card` / `bg-body` | `--color-background-surface` / `card` / `body` |
+| `border-border` / `border-strong` | `--color-border` / `--color-border-emphasized` |
+| `bg-success` / `text-error` / `text-warning` | Status tokens |
+| `bg-blue-subtle` / `border-blue-ring` / `text-blue-vivid` | Hue palette (×10 hues) |
+| `rounded-sm` / `rounded-md` / `rounded-lg` | `--radius-inner` / `element` / `container` |
+| `shadow-sm` / `shadow-md` / `shadow-lg` | `--shadow-low` / `med` / `high` |
+
+Spacing references `var(--spacing-1)` as the base unit, so `p-4` = 16px, matching XDS's `--spacing-4`. Arbitrary values still work as an escape hatch: `bg-[var(--color-background-surface)]`.
 
 **`src/app/providers.tsx`**
 
