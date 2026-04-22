@@ -9,30 +9,27 @@ import {
 } from '@xds/core/Layout';
 import {XDSCard} from '@xds/core/Card';
 import {XDSButton} from '@xds/core/Button';
+import {XDSSection} from '@xds/core/Section';
+import {XDSHeading, XDSText} from '@xds/core/Text';
 
 export default function LayoutFullBleedContent() {
   return (
-    <XDSCard width={400} height={350}>
+    <XDSCard>
       <XDSLayout
         header={
           <XDSLayoutHeader hasDivider>
-            <div style={{fontWeight: 600, fontSize: 18}}>Full Bleed Example</div>
+            <XDSHeading level={4}>Full Bleed Example</XDSHeading>
           </XDSLayoutHeader>
         }
         content={
           <XDSLayoutContent padding={0}>
-            <div
-              style={{
-                padding: 16,
-                fontSize: 14,
-                lineHeight: 1.5,
-                minHeight: 100,
-                backgroundColor: 'rgba(0,0,0,0.04)',
-              }}>
-              This content uses padding=0 to remove padding, allowing it to
-              touch the edges. Useful for tables, images, or other
-              edge-to-edge content.
-            </div>
+            <XDSSection variant="wash">
+              <XDSText type="body">
+                XDSSection automatically escapes the parent container padding
+                to fill edge-to-edge. Useful for wash backgrounds, tables, or
+                images that need to span the full width.
+              </XDSText>
+            </XDSSection>
           </XDSLayoutContent>
         }
         footer={

@@ -7,53 +7,42 @@ import {
   XDSLayoutFooter,
   XDSLayoutPanel,
   XDSHStack,
+  XDSVStack,
 } from '@xds/core/Layout';
 import {XDSCard} from '@xds/core/Card';
 import {XDSButton} from '@xds/core/Button';
-
-const navItems = [
-  {label: 'General', active: true},
-  {label: 'Account', active: false},
-  {label: 'Privacy', active: false},
-  {label: 'Notifications', active: false},
-  {label: 'Security', active: false},
-];
+import {XDSHeading, XDSText} from '@xds/core/Text';
+import {XDSList, XDSListItem} from '@xds/core/List';
 
 export default function LayoutSidebarLayout() {
   return (
-    <XDSCard width={700} height={400}>
+    <XDSCard>
       <XDSLayout
         header={
           <XDSLayoutHeader hasDivider>
-            <div style={{fontWeight: 600, fontSize: 18}}>Settings</div>
+            <XDSHeading level={4}>Settings</XDSHeading>
           </XDSLayoutHeader>
         }
         start={
-          <XDSLayoutPanel hasDivider role="navigation">
-            {navItems.map((item) => (
-              <div
-                key={item.label}
-                style={{
-                  padding: '8px 12px',
-                  borderRadius: 6,
-                  cursor: 'pointer',
-                  fontSize: 14,
-                  ...(item.active ? {fontWeight: 500} : {}),
-                }}>
-                {item.label}
-              </div>
-            ))}
+          <XDSLayoutPanel hasDivider role="navigation" width={140}>
+            <XDSList>
+              <XDSListItem label="General" isSelected />
+              <XDSListItem label="Account" />
+              <XDSListItem label="Privacy" />
+              <XDSListItem label="Notifications" />
+              <XDSListItem label="Security" />
+            </XDSList>
           </XDSLayoutPanel>
         }
         content={
           <XDSLayoutContent>
-            <div style={{fontWeight: 500, fontSize: 14, marginBottom: 12}}>
-              General Settings
-            </div>
-            <p style={{fontSize: 14, lineHeight: 1.5, margin: 0}}>
-              Configure your general preferences here. The sidebar navigation
-              allows you to switch between different settings sections.
-            </p>
+            <XDSVStack gap={3}>
+              <XDSHeading level={5}>General Settings</XDSHeading>
+              <XDSText type="body">
+                Configure your general preferences here. The sidebar navigation
+                allows you to switch between different settings sections.
+              </XDSText>
+            </XDSVStack>
           </XDSLayoutContent>
         }
         footer={

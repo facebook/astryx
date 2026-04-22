@@ -6,30 +6,43 @@ import {
   XDSLayoutContent,
   XDSLayoutFooter,
   XDSHStack,
+  XDSVStack,
 } from '@xds/core/Layout';
 import {XDSCard} from '@xds/core/Card';
 import {XDSButton} from '@xds/core/Button';
+import {XDSHeading, XDSText} from '@xds/core/Text';
 
 export default function LayoutBasicCardLayout() {
   return (
-    <XDSCard width={400} height={350}>
+    <XDSCard height={300}>
       <XDSLayout
         header={
           <XDSLayoutHeader hasDivider>
-            <div style={{fontWeight: 600, fontSize: 18}}>Card Title</div>
+            <XDSHeading level={4}>Card Title</XDSHeading>
           </XDSLayoutHeader>
         }
         content={
           <XDSLayoutContent>
-            <p style={{fontSize: 14, lineHeight: 1.5, margin: 0}}>
-              This is a basic card layout with a header, scrollable content
-              area, and footer. The layout automatically handles padding and
-              spacing between sections.
-            </p>
-            <br />
-            <p style={{fontSize: 14, lineHeight: 1.5, margin: 0}}>
-              Try scrolling this content area when it overflows.
-            </p>
+            <XDSVStack gap={3}>
+              <XDSText type="body">
+                This is a basic card layout with a header, scrollable content
+                area, and footer. The layout automatically handles padding and
+                spacing between sections.
+              </XDSText>
+              <XDSText type="body">
+                When content exceeds the available height, the content area
+                scrolls independently while the header and footer stay fixed
+                in place.
+              </XDSText>
+              <XDSText type="body">
+                This pattern works well for modal dialogs, detail panels, and
+                any card where the amount of content is unpredictable.
+              </XDSText>
+              <XDSText type="body">
+                The dividers between header, content, and footer provide clear
+                visual boundaries between the fixed and scrollable regions.
+              </XDSText>
+            </XDSVStack>
           </XDSLayoutContent>
         }
         footer={
