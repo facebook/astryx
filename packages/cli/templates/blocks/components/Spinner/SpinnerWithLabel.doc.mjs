@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'Spinner — With Label',
   description:
-    'Spinners with simple text and rich multi-line label content.',
+    'Spinners with text and rich multi-line labels.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['Spinner', 'Text'],
