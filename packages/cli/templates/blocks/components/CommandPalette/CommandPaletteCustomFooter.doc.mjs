@@ -5,5 +5,5 @@ export const doc = {
   description: 'Command palette with a custom footer tip message.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['CommandPalette', 'Button'],
+  componentsUsed: ['CommandPalette', 'CommandPaletteFooter', 'Button', 'Text'],
 };
