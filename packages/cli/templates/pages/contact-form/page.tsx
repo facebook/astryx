@@ -3,6 +3,7 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSCenter} from '@xds/core/Center';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
@@ -75,6 +76,13 @@ const WHY_US = [
 const styles = stylex.create({
   pageBg: {
     backgroundColor: colorVars['--color-background-surface'],
+    // illustration-horizontal-2 from xds_oss asset set
+    backgroundImage:
+      'url(https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-2.png)',
+    backgroundSize: '100% 15vh',
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'top center',
+    paddingTop: '15vh',
   },
   fullWidth: {
     width: '100%',
@@ -119,21 +127,7 @@ export default function FormSimplePage() {
     );
 
   return (
-    <div
-      {...stylex.props(styles.pageBg)}
-      style={{minHeight: '100svh', display: 'flex', flexDirection: 'column'}}>
-      {/* Full-bleed banner */}
-      <img
-        // illustration-horizontal-2 from xds_oss asset set
-        src="https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-2.png"
-        alt="Decorative banner"
-        style={{
-          width: '100%',
-          height: '15vh',
-          objectFit: 'cover',
-          objectPosition: 'center',
-        }}
-      />
+    <XDSCenter axis="horizontal" xstyle={styles.pageBg}>
 
       <div
         style={{
@@ -331,6 +325,6 @@ export default function FormSimplePage() {
           </XDSVStack>
         </XDSVStack>
       </div>
-    </div>
+    </XDSCenter>
   );
 }
