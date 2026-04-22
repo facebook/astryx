@@ -56,7 +56,6 @@ const CONTACT_COLUMNS = [
 const styles = stylex.create({
   page: {
     backgroundColor: colorVars['--color-background-surface'],
-    minHeight: '100svh',
     padding: 48,
   },
   inner: {
@@ -64,10 +63,7 @@ const styles = stylex.create({
     width: '100%',
   },
   topGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
     gap: 80,
-    alignItems: 'center',
   },
   imagePlaceholder: {
     borderRadius: radiusVars['--radius-container'],
@@ -118,7 +114,7 @@ export default function FormTwoColumnPage() {
     <XDSCenter height="100svh" xstyle={styles.page}>
       <XDSVStack gap={10} xstyle={styles.inner}>
         {/* ── Top: two-column ── */}
-        <div {...stylex.props(styles.topGrid)}>
+        <XDSGrid columns={2} align="center" xstyle={styles.topGrid}>
           {/* Left: headline + description + illustration */}
           <XDSVStack gap={6}>
             <XDSVStack gap={3}>
@@ -235,7 +231,7 @@ export default function FormTwoColumnPage() {
               />
             </XDSVStack>
           </XDSCard>
-        </div>
+        </XDSGrid>
 
         {/* ── Bottom: contact strip ── */}
         <XDSVStack gap={6}>
