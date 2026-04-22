@@ -63,8 +63,6 @@ const users: User[] = [
   },
 ];
 
-type ColumnKey = 'name' | 'email' | 'role' | 'department' | 'status';
-
 const allColumns: XDSTableColumn<User>[] = [
   {key: 'name', header: 'Name'},
   {key: 'email', header: 'Email'},
@@ -74,19 +72,19 @@ const allColumns: XDSTableColumn<User>[] = [
 ];
 
 const columnOptions = [
-  {key: 'name' as ColumnKey, label: 'Name', isAlwaysVisible: true},
-  {key: 'email' as ColumnKey, label: 'Email'},
-  {key: 'role' as ColumnKey, label: 'Role'},
-  {key: 'department' as ColumnKey, label: 'Department'},
-  {key: 'status' as ColumnKey, label: 'Status'},
+  {key: 'name' as const, label: 'Name', isAlwaysVisible: true},
+  {key: 'email' as const, label: 'Email'},
+  {key: 'role' as const, label: 'Role'},
+  {key: 'department' as const, label: 'Department'},
+  {key: 'status' as const, label: 'Status'},
 ];
 
-const allKeys: ColumnKey[] = ['name', 'email', 'role', 'department', 'status'];
+const allKeys: string[] = ['name', 'email', 'role', 'department', 'status'];
 
 export default function TableColumnSettingsTable() {
-  const [activeKeys, setActiveKeys] = useState<ColumnKey[]>(allKeys);
+  const [activeKeys, setActiveKeys] = useState<string[]>(allKeys);
 
-  const state = useXDSTableColumnSettingsState<ColumnKey>({
+  const state = useXDSTableColumnSettingsState({
     columns: columnOptions,
     activeColumnKeys: activeKeys,
     onChangeActiveColumnKeys: keys => setActiveKeys([...keys]),
