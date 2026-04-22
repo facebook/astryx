@@ -52,6 +52,7 @@ const styles = stylex.create({
    * overflow: visible so table bleed still escapes visually.
    */
   contextWrapper: {
+    width: '100%',
     overflow: 'visible',
   },
   /**
