@@ -134,7 +134,7 @@ export default function FormSimplePage() {
 
   return (
     <XDSCenter axis="horizontal" xstyle={styles.pageBg}>
-      <XDSVStack>
+      <XDSVStack width="100%">
         {/* Full-bleed banner */}
         <img
           // illustration-horizontal-2 from xds_oss asset set
