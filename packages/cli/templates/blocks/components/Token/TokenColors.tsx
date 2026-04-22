@@ -18,7 +18,7 @@ const COLORS = [
   {color: 'gray' as const, label: 'Gray'},
 ];
 
-export default function TokenVariants() {
+export default function TokenColors() {
   return (
     <XDSStack direction="vertical" gap={4}>
       <XDSStack direction="vertical" gap={1}>

@@ -4,7 +4,7 @@ import {XDSToken} from '@xds/core/Token';
 import {XDSStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
-export default function TokenWithRemove() {
+export default function TokenRemovable() {
   return (
     <XDSStack direction="vertical" gap={4}>
       <XDSStack direction="vertical" gap={1}>

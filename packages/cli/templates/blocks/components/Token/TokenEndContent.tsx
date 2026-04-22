@@ -5,7 +5,7 @@ import {XDSBadge} from '@xds/core/Badge';
 import {XDSStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
-export default function TokenWithEndContent() {
+export default function TokenEndContent() {
   return (
     <XDSStack direction="vertical" gap={4}>
       <XDSText type="supporting" color="secondary">

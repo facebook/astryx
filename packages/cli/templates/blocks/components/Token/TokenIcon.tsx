@@ -11,7 +11,7 @@ import {
   ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
 
-export default function TokenWithIcon() {
+export default function TokenIcon() {
   return (
     <XDSStack direction="vertical" gap={4}>
       <XDSText type="supporting" color="secondary">
