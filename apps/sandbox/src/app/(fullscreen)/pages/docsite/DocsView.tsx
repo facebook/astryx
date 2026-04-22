@@ -233,10 +233,16 @@ export function DocsView({
                         xstyle={localStyles.previewCard}
                       />
                       <div style={{paddingTop: 12}}>
-                        <XDSText type="body" style={{fontWeight: 700}}>
+                        <XDSText
+                          type="body"
+                          style={{
+                            fontWeight: 700,
+                            display: 'block',
+                            marginBottom: 4,
+                          }}>
                           {item.name}
                         </XDSText>
-                        <XDSText type="body" color="secondary">
+                        <XDSText type="supporting" color="secondary">
                           {item.desc}
                         </XDSText>
                       </div>
