@@ -5,6 +5,7 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSGrid} from '@xds/core/Grid';
+import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
@@ -14,7 +15,7 @@ import {XDSLink} from '@xds/core/Link';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSCard} from '@xds/core/Card';
 import {XDSSelector} from '@xds/core/Selector';
-import {colorVars, radiusVars} from '@xds/core/theme/tokens.stylex';
+import {colorVars} from '@xds/core/theme/tokens.stylex';
 
 // illustration-horizontal-1 from xds_oss asset set
 const ILLUSTRATION_URL =
@@ -62,14 +63,8 @@ const styles = stylex.create({
     maxWidth: 1100,
     width: '100%',
   },
-  topGrid: {
-    gap: 80,
-  },
   imagePlaceholder: {
-    borderRadius: radiusVars['--radius-container'],
     width: '85%',
-    aspectRatio: '4 / 3',
-    objectFit: 'contain',
   },
   fullWidth: {
     width: '100%',
@@ -114,7 +109,7 @@ export default function FormTwoColumnPage() {
     <XDSCenter height="100svh" xstyle={styles.page}>
       <XDSVStack gap={10} xstyle={styles.inner}>
         {/* ── Top: two-column ── */}
-        <XDSGrid columns={2} align="center" xstyle={styles.topGrid}>
+        <XDSGrid columns={2} align="center" gap={10}>
           {/* Left: headline + description + illustration */}
           <XDSVStack gap={6}>
             <XDSVStack gap={3}>
@@ -126,11 +121,9 @@ export default function FormTwoColumnPage() {
                 figure out the best path forward.
               </XDSText>
             </XDSVStack>
-            <img
-              {...stylex.props(styles.imagePlaceholder)}
-              src={ILLUSTRATION_URL}
-              alt="Illustration"
-            />
+            <XDSAspectRatio ratio={4 / 3} xstyle={styles.imagePlaceholder}>
+              <img src={ILLUSTRATION_URL} alt="Illustration" />
+            </XDSAspectRatio>
           </XDSVStack>
 
           {/* Right: form on a card */}
