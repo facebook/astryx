@@ -93,14 +93,14 @@ const tableStyles = stylex.create({
    * Container bleed: table escapes parent container padding
    * so rows span edge-to-edge inside Cards and Layout areas.
    *
-   * Inline bleed uses --container-padding-inline set by containers.
-   * Block bleed uses --container-padding-block-start/end for :first-child / :last-child
-   * margins, Block bleed uses --container-padding-block-start / --container-padding-block-end for :first-child / :last-child.
+   * Inline bleed uses --container-padding-inline-start/end set by containers.
+   * Block bleed uses --container-padding-block-start/end for :first-child / :last-child.
    */
   containerBleed: {
-    marginInlineStart: 'calc(-1 * var(--container-padding-inline, 0px))',
-    marginInlineEnd: 'calc(-1 * var(--container-padding-inline, 0px))',
-    width: 'calc(100% + 2 * var(--container-padding-inline, 0px))',
+    marginInlineStart: 'calc(-1 * var(--container-padding-inline-start, 0px))',
+    marginInlineEnd: 'calc(-1 * var(--container-padding-inline-end, 0px))',
+    width:
+      'calc(100% + var(--container-padding-inline-start, 0px) + var(--container-padding-inline-end, 0px))',
     marginTop: {
       default: null,
       ':first-child': 'calc(-1 * var(--container-padding-block-start, 0px))',

@@ -1,10 +1,10 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Table — Popover Filters',
+  name: 'Table — Striped Rows',
   description:
-    'Table with popover filter controls triggered by icons in column headers.',
+    'Table with alternating row colors and hover highlighting for easy scanning.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Table', 'PowerSearch'],
+  componentsUsed: ['Table'],
 };

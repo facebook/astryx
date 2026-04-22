@@ -26,7 +26,7 @@ const columns: XDSTableColumn<User>[] = [
 
 export default function TablePaginatedTable() {
   const [page, setPage] = useState(1);
-  const pageSize = 10;
+  const pageSize = 5;
 
   const plugin = useXDSTablePagination<User>({
     page,
