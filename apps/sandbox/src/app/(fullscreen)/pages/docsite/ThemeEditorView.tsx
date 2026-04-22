@@ -2,8 +2,9 @@
 
 import * as React from 'react';
 import {XDSButton} from '@xds/core/Button';
-import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
+import type {} from '@xds/core/ToggleButton';
 import {XDSTextInput} from '@xds/core/TextInput';
+import {XDSNumberInput} from '@xds/core/NumberInput';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSCard} from '@xds/core/Card';
 import {XDSHStack, XDSVStack, XDSStack} from '@xds/core/Stack';
@@ -92,6 +93,14 @@ import {
   UserGroupIcon,
   DocumentTextIcon,
   PhotoIcon,
+  SwatchIcon,
+  Square3Stack3DIcon,
+  StopIcon,
+  LanguageIcon,
+  ArrowsPointingOutIcon,
+  SunIcon,
+  ClockIcon,
+  BoltIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeIconSolid,
@@ -100,8 +109,72 @@ import {
 import {MoonIcon, ContrastIcon} from './docsite-icons';
 
 // =============================================================================
+// Font Options (shared between Body and Heading selectors)
+// =============================================================================
+
+const FONT_OPTIONS = [
+  {
+    value:
+      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    label: 'System (Default)',
+  },
+  {value: '"Inter", -apple-system, sans-serif', label: 'Inter'},
+  {value: '"Roboto", -apple-system, sans-serif', label: 'Roboto'},
+  {value: '"DM Sans", -apple-system, sans-serif', label: 'DM Sans'},
+  {value: '"Figtree", -apple-system, sans-serif', label: 'Figtree'},
+  {value: '"Poppins", -apple-system, sans-serif', label: 'Poppins'},
+  {
+    value: '"IBM Plex Sans", -apple-system, sans-serif',
+    label: 'IBM Plex Sans',
+  },
+  {
+    value: '"Source Sans 3", -apple-system, sans-serif',
+    label: 'Source Sans',
+  },
+  {value: '"Noto Sans", -apple-system, sans-serif', label: 'Noto Sans'},
+  {value: 'Georgia, "Times New Roman", serif', label: 'Georgia (Serif)'},
+];
+
+// =============================================================================
+// Collapsible Section
+// =============================================================================
+
+function CollapsibleSection({
+  title,
+  children,
+  defaultIsOpen = true,
+}: {
+  id: string;
+  title: string;
+  collapsed: Record<string, boolean>;
+  onToggle: (id: string) => void;
+  children: React.ReactNode;
+  defaultIsOpen?: boolean;
+}) {
+  return (
+    <XDSCollapsible trigger={title} defaultIsOpen={defaultIsOpen}>
+      {children}
+    </XDSCollapsible>
+  );
+}
+
+// =============================================================================
 // Token Groups
 // =============================================================================
+
+const TOKEN_GROUP_ICONS: Record<
+  string,
+  React.ComponentType<React.SVGProps<SVGSVGElement>>
+> = {
+  colors: SwatchIcon,
+  spacing: Square3Stack3DIcon,
+  radius: StopIcon,
+  typography: LanguageIcon,
+  size: ArrowsPointingOutIcon,
+  shadow: SunIcon,
+  duration: ClockIcon,
+  easing: BoltIcon,
+};
 
 const TOKEN_GROUPS = {
   colors: {
@@ -165,12 +238,12 @@ interface ComponentVar {
 }
 
 const RADIUS_OPTIONS = [
-  {value: 'var(--radius-none)', label: 'None'},
-  {value: 'var(--radius-inner)', label: 'Inner'},
-  {value: 'var(--radius-element)', label: 'Element'},
-  {value: 'var(--radius-container)', label: 'Container'},
-  {value: 'var(--radius-page)', label: 'Page'},
-  {value: 'var(--radius-full)', label: 'Full'},
+  {value: 'var(--radius-none)', label: 'None — 0px'},
+  {value: 'var(--radius-inner)', label: 'Inner — 2px'},
+  {value: 'var(--radius-element)', label: 'Element — 4px'},
+  {value: 'var(--radius-container)', label: 'Container — 8px'},
+  {value: 'var(--radius-page)', label: 'Page — 16px'},
+  {value: 'var(--radius-full)', label: 'Full — 9999px'},
 ];
 
 const SPACING_OPTIONS = [
@@ -690,100 +763,106 @@ function ColorSwatch({
   };
 
   return (
-    <XDSHStack
-      gap={3}
-      vAlign="center"
+    <div
       style={{
-        padding: '8px 12px',
-        borderRadius: 8,
-        backgroundColor: 'var(--color-background-body)',
+        padding: '10px 0',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 12,
       }}>
+      <XDSText
+        type="supporting"
+        color="primary"
+        maxLines={1}
+        style={{flexShrink: 0}}>
+        {getTokenLabel(tokenName)}
+      </XDSText>
       <div
         style={{
-          width: 32,
-          height: 32,
-          borderRadius: 6,
-          backgroundColor: displayValue,
-          border: '1px solid var(--color-border-emphasized)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
           flexShrink: 0,
-          position: 'relative',
-          cursor: hasColorPicker ? 'pointer' : undefined,
-          backgroundImage:
-            colorParsed && colorParsed.alpha < 1
-              ? `linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)`
-              : undefined,
-          backgroundSize: '8px 8px',
-          backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px',
+          justifyContent: 'flex-end',
         }}>
         <div
           style={{
-            width: '100%',
-            height: '100%',
+            width: 28,
+            height: 28,
             borderRadius: 6,
             backgroundColor: displayValue,
-          }}
-        />
-        {hasColorPicker && colorParsed && (
-          <input
-            type="color"
-            value={colorParsed.hex}
-            onChange={e => handleColorChange(e.target.value)}
+            border: '1px solid var(--color-border-emphasized)',
+            flexShrink: 0,
+            position: 'relative',
+            cursor: hasColorPicker ? 'pointer' : undefined,
+            backgroundImage:
+              colorParsed && colorParsed.alpha < 1
+                ? `linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)`
+                : undefined,
+            backgroundSize: '8px 8px',
+            backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px',
+          }}>
+          <div
             style={{
-              position: 'absolute',
-              inset: 0,
               width: '100%',
               height: '100%',
-              opacity: 0,
-              cursor: 'pointer',
-              border: 'none',
-              padding: 0,
+              borderRadius: 6,
+              backgroundColor: displayValue,
+              pointerEvents: 'none',
             }}
           />
-        )}
-      </div>
-      <XDSVStack gap={0} style={{flex: 1, minWidth: 0}}>
-        <XDSText type="supporting" color="primary" maxLines={1}>
-          {getTokenLabel(tokenName)}
-        </XDSText>
-        <XDSText type="supporting" color="secondary" maxLines={1}>
-          {tokenName}
-        </XDSText>
-      </XDSVStack>
-      <XDSHStack gap={1.5} vAlign="center">
-        <div style={{width: 100}}>
-          <XDSTextInput
-            label="Value"
-            isLabelHidden
-            value={displayValue}
-            onChange={val => {
+          {hasColorPicker && colorParsed && (
+            <input
+              type="color"
+              value={colorParsed.hex}
+              onChange={e => handleColorChange(e.target.value)}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                opacity: 0,
+                cursor: 'pointer',
+                border: 'none',
+                padding: 0,
+                zIndex: 1,
+              }}
+            />
+          )}
+        </div>
+        <XDSTextInput
+          label={tokenName}
+          isLabelHidden
+          size="sm"
+          value={
+            hasColorPicker && colorParsed
+              ? `${colorParsed.hex}  ${Math.round(colorParsed.alpha * 100)}%`
+              : displayValue
+          }
+          onChange={(val: string) => {
+            const parts = val.trim().split(/\s+/);
+            const hex = parts[0] || '';
+            const pctStr = parts.find(p => p.endsWith('%'));
+            const alpha = pctStr
+              ? Math.min(100, Math.max(0, Number(pctStr.replace('%', '')))) /
+                100
+              : (colorParsed?.alpha ?? 1);
+            if (hex.startsWith('#') && hex.length >= 4) {
+              handleColorChange(hex, alpha);
+            } else {
               const newValue = parsed
                 ? mode === 'light'
                   ? `light-dark(${val}, ${parsed.dark})`
                   : `light-dark(${parsed.light}, ${val})`
                 : val;
               onChange(tokenName, newValue);
-            }}
-            size="sm"
-          />
-        </div>
-        {hasColorPicker && colorParsed && (
-          <>
-            <div style={{width: 50}}>
-              <XDSTextInput
-                label="Alpha"
-                isLabelHidden
-                value={String(Math.round(colorParsed.alpha * 100))}
-                onChange={val => handleAlphaChange(Number(val) / 100)}
-                size="sm"
-              />
-            </div>
-            <XDSText type="supporting" color="secondary">
-              %
-            </XDSText>
-          </>
-        )}
-      </XDSHStack>
-    </XDSHStack>
+            }
+          }}
+          style={{width: 120}}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -3466,11 +3545,17 @@ function generateThemeCode(
 export function ThemeEditorView({
   activeView,
   setActiveView,
+  initialImage,
+  initialTheme,
+  onImageConsumed,
 }: {
   activeView: string;
   setActiveView: (
     view: 'craft' | 'explore' | 'docs' | 'profile' | 'theme',
   ) => void;
+  initialImage?: string | null;
+  initialTheme?: {accent: string; font?: string; radius?: number} | null;
+  onImageConsumed?: () => void;
 }) {
   // Token editing state
   const [activeGroup, setActiveGroup] = React.useState<TokenGroupKey>('colors');
@@ -3495,6 +3580,12 @@ export function ThemeEditorView({
   const [targetComponent, setTargetComponent] = React.useState<string | null>(
     null,
   );
+  const [collapsedSections, setCollapsedSections] = React.useState<
+    Record<string, boolean>
+  >({});
+  const toggleSection = React.useCallback((id: string) => {
+    setCollapsedSections(prev => ({...prev, [id]: !prev[id]}));
+  }, []);
 
   React.useEffect(() => {
     if (panelMode === 'editor') setActivePreview('tokens');
@@ -3849,6 +3940,27 @@ export function ThemeEditorView({
     [applyAITheme],
   );
 
+  React.useEffect(() => {
+    if (!initialTheme) return;
+    const fontLabel = initialTheme.font
+      ? initialTheme.font.split(',')[0].replace(/["']/g, '').trim()
+      : 'System';
+    applyAITheme({
+      accentColor: initialTheme.accent,
+      headingFont: fontLabel,
+      bodyFont: fontLabel,
+      spacingBase: 4,
+      radiusBase: initialTheme.radius ?? 8,
+      typeScaleBase: 14,
+      typeScaleRatio: 1.2,
+      sizeBase: 32,
+    });
+    if (initialImage) {
+      setAiImagePreview(initialImage);
+    }
+    onImageConsumed?.();
+  }, [initialTheme]);
+
   // Resize state (docsite layout pattern)
   const [editorPanelWidth, setEditorPanelWidth] = React.useState(400);
   const [isEditorResizing, setIsEditorResizing] = React.useState(false);
@@ -4115,17 +4227,87 @@ export function ThemeEditorView({
           '.xds-target-flash { animation: xds-flash-fade 3s ease-out forwards; }'}
       </style>
 
-      {/* Left Panel — Token Editor */}
+      {/* Left Panel — Sidebar Nav + Editor */}
       <div
         style={{
           width: editorPanelWidth,
           minWidth: 280,
           maxWidth: '50vw',
           flexShrink: 0,
-          padding: 16,
-          paddingRight: 0,
           display: 'flex',
+          gap: 0,
         }}>
+        {/* Sidebar Navigation Rail */}
+        <div
+          style={{
+            width: 48,
+            flexShrink: 0,
+            display: 'flex',
+            flexDirection: 'column' as const,
+            alignItems: 'center',
+            paddingTop: 12,
+            gap: 4,
+          }}>
+          <button
+            onClick={() => setActiveView('craft')}
+            aria-label="Back"
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 8,
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--color-text-secondary)',
+              marginBottom: 8,
+            }}>
+            <span style={{fontSize: 18}}>&#8592;</span>
+          </button>
+          {(
+            [
+              {id: 'editor', label: 'Editor', icon: '✦'},
+              {id: 'target', label: 'Component', icon: '◇'},
+              {id: 'raw', label: 'Tokens', icon: '{ }'},
+            ] as const
+          ).map(item => (
+            <button
+              key={item.id}
+              onClick={() => {
+                setPanelMode(item.id);
+                if (item.id === 'target') setActivePreview('preview');
+              }}
+              aria-label={item.label}
+              title={item.label}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 8,
+                border: 'none',
+                background:
+                  panelMode === item.id
+                    ? 'var(--color-accent-muted, rgba(0,100,224,0.1))'
+                    : 'transparent',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 14,
+                fontWeight: panelMode === item.id ? 600 : 400,
+                color:
+                  panelMode === item.id
+                    ? 'var(--color-accent, #0064E0)'
+                    : 'var(--color-text-secondary)',
+                transition: 'background 150ms ease, color 150ms ease',
+              }}>
+              {item.icon}
+            </button>
+          ))}
+        </div>
+
+        {/* Editor Panel Content */}
         <div
           style={{
             flex: 1,
@@ -4135,82 +4317,141 @@ export function ThemeEditorView({
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column' as const,
+            margin: '16px 0 16px 0',
           }}>
-          {/* Token group tabs */}
+          {/* Panel Header */}
           <div
             style={{
-              padding: '12px 16px 12px',
+              padding: '14px 16px',
               borderBottom: '1px solid var(--color-border)',
               display: 'flex',
               alignItems: 'center',
-              gap: 8,
-              overflowX: 'auto',
-              overflowY: 'hidden',
-              scrollbarWidth: 'none',
+              justifyContent: 'space-between',
             }}>
-            <XDSButton
-              label="Back"
-              variant="ghost"
-              size="sm"
-              onClick={() => setActiveView('craft')}
-              icon={<span style={{fontSize: 14}}>&#8592;</span>}
-              isIconOnly
-              style={{flexShrink: 0}}
-            />
-            <XDSToggleButtonGroup
-              label="Panel mode"
-              type="single"
-              value={
-                panelMode === 'target'
-                  ? 'target'
-                  : panelMode === 'editor'
-                    ? 'editor'
-                    : activeGroup
-              }
-              onChange={v => {
-                if (v === null) return;
-                if (v === 'editor') {
-                  setPanelMode('editor');
-                } else if (v === 'target') {
-                  setPanelMode('target');
-                  setActivePreview('preview');
-                } else if (v === 'raw') {
-                  setPanelMode('raw');
-                } else {
-                  setActiveGroup(v as TokenGroupKey);
-                }
-              }}
-              size="sm">
-              <XDSToggleButton value="editor" label="Editor" />
-              <XDSToggleButton value="target" label="Component" />
-              {panelMode === 'editor' || panelMode === 'target' ? (
-                <XDSToggleButton value="raw" label="Raw Tokens" />
-              ) : (
-                (Object.keys(TOKEN_GROUPS) as TokenGroupKey[]).map(groupKey => (
-                  <XDSToggleButton
-                    key={groupKey}
-                    value={groupKey}
-                    label={TOKEN_GROUPS[groupKey].label}
-                  />
-                ))
-              )}
-            </XDSToggleButtonGroup>
+            <XDSHeading level={2}>
+              {panelMode === 'editor'
+                ? 'Theme Builder'
+                : panelMode === 'target'
+                  ? 'Component Tokens'
+                  : 'Raw Tokens'}
+            </XDSHeading>
+            <XDSHStack gap={1}>
+              <XDSButton
+                label={aiAnalyzing ? 'Importing...' : 'Import'}
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (aiAnalyzing) return;
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/png,image/jpeg,image/webp';
+                  input.onchange = () => {
+                    const file = input.files?.[0];
+                    if (file) handleImageUpload(file);
+                  };
+                  input.click();
+                }}
+              />
+              <XDSButton
+                label="Reset"
+                variant="ghost"
+                size="sm"
+                onClick={handleReset}
+              />
+            </XDSHStack>
           </div>
 
-          {/* Scrollable token editors */}
+          {/* Raw Tokens sub-tabs */}
+          {panelMode === 'raw' && (
+            <div
+              style={{
+                padding: '8px 12px',
+                borderBottom: '1px solid var(--color-border)',
+                display: 'flex',
+                gap: 2,
+                overflowX: 'auto',
+                scrollbarWidth: 'none',
+              }}>
+              {(Object.keys(TOKEN_GROUPS) as TokenGroupKey[]).map(groupKey => {
+                const IconComp = TOKEN_GROUP_ICONS[groupKey];
+                const isActive = activeGroup === groupKey;
+                if (isActive) {
+                  return (
+                    <button
+                      key={groupKey}
+                      onClick={() => setActiveGroup(groupKey)}
+                      aria-label={TOKEN_GROUPS[groupKey].label}
+                      style={{
+                        padding: '5px 10px',
+                        borderRadius: 6,
+                        border: 'none',
+                        fontSize: 11,
+                        fontWeight: 600,
+                        background:
+                          'var(--color-accent-muted, rgba(0,100,224,0.1))',
+                        color: 'var(--color-accent, #0064E0)',
+                        cursor: 'pointer',
+                        transition: 'background 150ms ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 5,
+                        whiteSpace: 'nowrap',
+                      }}>
+                      {IconComp && (
+                        <IconComp
+                          style={{width: 14, height: 14, flexShrink: 0}}
+                        />
+                      )}
+                      {TOKEN_GROUPS[groupKey].label}
+                    </button>
+                  );
+                }
+                return (
+                  <XDSTooltip
+                    content={TOKEN_GROUPS[groupKey].label}
+                    key={groupKey}>
+                    <button
+                      onClick={() => setActiveGroup(groupKey)}
+                      aria-label={TOKEN_GROUPS[groupKey].label}
+                      style={{
+                        padding: 7,
+                        borderRadius: 6,
+                        border: 'none',
+                        background: 'transparent',
+                        color: 'var(--color-text-secondary)',
+                        cursor: 'pointer',
+                        transition: 'background 150ms ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                      {IconComp && <IconComp style={{width: 16, height: 16}} />}
+                    </button>
+                  </XDSTooltip>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Scrollable editor content */}
           <div style={{flex: 1, overflow: 'auto', padding: '16px'}}>
             {panelMode === 'editor' ? (
-              <XDSVStack gap={4}>
-                {/* Core Colors */}
-                <div>
+              <XDSVStack gap={5}>
+                {/* Color — Collapsible */}
+                <CollapsibleSection
+                  id="color"
+                  title="Color"
+                  collapsed={collapsedSections}
+                  onToggle={toggleSection}>
                   <XDSHStack
                     vAlign="center"
-                    style={{marginBottom: 8, justifyContent: 'space-between'}}>
+                    style={{marginBottom: 4, justifyContent: 'space-between'}}>
                     <XDSText type="label" color="secondary">
-                      Core Colors
+                      Create from accent
                     </XDSText>
                     <XDSSwitch
-                      label="Auto Pick"
+                      label="Create from accent"
+                      isLabelHidden
                       value={autoPickColors}
                       onChange={val => {
                         setAutoPickColors(val);
@@ -4228,29 +4469,29 @@ export function ThemeEditorView({
                       }}
                     />
                   </XDSHStack>
-                  <XDSVStack gap={1}>
-                    {autoPickColors ? (
-                      <ColorSwatch
-                        tokenName="--color-accent"
-                        value={tokens['--color-accent'] || ''}
-                        onChange={(name, value) => {
-                          handleTokenChange(name, value);
-                          const parsed = parseLightDark(value);
-                          const hex = parsed ? parsed.light : value;
-                          if (hex && hex.startsWith('#') && hex.length >= 7) {
-                            const derived = expandColorScale({accent: hex});
-                            setTokens(prev => ({
-                              ...prev,
-                              [name]: value,
-                              ...derived,
-                            }));
-                          }
-                        }}
-                        mode={mode}
-                      />
-                    ) : (
-                      [
-                        '--color-accent',
+                  <ColorSwatch
+                    tokenName="--color-accent"
+                    value={tokens['--color-accent'] || ''}
+                    onChange={(name, value) => {
+                      handleTokenChange(name, value);
+                      if (autoPickColors) {
+                        const parsed = parseLightDark(value);
+                        const hex = parsed ? parsed.light : value;
+                        if (hex && hex.startsWith('#') && hex.length >= 7) {
+                          const derived = expandColorScale({accent: hex});
+                          setTokens(prev => ({
+                            ...prev,
+                            [name]: value,
+                            ...derived,
+                          }));
+                        }
+                      }
+                    }}
+                    mode={mode}
+                  />
+                  {!autoPickColors && (
+                    <XDSVStack gap={0}>
+                      {[
                         '--color-neutral',
                         '--color-background-card',
                         '--color-background-surface',
@@ -4263,353 +4504,483 @@ export function ThemeEditorView({
                           onChange={handleTokenChange}
                           mode={mode}
                         />
-                      ))
-                    )}
-                  </XDSVStack>
-                </div>
+                      ))}
+                    </XDSVStack>
+                  )}
+                </CollapsibleSection>
 
-                {/* Font Families */}
-                <div>
-                  <XDSVStack gap={2}>
-                    {[
-                      {
-                        token: '--font-family-body',
-                        label: 'Body Font',
-                        options: [
-                          {
-                            value:
-                              '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-                            label: 'System (Default)',
-                          },
-                          {
-                            value: '"Inter", -apple-system, sans-serif',
-                            label: 'Inter',
-                          },
-                          {
-                            value: '"Roboto", -apple-system, sans-serif',
-                            label: 'Roboto',
-                          },
-                          {
-                            value: '"DM Sans", -apple-system, sans-serif',
-                            label: 'DM Sans',
-                          },
-                          {
-                            value: '"Figtree", -apple-system, sans-serif',
-                            label: 'Figtree',
-                          },
-                          {
-                            value: '"Poppins", -apple-system, sans-serif',
-                            label: 'Poppins',
-                          },
-                          {
-                            value: '"IBM Plex Sans", -apple-system, sans-serif',
-                            label: 'IBM Plex Sans',
-                          },
-                          {
-                            value: '"Source Sans 3", -apple-system, sans-serif',
-                            label: 'Source Sans',
-                          },
-                          {
-                            value: '"Noto Sans", -apple-system, sans-serif',
-                            label: 'Noto Sans',
-                          },
-                          {
-                            value: 'Georgia, "Times New Roman", serif',
-                            label: 'Georgia (Serif)',
-                          },
-                        ],
-                      },
-                      {
-                        token: '--font-family-heading',
-                        label: 'Heading Font',
-                        options: [
-                          {
-                            value:
-                              '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-                            label: 'System (Default)',
-                          },
-                          {
-                            value: '"Inter", -apple-system, sans-serif',
-                            label: 'Inter',
-                          },
-                          {
-                            value: '"Roboto", -apple-system, sans-serif',
-                            label: 'Roboto',
-                          },
-                          {
-                            value: '"DM Sans", -apple-system, sans-serif',
-                            label: 'DM Sans',
-                          },
-                          {
-                            value: '"Figtree", -apple-system, sans-serif',
-                            label: 'Figtree',
-                          },
-                          {
-                            value: '"Poppins", -apple-system, sans-serif',
-                            label: 'Poppins',
-                          },
-                          {
-                            value: '"IBM Plex Sans", -apple-system, sans-serif',
-                            label: 'IBM Plex Sans',
-                          },
-                          {
-                            value: '"Source Sans 3", -apple-system, sans-serif',
-                            label: 'Source Sans',
-                          },
-                          {
-                            value: '"Noto Sans", -apple-system, sans-serif',
-                            label: 'Noto Sans',
-                          },
-                          {
-                            value: 'Georgia, "Times New Roman", serif',
-                            label: 'Georgia (Serif)',
-                          },
-                        ],
-                      },
-                    ].map(({token, label, options}) => (
-                      <div key={token}>
-                        <XDSText
-                          type="label"
-                          color="secondary"
-                          style={{marginBottom: 4, display: 'block'}}>
-                          {label}
-                        </XDSText>
-                        <XDSSelector
-                          label={label}
-                          isLabelHidden
-                          options={options}
-                          value={tokens[token] || options[0].value}
-                          onChange={(val: string) =>
-                            handleTokenChange(token, val)
-                          }
-                        />
-                      </div>
-                    ))}
-                  </XDSVStack>
-                </div>
-
-                {/* Unified Presets */}
-                <div>
-                  <XDSText
-                    type="label"
-                    color="secondary"
-                    style={{marginBottom: 8, display: 'block'}}>
-                    Master Preset
-                  </XDSText>
-                  <div
-                    style={{display: 'flex', flexDirection: 'column', gap: 8}}>
+                <XDSDivider />
+                {/* Presets — Collapsible */}
+                <CollapsibleSection
+                  id="presets"
+                  title="Presets"
+                  collapsed={collapsedSections}
+                  onToggle={toggleSection}>
+                  <div style={{display: 'flex', gap: 6}}>
                     {Object.entries(UNIFIED_PRESETS).map(([key, p]) => {
                       const isSelected = activePreset === key;
-                      const ratioLabel =
-                        RATIO_OPTIONS.find(
-                          o => Math.abs(o.value - p.typeRatio) < 0.001,
-                        )?.label.split(' — ')[1] || p.typeRatio.toFixed(3);
+                      const gap =
+                        key === 'compact'
+                          ? 1
+                          : key === 'default'
+                            ? 2
+                            : key === 'comfortable'
+                              ? 3
+                              : 4;
+                      const cornerR =
+                        key === 'compact'
+                          ? 1
+                          : key === 'default'
+                            ? 2
+                            : key === 'comfortable'
+                              ? 3
+                              : 5;
                       return (
                         <div
                           key={key}
                           onClick={() => applyUnifiedPreset(key)}
                           style={{
-                            padding: 12,
+                            flex: 1,
+                            padding: '10px 6px 8px',
                             borderRadius: 10,
-                            border: isSelected
-                              ? '2px solid var(--color-accent)'
-                              : '1px solid var(--color-border-emphasized)',
+                            border: 'none',
                             backgroundColor: isSelected
-                              ? 'var(--color-accent-muted)'
-                              : 'transparent',
+                              ? 'var(--color-accent-muted, rgba(0,100,224,0.1))'
+                              : 'var(--color-background-wash, rgba(0,0,0,0.04))',
                             cursor: 'pointer',
+                            transition: 'background-color 0.15s ease',
                             display: 'flex',
+                            flexDirection: 'column' as const,
                             alignItems: 'center',
-                            justifyContent: 'space-between',
-                            gap: 12,
-                            transition:
-                              'border-color 0.15s ease, background-color 0.15s ease',
+                            gap: 6,
                           }}>
-                          <XDSText type="label" weight="semibold">
-                            {key.charAt(0).toUpperCase() + key.slice(1)}
-                          </XDSText>
+                          <svg width={32} height={32} viewBox="0 0 32 32">
+                            <rect
+                              x={0}
+                              y={0}
+                              width={32}
+                              height={8}
+                              rx={cornerR}
+                              fill={
+                                isSelected
+                                  ? 'var(--color-accent, #0064E0)'
+                                  : 'var(--color-text-quaternary)'
+                              }
+                              opacity={0.5}
+                            />
+                            <rect
+                              x={0}
+                              y={8 + gap}
+                              width={15 - gap / 2}
+                              height={32 - 8 - gap}
+                              rx={cornerR}
+                              fill={
+                                isSelected
+                                  ? 'var(--color-accent, #0064E0)'
+                                  : 'var(--color-text-quaternary)'
+                              }
+                            />
+                            <rect
+                              x={15 + gap / 2}
+                              y={8 + gap}
+                              width={32 - 15 - gap / 2}
+                              height={(32 - 8 - gap * 2) / 2}
+                              rx={cornerR}
+                              fill={
+                                isSelected
+                                  ? 'var(--color-accent, #0064E0)'
+                                  : 'var(--color-text-quaternary)'
+                              }
+                              opacity={0.7}
+                            />
+                            <rect
+                              x={15 + gap / 2}
+                              y={8 + gap + (32 - 8 - gap * 2) / 2 + gap}
+                              width={32 - 15 - gap / 2}
+                              height={(32 - 8 - gap * 2) / 2}
+                              rx={cornerR}
+                              fill={
+                                isSelected
+                                  ? 'var(--color-accent, #0064E0)'
+                                  : 'var(--color-text-quaternary)'
+                              }
+                              opacity={0.7}
+                            />
+                          </svg>
                           <XDSText
                             type="supporting"
-                            color="secondary"
-                            style={{textAlign: 'end'}}>
-                            Type {p.typeBase}px · {ratioLabel} · Grid{' '}
-                            {p.spacing}px · Radius {p.radius}px · Size{' '}
-                            {p.sizeMd}px
+                            style={{
+                              fontSize: 10,
+                              color: isSelected
+                                ? 'var(--color-accent, #0064E0)'
+                                : 'var(--color-text-secondary)',
+                            }}>
+                            {key.charAt(0).toUpperCase() + key.slice(1)}
                           </XDSText>
                         </div>
                       );
                     })}
                   </div>
-                </div>
+                </CollapsibleSection>
 
-                {/* Spacing */}
-                <XDSVStack gap={3}>
-                  <XDSHStack gap={1} vAlign="center">
-                    <XDSText type="label" color="secondary">
-                      Spacing
-                    </XDSText>
-                    <XDSTooltip
-                      content={`Linear scale: step N = ${spacingBase}px × N. All spacing tokens are multiples of the base unit.`}>
-                      <XDSIcon icon="info" size="sm" color="secondary" />
-                    </XDSTooltip>
-                  </XDSHStack>
-                  <div style={{paddingBottom: 24, overflow: 'visible'}}>
-                    <XDSSlider
-                      label="Base Unit"
-                      isLabelHidden
-                      min={0}
-                      max={16}
-                      step={2}
-                      value={spacingBase}
-                      onChange={(v: number) => applySpacingScale(v)}
-                      formatValue={(v: number) => `${v}px`}
-                      valueDisplay="text"
-                      marks={[
-                        {value: 2, label: 'S'},
-                        {value: 4, label: 'M'},
-                        {value: 6, label: 'L'},
-                        {value: 8, label: 'XL'},
-                      ]}
-                    />
-                  </div>
-                </XDSVStack>
-
-                {/* Radius */}
-                <XDSVStack gap={3}>
-                  <XDSHStack gap={1} vAlign="center">
-                    <XDSText type="label" color="secondary">
-                      Corner Radius
-                    </XDSText>
-                    <XDSTooltip
-                      content={`Linear scale: inner = ${radiusBase}px (1×), element = ${radiusBase * 2}px (2×), container = ${radiusBase * 3}px (3×), page = ${Math.round(radiusBase * 7)}px (7×).`}>
-                      <XDSIcon icon="info" size="sm" color="secondary" />
-                    </XDSTooltip>
-                  </XDSHStack>
-                  <div style={{paddingBottom: 24, overflow: 'visible'}}>
-                    <XDSSlider
-                      label="Base Radius"
-                      isLabelHidden
-                      min={0}
-                      max={18}
-                      step={2}
-                      value={radiusBase}
-                      onChange={(v: number) => applyRadiusScale(v)}
-                      formatValue={(v: number) => `${v}px`}
-                      valueDisplay="text"
-                      marks={[
-                        {value: 2, label: 'S'},
-                        {value: 4, label: 'M'},
-                        {value: 8, label: 'L'},
-                        {value: 12, label: 'XL'},
-                      ]}
-                    />
-                  </div>
-                </XDSVStack>
-
-                {/* Size */}
-                <XDSVStack gap={3}>
-                  <XDSHStack gap={1} vAlign="center">
-                    <XDSText type="label" color="secondary">
-                      Element Size
-                    </XDSText>
-                    <XDSTooltip
-                      content={`Step scale: sm = ${sizeBase - 4}px (md − grid), md = ${sizeBase}px (base), lg = ${sizeBase + 4}px (md + grid).`}>
-                      <XDSIcon icon="info" size="sm" color="secondary" />
-                    </XDSTooltip>
-                  </XDSHStack>
-                  <div style={{paddingBottom: 24, overflow: 'visible'}}>
-                    <XDSSlider
-                      label="Base Size (md)"
-                      isLabelHidden
-                      min={24}
-                      max={56}
-                      step={2}
-                      value={sizeBase}
-                      onChange={(v: number) => applySizeScale(v)}
-                      formatValue={(v: number) => `${v}px`}
-                      valueDisplay="text"
-                      marks={[
-                        {value: 28, label: 'S'},
-                        {value: 32, label: 'M'},
-                        {value: 44, label: 'L'},
-                        {value: 48, label: 'XL'},
-                      ]}
-                    />
-                  </div>
-                </XDSVStack>
-
-                {/* Type Scale */}
-                <XDSVStack gap={3}>
-                  <XDSHStack gap={1} vAlign="center">
-                    <XDSText type="label" color="secondary">
-                      Type Size
-                    </XDSText>
-                    <XDSTooltip
-                      content={`Geometric scale: size = round(base × ratio^step). Base = ${typeScaleBase}px, ratio = ${typeScaleRatio.toFixed(3)}. h4 is the anchor (step 0).`}>
-                      <XDSIcon icon="info" size="sm" color="secondary" />
-                    </XDSTooltip>
-                  </XDSHStack>
-                  <div style={{paddingBottom: 24, overflow: 'visible'}}>
-                    <XDSSlider
-                      label="Base Size"
-                      isLabelHidden
-                      min={10}
-                      max={24}
-                      step={1}
-                      value={typeScaleBase}
-                      onChange={(v: number) =>
-                        applyTypeScale(v, typeScaleRatio)
-                      }
-                      formatValue={(v: number) => `${v}px`}
-                      valueDisplay="text"
-                      marks={[
-                        {value: 12, label: 'S'},
-                        {value: 14, label: 'M'},
-                        {value: 16, label: 'L'},
-                        {value: 18, label: 'XL'},
-                      ]}
-                    />
-                  </div>
-                  <div
-                    style={{display: 'flex', flexDirection: 'column', gap: 4}}>
-                    <XDSText type="label" color="secondary">
-                      Type Scale
-                    </XDSText>
-                    <XDSSelector
-                      label="Type Scale"
-                      isLabelHidden
-                      options={[
-                        ...RATIO_OPTIONS.map(opt => ({
-                          value: String(opt.value),
-                          label: opt.label,
-                        })),
+                {/* Typography — Collapsible */}
+                <CollapsibleSection
+                  id="typography"
+                  title="Typography"
+                  collapsed={collapsedSections}
+                  onToggle={toggleSection}>
+                  <XDSVStack gap={4}>
+                    <div style={{display: 'flex', gap: 8}}>
+                      {[
                         {
-                          value: 'custom',
-                          label: !RATIO_OPTIONS.some(
+                          token: '--font-family-heading',
+                          label: 'Heading',
+                        },
+                        {
+                          token: '--font-family-body',
+                          label: 'Body',
+                        },
+                      ].map(({token, label}) => (
+                        <div key={token} style={{flex: 1, minWidth: 0}}>
+                          <XDSText
+                            type="label"
+                            color="secondary"
+                            style={{marginBottom: 4, display: 'block'}}>
+                            {label}
+                          </XDSText>
+                          <XDSSelector
+                            label={label}
+                            isLabelHidden
+                            options={FONT_OPTIONS}
+                            value={tokens[token] || FONT_OPTIONS[0].value}
+                            onChange={(val: string) =>
+                              handleTokenChange(token, val)
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <div>
+                      <XDSHStack
+                        gap={1}
+                        vAlign="center"
+                        style={{marginBottom: 4}}>
+                        <XDSText type="label" color="secondary">
+                          Type Size
+                        </XDSText>
+                        <XDSTooltip
+                          content={`Geometric scale: size = round(base × ratio^step). Base = ${typeScaleBase}px, ratio = ${typeScaleRatio.toFixed(3)}.`}>
+                          <XDSIcon icon="info" size="sm" color="secondary" />
+                        </XDSTooltip>
+                      </XDSHStack>
+                      <div
+                        style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                        <div style={{display: 'flex', gap: 4}}>
+                          {(
+                            [
+                              {label: 'S', value: 12},
+                              {label: 'M', value: 14},
+                              {label: 'L', value: 16},
+                              {label: 'XL', value: 18},
+                            ] as const
+                          ).map(p => (
+                            <button
+                              key={p.value}
+                              onClick={() =>
+                                applyTypeScale(p.value, typeScaleRatio)
+                              }
+                              style={{
+                                padding: '5px 0',
+                                minWidth: 38,
+                                borderRadius: 6,
+                                textAlign: 'center' as const,
+                                border: 'none',
+                                fontSize: 12,
+                                fontWeight: 500,
+                                background:
+                                  typeScaleBase === p.value
+                                    ? 'var(--color-accent-muted, rgba(0,100,224,0.1))'
+                                    : 'var(--color-background-wash, rgba(0,0,0,0.04))',
+                                color:
+                                  typeScaleBase === p.value
+                                    ? 'var(--color-accent, #0064E0)'
+                                    : 'var(--color-text-secondary)',
+                                cursor: 'pointer',
+                                transition:
+                                  'border-color 150ms ease, background 150ms ease',
+                              }}>
+                              {p.label}
+                            </button>
+                          ))}
+                        </div>
+                        <div style={{flex: 1}} />
+                        <XDSNumberInput
+                          label="Type size"
+                          isLabelHidden
+                          value={typeScaleBase}
+                          onChange={(v: number) =>
+                            applyTypeScale(v, typeScaleRatio)
+                          }
+                          min={10}
+                          max={24}
+                          step={1}
+                          units="px"
+                          size="sm"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <XDSText
+                        type="label"
+                        color="secondary"
+                        style={{marginBottom: 4}}>
+                        Type Scale
+                      </XDSText>
+                      <XDSSelector
+                        label="Type Scale"
+                        isLabelHidden
+                        options={[
+                          ...RATIO_OPTIONS.map(opt => ({
+                            value: String(opt.value),
+                            label: opt.label,
+                          })),
+                          {
+                            value: 'custom',
+                            label: !RATIO_OPTIONS.some(
+                              o => Math.abs(o.value - typeScaleRatio) < 0.001,
+                            )
+                              ? `Custom — ${typeScaleRatio.toFixed(3)}`
+                              : 'Custom...',
+                          },
+                        ]}
+                        value={
+                          !RATIO_OPTIONS.some(
                             o => Math.abs(o.value - typeScaleRatio) < 0.001,
                           )
-                            ? `Custom — ${typeScaleRatio.toFixed(3)}`
-                            : 'Custom...',
-                        },
-                      ]}
-                      value={
-                        !RATIO_OPTIONS.some(
-                          o => Math.abs(o.value - typeScaleRatio) < 0.001,
-                        )
-                          ? 'custom'
-                          : String(typeScaleRatio)
-                      }
-                      onChange={(v: string) => {
-                        if (v !== 'custom')
-                          applyTypeScale(typeScaleBase, Number(v));
-                      }}
-                    />
-                  </div>
-                </XDSVStack>
+                            ? 'custom'
+                            : String(typeScaleRatio)
+                        }
+                        onChange={(v: string) => {
+                          if (v !== 'custom')
+                            applyTypeScale(typeScaleBase, Number(v));
+                        }}
+                      />
+                    </div>
+                  </XDSVStack>
+                </CollapsibleSection>
 
-                {/* Duration */}
-                <XDSVStack gap={3}>
-                  <XDSHStack gap={1} vAlign="center">
+                {/* Shape & Layout — Collapsible */}
+                <CollapsibleSection
+                  id="shape"
+                  title="Shape & Layout"
+                  collapsed={collapsedSections}
+                  onToggle={toggleSection}>
+                  <XDSVStack gap={4}>
+                    <div>
+                      <XDSHStack
+                        gap={1}
+                        vAlign="center"
+                        style={{marginBottom: 4}}>
+                        <XDSText type="label" color="secondary">
+                          Corner Radius
+                        </XDSText>
+                        <XDSTooltip
+                          content={`Linear scale: inner = ${radiusBase}px (1×), element = ${radiusBase * 2}px (2×), container = ${radiusBase * 3}px (3×), page = ${Math.round(radiusBase * 7)}px (7×).`}>
+                          <XDSIcon icon="info" size="sm" color="secondary" />
+                        </XDSTooltip>
+                      </XDSHStack>
+                      <div
+                        style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                        <div style={{display: 'flex', gap: 4}}>
+                          {(
+                            [
+                              {label: 'S', value: 2},
+                              {label: 'M', value: 4},
+                              {label: 'L', value: 8},
+                              {label: 'XL', value: 12},
+                            ] as const
+                          ).map(p => (
+                            <button
+                              key={p.value}
+                              onClick={() => applyRadiusScale(p.value)}
+                              style={{
+                                padding: '5px 0',
+                                minWidth: 38,
+                                borderRadius: 6,
+                                textAlign: 'center' as const,
+                                border: 'none',
+                                fontSize: 12,
+                                fontWeight: 500,
+                                background:
+                                  radiusBase === p.value
+                                    ? 'var(--color-accent-muted, rgba(0,100,224,0.1))'
+                                    : 'var(--color-background-wash, rgba(0,0,0,0.04))',
+                                color:
+                                  radiusBase === p.value
+                                    ? 'var(--color-accent, #0064E0)'
+                                    : 'var(--color-text-secondary)',
+                                cursor: 'pointer',
+                                transition:
+                                  'border-color 150ms ease, background 150ms ease',
+                              }}>
+                              {p.label}
+                            </button>
+                          ))}
+                        </div>
+                        <div style={{flex: 1}} />
+                        <XDSNumberInput
+                          label="Radius"
+                          isLabelHidden
+                          value={radiusBase}
+                          onChange={(v: number) => applyRadiusScale(v)}
+                          min={0}
+                          max={18}
+                          step={2}
+                          units="px"
+                          size="sm"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <XDSHStack
+                        gap={1}
+                        vAlign="center"
+                        style={{marginBottom: 4}}>
+                        <XDSText type="label" color="secondary">
+                          Spacing
+                        </XDSText>
+                        <XDSTooltip
+                          content={`Linear scale: step N = ${spacingBase}px × N. All spacing tokens are multiples of the base unit.`}>
+                          <XDSIcon icon="info" size="sm" color="secondary" />
+                        </XDSTooltip>
+                      </XDSHStack>
+                      <div
+                        style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                        <div style={{display: 'flex', gap: 4}}>
+                          {(
+                            [
+                              {label: 'S', value: 2},
+                              {label: 'M', value: 4},
+                              {label: 'L', value: 6},
+                              {label: 'XL', value: 8},
+                            ] as const
+                          ).map(p => (
+                            <button
+                              key={p.value}
+                              onClick={() => applySpacingScale(p.value)}
+                              style={{
+                                padding: '5px 0',
+                                minWidth: 38,
+                                borderRadius: 6,
+                                textAlign: 'center' as const,
+                                border: 'none',
+                                fontSize: 12,
+                                fontWeight: 500,
+                                background:
+                                  spacingBase === p.value
+                                    ? 'var(--color-accent-muted, rgba(0,100,224,0.1))'
+                                    : 'var(--color-background-wash, rgba(0,0,0,0.04))',
+                                color:
+                                  spacingBase === p.value
+                                    ? 'var(--color-accent, #0064E0)'
+                                    : 'var(--color-text-secondary)',
+                                cursor: 'pointer',
+                                transition:
+                                  'border-color 150ms ease, background 150ms ease',
+                              }}>
+                              {p.label}
+                            </button>
+                          ))}
+                        </div>
+                        <div style={{flex: 1}} />
+                        <XDSNumberInput
+                          label="Spacing"
+                          isLabelHidden
+                          value={spacingBase}
+                          onChange={(v: number) => applySpacingScale(v)}
+                          min={0}
+                          max={16}
+                          step={2}
+                          units="px"
+                          size="sm"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <XDSHStack
+                        gap={1}
+                        vAlign="center"
+                        style={{marginBottom: 4}}>
+                        <XDSText type="label" color="secondary">
+                          Element Size
+                        </XDSText>
+                        <XDSTooltip
+                          content={`Step scale: sm = ${sizeBase - 4}px (md − grid), md = ${sizeBase}px (base), lg = ${sizeBase + 4}px (md + grid).`}>
+                          <XDSIcon icon="info" size="sm" color="secondary" />
+                        </XDSTooltip>
+                      </XDSHStack>
+                      <div
+                        style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                        <div style={{display: 'flex', gap: 4}}>
+                          {(
+                            [
+                              {label: 'S', value: 28},
+                              {label: 'M', value: 32},
+                              {label: 'L', value: 44},
+                              {label: 'XL', value: 48},
+                            ] as const
+                          ).map(p => (
+                            <button
+                              key={p.value}
+                              onClick={() => applySizeScale(p.value)}
+                              style={{
+                                padding: '5px 0',
+                                minWidth: 38,
+                                borderRadius: 6,
+                                textAlign: 'center' as const,
+                                border: 'none',
+                                fontSize: 12,
+                                fontWeight: 500,
+                                background:
+                                  sizeBase === p.value
+                                    ? 'var(--color-accent-muted, rgba(0,100,224,0.1))'
+                                    : 'var(--color-background-wash, rgba(0,0,0,0.04))',
+                                color:
+                                  sizeBase === p.value
+                                    ? 'var(--color-accent, #0064E0)'
+                                    : 'var(--color-text-secondary)',
+                                cursor: 'pointer',
+                                transition:
+                                  'border-color 150ms ease, background 150ms ease',
+                              }}>
+                              {p.label}
+                            </button>
+                          ))}
+                        </div>
+                        <div style={{flex: 1}} />
+                        <XDSNumberInput
+                          label="Element size"
+                          isLabelHidden
+                          value={sizeBase}
+                          onChange={(v: number) => applySizeScale(v)}
+                          min={24}
+                          max={56}
+                          step={2}
+                          units="px"
+                          size="sm"
+                        />
+                      </div>
+                    </div>
+                  </XDSVStack>
+                </CollapsibleSection>
+
+                {/* Motion — Collapsible */}
+                <CollapsibleSection
+                  id="motion"
+                  title="Motion"
+                  collapsed={collapsedSections}
+                  onToggle={toggleSection}>
+                  <XDSHStack gap={1} vAlign="center" style={{marginBottom: 4}}>
                     <XDSText type="label" color="secondary">
                       Duration
                     </XDSText>
@@ -4618,315 +4989,156 @@ export function ThemeEditorView({
                       <XDSIcon icon="info" size="sm" color="secondary" />
                     </XDSTooltip>
                   </XDSHStack>
-                  <div style={{paddingBottom: 24, overflow: 'visible'}}>
-                    <XDSSlider
-                      label="Duration Scale"
+                  <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                    <div style={{display: 'flex', gap: 4}}>
+                      {(
+                        [
+                          {label: '0.5×', value: 0.5},
+                          {label: '1×', value: 1},
+                          {label: '1.5×', value: 1.5},
+                          {label: '2×', value: 2},
+                        ] as const
+                      ).map(p => (
+                        <button
+                          key={p.value}
+                          onClick={() => applyDurationScale(p.value)}
+                          style={{
+                            padding: '5px 0',
+                            minWidth: 38,
+                            borderRadius: 6,
+                            textAlign: 'center' as const,
+                            border: 'none',
+                            fontSize: 12,
+                            fontWeight: 500,
+                            background:
+                              Math.abs(durationStep - p.value) < 0.01
+                                ? 'var(--color-accent-muted, rgba(0,100,224,0.1))'
+                                : 'var(--color-background-wash, rgba(0,0,0,0.04))',
+                            color:
+                              Math.abs(durationStep - p.value) < 0.01
+                                ? 'var(--color-accent, #0064E0)'
+                                : 'var(--color-text-secondary)',
+                            cursor: 'pointer',
+                            transition:
+                              'border-color 150ms ease, background 150ms ease',
+                          }}>
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div style={{flex: 1}} />
+                    <XDSNumberInput
+                      label="Duration"
                       isLabelHidden
-                      min={0.5}
-                      max={2}
-                      step={0.1}
                       value={durationStep}
                       onChange={(v: number) =>
                         applyDurationScale(Math.round(v * 10) / 10)
                       }
-                      formatValue={(v: number) => `${v.toFixed(1)}×`}
-                      valueDisplay="text"
-                      marks={[
-                        {value: 0.5, label: '0.5×'},
-                        {value: 1, label: '1×'},
-                        {value: 1.5, label: '1.5×'},
-                        {value: 2, label: '2×'},
-                      ]}
+                      min={0.5}
+                      max={2}
+                      step={0.1}
+                      units="×"
+                      size="sm"
                     />
                   </div>
-                </XDSVStack>
-
-                {/* AI Theme Extraction */}
-                <div>
-                  <XDSText
-                    type="label"
-                    color="secondary"
-                    style={{marginBottom: 8, display: 'block'}}>
-                    Extract from Screenshot
-                  </XDSText>
-                  <div
-                    onClick={() => {
-                      if (!aiAnalyzing) {
-                        const input = document.createElement('input');
-                        input.type = 'file';
-                        input.accept = 'image/png,image/jpeg,image/webp';
-                        input.onchange = () => {
-                          const file = input.files?.[0];
-                          if (file) handleImageUpload(file);
-                        };
-                        input.click();
-                      }
-                    }}
-                    onDragOver={e => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                    onDrop={e => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      if (aiAnalyzing) return;
-                      const file = e.dataTransfer.files[0];
-                      if (file && file.type.startsWith('image/'))
-                        handleImageUpload(file);
-                    }}
-                    style={{
-                      border: '2px dashed var(--color-border-emphasized)',
-                      borderRadius: 10,
-                      padding: aiImagePreview ? 0 : 20,
-                      textAlign: 'center',
-                      cursor: aiAnalyzing ? 'wait' : 'pointer',
-                      transition:
-                        'border-color 0.15s ease, background-color 0.15s ease',
-                      backgroundColor: 'var(--color-background-surface)',
-                      position: 'relative',
-                      overflow: 'hidden',
-                    }}>
-                    {aiAnalyzing ? (
-                      <XDSVStack
-                        gap={2}
-                        hAlign="center"
-                        style={{padding: aiImagePreview ? 20 : 0}}>
-                        {aiImagePreview && (
-                          <img
-                            src={aiImagePreview}
-                            alt="Uploaded screenshot"
-                            style={{
-                              position: 'absolute',
-                              inset: 0,
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'cover',
-                              opacity: 0.15,
-                            }}
-                          />
-                        )}
-                        <div style={{position: 'relative'}}>
-                          <XDSSpinner size="md" />
-                        </div>
-                        <XDSText
-                          type="supporting"
-                          color="secondary"
-                          style={{position: 'relative'}}>
-                          Analyzing with Gemini...
-                        </XDSText>
-                      </XDSVStack>
-                    ) : aiImagePreview ? (
-                      <div style={{position: 'relative'}}>
-                        <img
-                          src={aiImagePreview}
-                          alt="Uploaded screenshot"
-                          style={{
-                            width: '100%',
-                            height: 120,
-                            objectFit: 'cover',
-                            display: 'block',
-                            borderRadius: 8,
-                          }}
-                        />
-                        <div
-                          style={{
-                            position: 'absolute',
-                            inset: 0,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            background: 'rgba(0,0,0,0.4)',
-                            borderRadius: 8,
-                            opacity: 0,
-                            transition: 'opacity 0.15s ease',
-                          }}
-                          onMouseEnter={e => {
-                            (e.currentTarget as HTMLElement).style.opacity =
-                              '1';
-                          }}
-                          onMouseLeave={e => {
-                            (e.currentTarget as HTMLElement).style.opacity =
-                              '0';
-                          }}>
-                          <XDSText type="supporting" style={{color: '#fff'}}>
-                            Click to replace
-                          </XDSText>
-                        </div>
-                      </div>
-                    ) : (
-                      <XDSVStack gap={2} hAlign="center">
-                        <PhotoIcon
-                          style={{
-                            width: 32,
-                            height: 32,
-                            color: 'var(--color-icon-secondary)',
-                          }}
-                        />
-                        <XDSText type="supporting" color="secondary">
-                          Upload a UI screenshot or brand guideline
-                        </XDSText>
-                      </XDSVStack>
-                    )}
-                  </div>
-                  {aiError && (
-                    <XDSBanner
-                      status="error"
-                      title="Extraction failed"
-                      description={aiError}
-                      endContent={
-                        aiImagePreview ? (
-                          <XDSButton
-                            label="Retry"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              fetch(aiImagePreview)
-                                .then(r => r.blob())
-                                .then(blob =>
-                                  handleImageUpload(
-                                    new File([blob], 'retry.png', {
-                                      type: blob.type,
-                                    }),
-                                  ),
-                                );
-                            }}
-                          />
-                        ) : undefined
-                      }
-                      isDismissable
-                      onDismiss={() => setAiError(null)}
-                      style={{marginTop: 8}}
-                    />
-                  )}
-                </div>
+                </CollapsibleSection>
               </XDSVStack>
             ) : panelMode === 'target' ? (
-              <XDSVStack gap={4}>
-                <XDSSelector
-                  label="Target component"
-                  isLabelHidden
-                  size="lg"
-                  options={Object.entries(COMPONENT_VARS).map(
-                    ([key, comp]) => ({
-                      value: key,
-                      label: comp.label,
-                      icon: CubeIcon,
-                    }),
-                  )}
-                  value={targetComponent || ''}
-                  onChange={(v: string) => {
-                    setTargetComponent(v);
-                    setFlashComponent(v);
-                  }}
-                />
+              <XDSVStack gap={2}>
+                {Object.entries(COMPONENT_VARS).map(([key, comp]) => (
+                  <CollapsibleSection
+                    key={key}
+                    id={`comp-${key}`}
+                    title={comp.label}
+                    collapsed={collapsedSections}
+                    onToggle={id => {
+                      toggleSection(id);
+                      setFlashComponent(key);
+                    }}>
+                    <XDSVStack gap={1}>
+                      {comp.vars.map(v => {
+                        const currentValue = tokens[v.name] || '';
+                        const isCustom = customVars.has(v.name);
+                        const isPresetValue =
+                          !isCustom &&
+                          (!currentValue ||
+                            v.options.some(o => o.value === currentValue));
 
-                {targetComponent && COMPONENT_VARS[targetComponent] && (
-                  <XDSVStack gap={1}>
-                    {COMPONENT_VARS[targetComponent].vars.map(v => {
-                      const currentValue = tokens[v.name] || '';
-                      const isCustom = customVars.has(v.name);
-                      const isPresetValue =
-                        !isCustom &&
-                        (!currentValue ||
-                          v.options.some(o => o.value === currentValue));
-
-                      return (
-                        <div
-                          key={v.name}
-                          style={{
-                            padding: '10px 12px',
-                            borderRadius: 8,
-                            backgroundColor: 'var(--color-background-body)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            gap: 12,
-                          }}>
-                          <div style={{flex: 1, minWidth: 0}}>
-                            <XDSText
-                              type="supporting"
-                              color="primary"
-                              maxLines={1}>
-                              {v.name}
-                            </XDSText>
-                            <XDSText
-                              type="supporting"
-                              color="secondary"
-                              maxLines={1}>
-                              {v.description}
-                            </XDSText>
+                        return (
+                          <div
+                            key={v.name}
+                            style={{
+                              padding: '6px 0',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: 10,
+                            }}>
+                            <div style={{flex: 1, minWidth: 0}}>
+                              <XDSText
+                                type="supporting"
+                                color="primary"
+                                maxLines={1}>
+                                {v.description}
+                              </XDSText>
+                            </div>
+                            <div style={{flexShrink: 0, width: 130}}>
+                              {!isPresetValue ? (
+                                <XDSTextInput
+                                  label={v.name}
+                                  isLabelHidden
+                                  size="sm"
+                                  value={currentValue}
+                                  placeholder={v.default}
+                                  onChange={(val: string) => {
+                                    if (val.trim() === '') {
+                                      setTokens(prev => {
+                                        const next = {...prev};
+                                        delete next[v.name];
+                                        return next;
+                                      });
+                                      setCustomVars(prev => {
+                                        const next = new Set(prev);
+                                        next.delete(v.name);
+                                        return next;
+                                      });
+                                    } else {
+                                      handleTokenChange(v.name, val);
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <XDSSelector
+                                  label={v.name}
+                                  isLabelHidden
+                                  size="sm"
+                                  options={[
+                                    ...v.options,
+                                    {value: '__custom__', label: 'Custom...'},
+                                  ]}
+                                  value={currentValue || v.default}
+                                  onChange={(val: string) => {
+                                    if (val === '__custom__') {
+                                      setCustomVars(prev =>
+                                        new Set(prev).add(v.name),
+                                      );
+                                    } else {
+                                      handleTokenChange(v.name, val);
+                                    }
+                                  }}
+                                />
+                              )}
+                            </div>
                           </div>
-                          <div style={{flexShrink: 0, width: 140}}>
-                            {!isPresetValue ? (
-                              <XDSTextInput
-                                label={v.name}
-                                isLabelHidden
-                                size="sm"
-                                value={currentValue}
-                                placeholder={v.default}
-                                onChange={(val: string) => {
-                                  if (val.trim() === '') {
-                                    setTokens(prev => {
-                                      const next = {...prev};
-                                      delete next[v.name];
-                                      return next;
-                                    });
-                                    setCustomVars(prev => {
-                                      const next = new Set(prev);
-                                      next.delete(v.name);
-                                      return next;
-                                    });
-                                  } else {
-                                    handleTokenChange(v.name, val);
-                                  }
-                                }}
-                              />
-                            ) : (
-                              <XDSSelector
-                                label={v.name}
-                                isLabelHidden
-                                size="sm"
-                                options={[
-                                  ...v.options,
-                                  {value: '__custom__', label: 'Custom...'},
-                                ]}
-                                value={currentValue || v.default}
-                                onChange={(val: string) => {
-                                  if (val === '__custom__') {
-                                    setCustomVars(prev =>
-                                      new Set(prev).add(v.name),
-                                    );
-                                  } else {
-                                    handleTokenChange(v.name, val);
-                                  }
-                                }}
-                              />
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </XDSVStack>
-                )}
+                        );
+                      })}
+                    </XDSVStack>
+                  </CollapsibleSection>
+                ))}
               </XDSVStack>
             ) : (
               renderTokenEditor()
             )}
-          </div>
-
-          {/* Action bar */}
-          <div
-            style={{
-              padding: '16px',
-              borderTop: '1px solid var(--color-border)',
-              display: 'flex',
-              gap: '8px',
-            }}>
-            <XDSButton
-              label="Reset All"
-              variant="ghost"
-              onClick={handleReset}
-            />
           </div>
         </div>
       </div>
