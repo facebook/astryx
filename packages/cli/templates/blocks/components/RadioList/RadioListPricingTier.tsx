@@ -2,6 +2,7 @@
 
 import {useState} from 'react';
 import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
+import {XDSText} from '@xds/core/Text';
 
 export default function RadioListPricingTier() {
   const [value, setValue] = useState('');
@@ -11,17 +12,17 @@ export default function RadioListPricingTier() {
       <XDSRadioListItem
         label="Free"
         value="free"
-        endContent={<span style={{color: '#0D8626'}}>$0/mo</span>}
+        endContent={<XDSText type="body" color="positive">$0/mo</XDSText>}
       />
       <XDSRadioListItem
         label="Pro"
         value="pro"
-        endContent={<span style={{color: '#0064E0'}}>$9/mo</span>}
+        endContent={<XDSText type="body" color="accent">$9/mo</XDSText>}
       />
       <XDSRadioListItem
         label="Enterprise"
         value="enterprise"
-        endContent={<span style={{color: '#5B08D8'}}>Custom</span>}
+        endContent={<XDSText type="body" color="secondary">Custom</XDSText>}
       />
     </XDSRadioList>
   );
