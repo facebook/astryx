@@ -6,5 +6,5 @@ export const doc = {
     'Composition of PowerSearch with Table using usePowerSearchConfig to auto-generate config and filter data.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['PowerSearch', 'Table'],
+  componentsUsed: ['PowerSearch', 'Table', 'Layout'],
 };
