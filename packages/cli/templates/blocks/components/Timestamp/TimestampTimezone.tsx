@@ -14,8 +14,8 @@ export default function TimestampTimezone() {
           User-facing with timezone
         </XDSText>
         <XDSStack direction="horizontal" gap={4} vAlign="center">
-          <XDSTimestamp value={DATE} format="date_time" isTimezoneShown />
-          <XDSTimestamp value={DATE} format="time" isTimezoneShown />
+          <XDSTimestamp value={DATE} format="date_time" isTimezoneShown color="primary" />
+          <XDSTimestamp value={DATE} format="time" isTimezoneShown color="primary" />
         </XDSStack>
       </XDSStack>
       <XDSStack direction="vertical" gap={1}>
@@ -23,8 +23,8 @@ export default function TimestampTimezone() {
           System formats with timezone
         </XDSText>
         <XDSStack direction="horizontal" gap={4} vAlign="center">
-          <XDSTimestamp value={DATE} format="system_date_time" isTimezoneShown type="code" />
-          <XDSTimestamp value={DATE} format="system_time" isTimezoneShown type="code" />
+          <XDSTimestamp value={DATE} format="system_date_time" isTimezoneShown type="code" color="primary" />
+          <XDSTimestamp value={DATE} format="system_time" isTimezoneShown type="code" color="primary" />
         </XDSStack>
       </XDSStack>
     </XDSStack>

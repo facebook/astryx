@@ -14,9 +14,9 @@ export default function TimestampFormats() {
           User-facing formats
         </XDSText>
         <XDSStack direction="horizontal" gap={4} vAlign="center">
-          <XDSTimestamp value={DATE} format="date" />
-          <XDSTimestamp value={DATE} format="date_time" />
-          <XDSTimestamp value={DATE} format="time" />
+          <XDSTimestamp value={DATE} format="date" color="primary" />
+          <XDSTimestamp value={DATE} format="date_time" color="primary" />
+          <XDSTimestamp value={DATE} format="time" color="primary" />
         </XDSStack>
       </XDSStack>
       <XDSStack direction="vertical" gap={1}>
@@ -24,9 +24,9 @@ export default function TimestampFormats() {
           System formats (logs and dev tools)
         </XDSText>
         <XDSStack direction="horizontal" gap={4} vAlign="center">
-          <XDSTimestamp value={DATE} format="system_date" type="code" />
-          <XDSTimestamp value={DATE} format="system_date_time" type="code" />
-          <XDSTimestamp value={DATE} format="system_time" type="code" />
+          <XDSTimestamp value={DATE} format="system_date" type="code" color="primary" />
+          <XDSTimestamp value={DATE} format="system_date_time" type="code" color="primary" />
+          <XDSTimestamp value={DATE} format="system_time" type="code" color="primary" />
         </XDSStack>
       </XDSStack>
     </XDSStack>

@@ -12,12 +12,12 @@ export default function TimestampRelativeFormat() {
         Relative timestamps (hover for full date)
       </XDSText>
       <XDSStack direction="vertical" gap={2}>
-        <XDSTimestamp value={now - 5} format="relative" />
-        <XDSTimestamp value={now - 120} format="relative" />
-        <XDSTimestamp value={now - 3600} format="relative" />
-        <XDSTimestamp value={now - 86400} format="relative" />
-        <XDSTimestamp value={now - 259200} format="relative" />
-        <XDSTimestamp value={now - 90 * 86400} format="relative" />
+        <XDSTimestamp value={now - 5} format="relative" color="primary" />
+        <XDSTimestamp value={now - 120} format="relative" color="primary" />
+        <XDSTimestamp value={now - 3600} format="relative" color="primary" />
+        <XDSTimestamp value={now - 86400} format="relative" color="primary" />
+        <XDSTimestamp value={now - 259200} format="relative" color="primary" />
+        <XDSTimestamp value={now - 90 * 86400} format="relative" color="primary" />
       </XDSStack>
     </XDSStack>
   );
