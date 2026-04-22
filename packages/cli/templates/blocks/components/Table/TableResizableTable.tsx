@@ -7,7 +7,6 @@ import {
   proportional,
   pixel,
 } from '@xds/core/Table';
-import type {XDSTableColumn} from '@xds/core/Table';
 
 interface User extends Record<string, unknown> {
   id: string;
@@ -29,7 +28,7 @@ const users: User[] = [
   {id: '5', name: 'Eve Davis', email: 'eve@example.com', role: 'Analyst'},
 ];
 
-const columns: XDSTableColumn<User>[] = [
+const columns = [
   {key: 'name', header: 'Name'},
   {key: 'email', header: 'Email', width: proportional(2)},
   {key: 'role', header: 'Role', width: pixel(120)},
