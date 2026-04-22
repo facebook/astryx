@@ -3,6 +3,7 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSGrid} from '@xds/core/Grid';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
@@ -158,12 +159,7 @@ export default function FormSimplePage() {
           {/* Why work with us */}
           <div style={{paddingTop: '5%', paddingBottom: '5%'}}>
             <XDSVStack gap={5}>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
-                  gap: 16,
-                }}>
+              <XDSGrid columns={3} gap={4}>
                 {WHY_US.map(item => (
                   <XDSVStack key={item.title} gap={3}>
                     <img
@@ -186,18 +182,13 @@ export default function FormSimplePage() {
                     </XDSVStack>
                   </XDSVStack>
                 ))}
-              </div>
+              </XDSGrid>
             </XDSVStack>
           </div>
 
           {/* Your details */}
           <XDSVStack gap={5}>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: 16,
-              }}>
+            <XDSGrid columns={2} gap={4}>
               <XDSTextInput
                 label="Full Name"
                 placeholder="Full Name"
@@ -220,13 +211,8 @@ export default function FormSimplePage() {
                     : undefined
                 }
               />
-            </div>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: 16,
-              }}>
+            </XDSGrid>
+            <XDSGrid columns={2} gap={4}>
               <XDSTextInput
                 label="Company"
                 placeholder="Company"
@@ -249,7 +235,7 @@ export default function FormSimplePage() {
                     : undefined
                 }
               />
-            </div>
+            </XDSGrid>
           </XDSVStack>
 
           <XDSDivider />
@@ -258,7 +244,7 @@ export default function FormSimplePage() {
           <XDSVStack gap={5}>
             <XDSVStack gap={2}>
               <XDSText type="label">What are you going for?</XDSText>
-              <div style={{display: 'flex', flexWrap: 'wrap', gap: 8}}>
+              <XDSGrid columns={{minWidth: 120}} gap={2}>
                 {CAMPAIGN_GOALS.map(goal => (
                   <XDSToken
                     key={goal}
@@ -267,7 +253,7 @@ export default function FormSimplePage() {
                     onClick={() => toggleGoal(goal)}
                   />
                 ))}
-              </div>
+              </XDSGrid>
               {errors.goals && (
                 <XDSText type="supporting" xstyle={styles.errorColor}>{errors.goals}</XDSText>
               )}
