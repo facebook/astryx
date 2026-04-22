@@ -18,8 +18,9 @@ import {
   radiusVars,
 } from '@xds/core/theme/tokens.stylex';
 
+// illustration-horizontal-1 from xds_oss asset set
 const ILLUSTRATION_URL =
-  'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80';
+  'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-1.jpg';
 
 // ─────────────────────────────────────────────────────────────
 // Constants
