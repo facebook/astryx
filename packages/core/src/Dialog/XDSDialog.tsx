@@ -123,21 +123,11 @@ const styles = stylex.create({
     '--_dialog-radius': radiusVars['--radius-container'],
     borderRadius: 'var(--_dialog-radius)',
     boxShadow: shadowVars['--shadow-high'],
-    display: {
-      default: 'none',
-      ':where([open])': 'flex',
-    },
+    display: 'none',
     flexDirection: 'column',
     height: 'fit-content',
     overscrollBehavior: 'contain',
-    opacity: {
-      default: 0,
-      ':where([open])': 1,
-    },
-    animationName: {
-      default: 'none',
-      ':where([open])': enterDirectional,
-    },
+    opacity: 0,
     animationDuration: durationVars['--duration-medium-max'],
     animationTimingFunction: easeVars['--ease-standard'],
     animationFillMode: 'backwards' as const,
@@ -149,6 +139,14 @@ const styles = stylex.create({
       default: '0',
       ':focus-visible': '2px',
     },
+  },
+  // Applied via isOpen prop — avoids :where([open]) attribute selectors
+  // which have zero specificity and can lose to default styles depending
+  // on CSS source order in the build output.
+  open: {
+    display: 'flex',
+    opacity: 1,
+    animationName: enterDirectional,
   },
   // Backdrop using ::backdrop pseudo-element
   backdrop: {
@@ -453,6 +451,7 @@ export function XDSDialog({
         xdsClassName('dialog', {variant}),
         stylex.props(
           styles.dialog,
+          isOpen && styles.open,
           styles.backdrop,
           styles.isolateEdgeSignals,
           !isFullscreen && dynamicStyles.sizing(width, maxHeight),

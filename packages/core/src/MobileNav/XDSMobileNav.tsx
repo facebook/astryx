@@ -62,13 +62,12 @@ const styles = stylex.create({
     // Prevent touch gestures (pull-to-refresh, background scroll) passing through
     touchAction: 'none',
     outline: 'none',
-    // Native <dialog> uses display:none when closed — we preserve that
-    // by only setting display when [open] via :where() selector.
-    // This prevents the dialog from blocking pointer events when closed.
-    display: {
-      default: 'none',
-      ':where([open])': 'flex',
-    },
+    // Native <dialog> uses display:none when closed.
+    // Open state applied via isOpen prop to avoid :where([open]) specificity issues.
+    display: 'none',
+  },
+  open: {
+    display: 'flex',
   },
   // ::backdrop is provided by the browser's top layer
   backdrop: {
@@ -399,6 +398,7 @@ export function XDSMobileNav({
         xdsClassName('mobile-nav', {side: resolvedSide}),
         stylex.props(
           styles.dialog,
+          isOpen && styles.open,
           styles.backdrop,
           isOpen && styles.backdropOpen,
           xstyle,
