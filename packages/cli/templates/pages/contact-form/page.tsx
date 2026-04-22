@@ -16,12 +16,12 @@ import {XDSDivider} from '@xds/core/Divider';
 import {colorVars} from '@xds/core/theme/tokens.stylex';
 
 const WHY_US_IMAGES = [
-  // light-working-horizontal-3 from xds_oss asset set
-  'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-3.png',
-  // light-working-horizontal-2 from xds_oss asset set
-  'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-2.png',
-  // light-working-vertical-1 from xds_oss asset set
-  'https://lookaside.facebook.com/assets/xds_oss/light-working-vertical-1.png',
+  // illustration-horizontal-3 from xds_oss asset set
+  'https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-3.png',
+  // illustration-horizontal-4 from xds_oss asset set
+  'https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-4.png',
+  // illustration-horizontal-5 from xds_oss asset set
+  'https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-5.png',
 ];
 
 const CAMPAIGN_GOALS = [
@@ -123,8 +123,8 @@ export default function FormSimplePage() {
       style={{minHeight: '100svh', display: 'flex', flexDirection: 'column'}}>
       {/* Full-bleed banner */}
       <img
-        // texture-beige-horizontal-1 from xds_oss asset set
-        src="https://lookaside.facebook.com/assets/xds_oss/texture-beige-horizontal-1.png"
+        // illustration-horizontal-2 from xds_oss asset set
+        src="https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-2.png"
         alt="Decorative banner"
         style={{
           width: '100%',
