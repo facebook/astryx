@@ -11,11 +11,36 @@ interface User extends Record<string, unknown> {
   role: string;
 }
 
-const users: User[] = Array.from({length: 50}, (_, i) => ({
+const names = [
+  'Alice Johnson',
+  'Bob Smith',
+  'Charlie Brown',
+  'Diana Prince',
+  'Eve Davis',
+  'Frank Miller',
+  'Grace Lee',
+  'Hank Wilson',
+  'Ivy Chen',
+  'Jack Turner',
+  'Karen White',
+  'Leo Garcia',
+  'Mia Thompson',
+  'Noah Martinez',
+  'Olivia Clark',
+  'Paul Harris',
+  'Quinn Walker',
+  'Rachel Adams',
+  'Sam Robinson',
+  'Tina Scott',
+];
+
+const roles = ['Engineer', 'Designer', 'Manager', 'Admin', 'Analyst'];
+
+const users: User[] = names.map((name, i) => ({
   id: String(i + 1),
-  name: `User ${i + 1}`,
-  email: `user${i + 1}@example.com`,
-  role: ['Engineer', 'Designer', 'Manager', 'Admin', 'Analyst'][i % 5],
+  name,
+  email: `${name.split(' ')[0].toLowerCase()}@example.com`,
+  role: roles[i % roles.length],
 }));
 
 const columns: XDSTableColumn<User>[] = [
