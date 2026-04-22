@@ -3,6 +3,6 @@ export const doc = {
   type: 'block',
   name: 'TimeInput',
   isReady: true,
-  aspectRatio: 1,
+  aspectRatio: 16 / 9,
   isShowcase: true,
 };
