@@ -2,45 +2,51 @@
 
 import {useState} from 'react';
 import {XDSSelector} from '@xds/core/Selector';
+import {XDSVStack} from '@xds/core/Layout';
+import {XDSCenter} from '@xds/core/Center';
 
 export default function SelectorWithStatus() {
   const [value1, setValue1] = useState<string | undefined>();
-  const [value2, setValue2] = useState<string | undefined>('banana');
-  const [value3, setValue3] = useState<string | undefined>('apple');
+  const [value2, setValue2] = useState<string | undefined>('viewer');
+  const [value3, setValue3] = useState<string | undefined>('admin');
   return (
-    <div
-      style={{display: 'flex', flexDirection: 'column', gap: 16, width: 250}}>
-      <XDSSelector
-        label="Error status"
-        options={[
-          {value: 'apple', label: 'Apple'},
-          {value: 'banana', label: 'Banana'},
-        ]}
-        value={value1}
-        onChange={setValue1}
-        placeholder="Select a fruit..."
-        status={{type: 'error', message: 'Please select a fruit'}}
-      />
-      <XDSSelector
-        label="Warning status"
-        options={[
-          {value: 'apple', label: 'Apple'},
-          {value: 'banana', label: 'Banana'},
-        ]}
-        value={value2}
-        onChange={setValue2}
-        status={{type: 'warning', message: 'Banana is out of season'}}
-      />
-      <XDSSelector
-        label="Success status"
-        options={[
-          {value: 'apple', label: 'Apple'},
-          {value: 'banana', label: 'Banana'},
-        ]}
-        value={value3}
-        onChange={setValue3}
-        status={{type: 'success'}}
-      />
-    </div>
+    <XDSCenter width={250}>
+      <XDSVStack gap={4}>
+        <XDSSelector
+          label="Role"
+          options={[
+            {value: 'admin', label: 'Admin'},
+            {value: 'editor', label: 'Editor'},
+            {value: 'viewer', label: 'Viewer'},
+          ]}
+          value={value1}
+          onChange={setValue1}
+          placeholder="Choose a role..."
+          status={{type: 'error', message: 'Please select a role'}}
+        />
+        <XDSSelector
+          label="Role"
+          options={[
+            {value: 'admin', label: 'Admin'},
+            {value: 'editor', label: 'Editor'},
+            {value: 'viewer', label: 'Viewer'},
+          ]}
+          value={value2}
+          onChange={setValue2}
+          status={{type: 'warning', message: 'Viewer has limited access'}}
+        />
+        <XDSSelector
+          label="Role"
+          options={[
+            {value: 'admin', label: 'Admin'},
+            {value: 'editor', label: 'Editor'},
+            {value: 'viewer', label: 'Viewer'},
+          ]}
+          value={value3}
+          onChange={setValue3}
+          status={{type: 'success'}}
+        />
+      </XDSVStack>
+    </XDSCenter>
   );
 }

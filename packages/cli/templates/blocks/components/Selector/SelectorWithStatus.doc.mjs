@@ -3,8 +3,8 @@ export const doc = {
   type: 'block',
   name: 'Selector — Validation States',
   description:
-    'Selector fields showing error, warning, and success validation states with messages.',
+    'Selector showing error, warning, and success validation states.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Selector'],
+  componentsUsed: ['Selector', 'Center', 'VStack'],
 };

@@ -3,8 +3,8 @@ export const doc = {
   type: 'block',
   name: 'Selector — Grouped Sections',
   description:
-    'Selector with options organized into labeled sections for categorized choices.',
+    'Selector with options grouped into labeled sections.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Selector'],
+  componentsUsed: ['Selector', 'Center'],
 };
