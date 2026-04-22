@@ -189,6 +189,51 @@ describe('XDSTabList', () => {
     expect(screen.getByTestId('icon')).toBeInTheDocument();
     expect(screen.queryByTestId('selected-icon')).not.toBeInTheDocument();
   });
+
+  it('renders endContent after the label', () => {
+    render(
+      <XDSTabList value="home" onChange={() => {}}>
+        <XDSTab
+          value="home"
+          label="Home"
+          endContent={<span data-testid="badge">5</span>}
+        />
+      </XDSTabList>,
+    );
+
+    expect(screen.getByTestId('badge')).toBeInTheDocument();
+    expect(screen.getByTestId('badge').textContent).toBe('5');
+  });
+
+  it('does not render endContent wrapper when endContent is not provided', () => {
+    const {container} = render(
+      <XDSTabList value="home" onChange={() => {}}>
+        <XDSTab value="home" label="Home" />
+      </XDSTabList>,
+    );
+
+    // The endContentWrapper span should not exist
+    const button = screen.getByRole('button', {name: 'Home'});
+    // Button children: hoverBg, labelContainer, indicator (no endContent wrapper)
+    const spans = button.querySelectorAll(':scope > span');
+    // hoverBg + labelContainer + indicator = 3 spans
+    expect(spans.length).toBe(3);
+  });
+
+  it('renders endContent in link tabs', () => {
+    render(
+      <XDSTabList value="home" onChange={() => {}}>
+        <XDSTab
+          value="home"
+          label="Home"
+          href="/home"
+          endContent={<span data-testid="dot">●</span>}
+        />
+      </XDSTabList>,
+    );
+
+    expect(screen.getByTestId('dot')).toBeInTheDocument();
+  });
 });
 
 describe('XDSTab polymorphic link', () => {

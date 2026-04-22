@@ -60,6 +60,10 @@ export interface XDSTabProps extends XDSBaseProps<HTMLButtonElement> {
    * Icon element shown when tab is selected. Falls back to `icon` if not provided.
    */
   selectedIcon?: ReactNode;
+  /**
+   * Content rendered after the label (e.g. a badge or status dot).
+   */
+  endContent?: ReactNode;
 }
 
 // =============================================================================
@@ -158,6 +162,11 @@ const styles = stylex.create({
     pointerEvents: 'none',
     fontWeight: fontWeightVars['--font-weight-semibold'],
   },
+  endContentWrapper: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
 });
 
 const sizeStyles = stylex.create({
@@ -205,6 +214,7 @@ export function XDSTab({
   href,
   icon,
   selectedIcon,
+  endContent,
   xstyle,
   className,
   style,
@@ -279,12 +289,17 @@ export function XDSTab({
     </span>
   );
 
+  const endContentElement = endContent ? (
+    <span {...stylex.props(styles.endContentWrapper)}>{endContent}</span>
+  ) : null;
+
   if (href != null) {
     return (
       <LinkComponent href={href} onClick={handleSelect} {...sharedProps}>
         {hoverBgElement}
         {iconElement}
         {labelElement}
+        {endContentElement}
         {indicatorElement}
       </LinkComponent>
     );
@@ -295,6 +310,7 @@ export function XDSTab({
       {hoverBgElement}
       {iconElement}
       {labelElement}
+      {endContentElement}
       {indicatorElement}
     </button>
   );

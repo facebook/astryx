@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'TabList — With Actions',
   description:
-    'Page header pattern with tabs on the left and action buttons pushed to the right.',
+    'Page header pattern with tabs on the left and action buttons pushed to the right. When hasDivider is true, pair with a smaller button size (sm) so actions don\u2019t overpower the tab row.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['TabList', 'Tab', 'Button'],
