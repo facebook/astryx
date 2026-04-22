@@ -149,29 +149,27 @@ export default function FormSimplePage() {
           </XDSVStack>
 
           {/* Why work with us */}
-          <div style={{paddingTop: '5%', paddingBottom: '5%'}}>
-            <XDSVStack gap={5}>
-              <XDSGrid columns={3} gap={4}>
-                {WHY_US.map(item => (
-                  <XDSVStack key={item.title} gap={3}>
-                    <img
-                      src={item.image}
-                      alt={item.title}
-                      {...stylex.props(styles.cardImage)}
-                    />
-                    <XDSVStack gap={1}>
-                      <XDSText type="body" weight="bold">
-                        {item.title}
-                      </XDSText>
-                      <XDSText type="supporting" color="secondary">
-                        {item.description}
-                      </XDSText>
-                    </XDSVStack>
+          <XDSVStack gap={5}>
+            <XDSGrid columns={3} gap={4}>
+              {WHY_US.map(item => (
+                <XDSVStack key={item.title} gap={3}>
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    {...stylex.props(styles.cardImage)}
+                  />
+                  <XDSVStack gap={1}>
+                    <XDSText type="body" weight="bold">
+                      {item.title}
+                    </XDSText>
+                    <XDSText type="supporting" color="secondary">
+                      {item.description}
+                    </XDSText>
                   </XDSVStack>
-                ))}
-              </XDSGrid>
-            </XDSVStack>
-          </div>
+                </XDSVStack>
+              ))}
+            </XDSGrid>
+          </XDSVStack>
 
           {/* Your details */}
           <XDSVStack gap={5}>
