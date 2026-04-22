@@ -1059,7 +1059,7 @@ function ComponentPreview() {
                       </XDSText>
                     ))}
                   </XDSHStack>
-                  <XDSDivider />
+                  <XDSDivider variant="strong" />
                   <XDSHStack gap={3}>
                     <div style={{...SEC_BOX, flex: 1}}>
                       <XDSVStack gap={1}>
@@ -1188,7 +1188,7 @@ function ComponentPreview() {
                   <XDSText type="supporting" color="secondary">
                     Market orders execute at the current price.
                   </XDSText>
-                  <XDSDivider />
+                  <XDSDivider variant="strong" />
                   <div style={ROW}>
                     <XDSText type="body">Estimated Shares</XDSText>
                     <XDSText type="body" weight="bold">
@@ -1388,7 +1388,7 @@ function ComponentPreview() {
                 <div key={i} style={{...BAR_BASE, height: h}} />
               ))}
             </div>
-            <XDSDivider />
+            <XDSDivider variant="strong" />
             <div style={ROW}>
               <XDSVStack gap={0}>
                 <XDSText type="supporting" color="secondary">
@@ -1438,7 +1438,7 @@ function ComponentPreview() {
                 Pending Setup
               </XDSText>
             </XDSHStack>
-            <XDSDivider />
+            <XDSDivider variant="strong" />
             <div style={ROW}>
               <XDSText type="body">Net Royalties</XDSText>
               <XDSText type="body" weight="bold">
@@ -1451,7 +1451,7 @@ function ComponentPreview() {
                 -$0.00
               </XDSText>
             </div>
-            <XDSDivider />
+            <XDSDivider variant="strong" />
             <div style={ROW}>
               <XDSText type="body">Total Ready to Claim</XDSText>
               <XDSText type="body" weight="bold">
@@ -1604,7 +1604,7 @@ function ComponentPreview() {
               <XDSBreadcrumbItem href="#">...</XDSBreadcrumbItem>
               <XDSBreadcrumbItem isCurrent>Payments</XDSBreadcrumbItem>
             </XDSBreadcrumbs>
-            <XDSDivider />
+            <XDSDivider variant="strong" />
             <XDSCollapsibleGroup type="single" defaultValue="0">
               {[
                 {
@@ -1668,11 +1668,11 @@ function ComponentPreview() {
                     category, set a target amount and date, and we&apos;ll
                     calculate the monthly contribution needed.
                   </XDSText>
-                  <XDSDivider />
+                  <XDSDivider variant="strong" />
                   <XDSText type="label" weight="bold">
                     Can I track multiple goals at once?
                   </XDSText>
-                  <XDSDivider />
+                  <XDSDivider variant="strong" />
                   <XDSText type="label" weight="bold">
                     How are monthly contributions calculated?
                   </XDSText>
@@ -1701,7 +1701,7 @@ function ComponentPreview() {
               80% of $30,000
             </XDSText>
             <XDSProgressBar label="Savings Progress" value={80} />
-            <XDSDivider />
+            <XDSDivider variant="strong" />
             <div style={ROW}>
               <XDSText type="body">Projected Finish</XDSText>
               <XDSText type="body" weight="bold">
@@ -1774,7 +1774,7 @@ function ComponentPreview() {
               Select a date to view scheduled payments.
             </XDSText>
             <XDSCalendar />
-            <XDSDivider />
+            <XDSDivider variant="strong" />
             {[
               {
                 name: 'Netflix Subscription',
@@ -1928,7 +1928,7 @@ function ComponentPreview() {
                 ]}
               />
             </XDSHStack>
-            <XDSDivider />
+            <XDSDivider variant="strong" />
             <XDSHStack gap={2} vAlign="center" wrap="wrap">
               <XDSPopover
                 content={<PopoverSettingsContent />}
@@ -1994,7 +1994,7 @@ function ComponentPreview() {
                 onChange={setCheck2}
               />
             </XDSHStack>
-            <XDSDivider />
+            <XDSDivider variant="strong" />
             <XDSHStack gap={4} vAlign="end">
               <div style={{flex: 1, maxWidth: 200}}>
                 <XDSSlider
@@ -2028,7 +2028,7 @@ function ComponentPreview() {
               <XDSSpinner size="md" />
               <XDSSpinner size="lg" />
             </XDSHStack>
-            <XDSDivider />
+            <XDSDivider variant="strong" />
             <XDSVStack gap={2}>
               <XDSHStack gap={3} vAlign="center">
                 <XDSSkeleton
@@ -2045,7 +2045,7 @@ function ComponentPreview() {
               <XDSSkeleton width="100%" height={12} index={3} />
               <XDSSkeleton width="80%" height={12} index={4} />
             </XDSVStack>
-            <XDSDivider />
+            <XDSDivider variant="strong" />
             <XDSVStack gap={3}>
               <XDSProgressBar
                 value={progressValue}
@@ -2063,7 +2063,7 @@ function ComponentPreview() {
                 ))}
               </XDSHStack>
             </XDSVStack>
-            <XDSDivider />
+            <XDSDivider variant="strong" />
             <XDSHStack gap={4} vAlign="center">
               <XDSHStack gap={2} vAlign="center">
                 <XDSStatusDot variant="positive" label="Online" isPulsing />
@@ -2093,7 +2093,7 @@ function ComponentPreview() {
               <XDSTab value="reports" label="Reports" />
               <XDSTab value="settings" label="Settings" />
             </XDSTabList>
-            <XDSDivider />
+            <XDSDivider variant="strong" />
             <XDSList density="balanced">
               <XDSListItem
                 label="Dashboard"
@@ -2144,7 +2144,7 @@ function LandingPagePreview() {
           <XDSButton label="Documentation" variant="secondary" />
         </div>
       </div>
-      <XDSDivider />
+      <XDSDivider variant="strong" />
       <div>
         <XDSHeading level={2} style={{marginBottom: 16}}>
           Features
@@ -2410,7 +2410,7 @@ function PopoverSettingsContent() {
       <XDSText type="label" display="block">
         Settings
       </XDSText>
-      <XDSDivider />
+      <XDSDivider variant="strong" />
       <XDSSwitch
         label="Notifications"
         description="Receive push notifications"
@@ -2470,7 +2470,7 @@ function MicroInteractionsPreview() {
             />
           </XDSHStack>
         </div>
-        <XDSDivider />
+        <XDSDivider variant="strong" />
         <div>
           <XDSText type="supporting" color="secondary" display="block">
             Popover / HoverCard / Tooltip
@@ -2514,7 +2514,7 @@ function MicroInteractionsPreview() {
             </XDSTooltip>
           </XDSHStack>
         </div>
-        <XDSDivider />
+        <XDSDivider variant="strong" />
         <div>
           <XDSText type="supporting" color="secondary" display="block">
             Switches & Checkboxes
@@ -2534,7 +2534,7 @@ function MicroInteractionsPreview() {
             />
           </XDSHStack>
         </div>
-        <XDSDivider />
+        <XDSDivider variant="strong" />
         <div>
           <XDSText type="supporting" color="secondary" display="block">
             Slider & Selector
@@ -2577,7 +2577,7 @@ function LoadingStatusPreview() {
           <XDSSpinner size="md" />
           <XDSSpinner size="lg" />
         </XDSHStack>
-        <XDSDivider />
+        <XDSDivider variant="strong" />
         <XDSVStack gap={2}>
           <XDSHStack gap={3} vAlign="center">
             <XDSSkeleton width={40} height={40} radius="rounded" index={0} />
@@ -2589,7 +2589,7 @@ function LoadingStatusPreview() {
           <XDSSkeleton width="100%" height={12} index={3} />
           <XDSSkeleton width="80%" height={12} index={4} />
         </XDSVStack>
-        <XDSDivider />
+        <XDSDivider variant="strong" />
         <XDSVStack gap={3}>
           <XDSProgressBar value={progressValue} label={`${progressValue}%`} />
           <XDSHStack gap={2}>
@@ -2604,7 +2604,7 @@ function LoadingStatusPreview() {
             ))}
           </XDSHStack>
         </XDSVStack>
-        <XDSDivider />
+        <XDSDivider variant="strong" />
         <XDSHStack gap={4} vAlign="center">
           <XDSHStack gap={2} vAlign="center">
             <XDSStatusDot variant="positive" label="Online" isPulsing />
@@ -2638,7 +2638,7 @@ function SurfaceInteractionsPreview() {
           <XDSTab value="reports" label="Reports" />
           <XDSTab value="settings" label="Settings" />
         </XDSTabList>
-        <XDSDivider />
+        <XDSDivider variant="strong" />
         <XDSList density="balanced">
           <XDSListItem
             label="Dashboard"

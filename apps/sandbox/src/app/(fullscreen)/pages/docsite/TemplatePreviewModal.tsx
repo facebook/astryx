@@ -59,13 +59,12 @@ const tokenStyles = stylex.create({
   outline: {
     borderWidth: 1,
     borderStyle: 'solid',
-    borderColor: 'var(--color-border-emphasized)',
+    borderColor: 'var(--color-border-strong, #999)',
   },
   pill: {
     borderWidth: 1,
     borderStyle: 'solid',
-    borderColor: 'var(--color-border-emphasized)',
-    borderRadius: 9999,
+    borderColor: 'var(--color-border-strong, #999)',
   },
 });
 
@@ -147,12 +146,14 @@ export function TemplatePreviewModal({
       width="90vw"
       maxHeight="90vh"
       purpose="info"
-      style={{
-        padding: 0,
-        overflow: 'visible',
-        maxWidth: 1600,
-        '--xds-dialog-padding': '0px',
-      } as React.CSSProperties}>
+      style={
+        {
+          padding: 0,
+          overflow: 'visible',
+          maxWidth: 1600,
+          '--xds-dialog-padding': '0px',
+        } as React.CSSProperties
+      }>
       <div style={{position: 'absolute', top: 0, right: -40, zIndex: 1}}>
         <XDSCard padding={0} style={{borderRadius: '50%'}}>
           <XDSButton
@@ -177,8 +178,7 @@ export function TemplatePreviewModal({
                 aspectRatio: '16 / 10',
                 backgroundColor: 'var(--color-background-muted, #f9f9f9)',
                 borderRadius: 12,
-                overflowY: 'auto',
-                overflowX: 'hidden',
+                overflow: 'hidden',
                 border: '1px solid var(--color-border, #e0e0e0)',
               }}>
               {item.slug ? (
@@ -218,9 +218,7 @@ export function TemplatePreviewModal({
               style={{
                 opacity: transitioning ? 0 : 1,
                 transition: 'opacity 250ms ease',
-                animation: transitioning
-                  ? 'none'
-                  : 'previewFadeIn 300ms ease',
+                animation: transitioning ? 'none' : 'previewFadeIn 300ms ease',
               }}>
               <XDSText type="display-2">{item.name}</XDSText>
 
@@ -245,9 +243,7 @@ export function TemplatePreviewModal({
                   <XDSText type="supporting" color="secondary">
                     Crafted by
                   </XDSText>
-                  <XDSText
-                    type="body"
-                    style={{fontWeight: 600, fontSize: 16}}>
+                  <XDSText type="body" style={{fontWeight: 600, fontSize: 16}}>
                     {item.author}
                   </XDSText>
                 </XDSVStack>
@@ -255,9 +251,7 @@ export function TemplatePreviewModal({
             </div>
 
             {/* CTA buttons */}
-            <XDSVStack
-              gap={2}
-              style={{marginTop: 32, position: 'relative'}}>
+            <XDSVStack gap={2} style={{marginTop: 32, position: 'relative'}}>
               <XDSButton
                 variant="primary"
                 label="Start crafting"
@@ -283,11 +277,7 @@ export function TemplatePreviewModal({
                     size="lg"
                     isIconOnly
                     icon={
-                      isBookmarked ? (
-                        <BookmarkFilledIcon />
-                      ) : (
-                        <BookmarkIcon />
-                      )
+                      isBookmarked ? <BookmarkFilledIcon /> : <BookmarkIcon />
                     }
                     onClick={onBookmarkToggle}
                   />
@@ -367,214 +357,202 @@ export function TemplatePreviewModal({
                           flexDirection: 'column',
                           gap: 16,
                         }}>
-                        {(['official', 'community'] as const).map(
-                          category => {
-                            const entries = THEME_PICKER_ENTRIES.filter(
-                              e =>
-                                e.category === category &&
-                                e.name
-                                  .toLowerCase()
-                                  .includes(themeSearch.toLowerCase()),
-                            );
-                            if (entries.length === 0) return null;
-                            return (
-                              <div key={category}>
-                                <div style={{marginBottom: 8}}>
-                                  <XDSText
-                                    type="supporting"
-                                    color="secondary">
-                                    {category.charAt(0).toUpperCase() +
-                                      category.slice(1)}
-                                  </XDSText>
-                                </div>
-                                <div
-                                  style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: '1fr 1fr 1fr',
-                                    gap: 8,
-                                  }}>
-                                  {entries.map(entry => {
-                                    const isSelected =
-                                      selectedTheme === entry.key;
-                                    const isPinned = pinnedThemes.has(
-                                      entry.key,
-                                    );
-                                    const p = entry.preview;
-                                    return (
+                        {(['official', 'community'] as const).map(category => {
+                          const entries = THEME_PICKER_ENTRIES.filter(
+                            e =>
+                              e.category === category &&
+                              e.name
+                                .toLowerCase()
+                                .includes(themeSearch.toLowerCase()),
+                          );
+                          if (entries.length === 0) return null;
+                          return (
+                            <div key={category}>
+                              <div style={{marginBottom: 8}}>
+                                <XDSText type="supporting" color="secondary">
+                                  {category.charAt(0).toUpperCase() +
+                                    category.slice(1)}
+                                </XDSText>
+                              </div>
+                              <div
+                                style={{
+                                  display: 'grid',
+                                  gridTemplateColumns: '1fr 1fr 1fr',
+                                  gap: 8,
+                                }}>
+                                {entries.map(entry => {
+                                  const isSelected =
+                                    selectedTheme === entry.key;
+                                  const isPinned = pinnedThemes.has(entry.key);
+                                  const p = entry.preview;
+                                  return (
+                                    <div
+                                      key={entry.key}
+                                      style={{
+                                        borderRadius: 12,
+                                        overflow: 'hidden',
+                                        cursor: 'pointer',
+                                        border: isSelected
+                                          ? '1.5px solid var(--color-accent)'
+                                          : '1px solid var(--color-border-emphasized)',
+                                        transition: 'border-color 0.15s ease',
+                                      }}>
                                       <div
-                                        key={entry.key}
+                                        onClick={() => {
+                                          setSelectedTheme(entry.key);
+                                          setThemeBrowseOpen(false);
+                                          setThemeSearch('');
+                                        }}
                                         style={{
-                                          borderRadius: 12,
+                                          height: 100,
+                                          backgroundColor: p.bg,
+                                          display: 'flex',
+                                          flexDirection: 'column',
                                           overflow: 'hidden',
-                                          cursor: 'pointer',
-                                          border: isSelected
-                                            ? '1.5px solid var(--color-accent)'
-                                            : '1px solid var(--color-border-emphasized)',
-                                          transition:
-                                            'border-color 0.15s ease',
                                         }}>
                                         <div
-                                          onClick={() => {
-                                            setSelectedTheme(entry.key);
-                                            setThemeBrowseOpen(false);
-                                            setThemeSearch('');
-                                          }}
                                           style={{
-                                            height: 100,
-                                            backgroundColor: p.bg,
+                                            height: 14,
+                                            backgroundColor: p.surface,
+                                            borderBottom: `1px solid ${p.text}1A`,
                                             display: 'flex',
-                                            flexDirection: 'column',
-                                            overflow: 'hidden',
+                                            alignItems: 'center',
+                                            paddingInline: 8,
+                                            gap: 4,
                                           }}>
                                           <div
                                             style={{
-                                              height: 14,
-                                              backgroundColor: p.surface,
-                                              borderBottom: `1px solid ${p.text}1A`,
-                                              display: 'flex',
-                                              alignItems: 'center',
-                                              paddingInline: 8,
-                                              gap: 4,
-                                            }}>
-                                            <div
-                                              style={{
-                                                width: 5,
-                                                height: 5,
-                                                borderRadius: '50%',
-                                                backgroundColor: p.accent,
-                                              }}
-                                            />
-                                            <div
-                                              style={{
-                                                width: 16,
-                                                height: 2,
-                                                borderRadius: 1,
-                                                backgroundColor: p.text,
-                                                opacity: 0.3,
-                                              }}
-                                            />
-                                          </div>
+                                              width: 5,
+                                              height: 5,
+                                              borderRadius: '50%',
+                                              backgroundColor: p.accent,
+                                            }}
+                                          />
                                           <div
                                             style={{
-                                              flex: 1,
-                                              padding: 8,
-                                              display: 'flex',
-                                              flexDirection: 'column',
-                                              gap: 5,
-                                            }}>
-                                            <div
-                                              style={{
-                                                width: '65%',
-                                                height: 4,
-                                                borderRadius: 2,
-                                                backgroundColor: p.text,
-                                                opacity: 0.6,
-                                              }}
-                                            />
-                                            <div
-                                              style={{
-                                                width: '45%',
-                                                height: 3,
-                                                borderRadius: 1.5,
-                                                backgroundColor: p.text,
-                                                opacity: 0.25,
-                                              }}
-                                            />
-                                            <div
-                                              style={{
-                                                width: 28,
-                                                height: 10,
-                                                borderRadius: 4,
-                                                backgroundColor: p.accent,
-                                                marginTop: 'auto',
-                                              }}
-                                            />
-                                          </div>
+                                              width: 16,
+                                              height: 2,
+                                              borderRadius: 1,
+                                              backgroundColor: p.text,
+                                              opacity: 0.3,
+                                            }}
+                                          />
                                         </div>
+                                        <div
+                                          style={{
+                                            flex: 1,
+                                            padding: 8,
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: 5,
+                                          }}>
+                                          <div
+                                            style={{
+                                              width: '65%',
+                                              height: 4,
+                                              borderRadius: 2,
+                                              backgroundColor: p.text,
+                                              opacity: 0.6,
+                                            }}
+                                          />
+                                          <div
+                                            style={{
+                                              width: '45%',
+                                              height: 3,
+                                              borderRadius: 1.5,
+                                              backgroundColor: p.text,
+                                              opacity: 0.25,
+                                            }}
+                                          />
+                                          <div
+                                            style={{
+                                              width: 28,
+                                              height: 10,
+                                              borderRadius: 4,
+                                              backgroundColor: p.accent,
+                                              marginTop: 'auto',
+                                            }}
+                                          />
+                                        </div>
+                                      </div>
+                                      <div
+                                        style={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'space-between',
+                                          padding: '6px 8px',
+                                          backgroundColor:
+                                            'var(--color-surface, #f5f5f5)',
+                                        }}>
                                         <div
                                           style={{
                                             display: 'flex',
                                             alignItems: 'center',
-                                            justifyContent: 'space-between',
-                                            padding: '6px 8px',
-                                            backgroundColor:
-                                              'var(--color-surface, #f5f5f5)',
+                                            gap: 6,
                                           }}>
-                                          <div
-                                            style={{
-                                              display: 'flex',
-                                              alignItems: 'center',
-                                              gap: 6,
-                                            }}>
-                                            {(() => {
-                                              const Logo =
-                                                BRAND_LOGOS[entry.key];
-                                              return Logo ? (
-                                                <Logo
-                                                  width={14}
-                                                  height={14}
-                                                />
-                                              ) : (
-                                                <div
-                                                  style={{
-                                                    width: 14,
-                                                    height: 14,
-                                                    borderRadius: '50%',
-                                                    backgroundColor:
-                                                      entry.accent,
-                                                  }}
-                                                />
-                                              );
-                                            })()}
-                                            <XDSText
-                                              type="supporting"
-                                              style={{
-                                                fontWeight: isSelected
-                                                  ? 600
-                                                  : 400,
-                                              }}>
-                                              {entry.name}
-                                            </XDSText>
-                                          </div>
-                                          <div
-                                            onClick={e => {
-                                              e.stopPropagation();
-                                              togglePin(entry.key);
-                                            }}
-                                            style={{
-                                              cursor: 'pointer',
-                                              display: 'flex',
-                                              padding: 2,
-                                            }}>
-                                            {isPinned ? (
-                                              <StarFilledIcon
-                                                width={14}
-                                                height={14}
-                                                style={{
-                                                  color:
-                                                    'var(--color-text-primary, #111)',
-                                                }}
-                                              />
+                                          {(() => {
+                                            const Logo = BRAND_LOGOS[entry.key];
+                                            return Logo ? (
+                                              <Logo width={14} height={14} />
                                             ) : (
-                                              <StarIcon
-                                                width={14}
-                                                height={14}
+                                              <div
                                                 style={{
-                                                  color:
-                                                    'var(--color-secondary, #999)',
+                                                  width: 14,
+                                                  height: 14,
+                                                  borderRadius: '50%',
+                                                  backgroundColor: entry.accent,
                                                 }}
                                               />
-                                            )}
-                                          </div>
+                                            );
+                                          })()}
+                                          <XDSText
+                                            type="supporting"
+                                            style={{
+                                              fontWeight: isSelected
+                                                ? 600
+                                                : 400,
+                                            }}>
+                                            {entry.name}
+                                          </XDSText>
+                                        </div>
+                                        <div
+                                          onClick={e => {
+                                            e.stopPropagation();
+                                            togglePin(entry.key);
+                                          }}
+                                          style={{
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            padding: 2,
+                                          }}>
+                                          {isPinned ? (
+                                            <StarFilledIcon
+                                              width={14}
+                                              height={14}
+                                              style={{
+                                                color:
+                                                  'var(--color-text-primary, #111)',
+                                              }}
+                                            />
+                                          ) : (
+                                            <StarIcon
+                                              width={14}
+                                              height={14}
+                                              style={{
+                                                color:
+                                                  'var(--color-secondary, #999)',
+                                              }}
+                                            />
+                                          )}
                                         </div>
                                       </div>
-                                    );
-                                  })}
-                                </div>
+                                    </div>
+                                  );
+                                })}
                               </div>
-                            );
-                          },
-                        )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   }>
@@ -696,9 +674,7 @@ export function TemplatePreviewModal({
                 marginTop: 16,
                 opacity: transitioning ? 0 : 1,
                 transition: 'opacity 250ms ease',
-                animation: transitioning
-                  ? 'none'
-                  : 'previewFadeIn 300ms ease',
+                animation: transitioning ? 'none' : 'previewFadeIn 300ms ease',
               }}>
               {exploreTags.map(tag => (
                 <XDSToken
@@ -725,9 +701,7 @@ export function TemplatePreviewModal({
                 marginTop: 16,
                 opacity: transitioning ? 0 : 1,
                 transition: 'opacity 250ms ease',
-                animation: transitioning
-                  ? 'none'
-                  : 'previewFadeIn 300ms ease',
+                animation: transitioning ? 'none' : 'previewFadeIn 300ms ease',
               }}>
               {componentTags.map(c => (
                 <XDSToken

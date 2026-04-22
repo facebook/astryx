@@ -199,7 +199,7 @@ export function ChatPanel({
                   )}
                 </XDSText>
               </div>
-              <XDSDivider />
+              <XDSDivider variant="strong" />
               <XDSMetadataList title="Layout">
                 <XDSMetadataListItem label="Width">
                   {pointedElement.rect
@@ -212,7 +212,7 @@ export function ChatPanel({
                     : '—'}
                 </XDSMetadataListItem>
               </XDSMetadataList>
-              <XDSDivider />
+              <XDSDivider variant="strong" />
               <XDSMetadataList title="Styles">
                 <XDSMetadataListItem label="Background">
                   #ffffff
