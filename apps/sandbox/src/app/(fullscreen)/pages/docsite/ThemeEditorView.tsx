@@ -3545,11 +3545,15 @@ function generateThemeCode(
 export function ThemeEditorView({
   activeView,
   setActiveView,
+  initialImage,
+  onImageConsumed,
 }: {
   activeView: string;
   setActiveView: (
     view: 'craft' | 'explore' | 'docs' | 'profile' | 'theme',
   ) => void;
+  initialImage?: string | null;
+  onImageConsumed?: () => void;
 }) {
   // Token editing state
   const [activeGroup, setActiveGroup] = React.useState<TokenGroupKey>('colors');
@@ -3933,6 +3937,23 @@ export function ThemeEditorView({
     },
     [applyAITheme],
   );
+
+  React.useEffect(() => {
+    if (initialImage && !aiAnalyzing) {
+      setAiImagePreview(initialImage);
+      fetch(initialImage)
+        .then(r => r.blob())
+        .then(blob => {
+          handleImageUpload(
+            new File([blob], 'theme-preview.png', {type: blob.type}),
+          );
+          onImageConsumed?.();
+        })
+        .catch(() => {
+          onImageConsumed?.();
+        });
+    }
+  }, [initialImage]);
 
   // Resize state (docsite layout pattern)
   const [editorPanelWidth, setEditorPanelWidth] = React.useState(400);
