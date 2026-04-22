@@ -22,7 +22,7 @@ const userSource: XDSSearchSource = {
   bootstrap: () => users,
 };
 
-export default function TokenizerPreselectedItems() {
+export default function TokenizerPreselected() {
   const [value, setValue] = useState<XDSSearchableItem[]>([
     users[0],
     users[2],

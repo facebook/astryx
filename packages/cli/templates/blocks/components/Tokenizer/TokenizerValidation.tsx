@@ -20,7 +20,7 @@ const userSource: XDSSearchSource = {
   bootstrap: () => users,
 };
 
-export default function TokenizerValidationError() {
+export default function TokenizerValidation() {
   const [errorValue, setErrorValue] = useState<XDSSearchableItem[]>([]);
   const [warningValue, setWarningValue] = useState<XDSSearchableItem[]>([
     users[0],

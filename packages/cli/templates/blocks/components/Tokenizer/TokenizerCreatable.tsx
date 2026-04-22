@@ -11,7 +11,7 @@ const emptySource: XDSSearchSource = {
   bootstrap: () => [],
 };
 
-export default function TokenizerCreatableTags() {
+export default function TokenizerCreatable() {
   const [tags, setTags] = useState<XDSSearchableItem[]>([
     {id: 'urgent', label: 'Urgent'},
     {id: 'frontend', label: 'Frontend'},

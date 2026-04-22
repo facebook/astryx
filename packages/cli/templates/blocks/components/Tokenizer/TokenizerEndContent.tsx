@@ -22,7 +22,7 @@ const userSource: XDSSearchSource = {
   bootstrap: () => users,
 };
 
-export default function TokenizerWithEndContent() {
+export default function TokenizerEndContent() {
   const [value, setValue] = useState<XDSSearchableItem[]>([users[0], users[2]]);
 
   return (
