@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'Slider — Range',
   description:
-    'Dual-thumb range slider for selecting a value range like price or date bounds.',
+    'Range slider for selecting a value range like price bounds.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['Slider'],

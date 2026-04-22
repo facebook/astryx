@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'Slider — Formatted Value',
   description:
-    'Slider with a custom value formatter displaying the current value as text with units.',
+    'Slider with custom formatting showing temperature in Fahrenheit.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['Slider'],

@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'Slider — With Marks',
   description:
-    'Slider with labeled tick marks at fixed intervals for guided value selection.',
+    'Slider with labeled tick marks at fixed intervals.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['Slider'],

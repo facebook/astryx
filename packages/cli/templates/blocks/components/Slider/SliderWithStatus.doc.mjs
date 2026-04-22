@@ -3,8 +3,8 @@ export const doc = {
   type: 'block',
   name: 'Slider — Validation States',
   description:
-    'Sliders with error, warning, and success status messages for system monitoring.',
+    'Sliders with error, warning, and success validation states.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Slider'],
+  componentsUsed: ['Slider', 'VStack', 'Center'],
 };
