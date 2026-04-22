@@ -22,6 +22,8 @@ export function TemplateCard({
   onUse,
   onPreview,
   cardSize: _cardSize = 'medium',
+  isCached = false,
+  onIframeLoad,
 }: {
   src: string;
   slug?: string;
@@ -33,12 +35,15 @@ export function TemplateCard({
   onUse: () => void;
   onPreview: () => void;
   cardSize?: 'xlarge' | 'large' | 'medium' | 'small';
+  isCached?: boolean;
+  onIframeLoad?: (slug: string) => void;
 }) {
   const [hovered, setHovered] = useState(false);
   const [showCanvas, setShowCanvas] = useState(false);
   const [showUsePopover, setShowUsePopover] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [iframeScale, setIframeScale] = useState(0.25);
+  const [loadIframe, setLoadIframe] = useState(isCached);
   const iframeWrapperRef = useRef<HTMLDivElement>(null);
 
   const updateIframeScale = useCallback(() => {
@@ -50,9 +55,13 @@ export function TemplateCard({
   useEffect(() => {
     if (!slug) return;
     updateIframeScale();
-    const observer = new ResizeObserver(updateIframeScale);
-    if (iframeWrapperRef.current) observer.observe(iframeWrapperRef.current);
-    return () => observer.disconnect();
+    const el = iframeWrapperRef.current;
+    if (!el) return;
+
+    const resizeObs = new ResizeObserver(updateIframeScale);
+    resizeObs.observe(el);
+
+    return () => resizeObs.disconnect();
   }, [slug, updateIframeScale]);
 
   useEffect(() => {
@@ -77,7 +86,13 @@ export function TemplateCard({
           cursor: 'pointer',
           overflow: 'hidden',
         }}
-        onMouseEnter={() => setHovered(true)}
+        onMouseEnter={() => {
+          setHovered(true);
+          if (slug && !loadIframe) {
+            setLoadIframe(true);
+            onIframeLoad?.(slug);
+          }
+        }}
         onMouseLeave={() => setHovered(false)}
         onClick={onPreview}>
         {/* Preview layer — live iframe when slug is provided, static image otherwise */}
@@ -92,21 +107,36 @@ export function TemplateCard({
               opacity: isGenerating ? 0 : 1,
               transition: 'opacity 600ms ease',
             }}>
-            <iframe
-              src={`${basePath}/templates/${slug}/?embed=1`}
-              title={name}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: 1920,
-                height: 1205,
-                border: 'none',
-                transform: `scale(${iframeScale})`,
-                transformOrigin: 'top left',
-                pointerEvents: 'none',
-              }}
-            />
+            {!loadIframe && (
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  background:
+                    'linear-gradient(90deg, var(--color-background-muted, #f0f0f0) 0%, var(--color-background-surface, #fafafa) 50%, var(--color-background-muted, #f0f0f0) 100%)',
+                  backgroundSize: '800px 100%',
+                  animation: 'craftShimmer 1.6s ease-in-out infinite',
+                }}
+              />
+            )}
+            {loadIframe && (
+              <iframe
+                src={`${basePath}/templates/${slug}/?embed=1`}
+                title={name}
+                loading="lazy"
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: 1920,
+                  height: 1205,
+                  border: 'none',
+                  transform: `scale(${iframeScale})`,
+                  transformOrigin: 'top left',
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
           </div>
         ) : (
           <img

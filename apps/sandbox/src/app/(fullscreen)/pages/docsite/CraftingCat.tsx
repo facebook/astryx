@@ -1,32 +1,53 @@
 'use client';
 
-import React, {useState, useEffect} from 'react';
+import React from 'react';
 
-const FRAMES = [
-  '      /\\_/\\\n     ( o.o )\n   \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n   \u2502 \u258b       \u2502\n   \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n   /| \u2550\u2550\u2550\u2550\u2550\u2550\u2550 |\\',
-  '      /\\_/\\\n     ( o.o )\n   \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n   \u2502 _\u258b      \u2502\n   \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n   \\| \u2550\u2550\u2550\u2550\u2550\u2550\u2550 |/',
-  '      /\\_/\\\n     ( -.- )\n   \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n   \u2502 __\u258b     \u2502\n   \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n   /| \u2550\u2550\u2550\u2550\u2550\u2550\u2550 |\\',
-  '      /\\_/\\\n     ( o.o )\n   \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n   \u2502 ___\u258b    \u2502\n   \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n   \\| \u2550\u2550\u2550\u2550\u2550\u2550\u2550 |/',
-  '      /\\_/\\\n     ( o.o )\n   \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n   \u2502 ____\u258b   \u2502\n   \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n   /| \u2550\u2550\u2550\u2550\u2550\u2550\u2550 |\\',
-  '      /\\_/\\\n     ( ^.^ )\n   \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n   \u2502 \u258b       \u2502\n   \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n   \\| \u2550\u2550\u2550\u2550\u2550\u2550\u2550 |/',
+const SHAPES = [
+  {
+    gradient: 'linear-gradient(135deg, #F5B8C8, #FDCEB0)',
+    size: 22,
+    radius: '50%' as const,
+    delay: 0,
+  },
+  {
+    gradient: 'linear-gradient(135deg, #A8E6CF, #A0D2F5)',
+    size: 22,
+    radius: 5,
+    delay: 0.12,
+  },
+  {
+    gradient: 'linear-gradient(135deg, #C4B8F5, #F2B5D4)',
+    size: 22,
+    radius: '50%' as const,
+    delay: 0.24,
+  },
+  {
+    gradient: 'linear-gradient(135deg, #80D8C4, #FFE0A3)',
+    size: 22,
+    radius: 5,
+    delay: 0.36,
+  },
 ];
 
 export function CraftingCat() {
-  const [frame, setFrame] = useState(0);
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setFrame(prev => (prev + 1) % FRAMES.length);
-    }, 350);
-    return () => clearInterval(id);
-  }, []);
-
   return (
     <>
       <style>{`
-        @keyframes craftingShimmer {
-          0% { background-position: -200% center; }
-          100% { background-position: 200% center; }
+        @keyframes craftBounce {
+          0%, 100% { transform: translateY(0); }
+          40% { transform: translateY(-36px); }
+          55% { transform: translateY(-2px); }
+          70% { transform: translateY(-14px); }
+        }
+        @keyframes craftShadow {
+          0%, 100% { transform: scaleX(1); opacity: 0.15; }
+          40% { transform: scaleX(0.4); opacity: 0.05; }
+          55% { transform: scaleX(0.95); opacity: 0.14; }
+          70% { transform: scaleX(0.6); opacity: 0.08; }
+        }
+        @keyframes craftPulse {
+          0%, 100% { opacity: 0.5; }
+          50% { opacity: 1; }
         }
       `}</style>
       <div
@@ -37,33 +58,55 @@ export function CraftingCat() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 16,
           backgroundColor: 'var(--color-background-surface, #fff)',
         }}>
-        <pre
+        <div
           style={{
-            fontFamily:
-              '"JetBrains Mono", "Fira Code", "SF Mono", "Cascadia Code", monospace',
-            fontSize: 18,
-            lineHeight: 1.35,
-            color: 'var(--color-text-secondary, #65676B)',
-            margin: 0,
+            display: 'flex',
+            gap: 20,
+            alignItems: 'flex-end',
+            height: 80,
           }}>
-          {FRAMES[frame]}
-        </pre>
+          {SHAPES.map((s, i) => (
+            <div
+              key={i}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+              }}>
+              <div
+                style={{
+                  width: s.size,
+                  height: s.size,
+                  borderRadius: s.radius,
+                  background: s.gradient,
+                  animation: `craftBounce 2s cubic-bezier(0.34, 1.56, 0.64, 1) ${s.delay}s infinite`,
+                }}
+              />
+              <div
+                style={{
+                  width: 14,
+                  height: 4,
+                  borderRadius: '50%',
+                  background: 'var(--color-text-quaternary, rgba(0,0,0,0.08))',
+                  marginTop: 8,
+                  animation: `craftShadow 2s ease-in-out ${s.delay}s infinite`,
+                }}
+              />
+            </div>
+          ))}
+        </div>
         <span
           style={{
+            marginTop: 24,
             fontSize: 13,
             fontWeight: 500,
-            letterSpacing: 0.5,
-            background:
-              'linear-gradient(90deg, var(--color-text-secondary, #65676B) 40%, var(--color-text-primary, #111) 50%, var(--color-text-secondary, #65676B) 60%)',
-            backgroundSize: '200% auto',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            animation: 'craftingShimmer 2s linear infinite',
+            letterSpacing: 0.3,
+            color: 'var(--color-text-secondary, #65676B)',
+            animation: 'craftPulse 2s ease-in-out infinite',
           }}>
-          Crafting your UI...
+          Crafting your layout...
         </span>
       </div>
     </>

@@ -72,12 +72,12 @@ export const SIM_COUNT = 350;
 // ---------------------------------------------------------------------------
 
 export const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
-export const DUMMY_IMAGE = `${basePath}/templates/dummy-placeholder.png`;
+export const DUMMY_IMAGE = `${basePath}/docsite/dummy-placeholder.png`;
 export const AVATAR_IMAGE = `${basePath}/avatars/avatar-profile.jpg`;
 export const XDS_DESIGN_AVATAR = `${basePath}/avatars/xds-design-avatar.png`;
-export const FIRST_CARD_IMAGE = `${basePath}/templates/first-card.png`;
-export const SHOPPING_DETAILS_IMAGE = `${basePath}/templates/shopping-details.png`;
-export const SCREENSHOT_3_IMAGE = `${basePath}/templates/screenshot-3.png`;
+export const FIRST_CARD_IMAGE = `${basePath}/docsite/first-card.png`;
+export const SHOPPING_DETAILS_IMAGE = `${basePath}/docsite/shopping-details.png`;
+export const SCREENSHOT_3_IMAGE = `${basePath}/docsite/screenshot-3.png`;
 
 // ---------------------------------------------------------------------------
 // Mock code for the code block
@@ -194,16 +194,8 @@ export const TEMPLATES: {
     isOfficial: true,
   },
   {
-    name: 'Product Detail',
-    src: DUMMY_IMAGE,
-    slug: 'product-detail',
-    size: 'large',
-    author: 'XDS Design',
-    isOfficial: true,
-  },
-  {
-    name: 'Settings Page',
-    src: `${basePath}/templates/card4-preview.png`,
+    name: 'Landing Page',
+    src: `${basePath}/docsite/card4-preview.png`,
     size: 'small',
     author: 'XDS Design',
     isOfficial: true,
@@ -358,7 +350,7 @@ export const PROFILE_USED_ITEMS: {
       'Responsive contact form with validation, file upload, and success state.',
     lastUsed: '2026-04-13T11:00:00Z',
     usageCount: 4,
-    img: `${basePath}/templates/card4-preview.png`,
+    img: `${basePath}/docsite/card4-preview.png`,
   },
   {
     name: 'Badge',
@@ -388,13 +380,13 @@ export const PROFILE_USED_ITEMS: {
     img: SHOPPING_DETAILS_IMAGE,
   },
   {
-    name: 'Settings Page',
+    name: 'Landing Page',
     type: 'Template',
     description:
       'Sidebar settings layout with inline editing and expandable rows.',
     lastUsed: '2026-04-10T14:00:00Z',
     usageCount: 5,
-    img: `${basePath}/templates/card4-preview.png`,
+    img: `${basePath}/docsite/card4-preview.png`,
   },
   {
     name: 'Dialog',
@@ -461,7 +453,7 @@ export const PROFILE_LIKED_ITEMS: {
     type: 'Template',
     bookmarkedAt: '2026-04-07T09:00:00Z',
     description: 'E-commerce product page with image gallery and reviews.',
-    img: `${basePath}/templates/card4-preview.png`,
+    img: `${basePath}/docsite/card4-preview.png`,
     author: 'XDS Design',
   },
   {
@@ -599,13 +591,13 @@ export const PROFILE_CRAFT_ITEMS: {
     tags: ['Dashboard', 'Charts', 'Analytics'],
   },
   {
-    name: 'Settings Page',
+    name: 'Landing Page',
     type: 'Template',
     status: 'Published',
     used: 67,
     views: 248,
     bookmarks: 18,
-    img: `${basePath}/templates/card4-preview.png`,
+    img: `${basePath}/docsite/card4-preview.png`,
     lastUpdated: '2026-02-20T08:00:00Z',
     description:
       'Sidebar settings layout with inline editing and expandable rows.',
@@ -788,6 +780,7 @@ export const THEME_PICKER_ENTRIES: ThemePickerEntry[] = [
     name: 'Meta',
     category: 'official',
     accent: '#0064E0',
+    isPinnedByDefault: true,
     description: 'Meta brand with Figtree typography',
     preview: {
       bg: '#FFFFFF',
@@ -818,6 +811,7 @@ export const THEME_PICKER_ENTRIES: ThemePickerEntry[] = [
     name: 'Threads',
     category: 'official',
     accent: '#000000',
+    isPinnedByDefault: true,
     description: 'Threads brand with clean monochrome palette',
     preview: {
       bg: '#FFFFFF',
