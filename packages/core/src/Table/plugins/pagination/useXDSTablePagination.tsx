@@ -266,11 +266,11 @@ export function useXDSTablePagination<T extends Record<string, unknown>>(
         );
 
         return (
-          <>
+          <div>
             {(pos === 'above' || pos === 'both') && makeWrapper('above')}
             {children}
             {(pos === 'below' || pos === 'both') && makeWrapper('below')}
-          </>
+          </div>
         );
       },
     }),

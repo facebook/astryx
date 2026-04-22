@@ -7,5 +7,5 @@ export const doc = {
   isReady: true,
   aspectRatio: 16 / 9,
   isShowcase: true,
-  componentsUsed: ['Table'],
+  componentsUsed: ['Table', 'Card'],
 };
