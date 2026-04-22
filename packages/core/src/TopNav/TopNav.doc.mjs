@@ -2,6 +2,7 @@
 
 export const docs = {
   name: 'TopNav',
+  group: 'Navigation',
   keywords: ["topnav","navbar","appbar","header","toolbar","navigation","menubar","topbar"],
   theming: {
     targets: [

@@ -14,7 +14,7 @@ import {
 import {XDSStack, XDSText} from '@xds/core';
 import {XDSHeading} from '@xds/core/Text';
 
-const meta: Meta = {title: 'Lab/XDSChartAdvanced'};
+const meta: Meta = {title: 'Lab/ChartAdvanced'};
 export default meta;
 
 const ciData = [

@@ -3,7 +3,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {XDSThumbnail} from '@xds/core/Thumbnail';
 
 const meta: Meta<typeof XDSThumbnail> = {
-  title: 'Core/XDSThumbnail',
+  title: 'Core/Thumbnail',
   component: XDSThumbnail,
   tags: ['autodocs'],
   argTypes: {

@@ -23,7 +23,7 @@ const styles = stylex.create({
 });
 
 const meta: Meta<typeof XDSAvatar> = {
-  title: 'Core/XDSAvatar',
+  title: 'Core/Avatar',
   component: XDSAvatar,
   tags: ['autodocs'],
   argTypes: {

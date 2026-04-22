@@ -17,7 +17,7 @@ import {HandThumbUpIcon, HandThumbDownIcon} from '@heroicons/react/24/outline';
 import {ClipboardDocumentIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSChatMessageList> = {
-  title: 'Chat/XDSChatMessageList',
+  title: 'Core/Chat/MessageList',
   component: XDSChatMessageList,
   tags: ['autodocs'],
 };

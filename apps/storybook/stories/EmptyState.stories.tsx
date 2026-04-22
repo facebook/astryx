@@ -3,7 +3,7 @@ import {XDSEmptyState} from '@xds/core/EmptyState';
 import {XDSButton} from '@xds/core/Button';
 
 const meta: Meta<typeof XDSEmptyState> = {
-  title: 'Core/XDSEmptyState',
+  title: 'Core/EmptyState',
   component: XDSEmptyState,
   tags: ['autodocs'],
   argTypes: {

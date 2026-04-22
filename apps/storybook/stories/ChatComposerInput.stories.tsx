@@ -11,7 +11,7 @@ import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
 import {useState} from 'react';
 
 const meta: Meta = {
-  title: 'Chat/XDSChatComposerInput',
+  title: 'Core/Chat/ComposerInput',
   component: XDSChatComposerInput,
   tags: ['autodocs'],
   parameters: {

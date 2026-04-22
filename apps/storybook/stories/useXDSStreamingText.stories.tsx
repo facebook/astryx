@@ -84,7 +84,7 @@ function StreamingDemo({
 const SAMPLE_TEXT = 'Here is how you fetch a user in TypeScript:\n\nconst response = await fetch("/api/users/" + id);\nconst user = await response.json();\n\nKey points:\n- Always check response.ok before parsing\n- Use AbortController for cancellation\n- Consider a useUser hook for React apps\n\nThis approach gives you type-safe API calls with proper error handling.';
 
 const meta: Meta<typeof StreamingDemo> = {
-  title: 'Hooks/useXDSStreamingText',
+  title: 'Core/Hooks/useXDSStreamingText',
   component: StreamingDemo,
   tags: ['autodocs'],
   argTypes: {

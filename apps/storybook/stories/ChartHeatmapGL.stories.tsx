@@ -10,7 +10,7 @@ import {
 import {XDSStack, XDSText} from '@xds/core';
 import {XDSHeading} from '@xds/core/Text';
 
-const meta: Meta = {title: 'Lab/XDSChartHeatmapGL'};
+const meta: Meta = {title: 'Lab/ChartHeatmapGL'};
 export default meta;
 
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];

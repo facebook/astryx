@@ -57,7 +57,7 @@ const NativeInput = ({
 );
 
 const meta: Meta<typeof XDSField> = {
-  title: 'Form/XDSField',
+  title: 'Core/Inputs/Field',
   component: XDSField,
   tags: ['autodocs'],
   argTypes: {

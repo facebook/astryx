@@ -157,7 +157,7 @@ const NavItem = ({
 );
 
 const meta: Meta<typeof XDSLayout> = {
-  title: 'Layout/XDSLayout',
+  title: 'Core/Layout',
   component: XDSLayout,
   tags: ['autodocs'],
   parameters: {

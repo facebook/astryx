@@ -4,7 +4,7 @@ import {XDSText} from '@xds/core/Text';
 import {XDSHStack, XDSVStack} from '@xds/core/Layout';
 
 const meta: Meta<typeof XDSSpinner> = {
-  title: 'Core/XDSSpinner',
+  title: 'Core/Spinner',
   component: XDSSpinner,
   tags: ['autodocs'],
   argTypes: {

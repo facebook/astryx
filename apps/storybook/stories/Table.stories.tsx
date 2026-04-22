@@ -94,7 +94,7 @@ const columns: XDSTableColumn<User>[] = [
 // =============================================================================
 
 const meta: Meta<typeof XDSTable> = {
-  title: 'Core/XDSTable',
+  title: 'Core/Table',
   component: XDSTable,
   tags: ['autodocs'],
   argTypes: {

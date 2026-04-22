@@ -4,7 +4,7 @@ import {XDSBadge} from '@xds/core/Badge';
 import {Cog6ToothIcon, TrashIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSButton> = {
-  title: 'Core/XDSButton',
+  title: 'Core/Buttons/Button',
   component: XDSButton,
   tags: ['autodocs'],
   argTypes: {

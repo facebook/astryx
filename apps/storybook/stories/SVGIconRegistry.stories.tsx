@@ -154,7 +154,7 @@ function jsxSvgToIconDef(name: string, element: ReactElement): SVGIconDef | null
 // =============================================================================
 
 const meta: Meta = {
-  title: 'Lab/XDSSVGIcon/Registry Icons',
+  title: 'Lab/SVGIcon/Registry Icons',
 };
 export default meta;
 

@@ -2,7 +2,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {useMemo} from 'react';
 import {XDS3DChart, XDS3DScatter, use3D, useXDSChartColors} from '@xds/lab';
 
-const meta: Meta = {title: 'Lab/XDS3DChart/Backdrop'};
+const meta: Meta = {title: 'Lab/3DChart/Backdrop'};
 export default meta;
 
 /** Scatter that colors each point based on its projected screen position */

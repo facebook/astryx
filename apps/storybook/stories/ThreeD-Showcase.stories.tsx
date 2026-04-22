@@ -8,7 +8,7 @@ import {
 } from '@xds/lab';
 import {XDSMediaTheme} from '@xds/core/theme';
 
-const meta: Meta = {title: 'Lab/XDS3DChart/PopArt'};
+const meta: Meta = {title: 'Lab/3DChart/PopArt'};
 export default meta;
 
 // =============================================================================

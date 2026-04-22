@@ -12,7 +12,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSMoreMenu> = {
-  title: 'Core/XDSMoreMenu',
+  title: 'Core/MoreMenu',
   component: XDSMoreMenu,
   tags: ['autodocs'],
   parameters: {

@@ -4,7 +4,7 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSHStack} from '@xds/core/Layout';
 
 const meta: Meta<typeof XDSTooltip> = {
-  title: 'Core/XDSTooltip',
+  title: 'Core/Tooltip',
   component: XDSTooltip,
   tags: ['autodocs'],
   argTypes: {
