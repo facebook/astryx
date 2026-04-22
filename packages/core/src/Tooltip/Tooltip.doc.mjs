@@ -134,12 +134,12 @@ export const docs = {
   },
   usage: {
     description:
-      'Tooltip displays a short, non-interactive text hint anchored to a trigger element on hover or focus. Use Tooltip for progressive disclosure of supplementary information, such as describing an icon-only button or showing the full text of a truncated label.',
+      'A short text hint that appears on hover or focus, anchored to a trigger element. Use it to describe icon-only buttons, show the full text of truncated labels, or provide supplementary context without cluttering the UI.',
     bestPractices: [
       {guidance: true, description: 'Keep tooltip content concise — aim for under 140 characters of plain text.'},
       {guidance: true, description: 'Add a tooltip to icon-only buttons and controls that lack a visible label.'},
-      {guidance: false, description: 'Avoid placing interactive elements like links or buttons inside a tooltip — use HoverCard or Popover instead.'},
-      {guidance: false, description: 'Avoid using tooltips for essential information that users must see to complete a task.'},
+      {guidance: false, description: 'Place interactive elements like links or buttons inside a tooltip — use HoverCard or Popover instead.'},
+      {guidance: false, description: 'Use tooltips for essential information that users must see to complete a task.'},
     ],
   },
 };
@@ -279,12 +279,12 @@ export const docsZh = {
   },
   usage: {
     description:
-      'Tooltip displays a short, non-interactive text hint anchored to a trigger element on hover or focus. Use Tooltip for progressive disclosure of supplementary information, such as describing an icon-only button or showing the full text of a truncated label.',
+      'A short text hint that appears on hover or focus, anchored to a trigger element. Use it to describe icon-only buttons, show the full text of truncated labels, or provide supplementary context without cluttering the UI.',
     bestPractices: [
       {guidance: true, description: 'Keep tooltip content concise — aim for under 140 characters of plain text.'},
       {guidance: true, description: 'Add a tooltip to icon-only buttons and controls that lack a visible label.'},
-      {guidance: false, description: 'Avoid placing interactive elements like links or buttons inside a tooltip — use HoverCard or Popover instead.'},
-      {guidance: false, description: 'Avoid using tooltips for essential information that users must see to complete a task.'},
+      {guidance: false, description: 'Place interactive elements like links or buttons inside a tooltip — use HoverCard or Popover instead.'},
+      {guidance: false, description: 'Use tooltips for essential information that users must see to complete a task.'},
     ],
   },
 };
@@ -294,12 +294,12 @@ export const docsDense = {
   description: 'Hover/focus triggered tooltip for displaying short, non-interactive text anchored to trigger element.',
   usage: {
     description:
-      'Tooltip displays a short, non-interactive text hint anchored to a trigger element on hover or focus. Use Tooltip for progressive disclosure of supplementary information, such as describing an icon-only button or showing the full text of a truncated label.',
+      'A short text hint that appears on hover or focus, anchored to a trigger element. Use it to describe icon-only buttons, show the full text of truncated labels, or provide supplementary context without cluttering the UI.',
     bestPractices: [
       {guidance: true, description: 'Keep tooltip content concise — aim for under 140 characters of plain text.'},
       {guidance: true, description: 'Add a tooltip to icon-only buttons and controls that lack a visible label.'},
-      {guidance: false, description: 'Avoid placing interactive elements like links or buttons inside a tooltip — use HoverCard or Popover instead.'},
-      {guidance: false, description: 'Avoid using tooltips for essential information that users must see to complete a task.'},
+      {guidance: false, description: 'Place interactive elements like links or buttons inside a tooltip — use HoverCard or Popover instead.'},
+      {guidance: false, description: 'Use tooltips for essential information that users must see to complete a task.'},
     ],
   },
   components: [

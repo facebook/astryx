@@ -3,8 +3,8 @@ export const doc = {
   type: 'block',
   name: 'Tooltip — Hook Usage',
   description:
-    'Programmatic tooltip using the useXDSTooltip hook for direct ref control.',
+    'Tooltip using the useXDSTooltip hook for programmatic control.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Tooltip', 'Button'],
+  componentsUsed: ['Tooltip', 'Button', 'Center'],
 };
