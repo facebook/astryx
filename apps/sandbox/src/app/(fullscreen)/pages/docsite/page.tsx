@@ -194,7 +194,7 @@ function ThemeCard({
           onClick={onCustomize}>
           {theme.preview.img ? (
             <img
-              src={`${basePath}/templates/${theme.preview.img}`}
+              src={`${basePath}/docsite/${theme.preview.img}`}
               alt={theme.name}
               style={{
                 display: 'block',
@@ -741,13 +741,13 @@ function DocsiteLandingTemplate() {
   }, []);
 
   const layoutVariantMap: Record<string, string> = {
-    hero: `${basePath}/templates/card4-hero-default.png`,
-    split: `${basePath}/templates/card4-split-default.png`,
-    grid: `${basePath}/templates/card4-grid-default.png`,
-    carousel: `${basePath}/templates/card4-carousel-default.png`,
-    preview: `${basePath}/templates/card4-preview-default.png`,
-    settings: `${basePath}/templates/card4-preview-default.png`,
-    default: `${basePath}/templates/card4-preview-default.png`,
+    hero: `${basePath}/docsite/card4-hero-default.png`,
+    split: `${basePath}/docsite/card4-split-default.png`,
+    grid: `${basePath}/docsite/card4-grid-default.png`,
+    carousel: `${basePath}/docsite/card4-carousel-default.png`,
+    preview: `${basePath}/docsite/card4-preview-default.png`,
+    settings: `${basePath}/docsite/card4-preview-default.png`,
+    default: `${basePath}/docsite/card4-preview-default.png`,
   };
 
   const handlePreviewSend = useCallback(
@@ -2022,66 +2022,66 @@ function DocsiteLandingTemplate() {
                 : 0
             ];
           if (!t) return null;
-          const isSettingsPage = t.name === 'Settings Page';
+          const isLandingPage = t.name === 'Landing Page';
           const settingsVariants = [
             {
-              img: `${basePath}/templates/card4-preview-default.png`,
-              name: 'Settings Page',
+              img: `${basePath}/docsite/card4-preview-default.png`,
+              name: 'Landing Page',
               key: 'preview',
               themeImages: {
-                default: `${basePath}/templates/card4-preview-default.png`,
-                meta: `${basePath}/templates/card4-preview-meta.png`,
-                daily: `${basePath}/templates/card4-preview-daily.png`,
-                threads: `${basePath}/templates/card4-preview-daily.png`,
+                default: `${basePath}/docsite/card4-preview-default.png`,
+                meta: `${basePath}/docsite/card4-preview-meta.png`,
+                daily: `${basePath}/docsite/card4-preview-daily.png`,
+                threads: `${basePath}/docsite/card4-preview-daily.png`,
               },
             },
             {
-              img: `${basePath}/templates/card4-hero-default.png`,
+              img: `${basePath}/docsite/card4-hero-default.png`,
               name: 'Hero Layout',
               key: 'hero',
               themeImages: {
-                default: `${basePath}/templates/card4-hero-default.png`,
-                meta: `${basePath}/templates/card4-hero-meta.png`,
-                daily: `${basePath}/templates/card4-hero-daily.png`,
-                threads: `${basePath}/templates/card4-hero-daily.png`,
+                default: `${basePath}/docsite/card4-hero-default.png`,
+                meta: `${basePath}/docsite/card4-hero-meta.png`,
+                daily: `${basePath}/docsite/card4-hero-daily.png`,
+                threads: `${basePath}/docsite/card4-hero-daily.png`,
               },
             },
             {
-              img: `${basePath}/templates/card4-split-default.png`,
+              img: `${basePath}/docsite/card4-split-default.png`,
               name: 'Split Layout',
               key: 'split',
               themeImages: {
-                default: `${basePath}/templates/card4-split-default.png`,
-                meta: `${basePath}/templates/card4-split-meta.png`,
-                daily: `${basePath}/templates/card4-split-daily.png`,
-                threads: `${basePath}/templates/card4-split-daily.png`,
+                default: `${basePath}/docsite/card4-split-default.png`,
+                meta: `${basePath}/docsite/card4-split-meta.png`,
+                daily: `${basePath}/docsite/card4-split-daily.png`,
+                threads: `${basePath}/docsite/card4-split-daily.png`,
               },
             },
             {
-              img: `${basePath}/templates/card4-grid-default.png`,
+              img: `${basePath}/docsite/card4-grid-default.png`,
               name: 'Grid Layout',
               key: 'grid',
               themeImages: {
-                default: `${basePath}/templates/card4-grid-default.png`,
-                meta: `${basePath}/templates/card4-grid-meta.png`,
-                daily: `${basePath}/templates/card4-grid-daily.png`,
-                threads: `${basePath}/templates/card4-grid-daily.png`,
+                default: `${basePath}/docsite/card4-grid-default.png`,
+                meta: `${basePath}/docsite/card4-grid-meta.png`,
+                daily: `${basePath}/docsite/card4-grid-daily.png`,
+                threads: `${basePath}/docsite/card4-grid-daily.png`,
               },
             },
             {
-              img: `${basePath}/templates/card4-carousel-default.png`,
+              img: `${basePath}/docsite/card4-carousel-default.png`,
               name: 'Carousel Layout',
               key: 'carousel',
               themeImages: {
-                default: `${basePath}/templates/card4-carousel-default.png`,
-                meta: `${basePath}/templates/card4-carousel-meta.png`,
-                daily: `${basePath}/templates/card4-carousel-daily.png`,
-                threads: `${basePath}/templates/card4-carousel-daily.png`,
+                default: `${basePath}/docsite/card4-carousel-default.png`,
+                meta: `${basePath}/docsite/card4-carousel-meta.png`,
+                daily: `${basePath}/docsite/card4-carousel-daily.png`,
+                threads: `${basePath}/docsite/card4-carousel-daily.png`,
               },
             },
           ];
           const activeVariantKey = selectedVariant?.key ?? 'preview';
-          const moreLikeThisImages = isSettingsPage
+          const moreLikeThisImages = isLandingPage
             ? settingsVariants.filter(v => v.key !== activeVariantKey)
             : TEMPLATES.map((tmpl, i) => ({
                 img: tmpl.src,
@@ -2091,7 +2091,7 @@ function DocsiteLandingTemplate() {
               }))
                 .filter(item => item.key !== previewTarget)
                 .slice(0, 4);
-          const activeSettingsVariant = isSettingsPage
+          const activeSettingsVariant = isLandingPage
             ? (settingsVariants.find(v => v.key === activeVariantKey) ??
               settingsVariants[0])
             : null;
@@ -2105,7 +2105,7 @@ function DocsiteLandingTemplate() {
               item={{
                 name: activeSettingsVariant?.name ?? t.name,
                 img: activeSettingsVariant?.img ?? t.src,
-                slug: isSettingsPage ? undefined : t.slug,
+                slug: isLandingPage ? undefined : t.slug,
                 author: t.author,
                 ...(activeSettingsVariant
                   ? {themeImages: activeSettingsVariant.themeImages}
