@@ -172,7 +172,7 @@ function ThemeCard({
   theme: ThemePickerEntry;
   index: number;
   onCustomize: () => void;
-  onEdit: (imageUrl?: string) => void;
+  onEdit: (theme: ThemePickerEntry) => void;
 }) {
   const [hovered, setHovered] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
@@ -363,10 +363,7 @@ function ThemeCard({
                   style={{backgroundColor: 'var(--color-background-surface)'}}
                   onClick={e => {
                     e.stopPropagation();
-                    const imgUrl = theme.preview.img
-                      ? `${basePath}/docsite/${theme.preview.img}`
-                      : undefined;
-                    onEdit(imgUrl);
+                    onEdit(theme);
                   }}
                 />
               </XDSStack>
@@ -561,6 +558,11 @@ function DocsiteLandingTemplate() {
   const [card4Bookmarked, setCard4Bookmarked] = useState(false);
   const [themePreviewKey, setThemePreviewKey] = useState<string | null>(null);
   const [themeEditorImage, setThemeEditorImage] = useState<string | null>(null);
+  const [themeEditorInitial, setThemeEditorInitial] = useState<{
+    accent: string;
+    font?: string;
+    radius?: number;
+  } | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<{
     name: string;
     img: string;
@@ -1054,7 +1056,11 @@ function DocsiteLandingTemplate() {
         activeView={activeView}
         setActiveView={setActiveView}
         initialImage={themeEditorImage}
-        onImageConsumed={() => setThemeEditorImage(null)}
+        initialTheme={themeEditorInitial}
+        onImageConsumed={() => {
+          setThemeEditorImage(null);
+          setThemeEditorInitial(null);
+        }}
       />
     );
   }
@@ -1643,8 +1649,17 @@ function DocsiteLandingTemplate() {
                         theme={theme}
                         index={i}
                         onCustomize={() => setThemePreviewKey(theme.key)}
-                        onEdit={(imgUrl?: string) => {
-                          setThemeEditorImage(imgUrl ?? null);
+                        onEdit={(t: ThemePickerEntry) => {
+                          setThemeEditorInitial({
+                            accent: t.preview.accent,
+                            font: t.preview.font,
+                            radius: t.preview.radius,
+                          });
+                          setThemeEditorImage(
+                            t.preview.img
+                              ? `${basePath}/docsite/${t.preview.img}`
+                              : null,
+                          );
                           setActiveView('theme');
                         }}
                       />
@@ -1956,8 +1971,17 @@ function DocsiteLandingTemplate() {
                                   theme={t}
                                   index={ti}
                                   onCustomize={() => setThemePreviewKey(t.key)}
-                                  onEdit={(imgUrl?: string) => {
-                                    setThemeEditorImage(imgUrl ?? null);
+                                  onEdit={(t: ThemePickerEntry) => {
+                                    setThemeEditorInitial({
+                                      accent: t.preview.accent,
+                                      font: t.preview.font,
+                                      radius: t.preview.radius,
+                                    });
+                                    setThemeEditorImage(
+                                      t.preview.img
+                                        ? `${basePath}/docsite/${t.preview.img}`
+                                        : null,
+                                    );
                                     setActiveView('theme');
                                   }}
                                 />

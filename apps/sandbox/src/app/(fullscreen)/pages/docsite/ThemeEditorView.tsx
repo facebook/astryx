@@ -3546,6 +3546,7 @@ export function ThemeEditorView({
   activeView,
   setActiveView,
   initialImage,
+  initialTheme,
   onImageConsumed,
 }: {
   activeView: string;
@@ -3553,6 +3554,7 @@ export function ThemeEditorView({
     view: 'craft' | 'explore' | 'docs' | 'profile' | 'theme',
   ) => void;
   initialImage?: string | null;
+  initialTheme?: {accent: string; font?: string; radius?: number} | null;
   onImageConsumed?: () => void;
 }) {
   // Token editing state
@@ -3939,21 +3941,25 @@ export function ThemeEditorView({
   );
 
   React.useEffect(() => {
-    if (initialImage && !aiAnalyzing) {
+    if (!initialTheme) return;
+    const fontLabel = initialTheme.font
+      ? initialTheme.font.split(',')[0].replace(/["']/g, '').trim()
+      : 'System';
+    applyAITheme({
+      accentColor: initialTheme.accent,
+      headingFont: fontLabel,
+      bodyFont: fontLabel,
+      spacingBase: 4,
+      radiusBase: initialTheme.radius ?? 8,
+      typeScaleBase: 14,
+      typeScaleRatio: 1.2,
+      sizeBase: 32,
+    });
+    if (initialImage) {
       setAiImagePreview(initialImage);
-      fetch(initialImage)
-        .then(r => r.blob())
-        .then(blob => {
-          handleImageUpload(
-            new File([blob], 'theme-preview.png', {type: blob.type}),
-          );
-          onImageConsumed?.();
-        })
-        .catch(() => {
-          onImageConsumed?.();
-        });
     }
-  }, [initialImage]);
+    onImageConsumed?.();
+  }, [initialTheme]);
 
   // Resize state (docsite layout pattern)
   const [editorPanelWidth, setEditorPanelWidth] = React.useState(400);
