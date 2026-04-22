@@ -3,8 +3,8 @@ export const doc = {
   type: 'block',
   name: 'Typeahead — Limited Results',
   description:
-    'Typeahead with a capped dropdown showing at most three suggestions, ideal for compact selection UIs.',
+    'Typeahead with a capped dropdown showing at most three results.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Typeahead'],
+  componentsUsed: ['Typeahead', 'Center'],
 };

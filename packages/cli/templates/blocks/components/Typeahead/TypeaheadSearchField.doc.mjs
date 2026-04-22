@@ -3,8 +3,8 @@ export const doc = {
   type: 'block',
   name: 'Typeahead — Search Field',
   description:
-    'Search input with a magnifying glass icon and suggestions that appear on focus before typing.',
+    'Search input with icon and suggestions on focus.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Typeahead'],
+  componentsUsed: ['Typeahead', 'Center'],
 };

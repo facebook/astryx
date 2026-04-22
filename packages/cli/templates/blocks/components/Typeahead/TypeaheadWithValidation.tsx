@@ -3,16 +3,17 @@
 import {useState} from 'react';
 import {XDSTypeahead} from '@xds/core/Typeahead';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
+import {XDSCenter} from '@xds/core/Center';
 
 const items: XDSSearchableItem[] = [
-  {id: '1', label: 'Apple'},
-  {id: '2', label: 'Banana'},
-  {id: '3', label: 'Cherry'},
-  {id: '4', label: 'Date'},
-  {id: '5', label: 'Elderberry'},
-  {id: '6', label: 'Fig'},
-  {id: '7', label: 'Grape'},
-  {id: '8', label: 'Honeydew'},
+  {id: '1', label: 'New York'},
+  {id: '2', label: 'San Francisco'},
+  {id: '3', label: 'London'},
+  {id: '4', label: 'Berlin'},
+  {id: '5', label: 'Tokyo'},
+  {id: '6', label: 'Singapore'},
+  {id: '7', label: 'Sydney'},
+  {id: '8', label: 'Toronto'},
 ];
 
 const searchSource: XDSSearchSource = {
@@ -24,15 +25,15 @@ const searchSource: XDSSearchSource = {
 export default function TypeaheadWithValidation() {
   const [value, setValue] = useState<XDSSearchableItem | null>(null);
   return (
-    <div style={{width: 320}}>
+    <XDSCenter width={320}>
       <XDSTypeahead
-        label="Fruit"
-        placeholder="Search fruits..."
+        label="Office"
+        placeholder="Search offices..."
         searchSource={searchSource}
         value={value}
         onChange={setValue}
-        status={{type: 'error', message: 'Please select a fruit'}}
+        status={{type: 'error', message: 'Please select an office location'}}
       />
-    </div>
+    </XDSCenter>
   );
 }
