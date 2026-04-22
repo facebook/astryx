@@ -84,19 +84,21 @@ export const docs = {
   },
   usage: {
     description:
-      'Token is a compact chip component for displaying entities like tags, names, or status indicators inline within content. Use a Token to represent metadata, categorization, or removable selections. For static status indicators without interaction, use Badge instead.',
+      'Token is a small, inline element for representing discrete pieces of associated data — like tags, categories, or selections. Use it to label content, show active filters, or represent removable items like selected recipients in a compose field.',
     bestPractices: [
-      {guidance: true, description: 'Use color variants to distinguish different categories or entity types at a glance.'},
-      {guidance: true, description: 'Provide an onRemove callback when users need the ability to dismiss or deselect a token.'},
-      {guidance: false, description: 'Avoid using tokens for primary actions or navigation — use Button or Link instead.'},
-      {guidance: false, description: 'Avoid hiding the label unless an icon provides sufficient visual meaning on its own.'},
+      {guidance: true, description: 'Use color to distinguish categories — for example, green for "Active", red for "Blocked", blue for "In Review" — so users can scan status at a glance.'},
+      {guidance: true, description: 'Provide an onRemove callback when tokens represent user selections that can be undone, like filters or multi-select values.'},
+      {guidance: true, description: 'Add a leading icon when it helps identify the token type faster, like a person icon for user tokens or a tag icon for labels.'},
+      {guidance: true, description: 'Keep labels short — one to three words. Tokens truncate with ellipsis when the text overflows.'},
+      {guidance: false, description: 'Don\'t use tokens for primary actions or navigation — use Button or Link instead. Tokens are for displaying metadata, not triggering workflows.'},
+      {guidance: false, description: 'Don\'t hide the label unless the icon alone is universally understood. A color dot without text is ambiguous.'},
+      {guidance: false, description: 'Don\'t mix too many colors in one token group. Stick to two or three meaningful colors so the palette stays scannable.'},
     ],
     anatomy: [
-      {name: 'Color', required: false, description: 'Background color indicator.'},
-      {name: 'Label', required: true, description: 'Text label for the token.'},
-      {name: 'Icon', required: false, description: '16px icon displayed in the token.'},
-      {name: 'Remove button', required: false, description: 'Shown when onRemove is provided.'},
-      {name: 'Description', required: false, description: 'Additional descriptive text.'},
+      {name: 'Icon', required: false, description: 'A leading icon that identifies the token type, like a user avatar or category symbol.'},
+      {name: 'Label', required: true, description: 'The visible text. Also used as the accessible name when isLabelHidden is true.'},
+      {name: 'End content', required: false, description: 'Trailing content after the label, like a count badge or status dot.'},
+      {name: 'Remove button', required: false, description: 'An X button that appears when onRemove is provided, letting users dismiss the token.'},
     ],
   },
 };
@@ -186,41 +188,39 @@ export const docsZh = {
   },
   usage: {
     description:
-      'Token is a compact chip component for displaying entities like tags, names, or status indicators inline within content. Use a Token to represent metadata, categorization, or removable selections. For static status indicators without interaction, use Badge instead.',
+      'Token is a small, inline element for representing discrete pieces of associated data — like tags, categories, or selections. Use it to label content, show active filters, or represent removable items like selected recipients in a compose field.',
     bestPractices: [
-      {guidance: true, description: 'Use color variants to distinguish different categories or entity types at a glance.'},
-      {guidance: true, description: 'Provide an onRemove callback when users need the ability to dismiss or deselect a token.'},
-      {guidance: false, description: 'Avoid using tokens for primary actions or navigation — use Button or Link instead.'},
-      {guidance: false, description: 'Avoid hiding the label unless an icon provides sufficient visual meaning on its own.'},
+      {guidance: true, description: 'Use color to distinguish categories — for example, green for "Active", red for "Blocked", blue for "In Review" — so users can scan status at a glance.'},
+      {guidance: true, description: 'Provide an onRemove callback when tokens represent user selections that can be undone, like filters or multi-select values.'},
+      {guidance: true, description: 'Add a leading icon when it helps identify the token type faster, like a person icon for user tokens or a tag icon for labels.'},
+      {guidance: true, description: 'Keep labels short — one to three words. Tokens truncate with ellipsis when the text overflows.'},
+      {guidance: false, description: 'Don\'t use tokens for primary actions or navigation — use Button or Link instead. Tokens are for displaying metadata, not triggering workflows.'},
+      {guidance: false, description: 'Don\'t hide the label unless the icon alone is universally understood. A color dot without text is ambiguous.'},
+      {guidance: false, description: 'Don\'t mix too many colors in one token group. Stick to two or three meaningful colors so the palette stays scannable.'},
     ],
     anatomy: [
-      {name: 'Color', required: false, description: 'Background color indicator.'},
-      {name: 'Label', required: true, description: 'Text label for the token.'},
-      {name: 'Icon', required: false, description: '16px icon displayed in the token.'},
-      {name: 'Remove button', required: false, description: 'Shown when onRemove is provided.'},
-      {name: 'Description', required: false, description: 'Additional descriptive text.'},
+      {name: 'Icon', required: false, description: 'A leading icon that identifies the token type, like a user avatar or category symbol.'},
+      {name: 'Label', required: true, description: 'The visible text. Also used as the accessible name when isLabelHidden is true.'},
+      {name: 'End content', required: false, description: 'Trailing content after the label, like a count badge or status dot.'},
+      {name: 'Remove button', required: false, description: 'An X button that appears when onRemove is provided, letting users dismiss the token.'},
     ],
   },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'Chip/tag for displaying entities inline. Renders as <span> default, <a> w/ href, or <span> w/ invisible <button> when onClick provided.',
+  description: 'compact chip/tag for inline metadata, filters, selections. 11 colors, 2 sizes, removable, clickable, linkable.',
   usage: {
     description:
-      'Token is a compact chip component for displaying entities like tags, names, or status indicators inline within content. Use a Token to represent metadata, categorization, or removable selections. For static status indicators without interaction, use Badge instead.',
+      'Token is a small, inline element for representing discrete pieces of associated data — like tags, categories, or selections. Use for labeling content, showing active filters, or representing removable items.',
     bestPractices: [
-      {guidance: true, description: 'Use color variants to distinguish different categories or entity types at a glance.'},
-      {guidance: true, description: 'Provide an onRemove callback when users need the ability to dismiss or deselect a token.'},
-      {guidance: false, description: 'Avoid using tokens for primary actions or navigation — use Button or Link instead.'},
-      {guidance: false, description: 'Avoid hiding the label unless an icon provides sufficient visual meaning on its own.'},
-    ],
-    anatomy: [
-      {name: 'Color', required: false, description: 'Background color indicator.'},
-      {name: 'Label', required: true, description: 'Text label for the token.'},
-      {name: 'Icon', required: false, description: '16px icon displayed in the token.'},
-      {name: 'Remove button', required: false, description: 'Shown when onRemove is provided.'},
-      {name: 'Description', required: false, description: 'Additional descriptive text.'},
+      {guidance: true, description: 'Color-code categories — green for active, red for blocked, blue for review — for fast scanning.'},
+      {guidance: true, description: 'Provide onRemove when tokens represent dismissible user selections like filters or multi-select values.'},
+      {guidance: true, description: 'Add a leading icon when it helps identify the token type — person icon for users, tag icon for labels.'},
+      {guidance: true, description: 'Keep labels to one to three words. Tokens truncate with ellipsis on overflow.'},
+      {guidance: false, description: 'Don\'t use tokens for actions or navigation — use Button or Link. Tokens display metadata, not trigger workflows.'},
+      {guidance: false, description: 'Don\'t hide the label unless the icon alone is universally clear.'},
+      {guidance: false, description: 'Don\'t mix too many colors in one group. Two or three meaningful colors keeps it scannable.'},
     ],
   },
   propDescriptions: {
