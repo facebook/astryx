@@ -1,0 +1,9 @@
+/** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
+export const doc = {
+  type: 'block',
+  name: 'Token — End Content',
+  description: 'Tokens with trailing content like a count badge or status indicator after the label. Use for notification counts, item quantities, or compact status info.',
+  isReady: true,
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Token', 'Badge', 'Layout', 'Text'],
+};
