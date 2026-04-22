@@ -15,14 +15,9 @@ export default function TextColors() {
   return (
     <XDSStack direction="vertical" gap={3}>
       {COLORS.map(({color, description}) => (
-        <XDSStack key={color} direction="vertical" gap={0}>
-          <XDSText type="supporting" color="secondary">
-            {color}
-          </XDSText>
-          <XDSText type="body" color={color}>
-            {description}
-          </XDSText>
-        </XDSStack>
+        <XDSText key={color} type="body" color={color}>
+          {description}
+        </XDSText>
       ))}
     </XDSStack>
   );
