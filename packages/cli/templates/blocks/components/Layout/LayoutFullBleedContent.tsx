@@ -25,9 +25,9 @@ export default function LayoutFullBleedContent() {
           <XDSLayoutContent padding={0}>
             <XDSSection variant="wash">
               <XDSText type="body">
-                This content uses padding=0 to remove padding, allowing it to
-                touch the edges. Useful for tables, images, or other
-                edge-to-edge content.
+                XDSSection automatically escapes the parent container padding
+                to fill edge-to-edge. Useful for wash backgrounds, tables, or
+                images that need to span the full width.
               </XDSText>
             </XDSSection>
           </XDSLayoutContent>
