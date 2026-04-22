@@ -110,7 +110,7 @@ Some useful mappings:
 | `rounded-sm` / `rounded-md` / `rounded-lg` | `--radius-inner` / `element` / `container` |
 | `shadow-sm` / `shadow-md` / `shadow-lg` | `--shadow-low` / `med` / `high` |
 
-Spacing uses a 4px base (`--spacing: 4px`), so `p-4` = 16px, matching XDS's `--spacing-4`. Arbitrary values still work as an escape hatch: `bg-[var(--color-background-surface)]`.
+Spacing references `var(--spacing-1)` as the base unit, so `p-4` = 16px, matching XDS's `--spacing-4`. Arbitrary values still work as an escape hatch: `bg-[var(--color-background-surface)]`.
 
 **`src/app/providers.tsx`**
 

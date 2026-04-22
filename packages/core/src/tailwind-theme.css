@@ -141,14 +141,14 @@
   /* =========================================================================
    * Spacing
    *
-   * XDS uses a named scale (--spacing-0 through --spacing-12).
+   * XDS uses a named scale (--spacing-0 through --spacing-12) with a 4px base.
    * Tailwind v4 uses a base --spacing value with numeric multipliers:
-   *   p-4 → calc(var(--spacing) * 4) = 16px (when --spacing: 4px)
+   *   p-4 → calc(var(--spacing) * 4)
    *
-   * We set the base unit so Tailwind's numeric scale aligns with XDS:
-   *   p-1 = 4px, p-2 = 8px, p-4 = 16px, etc.
+   * By referencing --spacing-1 (the XDS base unit), Tailwind's scale
+   * stays in sync with XDS: p-1 = 4px, p-2 = 8px, p-4 = 16px, etc.
    * ========================================================================= */
-  --spacing: 4px;
+  --spacing: var(--spacing-1);
 
   /* =========================================================================
    * Typography
