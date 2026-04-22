@@ -9,7 +9,7 @@ import React, {
   useCallback,
   useMemo,
 } from 'react';
-import {useSearchParams, useRouter} from 'next/navigation';
+import {useSearchParams} from 'next/navigation';
 
 import {
   TEMPLATES,
@@ -23,6 +23,7 @@ import {
 import type {ThemePickerEntry} from './constants';
 import {TemplateCard} from './TemplateCard';
 import {AIComposer} from './AIComposer';
+import {COMPONENT_PREVIEW_LIST} from './ComponentPreviews';
 
 import {ChatPanel} from './ChatPanel';
 import type {PanelTab, PointedElement} from './ChatPanel';
@@ -388,7 +389,6 @@ export default function DocsiteLandingPage() {
 
 function DocsiteLandingTemplate() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const [previewMode, setPreviewMode] = useState<'light' | 'dark'>('light');
   const [previewTheme, setPreviewTheme] = useState('default');
 
@@ -622,7 +622,8 @@ function DocsiteLandingTemplate() {
 
     const qs = params.toString();
     if (qs === window.location.search.slice(1)) return;
-    router.replace(`/pages/docsite/${qs ? '?' + qs : ''}`, {scroll: false});
+    const url = `/pages/docsite/${qs ? '?' + qs : ''}`;
+    window.history.replaceState(window.history.state, '', url);
   }, [
     previewTarget,
     useTarget,
@@ -634,7 +635,6 @@ function DocsiteLandingTemplate() {
     profileUsedName,
     profileSettingsOpen,
     profileCollectionName,
-    router,
   ]);
 
   const prevViewRef = useRef(activeView);
@@ -1795,67 +1795,108 @@ function DocsiteLandingTemplate() {
                           : 'repeat(3, 1fr)',
                       gap: 16,
                     }}>
-                    {filteredTemplates.flatMap((template, i) => {
-                      const items = [
-                        <div
-                          key={`${template.name}-${template.originalIndex}`}
-                          style={{
-                            ...(craftTitle
-                              ? {
-                                  animation: `craftCardFadeIn 400ms ${i * 50}ms cubic-bezier(0.16, 1, 0.3, 1) both`,
+                    {activeTab === 'components'
+                      ? COMPONENT_PREVIEW_LIST.map(
+                          ({key, label, preview}, i) => (
+                            <XDSCard
+                              key={key}
+                              padding={0}
+                              style={{
+                                animation: `craftCardFadeIn 400ms ${i * 60}ms cubic-bezier(0.16, 1, 0.3, 1) both`,
+                              }}>
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  height: '100%',
+                                }}>
+                                <div
+                                  style={{
+                                    padding: '32px 20px',
+                                    flex: 1,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor:
+                                      'var(--color-background-body)',
+                                  }}>
+                                  {preview}
+                                </div>
+                                <div
+                                  style={{
+                                    padding: '12px 16px',
+                                    borderTop:
+                                      '1px solid var(--color-border-emphasized)',
+                                    backgroundColor:
+                                      'var(--color-background-body)',
+                                  }}>
+                                  <XDSText type="body" weight="bold">
+                                    {label}
+                                  </XDSText>
+                                </div>
+                              </div>
+                            </XDSCard>
+                          ),
+                        )
+                      : filteredTemplates.flatMap((template, i) => {
+                          const items = [
+                            <div
+                              key={`${template.name}-${template.originalIndex}`}
+                              style={{
+                                animation: `craftCardFadeIn 400ms ${i * 60}ms cubic-bezier(0.16, 1, 0.3, 1) both`,
+                                filter: previewImageFilter,
+                                transition: 'filter 300ms ease',
+                              }}>
+                              <TemplateCard
+                                src={template.src}
+                                slug={template.slug}
+                                name={template.name}
+                                isSelected={selected.has(
+                                  template.originalIndex,
+                                )}
+                                isGenerating={
+                                  isGenerating &&
+                                  generatingSource !== template.originalIndex
                                 }
-                              : undefined),
-                            filter: previewImageFilter,
-                            transition: 'filter 300ms ease',
-                          }}>
-                          <TemplateCard
-                            src={template.src}
-                            slug={template.slug}
-                            name={template.name}
-                            isSelected={selected.has(template.originalIndex)}
-                            isGenerating={
-                              isGenerating &&
-                              generatingSource !== template.originalIndex
-                            }
-                            cardSize={template.size}
-                            onSelect={() =>
-                              setSelected(prev => {
-                                const next = new Set(prev);
-                                if (next.has(template.originalIndex)) {
-                                  next.delete(template.originalIndex);
-                                } else {
-                                  next.add(template.originalIndex);
+                                cardSize={template.size}
+                                onSelect={() =>
+                                  setSelected(prev => {
+                                    const next = new Set(prev);
+                                    if (next.has(template.originalIndex)) {
+                                      next.delete(template.originalIndex);
+                                    } else {
+                                      next.add(template.originalIndex);
+                                    }
+                                    return next;
+                                  })
                                 }
-                                return next;
-                              })
-                            }
-                            onMoreLikeThis={() =>
-                              handleMoreLikeThis(template.originalIndex)
-                            }
-                            onUse={() => handleUse(template.originalIndex)}
-                            onPreview={() =>
-                              handlePreview(template.originalIndex)
-                            }
-                          />
-                        </div>,
-                      ];
-                      if (activeTab === 'all' && i === 2) {
-                        items.push(
-                          ...THEME_PICKER_ENTRIES.filter(
-                            t => t.key === 'daily' || t.key === 'forest',
-                          ).map((t, ti) => (
-                            <ThemeCard
-                              key={`theme-${t.key}`}
-                              theme={t}
-                              index={i + ti + 1}
-                              onCustomize={() => setThemePreviewKey(t.key)}
-                              onEdit={() => setActiveView('theme')}
-                            />
-                          )),
-                        );
-                      }
-                      return items;
-                    })}
+                                onMoreLikeThis={() =>
+                                  handleMoreLikeThis(template.originalIndex)
+                                }
+                                onUse={() => handleUse(template.originalIndex)}
+                                onPreview={() =>
+                                  handlePreview(template.originalIndex)
+                                }
+                              />
+                            </div>,
+                          ];
+                          if (activeTab === 'all' && i === 2) {
+                            items.push(
+                              ...THEME_PICKER_ENTRIES.filter(
+                                t => t.key === 'daily' || t.key === 'forest',
+                              ).map((t, ti) => (
+                                <ThemeCard
+                                  key={`theme-${t.key}`}
+                                  theme={t}
+                                  index={i + ti + 1}
+                                  onCustomize={() => setThemePreviewKey(t.key)}
+                                  onEdit={() => setActiveView('theme')}
+                                />
+                              )),
+                            );
+                          }
+                          return items;
+                        })}
                   </div>
                 ))}
             </div>

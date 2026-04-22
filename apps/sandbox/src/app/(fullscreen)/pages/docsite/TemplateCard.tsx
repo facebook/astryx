@@ -39,6 +39,7 @@ export function TemplateCard({
   const [showUsePopover, setShowUsePopover] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [iframeScale, setIframeScale] = useState(0.25);
+  const [isVisible, setIsVisible] = useState(false);
   const iframeWrapperRef = useRef<HTMLDivElement>(null);
 
   const updateIframeScale = useCallback(() => {
@@ -50,9 +51,27 @@ export function TemplateCard({
   useEffect(() => {
     if (!slug) return;
     updateIframeScale();
-    const observer = new ResizeObserver(updateIframeScale);
-    if (iframeWrapperRef.current) observer.observe(iframeWrapperRef.current);
-    return () => observer.disconnect();
+    const el = iframeWrapperRef.current;
+    if (!el) return;
+
+    const resizeObs = new ResizeObserver(updateIframeScale);
+    resizeObs.observe(el);
+
+    const intersectionObs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          intersectionObs.disconnect();
+        }
+      },
+      {rootMargin: '200px'},
+    );
+    intersectionObs.observe(el);
+
+    return () => {
+      resizeObs.disconnect();
+      intersectionObs.disconnect();
+    };
   }, [slug, updateIframeScale]);
 
   useEffect(() => {
@@ -92,21 +111,36 @@ export function TemplateCard({
               opacity: isGenerating ? 0 : 1,
               transition: 'opacity 600ms ease',
             }}>
-            <iframe
-              src={`${basePath}/templates/${slug}/?embed=1`}
-              title={name}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: 1920,
-                height: 1205,
-                border: 'none',
-                transform: `scale(${iframeScale})`,
-                transformOrigin: 'top left',
-                pointerEvents: 'none',
-              }}
-            />
+            {isVisible ? (
+              <iframe
+                src={`${basePath}/templates/${slug}/?embed=1`}
+                title={name}
+                loading="lazy"
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: 1920,
+                  height: 1205,
+                  border: 'none',
+                  transform: `scale(${iframeScale})`,
+                  transformOrigin: 'top left',
+                  pointerEvents: 'none',
+                }}
+              />
+            ) : (
+              <img
+                src={src}
+                alt={name}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  objectPosition: 'top',
+                }}
+              />
+            )}
           </div>
         ) : (
           <img

@@ -161,6 +161,8 @@ export function ChatPanel({
                 {
                   '--shadow-low': 'none',
                   '--shadow-med': 'none',
+                  '--_chat-composer-radius': 'var(--radius-container)',
+                  '--_button-radius': 'var(--radius-full)',
                 } as React.CSSProperties
               }
             />
