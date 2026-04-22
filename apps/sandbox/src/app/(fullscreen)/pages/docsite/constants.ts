@@ -881,7 +881,7 @@ export const THEME_PICKER_ENTRIES: ThemePickerEntry[] = [
       surface: '#FFFFFF',
       accent: '#4A90D9',
       text: '#1A1A2E',
-      radius: 16,
+      radius: 8,
       font: 'Inter, sans-serif',
       img: 'theme-preview-daily.png',
     },
