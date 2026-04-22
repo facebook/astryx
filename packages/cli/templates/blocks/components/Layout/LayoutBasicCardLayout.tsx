@@ -14,7 +14,7 @@ import {XDSHeading, XDSText} from '@xds/core/Text';
 
 export default function LayoutBasicCardLayout() {
   return (
-    <XDSCard>
+    <XDSCard height={300}>
       <XDSLayout
         header={
           <XDSLayoutHeader hasDivider>
@@ -30,7 +30,17 @@ export default function LayoutBasicCardLayout() {
                 spacing between sections.
               </XDSText>
               <XDSText type="body">
-                Try scrolling this content area when it overflows.
+                When content exceeds the available height, the content area
+                scrolls independently while the header and footer stay fixed
+                in place.
+              </XDSText>
+              <XDSText type="body">
+                This pattern works well for modal dialogs, detail panels, and
+                any card where the amount of content is unpredictable.
+              </XDSText>
+              <XDSText type="body">
+                The dividers between header, content, and footer provide clear
+                visual boundaries between the fixed and scrollable regions.
               </XDSText>
             </XDSVStack>
           </XDSLayoutContent>
