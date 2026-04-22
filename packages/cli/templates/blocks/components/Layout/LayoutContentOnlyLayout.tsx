@@ -6,7 +6,7 @@ import {XDSHeading, XDSText} from '@xds/core/Text';
 
 export default function LayoutContentOnlyLayout() {
   return (
-    <XDSCard width={400} height={250}>
+    <XDSCard>
       <XDSLayout
         content={
           <XDSLayoutContent>

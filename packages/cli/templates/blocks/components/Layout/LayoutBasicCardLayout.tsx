@@ -14,7 +14,7 @@ import {XDSHeading, XDSText} from '@xds/core/Text';
 
 export default function LayoutBasicCardLayout() {
   return (
-    <XDSCard width={400} height={350}>
+    <XDSCard>
       <XDSLayout
         header={
           <XDSLayoutHeader hasDivider>

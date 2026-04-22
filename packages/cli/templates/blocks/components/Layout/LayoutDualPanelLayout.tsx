@@ -10,11 +10,10 @@ import {
 import {XDSCard} from '@xds/core/Card';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSList, XDSListItem} from '@xds/core/List';
-import {XDSSection} from '@xds/core/Section';
 
 export default function LayoutDualPanelLayout() {
   return (
-    <XDSCard width="100%" maxWidth={800} height={400}>
+    <XDSCard>
       <XDSLayout
         header={
           <XDSLayoutHeader hasDivider>
@@ -41,11 +40,11 @@ export default function LayoutDualPanelLayout() {
               <XDSText type="label" color="secondary">
                 Files
               </XDSText>
-              <XDSSection variant="wash">
+              <XDSCard variant="muted">
                 <XDSText type="body">
                   Select a folder to view its contents
                 </XDSText>
-              </XDSSection>
+              </XDSCard>
             </XDSVStack>
           </XDSLayoutContent>
         }

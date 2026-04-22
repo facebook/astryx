@@ -16,7 +16,7 @@ import {XDSList, XDSListItem} from '@xds/core/List';
 
 export default function LayoutSidebarLayout() {
   return (
-    <XDSCard width={520} height={390}>
+    <XDSCard>
       <XDSLayout
         header={
           <XDSLayoutHeader hasDivider>
