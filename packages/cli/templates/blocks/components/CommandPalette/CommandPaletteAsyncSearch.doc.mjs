@@ -6,5 +6,5 @@ export const doc = {
     'Server-side search with loading spinner and custom empty states.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['CommandPalette', 'Button'],
+  componentsUsed: ['CommandPalette', 'CommandPaletteInput', 'Button'],
 };

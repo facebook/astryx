@@ -3,6 +3,8 @@
 import {useState, useMemo} from 'react';
 import {XDSCommandPalette} from '@xds/core/CommandPalette';
 import {XDSButton} from '@xds/core/Button';
+import {XDSText} from '@xds/core/Text';
+import {XDSKbd} from '@xds/core/Kbd';
 import {createStaticSource} from '@xds/core/Typeahead';
 import type {XDSSearchableItem} from '@xds/core/Typeahead';
 
@@ -20,7 +22,7 @@ const commands: RichCommand[] = [
   {
     id: 'settings',
     label: 'Open Settings',
-    auxiliaryData: {group: 'Navigation', shortcut: '⌘,'},
+    auxiliaryData: {group: 'Navigation', shortcut: 'mod+,'},
   },
   {
     id: 'profile',
@@ -35,12 +37,12 @@ const commands: RichCommand[] = [
   {
     id: 'new-file',
     label: 'Create New File',
-    auxiliaryData: {group: 'Actions', shortcut: '⌘N'},
+    auxiliaryData: {group: 'Actions', shortcut: 'mod+n'},
   },
   {
     id: 'search',
     label: 'Search Files',
-    auxiliaryData: {group: 'Actions', shortcut: '⌘P'},
+    auxiliaryData: {group: 'Actions', shortcut: 'mod+p'},
   },
 ];
 
@@ -56,15 +58,14 @@ export default function CommandPaletteRichItems() {
         onOpenChange={setIsOpen}
         searchSource={source}
         renderItem={(item: RichCommand) => (
-          <span
-            style={{display: 'flex', alignItems: 'center', gap: 8, flex: 1}}>
-            <span style={{flex: 1}}>{item.label}</span>
+          <>
+            <XDSText type="body" style={{flex: 1}}>
+              {item.label}
+            </XDSText>
             {item.auxiliaryData?.shortcut && (
-              <span style={{fontSize: 12, opacity: 0.5}}>
-                {item.auxiliaryData.shortcut}
-              </span>
+              <XDSKbd keys={item.auxiliaryData.shortcut} />
             )}
-          </span>
+          </>
         )}
       />
     </>
