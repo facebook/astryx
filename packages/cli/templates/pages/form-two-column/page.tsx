@@ -2,7 +2,7 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack} from '@xds/core/Layout';
+import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
@@ -12,11 +12,7 @@ import {XDSLink} from '@xds/core/Link';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSCard} from '@xds/core/Card';
 import {XDSSelector} from '@xds/core/Selector';
-import {
-  colorVars,
-  spacingVars,
-  radiusVars,
-} from '@xds/core/theme/tokens.stylex';
+import {colorVars, radiusVars} from '@xds/core/theme/tokens.stylex';
 
 // illustration-horizontal-1 from xds_oss asset set
 const ILLUSTRATION_URL =
@@ -77,13 +73,6 @@ const styles = stylex.create({
     gap: 80,
     alignItems: 'center',
   },
-  headline: {
-    fontSize: 48,
-    fontWeight: 700,
-    lineHeight: 1.05,
-    letterSpacing: '-0.03em',
-    margin: 0,
-  },
   imagePlaceholder: {
     backgroundColor: colorVars['--color-background-surface'],
     borderRadius: radiusVars['--radius-container'],
@@ -107,42 +96,10 @@ const styles = stylex.create({
     paddingTop: 32,
     textAlign: 'center',
   },
-  footerLabel: {
-    textTransform: 'uppercase',
-    letterSpacing: '0.08em',
-  },
-  tokenWrap: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: spacingVars['--spacing-2'],
-  },
   fullWidth: {
     width: '100%',
   },
 });
-
-const mobileStyles = stylex.create({
-  page: {
-    padding: 20,
-    alignItems: 'flex-start',
-  },
-  topGrid: {
-    gridTemplateColumns: '1fr',
-    gap: 32,
-  },
-  image: {
-    width: '100%',
-  },
-  footerGrid: {
-    gridTemplateColumns: '1fr',
-    textAlign: 'left',
-  },
-  inlineGrid: {
-    gridTemplateColumns: '1fr',
-  },
-});
-
-const MOBILE = '@media (max-width: 767px)' as const;
 
 // ─────────────────────────────────────────────────────────────
 // Page
@@ -186,9 +143,9 @@ export default function FormTwoColumnPage() {
           {/* Left: headline + description + illustration */}
           <XDSVStack gap={6}>
             <XDSVStack gap={3}>
-              <div {...stylex.props(styles.headline)}>
+              <XDSText type="display-1" as="h1">
                 Let&apos;s work together
-              </div>
+              </XDSText>
               <XDSText type="body" color="secondary">
                 Tell us what you&apos;re working on and we&apos;ll help you
                 figure out the best path forward.
@@ -259,7 +216,7 @@ export default function FormTwoColumnPage() {
 
               <XDSVStack gap={2}>
                 <XDSText type="label">What are you reaching out about?</XDSText>
-                <div {...stylex.props(styles.tokenWrap)}>
+                <XDSHStack gap={2} wrap="wrap">
                   {INQUIRY_REASONS.map(reason => (
                     <XDSToken
                       key={reason}
@@ -272,7 +229,7 @@ export default function FormTwoColumnPage() {
                       }
                     />
                   ))}
-                </div>
+                </XDSHStack>
               </XDSVStack>
               <XDSSelector
                 label="Budget range"
@@ -304,13 +261,13 @@ export default function FormTwoColumnPage() {
         </div>
 
         {/* ── Bottom: contact strip ── */}
-        <div>
+        <XDSVStack gap={6}>
           <XDSDivider />
           <div {...stylex.props(styles.footerGrid)}>
             {CONTACT_COLUMNS.map(col => (
               <XDSVStack key={col.label} gap={1} hAlign="center">
                 <XDSText type="supporting" color="secondary">
-                  <span {...stylex.props(styles.footerLabel)}>{col.label}</span>
+                  {col.label}
                 </XDSText>
                 <XDSLink
                   label={col.email}
@@ -322,7 +279,7 @@ export default function FormTwoColumnPage() {
               </XDSVStack>
             ))}
           </div>
-        </div>
+        </XDSVStack>
       </div>
     </div>
   );
