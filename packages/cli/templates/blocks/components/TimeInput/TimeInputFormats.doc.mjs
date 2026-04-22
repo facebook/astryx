@@ -4,6 +4,6 @@ export const doc = {
   name: 'TimeInput — Formats',
   description: '12-hour, 24-hour, and seconds formats side by side. Use 12h for US-centric UIs, 24h for international or technical contexts, and seconds for precise timing.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['TimeInput', 'Layout', 'Text'],
 };
