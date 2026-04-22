@@ -57,6 +57,10 @@ const STATIC_EXPORTS = {
     types: './src/xds.css.d.ts',
     default: './dist/xds.css',
   },
+  './tailwind-theme.css': {
+    types: './src/tailwind-theme.css.d.ts',
+    default: './src/tailwind-theme.css',
+  },
   './theme/tokens.stylex': {
     source: './src/theme/tokens.stylex.ts',
     types: './dist/theme/tokens.stylex.d.ts',

@@ -49,7 +49,7 @@ export default function Home() {
   const [input2, setInput2] = useState('');
 
   return (
-    <main className="min-h-screen bg-[var(--color-background-body)] p-8">
+    <main className="min-h-screen bg-body p-8">
       <div className="mx-auto max-w-3xl">
         <XDSVStack gap={8}>
           <XDSVStack gap={2}>
@@ -92,23 +92,134 @@ export default function Home() {
 
           <XDSDivider />
 
-          {/* XDS tokens in Tailwind arbitrary values */}
+          {/* Tailwind Bridge — the main demo */}
           <XDSVStack gap={3}>
-            <XDSHeading level={2}>XDS tokens in Tailwind</XDSHeading>
-            <div className="rounded-[var(--radius-container)] border border-[var(--color-border)] bg-[var(--color-background-surface)] p-[var(--spacing-4)]">
-              <p className="text-[var(--color-text-primary)] text-[var(--font-size-base)]">
-                Card built with Tailwind using XDS tokens via{' '}
-                <code className="text-[var(--font-size-sm)] text-[var(--color-text-secondary)]">
-                  var(--radius-container)
-                </code>
-                , etc.
-              </p>
+            <XDSHeading level={2}>Tailwind Bridge</XDSHeading>
+            <XDSText type="supporting" color="secondary">
+              With{' '}
+              <code className="rounded-sm bg-gray-100 px-1 py-0.5 text-xs">
+                @xds/core/tailwind-theme.css
+              </code>
+              , XDS tokens become native Tailwind utilities. No{' '}
+              <code className="rounded-sm bg-gray-100 px-1 py-0.5 text-xs">
+                var()
+              </code>{' '}
+              needed.
+            </XDSText>
+
+            {/* Before / After comparison */}
+            <div className="grid grid-cols-2 gap-6">
+              {/* Before: verbose arbitrary values */}
+              <XDSVStack gap={2}>
+                <XDSText type="label">Before (arbitrary values)</XDSText>
+                <div className="rounded-[var(--radius-container)] border border-[var(--color-border)] bg-[var(--color-background-surface)] p-[var(--spacing-4)]">
+                  <p className="text-[var(--color-text-primary)] text-[var(--font-size-base)]">
+                    35+ chars per token 😬
+                  </p>
+                  <p className="mt-2 text-[var(--color-text-secondary)] text-[var(--font-size-sm)]">
+                    bg-[var(--color-background-surface)]
+                  </p>
+                </div>
+              </XDSVStack>
+
+              {/* After: clean bridge utilities */}
+              <XDSVStack gap={2}>
+                <XDSText type="label">After (bridge utilities)</XDSText>
+                <div className="rounded-lg border border-border bg-surface p-4">
+                  <p className="text-base text-primary">
+                    Short and clean ✨
+                  </p>
+                  <p className="mt-2 text-sm text-secondary">
+                    bg-surface text-primary
+                  </p>
+                </div>
+              </XDSVStack>
             </div>
-            <div className="flex gap-[var(--spacing-3)]">
-              <div className="h-12 w-12 rounded-[var(--radius-element)] bg-[var(--color-accent)]" />
-              <div className="h-12 w-12 rounded-[var(--radius-element)] bg-[var(--color-success)]" />
-              <div className="h-12 w-12 rounded-[var(--radius-element)] bg-[var(--color-error)]" />
-              <div className="h-12 w-12 rounded-[var(--radius-element)] bg-[var(--color-warning)]" />
+
+            {/* Status colors */}
+            <XDSText type="label">Status colors</XDSText>
+            <div className="flex gap-3">
+              <div className="flex items-center gap-2 rounded-md bg-success/10 px-3 py-2">
+                <div className="h-2 w-2 rounded-full bg-success" />
+                <span className="text-sm font-medium text-success">
+                  Success
+                </span>
+              </div>
+              <div className="flex items-center gap-2 rounded-md bg-error/10 px-3 py-2">
+                <div className="h-2 w-2 rounded-full bg-error" />
+                <span className="text-sm font-medium text-error">Error</span>
+              </div>
+              <div className="flex items-center gap-2 rounded-md bg-warning/10 px-3 py-2">
+                <div className="h-2 w-2 rounded-full bg-warning" />
+                <span className="text-sm font-medium text-warning">
+                  Warning
+                </span>
+              </div>
+            </div>
+
+            {/* Hue palette */}
+            <XDSText type="label">Hue palette (subtle / ring / vivid)</XDSText>
+            <div className="grid grid-cols-5 gap-3">
+              <div className="rounded-md border border-blue-ring bg-blue-subtle p-3 text-center">
+                <span className="text-sm font-medium text-blue-vivid">
+                  blue
+                </span>
+              </div>
+              <div className="rounded-md border border-green-ring bg-green-subtle p-3 text-center">
+                <span className="text-sm font-medium text-green-vivid">
+                  green
+                </span>
+              </div>
+              <div className="rounded-md border border-purple-ring bg-purple-subtle p-3 text-center">
+                <span className="text-sm font-medium text-purple-vivid">
+                  purple
+                </span>
+              </div>
+              <div className="rounded-md border border-orange-ring bg-orange-subtle p-3 text-center">
+                <span className="text-sm font-medium text-orange-vivid">
+                  orange
+                </span>
+              </div>
+              <div className="rounded-md border border-red-ring bg-red-subtle p-3 text-center">
+                <span className="text-sm font-medium text-red-vivid">red</span>
+              </div>
+            </div>
+
+            {/* Semantic surfaces */}
+            <XDSText type="label">Semantic surfaces</XDSText>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-lg bg-surface p-4 shadow-sm">
+                <p className="text-sm font-medium text-primary">bg-surface</p>
+                <p className="text-xs text-secondary">Cards, panels</p>
+              </div>
+              <div className="rounded-lg bg-body p-4 shadow-sm">
+                <p className="text-sm font-medium text-primary">bg-body</p>
+                <p className="text-xs text-secondary">Page background</p>
+              </div>
+              <div className="rounded-lg bg-muted p-4 shadow-sm">
+                <p className="text-sm font-medium text-primary">bg-muted</p>
+                <p className="text-xs text-secondary">Subtle emphasis</p>
+              </div>
+            </div>
+
+            {/* Spacing + radius */}
+            <XDSText type="label">Spacing &amp; radius</XDSText>
+            <div className="flex items-end gap-3">
+              <div className="rounded-xs bg-accent-bg p-1 text-center">
+                <span className="text-xs text-on-accent">p-1</span>
+              </div>
+              <div className="rounded-sm bg-accent-bg p-2 text-center">
+                <span className="text-xs text-on-accent">p-2</span>
+              </div>
+              <div className="rounded-md bg-accent-bg p-3 text-center">
+                <span className="text-xs text-on-accent">p-3</span>
+              </div>
+              <div className="rounded-lg bg-accent-bg p-4 text-center">
+                <span className="text-xs text-on-accent">p-4</span>
+              </div>
+              <div className="rounded-xl bg-accent-bg p-6 text-center">
+                <span className="text-xs text-on-accent">p-6</span>
+              </div>
             </div>
           </XDSVStack>
 
