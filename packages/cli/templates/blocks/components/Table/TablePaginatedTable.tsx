@@ -3,6 +3,7 @@
 import {useState} from 'react';
 import {XDSTable, useXDSTablePagination, paginateData} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
+import {XDSSection} from '@xds/core/Section';
 
 interface User extends Record<string, unknown> {
   id: string;
@@ -61,11 +62,13 @@ export default function TablePaginatedTable() {
   });
 
   return (
-    <XDSTable
-      data={paginateData(users, page, pageSize)}
-      columns={columns}
-      idKey="id"
-      plugins={{pagination: plugin}}
-    />
+    <XDSSection>
+      <XDSTable
+        data={paginateData(users, page, pageSize)}
+        columns={columns}
+        idKey="id"
+        plugins={{pagination: plugin}}
+      />
+    </XDSSection>
   );
 }
