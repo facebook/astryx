@@ -3,7 +3,6 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSCenter} from '@xds/core/Center';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
@@ -119,7 +118,9 @@ export default function FormSimplePage() {
     );
 
   return (
-    <XDSCenter axis="horizontal" height="100svh" xstyle={styles.pageBg}>
+    <div
+      {...stylex.props(styles.pageBg)}
+      style={{minHeight: '100svh', display: 'flex', flexDirection: 'column'}}>
       {/* Full-bleed banner */}
       <img
         // illustration-horizontal-2 from xds_oss asset set
@@ -344,6 +345,6 @@ export default function FormSimplePage() {
           </XDSVStack>
         </XDSVStack>
       </div>
-    </XDSCenter>
+    </div>
   );
 }
