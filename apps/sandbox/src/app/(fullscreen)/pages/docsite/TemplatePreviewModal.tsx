@@ -74,12 +74,15 @@ export type TemplatePreviewItem = {
   slug?: string;
   author: string;
   description?: string;
+  themeImages?: Record<string, string>;
 };
 
 export type MoreLikeThisItem = {
   name: string;
   img: string;
+  slug?: string;
   key: string | number;
+  themeImages?: Record<string, string>;
 };
 
 export function TemplatePreviewModal({
@@ -121,6 +124,20 @@ export function TemplatePreviewModal({
       ),
   );
   const [transitioning, setTransitioning] = useState(false);
+  const [previewLoaded, setPreviewLoaded] = useState(false);
+
+  const themeFilters: Record<string, string> = {
+    neutral: 'saturate(0.3)',
+    brutalist: 'contrast(1.2) saturate(0.5)',
+    meta: 'sepia(0.15) saturate(1.4) hue-rotate(200deg)',
+    whatsapp: 'sepia(0.2) saturate(1.3) hue-rotate(100deg)',
+    threads: 'saturate(0.8) contrast(1.1)',
+    facebook: 'sepia(0.1) saturate(1.3) hue-rotate(190deg)',
+    matcha: 'sepia(0.2) saturate(1.2) hue-rotate(80deg)',
+    midnight: 'invert(0.88) hue-rotate(180deg)',
+    daily: 'sepia(0.1) saturate(1.1) hue-rotate(10deg)',
+  };
+  const previewFilter = themeFilters[selectedTheme] ?? undefined;
 
   const togglePin = useCallback((key: string) => {
     setPinnedThemes(prev => {
@@ -133,15 +150,25 @@ export function TemplatePreviewModal({
 
   if (!item) return null;
 
+  const themedImg = item.themeImages?.[selectedTheme] ?? item.img;
+  const hasThemedImage =
+    item.themeImages != null && selectedTheme in item.themeImages;
+
   const description =
     item.description ??
     `A ready-to-use ${item.name.toLowerCase()} template built with XDS components. Customize it with your own content and theme to match your brand.`;
+
+  const shimmerBg =
+    'linear-gradient(90deg, var(--color-background-muted, #f0f0f0) 0%, var(--color-background-surface, #fafafa) 50%, var(--color-background-muted, #f0f0f0) 100%)';
 
   return (
     <XDSDialog
       isOpen={isOpen}
       onOpenChange={open => {
-        if (!open) onClose();
+        if (!open) {
+          onClose();
+          setPreviewLoaded(false);
+        }
       }}
       width="90vw"
       maxHeight="90vh"
@@ -176,28 +203,40 @@ export function TemplatePreviewModal({
               style={{
                 flex: 1,
                 aspectRatio: '16 / 10',
-                backgroundColor: 'var(--color-background-muted, #f9f9f9)',
                 borderRadius: 12,
                 overflow: 'hidden',
                 border: '1px solid var(--color-border, #e0e0e0)',
+                filter: hasThemedImage ? undefined : previewFilter,
+                transition: 'filter 300ms ease',
+                ...(!previewLoaded
+                  ? {
+                      background: shimmerBg,
+                      backgroundSize: '800px 100%',
+                      animation: 'craftShimmer 1.6s ease-in-out infinite',
+                    }
+                  : {
+                      backgroundColor: 'var(--color-background-muted, #f9f9f9)',
+                    }),
               }}>
               {item.slug ? (
                 <iframe
                   src={`${basePath}/templates/${item.slug}/?embed=1`}
                   title={item.name}
+                  onLoad={() => setPreviewLoaded(true)}
                   style={{
                     width: '100%',
                     height: '100%',
                     border: 'none',
                     display: 'block',
-                    opacity: transitioning ? 0 : 1,
+                    opacity: transitioning || !previewLoaded ? 0 : 1,
                     transition: 'opacity 250ms ease',
                   }}
                 />
               ) : (
                 <img
-                  src={item.img}
-                  alt={item.name}
+                  src={themedImg}
+                  alt={`${item.name} — ${selectedTheme}`}
+                  onLoad={() => setPreviewLoaded(true)}
                   style={{
                     width: '100%',
                     display: 'block',
@@ -640,22 +679,39 @@ export function TemplatePreviewModal({
                     aspectRatio: '16/10',
                     overflow: 'hidden',
                   }}>
-                  <img
-                    src={mlItem.img}
-                    alt={mlItem.name}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      objectPosition: 'top',
-                      display: 'block',
-                      opacity: transitioning ? 0 : 1,
-                      transition: 'opacity 250ms ease',
-                      animation: transitioning
-                        ? 'none'
-                        : 'previewFadeIn 300ms ease',
-                    }}
-                  />
+                  {mlItem.slug ? (
+                    <iframe
+                      src={`${basePath}/templates/${mlItem.slug}/?embed=1`}
+                      title={mlItem.name}
+                      loading="lazy"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        border: 'none',
+                        display: 'block',
+                        pointerEvents: 'none',
+                        opacity: transitioning ? 0 : 1,
+                        transition: 'opacity 250ms ease',
+                      }}
+                    />
+                  ) : (
+                    <img
+                      src={mlItem.themeImages?.[selectedTheme] ?? mlItem.img}
+                      alt={mlItem.name}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        objectPosition: 'top',
+                        display: 'block',
+                        opacity: transitioning ? 0 : 1,
+                        transition: 'opacity 250ms ease',
+                        animation: transitioning
+                          ? 'none'
+                          : 'previewFadeIn 300ms ease',
+                      }}
+                    />
+                  )}
                 </XDSCard>
               ))}
             </div>
