@@ -6,7 +6,6 @@ import {XDSIcon} from '@xds/core/Icon';
 import {XDSHeading} from '@xds/core/Text';
 import {XDSStack} from '@xds/core/Layout';
 import {XDSCard} from '@xds/core/Card';
-import {XDSSection} from '@xds/core/Section';
 import {FunnelIcon, PlusIcon} from '@heroicons/react/24/outline';
 
 const SIZES = [

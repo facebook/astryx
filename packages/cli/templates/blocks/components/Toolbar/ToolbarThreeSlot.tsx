@@ -13,9 +13,6 @@ const styles = stylex.create({
   card: {
     height: '100%',
   },
-  fill: {
-    flexGrow: 1,
-  },
 });
 
 export default function ToolbarThreeSlot() {

@@ -6,7 +6,6 @@ import {XDSIcon} from '@xds/core/Icon';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSMoreMenu} from '@xds/core/MoreMenu';
 import {XDSTable} from '@xds/core/Table';
-import {XDSBadge} from '@xds/core/Badge';
 import {
   MagnifyingGlassIcon,
   ChevronDownIcon,
