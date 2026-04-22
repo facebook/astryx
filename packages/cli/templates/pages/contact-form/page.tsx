@@ -80,7 +80,7 @@ const styles = stylex.create({
     // illustration-horizontal-2 from xds_oss asset set
     backgroundImage:
       'url(https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-2.png)',
-    backgroundSize: '100% 15vh',
+    backgroundSize: '100% auto',
     backgroundRepeat: 'no-repeat',
     backgroundPosition: 'top center',
     paddingTop: '15vh',
