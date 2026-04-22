@@ -3,16 +3,17 @@
 import {useState} from 'react';
 import {XDSTypeahead} from '@xds/core/Typeahead';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
+import {XDSCenter} from '@xds/core/Center';
 
 const items: XDSSearchableItem[] = [
-  {id: '1', label: 'Apple'},
-  {id: '2', label: 'Banana'},
-  {id: '3', label: 'Cherry'},
-  {id: '4', label: 'Date'},
-  {id: '5', label: 'Elderberry'},
-  {id: '6', label: 'Fig'},
-  {id: '7', label: 'Grape'},
-  {id: '8', label: 'Honeydew'},
+  {id: '1', label: 'Engineering'},
+  {id: '2', label: 'Design'},
+  {id: '3', label: 'Marketing'},
+  {id: '4', label: 'Sales'},
+  {id: '5', label: 'Product'},
+  {id: '6', label: 'Finance'},
+  {id: '7', label: 'Legal'},
+  {id: '8', label: 'Operations'},
 ];
 
 const searchSource: XDSSearchSource = {
@@ -24,15 +25,15 @@ const searchSource: XDSSearchSource = {
 export default function TypeaheadWithHelperText() {
   const [value, setValue] = useState<XDSSearchableItem | null>(null);
   return (
-    <div style={{width: 320}}>
+    <XDSCenter width={320}>
       <XDSTypeahead
-        label="Fruit"
-        placeholder="Search fruits..."
+        label="Department"
+        placeholder="Search departments..."
         searchSource={searchSource}
         value={value}
         onChange={setValue}
-        description="Pick your favorite fruit from the list"
+        description="Select the department this request should be routed to"
       />
-    </div>
+    </XDSCenter>
   );
 }

@@ -301,12 +301,14 @@ export const docs = {
   },
   usage: {
     description:
-      'Typeahead is a searchable dropdown for selecting a single item from a large or dynamic dataset. Use Typeahead when users benefit from search-as-you-type to quickly find and select an option. For small fixed lists, use Selector instead; for multiple selections, use Tokenizer.',
+      'A searchable input for selecting a single item from a large or dynamic dataset. Results appear as the user types, with support for async data sources, debounced search, and custom item rendering. Use it when the option list is too large for a Selector dropdown.',
     bestPractices: [
       {guidance: true, description: 'Provide descriptive placeholder text that hints at what users can search for.'},
-      {guidance: true, description: 'Enable hasEntriesOnFocus when users benefit from seeing popular or recent options before typing.'},
-      {guidance: false, description: 'Avoid using Typeahead for short, static option lists — use Selector for better discoverability.'},
-      {guidance: false, description: 'Avoid placing multiple Typeaheads adjacent to each other without clear labels differentiating them.'},
+      {guidance: true, description: 'Show suggestions on focus when users benefit from seeing popular or recent options before typing.'},
+      {guidance: true, description: 'Add a search delay for remote data sources to avoid excessive network requests.'},
+      {guidance: false, description: 'Use for short, static option lists — use Selector for better discoverability.'},
+      {guidance: false, description: 'Use for multi-selection — use Tokenizer instead.'},
+      {guidance: false, description: 'Place multiple Typeaheads adjacent to each other without clear labels differentiating them.'},
     ],
   },
 };
@@ -612,12 +614,14 @@ export const docsZh = {
   },
   usage: {
     description:
-      'Typeahead is a searchable dropdown for selecting a single item from a large or dynamic dataset. Use Typeahead when users benefit from search-as-you-type to quickly find and select an option. For small fixed lists, use Selector instead; for multiple selections, use Tokenizer.',
+      'A searchable input for selecting a single item from a large or dynamic dataset. Results appear as the user types, with support for async data sources, debounced search, and custom item rendering. Use it when the option list is too large for a Selector dropdown.',
     bestPractices: [
       {guidance: true, description: 'Provide descriptive placeholder text that hints at what users can search for.'},
-      {guidance: true, description: 'Enable hasEntriesOnFocus when users benefit from seeing popular or recent options before typing.'},
-      {guidance: false, description: 'Avoid using Typeahead for short, static option lists — use Selector for better discoverability.'},
-      {guidance: false, description: 'Avoid placing multiple Typeaheads adjacent to each other without clear labels differentiating them.'},
+      {guidance: true, description: 'Show suggestions on focus when users benefit from seeing popular or recent options before typing.'},
+      {guidance: true, description: 'Add a search delay for remote data sources to avoid excessive network requests.'},
+      {guidance: false, description: 'Use for short, static option lists — use Selector for better discoverability.'},
+      {guidance: false, description: 'Use for multi-selection — use Tokenizer instead.'},
+      {guidance: false, description: 'Place multiple Typeaheads adjacent to each other without clear labels differentiating them.'},
     ],
   },
 };
@@ -627,12 +631,14 @@ export const docsDense = {
   description: 'Searchable dropdown for single-item selection w/ keyboard navigation. Supports async+sync search via searchSource interface.',
   usage: {
     description:
-      'Typeahead is a searchable dropdown for selecting a single item from a large or dynamic dataset. Use Typeahead when users benefit from search-as-you-type to quickly find and select an option. For small fixed lists, use Selector instead; for multiple selections, use Tokenizer.',
+      'A searchable input for selecting a single item from a large or dynamic dataset. Results appear as the user types, with support for async data sources, debounced search, and custom item rendering. Use it when the option list is too large for a Selector dropdown.',
     bestPractices: [
       {guidance: true, description: 'Provide descriptive placeholder text that hints at what users can search for.'},
-      {guidance: true, description: 'Enable hasEntriesOnFocus when users benefit from seeing popular or recent options before typing.'},
-      {guidance: false, description: 'Avoid using Typeahead for short, static option lists — use Selector for better discoverability.'},
-      {guidance: false, description: 'Avoid placing multiple Typeaheads adjacent to each other without clear labels differentiating them.'},
+      {guidance: true, description: 'Show suggestions on focus when users benefit from seeing popular or recent options before typing.'},
+      {guidance: true, description: 'Add a search delay for remote data sources to avoid excessive network requests.'},
+      {guidance: false, description: 'Use for short, static option lists — use Selector for better discoverability.'},
+      {guidance: false, description: 'Use for multi-selection — use Tokenizer instead.'},
+      {guidance: false, description: 'Place multiple Typeaheads adjacent to each other without clear labels differentiating them.'},
     ],
   },
   components: [
