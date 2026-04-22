@@ -1,0 +1,9 @@
+/** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
+export const doc = {
+  type: 'block',
+  name: 'ToggleButton — States',
+  description: 'Default, pressed, disabled, and loading states of a standalone toggle button. Shows how visual treatment changes across states.',
+  isReady: true,
+  aspectRatio: 16 / 9,
+  componentsUsed: ['ToggleButton', 'Layout', 'Text', 'Icon'],
+};
