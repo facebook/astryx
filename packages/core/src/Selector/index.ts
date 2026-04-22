@@ -20,11 +20,4 @@ export type {
   XDSSelectorDivider,
   XDSSelectorSection,
 } from './types';
-export {
-  isOptionData,
-  isDivider,
-  isSection,
-  normalizeOption,
-  getSelectableOptions,
-} from './utils';
 export {useCombobox, useSelectedItemOffset} from './hooks';
