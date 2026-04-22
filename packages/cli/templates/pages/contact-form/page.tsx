@@ -244,7 +244,7 @@ export default function FormSimplePage() {
           <XDSVStack gap={5}>
             <XDSVStack gap={2}>
               <XDSText type="label">What are you going for?</XDSText>
-              <XDSGrid columns={{minWidth: 120}} gap={2}>
+              <XDSHStack gap={2} wrap="wrap">
                 {CAMPAIGN_GOALS.map(goal => (
                   <XDSToken
                     key={goal}
@@ -253,7 +253,7 @@ export default function FormSimplePage() {
                     onClick={() => toggleGoal(goal)}
                   />
                 ))}
-              </XDSGrid>
+              </XDSHStack>
               {errors.goals && (
                 <XDSText type="supporting" xstyle={styles.errorColor}>{errors.goals}</XDSText>
               )}
