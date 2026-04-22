@@ -123,8 +123,8 @@ export default function FormSimplePage() {
       style={{minHeight: '100svh', display: 'flex', flexDirection: 'column'}}>
       {/* Full-bleed banner */}
       <img
-        // light-scene-horizontal-1 from xds_oss asset set
-        src="https://lookaside.facebook.com/assets/xds_oss/light-scene-horizontal-1.png"
+        // texture-beige-horizontal-1 from xds_oss asset set
+        src="https://lookaside.facebook.com/assets/xds_oss/texture-beige-horizontal-1.png"
         alt="Decorative banner"
         style={{
           width: '100%',
