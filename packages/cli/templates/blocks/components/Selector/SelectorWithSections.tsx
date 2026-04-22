@@ -2,38 +2,45 @@
 
 import {useState} from 'react';
 import {XDSSelector} from '@xds/core/Selector';
+import {XDSCenter} from '@xds/core/Center';
 
 export default function SelectorWithSections() {
   const [value, setValue] = useState<string | undefined>();
   return (
-    <div style={{width: 250}}>
+    <XDSCenter width={250}>
       <XDSSelector
-        label="Fruit"
+        label="Office"
         options={[
-          {value: 'apple', label: 'Apple'},
-          {value: 'banana', label: 'Banana'},
           {
             type: 'section',
-            title: 'Citrus',
+            title: 'North America',
             options: [
-              {value: 'orange', label: 'Orange'},
-              {value: 'lemon', label: 'Lemon'},
-              {value: 'lime', label: 'Lime'},
+              {value: 'nyc', label: 'New York'},
+              {value: 'sf', label: 'San Francisco'},
+              {value: 'sea', label: 'Seattle'},
             ],
           },
           {
             type: 'section',
-            title: 'Tropical',
+            title: 'Europe',
             options: [
-              {value: 'mango', label: 'Mango'},
-              {value: 'pineapple', label: 'Pineapple'},
+              {value: 'ldn', label: 'London'},
+              {value: 'ber', label: 'Berlin'},
+            ],
+          },
+          {
+            type: 'section',
+            title: 'Asia Pacific',
+            options: [
+              {value: 'tyo', label: 'Tokyo'},
+              {value: 'sgp', label: 'Singapore'},
             ],
           },
         ]}
         value={value}
         onChange={setValue}
-        placeholder="Select a fruit..."
+        placeholder="Choose an office..."
       />
-    </div>
+    </XDSCenter>
   );
 }

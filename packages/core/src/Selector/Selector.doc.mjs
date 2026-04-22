@@ -126,12 +126,16 @@ export const docs = {
   ],
   usage: {
     description:
-      'A dropdown selector for choosing a single option from a list. Use Selector in forms or settings when presenting 3–20 options. For triggering actions instead of selecting values, use a Dropdown Menu.',
+      'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options.',
     bestPractices: [
       {guidance: true, description: 'Provide a visible label so users understand what they are selecting.'},
-      {guidance: true, description: 'Use sections and dividers to organize long lists of related options.'},
+      {guidance: true, description: 'Use sections and dividers to organize options when the list exceeds ~8 items.'},
+      {guidance: true, description: 'Set a meaningful placeholder that hints at the expected selection (e.g. "Choose a country" not "Select...").'},
       {guidance: false, description: 'Use for action menus — use Dropdown Menu for triggering commands or navigation.'},
       {guidance: false, description: 'Use when there are only two options — use a SegmentedControl or radio buttons instead.'},
+      {guidance: false, description: 'Use Selector for navigation — links should be links, not dropdown options.'},
+      {guidance: false, description: 'Use for yes/no or on/off choices — use Switch or CheckboxInput instead.'},
+      {guidance: false, description: 'Put more than ~20 options without sections — consider Typeahead for large lists.'},
     ],
     anatomy: [
       {name: 'Label', required: false, description: 'Text label displayed above the selector.'},
@@ -268,12 +272,16 @@ export const docsZh = {
   ],
   usage: {
     description:
-      'A dropdown selector for choosing a single option from a list. Use Selector in forms or settings when presenting 3–20 options. For triggering actions instead of selecting values, use a Dropdown Menu.',
+      'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options.',
     bestPractices: [
       {guidance: true, description: 'Provide a visible label so users understand what they are selecting.'},
-      {guidance: true, description: 'Use sections and dividers to organize long lists of related options.'},
+      {guidance: true, description: 'Use sections and dividers to organize options when the list exceeds ~8 items.'},
+      {guidance: true, description: 'Set a meaningful placeholder that hints at the expected selection (e.g. "Choose a country" not "Select...").'},
       {guidance: false, description: 'Use for action menus — use Dropdown Menu for triggering commands or navigation.'},
       {guidance: false, description: 'Use when there are only two options — use a SegmentedControl or radio buttons instead.'},
+      {guidance: false, description: 'Use Selector for navigation — links should be links, not dropdown options.'},
+      {guidance: false, description: 'Use for yes/no or on/off choices — use Switch or CheckboxInput instead.'},
+      {guidance: false, description: 'Put more than ~20 options without sections — consider Typeahead for large lists.'},
     ],
     anatomy: [
       {name: 'Label', required: false, description: 'Text label displayed above the selector.'},
@@ -290,12 +298,16 @@ export const docsZh = {
 export const docsDense = {
   usage: {
     description:
-      'A dropdown selector for choosing a single option from a list. Use Selector in forms or settings when presenting 3–20 options. For triggering actions instead of selecting values, use a Dropdown Menu.',
+      'A dropdown selector for choosing a single value from a list of options. Supports labels, validation, descriptions, and required/optional states. Use it in forms and settings when presenting a moderate number of options.',
     bestPractices: [
       {guidance: true, description: 'Provide a visible label so users understand what they are selecting.'},
-      {guidance: true, description: 'Use sections and dividers to organize long lists of related options.'},
+      {guidance: true, description: 'Use sections and dividers to organize options when the list exceeds ~8 items.'},
+      {guidance: true, description: 'Set a meaningful placeholder that hints at the expected selection (e.g. "Choose a country" not "Select...").'},
       {guidance: false, description: 'Use for action menus — use Dropdown Menu for triggering commands or navigation.'},
       {guidance: false, description: 'Use when there are only two options — use a SegmentedControl or radio buttons instead.'},
+      {guidance: false, description: 'Use Selector for navigation — links should be links, not dropdown options.'},
+      {guidance: false, description: 'Use for yes/no or on/off choices — use Switch or CheckboxInput instead.'},
+      {guidance: false, description: 'Put more than ~20 options without sections — consider Typeahead for large lists.'},
     ],
     anatomy: [
       {name: 'Label', required: false, description: 'Text label displayed above the selector.'},
