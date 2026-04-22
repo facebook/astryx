@@ -46,6 +46,15 @@ const styles = stylex.create({
     tableLayout: 'fixed',
   },
   /**
+   * Wrapper div rendered when plugins inject siblings via
+   * transformTableContext (e.g. pagination). Keeps the table
+   * and its controls as one unit in parent flex/grid layouts.
+   * overflow: visible so table bleed still escapes visually.
+   */
+  contextWrapper: {
+    overflow: 'visible',
+  },
+  /**
    * Inline flex row that keeps the header label and any "after" slot content
    * (sort icons, filter buttons, etc.) on the same line with a small gap.
    * Applied only when `after` is present so plain cells are unaffected.
@@ -456,11 +465,13 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
   // Iterates in reverse so the first plugin in the array wraps outermost,
   // matching the mental model: plugins are listed in priority order, and
   // the first plugin's context provider encompasses all others.
+  let hasContextWrapper = false;
   for (let i = plugins.length - 1; i >= 0; i--) {
     const plugin = plugins[i];
     if (plugin.transformTableContext) {
       try {
         tableElement = plugin.transformTableContext(tableElement);
+        hasContextWrapper = true;
       } catch (error) {
         console.error(
           '[XDSTable] Plugin threw in transformTableContext:',
@@ -468,6 +479,13 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
         );
       }
     }
+  }
+
+  // When plugins inject siblings (pagination, toolbars) via
+  // transformTableContext, wrap in a containing div so the table +
+  // siblings stay as a single unit in parent flex/grid layouts.
+  if (hasContextWrapper) {
+    return <div {...stylex.props(styles.contextWrapper)}>{tableElement}</div>;
   }
 
   return tableElement as ReactElement;
