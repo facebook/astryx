@@ -1720,7 +1720,7 @@ function DocsiteLandingTemplate() {
                                 fontSize: 11,
                                 fontWeight: 600,
                                 padding: '2px 8px',
-                                borderRadius: 9999,
+                                borderRadius: 'var(--radius-control)',
                                 whiteSpace: 'nowrap' as const,
                                 flexShrink: 0,
                                 backgroundColor:
@@ -2004,7 +2004,7 @@ function DocsiteLandingTemplate() {
                           fontSize: 11,
                           fontWeight: 600,
                           padding: '2px 10px',
-                          borderRadius: 9999,
+                          borderRadius: 'var(--radius-control)',
                           backgroundColor: 'var(--color-background-muted)',
                           color: 'var(--color-text-secondary)',
                         }}>

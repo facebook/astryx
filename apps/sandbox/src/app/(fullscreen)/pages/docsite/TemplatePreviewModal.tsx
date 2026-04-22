@@ -59,13 +59,12 @@ const tokenStyles = stylex.create({
   outline: {
     borderWidth: 1,
     borderStyle: 'solid',
-    borderColor: 'var(--color-border-emphasized)',
+    borderColor: 'var(--color-border-strong, #999)',
   },
   pill: {
     borderWidth: 1,
     borderStyle: 'solid',
-    borderColor: 'var(--color-border-emphasized)',
-    borderRadius: 9999,
+    borderColor: 'var(--color-border-strong, #999)',
   },
 });
 
