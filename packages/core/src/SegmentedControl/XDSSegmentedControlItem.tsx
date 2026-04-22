@@ -106,6 +106,10 @@ const styles = stylex.create({
     cursor: 'default',
     color: colorVars['--color-text-disabled'],
   },
+  fill: {
+    flex: 1,
+    justifyContent: 'center',
+  },
   icon: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -163,6 +167,7 @@ export function XDSSegmentedControlItem({
   const isSelected = ctx.value === value;
   const isItemDisabled = isDisabled || ctx.isDisabled;
   const size: XDSSegmentedControlSize = ctx.size;
+  const isFill = ctx.layout === 'fill';
 
   const handleClick = useCallback(() => {
     if (!isItemDisabled && !isSelected) {
@@ -193,6 +198,7 @@ export function XDSSegmentedControlItem({
         stylex.props(
           styles.base,
           sizeStyles[size],
+          isFill && styles.fill,
           isSelected && styles.selected,
           !isSelected && !isItemDisabled && styles.hover,
           isItemDisabled && styles.disabled,
