@@ -22,7 +22,7 @@ export default function LayoutShowcase() {
         <XDSLayoutHeader hasDivider>
           <XDSHStack gap={2} vAlign="center">
             <XDSHeading level={4}>Projects</XDSHeading>
-            <XDSBadge variant="info">3 active</XDSBadge>
+            <XDSBadge variant="info" label="3 active" />
           </XDSHStack>
         </XDSLayoutHeader>
       }
