@@ -53,9 +53,9 @@ export interface XDSTextProps extends Omit<XDSBaseProps, 'children'> {
   ref?: React.Ref<HTMLElement>;
   /**
    * Semantic text type. Determines size, weight, and line-height from theme.
-   * Required to ensure semantic usage.
+   * @default 'body'
    */
-  type: XDSTextType;
+  type?: XDSTextType;
 
   /**
    * Explicit font size override. When set, overrides the size from `type`
@@ -172,7 +172,7 @@ const defaultColorByType: Record<XDSTextType, XDSTextColor> = {
  * ```
  */
 export function XDSText({
-  type,
+  type = 'body',
   size: _size,
   color,
   weight,
