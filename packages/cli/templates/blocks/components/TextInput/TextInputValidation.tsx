@@ -8,6 +8,7 @@ export default function TextInputValidation() {
   const [error, setError] = useState('sarah@');
   const [warning, setWarning] = useState('sarah_chen');
   const [success, setSuccess] = useState('https://sarahchen.dev');
+  const [errorOnly, setErrorOnly] = useState('test');
 
   return (
     <div style={{width: 300}}>
@@ -38,6 +39,13 @@ export default function TextInputValidation() {
           onChange={setSuccess}
           placeholder="Enter a value"
           status={{type: 'success', message: 'URL is valid and reachable.'}}
+        />
+        <XDSTextInput
+          label="Status without message"
+          value={errorOnly}
+          onChange={setErrorOnly}
+          placeholder="Enter a value"
+          status={{type: 'error'}}
         />
       </XDSStack>
     </div>
