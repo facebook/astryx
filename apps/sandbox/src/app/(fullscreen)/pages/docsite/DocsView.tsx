@@ -1539,20 +1539,22 @@ export function DocsView({
               </XDSSideNavItem>
             </XDSSideNavSection>
 
-            <XDSSideNavSection title="Libraries">
-              {LIBRARY_PACKAGES.map(pkg => (
-                <XDSSideNavItem
-                  key={pkg.key}
-                  label={pkg.name}
-                  isSelected={
-                    selectedComponent !== null && activeNav === pkg.key
-                  }
-                  onClick={() => {
-                    setSelectedComponent(pkg.key);
-                    setActiveNav(pkg.key);
-                  }}
-                />
-              ))}
+            <XDSSideNavSection title="Libraries" isHeaderHidden>
+              <XDSSideNavItem label="Libraries" collapsible>
+                {LIBRARY_PACKAGES.map(pkg => (
+                  <XDSSideNavItem
+                    key={pkg.key}
+                    label={pkg.name}
+                    isSelected={
+                      selectedComponent !== null && activeNav === pkg.key
+                    }
+                    onClick={() => {
+                      setSelectedComponent(pkg.key);
+                      setActiveNav(pkg.key);
+                    }}
+                  />
+                ))}
+              </XDSSideNavItem>
             </XDSSideNavSection>
 
             {COMPONENT_CATEGORIES.map(category => (
