@@ -137,15 +137,16 @@ const LIBRARY_PACKAGES: {
 const RESOURCE_ITEMS: {
   title: string;
   description: string;
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  image?: string;
   iconBg: string;
   iconColor: string;
 }[] = [
   {
     title: 'Figma Library',
     description: 'Design files, tokens, and component specs for designers.',
-    icon: PaletteIcon,
-    iconBg: '#F3E8FF',
+    image: `${basePath}/docsite/figma-logo.png`,
+    iconBg: 'transparent',
     iconColor: '#7C3AED',
   },
   {
@@ -873,7 +874,6 @@ function LibraryOverview({
             gap: 16,
           }}>
           {RESOURCE_ITEMS.map(resource => {
-            const IconComp = resource.icon;
             return (
               <XDSCard key={resource.title} padding={0}>
                 <div
@@ -894,8 +894,17 @@ function LibraryOverview({
                       alignItems: 'center',
                       justifyContent: 'center',
                       flexShrink: 0,
+                      overflow: 'hidden',
                     }}>
-                    <XDSIcon icon={IconComp} size="md" color="accent" />
+                    {resource.image ? (
+                      <img
+                        src={resource.image}
+                        alt={resource.title}
+                        style={{width: 44, height: 44, objectFit: 'contain'}}
+                      />
+                    ) : resource.icon ? (
+                      <XDSIcon icon={resource.icon} size="md" color="accent" />
+                    ) : null}
                   </div>
                   <XDSStack
                     direction="vertical"
