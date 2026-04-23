@@ -1,51 +1,38 @@
 'use client';
 
 import {XDSTimestamp} from '@xds/core/Timestamp';
+import {XDSStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
+
+const DATE = '2026-02-19T17:00:00Z';
 
 export default function TimestampColors() {
   return (
-    <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
-      <div>
-        <XDSText type="label" color="secondary">
-          primary:{' '}
+    <XDSStack direction="vertical" gap={4}>
+      <XDSStack direction="vertical" gap={1}>
+        <XDSText type="supporting" color="secondary">
+          primary
         </XDSText>
-        <XDSTimestamp
-          value="2026-02-19T17:00:00Z"
-          format="date_time"
-          color="primary"
-        />
-      </div>
-      <div>
-        <XDSText type="label" color="secondary">
-          secondary:{' '}
+        <XDSTimestamp value={DATE} format="date_time" color="primary" />
+      </XDSStack>
+      <XDSStack direction="vertical" gap={1}>
+        <XDSText type="supporting" color="secondary">
+          secondary
         </XDSText>
-        <XDSTimestamp
-          value="2026-02-19T17:00:00Z"
-          format="date_time"
-          color="secondary"
-        />
-      </div>
-      <div>
-        <XDSText type="label" color="secondary">
-          disabled:{' '}
+        <XDSTimestamp value={DATE} format="date_time" color="secondary" />
+      </XDSStack>
+      <XDSStack direction="vertical" gap={1}>
+        <XDSText type="supporting" color="secondary">
+          disabled
         </XDSText>
-        <XDSTimestamp
-          value="2026-02-19T17:00:00Z"
-          format="date_time"
-          color="disabled"
-        />
-      </div>
-      <div>
-        <XDSText type="label" color="secondary">
-          active:{' '}
+        <XDSTimestamp value={DATE} format="date_time" color="disabled" />
+      </XDSStack>
+      <XDSStack direction="vertical" gap={1}>
+        <XDSText type="supporting" color="secondary">
+          active
         </XDSText>
-        <XDSTimestamp
-          value="2026-02-19T17:00:00Z"
-          format="date_time"
-          color="active"
-        />
-      </div>
-    </div>
+        <XDSTimestamp value={DATE} format="date_time" color="active" />
+      </XDSStack>
+    </XDSStack>
   );
 }
