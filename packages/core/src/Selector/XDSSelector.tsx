@@ -89,7 +89,7 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-label-leading'],
     color: colorVars['--color-text-primary'],
     cursor: 'pointer',
-    transitionProperty: 'border-color, outline, box-shadow',
+    transitionProperty: 'border-color, box-shadow',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     boxShadow: {

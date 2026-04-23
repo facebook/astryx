@@ -48,7 +48,7 @@ export const inputWrapperStyles = stylex.create({
     '--_field-radius': radiusVars['--radius-element'],
     borderRadius: 'var(--_field-radius)',
     backgroundColor: colorVars['--color-background-surface'],
-    transitionProperty: 'border-color, outline, box-shadow',
+    transitionProperty: 'border-color, box-shadow',
     transitionDuration: {
       default: durationVars['--duration-fast'],
       '@media (prefers-reduced-motion: reduce)': '0s',
