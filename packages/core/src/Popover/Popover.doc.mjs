@@ -144,12 +144,13 @@ export const docs = {
   },
   usage: {
     description:
-      'Popover displays interactive content anchored to a trigger element, activated on click. Use it for secondary actions or supplementary information that does not warrant a full dialog. For hover-triggered previews use HoverCard, and for brief helper text use Tooltip.',
+      'A click-triggered overlay anchored to a button or trigger element. Use it for secondary actions, inline confirmations, or supplementary information that does not warrant a full dialog. For hover previews use HoverCard, for brief helper text use Tooltip.',
     bestPractices: [
       { guidance: true, description: 'Keep popover content focused on a single task or piece of information.' },
-      { guidance: true, description: 'Provide a clear close affordance — light dismiss or an explicit close button — so users can easily return to the main content.' },
-      { guidance: false, description: 'Nest popovers inside other popovers, as it creates confusing focus and navigation patterns.' },
-      { guidance: false, description: 'Use a Popover for content that requires heavy user input — use a Dialog instead.' },
+      { guidance: true, description: 'Provide a clear way to close — either by clicking outside or with an explicit close button.' },
+      { guidance: false, description: 'Nest popovers inside other popovers — it creates confusing focus and navigation.' },
+      { guidance: false, description: 'Use a popover for content that requires heavy user input — use a Dialog instead.' },
+      { guidance: false, description: 'Put too much content in a popover — if it needs scrolling, use a Dialog instead.' },
     ],
     anatomy: [
       {name: 'Header', required: true, description: 'Contains the title, optional subheader, and close button.'},
@@ -299,12 +300,13 @@ export const docsZh = {
   },
   usage: {
     description:
-      'Popover displays interactive content anchored to a trigger element, activated on click. Use it for secondary actions or supplementary information that does not warrant a full dialog. For hover-triggered previews use HoverCard, and for brief helper text use Tooltip.',
+      'A click-triggered overlay anchored to a button or trigger element. Use it for secondary actions, inline confirmations, or supplementary information that does not warrant a full dialog. For hover previews use HoverCard, for brief helper text use Tooltip.',
     bestPractices: [
       { guidance: true, description: 'Keep popover content focused on a single task or piece of information.' },
-      { guidance: true, description: 'Provide a clear close affordance — light dismiss or an explicit close button — so users can easily return to the main content.' },
-      { guidance: false, description: 'Nest popovers inside other popovers, as it creates confusing focus and navigation patterns.' },
-      { guidance: false, description: 'Use a Popover for content that requires heavy user input — use a Dialog instead.' },
+      { guidance: true, description: 'Provide a clear way to close — either by clicking outside or with an explicit close button.' },
+      { guidance: false, description: 'Nest popovers inside other popovers — it creates confusing focus and navigation.' },
+      { guidance: false, description: 'Use a popover for content that requires heavy user input — use a Dialog instead.' },
+      { guidance: false, description: 'Put too much content in a popover — if it needs scrolling, use a Dialog instead.' },
     ],
     anatomy: [
       {name: 'Header', required: true, description: 'Contains the title, optional subheader, and close button.'},
@@ -320,12 +322,13 @@ export const docsDense = {
     'Click-triggered popover displaying interactive content anchored to trigger element; implements button+dialog ARIA pattern.',
   usage: {
     description:
-      'Popover displays interactive content anchored to a trigger element, activated on click. Use it for secondary actions or supplementary information that does not warrant a full dialog. For hover-triggered previews use HoverCard, and for brief helper text use Tooltip.',
+      'A click-triggered overlay anchored to a button or trigger element. Use it for secondary actions, inline confirmations, or supplementary information that does not warrant a full dialog. For hover previews use HoverCard, for brief helper text use Tooltip.',
     bestPractices: [
       { guidance: true, description: 'Keep popover content focused on a single task or piece of information.' },
-      { guidance: true, description: 'Provide a clear close affordance — light dismiss or an explicit close button — so users can easily return to the main content.' },
-      { guidance: false, description: 'Nest popovers inside other popovers, as it creates confusing focus and navigation patterns.' },
-      { guidance: false, description: 'Use a Popover for content that requires heavy user input — use a Dialog instead.' },
+      { guidance: true, description: 'Provide a clear way to close — either by clicking outside or with an explicit close button.' },
+      { guidance: false, description: 'Nest popovers inside other popovers — it creates confusing focus and navigation.' },
+      { guidance: false, description: 'Use a popover for content that requires heavy user input — use a Dialog instead.' },
+      { guidance: false, description: 'Put too much content in a popover — if it needs scrolling, use a Dialog instead.' },
     ],
     anatomy: [
       {name: 'Header', required: true, description: 'Contains the title, optional subheader, and close button.'},
