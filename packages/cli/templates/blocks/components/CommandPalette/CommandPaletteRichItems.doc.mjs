@@ -6,5 +6,5 @@ export const doc = {
     'Custom item rendering with icons, keyboard shortcuts, and keyword search.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['CommandPalette', 'Button', 'Text', 'Kbd'],
+  componentsUsed: ['CommandPalette', 'Text', 'Kbd'],
 };

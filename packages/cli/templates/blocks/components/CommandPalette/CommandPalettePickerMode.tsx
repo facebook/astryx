@@ -2,13 +2,12 @@
 
 import {useState, useMemo} from 'react';
 import {XDSCommandPalette} from '@xds/core/CommandPalette';
-import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
 import {XDSIcon} from '@xds/core/Icon';
 import {createStaticSource} from '@xds/core/Typeahead';
 
+// Remove isInline for production — command palettes should be modal.
 export default function CommandPalettePickerMode() {
-  const [isOpen, setIsOpen] = useState(false);
   const [theme, setTheme] = useState('light');
   const source = useMemo(
     () =>
@@ -21,26 +20,21 @@ export default function CommandPalettePickerMode() {
   );
 
   return (
-    <>
-      <XDSButton label={`Theme: ${theme}`} onClick={() => setIsOpen(true)} />
-      <XDSCommandPalette
-        isOpen={isOpen}
-        onOpenChange={setIsOpen}
-        searchSource={source}
-        value={theme}
-        onValueChange={v => {
-          setTheme(v);
-          setIsOpen(false);
-        }}
-        renderItem={(item, isSelected) => (
-          <>
-            <XDSText type="body" style={{flex: 1}}>
-              {item.label}
-            </XDSText>
-            {isSelected && <XDSIcon icon="check" size="sm" />}
-          </>
-        )}
-      />
-    </>
+    <XDSCommandPalette
+      isOpen
+      isInline
+      onOpenChange={() => {}}
+      searchSource={source}
+      value={theme}
+      onValueChange={setTheme}
+      renderItem={(item, isSelected) => (
+        <>
+          <XDSText type="body" style={{flex: 1}}>
+            {item.label}
+          </XDSText>
+          {isSelected && <XDSIcon icon="check" size="sm" />}
+        </>
+      )}
+    />
   );
 }
