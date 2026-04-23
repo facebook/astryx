@@ -1,8 +1,8 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'ToggleButton — Single Select',
-  description: 'Single-select toggle group acting as a view mode switcher. Only one option can be active at a time — clicking the active button deselects it.',
+  name: 'ToggleButton — Label',
+  description: 'Toggle buttons with visible text labels that show a font weight shift on press. Use when the icon alone is not enough to communicate the action.',
   isReady: true,
   aspectRatio: 16 / 9,
   componentsUsed: ['ToggleButton', 'ToggleButtonGroup', 'Layout', 'Text', 'Icon'],

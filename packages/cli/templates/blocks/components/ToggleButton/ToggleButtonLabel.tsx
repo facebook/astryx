@@ -7,7 +7,7 @@ import {XDSText} from '@xds/core/Text';
 import {XDSIcon} from '@xds/core/Icon';
 import {EyeIcon, EyeSlashIcon, FunnelIcon, MapPinIcon} from '@heroicons/react/24/outline';
 
-export default function ToggleButtonWithLabel() {
+export default function ToggleButtonLabel() {
   const [isVisible, setIsVisible] = useState(true);
   const [filters, setFilters] = useState<string[]>([]);
 
