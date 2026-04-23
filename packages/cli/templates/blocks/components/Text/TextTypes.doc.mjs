@@ -4,6 +4,6 @@ export const doc = {
   name: 'Text — Types',
   description: 'All 5 semantic text types (body, large, label, supporting, code) with their default styling from the theme.',
   isReady: true,
-  aspectRatio: 16 / 9,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Text', 'Stack'],
 };
