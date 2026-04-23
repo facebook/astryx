@@ -4,10 +4,14 @@ import {useState} from 'react';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSStack} from '@xds/core/Layout';
 
-export default function TextInputStates() {
+export default function TextInputTypes() {
   const [text, setText] = useState('Sarah Chen');
   const [password, setPassword] = useState('hunter42');
   const [email, setEmail] = useState('sarah@example.com');
+  const [tooltip, setTooltip] = useState('');
+  const [required, setRequired] = useState('');
+  const [optional, setOptional] = useState('');
+  const [described, setDescribed] = useState('');
 
   return (
     <div style={{width: 300}}>
@@ -31,6 +35,34 @@ export default function TextInputStates() {
           value={email}
           onChange={setEmail}
           placeholder="Enter a value"
+        />
+        <XDSTextInput
+          label="Field tooltip"
+          value={tooltip}
+          onChange={setTooltip}
+          placeholder="Enter your API key"
+          labelTooltip="Your unique API key for authentication. Keep this secret!"
+        />
+        <XDSTextInput
+          label="Required field"
+          value={required}
+          onChange={setRequired}
+          placeholder="Enter your username"
+          isRequired
+        />
+        <XDSTextInput
+          label="Optional field"
+          value={optional}
+          onChange={setOptional}
+          placeholder="Enter your nickname"
+          isOptional
+        />
+        <XDSTextInput
+          label="Field description"
+          value={described}
+          onChange={setDescribed}
+          placeholder="Enter your email"
+          description="We'll never share your email with anyone."
         />
         <XDSTextInput
           label="Disabled field"
