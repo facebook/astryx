@@ -10,25 +10,27 @@ export default function TextInputSearchInput() {
   const [filter, setFilter] = useState('design systems');
 
   return (
-    <XDSStack direction="vertical" gap={3}>
-      <XDSTextInput
-        label="Search"
-        isLabelHidden
-        value={query}
-        onChange={setQuery}
-        placeholder="Search projects…"
-        startIcon={MagnifyingGlassIcon}
-        hasClear
-      />
-      <XDSTextInput
-        label="Filter results"
-        isLabelHidden
-        value={filter}
-        onChange={setFilter}
-        placeholder="Filter…"
-        startIcon={MagnifyingGlassIcon}
-        hasClear
-      />
-    </XDSStack>
+    <div style={{width: 300}}>
+      <XDSStack direction="vertical" gap={3}>
+        <XDSTextInput
+          label="Search"
+          isLabelHidden
+          value={query}
+          onChange={setQuery}
+          placeholder="Search projects…"
+          startIcon={MagnifyingGlassIcon}
+          hasClear
+        />
+        <XDSTextInput
+          label="Filter results"
+          isLabelHidden
+          value={filter}
+          onChange={setFilter}
+          placeholder="Filter…"
+          startIcon={MagnifyingGlassIcon}
+          hasClear
+        />
+      </XDSStack>
+    </div>
   );
 }

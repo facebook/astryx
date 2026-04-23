@@ -17,37 +17,39 @@ export default function TextInputWithIcon() {
   const [website, setWebsite] = useState('');
 
   return (
-    <XDSStack direction="vertical" gap={3}>
-      <XDSTextInput
-        label="Full name"
-        value={name}
-        onChange={setName}
-        placeholder="Sarah Chen"
-        startIcon={UserIcon}
-      />
-      <XDSTextInput
-        type="email"
-        label="Email"
-        value={email}
-        onChange={setEmail}
-        placeholder="sarah@company.com"
-        startIcon={EnvelopeIcon}
-      />
-      <XDSTextInput
-        type="password"
-        label="Password"
-        value={password}
-        onChange={setPassword}
-        placeholder="Enter your password"
-        startIcon={LockClosedIcon}
-      />
-      <XDSTextInput
-        label="Website"
-        value={website}
-        onChange={setWebsite}
-        placeholder="https://example.com"
-        startIcon={GlobeAltIcon}
-      />
-    </XDSStack>
+    <div style={{width: 300}}>
+      <XDSStack direction="vertical" gap={3}>
+        <XDSTextInput
+          label="Full name"
+          value={name}
+          onChange={setName}
+          placeholder="Sarah Chen"
+          startIcon={UserIcon}
+        />
+        <XDSTextInput
+          type="email"
+          label="Email"
+          value={email}
+          onChange={setEmail}
+          placeholder="sarah@company.com"
+          startIcon={EnvelopeIcon}
+        />
+        <XDSTextInput
+          type="password"
+          label="Password"
+          value={password}
+          onChange={setPassword}
+          placeholder="Enter your password"
+          startIcon={LockClosedIcon}
+        />
+        <XDSTextInput
+          label="Website"
+          value={website}
+          onChange={setWebsite}
+          placeholder="https://example.com"
+          startIcon={GlobeAltIcon}
+        />
+      </XDSStack>
+    </div>
   );
 }
