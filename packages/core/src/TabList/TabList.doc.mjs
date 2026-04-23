@@ -100,6 +100,12 @@ export const docs = {
             'Icon element shown when the tab is selected; falls back to icon if not provided.',
         },
         {
+          name: 'endContent',
+          type: 'ReactNode',
+          description:
+            'Content rendered after the label, such as a badge count or status dot.',
+        },
+        {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
@@ -134,8 +140,10 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Keep tab labels short and descriptive so users can quickly scan available sections.' },
       { guidance: true, description: 'Use XDSTabMenu to group overflow items when horizontal space is limited rather than scrolling tabs off-screen.' },
+      { guidance: true, description: 'When using hasDivider with action buttons alongside tabs, use a smaller button size (sm) so the actions don\u2019t overpower the tab row.' },
       { guidance: false, description: 'Use tabs for sequential steps or workflows — use a stepper or wizard pattern instead.' },
       { guidance: false, description: 'Place more than 6–8 visible tabs before the overflow menu — prioritize the most important categories.' },
+      { guidance: false, description: 'Confuse TabList with XDSSegmentedControl or XDSToggleButton. TabList is for navigation between views. SegmentedControl and ToggleButton are input controls — SegmentedControl always has exactly one selected option, while ToggleButton can be toggled on or off.' },
     ],
     anatomy: [
       {name: 'Left Content', required: false, description: 'Most important area; hugs content width.'},
@@ -246,6 +254,12 @@ export const docsZh = {
             '标签选中时显示的图标元素；未提供时回退到 icon。',
         },
         {
+          name: 'endContent',
+          type: 'ReactNode',
+          description:
+            '在标签文本之后渲染的内容，例如徽章计数或状态点。',
+        },
+        {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
@@ -280,8 +294,10 @@ export const docsZh = {
     bestPractices: [
       { guidance: true, description: 'Keep tab labels short and descriptive so users can quickly scan available sections.' },
       { guidance: true, description: 'Use XDSTabMenu to group overflow items when horizontal space is limited rather than scrolling tabs off-screen.' },
+      { guidance: true, description: 'When using hasDivider with action buttons alongside tabs, use a smaller button size (sm) so the actions don\u2019t overpower the tab row.' },
       { guidance: false, description: 'Use tabs for sequential steps or workflows — use a stepper or wizard pattern instead.' },
       { guidance: false, description: 'Place more than 6–8 visible tabs before the overflow menu — prioritize the most important categories.' },
+      { guidance: false, description: 'Confuse TabList with XDSSegmentedControl or XDSToggleButton. TabList is for navigation between views. SegmentedControl and ToggleButton are input controls — SegmentedControl always has exactly one selected option, while ToggleButton can be toggled on or off.' },
     ],
     anatomy: [
       {name: 'Left Content', required: false, description: 'Most important area; hugs content width.'},
@@ -300,8 +316,10 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Keep tab labels short and descriptive so users can quickly scan available sections.' },
       { guidance: true, description: 'Use XDSTabMenu to group overflow items when horizontal space is limited rather than scrolling tabs off-screen.' },
+      { guidance: true, description: 'When using hasDivider with action buttons alongside tabs, use a smaller button size (sm) so the actions don\u2019t overpower the tab row.' },
       { guidance: false, description: 'Use tabs for sequential steps or workflows — use a stepper or wizard pattern instead.' },
       { guidance: false, description: 'Place more than 6–8 visible tabs before the overflow menu — prioritize the most important categories.' },
+      { guidance: false, description: 'Confuse TabList with XDSSegmentedControl or XDSToggleButton. TabList is for navigation between views. SegmentedControl and ToggleButton are input controls — SegmentedControl always has exactly one selected option, while ToggleButton can be toggled on or off.' },
     ],
     anatomy: [
       {name: 'Left Content', required: false, description: 'Most important area; hugs content width.'},
@@ -332,6 +350,7 @@ export const docsDense = {
         as: 'Custom link component overriding XDSLinkProvider; only w/ href.',
         icon: 'Icon shown when not selected.',
         selectedIcon: 'Icon shown when selected; falls back to icon.',
+        endContent: 'Content after the label (badge, status dot, etc.).',
         xstyle: 'StyleX styles for layout customization. Must be stylex.create() value, not inline style.',
       },
     },
