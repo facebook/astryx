@@ -4,6 +4,6 @@ export const doc = {
   name: 'TextInput — Types',
   description: 'Text, password, and email types plus field-level features: tooltip, required, optional, description, disabled, and loading.',
   isReady: true,
-  aspectRatio: 3 / 4,
+  aspectRatio: 1 / 1,
   componentsUsed: ['TextInput', 'Layout'],
 };

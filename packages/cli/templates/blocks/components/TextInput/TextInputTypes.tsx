@@ -16,7 +16,7 @@ export default function TextInputTypes() {
     <div style={{width: 300}}>
       <XDSStack direction="vertical" gap={3}>
         <XDSTextInput
-          label="Field description"
+          label="Default field"
           value={described}
           onChange={setDescribed}
           placeholder="Enter your email"
