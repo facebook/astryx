@@ -13,4 +13,13 @@ describe('XDSCard', () => {
     const root = container.firstElementChild!;
     expect(root.className).toContain('xds-card');
   });
+
+  it('renders transparent variant with variant class', () => {
+    const {container} = render(
+      <XDSCard variant="transparent">Content</XDSCard>,
+    );
+    const root = container.firstElementChild!;
+    expect(root.className).toContain('xds-card');
+    expect(root.className).toContain('transparent');
+  });
 });
