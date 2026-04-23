@@ -2,6 +2,7 @@
   "name": "@xds/core",
   "version": "0.0.12",
   "description": "Core XDS components",
+  "license": "MIT",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
