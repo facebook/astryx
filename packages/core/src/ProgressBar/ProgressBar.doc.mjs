@@ -67,7 +67,7 @@ export const docs = {
   },
   usage: {
     description:
-      'A horizontal bar showing the completion progress of a task. Use it for operations where the duration is known, or as an animated indicator when progress can't be calculated. Supports semantic color variants, value labels, and custom formatting.',
+      'A horizontal bar showing the completion progress of a task. Use it for operations where the duration is known, or as an animated indicator when progress can\'t be calculated. Supports semantic color variants, value labels, and custom formatting.',
     bestPractices: [
       { guidance: true, description: "Use a determinate bar when the total amount of work is known, and indeterminate when it's not." },
       { guidance: true, description: 'Choose a color variant that matches the context — accent for general progress, positive for success, warning or negative for alerts.' },
@@ -146,7 +146,7 @@ export const docsZh = {
   },
   usage: {
     description:
-      'A horizontal bar showing the completion progress of a task. Use it for operations where the duration is known, or as an animated indicator when progress can't be calculated. Supports semantic color variants, value labels, and custom formatting.',
+      'A horizontal bar showing the completion progress of a task. Use it for operations where the duration is known, or as an animated indicator when progress can\'t be calculated. Supports semantic color variants, value labels, and custom formatting.',
     bestPractices: [
       { guidance: true, description: "Use a determinate bar when the total amount of work is known, and indeterminate when it's not." },
       { guidance: true, description: 'Choose a color variant that matches the context — accent for general progress, positive for success, warning or negative for alerts.' },
@@ -164,7 +164,7 @@ export const docsDense = {
     'Progress bar for displaying determinate or indeterminate progress.',
   usage: {
     description:
-      'A horizontal bar showing the completion progress of a task. Use it for operations where the duration is known, or as an animated indicator when progress can't be calculated. Supports semantic color variants, value labels, and custom formatting.',
+      'A horizontal bar showing the completion progress of a task. Use it for operations where the duration is known, or as an animated indicator when progress can\'t be calculated. Supports semantic color variants, value labels, and custom formatting.',
     bestPractices: [
       { guidance: true, description: "Use a determinate bar when the total amount of work is known, and indeterminate when it's not." },
       { guidance: true, description: 'Choose a color variant that matches the context — accent for general progress, positive for success, warning or negative for alerts.' },
