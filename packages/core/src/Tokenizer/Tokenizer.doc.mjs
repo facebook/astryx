@@ -159,7 +159,7 @@ export const docs = {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value \u2014 not an inline style object like style={{}}.',
     },
   ],
   theming: {
@@ -169,12 +169,23 @@ export const docs = {
   },
   usage: {
     description:
-      'Tokenizer is a multi-select input that lets users search and select multiple items displayed as removable token chips. Use Tokenizer when users need to build a set of selections from a searchable data source, such as adding recipients or applying multiple filters.',
+      'Tokenizer is a multi-select input that lets users search, select, and manage multiple items displayed as removable chips. Use it when users need to build a set of selections from a searchable data source, like adding team members, applying tags, or choosing filters.',
     bestPractices: [
-      {guidance: true, description: 'Provide a clear placeholder that communicates what users can search for.'},
-      {guidance: true, description: 'Set a maxEntries limit when the number of selections should be bounded.'},
-      {guidance: false, description: 'Avoid applying colored backgrounds to tokens within a Tokenizer — use the default color for consistency.'},
-      {guidance: false, description: 'Avoid using Tokenizer for single-item selection — use Typeahead instead.'},
+      {guidance: true, description: 'Write a placeholder that tells users what they can search for \u2014 "Search people\u2026" or "Add tags\u2026" \u2014 so the input is not a blank mystery.'},
+      {guidance: true, description: 'Set maxEntries when the number of selections should be bounded, like limiting a review to 5 approvers.'},
+      {guidance: true, description: 'Use hasCreate for free-form tagging where users need to enter values that do not exist in the search source.'},
+      {guidance: true, description: 'Show validation status with the status prop so users know immediately when a selection is missing or invalid.'},
+      {guidance: false, description: 'Don\u2019t use Tokenizer for single-item selection \u2014 use Typeahead instead. Tokenizer is for building sets of two or more items.'},
+      {guidance: false, description: 'Avoid applying custom colors to individual tokens inside a Tokenizer \u2014 use the default token style for visual consistency across the set.'},
+      {guidance: false, description: 'Don\u2019t hide the label \u2014 every Tokenizer needs a visible label so users understand what they are selecting. Use isLabelHidden only when surrounding context makes the purpose obvious.'},
+    ],
+    anatomy: [
+      {name: 'Label', required: true, description: 'The visible text above the input describing what the user is selecting. Also used as the accessible name.'},
+      {name: 'Token chips', required: false, description: 'Removable chips representing each selected item. Each chip shows a label and a remove button.'},
+      {name: 'Search input', required: true, description: 'The text input where users type to search the data source. Hides when maxEntries is reached.'},
+      {name: 'Dropdown menu', required: false, description: 'The search results list that appears below the input as the user types.'},
+      {name: 'End content', required: false, description: 'A trailing slot after the input for action buttons, counts, or other controls.'},
+      {name: 'Clear button', required: false, description: 'A button that removes all selected tokens at once. Shown when hasClear is true and tokens are present.'},
     ],
   },
 };
@@ -186,152 +197,152 @@ export const docsZh = {
     {
       name: 'label',
       type: 'string',
-      description: '输入框的无障碍标签。',
+      description: '\u8f93\u5165\u6846\u7684\u65e0\u969c\u788d\u6807\u7b7e\u3002',
       required: true,
     },
     {
       name: 'searchSource',
       type: 'XDSSearchSource<T>',
       description:
-        '提供搜索和引导方法的数据源，用于填充下拉列表。',
+        '\u63d0\u4f9b\u641c\u7d22\u548c\u5f15\u5bfc\u65b9\u6cd5\u7684\u6570\u636e\u6e90\uff0c\u7528\u4e8e\u586b\u5145\u4e0b\u62c9\u5217\u8868\u3002',
       required: true,
     },
     {
       name: 'value',
       type: 'T[]',
-      description: '当前已选项目的数组。',
+      description: '\u5f53\u524d\u5df2\u9009\u9879\u76ee\u7684\u6570\u7ec4\u3002',
       required: true,
     },
     {
       name: 'onChange',
       type: '(items: T[], change: XDSTokenizerChange<T>) => void',
       description:
-        "选择变更时调用。change 参数包含受影响的项目和类型（'add' | 'create' | 'remove' | 'reorder'）。",
+        "\u9009\u62e9\u53d8\u66f4\u65f6\u8c03\u7528\u3002change \u53c2\u6570\u5305\u542b\u53d7\u5f71\u54cd\u7684\u9879\u76ee\u548c\u7c7b\u578b\uff08'add' | 'create' | 'remove' | 'reorder'\uff09\u3002",
       required: true,
     },
     {
       name: 'placeholder',
       type: 'string',
       description:
-        '输入框占位文本。仅在未选择任何标记时显示。',
+        '\u8f93\u5165\u6846\u5360\u4f4d\u6587\u672c\u3002\u4ec5\u5728\u672a\u9009\u62e9\u4efb\u4f55\u6807\u8bb0\u65f6\u663e\u793a\u3002',
     },
     {
       name: 'maxEntries',
       type: 'number',
       description:
-        '允许的最大选择数量。达到限制时输入框会隐藏。',
+        '\u5141\u8bb8\u7684\u6700\u5927\u9009\u62e9\u6570\u91cf\u3002\u8fbe\u5230\u9650\u5236\u65f6\u8f93\u5165\u6846\u4f1a\u9690\u85cf\u3002',
     },
     {
       name: 'hasClear',
       type: 'boolean',
-      description: '显示全部清除按钮，用于批量移除所有标记。',
+      description: '\u663e\u793a\u5168\u90e8\u6e05\u9664\u6309\u94ae\uff0c\u7528\u4e8e\u6279\u91cf\u79fb\u9664\u6240\u6709\u6807\u8bb0\u3002',
       default: 'false',
     },
     {
       name: 'renderToken',
       type: '(item: T, onRemove: () => void) => ReactNode',
       description:
-        '已选标记的自定义渲染函数。默认渲染带有 label 和 onRemove 的 XDSToken。',
+        '\u5df2\u9009\u6807\u8bb0\u7684\u81ea\u5b9a\u4e49\u6e32\u67d3\u51fd\u6570\u3002\u9ed8\u8ba4\u6e32\u67d3\u5e26\u6709 label \u548c onRemove \u7684 XDSToken\u3002',
     },
     {
       name: 'renderItem',
       type: '(item: T) => ReactNode',
       description:
-        '下拉列表项的自定义渲染函数。默认渲染 XDSTypeaheadItem。',
+        '\u4e0b\u62c9\u5217\u8868\u9879\u7684\u81ea\u5b9a\u4e49\u6e32\u67d3\u51fd\u6570\u3002\u9ed8\u8ba4\u6e32\u67d3 XDSTypeaheadItem\u3002',
     },
     {
       name: 'isDisabled',
       type: 'boolean',
-      description: '禁用输入框和所有标记交互。',
+      description: '\u7981\u7528\u8f93\u5165\u6846\u548c\u6240\u6709\u6807\u8bb0\u4ea4\u4e92\u3002',
       default: 'false',
     },
     {
       name: 'status',
       type: 'XDSInputStatus',
       description:
-        '验证状态对象，包含类型和消息，用于错误/警告/成功状态。',
+        '\u9a8c\u8bc1\u72b6\u6001\u5bf9\u8c61\uff0c\u5305\u542b\u7c7b\u578b\u548c\u6d88\u606f\uff0c\u7528\u4e8e\u9519\u8bef/\u8b66\u544a/\u6210\u529f\u72b6\u6001\u3002',
     },
     {
       name: 'isLabelHidden',
       type: 'boolean',
-      description: '视觉隐藏标签，同时保持其可访问性。',
+      description: '\u89c6\u89c9\u9690\u85cf\u6807\u7b7e\uff0c\u540c\u65f6\u4fdd\u6301\u5176\u53ef\u8bbf\u95ee\u6027\u3002',
       default: 'false',
     },
     {
       name: 'description',
       type: 'string',
-      description: '显示在标签下方的辅助文本。',
+      description: '\u663e\u793a\u5728\u6807\u7b7e\u4e0b\u65b9\u7684\u8f85\u52a9\u6587\u672c\u3002',
     },
     {
       name: 'isRequired',
       type: 'boolean',
-      description: '将字段标记为必填。',
+      description: '\u5c06\u5b57\u6bb5\u6807\u8bb0\u4e3a\u5fc5\u586b\u3002',
       default: 'false',
     },
     {
       name: 'isOptional',
       type: 'boolean',
-      description: '在标签上显示可选指示器。',
+      description: '\u5728\u6807\u7b7e\u4e0a\u663e\u793a\u53ef\u9009\u6307\u793a\u5668\u3002',
       default: 'false',
     },
     {
       name: 'labelTooltip',
       type: 'string',
-      description: '标签上显示的工具提示文本。',
+      description: '\u6807\u7b7e\u4e0a\u663e\u793a\u7684\u5de5\u5177\u63d0\u793a\u6587\u672c\u3002',
     },
     {
       name: 'hasEntriesOnFocus',
       type: 'boolean',
-      description: '聚焦时在输入前显示引导结果。',
+      description: '\u805a\u7126\u65f6\u5728\u8f93\u5165\u524d\u663e\u793a\u5f15\u5bfc\u7ed3\u679c\u3002',
       default: 'false',
     },
     {
       name: 'maxMenuItems',
       type: 'number',
-      description: '下拉列表显示的最大项目数。',
+      description: '\u4e0b\u62c9\u5217\u8868\u663e\u793a\u7684\u6700\u5927\u9879\u76ee\u6570\u3002',
       default: '10',
     },
     {
       name: 'emptySearchResultsText',
       type: 'string',
-      description: '搜索无结果时显示的文本。',
+      description: '\u641c\u7d22\u65e0\u7ed3\u679c\u65f6\u663e\u793a\u7684\u6587\u672c\u3002',
       default: "'No results found'",
     },
     {
       name: 'hasAutoFocus',
       type: 'boolean',
-      description: '挂载时自动聚焦输入框。',
+      description: '\u6302\u8f7d\u65f6\u81ea\u52a8\u805a\u7126\u8f93\u5165\u6846\u3002',
       default: 'false',
     },
     {
       name: 'size',
       type: "'sm' | 'md'",
-      description: '输入框和标记的尺寸。',
+      description: '\u8f93\u5165\u6846\u548c\u6807\u8bb0\u7684\u5c3a\u5bf8\u3002',
       default: "'md'",
     },
     {
       name: 'debounceMs',
       type: 'number',
       description:
-        '触发搜索前的防抖延迟（毫秒）。同步数据源设置为 0。',
+        '\u89e6\u53d1\u641c\u7d22\u524d\u7684\u9632\u6296\u5ef6\u8fdf\uff08\u6beb\u79d2\uff09\u3002\u540c\u6b65\u6570\u636e\u6e90\u8bbe\u7f6e\u4e3a 0\u3002',
       default: '150',
     },
     {
       name: 'onChangeQuery',
       type: '(query: string) => void',
-      description: '搜索查询文本变更时触发的回调。',
+      description: '\u641c\u7d22\u67e5\u8be2\u6587\u672c\u53d8\u66f4\u65f6\u89e6\u53d1\u7684\u56de\u8c03\u3002',
     },
     {
       name: 'endContent',
       type: 'ReactNode',
       description:
-        '在输入行末尾显示的内容。适用于按钮、结果计数或其他控件。',
+        '\u5728\u8f93\u5165\u884c\u672b\u5c3e\u663e\u793a\u7684\u5185\u5bb9\u3002\u9002\u7528\u4e8e\u6309\u94ae\u3001\u7ed3\u679c\u8ba1\u6570\u6216\u5176\u4ed6\u63a7\u4ef6\u3002',
     },
     {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
-        '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值 — 不能是内联样式对象如 style={{}}。',
+        '\u7528\u4e8e\u5e03\u5c40\u81ea\u5b9a\u4e49\u7684 StyleX \u6837\u5f0f\uff08\u5916\u8fb9\u8ddd\u3001\u5b9a\u4f4d\u3001\u5c3a\u5bf8\uff09\u3002\u5fc5\u987b\u662f stylex.create() \u7684\u503c \u2014 \u4e0d\u80fd\u662f\u5185\u8054\u6837\u5f0f\u5bf9\u8c61\u5982 style={{}}\u3002',
     },
   ],
   theming: {
@@ -341,12 +352,23 @@ export const docsZh = {
   },
   usage: {
     description:
-      'Tokenizer is a multi-select input that lets users search and select multiple items displayed as removable token chips. Use Tokenizer when users need to build a set of selections from a searchable data source, such as adding recipients or applying multiple filters.',
+      'Tokenizer is a multi-select input that lets users search, select, and manage multiple items displayed as removable chips. Use it when users need to build a set of selections from a searchable data source, like adding team members, applying tags, or choosing filters.',
     bestPractices: [
-      {guidance: true, description: 'Provide a clear placeholder that communicates what users can search for.'},
-      {guidance: true, description: 'Set a maxEntries limit when the number of selections should be bounded.'},
-      {guidance: false, description: 'Avoid applying colored backgrounds to tokens within a Tokenizer — use the default color for consistency.'},
-      {guidance: false, description: 'Avoid using Tokenizer for single-item selection — use Typeahead instead.'},
+      {guidance: true, description: 'Write a placeholder that tells users what they can search for \u2014 "Search people\u2026" or "Add tags\u2026" \u2014 so the input is not a blank mystery.'},
+      {guidance: true, description: 'Set maxEntries when the number of selections should be bounded, like limiting a review to 5 approvers.'},
+      {guidance: true, description: 'Use hasCreate for free-form tagging where users need to enter values that do not exist in the search source.'},
+      {guidance: true, description: 'Show validation status with the status prop so users know immediately when a selection is missing or invalid.'},
+      {guidance: false, description: 'Don\u2019t use Tokenizer for single-item selection \u2014 use Typeahead instead. Tokenizer is for building sets of two or more items.'},
+      {guidance: false, description: 'Avoid applying custom colors to individual tokens inside a Tokenizer \u2014 use the default token style for visual consistency across the set.'},
+      {guidance: false, description: 'Don\u2019t hide the label \u2014 every Tokenizer needs a visible label so users understand what they are selecting. Use isLabelHidden only when surrounding context makes the purpose obvious.'},
+    ],
+    anatomy: [
+      {name: 'Label', required: true, description: 'The visible text above the input describing what the user is selecting. Also used as the accessible name.'},
+      {name: 'Token chips', required: false, description: 'Removable chips representing each selected item. Each chip shows a label and a remove button.'},
+      {name: 'Search input', required: true, description: 'The text input where users type to search the data source. Hides when maxEntries is reached.'},
+      {name: 'Dropdown menu', required: false, description: 'The search results list that appears below the input as the user types.'},
+      {name: 'End content', required: false, description: 'A trailing slot after the input for action buttons, counts, or other controls.'},
+      {name: 'Clear button', required: false, description: 'A button that removes all selected tokens at once. Shown when hasClear is true and tokens are present.'},
     ],
   },
 };
@@ -356,12 +378,15 @@ export const docsDense = {
   description: 'Multi-select typeahead w/ token chips for selected items. Composes XDSBaseTypeahead for search+XDSToken for chips.',
   usage: {
     description:
-      'Tokenizer is a multi-select input that lets users search and select multiple items displayed as removable token chips. Use Tokenizer when users need to build a set of selections from a searchable data source, such as adding recipients or applying multiple filters.',
+      'Multi-select input for searching and selecting multiple items as removable chips. Use for team members, tags, filters, or any set built from a searchable source.',
     bestPractices: [
-      {guidance: true, description: 'Provide a clear placeholder that communicates what users can search for.'},
-      {guidance: true, description: 'Set a maxEntries limit when the number of selections should be bounded.'},
-      {guidance: false, description: 'Avoid applying colored backgrounds to tokens within a Tokenizer — use the default color for consistency.'},
-      {guidance: false, description: 'Avoid using Tokenizer for single-item selection — use Typeahead instead.'},
+      {guidance: true, description: 'Placeholder that communicates what to search \u2014 "Search people\u2026" not blank.'},
+      {guidance: true, description: 'maxEntries when selections are bounded (e.g. 5 approvers max).'},
+      {guidance: true, description: 'hasCreate for free-form tagging with values not in the source.'},
+      {guidance: true, description: 'status prop for immediate validation feedback.'},
+      {guidance: false, description: 'Don\u2019t use for single-item selection \u2014 use Typeahead instead.'},
+      {guidance: false, description: 'Avoid custom token colors \u2014 default style for consistency.'},
+      {guidance: false, description: 'Don\u2019t hide the label unless context makes purpose obvious.'},
     ],
   },
   propDescriptions: {

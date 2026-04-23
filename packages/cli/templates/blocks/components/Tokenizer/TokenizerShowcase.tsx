@@ -1,7 +1,12 @@
 'use client';
 
+import * as stylex from '@stylexjs/stylex';
 import {XDSTokenizer} from '@xds/core/Tokenizer';
 import type {XDSSearchSource} from '@xds/core/Typeahead';
+
+const styles = stylex.create({
+  fixed: {width: 400},
+});
 
 const source: XDSSearchSource = {
   search: () => [],
@@ -19,6 +24,7 @@ export default function TokenizerShowcase() {
         {id: '2', label: 'Engineering'},
       ]}
       onChange={() => {}}
+      xstyle={styles.fixed}
     />
   );
 }
