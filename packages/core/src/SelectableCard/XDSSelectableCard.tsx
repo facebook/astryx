@@ -172,7 +172,8 @@ const dynamicStyles = stylex.create({
  * or a single value for radio-style selection.
  * For navigation/action cards, use XDSClickableCard instead.
  *
- * @example Single select (radio behavior)
+ * @example
+ * Single select (radio behavior)
  * ```tsx
  * const [selected, setSelected] = useState<string | null>(null);
  *
@@ -189,7 +190,8 @@ const dynamicStyles = stylex.create({
  * ))}
  * ```
  *
- * @example Multi-select (checkbox behavior)
+ * @example
+ * Multi-select (checkbox behavior)
  * ```tsx
  * const [selected, setSelected] = useState(new Set<string>());
  *
