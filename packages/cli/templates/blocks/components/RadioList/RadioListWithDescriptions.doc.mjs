@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'RadioList — With Descriptions',
   description:
-    'Radio list with description text on both the group and each individual item.',
+    'Radio list with descriptions on the group and each item.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['RadioList'],

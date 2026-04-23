@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'RadioList — With Validation',
   description:
-    'Required radio list that shows an error message when no option is selected.',
+    'Required radio list with an error message when nothing is selected.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['RadioList'],

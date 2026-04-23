@@ -3,8 +3,8 @@ export const doc = {
   type: 'block',
   name: 'RadioList — Pricing Tier',
   description:
-    'Radio list with end content showing pricing info, a common pattern for plan selection.',
+    'Radio list with pricing info in end content for plan selection.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['RadioList'],
+  componentsUsed: ['RadioList', 'Text'],
 };
