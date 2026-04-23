@@ -34,7 +34,7 @@ export default function ToolbarTableFilter() {
               placeholder="Search..."
               value=""
               onChange={() => {}}
-              icon={<XDSIcon icon={MagnifyingGlassIcon} />}
+              startIcon={MagnifyingGlassIcon}
             />
             <XDSButton
               label="Status"
