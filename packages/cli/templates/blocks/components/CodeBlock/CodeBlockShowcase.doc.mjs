@@ -2,7 +2,10 @@
 export const doc = {
   type: 'block',
   name: 'CodeBlock',
+  description:
+    'A syntax-highlighted TypeScript code block with line numbers, a title bar, and a copy button.',
   isReady: true,
-  aspectRatio: 4 / 3,
   isShowcase: true,
+  aspectRatio: 4 / 3,
+  componentsUsed: ['CodeBlock'],
 };

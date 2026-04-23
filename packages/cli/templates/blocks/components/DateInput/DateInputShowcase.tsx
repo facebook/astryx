@@ -1,13 +1,28 @@
 'use client';
 
+import {useState} from 'react';
 import {XDSDateInput} from '@xds/core/DateInput';
+import {XDSStack} from '@xds/core/Layout';
+import * as stylex from '@stylexjs/stylex';
+
+const styles = stylex.create({
+  root: {
+    width: 280,
+  },
+});
 
 export default function DateInputShowcase() {
+  const [date, setDate] = useState(undefined);
+
   return (
-    <XDSDateInput
-      label="Date"
-      placeholder="Select a date"
-      onChange={() => {}}
-    />
+    <XDSStack xstyle={styles.root}>
+      <XDSDateInput
+        label="Start date"
+        placeholder="Select a date"
+        value={date}
+        onChange={setDate}
+        hasClear
+      />
+    </XDSStack>
   );
 }

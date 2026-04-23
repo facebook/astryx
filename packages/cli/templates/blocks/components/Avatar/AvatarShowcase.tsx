@@ -1,7 +1,19 @@
 'use client';
 
-import {XDSAvatar} from '@xds/core/Avatar';
+import {XDSAvatar, XDSAvatarStatusDot} from '@xds/core/Avatar';
+import {XDSStack} from '@xds/core/Layout';
 
 export default function AvatarShowcase() {
-  return <XDSAvatar name="John Doe" size="medium" />;
+  return (
+    <XDSStack direction="horizontal" gap={4} vAlign="center">
+      <XDSAvatar name="Alex Kim" size="xsmall" />
+      <XDSAvatar name="Jordan Lee" size="small" />
+      <XDSAvatar name="Sam Chen" size="medium" />
+      <XDSAvatar
+        name="Taylor Nguyen"
+        size="large"
+        status={<XDSAvatarStatusDot variant="positive" label="Online" />}
+      />
+    </XDSStack>
+  );
 }

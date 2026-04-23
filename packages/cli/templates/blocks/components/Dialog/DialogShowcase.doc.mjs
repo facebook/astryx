@@ -2,7 +2,10 @@
 export const doc = {
   type: 'block',
   name: 'Dialog',
+  description:
+    'A button that opens a modal dialog with a header, body content, and action buttons.',
   isReady: true,
-  aspectRatio: 1,
   isShowcase: true,
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Dialog', 'Button', 'Layout', 'Text'],
 };
