@@ -263,7 +263,6 @@ const styles = stylex.create({
   scrollable: {overflowY: 'auto'},
   fixedColumn: {flexShrink: 0, alignSelf: 'stretch'},
   fillRemaining: {flex: 1, alignSelf: 'stretch'},
-  toolbarPadding: {paddingInline: 4},
 });
 
 function findItem(items: FileSystemItem[], id: string): FileSystemItem | null {
@@ -339,100 +338,99 @@ export default function FileExplorerPage() {
       height="fill"
       header={
         <XDSToolbar
-            label="File Explorer"
-            size="sm"
-            dividers={['bottom']}
-            xstyle={styles.toolbarPadding}
-            startContent={
-              <>
-                <XDSIconButton
-                  variant="ghost"
-                  size="sm"
-                  icon={<XDSIcon icon={ChevronLeftIcon} size="sm" />}
-                  onClick={() => {
-                    if (selectedPath.length > 0) {
-                      setSelectedPath(selectedPath.slice(0, -1));
-                    }
-                  }}
-                  isDisabled={selectedPath.length === 0}
-                  label="Go back"
-                />
-                <XDSIconButton
-                  variant="ghost"
-                  size="sm"
-                  icon={<XDSIcon icon={ChevronRightIcon} size="sm" />}
-                  isDisabled
-                  label="Go forward"
-                />
-                <XDSText type="label">{currentFolderName}</XDSText>
-              </>
-            }
-            centerContent={
-              <XDSSegmentedControl
+          label="File Explorer"
+          size="sm"
+          dividers={['bottom']}
+          startContent={
+            <>
+              <XDSIconButton
+                variant="ghost"
+                size="sm"
+                icon={<XDSIcon icon={ChevronLeftIcon} size="sm" />}
+                onClick={() => {
+                  if (selectedPath.length > 0) {
+                    setSelectedPath(selectedPath.slice(0, -1));
+                  }
+                }}
+                isDisabled={selectedPath.length === 0}
+                label="Go back"
+              />
+              <XDSIconButton
+                variant="ghost"
+                size="sm"
+                icon={<XDSIcon icon={ChevronRightIcon} size="sm" />}
+                isDisabled
+                label="Go forward"
+              />
+              <XDSText type="label">{currentFolderName}</XDSText>
+            </>
+          }
+          centerContent={
+            <XDSSegmentedControl
+              value="column"
+              onChange={() => {}}
+              label="View mode">
+              <XDSSegmentedControlItem
+                value="grid"
+                label="Grid"
+                icon={<XDSIcon icon={Squares2X2Icon} size="sm" />}
+                isLabelHidden
+              />
+              <XDSSegmentedControlItem
+                value="list"
+                label="List"
+                icon={<XDSIcon icon={Bars4Icon} size="sm" />}
+                isLabelHidden
+              />
+              <XDSSegmentedControlItem
                 value="column"
-                onChange={() => {}}
-                label="View mode">
-                <XDSSegmentedControlItem
-                  value="grid"
-                  label="Grid"
-                  icon={<XDSIcon icon={Squares2X2Icon} size="sm" />}
-                  isLabelHidden
-                />
-                <XDSSegmentedControlItem
-                  value="list"
-                  label="List"
-                  icon={<XDSIcon icon={Bars4Icon} size="sm" />}
-                  isLabelHidden
-                />
-                <XDSSegmentedControlItem
-                  value="column"
-                  label="Column"
-                  icon={<XDSIcon icon={ViewColumnsIcon} size="sm" />}
-                  isLabelHidden
-                />
-                <XDSSegmentedControlItem
-                  value="gallery"
-                  label="Gallery"
-                  icon={<XDSIcon icon={TableCellsIcon} size="sm" />}
-                  isLabelHidden
-                />
-              </XDSSegmentedControl>
-            }
-            endContent={
-              <>
-                <XDSIconButton
-                  variant="ghost"
-                  size="sm"
-                  icon={<XDSIcon icon={AdjustmentsHorizontalIcon} size="sm" />}
-                  label="Group"
-                />
-                <XDSIconButton
-                  variant="ghost"
-                  size="sm"
-                  icon={<XDSIcon icon={ShareIcon} size="sm" />}
-                  label="Share"
-                />
-                <XDSIconButton
-                  variant="ghost"
-                  size="sm"
-                  icon={<XDSIcon icon={TagIcon} size="sm" />}
-                  label="Tags"
-                />
-                <XDSIconButton
-                  variant="ghost"
-                  size="sm"
-                  icon={<XDSIcon icon={EllipsisHorizontalIcon} size="sm" />}
-                  label="More"
-                />
-                <XDSIconButton
-                  variant="ghost"
-                  size="sm"
-                  icon={<XDSIcon icon={MagnifyingGlassIcon} size="sm" />}
-                  label="Search"
-                />
-              </>
-            }
-          />
+                label="Column"
+                icon={<XDSIcon icon={ViewColumnsIcon} size="sm" />}
+                isLabelHidden
+              />
+              <XDSSegmentedControlItem
+                value="gallery"
+                label="Gallery"
+                icon={<XDSIcon icon={TableCellsIcon} size="sm" />}
+                isLabelHidden
+              />
+            </XDSSegmentedControl>
+          }
+          endContent={
+            <>
+              <XDSIconButton
+                variant="ghost"
+                size="sm"
+                icon={<XDSIcon icon={AdjustmentsHorizontalIcon} size="sm" />}
+                label="Group"
+              />
+              <XDSIconButton
+                variant="ghost"
+                size="sm"
+                icon={<XDSIcon icon={ShareIcon} size="sm" />}
+                label="Share"
+              />
+              <XDSIconButton
+                variant="ghost"
+                size="sm"
+                icon={<XDSIcon icon={TagIcon} size="sm" />}
+                label="Tags"
+              />
+              <XDSIconButton
+                variant="ghost"
+                size="sm"
+                icon={<XDSIcon icon={EllipsisHorizontalIcon} size="sm" />}
+                label="More"
+              />
+              <XDSIconButton
+                variant="ghost"
+                size="sm"
+                icon={<XDSIcon icon={MagnifyingGlassIcon} size="sm" />}
+                label="Search"
+              />
+            </>
+          }
+        />
       }
       content={
         <XDSLayoutContent padding={0} isScrollable={false}>
@@ -467,9 +465,7 @@ export default function FileExplorerPage() {
                                   : DocumentIcon
                               }
                               color={
-                                item.type === 'folder'
-                                  ? 'accent'
-                                  : 'secondary'
+                                item.type === 'folder' ? 'accent' : 'secondary'
                               }
                               size="sm"
                             />
