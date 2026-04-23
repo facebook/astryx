@@ -15,7 +15,7 @@ export default function DateInputShowcase() {
   const [date, setDate] = useState(undefined);
 
   return (
-    <XDSStack xstyle={styles.root}>
+    <XDSStack direction="vertical" xstyle={styles.root}>
       <XDSDateInput
         label="Start date"
         placeholder="Select a date"
