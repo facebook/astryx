@@ -4,6 +4,6 @@ export const doc = {
   name: 'TextInput — States',
   description: 'Error, warning, and success validation states with status messages. Use to show users what went wrong and how to fix it.',
   isReady: true,
-  aspectRatio: 9 / 16,
+  aspectRatio: 0.85,
   componentsUsed: ['TextInput', 'Layout'],
 };
