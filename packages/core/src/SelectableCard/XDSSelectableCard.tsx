@@ -173,8 +173,8 @@ const dynamicStyles = stylex.create({
  * For navigation/action cards, use XDSClickableCard instead.
  *
  * @example
- * Single select (radio behavior)
  * ```tsx
+ * // Single select (radio behavior)
  * const [selected, setSelected] = useState<string | null>(null);
  *
  * {plans.map(plan => (
@@ -191,8 +191,8 @@ const dynamicStyles = stylex.create({
  * ```
  *
  * @example
- * Multi-select (checkbox behavior)
  * ```tsx
+ * // Multi-select (checkbox behavior)
  * const [selected, setSelected] = useState(new Set<string>());
  *
  * {filters.map(filter => (
