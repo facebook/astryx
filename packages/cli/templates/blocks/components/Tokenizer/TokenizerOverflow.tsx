@@ -8,7 +8,7 @@ import {XDSText} from '@xds/core/Text';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
 
 const styles = stylex.create({
-  fixed: {width: 400},
+  fixed: {width: 400, maxWidth: 400},
 });
 
 const users: XDSSearchableItem[] = [
