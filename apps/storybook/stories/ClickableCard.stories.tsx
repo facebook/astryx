@@ -24,7 +24,7 @@ const meta: Meta<typeof XDSClickableCard> = {
         component:
           'An interactive card for navigation or action targets. ' +
           'Nested interactive elements (buttons, links) work independently — ' +
-          'clicking them does NOT trigger the card\\'s onClick or navigation. ' +
+          "clicking them does NOT trigger the card's onClick or navigation. " +
           'Uses `useClickableContainer` internally.',
       },
     },
