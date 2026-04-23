@@ -11,17 +11,13 @@ const styles = stylex.create({
   wide: {minWidth: 320},
 });
 
-const emptySource: XDSSearchSource = {
-  search: () => [],
-  bootstrap: () => [],
-};
-
 const users: XDSSearchableItem[] = [
   {id: '1', label: 'Alice Johnson'},
   {id: '2', label: 'Bob Smith'},
   {id: '3', label: 'Charlie Brown'},
   {id: '4', label: 'Diana Prince'},
   {id: '5', label: 'Eve Williams'},
+  {id: '6', label: 'Frank Miller'},
 ];
 
 const userSource: XDSSearchSource = {
@@ -30,38 +26,37 @@ const userSource: XDSSearchSource = {
   bootstrap: () => users,
 };
 
-export default function TokenizerCreatable() {
-  const [tags, setTags] = useState<XDSSearchableItem[]>([]);
-  const [members, setMembers] = useState<XDSSearchableItem[]>([]);
+export default function TokenizerOverflow() {
+  const [inlineValue, setInlineValue] = useState<XDSSearchableItem[]>(users);
+  const [layerValue, setLayerValue] = useState<XDSSearchableItem[]>(users);
 
   return (
     <XDSStack direction="vertical" gap={4}>
       <XDSStack direction="vertical" gap={1}>
         <XDSText type="supporting" color="secondary">
-          Free-text only
+          Inline overflow — content shifts down on expand
         </XDSText>
         <XDSTokenizer
-          label="Tags"
-          searchSource={emptySource}
-          value={tags}
-          onChange={items => setTags(items)}
-          hasCreate
-          placeholder="Type a tag and press Enter..."
+          label="Inline Overflow"
+          placeholder="Add more..."
+          searchSource={userSource}
+          value={inlineValue}
+          onChange={items => setInlineValue(items)}
+          tokenOverflowBehavior="unfocusedInline"
           xstyle={styles.wide}
         />
       </XDSStack>
       <XDSStack direction="vertical" gap={1}>
         <XDSText type="supporting" color="secondary">
-          Create or search
+          Layer overflow — expands as overlay, no layout shift
         </XDSText>
         <XDSTokenizer
-          label="Team Members"
+          label="Layer Overflow"
+          placeholder="Add more..."
           searchSource={userSource}
-          value={members}
-          onChange={items => setMembers(items)}
-          hasCreate
-          hasEntriesOnFocus
-          placeholder="Search or type a new name..."
+          value={layerValue}
+          onChange={items => setLayerValue(items)}
+          tokenOverflowBehavior="unfocusedLayer"
           xstyle={styles.wide}
         />
       </XDSStack>

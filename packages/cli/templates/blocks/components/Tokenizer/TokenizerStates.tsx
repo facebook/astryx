@@ -1,10 +1,14 @@
 'use client';
 
 import {useState} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {XDSTokenizer} from '@xds/core/Tokenizer';
 import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
+
+const styles = stylex.create({
+  wide: {minWidth: 320},
+});
 
 const users: XDSSearchableItem[] = [
   {id: '1', label: 'Alice Johnson'},
@@ -25,51 +29,52 @@ export default function TokenizerStates() {
   const [warningValue, setWarningValue] = useState<XDSSearchableItem[]>([
     users[0],
   ]);
+  const [successValue, setSuccessValue] = useState<XDSSearchableItem[]>([
+    users[1],
+    users[3],
+  ]);
 
   return (
     <XDSStack direction="vertical" gap={4}>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
-          Disabled
-        </XDSText>
-        <XDSTokenizer
-          label="Assigned Reviewers"
-          searchSource={userSource}
-          value={[users[0], users[2]]}
-          onChange={() => {}}
-          isDisabled
-        />
-      </XDSStack>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
-          Error
-        </XDSText>
-        <XDSTokenizer
-          label="Reviewers"
-          placeholder="Search people..."
-          searchSource={userSource}
-          value={errorValue}
-          onChange={items => setErrorValue(items)}
-          isRequired
-          status={{type: 'error', message: 'At least one reviewer is required'}}
-        />
-      </XDSStack>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
-          Warning
-        </XDSText>
-        <XDSTokenizer
-          label="Approvers"
-          placeholder="Search people..."
-          searchSource={userSource}
-          value={warningValue}
-          onChange={items => setWarningValue(items)}
-          status={{
-            type: 'warning',
-            message: 'Consider adding at least 2 approvers',
-          }}
-        />
-      </XDSStack>
+      <XDSTokenizer
+        label="Disabled field"
+        searchSource={userSource}
+        value={[users[0], users[2]]}
+        onChange={() => {}}
+        isDisabled
+        xstyle={styles.wide}
+      />
+      <XDSTokenizer
+        label="Error message"
+        placeholder="Search people..."
+        searchSource={userSource}
+        value={errorValue}
+        onChange={items => setErrorValue(items)}
+        isRequired
+        status={{type: 'error', message: 'At least one reviewer is required'}}
+        xstyle={styles.wide}
+      />
+      <XDSTokenizer
+        label="Warning message"
+        placeholder="Search people..."
+        searchSource={userSource}
+        value={warningValue}
+        onChange={items => setWarningValue(items)}
+        status={{
+          type: 'warning',
+          message: 'Consider adding at least 2 approvers',
+        }}
+        xstyle={styles.wide}
+      />
+      <XDSTokenizer
+        label="Success message"
+        placeholder="Search people..."
+        searchSource={userSource}
+        value={successValue}
+        onChange={items => setSuccessValue(items)}
+        status={{type: 'success', message: 'All required reviewers added'}}
+        xstyle={styles.wide}
+      />
     </XDSStack>
   );
 }

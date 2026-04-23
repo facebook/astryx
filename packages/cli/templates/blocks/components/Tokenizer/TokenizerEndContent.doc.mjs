@@ -2,8 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'Tokenizer \u2014 End Content',
-  description: 'Tokenizer with action controls in the end slot. Shows an apply button and a ghost icon-only clear button.',
+  description: 'Tokenizer with an action button in the end slot. Use for inline actions like applying selections alongside the input.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['Tokenizer', 'Button', 'IconButton', 'Icon', 'Layout', 'Text'],
+  componentsUsed: ['Tokenizer', 'Button', 'Layout', 'Text'],
 };

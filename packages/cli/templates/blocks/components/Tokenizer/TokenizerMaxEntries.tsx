@@ -1,10 +1,15 @@
 'use client';
 
 import {useState} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {XDSTokenizer} from '@xds/core/Tokenizer';
 import {XDSStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
+
+const styles = stylex.create({
+  wide: {minWidth: 320},
+});
 
 const skills: XDSSearchableItem[] = [
   {id: '1', label: 'React'},
@@ -34,7 +39,7 @@ export default function TokenizerMaxEntries() {
   return (
     <XDSStack direction="vertical" gap={2}>
       <XDSText type="supporting" color="secondary">
-        Limited to {MAX_SKILLS} selections \u2014 {MAX_SKILLS - value.length}{' '}
+        Limited to {MAX_SKILLS} selections — {MAX_SKILLS - value.length}{' '}
         remaining
       </XDSText>
       <XDSTokenizer
@@ -45,6 +50,7 @@ export default function TokenizerMaxEntries() {
         value={value}
         onChange={items => setValue(items)}
         maxEntries={MAX_SKILLS}
+        xstyle={styles.wide}
       />
     </XDSStack>
   );

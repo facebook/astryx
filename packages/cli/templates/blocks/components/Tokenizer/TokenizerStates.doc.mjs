@@ -2,8 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'Tokenizer \u2014 States',
-  description: 'Tokenizer in disabled, error, and warning states. Use to communicate validation feedback or lock a selection from editing.',
+  description: 'Tokenizer in disabled, error, warning, and success states. Use to communicate validation feedback or lock a selection from editing.',
   isReady: true,
-  aspectRatio: 16 / 9,
-  componentsUsed: ['Tokenizer', 'Layout', 'Text'],
+  aspectRatio: 4 / 3,
+  componentsUsed: ['Tokenizer', 'Layout'],
 };
