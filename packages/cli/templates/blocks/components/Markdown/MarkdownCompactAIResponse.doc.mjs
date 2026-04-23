@@ -2,8 +2,7 @@
 export const doc = {
   type: 'block',
   name: 'Markdown — Compact AI Response',
-  description:
-    'AI-style compact markdown with shifted headings, code, and blockquotes.',
+  description: 'Compact markdown styled for AI responses with shifted heading levels',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['Markdown'],

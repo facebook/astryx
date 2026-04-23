@@ -2,8 +2,7 @@
 export const doc = {
   type: 'block',
   name: 'Markdown — Cited Content',
-  description:
-    'Markdown with inline citation references linked to external sources.',
+  description: 'Markdown with citation chips linked to external sources',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['Markdown'],
