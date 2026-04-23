@@ -2,7 +2,7 @@
 export const doc = {
   type: 'block',
   name: 'MetadataList — Basic',
-  description: 'Simple single-column key-value metadata list.',
+  description: 'Single-column key-value metadata list.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['MetadataList'],
