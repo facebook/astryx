@@ -26,11 +26,7 @@ const userSource: XDSSearchSource = {
 };
 
 export default function TokenizerClear() {
-  const [value, setValue] = useState<XDSSearchableItem[]>([
-    users[0],
-    users[1],
-    users[2],
-  ]);
+  const [value, setValue] = useState<XDSSearchableItem[]>([users[0], users[1]]);
 
   return (
     <XDSStack direction="vertical" gap={2}>
