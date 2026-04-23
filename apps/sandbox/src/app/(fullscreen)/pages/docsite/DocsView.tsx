@@ -41,6 +41,7 @@ import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSChatComposer} from '@xds/core/Chat';
 import {XDSLink} from '@xds/core/Link';
+import {XDSPopover} from '@xds/core/Popover';
 import {COMPONENT_PREVIEWS} from './ComponentPreviews';
 import {SEARCH_COMMANDS, basePath} from './constants';
 import {
@@ -154,12 +155,15 @@ const LIBRARY_PACKAGES: {
 ];
 
 const RESOURCE_ITEMS: {
+  key?: string;
   title: string;
   description: string;
   icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   image?: string;
   iconBg: string;
   iconColor: string;
+  isExternal?: boolean;
+  href?: string;
 }[] = [
   {
     title: 'Figma Library',
@@ -167,8 +171,11 @@ const RESOURCE_ITEMS: {
     image: `${basePath}/docsite/figma-logo.png`,
     iconBg: 'transparent',
     iconColor: '#7C3AED',
+    isExternal: true,
+    href: 'https://www.figma.com/design/c9CR0F4jJQwhue60Ec7qOz/XDS-Open-Source-Library',
   },
   {
+    key: 'res-npm',
     title: 'NPM Packages',
     description: 'Published packages on the npm registry under the @xds scope.',
     icon: DownloadIcon,
@@ -176,6 +183,7 @@ const RESOURCE_ITEMS: {
     iconColor: '#DC2626',
   },
   {
+    key: 'res-agent-docs',
     title: 'AI / Agent Docs',
     description:
       'AGENTS.md and CLI docs for using XDS with AI coding assistants.',
@@ -184,8 +192,9 @@ const RESOURCE_ITEMS: {
     iconColor: '#D97706',
   },
   {
-    title: 'Contributing',
-    description: 'How to contribute components, themes, and templates to XDS.',
+    key: 'res-publishing',
+    title: 'Publishing',
+    description: 'How to publish components, themes, and templates to Craft.',
     icon: HeartIcon,
     iconBg: '#FCE7F3',
     iconColor: '#EC4899',
@@ -680,10 +689,199 @@ function FoundationPage({foundationKey}: {foundationKey: string}) {
 }
 
 // ---------------------------------------------------------------------------
-// LibraryPackagePage component (placeholder)
+// LibraryPackagePage components
 // ---------------------------------------------------------------------------
 
-function LibraryPackagePage({packageKey}: {packageKey: string}) {
+const VEGA_COMPONENTS: {label: string; items: {key: string; name: string; desc: string}[]}[] = [
+  {
+    label: 'Charts',
+    items: [
+      {key: 'bar-chart', name: 'BarChart', desc: 'Vertical and horizontal bar charts for categorical data comparison.'},
+      {key: 'line-chart', name: 'LineChart', desc: 'Line charts for trends over time with multiple series support.'},
+      {key: 'area-chart', name: 'AreaChart', desc: 'Filled area charts for volume and cumulative data visualization.'},
+      {key: 'pie-chart', name: 'PieChart', desc: 'Pie and donut charts for part-to-whole relationships.'},
+    ],
+  },
+  {
+    label: 'Utilities',
+    items: [
+      {key: 'chart-legend', name: 'ChartLegend', desc: 'Legend component for labeling chart series and categories.'},
+      {key: 'chart-tooltip', name: 'ChartTooltip', desc: 'Tooltip overlay for displaying data point details on hover.'},
+      {key: 'chart-axis', name: 'ChartAxis', desc: 'Configurable axis component for labels, ticks, and gridlines.'},
+    ],
+  },
+];
+
+const CHAT_COMPONENTS: {label: string; items: {key: string; name: string; desc: string}[]}[] = [
+  {
+    label: 'Messaging',
+    items: [
+      {key: 'chat', name: 'Chat', desc: 'Conversational message interface with bubbles, input, and thread support.'},
+      {key: 'chat-composer', name: 'ChatComposer', desc: 'Rich text composer with attachments, mentions, and slash commands.'},
+      {key: 'chat-composer-input', name: 'ChatComposerInput', desc: 'Controlled input for the chat composer with mention triggers.'},
+      {key: 'chat-layout', name: 'ChatLayout', desc: 'Full chat page layout with message list, composer, and empty state.'},
+    ],
+  },
+  {
+    label: 'Content',
+    items: [
+      {key: 'chat-tokenized-text', name: 'ChatTokenizedText', desc: 'Renders text with inline tokens like @mentions and #tags.'},
+      {key: 'chat-tool-calls', name: 'ChatToolCalls', desc: 'Displays AI tool call results with status and expandable details.'},
+      {key: 'chat-dictation', name: 'ChatDictation', desc: 'Voice dictation input with recording states and waveform.'},
+    ],
+  },
+];
+
+function PackageGridPage({
+  packageKey,
+  components,
+  onSelectComponent,
+}: {
+  packageKey: string;
+  components: {label: string; items: {key: string; name: string; desc: string}[]}[];
+  onSelectComponent: (key: string) => void;
+}) {
+  const [hoveredComponent, setHoveredComponent] = useState<string | null>(null);
+  const pkg = LIBRARY_PACKAGES.find(p => p.key === packageKey)!;
+  const totalComponents = components.reduce(
+    (sum, cat) => sum + cat.items.length,
+    0,
+  );
+
+  return (
+    <div style={{display: 'flex', height: '100%', overflow: 'hidden'}}>
+      <div style={{width: '45%', flexShrink: 0, padding: 16}}>
+        <XDSCard
+          variant="muted"
+          padding={6}
+          style={{
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+          {hoveredComponent && COMPONENT_PREVIEWS[hoveredComponent] ? (
+            <XDSStack direction="vertical" gap={3} hAlign="center">
+              {COMPONENT_PREVIEWS[hoveredComponent]}
+              <XDSText type="supporting" weight="semibold" color="secondary">
+                {hoveredComponent}
+              </XDSText>
+            </XDSStack>
+          ) : (
+            <XDSStack direction="vertical" gap={2} hAlign="center" style={{textAlign: 'center'}}>
+              <XDSText type="display-2">{pkg.name}</XDSText>
+              <XDSText type="body" color="secondary">
+                {totalComponents} components
+              </XDSText>
+              {pkg.status === 'Coming Soon' ? (
+                <XDSBadge label="Coming Soon" variant="info" />
+              ) : (
+                <XDSText type="supporting" color="secondary" style={{maxWidth: 300}}>
+                  Hover a component on the right to preview it here.
+                </XDSText>
+              )}
+            </XDSStack>
+          )}
+        </XDSCard>
+      </div>
+
+      <div style={{flex: 1, overflowY: 'auto', padding: '32px 32px'}}>
+        <XDSStack direction="horizontal" gap={3} vAlign="center" style={{marginBottom: 8}}>
+          <XDSText type="display-1">{pkg.name}</XDSText>
+          {pkg.version && (
+            <XDSText type="supporting" color="secondary" style={{fontFamily: 'monospace'}}>
+              v{pkg.version}
+            </XDSText>
+          )}
+        </XDSStack>
+        <XDSStack direction="horizontal" gap={2} vAlign="center" style={{marginBottom: 24}}>
+          <XDSText type="body" color="secondary" style={{flex: 1}}>
+            {pkg.description}
+          </XDSText>
+          <XDSPopover
+            label="Install"
+            placement="below"
+            alignment="end"
+            width={360}
+            content={
+              <XDSStack direction="vertical" gap={3}>
+                <XDSStack direction="vertical" gap={1}>
+                  <XDSText type="label">1. Install the package</XDSText>
+                  <XDSCard padding={0}>
+                    <XDSCodeBlock
+                      code={`npm install ${pkg.name}`}
+                      language="bash"
+                      hasCopyButton
+                      size="sm"
+                    />
+                  </XDSCard>
+                </XDSStack>
+                <XDSStack direction="vertical" gap={1}>
+                  <XDSText type="label">2. Import a component</XDSText>
+                  <XDSCard padding={0}>
+                    <XDSCodeBlock
+                      code={`import {...} from '${pkg.name}/ComponentName';`}
+                      language="typescript"
+                      size="sm"
+                    />
+                  </XDSCard>
+                </XDSStack>
+                <XDSText type="supporting" color="secondary">
+                  See Getting Started for full setup with ThemeProvider.
+                </XDSText>
+              </XDSStack>
+            }>
+            <XDSButton label="Install" variant="primary" size="sm" icon={<DownloadIcon />} />
+          </XDSPopover>
+        </XDSStack>
+        {components.map(cat => (
+          <div key={cat.label} style={{marginBottom: 28}}>
+            <XDSText type="label" color="secondary" style={{display: 'block', marginBottom: 10}}>
+              {cat.label}
+            </XDSText>
+            <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10}}>
+              {cat.items.map(item => (
+                <div
+                  key={item.key}
+                  onMouseEnter={() => setHoveredComponent(item.key)}
+                  onMouseLeave={() => setHoveredComponent(null)}
+                  onClick={() => onSelectComponent(item.key)}
+                  style={{cursor: 'pointer'}}>
+                  <XDSCard padding={3}>
+                    <XDSText type="body" weight="bold" style={{display: 'block', marginBottom: 2}}>
+                      {item.name}
+                    </XDSText>
+                    <XDSText type="supporting" color="secondary" maxLines={2}>
+                      {item.desc}
+                    </XDSText>
+                  </XDSCard>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LibraryPackagePage({
+  packageKey,
+  onSelectComponent,
+}: {
+  packageKey: string;
+  onSelectComponent: (key: string) => void;
+}) {
+  if (packageKey === 'pkg-core') {
+    return <PackageGridPage packageKey={packageKey} components={COMPONENT_CATEGORIES} onSelectComponent={onSelectComponent} />;
+  }
+  if (packageKey === 'pkg-vega') {
+    return <PackageGridPage packageKey={packageKey} components={VEGA_COMPONENTS} onSelectComponent={onSelectComponent} />;
+  }
+  if (packageKey === 'pkg-chat') {
+    return <PackageGridPage packageKey={packageKey} components={CHAT_COMPONENTS} onSelectComponent={onSelectComponent} />;
+  }
   const pkg = LIBRARY_PACKAGES.find(p => p.key === packageKey);
   if (!pkg) return null;
   return (
@@ -692,34 +890,194 @@ function LibraryPackagePage({packageKey}: {packageKey: string}) {
         <XDSStack direction="horizontal" gap={3} vAlign="center">
           <XDSText type="display-1">{pkg.name}</XDSText>
           {pkg.version && (
-            <XDSText
-              type="supporting"
-              color="secondary"
-              style={{fontFamily: 'monospace'}}>
+            <XDSText type="supporting" color="secondary" style={{fontFamily: 'monospace'}}>
               v{pkg.version}
             </XDSText>
           )}
         </XDSStack>
-        <XDSText type="body" color="secondary">
-          {pkg.description}
-        </XDSText>
+        <XDSText type="body" color="secondary">{pkg.description}</XDSText>
       </XDSStack>
+      <div style={{marginTop: 48, padding: 64, borderRadius: 12, backgroundColor: 'var(--color-background-muted, #f5f5f5)', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+        <XDSText type="body" color="secondary">Documentation coming soon</XDSText>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ResourcePage components
+// ---------------------------------------------------------------------------
+
+function ResourceHeader({
+  icon,
+  title,
+  description,
+  bg,
+}: {
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  title: string;
+  description: string;
+  bg: string;
+}) {
+  return (
+    <div
+      style={{
+        backgroundColor: bg,
+        borderRadius: 16,
+        padding: '32px 36px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 20,
+        marginBottom: 40,
+      }}>
       <div
         style={{
-          marginTop: 48,
-          padding: 64,
-          borderRadius: 12,
-          backgroundColor: 'var(--color-background-muted, #f5f5f5)',
+          width: 48,
+          height: 48,
+          borderRadius: 14,
+          backgroundColor: 'rgba(255,255,255,0.6)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          flexShrink: 0,
         }}>
+        <XDSIcon icon={icon} size="md" color="accent" />
+      </div>
+      <XDSStack direction="vertical" gap={0}>
+        <XDSText type="display-2">{title}</XDSText>
+        <XDSText type="body" color="secondary">{description}</XDSText>
+      </XDSStack>
+    </div>
+  );
+}
+
+function NpmPackagesPage() {
+  return (
+    <div style={{maxWidth: 840, margin: '0 auto', padding: '32px 40px'}}>
+      <ResourceHeader icon={DownloadIcon} title="NPM Packages" description="All packages are published under the @xds scope on npm." bg="#FEE2E2" />
+      <div>
+        <XDSHeading level={2} style={{marginBottom: 16}}>Install</XDSHeading>
+        <XDSCard padding={0}>
+          <XDSCodeBlock code={`# Core components\nnpm install @xds/core\n\n# Charts & data visualization\nnpm install @xds/vega\n\n# Chat & conversational UI\nnpm install @xds/chat\n\n# CLI tooling\nnpm install -g @xds/cli`} title="Terminal" language="bash" hasCopyButton />
+        </XDSCard>
+      </div>
+      <div style={{marginTop: 40}}>
+        <XDSHeading level={2} style={{marginBottom: 16}}>Packages</XDSHeading>
+        <XDSTable
+          data={[
+            {package: '@xds/core', description: 'Core UI components (60+)', version: '0.0.12', status: 'Stable'},
+            {package: '@xds/vega', description: 'Charts & data visualization', version: '—', status: 'Coming Soon'},
+            {package: '@xds/chat', description: 'Conversational UI components', version: '0.0.12', status: 'Stable'},
+            {package: '@xds/cli', description: 'CLI for scaffolding & tooling', version: '0.0.12', status: 'Stable'},
+            {package: '@xds/theme-default', description: 'Default theme (blue accent)', version: '0.0.12', status: 'Stable'},
+            {package: '@xds/theme-neutral', description: 'Neutral warm gray theme', version: '0.0.12', status: 'Stable'},
+            {package: '@xds/theme-daily', description: 'Soft blues for everyday tools', version: '0.0.12', status: 'Stable'},
+          ] as {[key: string]: unknown}[]}
+          columns={[
+            {key: 'package', header: 'Package'},
+            {key: 'description', header: 'Description'},
+            {key: 'version', header: 'Version'},
+            {key: 'status', header: 'Status'},
+          ]}
+        />
+      </div>
+      <div style={{marginTop: 40}}>
+        <XDSHeading level={2} style={{marginBottom: 16}}>Peer dependencies</XDSHeading>
         <XDSText type="body" color="secondary">
-          Documentation coming soon
+          All packages require React 18+ and StyleX 0.17+. Theme packages are optional — if no theme is installed, components use built-in defaults.
         </XDSText>
       </div>
     </div>
   );
+}
+
+function AgentDocsPage() {
+  return (
+    <div style={{maxWidth: 840, margin: '0 auto', padding: '32px 40px'}}>
+      <ResourceHeader icon={SparklesIcon} title="AI / Agent Docs" description="Generate context docs so your AI knows every component, prop, and pattern." bg="#FEF3C7" />
+      <div>
+        <XDSHeading level={2} style={{marginBottom: 16}}>Generate agent docs</XDSHeading>
+        <XDSText type="body" color="secondary" style={{marginBottom: 16}}>
+          The CLI produces a comprehensive AGENTS.md that AI assistants can use as context when generating XDS code.
+        </XDSText>
+        <XDSCard padding={0}>
+          <XDSCodeBlock code={`# Generate docs for all components\nxds docs\n\n# List available doc topics\nxds docs --list\n\n# Get specific docs (dense format for AI)\nxds docs principles --dense\nxds docs tokens --dense\nxds docs theme --dense\n\n# Get docs for a specific component\nxds component Button --dense\nxds component Table --dense`} title="Terminal" language="bash" hasCopyButton />
+        </XDSCard>
+      </div>
+      <div style={{marginTop: 40}}>
+        <XDSHeading level={2} style={{marginBottom: 16}}>What&#39;s included</XDSHeading>
+        <XDSList density="spacious" listStyle="disc">
+          <XDSListItem label="Component props, variants, and usage examples for every component" />
+          <XDSListItem label="Design token reference — spacing, colors, typography, radius, elevation" />
+          <XDSListItem label="Theme provider setup and customization patterns" />
+          <XDSListItem label="Anti-patterns and common mistakes to avoid" />
+          <XDSListItem label="StyleX conventions and CSS capabilities" />
+        </XDSList>
+      </div>
+      <div style={{marginTop: 40}}>
+        <XDSHeading level={2} style={{marginBottom: 16}}>Using with Cursor / AI assistants</XDSHeading>
+        <XDSText type="body" color="secondary" style={{marginBottom: 16}}>
+          Add the generated AGENTS.md to your project root. AI assistants like Cursor, Copilot, and Claude will automatically use it as context when you ask them to build UI with XDS components.
+        </XDSText>
+        <XDSCard padding={0}>
+          <XDSCodeBlock code={`# Generate and save to project root\nxds docs > AGENTS.md\n\n# Or use the CLI bootstrap commands\nxds help           # discover all commands\nxds component --list  # all components by category\nxds template --list   # available page templates`} title="Terminal" language="bash" hasCopyButton />
+        </XDSCard>
+      </div>
+    </div>
+  );
+}
+
+function PublishingPage() {
+  return (
+    <div style={{maxWidth: 840, margin: '0 auto', padding: '32px 40px'}}>
+      <ResourceHeader icon={HeartIcon} title="Publishing" description="Publish components, themes, and templates to Craft for others to discover and use." bg="#FCE7F3" />
+      <div>
+        <XDSHeading level={2} style={{marginBottom: 16}}>What you can publish</XDSHeading>
+        <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12}}>
+          {[
+            {icon: CodeIcon, title: 'Components', desc: 'Build and publish custom components to the Craft library for others to use.'},
+            {icon: PaletteIcon, title: 'Themes', desc: 'Create and share theme packages with custom colors, typography, and radius.'},
+            {icon: GridIcon, title: 'Templates', desc: 'Publish page templates and layouts that others can browse and use in Craft.'},
+          ].map(item => (
+            <XDSCard key={item.title} padding={4}>
+              <XDSStack direction="horizontal" gap={3}>
+                <div style={{width: 36, height: 36, borderRadius: 10, backgroundColor: 'var(--color-background-accent-muted, #DBEAFE)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0}}>
+                  <XDSIcon icon={item.icon} size="sm" color="accent" />
+                </div>
+                <XDSStack direction="vertical" gap={0}>
+                  <XDSText type="body" weight="bold">{item.title}</XDSText>
+                  <XDSText type="supporting" color="secondary">{item.desc}</XDSText>
+                </XDSStack>
+              </XDSStack>
+            </XDSCard>
+          ))}
+        </div>
+      </div>
+      <div style={{marginTop: 40}}>
+        <XDSHeading level={2} style={{marginBottom: 16}}>Getting started</XDSHeading>
+        <XDSCard padding={0}>
+          <XDSCodeBlock code={`# Clone the repo\ngit clone https://github.com/facebookexperimental/xds.git\ncd xds\n\n# Install dependencies\nyarn install\n\n# Start the sandbox\nyarn workspace @xds/sandbox dev\n\n# Run tests\nyarn test\n\n# Run storybook\nyarn storybook`} title="Terminal" language="bash" hasCopyButton />
+        </XDSCard>
+      </div>
+      <div style={{marginTop: 40}}>
+        <XDSHeading level={2} style={{marginBottom: 16}}>Publishing guidelines</XDSHeading>
+        <XDSList density="spacious" listStyle="disc">
+          <XDSListItem label="Use only XDS components — no raw HTML or inline styles" />
+          <XDSListItem label="Include a .doc.mjs file with a description, tags, and preview metadata" />
+          <XDSListItem label="Templates should use XDSAppShell for page layout" />
+          <XDSListItem label="Themes must define all required tokens (colors, typography, radius, elevation)" />
+          <XDSListItem label="Add block examples that demonstrate your component in realistic contexts" />
+        </XDSList>
+      </div>
+    </div>
+  );
+}
+
+function ResourcePage({resourceKey}: {resourceKey: string}) {
+  if (resourceKey === 'res-npm') return <NpmPackagesPage />;
+  if (resourceKey === 'res-agent-docs') return <AgentDocsPage />;
+  if (resourceKey === 'res-publishing') return <PublishingPage />;
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -1091,8 +1449,8 @@ function LibraryOverview({
               <div
                 key={pkg.key}
                 onClick={() => onSelectComponent(pkg.key)}
-                style={{cursor: 'pointer'}}>
-                <XDSCard padding={0}>
+                style={{cursor: 'pointer', height: '100%'}}>
+                <XDSCard padding={0} style={{height: '100%'}}>
                   <div
                     style={{
                       aspectRatio: '16 / 9',
@@ -1162,14 +1520,23 @@ function LibraryOverview({
           }}>
           {RESOURCE_ITEMS.map(resource => {
             return (
-              <XDSCard key={resource.title} padding={0}>
+              <div
+                key={resource.title}
+                onClick={
+                  resource.href
+                    ? () => window.open(resource.href, '_blank')
+                    : resource.key
+                      ? () => onSelectComponent(resource.key!)
+                      : undefined
+                }
+                style={{cursor: 'pointer'}}>
+              <XDSCard padding={0}>
                 <div
                   style={{
                     padding: 24,
                     display: 'flex',
                     gap: 16,
                     alignItems: 'flex-start',
-                    cursor: 'pointer',
                   }}>
                   <div
                     style={{
@@ -1211,6 +1578,7 @@ function LibraryOverview({
                   />
                 </div>
               </XDSCard>
+              </div>
             );
           })}
         </div>
@@ -1557,6 +1925,24 @@ export function DocsView({
               </XDSSideNavItem>
             </XDSSideNavSection>
 
+            <XDSSideNavSection title="Resources" isHeaderHidden>
+              <XDSSideNavItem label="Resources" collapsible>
+                {RESOURCE_ITEMS.filter(r => r.key).map(resource => (
+                  <XDSSideNavItem
+                    key={resource.key}
+                    label={resource.title}
+                    isSelected={
+                      selectedComponent !== null && activeNav === resource.key
+                    }
+                    onClick={() => {
+                      setSelectedComponent(resource.key!);
+                      setActiveNav(resource.key!);
+                    }}
+                  />
+                ))}
+              </XDSSideNavItem>
+            </XDSSideNavSection>
+
             {COMPONENT_CATEGORIES.map(category => (
               <XDSSideNavSection key={category.label} title={category.label}>
                 {category.items.map(item => (
@@ -1596,7 +1982,15 @@ export function DocsView({
         ) : FOUNDATION_ITEMS.some(f => f.key === selectedComponent) ? (
           <FoundationPage foundationKey={selectedComponent} />
         ) : LIBRARY_PACKAGES.some(p => p.key === selectedComponent) ? (
-          <LibraryPackagePage packageKey={selectedComponent} />
+          <LibraryPackagePage
+            packageKey={selectedComponent}
+            onSelectComponent={(key: string) => {
+              setSelectedComponent(key);
+              setActiveNav(key);
+            }}
+          />
+        ) : RESOURCE_ITEMS.some(r => r.key === selectedComponent) ? (
+          <ResourcePage resourceKey={selectedComponent} />
         ) : (
           <div style={{maxWidth: 840, margin: '0 auto', padding: '32px 40px'}}>
             {/* Header */}
