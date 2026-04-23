@@ -5,7 +5,8 @@
  * - *Defaults: Plain objects with default values (used by defineVars and themes)
  * - *Vars: CSS custom properties that themes can override via createTheme
  *
- * SYNC: When modified, update /packages/agent-tools/docs/tokens.md
+ * SYNC: When modified, run `node scripts/generate-token-docs.mjs` to update docs.
+ * CI checks for drift via --check flag.
  *
  * Domain tokens (syntax highlighting, data visualization) live separately in
  * /packages/core/src/theme/domainTokens/ — they're tree-shaken from core components.

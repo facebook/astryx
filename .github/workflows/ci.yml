@@ -58,6 +58,9 @@ jobs:
       - name: Check package.json exports are in sync
         run: node scripts/sync-exports.js --check
 
+      - name: Check token docs are in sync
+        run: node scripts/generate-token-docs.mjs --check
+
       - run: yarn test
 
   # Build storybook + analyze components (parallel with test)
