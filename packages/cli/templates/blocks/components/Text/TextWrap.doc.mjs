@@ -4,6 +4,6 @@ export const doc = {
   name: 'Text — Wrap',
   description: 'The 4 text-wrap modes (wrap, nowrap, balance, pretty) shown in width-constrained containers.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 1 / 1,
   componentsUsed: ['Text'],
 };
