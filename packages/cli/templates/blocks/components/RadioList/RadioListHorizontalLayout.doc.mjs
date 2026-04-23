@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'RadioList — Horizontal Layout',
   description:
-    'Radio list with horizontal orientation for compact inline selection like sizes.',
+    'Radio list with horizontal orientation for compact selections.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['RadioList'],

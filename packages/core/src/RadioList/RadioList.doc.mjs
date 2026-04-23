@@ -145,12 +145,14 @@ export const docs = {
   ],
   usage: {
     description:
-      'RadioList presents a group of mutually exclusive options for single-value selection. Use it when users must choose exactly one option from a small, visible set. For multiple selections use CheckboxList; for long option lists consider Selector.',
+      'A group of options where only one can be selected at a time. All options are visible at once, making it easy to compare choices. Use it when users need to pick one option from a small set.',
     bestPractices: [
-      { guidance: true, description: 'Keep the number of options small enough to display without scrolling — typically 2 to 7 choices.' },
+      { guidance: true, description: 'Keep the number of options small — typically 2 to 7 choices.' },
       { guidance: true, description: 'Use clear, concise labels that differentiate each option at a glance.' },
-      { guidance: false, description: 'Use a RadioList when more than one selection is needed — switch to CheckboxList for multi-select scenarios.' },
-      { guidance: false, description: 'Use a RadioList for very long lists of options — use a Selector or Combobox for discoverability.' },
+      { guidance: true, description: "Pre-select a default option when there's a sensible default — don't leave the group empty unless the choice is truly optional." },
+      { guidance: false, description: 'Use when multiple selections are needed — use CheckboxList instead.' },
+      { guidance: false, description: 'Use for long lists — use Selector for better discoverability.' },
+      { guidance: false, description: 'Use horizontal layout with more than 4 options — it wraps awkwardly.' },
     ],
     anatomy: [
       {name: 'Header', required: false, description: 'Optional heading above the radio list.'},
@@ -305,12 +307,14 @@ export const docsZh = {
   ],
   usage: {
     description:
-      'RadioList presents a group of mutually exclusive options for single-value selection. Use it when users must choose exactly one option from a small, visible set. For multiple selections use CheckboxList; for long option lists consider Selector.',
+      'A group of options where only one can be selected at a time. All options are visible at once, making it easy to compare choices. Use it when users need to pick one option from a small set.',
     bestPractices: [
-      { guidance: true, description: 'Keep the number of options small enough to display without scrolling — typically 2 to 7 choices.' },
+      { guidance: true, description: 'Keep the number of options small — typically 2 to 7 choices.' },
       { guidance: true, description: 'Use clear, concise labels that differentiate each option at a glance.' },
-      { guidance: false, description: 'Use a RadioList when more than one selection is needed — switch to CheckboxList for multi-select scenarios.' },
-      { guidance: false, description: 'Use a RadioList for very long lists of options — use a Selector or Combobox for discoverability.' },
+      { guidance: true, description: "Pre-select a default option when there's a sensible default — don't leave the group empty unless the choice is truly optional." },
+      { guidance: false, description: 'Use when multiple selections are needed — use CheckboxList instead.' },
+      { guidance: false, description: 'Use for long lists — use Selector for better discoverability.' },
+      { guidance: false, description: 'Use horizontal layout with more than 4 options — it wraps awkwardly.' },
     ],
     anatomy: [
       {name: 'Header', required: false, description: 'Optional heading above the radio list.'},
@@ -326,12 +330,14 @@ export const docsDense = {
     'Radio group component for single-value selection from list of options.',
   usage: {
     description:
-      'RadioList presents a group of mutually exclusive options for single-value selection. Use it when users must choose exactly one option from a small, visible set. For multiple selections use CheckboxList; for long option lists consider Selector.',
+      'A group of options where only one can be selected at a time. All options are visible at once, making it easy to compare choices. Use it when users need to pick one option from a small set.',
     bestPractices: [
-      { guidance: true, description: 'Keep the number of options small enough to display without scrolling — typically 2 to 7 choices.' },
+      { guidance: true, description: 'Keep the number of options small — typically 2 to 7 choices.' },
       { guidance: true, description: 'Use clear, concise labels that differentiate each option at a glance.' },
-      { guidance: false, description: 'Use a RadioList when more than one selection is needed — switch to CheckboxList for multi-select scenarios.' },
-      { guidance: false, description: 'Use a RadioList for very long lists of options — use a Selector or Combobox for discoverability.' },
+      { guidance: true, description: "Pre-select a default option when there's a sensible default — don't leave the group empty unless the choice is truly optional." },
+      { guidance: false, description: 'Use when multiple selections are needed — use CheckboxList instead.' },
+      { guidance: false, description: 'Use for long lists — use Selector for better discoverability.' },
+      { guidance: false, description: 'Use horizontal layout with more than 4 options — it wraps awkwardly.' },
     ],
     anatomy: [
       {name: 'Header', required: false, description: 'Optional heading above the radio list.'},
