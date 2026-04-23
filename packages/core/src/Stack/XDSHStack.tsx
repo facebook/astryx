@@ -34,6 +34,18 @@ export interface XDSHStackProps extends Omit<
    * @default 'stretch'
    */
   vAlign?: StackCrossAlignment;
+
+  /**
+   * Main-axis alignment alias. Maps to `hAlign` on HStack.
+   * Mirrors CSS `justify-content` / Tailwind `justify-*`.
+   */
+  justify?: StackMainAlignment;
+
+  /**
+   * Cross-axis alignment alias. Maps to `vAlign` on HStack.
+   * Mirrors CSS `align-items` / Tailwind `items-*`.
+   */
+  align?: StackCrossAlignment;
 }
 
 /**
@@ -48,8 +60,23 @@ export interface XDSHStackProps extends Omit<
  * </XDSHStack>
  * ```
  */
-export function XDSHStack({ref, ...props}: XDSHStackProps) {
-  return <XDSStack {...props} direction="horizontal" ref={ref} />;
+export function XDSHStack({
+  ref,
+  justify,
+  align,
+  hAlign,
+  vAlign,
+  ...props
+}: XDSHStackProps) {
+  return (
+    <XDSStack
+      {...props}
+      direction="horizontal"
+      hAlign={hAlign ?? justify}
+      vAlign={vAlign ?? align}
+      ref={ref}
+    />
+  );
 }
 
 XDSHStack.displayName = 'XDSHStack';

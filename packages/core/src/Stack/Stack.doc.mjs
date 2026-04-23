@@ -23,10 +23,25 @@ export const docs = {
             'Numeric spacing step controlling the gap between items: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
         },
         {
+          name: 'hAlign',
+          type: "'start' | 'center' | 'end' | 'between' | 'around' | 'evenly'",
+          description: 'Horizontal (main-axis) alignment of items.',
+        },
+        {
           name: 'vAlign',
           type: "'start' | 'center' | 'end' | 'stretch'",
           description: 'Vertical (cross-axis) alignment of items.',
           default: "'stretch'",
+        },
+        {
+          name: 'justify',
+          type: "'start' | 'center' | 'end' | 'between' | 'around' | 'evenly'",
+          description: 'Main-axis alignment alias for hAlign. Mirrors CSS justify-content.',
+        },
+        {
+          name: 'align',
+          type: "'start' | 'center' | 'end' | 'stretch'",
+          description: 'Cross-axis alignment alias for vAlign. Mirrors CSS align-items.',
         },
         {
           name: 'wrap',
@@ -68,6 +83,21 @@ export const docs = {
           type: "'start' | 'center' | 'end' | 'stretch'",
           description: 'Horizontal (cross-axis) alignment of items.',
           default: "'stretch'",
+        },
+        {
+          name: 'vAlign',
+          type: "'start' | 'center' | 'end' | 'between' | 'around' | 'evenly'",
+          description: 'Vertical (main-axis) alignment of items.',
+        },
+        {
+          name: 'justify',
+          type: "'start' | 'center' | 'end' | 'between' | 'around' | 'evenly'",
+          description: 'Main-axis alignment alias for vAlign. Mirrors CSS justify-content.',
+        },
+        {
+          name: 'align',
+          type: "'start' | 'center' | 'end' | 'stretch'",
+          description: 'Cross-axis alignment alias for hAlign. Mirrors CSS align-items.',
         },
         {
           name: 'wrap',
@@ -204,10 +234,25 @@ export const docsZh = {
             '控制元素间距的数值间距步进：0、0.5、1、1.5、2、3、4、5、6、8、10。',
         },
         {
+          name: 'hAlign',
+          type: "'start' | 'center' | 'end' | 'between' | 'around' | 'evenly'",
+          description: '水平（主轴）对齐方式。',
+        },
+        {
           name: 'vAlign',
           type: "'start' | 'center' | 'end' | 'stretch'",
           description: '元素的垂直（交叉轴）对齐方式。',
           default: "'stretch'",
+        },
+        {
+          name: 'justify',
+          type: "'start' | 'center' | 'end' | 'between' | 'around' | 'evenly'",
+          description: 'hAlign 的别名。对应 CSS justify-content。',
+        },
+        {
+          name: 'align',
+          type: "'start' | 'center' | 'end' | 'stretch'",
+          description: 'vAlign 的别名。对应 CSS align-items。',
         },
         {
           name: 'wrap',
@@ -250,6 +295,21 @@ export const docsZh = {
           type: "'start' | 'center' | 'end' | 'stretch'",
           description: '元素的水平（交叉轴）对齐方式。',
           default: "'stretch'",
+        },
+        {
+          name: 'vAlign',
+          type: "'start' | 'center' | 'end' | 'between' | 'around' | 'evenly'",
+          description: '垂直（主轴）对齐方式。',
+        },
+        {
+          name: 'justify',
+          type: "'start' | 'center' | 'end' | 'between' | 'around' | 'evenly'",
+          description: 'vAlign 的别名。对应 CSS justify-content。',
+        },
+        {
+          name: 'align',
+          type: "'start' | 'center' | 'end' | 'stretch'",
+          description: 'hAlign 的别名。对应 CSS align-items。',
         },
         {
           name: 'wrap',
@@ -381,7 +441,10 @@ export const docsDense = {
       description: 'Horizontal stack; left-to-right, polymorphic rendering.',
       propDescriptions: {
         gap: 'Numeric spacing step for gap: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
+        hAlign: 'Horizontal (main-axis) alignment.',
         vAlign: 'Vertical (cross-axis) alignment.',
+        justify: 'Main-axis alignment alias for hAlign. Mirrors CSS justify-content.',
+        align: 'Cross-axis alignment alias for vAlign. Mirrors CSS align-items.',
         wrap: 'Flex wrap behavior.',
         element: 'HTML element to render as container.',
         children: 'Stack content.',
@@ -394,6 +457,9 @@ export const docsDense = {
       propDescriptions: {
         gap: 'Numeric spacing step for gap: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
         hAlign: 'Horizontal (cross-axis) alignment.',
+        vAlign: 'Vertical (main-axis) alignment.',
+        justify: 'Main-axis alignment alias for vAlign. Mirrors CSS justify-content.',
+        align: 'Cross-axis alignment alias for hAlign. Mirrors CSS align-items.',
         wrap: 'Flex wrap behavior.',
         element: 'HTML element to render as container.',
         children: 'Stack content.',
