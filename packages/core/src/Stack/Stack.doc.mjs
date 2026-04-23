@@ -172,12 +172,11 @@ export const docs = {
   ],
   usage: {
     description:
-      'Stack provides layout primitives for arranging items in horizontal or vertical sequences with consistent spacing. Use XDSHStack for row layouts and XDSVStack for column layouts when distributing child elements with uniform gaps from the design system spacing scale.',
+      'Stack arranges items in a row or column with consistent spacing. Use the gap prop to control the space between items.',
     bestPractices: [
-      { guidance: true, description: 'Use the gap prop with design system spacing tokens to maintain consistent spacing between stack children.' },
-      { guidance: true, description: 'Wrap individual items in XDSStackItem with size="fill" when an item should expand to consume remaining space.' },
-      { guidance: false, description: 'Apply custom margins between stack children — use the gap prop instead for uniform spacing.' },
-      { guidance: false, description: 'Nest stacks deeply when a single stack with wrap enabled could achieve the same layout.' },
+      { guidance: true, description: 'Use the gap prop for spacing between items — don\'t add margins manually.' },
+      { guidance: true, description: 'Use XDSStackItem with size="fill" to make one item stretch and fill the leftover space.' },
+      { guidance: false, description: 'Nest stacks inside stacks — try wrap="wrap" first to let items flow to the next line.' },
     ],
   },
 };
@@ -355,12 +354,11 @@ export const docsZh = {
   ],
   usage: {
     description:
-      'Stack provides layout primitives for arranging items in horizontal or vertical sequences with consistent spacing. Use XDSHStack for row layouts and XDSVStack for column layouts when distributing child elements with uniform gaps from the design system spacing scale.',
+      'Stack arranges items in a row or column with consistent spacing. Use the gap prop to control the space between items.',
     bestPractices: [
-      { guidance: true, description: 'Use the gap prop with design system spacing tokens to maintain consistent spacing between stack children.' },
-      { guidance: true, description: 'Wrap individual items in XDSStackItem with size="fill" when an item should expand to consume remaining space.' },
-      { guidance: false, description: 'Apply custom margins between stack children — use the gap prop instead for uniform spacing.' },
-      { guidance: false, description: 'Nest stacks deeply when a single stack with wrap enabled could achieve the same layout.' },
+      { guidance: true, description: 'Use the gap prop for spacing between items — don\'t add margins manually.' },
+      { guidance: true, description: 'Use XDSStackItem with size="fill" to make one item stretch and fill the leftover space.' },
+      { guidance: false, description: 'Nest stacks inside stacks — try wrap="wrap" first to let items flow to the next line.' },
     ],
   },
 };
@@ -370,12 +368,11 @@ export const docsDense = {
   description: 'Stack layout primitives for horizontal/vertical sequences using flexbox w/ themed spacing tokens.',
   usage: {
     description:
-      'Stack provides layout primitives for arranging items in horizontal or vertical sequences with consistent spacing. Use XDSHStack for row layouts and XDSVStack for column layouts when distributing child elements with uniform gaps from the design system spacing scale.',
+      'Stack arranges items in a row or column with consistent spacing. Use the gap prop to control the space between items.',
     bestPractices: [
-      { guidance: true, description: 'Use the gap prop with design system spacing tokens to maintain consistent spacing between stack children.' },
-      { guidance: true, description: 'Wrap individual items in XDSStackItem with size="fill" when an item should expand to consume remaining space.' },
-      { guidance: false, description: 'Apply custom margins between stack children — use the gap prop instead for uniform spacing.' },
-      { guidance: false, description: 'Nest stacks deeply when a single stack with wrap enabled could achieve the same layout.' },
+      { guidance: true, description: 'Use the gap prop for spacing between items — don\'t add margins manually.' },
+      { guidance: true, description: 'Use XDSStackItem with size="fill" to make one item stretch and fill the leftover space.' },
+      { guidance: false, description: 'Nest stacks inside stacks — try wrap="wrap" first to let items flow to the next line.' },
     ],
   },
   components: [
