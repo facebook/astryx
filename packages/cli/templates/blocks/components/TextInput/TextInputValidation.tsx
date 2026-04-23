@@ -47,6 +47,19 @@ export default function TextInputValidation() {
           placeholder="Enter a value"
           status={{type: 'error'}}
         />
+        <XDSTextInput
+          label="Disabled field"
+          value=""
+          onChange={() => {}}
+          placeholder="Enter a value"
+          isDisabled
+        />
+        <XDSTextInput
+          label="Loading field"
+          value="sarahc"
+          onChange={() => {}}
+          isLoading
+        />
       </XDSStack>
     </div>
   );

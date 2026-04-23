@@ -57,19 +57,6 @@ export default function TextInputTypes() {
           placeholder="Enter your nickname"
           isOptional
         />
-        <XDSTextInput
-          label="Disabled field"
-          value=""
-          onChange={() => {}}
-          placeholder="Enter a value"
-          isDisabled
-        />
-        <XDSTextInput
-          label="Loading field"
-          value="sarahc"
-          onChange={() => {}}
-          isLoading
-        />
       </XDSStack>
     </div>
   );
