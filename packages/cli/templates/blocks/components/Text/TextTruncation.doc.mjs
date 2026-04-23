@@ -2,8 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'Text — Truncation',
-  description: 'Text truncation at 1, 2, and 3 lines with automatic ellipsis and hover tooltips that reveal the full content.',
+  description: 'Single-line and multi-line text truncation with ellipsis using maxLines in a width-constrained container.',
   isReady: true,
-  aspectRatio: 16 / 9,
-  componentsUsed: ['Text', 'Stack', 'Section'],
+  aspectRatio: 4 / 3,
+  componentsUsed: ['Text'],
 };

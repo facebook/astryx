@@ -1,11 +1,9 @@
 'use client';
 
 import {XDSText} from '@xds/core/Text';
-import {XDSStack} from '@xds/core/Stack';
-import {XDSSection} from '@xds/core/Section';
 
 const LONG_TEXT =
-  'The design system provides a consistent set of typography tokens, spacing scales, and color palettes that ensure every surface in the product feels cohesive regardless of which team built it. Components inherit these tokens automatically so teams can build new features without manually matching fonts, colors, or spacing values across different surfaces and breakpoints.';
+  'The design system provides a consistent set of typography tokens, spacing scales, and color palettes that ensure every surface in the product feels cohesive regardless of which team built it.';
 
 const LINES = [
   {maxLines: 1, label: '1 line'},
@@ -15,19 +13,25 @@ const LINES = [
 
 export default function TextTruncation() {
   return (
-    <XDSStack direction="vertical" gap={3}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 16,
+        maxWidth: 300,
+      }}>
       {LINES.map(({maxLines, label}) => (
-        <XDSStack key={maxLines} direction="vertical" gap={1}>
-          <XDSText type="supporting" color="secondary">
+        <div key={maxLines}>
+          <XDSText type="supporting" color="secondary" display="block">
             {label}
           </XDSText>
-          <XDSSection padding={2} variant="wash">
+          <div style={{border: '1px solid #ccc', padding: 8}}>
             <XDSText type="body" maxLines={maxLines}>
               {LONG_TEXT}
             </XDSText>
-          </XDSSection>
-        </XDSStack>
+          </div>
+        </div>
       ))}
-    </XDSStack>
+    </div>
   );
 }
