@@ -13,9 +13,7 @@ import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
-import {XDSBadge} from '@xds/core/Badge';
 import {XDSList, XDSListItem} from '@xds/core/List';
-import {XDSBanner} from '@xds/core/Banner';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {XDSHStack, XDSVStack, XDSStackItem} from '@xds/core/Stack';
 import {XDSLayout, XDSLayoutContent} from '@xds/core/Layout';
@@ -40,62 +38,58 @@ const styles = stylex.create({
 // Data
 // ---------------------------------------------------------------------------
 
-const OVERVIEW_SECTIONS = [
+const COMPONENT_CATEGORIES = [
   {
     label: 'Core',
     items: [
-      {key: 'appshell', name: 'AppShell', desc: 'Foundational page layout with header, sidebar, and content regions.'},
-      {key: 'button', name: 'Button', desc: 'Buttons let people take action. Used in forms, dialogs, and toolbars.'},
-      {key: 'card', name: 'Card', desc: 'Cards group related content and actions in a contained surface.'},
-      {key: 'dialog', name: 'Dialog', desc: 'Modal overlays that require user attention or action before continuing.'},
-      {key: 'badge', name: 'Badge', desc: 'Small counts or status labels attached to icons, buttons, or list items.'},
-      {key: 'banner', name: 'Banner', desc: 'Important, non-modal messages at the top of a page or section.'},
-      {key: 'avatar', name: 'Avatar', desc: 'Represents a person or entity with an image, initials, or icon.'},
-      {key: 'table', name: 'Table', desc: 'Structured data in rows and columns with sorting and selection.'},
+      {key: 'appshell', name: 'AppShell', desc: 'AppShell provides a foundational page layout with header, sidebar, and content regions. Use it to establish consistent structure across your application.'},
+      {key: 'avatar', name: 'Avatar', desc: 'Avatars represent a person or entity with an image, initials, or icon. They are commonly used in user profiles, comments, and contact lists.'},
+      {key: 'badge', name: 'Badge', desc: 'Badges display small counts or status labels. They can be attached to icons, buttons, or list items to surface key information at a glance.'},
+      {key: 'banner', name: 'Banner', desc: 'Banners show important, non-modal messages at the top of a page or section. They communicate status, warnings, or promotional information.'},
+      {key: 'button', name: 'Button', desc: 'Buttons let people take action. They can be used in forms, dialogs, and toolbars, or as standalone links.'},
+      {key: 'calendar', name: 'Calendar', desc: 'Calendar provides a date-picking grid for selecting single dates or date ranges. It integrates with form fields for date input.'},
+      {key: 'dialog', name: 'Dialog', desc: 'Dialogs are modal overlays that require user attention or action before continuing. They are used for confirmations, forms, and critical decisions.'},
+      {key: 'dropdownmenu', name: 'DropdownMenu', desc: 'DropdownMenu presents a list of actions or options in a floating overlay. It is triggered by a button and supports nested submenus.'},
+      {key: 'emptystate', name: 'EmptyState', desc: 'EmptyState provides a placeholder when there is no content to display. It guides users with a message, illustration, and optional call-to-action.'},
+      {key: 'hovercard', name: 'HoverCard', desc: 'HoverCard shows a rich preview of content when users hover over a trigger element. It is ideal for previewing profiles, links, or details.'},
+      {key: 'icon', name: 'Icon', desc: 'Icons are small visual symbols that represent actions, objects, or concepts. They improve scannability and reinforce meaning alongside text.'},
+      {key: 'kbd', name: 'Kbd', desc: 'Kbd renders keyboard shortcut hints in a styled inline element. Use it to show users which key combinations perform specific actions.'},
+      {key: 'link', name: 'Link', desc: 'Links provide navigation between pages or to external resources. They follow accessible anchor semantics with visual affordance.'},
+      {key: 'list', name: 'List', desc: 'List displays a vertical set of related items. It supports selection, icons, and metadata for building menus, nav lists, and more.'},
+      {key: 'popover', name: 'Popover', desc: 'Popover displays rich content in a floating panel anchored to a trigger element. It is used for forms, filters, and contextual tools.'},
+      {key: 'table', name: 'Table', desc: 'Table displays structured data in rows and columns with support for sorting, selection, and custom cell rendering.'},
+      {key: 'token', name: 'Token', desc: 'Tokens display compact metadata labels such as tags, categories, or filters. They can be dismissible and support selection state.'},
+      {key: 'tooltip', name: 'Tooltip', desc: 'Tooltips show concise helper text when users hover over or focus an element. They clarify icons, truncated labels, and controls.'},
     ],
   },
   {
     label: 'Layout',
     items: [
-      {key: 'stack', name: 'Stack', desc: 'Arranges child elements in a row or column with consistent gap spacing.'},
-      {key: 'grid', name: 'Grid', desc: 'CSS grid-based layout container with configurable columns and gap.'},
-      {key: 'divider', name: 'Divider', desc: 'Separates content into distinct sections with a subtle line.'},
-      {key: 'section', name: 'Section', desc: 'Wraps a block of content with consistent vertical spacing.'},
+      {key: 'card', name: 'Card', desc: 'Cards group related content and actions in a contained surface. They can include headers, media, body text, and action bars.'},
+      {key: 'divider', name: 'Divider', desc: 'Dividers separate content into distinct sections with a subtle or strong horizontal line. They can optionally include a label.'},
+      {key: 'grid', name: 'Grid', desc: 'Grid provides a CSS grid-based layout container with configurable columns, rows, and gap. It simplifies responsive multi-column designs.'},
+      {key: 'stack', name: 'Stack', desc: 'Stack arranges child elements in a row or column with consistent gap spacing. It is the primary tool for one-dimensional layout composition.'},
     ],
   },
   {
     label: 'Navigation',
     items: [
-      {key: 'sidenav', name: 'SideNav', desc: 'Vertical navigation panel with links, sections, and collapsible groups.'},
-      {key: 'topnav', name: 'TopNav', desc: 'App-level navigation bar with branding, links, search, and user actions.'},
-      {key: 'tablist', name: 'TabList', desc: 'Switches between content views using a horizontal row of tabs.'},
-      {key: 'breadcrumbs', name: 'Breadcrumbs', desc: "Shows the user's current location within a navigation hierarchy."},
+      {key: 'breadcrumbs', name: 'Breadcrumbs', desc: "Breadcrumbs show the user's current location within a navigation hierarchy. They provide quick links back to parent pages."},
+      {key: 'sidenav', name: 'SideNav', desc: 'SideNav renders a vertical navigation panel with links, sections, and collapsible groups. It is used as the primary nav in dashboard layouts.'},
+      {key: 'tablist', name: 'TabList', desc: 'TabList switches between content views using a horizontal row of tabs. Only one tab is active at a time, and content changes without a page reload.'},
+      {key: 'topnav', name: 'TopNav', desc: 'TopNav provides an app-level navigation bar across the top of the page. It holds branding, primary links, search, and user actions.'},
     ],
   },
   {
     label: 'Form',
     items: [
-      {key: 'textinput', name: 'TextInput', desc: 'Single-line text field for names, emails, and search queries.'},
-      {key: 'selector', name: 'Selector', desc: 'Pick a single item from a dropdown list with search and grouping.'},
-      {key: 'switch', name: 'Switch', desc: 'Toggles a setting between on and off states with immediate effect.'},
-      {key: 'checkboxinput', name: 'CheckboxInput', desc: 'Single checkbox with a label for boolean opt-in choices.'},
+      {key: 'checkboxinput', name: 'CheckboxInput', desc: 'CheckboxInput renders a single checkbox with a label. It is used for boolean opt-in choices like terms acceptance or feature toggles.'},
+      {key: 'selector', name: 'Selector', desc: 'Selector lets users pick a single item from a dropdown list. It supports search, grouping, and custom option rendering.'},
+      {key: 'switch', name: 'Switch', desc: 'Switch toggles a setting between on and off states with immediate effect. It is used for preferences, feature flags, and real-time controls.'},
+      {key: 'textinput', name: 'TextInput', desc: 'TextInput is a single-line text field for short user input like names, emails, and search queries. It supports icons, prefixes, and validation.'},
+      {key: 'typeahead', name: 'Typeahead', desc: 'Typeahead provides an autocomplete search input that suggests results as the user types. It supports async data sources and custom rendering.'},
     ],
   },
-];
-
-const QUICK_LINKS = [
-  {title: 'Getting Started', desc: 'Install, configure theming, and build your first component.', key: 'getting-started'},
-  {title: 'What\'s New', desc: 'Latest updates, new components, and breaking changes.', key: 'whats-new'},
-  {title: 'Principles', desc: 'Design rules, anti-patterns, and best practices.', key: 'principles'},
-  {title: 'Accessibility', desc: 'Built-in a11y features and ARIA patterns.', key: 'accessibility'},
-];
-
-const CHANGELOG_ENTRIES = [
-  {date: 'Apr.18', type: 'Release' as const, title: '@xds/chat package with message bubbles, thread view, and AI composer'},
-  {date: 'Apr.18', type: 'Release' as const, title: 'Calendar component with single date and date range selection'},
-  {date: 'Apr.16', type: 'Improvement' as const, title: 'Dialog entry animations now use @starting-style instead of JS state'},
-  {date: 'Apr.14', type: 'Fix' as const, title: 'Popover focus trap no longer breaks with nested popovers'},
-  {date: 'Apr.10', type: 'Improvement' as const, title: 'Button loading state preserves width to prevent layout shift'},
 ];
 
 // ---------------------------------------------------------------------------
@@ -103,9 +97,9 @@ const CHANGELOG_ENTRIES = [
 // ---------------------------------------------------------------------------
 
 function OverviewView({
-  onSelectPage,
+  onSelectComponent,
 }: {
-  onSelectPage: (key: string) => void;
+  onSelectComponent: (key: string) => void;
 }) {
   return (
     <XDSLayout contentWidth={1200} content={
@@ -116,23 +110,17 @@ function OverviewView({
             <XDSHStack gap={8} vAlign="center">
               <XDSStackItem size="fill">
                 <XDSVStack gap={4}>
-                  <XDSText type="display-1">Documentation</XDSText>
+                  <XDSText type="display-1">Web overview</XDSText>
                   <XDSText type="large" weight="normal" color="secondary">
-                    Everything you need to build beautiful, accessible products
-                    with our component library.
+                    An open-source UI library to help developers quickly build
+                    beautiful, accessible products.
                   </XDSText>
-                  <XDSHStack gap={3}>
+                  <XDSHStack>
                     <XDSButton
                       label="Get started"
                       variant="primary"
                       size="lg"
-                      onClick={() => onSelectPage('getting-started')}
-                    />
-                    <XDSButton
-                      label="What's new"
-                      variant="secondary"
-                      size="lg"
-                      onClick={() => onSelectPage('whats-new')}
+                      onClick={() => onSelectComponent('getting-started')}
                     />
                   </XDSHStack>
                 </XDSVStack>
@@ -141,27 +129,8 @@ function OverviewView({
             </XDSHStack>
           </XDSCard>
 
-          {/* Quick links */}
-          <XDSVStack gap={4}>
-            <XDSText type="display-2">Quick Links</XDSText>
-            <XDSGrid columns={{minWidth: 260}} gap={4}>
-              {QUICK_LINKS.map(link => (
-                <XDSCard
-                  key={link.key}
-                  padding={5}
-                  onClick={() => onSelectPage(link.key)}
-                  xstyle={styles.previewCard}>
-                  <XDSVStack gap={1}>
-                    <XDSText type="body" weight="bold">{link.title}</XDSText>
-                    <XDSText type="body" color="secondary">{link.desc}</XDSText>
-                  </XDSVStack>
-                </XDSCard>
-              ))}
-            </XDSGrid>
-          </XDSVStack>
-
-          {/* Component categories */}
-          {OVERVIEW_SECTIONS.map(category => (
+          {/* Category sections */}
+          {COMPONENT_CATEGORIES.map(category => (
             <XDSVStack key={category.label} gap={4}>
               <XDSText type="display-2">{category.label}</XDSText>
               <XDSGrid columns={{minWidth: 260}} gap={8}>
@@ -172,49 +141,21 @@ function OverviewView({
                       padding={0}
                       minHeight={160}
                       xstyle={styles.previewCard}
-                      onClick={() => onSelectPage(item.key)}
+                      onClick={() => onSelectComponent(item.key)}
                     />
                     <XDSVStack gap={0.5}>
-                      <XDSText type="body" weight="bold">{item.name}</XDSText>
-                      <XDSText type="body" color="secondary">{item.desc}</XDSText>
+                      <XDSText type="body" weight="bold">
+                        {item.name}
+                      </XDSText>
+                      <XDSText type="body" color="secondary">
+                        {item.desc}
+                      </XDSText>
                     </XDSVStack>
                   </XDSVStack>
                 ))}
               </XDSGrid>
             </XDSVStack>
           ))}
-
-          {/* What's new */}
-          <XDSVStack gap={4}>
-            <XDSHStack vAlign="center">
-              <XDSStackItem size="fill">
-                <XDSText type="display-2">What&#39;s New</XDSText>
-              </XDSStackItem>
-              <XDSButton
-                label="View all"
-                variant="ghost"
-                onClick={() => onSelectPage('whats-new')}
-              />
-            </XDSHStack>
-            {CHANGELOG_ENTRIES.map((entry, i) => (
-              <div key={i}>
-                <XDSHStack gap={3} vAlign="center">
-                  <XDSText
-                    type="supporting"
-                    color="secondary"
-                    style={{fontFamily: 'monospace', fontSize: 12, width: 50, flexShrink: 0}}>
-                    {entry.date}
-                  </XDSText>
-                  <XDSBadge
-                    label={entry.type}
-                    variant={entry.type === 'Release' ? 'green' : entry.type === 'Improvement' ? 'blue' : 'orange'}
-                  />
-                  <XDSText type="body" style={{flex: 1}}>{entry.title}</XDSText>
-                </XDSHStack>
-                {i < CHANGELOG_ENTRIES.length - 1 && <XDSDivider style={{marginTop: 12}} />}
-              </div>
-            ))}
-          </XDSVStack>
         </XDSVStack>
       </XDSLayoutContent>
     } />
@@ -226,114 +167,143 @@ function GettingStartedView() {
     <XDSLayout contentWidth={960} content={
       <XDSLayoutContent padding={8}>
         <XDSVStack gap={8}>
+        {/* Header */}
+        <XDSVStack gap={2}>
+          <XDSText type="display-1">
+            Getting started with Product Name
+          </XDSText>
+          <XDSText type="supporting" color="secondary">
+            Last updated March 30, 2026
+          </XDSText>
+          <XDSText type="body">
+            Install the package, configure your theme, and build your first
+            component in three steps.
+          </XDSText>
+        </XDSVStack>
+
+        {/* AI Assistance prompt card */}
+        <XDSCard>
+          <XDSVStack gap={3}>
+            <XDSHStack gap={2} vAlign="center">
+              <XDSStackItem size="fill">
+                <XDSHStack gap={2} vAlign="center">
+                  <XDSIcon icon={SparklesIcon} size="sm" color="secondary" />
+                  <XDSText type="body" weight="semibold">
+                    AI Assistance
+                  </XDSText>
+                </XDSHStack>
+              </XDSStackItem>
+              <XDSButton
+                label="Copy prompt"
+                variant="ghost"
+                size="sm"
+                icon={<XDSIcon icon={ClipboardDocumentIcon} />}
+                onClick={() => {
+                  void navigator.clipboard.writeText(
+                    'Help me get set up with Product Name. Based on my project, do the following: 1. Install @xds/core and the StyleX compiler. 2. Wrap my app in XDSThemeProvider. 3. Replace one existing component with an XDS equivalent. After setup, suggest relevant next steps based on my project.',
+                  );
+                }}
+              />
+              <XDSDropdownMenu
+                button={{
+                  label: 'More options',
+                  variant: 'ghost',
+                  size: 'sm',
+                  isIconOnly: true,
+                  icon: <XDSIcon icon={ChevronDownIcon} />,
+                }}
+                items={[
+                  {label: 'Open in v0', onClick: () => {}},
+                  {label: 'Open in Claude', onClick: () => {}},
+                  {label: 'Open in ChatGPT', onClick: () => {}},
+                  {label: 'Open in Cursor', onClick: () => {}},
+                ]}
+              />
+            </XDSHStack>
+            <XDSText type="body" color="secondary">
+              Help me get set up with Product Name. Based on my project, do the
+              following: 1. Install @xds/core and the StyleX compiler. 2. Wrap
+              my app in XDSThemeProvider. 3. Replace one existing component with
+              an XDS equivalent.
+            </XDSText>
+          </XDSVStack>
+        </XDSCard>
+
+        {/* Prerequisites */}
+        <XDSVStack gap={4}>
+          <XDSHeading level={2}>Prerequisites</XDSHeading>
+          <XDSList density="compact" listStyle="disc">
+            <XDSListItem label="Node.js 18+" />
+            <XDSListItem label="React 18 or 19" />
+            <XDSListItem label="A package manager (npm, yarn, or pnpm)" />
+          </XDSList>
+        </XDSVStack>
+
+        <XDSDivider />
+
+        {/* Install the package */}
+        <XDSVStack gap={4}>
+          <XDSHeading level={2}>Install the package</XDSHeading>
+          <XDSText type="body">
+            Every project starts with installing the core package. This gives
+            you access to all components, tokens, and utilities.
+          </XDSText>
+
           <XDSVStack gap={2}>
-            <XDSText type="display-1">Getting started</XDSText>
-            <XDSText type="supporting" color="secondary">
-              Last updated March 30, 2026
+            <XDSText type="body" weight="bold">
+              Step 1: Install the core package
             </XDSText>
-            <XDSText type="body">
-              Install the package, configure your theme, and build your first
-              component in three steps.
-            </XDSText>
+            <XDSCard padding={0}>
+              <XDSCodeBlock code="npm install @xds/core" language="bash" />
+            </XDSCard>
           </XDSVStack>
 
-          <XDSCard>
-            <XDSVStack gap={3}>
-              <XDSHStack gap={2} vAlign="center">
-                <XDSStackItem size="fill">
-                  <XDSHStack gap={2} vAlign="center">
-                    <XDSIcon icon={SparklesIcon} size="sm" color="secondary" />
-                    <XDSText type="body" weight="semibold">AI Assistance</XDSText>
-                  </XDSHStack>
-                </XDSStackItem>
-                <XDSButton
-                  label="Copy prompt"
-                  variant="ghost"
-                  size="sm"
-                  icon={<XDSIcon icon={ClipboardDocumentIcon} />}
-                  onClick={() => {
-                    void navigator.clipboard.writeText(
-                      'Help me get set up with Product Name. Install @xds/core and the StyleX compiler, wrap my app in XDSThemeProvider, and replace one existing component with an XDS equivalent.',
-                    );
-                  }}
-                />
-                <XDSDropdownMenu
-                  button={{
-                    label: 'More options',
-                    variant: 'ghost',
-                    size: 'sm',
-                    isIconOnly: true,
-                    icon: <XDSIcon icon={ChevronDownIcon} />,
-                  }}
-                  items={[
-                    {label: 'Open in Cursor', onClick: () => {}},
-                    {label: 'Open in Claude', onClick: () => {}},
-                  ]}
-                />
-              </XDSHStack>
-              <XDSText type="body" color="secondary">
-                Help me get set up with Product Name. Install @xds/core and the
-                StyleX compiler, wrap my app in XDSThemeProvider, and replace
-                one existing component with an XDS equivalent.
-              </XDSText>
-            </XDSVStack>
-          </XDSCard>
-
-          <XDSVStack gap={4}>
-            <XDSHeading level={2}>Prerequisites</XDSHeading>
-            <XDSList density="compact" listStyle="disc">
-              <XDSListItem label="Node.js 18+" />
-              <XDSListItem label="React 18 or 19" />
-              <XDSListItem label="A package manager (npm, yarn, or pnpm)" />
-            </XDSList>
+          <XDSVStack gap={2}>
+            <XDSText type="body" weight="bold">
+              Step 2: Add the StyleX compiler
+            </XDSText>
+            <XDSText type="body" color="secondary">
+              XDS uses StyleX for styling. Add the compiler plugin to your build
+              configuration.
+            </XDSText>
+            <XDSCard padding={0}>
+              <XDSCodeBlock
+                code="npm install @stylexjs/babel-plugin"
+                language="bash"
+              />
+            </XDSCard>
           </XDSVStack>
 
-          <XDSDivider />
-
-          <XDSVStack gap={4}>
-            <XDSHeading level={2}>Install the package</XDSHeading>
-            <XDSText type="body">
-              Every project starts with installing the core package. This gives
-              you access to all components, tokens, and utilities.
+          <XDSVStack gap={2}>
+            <XDSText type="body" weight="bold">
+              Step 3: Import your first component
             </XDSText>
-            <XDSVStack gap={2}>
-              <XDSText type="body" weight="bold">Step 1: Install the core package</XDSText>
-              <XDSCard padding={0}>
-                <XDSCodeBlock code="npm install @xds/core" language="bash" />
-              </XDSCard>
-            </XDSVStack>
-            <XDSVStack gap={2}>
-              <XDSText type="body" weight="bold">Step 2: Add the StyleX compiler</XDSText>
-              <XDSCard padding={0}>
-                <XDSCodeBlock code="npm install @stylexjs/babel-plugin" language="bash" />
-              </XDSCard>
-            </XDSVStack>
-            <XDSVStack gap={2}>
-              <XDSText type="body" weight="bold">Step 3: Import your first component</XDSText>
-              <XDSCard padding={0}>
-                <XDSCodeBlock
-                  code={`import { XDSButton } from '@xds/core/Button';
+            <XDSCard padding={0}>
+              <XDSCodeBlock
+                code={`import { XDSButton } from '@xds/core/Button';
 
 export default function App() {
   return <XDSButton label="Hello XDS" variant="primary" />;
 }`}
-                  language="tsx"
-                />
-              </XDSCard>
-            </XDSVStack>
+                language="tsx"
+              />
+            </XDSCard>
           </XDSVStack>
+        </XDSVStack>
 
-          <XDSDivider />
+        <XDSDivider />
 
-          <XDSVStack gap={4}>
-            <XDSHeading level={2}>Configure theming</XDSHeading>
-            <XDSText type="body">
-              XDS ships with a default theme that works out of the box. To
-              customize colors, typography, and spacing, wrap your app in a theme provider.
-            </XDSText>
-            <XDSCard padding={0}>
-              <XDSCodeBlock
-                code={`import { XDSThemeProvider } from '@xds/core/Theme';
+        {/* Configure theming */}
+        <XDSVStack gap={4}>
+          <XDSHeading level={2}>Configure theming</XDSHeading>
+          <XDSText type="body">
+            XDS ships with a default theme that works out of the box. To
+            customize colors, typography, and spacing, wrap your app in a theme
+            provider.
+          </XDSText>
+          <XDSCard padding={0}>
+            <XDSCodeBlock
+              code={`import { XDSThemeProvider } from '@xds/core/Theme';
 
 export default function App({ children }) {
   return (
@@ -342,66 +312,28 @@ export default function App({ children }) {
     </XDSThemeProvider>
   );
 }`}
-                language="tsx"
-              />
-            </XDSCard>
-          </XDSVStack>
-
-          <XDSDivider />
-
-          <XDSVStack gap={4}>
-            <XDSHeading level={2}>Next steps</XDSHeading>
-            <XDSList density="compact" listStyle="disc">
-              <XDSListItem label="Fundamental concepts — How theming, layout, and composition work" />
-              <XDSListItem label="Component API reference — Props, variants, and examples for every component" />
-              <XDSListItem label="Accessibility — Built-in a11y features and ARIA patterns" />
-              <XDSListItem label="CLI tools — Scaffold projects and manage templates" />
-              <XDSListItem label="Design tokens — Colors, spacing, typography, and sizing" />
-            </XDSList>
-          </XDSVStack>
+              language="tsx"
+            />
+          </XDSCard>
+          <XDSText type="body" color="secondary">
+            See the theming guide for the full list of customizable tokens.
+          </XDSText>
         </XDSVStack>
-      </XDSLayoutContent>
-    } />
-  );
-}
 
-function WhatsNewView() {
-  return (
-    <XDSLayout contentWidth={960} content={
-      <XDSLayoutContent padding={8}>
-        <XDSVStack gap={8}>
-          <XDSVStack gap={2}>
-            <XDSText type="display-1">What&#39;s New</XDSText>
-            <XDSText type="body" color="secondary">
-              Latest updates, new components, improvements, and breaking changes.
-            </XDSText>
-          </XDSVStack>
+        <XDSDivider />
 
-          <XDSBanner status="info" title="Latest Release">
-            <XDSText type="body">
-              @xds/chat v0.0.12 is now available with message bubbles, thread view, and AI composer.
-            </XDSText>
-          </XDSBanner>
-
-          {CHANGELOG_ENTRIES.map((entry, i) => (
-            <div key={i}>
-              <XDSHStack gap={3} vAlign="center" style={{padding: '12px 0'}}>
-                <XDSText
-                  type="supporting"
-                  color="secondary"
-                  style={{fontFamily: 'monospace', fontSize: 12, width: 50, flexShrink: 0}}>
-                  {entry.date}
-                </XDSText>
-                <XDSBadge
-                  label={entry.type}
-                  variant={entry.type === 'Release' ? 'green' : entry.type === 'Improvement' ? 'blue' : 'orange'}
-                />
-                <XDSText type="body" weight="bold" style={{flex: 1}}>{entry.title}</XDSText>
-              </XDSHStack>
-              {i < CHANGELOG_ENTRIES.length - 1 && <XDSDivider />}
-            </div>
-          ))}
+        {/* Next steps */}
+        <XDSVStack gap={4}>
+          <XDSHeading level={2}>Next steps</XDSHeading>
+          <XDSList density="compact" listStyle="disc">
+            <XDSListItem label="Fundamental concepts — How theming, layout, and composition work" />
+            <XDSListItem label="Component API reference — Props, variants, and examples for every component" />
+            <XDSListItem label="Accessibility — Built-in a11y features and ARIA patterns" />
+            <XDSListItem label="CLI tools — Scaffold projects and manage templates" />
+            <XDSListItem label="Design tokens — Colors, spacing, typography, and sizing" />
+          </XDSList>
         </XDSVStack>
+      </XDSVStack>
       </XDSLayoutContent>
     } />
   );
@@ -420,7 +352,9 @@ export default function DocumentationOverviewPage() {
       height="fill"
       sideNav={
         <XDSSideNav
-          header={<XDSSideNavHeading heading="Product Name" />}>
+          header={
+            <XDSSideNavHeading heading="Product Name" />
+          }>
           <XDSSideNavSection title="Navigation" isHeaderHidden>
             <XDSSideNavItem
               label="Home"
@@ -428,25 +362,13 @@ export default function DocumentationOverviewPage() {
               onClick={() => setActivePage('home')}
             />
             <XDSSideNavItem
-              label="Getting Started"
+              label="Getting started"
               isSelected={activePage === 'getting-started'}
               onClick={() => setActivePage('getting-started')}
             />
-            <XDSSideNavItem
-              label="What's New"
-              isSelected={activePage === 'whats-new'}
-              onClick={() => setActivePage('whats-new')}
-            />
           </XDSSideNavSection>
 
-          <XDSSideNavSection title="Guides">
-            <XDSSideNavItem label="Principles" />
-            <XDSSideNavItem label="Accessibility" />
-            <XDSSideNavItem label="Theming" />
-            <XDSSideNavItem label="CLI Tools" />
-          </XDSSideNavSection>
-
-          {OVERVIEW_SECTIONS.map(category => (
+          {COMPONENT_CATEGORIES.map(category => (
             <XDSSideNavSection key={category.label} title={category.label}>
               {category.items.map(item => (
                 <XDSSideNavItem
@@ -459,13 +381,9 @@ export default function DocumentationOverviewPage() {
         </XDSSideNav>
       }>
       {activePage === 'home' ? (
-        <OverviewView onSelectPage={setActivePage} />
-      ) : activePage === 'getting-started' ? (
-        <GettingStartedView />
-      ) : activePage === 'whats-new' ? (
-        <WhatsNewView />
+        <OverviewView onSelectComponent={setActivePage} />
       ) : (
-        <OverviewView onSelectPage={setActivePage} />
+        <GettingStartedView />
       )}
     </XDSAppShell>
   );

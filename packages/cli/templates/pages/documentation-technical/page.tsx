@@ -16,7 +16,6 @@ import {XDSCard} from '@xds/core/Card';
 import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSToken} from '@xds/core/Token';
-import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSBanner} from '@xds/core/Banner';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
@@ -40,7 +39,7 @@ const styles = stylex.create({
 });
 
 // ---------------------------------------------------------------------------
-// DialogPreview
+// DialogPreview — stateful dialog preview for component previews
 // ---------------------------------------------------------------------------
 
 function DialogPreview() {
@@ -74,51 +73,116 @@ const COMPONENT_CATEGORIES = [
   {
     label: 'Core',
     items: [
-      {key: 'appshell', name: 'AppShell', desc: 'Foundational page layout with header, sidebar, and content regions.'},
-      {key: 'avatar', name: 'Avatar', desc: 'Represents a person or entity with an image, initials, or icon.'},
-      {key: 'badge', name: 'Badge', desc: 'Small counts or status labels attached to icons, buttons, or list items.'},
-      {key: 'banner', name: 'Banner', desc: 'Important, non-modal messages at the top of a page or section.'},
-      {key: 'button', name: 'Button', desc: 'Buttons let people take action in forms, dialogs, and toolbars.'},
-      {key: 'card', name: 'Card', desc: 'Cards group related content and actions in a contained surface.'},
-      {key: 'dialog', name: 'Dialog', desc: 'Modal overlays that require user attention or action before continuing.'},
-      {key: 'dropdownmenu', name: 'DropdownMenu', desc: 'List of actions or options in a floating overlay triggered by a button.'},
-      {key: 'icon', name: 'Icon', desc: 'Small visual symbols that represent actions, objects, or concepts.'},
-      {key: 'link', name: 'Link', desc: 'Navigation between pages or to external resources with visual affordance.'},
-      {key: 'list', name: 'List', desc: 'Vertical set of related items with selection, icons, and metadata.'},
-      {key: 'popover', name: 'Popover', desc: 'Rich content in a floating panel anchored to a trigger element.'},
-      {key: 'table', name: 'Table', desc: 'Structured data in rows and columns with sorting, selection, and custom cells.'},
-      {key: 'token', name: 'Token', desc: 'Compact metadata labels such as tags, categories, or filters.'},
-      {key: 'tooltip', name: 'Tooltip', desc: 'Concise helper text when users hover over or focus an element.'},
+      {key: 'appshell', name: 'AppShell', desc: 'AppShell provides a foundational page layout with header, sidebar, and content regions. Use it to establish consistent structure across your application.'},
+      {key: 'avatar', name: 'Avatar', desc: 'Avatars represent a person or entity with an image, initials, or icon. They are commonly used in user profiles, comments, and contact lists.'},
+      {key: 'badge', name: 'Badge', desc: 'Badges display small counts or status labels. They can be attached to icons, buttons, or list items to surface key information at a glance.'},
+      {key: 'banner', name: 'Banner', desc: 'Banners show important, non-modal messages at the top of a page or section. They communicate status, warnings, or promotional information.'},
+      {key: 'button', name: 'Button', desc: 'Buttons let people take action. They can be used in forms, dialogs, and toolbars, or as standalone links.'},
+      {key: 'calendar', name: 'Calendar', desc: 'Calendar provides a date-picking grid for selecting single dates or date ranges. It integrates with form fields for date input.'},
+      {key: 'dialog', name: 'Dialog', desc: 'Dialogs are modal overlays that require user attention or action before continuing. They are used for confirmations, forms, and critical decisions.'},
+      {key: 'dropdownmenu', name: 'DropdownMenu', desc: 'DropdownMenu presents a list of actions or options in a floating overlay. It is triggered by a button and supports nested submenus.'},
+      {key: 'emptystate', name: 'EmptyState', desc: 'EmptyState provides a placeholder when there is no content to display. It guides users with a message, illustration, and optional call-to-action.'},
+      {key: 'hovercard', name: 'HoverCard', desc: 'HoverCard shows a rich preview of content when users hover over a trigger element. It is ideal for previewing profiles, links, or details.'},
+      {key: 'icon', name: 'Icon', desc: 'Icons are small visual symbols that represent actions, objects, or concepts. They improve scannability and reinforce meaning alongside text.'},
+      {key: 'kbd', name: 'Kbd', desc: 'Kbd renders keyboard shortcut hints in a styled inline element. Use it to show users which key combinations perform specific actions.'},
+      {key: 'link', name: 'Link', desc: 'Links provide navigation between pages or to external resources. They follow accessible anchor semantics with visual affordance.'},
+      {key: 'list', name: 'List', desc: 'List displays a vertical set of related items. It supports selection, icons, and metadata for building menus, nav lists, and more.'},
+      {key: 'metadatalist', name: 'MetadataList', desc: 'MetadataList displays key-value pairs in a structured layout. Use it for detail panels, settings summaries, and record information.'},
+      {key: 'moremenu', name: 'MoreMenu', desc: 'MoreMenu provides an overflow menu triggered by an icon button. It collects secondary actions that do not fit in the primary toolbar.'},
+      {key: 'overflowlist', name: 'OverflowList', desc: 'OverflowList renders as many items as fit in the available space and collapses the rest into an overflow menu automatically.'},
+      {key: 'pagination', name: 'Pagination', desc: 'Pagination lets users navigate through pages of content. It supports page numbers, previous/next controls, and page-size selection.'},
+      {key: 'popover', name: 'Popover', desc: 'Popover displays rich content in a floating panel anchored to a trigger element. It is used for forms, filters, and contextual tools.'},
+      {key: 'progressbar', name: 'ProgressBar', desc: 'ProgressBar shows the completion status of a task or process. It provides visual feedback for uploads, installations, and multi-step flows.'},
+      {key: 'skeleton', name: 'Skeleton', desc: 'Skeleton renders placeholder shapes that mimic content layout while loading. It reduces perceived wait time and prevents layout shifts.'},
+      {key: 'spinner', name: 'Spinner', desc: 'Spinner indicates that a process is in progress when the duration is unknown. It draws attention without blocking the interface.'},
+      {key: 'statusdot', name: 'StatusDot', desc: 'StatusDot shows a small colored indicator for online, offline, busy, or custom statuses. It is often paired with avatars or list items.'},
+      {key: 'table', name: 'Table', desc: 'Table displays structured data in rows and columns with support for sorting, selection, and custom cell rendering.'},
+      {key: 'thumbnail', name: 'Thumbnail', desc: 'Thumbnail renders a small image preview with consistent sizing and optional rounded corners. It is used in media lists, cards, and galleries.'},
+      {key: 'timestamp', name: 'Timestamp', desc: 'Timestamp formats and displays dates and times with relative or absolute labels. It updates automatically to stay current.'},
+      {key: 'toast', name: 'Toast', desc: 'Toasts display brief, non-blocking notifications at the edge of the screen. They auto-dismiss and are used for success, error, or info messages.'},
+      {key: 'togglebutton', name: 'ToggleButton', desc: 'ToggleButton is a button that switches between an on and off state. Use it for binary options like bookmarking, favoriting, or muting.'},
+      {key: 'token', name: 'Token', desc: 'Tokens display compact metadata labels such as tags, categories, or filters. They can be dismissible and support selection state.'},
+      {key: 'tooltip', name: 'Tooltip', desc: 'Tooltips show concise helper text when users hover over or focus an element. They clarify icons, truncated labels, and controls.'},
+      {key: 'treelist', name: 'TreeList', desc: 'TreeList renders hierarchical data in an expandable tree structure. It supports multi-level nesting, selection, and lazy loading.'},
+    ],
+  },
+  {
+    label: 'Typography',
+    items: [
+      {key: 'heading', name: 'Heading', desc: 'Heading renders semantic section titles from h1 through h6. It establishes visual hierarchy and supports multiple weight and size options.'},
+      {key: 'text', name: 'Text', desc: 'Text renders body copy, labels, and supporting content with consistent typography. It supports sizes from display down to caption.'},
     ],
   },
   {
     label: 'Layout',
     items: [
-      {key: 'stack', name: 'Stack', desc: 'Arranges children in a row or column with consistent gap spacing.'},
-      {key: 'grid', name: 'Grid', desc: 'CSS grid-based layout container with configurable columns and gap.'},
-      {key: 'divider', name: 'Divider', desc: 'Separates content into distinct sections with a subtle line.'},
-      {key: 'section', name: 'Section', desc: 'Wraps content with consistent vertical spacing and optional heading.'},
-      {key: 'center', name: 'Center', desc: 'Centers its child horizontally and vertically within available space.'},
+      {key: 'aspectratio', name: 'AspectRatio', desc: 'AspectRatio constrains its child to a specified width-to-height ratio. Use it for responsive images, videos, and embedded media.'},
+      {key: 'card', name: 'Card', desc: 'Cards group related content and actions in a contained surface. They can include headers, media, body text, and action bars.'},
+      {key: 'center', name: 'Center', desc: 'Center aligns its child horizontally and vertically within the available space. It is useful for empty states, loading screens, and hero sections.'},
+      {key: 'divider', name: 'Divider', desc: 'Dividers separate content into distinct sections with a subtle or strong horizontal line. They can optionally include a label.'},
+      {key: 'grid', name: 'Grid', desc: 'Grid provides a CSS grid-based layout container with configurable columns, rows, and gap. It simplifies responsive multi-column designs.'},
+      {key: 'layout', name: 'Layout', desc: 'Layout provides foundational page-level primitives for header, sidebar, and content regions. It establishes consistent spacing and structure.'},
+      {key: 'section', name: 'Section', desc: 'Section wraps a block of content with consistent vertical spacing and an optional heading. It structures pages into logical groups.'},
+      {key: 'stack', name: 'Stack', desc: 'Stack arranges child elements in a row or column with consistent gap spacing. It is the primary tool for one-dimensional layout composition.'},
+      {key: 'toolbar', name: 'Toolbar', desc: 'Toolbar arranges a row of action buttons and controls in a compact, aligned strip. It is used at the top of panels, editors, and cards.'},
     ],
   },
   {
     label: 'Navigation',
     items: [
-      {key: 'sidenav', name: 'SideNav', desc: 'Vertical navigation panel with links, sections, and collapsible groups.'},
-      {key: 'topnav', name: 'TopNav', desc: 'App-level navigation bar with branding, links, and user actions.'},
-      {key: 'tablist', name: 'TabList', desc: 'Switches between content views using a horizontal row of tabs.'},
-      {key: 'breadcrumbs', name: 'Breadcrumbs', desc: "Shows user's current location within a navigation hierarchy."},
+      {key: 'breadcrumbs', name: 'Breadcrumbs', desc: "Breadcrumbs show the user's current location within a navigation hierarchy. They provide quick links back to parent pages."},
+      {key: 'mobilenav', name: 'MobileNav', desc: 'MobileNav provides a responsive navigation menu optimized for small screens. It typically slides in from the edge of the viewport.'},
+      {key: 'sidenav', name: 'SideNav', desc: 'SideNav renders a vertical navigation panel with links, sections, and collapsible groups. It is used as the primary nav in dashboard layouts.'},
+      {key: 'tablist', name: 'TabList', desc: 'TabList switches between content views using a horizontal row of tabs. Only one tab is active at a time, and content changes without a page reload.'},
+      {key: 'topnav', name: 'TopNav', desc: 'TopNav provides an app-level navigation bar across the top of the page. It holds branding, primary links, search, and user actions.'},
     ],
   },
   {
     label: 'Form',
     items: [
-      {key: 'textinput', name: 'TextInput', desc: 'Single-line text field for names, emails, and search queries.'},
-      {key: 'selector', name: 'Selector', desc: 'Pick a single item from a dropdown list with search and grouping.'},
-      {key: 'switch', name: 'Switch', desc: 'Toggles a setting between on and off states with immediate effect.'},
-      {key: 'checkboxinput', name: 'CheckboxInput', desc: 'Single checkbox with a label for boolean opt-in choices.'},
-      {key: 'radiolist', name: 'RadioList', desc: 'Group of mutually exclusive options for settings and preferences.'},
-      {key: 'slider', name: 'Slider', desc: 'Select a value or range by dragging a handle along a track.'},
+      {key: 'checkboxinput', name: 'CheckboxInput', desc: 'CheckboxInput renders a single checkbox with a label. It is used for boolean opt-in choices like terms acceptance or feature toggles.'},
+      {key: 'checkboxlist', name: 'CheckboxList', desc: 'CheckboxList displays a group of checkboxes for selecting multiple options. It manages shared state and supports select-all behavior.'},
+      {key: 'dateinput', name: 'DateInput', desc: 'DateInput provides a text field with calendar picker for entering dates. It validates format and supports min/max date constraints.'},
+      {key: 'field', name: 'Field', desc: 'Field wraps a form control with a label, helper text, and error message. It ensures consistent layout and accessibility across all form inputs.'},
+      {key: 'formlayout', name: 'FormLayout', desc: 'FormLayout arranges form fields in a structured vertical or horizontal layout with consistent spacing and alignment.'},
+      {key: 'multiselector', name: 'MultiSelector', desc: 'MultiSelector lets users pick multiple items from a searchable list with tokenized selections. It is ideal for assigning tags, teams, or categories.'},
+      {key: 'numberinput', name: 'NumberInput', desc: 'NumberInput provides a text field for numeric values with optional increment/decrement controls. It supports min, max, and step constraints.'},
+      {key: 'powersearch', name: 'PowerSearch', desc: 'PowerSearch provides an advanced search interface with filters, suggestions, and structured query support for complex data exploration.'},
+      {key: 'radiolist', name: 'RadioList', desc: 'RadioList presents a group of mutually exclusive options. Only one option can be selected at a time, making it ideal for settings and preferences.'},
+      {key: 'selector', name: 'Selector', desc: 'Selector lets users pick a single item from a dropdown list. It supports search, grouping, and custom option rendering.'},
+      {key: 'slider', name: 'Slider', desc: 'Slider lets users select a value or range by dragging a handle along a track. It is used for volume, brightness, and numeric range inputs.'},
+      {key: 'switch', name: 'Switch', desc: 'Switch toggles a setting between on and off states with immediate effect. It is used for preferences, feature flags, and real-time controls.'},
+      {key: 'textarea', name: 'TextArea', desc: 'TextArea provides a multi-line text field for longer-form content like comments, descriptions, and messages. It supports auto-resize.'},
+      {key: 'textinput', name: 'TextInput', desc: 'TextInput is a single-line text field for short user input like names, emails, and search queries. It supports icons, prefixes, and validation.'},
+      {key: 'timeinput', name: 'TimeInput', desc: 'TimeInput provides a field for entering times with optional picker support. It validates format and supports 12- and 24-hour modes.'},
+      {key: 'tokenizer', name: 'Tokenizer', desc: 'Tokenizer is a text input that converts entries into removable tokens. It is used for multi-value fields like email recipients and tags.'},
+      {key: 'typeahead', name: 'Typeahead', desc: 'Typeahead provides an autocomplete search input that suggests results as the user types. It supports async data sources and custom rendering.'},
+    ],
+  },
+  {
+    label: 'Inputs',
+    items: [
+      {key: 'segmentedcontrol', name: 'SegmentedControl', desc: 'SegmentedControl lets users toggle between a small set of mutually exclusive options displayed as connected segments. It works like a visual radio group.'},
+    ],
+  },
+  {
+    label: 'Components',
+    items: [
+      {key: 'codeblock', name: 'CodeBlock', desc: 'CodeBlock displays formatted, syntax-highlighted source code. It supports line numbers, copy-to-clipboard, and language detection.'},
+      {key: 'collapsible', name: 'Collapsible', desc: 'Collapsible wraps content that can be expanded or collapsed with a trigger. It is used for FAQs, advanced settings, and progressive disclosure.'},
+      {key: 'markdown', name: 'Markdown', desc: 'Markdown renders markdown-formatted text into styled HTML. It supports headings, lists, links, code blocks, and inline formatting.'},
+    ],
+  },
+  {
+    label: 'Chat',
+    items: [
+      {key: 'chat', name: 'Chat', desc: 'Chat provides a conversational message interface with message bubbles, input, and thread support. It is used for AI assistants and messaging UIs.'},
+    ],
+  },
+  {
+    label: 'CommandPalette',
+    items: [
+      {key: 'commandpalette', name: 'CommandPalette', desc: 'CommandPalette is a keyboard-driven command menu for quick navigation and actions. It is opened with a hotkey and supports fuzzy search.'},
     ],
   },
 ];
@@ -128,55 +192,47 @@ const COMPONENT_DOCS: Record<
   {
     usage: string;
     bestPractices: {type: 'do' | 'dont'; text: string}[];
-    props: {name: string; type: string; default: string; description: string}[];
-    examples: {title: string; description: string; code: string}[];
+    examples: {
+      title: string;
+      description: string;
+      code: string;
+    }[];
   }
 > = {
   button: {
     usage:
       'Buttons provide visual cues for actions and events. These fundamental components allow users to commit actions and navigate a page flow. Use a Button when a user needs to submit a form, start a new task or action, or trigger a new UI element to appear on the page.',
     bestPractices: [
-      {type: 'do', text: 'Convey clear action hierarchy: Each surface should only have 1 primary button.'},
-      {type: 'do', text: 'Promote clarity: Consider labels alongside icons where appropriate.'},
-      {type: 'dont', text: 'Overuse primary buttons: Overusing colored buttons creates visual confusion.'},
-      {type: 'dont', text: 'Use a button for navigation: Use Link instead for page transitions.'},
-    ],
-    props: [
-      {name: 'label', type: 'string', default: '—', description: 'Accessible label text for the button.'},
-      {name: 'variant', type: "'primary' | 'secondary' | 'ghost' | 'destructive'", default: "'secondary'", description: 'Visual style variant.'},
-      {name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'", description: 'Size of the button.'},
-      {name: 'icon', type: 'ReactNode', default: '—', description: 'Icon element displayed before the label.'},
-      {name: 'isIconOnly', type: 'boolean', default: 'false', description: 'Render only the icon, hiding the label visually.'},
-      {name: 'isDisabled', type: 'boolean', default: 'false', description: 'Prevents interaction and dims the button.'},
-      {name: 'isLoading', type: 'boolean', default: 'false', description: 'Shows a spinner and disables interaction.'},
-      {name: 'onClick', type: '() => void', default: '—', description: 'Callback fired when the button is clicked.'},
+      {
+        type: 'do',
+        text: 'Convey clear action hierarchy: Each surface should only have 1 primary button. A majority of buttons should be in default or flat style.',
+      },
+      {
+        type: 'do',
+        text: 'Promote clarity: Consider labels alongside icons where appropriate.',
+      },
+      {
+        type: 'dont',
+        text: 'Overuse primary or special buttons: Overusing colored buttons will result in a page with less intentionality, create visual confusion and a lack of page hierarchy.',
+      },
     ],
     examples: [
       {
-        title: 'Variants',
-        description: 'Four semantic button types: ghost, secondary, primary, and destructive.',
-        code: `<XDSButton label="Ghost" variant="ghost" />
-<XDSButton label="Secondary" variant="secondary" />
+        title: 'Semantics',
+        description:
+          'We have four semantic buttons types: flat, default, primary, and destructive. Flat buttons are used to limit visual prominence, whereas primary emphasizes a single action. Use destructive for deletions that trigger dialog confirmations.',
+        code: `<XDSButton label="Flat" variant="ghost" />
+<XDSButton label="Default" variant="secondary" />
 <XDSButton label="Primary" variant="primary" />
 <XDSButton label="Destructive" variant="destructive" />`,
       },
       {
-        title: 'With icon',
-        description: 'Buttons can include a leading icon for visual reinforcement.',
+        title: 'Default button with badge',
+        description:
+          'Buttons can include a badge to highlight new or updated actions.',
         code: `<XDSButton
-  label="Add item"
-  variant="primary"
-  icon={<PlusIcon />}
-/>`,
-      },
-      {
-        title: 'Icon only',
-        description: 'Icon-only buttons for compact toolbars. Always provide a label for accessibility.',
-        code: `<XDSButton
-  label="Settings"
-  variant="ghost"
-  icon={<CogIcon />}
-  isIconOnly
+  label="Button"
+  variant="default"
 />`,
       },
     ],
@@ -206,14 +262,9 @@ function getComponentDocs(key: string) {
   return {
     usage: desc,
     bestPractices: [
-      {type: 'do' as const, text: `Use ${name} in the appropriate context to provide the described functionality.`},
+      {type: 'do' as const, text: `Use ${name} in the appropriate context to provide the functionality described above.`},
       {type: 'do' as const, text: `Pair ${name} with related components to create cohesive, accessible interfaces.`},
       {type: 'dont' as const, text: `Use ${name} when a simpler alternative achieves the same goal with less complexity.`},
-    ],
-    props: [
-      {name: 'label', type: 'string', default: '—', description: `Accessible label for the ${name} component.`},
-      {name: 'children', type: 'ReactNode', default: '—', description: `Content rendered inside the ${name}.`},
-      {name: 'className', type: 'string', default: '—', description: 'Additional CSS class name.'},
     ],
     examples: [
       {
@@ -226,7 +277,7 @@ function getComponentDocs(key: string) {
 }
 
 // ---------------------------------------------------------------------------
-// Sub-views
+// ComponentDetailView
 // ---------------------------------------------------------------------------
 
 function ComponentDetailView({activeNav}: {activeNav: string}) {
@@ -234,14 +285,13 @@ function ComponentDetailView({activeNav}: {activeNav: string}) {
 
   const EXAMPLE_PREVIEWS: Record<string, React.ReactNode[]> = {
     button: [
-      <XDSHStack key="variants" gap={3} vAlign="center">
-        <XDSButton label="Ghost" variant="ghost" />
-        <XDSButton label="Secondary" variant="secondary" />
+      <XDSHStack key="semantics" gap={3} vAlign="center">
+        <XDSButton label="Flat" variant="ghost" />
+        <XDSButton label="Default" variant="secondary" />
         <XDSButton label="Primary" variant="primary" />
         <XDSButton label="Destructive" variant="destructive" />
       </XDSHStack>,
-      <XDSButton key="icon" label="Add item" variant="primary" icon={<XDSIcon icon={PlusIcon} />} />,
-      <XDSButton key="icononly" label="Settings" variant="ghost" icon={<XDSIcon icon={PlusIcon} />} isIconOnly />,
+      <XDSButton key="badge" label="Button" variant="secondary" />,
     ],
   };
 
@@ -260,7 +310,9 @@ function ComponentDetailView({activeNav}: {activeNav: string}) {
       <XDSCard>
         <XDSVStack gap={2}>
           <XDSHeading level={4}>Card Title</XDSHeading>
-          <XDSText type="body" color="secondary">Cards group related content and actions.</XDSText>
+          <XDSText type="body" color="secondary">
+            Cards group related content and actions.
+          </XDSText>
         </XDSVStack>
       </XDSCard>
     ),
@@ -270,6 +322,8 @@ function ComponentDetailView({activeNav}: {activeNav: string}) {
       </XDSBanner>
     ),
     dialog: <DialogPreview />,
+    text: <XDSText type="body">Body text</XDSText>,
+    divider: <XDSDivider />,
     token: <XDSToken label="Design" />,
     tooltip: (
       <XDSTooltip content="Primary action">
@@ -295,11 +349,13 @@ function ComponentDetailView({activeNav}: {activeNav: string}) {
 
           <XDSDivider />
 
-          {/* Live Preview */}
+          {/* Live Preview Card */}
           <XDSCard variant="muted" padding={0}>
             <XDSCenter height={360}>
               {COMPONENT_PREVIEWS[activeNav] ?? (
-                <XDSText type="supporting" color="secondary">Preview coming soon</XDSText>
+                <XDSText type="supporting" color="secondary">
+                  Preview coming soon
+                </XDSText>
               )}
             </XDSCenter>
           </XDSCard>
@@ -307,7 +363,9 @@ function ComponentDetailView({activeNav}: {activeNav: string}) {
           {/* Usage & Best Practices */}
           <XDSVStack gap={4}>
             <XDSHeading level={2}>Usage</XDSHeading>
-            <XDSText type="large" weight="normal">{docs.usage}</XDSText>
+            <XDSText type="large" weight="normal">
+              {docs.usage}
+            </XDSText>
             <XDSHeading level={3}>Best practices</XDSHeading>
             <XDSTable
               data={docs.bestPractices as Record<string, unknown>[]}
@@ -327,36 +385,11 @@ function ComponentDetailView({activeNav}: {activeNav: string}) {
                   key: 'text',
                   header: 'Practices',
                   renderCell: (item: Record<string, unknown>) => (
-                    <XDSText type="body" textWrap="wrap">{item.text as string}</XDSText>
+                    <XDSText type="body" textWrap="wrap">
+                      {item.text as string}
+                    </XDSText>
                   ),
                 },
-              ]}
-              density="spacious"
-              dividers="rows"
-            />
-          </XDSVStack>
-
-          <XDSDivider />
-
-          {/* Props table */}
-          <XDSVStack gap={4}>
-            <XDSHeading level={2}>Props</XDSHeading>
-            <XDSText type="body" color="secondary">
-              All available props for the {getComponentName(activeNav)} component.
-            </XDSText>
-            <XDSTable
-              data={docs.props as Record<string, unknown>[]}
-              columns={[
-                {key: 'name', header: 'Prop', width: pixel(140), renderCell: (item: Record<string, unknown>) => (
-                  <XDSText type="body" weight="bold" style={{fontFamily: 'monospace', fontSize: 13}}>{item.name as string}</XDSText>
-                )},
-                {key: 'type', header: 'Type', width: pixel(200), renderCell: (item: Record<string, unknown>) => (
-                  <XDSText type="supporting" style={{fontFamily: 'monospace', fontSize: 12}}>{item.type as string}</XDSText>
-                )},
-                {key: 'default', header: 'Default', width: pixel(100), renderCell: (item: Record<string, unknown>) => (
-                  <XDSText type="supporting" color="secondary" style={{fontFamily: 'monospace', fontSize: 12}}>{item.default as string}</XDSText>
-                )},
-                {key: 'description', header: 'Description'},
               ]}
               density="spacious"
               dividers="rows"
@@ -369,61 +402,79 @@ function ComponentDetailView({activeNav}: {activeNav: string}) {
           <XDSVStack gap={4}>
             <XDSHeading level={2}>Examples</XDSHeading>
             <XDSText type="large" weight="normal">
-              Explore common configurations, variations, and states.
+              Explore common configurations, variations, and states for this
+              component.
             </XDSText>
           </XDSVStack>
           <XDSVStack gap={8}>
-            {docs.examples.map((example, i) => {
-              const tabKey = `${activeNav}-${i}`;
-              const activeTab = exampleTabs[tabKey] ?? 'description';
-              return (
-                <XDSCard key={i} padding={0}>
-                  <XDSSection padding={3} variant="transparent">
-                    <XDSHStack gap={3} vAlign="center">
-                      <XDSStackItem size="fill">
-                        <XDSText type="body" weight="medium">{example.title}</XDSText>
-                      </XDSStackItem>
-                      <XDSHStack gap={1} vAlign="center">
-                        <XDSButton
-                          label="Open in Craft"
-                          variant="ghost"
-                          size="sm"
-                          icon={<XDSIcon icon={ArrowTopRightOnSquareIcon} />}
-                        />
-                        <XDSIconButton
-                          label="Fullscreen"
-                          variant="ghost"
-                          size="sm"
-                          icon={<XDSIcon icon={ArrowsPointingOutIcon} />}
-                        />
-                      </XDSHStack>
-                    </XDSHStack>
-                  </XDSSection>
-                  <XDSCenter height={280}>
-                    {previews[i] ?? (
-                      <XDSText type="supporting" color="secondary">Preview coming soon</XDSText>
-                    )}
-                  </XDSCenter>
-                  <XDSSection variant="wash" padding={3} dividers={['top']}>
-                    <XDSVStack gap={3}>
-                      <XDSTabList
-                        value={activeTab}
-                        onChange={value => setExampleTabs(prev => ({...prev, [tabKey]: value}))}
+          {docs.examples.map((example, i) => {
+            const tabKey = `${activeNav}-${i}`;
+            const activeTab = exampleTabs[tabKey] ?? 'description';
+            return (
+              <XDSCard key={i} padding={0}>
+                {/* Header */}
+                <XDSSection padding={3} variant="transparent">
+                  <XDSHStack gap={3} vAlign="center">
+                    <XDSStackItem size="fill">
+                      <XDSText type="body" weight="medium">
+                        {example.title}
+                      </XDSText>
+                    </XDSStackItem>
+                    <XDSHStack gap={1} vAlign="center">
+                      <XDSButton
+                        label="Open in Craft"
+                        variant="ghost"
                         size="sm"
-                        xstyle={styles.tabListFlush}>
-                        <XDSTab value="description" label="Description" />
-                        <XDSTab value="code" label="Code" />
-                      </XDSTabList>
-                      {activeTab === 'description' ? (
-                        <XDSText type="body">{example.description}</XDSText>
-                      ) : (
-                        <XDSCodeBlock code={example.code} language="tsx" />
-                      )}
-                    </XDSVStack>
-                  </XDSSection>
-                </XDSCard>
-              );
-            })}
+                        icon={<XDSIcon icon={ArrowTopRightOnSquareIcon} />}
+                      />
+                      <XDSButton
+                        label="Send to CLI"
+                        variant="ghost"
+                        size="sm"
+                      />
+                      <XDSIconButton
+                        label="Fullscreen"
+                        variant="ghost"
+                        size="sm"
+                        icon={<XDSIcon icon={ArrowsPointingOutIcon} />}
+                      />
+                    </XDSHStack>
+                  </XDSHStack>
+                </XDSSection>
+                {/* Preview */}
+                <XDSCenter height={280}>
+                  {previews[i] ?? (
+                    <XDSText type="supporting" color="secondary">
+                      Preview coming soon
+                    </XDSText>
+                  )}
+                </XDSCenter>
+                {/* Tabs + content */}
+                <XDSSection variant="wash" padding={3} dividers={['top']}>
+                  <XDSVStack gap={3}>
+                    <XDSTabList
+                      value={activeTab}
+                      onChange={value =>
+                        setExampleTabs(prev => ({
+                          ...prev,
+                          [tabKey]: value,
+                        }))
+                      }
+                      size="sm"
+                      xstyle={styles.tabListFlush}>
+                      <XDSTab value="description" label="Description" />
+                      <XDSTab value="code" label="Code" />
+                    </XDSTabList>
+                    {activeTab === 'description' ? (
+                      <XDSText type="body">{example.description}</XDSText>
+                    ) : (
+                      <XDSCodeBlock code={example.code} language="tsx" />
+                    )}
+                  </XDSVStack>
+                </XDSSection>
+              </XDSCard>
+            );
+          })}
           </XDSVStack>
         </XDSVStack>
       </XDSLayoutContent>
@@ -444,7 +495,9 @@ export default function TechnicalDocumentationPage() {
       height="fill"
       sideNav={
         <XDSSideNav
-          header={<XDSSideNavHeading heading="API Reference" />}>
+          header={
+            <XDSSideNavHeading heading="Product Name" />
+          }>
           {COMPONENT_CATEGORIES.map(category => (
             <XDSSideNavSection key={category.label} title={category.label}>
               {category.items.map(item => (
@@ -452,7 +505,11 @@ export default function TechnicalDocumentationPage() {
                   key={item.key}
                   label={item.name}
                   isSelected={activePage === item.key}
-                  onClick={() => setActivePage(item.key)}
+                  onClick={
+                    item.key === 'button'
+                      ? () => setActivePage(item.key)
+                      : undefined
+                  }
                 />
               ))}
             </XDSSideNavSection>
