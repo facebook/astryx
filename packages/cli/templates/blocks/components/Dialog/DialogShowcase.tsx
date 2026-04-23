@@ -2,7 +2,12 @@
 
 import {useState} from 'react';
 import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
-import {XDSLayout, XDSLayoutContent, XDSLayoutFooter} from '@xds/core/Layout';
+import {
+  XDSLayout,
+  XDSLayoutContent,
+  XDSLayoutFooter,
+  XDSHStack,
+} from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
 
@@ -30,22 +35,20 @@ export default function DialogShowcase() {
             </XDSLayoutContent>
           }
           footer={
-            <XDSLayoutFooter
-              endContent={
-                <>
-                  <XDSButton
-                    label="Discard"
-                    variant="ghost"
-                    onClick={() => setIsOpen(false)}
-                  />
-                  <XDSButton
-                    label="Save"
-                    variant="primary"
-                    onClick={() => setIsOpen(false)}
-                  />
-                </>
-              }
-            />
+            <XDSLayoutFooter>
+              <XDSHStack gap={2} hAlign="end">
+                <XDSButton
+                  label="Discard"
+                  variant="ghost"
+                  onClick={() => setIsOpen(false)}
+                />
+                <XDSButton
+                  label="Save"
+                  variant="primary"
+                  onClick={() => setIsOpen(false)}
+                />
+              </XDSHStack>
+            </XDSLayoutFooter>
           }
         />
       </XDSDialog>
