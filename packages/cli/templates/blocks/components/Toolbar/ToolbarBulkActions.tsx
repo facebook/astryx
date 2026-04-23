@@ -72,7 +72,7 @@ export default function ToolbarBulkActions() {
           {key: 'role', header: 'Role'},
         ]}
         data={DATA}
-        plugins={[selectionPlugin]}
+        plugins={{selection: selectionPlugin}}
       />
     </>
   );
