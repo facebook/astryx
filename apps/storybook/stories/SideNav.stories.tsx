@@ -522,3 +522,70 @@ export const HeaderEndContentWithMenu: Story = {
     </XDSSideNav>
   ),
 };
+
+// =============================================================================
+// Collapsible Items
+// =============================================================================
+
+export const CollapsibleItems: Story = {
+  name: 'Collapsible Items',
+  render: () => (
+    <XDSSideNav
+      header={
+        <XDSSideNavHeading
+          icon={
+            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+          }
+          heading="My App"
+        />
+      }>
+      <XDSSideNavSection title="Collapsible (no href)">
+        <XDSSideNavItem
+          label="Settings"
+          icon={Cog6ToothIcon}
+          collapsible>
+          <XDSSideNavItem label="General" href="/settings/general" />
+          <XDSSideNavItem label="Security" href="/settings/security" />
+          <XDSSideNavItem label="Notifications" href="/settings/notifications" />
+        </XDSSideNavItem>
+        <XDSSideNavItem
+          label="Documents"
+          icon={DocumentTextIcon}
+          collapsible={{defaultIsCollapsed: true}}>
+          <XDSSideNavItem label="Drafts" href="/documents/drafts" />
+          <XDSSideNavItem label="Published" href="/documents/published" />
+        </XDSSideNavItem>
+      </XDSSideNavSection>
+      <XDSSideNavSection title="Collapsible + href">
+        <XDSSideNavItem
+          label="Settings"
+          icon={Cog6ToothIcon}
+          href="/settings"
+          collapsible>
+          <XDSSideNavItem label="General" href="/settings/general" />
+          <XDSSideNavItem label="Security" href="/settings/security" />
+          <XDSSideNavItem label="Notifications" href="/settings/notifications" />
+        </XDSSideNavItem>
+        <XDSSideNavItem
+          label="Documents"
+          icon={DocumentTextIcon}
+          href="/documents"
+          collapsible={{defaultIsCollapsed: true}}>
+          <XDSSideNavItem label="Drafts" href="/documents/drafts" />
+          <XDSSideNavItem label="Published" href="/documents/published" />
+        </XDSSideNavItem>
+      </XDSSideNavSection>
+      <XDSSideNavSection title="Collapsible + onClick">
+        <XDSSideNavItem
+          label="Settings"
+          icon={Cog6ToothIcon}
+          onClick={() => alert('Settings clicked')}
+          collapsible>
+          <XDSSideNavItem label="General" href="/settings/general" />
+          <XDSSideNavItem label="Security" href="/settings/security" />
+          <XDSSideNavItem label="Notifications" href="/settings/notifications" />
+        </XDSSideNavItem>
+      </XDSSideNavSection>
+    </XDSSideNav>
+  ),
+};

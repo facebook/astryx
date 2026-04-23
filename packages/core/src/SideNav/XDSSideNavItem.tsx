@@ -26,6 +26,7 @@ import {
   durationVars,
   easeVars,
   borderVars,
+  radiusVars,
 } from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
 import type {XDSIconType} from '../Icon';
@@ -93,6 +94,9 @@ const styles = stylex.create({
   expandChevron: {
     display: 'inline-flex',
     alignItems: 'center',
+    justifyContent: 'center',
+    width: spacingVars['--spacing-6'],
+    height: spacingVars['--spacing-6'],
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -100,6 +104,52 @@ const styles = stylex.create({
   },
   expandChevronExpanded: {
     transform: 'rotate(180deg)',
+  },
+  // Standalone toggle button for the chevron when collapsible + href.
+  expandToggle: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    padding: 0,
+    margin: 0,
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
+    color: 'inherit',
+    cursor: 'pointer',
+    borderRadius: radiusVars['--radius-element'],
+    ':hover': {
+      '@media (hover: hover)': {
+        backgroundColor: colorVars['--color-overlay-hover'],
+      },
+    },
+    ':active': {
+      backgroundColor: colorVars['--color-overlay-pressed'],
+    },
+  },
+  // Primary action element inside the split-action row (link or button).
+  // Flex:1 so it fills remaining space, giving a wide click target.
+  // Resets both link and button appearance so it blends into the row.
+  splitAction: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
+    flex: 1,
+    minWidth: 0,
+    color: 'inherit',
+    textDecoration: 'none',
+    padding: 0,
+    margin: 0,
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
+    fontFamily: 'inherit',
+    fontSize: 'inherit',
+    fontWeight: 'inherit',
+    lineHeight: 'inherit',
+    textAlign: 'start',
+    cursor: 'pointer',
   },
   // Popover surface for collapsed items with children
   popoverSurface: {
@@ -127,6 +177,57 @@ const EXPANDED_COLLAPSE_STATE = {
   toggle: () => {},
   isCollapsible: false,
 };
+
+// =============================================================================
+// NavItemElement — resolves link vs button based on props
+// =============================================================================
+
+interface NavItemElementProps {
+  href?: string;
+  as?: XDSLinkComponentType;
+  isDisabled?: boolean;
+  onClick?: (e: React.MouseEvent) => void;
+  ref?: React.Ref<HTMLElement>;
+  children: ReactNode;
+  [key: string]: unknown;
+}
+
+/**
+ * Renders `<a>` (via LinkComponent) when `href` is set, otherwise `<button>`.
+ * Centralizes the link-vs-button decision used across all SideNavItem paths.
+ */
+function NavItemElement({
+  href,
+  as,
+  isDisabled,
+  onClick,
+  ref,
+  children,
+  ...rest
+}: NavItemElementProps) {
+  const LinkComponent = useXDSLinkComponent(as);
+  if (href && !isDisabled) {
+    return (
+      <LinkComponent
+        ref={ref as React.Ref<HTMLAnchorElement>}
+        href={href}
+        onClick={onClick}
+        {...rest}>
+        {children}
+      </LinkComponent>
+    );
+  }
+  return (
+    <button
+      ref={ref as React.Ref<HTMLButtonElement>}
+      type="button"
+      onClick={onClick}
+      disabled={isDisabled}
+      {...rest}>
+      {children}
+    </button>
+  );
+}
 
 // =============================================================================
 // Types
@@ -254,7 +355,6 @@ export function XDSSideNavItem({
   const isInDrawer = renderMode === 'drawer' || renderMode === 'drawer-content';
   const id = useId();
   const hasChildren = !!children;
-  const LinkComponent = useXDSLinkComponent(as);
   const itemRef = useRef<HTMLDivElement>(null);
 
   // Popover for collapsed items with children
@@ -288,12 +388,18 @@ export function XDSSideNavItem({
 
   const displayIcon = isSelected && selectedIcon ? selectedIcon : icon;
 
+  // When collapsible + a primary action (href or onClick), the action and
+  // toggle are independent: clicking the label navigates/fires onClick,
+  // clicking the chevron expands/collapses children.
+  const hasPrimaryAction = !!href || !!onClick;
+  const hasIndependentToggle = isItemCollapsible && hasPrimaryAction && !isCollapsed;
+
   const handleClick = (e: React.MouseEvent) => {
     if (isDisabled) {
       e.preventDefault();
       return;
     }
-    if (isItemCollapsible && !isCollapsed) {
+    if (isItemCollapsible && !hasIndependentToggle && !isCollapsed) {
       e.preventDefault();
       toggleItemCollapse();
       return;
@@ -303,6 +409,12 @@ export function XDSSideNavItem({
     if (isInDrawer) {
       closeMobileNav();
     }
+  };
+
+  const handleToggleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleItemCollapse();
   };
 
   // Hover handlers for collapsed popover (mirrors TopNavMenu pattern)
@@ -425,27 +537,18 @@ export function XDSSideNavItem({
       'data-testid': testId,
     };
 
-    const collapsedElement =
-      href && !isDisabled ? (
-        <LinkComponent
-          ref={ref as React.Ref<HTMLAnchorElement>}
-          href={href}
-          onClick={handleClick}
-          {...collapsedAriaProps}
-          {...collapsedItemStyles}>
-          {collapsedIcon}
-        </LinkComponent>
-      ) : (
-        <button
-          ref={ref as React.Ref<HTMLButtonElement>}
-          type="button"
-          onClick={handleClick}
-          disabled={isDisabled}
-          {...collapsedAriaProps}
-          {...collapsedItemStyles}>
-          {collapsedIcon}
-        </button>
-      );
+    const collapsedElement = (
+      <NavItemElement
+        ref={ref}
+        href={href}
+        as={as}
+        isDisabled={isDisabled}
+        onClick={handleClick}
+        {...collapsedAriaProps}
+        {...collapsedItemStyles}>
+        {collapsedIcon}
+      </NavItemElement>
+    );
 
     return (
       <div ref={itemRef} {...stylex.props(styles.root)}>
@@ -468,7 +571,7 @@ export function XDSSideNavItem({
       {!isCollapsed && endContent && (
         <span {...stylex.props(styles.endContent)}>{endContent}</span>
       )}
-      {!isCollapsed && isItemCollapsible && (
+      {!isCollapsed && isItemCollapsible && !hasIndependentToggle && (
         <span
           {...stylex.props(
             styles.expandChevron,
@@ -480,57 +583,88 @@ export function XDSSideNavItem({
     </>
   );
 
-  const ariaProps = {
-    'aria-current': isSelected ? ('page' as const) : undefined,
-    'aria-disabled': isDisabled || undefined,
-    'aria-expanded': isItemCollapsible ? !isItemCollapsed : undefined,
-    'aria-controls': isItemCollapsible ? `${id}-children` : undefined,
-    'data-testid': testId,
-  };
+  const navItemStyleProps = mergeProps(
+    xdsClassName('side-nav-item', {
+      size,
+      selected: isSelected ? 'selected' : null,
+    }),
+    stylex.props(
+      navItemStyles.item,
+      navItemStyles[size],
+      isSelected && navItemStyles.selected,
+      isDisabled && navItemStyles.disabled,
+    ),
+  );
 
-  const itemElement =
-    href && !isDisabled ? (
-      <LinkComponent
-        ref={ref as React.Ref<HTMLAnchorElement>}
-        href={href}
-        onClick={handleClick}
-        {...ariaProps}
-        {...mergeProps(
-          xdsClassName('side-nav-item', {
-            size,
-            selected: isSelected ? 'selected' : null,
-          }),
-          stylex.props(
-            navItemStyles.item,
-            navItemStyles[size],
-            isSelected && navItemStyles.selected,
-            isDisabled && navItemStyles.disabled,
-          ),
-        )}>
-        {itemContent}
-      </LinkComponent>
-    ) : (
-      <button
-        ref={ref as React.Ref<HTMLButtonElement>}
-        type="button"
-        onClick={handleClick}
-        disabled={isDisabled}
-        {...ariaProps}
-        {...mergeProps(
-          xdsClassName('side-nav-item', {
-            size,
-            selected: isSelected ? 'selected' : null,
-          }),
-          stylex.props(
-            navItemStyles.item,
-            navItemStyles[size],
-            isSelected && navItemStyles.selected,
-            isDisabled && navItemStyles.disabled,
-          ),
-        )}>
-        {itemContent}
-      </button>
+  // ── Split-action path: <div> row with <a> + <button> as siblings ──
+  //
+  // When both collapsible and href are set, we can't nest a <button>
+  // inside an <a>. Instead we use a <div> as the flex row container,
+  // an <a display:contents> for the link (with ::before covering the row),
+  // and a <button> sibling lifted above the overlay via z-index.
+
+  // ── Split-action path: primary element + toggle button as siblings ──
+  //
+  // When collapsible and a primary action (href or onClick) are both set,
+  // we render a <div> row with the primary element and chevron toggle as
+  // siblings. This avoids nesting interactive elements (<button> inside <a>).
+
+  let itemElement;
+
+  if (hasIndependentToggle) {
+    itemElement = (
+      <div
+        aria-current={isSelected ? ('page' as const) : undefined}
+        data-testid={testId}
+        {...navItemStyleProps}>
+        <NavItemElement
+          ref={ref}
+          href={href}
+          as={as}
+          isDisabled={isDisabled}
+          onClick={handleClick}
+          {...stylex.props(styles.splitAction)}>
+          {itemContent}
+        </NavItemElement>
+        <button
+          type="button"
+          onClick={handleToggleClick}
+          aria-label={isItemCollapsed ? `Expand ${label}` : `Collapse ${label}`}
+          aria-expanded={!isItemCollapsed}
+          aria-controls={`${id}-children`}
+          {...stylex.props(styles.expandToggle)}>
+          <span
+            {...stylex.props(
+              styles.expandChevron,
+              !isItemCollapsed && styles.expandChevronExpanded,
+            )}>
+            {getIcon('chevronDown')}
+          </span>
+        </button>
+      </div>
     );
+  } else {
+    const ariaProps = {
+      'aria-current': isSelected ? ('page' as const) : undefined,
+      'aria-disabled': isDisabled || undefined,
+      'aria-expanded': isItemCollapsible ? !isItemCollapsed : undefined,
+      'aria-controls': isItemCollapsible ? `${id}-children` : undefined,
+      'data-testid': testId,
+    };
+
+    itemElement = (
+      <NavItemElement
+        ref={ref}
+        href={href}
+        as={as}
+        isDisabled={isDisabled}
+        onClick={handleClick}
+        {...ariaProps}
+        {...navItemStyleProps}>
+        {itemContent}
+      </NavItemElement>
+    );
+  }
 
   const item = (
     <div ref={itemRef} {...stylex.props(styles.root)}>
@@ -541,6 +675,7 @@ export function XDSSideNavItem({
           role="group"
           aria-labelledby={`${id}-label`}
           aria-hidden={isItemCollapsed}
+          inert={isItemCollapsed ? true : undefined}
           {...stylex.props(
             styles.childrenCollapsible,
             isItemCollapsed && styles.childrenCollapsed,
