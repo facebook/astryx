@@ -201,65 +201,54 @@ const RESOURCE_ITEMS: {
   },
 ];
 
-const OSS_FEATURES: {title: string; desc: string}[] = [
+const XDS_OFFERINGS: {
+  title: string;
+  subtitle: string;
+  pkg: string;
+  color: string;
+  features: string[];
+}[] = [
   {
-    title: 'TypeScript + StyleX',
-    desc: 'Full type safety and atomic CSS — catch errors at build time, ship zero-runtime styles.',
+    title: 'XDS OSS (External)',
+    subtitle: 'Open source for everyone',
+    pkg: '@xds/core',
+    color: '#059669',
+    features: [
+      'TypeScript + StyleX with full type safety',
+      'MIT licensed — use anywhere, no restrictions',
+      'Source-level distribution with tree-shaking',
+      'Themeable via @xds/theme-* packages',
+      'CLI tooling and AI agent docs',
+      'Fork & swizzle any component',
+    ],
   },
   {
-    title: 'Open source (MIT)',
-    desc: 'Use it anywhere — Nest, external apps, commercial or personal. No licensing concerns.',
+    title: 'XDS OSS (Nest)',
+    subtitle: 'Same library, internal platform',
+    pkg: '@xds/core',
+    color: '#2563EB',
+    features: [
+      'Same @xds/core package as external',
+      'Works natively on the Nest platform',
+      'Same components, same API, same themes',
+      'No separate library or migration needed',
+      'Build internal tools with production-grade UI',
+      'Access to all CLI tooling and templates',
+    ],
   },
   {
-    title: 'Modern component architecture',
-    desc: 'Composable APIs with slots, render props, and controlled/uncontrolled patterns.',
-  },
-  {
-    title: 'Source-level distribution',
-    desc: 'Import source directly — tree-shake, customize, and debug without fighting bundled dist.',
-  },
-  {
-    title: 'Themeable via @xds/theme-*',
-    desc: 'Swap entire visual identities with a single theme package. Colors, typography, radius, icons — all configurable.',
-  },
-  {
-    title: 'CLI tooling & agent docs',
-    desc: 'Scaffold projects, generate templates, and feed component docs to AI coding assistants.',
-  },
-  {
-    title: 'Fork & swizzle any component',
-    desc: 'Run xds swizzle to eject any component into your codebase. You own the code, no lock-in.',
-  },
-  {
-    title: 'Works in Nest',
-    desc: 'XDS OSS is fully compatible with the Nest platform. Build internal tools with the same components you use externally — no separate library needed.',
-  },
-];
-
-const WWW_FEATURES: {title: string; desc: string}[] = [
-  {
-    title: 'Flow types',
-    desc: "Type system used across Meta's internal codebase.",
-  },
-  {
-    title: 'Internal to Meta monorepo',
-    desc: "Lives inside Meta's monorepo, not available externally.",
-  },
-  {
-    title: 'Pre-built dist/ artifacts',
-    desc: 'Ships compiled bundles rather than source code.',
-  },
-  {
-    title: 'Legacy component patterns',
-    desc: 'Older API conventions carried forward for backward compatibility.',
-  },
-  {
-    title: 'Maintained by the XDS team',
-    desc: 'Separate team handles updates and internal integrations.',
-  },
-  {
-    title: 'internalfb.com only',
-    desc: 'Cannot be used in Nest apps. Tightly coupled to the internalfb.com platform and toolchain.',
+    title: 'XDS WWW (Intern)',
+    subtitle: 'Legacy internal system',
+    pkg: '@xds/www',
+    color: '#6B7280',
+    features: [
+      'Flow types for Meta monorepo',
+      'Pre-built dist/ artifacts',
+      'Legacy component API patterns',
+      'Maintained by the XDS team',
+      'internalfb.com only — not available in Nest',
+      'Tightly coupled to Intern platform',
+    ],
   },
 ];
 
@@ -794,7 +783,6 @@ function PackageGridPage({
             zIndex: 10,
             backgroundColor: 'var(--color-background-surface, #fff)',
             padding: '24px 32px 16px',
-            borderBottom: '1px solid var(--color-divider, rgba(0,0,0,0.08))',
           }}>
           <XDSStack direction="horizontal" gap={3} vAlign="center" style={{marginBottom: 8}}>
             <XDSText type="display-1">{pkg.name}</XDSText>
@@ -1596,124 +1584,74 @@ function LibraryOverview({
         </div>
       </XDSStack>
 
-      {/* ── Section 4: XDS OSS vs XDS WWW ── */}
+      {/* ── Section 4: Where to use XDS ── */}
       <XDSStack direction="vertical" gap={0} style={{marginBottom: 64}}>
-        <XDSHeading level={2}>XDS Open Source vs XDS WWW</XDSHeading>
+        <XDSHeading level={2}>Where to use XDS</XDSHeading>
         <XDSText
           type="body"
           color="secondary"
           style={{marginTop: 8, marginBottom: 24, maxWidth: 680}}>
-          XDS exists in two forms. XDS OSS is the open-source version that works
-          everywhere — including Nest. XDS WWW is the internal version used
-          exclusively on internalfb.com. Every OSS component can be forked or
-          swizzled — you own the code.
+          XDS is available in three contexts. Choose the right one based on
+          where you&#39;re building.
         </XDSText>
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+            gridTemplateColumns: 'repeat(3, 1fr)',
             gap: 16,
           }}>
-          {/* OSS card */}
-          <XDSCard padding={6}>
-            <XDSStack
-              direction="horizontal"
-              gap={2}
-              vAlign="center"
-              style={{marginBottom: 8}}>
+          {XDS_OFFERINGS.map(offering => (
+            <XDSCard key={offering.title} padding={0} style={{height: '100%'}}>
               <div
                 style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: '50%',
-                  backgroundColor: '#059669',
-                  flexShrink: 0,
-                }}
-              />
-              <XDSHeading level={3}>XDS Open Source</XDSHeading>
-            </XDSStack>
-            <XDSText
-              type="supporting"
-              color="secondary"
-              style={{fontFamily: 'monospace', marginBottom: 16}}>
-              @xds/core
-            </XDSText>
-            <XDSDivider />
-            <XDSStack direction="vertical" gap={4} style={{marginTop: 16}}>
-              {OSS_FEATURES.map(feature => (
-                <XDSStack key={feature.title} direction="horizontal" gap={3}>
+                  padding: '20px 24px',
+                  borderBottom: `3px solid ${offering.color}`,
+                }}>
+                <XDSStack direction="horizontal" gap={2} vAlign="center" style={{marginBottom: 4}}>
                   <div
                     style={{
-                      width: 6,
-                      height: 6,
+                      width: 10,
+                      height: 10,
                       borderRadius: '50%',
-                      backgroundColor: '#059669',
+                      backgroundColor: offering.color,
                       flexShrink: 0,
-                      marginTop: 7,
                     }}
                   />
-                  <XDSStack direction="vertical" gap={0}>
-                    <XDSText type="body" weight="semibold">
-                      {feature.title}
-                    </XDSText>
+                  <XDSText type="body" weight="bold">
+                    {offering.title}
+                  </XDSText>
+                </XDSStack>
+                <XDSText type="supporting" color="secondary">
+                  {offering.subtitle}
+                </XDSText>
+                <XDSText
+                  type="supporting"
+                  color="secondary"
+                  style={{fontFamily: 'monospace', display: 'block', marginTop: 8}}>
+                  {offering.pkg}
+                </XDSText>
+              </div>
+              <XDSStack direction="vertical" gap={3} style={{padding: '16px 24px'}}>
+                {offering.features.map(feature => (
+                  <XDSStack key={feature} direction="horizontal" gap={2}>
+                    <div
+                      style={{
+                        width: 5,
+                        height: 5,
+                        borderRadius: '50%',
+                        backgroundColor: offering.color,
+                        flexShrink: 0,
+                        marginTop: 7,
+                      }}
+                    />
                     <XDSText type="supporting" color="secondary">
-                      {feature.desc}
+                      {feature}
                     </XDSText>
                   </XDSStack>
-                </XDSStack>
-              ))}
-            </XDSStack>
-          </XDSCard>
-          {/* WWW card */}
-          <XDSCard padding={6}>
-            <XDSStack
-              direction="horizontal"
-              gap={2}
-              vAlign="center"
-              style={{marginBottom: 8}}>
-              <div
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: '50%',
-                  backgroundColor: '#6B7280',
-                  flexShrink: 0,
-                }}
-              />
-              <XDSHeading level={3}>XDS WWW (Internal)</XDSHeading>
-            </XDSStack>
-            <XDSText
-              type="supporting"
-              color="secondary"
-              style={{fontFamily: 'monospace', marginBottom: 16}}>
-              @xds/www
-            </XDSText>
-            <XDSDivider />
-            <XDSStack direction="vertical" gap={4} style={{marginTop: 16}}>
-              {WWW_FEATURES.map(feature => (
-                <XDSStack key={feature.title} direction="horizontal" gap={3}>
-                  <div
-                    style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: '50%',
-                      backgroundColor: '#6B7280',
-                      flexShrink: 0,
-                      marginTop: 7,
-                    }}
-                  />
-                  <XDSStack direction="vertical" gap={0}>
-                    <XDSText type="body" weight="semibold">
-                      {feature.title}
-                    </XDSText>
-                    <XDSText type="supporting" color="secondary">
-                      {feature.desc}
-                    </XDSText>
-                  </XDSStack>
-                </XDSStack>
-              ))}
-            </XDSStack>
-          </XDSCard>
+                ))}
+              </XDSStack>
+            </XDSCard>
+          ))}
         </div>
       </XDSStack>
 
@@ -1875,12 +1813,17 @@ export function DocsView({
         }
         sideNav={
           <XDSSideNav style={{paddingLeft: 8}}>
+            <XDSSideNavSection title="Home" isHeaderHidden>
+              <XDSSideNavItem
+                label="Home"
+                isSelected={selectedComponent === null}
+                onClick={() => setSelectedComponent(null)}
+              />
+            </XDSSideNavSection>
             <XDSSideNavSection title="Overview" isHeaderHidden>
               <XDSSideNavItem
-                label="Overview"
-                isSelected={selectedComponent === null}
-                collapsible
-                onClick={() => setSelectedComponent(null)}>
+                label="Guide"
+                collapsible>
                 <XDSSideNavItem
                   label="Getting Started"
                   isSelected={
