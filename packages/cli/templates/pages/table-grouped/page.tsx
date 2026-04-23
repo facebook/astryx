@@ -978,7 +978,6 @@ export default function DataTableTemplate() {
               {isAdvancedFilter ? (
                 <XDSToolbar
                   label="Filter toolbar"
-                  density="compact"
                   startContent={
                     <>
                       <div {...stylex.props(pageStyles.flexFill)}>
@@ -1013,7 +1012,6 @@ export default function DataTableTemplate() {
               ) : (
                 <XDSToolbar
                   label="Filter toolbar"
-                  density="compact"
                   startContent={
                     <>
                       <XDSTextInput
