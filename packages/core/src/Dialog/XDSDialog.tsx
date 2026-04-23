@@ -180,6 +180,19 @@ const styles = stylex.create({
     overflow: 'hidden',
     borderRadius: 'inherit',
   },
+  // Inline wrapper mirrors the dialog's visual styles without <dialog> behavior
+  inlineWrapper: {
+    padding: 0,
+    border: 'none',
+    backgroundColor: colorVars['--color-background-surface'],
+    '--_dialog-radius': radiusVars['--radius-container'],
+    borderRadius: 'var(--_dialog-radius)',
+    boxShadow: shadowVars['--shadow-high'],
+    display: 'flex',
+    flexDirection: 'column',
+    height: 'fit-content',
+    overscrollBehavior: 'contain',
+  },
 });
 
 // Dynamic styles for width, maxHeight, and position
@@ -219,6 +232,14 @@ export interface XDSDialogProps extends XDSBaseProps<HTMLDialogElement> {
    * Whether the dialog is open.
    */
   isOpen: boolean;
+
+  /**
+   * Renders dialog content inline without the <dialog> element, backdrop, or
+   * modal behavior. Intended for documentation previews and showcases only —
+   * not for production UIs. The dialog will not trap focus or respond to Escape.
+   * @default false
+   */
+  isInline?: boolean;
 
   /**
    * Callback fired when the dialog visibility changes.
@@ -305,6 +326,7 @@ export interface XDSDialogProps extends XDSBaseProps<HTMLDialogElement> {
  */
 export function XDSDialog({
   isOpen,
+  isInline = false,
   onOpenChange,
   width = 400,
   maxHeight = '75vh',
@@ -319,6 +341,13 @@ export function XDSDialog({
   ref,
   ...props
 }: XDSDialogProps) {
+  // When no explicit padding prop, use theme default (--xds-dialog-padding)
+  const useThemeDefault = padding == null;
+  const effectivePadding = padding ?? 4;
+  const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;
+
+  const isFullscreen = variant === 'fullscreen';
+
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   // Capture the element that was focused when the dialog opened,
@@ -340,8 +369,9 @@ export function XDSDialog({
     }
   };
 
-  // Handle open/close state
+  // Handle open/close state — skip for inline rendering
   useEffect(() => {
+    if (isInline) return;
     const dialog = dialogRef.current;
     if (!dialog) return;
 
@@ -380,13 +410,15 @@ export function XDSDialog({
       triggerElementRef.current?.focus();
       triggerElementRef.current = null;
     }
-  }, [isOpen]);
+  }, [isOpen, isInline]);
 
   // Lock body scroll when dialog is open (iOS Safari workaround)
-  useScrollLock(isOpen);
+  // Skip for inline rendering — no modal overlay to compensate for.
+  useScrollLock(isOpen && !isInline);
 
-  // Handle Escape key
+  // Handle Escape key — skip for inline rendering
   useEffect(() => {
+    if (isInline) return;
     const dialog = dialogRef.current;
     if (!dialog || !isOpen) return;
 
@@ -401,7 +433,7 @@ export function XDSDialog({
 
     dialog.addEventListener('keydown', handleKeyDown);
     return () => dialog.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, allowEscape, onOpenChange]);
+  }, [isOpen, isInline, allowEscape, onOpenChange]);
 
   // Handle backdrop click
   const handleClick = (event: React.MouseEvent<HTMLDialogElement>) => {
@@ -429,12 +461,78 @@ export function XDSDialog({
     }
   };
 
-  // When no explicit padding prop, use theme default (--xds-dialog-padding)
-  const useThemeDefault = padding == null;
-  const effectivePadding = padding ?? 4;
-  const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;
+  // Shared inner content wrapper
+  const innerContent = (
+    <div
+      {...stylex.props(
+        styles.inner,
+        ...container(
+          useThemeDefault
+            ? {
+                useThemeDefault: 'dialog',
+                maxHeight: isFullscreen
+                  ? undefined
+                  : typeof maxHeight === 'number'
+                    ? `${maxHeight}px`
+                    : maxHeight,
+              }
+            : {
+                paddingInnerX: paddingToken,
+                paddingInnerY: paddingToken,
+                paddingOuterX: paddingToken,
+                paddingOuterY: paddingToken,
+                maxHeight: isFullscreen
+                  ? undefined
+                  : typeof maxHeight === 'number'
+                    ? `${maxHeight}px`
+                    : maxHeight,
+              },
+        ),
+        !useThemeDefault &&
+          effectivePadding !== 4 &&
+          paddingStyles[effectivePadding],
+        !useThemeDefault &&
+          effectivePadding !== 4 &&
+          containerPaddingInlineVarStyles[effectivePadding],
+        !useThemeDefault &&
+          effectivePadding !== 4 &&
+          containerPaddingBlockStartVarStyles[effectivePadding],
+        !useThemeDefault &&
+          effectivePadding !== 4 &&
+          containerPaddingBlockEndVarStyles[effectivePadding],
+      )}>
+      {children}
+    </div>
+  );
 
-  const isFullscreen = variant === 'fullscreen';
+  // --- Inline rendering path (for documentation previews) ---
+  if (isInline) {
+    if (!isOpen) return null;
+
+    return (
+      <div
+        {...mergeProps(
+          xdsClassName('dialog', {variant}),
+          stylex.props(
+            styles.inlineWrapper,
+            !isFullscreen && dynamicStyles.sizing(width, maxHeight),
+            isFullscreen && styles.fullscreen,
+            xstyle,
+          ),
+          className,
+          style,
+        )}
+        data-testid={
+          (props as Record<string, unknown>)['data-testid'] as
+            | string
+            | undefined
+        }>
+        {innerContent}
+      </div>
+    );
+  }
+
+  // --- Standard modal rendering path ---
   const hasPosition = position != null && !isFullscreen;
 
   // Filter out native open to prevent InvalidStateError when accidentally passed
@@ -469,46 +567,7 @@ export function XDSDialog({
         style,
       )}
       {...safeProps}>
-      <div
-        {...stylex.props(
-          styles.inner,
-          ...container(
-            useThemeDefault
-              ? {
-                  useThemeDefault: 'dialog',
-                  maxHeight: isFullscreen
-                    ? undefined
-                    : typeof maxHeight === 'number'
-                      ? `${maxHeight}px`
-                      : maxHeight,
-                }
-              : {
-                  paddingInnerX: paddingToken,
-                  paddingInnerY: paddingToken,
-                  paddingOuterX: paddingToken,
-                  paddingOuterY: paddingToken,
-                  maxHeight: isFullscreen
-                    ? undefined
-                    : typeof maxHeight === 'number'
-                      ? `${maxHeight}px`
-                      : maxHeight,
-                },
-          ),
-          !useThemeDefault &&
-            effectivePadding !== 4 &&
-            paddingStyles[effectivePadding],
-          !useThemeDefault &&
-            effectivePadding !== 4 &&
-            containerPaddingInlineVarStyles[effectivePadding],
-          !useThemeDefault &&
-            effectivePadding !== 4 &&
-            containerPaddingBlockStartVarStyles[effectivePadding],
-          !useThemeDefault &&
-            effectivePadding !== 4 &&
-            containerPaddingBlockEndVarStyles[effectivePadding],
-        )}>
-        {children}
-      </div>
+      {innerContent}
     </dialog>
   );
 }

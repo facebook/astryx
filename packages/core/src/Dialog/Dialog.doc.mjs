@@ -72,6 +72,13 @@ export const docs = {
             'Controls dismissal behavior: required disables Escape and backdrop click; form disables backdrop click after interaction; info allows both.',
           default: "'info'",
         },
+        {
+          name: 'isInline',
+          type: 'boolean',
+          description:
+            'Renders dialog content inline without the <dialog> element, backdrop, or modal behavior. For documentation previews and showcases only.',
+          default: 'false',
+        },
       ],    },
     {
       name: 'XDSDialogHeader',
