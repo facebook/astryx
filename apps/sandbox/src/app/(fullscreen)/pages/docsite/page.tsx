@@ -642,7 +642,7 @@ function DocsiteLandingTemplate() {
 
     const qs = params.toString();
     if (qs === window.location.search.slice(1)) return;
-    const url = `/pages/docsite/${qs ? '?' + qs : ''}`;
+    const url = `${basePath}/pages/docsite/${qs ? '?' + qs : ''}`;
     window.history.replaceState(window.history.state, '', url);
   }, [
     previewTarget,
