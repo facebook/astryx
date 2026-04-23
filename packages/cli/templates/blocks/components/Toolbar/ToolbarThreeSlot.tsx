@@ -11,35 +11,35 @@ import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
   card: {
+    width: 600,
     height: '100%',
+    marginTop: 260,
   },
 });
 
 export default function ToolbarThreeSlot() {
   return (
-    <div style={{width: 600, height: '100%', marginTop: 260}}>
-      <XDSCard xstyle={styles.card}>
-        <XDSToolbar
-          label="Document toolbar"
-          dividers={['bottom']}
-          startContent={
-            <XDSButton
-              label="Back"
-              variant="ghost"
-              icon={<XDSIcon icon={ArrowLeftIcon} />}
-              isIconOnly
-            />
-          }
-          centerContent={<XDSHeading level={4}>Title</XDSHeading>}
-          endContent={
-            <>
-              <XDSButton label="Discard" variant="secondary" />
-              <XDSButton label="Save" variant="primary" />
-            </>
-          }
-        />
-        <XDSSection />
-      </XDSCard>
-    </div>
+    <XDSCard xstyle={styles.card}>
+      <XDSToolbar
+        label="Document toolbar"
+        dividers={['bottom']}
+        startContent={
+          <XDSButton
+            label="Back"
+            variant="ghost"
+            icon={<XDSIcon icon={ArrowLeftIcon} />}
+            isIconOnly
+          />
+        }
+        centerContent={<XDSHeading level={4}>Title</XDSHeading>}
+        endContent={
+          <>
+            <XDSButton label="Discard" variant="secondary" />
+            <XDSButton label="Save" variant="primary" />
+          </>
+        }
+      />
+      <XDSSection />
+    </XDSCard>
   );
 }

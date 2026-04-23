@@ -11,37 +11,37 @@ import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
   card: {
+    width: 600,
     height: '100%',
+    marginTop: 260,
   },
 });
 
 export default function ToolbarCardHeader() {
   return (
-    <div style={{width: 600, height: '100%', marginTop: 260}}>
-      <XDSCard xstyle={styles.card}>
-        <XDSToolbar
-          label="User list actions"
-          size="sm"
-          dividers={['bottom']}
-          startContent={<XDSHeading level={4}>Card title</XDSHeading>}
-          endContent={
-            <>
-              <XDSButton
-                label="Filter"
-                variant="ghost"
-                icon={<XDSIcon icon={FunnelIcon} />}
-                isIconOnly
-              />
-              <XDSButton
-                label="Add user"
-                icon={<XDSIcon icon={PlusIcon} />}
-                isIconOnly
-              />
-            </>
-          }
-        />
-        <XDSSection />
-      </XDSCard>
-    </div>
+    <XDSCard xstyle={styles.card}>
+      <XDSToolbar
+        label="User list actions"
+        size="sm"
+        dividers={['bottom']}
+        startContent={<XDSHeading level={4}>Card title</XDSHeading>}
+        endContent={
+          <>
+            <XDSButton
+              label="Filter"
+              variant="ghost"
+              icon={<XDSIcon icon={FunnelIcon} />}
+              isIconOnly
+            />
+            <XDSButton
+              label="Add user"
+              icon={<XDSIcon icon={PlusIcon} />}
+              isIconOnly
+            />
+          </>
+        }
+      />
+      <XDSSection />
+    </XDSCard>
   );
 }

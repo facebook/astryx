@@ -7,6 +7,13 @@ import {XDSHeading} from '@xds/core/Text';
 import {XDSStack} from '@xds/core/Layout';
 import {XDSCard} from '@xds/core/Card';
 import {FunnelIcon, PlusIcon} from '@heroicons/react/24/outline';
+import * as stylex from '@stylexjs/stylex';
+
+const styles = stylex.create({
+  container: {
+    width: 600,
+  },
+});
 
 const SIZES = [
   {size: 'sm' as const, label: 'Small'},
@@ -16,7 +23,7 @@ const SIZES = [
 
 export default function ToolbarSizes() {
   return (
-    <XDSStack direction="vertical" gap={4} style={{width: 600}}>
+    <XDSStack direction="vertical" gap={4} xstyle={styles.container}>
       {SIZES.map(({size, label}) => (
         <XDSCard key={size}>
           <XDSToolbar

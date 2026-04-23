@@ -12,35 +12,35 @@ import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
   card: {
+    width: '100%',
     height: '100%',
+    marginTop: 200,
   },
 });
 
 export default function ToolbarWithTabs() {
   const [tab, setTab] = useState('overview');
   return (
-    <div style={{width: '100%', height: '100%', marginTop: 200}}>
-      <XDSCard xstyle={styles.card}>
-        <XDSToolbar
-          label="Section navigation"
-          dividers={['bottom']}
-          startContent={
-            <XDSTabList value={tab} onChange={setTab}>
-              <XDSTab value="overview" label="Overview" />
-              <XDSTab value="analytics" label="Analytics" />
-              <XDSTab value="settings" label="Settings" />
-            </XDSTabList>
-          }
-          endContent={
-            <XDSButton
-              label="New item"
-              icon={<XDSIcon icon={PlusIcon} />}
-              isIconOnly
-            />
-          }
-        />
-        <XDSSection />
-      </XDSCard>
-    </div>
+    <XDSCard xstyle={styles.card}>
+      <XDSToolbar
+        label="Section navigation"
+        dividers={['bottom']}
+        startContent={
+          <XDSTabList value={tab} onChange={setTab}>
+            <XDSTab value="overview" label="Overview" />
+            <XDSTab value="analytics" label="Analytics" />
+            <XDSTab value="settings" label="Settings" />
+          </XDSTabList>
+        }
+        endContent={
+          <XDSButton
+            label="New item"
+            icon={<XDSIcon icon={PlusIcon} />}
+            isIconOnly
+          />
+        }
+      />
+      <XDSSection />
+    </XDSCard>
   );
 }

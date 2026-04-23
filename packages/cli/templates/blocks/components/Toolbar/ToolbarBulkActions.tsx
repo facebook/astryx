@@ -32,7 +32,7 @@ export default function ToolbarBulkActions() {
   const selectionPlugin = useXDSTableSelection(selectionConfig);
 
   return (
-    <div>
+    <>
       {selectedKeys.size > 0 && (
         <XDSToolbar
           label="Bulk actions"
@@ -59,7 +59,7 @@ export default function ToolbarBulkActions() {
             <XDSButton
               label="Deselect all"
               variant="ghost"
-              onPress={() => setSelectedKeys(new Set())}
+              onClick={() => setSelectedKeys(new Set())}
             />
           }
         />
@@ -74,6 +74,6 @@ export default function ToolbarBulkActions() {
         data={DATA}
         plugins={[selectionPlugin]}
       />
-    </div>
+    </>
   );
 }
