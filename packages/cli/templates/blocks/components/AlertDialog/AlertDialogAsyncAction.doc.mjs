@@ -1,10 +1,10 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'AlertDialog — Async Action',
+  name: 'AlertDialog — Loading',
   description:
-    'Alert dialog with an async action that shows a loading state while processing.',
+    'A confirmation dialog that shows a spinner while the action runs.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['AlertDialog', 'Button'],
 };

@@ -15,11 +15,11 @@ export const docs = {
   ],
   usage: {
     description:
-      'AlertDialog is a confirmation dialog for destructive or irreversible actions. Use it to require explicit user confirmation before proceeding with actions like deleting content or discarding changes.',
+      'AlertDialog asks the user to confirm a destructive or irreversible action before it happens. Use it for things like deleting content, revoking access, or discarding unsaved changes.',
     bestPractices: [
-      {guidance: true, description: 'Clearly describe the consequences of the action in the description text so users can make an informed decision.'},
-      {guidance: true, description: 'Keep the action button label specific and descriptive, such as "Delete project" rather than a generic "OK".'},
-      {guidance: false, description: 'Use AlertDialog for non-destructive actions or simple informational messages — use a standard Dialog instead.'},
+      {guidance: true, description: 'Make the action button label specific — "Delete project" is better than "OK" or "Confirm".'},
+      {guidance: true, description: 'Describe what will happen in the description so the user knows the consequences before confirming.'},
+      {guidance: false, description: 'Use AlertDialog for non-destructive actions — use a standard Dialog instead.'},
     ],
   },
   props: [
