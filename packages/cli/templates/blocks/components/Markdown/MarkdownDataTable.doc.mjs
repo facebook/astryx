@@ -2,8 +2,7 @@
 export const doc = {
   type: 'block',
   name: 'Markdown — Data Table',
-  description:
-    'Markdown-rendered comparison table with aligned columns and mixed data.',
+  description: 'Comparison table rendered from a markdown string',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['Markdown'],

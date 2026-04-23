@@ -103,11 +103,11 @@ export const docs = {
   },
   usage: {
     description:
-      'Markdown renders a markdown string as XDS-styled components with support for headings, lists, tables, code blocks, and more. Use it for displaying user-generated or AI-streamed content with consistent design-system styling.',
+      'Renders a markdown string as XDS-styled components. Use Markdown for user-generated content, AI responses, and documentation — it handles headings, lists, tables, code blocks, and citations with consistent styling.',
     bestPractices: [
-      { guidance: true, description: 'Set headingLevelStart to fit the surrounding page hierarchy when embedding markdown within a section.' },
-      { guidance: true, description: 'Use contentWidth to constrain prose to a readable line length in wide layouts.' },
-      { guidance: false, description: 'Use Markdown for hand-authored rich text layouts — use XDSText and heading components directly instead.' },
+      { guidance: true, description: 'Set headingLevelStart to match the page hierarchy — e.g. start at 3 if the markdown sits inside an h2 section.' },
+      { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },
+      { guidance: false, description: 'Use Markdown for hand-authored layouts — use XDSText and XDSHeading directly when you control the content.' },
     ],
   },
 };
@@ -201,26 +201,26 @@ export const docsZh = {
   },
   usage: {
     description:
-      'Markdown renders a markdown string as XDS-styled components with support for headings, lists, tables, code blocks, and more. Use it for displaying user-generated or AI-streamed content with consistent design-system styling.',
+      'Renders a markdown string as XDS-styled components. Use Markdown for user-generated content, AI responses, and documentation — it handles headings, lists, tables, code blocks, and citations with consistent styling.',
     bestPractices: [
-      { guidance: true, description: 'Set headingLevelStart to fit the surrounding page hierarchy when embedding markdown within a section.' },
-      { guidance: true, description: 'Use contentWidth to constrain prose to a readable line length in wide layouts.' },
-      { guidance: false, description: 'Use Markdown for hand-authored rich text layouts — use XDSText and heading components directly instead.' },
+      { guidance: true, description: 'Set headingLevelStart to match the page hierarchy — e.g. start at 3 if the markdown sits inside an h2 section.' },
+      { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },
+      { guidance: false, description: 'Use Markdown for hand-authored layouts — use XDSText and XDSHeading directly when you control the content.' },
     ],
   },
 };
 
 export const docsDense = {
   n: 'Markdown',
-  d: 'Renders markdown string as XDS components. Headings, bold, italic, code, lists, tables, links, blockquotes, task lists. Streaming with fade-in animation.',
+  d: 'Renders markdown string as XDS-styled components. Use for user-generated content, AI responses, docs. Headings, lists, tables, code, citations w/ consistent styling.',
   kw: ['markdown', 'rich text', 'prose', 'renderer', 'streaming', 'markup', 'md'],
   usage: {
     description:
-      'Markdown renders a markdown string as XDS-styled components with support for headings, lists, tables, code blocks, and more. Use it for displaying user-generated or AI-streamed content with consistent design-system styling.',
+      'Renders a markdown string as XDS-styled components. Use Markdown for user-generated content, AI responses, and documentation — it handles headings, lists, tables, code blocks, and citations with consistent styling.',
     bestPractices: [
-      { guidance: true, description: 'Set headingLevelStart to fit the surrounding page hierarchy when embedding markdown within a section.' },
-      { guidance: true, description: 'Use contentWidth to constrain prose to a readable line length in wide layouts.' },
-      { guidance: false, description: 'Use Markdown for hand-authored rich text layouts — use XDSText and heading components directly instead.' },
+      { guidance: true, description: 'Set headingLevelStart to match the page hierarchy — e.g. start at 3 if the markdown sits inside an h2 section.' },
+      { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },
+      { guidance: false, description: 'Use Markdown for hand-authored layouts — use XDSText and XDSHeading directly when you control the content.' },
     ],
   },
   p: {
