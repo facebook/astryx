@@ -16,11 +16,11 @@
 
 import React, {
   useCallback,
-  useLayoutEffect,
   useRef,
   type ReactElement,
   type ReactNode,
 } from 'react';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -342,7 +342,7 @@ export function XDSPopover({
   );
 
   // Sibling mode: attach to external anchorRef
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!anchorRef) return;
 
     const el = anchorRef.current;
@@ -371,7 +371,7 @@ export function XDSPopover({
 
   // Children mode: use wrapper as CSS anchor, find button inside for
   // ARIA + event handlers.
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (anchorRef) return; // Skip if using anchorRef mode
 
     const wrapper = wrapperRef.current;
@@ -400,7 +400,7 @@ export function XDSPopover({
   }, [anchorRef, popover, attachTrigger]);
 
   // Sync controlled state
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!isControlled) return;
     if (isOpen && !popover.isOpen) {
       popover.show();

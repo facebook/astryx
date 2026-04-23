@@ -2,7 +2,7 @@
 
 /**
  * @file useXDSSlotPresence.tsx
- * @input Uses React useCallback, useLayoutEffect, useRef, useState
+ * @input Uses React useCallback, useEffect, useRef, useState
  * @output Exports useXDSSlotPresence hook
  * @position Internal hook for detecting whether slot containers have rendered content.
  *
@@ -16,7 +16,7 @@
  * ref) — only one mounts at a time, and the hook observes whichever is active.
  */
 
-import {useCallback, useLayoutEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 
 function hasChildContent(el: HTMLElement): boolean {
   for (let i = 0; i < el.childNodes.length; i++) {
@@ -82,7 +82,7 @@ export function useXDSSlotPresence(initialValue = false) {
   }, []);
 
   // Clean up on unmount
-  useLayoutEffect(() => {
+  useEffect(() => {
     return () => {
       if (observerRef.current) {
         observerRef.current.disconnect();

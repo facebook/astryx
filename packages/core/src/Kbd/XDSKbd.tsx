@@ -11,7 +11,8 @@
  * - /packages/core/src/Kbd/index.ts
  */
 
-import {useState, useLayoutEffect} from 'react';
+import {useState} from 'react';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
@@ -122,7 +123,7 @@ export interface XDSKbdProps extends XDSBaseProps<HTMLSpanElement> {
  *
  * Platform-aware: `mod` renders as ⌘ on macOS and Ctrl elsewhere.
  * SSR-safe — defers platform detection to a layout effect to avoid
- * hydration mismatches. Uses useLayoutEffect so the platform-correct
+ * hydration mismatches. Uses useIsomorphicLayoutEffect so the platform-correct
  * symbol is set before the browser paints (no visible flicker).
  *
  * @example
@@ -133,7 +134,7 @@ export interface XDSKbdProps extends XDSBaseProps<HTMLSpanElement> {
 export function XDSKbd({keys, xstyle, className, style, ...rest}: XDSKbdProps) {
   const [isMac, setIsMac] = useState(false);
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     setIsMac(detectMac());
   }, []);
 

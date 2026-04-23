@@ -482,8 +482,8 @@ export function XDSAppShell({
 
   // =========================================================================
   // Slot presence — checks whether slot containers have rendered DOM content.
-  // Refs are attached to wrapper divs around each slot; useLayoutEffect checks
-  // childNodes so presence is known before paint.
+  // Refs are attached to wrapper divs around each slot; a MutationObserver
+  // checks childNodes to track whether each slot has rendered content.
   // =========================================================================
   const {ref: topNavRef, hasContent: hasTopNavContent} = useXDSSlotPresence(
     topNav != null,

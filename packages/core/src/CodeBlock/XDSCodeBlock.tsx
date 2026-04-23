@@ -7,7 +7,7 @@
  */
 
 import {
-  useLayoutEffect,
+  useInsertionEffect,
   useEffect,
   useRef,
   useState,
@@ -436,7 +436,7 @@ function SpanCodeContent({
   isWrapped: boolean;
   sizeStyle: stylex.StyleXStyles;
 }) {
-  useLayoutEffect(() => {
+  useInsertionEffect(() => {
     ensureHighlightStyles();
   }, []);
 

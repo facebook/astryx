@@ -14,11 +14,11 @@
 
 import React, {
   useCallback,
-  useLayoutEffect,
   useRef,
   type ReactElement,
   type ReactNode,
 } from 'react';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
 import {useXDSHoverCard, type HoverCardFocusTrigger} from './useXDSHoverCard';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useXDSLayer';
@@ -189,7 +189,7 @@ export function XDSHoverCard({
   });
 
   // For element children with display:contents, attach ref to first child
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (textOnly) return; // Skip for text-only (ref is on wrapper)
 
     const wrapper = wrapperRef.current;

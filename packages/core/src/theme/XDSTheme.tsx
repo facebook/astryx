@@ -32,13 +32,8 @@
  * ```
  */
 
-import React, {
-  useId,
-  useInsertionEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-} from 'react';
+import React, {useId, useInsertionEffect, useMemo, useRef} from 'react';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
 import type {ThemeMode} from './types';
 import {colorVars, typographyVars} from './tokens.stylex';
@@ -174,7 +169,7 @@ function useThemeStyleInjection(theme: XDSDefinedTheme): void {
 /**
  * Hook that loads fonts declared in theme.fonts at runtime.
  *
- * Uses useLayoutEffect to inject font stylesheets before the browser paints,
+ * Uses useIsomorphicLayoutEffect to inject font stylesheets before the browser paints,
  * minimizing flash of unstyled text (FOUT).
  *
  * This is the fallback loading path — the preferred approach is to add
@@ -187,7 +182,7 @@ function useThemeStyleInjection(theme: XDSDefinedTheme): void {
 function useThemeFontLoading(theme: XDSDefinedTheme): void {
   const injectedLinksRef = useRef<HTMLLinkElement[]>([]);
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (typeof document === 'undefined') return;
     if (!theme.fonts || theme.fonts.length === 0) return;
 
@@ -263,7 +258,7 @@ function useRootThemeSync(
   mode: ThemeMode,
   themeName: string,
 ): void {
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (isNested) return;
     if (typeof document === 'undefined') return;
 

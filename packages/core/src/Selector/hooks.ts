@@ -6,7 +6,8 @@
  * @position Internal hooks; used by XDSSelector.tsx
  */
 
-import {useCallback, useLayoutEffect, useRef, useState} from 'react';
+import {useCallback, useRef, useState} from 'react';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import type {RefObject} from 'react';
 import type {XDSSelectorOptionData} from './types';
 
@@ -47,7 +48,7 @@ export function useSelectedItemOffset({
   const [offset, setOffset] = useState(0);
   const [isPositioned, setIsPositioned] = useState(false);
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!isOpen) {
       // Reset offset when closed
       setOffset(0);
