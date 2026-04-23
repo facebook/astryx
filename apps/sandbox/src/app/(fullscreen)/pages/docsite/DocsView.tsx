@@ -786,16 +786,25 @@ function PackageGridPage({
         </XDSCard>
       </div>
 
-      <div style={{flex: 1, overflowY: 'auto', padding: '32px 32px'}}>
-        <XDSStack direction="horizontal" gap={3} vAlign="center" style={{marginBottom: 8}}>
-          <XDSText type="display-1">{pkg.name}</XDSText>
-          {pkg.version && (
-            <XDSText type="supporting" color="secondary" style={{fontFamily: 'monospace'}}>
-              v{pkg.version}
-            </XDSText>
-          )}
-        </XDSStack>
-        <XDSStack direction="horizontal" gap={2} vAlign="center" style={{marginBottom: 24}}>
+      <div style={{flex: 1, overflowY: 'auto'}}>
+        <div
+          style={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 10,
+            backgroundColor: 'var(--color-background-surface, #fff)',
+            padding: '24px 32px 16px',
+            borderBottom: '1px solid var(--color-divider, rgba(0,0,0,0.08))',
+          }}>
+          <XDSStack direction="horizontal" gap={3} vAlign="center" style={{marginBottom: 8}}>
+            <XDSText type="display-1">{pkg.name}</XDSText>
+            {pkg.version && (
+              <XDSText type="supporting" color="secondary" style={{fontFamily: 'monospace'}}>
+                v{pkg.version}
+              </XDSText>
+            )}
+          </XDSStack>
+          <XDSStack direction="horizontal" gap={2} vAlign="center">
           <XDSText type="body" color="secondary" style={{flex: 1}}>
             {pkg.description}
           </XDSText>
@@ -835,6 +844,8 @@ function PackageGridPage({
             <XDSButton label="Install" variant="primary" size="sm" icon={<DownloadIcon />} />
           </XDSPopover>
         </XDSStack>
+        </div>
+        <div style={{padding: '24px 32px'}}>
         {components.map(cat => (
           <div key={cat.label} style={{marginBottom: 28}}>
             <XDSText type="label" color="secondary" style={{display: 'block', marginBottom: 10}}>
@@ -861,6 +872,7 @@ function PackageGridPage({
             </div>
           </div>
         ))}
+        </div>
       </div>
     </div>
   );
