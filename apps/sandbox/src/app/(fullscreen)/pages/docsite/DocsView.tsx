@@ -30,8 +30,10 @@ import {
   TerminalIcon,
   ChatIcon,
   ChartsIcon,
+  DownloadIcon,
 } from './docsite-icons';
 import {XDSBadge} from '@xds/core/Badge';
+import {XDSIcon} from '@xds/core/Icon';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {COMPONENT_PREVIEWS} from './ComponentPreviews';
@@ -245,47 +247,29 @@ const RESOURCE_ITEMS: {
 }[] = [
   {
     title: 'Figma Library',
-    description:
-      'Design tokens, components, and templates — synced with the code library.',
+    description: 'Design files, tokens, and component specs for designers.',
     icon: PaletteIcon,
     iconBg: '#F3E8FF',
     iconColor: '#7C3AED',
   },
   {
-    title: 'Templates',
-    description: 'Pre-built page layouts ready to customize and ship.',
-    icon: GridIcon,
-    iconBg: '#DBEAFE',
-    iconColor: '#2563EB',
-  },
-  {
-    title: 'Components',
-    description:
-      'Full catalog of 60+ components with live previews and API docs.',
-    icon: CodeIcon,
-    iconBg: '#D1FAE5',
-    iconColor: '#059669',
-  },
-  {
-    title: 'How to Publish Templates',
-    description:
-      'Step-by-step guide for contributing templates to the community library.',
-    icon: UploadIcon,
-    iconBg: '#FEF3C7',
-    iconColor: '#D97706',
-  },
-  {
-    title: 'Change Log',
-    description:
-      'Latest updates, bug fixes, new components, and breaking changes.',
-    icon: SparklesIcon,
+    title: 'NPM Packages',
+    description: 'Published packages on the npm registry under the @xds scope.',
+    icon: DownloadIcon,
     iconBg: '#FEE2E2',
     iconColor: '#DC2626',
   },
   {
-    title: 'Contributing',
+    title: 'AI / Agent Docs',
     description:
-      'How to contribute components, themes, templates, and documentation to XDS.',
+      'AGENTS.md and CLI docs for using XDS with AI coding assistants.',
+    icon: SparklesIcon,
+    iconBg: '#FEF3C7',
+    iconColor: '#D97706',
+  },
+  {
+    title: 'Contributing',
+    description: 'How to contribute components, themes, and templates to XDS.',
     icon: HeartIcon,
     iconBg: '#FCE7F3',
     iconColor: '#EC4899',
@@ -786,7 +770,7 @@ function LibraryOverview({
               onClick={onGetStarted}
             />
             <XDSButton
-              label="Browse components"
+              label="Find inspiration"
               variant="secondary"
               size="lg"
               onClick={() => onSelectComponent('button')}
@@ -931,13 +915,7 @@ function LibraryOverview({
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}>
-                      <IconComp
-                        style={{
-                          width: 22,
-                          height: 22,
-                          color: 'var(--color-icon-accent, #2563EB)',
-                        }}
-                      />
+                      <XDSIcon icon={IconComp} size="md" color="accent" />
                     </div>
                     <XDSBadge
                       label={pkg.status}
@@ -1025,13 +1003,7 @@ function LibraryOverview({
                       justifyContent: 'center',
                       flexShrink: 0,
                     }}>
-                    <IconComp
-                      style={{
-                        width: 22,
-                        height: 22,
-                        color: resource.iconColor,
-                      }}
-                    />
+                    <XDSIcon icon={IconComp} size="md" color="accent" />
                   </div>
                   <div style={{flex: 1, minWidth: 0}}>
                     <XDSText
@@ -1045,14 +1017,10 @@ function LibraryOverview({
                       </XDSText>
                     </div>
                   </div>
-                  <ExternalLinkIcon
-                    style={{
-                      width: 16,
-                      height: 16,
-                      color: 'var(--color-icon-secondary)',
-                      flexShrink: 0,
-                      marginTop: 4,
-                    }}
+                  <XDSIcon
+                    icon={ExternalLinkIcon}
+                    size="sm"
+                    color="secondary"
                   />
                 </div>
               </XDSCard>
