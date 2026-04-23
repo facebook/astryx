@@ -1,7 +1,7 @@
 'use client';
 
 import {XDSKbd} from '@xds/core/Kbd';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSVStack, XDSHStack} from '@xds/core/Stack';
 import {XDSText} from '@xds/core/Text';
 
 export default function KbdModifierCombos() {
