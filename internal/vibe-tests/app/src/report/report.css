@@ -44,6 +44,12 @@
   gap: var(--spacing-3);
 }
 
+.report-compare-summaryGrid5 {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--spacing-3);
+}
+
 .report-compare-winCard {
   padding: var(--spacing-3);
   text-align: center;
@@ -63,6 +69,10 @@
 
 .report-color-warning {
   color: var(--color-warning);
+}
+
+.report-color-info {
+  color: var(--color-info, #8b5cf6);
 }
 
 /* === PromptDetailCard === */
@@ -102,6 +112,12 @@
 .report-promptDetail-scoresRow3 {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--spacing-3);
+}
+
+.report-promptDetail-scoresRow4 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
   gap: var(--spacing-3);
 }
 

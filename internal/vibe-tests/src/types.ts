@@ -315,18 +315,22 @@ export interface UniversalAggregate {
   cost?: CostMetrics;
 }
 
+export type TargetName = 'xds' | 'xds-tailwind' | 'baseline' | 'html';
+
 export interface UniversalComparison {
   xds: UniversalAggregate;
   baseline: UniversalAggregate;
   html?: UniversalAggregate;
-  winners: Record<UniversalDimension, 'xds' | 'baseline' | 'html' | 'tie'>;
+  xdsTailwind?: UniversalAggregate;
+  winners: Record<UniversalDimension, TargetName | 'tie'>;
   byPrompt: Record<
     string,
     {
       xds: UniversalScore;
       baseline: UniversalScore;
       html?: UniversalScore;
-      winner: 'xds' | 'baseline' | 'html' | 'tie';
+      xdsTailwind?: UniversalScore;
+      winner: TargetName | 'tie';
     }
   >;
 }
