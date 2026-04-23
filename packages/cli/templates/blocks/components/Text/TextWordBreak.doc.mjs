@@ -4,6 +4,6 @@ export const doc = {
   name: 'Text — Word Break',
   description: 'Compares break-word and break-all word break modes on a long unbreakable string.',
   isReady: true,
-  aspectRatio: 16 / 9,
-  componentsUsed: ['Text', 'Stack', 'Section'],
+  aspectRatio: 4 / 3,
+  componentsUsed: ['Text'],
 };

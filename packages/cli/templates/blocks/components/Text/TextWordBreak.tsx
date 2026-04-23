@@ -1,33 +1,30 @@
 'use client';
 
 import {XDSText} from '@xds/core/Text';
-import {XDSStack} from '@xds/core/Stack';
-import {XDSSection} from '@xds/core/Section';
-
-const LONG_WORD = 'Supercalifragilisticexpialidocious_DesignTokensAreThemeable';
-
-const BREAKS = [
-  {wordBreak: 'break-word' as const, label: 'break-word'},
-  {wordBreak: 'break-all' as const, label: 'break-all'},
-];
 
 export default function TextWordBreak() {
   return (
-    <XDSStack direction="horizontal" gap={3}>
-      {BREAKS.map(({wordBreak, label}) => (
-        <XDSStack key={wordBreak} direction="vertical" gap={1}>
-          <XDSText type="supporting" color="secondary">
-            {label}
+    <div style={{display: 'flex', gap: 16, maxWidth: 600}}>
+      <div style={{flex: 1}}>
+        <XDSText type="label" display="block">
+          break-word (default for multi-line):
+        </XDSText>
+        <div style={{width: 150, border: '1px solid #ccc', padding: 8}}>
+          <XDSText type="body" maxLines={2} wordBreak="break-word">
+            Thisisaverylongwordthatneedstobreakatwordlevel
           </XDSText>
-          <div style={{width: 150}}>
-            <XDSSection padding={2} variant="wash">
-              <XDSText type="body" maxLines={2} wordBreak={wordBreak}>
-                {LONG_WORD}
-              </XDSText>
-            </XDSSection>
-          </div>
-        </XDSStack>
-      ))}
-    </XDSStack>
+        </div>
+      </div>
+      <div style={{flex: 1}}>
+        <XDSText type="label" display="block">
+          break-all (default for single-line):
+        </XDSText>
+        <div style={{width: 150, border: '1px solid #ccc', padding: 8}}>
+          <XDSText type="body" maxLines={2} wordBreak="break-all">
+            Thisisaverylongwordthatneedstobreakatanylevel
+          </XDSText>
+        </div>
+      </div>
+    </div>
   );
 }

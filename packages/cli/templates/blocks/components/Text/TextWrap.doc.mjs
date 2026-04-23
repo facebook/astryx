@@ -2,8 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'Text — Wrap',
-  description: 'The 4 text-wrap modes (wrap, nowrap, balance, pretty) shown in constrained containers.',
+  description: 'The 4 text-wrap modes (wrap, nowrap, balance, pretty) shown in width-constrained containers.',
   isReady: true,
-  aspectRatio: 16 / 9,
-  componentsUsed: ['Text', 'Stack', 'Section'],
+  aspectRatio: 4 / 3,
+  componentsUsed: ['Text'],
 };
