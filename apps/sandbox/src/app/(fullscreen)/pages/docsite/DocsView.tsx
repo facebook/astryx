@@ -36,6 +36,8 @@ import {XDSBadge} from '@xds/core/Badge';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
+import {XDSTextInput} from '@xds/core/TextInput';
+import {XDSLink} from '@xds/core/Link';
 import {COMPONENT_PREVIEWS} from './ComponentPreviews';
 import {SEARCH_COMMANDS, basePath} from './constants';
 import {
@@ -58,144 +60,36 @@ const localStyles = stylex.create({
 const FOUNDATION_ITEMS: {
   title: string;
   description: string;
-  visual: React.ReactNode;
 }[] = [
   {
     title: 'Colors',
     description:
-      'Semantic color tokens for surfaces, text, borders, and accents.',
-    visual: (
-      <div style={{display: 'flex', gap: 6}}>
-        {['#0066FF', '#111111', '#6B7280', '#DC2626', '#059669', '#D97706'].map(
-          c => (
-            <div
-              key={c}
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: 6,
-                backgroundColor: c,
-              }}
-            />
-          ),
-        )}
-      </div>
-    ),
+      'A semantic palette that adapts across themes. Use surface, text, border, and accent tokens instead of raw hex values so your UI stays consistent in light, dark, and custom themes.',
   },
   {
     title: 'Typography',
     description:
-      'Type scale from display headings down to captions and labels.',
-    visual: (
-      <div style={{display: 'flex', alignItems: 'baseline', gap: 10}}>
-        <span style={{fontSize: 32, fontWeight: 700, lineHeight: 1}}>Ag</span>
-        <span
-          style={{fontSize: 18, fontWeight: 600, lineHeight: 1, opacity: 0.6}}>
-          Ag
-        </span>
-        <span
-          style={{fontSize: 13, fontWeight: 400, lineHeight: 1, opacity: 0.4}}>
-          Ag
-        </span>
-      </div>
-    ),
+      'A type scale from display-1 down to supporting text, with weight and color options. Establishes visual hierarchy without guessing font sizes.',
   },
   {
     title: 'Spacing',
     description:
-      'Consistent 4px-based spacing scale for padding, margins, and gaps.',
-    visual: (
-      <div style={{display: 'flex', alignItems: 'flex-end', gap: 4}}>
-        {[4, 8, 12, 16, 24, 32].map(s => (
-          <div
-            key={s}
-            style={{
-              width: 16,
-              height: s,
-              borderRadius: 3,
-              backgroundColor: 'var(--color-icon-accent, #0066FF)',
-              opacity: 0.15 + (s / 32) * 0.85,
-            }}
-          />
-        ))}
-      </div>
-    ),
+      'A 4px-based scale (0–10) used for padding, margins, and gaps. Keeps layouts aligned to a consistent rhythm across every component and page.',
   },
   {
     title: 'Radius',
-    description: 'Border radius tokens from sharp corners to fully rounded.',
-    visual: (
-      <div style={{display: 'flex', gap: 8, alignItems: 'center'}}>
-        {[2, 6, 10, 16, 999].map(r => (
-          <div
-            key={r}
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: r,
-              border: '2px solid var(--color-border-default, #d0d0d0)',
-              backgroundColor: 'var(--color-background-muted, #f5f5f5)',
-            }}
-          />
-        ))}
-      </div>
-    ),
+    description:
+      'Border radius tokens from sharp (2px) to fully rounded (pill). Controls, cards, and containers each have a designated radius so shapes feel intentional.',
   },
   {
     title: 'Motion',
-    description: 'Duration and easing curves for transitions and animations.',
-    visual: (
-      <div style={{display: 'flex', gap: 6, alignItems: 'center'}}>
-        {['150ms', '250ms', '400ms'].map((d, i) => (
-          <div key={d} style={{textAlign: 'center'}}>
-            <div
-              style={{
-                width: 24 + i * 6,
-                height: 4,
-                borderRadius: 2,
-                backgroundColor: 'var(--color-icon-accent, #0066FF)',
-                opacity: 0.4 + i * 0.25,
-              }}
-            />
-            <span
-              style={{
-                fontSize: 10,
-                color: 'var(--color-text-secondary)',
-                marginTop: 4,
-                display: 'block',
-                fontFamily: 'monospace',
-              }}>
-              {d}
-            </span>
-          </div>
-        ))}
-      </div>
-    ),
+    description:
+      'Duration and easing presets for transitions and animations. Fast (150ms) for micro-interactions, medium (250ms) for panels, slow (400ms) for page transitions.',
   },
   {
     title: 'Elevation',
     description:
-      'Shadow tokens for layered surfaces, cards, popovers, and dialogs.',
-    visual: (
-      <div style={{display: 'flex', gap: 10, alignItems: 'center'}}>
-        {[
-          '0 1px 2px rgba(0,0,0,0.06)',
-          '0 2px 8px rgba(0,0,0,0.1)',
-          '0 8px 24px rgba(0,0,0,0.14)',
-        ].map((shadow, i) => (
-          <div
-            key={i}
-            style={{
-              width: 32,
-              height: 24,
-              borderRadius: 6,
-              backgroundColor: '#fff',
-              boxShadow: shadow,
-            }}
-          />
-        ))}
-      </div>
-    ),
+      'Layered shadow tokens that communicate depth. Cards sit at level 1, popovers at level 2, dialogs at level 3 — no manual box-shadow needed.',
   },
 ];
 
@@ -650,12 +544,12 @@ function WhatsNewPage() {
                       label={entry.type}
                       variant={
                         entry.type === 'Release'
-                          ? 'success'
+                          ? 'green'
                           : entry.type === 'Improvement'
-                            ? 'info'
+                            ? 'blue'
                             : entry.type === 'Fix'
-                              ? 'warning'
-                              : 'error'
+                              ? 'orange'
+                              : 'red'
                       }
                     />
                   </XDSStack>
@@ -747,22 +641,23 @@ function LibraryOverview({
           overflow: 'hidden',
           minHeight: 340,
         }}>
-        <div style={{flex: 1, minWidth: 0}}>
+        <XDSStack direction="vertical" gap={0} style={{flex: 1, minWidth: 0}}>
           <XDSText type="supporting" color="secondary">
             XDS Design System
           </XDSText>
-          <div style={{marginTop: 8}}>
-            <XDSText type="display-1">Build products faster with XDS.</XDSText>
-          </div>
-          <div style={{marginTop: 16, maxWidth: 540}}>
-            <XDSText type="large" color="secondary">
-              XDS is an open-source React component library born from years of
-              building internal tools at Meta. Built with TypeScript and StyleX,
-              it provides 60+ accessible, themeable components for shipping
-              polished UIs fast.
-            </XDSText>
-          </div>
-          <div style={{marginTop: 28, display: 'flex', gap: 12}}>
+          <XDSText type="display-1" style={{marginTop: 8}}>
+            Build products faster with XDS.
+          </XDSText>
+          <XDSText
+            type="large"
+            color="secondary"
+            style={{marginTop: 16, maxWidth: 540}}>
+            XDS is an open-source React component library born from years of
+            building internal tools at Meta. Built with TypeScript and StyleX,
+            it provides 60+ accessible, themeable components for shipping
+            polished UIs fast.
+          </XDSText>
+          <XDSStack direction="horizontal" gap={3} style={{marginTop: 28}}>
             <XDSButton
               label="Get started"
               variant="primary"
@@ -775,19 +670,14 @@ function LibraryOverview({
               size="lg"
               onClick={() => onSelectComponent('button')}
             />
-          </div>
-          <div
-            style={{
-              marginTop: 32,
-              display: 'flex',
-              gap: 32,
-            }}>
+          </XDSStack>
+          <XDSStack direction="horizontal" gap={8} style={{marginTop: 32}}>
             {[
               {value: `${totalComponents}+`, label: 'Components'},
               {value: '6', label: 'Themes'},
               {value: 'MIT', label: 'License'},
             ].map(stat => (
-              <div key={stat.label}>
+              <XDSStack key={stat.label} direction="vertical" gap={0}>
                 <XDSText
                   type="body"
                   style={{fontWeight: 700, display: 'block'}}>
@@ -796,10 +686,10 @@ function LibraryOverview({
                 <XDSText type="supporting" color="secondary">
                   {stat.label}
                 </XDSText>
-              </div>
+              </XDSStack>
             ))}
-          </div>
-        </div>
+          </XDSStack>
+        </XDSStack>
         <div
           style={{
             flex: '0 0 320px',
@@ -821,13 +711,14 @@ function LibraryOverview({
       </div>
 
       {/* ── Section 2: Foundations ── */}
-      <div style={{marginBottom: 64}}>
-        <XDSText type="display-2">Foundations</XDSText>
-        <div style={{marginTop: 8, marginBottom: 24}}>
-          <XDSText type="body" color="secondary">
-            The design tokens and primitives that every component is built on.
-          </XDSText>
-        </div>
+      <XDSStack direction="vertical" gap={0} style={{marginBottom: 64}}>
+        <XDSHeading level={2}>Foundations</XDSHeading>
+        <XDSText
+          type="body"
+          color="secondary"
+          style={{marginTop: 8, marginBottom: 24}}>
+          The design tokens and primitives that every component is built on.
+        </XDSText>
         <div
           style={{
             display: 'grid',
@@ -836,41 +727,49 @@ function LibraryOverview({
           }}>
           {FOUNDATION_ITEMS.map(item => (
             <XDSCard key={item.title} padding={0}>
-              <div style={{padding: '24px 24px 20px'}}>
-                <div
-                  style={{
-                    height: 52,
-                    marginBottom: 16,
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}>
-                  {item.visual}
-                </div>
-                <XDSText
-                  type="body"
-                  style={{fontWeight: 700, display: 'block'}}>
+              <img
+                src={`${basePath}/docsite/foundation-preview.png`}
+                alt={item.title}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  aspectRatio: '16 / 9',
+                  objectFit: 'cover',
+                  borderRadius: '12px 12px 0 0',
+                }}
+              />
+              <XDSStack
+                direction="vertical"
+                gap={1}
+                style={{padding: '16px 20px'}}>
+                <XDSText type="body" weight="bold">
                   {item.title}
                 </XDSText>
-                <div style={{marginTop: 4}}>
-                  <XDSText type="supporting" color="secondary">
-                    {item.description}
-                  </XDSText>
-                </div>
-              </div>
+                <XDSText type="supporting" color="secondary">
+                  {item.description}
+                </XDSText>
+              </XDSStack>
             </XDSCard>
           ))}
         </div>
-      </div>
+      </XDSStack>
 
       {/* ── Section 3: Libraries & Packages ── */}
-      <div style={{marginBottom: 64}}>
-        <XDSText type="display-2">Libraries &amp; Packages</XDSText>
-        <div style={{marginTop: 8, marginBottom: 24}}>
-          <XDSText type="body" color="secondary">
-            Install what you need. All packages are published to npm under the{' '}
-            <span style={{fontFamily: 'monospace'}}>@xds</span> scope.
-          </XDSText>
-        </div>
+      <XDSStack direction="vertical" gap={0} style={{marginBottom: 64}}>
+        <XDSHeading level={2}>Libraries &amp; Packages</XDSHeading>
+        <XDSText
+          type="body"
+          color="secondary"
+          style={{marginTop: 8, marginBottom: 24}}>
+          Install what you need. All packages are published to npm under the{' '}
+          <XDSText
+            type="body"
+            color="secondary"
+            style={{fontFamily: 'monospace'}}>
+            @xds
+          </XDSText>{' '}
+          scope.
+        </XDSText>
         <div
           style={{
             display: 'grid',
@@ -928,20 +827,12 @@ function LibraryOverview({
                       }
                     />
                   </div>
-                  <div style={{flex: 1}}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'baseline',
-                        gap: 8,
-                      }}>
+                  <XDSStack direction="vertical" gap={1} style={{flex: 1}}>
+                    <XDSStack direction="horizontal" gap={2} vAlign="baseline">
                       <XDSText
                         type="body"
-                        style={{
-                          fontWeight: 700,
-                          fontFamily: 'monospace',
-                          fontSize: 14,
-                        }}>
+                        weight="bold"
+                        style={{fontFamily: 'monospace', fontSize: 14}}>
                         {pkg.name}
                       </XDSText>
                       {pkg.version && (
@@ -952,28 +843,27 @@ function LibraryOverview({
                           v{pkg.version}
                         </XDSText>
                       )}
-                    </div>
-                    <div style={{marginTop: 6}}>
-                      <XDSText type="supporting" color="secondary">
-                        {pkg.description}
-                      </XDSText>
-                    </div>
-                  </div>
+                    </XDSStack>
+                    <XDSText type="supporting" color="secondary">
+                      {pkg.description}
+                    </XDSText>
+                  </XDSStack>
                 </div>
               </XDSCard>
             );
           })}
         </div>
-      </div>
+      </XDSStack>
 
       {/* ── Section 3: Resources ── */}
-      <div style={{marginBottom: 64}}>
-        <XDSText type="display-2">Resources</XDSText>
-        <div style={{marginTop: 8, marginBottom: 24}}>
-          <XDSText type="body" color="secondary">
-            Everything you need to design, build, and contribute.
-          </XDSText>
-        </div>
+      <XDSStack direction="vertical" gap={0} style={{marginBottom: 64}}>
+        <XDSHeading level={2}>Resources</XDSHeading>
+        <XDSText
+          type="body"
+          color="secondary"
+          style={{marginTop: 8, marginBottom: 24}}>
+          Everything you need to design, build, and contribute.
+        </XDSText>
         <div
           style={{
             display: 'grid',
@@ -1005,18 +895,17 @@ function LibraryOverview({
                     }}>
                     <XDSIcon icon={IconComp} size="md" color="accent" />
                   </div>
-                  <div style={{flex: 1, minWidth: 0}}>
-                    <XDSText
-                      type="body"
-                      style={{fontWeight: 700, display: 'block'}}>
+                  <XDSStack
+                    direction="vertical"
+                    gap={1}
+                    style={{flex: 1, minWidth: 0}}>
+                    <XDSText type="body" weight="bold">
                       {resource.title}
                     </XDSText>
-                    <div style={{marginTop: 4}}>
-                      <XDSText type="supporting" color="secondary">
-                        {resource.description}
-                      </XDSText>
-                    </div>
-                  </div>
+                    <XDSText type="supporting" color="secondary">
+                      {resource.description}
+                    </XDSText>
+                  </XDSStack>
                   <XDSIcon
                     icon={ExternalLinkIcon}
                     size="sm"
@@ -1027,19 +916,20 @@ function LibraryOverview({
             );
           })}
         </div>
-      </div>
+      </XDSStack>
 
       {/* ── Section 4: XDS OSS vs XDS WWW ── */}
-      <div style={{marginBottom: 64}}>
-        <XDSText type="display-2">XDS Open Source vs XDS WWW</XDSText>
-        <div style={{marginTop: 8, marginBottom: 24, maxWidth: 680}}>
-          <XDSText type="body" color="secondary">
-            XDS exists in two forms. This library is the open-source version,
-            which ports the design value from Meta&#39;s internal system with a
-            modern, open architecture. Every component can be forked or swizzled
-            — you own the code.
-          </XDSText>
-        </div>
+      <XDSStack direction="vertical" gap={0} style={{marginBottom: 64}}>
+        <XDSHeading level={2}>XDS Open Source vs XDS WWW</XDSHeading>
+        <XDSText
+          type="body"
+          color="secondary"
+          style={{marginTop: 8, marginBottom: 24, maxWidth: 680}}>
+          XDS exists in two forms. This library is the open-source version,
+          which ports the design value from Meta&#39;s internal system with a
+          modern, open architecture. Every component can be forked or swizzled —
+          you own the code.
+        </XDSText>
         <div
           style={{
             display: 'grid',
@@ -1047,149 +937,132 @@ function LibraryOverview({
             gap: 16,
           }}>
           {/* OSS card */}
-          <XDSCard padding={0}>
-            <div style={{padding: 28}}>
+          <XDSCard padding={6}>
+            <XDSStack
+              direction="horizontal"
+              gap={2}
+              vAlign="center"
+              style={{marginBottom: 8}}>
               <div
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  marginBottom: 8,
-                }}>
-                <div
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: '50%',
-                    backgroundColor: '#059669',
-                    flexShrink: 0,
-                  }}
-                />
-                <XDSHeading level={3}>XDS Open Source</XDSHeading>
-              </div>
-              <XDSText
-                type="supporting"
-                color="secondary"
-                style={{
-                  fontFamily: 'monospace',
-                  display: 'block',
-                  marginBottom: 16,
-                }}>
-                @xds/core
-              </XDSText>
-              <XDSDivider />
-              <div
-                style={{
-                  marginTop: 16,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 16,
-                }}>
-                {OSS_FEATURES.map(feature => (
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  backgroundColor: '#059669',
+                  flexShrink: 0,
+                }}
+              />
+              <XDSHeading level={3}>XDS Open Source</XDSHeading>
+            </XDSStack>
+            <XDSText
+              type="supporting"
+              color="secondary"
+              style={{fontFamily: 'monospace', marginBottom: 16}}>
+              @xds/core
+            </XDSText>
+            <XDSDivider />
+            <XDSStack direction="vertical" gap={4} style={{marginTop: 16}}>
+              {OSS_FEATURES.map(feature => (
+                <XDSStack key={feature.title} direction="horizontal" gap={3}>
                   <div
-                    key={feature.title}
                     style={{
-                      display: 'flex',
-                      gap: 12,
-                    }}>
-                    <div
-                      style={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: '50%',
-                        backgroundColor: '#059669',
-                        flexShrink: 0,
-                        marginTop: 7,
-                      }}
-                    />
-                    <div>
-                      <XDSText
-                        type="body"
-                        style={{fontWeight: 600, display: 'block'}}>
-                        {feature.title}
-                      </XDSText>
-                      <XDSText type="supporting" color="secondary">
-                        {feature.desc}
-                      </XDSText>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      backgroundColor: '#059669',
+                      flexShrink: 0,
+                      marginTop: 7,
+                    }}
+                  />
+                  <XDSStack direction="vertical" gap={0}>
+                    <XDSText type="body" weight="semibold">
+                      {feature.title}
+                    </XDSText>
+                    <XDSText type="supporting" color="secondary">
+                      {feature.desc}
+                    </XDSText>
+                  </XDSStack>
+                </XDSStack>
+              ))}
+            </XDSStack>
           </XDSCard>
           {/* WWW card */}
-          <XDSCard padding={0}>
-            <div style={{padding: 28}}>
+          <XDSCard padding={6}>
+            <XDSStack
+              direction="horizontal"
+              gap={2}
+              vAlign="center"
+              style={{marginBottom: 8}}>
               <div
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  marginBottom: 8,
-                }}>
-                <div
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: '50%',
-                    backgroundColor: '#6B7280',
-                    flexShrink: 0,
-                  }}
-                />
-                <XDSHeading level={3}>XDS WWW (Internal)</XDSHeading>
-              </div>
-              <XDSText
-                type="supporting"
-                color="secondary"
-                style={{
-                  fontFamily: 'monospace',
-                  display: 'block',
-                  marginBottom: 16,
-                }}>
-                @nest/xds
-              </XDSText>
-              <XDSDivider />
-              <div
-                style={{
-                  marginTop: 16,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 16,
-                }}>
-                {WWW_FEATURES.map(feature => (
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  backgroundColor: '#6B7280',
+                  flexShrink: 0,
+                }}
+              />
+              <XDSHeading level={3}>XDS WWW (Internal)</XDSHeading>
+            </XDSStack>
+            <XDSText
+              type="supporting"
+              color="secondary"
+              style={{fontFamily: 'monospace', marginBottom: 16}}>
+              @nest/xds
+            </XDSText>
+            <XDSDivider />
+            <XDSStack direction="vertical" gap={4} style={{marginTop: 16}}>
+              {WWW_FEATURES.map(feature => (
+                <XDSStack key={feature.title} direction="horizontal" gap={3}>
                   <div
-                    key={feature.title}
                     style={{
-                      display: 'flex',
-                      gap: 12,
-                    }}>
-                    <div
-                      style={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: '50%',
-                        backgroundColor: '#6B7280',
-                        flexShrink: 0,
-                        marginTop: 7,
-                      }}
-                    />
-                    <div>
-                      <XDSText
-                        type="body"
-                        style={{fontWeight: 600, display: 'block'}}>
-                        {feature.title}
-                      </XDSText>
-                      <XDSText type="supporting" color="secondary">
-                        {feature.desc}
-                      </XDSText>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      backgroundColor: '#6B7280',
+                      flexShrink: 0,
+                      marginTop: 7,
+                    }}
+                  />
+                  <XDSStack direction="vertical" gap={0}>
+                    <XDSText type="body" weight="semibold">
+                      {feature.title}
+                    </XDSText>
+                    <XDSText type="supporting" color="secondary">
+                      {feature.desc}
+                    </XDSText>
+                  </XDSStack>
+                </XDSStack>
+              ))}
+            </XDSStack>
           </XDSCard>
         </div>
-      </div>
+      </XDSStack>
+
+      {/* ── Section 5: Have a question? ── */}
+      <XDSStack
+        direction="vertical"
+        gap={3}
+        hAlign="center"
+        style={{marginBottom: 64, textAlign: 'center'}}>
+        <XDSHeading level={2}>Have a question?</XDSHeading>
+        <XDSText type="body" weight="bold">
+          Please use this support first
+        </XDSText>
+        <XDSTextInput
+          label="Ask a question"
+          isLabelHidden
+          placeholder="Search for answers..."
+          size="lg"
+          style={{width: '100%', maxWidth: 560}}
+        />
+        <XDSText type="supporting" color="secondary">
+          if you really want to talk a human,{' '}
+          <XDSLink label="go here" color="secondary">
+            go here
+          </XDSLink>
+        </XDSText>
+      </XDSStack>
     </div>
   );
 }
