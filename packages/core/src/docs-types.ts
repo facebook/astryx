@@ -268,9 +268,18 @@ interface BaseDoc {
    *  Lowercase only. Used by `xds component <term>` for fuzzy matching.
    *  e.g. `['accordion', 'expand', 'toggle', 'disclosure']` for Collapsible */
   keywords?: string[];
-  /** Sub-component names to hide from discovery. Use when the directory's
-   *  doc covers a group but some XDS*.tsx files are internal. */
-  internalComponents?: string[];
+  /** Sub-component names to hide from human-facing UI (CLI listings,
+   *  docs catalogs). The components stay public and importable — agents
+   *  and tooling can still discover them via source. Use when the
+   *  directory's doc covers a group but some XDS*.tsx files shouldn't
+   *  appear in the catalog. */
+  hiddenComponents?: string[];
+  /** Hide this entire component from human-facing UI (CLI listings,
+   *  docs catalogs). The component stays public and importable — agents
+   *  and tooling can still discover it via source. Use for shared
+   *  primitives (NavIcon, NavMenu) that only make sense in the context
+   *  of their parent compositions. */
+  hidden?: boolean;
   /** Optional group for sidebar/docs organization.
    *  Components without a group appear flat in alphabetical order.
    *  Groups cluster related components that are always used together
@@ -290,7 +299,9 @@ interface BaseDoc {
     | 'Layout'
     | 'List'
     | 'MetadataList'
-    | 'Navigation'
+    | 'MobileNav'
+    | 'SideNav'
+    | 'TopNav'
     | 'RadioList'
     | 'SegmentedControl'
     | 'Selector'

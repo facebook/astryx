@@ -11,29 +11,32 @@ const SKIP_DIRS = new Set(['hooks', 'utils', '__tests__', 'node_modules']);
 // Only matches at shallow indentation (≤ 4 spaces from line start) to avoid
 // picking up nested `group:` fields inside prop descriptions.
 const GROUP_RE = /(?:^|\n) {0,4}group:\s*['"]([^'"]+)['"]/;
-const INTERNAL_COMPONENTS_RE = /(?:^|\n) {0,4}internalComponents:\s*\[([^\]]*)\]/;
+const HIDDEN_COMPONENTS_RE = /(?:^|\n) {0,4}hiddenComponents:\s*\[([^\]]*)\]/;
+const HIDDEN_RE = /(?:^|\n) {0,4}hidden:\s*true/;
 
 /**
- * Read the `group` and `internalComponents` fields from a
+ * Read the `group`, `hiddenComponents`, and `hidden` fields from a
  * component's .doc.mjs file (synchronous).
  */
 function readDocMeta(docPath) {
   try {
     const content = fs.readFileSync(docPath, 'utf-8');
     const groupMatch = GROUP_RE.exec(content);
-    const internalCompsMatch = INTERNAL_COMPONENTS_RE.exec(content);
+    const hiddenCompsMatch = HIDDEN_COMPONENTS_RE.exec(content);
     const hiddenSet = new Set();
-    if (internalCompsMatch) {
-      for (const m of internalCompsMatch[1].matchAll(/['"]([^'"]+)['"]/g)) {
+    if (hiddenCompsMatch) {
+      for (const m of hiddenCompsMatch[1].matchAll(/['"]([^'"]+)['"]/g)) {
         hiddenSet.add(m[1]);
       }
     }
+    const hidden = HIDDEN_RE.test(content);
     return {
       group: groupMatch ? groupMatch[1] : null,
-      internalComponents: hiddenSet,
+      hiddenComponents: hiddenSet,
+      hidden,
     };
   } catch {
-    return {group: null, internalComponents: new Set()};
+    return {group: null, hiddenComponents: new Set(), hidden: false};
   }
 }
 
@@ -83,13 +86,16 @@ export function discoverComponents(coreDir) {
     if (!fs.existsSync(docFile)) {
       docFile = path.join(dirPath, `XDS${entry.name}.doc.mjs`);
     }
-    const {group, internalComponents} = fs.existsSync(docFile)
+    const {group, hiddenComponents, hidden} = fs.existsSync(docFile)
       ? readDocMeta(docFile)
-      : {group: null, internalComponents: new Set()};
+      : {group: null, hiddenComponents: new Set(), hidden: false};
+
+    // Skip entire directory if the doc is marked hidden
+    if (hidden) continue;
 
     for (const fileName of xdsFiles) {
       const componentName = fileName.replace(/^XDS/, '').replace(/\.tsx$/, '');
-      if (internalComponents.has(componentName)) continue;
+      if (hiddenComponents.has(componentName)) continue;
 
       // Check for a per-component doc file that overrides the directory group
       let compGroup = group;
