@@ -13,11 +13,11 @@
 
 import React, {
   useCallback,
-  useLayoutEffect,
   useRef,
   type ReactElement,
   type ReactNode,
 } from 'react';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
 import {useXDSTooltip, type TooltipFocusTrigger} from './useXDSTooltip';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useXDSLayer';
@@ -199,7 +199,7 @@ export function XDSTooltip({
   });
 
   // Sibling mode: attach to external anchorRef
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!anchorRef) return;
 
     const el = anchorRef.current;
@@ -226,7 +226,7 @@ export function XDSTooltip({
   }, [anchorRef, tooltip.ref, tooltip.describedBy]);
 
   // For element children with display:contents, attach ref to first child
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (anchorRef) return; // Skip if using anchorRef mode
     if (textOnly) return; // Skip for text-only (ref is on wrapper)
 

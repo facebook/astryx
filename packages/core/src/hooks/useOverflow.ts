@@ -2,7 +2,7 @@
 
 /**
  * @file useOverflow.ts
- * @input Uses React useState, useLayoutEffect, useCallback, useRef
+ * @input Uses React useState, useCallback, useRef; useIsomorphicLayoutEffect
  * @output Exports useOverflow hook for measuring and managing horizontal overflow
  * @position Core hook; used by XDSOverflowList and consumers for overflow patterns
  *
@@ -14,8 +14,8 @@
  * - /packages/core/src/hooks/index.ts
  */
 
-
-import {useState, useLayoutEffect, useCallback, useRef} from 'react';
+import {useState, useCallback, useRef} from 'react';
+import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
 
 export interface UseOverflowOptions {
   /**
@@ -200,7 +200,7 @@ export function useOverflow(
   );
 
   // Recalculate when itemCount changes
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     calculate();
   }, [calculate]);
 
