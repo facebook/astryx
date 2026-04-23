@@ -107,3 +107,5 @@ export function XDSTreeListBranches({
   );
 }
 
+
+XDSTreeListBranches.displayName = 'XDSTreeListBranches';
