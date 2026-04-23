@@ -64,10 +64,13 @@ const styles = stylex.create({
     '--_card-radius': radiusVars['--radius-container'],
     borderRadius: 'var(--_card-radius)',
     overflow: 'clip',
-  },
-  withBorder: {
+    // Border width/style always present to prevent layout jitter when
+    // switching between default and colored variants.
     borderWidth: borderVars['--border-width'],
     borderStyle: 'solid',
+    borderColor: 'transparent',
+  },
+  withBorder: {
     borderColor: colorVars['--color-border-emphasized'],
   },
   // Fixed-height cards scroll content; overflow: auto also clips to border-radius
