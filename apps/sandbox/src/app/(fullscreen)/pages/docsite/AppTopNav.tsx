@@ -10,7 +10,7 @@ import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSCommandPalette} from '@xds/core/CommandPalette';
 
 import {SearchIcon, ProfileIcon, FilterIcon} from './docsite-icons';
-import {SEARCH_COMMANDS} from './constants';
+import {SEARCH_COMMANDS, basePath} from './constants';
 
 const XDS_WORDMARK = (
   <svg
@@ -107,7 +107,7 @@ export function AppTopNav({
         heading={
           <XDSTopNavHeading
             logo={XDS_WORDMARK}
-            headingHref="/pages/docsite/"
+            headingHref={`${basePath}/pages/docsite/`}
             menu={headingMenu}
           />
         }

@@ -1771,7 +1771,7 @@ export function DocsView({
 
     const qs = params.toString();
     if (qs === window.location.search.slice(1)) return;
-    const url = `/pages/docsite/?${qs}`;
+    const url = `${basePath}/pages/docsite/?${qs}`;
     window.history.replaceState(window.history.state, '', url);
   }, [selectedComponent]);
 
