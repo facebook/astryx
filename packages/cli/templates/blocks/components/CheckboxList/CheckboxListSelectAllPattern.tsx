@@ -2,7 +2,6 @@
 
 import {useState} from 'react';
 import {XDSCheckboxList, XDSCheckboxListItem} from '@xds/core/CheckboxList';
-import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
 import {XDSDivider} from '@xds/core/Divider';
 
 const DOCUMENTS = [
