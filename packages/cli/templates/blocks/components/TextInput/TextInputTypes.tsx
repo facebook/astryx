@@ -5,7 +5,6 @@ import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSStack} from '@xds/core/Layout';
 
 export default function TextInputTypes() {
-  const [text, setText] = useState('Sarah Chen');
   const [password, setPassword] = useState('hunter42');
   const [email, setEmail] = useState('sarah@example.com');
   const [tooltip, setTooltip] = useState('');
@@ -17,10 +16,11 @@ export default function TextInputTypes() {
     <div style={{width: 300}}>
       <XDSStack direction="vertical" gap={3}>
         <XDSTextInput
-          label="Default field"
-          value={text}
-          onChange={setText}
-          placeholder="Enter a value"
+          label="Field description"
+          value={described}
+          onChange={setDescribed}
+          placeholder="Enter your email"
+          description="Descriptions can be used to provide additional information about a field."
         />
         <XDSTextInput
           type="password"
@@ -56,13 +56,6 @@ export default function TextInputTypes() {
           onChange={setOptional}
           placeholder="Enter your nickname"
           isOptional
-        />
-        <XDSTextInput
-          label="Field description"
-          value={described}
-          onChange={setDescribed}
-          placeholder="Enter your email"
-          description="We'll never share your email with anyone."
         />
         <XDSTextInput
           label="Disabled field"

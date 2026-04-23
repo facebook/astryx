@@ -7,14 +7,12 @@ import {
   EnvelopeIcon,
   LockClosedIcon,
   UserIcon,
-  GlobeAltIcon,
 } from '@heroicons/react/24/outline';
 
 export default function TextInputIcon() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [website, setWebsite] = useState('');
 
   return (
     <div style={{width: 300}}>
@@ -41,13 +39,6 @@ export default function TextInputIcon() {
           onChange={setPassword}
           placeholder="Enter your password"
           startIcon={LockClosedIcon}
-        />
-        <XDSTextInput
-          label="Website"
-          value={website}
-          onChange={setWebsite}
-          placeholder="https://example.com"
-          startIcon={GlobeAltIcon}
         />
       </XDSStack>
     </div>
