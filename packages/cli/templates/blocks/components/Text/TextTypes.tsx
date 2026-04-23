@@ -4,8 +4,8 @@ import {XDSText} from '@xds/core/Text';
 import {XDSStack} from '@xds/core/Stack';
 
 const TYPES = [
-  {type: 'large' as const, label: 'Large text', sample: 'Large text for introductions and callouts'},
   {type: 'body' as const, label: 'Body text', sample: 'Body text for paragraphs and general content'},
+  {type: 'large' as const, label: 'Large text', sample: 'Large text for introductions and callouts'},
   {type: 'label' as const, label: 'Label text', sample: 'Label text for form fields and section titles'},
   {type: 'supporting' as const, label: 'Supporting text', sample: 'Supporting text for captions and metadata'},
   {type: 'code' as const, label: 'Code text', sample: 'const theme = defineTheme({})'},
