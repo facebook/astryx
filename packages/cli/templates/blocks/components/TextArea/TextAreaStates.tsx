@@ -8,7 +8,7 @@ export default function TextAreaStates() {
   const [requiredValue, setRequiredValue] = useState('');
 
   return (
-    <XDSStack direction="vertical" gap={4}>
+    <XDSStack direction="vertical" gap={4} style={{width: 400}}>
       <XDSTextArea
         label="Required field"
         value={requiredValue}

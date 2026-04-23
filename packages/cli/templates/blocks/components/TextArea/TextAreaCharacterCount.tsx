@@ -9,13 +9,15 @@ export default function TextAreaCharacterCount() {
   );
 
   return (
-    <XDSTextArea
-      label="Status update"
-      value={value}
-      onChange={setValue}
-      placeholder="What's on your mind?"
-      maxLength={280}
-      rows={3}
-    />
+    <div style={{width: 400}}>
+      <XDSTextArea
+        label="Status update"
+        value={value}
+        onChange={setValue}
+        placeholder="What's on your mind?"
+        maxLength={280}
+        rows={3}
+      />
+    </div>
   );
 }

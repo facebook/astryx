@@ -8,13 +8,15 @@ export default function TextAreaWithIcon() {
   const [value, setValue] = useState('');
 
   return (
-    <XDSTextArea
-      label="Meeting notes"
-      description="Capture key decisions and action items."
-      value={value}
-      onChange={setValue}
-      placeholder="What was discussed?"
-      startIcon={PencilSquareIcon}
-    />
+    <div style={{width: 400}}>
+      <XDSTextArea
+        label="Meeting notes"
+        description="Capture key decisions and action items."
+        value={value}
+        onChange={setValue}
+        placeholder="What was discussed?"
+        startIcon={PencilSquareIcon}
+      />
+    </div>
   );
 }
