@@ -146,12 +146,16 @@ function createEntryFile(
   const entryPath = path.join(tmpDir, 'entry.tsx');
 
   // For XDS and XDS+Tailwind targets, wrap in theme provider and import reset
-  if (target === 'xds') {
+  if (target === 'xds' || target === 'xds-tailwind') {
+    const tailwindImport =
+      target === 'xds-tailwind'
+        ? `\nimport '${path.join(REPO_ROOT, 'packages/core/src/tailwind-theme.css').replace(/\\/g, '/')}';`
+        : '';
     fs.writeFileSync(
       entryPath,
       `import React from 'react';
 import {createRoot} from 'react-dom/client';
-import '@xds/core/reset.css';
+import '@xds/core/reset.css';${tailwindImport}
 import {XDSTheme} from '@xds/core/theme';
 import {defaultTheme} from '@xds/theme/default';
 import Component from '${componentPath.replace(/\\/g, '/')}';
@@ -193,9 +197,9 @@ function createIndexHtml(
 ): string {
   const htmlPath = path.join(tmpDir, 'index.html');
 
-  // Baseline previews need Tailwind CSS for styling
+  // Baseline and xds-tailwind previews need Tailwind CSS for styling
   const tailwindCdn =
-    target === 'baseline'
+    target === 'baseline' || target === 'xds-tailwind'
       ? `\n  <script src="https://cdn.tailwindcss.com"></script>
   <style>
     :root {
@@ -284,7 +288,7 @@ function createViteConfig(tmpDir: string, target: string): string {
   // type casts). We use a pre-transform plugin to strip TypeScript type
   // assertions before StyleX processes the file.
   const plugins =
-    target === 'xds'
+    target === 'xds' || target === 'xds-tailwind'
       ? `
     {
       name: 'stylex-inline-vars',
@@ -356,7 +360,7 @@ function createViteConfig(tmpDir: string, target: string): string {
     viteSingleFile(),`;
 
   const imports =
-    target === 'xds'
+    target === 'xds' || target === 'xds-tailwind'
       ? `import stylex from '@stylexjs/unplugin';
 import react from '@vitejs/plugin-react';
 import {viteSingleFile} from 'vite-plugin-singlefile';`
@@ -380,7 +384,7 @@ import {viteSingleFile} from 'vite-plugin-singlefile';`;
     },`;
 
   const aliases =
-    target === 'xds'
+    target === 'xds' || target === 'xds-tailwind'
       ? xdsAliases
       : target === 'baseline'
         ? `
@@ -713,7 +717,7 @@ async function main() {
       console.log(`  📄 ${promptId} (${target})...`);
 
       // Auto-fix missing XDS imports before building
-      if (target === 'xds') {
+      if (target === 'xds' || target === 'xds-tailwind') {
         const autoImported = fixMissingXDSImports(componentPath);
         if (autoImported.length > 0) {
           console.log(`  ⚡ Auto-imported: ${autoImported.join(', ')}`);
@@ -728,7 +732,7 @@ async function main() {
       const ok = buildPreview(componentPath, target, promptId, previewPath);
       if (ok) {
         // Post-build validation: ensure no unresolved XDS references
-        if (target === 'xds') {
+        if (target === 'xds' || target === 'xds-tailwind') {
           const unresolved = validatePreviewHtml(previewPath);
           if (unresolved.length > 0) {
             console.error(

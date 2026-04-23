@@ -8,6 +8,7 @@
  *
  * Usage:
  *   node internal/vibe-tests/src/setup-iteration.mjs --sample 10 --target xds
+ *   node internal/vibe-tests/src/setup-iteration.mjs --sample 10 --target xds-tailwind
  *   node internal/vibe-tests/src/setup-iteration.mjs --sample 10 --target baseline
  *   node internal/vibe-tests/src/setup-iteration.mjs --sample 10 --target html
  *   node internal/vibe-tests/src/setup-iteration.mjs --sample 10 --target xds --prompts cwm-1,dd-2,fwc-6
@@ -113,6 +114,25 @@ Metadata: {"completedAt": "<ISO timestamp>", "docsRead": [<docs you read>]}
 Write ONLY valid TSX. No markdown fences, no explanation.`;
 }
 
+function generateXdsTailwindTaskPrompt(prompt, iterDir) {
+  return `You are generating React/TSX code using the XDS design system with Tailwind CSS.
+
+Read the package README at ${path.resolve(VIBE_DIR, '../../packages/core/README.md')} for how to look up
+component docs. Use what you find there to discover the components you need.
+
+## Task
+
+${prompt.prompt}
+
+## Output
+
+Write the TSX code to: ${path.join(iterDir, 'results', `${prompt.id}.tsx`)}
+Write metadata to: ${path.join(iterDir, 'results', `${prompt.id}.json`)}
+
+Metadata: {"completedAt": "<ISO timestamp>", "docsRead": [<component names you looked up>]}
+Write ONLY valid TSX. No markdown fences, no explanation.`;
+}
+
 function generateHtmlTaskPrompt(prompt, iterDir) {
   return `You are generating React/TSX code using ONLY plain HTML elements and inline CSS.
 Do NOT use any component library. Use standard HTML elements (div, button, input, etc.)
@@ -144,6 +164,7 @@ const promptFilter = promptsIdx !== -1 ? args[promptsIdx + 1].split(',') : null;
 console.log(`\n🧪 Setup Vibe Test Iteration`);
 console.log(`   Target: ${target}, Sample: ${sample}`);
 if (target === 'xds') console.log(`   Mode: CLI-retrieval (MacBook)\n`);
+else if (target === 'xds-tailwind') console.log(`   Mode: CLI-retrieval + Tailwind (MacBook)\n`);
 else console.log(`   Mode: ${target === 'baseline' ? 'baseline-docs' : 'no docs'}\n`);
 
 // 1. Load and filter/sample prompts
@@ -173,7 +194,7 @@ const manifest = {
     persona: 'naive',
     holdout: false,
     degradation: false,
-    cliRetrieval: target === 'xds',
+    cliRetrieval: target === 'xds' || target === 'xds-tailwind',
   },
   prompts: prompts.map(p => ({
     id: p.id,
@@ -187,6 +208,7 @@ const manifest = {
 fs.writeFileSync(path.join(iterDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
 
 const generateTaskPrompt = target === 'xds' ? generateXdsTaskPrompt
+  : target === 'xds-tailwind' ? generateXdsTailwindTaskPrompt
   : target === 'baseline' ? generateBaselineTaskPrompt
   : generateHtmlTaskPrompt;
 
@@ -216,8 +238,8 @@ console.log(`   Dir: ${iterDir}`);
 console.log(`   ${prompts.length} tasks created`);
 console.log(`   Prompt IDs: ${prompts.map(p => p.id).join(',')}\n`);
 
-if (target === 'xds') {
-  console.log(`## Sub-agent spawn pattern (XDS with CLI retrieval):\n`);
+if (target === 'xds' || target === 'xds-tailwind') {
+  console.log(`## Sub-agent spawn pattern (${target} with CLI retrieval):\n`);
   console.log(`Each agent needs: node "cli:MacBook-Pro-2" for CLI, workspace for file I/O\n`);
 } else if (target === 'baseline') {
   console.log(`## Sub-agent spawn pattern (baseline):\n`);

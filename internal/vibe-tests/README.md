@@ -23,64 +23,38 @@ Prompts live in [`test-sets/default.json`](test-sets/default.json). Each prompt 
 
 ## Sub-Agent Prompts
 
-Each target gets an equivalent prompt. The only thing that varies is the design system and where to find its docs.
+Each target gets an equivalent prompt. The only thing that varies is the design system name and the project environment.
 
-**XDS agent sees:**
+**All library targets see the same structure:**
 
 ```
-You are generating React/TSX code using the XDS design system.
-
-Read the package README at node_modules/@xds/core/README.md for how to look up
-component docs. Use what you find there to discover the components you need.
+You are generating React/TSX code using <system name>.
+Your project is at <project dir>. Explore it to find available components.
 
 ## Task
 
-Build a shipping method selector with three options: Standard (free, 5-7 days),
-Express ($9.99, 2-3 days), Overnight ($19.99, next day)
-
-## Output
-
-Write the TSX code to: internal/vibe-tests/results/<id>/results/fwc-6.tsx
-Write metadata to: internal/vibe-tests/results/<id>/results/fwc-6.json
-
-Metadata: {"completedAt": "<ISO timestamp>", "docsRead": [<component names you looked up>]}
-Write ONLY valid TSX. No markdown fences, no explanation.
-```
-
-**Baseline (shadcn) agent sees:**
-
-```
-You are generating React/TSX code using shadcn/ui components with Tailwind CSS.
-
-Read the baseline docs at internal/vibe-tests/.baseline-docs/
-and AGENTS.baseline.md for component guidance.
-
-## Task
-
-Build a shipping method selector with three options: Standard (free, 5-7 days),
-Express ($9.99, 2-3 days), Overnight ($19.99, next day)
+<prompt text>
 
 ## Output
 ...same format...
 ```
 
-**HTML agent sees:**
+**HTML target sees:**
 
 ```
 You are generating React/TSX code using ONLY plain HTML elements and inline CSS.
-Do NOT use any component library. Use standard HTML elements (div, button, input, etc.)
-with inline styles or a styles object.
+Your project is at <project dir>. Do NOT use any component library.
+Use standard HTML elements (div, button, input, etc.) with inline styles or a styles object.
 
 ## Task
 
-Build a shipping method selector with three options: Standard (free, 5-7 days),
-Express ($9.99, 2-3 days), Overnight ($19.99, next day)
+<prompt text>
 
 ## Output
 ...same format...
 ```
 
-Note: no system-specific rules, no expected components, no pre-built commands. The agent discovers what it needs through the system's own docs.
+Note: no system-specific rules, no expected components, no pre-built commands. The agent discovers what it needs through the project's own files (README, package.json, symlinked sources).
 
 ## Checker Protocol
 
@@ -151,6 +125,7 @@ These are intentional and documented — they slightly favor baseline, making XD
 
 - **Efficiency:** Tailwind's single-line `className` gets a lower styling-ratio than XDS's multi-line `stylex.create` blocks, despite encoding more decisions
 - **Maintainability:** Tailwind scale values (`p-4`, `text-sm`) count as semantic, which is generous compared to how raw `16px` is counted for HTML
+- **XDS+Tailwind scoring:** The hybrid target counts styling decisions from both XDS props and Tailwind classes. This may inflate its decision count relative to pure XDS, but accurately reflects the code's actual styling surface area
 
 ## Directory Structure
 
@@ -159,7 +134,7 @@ internal/vibe-tests/
 ├── test-sets/           # Prompt batteries (JSON)
 ├── src/                 # Runner scripts and evaluation
 │   ├── setup-iteration.mjs   # Single-target iteration setup
-│   ├── setup-nightly.mjs     # 3-target nightly setup
+│   ├── setup-nightly.mjs     # 4-target nightly setup
 │   ├── universal-eval.ts     # Static analysis scoring (5 dimensions)
 │   ├── universal-aggregate.ts # Score aggregation
 │   ├── universal-compare.ts  # Cross-target comparison

@@ -2,14 +2,15 @@
 /**
  * @file setup-nightly.mjs
  * 
- * Sets up a complete nightly vibe test run: 3 iterations (xds, baseline, html)
- * using the same prompts. XDS tasks include CLI-retrieval instructions.
+ * Sets up a complete nightly vibe test run: 4 iterations
+ * (xds, xds-tailwind, baseline, html) using the same prompts.
+ * XDS and XDS+Tailwind tasks include CLI-retrieval instructions.
  *
  * Usage:
  *   node internal/vibe-tests/src/setup-nightly.mjs
  *   node internal/vibe-tests/src/setup-nightly.mjs --sample 5
  *
- * Output: prints JSON with all three iteration IDs and prompt IDs
+ * Output: prints JSON with all four iteration IDs and prompt IDs
  * for the nightly runner to use when spawning sub-agents.
  */
 
@@ -81,7 +82,24 @@ function samplePrompts(prompts, n) {
 
 function generateXdsTaskPrompt(prompt, projectDir) {
   return `You are generating React/TSX code using the XDS design system.
-Your project is at ${projectDir}. Explore it to find how to look up component docs.
+Your project is at ${projectDir}. Explore it to find available components.
+
+## Task
+
+${prompt.prompt}
+
+## Output
+
+Write the TSX code to: ${path.join(projectDir, `${prompt.id}.tsx`)}
+Write metadata to: ${path.join(projectDir, `${prompt.id}.json`)}
+
+Metadata: {"completedAt": "<ISO timestamp>", "docsRead": [<component names you looked up>]}
+Write ONLY valid TSX. No markdown fences, no explanation.`;
+}
+
+function generateXdsTailwindTaskPrompt(prompt, projectDir) {
+  return `You are generating React/TSX code using the XDS design system with Tailwind CSS.
+Your project is at ${projectDir}. Explore it to find available components.
 
 ## Task
 
@@ -131,7 +149,15 @@ Metadata: {"completedAt": "<ISO timestamp>", "docsRead": []}
 Write ONLY valid TSX. No markdown fences, no explanation.`;
 }
 
-function createIteration(target, prompts, generateFn) {
+const TARGET_CONFIG = {
+  xds: {label: 'XDS', generateFn: generateXdsTaskPrompt, cliRetrieval: true},
+  'xds-tailwind': {label: 'XDS+TW', generateFn: generateXdsTailwindTaskPrompt, cliRetrieval: true},
+  baseline: {label: 'Baseline', generateFn: generateBaselineTaskPrompt, cliRetrieval: false},
+  html: {label: 'HTML', generateFn: generateHtmlTaskPrompt, cliRetrieval: false},
+};
+
+function createIteration(target, prompts) {
+  const config = TARGET_CONFIG[target];
   const iterationId = generateId();
   const iterDir = path.join(RESULTS_DIR, iterationId);
   ensureDir(iterDir);
@@ -146,7 +172,7 @@ function createIteration(target, prompts, generateFn) {
       persona: 'naive',
       holdout: false,
       degradation: false,
-      cliRetrieval: target === 'xds',
+      cliRetrieval: config.cliRetrieval,
     },
     prompts: prompts.map(p => ({
       id: p.id,
@@ -164,7 +190,7 @@ function createIteration(target, prompts, generateFn) {
 
   for (const prompt of prompts) {
     const agentProject = createAgentProject(target, iterDir, prompt.id);
-    const taskPrompt = generateFn(prompt, agentProject);
+    const taskPrompt = config.generateFn(prompt, agentProject);
     const task = {
       promptId: prompt.id,
       category: prompt.category,
@@ -186,12 +212,13 @@ function createIteration(target, prompts, generateFn) {
 
 // ── Main ─────────────────────────────────────────────────────────────
 
+const TARGETS = ['xds', 'xds-tailwind', 'baseline', 'html'];
 const args = process.argv.slice(2);
 const sampleIdx = args.indexOf('--sample');
 const sample = sampleIdx !== -1 ? parseInt(args[sampleIdx + 1]) : 10;
 
 console.log(`\n🧪 Nightly Vibe Test Setup`);
-console.log(`   Sample: ${sample} prompts × 3 targets = ${sample * 3} total tasks\n`);
+console.log(`   Sample: ${sample} prompts × ${TARGETS.length} targets = ${sample * TARGETS.length} total tasks\n`);
 
 // 1. Sample prompts once — reuse across all targets
 const allPrompts = loadTestSet();
@@ -200,64 +227,64 @@ const promptIds = prompts.map(p => p.id);
 console.log(`📋 Selected ${prompts.length} prompts from ${allPrompts.length} total`);
 console.log(`   IDs: ${promptIds.join(', ')}\n`);
 
-// 2. Create iterations for all three targets
-const xds = createIteration('xds', prompts, generateXdsTaskPrompt);
-const baseline = createIteration('baseline', prompts, generateBaselineTaskPrompt);
-const html = createIteration('html', prompts, generateHtmlTaskPrompt);
+// 2. Create iterations for all targets
+const iterations = {};
+const dirs = {};
+for (const target of TARGETS) {
+  const result = createIteration(target, prompts);
+  iterations[target] = result.iterationId;
+  dirs[target] = result.iterDir;
+}
 
 console.log(`✅ All iterations ready:\n`);
-console.log(`   XDS:      ${xds.iterationId}  (${xds.iterDir})`);
-console.log(`   Baseline: ${baseline.iterationId}  (${baseline.iterDir})`);
-console.log(`   HTML:     ${html.iterationId}  (${html.iterDir})\n`);
+for (const target of TARGETS) {
+  const label = TARGET_CONFIG[target].label.padEnd(10);
+  console.log(`   ${label} ${iterations[target]}  (${dirs[target]})`);
+}
+console.log();
 
 // 3. Output structured data for the nightly runner
 const nightlyConfig = {
   createdAt: timestamp(),
   sample,
   promptIds,
-  iterations: {
-    xds: xds.iterationId,
-    baseline: baseline.iterationId,
-    html: html.iterationId,
-  },
-  dirs: {
-    xds: xds.iterDir,
-    baseline: baseline.iterDir,
-    html: html.iterDir,
-  },
+  iterations,
+  dirs,
 };
 
-// Write config for the runner to pick up
 const configPath = path.join(RESULTS_DIR, 'nightly-config.json');
 fs.writeFileSync(configPath, JSON.stringify(nightlyConfig, null, 2));
 console.log(`📄 Config written: ${configPath}\n`);
 
-// Print spawn instructions
-console.log(`## XDS agents (CLI retrieval on MacBook):\n`);
-for (const p of prompts) {
-  console.log(`  ${xds.iterDir}/tasks/${p.id}.json`);
-}
-console.log(`\n## Baseline agents (read .baseline-docs/):\n`);
-for (const p of prompts) {
-  console.log(`  ${baseline.iterDir}/tasks/${p.id}.json`);
-}
-console.log(`\n## HTML agents (no docs):\n`);
-for (const p of prompts) {
-  console.log(`  ${html.iterDir}/tasks/${p.id}.json`);
+// Print spawn instructions per target
+for (const target of TARGETS) {
+  const config = TARGET_CONFIG[target];
+  const hint = config.cliRetrieval ? '(CLI retrieval on MacBook)' :
+    target === 'baseline' ? '(read .baseline-docs/)' : '(no docs)';
+  console.log(`## ${config.label} agents ${hint}:\n`);
+  for (const p of prompts) {
+    console.log(`  ${dirs[target]}/tasks/${p.id}.json`);
+  }
+  console.log();
 }
 
-console.log(`\n## After all agents complete:\n`);
+// Post-run commands
+const allIds = TARGETS.map(t => iterations[t]);
+console.log(`## After all agents complete:\n`);
 console.log(`  # Collect results from agent project dirs`);
-console.log(`  node src/collect-results.mjs ${xds.iterationId}`);
-console.log(`  node src/collect-results.mjs ${baseline.iterationId}`);
-console.log(`  node src/collect-results.mjs ${html.iterationId}`);
+for (const id of allIds) {
+  console.log(`  node src/collect-results.mjs ${id}`);
+}
 console.log(``);
 console.log(`  # tsc type-checking`);
-console.log(`  npx tsx src/build-previews.ts --iterations "${xds.iterationId},${baseline.iterationId},${html.iterationId}" --tsc-only`);
+console.log(`  npx tsx src/build-previews.ts --iterations "${allIds.join(',')}" --tsc-only`);
 console.log(`\n  # Evaluation`);
-console.log(`  npx tsx src/universal-aggregate.ts --iteration ${xds.iterationId}`);
-console.log(`  npx tsx src/universal-aggregate.ts --iteration ${baseline.iterationId}`);
-console.log(`  npx tsx src/universal-aggregate.ts --iteration ${html.iterationId}`);
-console.log(`  npx tsx src/universal-compare.ts --xds ${xds.iterationId} --baseline ${baseline.iterationId} --html ${html.iterationId}`);
-console.log(`\n  # Deploy report`);
-console.log(`  npx tsx src/deploy-report.ts --iteration ${xds.iterationId} --baseline ${baseline.iterationId} --html ${html.iterationId}`);
+for (const id of allIds) {
+  console.log(`  npx tsx src/universal-aggregate.ts --iteration ${id}`);
+}
+console.log(`\n  # Compare (3-way: xds vs baseline vs html)`);
+console.log(`  npx tsx src/universal-compare.ts --xds ${iterations.xds} --baseline ${iterations.baseline} --html ${iterations.html}`);
+console.log(`\n  # Compare (xds vs xds-tailwind)`);
+console.log(`  npx tsx src/universal-compare.ts --xds ${iterations.xds} --baseline ${iterations['xds-tailwind']}`);
+console.log(`\n  # Deploy report (xds vs baseline)`);
+console.log(`  npx tsx src/deploy-report.ts --iteration ${iterations.xds} --baseline ${iterations.baseline}`);
