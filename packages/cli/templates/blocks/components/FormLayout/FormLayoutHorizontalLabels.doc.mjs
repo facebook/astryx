@@ -2,8 +2,7 @@
 export const doc = {
   type: 'block',
   name: 'FormLayout — Settings Form',
-  description:
-    'Horizontal-labels layout for settings pages with labels beside inputs',
+  description: 'Settings form with labels placed beside their inputs',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['FormLayout', 'TextInput', 'Selector'],
