@@ -19,7 +19,7 @@ export const docs = {
           type: "'body' | 'large' | 'label' | 'supporting' | 'code'",
           description:
             'Semantic text type. Determines size, weight, and line-height from the theme.',
-          required: true,
+          default: "'body'",
         },
         {
           name: 'children',
@@ -233,7 +233,7 @@ export const docsZh = {
           type: "'body' | 'large' | 'label' | 'supporting' | 'code'",
           description:
             '语义化文本类型。从主题中确定大小、字重和行高。',
-          required: true,
+          default: "'body'",
         },
         {
           name: 'children',
