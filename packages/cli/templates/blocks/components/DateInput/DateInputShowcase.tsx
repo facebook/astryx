@@ -7,7 +7,7 @@ import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
   root: {
-    width: 280,
+    width: 320,
   },
 });
 
