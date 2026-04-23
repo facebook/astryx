@@ -124,6 +124,7 @@ const LIBRARY_PACKAGES: {
   version?: string;
   status: 'Stable' | 'Published' | 'Experimental' | 'Coming Soon';
   iconType: 'core' | 'charts' | 'chat' | 'cli';
+  image: string;
 }[] = [
   {
     key: 'pkg-core',
@@ -133,6 +134,7 @@ const LIBRARY_PACKAGES: {
     version: '0.0.12',
     status: 'Stable',
     iconType: 'core',
+    image: `${basePath}/docsite/LibrariesCore.png`,
   },
   {
     key: 'pkg-vega',
@@ -141,6 +143,7 @@ const LIBRARY_PACKAGES: {
       'Chart and data visualization components. Bar, line, area, pie, and more — built for dashboards and analytics.',
     status: 'Coming Soon',
     iconType: 'charts',
+    image: `${basePath}/docsite/LibrariesVega.png`,
   },
   {
     key: 'pkg-chat',
@@ -149,6 +152,7 @@ const LIBRARY_PACKAGES: {
       'Conversational UI components for AI assistants, messaging, and chat interfaces with thread support.',
     status: 'Stable',
     iconType: 'chat',
+    image: `${basePath}/docsite/LibrariesChat.png`,
   },
   {
     key: 'pkg-cli',
@@ -158,6 +162,7 @@ const LIBRARY_PACKAGES: {
     version: '0.0.12',
     status: 'Stable',
     iconType: 'cli',
+    image: `${basePath}/docsite/LibrariesCli.png`,
   },
 ];
 
@@ -1519,8 +1524,9 @@ function LibraryOverview({
                 <div
                   style={{
                     aspectRatio: '16 / 9',
-                    backgroundColor:
-                      'var(--color-background-accent-muted, #DBEAFE)',
+                    backgroundImage: `url(${pkg.image})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
                     borderRadius: 12,
                     display: 'flex',
                     alignItems: 'center',
@@ -1528,7 +1534,7 @@ function LibraryOverview({
                     position: 'relative',
                     marginBottom: 12,
                   }}>
-                  <XDSIcon icon={IconComp} size="lg" color="accent" />
+                  <XDSIcon icon={IconComp} size="lg" style={{width: 48, height: 48, color: '#484233', strokeWidth: 1.8}} />
                   {pkg.status === 'Coming Soon' && (
                     <div style={{position: 'absolute', top: 12, right: 12}}>
                       <XDSBadge label="Coming Soon" variant="info" />
