@@ -12,17 +12,29 @@ export default function RadioListPricingTier() {
       <XDSRadioListItem
         label="Free"
         value="free"
-        endContent={<XDSText type="body" color="positive">$0/mo</XDSText>}
+        endContent={
+          <XDSText type="body" color="secondary">
+            $0/mo
+          </XDSText>
+        }
       />
       <XDSRadioListItem
         label="Pro"
         value="pro"
-        endContent={<XDSText type="body" color="accent">$9/mo</XDSText>}
+        endContent={
+          <XDSText type="body" color="secondary">
+            $9/mo
+          </XDSText>
+        }
       />
       <XDSRadioListItem
         label="Enterprise"
         value="enterprise"
-        endContent={<XDSText type="body" color="secondary">Custom</XDSText>}
+        endContent={
+          <XDSText type="body" color="secondary">
+            Custom
+          </XDSText>
+        }
       />
     </XDSRadioList>
   );
