@@ -1,12 +1,10 @@
 'use client';
 
-import {useState, useMemo} from 'react';
+import {useMemo} from 'react';
 import {XDSCommandPalette} from '@xds/core/CommandPalette';
-import {XDSButton} from '@xds/core/Button';
 import {createStaticSource} from '@xds/core/Typeahead';
 
 export default function CommandPaletteAutoGrouped() {
-  const [isOpen, setIsOpen] = useState(false);
   const source = useMemo(
     () =>
       createStaticSource([
@@ -33,13 +31,11 @@ export default function CommandPaletteAutoGrouped() {
   );
 
   return (
-    <>
-      <XDSButton label="Open Grouped" onClick={() => setIsOpen(true)} />
-      <XDSCommandPalette
-        isOpen={isOpen}
-        onOpenChange={setIsOpen}
-        searchSource={source}
-      />
-    </>
+    <XDSCommandPalette
+      isOpen
+      isInline
+      onOpenChange={() => {}}
+      searchSource={source}
+    />
   );
 }
