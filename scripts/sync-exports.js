@@ -74,6 +74,7 @@ const STATIC_EXPORTS = {
     require: './dist/theme/syntax/index.js',
   },
   './docs.mjs': './docs.mjs',
+  './groups.doc.mjs': './groups.doc.mjs',
 };
 
 /**

@@ -44,6 +44,7 @@
       "require": "./dist/theme/syntax/index.js"
     },
     "./docs.mjs": "./docs.mjs",
+    "./groups.doc.mjs": "./groups.doc.mjs",
     "./AlertDialog": {
       "source": "./src/AlertDialog/index.ts",
       "types": "./dist/AlertDialog/index.d.ts",
@@ -523,6 +524,7 @@
     "dist",
     "src",
     "docs.mjs",
+    "groups.doc.mjs",
     "README.md"
   ],
   "scripts": {
