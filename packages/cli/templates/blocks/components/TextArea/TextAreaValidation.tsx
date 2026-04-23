@@ -10,9 +10,10 @@ export default function TextAreaValidation() {
   const [successValue, setSuccessValue] = useState(
     'Redesign the onboarding flow to reduce drop-off by 15% in Q3. Focus on simplifying the account creation step and adding a progress indicator.',
   );
+  const [errorNoMsgValue, setErrorNoMsgValue] = useState('Invalid content');
 
   return (
-    <XDSStack direction="vertical" gap={4}>
+    <XDSStack direction="vertical" gap={4} style={{width: 400}}>
       <XDSTextArea
         label="Error message"
         value={errorValue}
@@ -39,6 +40,12 @@ export default function TextAreaValidation() {
           type: 'success',
           message: 'Looks good — clear and actionable.',
         }}
+      />
+      <XDSTextArea
+        label="Error without message"
+        value={errorNoMsgValue}
+        onChange={setErrorNoMsgValue}
+        status={{type: 'error'}}
       />
     </XDSStack>
   );
