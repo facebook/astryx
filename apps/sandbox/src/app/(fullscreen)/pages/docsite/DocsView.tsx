@@ -1576,7 +1576,7 @@ function LibraryOverview({
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+            gridTemplateColumns: 'repeat(4, 1fr)',
             gap: 16,
           }}>
           {RESOURCE_ITEMS.map(resource => {
@@ -1591,53 +1591,26 @@ function LibraryOverview({
                       : undefined
                 }
                 style={{cursor: 'pointer'}}>
-              <XDSCard padding={0}>
-                <div
-                  style={{
-                    padding: 24,
-                    display: 'flex',
-                    gap: 16,
-                    alignItems: 'flex-start',
-                  }}>
-                  <div
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 12,
-                      backgroundColor: resource.iconBg,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                      overflow: 'hidden',
-                    }}>
+              <XDSCard padding={4} style={{height: '100%'}}>
+                <XDSStack direction="vertical" gap={4} style={{height: '100%'}}>
+                  <XDSText type="body" weight="bold">
+                    {resource.title}
+                  </XDSText>
+                  <XDSText type="supporting" color="secondary" style={{flex: 1}}>
+                    {resource.description}
+                  </XDSText>
+                  <div>
                     {resource.image ? (
                       <img
                         src={resource.image}
                         alt={resource.title}
-                        style={{width: 44, height: 44, objectFit: 'contain'}}
+                        style={{width: 28, height: 28, objectFit: 'contain'}}
                       />
                     ) : resource.icon ? (
-                      <XDSIcon icon={resource.icon} size="md" color="accent" />
+                      <XDSIcon icon={resource.icon} size="md" color="secondary" />
                     ) : null}
                   </div>
-                  <XDSStack
-                    direction="vertical"
-                    gap={1}
-                    style={{flex: 1, minWidth: 0}}>
-                    <XDSText type="body" weight="bold">
-                      {resource.title}
-                    </XDSText>
-                    <XDSText type="supporting" color="secondary">
-                      {resource.description}
-                    </XDSText>
-                  </XDSStack>
-                  <XDSIcon
-                    icon={ExternalLinkIcon}
-                    size="sm"
-                    color="secondary"
-                  />
-                </div>
+                </XDSStack>
               </XDSCard>
               </div>
             );
