@@ -17,6 +17,7 @@
 
 import {useId, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
@@ -109,6 +110,26 @@ export interface XDSSideNavSectionProps {
    */
   isHeaderHidden?: boolean;
   /**
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   *
+   * @example
+   * ```
+   * const overrides = stylex.create({ root: { marginBottom: 8 } });
+   * <XDSSideNavSection title="Main" xstyle={overrides.root}>...</XDSSideNavSection>
+   * ```
+   */
+  xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) appended to the root element.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element.
+   */
+  style?: React.CSSProperties;
+  /**
    * Test ID for the section element.
    */
   'data-testid'?: string;
@@ -138,6 +159,9 @@ export function XDSSideNavSection({
   children,
   endContent,
   isHeaderHidden = false,
+  xstyle,
+  className,
+  style,
   'data-testid': testId,
 }: XDSSideNavSectionProps) {
   const {isCollapsed} = useXDSSideNavCollapse();
@@ -181,10 +205,14 @@ export function XDSSideNavSection({
       data-testid={testId}
       {...mergeProps(
         xdsClassName('side-nav-section'),
-        stylex.props(styles.root),
+        stylex.props(styles.root, xstyle),
+        className,
+        style,
       )}>
       <div
-        {...mergeProps(stylex.props(styles.header), {style: shouldHideHeader ? visuallyHiddenStyle : undefined})}>
+        {...mergeProps(stylex.props(styles.header), {
+          style: shouldHideHeader ? visuallyHiddenStyle : undefined,
+        })}>
         {headerContent}
       </div>
       <div {...stylex.props(styles.items)}>{children}</div>

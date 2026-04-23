@@ -210,6 +210,12 @@ export const docs = {
             'Visually hides the section header while keeping it accessible to screen readers.',
           default: 'false',
         },
+        {
+          name: 'xstyle',
+          type: 'StyleXStyles',
+          description:
+            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        },
       ],
     },
     {
@@ -586,6 +592,7 @@ export const docsDense = {
         children: 'Section items.',
         endContent: 'Right-side content in section header.',
         isHeaderHidden: 'Visually hides section header while keeping accessible to screen readers.',
+        xstyle: 'StyleX styles for layout customization.',
       },
     },
     {

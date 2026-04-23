@@ -625,6 +625,26 @@ describe('XDSSideNavSection', () => {
     );
     expect(screen.getByTestId('nav-section')).toBeInTheDocument();
   });
+
+  it('forwards className to root element', () => {
+    render(
+      <XDSSideNavSection title="Main" className="custom-section">
+        <XDSSideNavItem label="Dashboard" />
+      </XDSSideNavSection>,
+    );
+    const group = screen.getByRole('group');
+    expect(group.className).toContain('custom-section');
+  });
+
+  it('forwards style to root element', () => {
+    render(
+      <XDSSideNavSection title="Main" style={{marginTop: 16}}>
+        <XDSSideNavItem label="Dashboard" />
+      </XDSSideNavSection>,
+    );
+    const group = screen.getByRole('group');
+    expect(group.style.marginTop).toBe('16px');
+  });
 });
 
 // =============================================================================
@@ -850,6 +870,141 @@ describe('XDSSideNavItem (collapsed)', () => {
 // =============================================================================
 // Mobile nav close-on-activate
 // =============================================================================
+
+// =============================================================================
+// XDSSideNavItem — collapsible + href (independent toggle)
+// =============================================================================
+
+describe('XDSSideNavItem — collapsible + href', () => {
+  it('renders a link that navigates when both collapsible and href are set', () => {
+    render(
+      <XDSSideNavItem
+        label="Settings"
+        href="/settings"
+        collapsible
+        data-testid="parent">
+        <XDSSideNavItem label="General" href="/settings/general" />
+      </XDSSideNavItem>,
+    );
+    const link = screen.getByRole('link', {name: 'Settings'});
+    expect(link).toHaveAttribute('href', '/settings');
+  });
+
+  it('renders a separate toggle button for the chevron', () => {
+    render(
+      <XDSSideNavItem label="Settings" href="/settings" collapsible>
+        <XDSSideNavItem label="General" href="/settings/general" />
+      </XDSSideNavItem>,
+    );
+    const toggle = screen.getByRole('button', {name: /collapse settings/i});
+    expect(toggle).toBeInTheDocument();
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('toggle button collapses children without navigating', async () => {
+    const user = userEvent.setup();
+    render(
+      <XDSSideNavItem label="Settings" href="/settings" collapsible>
+        <XDSSideNavItem label="General" href="/settings/general" />
+      </XDSSideNavItem>,
+    );
+    const toggle = screen.getByRole('button', {name: /collapse settings/i});
+    await user.click(toggle);
+    // After collapsing, aria-hidden on children container
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).toHaveAccessibleName('Expand Settings');
+  });
+
+  it('link does not toggle collapse when clicked', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    render(
+      <XDSSideNavItem
+        label="Settings"
+        href="/settings"
+        collapsible
+        onClick={onClick}>
+        <XDSSideNavItem label="General" href="/settings/general" />
+      </XDSSideNavItem>,
+    );
+    const link = screen.getByRole('link', {name: 'Settings'});
+    await user.click(link);
+    expect(onClick).toHaveBeenCalledTimes(1);
+    // Children should still be visible (not collapsed)
+    const toggle = screen.getByRole('button', {name: /collapse settings/i});
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('link does not have aria-expanded (toggle button owns it)', () => {
+    render(
+      <XDSSideNavItem label="Settings" href="/settings" collapsible>
+        <XDSSideNavItem label="General" href="/settings/general" />
+      </XDSSideNavItem>,
+    );
+    const link = screen.getByRole('link', {name: 'Settings'});
+    expect(link).not.toHaveAttribute('aria-expanded');
+  });
+
+  it('without href or onClick, clicking the item toggles collapse', async () => {
+    const user = userEvent.setup();
+    render(
+      <XDSSideNavItem label="Settings" collapsible>
+        <XDSSideNavItem label="General" />
+      </XDSSideNavItem>,
+    );
+    const button = screen.getByRole('button', {name: 'Settings'});
+    expect(button).toHaveAttribute('aria-expanded', 'true');
+    await user.click(button);
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('with onClick (no href), clicking the label fires onClick', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    render(
+      <XDSSideNavItem label="Settings" onClick={onClick} collapsible>
+        <XDSSideNavItem label="General" />
+      </XDSSideNavItem>,
+    );
+    const primaryButton = screen.getByRole('button', {name: 'Settings'});
+    await user.click(primaryButton);
+    expect(onClick).toHaveBeenCalledTimes(1);
+    // Children should still be visible
+    const toggle = screen.getByRole('button', {name: /collapse settings/i});
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('with onClick (no href), toggle collapses without firing onClick', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    render(
+      <XDSSideNavItem label="Settings" onClick={onClick} collapsible>
+        <XDSSideNavItem label="General" />
+      </XDSSideNavItem>,
+    );
+    const toggle = screen.getByRole('button', {name: /collapse settings/i});
+    await user.click(toggle);
+    expect(onClick).not.toHaveBeenCalled();
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('collapsed children are inert (not focusable)', async () => {
+    const user = userEvent.setup();
+    render(
+      <XDSSideNavItem label="Settings" collapsible>
+        <XDSSideNavItem label="General" href="/settings/general" />
+      </XDSSideNavItem>,
+    );
+    // Collapse the item
+    const button = screen.getByRole('button', {name: 'Settings'});
+    await user.click(button);
+    // The children container should have inert attribute
+    const childrenContainer = document.getElementById(
+      button.getAttribute('aria-controls')!,
+    );
+    expect(childrenContainer).toHaveAttribute('inert');
+  });
+});
 
 import {XDSSideNavRenderContext} from './XDSSideNavRenderContext';
 import {XDSAppShellMobileContext} from '../AppShell/XDSAppShellMobileContext';
