@@ -110,11 +110,6 @@ export const categories: SandboxCategory[] = [
     description: 'Interactive tools for building and exploring XDS components.',
     pages: [
       {
-        name: 'Theme Editor',
-        href: '/pages/theme-editor/',
-        description: 'Customize and preview XDS design tokens',
-      },
-      {
         name: 'CodeBlock Perf',
         href: '/pages/codeblock-perf/',
         description: 'Compare highlight modes and scroll performance',
