@@ -18,7 +18,7 @@
 export const GROUP_DOCS = {
   Chat: {
     name: 'Chat',
-    canonical: 'ChatMessageList',
+    canonical: 'ChatComposer',
     description:
       'Conversational messaging primitives for building chat UIs, AI assistants, and threaded conversations.',
   },
