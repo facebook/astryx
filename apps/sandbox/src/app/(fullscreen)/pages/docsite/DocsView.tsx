@@ -1410,10 +1410,10 @@ function LibraryOverview({
           gap={0}
           hAlign="center"
           style={{flex: 1, minWidth: 0, textAlign: 'center'}}>
-          <XDSText type="display-1">
+          <XDSText type="display-1" style={{fontSize: '3.25rem'}}>
             XDS OSS
             <br />
-            for building with AI
+            Build with AI
           </XDSText>
           <XDSStack direction="horizontal" gap={3} style={{marginTop: 28}}>
             <XDSButton
@@ -1515,54 +1515,43 @@ function LibraryOverview({
               <div
                 key={pkg.key}
                 onClick={() => onSelectComponent(pkg.key)}
-                style={{cursor: 'pointer', height: '100%'}}>
-                <XDSCard padding={0} style={{height: '100%'}}>
-                  <div
-                    style={{
-                      aspectRatio: '16 / 9',
-                      backgroundColor:
-                        'var(--color-background-accent-muted, #DBEAFE)',
-                      borderRadius: '12px 12px 0 0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      position: 'relative',
-                    }}>
-                    <XDSIcon icon={IconComp} size="lg" color="accent" />
-                    {pkg.status === 'Coming Soon' && (
-                      <div style={{position: 'absolute', top: 12, right: 12}}>
-                        <XDSBadge label="Coming Soon" variant="info" />
-                      </div>
-                    )}
-                  </div>
-                  <XDSStack
-                    direction="vertical"
-                    gap={1}
-                    style={{padding: '16px 20px'}}>
-                    <XDSStack
-                      direction="horizontal"
-                      gap={2}
-                      style={{alignItems: 'baseline'}}>
-                      <XDSText
-                        type="body"
-                        weight="bold"
-                        style={{fontFamily: 'monospace', fontSize: 14}}>
-                        {pkg.name}
-                      </XDSText>
-                      {pkg.version && (
-                        <XDSText
-                          type="supporting"
-                          color="secondary"
-                          style={{fontFamily: 'monospace', fontSize: 12}}>
-                          v{pkg.version}
-                        </XDSText>
-                      )}
-                    </XDSStack>
-                    <XDSText type="supporting" color="secondary">
-                      {pkg.description}
+                style={{cursor: 'pointer'}}>
+                <div
+                  style={{
+                    aspectRatio: '16 / 9',
+                    backgroundColor:
+                      'var(--color-background-accent-muted, #DBEAFE)',
+                    borderRadius: 12,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    position: 'relative',
+                    marginBottom: 12,
+                  }}>
+                  <XDSIcon icon={IconComp} size="lg" color="accent" />
+                  {pkg.status === 'Coming Soon' && (
+                    <div style={{position: 'absolute', top: 12, right: 12}}>
+                      <XDSBadge label="Coming Soon" variant="info" />
+                    </div>
+                  )}
+                </div>
+                <XDSText
+                  type="body"
+                  weight="bold"
+                  style={{fontFamily: 'monospace', fontSize: 14, display: 'block', marginBottom: 4}}>
+                  {pkg.name}
+                  {pkg.version && (
+                    <XDSText
+                      type="supporting"
+                      color="secondary"
+                      style={{fontFamily: 'monospace', fontSize: 12, marginLeft: 8}}>
+                      v{pkg.version}
                     </XDSText>
-                  </XDSStack>
-                </XDSCard>
+                  )}
+                </XDSText>
+                <XDSText type="supporting" color="secondary">
+                  {pkg.description}
+                </XDSText>
               </div>
             );
           })}
