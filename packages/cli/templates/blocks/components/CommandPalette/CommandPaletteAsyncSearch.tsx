@@ -1,8 +1,10 @@
 'use client';
 
-import {useState, useMemo} from 'react';
-import {XDSCommandPalette, XDSCommandPaletteInput} from '@xds/core/CommandPalette';
-import {XDSButton} from '@xds/core/Button';
+import {useMemo} from 'react';
+import {
+  XDSCommandPalette,
+  XDSCommandPaletteInput,
+} from '@xds/core/CommandPalette';
 import type {XDSSearchSource} from '@xds/core/Typeahead';
 
 const allFiles = [
@@ -14,7 +16,6 @@ const allFiles = [
 ];
 
 export default function CommandPaletteAsyncSearch() {
-  const [isOpen, setIsOpen] = useState(false);
   const source = useMemo<XDSSearchSource>(
     () => ({
       async search(query: string) {
@@ -31,16 +32,14 @@ export default function CommandPaletteAsyncSearch() {
   );
 
   return (
-    <>
-      <XDSButton label="Open File Search" onClick={() => setIsOpen(true)} />
-      <XDSCommandPalette
-        isOpen={isOpen}
-        onOpenChange={setIsOpen}
-        searchSource={source}
-        input={<XDSCommandPaletteInput placeholder="Search files..." />}
-        emptyBootstrapText="Type a filename to search"
-        emptySearchText="No files found"
-      />
-    </>
+    <XDSCommandPalette
+      isOpen
+      isInline
+      onOpenChange={() => {}}
+      searchSource={source}
+      input={<XDSCommandPaletteInput placeholder="Search files..." />}
+      emptyBootstrapText="Type a filename to search"
+      emptySearchText="No files found"
+    />
   );
 }

@@ -6,6 +6,6 @@ export const doc = {
     'A delete button that asks the user to confirm before deleting.',
   isReady: true,
   isShowcase: true,
-  aspectRatio: 16 / 9,
-  componentsUsed: ['AlertDialog', 'Button'],
+  aspectRatio: 4 / 3,
+  componentsUsed: ['AlertDialog'],
 };

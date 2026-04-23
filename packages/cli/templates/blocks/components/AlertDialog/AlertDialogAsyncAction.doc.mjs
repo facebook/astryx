@@ -5,6 +5,6 @@ export const doc = {
   description:
     'A confirmation dialog that shows a spinner while the action runs.',
   isReady: true,
-  aspectRatio: 16 / 9,
-  componentsUsed: ['AlertDialog', 'Button'],
+  aspectRatio: 4 / 3,
+  componentsUsed: ['AlertDialog'],
 };

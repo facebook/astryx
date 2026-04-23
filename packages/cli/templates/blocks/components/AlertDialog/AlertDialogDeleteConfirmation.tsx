@@ -1,26 +1,33 @@
 'use client';
 
-import {useState} from 'react';
-import {XDSAlertDialog} from '@xds/core/AlertDialog';
-import {XDSButton} from '@xds/core/Button';
+import {
+  XDSAlertDialog,
+  useXDSImperativeAlertDialog,
+} from '@xds/core/AlertDialog';
 
+// Remove isInline for production — alert dialogs should be modal.
 export default function AlertDialogDeleteConfirmation() {
-  const [isOpen, setIsOpen] = useState(false);
+  const alert = useXDSImperativeAlertDialog();
+
+  const alertProps = {
+    title: 'Delete item?',
+    description:
+      'This action cannot be undone. The item and all its data will be permanently removed.',
+    actionLabel: 'Delete',
+  } as const;
+
   return (
     <>
-      <XDSButton
-        label="Delete item"
-        variant="destructive"
-        onClick={() => setIsOpen(true)}
-      />
       <XDSAlertDialog
-        isOpen={isOpen}
-        onOpenChange={setIsOpen}
-        title="Delete item?"
-        description="This action cannot be undone. The item and all its data will be permanently removed."
-        actionLabel="Delete"
-        onAction={() => setIsOpen(false)}
+        isOpen
+        isInline
+        onOpenChange={() => {}}
+        {...alertProps}
+        onAction={() =>
+          alert.show({...alertProps, onAction: () => alert.hide()})
+        }
       />
+      {alert.element}
     </>
   );
 }

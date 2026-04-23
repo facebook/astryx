@@ -5,6 +5,6 @@ export const doc = {
   description:
     'Asks the user to confirm a destructive action before it happens. Use before deleting projects, removing team members, revoking API keys, or any irreversible operation.',
   isReady: true,
-  aspectRatio: 16 / 9,
-  componentsUsed: ['Dialog', 'Layout', 'Button', 'Text', 'Card'],
+  aspectRatio: 4 / 3,
+  componentsUsed: ['Dialog', 'Layout', 'Button', 'Text'],
 };

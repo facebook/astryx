@@ -32,6 +32,13 @@ export interface XDSAlertDialogProps extends XDSBaseProps<HTMLDivElement> {
   isOpen: boolean;
 
   /**
+   * Renders alert dialog content inline without modal behavior.
+   * For documentation previews and showcases only.
+   * @default false
+   */
+  isInline?: boolean;
+
+  /**
    * Callback fired when the dialog visibility changes.
    * Called with `false` when cancel is clicked or Escape is pressed.
    */
@@ -105,6 +112,7 @@ export interface XDSAlertDialogProps extends XDSBaseProps<HTMLDivElement> {
  */
 export function XDSAlertDialog({
   isOpen,
+  isInline,
   onOpenChange,
   title,
   description,
@@ -129,6 +137,7 @@ export function XDSAlertDialog({
   return (
     <XDSDialog
       isOpen={isOpen}
+      isInline={isInline}
       onOpenChange={onOpenChange}
       width={width}
       purpose="form"

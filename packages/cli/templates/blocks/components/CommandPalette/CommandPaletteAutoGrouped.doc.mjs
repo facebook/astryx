@@ -5,6 +5,6 @@ export const doc = {
   description:
     'Command palette with items grouped via auxiliaryData.group.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['CommandPalette', 'Button'],
+  aspectRatio: 3 / 4,
+  componentsUsed: ['CommandPalette'],
 };

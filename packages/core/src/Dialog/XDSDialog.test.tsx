@@ -312,4 +312,35 @@ describe('XDSDialog', () => {
       expect(dialog.getAttribute('class')).toBeTruthy();
     });
   });
+
+  describe('isInline', () => {
+    it('renders children in a div without a <dialog> element', () => {
+      const {container} = render(
+        <XDSDialog isOpen={true} isInline onOpenChange={() => {}}>
+          <div data-testid="child">Inline content</div>
+        </XDSDialog>,
+      );
+      expect(screen.getByText('Inline content')).toBeInTheDocument();
+      expect(container.querySelector('dialog')).toBeNull();
+    });
+
+    it('renders nothing when isOpen is false', () => {
+      const {container} = render(
+        <XDSDialog isOpen={false} isInline onOpenChange={() => {}}>
+          <div data-testid="child">Hidden content</div>
+        </XDSDialog>,
+      );
+      expect(screen.queryByText('Hidden content')).not.toBeInTheDocument();
+      expect(container.querySelector('dialog')).toBeNull();
+    });
+
+    it('does not call showModal', () => {
+      render(
+        <XDSDialog isOpen={true} isInline onOpenChange={() => {}}>
+          Content
+        </XDSDialog>,
+      );
+      expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
+    });
+  });
 });

@@ -3,7 +3,7 @@
 export const docs = {
   name: 'Dialog',
   group: 'Dialog',
-  keywords: ["dialog","modal","popup","overlay","lightbox","alert","confirm","prompt","backdrop","focus trap"],
+  keywords: ["dialog","modal","popup","overlay","lightbox","alert","confirm","prompt","backdrop","focus trap","imperative"],
   theming: {
     container: true,
     targets: [
@@ -72,6 +72,13 @@ export const docs = {
             'Controls dismissal behavior: required disables Escape and backdrop click; form disables backdrop click after interaction; info allows both.',
           default: "'info'",
         },
+        {
+          name: 'isInline',
+          type: 'boolean',
+          description:
+            'Renders dialog content inline without the <dialog> element, backdrop, or modal behavior. For documentation previews and showcases only.',
+          default: 'false',
+        },
       ],    },
     {
       name: 'XDSDialogHeader',
@@ -114,9 +121,19 @@ export const docs = {
         },
       ],
     },
+    {
+      name: 'useXDSImperativeDialog',
+      description: 'Hook for showing a dialog without managing open state. Call dialog.show(content, options) to open and dialog.hide() to close. Render dialog.element in your JSX tree.',
+      props: [
+        {name: 'show', type: '(content: ReactNode, options?: DialogOptions) => void', description: 'Show the dialog with the given content. Options are the same as XDSDialog props minus isOpen/onOpenChange/children.'},
+        {name: 'hide', type: '() => void', description: 'Hide the dialog.'},
+        {name: 'isOpen', type: 'boolean', description: 'Whether the dialog is currently open.'},
+        {name: 'element', type: 'ReactNode', description: 'The dialog element — render this in your JSX tree.'},
+      ],
+    },
   ],
   usage: {
-    description: 'Dialog displays a modal overlay that blocks interaction with the page until the user responds. Use it for delete confirmations, edit forms, terms acceptance, or any decision that should not be skipped.',
+    description: 'Dialog displays a modal overlay that blocks interaction with the page until the user responds. Use it for delete confirmations, edit forms, terms acceptance, or any decision that should not be skipped.\n\nFor cases where you want to show a dialog without managing open state, use the `useXDSImperativeDialog` hook — call `dialog.show(content)` and render `dialog.element` in your tree.',
     bestPractices: [
       { guidance: true, description: 'Choose the right purpose: info for dismissable content, form to prevent accidental backdrop dismissal, required when the user must respond.' },
       { guidance: true, description: 'Include a clear title in the header so users immediately understand what the dialog is asking.' },

@@ -45,6 +45,13 @@ export interface XDSCommandPaletteProps<
   /** Whether the command palette is open. */
   isOpen: boolean;
 
+  /**
+   * Renders command palette content inline without modal behavior.
+   * For documentation previews and showcases only.
+   * @default false
+   */
+  isInline?: boolean;
+
   /** Called when the command palette visibility changes. */
   onOpenChange: (isOpen: boolean) => void;
 
@@ -250,6 +257,7 @@ export function XDSCommandPalette<
   T extends XDSSearchableItem = XDSSearchableItem,
 >({
   isOpen,
+  isInline,
   onOpenChange,
   searchSource,
   input,
@@ -491,6 +499,7 @@ export function XDSCommandPalette<
   return (
     <XDSDialog
       isOpen={isOpen}
+      isInline={isInline}
       onOpenChange={open => {
         if (!open) handleClose();
         else onOpenChange(true);
