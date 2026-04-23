@@ -67,35 +67,42 @@ const localStyles = stylex.create({
 // ---------------------------------------------------------------------------
 
 const FOUNDATION_ITEMS: {
+  key: string;
   title: string;
   description: string;
 }[] = [
   {
+    key: 'colors',
     title: 'Colors',
     description:
       'A semantic palette that adapts across themes. Use surface, text, border, and accent tokens instead of raw hex values so your UI stays consistent in light, dark, and custom themes.',
   },
   {
+    key: 'typography',
     title: 'Typography',
     description:
       'A type scale from display-1 down to supporting text, with weight and color options. Establishes visual hierarchy without guessing font sizes.',
   },
   {
+    key: 'spacing',
     title: 'Spacing',
     description:
       'A 4px-based scale (0–10) used for padding, margins, and gaps. Keeps layouts aligned to a consistent rhythm across every component and page.',
   },
   {
+    key: 'radius',
     title: 'Radius',
     description:
       'Border radius tokens from sharp (2px) to fully rounded (pill). Controls, cards, and containers each have a designated radius so shapes feel intentional.',
   },
   {
+    key: 'motion',
     title: 'Motion',
     description:
       'Duration and easing presets for transitions and animations. Fast (150ms) for micro-interactions, medium (250ms) for panels, slow (400ms) for page transitions.',
   },
   {
+    key: 'elevation',
     title: 'Elevation',
     description:
       'Layered shadow tokens that communicate depth. Cards sit at level 1, popovers at level 2, dialogs at level 3 — no manual box-shadow needed.',
@@ -103,6 +110,7 @@ const FOUNDATION_ITEMS: {
 ];
 
 const LIBRARY_PACKAGES: {
+  key: string;
   name: string;
   description: string;
   version?: string;
@@ -110,6 +118,7 @@ const LIBRARY_PACKAGES: {
   iconType: 'core' | 'charts' | 'chat' | 'cli';
 }[] = [
   {
+    key: 'pkg-core',
     name: '@xds/core',
     description:
       'Core UI component library with 60+ accessible, themeable React components built on StyleX.',
@@ -118,6 +127,7 @@ const LIBRARY_PACKAGES: {
     iconType: 'core',
   },
   {
+    key: 'pkg-vega',
     name: '@xds/vega',
     description:
       'Chart and data visualization components. Bar, line, area, pie, and more — built for dashboards and analytics.',
@@ -125,6 +135,7 @@ const LIBRARY_PACKAGES: {
     iconType: 'charts',
   },
   {
+    key: 'pkg-chat',
     name: '@xds/chat',
     description:
       'Conversational UI components for AI assistants, messaging, and chat interfaces with thread support.',
@@ -132,6 +143,7 @@ const LIBRARY_PACKAGES: {
     iconType: 'chat',
   },
   {
+    key: 'pkg-cli',
     name: '@xds/cli',
     description:
       'CLI for scaffolding projects, theming, templates, swizzling components, and agent docs.',
@@ -635,6 +647,82 @@ function WhatsNewPage() {
 }
 
 // ---------------------------------------------------------------------------
+// FoundationPage component (placeholder)
+// ---------------------------------------------------------------------------
+
+function FoundationPage({foundationKey}: {foundationKey: string}) {
+  const item = FOUNDATION_ITEMS.find(f => f.key === foundationKey);
+  if (!item) return null;
+  return (
+    <div style={{maxWidth: 840, margin: '0 auto', padding: '32px 40px'}}>
+      <XDSStack direction="vertical" gap={2}>
+        <XDSText type="display-1">{item.title}</XDSText>
+        <XDSText type="body" color="secondary">
+          {item.description}
+        </XDSText>
+      </XDSStack>
+      <div
+        style={{
+          marginTop: 48,
+          padding: 64,
+          borderRadius: 12,
+          backgroundColor: 'var(--color-background-muted, #f5f5f5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+        <XDSText type="body" color="secondary">
+          Documentation coming soon
+        </XDSText>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// LibraryPackagePage component (placeholder)
+// ---------------------------------------------------------------------------
+
+function LibraryPackagePage({packageKey}: {packageKey: string}) {
+  const pkg = LIBRARY_PACKAGES.find(p => p.key === packageKey);
+  if (!pkg) return null;
+  return (
+    <div style={{maxWidth: 840, margin: '0 auto', padding: '32px 40px'}}>
+      <XDSStack direction="vertical" gap={2}>
+        <XDSStack direction="horizontal" gap={3} vAlign="center">
+          <XDSText type="display-1">{pkg.name}</XDSText>
+          {pkg.version && (
+            <XDSText
+              type="supporting"
+              color="secondary"
+              style={{fontFamily: 'monospace'}}>
+              v{pkg.version}
+            </XDSText>
+          )}
+        </XDSStack>
+        <XDSText type="body" color="secondary">
+          {pkg.description}
+        </XDSText>
+      </XDSStack>
+      <div
+        style={{
+          marginTop: 48,
+          padding: 64,
+          borderRadius: 12,
+          backgroundColor: 'var(--color-background-muted, #f5f5f5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+        <XDSText type="body" color="secondary">
+          Documentation coming soon
+        </XDSText>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // GettingStartedPage component
 // ---------------------------------------------------------------------------
 
@@ -933,30 +1021,35 @@ function LibraryOverview({
             gap: 16,
           }}>
           {FOUNDATION_ITEMS.map(item => (
-            <XDSCard key={item.title} padding={0}>
-              <img
-                src={`${basePath}/docsite/foundation-preview.png`}
-                alt={item.title}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  aspectRatio: '16 / 9',
-                  objectFit: 'cover',
-                  borderRadius: '12px 12px 0 0',
-                }}
-              />
-              <XDSStack
-                direction="vertical"
-                gap={1}
-                style={{padding: '16px 20px'}}>
-                <XDSText type="body" weight="bold">
-                  {item.title}
-                </XDSText>
-                <XDSText type="supporting" color="secondary">
-                  {item.description}
-                </XDSText>
-              </XDSStack>
-            </XDSCard>
+            <div
+              key={item.key}
+              onClick={() => onSelectComponent(item.key)}
+              style={{cursor: 'pointer'}}>
+              <XDSCard padding={0}>
+                <img
+                  src={`${basePath}/docsite/foundation-preview.png`}
+                  alt={item.title}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    aspectRatio: '16 / 9',
+                    objectFit: 'cover',
+                    borderRadius: '12px 12px 0 0',
+                  }}
+                />
+                <XDSStack
+                  direction="vertical"
+                  gap={1}
+                  style={{padding: '16px 20px'}}>
+                  <XDSText type="body" weight="bold">
+                    {item.title}
+                  </XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    {item.description}
+                  </XDSText>
+                </XDSStack>
+              </XDSCard>
+            </div>
           ))}
         </div>
       </XDSStack>
@@ -995,53 +1088,58 @@ function LibraryOverview({
             };
             const IconComp = ICON_MAP[pkg.iconType] ?? CodeIcon;
             return (
-              <XDSCard key={pkg.name} padding={0}>
-                <div
-                  style={{
-                    aspectRatio: '16 / 9',
-                    backgroundColor:
-                      'var(--color-background-accent-muted, #DBEAFE)',
-                    borderRadius: '12px 12px 0 0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    position: 'relative',
-                  }}>
-                  <XDSIcon icon={IconComp} size="lg" color="accent" />
-                  {pkg.status === 'Coming Soon' && (
-                    <div style={{position: 'absolute', top: 12, right: 12}}>
-                      <XDSBadge label="Coming Soon" variant="info" />
-                    </div>
-                  )}
-                </div>
-                <XDSStack
-                  direction="vertical"
-                  gap={1}
-                  style={{padding: '16px 20px'}}>
-                  <XDSStack
-                    direction="horizontal"
-                    gap={2}
-                    style={{alignItems: 'baseline'}}>
-                    <XDSText
-                      type="body"
-                      weight="bold"
-                      style={{fontFamily: 'monospace', fontSize: 14}}>
-                      {pkg.name}
-                    </XDSText>
-                    {pkg.version && (
-                      <XDSText
-                        type="supporting"
-                        color="secondary"
-                        style={{fontFamily: 'monospace', fontSize: 12}}>
-                        v{pkg.version}
-                      </XDSText>
+              <div
+                key={pkg.key}
+                onClick={() => onSelectComponent(pkg.key)}
+                style={{cursor: 'pointer'}}>
+                <XDSCard padding={0}>
+                  <div
+                    style={{
+                      aspectRatio: '16 / 9',
+                      backgroundColor:
+                        'var(--color-background-accent-muted, #DBEAFE)',
+                      borderRadius: '12px 12px 0 0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      position: 'relative',
+                    }}>
+                    <XDSIcon icon={IconComp} size="lg" color="accent" />
+                    {pkg.status === 'Coming Soon' && (
+                      <div style={{position: 'absolute', top: 12, right: 12}}>
+                        <XDSBadge label="Coming Soon" variant="info" />
+                      </div>
                     )}
+                  </div>
+                  <XDSStack
+                    direction="vertical"
+                    gap={1}
+                    style={{padding: '16px 20px'}}>
+                    <XDSStack
+                      direction="horizontal"
+                      gap={2}
+                      style={{alignItems: 'baseline'}}>
+                      <XDSText
+                        type="body"
+                        weight="bold"
+                        style={{fontFamily: 'monospace', fontSize: 14}}>
+                        {pkg.name}
+                      </XDSText>
+                      {pkg.version && (
+                        <XDSText
+                          type="supporting"
+                          color="secondary"
+                          style={{fontFamily: 'monospace', fontSize: 12}}>
+                          v{pkg.version}
+                        </XDSText>
+                      )}
+                    </XDSStack>
+                    <XDSText type="supporting" color="secondary">
+                      {pkg.description}
+                    </XDSText>
                   </XDSStack>
-                  <XDSText type="supporting" color="secondary">
-                    {pkg.description}
-                  </XDSText>
-                </XDSStack>
-              </XDSCard>
+                </XDSCard>
+              </div>
             );
           })}
         </div>
@@ -1423,6 +1521,40 @@ export function DocsView({
               />
             </XDSSideNavSection>
 
+            <XDSSideNavSection title="Foundations" isHeaderHidden>
+              <XDSSideNavItem label="Foundations" collapsible>
+                {FOUNDATION_ITEMS.map(item => (
+                  <XDSSideNavItem
+                    key={item.key}
+                    label={item.title}
+                    isSelected={
+                      selectedComponent !== null && activeNav === item.key
+                    }
+                    onClick={() => {
+                      setSelectedComponent(item.key);
+                      setActiveNav(item.key);
+                    }}
+                  />
+                ))}
+              </XDSSideNavItem>
+            </XDSSideNavSection>
+
+            <XDSSideNavSection title="Libraries">
+              {LIBRARY_PACKAGES.map(pkg => (
+                <XDSSideNavItem
+                  key={pkg.key}
+                  label={pkg.name}
+                  isSelected={
+                    selectedComponent !== null && activeNav === pkg.key
+                  }
+                  onClick={() => {
+                    setSelectedComponent(pkg.key);
+                    setActiveNav(pkg.key);
+                  }}
+                />
+              ))}
+            </XDSSideNavSection>
+
             {COMPONENT_CATEGORIES.map(category => (
               <XDSSideNavSection key={category.label} title={category.label}>
                 {category.items.map(item => (
@@ -1459,6 +1591,10 @@ export function DocsView({
           <WhatsNewPage />
         ) : selectedComponent === 'getting-started' ? (
           <GettingStartedPage />
+        ) : FOUNDATION_ITEMS.some(f => f.key === selectedComponent) ? (
+          <FoundationPage foundationKey={selectedComponent} />
+        ) : LIBRARY_PACKAGES.some(p => p.key === selectedComponent) ? (
+          <LibraryPackagePage packageKey={selectedComponent} />
         ) : (
           <div style={{maxWidth: 840, margin: '0 auto', padding: '32px 40px'}}>
             {/* Header */}
