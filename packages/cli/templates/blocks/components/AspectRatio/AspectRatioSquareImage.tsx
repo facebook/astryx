@@ -1,10 +1,11 @@
 'use client';
 
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
+import {XDSCenter} from '@xds/core/Center';
 
 export default function AspectRatioSquareImage() {
   return (
-    <div style={{maxWidth: 300}}>
+    <XDSCenter width={300}>
       <XDSAspectRatio ratio={1}>
         <img
           src="https://picsum.photos/400/400"
@@ -13,10 +14,9 @@ export default function AspectRatioSquareImage() {
             width: '100%',
             height: '100%',
             objectFit: 'cover',
-            borderRadius: 8,
           }}
         />
       </XDSAspectRatio>
-    </div>
+    </XDSCenter>
   );
 }

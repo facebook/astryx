@@ -2,7 +2,7 @@
 export const doc = {
   type: 'block',
   name: 'AspectRatio — Image Gallery',
-  description: 'Grid of images with consistent 4:3 aspect ratios for a uniform gallery layout.',
+  description: 'Grid of images with consistent 4:3 aspect ratios.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['AspectRatio', 'Grid'],
