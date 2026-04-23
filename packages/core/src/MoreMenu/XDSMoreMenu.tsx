@@ -64,6 +64,16 @@ export interface XDSMoreMenuProps {
    */
   isDisabled?: boolean;
 
+  /**
+   * Controlled open state for the menu.
+   */
+  isMenuOpen?: boolean;
+
+  /**
+   * Callback fired when the menu visibility changes.
+   */
+  onOpenChange?: (isOpen: boolean) => void;
+
   /** Test ID for testing frameworks. */
   'data-testid'?: string;
 }
@@ -90,6 +100,8 @@ export function XDSMoreMenu({
   size: sizeProp,
   icon,
   isDisabled = false,
+  isMenuOpen,
+  onOpenChange,
   'data-testid': testId,
   ref,
 }: XDSMoreMenuProps) {
@@ -99,6 +111,8 @@ export function XDSMoreMenu({
   return (
     <XDSDropdownMenu
       className="xds-more-menu"
+      isMenuOpen={isMenuOpen}
+      onOpenChange={onOpenChange}
       button={{
         label,
         icon: icon ?? moreIcon,
