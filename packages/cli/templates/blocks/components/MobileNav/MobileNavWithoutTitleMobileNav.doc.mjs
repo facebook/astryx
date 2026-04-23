@@ -2,8 +2,7 @@
 export const doc = {
   type: 'block',
   name: 'MobileNav — Without Title',
-  description:
-    'Minimal mobile navigation drawer without a title bar header.',
+  description: 'Mobile navigation drawer without a title header',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['MobileNav', 'SideNav', 'Button', 'Icon'],

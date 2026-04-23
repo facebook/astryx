@@ -52,11 +52,11 @@ export const docs = {
   },
   usage: {
     description:
-      'MobileNav is a slide-out drawer overlay for mobile navigation. It serves as the mobile counterpart to SideNav and accepts the same children. Use it on mobile viewports where a persistent side navigation is not practical.',
+      'A slide-out drawer for mobile navigation. MobileNav is the mobile counterpart to SideNav and accepts the same children. Use it on narrow viewports where a persistent sidebar is not practical.',
     bestPractices: [
-      { guidance: true, description: 'Share the same navigation children between MobileNav and SideNav by extracting them into a variable.' },
-      { guidance: true, description: 'Provide a descriptive title to improve context and screen reader clarity.' },
-      { guidance: false, description: 'Use MobileNav on desktop viewports where a persistent SideNav would be more appropriate.' },
+      { guidance: true, description: 'Share the same nav items between MobileNav and SideNav by extracting them into a variable.' },
+      { guidance: true, description: 'Provide a title when the drawer\'s purpose is not obvious from its content.' },
+      { guidance: false, description: 'Use MobileNav on desktop — use a persistent SideNav instead.' },
     ],
   },
 };
@@ -111,11 +111,11 @@ export const docsZh = {
   },
   usage: {
     description:
-      'MobileNav is a slide-out drawer overlay for mobile navigation. It serves as the mobile counterpart to SideNav and accepts the same children. Use it on mobile viewports where a persistent side navigation is not practical.',
+      'A slide-out drawer for mobile navigation. MobileNav is the mobile counterpart to SideNav and accepts the same children. Use it on narrow viewports where a persistent sidebar is not practical.',
     bestPractices: [
-      { guidance: true, description: 'Share the same navigation children between MobileNav and SideNav by extracting them into a variable.' },
-      { guidance: true, description: 'Provide a descriptive title to improve context and screen reader clarity.' },
-      { guidance: false, description: 'Use MobileNav on desktop viewports where a persistent SideNav would be more appropriate.' },
+      { guidance: true, description: 'Share the same nav items between MobileNav and SideNav by extracting them into a variable.' },
+      { guidance: true, description: 'Provide a title when the drawer\'s purpose is not obvious from its content.' },
+      { guidance: false, description: 'Use MobileNav on desktop — use a persistent SideNav instead.' },
     ],
   },
 };
@@ -126,11 +126,11 @@ export const docsDense = {
     'Slide-out drawer overlay for mobile navigation. Mobile counterpart to XDSSideNav; accepts same children (XDSSideNavSection, XDSSideNavItem, or any ReactNode).',
   usage: {
     description:
-      'MobileNav is a slide-out drawer overlay for mobile navigation. It serves as the mobile counterpart to SideNav and accepts the same children. Use it on mobile viewports where a persistent side navigation is not practical.',
+      'A slide-out drawer for mobile navigation. MobileNav is the mobile counterpart to SideNav and accepts the same children. Use it on narrow viewports where a persistent sidebar is not practical.',
     bestPractices: [
-      { guidance: true, description: 'Share the same navigation children between MobileNav and SideNav by extracting them into a variable.' },
-      { guidance: true, description: 'Provide a descriptive title to improve context and screen reader clarity.' },
-      { guidance: false, description: 'Use MobileNav on desktop viewports where a persistent SideNav would be more appropriate.' },
+      { guidance: true, description: 'Share the same nav items between MobileNav and SideNav by extracting them into a variable.' },
+      { guidance: true, description: 'Provide a title when the drawer\'s purpose is not obvious from its content.' },
+      { guidance: false, description: 'Use MobileNav on desktop — use a persistent SideNav instead.' },
     ],
   },
   propDescriptions: {
