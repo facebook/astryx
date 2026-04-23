@@ -13,8 +13,7 @@ export default function TextInputSearch() {
     <div style={{width: 300}}>
       <XDSStack direction="vertical" gap={3}>
         <XDSTextInput
-          label="Search"
-          isLabelHidden
+          label="Search field"
           value={query}
           onChange={setQuery}
           placeholder="Search projects…"
@@ -22,8 +21,7 @@ export default function TextInputSearch() {
           hasClear
         />
         <XDSTextInput
-          label="Filter results"
-          isLabelHidden
+          label="Search field with value"
           value={filter}
           onChange={setFilter}
           placeholder="Filter…"
