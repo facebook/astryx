@@ -5,7 +5,7 @@ import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSStack} from '@xds/core/Layout';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 
-export default function TextInputSearchInput() {
+export default function TextInputSearch() {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('design systems');
 

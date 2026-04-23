@@ -4,7 +4,7 @@ import {useState} from 'react';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSStack} from '@xds/core/Layout';
 
-export default function TextInputWithValidation() {
+export default function TextInputValidation() {
   const [error, setError] = useState('sarah@');
   const [warning, setWarning] = useState('sarah_chen');
   const [success, setSuccess] = useState('https://sarahchen.dev');
