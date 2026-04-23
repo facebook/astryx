@@ -2,7 +2,10 @@
 export const doc = {
   type: 'block',
   name: 'Collapsible',
+  description:
+    'An accordion group with three collapsible sections in single mode — opening one closes the others.',
   isReady: true,
-  aspectRatio: 1,
   isShowcase: true,
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Collapsible', 'Text', 'Card'],
 };

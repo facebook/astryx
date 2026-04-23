@@ -2,7 +2,10 @@
 export const doc = {
   type: 'block',
   name: 'DateInput',
+  description:
+    'A date input field with a calendar popover. Type a date or click the calendar icon to pick one.',
   isReady: true,
-  aspectRatio: 1,
   isShowcase: true,
+  aspectRatio: 1,
+  componentsUsed: ['DateInput', 'Layout'],
 };

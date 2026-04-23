@@ -2,8 +2,10 @@
 export const doc = {
   type: 'block',
   name: 'HoverCard',
+  description:
+    'A hover card that shows a user profile preview when hovering over a trigger button. Starts open for preview.',
   isReady: true,
-  aspectRatio: 1,
   isShowcase: true,
-  componentsUsed: ['HoverCard', 'Button', 'Layout', 'Text'],
+  aspectRatio: 1,
+  componentsUsed: ['HoverCard', 'Button', 'Layout', 'Text', 'Avatar'],
 };

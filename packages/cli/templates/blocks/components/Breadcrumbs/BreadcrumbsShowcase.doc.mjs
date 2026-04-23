@@ -2,7 +2,10 @@
 export const doc = {
   type: 'block',
   name: 'Breadcrumbs',
+  description:
+    'A breadcrumb trail showing page hierarchy with linked ancestors and a current page.',
   isReady: true,
-  aspectRatio: 4 / 3,
   isShowcase: true,
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Breadcrumbs'],
 };

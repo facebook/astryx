@@ -2,7 +2,10 @@
 export const doc = {
   type: 'block',
   name: 'CheckboxInput',
+  description:
+    'Interactive checkboxes showing checked, unchecked, and indeterminate states with descriptions.',
   isReady: true,
-  aspectRatio: 1,
   isShowcase: true,
+  aspectRatio: 16 / 9,
+  componentsUsed: ['CheckboxInput', 'Layout'],
 };
