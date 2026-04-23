@@ -14,12 +14,8 @@ export default function StackAlignment() {
             Start (left)
           </XDSText>
           <XDSStack direction="horizontal" gap={2} hAlign="start">
-            <XDSButton variant="secondary" size="sm">
-              Cancel
-            </XDSButton>
-            <XDSButton variant="primary" size="sm">
-              Save
-            </XDSButton>
+            <XDSButton label="Cancel" variant="secondary" size="sm" />
+            <XDSButton label="Save" variant="primary" size="sm" />
           </XDSStack>
         </XDSStack>
       </XDSCard>
@@ -29,12 +25,8 @@ export default function StackAlignment() {
             Center
           </XDSText>
           <XDSStack direction="horizontal" gap={2} hAlign="center">
-            <XDSButton variant="secondary" size="sm">
-              Cancel
-            </XDSButton>
-            <XDSButton variant="primary" size="sm">
-              Save
-            </XDSButton>
+            <XDSButton label="Cancel" variant="secondary" size="sm" />
+            <XDSButton label="Save" variant="primary" size="sm" />
           </XDSStack>
         </XDSStack>
       </XDSCard>
@@ -44,12 +36,8 @@ export default function StackAlignment() {
             End (right)
           </XDSText>
           <XDSStack direction="horizontal" gap={2} hAlign="end">
-            <XDSButton variant="secondary" size="sm">
-              Cancel
-            </XDSButton>
-            <XDSButton variant="primary" size="sm">
-              Save
-            </XDSButton>
+            <XDSButton label="Cancel" variant="secondary" size="sm" />
+            <XDSButton label="Save" variant="primary" size="sm" />
           </XDSStack>
         </XDSStack>
       </XDSCard>

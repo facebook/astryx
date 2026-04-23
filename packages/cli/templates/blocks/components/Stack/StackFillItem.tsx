@@ -34,9 +34,7 @@ export default function StackFillItem() {
             </XDSStack>
           </XDSStackItem>
           <XDSStackItem size="static">
-            <XDSButton variant="secondary" size="sm">
-              View
-            </XDSButton>
+            <XDSButton label="View" variant="secondary" size="sm" />
           </XDSStackItem>
         </XDSStack>
       ))}
