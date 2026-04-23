@@ -14,7 +14,7 @@
  * - /packages/core/src/Table/index.ts (exports)
  */
 
-import {useMemo, useRef, type ReactNode} from 'react';
+import {useMemo, useRef, useLayoutEffect, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../../../theme/tokens.stylex';
 import {XDSPagination} from '../../../Pagination';
@@ -231,6 +231,34 @@ export function useXDSTablePagination<T extends Record<string, unknown>>(
   const configRef = useRef({paginationProps, position, align});
   configRef.current = {paginationProps, position, align};
 
+  // Track the maximum observed table height to prevent layout jumping
+  // when the last page has fewer rows than a full page. The wrapper
+  // applies this as minHeight so the pagination controls stay put.
+  const maxHeightRef = useRef(0);
+  const tableWrapperRef = useRef<HTMLDivElement>(null);
+
+  // Reset tracked height when pageSize changes since row count differs.
+  const lastPageSizeRef = useRef(pageSize);
+  if (lastPageSizeRef.current !== pageSize) {
+    lastPageSizeRef.current = pageSize;
+    maxHeightRef.current = 0;
+  }
+
+  // After every page change, measure the table and maintain minHeight.
+  // useLayoutEffect runs before paint, preventing a visual flash when
+  // temporarily clearing minHeight to measure natural content height.
+  useLayoutEffect(() => {
+    const node = tableWrapperRef.current;
+    if (node == null) return;
+    // Temporarily remove minHeight to measure natural height
+    node.style.minHeight = '';
+    const height = node.scrollHeight;
+    if (height > maxHeightRef.current) {
+      maxHeightRef.current = height;
+    }
+    node.style.minHeight = `${maxHeightRef.current}px`;
+  });
+
   // Stable plugin object \u2014 created once, reads config via ref.
   return useMemo(
     (): TablePlugin<T> => ({
@@ -268,7 +296,7 @@ export function useXDSTablePagination<T extends Record<string, unknown>>(
         return (
           <>
             {(pos === 'above' || pos === 'both') && makeWrapper('above')}
-            {children}
+            <div ref={tableWrapperRef}>{children}</div>
             {(pos === 'below' || pos === 'both') && makeWrapper('below')}
           </>
         );

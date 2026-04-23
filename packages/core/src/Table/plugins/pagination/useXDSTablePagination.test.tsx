@@ -599,4 +599,47 @@ describe('useXDSTablePagination', () => {
       expect(prevButton).toBeDisabled();
     });
   });
+
+  // ===========================================================================
+  // Stable height wrapper
+  // ===========================================================================
+
+  describe('stable height wrapper', () => {
+    it('wraps the table in a div for stable height when pagination is below', () => {
+      render(<PaginatedTable data={generateItems(30)} pageSize={10} />);
+      const table = screen.getByRole('table');
+      // The table should be inside a wrapper div (not a direct child of the fragment)
+      const wrapper = table.parentElement;
+      expect(wrapper).toBeInstanceOf(HTMLDivElement);
+      expect(wrapper?.tagName).toBe('DIV');
+    });
+
+    it('wraps the table in a div for stable height when pagination is above', () => {
+      render(
+        <PaginatedTable
+          data={generateItems(30)}
+          pageSize={10}
+          position="above"
+        />,
+      );
+      const table = screen.getByRole('table');
+      const wrapper = table.parentElement;
+      expect(wrapper).toBeInstanceOf(HTMLDivElement);
+      expect(wrapper?.tagName).toBe('DIV');
+    });
+
+    it('does not add wrapper when position is none', () => {
+      const {container} = render(
+        <PaginatedTable
+          data={generateItems(30)}
+          pageSize={10}
+          position="none"
+        />,
+      );
+      const table = screen.getByRole('table');
+      // When position is 'none', the table should not have an extra wrapper
+      // (it's returned directly, so its parent is whatever the test container provides)
+      expect(table.parentElement).toBe(container);
+    });
+  });
 });
