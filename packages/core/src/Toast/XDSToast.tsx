@@ -26,7 +26,7 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-4'],
     borderRadius: radiusVars['--radius-container'],
     width: 400,
-    maxWidth: 'calc(100vw - 32px)',
+    maxWidth: 'min(100%, calc(100vw - 32px))',
     boxShadow: shadowVars['--shadow-med'],
     opacity: 1,
     fontFamily: typographyVars['--font-family-body'],
