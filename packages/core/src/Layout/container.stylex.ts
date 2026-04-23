@@ -57,10 +57,8 @@ export type SpacingToken =
 const baseStyles = stylex.create({
   container: {
     boxSizing: 'border-box',
-    paddingInlineStart:
-      'var(--container-padding-inline-start, var(--container-padding-inline))',
-    paddingInlineEnd:
-      'var(--container-padding-inline-end, var(--container-padding-inline))',
+    paddingInlineStart: 'var(--container-padding-inline-start)',
+    paddingInlineEnd: 'var(--container-padding-inline-end)',
     paddingBlockStart: 'var(--container-padding-block-start)',
     paddingBlockEnd: 'var(--container-padding-block-end)',
   },
@@ -183,25 +181,48 @@ export type ContainerComponent = keyof typeof themeDefaultStyles;
 
 /**
  * Container inline padding styles for edge compensation.
- * Sets --container-padding-inline so edge-compensating children (ghost buttons, etc.)
- * know the inline padding to compensate against.
+ * Sets --container-padding-inline-start and --container-padding-inline-end so
+ * edge-compensating children (bleed tables, dividers, etc.) know the inline
+ * padding to compensate against.
  */
-const containerPaddingInlineStyles = stylex.create({
-  spacing0: {'--container-padding-inline': spacingVars['--spacing-0']},
-  spacing0_5: {'--container-padding-inline': spacingVars['--spacing-0-5']},
-  spacing1: {'--container-padding-inline': spacingVars['--spacing-1']},
-  spacing1_5: {'--container-padding-inline': spacingVars['--spacing-1-5']},
-  spacing2: {'--container-padding-inline': spacingVars['--spacing-2']},
-  spacing3: {'--container-padding-inline': spacingVars['--spacing-3']},
-  spacing4: {'--container-padding-inline': spacingVars['--spacing-4']},
-  spacing5: {'--container-padding-inline': spacingVars['--spacing-5']},
-  spacing6: {'--container-padding-inline': spacingVars['--spacing-6']},
-  spacing7: {'--container-padding-inline': spacingVars['--spacing-7']},
-  spacing8: {'--container-padding-inline': spacingVars['--spacing-8']},
-  spacing9: {'--container-padding-inline': spacingVars['--spacing-9']},
-  spacing10: {'--container-padding-inline': spacingVars['--spacing-10']},
-  spacing11: {'--container-padding-inline': spacingVars['--spacing-11']},
-  spacing12: {'--container-padding-inline': spacingVars['--spacing-12']},
+const containerPaddingInlineStartStyles = stylex.create({
+  spacing0: {'--container-padding-inline-start': spacingVars['--spacing-0']},
+  spacing0_5: {
+    '--container-padding-inline-start': spacingVars['--spacing-0-5'],
+  },
+  spacing1: {'--container-padding-inline-start': spacingVars['--spacing-1']},
+  spacing1_5: {
+    '--container-padding-inline-start': spacingVars['--spacing-1-5'],
+  },
+  spacing2: {'--container-padding-inline-start': spacingVars['--spacing-2']},
+  spacing3: {'--container-padding-inline-start': spacingVars['--spacing-3']},
+  spacing4: {'--container-padding-inline-start': spacingVars['--spacing-4']},
+  spacing5: {'--container-padding-inline-start': spacingVars['--spacing-5']},
+  spacing6: {'--container-padding-inline-start': spacingVars['--spacing-6']},
+  spacing7: {'--container-padding-inline-start': spacingVars['--spacing-7']},
+  spacing8: {'--container-padding-inline-start': spacingVars['--spacing-8']},
+  spacing9: {'--container-padding-inline-start': spacingVars['--spacing-9']},
+  spacing10: {'--container-padding-inline-start': spacingVars['--spacing-10']},
+  spacing11: {'--container-padding-inline-start': spacingVars['--spacing-11']},
+  spacing12: {'--container-padding-inline-start': spacingVars['--spacing-12']},
+});
+
+const containerPaddingInlineEndStyles = stylex.create({
+  spacing0: {'--container-padding-inline-end': spacingVars['--spacing-0']},
+  spacing0_5: {'--container-padding-inline-end': spacingVars['--spacing-0-5']},
+  spacing1: {'--container-padding-inline-end': spacingVars['--spacing-1']},
+  spacing1_5: {'--container-padding-inline-end': spacingVars['--spacing-1-5']},
+  spacing2: {'--container-padding-inline-end': spacingVars['--spacing-2']},
+  spacing3: {'--container-padding-inline-end': spacingVars['--spacing-3']},
+  spacing4: {'--container-padding-inline-end': spacingVars['--spacing-4']},
+  spacing5: {'--container-padding-inline-end': spacingVars['--spacing-5']},
+  spacing6: {'--container-padding-inline-end': spacingVars['--spacing-6']},
+  spacing7: {'--container-padding-inline-end': spacingVars['--spacing-7']},
+  spacing8: {'--container-padding-inline-end': spacingVars['--spacing-8']},
+  spacing9: {'--container-padding-inline-end': spacingVars['--spacing-9']},
+  spacing10: {'--container-padding-inline-end': spacingVars['--spacing-10']},
+  spacing11: {'--container-padding-inline-end': spacingVars['--spacing-11']},
+  spacing12: {'--container-padding-inline-end': spacingVars['--spacing-12']},
 });
 
 /**
@@ -334,7 +355,7 @@ export interface ContainerOptions {
 
   /**
    * Outer horizontal padding (left/right).
-   * Sets --container-padding-inline and --layout-padding-outer-x CSS variables.
+   * Sets --container-padding-inline-start/end and --layout-padding-outer-x CSS variables.
    * Overrides `padding` for the horizontal outer axis.
    */
   paddingOuterX?: SpacingToken;
@@ -387,7 +408,7 @@ export interface ContainerOptions {
  * StyleX utility to add layout container styles to any element.
  *
  * Sets CSS variables for padding that child layout components read:
- * - `--container-padding-inline` — Inline padding for edge compensation and bleed
+ * - `--container-padding-inline-start` / `--container-padding-inline-end` — Inline padding for edge compensation and bleed
  * - `--container-padding-block-start` / `--container-padding-block-end` — Block padding for vertical bleed
  * - `--layout-padding-outer-x`, `--layout-padding-outer-y` (internal)
  * - `--layout-padding-inner-x`, `--layout-padding-inner-y` (internal)
@@ -459,7 +480,8 @@ export function container({
 
   return [
     baseStyles.container,
-    containerPaddingInlineStyles[outerX],
+    containerPaddingInlineStartStyles[outerX],
+    containerPaddingInlineEndStyles[outerX],
     containerPaddingBlockStartStyles[outerY],
     containerPaddingBlockEndStyles[outerY],
     paddingOuterXStyles[outerX],

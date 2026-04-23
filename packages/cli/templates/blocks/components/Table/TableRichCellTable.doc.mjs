@@ -3,8 +3,8 @@ export const doc = {
   type: 'block',
   name: 'Table — Rich Cell Content',
   description:
-    'Table with custom cell renderers including clickable emails and colored role badges.',
+    'Table with rich cell content using XDSLink for emails and XDSBadge for role labels.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Table'],
+  componentsUsed: ['Table', 'Badge', 'Link'],
 };

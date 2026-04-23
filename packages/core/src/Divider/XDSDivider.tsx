@@ -150,9 +150,10 @@ const labelStyles = stylex.create({
 
 const fullBleedStyles = stylex.create({
   horizontal: {
-    marginInlineStart: 'calc(-1 * var(--container-padding-inline, 0px))',
-    marginInlineEnd: 'calc(-1 * var(--container-padding-inline, 0px))',
-    width: 'calc(100% + 2 * var(--container-padding-inline, 0px))',
+    marginInlineStart: 'calc(-1 * var(--container-padding-inline-start, 0px))',
+    marginInlineEnd: 'calc(-1 * var(--container-padding-inline-end, 0px))',
+    width:
+      'calc(100% + var(--container-padding-inline-start, 0px) + var(--container-padding-inline-end, 0px))',
   },
   vertical: {
     marginBlockStart: 'calc(-1 * var(--container-padding-block-start, 0px))',

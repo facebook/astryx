@@ -1,10 +1,10 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Table — Basic Data Table',
+  name: 'Table — Inline Filters',
   description:
-    'Simple data-driven table with striped rows and hover highlighting.',
+    'Table with inline filter controls rendered directly below each column header.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Table'],
+  componentsUsed: ['Table', 'PowerSearch'],
 };

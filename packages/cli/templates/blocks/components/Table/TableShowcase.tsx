@@ -1,6 +1,7 @@
 'use client';
 
 import {XDSTable, proportional, pixel} from '@xds/core/Table';
+import {XDSCard} from '@xds/core/Card';
 import type {XDSTableColumn} from '@xds/core/Table';
 
 interface User extends Record<string, unknown> {
@@ -25,5 +26,9 @@ const columns: XDSTableColumn<User>[] = [
 ];
 
 export default function TableShowcase() {
-  return <XDSTable data={users} columns={columns} idKey="id" hasHover />;
+  return (
+    <XDSCard>
+      <XDSTable data={users} columns={columns} idKey="id" hasHover />
+    </XDSCard>
+  );
 }

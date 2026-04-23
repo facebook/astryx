@@ -50,14 +50,16 @@ const styles = stylex.create({
         0,
     },
     // Publish container padding vars for bleed children (Table, Divider, etc.)
-    '--container-padding-inline': `var(--layout-padding-inner-x, ${spacingVars['--spacing-4']})`,
+    '--container-padding-inline-start': `var(--layout-padding-inner-x, ${spacingVars['--spacing-4']})`,
+    '--container-padding-inline-end': `var(--layout-padding-inner-x, ${spacingVars['--spacing-4']})`,
     '--container-padding-block-start': `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
     '--container-padding-block-end': `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
   },
   // When no start panel: outer-x on left edge
   noStart: {
     paddingInlineStart: `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
-    '--container-padding-inline': `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
+    '--container-padding-inline-start': `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
+    '--container-padding-inline-end': `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
   },
   // When no end panel: outer-x on right edge
   noEnd: {
@@ -81,7 +83,8 @@ const styles = stylex.create({
     paddingInlineEnd: 0,
     paddingBlockStart: 0,
     paddingBlockEnd: 0,
-    '--container-padding-inline': '0px',
+    '--container-padding-inline-start': '0px',
+    '--container-padding-inline-end': '0px',
     '--container-padding-block-start': '0px',
     '--container-padding-block-end': '0px',
   },

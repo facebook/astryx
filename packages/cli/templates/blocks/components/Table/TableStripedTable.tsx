@@ -2,8 +2,6 @@
 
 import {XDSTable, proportional, pixel} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSLink} from '@xds/core/Link';
 
 interface User extends Record<string, unknown> {
   id: string;
@@ -51,35 +49,15 @@ const users: User[] = [
   },
 ];
 
-const roleVariant: Record<string, 'blue' | 'purple' | 'green'> = {
-  Engineer: 'blue',
-  Designer: 'purple',
-  PM: 'green',
-};
-
 const columns: XDSTableColumn<User>[] = [
   {key: 'name', header: 'Name'},
-  {
-    key: 'email',
-    header: 'Email',
-    width: proportional(2),
-    renderCell: item => (
-      <XDSLink label={item.email} href={`mailto:${item.email}`}>{item.email}</XDSLink>
-    ),
-  },
-  {
-    key: 'role',
-    header: 'Role',
-    renderCell: item => (
-      <XDSBadge
-        label={item.role}
-        variant={roleVariant[item.role] ?? 'neutral'}
-      />
-    ),
-  },
+  {key: 'email', header: 'Email', width: proportional(2)},
+  {key: 'role', header: 'Role'},
   {key: 'age', header: 'Age', width: pixel(80)},
 ];
 
-export default function TableRichCellTable() {
-  return <XDSTable data={users} columns={columns} idKey="id" hasHover />;
+export default function TableStripedTable() {
+  return (
+    <XDSTable data={users} columns={columns} idKey="id" isStriped hasHover />
+  );
 }

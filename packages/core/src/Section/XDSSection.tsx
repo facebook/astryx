@@ -71,10 +71,8 @@ const nestedStyles = stylex.create({
   // Outer wrapper escapes parent's container padding
   outer: {
     // Escape horizontal padding using directional vars with shorthand fallback
-    marginInlineStart:
-      'calc(-1 * var(--container-padding-inline-start, var(--container-padding-inline, 0px)))',
-    marginInlineEnd:
-      'calc(-1 * var(--container-padding-inline-end, var(--container-padding-inline, 0px)))',
+    marginInlineStart: 'calc(-1 * var(--container-padding-inline-start, 0px))',
+    marginInlineEnd: 'calc(-1 * var(--container-padding-inline-end, 0px))',
     // Escape top padding only if first child
     marginTop: {
       default: null,
@@ -88,7 +86,6 @@ const nestedStyles = stylex.create({
   },
   // Inner wrapper resets container padding for descendants
   inner: {
-    '--container-padding-inline': '0px',
     '--container-padding-inline-start': '0px',
     '--container-padding-inline-end': '0px',
     '--container-padding-block-start': '0px',
