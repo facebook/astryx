@@ -13,17 +13,17 @@ export default function TextWordBreak() {
       }}>
       <div>
         <XDSText type="label" display="block">
-          Break-word (default for multi-line):
+          Break-word (default for multi-line)
         </XDSText>
         <div style={{width: 200, border: '1px solid #ccc', padding: 8}}>
           <XDSText type="body" maxLines={2} wordBreak="break-word">
-            A verylongunbreakableword follows normal text here
+            This is a verylongunbreakableword for a break-word example
           </XDSText>
         </div>
       </div>
       <div>
         <XDSText type="label" display="block">
-          Break-all (default for single-line):
+          Break-all (default for single-line)
         </XDSText>
         <div style={{width: 200, border: '1px solid #ccc', padding: 8}}>
           <XDSText type="body" maxLines={2} wordBreak="break-all">

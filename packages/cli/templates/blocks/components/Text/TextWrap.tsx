@@ -13,7 +13,7 @@ export default function TextWrap() {
       }}>
       <div>
         <XDSText type="label" display="block">
-          Wrap (default):
+          Wrap (default)
         </XDSText>
         <div style={{border: '1px solid #ccc', padding: 8, width: 200}}>
           <XDSText type="body" textWrap="wrap">
@@ -24,7 +24,7 @@ export default function TextWrap() {
       </div>
       <div>
         <XDSText type="label" display="block">
-          Nowrap:
+          Nowrap
         </XDSText>
         <div
           style={{
@@ -40,7 +40,7 @@ export default function TextWrap() {
       </div>
       <div>
         <XDSText type="label" display="block">
-          Balance:
+          Balance
         </XDSText>
         <div style={{border: '1px solid #ccc', padding: 8, width: 200}}>
           <XDSText type="body" textWrap="balance">
@@ -50,7 +50,7 @@ export default function TextWrap() {
       </div>
       <div>
         <XDSText type="label" display="block">
-          Pretty:
+          Pretty
         </XDSText>
         <div style={{border: '1px solid #ccc', padding: 8, width: 200}}>
           <XDSText type="body" textWrap="pretty">
