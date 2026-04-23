@@ -469,7 +469,7 @@ export default function AIChatTemplate() {
                       style={{minHeight: '44px'}}
                     />
                   }
-                  attachments={
+                  drawer={
                     attachments.length > 0 ? (
                       <XDSChatComposerDrawer count={attachments.length}>
                         {attachments.map((name, i) => (
@@ -722,7 +722,7 @@ export default function AIChatTemplate() {
               style={{minHeight: '44px'}}
             />
           }
-          attachments={
+          drawer={
             attachments.length > 0 ? (
               <XDSChatComposerDrawer
                 count={attachments.length}

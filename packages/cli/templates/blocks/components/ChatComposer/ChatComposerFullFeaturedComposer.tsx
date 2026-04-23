@@ -10,7 +10,7 @@ export default function ChatComposerFullFeaturedComposer() {
     <XDSChatComposer
       onSubmit={() => {}}
       placeholder="Ask me anything..."
-      attachments={
+      drawer={
         <XDSChatComposerDrawer>
           <XDSToken label="design-spec.pdf" onRemove={() => {}} />
         </XDSChatComposerDrawer>

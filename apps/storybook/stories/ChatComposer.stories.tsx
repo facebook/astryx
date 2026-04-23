@@ -135,7 +135,7 @@ export const WithAttachments: Story = {
   render: () => (
     <XDSChatComposer
       onSubmit={value => console.log('Submit:', value)}
-      attachments={
+      drawer={
         <XDSChatComposerDrawer>
           <XDSToken label="report.pdf" onRemove={() => {}} />
           <XDSToken label="data.csv" onRemove={() => {}} />
@@ -173,7 +173,7 @@ export const FullFeatured: Story = {
         isStreaming={isStreaming}
         onStop={() => setIsStreaming(false)}
         placeholder="Ask me anything..."
-        attachments={
+        drawer={
           <XDSChatComposerDrawer>
             <XDSToken label="design-spec.pdf" onRemove={() => {}} />
           </XDSChatComposerDrawer>
@@ -241,7 +241,7 @@ export const WithManyAttachments: Story = {
   render: () => (
     <XDSChatComposer
       onSubmit={value => console.log('Submit:', value)}
-      attachments={
+      drawer={
         <XDSChatComposerDrawer count={6}>
           <XDSToken label="new_feature_prd.docx" onRemove={() => {}} />
           <XDSToken label="2026_roadmap.docx" onRemove={() => {}} />

@@ -8,7 +8,7 @@ export default function ChatComposerComposerWithAttachments() {
   return (
     <XDSChatComposer
       onSubmit={() => {}}
-      attachments={
+      drawer={
         <XDSChatComposerDrawer>
           <XDSToken label="report.pdf" onRemove={() => {}} />
           <XDSToken label="data.csv" onRemove={() => {}} />

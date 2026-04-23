@@ -412,7 +412,7 @@ export const FullAIChat: StoryObj = {
         onSubmit={handleSubmit}
         onStop={handleStop}
         isStreaming={isStreaming}
-        attachments={
+        drawer={
           files.length > 0 ? (
             <XDSChatComposerDrawer>
               {files.map(f => (
@@ -714,7 +714,7 @@ export const PanelView: StoryObj = {
         onSubmit={handleSubmit}
         onStop={handleStop}
         isStreaming={isStreaming}
-        attachments={
+        drawer={
           files.length > 0 ? (
             <XDSChatComposerDrawer>
               {files.map(f => (
