@@ -2,6 +2,7 @@
 
 export const docs = {
   name: 'Card',
+  group: 'Card',
   keywords: ["card","surface","panel","container","elevated","shadow","box","paper","tile","well"],
   usage: {
     description:

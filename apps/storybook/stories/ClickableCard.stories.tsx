@@ -5,14 +5,37 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 
 const meta: Meta<typeof XDSClickableCard> = {
-  title: 'ClickableCard/XDSClickableCard',
+  title: 'Card/XDSClickableCard',
   component: XDSClickableCard,
+  tags: ['autodocs'],
+  argTypes: {
+    variant: {
+      control: 'select',
+      options: [
+        'default', 'transparent', 'muted',
+        'blue', 'cyan', 'gray', 'green', 'orange',
+        'pink', 'purple', 'red', 'teal', 'yellow',
+      ],
+    },
+  },
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'An interactive card for navigation or action targets. ' +
+          'Nested interactive elements (buttons, links) work independently — ' +
+          'clicking them does NOT trigger the card\\'s onClick or navigation. ' +
+          'Uses `useClickableContainer` internally.',
+      },
+    },
+  },
 };
 
 export default meta;
 type Story = StoryObj<typeof XDSClickableCard>;
 
 export const Navigation: Story = {
+  name: 'Navigation (href)',
   render: () => (
     <XDSClickableCard label="Settings" href="/settings" width={300}>
       <XDSVStack gap={1}>
@@ -21,9 +44,17 @@ export const Navigation: Story = {
       </XDSVStack>
     </XDSClickableCard>
   ),
+  parameters: {
+    docs: {
+      description: {
+        story: 'Card with `href` — clicking navigates. Ctrl/Cmd+click opens new tab. Middle-click opens new tab.',
+      },
+    },
+  },
 };
 
 export const WithOnClick: Story = {
+  name: 'Action (onClick)',
   render: () => (
     <XDSClickableCard label="Open modal" onClick={() => alert('Card clicked!')} width={300}>
       <XDSVStack gap={1}>
@@ -32,10 +63,17 @@ export const WithOnClick: Story = {
       </XDSVStack>
     </XDSClickableCard>
   ),
+  parameters: {
+    docs: {
+      description: {
+        story: 'Card with `onClick` — fires the handler when the card surface is clicked.',
+      },
+    },
+  },
 };
 
 export const NestedButton: Story = {
-  name: 'With Nested Button',
+  name: 'Nested Interactive Elements',
   render: () => (
     <XDSClickableCard label="Product card" href="/product/123" width={300}>
       <XDSVStack gap={2}>
@@ -49,6 +87,16 @@ export const NestedButton: Story = {
       </XDSVStack>
     </XDSClickableCard>
   ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The key feature: nested buttons/links work independently. ' +
+          'Clicking "Add to cart" fires its own handler without triggering card navigation. ' +
+          'This is handled by `useClickableContainer` which checks `hasInteractiveAncestor` on each click.',
+      },
+    },
+  },
 };
 
 export const Disabled: Story = {
@@ -60,21 +108,39 @@ export const Disabled: Story = {
       </XDSVStack>
     </XDSClickableCard>
   ),
+  parameters: {
+    docs: {
+      description: {
+        story: '`isDisabled` suppresses click, hover, focus, and sets `aria-disabled`. `tabIndex` becomes -1.',
+      },
+    },
+  },
 };
 
-export const Variants: Story = {
-  name: 'Background Variants',
-  render: () => (
-    <XDSHStack gap={3}>
-      <XDSClickableCard label="Default" onClick={() => {}} width={200}>
-        <XDSText type="body" weight="bold">Default</XDSText>
-      </XDSClickableCard>
-      <XDSClickableCard label="Muted" onClick={() => {}} variant="muted" width={200}>
-        <XDSText type="body" weight="bold">Muted</XDSText>
-      </XDSClickableCard>
-      <XDSClickableCard label="Transparent" onClick={() => {}} variant="transparent" width={200}>
-        <XDSText type="body" weight="bold">Transparent</XDSText>
-      </XDSClickableCard>
-    </XDSHStack>
-  ),
+export const ColorVariants: Story = {
+  name: 'Color Variants',
+  render: () => {
+    const variants = [
+      'default', 'muted', 'transparent',
+      'blue', 'cyan', 'gray', 'green', 'orange',
+      'pink', 'purple', 'red', 'teal', 'yellow',
+    ] as const;
+
+    return (
+      <XDSHStack gap={3} wrap="wrap">
+        {variants.map((v) => (
+          <XDSClickableCard key={v} label={v} onClick={() => alert(v)} variant={v} width={140}>
+            <XDSText type="body" weight="bold">{v}</XDSText>
+          </XDSClickableCard>
+        ))}
+      </XDSHStack>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: 'All color variants — same palette as XDSCard. Color cards have transparent borders.',
+      },
+    },
+  },
 };

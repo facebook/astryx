@@ -21,6 +21,7 @@ export const docs = {
     {name: 'isDisabled', type: 'boolean', description: 'Disables the card.', default: 'false'},
     {name: 'children', type: 'ReactNode', description: 'Card content.'},
     {name: 'padding', type: "SpacingStep", description: 'Inner padding.', default: '4'},
+    {name: 'variant', type: "'default' | 'transparent' | 'muted' | 'blue' | 'cyan' | 'gray' | 'green' | 'orange' | 'pink' | 'purple' | 'red' | 'teal' | 'yellow'", description: 'Background color variant.', default: "'default'"},
     {name: 'width', type: 'SizeValue', description: 'Card width.'},
     {name: 'height', type: 'SizeValue', description: 'Card height.'},
     {name: 'maxWidth', type: 'SizeValue', description: 'Maximum card width.'},

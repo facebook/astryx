@@ -34,6 +34,7 @@ import type {SizeValue, SpacingStep} from '../utils/types';
 import {xdsClassName, mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useClickableContainer} from '../hooks/useClickableContainer';
+import type {XDSCardVariant} from '../Card/XDSCard';
 
 // =============================================================================
 // Styles
@@ -49,7 +50,6 @@ const styles = stylex.create({
     borderWidth: '2px',
     borderStyle: 'solid',
     borderColor: colorVars['--color-border-emphasized'],
-    backgroundColor: colorVars['--color-background-card'],
     position: 'relative',
     cursor: 'pointer',
     transition: 'border-color 0.15s ease',
@@ -81,6 +81,48 @@ const styles = stylex.create({
   disabled: {
     cursor: 'not-allowed',
     opacity: 0.5,
+  },
+});
+
+const variantStyles = stylex.create({
+  default: {
+    backgroundColor: colorVars['--color-background-card'],
+  },
+  transparent: {
+    backgroundColor: 'transparent',
+  },
+  muted: {
+    backgroundColor: colorVars['--color-background-muted'],
+  },
+  blue: {
+    backgroundColor: colorVars['--color-background-blue'],
+  },
+  cyan: {
+    backgroundColor: colorVars['--color-background-cyan'],
+  },
+  gray: {
+    backgroundColor: colorVars['--color-background-gray'],
+  },
+  green: {
+    backgroundColor: colorVars['--color-background-green'],
+  },
+  orange: {
+    backgroundColor: colorVars['--color-background-orange'],
+  },
+  pink: {
+    backgroundColor: colorVars['--color-background-pink'],
+  },
+  purple: {
+    backgroundColor: colorVars['--color-background-purple'],
+  },
+  red: {
+    backgroundColor: colorVars['--color-background-red'],
+  },
+  teal: {
+    backgroundColor: colorVars['--color-background-teal'],
+  },
+  yellow: {
+    backgroundColor: colorVars['--color-background-yellow'],
   },
 });
 
@@ -142,6 +184,16 @@ export interface XDSSelectableCardProps extends Omit<XDSBaseProps, 'onChange'> {
    * Maximum width of the card.
    */
   maxWidth?: SizeValue;
+
+  /**
+   * Background color variant.
+   * - `default`: standard card background
+   * - `transparent`: no background
+   * - `muted`: subtle muted background
+   * - Non-semantic palette: `blue | cyan | gray | green | orange | pink | purple | red | teal | yellow`
+   * @default 'default'
+   */
+  variant?: XDSCardVariant;
 }
 
 // Dynamic sizing styles
@@ -223,6 +275,7 @@ export function XDSSelectableCard({
   width,
   height,
   maxWidth,
+  variant = 'default',
   xstyle,
   className,
   style,
@@ -277,10 +330,12 @@ export function XDSSelectableCard({
       }
       {...mergeProps(
         xdsClassName('selectable-card', {
+          variant,
           selected: isSelected ? 'true' : 'false',
         }),
         stylex.props(
           styles.card,
+          variantStyles[variant] ?? variantStyles.default,
           isSelected && styles.selected,
           !isDisabled && styles.hoverState,
           isDisabled && styles.disabled,

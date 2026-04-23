@@ -35,6 +35,7 @@ import type {SizeValue, SpacingStep} from '../utils/types';
 import {xdsClassName, mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useClickableContainer} from '../hooks/useClickableContainer';
+import type {XDSCardVariant} from '../Card/XDSCard';
 
 // =============================================================================
 // Styles
@@ -98,6 +99,46 @@ const variantStyles = stylex.create({
     backgroundColor: colorVars['--color-background-muted'],
     borderColor: 'transparent',
   },
+  blue: {
+    backgroundColor: colorVars['--color-background-blue'],
+    borderColor: 'transparent',
+  },
+  cyan: {
+    backgroundColor: colorVars['--color-background-cyan'],
+    borderColor: 'transparent',
+  },
+  gray: {
+    backgroundColor: colorVars['--color-background-gray'],
+    borderColor: 'transparent',
+  },
+  green: {
+    backgroundColor: colorVars['--color-background-green'],
+    borderColor: 'transparent',
+  },
+  orange: {
+    backgroundColor: colorVars['--color-background-orange'],
+    borderColor: 'transparent',
+  },
+  pink: {
+    backgroundColor: colorVars['--color-background-pink'],
+    borderColor: 'transparent',
+  },
+  purple: {
+    backgroundColor: colorVars['--color-background-purple'],
+    borderColor: 'transparent',
+  },
+  red: {
+    backgroundColor: colorVars['--color-background-red'],
+    borderColor: 'transparent',
+  },
+  teal: {
+    backgroundColor: colorVars['--color-background-teal'],
+    borderColor: 'transparent',
+  },
+  yellow: {
+    backgroundColor: colorVars['--color-background-yellow'],
+    borderColor: 'transparent',
+  },
 });
 
 // =============================================================================
@@ -154,9 +195,13 @@ export interface XDSClickableCardProps extends Omit<XDSBaseProps, 'onChange'> {
 
   /**
    * Background color variant.
+   * - `default`: standard card background with visible border
+   * - `transparent`: no background, no border
+   * - `muted`: subtle muted background
+   * - Non-semantic palette: `blue | cyan | gray | green | orange | pink | purple | red | teal | yellow`
    * @default 'default'
    */
-  variant?: 'default' | 'transparent' | 'muted';
+  variant?: XDSCardVariant;
 
   /**
    * Width of the card.
