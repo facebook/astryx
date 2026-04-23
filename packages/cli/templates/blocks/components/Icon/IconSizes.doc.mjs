@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'Icon — Size Variants',
   description:
-    'All icon size variants from extra-small to large, displayed side by side for comparison.',
+    'All icon sizes from extra-small to large.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['Icon', 'HStack', 'VStack', 'Text'],
