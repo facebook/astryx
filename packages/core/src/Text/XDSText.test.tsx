@@ -9,6 +9,11 @@ import {XDSText} from './XDSText';
 
 describe('XDSText', () => {
   describe('rendering', () => {
+    it('renders without type prop (defaults to body)', () => {
+      render(<XDSText>Default body text</XDSText>);
+      expect(screen.getByText('Default body text')).toBeInTheDocument();
+    });
+
     it('renders children correctly', () => {
       render(<XDSText type="body">Hello World</XDSText>);
       expect(screen.getByText('Hello World')).toBeInTheDocument();
