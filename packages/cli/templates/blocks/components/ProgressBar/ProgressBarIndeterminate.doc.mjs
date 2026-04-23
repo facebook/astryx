@@ -6,5 +6,5 @@ export const doc = {
     'Indeterminate progress bar for operations with unknown duration.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['ProgressBar'],
+  componentsUsed: ['ProgressBar', 'Center'],
 };
