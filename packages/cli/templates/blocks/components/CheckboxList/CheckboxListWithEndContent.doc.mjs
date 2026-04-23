@@ -6,5 +6,5 @@ export const doc = {
     'Checkbox list items with pricing labels as end content for an add-on selection pattern.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['CheckboxList'],
+  componentsUsed: ['CheckboxList', 'Badge'],
 };
