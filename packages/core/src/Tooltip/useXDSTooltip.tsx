@@ -119,6 +119,12 @@ export interface XDSTooltipOptions {
   isEnabled?: boolean;
 
   /**
+   * Whether the tooltip should be shown on mount.
+   * The tooltip is still dismissible — this just opens it initially.
+   */
+  isDefaultOpen?: boolean;
+
+  /**
    * Callback fired when tooltip is shown.
    * Wrap in useCallback for stable identity.
    */
@@ -226,6 +232,7 @@ export function useXDSTooltip(
     hideDelay = 0,
     focusTrigger = 'auto',
     isEnabled = true,
+    isDefaultOpen = false,
     onShow,
     onHide,
   } = options;
@@ -369,6 +376,14 @@ export function useXDSTooltip(
       clearTimeouts();
     };
   }, [clearTimeouts]);
+
+  // Show on mount when isDefaultOpen is true
+  useEffect(() => {
+    if (isDefaultOpen) {
+      layer.show();
+    }
+    // Only run on mount — isDefaultOpen is not reactive
+  }, []);
 
   // Render function that wraps layer.render with tooltip styling
   const renderTooltip = useCallback(

@@ -71,6 +71,11 @@ export const docs = {
           description: 'Shows a dashed underline on the trigger element.',
           default: "'auto'",
         },
+        {
+          name: 'isDefaultOpen',
+          type: 'boolean',
+          description: 'Whether the tooltip should be shown on mount. Still dismissible.',
+        },
       ],
     },
     {
@@ -113,6 +118,11 @@ export const docs = {
           type: 'boolean',
           description: 'Enables or disables all hover and focus triggers.',
           default: 'true',
+        },
+        {
+          name: 'isDefaultOpen',
+          type: 'boolean',
+          description: 'Whether the tooltip should be shown on mount. Still dismissible.',
         },
         {
           name: 'onShow',
@@ -216,6 +226,11 @@ export const docsZh = {
           description: '在触发元素上显示虚线下划线。',
           default: "'auto'",
         },
+        {
+          name: 'isDefaultOpen',
+          type: 'boolean',
+          description: '是否在挂载时显示工具提示。仍然可以关闭。',
+        },
       ],
     },
     {
@@ -258,6 +273,11 @@ export const docsZh = {
           type: 'boolean',
           description: '启用或禁用所有悬停和聚焦触发器。',
           default: 'true',
+        },
+        {
+          name: 'isDefaultOpen',
+          type: 'boolean',
+          description: '是否在挂载时显示工具提示。仍然可以关闭。',
         },
         {
           name: 'onShow',
@@ -318,6 +338,7 @@ export const docsDense = {
         isEnabled: 'Enables/disables tooltip triggers.',
         onOpenChange: 'Callback when visibility changes; true=shown, false=hidden.',
         hasHoverIndication: 'Dashed underline on trigger element.',
+        isDefaultOpen: 'Show tooltip on mount. Still dismissible.',
       },
     },
     {
@@ -330,6 +351,7 @@ export const docsDense = {
         hideDelay: 'Hide delay in ms.',
         focusTrigger: 'Controls when focus events trigger tooltip.',
         isEnabled: 'Enables/disables all hover+focus triggers.',
+        isDefaultOpen: 'Show tooltip on mount. Still dismissible.',
         onShow: 'Fired when tooltip becomes visible.',
         onHide: 'Fired when tooltip hidden.',
       },

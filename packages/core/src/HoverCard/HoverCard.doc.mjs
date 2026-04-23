@@ -78,6 +78,11 @@ export const docs = {
           description: 'Shows a dashed underline on the trigger element.',
           default: "'auto'",
         },
+        {
+          name: 'isDefaultOpen',
+          type: 'boolean',
+          description: 'Whether the hover card should be shown on mount. Still dismissible.',
+        },
       ],
     },
     {
@@ -120,6 +125,11 @@ export const docs = {
           type: 'boolean',
           description: 'Enables or disables all hover and focus triggers.',
           default: 'true',
+        },
+        {
+          name: 'isDefaultOpen',
+          type: 'boolean',
+          description: 'Whether the hover card should be shown on mount. Still dismissible.',
         },
         {
           name: 'onShow',
@@ -232,6 +242,11 @@ export const docsZh = {
           description: '在触发元素上显示虚线下划线。',
           default: "'auto'",
         },
+        {
+          name: 'isDefaultOpen',
+          type: 'boolean',
+          description: '是否在挂载时显示悬浮卡片。仍然可以关闭。',
+        },
       ],
     },
     {
@@ -274,6 +289,11 @@ export const docsZh = {
           type: 'boolean',
           description: '启用或禁用所有悬停和聚焦触发器。',
           default: 'true',
+        },
+        {
+          name: 'isDefaultOpen',
+          type: 'boolean',
+          description: '是否在挂载时显示悬浮卡片。仍然可以关闭。',
         },
         {
           name: 'onShow',
@@ -327,6 +347,7 @@ export const docsDense = {
         isEnabled: 'Enable/disable hover + focus triggers.',
         onOpenChange: 'Callback when visibility changes; true=shown, false=hidden.',
         hasHoverIndication: 'Dashed underline on trigger element.',
+        isDefaultOpen: 'Show hover card on mount. Still dismissible.',
       },
     },
     {
@@ -339,6 +360,7 @@ export const docsDense = {
         hideDelay: 'Hide delay in ms.',
         focusTrigger: 'Controls when focus events trigger layer.',
         isEnabled: 'Enable/disable all hover + focus triggers.',
+        isDefaultOpen: 'Show hover card on mount. Still dismissible.',
         onShow: 'Callback when hover card becomes visible.',
         onHide: 'Callback when hover card hidden.',
       },

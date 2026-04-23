@@ -109,6 +109,12 @@ export interface XDSHoverCardProps {
    * @default 'auto'
    */
   hasHoverIndication?: 'auto' | boolean;
+
+  /**
+   * Whether the hover card should be shown on mount.
+   * The hover card is still dismissible — this just opens it initially.
+   */
+  isDefaultOpen?: boolean;
 }
 
 /**
@@ -152,6 +158,7 @@ export function XDSHoverCard({
   isEnabled = true,
   onOpenChange,
   hasHoverIndication = 'auto',
+  isDefaultOpen,
 }: XDSHoverCardProps): ReactElement {
   const wrapperRef = useRef<HTMLElement>(null);
   const textOnly = isTextOnly(children);
@@ -176,6 +183,7 @@ export function XDSHoverCard({
     hideDelay,
     focusTrigger,
     isEnabled,
+    isDefaultOpen,
     onShow: handleShow,
     onHide: handleHide,
   });
