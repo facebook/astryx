@@ -2,7 +2,7 @@
 
 export const docs = {
   name: 'Stack',
-  group: 'Stack',
+  group: 'Layout',
   keywords: ["stack","hstack","vstack","flexbox","flex","spacing","gap","horizontal","vertical","row","column"],
   theming: {
     targets: [
@@ -214,7 +214,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Stack',
-  group: 'Stack',
+  group: 'Layout',
   theming: {
     targets: [
       {className: 'xds-stack', visualProps: ['direction', 'gap', 'wrap']},

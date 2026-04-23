@@ -2,7 +2,7 @@
 
 export const docs = {
   name: 'RadioList',
-  group: 'RadioList',
+  group: 'Radio',
   keywords: ["radiolist","radio","radiogroup","radiobutton","optionlist","singlechoice","choicelist"],
   theming: {
     targets: [

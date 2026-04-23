@@ -2,7 +2,7 @@
 
 export const docs = {
   name: 'SyntaxTheme',
-  group: 'Utility',
+  group: 'Utilities',
   keywords: ['syntax', 'highlighting', 'code', 'theme'],
   usage: {
     description: 'Applies syntax highlighting colors to XDSCodeBlock components.',

@@ -2,7 +2,7 @@
 
 export const docs = {
   name: 'Layer',
-  group: 'Utility',
+  group: 'Utilities',
   keywords: ["layer","overlay","popover","positioning","anchor","floating","dropdown","popper","popup","portal"],
   components: [
     {

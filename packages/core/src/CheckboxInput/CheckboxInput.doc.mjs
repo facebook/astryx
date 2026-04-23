@@ -2,6 +2,7 @@
 
 export const docs = {
   name: 'CheckboxInput',
+  group: 'Checkbox',
   keywords: ["checkbox","check","toggle","tick","indeterminate","boolean","tristate"],
   props: [
     {
