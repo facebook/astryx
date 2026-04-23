@@ -436,7 +436,7 @@ function countElements(code: string): number {
 function countStylingDecisions(code: string, target: string): number {
   let count = 0;
 
-  if (target === 'xds') {
+  if (target === 'xds' || target === 'xds-tailwind') {
     // Component props that are styling decisions: variant, size, gap, color, type
     count += (
       code.match(
@@ -448,7 +448,9 @@ function countStylingDecisions(code: string, target: string): number {
     for (const block of stylexBlocks) {
       count += (block.match(/\w+\s*:/g) || []).length;
     }
-  } else if (target === 'baseline') {
+  }
+
+  if (target === 'baseline' || target === 'xds-tailwind') {
     // Tailwind classes — each utility class is a decision
     const classNames = code.match(/className\s*=\s*["']([^"']+)["']/g) || [];
     for (const cn of classNames) {
@@ -462,9 +464,13 @@ function countStylingDecisions(code: string, target: string): number {
     for (const call of cnCalls) {
       count += (call.match(/["'][^"']+["']/g) || []).length;
     }
-    // Component variant/size props
-    count += (code.match(/\b(variant|size)\s*=\s*/g) || []).length;
-  } else {
+    // Component variant/size props (only count if not already counted above)
+    if (target === 'baseline') {
+      count += (code.match(/\b(variant|size)\s*=\s*/g) || []).length;
+    }
+  }
+
+  if (target === 'html') {
     // Raw HTML — inline style properties
     const styleBlocks = code.match(/style\s*=\s*\{\{([^}]+)\}\}/g) || [];
     for (const block of styleBlocks) {
@@ -527,14 +533,14 @@ function analyzeEfficiency(
       if (stripped === '}' || stripped === '};') inTypeBlock = false;
       continue;
     }
-    if (target === 'xds' && stripped.includes('stylex.create'))
+    if ((target === 'xds' || target === 'xds-tailwind') && stripped.includes('stylex.create'))
       inStyleBlock = true;
     if (inStyleBlock) {
       stylingLines++;
       if (stripped === '});') inStyleBlock = false;
       continue;
     }
-    if (target === 'baseline' && stripped.includes('className=')) {
+    if ((target === 'baseline' || target === 'xds-tailwind') && stripped.includes('className=')) {
       stylingLines++;
       continue;
     }
@@ -650,14 +656,16 @@ function countMagicAndSemanticValues(
   // CSS variables
   semantic += (code.match(/var\(--[\w-]+\)/g) || []).length;
 
-  if (target === 'xds') {
+  if (target === 'xds' || target === 'xds-tailwind') {
     // StyleX token references: spacingVars["--spacing-4"], colorVars["--color-*"]
     semantic += (code.match(/\w+Vars\[["']--[\w-]+["']\]/g) || []).length;
     // Component props that delegate styling: variant=, size=, gap=, color=, type=
     semantic += (
       code.match(/\b(variant|size|gap|color|type|level)\s*=\s*["']/g) || []
     ).length;
-  } else if (target === 'baseline') {
+  }
+
+  if (target === 'baseline' || target === 'xds-tailwind') {
     // Tailwind semantic tokens: bg-primary, text-muted-foreground, etc.
     semantic += (
       code.match(
@@ -670,8 +678,10 @@ function countMagicAndSemanticValues(
         /(?:^|\s)(?:p|m|gap|space|text|rounded|font|w|h)-(?:\d+|xs|sm|md|lg|xl|2xl|3xl|full|auto)(?:\s|["']|$)/g,
       ) || []
     ).length;
-    // Component variant/size props
-    semantic += (code.match(/\b(variant|size)\s*=\s*["']/g) || []).length;
+    // Component variant/size props (only count if not already counted above)
+    if (target === 'baseline') {
+      semantic += (code.match(/\b(variant|size)\s*=\s*["']/g) || []).length;
+    }
   }
 
   // --- Magic values (all targets) ---

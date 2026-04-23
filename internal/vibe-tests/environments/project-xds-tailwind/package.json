@@ -1,0 +1,15 @@
+{
+  "name": "my-app",
+  "private": true,
+  "dependencies": {
+    "@xds/core": "*",
+    "@xds/theme-default": "*",
+    "react": "^19",
+    "react-dom": "^19",
+    "tailwindcss": "^4"
+  },
+  "devDependencies": {
+    "@xds/cli": "*",
+    "@tailwindcss/postcss": "^4"
+  }
+}
