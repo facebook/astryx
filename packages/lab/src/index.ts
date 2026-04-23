@@ -199,9 +199,10 @@ export {
   band,
   candlestick,
   useChartV2,
-  type SeriesConfig,
+  type SeriesDef,
   type ChartV2Context,
   type ChartPointerEvent,
   type ResolvedPoint,
   type ResolvedPositions,
+  type SeriesContext,
 } from './ChartV2';
