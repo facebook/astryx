@@ -2,8 +2,7 @@
 export const doc = {
   type: 'block',
   name: 'Kbd — Inline Instructions',
-  description:
-    'Keyboard shortcuts rendered inline within instructional text, showing how to guide users through keyboard interactions.',
+  description: 'Keyboard shortcuts rendered inline within instructional text',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['Kbd', 'VStack', 'Text'],

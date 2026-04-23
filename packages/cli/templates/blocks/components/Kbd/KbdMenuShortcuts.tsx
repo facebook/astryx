@@ -1,7 +1,8 @@
 'use client';
 
 import {XDSKbd} from '@xds/core/Kbd';
-import {XDSText} from '@xds/core/Text';
+import {XDSCard} from '@xds/core/Card';
+import {XDSList, XDSListItem} from '@xds/core/List';
 
 const menuItems = [
   {label: 'Cut', keys: 'mod+x'},
@@ -13,29 +14,16 @@ const menuItems = [
 
 export default function KbdMenuShortcuts() {
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 4,
-        padding: 8,
-        border: '1px solid #e0e0e0',
-        borderRadius: 8,
-        width: 250,
-      }}>
-      {menuItems.map((item) => (
-        <div
-          key={item.label}
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: 8,
-          }}>
-          <XDSText type="body">{item.label}</XDSText>
-          <XDSKbd keys={item.keys} />
-        </div>
-      ))}
-    </div>
+    <XDSCard padding={0}>
+      <XDSList density="compact">
+        {menuItems.map(item => (
+          <XDSListItem
+            key={item.label}
+            label={item.label}
+            endContent={<XDSKbd keys={item.keys} />}
+          />
+        ))}
+      </XDSList>
+    </XDSCard>
   );
 }
