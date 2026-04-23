@@ -43,16 +43,10 @@ export const docs = {
         'Enables the compact variant with reduced spacing for constrained content areas.',
       default: 'false',
     },
-    {
-      name: 'xstyle',
-      type: 'StyleXStyles',
-      description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
-    },
   ],
   theming: {
     targets: [
-      {className: 'xds-emptystate'},
+      {className: 'xds-emptystate', visualProps: ['variant']},
     ],
   },
   usage: {
@@ -117,16 +111,10 @@ export const docsZh = {
         '启用紧凑变体，减少间距，适用于空间受限的内容区域。',
       default: 'false',
     },
-    {
-      name: 'xstyle',
-      type: 'StyleXStyles',
-      description:
-        '用于布局自定义（外边距、定位、尺寸）的 StyleX 样式。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
-    },
   ],
   theming: {
     targets: [
-      {className: 'xds-emptystate'},
+      {className: 'xds-emptystate', visualProps: ['variant']},
     ],
   },
   usage: {
@@ -160,6 +148,5 @@ export const docsDense = {
     icon: 'Optional icon/illustration above title; rendered decorative (aria-hidden="true").',
     actions: 'Optional action buttons below description; horizontal by default, vertical when isCompact.',
     isCompact: 'Enables compact variant w/ reduced spacing for constrained areas.',
-    xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
   },
 };

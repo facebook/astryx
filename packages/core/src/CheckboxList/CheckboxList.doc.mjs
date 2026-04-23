@@ -72,15 +72,15 @@ export const docs = {
           default: 'false',
         },
         {
+          name: 'isReadOnly',
+          type: 'boolean',
+          description: 'Whether all checkbox items are read-only. Displays the current state at full opacity but prevents interaction.',
+          default: 'false',
+        },
+        {
           name: 'status',
           type: 'XDSInputStatus',
           description: 'Status indicator ({ type, message }).',
-        },
-        {
-          name: 'xstyle',
-          type: 'StyleXStyles',
-          description:
-            'StyleX styles for layout customization. Must be a stylex.create() value.',
         },
       ],
     },
@@ -91,7 +91,7 @@ export const docs = {
       props: [
         {
           name: 'label',
-          type: 'string',
+          type: 'ReactNode',
           description: 'Primary text label for the item.',
           required: true,
         },
@@ -168,15 +168,15 @@ export const docsZh = {
         {name: 'density', type: "'compact' | 'balanced' | 'spacious'", description: '列表项的间距密度。', default: "'balanced'"},
         {name: 'hasDividers', type: 'boolean', description: '是否在选项之间显示分隔线。', default: 'false'},
         {name: 'isDisabled', type: 'boolean', description: '是否禁用所有复选框选项。', default: 'false'},
+        {name: 'isReadOnly', type: 'boolean', description: '是否将所有复选框选项设为只读。以全不透明度显示当前状态但阻止交互。', default: 'false'},
         {name: 'status', type: 'XDSInputStatus', description: '状态指示器（{ type, message }）。'},
-        {name: 'xstyle', type: 'StyleXStyles', description: '用于布局自定义的 StyleX 样式。必须是 stylex.create() 的值。'},
       ],
     },
     {
       name: 'XDSCheckboxListItem',
       description: '单个复选框选项，包含标签、描述和尾部内容插槽。可在集合模式或独立模式下使用。',
       props: [
-        {name: 'label', type: 'string', description: '选项的主要文本标签。', required: true},
+        {name: 'label', type: 'ReactNode', description: '选项的主要文本标签。', required: true},
         {name: 'value', type: 'string', description: '标识键（在 XDSCheckboxList 内为必填）。'},
         {name: 'description', type: 'string', description: '标签下方的辅助文本。'},
         {name: 'endContent', type: 'ReactNode', description: '在标签区域后渲染的内容。'},
@@ -218,8 +218,8 @@ export const docsDense = {
         density: 'Spacing density for list items.',
         hasDividers: 'Whether to show dividers between items.',
         isDisabled: 'Whether all checkbox items disabled.',
+        isReadOnly: 'Whether all checkbox items read-only. Full opacity, no interaction.',
         status: 'Status indicator ({ type, message }).',
-        xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
       },
     },
     {

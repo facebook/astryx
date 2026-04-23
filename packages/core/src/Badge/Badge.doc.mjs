@@ -15,6 +15,7 @@ export const docs = {
       name: 'label',
       type: 'ReactNode',
       description: 'Badge text content.',
+      required: true,
     },
     {
       name: 'icon',
@@ -68,7 +69,7 @@ export const docsZh = {
       description: '视觉样式变体。语义变体使用实色背景，非语义颜色变体使用浅色背景配彩色文字。',
       default: "'neutral'",
     },
-    {name: 'label', type: 'ReactNode', description: '徽章文本内容。'},
+    {name: 'label', type: 'ReactNode', description: '徽章文本内容。', required: true},
     {name: 'icon', type: 'ReactNode', description: '可选的前置图标。'},
   ],
   theming: {

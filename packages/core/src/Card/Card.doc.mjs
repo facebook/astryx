@@ -62,7 +62,7 @@ export const docs = {
   theming: {
     container: true,
     targets: [
-      {className: 'xds-card'},
+      {className: 'xds-card', visualProps: ['variant']},
     ],
     vars: [
       {name: '--_card-radius', description: 'Border radius of the card', default: 'var(--radius-container)', private: true},
@@ -100,11 +100,17 @@ export const docsZh = {
     {name: 'minHeight', type: 'SizeValue', description: '卡片最小高度。'},
     {name: 'children', type: 'ReactNode', description: '在卡片内部渲染的内容。'},
     {name: 'padding', type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10', description: '使用间距比例的内边距。', default: '4'},
+    {
+      name: 'variant',
+      type: "'default' | 'muted' | 'blue' | 'cyan' | 'gray' | 'green' | 'orange' | 'pink' | 'purple' | 'red' | 'teal' | 'yellow'",
+      description: '背景颜色变体。`default` 使用标准卡片背景。`muted` 使用柔和背景用于弱化卡片。非语义变体使用对应的 `--color-<name>-background` 令牌。',
+      default: "'default'",
+    },
   ],
   theming: {
     container: true,
     targets: [
-      {className: 'xds-card'},
+      {className: 'xds-card', visualProps: ['variant']},
     ],
     vars: [
       {name: '--_card-radius', description: 'Border radius of the card', default: 'var(--radius-container)', private: true},
@@ -134,5 +140,6 @@ export const docsDense = {
     minHeight: 'min card height',
     children: 'content inside card',
     padding: 'internal padding via spacing scale',
+    variant: 'background color variant (default, muted, or palette color)',
   },
 };

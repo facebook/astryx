@@ -99,7 +99,7 @@ export const docs = {
     },
     {
       name: 'endContent',
-      type: 'ReactElement<XDSIconProps> | ReactElement<XDSBadgeProps>',
+      type: 'ReactNode',
       description:
         'Trailing icon or badge rendered after the label. Ignored when isIconOnly is true. Color is inherited from the button variant.',
     },
@@ -119,6 +119,30 @@ export const docs = {
       type: '(e: MouseEvent) => void | Promise<void>',
       description:
         'Async click handler. Shows loading state while the returned promise is pending.',
+    },
+    {
+      name: 'href',
+      type: 'string',
+      description:
+        'When provided, renders the button as a link (<a> or custom component). Enables native link behaviors like right-click and Cmd+Click. When the button is disabled, still renders as <button> (disabled links are an accessibility anti-pattern).',
+    },
+    {
+      name: 'as',
+      type: 'XDSLinkComponentType',
+      description:
+        'Custom link component to use when href is provided. Overrides the provider-level default set by XDSLinkProvider. Useful for Next.js Link or other router-aware components.',
+    },
+    {
+      name: 'target',
+      type: 'string',
+      description:
+        'HTML target attribute for the link. Only applies when href is provided.',
+    },
+    {
+      name: 'rel',
+      type: 'string',
+      description:
+        'HTML rel attribute for the link. Only applies when href is provided.',
     },
   ],
   theming: {
@@ -184,9 +208,9 @@ export const docsZh = {
     {name: 'children', type: 'ReactNode', description: '按钮内容。与 icon 同时提供时，文本渲染在图标旁边。'},
     {
       name: 'endContent',
-      type: 'ReactElement<XDSIconProps> | ReactElement<XDSBadgeProps>',
+      type: 'ReactNode',
       description:
-        '标签后方渲染的尾部图标或徽章。仅接受 <XDSIcon> 或 <XDSBadge>。纯图标按钮时忽略。颜色继承自按钮变体。',
+        '标签后方渲染的尾部内容（徽章、图标、箭头等）。纯图标按钮时忽略。颜色继承自按钮变体。',
     },
     {name: 'tooltip', type: 'string', description: '悬停时显示的提示文本。'},
     {name: 'onClick', type: '(e: MouseEvent) => void', description: '标准点击处理函数（从 ButtonHTMLAttributes 透传）。'},
@@ -194,6 +218,28 @@ export const docsZh = {
       name: 'onClickAction',
       type: '(e: MouseEvent) => void | Promise<void>',
       description: '异步点击处理函数。返回的 Promise 处于 pending 状态时显示加载状态。',
+    },
+    {
+      name: 'href',
+      type: 'string',
+      description:
+        '提供后，按钮渲染为链接（<a> 或自定义组件）。启用右键菜单和 Cmd+Click 等原生链接行为。按钮禁用时仍渲染为 <button>（禁用链接是无障碍反模式）。',
+    },
+    {
+      name: 'as',
+      type: 'XDSLinkComponentType',
+      description:
+        '指定 href 时使用的自定义链接组件。覆盖 XDSLinkProvider 的默认设置。适用于 Next.js Link 等路由感知组件。',
+    },
+    {
+      name: 'target',
+      type: 'string',
+      description: '链接的 HTML target 属性。仅在提供 href 时生效。',
+    },
+    {
+      name: 'rel',
+      type: 'string',
+      description: '链接的 HTML rel 属性。仅在提供 href 时生效。',
     },
   ],
   theming: {
@@ -247,10 +293,14 @@ export const docsDense = {
     icon: 'icon element rendered before label text',
     isIconOnly: 'when true, renders square icon-only button; label becomes aria-label',
     children: 'optional visible content; rendered instead of label when provided',
-    endContent: 'trailing icon/badge after label; ignored when isIconOnly; color inherited',
+    endContent: 'trailing content after label; ignored when isIconOnly; color inherited',
     tooltip: 'tooltip on hover',
     onClick: 'standard click handler; fires before onClickAction',
     onClickAction: 'async click handler; shows loading while promise pending',
     isDisabled: 'disables button; uses aria-disabled when tooltip present',
+    href: 'renders as link when provided; falls back to <button> when disabled',
+    as: 'custom link component; overrides XDSLinkProvider default',
+    target: 'HTML target for link; only when href provided',
+    rel: 'HTML rel for link; only when href provided',
   },
 };

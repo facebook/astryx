@@ -91,6 +91,13 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'hasAutoFocus',
+      type: 'boolean',
+      description:
+        'Automatically focuses the input when the component mounts.',
+      default: 'false',
+    },
+    {
       name: 'hourFormat',
       type: "'12h' | '24h'",
       description:
@@ -128,12 +135,6 @@ export const docs = {
       type: 'string',
       description:
         'Tooltip text rendered as an info icon at the end of the label row.',
-    },
-    {
-      name: 'xstyle',
-      type: 'StyleXStyles',
-      description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
     },
   ],
   theming: {
@@ -243,6 +244,13 @@ export const docsZh = {
       default: 'false',
     },
     {
+      name: 'hasAutoFocus',
+      type: 'boolean',
+      description:
+        '组件挂载时自动聚焦输入框。',
+      default: 'false',
+    },
+    {
       name: 'hourFormat',
       type: "'12h' | '24h'",
       description:
@@ -280,12 +288,6 @@ export const docsZh = {
       type: 'string',
       description:
         '在标签行末尾以信息图标形式渲染的工具提示文本。',
-    },
-    {
-      name: 'xstyle',
-      type: 'StyleXStyles',
-      description:
-        'StyleX 样式，用于布局自定义（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
     },
   ],
   theming: {
@@ -331,12 +333,12 @@ export const docsDense = {
     max: 'Max selectable time in ISO format. Out-of-range rejected.',
     hasSeconds: 'Includes seconds in display+parsing.',
     hasClear: 'Shows clear button when value set+not disabled.',
+    hasAutoFocus: 'Auto-focuses input on mount.',
     hourFormat: "Display format. '12h' shows AM/PM; '24h' uses 24-hour notation.",
     increment: 'Minutes to add/subtract on arrow up/down.',
     placeholder: 'Placeholder when empty. Focused+empty shows format hint.',
     size: 'Input element height.',
     status: 'Colored border+icon. Message rendered below input.',
     labelTooltip: 'Tooltip as info icon at label row end.',
-    xstyle: 'StyleX styles for layout customization. Must be stylex.create() value, not inline style.',
   },
 };

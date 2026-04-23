@@ -42,7 +42,7 @@ export const docs = {
     },
     {
       name: 'variant',
-      type: "'accent' | 'positive' | 'warning' | 'negative'",
+      type: "'accent' | 'positive' | 'warning' | 'neutral' | 'negative'",
       description: 'Semantic color variant.',
       default: "'accent'",
     },
@@ -51,12 +51,6 @@ export const docs = {
       type: 'boolean',
       description: 'Animated loading indicator for unknown progress.',
       default: 'false',
-    },
-    {
-      name: 'xstyle',
-      type: 'StyleXStyles',
-      description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
     },
   ],
   theming: {
@@ -118,7 +112,7 @@ export const docsZh = {
     },
     {
       name: 'variant',
-      type: "'accent' | 'positive' | 'warning' | 'negative'",
+      type: "'accent' | 'positive' | 'warning' | 'neutral' | 'negative'",
       description: '语义颜色变体。',
       default: "'accent'",
     },
@@ -127,12 +121,6 @@ export const docsZh = {
       type: 'boolean',
       description: '用于未知进度的动画加载指示器。',
       default: 'false',
-    },
-    {
-      name: 'xstyle',
-      type: 'StyleXStyles',
-      description:
-        '用于布局自定义的 StyleX 样式（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
     },
   ],
   theming: {
@@ -174,6 +162,5 @@ export const docsDense = {
     formatValueLabel: 'Custom value label formatter; defaults to percentage string.',
     variant: 'Semantic color variant.',
     isIndeterminate: 'Animated loading indicator for unknown progress.',
-    xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
   },
 };

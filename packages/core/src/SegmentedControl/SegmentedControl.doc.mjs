@@ -6,7 +6,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'xds-segmented-control', visualProps: ['size']},
-      {className: 'xds-segmented-control-item'},
+      {className: 'xds-segmented-control-item', visualProps: ['size'], states: ['selected', 'disabled']},
     ],
     vars: [
       {name: '--_segmented-control-radius', description: 'Border radius of the segmented control', default: 'var(--radius-element)', private: true},

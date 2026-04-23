@@ -131,6 +131,13 @@ export const docs = {
       default: "'md'",
     },
     {
+      name: 'tokenOverflowBehavior',
+      type: "'none' | 'unfocusedInline' | 'unfocusedLayer'",
+      description:
+        "Controls how tokens overflow when the container is too narrow. 'none' wraps tokens to multiple lines. 'unfocusedInline' shows a single line with a \"+N more\" indicator when unfocused and expands inline on focus. 'unfocusedLayer' behaves the same but promotes the expanded content to an overlay.",
+      default: "'none'",
+    },
+    {
       name: 'debounceMs',
       type: 'number',
       description:
@@ -148,6 +155,12 @@ export const docs = {
       name: 'onChangeQuery',
       type: '(query: string) => void',
       description: 'Callback fired when the search query text changes.',
+    },
+    {
+      name: 'startIcon',
+      type: 'XDSIconType',
+      description:
+        'Icon displayed at the start of the input, before any tokens. Useful for adding a search or category icon.',
     },
     {
       name: 'endContent',
@@ -310,6 +323,13 @@ export const docsZh = {
       default: "'md'",
     },
     {
+      name: 'tokenOverflowBehavior',
+      type: "'none' | 'unfocusedInline' | 'unfocusedLayer'",
+      description:
+        "控制容器宽度不足时标记的溢出方式。'none' 将标记换行到多行。'unfocusedInline' 在未聚焦时显示单行并带有 \"+N 更多\" 指示器，聚焦时内联展开。'unfocusedLayer' 行为相同，但将展开内容提升为浮层。",
+      default: "'none'",
+    },
+    {
       name: 'debounceMs',
       type: 'number',
       description:
@@ -320,6 +340,12 @@ export const docsZh = {
       name: 'onChangeQuery',
       type: '(query: string) => void',
       description: '搜索查询文本变更时触发的回调。',
+    },
+    {
+      name: 'startIcon',
+      type: 'XDSIconType',
+      description:
+        '在输入框起始位置、所有标记之前显示的图标。适用于添加搜索或分类图标。',
     },
     {
       name: 'endContent',
@@ -387,8 +413,10 @@ export const docsDense = {
     emptySearchResultsText: 'Text when search returns no results.',
     hasAutoFocus: 'Auto-focus input on mount.',
     size: 'Input+token size.',
+    tokenOverflowBehavior: "Token overflow mode. 'none' wraps normally. 'unfocusedInline' collapses to one line w/ +N more. 'unfocusedLayer' same but expands as overlay.",
     debounceMs: 'Search debounce delay ms. 0 for sync sources.',
     onChangeQuery: 'Fired on search query text change.',
+    startIcon: 'Icon at input start, before tokens. For search/category icons.',
     endContent: 'Content at input row end. For buttons, counts, controls.',
     xstyle: 'StyleX layout styles (margins, positioning). Must be stylex.create() value.',
   },

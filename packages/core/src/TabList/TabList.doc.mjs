@@ -17,7 +17,7 @@ export const docs = {
     {
       name: 'XDSTabList',
       description:
-        'Nav wrapper that provides XDSTabListContext (value, onChange, size) to XDSTab and XDSTabMenu children.',
+        'Nav wrapper that provides XDSTabListContext (value, onChange, size, layout) to XDSTab and XDSTabMenu children.',
       props: [
         {
           name: 'value',
@@ -38,6 +38,13 @@ export const docs = {
           default: "'md'",
         },
         {
+          name: 'layout',
+          type: "'hug' | 'fill'",
+          description:
+            'Layout mode for tab sizing. In hug mode each tab sizes to its content; in fill mode tabs stretch equally to fill the container width.',
+          default: "'hug'",
+        },
+        {
           name: 'hasDivider',
           type: 'boolean',
           description:
@@ -50,13 +57,8 @@ export const docs = {
           description: 'XDSTab and XDSTabMenu items to render inside the nav.',
           required: true,
         },
-        {
-          name: 'xstyle',
-          type: 'StyleXStyles',
-          description:
-            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
-        },
-      ],    },
+      ],
+    },
     {
       name: 'XDSTab',
       description:
@@ -97,12 +99,6 @@ export const docs = {
           type: 'ReactNode',
           description:
             'Icon element shown when the tab is selected; falls back to icon if not provided.',
-        },
-        {
-          name: 'xstyle',
-          type: 'StyleXStyles',
-          description:
-            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
         },
       ],
     },
@@ -161,7 +157,7 @@ export const docsZh = {
     {
       name: 'XDSTabList',
       description:
-        '导航容器，为 XDSTab 和 XDSTabMenu 子组件提供 XDSTabListContext（value、onChange、size）。',
+        '导航容器，为 XDSTab 和 XDSTabMenu 子组件提供 XDSTabListContext（value、onChange、size、layout）。',
       props: [
         {
           name: 'value',
@@ -182,6 +178,13 @@ export const docsZh = {
           default: "'md'",
         },
         {
+          name: 'layout',
+          type: "'hug' | 'fill'",
+          description:
+            '标签尺寸的布局模式。hug 模式下每个标签按内容大小显示；fill 模式下标签等分容器宽度。',
+          default: "'hug'",
+        },
+        {
           name: 'hasDivider',
           type: 'boolean',
           description:
@@ -193,12 +196,6 @@ export const docsZh = {
           type: 'ReactNode',
           description: '在 nav 内渲染的 XDSTab 和 XDSTabMenu 项。',
           required: true,
-        },
-        {
-          name: 'xstyle',
-          type: 'StyleXStyles',
-          description:
-            'StyleX 样式，用于布局自定义（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
         },
       ],
     },
@@ -242,12 +239,6 @@ export const docsZh = {
           type: 'ReactNode',
           description:
             '标签选中时显示的图标元素；未提供时回退到 icon。',
-        },
-        {
-          name: 'xstyle',
-          type: 'StyleXStyles',
-          description:
-            'StyleX 样式，用于布局自定义（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
         },
       ],
     },
@@ -310,14 +301,14 @@ export const docsDense = {
   components: [
     {
       name: 'XDSTabList',
-      description: 'Nav wrapper providing XDSTabListContext (value, onChange, size) to children.',
+      description: 'Nav wrapper providing XDSTabListContext (value, onChange, size, layout) to children.',
       propDescriptions: {
         value: 'Currently selected tab value.',
         onChange: 'Fired when tab is selected.',
         size: 'Size variant applied to all child tabs.',
+        layout: 'Tab sizing mode: hug (content-width) or fill (equal-stretch).',
         hasDivider: 'Show bottom border divider under tab list.',
         children: 'XDSTab + XDSTabMenu items inside nav.',
-        xstyle: 'StyleX styles for layout customization. Must be stylex.create() value, not inline style.',
       },
     },
     {
@@ -330,7 +321,6 @@ export const docsDense = {
         as: 'Custom link component overriding XDSLinkProvider; only w/ href.',
         icon: 'Icon shown when not selected.',
         selectedIcon: 'Icon shown when selected; falls back to icon.',
-        xstyle: 'StyleX styles for layout customization. Must be stylex.create() value, not inline style.',
       },
     },
     {

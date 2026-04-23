@@ -68,10 +68,17 @@ export const docs = {
           name: 'purpose',
           type: "'required' | 'form' | 'info'",
           description:
-            'Controls dismissal behavior: required disables Escape and backdrop click; form disables backdrop click after interaction; info allows both.',
+            'Controls dismissal behavior: required disables Escape and backdrop click; form disables backdrop click but allows Escape; info allows both.',
           default: "'info'",
         },
-      ],    },
+        {
+          name: 'padding',
+          type: 'SpacingStep',
+          description:
+            'Internal padding of the dialog using the spacing scale. When omitted, uses the theme default.',
+        },
+      ],
+    },
     {
       name: 'XDSDialogHeader',
       description:
@@ -81,6 +88,7 @@ export const docs = {
           name: 'title',
           type: 'string',
           description: 'Dialog title (receives focus on open).',
+          required: true,
         },
         {
           name: 'subtitle',
@@ -202,8 +210,14 @@ export const docsZh = {
           name: 'purpose',
           type: "'required' | 'form' | 'info'",
           description:
-            '控制关闭行为：required 禁用 Escape 和遮罩层点击；form 在交互后禁用遮罩层点击；info 两者都允许。',
+            '控制关闭行为：required 禁用 Escape 和遮罩层点击；form 禁用遮罩层点击但允许 Escape；info 两者都允许。',
           default: "'info'",
+        },
+        {
+          name: 'padding',
+          type: 'SpacingStep',
+          description:
+            '对话框的内边距，使用间距比例。省略时使用主题默认值。',
         },
       ],
     },
@@ -216,6 +230,7 @@ export const docsZh = {
           name: 'title',
           type: 'string',
           description: '对话框标题（打开时获得焦点）。',
+          required: true,
         },
         {
           name: 'subtitle',
@@ -293,7 +308,8 @@ export const docsDense = {
         maxHeight: 'max dialog height',
         position: 'static position; centered by default',
         variant: 'standard or fullscreen (fills viewport)',
-        purpose: 'dismissal behavior: required=no dismiss; form=no backdrop after interaction; info=both allowed',
+        purpose: 'dismissal behavior: required=no dismiss; form=no backdrop click; info=both allowed',
+        padding: 'internal padding via spacing scale; theme default if omitted',
       },
     },
     {

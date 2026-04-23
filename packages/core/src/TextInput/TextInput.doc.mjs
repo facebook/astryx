@@ -123,6 +123,18 @@ export const docs = {
       description:
         'The HTML name attribute for the input, useful for form submissions.',
     },
+    {
+      name: 'onEnter',
+      type: '() => void',
+      description:
+        'Callback fired when the user presses the Enter key.',
+    },
+    {
+      name: 'onKeyDown',
+      type: '(e: KeyboardEvent<HTMLInputElement>) => void',
+      description:
+        'Callback fired on keydown events on the input.',
+    },
   ],
   theming: {
     targets: [
@@ -269,6 +281,18 @@ export const docsZh = {
       description:
         '输入框的 HTML name 属性，用于表单提交。',
     },
+    {
+      name: 'onEnter',
+      type: '() => void',
+      description:
+        '用户按下 Enter 键时触发的回调。',
+    },
+    {
+      name: 'onKeyDown',
+      type: '(e: KeyboardEvent<HTMLInputElement>) => void',
+      description:
+        '输入框上键盘按下事件触发的回调。',
+    },
   ],
   theming: {
     targets: [
@@ -334,5 +358,7 @@ export const docsDense = {
     hasClear: 'Shows clear button when input has value. Clears value on click.',
     hasAutoFocus: 'Auto-focus input on mount.',
     htmlName: 'HTML name attr for form submissions.',
+    onEnter: 'Fired when user presses Enter key.',
+    onKeyDown: 'Fired on keydown events on input.',
   },
 };

@@ -22,7 +22,7 @@ export const docs = {
         {
           name: 'children',
           type: 'ReactNode',
-          description: 'Trigger element that must accept a ref.',
+          description: 'Trigger element or text. Text children are automatically wrapped in a focusable span.',
         },
         {
           name: 'content',
@@ -173,7 +173,7 @@ export const docsZh = {
         {
           name: 'children',
           type: 'ReactNode',
-          description: '必须接受 ref 的触发元素。',
+          description: '触发元素或文本。文本子元素会自动包装在可聚焦的 span 中。',
         },
         {
           name: 'content',
@@ -324,7 +324,7 @@ export const docsDense = {
       name: 'XDSHoverCard',
       description: 'Component wrapper for hover card overlay; richer overlay triggered on hover/focus.',
       propDescriptions: {
-        children: 'Trigger element; must accept ref.',
+        children: 'Trigger element or text; text auto-wrapped in focusable span.',
         content: 'Hover card content.',
         placement: 'Position relative to anchor element.',
         alignment: 'Alignment along placement axis.',

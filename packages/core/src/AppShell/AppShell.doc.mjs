@@ -17,6 +17,7 @@ export const docs = {
     {
       name: 'children',
       type: 'ReactNode',
+      required: true,
       description: 'Main content area, rendered inside a <main> element.',
     },
     {
@@ -38,7 +39,7 @@ export const docs = {
     },
     {
       name: 'mobileNav',
-      type: 'ReactNode',
+      type: 'false | XDSMobileNavConfig | ReactNode',
       description:
         'Mobile navigation configuration. Accepts false (disable), config object (tune auto behavior), or ReactNode (full custom drawer).',
     },
@@ -55,23 +56,6 @@ export const docs = {
         "Height behavior: 'fill' makes the shell fill the viewport (100dvh) with independent scroll containers; 'auto' lets the shell grow with content and uses sticky positioning for nav.",
       default: "'fill'",
     },
-    {
-      name: 'isSideNavCollapsed',
-      type: 'boolean',
-      description: 'Whether the sideNav is collapsed (controlled mode).',
-    },
-    {
-      name: 'defaultIsSideNavCollapsed',
-      type: 'boolean',
-      description: 'Initial collapsed state for uncontrolled mode.',
-      default: 'false',
-    },
-    {
-      name: 'onSideNavCollapsedChange',
-      type: '(isCollapsed: boolean) => void',
-      description: 'Callback fired when the sideNav collapse state changes.',
-    },
-
     {
       name: 'variant',
       type: "'wash' | 'surface' | 'section' | 'elevated'",
@@ -107,7 +91,7 @@ export const docsZh = {
     ],
   },
   props: [
-    {name: 'children', type: 'ReactNode', description: '主内容区域，渲染在 <main> 元素内部。'},
+    {name: 'children', type: 'ReactNode', required: true, description: '主内容区域，渲染在 <main> 元素内部。'},
     {
       name: 'contentPadding',
       type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
@@ -117,7 +101,7 @@ export const docsZh = {
     },
     {name: 'topNav', type: 'ReactNode', description: '顶部导航插槽，通常为 XDSTopNav。'},
     {name: 'sideNav', type: 'ReactNode', description: '侧边导航插槽，通常为 XDSSideNav。'},
-    {name: 'mobileNav', type: 'ReactNode', description: '移动端导航配置。接受 false（禁用）、配置对象（调整自动行为）或 ReactNode（完全自定义抽屉）。'},
+    {name: 'mobileNav', type: 'false | XDSMobileNavConfig | ReactNode', description: '移动端导航配置。接受 false（禁用）、配置对象（调整自动行为）或 ReactNode（完全自定义抽屉）。'},
     {name: 'banner', type: 'ReactNode', description: '横幅插槽，用于全局公告，放置在 topNav 上方。'},
     {
       name: 'height',
@@ -126,16 +110,6 @@ export const docsZh = {
         "高度行为：'fill' 使外壳填满视口（100dvh），各区域拥有独立的滚动容器；'auto' 使外壳随内容增长，导航使用 sticky 定位。",
       default: "'fill'",
     },
-    {name: 'isSideNavCollapsed', type: 'boolean', description: 'sideNav 是否折叠（受控模式）。'},
-    {name: 'defaultIsSideNavCollapsed', type: 'boolean', description: '非受控模式下的初始折叠状态。', default: 'false'},
-    {name: 'onSideNavCollapsedChange', type: '(isCollapsed: boolean) => void', description: 'sideNav 折叠状态变化时触发的回调。'},
-    {
-      name: 'sideNavBreakpoint',
-      type: "'sm' | 'md' | 'lg' | 'none'",
-      description: '视口宽度断点，低于该断点时 sideNav 自动折叠。使用 "none" 禁用响应式折叠。',
-      default: "'md'",
-    },
-    {name: 'sideNavWidth', type: 'number', description: 'sideNav 面板的宽度（像素）。', default: '260'},
     {
       name: 'variant',
       type: "'wash' | 'surface' | 'section' | 'elevated'",
@@ -185,9 +159,6 @@ export const docsDense = {
     banner: 'slot for system-wide announcements above topNav',
     height:
       'fill=viewport 100dvh w/ independent scroll; auto=content-driven w/ sticky nav',
-    isSideNavCollapsed: 'sideNav collapsed (controlled)',
-    defaultIsSideNavCollapsed: 'initial collapsed state (uncontrolled)',
-    onSideNavCollapsedChange: 'callback on sideNav collapse change',
     variant:
       'nav bg style: wash=wash bg, surface=surface bg, section=dividers, elevated=wash nav w/ elevated surface content+radius',
     contentPadding:

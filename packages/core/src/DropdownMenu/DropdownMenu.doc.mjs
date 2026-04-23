@@ -9,7 +9,7 @@ export const docs = {
       {className: 'xds-dropdown-menu-item'},
     ],
     vars: [
-      {name: '--_dropdown-menu-radius', description: 'Border radius of the menu popup', default: 'var(--radius-element)', private: true},
+      {name: '--_dropdown-menu-radius', description: 'Border radius of the menu popup', default: 'var(--radius-container)', private: true},
       {name: '--_dropdown-menu-padding', description: 'Inner padding of the menu popup', default: 'var(--spacing-1)', private: true},
     ],
     derived: [
@@ -21,7 +21,7 @@ export const docs = {
     {
       name: 'XDSDropdownMenu',
       description:
-        'Main dropdown menu component with a trigger button and popup item list.',
+        'Main dropdown menu component with a trigger button and popup item list. Supports two mutually exclusive modes: pass `items` for data-driven menus or `children` for compound-component menus.',
       props: [
         {
           name: 'button',
@@ -34,8 +34,7 @@ export const docs = {
           name: 'items',
           type: 'XDSDropdownMenuOption[]',
           description:
-            'Menu items, dividers, or sections to display in the popup.',
-          required: true,
+            'Menu items, dividers, or sections to display in the popup. Mutually exclusive with `children`.',
         },
         {
           name: 'isMenuOpen',
@@ -66,14 +65,15 @@ export const docs = {
         },
         {
           name: 'children',
-          type: '(item: XDSDropdownMenuItemData) => ReactNode',
-          description: 'Custom render function for each item in the list.',
+          type: 'ReactNode',
+          description: 'JSX content rendered directly inside the menu popup. Use with XDSDropdownMenuItem for compound-component mode. Mutually exclusive with `items`.',
         },
-      ],    },
+      ],
+    },
     {
       name: 'XDSDropdownMenuItem',
       description:
-        'Helper component for custom item rendering with consistent styling.',
+        'Interactive menu item for compound-component mode with consistent styling. Must be used inside XDSDropdownMenu.',
       props: [
         {
           name: 'icon',
@@ -84,11 +84,23 @@ export const docs = {
           name: 'label',
           type: 'ReactNode',
           description: 'Primary label text.',
+          required: true,
         },
         {
           name: 'description',
           type: 'ReactNode',
           description: 'Secondary description text displayed below the label.',
+        },
+        {
+          name: 'onClick',
+          type: '() => void',
+          description: 'Callback fired when the item is selected. Automatically closes the menu after invocation.',
+        },
+        {
+          name: 'isDisabled',
+          type: 'boolean',
+          description: 'Whether the item is disabled; prevents click and keyboard activation.',
+          default: 'false',
         },
         {
           name: 'children',
@@ -194,7 +206,7 @@ export const docsZh = {
       {className: 'xds-dropdown-menu-item'},
     ],
     vars: [
-      {name: '--_dropdown-menu-radius', description: 'Border radius of the menu popup', default: 'var(--radius-element)', private: true},
+      {name: '--_dropdown-menu-radius', description: 'Border radius of the menu popup', default: 'var(--radius-container)', private: true},
       {name: '--_dropdown-menu-padding', description: 'Inner padding of the menu popup', default: 'var(--spacing-1)', private: true},
     ],
     derived: [
@@ -206,7 +218,7 @@ export const docsZh = {
     {
       name: 'XDSDropdownMenu',
       description:
-        '主下拉菜单组件，包含触发按钮和弹出项列表。',
+        '主下拉菜单组件，包含触发按钮和弹出项列表。支持两种互斥模式：传递 `items` 用于数据驱动菜单，或传递 `children` 用于组合组件菜单。',
       props: [
         {
           name: 'button',
@@ -219,8 +231,7 @@ export const docsZh = {
           name: 'items',
           type: 'XDSDropdownMenuOption[]',
           description:
-            '在弹出菜单中显示的菜单项、分隔线或分组。',
-          required: true,
+            '在弹出菜单中显示的菜单项、分隔线或分组。与 `children` 互斥。',
         },
         {
           name: 'isMenuOpen',
@@ -251,15 +262,15 @@ export const docsZh = {
         },
         {
           name: 'children',
-          type: '(item: XDSDropdownMenuItemData) => ReactNode',
-          description: '列表中每个项的自定义渲染函数。',
+          type: 'ReactNode',
+          description: '直接渲染在菜单弹出层内的 JSX 内容。配合 XDSDropdownMenuItem 用于组合组件模式。与 `items` 互斥。',
         },
       ],
     },
     {
       name: 'XDSDropdownMenuItem',
       description:
-        '用于自定义项渲染的辅助组件，提供一致的样式。',
+        '组合组件模式下的交互式菜单项，提供一致的样式。必须在 XDSDropdownMenu 内使用。',
       props: [
         {
           name: 'icon',
@@ -270,11 +281,23 @@ export const docsZh = {
           name: 'label',
           type: 'ReactNode',
           description: '主标签文本。',
+          required: true,
         },
         {
           name: 'description',
           type: 'ReactNode',
           description: '显示在标签下方的次要描述文本。',
+        },
+        {
+          name: 'onClick',
+          type: '() => void',
+          description: '选择菜单项时触发的回调。调用后自动关闭菜单。',
+        },
+        {
+          name: 'isDisabled',
+          type: 'boolean',
+          description: '菜单项是否禁用；阻止点击和键盘激活。',
+          default: 'false',
         },
         {
           name: 'children',
@@ -386,25 +409,27 @@ export const docsDense = {
   components: [
     {
       name: 'XDSDropdownMenu',
-      description: 'trigger button + popup item list',
+      description: 'trigger button + popup item list (data-driven or compound)',
       propDescriptions: {
         button: 'trigger button props (XDSButton props except onClick)',
-        items: 'menu items, dividers, or sections in popup',
+        items: 'menu items, dividers, or sections in popup; mutually exclusive with children',
         isMenuOpen: 'controlled open state',
         onOpenChange: 'callback on open state change',
         menuWidth: 'custom menu width; default matches trigger button',
         onClick: 'trigger button click callback',
         hasChevron: 'show chevron on trigger; false for icon-only triggers',
-        children: 'custom render fn per item',
+        children: 'JSX children for compound-component mode; mutually exclusive with items',
       },
     },
     {
       name: 'XDSDropdownMenuItem',
-      description: 'helper for custom item rendering w/ consistent styling',
+      description: 'interactive menu item for compound mode w/ consistent styling',
       propDescriptions: {
         icon: 'icon before label',
-        label: 'primary label text',
+        label: 'primary label text (required)',
         description: 'secondary text below label',
+        onClick: 'callback on selection; auto-closes menu',
+        isDisabled: 'disabled; prevents click and keyboard activation',
         children: 'additional content after label+description',
         xstyle: 'StyleX styles for root container',
       },

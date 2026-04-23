@@ -43,12 +43,6 @@ export const docs = {
             "List marker style. 'decimal' renders an <ol> element instead of <ul>.",
           default: "'none'",
         },
-        {
-          name: 'xstyle',
-          type: 'StyleXStyles',
-          description:
-            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
-        },
       ],
     },
     {
@@ -58,8 +52,8 @@ export const docs = {
       props: [
         {
           name: 'label',
-          type: 'string',
-          description: 'Primary text.',
+          type: 'ReactNode',
+          description: 'Primary text. A plain string gets single-line truncation automatically; a ReactNode lets child components control their own wrapping and line-clamp behavior.',
           required: true,
         },
         {
@@ -172,12 +166,6 @@ export const docsZh = {
             "列表标记样式。'decimal' 渲染 <ol> 元素而非 <ul>。",
           default: "'none'",
         },
-        {
-          name: 'xstyle',
-          type: 'StyleXStyles',
-          description:
-            '用于布局自定义的 StyleX 样式（边距、定位、尺寸）。必须是 stylex.create() 的值，不能是内联样式对象如 style={{}}。',
-        },
       ],
     },
     {
@@ -187,8 +175,8 @@ export const docsZh = {
       props: [
         {
           name: 'label',
-          type: 'string',
-          description: '主要文本。',
+          type: 'ReactNode',
+          description: '主要文本。纯字符串会自动应用单行截断；ReactNode 允许子组件自行控制换行和多行截断行为。',
           required: true,
         },
         {
@@ -289,8 +277,6 @@ export const docsDense = {
         header: 'Header content, associated w/ list via aria-labelledby.',
         listStyle:
           "List marker style. 'decimal' renders <ol> instead of <ul>.",
-        xstyle:
-          'StyleX styles for layout customization (margins, positioning, sizing). Must be stylex.create() value.',
       },
     },
     {
@@ -298,7 +284,7 @@ export const docsDense = {
       description:
         'List item w/ label, description, start/end content slots, interactive patterns.',
       propDescriptions: {
-        label: 'Primary text.',
+        label: 'Primary text. Plain string gets single-line truncation; ReactNode lets children control wrapping.',
         description: 'Secondary text below label.',
         startContent: 'Content before label area (e.g. icon, avatar).',
         endContent: 'Content after label area (e.g. badge, chevron).',

@@ -61,6 +61,12 @@ export const docs = {
           description: 'Column spacing; overrides `gap` for the column axis.',
         },
         {
+          name: 'rowHeight',
+          type: 'number',
+          description:
+            'Height of each implicit row track in px. Sets `grid-auto-rows` — use with `XDSGridSpan rows={N}` to create masonry-style layouts where items span varying numbers of rows.',
+        },
+        {
           name: 'align',
           type: 'GridAlignment',
           description: 'Vertical alignment of items.',
@@ -160,6 +166,12 @@ export const docsZh = {
           description: '列间距；覆盖列轴方向的 `gap`。',
         },
         {
+          name: 'rowHeight',
+          type: 'number',
+          description:
+            '每个隐式行轨道的高度（px）。设置 `grid-auto-rows` — 与 `XDSGridSpan rows={N}` 配合使用，创建瀑布流布局。',
+        },
+        {
           name: 'align',
           type: 'GridAlignment',
           description: '项目的垂直对齐方式。',
@@ -241,6 +253,7 @@ export const docsDense = {
         gap: 'Spacing between all items.',
         rowGap: 'Row spacing; overrides gap for row axis.',
         columnGap: 'Column spacing; overrides gap for column axis.',
+        rowHeight: 'Implicit row track height (px). Sets grid-auto-rows for masonry layouts w/ XDSGridSpan rows={N}.',
         align: 'Vertical alignment of items.',
         justify: 'Horizontal alignment of items.',
         children: 'Grid content.',

@@ -286,7 +286,7 @@ export const docs = {
           type: 'boolean',
           description:
             'Allow cycling back to unsorted. When true: asc, desc, unsorted. When false: asc, desc, asc.',
-          default: 'false',
+          default: 'true',
         },
         {
           name: 'isMultiSortEnabled',
@@ -668,7 +668,7 @@ export const docsZh = {
           type: 'boolean',
           description:
             '允许循环回到未排序状态。为 true 时：升序、降序、未排序。为 false 时：升序、降序、升序。',
-          default: 'false',
+          default: 'true',
         },
         {
           name: 'isMultiSortEnabled',

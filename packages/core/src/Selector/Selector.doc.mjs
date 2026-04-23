@@ -24,7 +24,7 @@ export const docs = {
           name: 'options',
           type: 'XDSSelectorOption[]',
           description:
-            'Array of items — strings, objects with value/label/icon/disabled, dividers ({type: "divider"}), or sections ({type: "section", title, items}).',
+            'Array of items — strings, objects with value/label/icon/disabled, dividers ({type: "divider"}), or sections ({type: "section", title, options}).',
           required: true,
         },
         {
@@ -62,9 +62,20 @@ export const docs = {
           description: 'Disables the selector.',
         },
         {
+          name: 'isLoading',
+          type: 'boolean',
+          description: 'Shows a spinner and disables interaction while data is loading.',
+          default: 'false',
+        },
+        {
           name: 'isLabelHidden',
           type: 'boolean',
           description: 'Visually hides the label while keeping it accessible.',
+        },
+        {
+          name: 'labelTooltip',
+          type: 'string',
+          description: 'Tooltip text displayed in an info icon at the end of the label.',
         },
         {
           name: 'description',
@@ -167,7 +178,7 @@ export const docsZh = {
           name: 'options',
           type: 'XDSSelectorOption[]',
           description:
-            '选项数组 - 字符串、带 value/label/icon/disabled 的对象、分隔线（{type: "divider"}）或分组（{type: "section", title, items}）。',
+            '选项数组 - 字符串、带 value/label/icon/disabled 的对象、分隔线（{type: "divider"}）或分组（{type: "section", title, options}）。',
           required: true,
         },
         {
@@ -204,9 +215,20 @@ export const docsZh = {
           description: '禁用选择器。',
         },
         {
+          name: 'isLoading',
+          type: 'boolean',
+          description: '加载数据时显示加载指示器并禁用交互。',
+          default: 'false',
+        },
+        {
           name: 'isLabelHidden',
           type: 'boolean',
           description: '视觉上隐藏标签，同时保持无障碍可访问性。',
+        },
+        {
+          name: 'labelTooltip',
+          type: 'string',
+          description: '在标签末尾的信息图标中显示的提示文本。',
         },
         {
           name: 'description',
@@ -311,14 +333,16 @@ export const docsDense = {
       description: 'Dropdown selector for choosing from list of options.',
       propDescriptions: {
         label: 'Label text for accessibility.',
-        options: 'Array of items; strings, objects w/ value/label/icon/disabled, dividers ({type: "divider"}), sections ({type: "section", title, items}).',
+        options: 'Array of items; strings, objects w/ value/label/icon/disabled, dividers ({type: "divider"}), sections ({type: "section", title, options}).',
         value: 'Currently selected value.',
         onChange: 'Callback fired when selection changes.',
         hasClear: 'Shows clear button when value selected. onChange also accepts null on clear.',
         placeholder: 'Placeholder text when no value selected.',
         size: 'Size variant for selector.',
         isDisabled: 'Disables selector.',
+        isLoading: 'Shows spinner and disables interaction while loading.',
         isLabelHidden: 'Visually hides label while keeping accessible.',
+        labelTooltip: 'Tooltip text in info icon at end of label.',
         description: 'Helper text below label.',
         isOptional: 'Marks field optional.',
         isRequired: 'Marks field required.',

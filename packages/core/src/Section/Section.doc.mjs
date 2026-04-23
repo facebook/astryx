@@ -49,9 +49,9 @@ export const docs = {
       default: '4',
     },
     {
-      name: 'xstyle',
-      type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object.',
+      name: 'paddingBlock',
+      type: 'SpacingStep',
+      description: 'Block (vertical) padding override. When set, overrides only the block axis padding while preserving inline padding from padding or the container theme default.',
     },
   ],
   theming: {
@@ -123,9 +123,9 @@ export const docsZh = {
       default: '4',
     },
     {
-      name: 'xstyle',
-      type: 'StyleXStyles',
-      description: '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值，不能是内联样式对象。',
+      name: 'paddingBlock',
+      type: 'SpacingStep',
+      description: '块方向（垂直）内边距覆盖。设置后，仅覆盖块轴方向的内边距，同时保留来自 padding 或容器主题默认值的行内方向内边距。',
     },
   ],
   theming: {
@@ -170,6 +170,6 @@ export const docsDense = {
     children: 'Content rendered inside section.',
     dividers: 'Which sides of section have divider borders.',
     padding: 'Internal padding via spacing scale; 0 for edge-to-edge content.',
-    xstyle: 'StyleX styles for layout customization; must be stylex.create() value.',
+    paddingBlock: 'Block-axis padding override; preserves inline padding from padding prop or theme default.',
   },
 };

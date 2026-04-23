@@ -5,7 +5,7 @@ export const docs = {
   keywords: ['toolbar', 'nav', 'bar', 'actions', 'buttonbar', 'header', 'footer', 'action-bar', 'control-bar'],
   theming: {
     targets: [
-      {className: 'xds-toolbar', states: ['density']},
+      {className: 'xds-toolbar', visualProps: ['size']},
     ],
   },
   components: [
@@ -37,16 +37,16 @@ export const docs = {
           description: 'Content aligned to the end (right in LTR).',
         },
         {
-          name: 'density',
-          type: "'compact' | 'default'",
-          description: 'Toolbar density. Controls minimum height.',
-          default: "'default'",
+          name: 'size',
+          type: "'sm' | 'md' | 'lg'",
+          description: 'Size of the toolbar. Children such as Button, TextInput, TabList, and Selector inherit this size as their default via XDSSizeContext.',
+          default: "'md'",
         },
         {
           name: 'gap',
           type: 'SpacingStep',
           description: 'Gap between items within each slot.',
-          default: '2',
+          default: '1',
         },
         {
           name: 'orientation',
@@ -62,19 +62,25 @@ export const docs = {
           default: "'transparent'",
         },
         {
+          name: 'dividers',
+          type: "Array<'top' | 'bottom' | 'start' | 'end'>",
+          description: 'Which sides should have divider borders. Passed through to XDSSection.',
+        },
+        {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
             'StyleX styles for layout customization. Must be a stylex.create() value.',
         },
-      ],    },
+      ],
+    },
   ],
   usage: {
     description:
       'Toolbar is a horizontal container for grouping related actions and controls using start, center, and end content slots. Use Toolbar to provide contextual actions above content areas like tables, editors, or detail panels.',
     bestPractices: [
       {guidance: true, description: 'Group related actions together in the same slot for a clear visual hierarchy.'},
-      {guidance: true, description: 'Use the compact density variant when space is limited or the toolbar is secondary to the main content.'},
+      {guidance: true, description: 'Use a smaller size (sm) when space is limited or the toolbar is secondary to the main content.'},
       {guidance: false, description: 'Avoid overloading the toolbar with too many actions — use an overflow menu for less common items.'},
     ],
   },
@@ -91,10 +97,11 @@ export const docsZh = {
         startContent: '起始内容（LTR 中靠左对齐）。',
         centerContent: '居中内容。切换为 CSS grid（1fr auto 1fr）。',
         endContent: '结束内容（LTR 中靠右对齐）。',
-        density: '工具栏密度。控制最小高度。',
+        size: '工具栏尺寸。子组件（如 Button、TextInput、TabList、Selector）通过 XDSSizeContext 继承此尺寸作为默认值。',
         gap: '插槽内项目间距。',
         orientation: '键盘导航方向。控制方向键方向。',
         variant: '传递给 XDSSection 的视觉变体。',
+        dividers: '哪些侧面应有分隔线边框。传递给 XDSSection。',
         xstyle: '用于布局自定义的 StyleX 样式。必须是 stylex.create() 的值。',
       },
     },
@@ -104,7 +111,7 @@ export const docsZh = {
       'Toolbar is a horizontal container for grouping related actions and controls using start, center, and end content slots. Use Toolbar to provide contextual actions above content areas like tables, editors, or detail panels.',
     bestPractices: [
       {guidance: true, description: 'Group related actions together in the same slot for a clear visual hierarchy.'},
-      {guidance: true, description: 'Use the compact density variant when space is limited or the toolbar is secondary to the main content.'},
+      {guidance: true, description: 'Use a smaller size (sm) when space is limited or the toolbar is secondary to the main content.'},
       {guidance: false, description: 'Avoid overloading the toolbar with too many actions — use an overflow menu for less common items.'},
     ],
   },
@@ -118,7 +125,7 @@ export const docsDense = {
       'Toolbar is a horizontal container for grouping related actions and controls using start, center, and end content slots. Use Toolbar to provide contextual actions above content areas like tables, editors, or detail panels.',
     bestPractices: [
       {guidance: true, description: 'Group related actions together in the same slot for a clear visual hierarchy.'},
-      {guidance: true, description: 'Use the compact density variant when space is limited or the toolbar is secondary to the main content.'},
+      {guidance: true, description: 'Use a smaller size (sm) when space is limited or the toolbar is secondary to the main content.'},
       {guidance: false, description: 'Avoid overloading the toolbar with too many actions — use an overflow menu for less common items.'},
     ],
   },
@@ -131,10 +138,11 @@ export const docsDense = {
         startContent: 'Start-aligned content.',
         centerContent: 'Centered content; switches to 3-col grid.',
         endContent: 'End-aligned content.',
-        density: 'Toolbar density; controls min-height.',
+        size: 'Toolbar size; children inherit via XDSSizeContext.',
         gap: 'Gap between slot items.',
         orientation: 'Keyboard nav direction.',
         variant: 'Visual variant for XDSSection.',
+        dividers: 'Which sides get divider borders.',
         xstyle: 'StyleX layout styles. Must be stylex.create() value.',
       },
     },

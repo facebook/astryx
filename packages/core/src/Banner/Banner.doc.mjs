@@ -16,7 +16,7 @@ export const docs = {
     ],
     anatomy: [
       {name: 'Icon', required: true, description: 'Automatically set based on the status (info, warning, error, success).'},
-      {name: 'Title', required: false, description: 'The main message. Required if no description is provided.'},
+      {name: 'Title', required: true, description: 'The main message displayed prominently in the header.'},
       {name: 'Description', required: false, description: 'Additional detail below the title. Required if no title is provided.'},
       {name: 'Action button', required: false, description: 'A button for the user to act on the message, like "Review" or "Retry".'},
       {name: 'Dismiss button', required: false, description: 'Lets the user close the banner. Enabled by setting isDismissable.'},
@@ -73,16 +73,17 @@ export const docs = {
       default: "'card'",
     },
     {
+      name: 'defaultIsExpanded',
+      type: 'boolean',
+      description:
+        'Whether the collapsible content area starts expanded. Only relevant when children are provided.',
+      default: 'false',
+    },
+    {
       name: 'children',
       type: 'ReactNode',
       description:
         'Content rendered in the card-background area below the colored header.',
-    },
-    {
-      name: 'xstyle',
-      type: 'StyleXStyles',
-      description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
     },
   ],
 
@@ -116,7 +117,7 @@ export const docsZh = {
     ],
     anatomy: [
       {name: 'Icon', required: true, description: 'Automatically set based on the status (info, warning, error, success).'},
-      {name: 'Title', required: false, description: 'The main message. Required if no description is provided.'},
+      {name: 'Title', required: true, description: 'The main message displayed prominently in the header.'},
       {name: 'Description', required: false, description: 'Additional detail below the title. Required if no title is provided.'},
       {name: 'Action button', required: false, description: 'A button for the user to act on the message, like "Review" or "Retry".'},
       {name: 'Dismiss button', required: false, description: 'Lets the user close the banner. Enabled by setting isDismissable.'},
@@ -132,13 +133,8 @@ export const docsZh = {
     {name: 'onDismiss', type: '() => void', description: '点击关闭按钮时调用；无论是否提供此回调，横幅都会自动隐藏。'},
     {name: 'endContent', type: 'ReactNode', description: '渲染在头部区域末端对齐的操作内容，通常是按钮或链接。'},
     {name: 'container', type: "'card' | 'section'", description: '视觉变体：card 带圆角；section 无圆角全宽，适用于页面级场景。', default: "'card'"},
+    {name: 'defaultIsExpanded', type: 'boolean', description: '可折叠内容区域是否默认展开。仅在提供 children 时有效。', default: 'false'},
     {name: 'children', type: 'ReactNode', description: '渲染在彩色头部下方卡片背景区域的内容。'},
-    {
-      name: 'xstyle',
-      type: 'StyleXStyles',
-      description:
-        '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
-    },
   ],
   theming: {
     targets: [
@@ -181,7 +177,7 @@ export const docsDense = {
     ],
     anatomy: [
       {name: 'Icon', required: true, description: 'Set automatically from status.'},
-      {name: 'Title', required: false, description: 'Main message text.'},
+      {name: 'Title', required: true, description: 'Main message text.'},
       {name: 'Description', required: false, description: 'Detail below title.'},
       {name: 'Action button', required: false, description: 'CTA like Review or Retry.'},
       {name: 'Dismiss button', required: false, description: 'Close button via isDismissable.'},
@@ -197,7 +193,7 @@ export const docsDense = {
     onDismiss: 'dismiss callback; banner self-hides regardless',
     endContent: 'end-aligned action in header, typically button/link',
     container: 'card=border-radius; section=full-width no radius for page-level',
+    defaultIsExpanded: 'collapsible content starts expanded; only when children provided',
     children: 'content in card-bg area below colored header',
-    xstyle: 'StyleX layout customization via stylex.create()',
   },
 };

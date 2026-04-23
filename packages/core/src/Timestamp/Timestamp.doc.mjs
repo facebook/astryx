@@ -71,7 +71,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-timestamp', visualProps: ['type', 'color']},
+      {className: 'xds-timestamp', visualProps: ['format']},
     ],
   },
   usage: {

@@ -7,7 +7,7 @@ export const docs = {
     targets: [
       {className: 'xds-side-nav', visualProps: ['mode']},
       {className: 'xds-side-nav-heading'},
-      {className: 'xds-side-nav-item'},
+      {className: 'xds-side-nav-item', visualProps: ['size'], states: ['selected']},
       {className: 'xds-side-nav-section'},
     ],
   },
@@ -50,12 +50,14 @@ export const docs = {
           default: 'false',
         },
         {
-          name: 'xstyle',
-          type: 'StyleXStyles',
+          name: 'resizable',
+          type: "boolean | { defaultWidth?: number; onWidthChange?: (width: number) => void }",
           description:
-            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+            'Enables a drag handle at the inline-end edge for resizing the sidebar. true for defaults (260 px initial width), or an object to configure defaultWidth and onWidthChange. Hidden when collapsed.',
+          default: 'false',
         },
-      ],    },
+      ],
+    },
     {
       name: 'XDSSideNavHeading',
       description:
@@ -71,6 +73,11 @@ export const docs = {
           name: 'icon',
           type: 'ReactNode',
           description: 'Product/app icon.',
+        },
+        {
+          name: 'as',
+          type: 'XDSLinkComponentType',
+          description: 'Custom link component.',
         },
         {
           name: 'headingHref',
@@ -174,6 +181,12 @@ export const docs = {
           description: 'Enables collapse behavior for items with children. Pass true for uncontrolled (starts expanded), or an object for controlled mode.',
           default: 'false',
         },
+        {
+          name: 'size',
+          type: "'sm' | 'md' | 'lg'",
+          description: 'Size variant controlling item height.',
+          default: "'md'",
+        },
       ],
     },
     {
@@ -261,7 +274,7 @@ export const docsZh = {
     targets: [
       {className: 'xds-side-nav', visualProps: ['mode']},
       {className: 'xds-side-nav-heading'},
-      {className: 'xds-side-nav-item'},
+      {className: 'xds-side-nav-item', visualProps: ['size'], states: ['selected']},
       {className: 'xds-side-nav-section'},
     ],
   },
@@ -304,10 +317,11 @@ export const docsZh = {
           default: 'false',
         },
         {
-          name: 'xstyle',
-          type: 'StyleXStyles',
+          name: 'resizable',
+          type: "boolean | { defaultWidth?: number; onWidthChange?: (width: number) => void }",
           description:
-            '用于布局自定义的 StyleX 样式（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
+            '在侧边栏内联末端启用拖动手柄以调整宽度。true 使用默认值（260 px 初始宽度），或传入对象配置 defaultWidth 和 onWidthChange。折叠时隐藏。',
+          default: 'false',
         },
       ],
     },
@@ -326,6 +340,11 @@ export const docsZh = {
           name: 'icon',
           type: 'ReactNode',
           description: '产品/应用图标。',
+        },
+        {
+          name: 'as',
+          type: 'XDSLinkComponentType',
+          description: '自定义链接组件。',
         },
         {
           name: 'headingHref',
@@ -428,6 +447,12 @@ export const docsZh = {
           type: 'boolean | { defaultIsCollapsed?: boolean, isCollapsed?: boolean, onCollapsedChange?: (isCollapsed: boolean) => void }',
           description: '启用带子项的折叠行为。传 true 为非受控模式（默认展开），或传对象用于受控模式。',
           default: 'false',
+        },
+        {
+          name: 'size',
+          type: "'sm' | 'md' | 'lg'",
+          description: '控制项目高度的尺寸变体。',
+          default: "'md'",
         },
       ],
     },
@@ -538,7 +563,7 @@ export const docsDense = {
         footer: 'Footer area above icon bar.',
         footerIcons: 'Footer icon bar.',
         collapsible: 'Enables collapse behavior. true for uncontrolled w/ default toggle, or object for controlled mode (defaultIsCollapsed, isCollapsed+onCollapsedChange, hasButton, buttonLabel).',
-        xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
+        resizable: 'Drag handle at inline-end edge for resizing. true for defaults (260 px), or object for defaultWidth + onWidthChange. Hidden when collapsed.',
       },
     },
     {
@@ -548,6 +573,7 @@ export const docsDense = {
       propDescriptions: {
         heading: 'Product/app name.',
         icon: 'Product/app icon.',
+        as: 'Custom link component.',
         headingHref: 'Link for heading.',
         superheading: 'Text above heading.',
         superheadingHref: 'Link for superheading.',
@@ -573,6 +599,7 @@ export const docsDense = {
         endContent: 'Right-side content such as badges or counts.',
         children: 'Sub-items for nesting.',
         collapsible: 'Enables collapse for items w/ children. true=uncontrolled, object=controlled mode.',
+        size: 'Size variant controlling item height.',
       },
     },
     {

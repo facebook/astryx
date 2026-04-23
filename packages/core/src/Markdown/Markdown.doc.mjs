@@ -64,6 +64,7 @@ export const docs = {
       type: 'number | string',
       description:
         'Max width for prose content (paragraphs, headings, lists, blockquotes). Tables and code blocks are unconstrained and can expand to the full container width. Use for readable line lengths in wide layouts.',
+      default: '680',
     },
     {
       name: 'contentAlign',
@@ -71,29 +72,6 @@ export const docs = {
       description:
         "Alignment of prose content within the container when contentWidth is narrower than the available space.",
       default: "'start'",
-    },
-    {
-      name: 'xstyle',
-      type: 'StyleXStyles',
-      description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
-    },
-    {
-      name: 'className',
-      type: 'string',
-      description:
-        'CSS class name for the root element. Prefer xstyle for styling — className is provided for integration with non-StyleX systems.',
-    },
-    {
-      name: 'style',
-      type: 'CSSProperties',
-      description:
-        'Inline styles for the root element. Prefer xstyle for styling — inline styles bypass StyleX optimization.',
-    },
-    {
-      name: 'data-testid',
-      type: 'string',
-      description: 'Test selector for automated testing frameworks.',
     },
   ],
   theming: {
@@ -164,6 +142,7 @@ export const docsZh = {
       type: 'number | string',
       description:
         '正文内容的最大宽度（段落、标题、列表、引用块）。表格和代码块不受限制，可扩展到完整容器宽度。用于在宽布局中保持可读行长。',
+      default: '680',
     },
     {
       name: 'contentAlign',
@@ -171,27 +150,6 @@ export const docsZh = {
       description:
         "当 contentWidth 小于可用空间时，正文内容在容器内的对齐方式。",
       default: "'start'",
-    },
-    {
-      name: 'xstyle',
-      type: 'StyleXStyles',
-      description:
-        '用于布局自定义的 StyleX 样式。必须是 stylex.create() 的值，而非内联样式对象。',
-    },
-    {
-      name: 'className',
-      type: 'string',
-      description: '根元素的 CSS 类名。建议使用 xstyle — className 适用于非 StyleX 系统集成。',
-    },
-    {
-      name: 'style',
-      type: 'CSSProperties',
-      description: '根元素的内联样式。建议使用 xstyle — 内联样式会绕过 StyleX 优化。',
-    },
-    {
-      name: 'data-testid',
-      type: 'string',
-      description: '用于自动化测试框架的测试选择器。',
     },
   ],
   theming: {
@@ -231,12 +189,8 @@ export const docsDense = {
     onLinkClick: '(href, event) => void|false. Return false prevents navigation.',
     sources: 'Record<string, XDSMarkdownSource>. Citation sources by ID. [id]/【id】 markers render as chips.',
     citationStyle: "'label'|'number'. label=chip w/ title+icon, number=compact badge. Default: 'label'.",
-    contentWidth: 'number|string. Max width for prose (headings, paragraphs, lists). Tables/code unconstrained.',
+    contentWidth: 'number|string. Max width for prose (headings, paragraphs, lists). Tables/code unconstrained. Default: 680.',
     contentAlign: "'start'|'center'. Prose alignment when contentWidth < container. Default: 'start'.",
-    xstyle: 'stylex.create() for layout (margins, sizing).',
-    className: 'CSS class. Prefer xstyle.',
-    style: 'Inline styles. Prefer xstyle.',
-    'data-testid': 'Test selector.',
   },
   ex: [
     '<XDSMarkdown>{\'# Hello\\\\n\\\\nThis is **bold** text.\'}</XDSMarkdown>',

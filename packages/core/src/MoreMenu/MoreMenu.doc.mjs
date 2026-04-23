@@ -42,18 +42,6 @@ export const docs = {
       description: 'Whether the menu trigger is disabled.',
       default: 'false',
     },
-    {
-      name: 'children',
-      type: '(item: XDSDropdownMenuItemData) => ReactNode',
-      description:
-        'Custom render function for items. Only called for selectable items (not dividers/sections).',
-    },
-    {
-      name: 'xstyle',
-      type: 'StyleXStyles',
-      description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
-    },
   ],
   theming: {
     targets: [
@@ -113,18 +101,6 @@ export const docsZh = {
       description: '菜单触发器是否禁用。',
       default: 'false',
     },
-    {
-      name: 'children',
-      type: '(item: XDSDropdownMenuItemData) => ReactNode',
-      description:
-        '自定义项目渲染函数。仅对可选择的项目调用（不包括分割线/分组）。',
-    },
-    {
-      name: 'xstyle',
-      type: 'StyleXStyles',
-      description:
-        '用于布局自定义的 StyleX 样式（边距、定位、尺寸）。必须是 stylex.create() 的值，不能是内联样式对象如 style={{}}。',
-    },
   ],
   theming: {
     targets: [
@@ -164,8 +140,5 @@ export const docsDense = {
     size: 'Trigger button size.',
     icon: 'Override default three-dot icon. Accepts any ReactNode.',
     isDisabled: 'Whether menu trigger disabled.',
-    children: 'Custom render function for selectable items (not dividers/sections).',
-    xstyle:
-      'StyleX styles for layout customization (margins, positioning, sizing). Must be stylex.create() value.',
   },
 };

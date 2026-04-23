@@ -148,6 +148,11 @@ export const docs = {
       type: '() => void',
       description: 'Callback fired when the user presses the Enter key.',
     },
+    {
+      name: 'onKeyDown',
+      type: '(e: KeyboardEvent<HTMLInputElement>) => void',
+      description: 'Callback fired on keydown events on the input.',
+    },
   ],
   theming: {
     targets: [
@@ -320,6 +325,11 @@ export const docsZh = {
       type: '() => void',
       description: '用户按下 Enter 键时触发的回调。',
     },
+    {
+      name: 'onKeyDown',
+      type: '(e: KeyboardEvent<HTMLInputElement>) => void',
+      description: '输入框按键按下时触发的回调。',
+    },
   ],
   theming: {
     targets: [
@@ -392,5 +402,6 @@ export const docsDense = {
     onFocus: 'Callback on focus.',
     onBlur: 'Callback on blur.',
     onEnter: 'Callback on Enter key.',
+    onKeyDown: 'Callback on keydown.',
   },
 };

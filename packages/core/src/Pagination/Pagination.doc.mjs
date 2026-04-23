@@ -26,13 +26,13 @@ export const docs = {
       name: 'totalItems',
       type: 'number',
       description:
-        'Total number of items. Used to calculate page count. Takes precedence over totalPages if both provided.',
+        'Total number of items. Used to calculate page count when totalPages is not provided.',
     },
     {
       name: 'totalPages',
       type: 'number',
       description:
-        'Total number of pages. Use when you know page count but not item count.',
+        'Total number of pages. Takes precedence over totalItems if both are provided.',
     },
     {
       name: 'hasMore',
@@ -90,12 +90,6 @@ export const docs = {
       description: 'Accessible label for the navigation landmark.',
       default: "'Pagination'",
     },
-    {
-      name: 'xstyle',
-      type: 'StyleXStyles',
-      description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
-    },
   ],
   theming: {
     targets: [
@@ -141,13 +135,13 @@ export const docsZh = {
       name: 'totalItems',
       type: 'number',
       description:
-        '总项目数。用于计算页数。同时提供时优先于 totalPages。',
+        '总项目数。未提供 totalPages 时用于计算页数。',
     },
     {
       name: 'totalPages',
       type: 'number',
       description:
-        '总页数。当你知道页数但不知道项目数时使用。',
+        '总页数。同时提供时优先于 totalItems。',
     },
     {
       name: 'hasMore',
@@ -205,12 +199,6 @@ export const docsZh = {
       description: '导航地标的无障碍标签。',
       default: "'Pagination'",
     },
-    {
-      name: 'xstyle',
-      type: 'StyleXStyles',
-      description:
-        '用于布局自定义（外边距、定位、尺寸）的 StyleX 样式。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
-    },
   ],
   theming: {
     targets: [
@@ -249,8 +237,8 @@ export const docsDense = {
     onChange: 'Called on page change.',
     onChangeAction:
       'Async action on page change. Fires after onChange; uses React transitions for loading.',
-    totalItems: 'Total items. Calculates page count. Precedence over totalPages.',
-    totalPages: 'Total pages. Use when page count known but not item count.',
+    totalItems: 'Total items. Calculates page count when totalPages is not provided.',
+    totalPages: 'Total pages. Takes precedence over totalItems if both provided.',
     hasMore: 'More pages exist after current. For cursor-based pagination.',
     pageSize: 'Items per page.',
     pageSizeOptions: 'Page size options. Shows selector dropdown when provided.',
@@ -260,7 +248,5 @@ export const docsDense = {
     size: 'Control size.',
     isDisabled: 'Component disabled.',
     label: 'Accessible label for nav landmark.',
-    xstyle:
-      'StyleX styles for layout customization (margins, positioning, sizing). Must be stylex.create() value.',
   },
 };
