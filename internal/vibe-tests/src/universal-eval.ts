@@ -104,22 +104,114 @@ function scoreTscErrors(tscResult: TscResult): {
 }
 
 // ============================================================
-// 1. Correctness (tsc-based)
+// 1. Correctness (tsc + phantom prop detection)
 // ============================================================
+
+/**
+ * Detect "phantom props" — event handlers and props that look valid
+ * but silently do nothing in React DOM. These compile fine on targets
+ * without strict types (baseline, html) but represent real bugs.
+ *
+ * Applied equally to ALL targets for fairness.
+ */
+function analyzePhantomProps(code: string): UniversalFinding[] {
+  const findings: UniversalFinding[] = [];
+  const lines = code.split('\n');
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const lineNum = i + 1;
+
+    // Skip comments and imports
+    const trimmed = line.trim();
+    if (
+      trimmed.startsWith('//') ||
+      trimmed.startsWith('*') ||
+      trimmed.startsWith('import ')
+    )
+      continue;
+
+    // onPress on any element/component — React Native, not DOM
+    if (/\bonPress\s*[={]/.test(line) && !/onPressedChange/.test(line)) {
+      findings.push({
+        rule: 'phantom-prop',
+        severity: 'critical',
+        detail:
+          'onPress is React Native — use onClick for React DOM. Handler will never fire.',
+        line: lineNum,
+      });
+    }
+
+    // onLongPress — React Native only
+    if (/\bonLongPress\s*[={]/.test(line)) {
+      findings.push({
+        rule: 'phantom-prop',
+        severity: 'critical',
+        detail:
+          'onLongPress is React Native — no DOM equivalent. Handler will never fire.',
+        line: lineNum,
+      });
+    }
+
+    // onChange on <button> — buttons don't fire change events
+    if (/<button\b/i.test(line) || /<Button\b/.test(line)) {
+      const context = lines.slice(i, Math.min(i + 3, lines.length)).join(' ');
+      if (
+        /\bonChange\s*[={]/.test(context) &&
+        !/type\s*=\s*["']/.test(context)
+      ) {
+        findings.push({
+          rule: 'phantom-prop',
+          severity: 'moderate',
+          detail: 'onChange on button — buttons do not fire change events',
+          line: lineNum,
+        });
+      }
+    }
+
+    // onSubmit on non-form elements
+    if (/\bonSubmit\s*[={]/.test(line)) {
+      const context = lines
+        .slice(Math.max(0, i - 2), Math.min(i + 2, lines.length))
+        .join(' ');
+      if (
+        /<(div|section|main|span)\b/.test(context) &&
+        !/<form\b/.test(context)
+      ) {
+        findings.push({
+          rule: 'phantom-prop',
+          severity: 'moderate',
+          detail:
+            'onSubmit on non-form element — only <form> fires submit events',
+          line: lineNum,
+        });
+      }
+    }
+  }
+
+  return findings;
+}
 
 function analyzeCorrectness(
   code: string,
   _target: string,
   tscResult?: TscResult | null,
 ): DimensionScore {
-  // tsc results are the sole correctness signal
+  const findings: UniversalFinding[] = [];
+
+  // Phantom prop detection — runs on ALL targets equally
+  findings.push(...analyzePhantomProps(code));
+
+  // tsc results — phantom props already caught by tsc don't double-penalize
   if (tscResult) {
-    const {score, findings} = scoreTscErrors(tscResult);
-    return {score: clamp(score), findings};
+    const tsc = scoreTscErrors(tscResult);
+    findings.push(...tsc.findings);
+    // tsc already penalizes type errors (which catch phantom props on strict targets).
+    // Don't add phantom prop penalty on top — it's already in the tsc score.
+    return {score: clamp(tsc.score), findings};
   }
 
-  // No tsc data available — check for missing export only
-  const findings: UniversalFinding[] = [];
+  // No tsc data — phantom props + structural checks
   if (!/export\s+(default|function|const|class)/.test(code)) {
     findings.push({
       rule: 'missing-export',
@@ -128,10 +220,13 @@ function analyzeCorrectness(
     });
   }
 
-  // Without tsc data, assume code is correct (backwards compat for old iterations)
   let score = 100;
   for (const f of findings) {
-    score -= f.severity === 'minor' ? 3 : 0;
+    if (f.rule === 'phantom-prop') {
+      score -= f.severity === 'critical' ? 15 : 8;
+    } else if (f.severity === 'minor') {
+      score -= 3;
+    }
   }
   return {score: clamp(score), findings};
 }
@@ -533,14 +628,20 @@ function analyzeEfficiency(
       if (stripped === '}' || stripped === '};') inTypeBlock = false;
       continue;
     }
-    if ((target === 'xds' || target === 'xds-tailwind') && stripped.includes('stylex.create'))
+    if (
+      (target === 'xds' || target === 'xds-tailwind') &&
+      stripped.includes('stylex.create')
+    )
       inStyleBlock = true;
     if (inStyleBlock) {
       stylingLines++;
       if (stripped === '});') inStyleBlock = false;
       continue;
     }
-    if ((target === 'baseline' || target === 'xds-tailwind') && stripped.includes('className=')) {
+    if (
+      (target === 'baseline' || target === 'xds-tailwind') &&
+      stripped.includes('className=')
+    ) {
       stylingLines++;
       continue;
     }
