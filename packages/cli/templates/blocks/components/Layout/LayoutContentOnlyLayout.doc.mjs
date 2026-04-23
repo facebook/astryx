@@ -6,5 +6,5 @@ export const doc = {
     'A minimal layout with just a content area inside a card, without header or footer.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Layout', 'LayoutContent', 'Card'],
+  componentsUsed: ['Layout', 'LayoutContent', 'Card', 'VStack', 'Text', 'Heading'],
 };

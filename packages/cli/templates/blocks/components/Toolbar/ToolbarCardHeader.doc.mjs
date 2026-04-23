@@ -3,8 +3,8 @@ export const doc = {
   type: 'block',
   name: 'Toolbar — Card Header',
   description:
-    'Compact toolbar as a card header with title, filter, and add actions.',
+    'A toolbar as a card header with a left-aligned title and icon actions on the right. Use Toolbar instead of LayoutHeader when your card header has interactive actions — Toolbar adds start/end slot layout, keyboard navigation, and automatic size cascading. If the header is just a title with no actions, a LayoutHeader or Section is enough.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['Toolbar', 'Card', 'Section', 'Button', 'Text'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Toolbar', 'Button', 'Icon', 'Text', 'Card', 'Section'],
 };

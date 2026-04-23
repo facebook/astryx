@@ -1,10 +1,10 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'HoverCard — Interactive Content',
+  name: 'HoverCard — Link Preview',
   description:
-    'A hover card with interactive buttons inside, allowing users to take actions without navigating away.',
+    'Shows a page summary when hovering a link — title, description, and URL. Use for documentation links, article references, or any URL where a preview helps the user decide whether to click.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['HoverCard', 'Button', 'VStack', 'HStack'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['HoverCard', 'Icon', 'Layout', 'Text'],
 };

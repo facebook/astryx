@@ -5,5 +5,5 @@ export const doc = {
   description: 'Disabled switch with label and description for gated features.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Switch'],
+  componentsUsed: ['Switch', 'Center'],
 };

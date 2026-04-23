@@ -9,7 +9,7 @@ import {XDSStack} from '@xds/core/Stack';
 import {XDSDialog} from '@xds/core/Dialog';
 
 const meta: Meta = {
-  title: 'Core/XDSToast',
+  title: 'Core/Toast',
   tags: ['autodocs'],
   parameters: {
     docs: {
@@ -270,8 +270,7 @@ export const Stacking: StoryObj = {
   parameters: {
     docs: {
       description: {
-        story:
-          'Multiple toasts stack vertically. Default max visible is 5.',
+        story: 'Multiple toasts stack vertically. Default max visible is 5.',
       },
     },
   },
@@ -338,7 +337,7 @@ export const ToastOverDialog: StoryObj = {
     docs: {
       description: {
         story:
-          'Dialog with its own `XDSToastViewport` — toasts render inside the dialog\'s top layer context and appear above the dialog overlay.',
+          "Dialog with its own `XDSToastViewport` — toasts render inside the dialog's top layer context and appear above the dialog overlay.",
       },
     },
   },
@@ -349,15 +348,11 @@ function DialogToastContent({onClose}: {onClose: () => void}) {
   return (
     <XDSStack gap={3}>
       <p>
-        This dialog has its own toast viewport. Toasts fired here render
-        inside the dialog — above its overlay.
+        This dialog has its own toast viewport. Toasts fired here render inside
+        the dialog — above its overlay.
       </p>
       <XDSStack direction="row" gap={2} wrap="wrap">
-        <XDSButton
-          label="Close"
-          variant="secondary"
-          onClick={onClose}
-        />
+        <XDSButton label="Close" variant="secondary" onClick={onClose} />
         <XDSButton
           label="Show toast"
           onClick={() => {

@@ -2,9 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'OverflowList — Dropdown Actions',
-  description:
-    'Action toolbar that collapses overflow buttons into a dropdown menu.',
+  description: 'Action toolbar that collapses overflow buttons into a dropdown menu',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['OverflowList', 'Button', 'DropdownMenu'],
+  componentsUsed: ['OverflowList', 'Button', 'DropdownMenu', 'Card'],
 };

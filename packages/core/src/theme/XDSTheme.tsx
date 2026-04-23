@@ -9,9 +9,11 @@
  * - Component overrides scoped via @scope'd CSS selectors on .xds-* classes
  *
  * Root detection: The first XDSTheme in the tree (no parent XDSTheme)
- * automatically syncs `data-theme` to `document.documentElement`, which
- * drives `color-scheme` via reset.css rules. This ensures browser chrome
- * (scrollbars, native form controls, date pickers) reflects the active mode.
+ * automatically syncs attributes to `document.documentElement`:
+ * - `data-theme` — drives `color-scheme` via reset.css rules, ensuring browser
+ *   chrome (scrollbars, native form controls, date pickers) reflects the mode.
+ * - `data-xds-theme` — enables @scope'd theme CSS to reach elements rendered
+ *   outside the XDSTheme wrapper (portals, toast fallback viewports).
  *
  * For RSC / SSR, set `data-theme` on `<html>` in your root server layout
  * to avoid a flash of wrong theme before hydration:
@@ -244,16 +246,23 @@ function useThemeFontLoading(theme: XDSDefinedTheme): void {
 // =============================================================================
 
 /**
- * Hook to sync data-theme to document.documentElement for the root provider.
+ * Hook to sync theme attributes to document.documentElement for the root provider.
  * Skipped for nested XDSTheme instances.
  *
- * reset.css maps [data-theme] to color-scheme, which controls browser chrome
- * (scrollbars, native form controls, date pickers).
+ * Syncs two attributes:
+ * - `data-theme` (light/dark) — reset.css maps this to color-scheme, controlling
+ *   browser chrome (scrollbars, native form controls, date pickers).
+ * - `data-xds-theme` (theme name) — enables @scope'd theme CSS to reach elements
+ *   outside the XDSTheme wrapper (e.g. toast fallback viewports, portals).
  *
  * - 'light' | 'dark' → sets data-theme="light" | "dark"
  * - 'system' → removes data-theme (reset.css defaults to color-scheme: light dark)
  */
-function useRootColorSchemeSync(isNested: boolean, mode: ThemeMode): void {
+function useRootThemeSync(
+  isNested: boolean,
+  mode: ThemeMode,
+  themeName: string,
+): void {
   useLayoutEffect(() => {
     if (isNested) return;
     if (typeof document === 'undefined') return;
@@ -265,10 +274,14 @@ function useRootColorSchemeSync(isNested: boolean, mode: ThemeMode): void {
       document.documentElement.removeAttribute('data-theme');
     }
 
+    // Sync theme name so @scope rules reach portals/fallback viewports
+    document.documentElement.setAttribute('data-xds-theme', themeName);
+
     return () => {
       document.documentElement.removeAttribute('data-theme');
+      document.documentElement.removeAttribute('data-xds-theme');
     };
-  }, [isNested, mode]);
+  }, [isNested, mode, themeName]);
 }
 
 // =============================================================================
@@ -283,8 +296,8 @@ function useRootColorSchemeSync(isNested: boolean, mode: ThemeMode): void {
  * components render with their .xds-* class and don't need context.
  *
  * When this is the root XDSTheme (no parent XDSTheme in the tree),
- * it syncs `data-theme` to `<html>` so browser chrome elements
- * (scrollbars, form controls, date pickers) reflect the active mode.
+ * it syncs `data-theme` and `data-xds-theme` to `<html>` so browser
+ * chrome reflects the active mode and @scope'd CSS reaches portals.
  * Nested XDSTheme instances skip the sync.
  */
 export function XDSTheme({
@@ -296,7 +309,7 @@ export function XDSTheme({
 
   useThemeStyleInjection(theme);
   useThemeFontLoading(theme);
-  useRootColorSchemeSync(isNested, mode);
+  useRootThemeSync(isNested, mode, theme.name);
 
   // Get color-scheme style
   const colorSchemeStyle =

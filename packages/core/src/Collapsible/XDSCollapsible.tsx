@@ -35,6 +35,9 @@ import {xdsClassName, mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 const styles = stylex.create({
+  root: {
+    width: '100%',
+  },
   // Trigger button — full width, flex row, no browser button styling
   trigger: {
     all: 'unset',
@@ -187,7 +190,7 @@ export function XDSCollapsible({
       ref={ref}
       {...mergeProps(
         xdsClassName('collapsible'),
-        stylex.props(xstyle),
+        stylex.props(styles.root, xstyle),
         className,
         style,
       )}

@@ -3,7 +3,7 @@ import {XDSChatTokenizedText} from '@xds/core/Chat';
 import {XDSChatMessage, XDSChatMessageBubble} from '@xds/core/Chat';
 
 const meta: Meta<typeof XDSChatTokenizedText> = {
-  title: 'Chat/XDSChatTokenizedText',
+  title: 'Core/Chat/TokenizedText',
   component: XDSChatTokenizedText,
   tags: ['autodocs'],
   parameters: {layout: 'centered'},

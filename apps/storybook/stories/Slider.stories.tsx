@@ -4,7 +4,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {XDSSlider} from '@xds/core/Slider';
 
 const meta: Meta<typeof XDSSlider> = {
-  title: 'Form/XDSSlider',
+  title: 'Core/Slider',
   component: XDSSlider,
   tags: ['autodocs'],
   argTypes: {

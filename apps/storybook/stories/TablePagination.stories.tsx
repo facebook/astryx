@@ -82,7 +82,7 @@ function PaginatedDemo({
 // =============================================================================
 
 const meta: Meta = {
-  title: 'Core/XDSTable/Pagination',
+  title: 'Core/Table/Pagination',
   tags: ['autodocs'],
 };
 

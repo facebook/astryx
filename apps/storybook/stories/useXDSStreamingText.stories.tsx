@@ -81,10 +81,11 @@ function StreamingDemo({
   );
 }
 
-const SAMPLE_TEXT = 'Here is how you fetch a user in TypeScript:\n\nconst response = await fetch("/api/users/" + id);\nconst user = await response.json();\n\nKey points:\n- Always check response.ok before parsing\n- Use AbortController for cancellation\n- Consider a useUser hook for React apps\n\nThis approach gives you type-safe API calls with proper error handling.';
+const SAMPLE_TEXT =
+  'Here is how you fetch a user in TypeScript:\n\nconst response = await fetch("/api/users/" + id);\nconst user = await response.json();\n\nKey points:\n- Always check response.ok before parsing\n- Use AbortController for cancellation\n- Consider a useUser hook for React apps\n\nThis approach gives you type-safe API calls with proper error handling.';
 
 const meta: Meta<typeof StreamingDemo> = {
-  title: 'Hooks/useXDSStreamingText',
+  title: 'Core/Hooks/useXDSStreamingText',
   component: StreamingDemo,
   tags: ['autodocs'],
   argTypes: {
@@ -99,7 +100,12 @@ export default meta;
 type Story = StoryObj<typeof StreamingDemo>;
 
 export const Natural: Story = {
-  args: {text: SAMPLE_TEXT, speed: 'natural', chunkSize: 20, chunkIntervalMs: 50},
+  args: {
+    text: SAMPLE_TEXT,
+    speed: 'natural',
+    chunkSize: 20,
+    chunkIntervalMs: 50,
+  },
 };
 
 export const Fast: Story = {
@@ -107,15 +113,30 @@ export const Fast: Story = {
 };
 
 export const Instant: Story = {
-  args: {text: SAMPLE_TEXT, speed: 'instant', chunkSize: 20, chunkIntervalMs: 50},
+  args: {
+    text: SAMPLE_TEXT,
+    speed: 'instant',
+    chunkSize: 20,
+    chunkIntervalMs: 50,
+  },
 };
 
 export const BurstyChunks: Story = {
   name: 'Bursty chunks (large backlog)',
-  args: {text: SAMPLE_TEXT, speed: 'natural', chunkSize: 80, chunkIntervalMs: 200},
+  args: {
+    text: SAMPLE_TEXT,
+    speed: 'natural',
+    chunkSize: 80,
+    chunkIntervalMs: 200,
+  },
 };
 
 export const SlowTrickle: Story = {
   name: 'Slow trickle',
-  args: {text: SAMPLE_TEXT, speed: 'natural', chunkSize: 1, chunkIntervalMs: 100},
+  args: {
+    text: SAMPLE_TEXT,
+    speed: 'natural',
+    chunkSize: 1,
+    chunkIntervalMs: 100,
+  },
 };

@@ -56,18 +56,20 @@ export const docs = {
     ],
   },
   usage: {
-    description: 'An empty state placeholder that provides guidance when there is no data to display. Use for null states, failed loading states, or when search and filter results return nothing. Always include a clear message and a call to action so users know how to proceed.',
+    description: 'EmptyState shows a placeholder when a content area has no data. Use it for empty lists, zero search results, first-time setups, or cleared inboxes. Always include a title and a next step so the user is not stuck.',
     bestPractices: [
       { guidance: true, description: 'Include a clear title and a call-to-action button so users know how to proceed.' },
       { guidance: true, description: 'Use an illustration or icon that reinforces the context of the empty state.' },
+      { guidance: true, description: 'Use the compact variant inside cards or sidebars where space is limited.' },
       { guidance: false, description: 'Leave an empty state without guidance — always explain what happened and what the user can do next.' },
-      { guidance: false, description: 'Use an EmptyState for error messages that require immediate action — use an alert instead.' },
+      { guidance: false, description: 'Use a generic message like "No data" — be specific about what is empty and why.' },
+      { guidance: false, description: 'Use an EmptyState for error messages that require immediate action — use a Banner instead.' },
     ],
     anatomy: [
-      {name: 'Illustration', required: false, description: 'Visual cue that reinforces the empty state context.'},
-      {name: 'Title', required: true, description: 'Primary message explaining the empty state.'},
-      {name: 'Subtitle', required: false, description: 'Additional context or explanation.'},
-      {name: 'Call to action', required: false, description: 'Buttons guiding the user to a next step.'},
+      {name: 'Icon', required: false, description: 'A visual cue above the title that reinforces the context, like a search icon for no results.'},
+      {name: 'Title', required: true, description: 'Primary message explaining what is empty — "No projects yet" not "No data".'},
+      {name: 'Description', required: false, description: 'Additional context explaining why it is empty or what the user can do.'},
+      {name: 'Actions', required: false, description: 'One or two buttons guiding the user to a next step, like "Create project" or "Clear filters".'},
     ],
   },
 };
@@ -128,18 +130,14 @@ export const docsZh = {
     ],
   },
   usage: {
-    description: 'An empty state placeholder that provides guidance when there is no data to display. Use for null states, failed loading states, or when search and filter results return nothing. Always include a clear message and a call to action so users know how to proceed.',
+    description: 'EmptyState shows a placeholder when a content area has no data. Use it for empty lists, zero search results, first-time setups, or cleared inboxes. Always include a title and a next step so the user is not stuck.',
     bestPractices: [
       { guidance: true, description: 'Include a clear title and a call-to-action button so users know how to proceed.' },
       { guidance: true, description: 'Use an illustration or icon that reinforces the context of the empty state.' },
+      { guidance: true, description: 'Use the compact variant inside cards or sidebars where space is limited.' },
       { guidance: false, description: 'Leave an empty state without guidance — always explain what happened and what the user can do next.' },
-      { guidance: false, description: 'Use an EmptyState for error messages that require immediate action — use an alert instead.' },
-    ],
-    anatomy: [
-      {name: 'Illustration', required: false, description: 'Visual cue that reinforces the empty state context.'},
-      {name: 'Title', required: true, description: 'Primary message explaining the empty state.'},
-      {name: 'Subtitle', required: false, description: 'Additional context or explanation.'},
-      {name: 'Call to action', required: false, description: 'Buttons guiding the user to a next step.'},
+      { guidance: false, description: 'Use a generic message like "No data" — be specific about what is empty and why.' },
+      { guidance: false, description: 'Use an EmptyState for error messages that require immediate action — use a Banner instead.' },
     ],
   },
 };
@@ -147,20 +145,12 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description:
-    'Empty state placeholder for content areas w/ no data. Displays icon/illustration, title, optional description + action buttons.',
+    'placeholder when a content area has no data — icon, title, description, action buttons',
   usage: {
-    description: 'An empty state placeholder that provides guidance when there is no data to display. Use for null states, failed loading states, or when search and filter results return nothing. Always include a clear message and a call to action so users know how to proceed.',
+    description: 'EmptyState shows a placeholder for empty lists, zero search results, first-time setups. Always include a title and next step.',
     bestPractices: [
-      { guidance: true, description: 'Include a clear title and a call-to-action button so users know how to proceed.' },
-      { guidance: true, description: 'Use an illustration or icon that reinforces the context of the empty state.' },
-      { guidance: false, description: 'Leave an empty state without guidance — always explain what happened and what the user can do next.' },
-      { guidance: false, description: 'Use an EmptyState for error messages that require immediate action — use an alert instead.' },
-    ],
-    anatomy: [
-      {name: 'Illustration', required: false, description: 'Visual cue that reinforces the empty state context.'},
-      {name: 'Title', required: true, description: 'Primary message explaining the empty state.'},
-      {name: 'Subtitle', required: false, description: 'Additional context or explanation.'},
-      {name: 'Call to action', required: false, description: 'Buttons guiding the user to a next step.'},
+      { guidance: true, description: 'Clear title + CTA button. Icon for context. Compact variant in tight spaces.' },
+      { guidance: false, description: 'No generic "No data" — be specific. Not for errors — use Banner.' },
     ],
   },
   propDescriptions: {

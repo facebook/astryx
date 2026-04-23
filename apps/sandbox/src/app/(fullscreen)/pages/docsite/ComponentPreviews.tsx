@@ -1,221 +1,365 @@
 'use client';
 
-import React from 'react';
+import React, {useState} from 'react';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
 import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSBanner} from '@xds/core/Banner';
-import {XDSDivider} from '@xds/core/Divider';
+import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
+import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
+import {XDSProgressBar} from '@xds/core/ProgressBar';
+import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
+import {XDSSlider} from '@xds/core/Slider';
+import {XDSSpinner} from '@xds/core/Spinner';
+import {XDSSwitch} from '@xds/core/Switch';
+import {XDSTabList, XDSTab} from '@xds/core/TabList';
+import {XDSTextInput} from '@xds/core/TextInput';
+import {XDSSelector} from '@xds/core/Selector';
+import {XDSTextArea} from '@xds/core/TextArea';
 import {XDSToken} from '@xds/core/Token';
 import {XDSTooltip} from '@xds/core/Tooltip';
-import {DialogPreview} from './ProfileView';
 
-export const COMPONENT_PREVIEWS: {[key: string]: React.ReactNode} = {
-  button: (
-    <div>
-      <div style={{marginBottom: 16}}>
-        <XDSHeading level={3}>Variants</XDSHeading>
-      </div>
+export const COMPONENT_PREVIEW_LIST: {
+  key: string;
+  label: string;
+  preview: React.ReactNode;
+}[] = [
+  {
+    key: 'button',
+    label: 'Button',
+    preview: (
       <div
         style={{
           display: 'flex',
-          gap: 12,
-          flexWrap: 'wrap' as const,
-          marginBottom: 32,
+          gap: 10,
+          flexWrap: 'wrap',
+          alignItems: 'center',
         }}>
         <XDSButton label="Primary" variant="primary" />
         <XDSButton label="Secondary" variant="secondary" />
         <XDSButton label="Ghost" variant="ghost" />
       </div>
-      <div style={{marginBottom: 16}}>
-        <XDSHeading level={3}>Sizes</XDSHeading>
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          gap: 12,
-          alignItems: 'center',
-          flexWrap: 'wrap' as const,
-        }}>
-        <XDSButton label="Small" variant="primary" size="sm" />
-        <XDSButton label="Medium" variant="primary" size="md" />
-        <XDSButton label="Large" variant="primary" size="lg" />
-      </div>
-    </div>
-  ),
-  avatar: (
-    <div>
-      <div style={{marginBottom: 16}}>
-        <XDSHeading level={3}>Sizes</XDSHeading>
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          gap: 16,
-          alignItems: 'center',
-          flexWrap: 'wrap' as const,
-        }}>
+    ),
+  },
+  {
+    key: 'avatar',
+    label: 'Avatar',
+    preview: (
+      <div style={{display: 'flex', gap: 16, alignItems: 'center'}}>
         <XDSAvatar name="Alice" size="small" />
         <XDSAvatar name="Bob" size="medium" />
         <XDSAvatar name="Charlie" size="large" />
       </div>
-    </div>
-  ),
-  badge: (
-    <div>
-      <div style={{marginBottom: 16}}>
-        <XDSHeading level={3}>Variants</XDSHeading>
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          gap: 12,
-          flexWrap: 'wrap' as const,
-        }}>
+    ),
+  },
+  {
+    key: 'badge',
+    label: 'Badge',
+    preview: (
+      <div style={{display: 'flex', gap: 10, flexWrap: 'wrap'}}>
         <XDSBadge label="Default" />
         <XDSBadge label="Info" variant="info" />
         <XDSBadge label="Success" variant="success" />
         <XDSBadge label="Warning" variant="warning" />
         <XDSBadge label="Error" variant="error" />
       </div>
-    </div>
-  ),
-  card: (
-    <div>
-      <div style={{marginBottom: 16}}>
-        <XDSHeading level={3}>Card</XDSHeading>
-      </div>
-      <div style={{maxWidth: 400}}>
-        <XDSCard>
-          <div style={{padding: 16}}>
-            <XDSHeading level={4}>Card Title</XDSHeading>
-            <div style={{marginTop: 8}}>
-              <XDSText type="body" color="secondary">
-                Cards are containers for grouping related content and actions.
-                They provide a flexible surface for displaying information.
-              </XDSText>
-            </div>
-          </div>
-        </XDSCard>
-      </div>
-    </div>
-  ),
-  banner: (
-    <div>
-      <div style={{marginBottom: 16}}>
-        <XDSHeading level={3}>Status Variants</XDSHeading>
-      </div>
-      <div
-        style={{display: 'flex', flexDirection: 'column' as const, gap: 12}}>
-        <XDSBanner status="info" title="Information">
-          <XDSText type="body">
-            This is an informational banner message.
-          </XDSText>
-        </XDSBanner>
-        <XDSBanner status="success" title="Success">
-          <XDSText type="body">Operation completed successfully.</XDSText>
-        </XDSBanner>
-        <XDSBanner status="warning" title="Warning">
-          <XDSText type="body">Please review before continuing.</XDSText>
-        </XDSBanner>
-      </div>
-    </div>
-  ),
-  dialog: <DialogPreview />,
-  text: (
-    <div>
-      <div style={{marginBottom: 16}}>
-        <XDSHeading level={3}>Typography Scale</XDSHeading>
-      </div>
-      <div
-        style={{display: 'flex', flexDirection: 'column' as const, gap: 12}}>
-        <XDSText type="display-1">Display 1</XDSText>
-        <XDSText type="display-2">Display 2</XDSText>
-        <XDSText type="display-3">Display 3</XDSText>
-        <XDSHeading level={1}>Heading 1</XDSHeading>
-        <XDSHeading level={2}>Heading 2</XDSHeading>
-        <XDSHeading level={3}>Heading 3</XDSHeading>
-        <XDSHeading level={4}>Heading 4</XDSHeading>
-        <XDSText type="body">Body text</XDSText>
-        <XDSText type="supporting">Supporting text</XDSText>
-      </div>
-    </div>
-  ),
-  divider: (
-    <div>
-      <div style={{marginBottom: 16}}>
-        <XDSHeading level={3}>Divider</XDSHeading>
-      </div>
-      <div
-        style={{display: 'flex', flexDirection: 'column' as const, gap: 24}}>
-        <div>
-          <XDSText type="supporting" color="secondary">
-            Subtle (default)
-          </XDSText>
+    ),
+  },
+  {
+    key: 'card',
+    label: 'Card',
+    preview: (
+      <XDSCard>
+        <div style={{padding: 16}}>
+          <XDSHeading level={4}>Card Title</XDSHeading>
           <div style={{marginTop: 8}}>
-            <XDSDivider />
+            <XDSText type="body" color="secondary">
+              A flexible surface for grouping related content.
+            </XDSText>
           </div>
         </div>
-        <div>
-          <XDSText type="supporting" color="secondary">
-            Strong
-          </XDSText>
-          <div style={{marginTop: 8}}>
-            <XDSDivider variant="strong" />
-          </div>
-        </div>
-        <div>
-          <XDSText type="supporting" color="secondary">
-            With label
-          </XDSText>
-          <div style={{marginTop: 8}}>
-            <XDSDivider label="Section" />
-          </div>
-        </div>
-      </div>
-    </div>
-  ),
-  token: (
-    <div>
-      <div style={{marginBottom: 16}}>
-        <XDSHeading level={3}>Tokens</XDSHeading>
-      </div>
+      </XDSCard>
+    ),
+  },
+  {
+    key: 'banner',
+    label: 'Banner',
+    preview: (
       <div
         style={{
           display: 'flex',
-          gap: 8,
-          flexWrap: 'wrap' as const,
+          flexDirection: 'column',
+          gap: 10,
+          width: '100%',
         }}>
+        <XDSBanner status="info" title="Information">
+          <XDSText type="body">Informational message.</XDSText>
+        </XDSBanner>
+        <XDSBanner status="success" title="Success">
+          <XDSText type="body">Operation completed.</XDSText>
+        </XDSBanner>
+      </div>
+    ),
+  },
+  {
+    key: 'textinput',
+    label: 'TextInput',
+    preview: (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 12,
+          maxWidth: 320,
+        }}>
+        <XDSTextInput label="Name" placeholder="Enter your name" value="" />
+        <XDSTextInput label="Email" placeholder="you@example.com" value="" />
+      </div>
+    ),
+  },
+  {
+    key: 'tablist',
+    label: 'TabList',
+    preview: <TabListPreview />,
+  },
+  {
+    key: 'dropdownmenu',
+    label: 'DropdownMenu',
+    preview: (
+      <div style={{display: 'flex', gap: 12}}>
+        <XDSDropdownMenu
+          button={{label: 'Actions', variant: 'secondary', size: 'md'}}
+          items={[
+            {label: 'Edit'},
+            {label: 'Duplicate'},
+            {label: 'Archive'},
+            {label: 'Delete'},
+          ]}
+        />
+        <XDSDropdownMenu
+          button={{label: 'Options', variant: 'ghost', size: 'md'}}
+          items={[{label: 'Settings'}, {label: 'Preferences'}, {label: 'Help'}]}
+        />
+      </div>
+    ),
+  },
+  {
+    key: 'switch',
+    label: 'Switch',
+    preview: <SwitchPreview />,
+  },
+  {
+    key: 'checkbox',
+    label: 'Checkbox',
+    preview: <CheckboxPreview />,
+  },
+  {
+    key: 'radiolist',
+    label: 'RadioList',
+    preview: <RadioListPreview />,
+  },
+  {
+    key: 'progressbar',
+    label: 'ProgressBar',
+    preview: (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
+          width: '100%',
+          minWidth: 280,
+        }}>
+        <div style={{width: '100%'}}>
+          <XDSText type="supporting" color="secondary">
+            25%
+          </XDSText>
+          <div style={{marginTop: 6, width: '100%'}}>
+            <XDSProgressBar value={25} label="Progress" isLabelHidden />
+          </div>
+        </div>
+        <div style={{width: '100%'}}>
+          <XDSText type="supporting" color="secondary">
+            60%
+          </XDSText>
+          <div style={{marginTop: 6, width: '100%'}}>
+            <XDSProgressBar value={60} label="Progress" isLabelHidden />
+          </div>
+        </div>
+        <div style={{width: '100%'}}>
+          <XDSText type="supporting" color="secondary">
+            100%
+          </XDSText>
+          <div style={{marginTop: 6, width: '100%'}}>
+            <XDSProgressBar value={100} label="Progress" isLabelHidden />
+          </div>
+        </div>
+      </div>
+    ),
+  },
+  {
+    key: 'slider',
+    label: 'Slider',
+    preview: <SliderPreview />,
+  },
+  {
+    key: 'token',
+    label: 'Token',
+    preview: (
+      <div style={{display: 'flex', gap: 8, flexWrap: 'wrap'}}>
         <XDSToken label="Design" />
         <XDSToken label="Engineering" />
         <XDSToken label="Product" />
         <XDSToken label="Research" />
       </div>
-    </div>
-  ),
-  tooltip: (
-    <div>
-      <div style={{marginBottom: 16}}>
-        <XDSHeading level={3}>Tooltip</XDSHeading>
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          gap: 12,
-          flexWrap: 'wrap' as const,
-        }}>
+    ),
+  },
+  {
+    key: 'tooltip',
+    label: 'Tooltip',
+    preview: (
+      <div style={{display: 'flex', gap: 12}}>
         <XDSTooltip content="Primary action">
           <XDSButton label="Hover me" variant="primary" />
         </XDSTooltip>
         <XDSTooltip content="Secondary action">
           <XDSButton label="Or me" variant="secondary" />
         </XDSTooltip>
-        <XDSTooltip content="Ghost action">
-          <XDSButton label="Or me" variant="ghost" />
-        </XDSTooltip>
       </div>
+    ),
+  },
+  {
+    key: 'selector',
+    label: 'Selector',
+    preview: <SelectorPreview />,
+  },
+  {
+    key: 'spinner',
+    label: 'Spinner',
+    preview: (
+      <div style={{display: 'flex', gap: 24, alignItems: 'center'}}>
+        <XDSSpinner size="sm" />
+        <XDSSpinner size="md" />
+        <XDSSpinner size="lg" />
+      </div>
+    ),
+  },
+  {
+    key: 'text',
+    label: 'Text',
+    preview: (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 6}}>
+        <XDSHeading level={2}>Heading</XDSHeading>
+        <XDSText type="body">Body text for content and descriptions.</XDSText>
+        <XDSText type="supporting" color="secondary">
+          Supporting text for metadata.
+        </XDSText>
+      </div>
+    ),
+  },
+  {
+    key: 'textarea',
+    label: 'TextArea',
+    preview: (
+      <div style={{width: '100%'}}>
+        <XDSTextArea
+          label="Message"
+          placeholder="Write something..."
+          value=""
+        />
+      </div>
+    ),
+  },
+];
+
+export const COMPONENT_PREVIEWS: {[key: string]: React.ReactNode} =
+  Object.fromEntries(COMPONENT_PREVIEW_LIST.map(c => [c.key, c.preview]));
+
+function SwitchPreview() {
+  const [a, setA] = useState(true);
+  const [b, setB] = useState(true);
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+        maxWidth: 240,
+      }}>
+      <XDSSwitch label="Notifications" value={a} onChange={v => setA(v)} />
+      <XDSSwitch label="Dark mode" value={b} onChange={v => setB(v)} />
     </div>
-  ),
-};
+  );
+}
+
+function TabListPreview() {
+  const [tab, setTab] = useState('overview');
+  return (
+    <XDSTabList value={tab} onChange={setTab}>
+      <XDSTab value="overview" label="Overview" />
+      <XDSTab value="analytics" label="Analytics" />
+      <XDSTab value="settings" label="Settings" />
+    </XDSTabList>
+  );
+}
+
+function CheckboxPreview() {
+  const [a, setA] = useState(true);
+  const [b, setB] = useState(false);
+  const [c, setC] = useState(false);
+  return (
+    <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
+      <XDSCheckboxInput
+        label="Accept terms"
+        value={a}
+        onChange={v => setA(v)}
+      />
+      <XDSCheckboxInput
+        label="Subscribe to newsletter"
+        value={b}
+        onChange={v => setB(v)}
+      />
+      <XDSCheckboxInput label="Remember me" value={c} onChange={v => setC(v)} />
+    </div>
+  );
+}
+
+function RadioListPreview() {
+  const [val, setVal] = useState('medium');
+  return (
+    <XDSRadioList label="Size" value={val} onChange={setVal}>
+      <XDSRadioListItem value="small" label="Small" />
+      <XDSRadioListItem value="medium" label="Medium" />
+      <XDSRadioListItem value="large" label="Large" />
+    </XDSRadioList>
+  );
+}
+
+function SliderPreview() {
+  const [val, setVal] = useState(50);
+  return (
+    <div style={{width: '100%'}}>
+      <XDSSlider label="Volume" value={val} onChange={setVal} />
+    </div>
+  );
+}
+
+function SelectorPreview() {
+  const [val, setVal] = useState('option1');
+  return (
+    <div style={{width: '100%'}}>
+      <XDSSelector
+        label="Category"
+        value={val}
+        onChange={setVal}
+        options={[
+          {value: 'option1', label: 'Design'},
+          {value: 'option2', label: 'Engineering'},
+          {value: 'option3', label: 'Product'},
+        ]}
+      />
+    </div>
+  );
+}

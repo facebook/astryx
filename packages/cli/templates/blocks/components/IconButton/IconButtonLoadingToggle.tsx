@@ -3,7 +3,7 @@
 import {useState} from 'react';
 import {XDSIconButton} from '@xds/core/IconButton';
 import {XDSIcon} from '@xds/core/Icon';
-import {XDSHStack} from '@xds/core/Layout';
+import {XDSHStack} from '@xds/core/Stack';
 
 export default function IconButtonLoadingToggle() {
   const [loadingId, setLoadingId] = useState<string | null>(null);

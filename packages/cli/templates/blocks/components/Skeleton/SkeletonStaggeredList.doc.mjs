@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'Skeleton — Staggered List',
   description:
-    'Staggered skeleton lines with varying widths and sequential animation timing.',
+    'Staggered skeleton lines with varying widths.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['Skeleton', 'VStack'],

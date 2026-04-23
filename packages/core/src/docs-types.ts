@@ -268,6 +268,50 @@ interface BaseDoc {
    *  Lowercase only. Used by `xds component <term>` for fuzzy matching.
    *  e.g. `['accordion', 'expand', 'toggle', 'disclosure']` for Collapsible */
   keywords?: string[];
+  /** Sub-component names to hide from human-facing UI (CLI listings,
+   *  docs catalogs). The components stay public and importable — agents
+   *  and tooling can still discover them via source. Use when the
+   *  directory's doc covers a group but some XDS*.tsx files shouldn't
+   *  appear in the catalog. */
+  hiddenComponents?: string[];
+  /** Hide this entire component from human-facing UI (CLI listings,
+   *  docs catalogs). The component stays public and importable — agents
+   *  and tooling can still discover it via source. Use for shared
+   *  primitives (NavIcon, NavMenu) that only make sense in the context
+   *  of their parent compositions. */
+  hidden?: boolean;
+  /** Optional group for sidebar/docs organization.
+   *  Components without a group appear flat in alphabetical order.
+   *  Groups cluster related components that are always used together
+   *  or are variants of each other. */
+  group?:
+    | 'Avatar'
+    | 'Breadcrumbs'
+    | 'Button'
+    | 'Chat'
+    | 'CheckboxList'
+    | 'Collapsible'
+    | 'CommandPalette'
+    | 'Dialog'
+    | 'DropdownMenu'
+    | 'Field'
+    | 'Grid'
+    | 'Layout'
+    | 'List'
+    | 'MetadataList'
+    | 'MobileNav'
+    | 'SideNav'
+    | 'TopNav'
+    | 'RadioList'
+    | 'SegmentedControl'
+    | 'Selector'
+    | 'Stack'
+    | 'TabList'
+    | 'Table'
+    | 'Toast'
+    | 'TreeList'
+    | 'Typeahead'
+    | 'Utility';
   /** Theming configuration. Documents the stable CSS class names
    *  rendered by this component that themes can target via `@scope`
    *  selectors in `defineTheme`. */
@@ -468,11 +512,11 @@ interface BaseTemplateDoc {
   name: string;
 
   /** One-sentence description of what the template provides. */
-  description: string;
+  description?: string;
 
   /** Whether this template is ready for use. Templates with
    *  isReady: false show as "(WIP)" in the gallery and CLI. */
-  isReady: boolean;
+  isReady?: boolean;
 }
 
 export interface PageTemplateDoc extends BaseTemplateDoc {
@@ -486,25 +530,9 @@ export interface BlockTemplateDoc extends BaseTemplateDoc {
   /** Scale factor for the block preview (default 1). */
   scale?: number;
   /** Component names this block uses, for cross-referencing. */
-  componentsUsed: string[];
+  componentsUsed?: string[];
+  /** When true this block is the canonical "hero" showcase for a component. */
+  isShowcase?: boolean;
 }
 
 export type TemplateDoc = PageTemplateDoc | BlockTemplateDoc;
-
-/**
- * Showcase metadata for a component.
- *
- * Each component can have a showcase file in `packages/cli/templates/showcase/`
- * consisting of a `{Name}.doc.mjs` (this type) and a `{Name}.tsx` (the component).
- *
- *   /\*\* \@type \{import('@xds/core').ComponentShowcaseDoc\} *\/
- *   export const doc = \{ name: 'Button', aspectRatio: 1 \};
- */
-export interface ComponentShowcaseDoc {
-  /** Component name (matches the directory name).
-   *  e.g. `"Button"`, `"Layout"`, `"Dialog"` */
-  name: string;
-  /** Width-to-height ratio for the preview container.
-   *  e.g. `1`, `16 / 9`, `4 / 3` */
-  aspectRatio: number;
-}

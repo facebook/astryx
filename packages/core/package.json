@@ -27,6 +27,10 @@
       "types": "./src/xds.css.d.ts",
       "default": "./dist/xds.css"
     },
+    "./tailwind-theme.css": {
+      "types": "./src/tailwind-theme.css.d.ts",
+      "default": "./src/tailwind-theme.css"
+    },
     "./theme/tokens.stylex": {
       "source": "./src/theme/tokens.stylex.ts",
       "types": "./dist/theme/tokens.stylex.d.ts",
@@ -39,7 +43,7 @@
       "import": "./dist/theme/syntax/index.mjs",
       "require": "./dist/theme/syntax/index.js"
     },
-    "./xds.md": "./xds.md",
+    "./docs.mjs": "./docs.mjs",
     "./AlertDialog": {
       "source": "./src/AlertDialog/index.ts",
       "types": "./dist/AlertDialog/index.d.ts",
@@ -280,12 +284,6 @@
       "import": "./dist/NavIcon/index.mjs",
       "require": "./dist/NavIcon/index.js"
     },
-    "./NavItem": {
-      "source": "./src/NavItem/index.ts",
-      "types": "./dist/NavItem/index.d.ts",
-      "import": "./dist/NavItem/index.mjs",
-      "require": "./dist/NavItem/index.js"
-    },
     "./NavMenu": {
       "source": "./src/NavMenu/index.ts",
       "types": "./dist/NavMenu/index.d.ts",
@@ -524,7 +522,8 @@
   "files": [
     "dist",
     "src",
-    "xds.md"
+    "docs.mjs",
+    "README.md"
   ],
   "scripts": {
     "prepack": "yarn build",

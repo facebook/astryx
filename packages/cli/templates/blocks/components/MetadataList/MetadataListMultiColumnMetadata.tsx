@@ -2,6 +2,7 @@
 
 import {XDSMetadataList, XDSMetadataListItem} from '@xds/core/MetadataList';
 import {XDSToken} from '@xds/core/Token';
+import {XDSHStack} from '@xds/core/Layout';
 
 export default function MetadataListMultiColumnMetadata() {
   return (
@@ -11,10 +12,10 @@ export default function MetadataListMultiColumnMetadata() {
       <XDSMetadataListItem label="Owner">Joey</XDSMetadataListItem>
       <XDSMetadataListItem label="Created">Jan 15, 2026</XDSMetadataListItem>
       <XDSMetadataListItem label="Tags">
-        <span style={{display: 'flex', gap: 4}}>
+        <XDSHStack gap={1}>
           <XDSToken label="component" />
           <XDSToken label="xds" />
-        </span>
+        </XDSHStack>
       </XDSMetadataListItem>
       <XDSMetadataListItem label="Priority">Tier 1</XDSMetadataListItem>
     </XDSMetadataList>

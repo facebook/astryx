@@ -6,5 +6,5 @@ export const doc = {
     'A vertical list of external links that open in a new tab with an indicator icon.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Link'],
+  componentsUsed: ['Link', 'VStack'],
 };

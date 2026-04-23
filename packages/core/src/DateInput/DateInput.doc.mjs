@@ -107,12 +107,6 @@ export const docs = {
       default: 'false',
     },
     {
-      name: 'hasClear',
-      type: 'boolean',
-      description: '设置日期值时显示清除 (×) 按鈕。点击后清空值并将焦点返回输入框。',
-      default: 'false',
-    },
-    {
       name: 'numberOfMonths',
       type: '1 | 2',
       description:
@@ -132,12 +126,23 @@ export const docs = {
     ],
   },
   usage: {
-    description: 'A date input field that combines a text input with a calendar popover for selecting dates. Use when users need to enter a specific date, such as scheduling events, setting deadlines, or completing form submissions.',
+    description: 'DateInput lets the user type or pick a date from a calendar popover. Use it for scheduling, deadlines, booking dates, or any form field that needs a specific calendar date.',
     bestPractices: [
       { guidance: true, description: 'Provide clear labels and descriptions so users understand what date is expected.' },
       { guidance: true, description: 'Use min, max, and dateConstraints to restrict selectable dates to valid ranges.' },
+      { guidance: true, description: 'Use hasClear when the date is optional so the user can easily reset it.' },
+      { guidance: true, description: 'Show a loading state with onChangeAction when the date triggers a server-side save.' },
       { guidance: false, description: 'Use a DateInput for free-form text that does not represent a calendar date.' },
       { guidance: false, description: 'Hide the label without surrounding context that makes the field purpose obvious.' },
+      { guidance: false, description: 'Rely on the calendar alone — the text input lets users type dates directly, which is faster for known dates.' },
+    ],
+    anatomy: [
+      {name: 'Label', required: true, description: 'Text above the input describing what date is expected.'},
+      {name: 'Text input', required: true, description: 'A field where the user can type a date directly. Parses common formats like MM/DD/YYYY.'},
+      {name: 'Calendar icon', required: true, description: 'A button that opens the calendar popover for visual date picking.'},
+      {name: 'Calendar popover', required: false, description: 'A month grid that appears when the icon is clicked or the input is focused.'},
+      {name: 'Clear button', required: false, description: 'A × button that resets the date value. Shown when hasClear is true and a date is set.'},
+      {name: 'Status message', required: false, description: 'An error, warning, or success message below the input.'},
     ],
   },
 };
@@ -146,12 +151,15 @@ export const docs = {
 export const docsZh = {
   name: 'DateInput',
   usage: {
-    description: 'A date input field that combines a text input with a calendar popover for selecting dates. Use when users need to enter a specific date, such as scheduling events, setting deadlines, or completing form submissions.',
+    description: 'DateInput lets the user type or pick a date from a calendar popover. Use it for scheduling, deadlines, booking dates, or any form field that needs a specific calendar date.',
     bestPractices: [
       { guidance: true, description: 'Provide clear labels and descriptions so users understand what date is expected.' },
       { guidance: true, description: 'Use min, max, and dateConstraints to restrict selectable dates to valid ranges.' },
+      { guidance: true, description: 'Use hasClear when the date is optional so the user can easily reset it.' },
+      { guidance: true, description: 'Show a loading state with onChangeAction when the date triggers a server-side save.' },
       { guidance: false, description: 'Use a DateInput for free-form text that does not represent a calendar date.' },
       { guidance: false, description: 'Hide the label without surrounding context that makes the field purpose obvious.' },
+      { guidance: false, description: 'Rely on the calendar alone — the text input lets users type dates directly, which is faster for known dates.' },
     ],
   },
   props: [
@@ -199,14 +207,14 @@ export const docsZh = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'text input w/ calendar popover for date selection',
+  description: 'text input w/ calendar popover for picking a date',
   usage: {
-    description: 'A date input field that combines a text input with a calendar popover for selecting dates. Use when users need to enter a specific date, such as scheduling events, setting deadlines, or completing form submissions.',
+    description: 'DateInput lets the user type or pick a date from a calendar popover. Use for scheduling, deadlines, booking dates, or any form field needing a calendar date.',
     bestPractices: [
-      { guidance: true, description: 'Provide clear labels and descriptions so users understand what date is expected.' },
-      { guidance: true, description: 'Use min, max, and dateConstraints to restrict selectable dates to valid ranges.' },
-      { guidance: false, description: 'Use a DateInput for free-form text that does not represent a calendar date.' },
-      { guidance: false, description: 'Hide the label without surrounding context that makes the field purpose obvious.' },
+      { guidance: true, description: 'Clear labels + descriptions. Use min/max/dateConstraints for valid ranges.' },
+      { guidance: true, description: 'Use hasClear for optional dates. Use onChangeAction for server-side saves.' },
+      { guidance: false, description: 'Use for free-form text that is not a calendar date.' },
+      { guidance: false, description: 'Hide the label without surrounding context. Don\'t ignore the text input — users can type dates directly.' },
     ],
   },
   propDescriptions: {

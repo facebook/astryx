@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'Icon — Semantic Colors',
   description:
-    'All semantic icon color variants with labels, showing primary through warning states.',
+    'All semantic icon color variants with labels.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['Icon', 'HStack', 'VStack', 'Text'],

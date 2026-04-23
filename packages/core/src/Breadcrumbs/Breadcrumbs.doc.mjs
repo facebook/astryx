@@ -2,14 +2,25 @@
 
 export const docs = {
   name: 'Breadcrumbs',
+  group: 'Breadcrumbs',
   keywords: ["breadcrumbs","breadcrumb","navigation","nav","crumbs","trail","path","hierarchy","wayfinding","steps"],
   usage: {
     description:
-      'Breadcrumbs display a secondary navigation trail that shows the user\'s position within a content hierarchy. Use to orient users and enable quick back-and-forth navigation across nested pages.',
+      'Breadcrumbs show a trail of links from the root to the current page. Use them at the top of detail pages, settings panels, or anywhere the user needs to see where they are and navigate back up.',
     bestPractices: [
-      {guidance: true, description: 'Place breadcrumbs near the top of the page, above the main heading, to establish hierarchy context.'},
-      {guidance: true, description: 'Keep breadcrumb labels short and match the titles of the pages they link to.'},
-      {guidance: false, description: 'Use breadcrumbs as the primary navigation — they supplement, not replace, a main nav.'},
+      {guidance: true, description: 'Place breadcrumbs above the page heading so the user sees their location before reading the content.'},
+      {guidance: true, description: 'Keep labels short and match the page titles they link to — "Settings" not "Application Settings Page".'},
+      {guidance: true, description: 'Use the supporting variant in dense UIs like admin panels or sidebars where the breadcrumb should be subtle.'},
+      {guidance: true, description: 'Make the last item plain text, not a link — it represents the current page. The component does this automatically when you set isCurrent.'},
+      {guidance: false, description: 'Use breadcrumbs as the primary navigation — they supplement a sidebar or top nav, not replace it.'},
+      {guidance: false, description: 'Show breadcrumbs on top-level pages that have no parent — they add clutter without helping the user.'},
+      {guidance: false, description: 'Let the trail grow beyond 5 levels — if you need more, consider simplifying the page hierarchy instead.'},
+    ],
+    anatomy: [
+      {name: 'Trail', required: true, description: 'The ordered list of links from root to current page.'},
+      {name: 'Item', required: true, description: 'A single step in the trail. Renders as a link or plain text for the current page.'},
+      {name: 'Separator', required: true, description: 'The character between items. Defaults to "/" but can be customized.'},
+      {name: 'Icon', required: false, description: 'An optional icon before an item label, like a home icon on the first item.'},
     ],
   },
   theming: {
@@ -105,13 +116,18 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Breadcrumbs',
+  group: 'Breadcrumbs',
   usage: {
     description:
-      'Breadcrumbs display a secondary navigation trail that shows the user\'s position within a content hierarchy. Use to orient users and enable quick back-and-forth navigation across nested pages.',
+      'Breadcrumbs show a trail of links from the root to the current page. Use them at the top of detail pages, settings panels, or anywhere the user needs to see where they are and navigate back up.',
     bestPractices: [
-      {guidance: true, description: 'Place breadcrumbs near the top of the page, above the main heading, to establish hierarchy context.'},
-      {guidance: true, description: 'Keep breadcrumb labels short and match the titles of the pages they link to.'},
-      {guidance: false, description: 'Use breadcrumbs as the primary navigation — they supplement, not replace, a main nav.'},
+      {guidance: true, description: 'Place breadcrumbs above the page heading so the user sees their location before reading the content.'},
+      {guidance: true, description: 'Keep labels short and match the page titles they link to — "Settings" not "Application Settings Page".'},
+      {guidance: true, description: 'Use the supporting variant in dense UIs like admin panels or sidebars where the breadcrumb should be subtle.'},
+      {guidance: true, description: 'Make the last item plain text, not a link — it represents the current page. The component does this automatically when you set isCurrent.'},
+      {guidance: false, description: 'Use breadcrumbs as the primary navigation — they supplement a sidebar or top nav, not replace it.'},
+      {guidance: false, description: 'Show breadcrumbs on top-level pages that have no parent — they add clutter without helping the user.'},
+      {guidance: false, description: 'Let the trail grow beyond 5 levels — if you need more, consider simplifying the page hierarchy instead.'},
     ],
   },
   theming: {
@@ -159,14 +175,17 @@ export const docsZh = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'navigation breadcrumb trail w/ semantic HTML',
+  description: 'link trail from root to current page for wayfinding',
   usage: {
     description:
-      'Breadcrumbs display a secondary navigation trail that shows the user\'s position within a content hierarchy. Use to orient users and enable quick back-and-forth navigation across nested pages.',
+      'Breadcrumbs show a trail of links from root to current page. Use at the top of detail pages, settings, or nested content.',
     bestPractices: [
-      {guidance: true, description: 'Place breadcrumbs near the top of the page, above the main heading, to establish hierarchy context.'},
-      {guidance: true, description: 'Keep breadcrumb labels short and match the titles of the pages they link to.'},
-      {guidance: false, description: 'Use breadcrumbs as the primary navigation — they supplement, not replace, a main nav.'},
+      {guidance: true, description: 'Place above the page heading. Keep labels short and matching page titles.'},
+      {guidance: true, description: 'Use supporting variant in dense UIs where the breadcrumb should be subtle.'},
+      {guidance: true, description: 'Last item should be plain text (isCurrent), not a link.'},
+      {guidance: false, description: 'Use as primary navigation — breadcrumbs supplement, not replace, a main nav.'},
+      {guidance: false, description: 'Show on top-level pages with no parent.'},
+      {guidance: false, description: 'Let the trail exceed 5 levels — simplify the hierarchy instead.'},
     ],
   },
   components: [

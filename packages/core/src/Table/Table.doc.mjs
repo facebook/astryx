@@ -2,6 +2,7 @@
 
 export const docs = {
   name: 'Table',
+  group: 'Table',
   keywords: ["table","datatable","datagrid","spreadsheet","sorting","virtualized","columns","rows","selection","pinning"],
   theming: {
     targets: [
@@ -430,6 +431,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Table',
+  group: 'Table',
   theming: {
     targets: [
       {className: 'xds-base-table'},

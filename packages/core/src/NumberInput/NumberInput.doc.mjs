@@ -156,10 +156,10 @@ export const docs = {
   },
   usage: {
     description:
-      'NumberInput is a form input for collecting and editing numeric values with built-in validation. Use it when users need to enter quantities, measurements, or other constrained numeric data with optional min, max, and step controls.',
+      'A form input for numeric values with built-in validation, min/max constraints, and step controls. Use NumberInput for quantities, measurements, percentages, and similar inputs.',
     bestPractices: [
-      { guidance: true, description: 'Set appropriate min, max, and step constraints to guide users toward valid values.' },
-      { guidance: true, description: 'Display units (e.g. "%" or "GB") to clarify what the number represents.' },
+      { guidance: true, description: 'Set min, max, and step to guide users toward valid values.' },
+      { guidance: true, description: 'Show units (e.g. "%" or "GB") so users know what the number represents.' },
       { guidance: false, description: 'Use NumberInput for free-form text that happens to contain numbers — use TextInput instead.' },
       { guidance: false, description: 'Set both isOptional and isRequired on the same field.' },
     ],
@@ -328,10 +328,10 @@ export const docsZh = {
   },
   usage: {
     description:
-      'NumberInput is a form input for collecting and editing numeric values with built-in validation. Use it when users need to enter quantities, measurements, or other constrained numeric data with optional min, max, and step controls.',
+      'A form input for numeric values with built-in validation, min/max constraints, and step controls. Use NumberInput for quantities, measurements, percentages, and similar inputs.',
     bestPractices: [
-      { guidance: true, description: 'Set appropriate min, max, and step constraints to guide users toward valid values.' },
-      { guidance: true, description: 'Display units (e.g. "%" or "GB") to clarify what the number represents.' },
+      { guidance: true, description: 'Set min, max, and step to guide users toward valid values.' },
+      { guidance: true, description: 'Show units (e.g. "%" or "GB") so users know what the number represents.' },
       { guidance: false, description: 'Use NumberInput for free-form text that happens to contain numbers — use TextInput instead.' },
       { guidance: false, description: 'Set both isOptional and isRequired on the same field.' },
     ],
@@ -350,10 +350,10 @@ export const docsDense = {
   description: 'Number input component for collecting numeric user input w/ validation.',
   usage: {
     description:
-      'NumberInput is a form input for collecting and editing numeric values with built-in validation. Use it when users need to enter quantities, measurements, or other constrained numeric data with optional min, max, and step controls.',
+      'A form input for numeric values with built-in validation, min/max constraints, and step controls. Use NumberInput for quantities, measurements, percentages, and similar inputs.',
     bestPractices: [
-      { guidance: true, description: 'Set appropriate min, max, and step constraints to guide users toward valid values.' },
-      { guidance: true, description: 'Display units (e.g. "%" or "GB") to clarify what the number represents.' },
+      { guidance: true, description: 'Set min, max, and step to guide users toward valid values.' },
+      { guidance: true, description: 'Show units (e.g. "%" or "GB") so users know what the number represents.' },
       { guidance: false, description: 'Use NumberInput for free-form text that happens to contain numbers — use TextInput instead.' },
       { guidance: false, description: 'Set both isOptional and isRequired on the same field.' },
     ],

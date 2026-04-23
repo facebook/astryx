@@ -9,7 +9,11 @@
 
 // Unified stack component
 export {XDSStack} from './XDSStack';
-export type {XDSStackProps, StackAlignment} from './XDSStack';
+export type {
+  XDSStackProps,
+  XDSStackAlignment,
+  StackAlignment,
+} from './XDSStack';
 
 // Convenience wrappers
 export {XDSHStack} from './XDSHStack';

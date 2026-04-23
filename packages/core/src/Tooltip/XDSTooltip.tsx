@@ -119,6 +119,12 @@ export interface XDSTooltipProps {
    * @default 'auto'
    */
   hasHoverIndication?: 'auto' | boolean;
+
+  /**
+   * Whether the tooltip should be shown on mount.
+   * The tooltip is still dismissible — this just opens it initially.
+   */
+  isDefaultOpen?: boolean;
 }
 
 /**
@@ -162,6 +168,7 @@ export function XDSTooltip({
   isEnabled = true,
   onOpenChange,
   hasHoverIndication = 'auto',
+  isDefaultOpen,
 }: XDSTooltipProps): ReactElement {
   const wrapperRef = useRef<HTMLElement>(null);
   const textOnly = children != null ? isTextOnly(children) : false;
@@ -186,6 +193,7 @@ export function XDSTooltip({
     hideDelay,
     focusTrigger,
     isEnabled,
+    isDefaultOpen,
     onShow: handleShow,
     onHide: handleHide,
   });

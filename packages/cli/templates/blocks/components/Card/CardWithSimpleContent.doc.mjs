@@ -1,9 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Card — Simple Content',
-  description: 'Card with a heading and body text using the layout stack.',
+  name: 'Card — Simple',
+  description: 'A card with a heading and body text. Use for summaries, descriptions, or any grouped content that needs visual separation from the page. The card handles its own border, background, and padding — just pass your content as children. Set a width to constrain it, or leave it to fill the parent.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Card', 'Layout', 'Text'],
 };

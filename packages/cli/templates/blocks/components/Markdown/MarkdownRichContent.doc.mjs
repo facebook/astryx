@@ -2,8 +2,7 @@
 export const doc = {
   type: 'block',
   name: 'Markdown — Rich Content',
-  description:
-    'Full-featured markdown rendering with headings, lists, code blocks, tables, and blockquotes.',
+  description: 'Markdown with headings, lists, code blocks, tables, blockquotes, and task lists',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['Markdown'],

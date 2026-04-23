@@ -112,6 +112,12 @@ export interface XDSHoverCardOptions {
   isEnabled?: boolean;
 
   /**
+   * Whether the hover card should be shown on mount.
+   * The hover card is still dismissible — this just opens it initially.
+   */
+  isDefaultOpen?: boolean;
+
+  /**
    * Callback fired when hover card is shown.
    * Wrap in useCallback for stable identity.
    */
@@ -226,6 +232,7 @@ export function useXDSHoverCard(
     hideDelay = 200,
     focusTrigger = 'auto',
     isEnabled = true,
+    isDefaultOpen = false,
     onShow,
     onHide,
   } = options;
@@ -394,6 +401,14 @@ export function useXDSHoverCard(
       clearTimeouts();
     };
   }, [clearTimeouts]);
+
+  // Show on mount when isDefaultOpen is true
+  useEffect(() => {
+    if (isDefaultOpen) {
+      layer.show();
+    }
+    // Only run on mount — isDefaultOpen is not reactive
+  }, []);
 
   // Render function that wraps layer.render with hover card behavior
   const renderHoverCard = useCallback(

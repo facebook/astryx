@@ -1,10 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Text — Content Hierarchy',
-  description:
-    'Form-like content sections using label, body, and supporting text types for visual hierarchy.',
+  name: 'Text — Hierarchy',
+  description: 'Label, body, and supporting text types layered to create a natural reading order without any custom styling.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['Text'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Text', 'Stack'],
 };

@@ -2,9 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'ToggleButton — With Label',
-  description:
-    'Toggle button with visible label text that shows a font weight shift on press.',
+  description: 'Toggle buttons with visible text labels that show a font weight shift on press. Use when the icon alone is not enough to communicate the action.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['ToggleButton'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['ToggleButton', 'ToggleButtonGroup', 'Layout', 'Text', 'Icon'],
 };

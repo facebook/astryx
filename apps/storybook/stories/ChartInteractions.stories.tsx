@@ -18,7 +18,7 @@ import {XDSStack, XDSText} from '@xds/core';
 import {XDSHeading} from '@xds/core/Text';
 import {useDataset} from './useDataset';
 
-const meta: Meta = {title: 'Lab/XDSChart Interactions', tags: ['autodocs']};
+const meta: Meta = {title: 'Lab/Chart Interactions', tags: ['autodocs']};
 export default meta;
 
 type Car = {Horsepower: number; Miles_per_Gallon: number};

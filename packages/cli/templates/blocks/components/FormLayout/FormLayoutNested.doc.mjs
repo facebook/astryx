@@ -2,8 +2,7 @@
 export const doc = {
   type: 'block',
   name: 'FormLayout — Nested Address Form',
-  description:
-    'Nested vertical and horizontal layouts for a multi-section address form',
+  description: 'Address form mixing vertical and horizontal layouts for grouped fields',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['FormLayout', 'TextInput'],

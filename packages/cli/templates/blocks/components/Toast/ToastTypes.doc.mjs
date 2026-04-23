@@ -2,9 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'Toast — Types',
-  description:
-    'Info and error toast variants. Error toasts persist until dismissed.',
+  description: 'Info and error toast variants side by side. Info toasts auto-dismiss after 5 seconds, error toasts persist until the user dismisses them.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['Toast', 'Button', 'Stack'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Toast', 'Button', 'Layout', 'Text'],
 };

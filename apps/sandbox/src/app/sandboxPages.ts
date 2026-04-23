@@ -97,13 +97,11 @@ export const categories: SandboxCategory[] = [
     description:
       'Full-page application templates — dashboards, forms, and data views built with XDS.',
     pages: [
-      ...autoDiscoveredTemplates
-        .filter(t => t.slug !== 'docsite-landing')
-        .map(t => ({
-          name: t.name,
-          href: t.href,
-          description: t.description,
-        })),
+      ...autoDiscoveredTemplates.map(t => ({
+        name: t.name,
+        href: t.href,
+        description: t.description,
+      })),
     ],
   },
   {
@@ -126,12 +124,6 @@ export const categories: SandboxCategory[] = [
         href: '/pages/docsite/',
         description:
           'Template gallery with AI composer and component documentation',
-      },
-      {
-        name: 'Docsite Landing',
-        href: '/templates/docsite-landing/',
-        description:
-          'Template gallery with SideNav layout, AI chat, and resizable preview panel',
       },
       {
         name: 'Media Mode',

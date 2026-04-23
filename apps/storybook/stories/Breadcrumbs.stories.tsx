@@ -3,7 +3,7 @@ import {XDSBreadcrumbs, XDSBreadcrumbItem} from '@xds/core/Breadcrumbs';
 import {HomeIcon, Cog6ToothIcon, FolderIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSBreadcrumbs> = {
-  title: 'Navigation/XDSBreadcrumbs',
+  title: 'Core/Navigation/Breadcrumbs',
   component: XDSBreadcrumbs,
   tags: ['autodocs'],
   argTypes: {

@@ -5,8 +5,8 @@ import {XDSFormLayout} from '@xds/core/FormLayout';
 import {XDSTextInput} from '@xds/core/TextInput';
 
 export default function FormLayoutHorizontal() {
-  const [first, setFirst] = useState('');
-  const [last, setLast] = useState('');
+  const [first, setFirst] = useState('Jordan');
+  const [last, setLast] = useState('Rivera');
 
   return (
     <XDSFormLayout direction="horizontal">

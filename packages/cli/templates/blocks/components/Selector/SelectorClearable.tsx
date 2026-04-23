@@ -2,19 +2,25 @@
 
 import {useState} from 'react';
 import {XDSSelector} from '@xds/core/Selector';
+import {XDSCenter} from '@xds/core/Center';
 
 export default function SelectorClearable() {
-  const [value, setValue] = useState<string | null>('Banana');
+  const [value, setValue] = useState<string | null>('engineering');
   return (
-    <div style={{width: 250}}>
+    <XDSCenter width={250}>
       <XDSSelector
-        label="Fruit"
-        options={['Apple', 'Banana', 'Cherry', 'Date']}
+        label="Department"
+        options={[
+          {value: 'engineering', label: 'Engineering'},
+          {value: 'design', label: 'Design'},
+          {value: 'marketing', label: 'Marketing'},
+          {value: 'sales', label: 'Sales'},
+        ]}
         value={value}
         onChange={setValue}
-        placeholder="Select a fruit..."
+        placeholder="Choose a department..."
         hasClear
       />
-    </div>
+    </XDSCenter>
   );
 }

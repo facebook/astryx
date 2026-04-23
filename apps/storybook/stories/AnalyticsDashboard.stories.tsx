@@ -458,7 +458,7 @@ const componentAdoptionData: ComponentAdoptionRow[] = [
   },
   {
     id: '7',
-    component: 'XDSSelectorItem',
+    component: 'XDSSelectorOption',
     usages: 57513,
     files: 19649,
     oncalls: 50,
@@ -1385,7 +1385,7 @@ function AnalyticsDashboard() {
 // =============================================================================
 
 const meta: Meta = {
-  title: 'Pages/Analytics Dashboard',
+  title: 'Patterns/Analytics Dashboard',
   parameters: {
     layout: 'fullscreen',
   },

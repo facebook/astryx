@@ -187,3 +187,21 @@ export {
   type XDSSankeyGridProps,
   type SankeyContext,
 } from './Sankey';
+
+// Chart v2 — config model
+export {
+  XDSChart as XDSChartV2,
+  type XDSChartProps as XDSChartV2Props,
+  bar,
+  line,
+  dot,
+  area,
+  band,
+  candlestick,
+  useChartV2,
+  type SeriesConfig,
+  type ChartV2Context,
+  type ChartPointerEvent,
+  type ResolvedPoint,
+  type ResolvedPositions,
+} from './ChartV2';

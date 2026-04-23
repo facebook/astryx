@@ -1,39 +1,35 @@
 'use client';
 
 import {XDSText} from '@xds/core/Text';
+import {XDSStack} from '@xds/core/Stack';
 
 export default function TextHierarchy() {
   return (
-    <div
-      style={{
-        maxWidth: 300,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 16,
-      }}>
-      <div>
+    <XDSStack direction="vertical" gap={4}>
+      <XDSStack direction="vertical" gap={1}>
         <XDSText type="label" display="block">
-          Section title as label
+          Account settings
         </XDSText>
         <XDSText type="body" display="block">
-          Body text provides the main content or instructions for this section.
+          Manage your profile information, notification preferences, and
+          security options from this page.
         </XDSText>
         <XDSText type="supporting" display="block">
-          Supporting text adds extra context or constraints.
+          Last updated 3 hours ago
         </XDSText>
-      </div>
-      <div>
+      </XDSStack>
+      <XDSStack direction="vertical" gap={1}>
         <XDSText type="label" display="block">
-          Another section
+          Billing details
         </XDSText>
         <XDSText type="body" display="block">
-          These text types create a natural visual hierarchy without any
-          additional styling.
+          Your next invoice of $49.00 is scheduled for January 15, 2025. All
+          charges are billed in USD.
         </XDSText>
         <XDSText type="supporting" color="active" display="block">
-          Active supporting text draws attention to important details.
+          Payment method verified
         </XDSText>
-      </div>
-    </div>
+      </XDSStack>
+    </XDSStack>
   );
 }

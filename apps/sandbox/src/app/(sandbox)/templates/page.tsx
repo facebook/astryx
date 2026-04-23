@@ -35,6 +35,7 @@ type TemplateRow = {
   isReady: boolean;
   grade: string;
   gradeScore: number;
+  isShowcase: boolean;
 };
 
 const rows: TemplateRow[] = [
@@ -50,6 +51,7 @@ const rows: TemplateRow[] = [
     isReady: t.isReady,
     grade: t.grade,
     gradeScore: t.gradeScore,
+    isShowcase: false,
   })),
   ...blocks.map(b => ({
     id: `block-${b.slug}`,
@@ -63,6 +65,7 @@ const rows: TemplateRow[] = [
     isReady: b.isReady,
     grade: b.grade,
     gradeScore: b.gradeScore,
+    isShowcase: b.isShowcase,
   })),
 ];
 
@@ -163,7 +166,10 @@ function CopyPath({path}: {path: string}) {
 
 const uniqueComponents = [...new Set(blocks.map(b => b.component))].sort();
 
-const GRADE_VARIANT: Record<string, 'success' | 'info' | 'warning' | 'error' | 'neutral'> = {
+const GRADE_VARIANT: Record<
+  string,
+  'success' | 'info' | 'warning' | 'error' | 'neutral'
+> = {
   A: 'neutral',
   B: 'info',
   C: 'warning',
@@ -203,6 +209,7 @@ const fieldDefs = [
       {value: 'F', label: 'F'},
     ],
   },
+  {key: 'isShowcase', type: 'boolean', label: 'Showcase'},
 ] as const;
 
 const columns: XDSTableColumn<TemplateRow>[] = [
@@ -250,6 +257,15 @@ const columns: XDSTableColumn<TemplateRow>[] = [
     sortable: true,
     filter: 'component',
     width: pixel(150),
+  },
+  {
+    key: 'isShowcase',
+    header: 'Showcase',
+    sortable: true,
+    filter: 'isShowcase',
+    width: pixel(100),
+    renderCell: (row: TemplateRow) =>
+      row.isShowcase ? <XDSBadge label="Showcase" variant="info" /> : null,
   },
   {
     key: 'description',

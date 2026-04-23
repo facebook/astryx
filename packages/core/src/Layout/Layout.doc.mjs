@@ -2,6 +2,7 @@
 
 export const docs = {
   name: 'Layout',
+  group: 'Layout',
   keywords: ["layout","container","content","flex","box","wrapper","scaffold","page","shell"],
   theming: {
     targets: [

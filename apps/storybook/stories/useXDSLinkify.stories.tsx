@@ -66,7 +66,7 @@ function LinkifyDemo({
 // ---------------------------------------------------------------------------
 
 const meta: Meta<typeof LinkifyDemo> = {
-  title: 'Hooks/useXDSLinkify',
+  title: 'Core/Hooks/useXDSLinkify',
   component: LinkifyDemo,
   tags: ['autodocs'],
   argTypes: {
@@ -169,7 +169,7 @@ export const Interactive: Story = {
         <XDSTextInput
           label="Input text"
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={e => setText(e.target.value)}
         />
         <div
           style={{

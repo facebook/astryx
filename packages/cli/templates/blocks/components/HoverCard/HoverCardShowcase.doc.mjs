@@ -1,0 +1,9 @@
+/** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
+export const doc = {
+  type: 'block',
+  name: 'HoverCard',
+  isReady: true,
+  aspectRatio: 1,
+  isShowcase: true,
+  componentsUsed: ['HoverCard', 'Button', 'Layout', 'Text'],
+};

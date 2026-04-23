@@ -42,12 +42,12 @@ export const docs = {
   },
   usage: {
     description:
-      'An animated loading indicator for indeterminate wait states. Use Spinner to signal ongoing processes with unknown duration, such as data fetching or form submission. For loading content of known dimensions, use Skeleton instead.',
+      'An animated loading indicator for processes with unknown duration, such as data fetching or form submission. Supports visible labels, multiple sizes, and a dark background variant. For content with known dimensions, use Skeleton instead.',
     bestPractices: [
       {guidance: true, description: 'Provide a meaningful label to describe what is loading for screen reader users.'},
-      {guidance: true, description: 'Choose the appropriate shade — use "onMedia" when placed on dark or accent-colored backgrounds.'},
+      {guidance: true, description: 'Use the "onMedia" shade when placed on dark or accent-colored backgrounds.'},
       {guidance: false, description: 'Use for content areas with known dimensions — use Skeleton to preserve layout instead.'},
-      {guidance: false, description: 'Stack multiple Spinners in the same view — use one to represent the overall loading state.'},
+      {guidance: false, description: 'Stack multiple spinners in the same view — use one to represent the overall loading state.'},
     ],
   },
 };
@@ -93,12 +93,12 @@ export const docsZh = {
   },
   usage: {
     description:
-      'An animated loading indicator for indeterminate wait states. Use Spinner to signal ongoing processes with unknown duration, such as data fetching or form submission. For loading content of known dimensions, use Skeleton instead.',
+      'An animated loading indicator for processes with unknown duration, such as data fetching or form submission. Supports visible labels, multiple sizes, and a dark background variant. For content with known dimensions, use Skeleton instead.',
     bestPractices: [
       {guidance: true, description: 'Provide a meaningful label to describe what is loading for screen reader users.'},
-      {guidance: true, description: 'Choose the appropriate shade — use "onMedia" when placed on dark or accent-colored backgrounds.'},
+      {guidance: true, description: 'Use the "onMedia" shade when placed on dark or accent-colored backgrounds.'},
       {guidance: false, description: 'Use for content areas with known dimensions — use Skeleton to preserve layout instead.'},
-      {guidance: false, description: 'Stack multiple Spinners in the same view — use one to represent the overall loading state.'},
+      {guidance: false, description: 'Stack multiple spinners in the same view — use one to represent the overall loading state.'},
     ],
   },
 };
@@ -107,12 +107,12 @@ export const docsZh = {
 export const docsDense = {
   usage: {
     description:
-      'An animated loading indicator for indeterminate wait states. Use Spinner to signal ongoing processes with unknown duration, such as data fetching or form submission. For loading content of known dimensions, use Skeleton instead.',
+      'An animated loading indicator for processes with unknown duration, such as data fetching or form submission. Supports visible labels, multiple sizes, and a dark background variant. For content with known dimensions, use Skeleton instead.',
     bestPractices: [
       {guidance: true, description: 'Provide a meaningful label to describe what is loading for screen reader users.'},
-      {guidance: true, description: 'Choose the appropriate shade — use "onMedia" when placed on dark or accent-colored backgrounds.'},
+      {guidance: true, description: 'Use the "onMedia" shade when placed on dark or accent-colored backgrounds.'},
       {guidance: false, description: 'Use for content areas with known dimensions — use Skeleton to preserve layout instead.'},
-      {guidance: false, description: 'Stack multiple Spinners in the same view — use one to represent the overall loading state.'},
+      {guidance: false, description: 'Stack multiple spinners in the same view — use one to represent the overall loading state.'},
     ],
   },
   propDescriptions: {

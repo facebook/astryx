@@ -17,7 +17,7 @@ import {HandThumbUpIcon, HandThumbDownIcon} from '@heroicons/react/24/outline';
 import {ClipboardDocumentIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSChatMessageList> = {
-  title: 'Chat/XDSChatMessageList',
+  title: 'Core/Chat/MessageList',
   component: XDSChatMessageList,
   tags: ['autodocs'],
 };
@@ -32,7 +32,9 @@ export const Default: StoryObj = {
           <XDSChatMessageBubble
             metadata={
               <XDSChatMessageMetadata
-                timestamp={<XDSTimestamp value="2026-03-15T14:30:00" format="time" />}
+                timestamp={
+                  <XDSTimestamp value="2026-03-15T14:30:00" format="time" />
+                }
                 status="read"
               />
             }>
@@ -50,7 +52,9 @@ For **server state**, use a library like **TanStack Query** or **SWR** — they 
 
 Avoid global state managers unless you have a genuine need for cross-cutting state. Most apps are over-engineered in this area.`}</XDSMarkdown>
           <XDSChatMessageMetadata
-            timestamp={<XDSTimestamp value="2026-03-15T14:30:30" format="time" />}
+            timestamp={
+              <XDSTimestamp value="2026-03-15T14:30:30" format="time" />
+            }
             footer={
               <>
                 <span>Claude Opus 4.6</span>
@@ -71,7 +75,9 @@ Avoid global state managers unless you have a genuine need for cross-cutting sta
                 />
                 <XDSButton
                   label="Copy"
-                  icon={<ClipboardDocumentIcon style={{width: 14, height: 14}} />}
+                  icon={
+                    <ClipboardDocumentIcon style={{width: 14, height: 14}} />
+                  }
                   variant="ghost"
                   size="sm"
                   isIconOnly
@@ -84,7 +90,9 @@ Avoid global state managers unless you have a genuine need for cross-cutting sta
           <XDSChatMessageBubble
             metadata={
               <XDSChatMessageMetadata
-                timestamp={<XDSTimestamp value="2026-03-15T14:31:00" format="time" />}
+                timestamp={
+                  <XDSTimestamp value="2026-03-15T14:31:00" format="time" />
+                }
                 status="read"
               />
             }>
@@ -92,7 +100,9 @@ Avoid global state managers unless you have a genuine need for cross-cutting sta
           </XDSChatMessageBubble>
         </XDSChatMessage>
         <XDSChatMessage sender="assistant">
-          <XDSMarkdown density="compact">Here's a common pattern for form state:</XDSMarkdown>
+          <XDSMarkdown density="compact">
+            Here's a common pattern for form state:
+          </XDSMarkdown>
           <XDSCodeBlock
             code={`const reducer = (state, action) => {
   switch (action.type) {
@@ -118,7 +128,9 @@ const [state, dispatch] = useReducer(reducer, initialState);`}
 | \`useSyncExternalStore\` | External stores | On snapshot change | High | Redux, Zustand, signals |
 | \`useRef\` | Mutable values | Never | Low | DOM refs, timers, previous values |`}</XDSMarkdown>
           <XDSChatMessageMetadata
-            timestamp={<XDSTimestamp value="2026-03-15T14:31:30" format="time" />}
+            timestamp={
+              <XDSTimestamp value="2026-03-15T14:31:30" format="time" />
+            }
             footer={
               <>
                 <span>Claude Opus 4.6</span>
@@ -139,7 +151,9 @@ const [state, dispatch] = useReducer(reducer, initialState);`}
                 />
                 <XDSButton
                   label="Copy"
-                  icon={<ClipboardDocumentIcon style={{width: 14, height: 14}} />}
+                  icon={
+                    <ClipboardDocumentIcon style={{width: 14, height: 14}} />
+                  }
                   variant="ghost"
                   size="sm"
                   isIconOnly
@@ -243,7 +257,9 @@ export const ChatConversation: StoryObj = {
               name={<span style={nameStyle}>Navi</span>}
               metadata={
                 <XDSChatMessageMetadata
-                  timestamp={<XDSTimestamp value="2026-03-15T14:30:00" format="time" />}
+                  timestamp={
+                    <XDSTimestamp value="2026-03-15T14:30:00" format="time" />
+                  }
                 />
               }>
               Hey! I looked at the PR and left a few comments on the density
@@ -263,7 +279,9 @@ export const ChatConversation: StoryObj = {
               group="last"
               metadata={
                 <XDSChatMessageMetadata
-                  timestamp={<XDSTimestamp value="2026-03-15T14:31:00" format="time" />}
+                  timestamp={
+                    <XDSTimestamp value="2026-03-15T14:31:00" format="time" />
+                  }
                   status="read"
                 />
               }>
@@ -278,7 +296,9 @@ export const ChatConversation: StoryObj = {
               name={<span style={nameStyle}>Navi</span>}
               metadata={
                 <XDSChatMessageMetadata
-                  timestamp={<XDSTimestamp value="2026-03-15T14:32:00" format="time" />}
+                  timestamp={
+                    <XDSTimestamp value="2026-03-15T14:32:00" format="time" />
+                  }
                 />
               }>
               Sounds good. The main thing is the compact radius — it should use
@@ -293,7 +313,9 @@ export const ChatConversation: StoryObj = {
               name={<span style={nameStyle}>Cindy</span>}
               metadata={
                 <XDSChatMessageMetadata
-                  timestamp={<XDSTimestamp value="2026-03-15T14:33:00" format="time" />}
+                  timestamp={
+                    <XDSTimestamp value="2026-03-15T14:33:00" format="time" />
+                  }
                   status="delivered"
                 />
               }>

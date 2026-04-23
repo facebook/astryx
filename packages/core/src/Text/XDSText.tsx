@@ -15,7 +15,6 @@
 
 import {lazy, Suspense, useCallback, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import type {
   XDSTextType,
   XDSTextSize,
@@ -41,6 +40,7 @@ import {
 import {useTruncation} from './useTruncation';
 import type {LayerPlacement} from '../Layer';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 const LazyXDSTooltip = lazy(() =>
   import('../Tooltip/XDSTooltip').then(mod => ({default: mod.XDSTooltip})),
@@ -48,7 +48,7 @@ const LazyXDSTooltip = lazy(() =>
 
 export type {XDSTextType, XDSTextSize};
 
-export interface XDSTextProps {
+export interface XDSTextProps extends Omit<XDSBaseProps, 'children'> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLElement>;
   /**
@@ -132,28 +132,6 @@ export interface XDSTextProps {
   hasTabularNumbers?: boolean;
 
   /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
-
-  /**
    * Text content
    */
   children: ReactNode;
@@ -164,9 +142,6 @@ export interface XDSTextProps {
    * @default 'span'
    */
   as?: 'span' | 'p' | 'div' | 'label' | 'h1' | 'h2' | 'h3';
-
-  'data-testid'?: string;
-  id?: string;
 }
 
 // Default color by text type

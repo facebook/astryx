@@ -2,6 +2,7 @@
 
 export const docs = {
   name: 'Field',
+  group: 'Field',
   keywords: ["field","formfield","formgroup","formcontrol","label","input","required","optional","helpertext","hint"],
   theming: {
     targets: [
@@ -216,12 +217,22 @@ export const docs = {
     },
   ],
   usage: {
-    description: 'A form field wrapper that provides consistent labels, descriptions, and validation states around input controls. Use to wrap any input component in a form to ensure accessible labeling, optional/required indicators, and inline status feedback.',
+    description: 'Field wraps any input control with a label, description, and validation status. Use it to build accessible forms with consistent labeling, optional/required indicators, and inline error, warning, or success feedback.',
     bestPractices: [
       { guidance: true, description: 'Always provide a label for accessibility, even if visually hidden with isLabelHidden.' },
       { guidance: true, description: 'Use the status prop with clear messages to provide inline validation feedback.' },
+      { guidance: true, description: 'Add a description when the label alone does not explain what the field expects, like format hints or constraints.' },
       { guidance: false, description: 'Set both isOptional and isRequired on the same field.' },
       { guidance: false, description: 'Use the detached status variant on bordered inputs — reserve it for checkboxes, switches, and sliders.' },
+      { guidance: false, description: 'Hide the label without providing an alternative way for the user to understand the field purpose.' },
+    ],
+    anatomy: [
+      {name: 'Label', required: true, description: 'Text identifying the field. Always rendered for accessibility, optionally hidden visually.'},
+      {name: 'Description', required: false, description: 'Helper text between the label and input explaining what to enter.'},
+      {name: 'Input slot', required: true, description: 'The input control wrapped by the field — TextInput, Select, DateInput, etc.'},
+      {name: 'Status message', required: false, description: 'Inline validation feedback showing error, warning, or success with a message.'},
+      {name: 'Optional/Required indicator', required: false, description: 'Badge next to the label showing whether the field is optional or required.'},
+      {name: 'Label tooltip', required: false, description: 'Info icon at the end of the label with a tooltip explaining the field.'},
     ],
   },
 };
@@ -443,12 +454,14 @@ export const docsZh = {
     },
   ],
   usage: {
-    description: 'A form field wrapper that provides consistent labels, descriptions, and validation states around input controls. Use to wrap any input component in a form to ensure accessible labeling, optional/required indicators, and inline status feedback.',
+    description: 'Field wraps any input control with a label, description, and validation status. Use it to build accessible forms with consistent labeling, optional/required indicators, and inline error, warning, or success feedback.',
     bestPractices: [
       { guidance: true, description: 'Always provide a label for accessibility, even if visually hidden with isLabelHidden.' },
       { guidance: true, description: 'Use the status prop with clear messages to provide inline validation feedback.' },
+      { guidance: true, description: 'Add a description when the label alone does not explain what the field expects, like format hints or constraints.' },
       { guidance: false, description: 'Set both isOptional and isRequired on the same field.' },
       { guidance: false, description: 'Use the detached status variant on bordered inputs — reserve it for checkboxes, switches, and sliders.' },
+      { guidance: false, description: 'Hide the label without providing an alternative way for the user to understand the field purpose.' },
     ],
   },
 };
@@ -458,12 +471,10 @@ export const docsDense = {
   description:
     'Form field wrapper providing label, description + optional/required indicators.',
   usage: {
-    description: 'A form field wrapper that provides consistent labels, descriptions, and validation states around input controls. Use to wrap any input component in a form to ensure accessible labeling, optional/required indicators, and inline status feedback.',
+    description: 'Field wraps input controls with label, description, and validation. Use for accessible forms with consistent labeling and inline feedback.',
     bestPractices: [
-      { guidance: true, description: 'Always provide a label for accessibility, even if visually hidden with isLabelHidden.' },
-      { guidance: true, description: 'Use the status prop with clear messages to provide inline validation feedback.' },
-      { guidance: false, description: 'Set both isOptional and isRequired on the same field.' },
-      { guidance: false, description: 'Use the detached status variant on bordered inputs — reserve it for checkboxes, switches, and sliders.' },
+      { guidance: true, description: 'Always provide a label. Use status with clear messages. Add description for format hints.' },
+      { guidance: false, description: 'Don\'t set both isOptional and isRequired. Don\'t use detached status on bordered inputs.' },
     ],
   },
   components: [

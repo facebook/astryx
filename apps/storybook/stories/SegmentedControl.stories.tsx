@@ -12,7 +12,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSSegmentedControl> = {
-  title: 'Inputs/XDSSegmentedControl',
+  title: 'Core/Inputs/SegmentedControl',
   component: XDSSegmentedControl,
   tags: ['autodocs'],
   argTypes: {

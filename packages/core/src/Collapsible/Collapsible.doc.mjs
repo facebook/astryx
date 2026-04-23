@@ -2,6 +2,7 @@
 
 export const docs = {
   name: 'Collapsible',
+  group: 'Collapsible',
   keywords: ["accordion","collapse","expandable","disclosure","toggle","panel","foldable","expander","expand"],
   theming: {
     targets: [
@@ -85,12 +86,20 @@ export const docs = {
     },
   ],
   usage: {
-    description: 'Collapsible is a content primitive that reveals and hides content on demand via a trigger button. Use it to progressively disclose secondary information in lists, settings, or detail panels.',
+    description: 'Collapsible hides and reveals content behind a trigger button. Use it in settings panels, FAQ pages, or detail views to keep the page scannable while letting users drill into sections they care about. Wrap multiple collapsibles in XDSCollapsibleGroup for accordion behavior.',
     bestPractices: [
-      { guidance: true, description: 'Use XDSCollapsibleGroup with type="single" for accordion-style patterns where only one section should be open at a time.' },
-      { guidance: true, description: 'Start sections open (defaultIsOpen) when the content is likely needed on first view.' },
+      { guidance: true, description: 'Wrap each XDSCollapsible in an XDSCard for visual separation in accordion layouts.' },
+      { guidance: true, description: 'Use XDSCollapsibleGroup with type="single" for settings or FAQ pages where only one section should be open at a time.' },
+      { guidance: true, description: 'Use type="multiple" when users need to compare content across sections, like feature lists or pricing tiers.' },
+      { guidance: true, description: 'Start sections open (defaultIsOpen) when the content is likely needed on first view — don\'t make users click to see essential info.' },
       { guidance: false, description: 'Hide critical or required content behind a collapsible — users may not discover it.' },
-      { guidance: false, description: 'Nest collapsibles deeply — more than two levels makes content hard to discover and navigate.' },
+      { guidance: false, description: 'Nest collapsibles more than two levels deep — it makes content hard to find and navigate.' },
+      { guidance: false, description: 'Use a collapsible for a single short paragraph — just show the text directly instead.' },
+    ],
+    anatomy: [
+      { name: 'Trigger', required: true, description: 'The always-visible button that toggles the content. Shows a label and a chevron indicator.' },
+      { name: 'Chevron', required: false, description: 'Animated arrow that rotates to show open or closed state.' },
+      { name: 'Content', required: false, description: 'The area that hides or reveals when the trigger is clicked.' },
     ],
   },
 };
@@ -98,13 +107,17 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Collapsible',
+  group: 'Collapsible',
   usage: {
-    description: 'Collapsible is a content primitive that reveals and hides content on demand via a trigger button. Use it to progressively disclose secondary information in lists, settings, or detail panels.',
+    description: 'Collapsible hides and reveals content behind a trigger button. Use it in settings panels, FAQ pages, or detail views to keep the page scannable while letting users drill into sections they care about. Wrap multiple collapsibles in XDSCollapsibleGroup for accordion behavior.',
     bestPractices: [
-      { guidance: true, description: 'Use XDSCollapsibleGroup with type="single" for accordion-style patterns where only one section should be open at a time.' },
-      { guidance: true, description: 'Start sections open (defaultIsOpen) when the content is likely needed on first view.' },
+      { guidance: true, description: 'Wrap each XDSCollapsible in an XDSCard for visual separation in accordion layouts.' },
+      { guidance: true, description: 'Use XDSCollapsibleGroup with type="single" for settings or FAQ pages where only one section should be open at a time.' },
+      { guidance: true, description: 'Use type="multiple" when users need to compare content across sections, like feature lists or pricing tiers.' },
+      { guidance: true, description: 'Start sections open (defaultIsOpen) when the content is likely needed on first view — don\'t make users click to see essential info.' },
       { guidance: false, description: 'Hide critical or required content behind a collapsible — users may not discover it.' },
-      { guidance: false, description: 'Nest collapsibles deeply — more than two levels makes content hard to discover and navigate.' },
+      { guidance: false, description: 'Nest collapsibles more than two levels deep — it makes content hard to find and navigate.' },
+      { guidance: false, description: 'Use a collapsible for a single short paragraph — just show the text directly instead.' },
     ],
   },
   theming: {
@@ -143,14 +156,15 @@ export const docsZh = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'collapsible content primitive + group coordination',
+  description: 'hide/reveal content behind a trigger; group for accordion behavior',
   usage: {
-    description: 'Collapsible is a content primitive that reveals and hides content on demand via a trigger button. Use it to progressively disclose secondary information in lists, settings, or detail panels.',
+    description: 'Collapsible hides and reveals content behind a trigger button. Use in settings, FAQs, or detail views. Wrap in XDSCollapsibleGroup for accordion behavior.',
     bestPractices: [
-      { guidance: true, description: 'Use XDSCollapsibleGroup with type="single" for accordion-style patterns where only one section should be open at a time.' },
-      { guidance: true, description: 'Start sections open (defaultIsOpen) when the content is likely needed on first view.' },
-      { guidance: false, description: 'Hide critical or required content behind a collapsible — users may not discover it.' },
-      { guidance: false, description: 'Nest collapsibles deeply — more than two levels makes content hard to discover and navigate.' },
+      { guidance: true, description: 'Wrap in XDSCard for visual separation. Use type="single" for settings/FAQs.' },
+      { guidance: true, description: 'Use type="multiple" when users need to compare across sections.' },
+      { guidance: true, description: 'Start sections open (defaultIsOpen) when content is needed on first view.' },
+      { guidance: false, description: 'Hide critical content behind a collapsible — users may not discover it.' },
+      { guidance: false, description: 'Nest more than two levels deep. Avoid for single short paragraphs.' },
     ],
   },
   components: [

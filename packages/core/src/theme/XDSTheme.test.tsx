@@ -22,11 +22,13 @@ describe('XDSTheme', () => {
   beforeEach(() => {
     // Clean up documentElement state before each test
     document.documentElement.removeAttribute('data-theme');
+    document.documentElement.removeAttribute('data-xds-theme');
   });
 
   afterEach(() => {
     cleanup();
     document.documentElement.removeAttribute('data-theme');
+    document.documentElement.removeAttribute('data-xds-theme');
   });
 
   it('renders children', () => {
@@ -92,8 +94,50 @@ describe('XDSTheme', () => {
   });
 
   // =========================================================================
+  // Root detection — data-xds-theme on <html>
+  // =========================================================================
+
+  it('syncs data-xds-theme to <html> for root provider', () => {
+    render(
+      <XDSTheme theme={testTheme} mode="light">
+        <span>child</span>
+      </XDSTheme>,
+    );
+    expect(document.documentElement.getAttribute('data-xds-theme')).toBe(
+      'test',
+    );
+  });
+
+  it('removes data-xds-theme from <html> when root provider unmounts', () => {
+    const {unmount} = render(
+      <XDSTheme theme={testTheme} mode="light">
+        <span>child</span>
+      </XDSTheme>,
+    );
+    expect(document.documentElement.getAttribute('data-xds-theme')).toBe(
+      'test',
+    );
+    unmount();
+    expect(document.documentElement.hasAttribute('data-xds-theme')).toBe(false);
+  });
+
+  // =========================================================================
   // Nested themes — should NOT sync to <html>
   // =========================================================================
+
+  it('does not let nested XDSTheme override <html> data-xds-theme', () => {
+    render(
+      <XDSTheme theme={testTheme} mode="dark">
+        <XDSTheme theme={altTheme} mode="light">
+          <span>nested</span>
+        </XDSTheme>
+      </XDSTheme>,
+    );
+    // Root is "test" — nested "alt" should NOT override
+    expect(document.documentElement.getAttribute('data-xds-theme')).toBe(
+      'test',
+    );
+  });
 
   it('does not let nested XDSTheme override <html> data-theme', () => {
     render(

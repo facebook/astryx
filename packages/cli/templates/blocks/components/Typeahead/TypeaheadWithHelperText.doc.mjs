@@ -3,8 +3,8 @@ export const doc = {
   type: 'block',
   name: 'Typeahead — With Helper Text',
   description:
-    'Typeahead field with a description below the label providing guidance on what to select.',
+    'Typeahead with a description below the label.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Typeahead'],
+  componentsUsed: ['Typeahead', 'Center'],
 };

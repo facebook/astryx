@@ -34,11 +34,11 @@ export const docs = {
     targets: [{className: 'xds-kbd'}],
   },
   usage: {
-    description: 'Displays a keyboard shortcut as styled key badges. Use Kbd in tooltips, menus, and documentation to visually communicate key combinations to users.',
+    description: 'Renders a keyboard shortcut as styled key badges. Use Kbd in tooltips, menus, and help text to show key combinations.',
     bestPractices: [
-      { guidance: true, description: 'Place keyboard shortcuts near the action they describe, such as in a tooltip or menu item.' },
-      { guidance: true, description: 'Use the "mod" key name for platform-adaptive display — it renders as ⌘ on Mac and Ctrl on other platforms.' },
-      { guidance: false, description: 'Use Kbd as the only way to discover an action — keyboard shortcuts should supplement visible labels and controls.' },
+      { guidance: true, description: 'Place shortcuts near the action they trigger — in a tooltip, menu item, or inline instruction.' },
+      { guidance: true, description: 'Use mod instead of ctrl or cmd — it automatically adapts to the user\'s platform.' },
+      { guidance: false, description: 'Use Kbd as the only way to discover an action — shortcuts should supplement visible controls, not replace them.' },
     ],
   },
 };
@@ -77,11 +77,11 @@ export const docsZh = {
     targets: [{className: 'xds-kbd'}],
   },
   usage: {
-    description: 'Displays a keyboard shortcut as styled key badges. Use Kbd in tooltips, menus, and documentation to visually communicate key combinations to users.',
+    description: 'Renders a keyboard shortcut as styled key badges. Use Kbd in tooltips, menus, and help text to show key combinations.',
     bestPractices: [
-      { guidance: true, description: 'Place keyboard shortcuts near the action they describe, such as in a tooltip or menu item.' },
-      { guidance: true, description: 'Use the "mod" key name for platform-adaptive display — it renders as ⌘ on Mac and Ctrl on other platforms.' },
-      { guidance: false, description: 'Use Kbd as the only way to discover an action — keyboard shortcuts should supplement visible labels and controls.' },
+      { guidance: true, description: 'Place shortcuts near the action they trigger — in a tooltip, menu item, or inline instruction.' },
+      { guidance: true, description: 'Use mod instead of ctrl or cmd — it automatically adapts to the user\'s platform.' },
+      { guidance: false, description: 'Use Kbd as the only way to discover an action — shortcuts should supplement visible controls, not replace them.' },
     ],
   },
 };
@@ -89,13 +89,13 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description:
-    'Displays keyboard shortcut as styled <kbd> elements. Use in tooltips, menus + docs to show key combinations.',
+    'Renders keyboard shortcut as styled key badges. Use in tooltips, menus + help text to show key combinations.',
   usage: {
-    description: 'Displays a keyboard shortcut as styled key badges. Use Kbd in tooltips, menus, and documentation to visually communicate key combinations to users.',
+    description: 'Renders a keyboard shortcut as styled key badges. Use Kbd in tooltips, menus, and help text to show key combinations.',
     bestPractices: [
-      { guidance: true, description: 'Place keyboard shortcuts near the action they describe, such as in a tooltip or menu item.' },
-      { guidance: true, description: 'Use the "mod" key name for platform-adaptive display — it renders as ⌘ on Mac and Ctrl on other platforms.' },
-      { guidance: false, description: 'Use Kbd as the only way to discover an action — keyboard shortcuts should supplement visible labels and controls.' },
+      { guidance: true, description: 'Place shortcuts near the action they trigger — in a tooltip, menu item, or inline instruction.' },
+      { guidance: true, description: 'Use mod instead of ctrl or cmd — it automatically adapts to the user\'s platform.' },
+      { guidance: false, description: 'Use Kbd as the only way to discover an action — shortcuts should supplement visible controls, not replace them.' },
     ],
   },
   propDescriptions: {

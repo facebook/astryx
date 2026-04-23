@@ -98,12 +98,13 @@ export const docs = {
   ],
   usage: {
     description:
-      'Link is a styled anchor element for inline and standalone text navigation with external link support and polymorphic rendering. Use it for navigating between pages or to external URLs within body text or as standalone actions.',
+      'A styled anchor for inline and standalone text navigation. Supports external links, underline variants, tooltips, and custom link components for router integration. Use it for navigating between pages or to external URLs.',
     bestPractices: [
-      { guidance: true, description: 'Write descriptive, concise link text that clearly communicates the destination or action.' },
-      { guidance: true, description: 'Use isStandalone when the link appears outside of inline text, so it receives proper base font sizing.' },
-      { guidance: false, description: 'Use icon-only links without a visible text label — always include descriptive text.' },
+      { guidance: true, description: 'Write descriptive, concise link text that clearly communicates the destination.' },
+      { guidance: true, description: 'Set `isStandalone` when the link appears outside of inline text, so it receives proper base font sizing.' },
       { guidance: false, description: 'Use Link for actions that do not navigate — use a Button instead.' },
+      { guidance: false, description: 'Use generic text like "click here" or "read more" — describe the destination.' },
+      { guidance: false, description: 'Use icon-only links without a visible text label.' },
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'The visible text of the link.'},
@@ -212,12 +213,13 @@ export const docsZh = {
   ],
   usage: {
     description:
-      'Link is a styled anchor element for inline and standalone text navigation with external link support and polymorphic rendering. Use it for navigating between pages or to external URLs within body text or as standalone actions.',
+      'A styled anchor for inline and standalone text navigation. Supports external links, underline variants, tooltips, and custom link components for router integration. Use it for navigating between pages or to external URLs.',
     bestPractices: [
-      { guidance: true, description: 'Write descriptive, concise link text that clearly communicates the destination or action.' },
-      { guidance: true, description: 'Use isStandalone when the link appears outside of inline text, so it receives proper base font sizing.' },
-      { guidance: false, description: 'Use icon-only links without a visible text label — always include descriptive text.' },
+      { guidance: true, description: 'Write descriptive, concise link text that clearly communicates the destination.' },
+      { guidance: true, description: 'Set `isStandalone` when the link appears outside of inline text, so it receives proper base font sizing.' },
       { guidance: false, description: 'Use Link for actions that do not navigate — use a Button instead.' },
+      { guidance: false, description: 'Use generic text like "click here" or "read more" — describe the destination.' },
+      { guidance: false, description: 'Use icon-only links without a visible text label.' },
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'The visible text of the link.'},
@@ -233,12 +235,13 @@ export const docsDense = {
     'Styled anchor links w/ multiple variants + polymorphic link infra for custom link components (Next.js Link, React Router Link, etc.).',
   usage: {
     description:
-      'Link is a styled anchor element for inline and standalone text navigation with external link support and polymorphic rendering. Use it for navigating between pages or to external URLs within body text or as standalone actions.',
+      'A styled anchor for inline and standalone text navigation. Supports external links, underline variants, tooltips, and custom link components for router integration. Use it for navigating between pages or to external URLs.',
     bestPractices: [
-      { guidance: true, description: 'Write descriptive, concise link text that clearly communicates the destination or action.' },
-      { guidance: true, description: 'Use isStandalone when the link appears outside of inline text, so it receives proper base font sizing.' },
-      { guidance: false, description: 'Use icon-only links without a visible text label — always include descriptive text.' },
+      { guidance: true, description: 'Write descriptive, concise link text that clearly communicates the destination.' },
+      { guidance: true, description: 'Set `isStandalone` when the link appears outside of inline text, so it receives proper base font sizing.' },
       { guidance: false, description: 'Use Link for actions that do not navigate — use a Button instead.' },
+      { guidance: false, description: 'Use generic text like "click here" or "read more" — describe the destination.' },
+      { guidance: false, description: 'Use icon-only links without a visible text label.' },
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'The visible text of the link.'},

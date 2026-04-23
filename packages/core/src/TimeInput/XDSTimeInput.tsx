@@ -25,7 +25,6 @@ import {
   type FocusEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import type {XDSIconName} from '../Icon';
 import {
   colorVars,
@@ -57,6 +56,8 @@ import {
   xdsClassName,
   mergeProps,
 } from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
+import {useXDSSize} from '../SizeContext/XDSSizeContext';
 
 const styles = stylex.create({
   icon: {
@@ -133,7 +134,10 @@ export type {
   XDSInputStatusType as XDSTimeInputStatusType,
 } from '../Field';
 
-export interface XDSTimeInputProps {
+export interface XDSTimeInputProps extends Omit<
+  XDSBaseProps,
+  'onChange' | 'defaultValue'
+> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLInputElement>;
   /**
@@ -259,28 +263,6 @@ export interface XDSTimeInputProps {
    * Tooltip text to display in an info icon at the end of the label.
    */
   labelTooltip?: string;
-
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
 }
 
 /**
@@ -316,7 +298,7 @@ export function XDSTimeInput({
   hourFormat = '12h',
   increment = 1,
   placeholder = 'Select a time',
-  size = 'md',
+  size: sizeProp,
   status,
   labelTooltip,
   xstyle,
@@ -324,6 +306,8 @@ export function XDSTimeInput({
   style,
   ref,
 }: XDSTimeInputProps) {
+  const size = useXDSSize(sizeProp, 'md');
+
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -579,7 +563,7 @@ export function XDSTimeInput({
           <button
             type="button"
             onClick={handleClear}
-            aria-label="Clear time"
+            aria-label={`Clear ${label}`}
             {...stylex.props(styles.clearButton)}>
             <XDSIcon icon="close" size="sm" color="secondary" />
           </button>

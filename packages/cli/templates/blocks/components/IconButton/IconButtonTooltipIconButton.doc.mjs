@@ -2,8 +2,7 @@
 export const doc = {
   type: 'block',
   name: 'IconButton — With Tooltips',
-  description:
-    'Icon buttons with tooltip hints that appear on hover, providing context for icon-only controls.',
+  description: 'Icon buttons with tooltips that explain each action on hover',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['IconButton', 'Icon', 'HStack'],

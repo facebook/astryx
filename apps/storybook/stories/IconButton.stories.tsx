@@ -11,7 +11,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSIconButton> = {
-  title: 'Core/XDSIconButton',
+  title: 'Core/Buttons/IconButton',
   component: XDSIconButton,
   tags: ['autodocs'],
   argTypes: {

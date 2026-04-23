@@ -22,9 +22,12 @@ const styles = stylex.create({
     pointerEvents: 'none',
     // Reset popover styles — the popover attribute puts us in the top
     // layer (above dialogs), but we don't want its default styles.
+    // UA stylesheet applies background-color: Canvas, margin: auto, etc.
     inset: 'unset',
+    margin: 0,
     border: 'none',
     background: 'none',
+    backgroundColor: 'transparent',
     overflow: 'visible',
   },
   bottomEnd: {bottom: 0, insetInlineEnd: 0, alignItems: 'flex-end'},
@@ -188,7 +191,9 @@ export function XDSToastViewport({
         // popover="manual" promotes to the top layer (above dialogs).
         // Omitted inside dialogs where the viewport is already in a top layer.
         popover={isTopLayer ? 'manual' : undefined}
-        {...mergeProps(stylex.props(styles.viewport, posStyle), {style: Object.keys(insetStyle).length > 0 ? insetStyle : undefined})}>
+        {...mergeProps(stylex.props(styles.viewport, posStyle), {
+          style: Object.keys(insetStyle).length > 0 ? insetStyle : undefined,
+        })}>
         {visibleToasts.map(entry => {
           const o = entry.options;
           const type = o.type ?? 'info';

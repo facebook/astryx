@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'Skeleton — Table Rows',
   description:
-    'Multi-row table skeleton with staggered column widths for data table loading states.',
+    'Table skeleton with staggered column widths.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['Skeleton', 'HStack', 'VStack'],

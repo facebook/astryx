@@ -38,7 +38,7 @@ export * from './Link';
 export * from './List';
 export * from './MetadataList';
 export * from './NavIcon';
-export * from './NavItem';
+// NavItem (navItemStyles) is internal — shared styles consumed by SideNav/TopNav/MobileNav
 export * from './NavMenu';
 export * from './Slider';
 export * from './Stack';
@@ -157,5 +157,4 @@ export type {
   ComponentVar,
   DerivedVar,
   TranslationDoc,
-  ComponentShowcaseDoc,
 } from './docs-types';

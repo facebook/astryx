@@ -19,7 +19,7 @@ const styles = stylex.create({
 });
 
 const meta: Meta<typeof XDSDialog> = {
-  title: 'Core/XDSDialog',
+  title: 'Core/Dialogs/Dialog',
   component: XDSDialog,
   tags: ['autodocs'],
   argTypes: {

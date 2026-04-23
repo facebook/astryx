@@ -1,12 +1,11 @@
 'use client';
 
-import {useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
+import {useState, useEffect} from 'react';
 import {XDSAppShell} from '@xds/core/AppShell';
+import {useMediaQuery} from '@xds/core/hooks';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {
   XDSSideNav,
-  XDSSideNavCollapseButton,
   XDSSideNavHeading,
   XDSSideNavItem,
   XDSSideNavSection,
@@ -18,6 +17,7 @@ import {
   XDSLayoutPanel,
   XDSVStack,
   XDSHStack,
+  XDSStackItem,
   XDSCard,
   XDSSection,
 } from '@xds/core/Layout';
@@ -25,7 +25,6 @@ import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSButton} from '@xds/core/Button';
-
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSLink} from '@xds/core/Link';
@@ -33,226 +32,36 @@ import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSMetadataList, XDSMetadataListItem} from '@xds/core/MetadataList';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
 import {XDSCollapsible} from '@xds/core/Collapsible';
-import {XDSCenter} from '@xds/core/Center';
 import {XDSIcon} from '@xds/core/Icon';
-
-// ─── Icons ──────────────────────────────────────────────────────────────────
-const HomeIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-    <polyline points="9 22 9 12 15 12 15 22" />
-  </svg>
-);
-const OrdersIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <rect x="2" y="3" width="20" height="18" rx="2" />
-    <path d="M8 7h8M8 11h5M8 15h3" />
-  </svg>
-);
-const ProductsIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-    <line x1="12" y1="22.08" x2="12" y2="12" />
-  </svg>
-);
-const CustomersIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-    <circle cx="9" cy="7" r="4" />
-    <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-  </svg>
-);
-const ContentIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-    <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
-  </svg>
-);
-const AnalyticsIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M18 20V10M12 20V4M6 20v-6" />
-  </svg>
-);
-const SettingsIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <circle cx="12" cy="12" r="3" />
-    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-  </svg>
-);
-const HelpIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <circle cx="12" cy="12" r="10" />
-    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01" />
-  </svg>
-);
-const CalendarIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <rect x="3" y="4" width="18" height="18" rx="2" />
-    <line x1="16" y1="2" x2="16" y2="6" />
-    <line x1="8" y1="2" x2="8" y2="6" />
-    <line x1="3" y1="10" x2="21" y2="10" />
-  </svg>
-);
-const FlagIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7" />
-  </svg>
-);
-const FilterIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-  </svg>
-);
-const ThumbUpIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
-  </svg>
-);
-const HeartIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-  </svg>
-);
-const EditIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-  </svg>
-);
-const ShopIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
-    <path d="M11.47 3.841a.75.75 0 0 1 1.06 0l8.69 8.69a.75.75 0 1 0 1.06-1.061l-8.689-8.69a2.25 2.25 0 0 0-3.182 0l-8.69 8.69a.75.75 0 1 0 1.061 1.06l8.69-8.689Z" />
-    <path d="m12 5.432 8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-3a.75.75 0 0 0-.75.75V21a.75.75 0 0 1-.75.75H5.625a1.875 1.875 0 0 1-1.875-1.875v-6.198a2.29 2.29 0 0 0 .091-.086L12 5.432Z" />
-  </svg>
-);
-const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
-    />
-  </svg>
-);
-const PanelRightIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.5}
-    {...props}>
-    <rect x="3" y="3" width="18" height="18" rx="2" />
-    <line x1="15" y1="3" x2="15" y2="21" />
-  </svg>
-);
+import {XDSThumbnail} from '@xds/core/Thumbnail';
+import {
+  HomeIcon,
+  ClipboardDocumentListIcon,
+  CubeIcon,
+  UserGroupIcon,
+  DocumentTextIcon,
+  ChartBarIcon,
+  Cog6ToothIcon,
+  QuestionMarkCircleIcon,
+  CalendarIcon,
+  FlagIcon,
+  FunnelIcon,
+  HandThumbUpIcon,
+  HeartIcon,
+  PencilSquareIcon,
+  ArrowLeftIcon,
+  ViewColumnsIcon,
+} from '@heroicons/react/24/outline';
+import {BuildingStorefrontIcon} from '@heroicons/react/24/solid';
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
+import * as stylex from '@stylexjs/stylex';
+
 const pageStyles = stylex.create({
-  bulletSeparator: {
-    fontSize: 12,
-    lineHeight: '16px',
-    color: 'var(--color-text-secondary, #666)',
-    userSelect: 'none',
-    flexShrink: 0,
-  },
-  productImage: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-    borderRadius: 'var(--radius-content, 4px)',
-  },
-  reactionBar: {
-    display: 'flex',
-    gap: 12,
-    alignItems: 'center',
-    fontSize: 12,
-    color: 'var(--color-text-secondary, #666)',
-  },
-  commentBubble: {
-    backgroundColor: 'var(--color-bg-wash, #f5f5f5)',
-    borderRadius: 'var(--radius-container, 12px)',
-    padding: 12,
-  },
-  panelSection: {
-    paddingBlock: 4,
-  },
-  contentFlushEnd: {
-    paddingInlineEnd: 0,
+  tabsRow: {
+    marginInline: -12,
+    marginBottom: -16,
+    marginTop: 12,
   },
 });
 
@@ -260,11 +69,16 @@ const pageStyles = stylex.create({
 // Light product photography from the xds_oss asset set (ceramics collection)
 // Source: meta assets.file list -s xds_oss -g light-product-{1..5}
 const PRODUCT_IMAGES = [
-  'https://scontent.xx.fbcdn.net/v/t39.6806-6/671222955_2145727732941085_520241325832272863_n.png?_nc_cat=102&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=nPid9vxWiAAQ7kNvwEn9zAk&_nc_oc=Adpvs8c0_OPaD3OBM2-RuvQhsq_ZIQCuI4MIYJDHog2g0wbDnnKsQY18ujPRPRsUsCQaE3gnHXhybHYdgHyTPGcy&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=ydKBqwA5klQRsF7pHyaL9Q&_nc_ss=7a30f&oh=00_Af1MWCNR4BSpKvDiJrg4I7hrhPhvwUkpwRMPpGkexhKxpg&oe=69E5F2F2',
-  'https://scontent.xx.fbcdn.net/v/t39.6806-6/673826432_1199625442080268_2235614826141527510_n.png?_nc_cat=101&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=7sfupHwtMWoQ7kNvwHq-oll&_nc_oc=AdorjEzWeonV_cTC82CQcP_97bhPEFri4gRyJuRCTm5tm4RrSHqZHinwq3cpLIVwwDqJGdLCeaezQOL1pCTdEurA&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=dhQMbNPZ6a4O8tvuG-zaQQ&_nc_ss=7a30f&oh=00_Af0jFaeYAmFWPUXPDLAx1wHlwVkoTPaVfUQircvONREAew&oe=69E5DFF1',
-  'https://scontent.xx.fbcdn.net/v/t39.6806-6/672681263_1894137684571541_8624778644609428792_n.png?_nc_cat=109&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=O9FpOzmcuhIQ7kNvwHJc_5e&_nc_oc=AdohCQROsW1HA9oyV_P08xW-PZ7aRBaxKQDouJQeLqWBRg4s_diiKocTCXKFW6MrH29i-qmdKX4F1XacD-ZBr1aI&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=4Ho2VwbJyUMPRPg1_pYYXQ&_nc_ss=7a30f&oh=00_Af3rTWfTt78ZVlhHCjbjcvEMAmyt_Y5UApS2ezLwTSVDdw&oe=69E5F643',
-  'https://scontent.xx.fbcdn.net/v/t39.6806-6/670399674_3883527348446559_364118105607949641_n.png?_nc_cat=103&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=qjhrCslvBhEQ7kNvwGIRrYU&_nc_oc=AdqjfEPZizLmq2xSVhncfdeilisr9iS4xyW6xvESla6s72ctRLyjAdz_aUhs0_7GlT2wLRjFqotzo6mCRpj_zoev&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=p5rjWn-ZxsbEF4l-xiDkoA&_nc_ss=7a30f&oh=00_Af0dfW78AWBoDni-ydDYmjYYnu6TcBty9hI97oewb6OFfw&oe=69E5EB2D',
-  'https://scontent.xx.fbcdn.net/v/t39.6806-6/671457944_4516505268571219_6833232903201599778_n.png?_nc_cat=101&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=2LiO931mC78Q7kNvwEClCGO&_nc_oc=AdoxCLopOX1C45nJksLqWaffKTeqizJ7joW-P2gbmknrVE5KqvaVXRzof8YTOZNW0OMuPUSnUEX0aQ32RhRv6xeF&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=AXiNN0rtQ-RZnfzDQS5AjA&_nc_ss=7a30f&oh=00_Af3DYuG7fKdv_a6uNNcfTO5iIV16d_65o0-9FZnZp4jQfg&oe=69E5E555',
+  // light-product-1
+  'https://scontent.xx.fbcdn.net/v/t39.6806-6/671222955_2145727732941085_520241325832272863_n.png?_nc_cat=102&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=_Ch_acjT1BcQ7kNvwFADCvm&_nc_oc=AdqqylHdxZ9J4WaGETpiBq1DXGTxM7xNmhKft8oBFP39swimIWZ7AZdZ1AKvHLbY4fQmrgJ5x2ERsTFv98HzMFN8&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=EcLE5fhnvnLjNTYpUQKeXw&_nc_ss=7a30f&oh=00_Af3jxqjOZaUZaSNIGpa3Aet1Uddvdujkk7oegd-_A0bOZA&oe=69EC5232',
+  // light-product-2
+  'https://scontent.xx.fbcdn.net/v/t39.6806-6/673826432_1199625442080268_2235614826141527510_n.png?_nc_cat=101&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=_wjLv5Lhh_8Q7kNvwGWRhyt&_nc_oc=AdpFiVWrB2w5PwJdvE3h9DoYN3IzJZB9W1TTvnhK4i5q0t83dp8bbLsfNTHtktLDqMrgdp6mMWKLZ7oJO_YNqje2&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=QNknQFLa-qbjgo-aYr3B3w&_nc_ss=7a30f&oh=00_Af2pOYyfoeSW61DtYM8HQox8tAFI5lUk5aX-TiLvgr1cjQ&oe=69EC3F31',
+  // light-product-3
+  'https://scontent.xx.fbcdn.net/v/t39.6806-6/672681263_1894137684571541_8624778644609428792_n.png?_nc_cat=109&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=w9acCjHivWUQ7kNvwHr7aPX&_nc_oc=Adr2brJxtVS4X0T6nifDX4ilMvUWwNKMXZh6ZuLoyqWqe7tjHD5o7cQuzNQYrIEIb6_QIW5YLaq2CTx55-fGzg0B&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=3toqnQ2Xkolb6jv7QsUzdw&_nc_ss=7a30f&oh=00_Af2x_-4uoy7Vr0QQ1F6Fs9JENKFc2--Hv3wUfmKymSXuxA&oe=69EC5583',
+  // light-product-4
+  'https://scontent.xx.fbcdn.net/v/t39.6806-6/670399674_3883527348446559_364118105607949641_n.png?_nc_cat=103&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=o3njmHZr7gYQ7kNvwGbioqf&_nc_oc=Ado4I-fGsoF4PuhuxLx6SAboigPu9Xsdnosy866WWRM5aulLrmQRc5xh7EQJrx4YDx_pK1qvGCQd_m9WDcEbzZ-D&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=C0OA-Y0wfGERdXCxRnfkMA&_nc_ss=7a30f&oh=00_Af2mjuba1-uIEO0x8d6kQtGHcS0rxRK0FsSFULQ43xApew&oe=69EC4A6D',
+  // light-product-5
+  'https://scontent.xx.fbcdn.net/v/t39.6806-6/671457944_4516505268571219_6833232903201599778_n.png?_nc_cat=101&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=70oaCchmPvkQ7kNvwEhnyV5&_nc_oc=AdpnM83UaG_26EX-nNlHboZr9lIWze8y13UKAwTsJsDkR4zFGSk__UK8FN_f_W06xnx2eHRbElX9xyop69nEylZA&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=iolShmKEPYHkXdhBqc0ynQ&_nc_ss=7a30f&oh=00_Af22qlucAlsFv61LJs7RFu-eXP8RgSILrqeE-uLtJsthBQ&oe=69EC4495',
 ];
 
 const PRODUCTS = [
@@ -358,7 +172,13 @@ function ShopSideNav() {
         <XDSSideNavHeading
           icon={
             <XDSNavIcon
-              icon={<XDSIcon icon={ShopIcon} size="sm" color="inherit" />}
+              icon={
+                <XDSIcon
+                  icon={BuildingStorefrontIcon}
+                  size="sm"
+                  color="inherit"
+                />
+              }
             />
           }
           heading="Kiln & Table"
@@ -366,22 +186,21 @@ function ShopSideNav() {
         />
       }
       footer={
-        <XDSVStack gap={0} style={{padding: '8px 0'}}>
+        <XDSVStack gap={0}>
           <XDSSideNavItem
             label="Settings"
-            icon={SettingsIcon}
+            icon={Cog6ToothIcon}
             isSelected={active === 'settings'}
             onClick={() => setActive('settings')}
           />
           <XDSSideNavItem
             label="Help Center"
-            icon={HelpIcon}
+            icon={QuestionMarkCircleIcon}
             isSelected={active === 'help'}
             onClick={() => setActive('help')}
           />
         </XDSVStack>
-      }
-      footerIcons={<XDSSideNavCollapseButton />}>
+      }>
       <XDSSideNavSection title="Main" isHeaderHidden>
         <XDSSideNavItem
           label="Home"
@@ -391,13 +210,13 @@ function ShopSideNav() {
         />
         <XDSSideNavItem
           label="Orders"
-          icon={OrdersIcon}
+          icon={ClipboardDocumentListIcon}
           isSelected={active === 'orders'}
           onClick={() => setActive('orders')}
         />
         <XDSSideNavItem
           label="Products"
-          icon={ProductsIcon}
+          icon={CubeIcon}
           isSelected={active === 'products'}
           onClick={() => setActive('products')}
         />
@@ -405,19 +224,19 @@ function ShopSideNav() {
       <XDSSideNavSection title="Sales channels">
         <XDSSideNavItem
           label="Customers"
-          icon={CustomersIcon}
+          icon={UserGroupIcon}
           isSelected={active === 'customers'}
           onClick={() => setActive('customers')}
         />
         <XDSSideNavItem
           label="Content"
-          icon={ContentIcon}
+          icon={DocumentTextIcon}
           isSelected={active === 'content'}
           onClick={() => setActive('content')}
         />
         <XDSSideNavItem
           label="Analytics"
-          icon={AnalyticsIcon}
+          icon={ChartBarIcon}
           isSelected={active === 'analytics'}
           onClick={() => setActive('analytics')}
         />
@@ -428,7 +247,11 @@ function ShopSideNav() {
 
 // ─── Bullet separator ───────────────────────────────────────────────────────
 function Bullet() {
-  return <span {...stylex.props(pageStyles.bulletSeparator)}>{'・'}</span>;
+  return (
+    <XDSText type="supporting" color="secondary">
+      {'・'}
+    </XDSText>
+  );
 }
 
 // ─── Page Header ────────────────────────────────────────────────────────────
@@ -445,78 +268,61 @@ function PageHeader({
 }) {
   return (
     <XDSLayoutHeader hasDivider padding={4}>
-      <XDSCenter axis="horizontal">
-        <XDSVStack gap={0} style={{width: '100%'}}>
-          <XDSHStack
-            gap={4}
-            vAlign="start"
-            style={{justifyContent: 'space-between'}}>
-            <XDSVStack gap={0} style={{flex: 1, minWidth: 0}}>
-              {/* Back link */}
+      <XDSVStack gap={0}>
+        <XDSHStack gap={4} vAlign="start">
+          <XDSStackItem size="fill">
+            <XDSVStack gap={0}>
               <XDSLink href="#" label="All orders" color="secondary">
                 <XDSHStack gap={1} vAlign="center">
                   <XDSIcon icon={ArrowLeftIcon} size="sm" color="inherit" />
                   All orders
                 </XDSHStack>
               </XDSLink>
-              {/* Title + metadata */}
               <XDSVStack gap={0}>
                 <XDSHeading level={1}>#1001</XDSHeading>
-                {/* Metadata row */}
-                <XDSHStack
-                  gap={1}
-                  vAlign="center"
-                  style={{overflow: 'hidden', whiteSpace: 'nowrap'}}>
-                  <XDSText type="body" style={{flexShrink: 0}}>
+                <XDSHStack gap={1} vAlign="center">
+                  <XDSText type="body" maxLines={1}>
                     {PRODUCTS.length} ordered items
                   </XDSText>
                   <Bullet />
-                  <XDSHStack gap={1} vAlign="center" style={{flexShrink: 0}}>
+                  <XDSHStack gap={1} vAlign="center">
                     <XDSAvatar name="Jane Doe" size="xsmall" />
-                    <XDSText type="body">Jane Doe</XDSText>
+                    <XDSText type="body" maxLines={1}>
+                      Jane Doe
+                    </XDSText>
                   </XDSHStack>
                   <Bullet />
-                  <span style={{flexShrink: 0}}>
-                    <XDSBadge variant="warning" label="Unfulfilled" />
-                  </span>
+                  <XDSBadge variant="warning" label="Unfulfilled" />
                   <Bullet />
-                  <XDSHStack gap={1} vAlign="center" style={{flexShrink: 0}}>
+                  <XDSHStack gap={1} vAlign="center">
                     <XDSIcon icon={CalendarIcon} size="sm" color="secondary" />
-                    <XDSText type="body">02/23/2026</XDSText>
+                    <XDSText type="body" maxLines={1}>
+                      02/23/2026
+                    </XDSText>
                   </XDSHStack>
                   <Bullet />
-                  <XDSHStack gap={1} vAlign="center" style={{flexShrink: 0}}>
+                  <XDSHStack gap={1} vAlign="center">
                     <XDSIcon icon={FlagIcon} size="sm" color="secondary" />
-                    <XDSText type="body">Needs attention</XDSText>
+                    <XDSText type="body" maxLines={1}>
+                      Needs attention
+                    </XDSText>
                   </XDSHStack>
                   <Bullet />
-                  <XDSLink
-                    href="#"
-                    label="See all"
-                    color="secondary"
-                    style={{flexShrink: 0}}>
+                  <XDSLink href="#" label="See all" color="secondary">
                     See all
                   </XDSLink>
                 </XDSHStack>
               </XDSVStack>
             </XDSVStack>
-
-            {/* Actions — top-aligned */}
-            <XDSHStack gap={2} style={{flexShrink: 0}}>
-              <XDSButton label="Restock" variant="secondary" />
-              <XDSButton label="Edit" variant="secondary" />
-            </XDSHStack>
+          </XDSStackItem>
+          <XDSHStack gap={2}>
+            <XDSButton label="Restock" variant="secondary" />
+            <XDSButton label="Edit" variant="secondary" />
           </XDSHStack>
+        </XDSHStack>
 
-          {/* Tabs — full width */}
-          <XDSHStack
-            vAlign="center"
-            style={{
-              justifyContent: 'space-between',
-              marginInline: -12,
-              marginBottom: -16,
-              marginTop: 12,
-            }}>
+        <XDSHStack vAlign="center" xstyle={pageStyles.tabsRow}>
+          <XDSStackItem size="fill">
             <XDSTabList value={activeTab} onChange={onTabChange} size="lg">
               <XDSTab value="details" label="Details" />
               <XDSTab value="invoices" label="Invoices" />
@@ -524,19 +330,17 @@ function PageHeader({
               <XDSTab value="customer" label="Customer" />
               <XDSTab value="analysis" label="Analysis" />
             </XDSTabList>
-            <XDSButton
-              label={isPanelOpen ? 'Hide panel' : 'Show panel'}
-              variant="ghost"
-              size="md"
-              icon={
-                <XDSIcon icon={PanelRightIcon} size="sm" color="secondary" />
-              }
-              isIconOnly
-              onClick={onTogglePanel}
-            />
-          </XDSHStack>
-        </XDSVStack>
-      </XDSCenter>
+          </XDSStackItem>
+          <XDSButton
+            label={isPanelOpen ? 'Hide panel' : 'Show panel'}
+            variant="ghost"
+            size="md"
+            icon={<XDSIcon icon={ViewColumnsIcon} size="sm" />}
+            isIconOnly
+            onClick={onTogglePanel}
+          />
+        </XDSHStack>
+      </XDSVStack>
     </XDSLayoutHeader>
   );
 }
@@ -546,18 +350,20 @@ function ItemsCard() {
   return (
     <XDSSection>
       <XDSVStack gap={4}>
-        <XDSHStack vAlign="center" style={{justifyContent: 'space-between'}}>
-          <XDSHStack gap={2} vAlign="center">
-            <XDSHeading level={2}>Items</XDSHeading>
-            <XDSBadge variant="warning" label="Unfulfilled" />
-          </XDSHStack>
+        <XDSHStack vAlign="center">
+          <XDSStackItem size="fill">
+            <XDSHStack gap={2} vAlign="center">
+              <XDSHeading level={2}>Items</XDSHeading>
+              <XDSBadge variant="warning" label="Unfulfilled" />
+            </XDSHStack>
+          </XDSStackItem>
           <XDSHStack gap={2}>
             <XDSButton label="Fulfill item" variant="ghost" />
             <XDSButton label="Create shipping label" variant="secondary" />
           </XDSHStack>
         </XDSHStack>
 
-        <XDSList density="spacious" style={{marginInline: -12}}>
+        <XDSList density="spacious">
           {PRODUCTS.map((product, i) => (
             <XDSListItem
               key={i}
@@ -573,13 +379,11 @@ function ItemsCard() {
               }
               onClick={() => {}}
               startContent={
-                <div style={{width: 100, height: 66, flexShrink: 0}}>
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    {...stylex.props(pageStyles.productImage)}
-                  />
-                </div>
+                <XDSThumbnail
+                  src={product.image}
+                  alt={product.name}
+                  label={product.name}
+                />
               }
               endContent={
                 <XDSText type="body" color="secondary">
@@ -601,11 +405,13 @@ function InvoiceCard() {
   return (
     <XDSSection>
       <XDSVStack gap={4}>
-        <XDSHStack vAlign="center" style={{justifyContent: 'space-between'}}>
-          <XDSHStack gap={2} vAlign="center">
-            <XDSHeading level={2}>Invoice</XDSHeading>
-            <XDSBadge variant="success" label="Paid" />
-          </XDSHStack>
+        <XDSHStack vAlign="center">
+          <XDSStackItem size="fill">
+            <XDSHStack gap={2} vAlign="center">
+              <XDSHeading level={2}>Invoice</XDSHeading>
+              <XDSBadge variant="success" label="Paid" />
+            </XDSHStack>
+          </XDSStackItem>
           <XDSHStack gap={2}>
             <XDSButton label="Refund" variant="ghost" />
             <XDSButton label="Send Invoice" variant="secondary" />
@@ -614,31 +420,40 @@ function InvoiceCard() {
 
         <XDSMetadataList>
           <XDSMetadataListItem label="Subtotal">
-            <XDSHStack style={{justifyContent: 'space-between', width: '100%'}}>
-              <span>{PRODUCTS.length} items</span>
-              <span>{fmt(SUBTOTAL)}</span>
+            <XDSHStack>
+              <XDSStackItem size="fill">
+                <XDSText type="body">{PRODUCTS.length} items</XDSText>
+              </XDSStackItem>
+              <XDSText type="body">{fmt(SUBTOTAL)}</XDSText>
             </XDSHStack>
           </XDSMetadataListItem>
           <XDSMetadataListItem label="Discount">
-            <XDSHStack style={{justifyContent: 'space-between', width: '100%'}}>
-              <span>New customer code: NEW15</span>
-              <span>– {fmt(DISCOUNT)}</span>
+            <XDSHStack>
+              <XDSStackItem size="fill">
+                <XDSText type="body">New customer code: NEW15</XDSText>
+              </XDSStackItem>
+              <XDSText type="body">– {fmt(DISCOUNT)}</XDSText>
             </XDSHStack>
           </XDSMetadataListItem>
           <XDSMetadataListItem label="Shipping">
-            <XDSHStack style={{justifyContent: 'space-between', width: '100%'}}>
-              <span>Free shipping (0.0lbs) USPS</span>
-              <span>{fmt(SHIPPING)}</span>
+            <XDSHStack>
+              <XDSStackItem size="fill">
+                <XDSText type="body">Free shipping (0.0lbs) USPS</XDSText>
+              </XDSStackItem>
+              <XDSText type="body">{fmt(SHIPPING)}</XDSText>
             </XDSHStack>
           </XDSMetadataListItem>
           <XDSMetadataListItem label="Tax">
-            <XDSHStack style={{justifyContent: 'space-between', width: '100%'}}>
-              <span>Sales tax (8.25%)</span>
-              <span>{fmt(TAX)}</span>
+            <XDSHStack>
+              <XDSStackItem size="fill">
+                <XDSText type="body">Sales tax (8.25%)</XDSText>
+              </XDSStackItem>
+              <XDSText type="body">{fmt(TAX)}</XDSText>
             </XDSHStack>
           </XDSMetadataListItem>
           <XDSMetadataListItem label="Total">
-            <XDSHStack style={{justifyContent: 'flex-end', width: '100%'}}>
+            <XDSHStack>
+              <XDSStackItem size="fill" />
               <XDSText type="body" weight="bold">
                 {fmt(TOTAL)}
               </XDSText>
@@ -650,9 +465,11 @@ function InvoiceCard() {
 
         <XDSMetadataList>
           <XDSMetadataListItem label="Paid by customer">
-            <XDSHStack style={{justifyContent: 'space-between', width: '100%'}}>
-              <span>Visa ...7482</span>
-              <span>{fmt(TOTAL)}</span>
+            <XDSHStack>
+              <XDSStackItem size="fill">
+                <XDSText type="body">Visa ...7482</XDSText>
+              </XDSStackItem>
+              <XDSText type="body">{fmt(TOTAL)}</XDSText>
             </XDSHStack>
           </XDSMetadataListItem>
         </XDSMetadataList>
@@ -666,35 +483,37 @@ function TimelineSection() {
   return (
     <XDSSection>
       <XDSVStack gap={4}>
-        <XDSHStack vAlign="center" style={{justifyContent: 'space-between'}}>
-          <XDSHeading level={2}>Timeline</XDSHeading>
+        <XDSHStack vAlign="center">
+          <XDSStackItem size="fill">
+            <XDSHeading level={2}>Timeline</XDSHeading>
+          </XDSStackItem>
           <XDSButton
             label="Filters"
             variant="ghost"
-            icon={<XDSIcon icon={FilterIcon} />}
+            icon={<XDSIcon icon={FunnelIcon} />}
             isIconOnly
           />
         </XDSHStack>
 
         <XDSVStack gap={4}>
           {ACTIVITY.map((item, i) => (
-            <div key={i}>
-              <XDSVStack gap={2}>
-                <XDSHStack gap={3} vAlign="start">
-                  <XDSAvatar name={item.user} size="small" />
-                  <XDSVStack gap={2} style={{flex: 1}}>
-                    <div {...stylex.props(pageStyles.commentBubble)}>
+            <XDSVStack key={i} gap={2}>
+              <XDSHStack gap={3} vAlign="start">
+                <XDSAvatar name={item.user} size="small" />
+                <XDSStackItem size="fill">
+                  <XDSVStack gap={2}>
+                    <XDSCard variant="muted" padding={3}>
                       <XDSVStack gap={1}>
                         <XDSText type="body" weight="bold">
                           {item.user}
                         </XDSText>
                         <XDSText type="body">{item.text}</XDSText>
                         {item.changes && (
-                          <XDSVStack gap={1} style={{marginTop: 4}}>
+                          <XDSVStack gap={1}>
                             {item.changes.map((change, j) => (
                               <XDSHStack key={j} gap={2} vAlign="center">
                                 <XDSIcon
-                                  icon={EditIcon}
+                                  icon={PencilSquareIcon}
                                   size="sm"
                                   color="secondary"
                                 />
@@ -706,30 +525,40 @@ function TimelineSection() {
                           </XDSVStack>
                         )}
                       </XDSVStack>
-                    </div>
-                    <div {...stylex.props(pageStyles.reactionBar)}>
+                    </XDSCard>
+                    <XDSHStack gap={3} vAlign="center">
                       <XDSHStack gap={1} vAlign="center">
                         <XDSIcon
-                          icon={ThumbUpIcon}
+                          icon={HandThumbUpIcon}
                           size="xsm"
-                          color="inherit"
+                          color="secondary"
                         />
-                        <XDSIcon icon={HeartIcon} size="xsm" color="inherit" />
-                        <span>{item.reactions}</span>
+                        <XDSIcon
+                          icon={HeartIcon}
+                          size="xsm"
+                          color="secondary"
+                        />
+                        <XDSText type="supporting" color="secondary">
+                          {item.reactions}
+                        </XDSText>
                       </XDSHStack>
-                      <span>Like</span>
+                      <XDSText type="supporting" color="secondary">
+                        Like
+                      </XDSText>
                       <Bullet />
-                      <span>Reply</span>
+                      <XDSText type="supporting" color="secondary">
+                        Reply
+                      </XDSText>
                       <Bullet />
-                      <span>{item.time}</span>
-                    </div>
+                      <XDSText type="supporting" color="secondary">
+                        {item.time}
+                      </XDSText>
+                    </XDSHStack>
                   </XDSVStack>
-                </XDSHStack>
-              </XDSVStack>
-              {i < ACTIVITY.length - 1 && (
-                <XDSDivider style={{marginTop: 12}} />
-              )}
-            </div>
+                </XDSStackItem>
+              </XDSHStack>
+              {i < ACTIVITY.length - 1 && <XDSDivider />}
+            </XDSVStack>
           ))}
         </XDSVStack>
       </XDSVStack>
@@ -738,98 +567,67 @@ function TimelineSection() {
 }
 
 // ─── Right Panel ────────────────────────────────────────────────────────────
-function RightPanel({isOpen}: {isOpen: boolean}) {
+function RightPanel() {
   return (
-    <div
-      style={{
-        width: isOpen ? 320 : 0,
-        minWidth: isOpen ? 320 : 0,
-        overflow: 'hidden',
-        transition:
-          'width var(--duration-medium, 410ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1)), min-width var(--duration-medium, 410ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1))',
-        flexShrink: 0,
-      }}>
-      <XDSLayoutPanel
-        hasDivider
-        width={320}
-        padding={0}
-        role="complementary"
-        style={{
-          opacity: isOpen ? 1 : 0,
-          transition:
-            'opacity var(--duration-fast, 175ms) var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1))',
-          transitionDelay: isOpen ? 'var(--duration-fast, 175ms)' : '0ms',
-        }}>
-        <XDSVStack gap={4}>
-          {/* Notes */}
-          <div
-            {...stylex.props(pageStyles.panelSection)}
-            style={{padding: '8px 16px'}}>
-            <XDSCollapsible trigger={<XDSHeading level={4}>Notes</XDSHeading>}>
-              <XDSText type="body">
-                Customer is a repeat buyer — 3rd order this quarter. Prefers
-                snow and oat glazes. Requested gift wrapping for the mug set.
-                Ships to a residential address in CA.{' '}
-                <XDSLink href="#" label="Show more" color="secondary">
-                  Show more
-                </XDSLink>
-              </XDSText>
-            </XDSCollapsible>
-          </div>
+    <XDSLayoutPanel width={320} padding={4} role="complementary">
+      <XDSVStack gap={4}>
+        <XDSCollapsible trigger={<XDSHeading level={4}>Notes</XDSHeading>}>
+          <XDSText type="body">
+            Customer is a repeat buyer — 3rd order this quarter. Prefers snow
+            and oat glazes. Requested gift wrapping for the mug set. Ships to a
+            residential address in CA.{' '}
+            <XDSLink href="#" label="Show more" color="secondary">
+              Show more
+            </XDSLink>
+          </XDSText>
+        </XDSCollapsible>
 
-          {/* Customer */}
-          <div
-            {...stylex.props(pageStyles.panelSection)}
-            style={{padding: '8px 16px'}}>
-            <XDSCollapsible
-              trigger={<XDSHeading level={4}>Customer</XDSHeading>}>
-              <XDSMetadataList>
-                <XDSMetadataListItem label="Name">Jane Doe</XDSMetadataListItem>
-                <XDSMetadataListItem label="Address">
-                  321 Smith Road, CA 38238
-                </XDSMetadataListItem>
-                <XDSMetadataListItem label="Phone">234-</XDSMetadataListItem>
-                <XDSMetadataListItem label="Email">
-                  janedoe@email.com
-                </XDSMetadataListItem>
-                <XDSMetadataListItem label="Billing Address">
-                  Same as shipping address
-                </XDSMetadataListItem>
-              </XDSMetadataList>
-            </XDSCollapsible>
-          </div>
+        <XDSCollapsible trigger={<XDSHeading level={4}>Customer</XDSHeading>}>
+          <XDSMetadataList>
+            <XDSMetadataListItem label="Name">Jane Doe</XDSMetadataListItem>
+            <XDSMetadataListItem label="Address">
+              321 Smith Road, CA 38238
+            </XDSMetadataListItem>
+            <XDSMetadataListItem label="Phone">234-</XDSMetadataListItem>
+            <XDSMetadataListItem label="Email">
+              janedoe@email.com
+            </XDSMetadataListItem>
+            <XDSMetadataListItem label="Billing Address">
+              Same as shipping address
+            </XDSMetadataListItem>
+          </XDSMetadataList>
+        </XDSCollapsible>
 
-          {/* Fraud Analysis */}
-          <div
-            {...stylex.props(pageStyles.panelSection)}
-            style={{padding: '8px 16px'}}>
-            <XDSCollapsible
-              trigger={<XDSHeading level={4}>Fraud Analysis</XDSHeading>}>
-              <XDSVStack gap={1}>
-                <XDSProgressBar
-                  label="Risk level"
-                  value={15}
-                  variant="positive"
-                  isLabelHidden
-                />
-                <XDSText type="body">Recommendation: Fulfill order</XDSText>
-                <XDSText type="body">
-                  There is a low chance that you will receive a chargeback on
-                  this order.
-                </XDSText>
-              </XDSVStack>
-            </XDSCollapsible>
-          </div>
-        </XDSVStack>
-      </XDSLayoutPanel>
-    </div>
+        <XDSCollapsible
+          trigger={<XDSHeading level={4}>Fraud Analysis</XDSHeading>}>
+          <XDSVStack gap={1}>
+            <XDSProgressBar
+              label="Risk level"
+              value={15}
+              variant="positive"
+              isLabelHidden
+            />
+            <XDSText type="body">Recommendation: Fulfill order</XDSText>
+            <XDSText type="body">
+              There is a low chance that you will receive a chargeback on this
+              order.
+            </XDSText>
+          </XDSVStack>
+        </XDSCollapsible>
+      </XDSVStack>
+    </XDSLayoutPanel>
   );
 }
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 export default function DetailPage2Template() {
   const [activeTab, setActiveTab] = useState('details');
+  const isNarrow = useMediaQuery('(max-width: 1024px)');
   const [isPanelOpen, setIsPanelOpen] = useState(true);
+
+  useEffect(() => {
+    setIsPanelOpen(!isNarrow);
+  }, [isNarrow]);
 
   return (
     <XDSAppShell
@@ -849,7 +647,7 @@ export default function DetailPage2Template() {
           />
         }
         content={
-          <XDSLayoutContent role="main" xstyle={pageStyles.contentFlushEnd}>
+          <XDSLayoutContent role="main">
             <XDSVStack gap={4}>
               <ItemsCard />
               <InvoiceCard />
@@ -857,7 +655,7 @@ export default function DetailPage2Template() {
             </XDSVStack>
           </XDSLayoutContent>
         }
-        end={<RightPanel isOpen={isPanelOpen} />}
+        end={isPanelOpen ? <RightPanel /> : undefined}
       />
     </XDSAppShell>
   );

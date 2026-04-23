@@ -6,6 +6,7 @@ import {
   XDSCommandPaletteFooter,
 } from '@xds/core/CommandPalette';
 import {XDSButton} from '@xds/core/Button';
+import {XDSText} from '@xds/core/Text';
 import {createStaticSource} from '@xds/core/Typeahead';
 
 export default function CommandPaletteCustomFooter() {
@@ -28,7 +29,9 @@ export default function CommandPaletteCustomFooter() {
         searchSource={source}
         footer={
           <XDSCommandPaletteFooter>
-            <span>Pro tip: use ⌘K to open anywhere</span>
+            <XDSText type="supporting">
+              Pro tip: use ⌘K to open anywhere
+            </XDSText>
           </XDSCommandPaletteFooter>
         }
       />

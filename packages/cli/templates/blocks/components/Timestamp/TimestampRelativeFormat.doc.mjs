@@ -1,10 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Timestamp — Relative Format',
-  description:
-    'Series of timestamps showing relative time labels from seconds ago to months ago.',
+  name: 'Timestamp — Relative',
+  description: 'Relative time labels from seconds to months ago, with hover tooltips showing the full date. Use in feeds, comment threads, and activity logs.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['Timestamp'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Timestamp', 'Layout', 'Text'],
 };

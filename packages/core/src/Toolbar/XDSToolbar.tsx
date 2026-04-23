@@ -127,8 +127,8 @@ const blockPaddingVarForSize: Record<XDSElementSize, string> = {
  */
 const edgeInsetStyles = stylex.create({
   inset: (blockPadding: string) => ({
-    '--edge-inset-start': `calc(var(--container-padding-inline-start, var(--container-padding-inline, ${spacingVars['--spacing-4']})) - ${blockPadding})`,
-    '--edge-inset-end': `calc(var(--container-padding-inline-end, var(--container-padding-inline, ${spacingVars['--spacing-4']})) - ${blockPadding})`,
+    '--edge-inset-start': `calc(var(--container-padding-inline-start, ${spacingVars['--spacing-4']}) - ${blockPadding})`,
+    '--edge-inset-end': `calc(var(--container-padding-inline-end, ${spacingVars['--spacing-4']}) - ${blockPadding})`,
   }),
 });
 

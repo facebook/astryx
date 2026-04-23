@@ -2,6 +2,7 @@
 
 export const docs = {
   name: 'SegmentedControl',
+  group: 'SegmentedControl',
   keywords: ['radio', 'tabs', 'toggle', 'toggle-group', 'pill', 'button-group', 'switch', 'segment', 'control'],
   theming: {
     targets: [

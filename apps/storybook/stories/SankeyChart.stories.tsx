@@ -12,7 +12,7 @@ import {XDSStack, XDSText} from '@xds/core';
 import {XDSHeading} from '@xds/core/Text';
 
 const meta: Meta = {
-  title: 'Lab/XDSSankeyChart',
+  title: 'Lab/SankeyChart',
   tags: ['autodocs'],
 };
 

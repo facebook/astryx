@@ -101,21 +101,54 @@ export const paddingStyles = stylex.create({
 
 /**
  * Container padding inline CSS variable styles for edge compensation.
- * Sets --container-padding-inline so edge-compensating children know
- * the inline padding to compensate against.
+ * Sets --container-padding-inline-start and --container-padding-inline-end so
+ * edge-compensating children know the inline padding to compensate against.
  */
 export const containerPaddingInlineVarStyles = stylex.create({
-  0: {'--container-padding-inline': spacingVars['--spacing-0']},
-  0.5: {'--container-padding-inline': spacingVars['--spacing-0-5']},
-  1: {'--container-padding-inline': spacingVars['--spacing-1']},
-  1.5: {'--container-padding-inline': spacingVars['--spacing-1-5']},
-  2: {'--container-padding-inline': spacingVars['--spacing-2']},
-  3: {'--container-padding-inline': spacingVars['--spacing-3']},
-  4: {'--container-padding-inline': spacingVars['--spacing-4']},
-  5: {'--container-padding-inline': spacingVars['--spacing-5']},
-  6: {'--container-padding-inline': spacingVars['--spacing-6']},
-  8: {'--container-padding-inline': spacingVars['--spacing-8']},
-  10: {'--container-padding-inline': spacingVars['--spacing-10']},
+  0: {
+    '--container-padding-inline-start': spacingVars['--spacing-0'],
+    '--container-padding-inline-end': spacingVars['--spacing-0'],
+  },
+  0.5: {
+    '--container-padding-inline-start': spacingVars['--spacing-0-5'],
+    '--container-padding-inline-end': spacingVars['--spacing-0-5'],
+  },
+  1: {
+    '--container-padding-inline-start': spacingVars['--spacing-1'],
+    '--container-padding-inline-end': spacingVars['--spacing-1'],
+  },
+  1.5: {
+    '--container-padding-inline-start': spacingVars['--spacing-1-5'],
+    '--container-padding-inline-end': spacingVars['--spacing-1-5'],
+  },
+  2: {
+    '--container-padding-inline-start': spacingVars['--spacing-2'],
+    '--container-padding-inline-end': spacingVars['--spacing-2'],
+  },
+  3: {
+    '--container-padding-inline-start': spacingVars['--spacing-3'],
+    '--container-padding-inline-end': spacingVars['--spacing-3'],
+  },
+  4: {
+    '--container-padding-inline-start': spacingVars['--spacing-4'],
+    '--container-padding-inline-end': spacingVars['--spacing-4'],
+  },
+  5: {
+    '--container-padding-inline-start': spacingVars['--spacing-5'],
+    '--container-padding-inline-end': spacingVars['--spacing-5'],
+  },
+  6: {
+    '--container-padding-inline-start': spacingVars['--spacing-6'],
+    '--container-padding-inline-end': spacingVars['--spacing-6'],
+  },
+  8: {
+    '--container-padding-inline-start': spacingVars['--spacing-8'],
+    '--container-padding-inline-end': spacingVars['--spacing-8'],
+  },
+  10: {
+    '--container-padding-inline-start': spacingVars['--spacing-10'],
+    '--container-padding-inline-end': spacingVars['--spacing-10'],
+  },
 });
 
 /**

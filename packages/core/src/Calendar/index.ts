@@ -46,4 +46,3 @@ export {
 } from './utils';
 
 // Re-export theme styles for customization
-export {dayCellTheme} from './styles';

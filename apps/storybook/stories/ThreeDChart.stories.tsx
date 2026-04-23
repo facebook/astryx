@@ -13,7 +13,7 @@ import {XDSStack, XDSText} from '@xds/core';
 import {XDSHeading} from '@xds/core/Text';
 
 const meta: Meta = {
-  title: 'Lab/XDS3DChart',
+  title: 'Lab/3DChart',
   tags: ['autodocs'],
 };
 

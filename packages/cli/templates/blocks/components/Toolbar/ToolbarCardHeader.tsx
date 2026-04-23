@@ -1,63 +1,47 @@
 'use client';
 
 import {XDSToolbar} from '@xds/core/Toolbar';
+import {XDSButton} from '@xds/core/Button';
+import {XDSIcon} from '@xds/core/Icon';
+import {XDSHeading} from '@xds/core/Text';
 import {XDSCard} from '@xds/core/Card';
 import {XDSSection} from '@xds/core/Section';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSButton} from '@xds/core/Button';
+import {FunnelIcon, PlusIcon} from '@heroicons/react/24/outline';
+import * as stylex from '@stylexjs/stylex';
+
+const styles = stylex.create({
+  card: {
+    width: 600,
+    height: '100%',
+    marginTop: 260,
+  },
+});
 
 export default function ToolbarCardHeader() {
   return (
-    <XDSCard width={600}>
+    <XDSCard xstyle={styles.card}>
       <XDSToolbar
         label="User list actions"
         size="sm"
         dividers={['bottom']}
-        startContent={<XDSHeading level={4}>Users</XDSHeading>}
+        startContent={<XDSHeading level={4}>Card title</XDSHeading>}
         endContent={
           <>
             <XDSButton
               label="Filter"
               variant="ghost"
-              size="sm"
-              icon={
-                <svg
-                  width={16}
-                  height={16}
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                  strokeLinecap="round"
-                  strokeLinejoin="round">
-                  <path d="M1.5 3h13L9.5 9v4l-3 1.5V9L1.5 3z" />
-                </svg>
-              }
+              icon={<XDSIcon icon={FunnelIcon} />}
               isIconOnly
             />
             <XDSButton
               label="Add user"
-              size="sm"
-              icon={
-                <svg
-                  width={16}
-                  height={16}
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  strokeLinecap="round">
-                  <path d="M8 3v10M3 8h10" />
-                </svg>
-              }
+              icon={<XDSIcon icon={PlusIcon} />}
               isIconOnly
             />
           </>
         }
       />
-      <XDSSection>
-        <XDSText type="body">Table rows go here...</XDSText>
-      </XDSSection>
+      <XDSSection />
     </XDSCard>
   );
 }

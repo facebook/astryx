@@ -5,12 +5,12 @@ export const docs = {
   keywords: ["appshell","layout","scaffold","sidebar","sidenav","topnav","header","navigation","dashboard","shell","page","frame"],
   usage: {
     description:
-      'AppShell is an application-level layout providing header, side navigation, and main content areas. Use it to scaffold the top-level structure of a dashboard or admin interface with consistent navigation patterns.',
+      'The outermost layout for an application. Provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page — it handles responsive collapse, skip-to-content, and mobile navigation automatically.',
     bestPractices: [
-      {guidance: true, description: 'Choose the height mode that matches your content — use "fill" for dashboards with independent scroll regions and "auto" for content-driven pages.'},
-      {guidance: true, description: 'When a TopNav is present, omit SideNavHeading from the SideNav to avoid duplicating the app identity.'},
-      {guidance: false, description: 'Nest an AppShell inside another AppShell or use it for sub-page layouts — it is intended as the outermost layout frame.'},
-      {guidance: false, description: 'Mix multiple navigation patterns within the same shell — pick either topNav, sideNav, or both and use them consistently.'},
+      {guidance: true, description: 'Choose the right height — use "fill" for dashboards with internal scrolling and "auto" for pages that grow with content.'},
+      {guidance: true, description: 'Set `contentPadding` based on content type — 4 for forms and settings, 0 for tables and dashboards.'},
+      {guidance: false, description: "Nest one AppShell inside another — it's the outermost layout frame."},
+      {guidance: false, description: 'Use for sub-page layouts — use Layout for content areas within AppShell.'},
     ],
   },
   props: [
@@ -98,12 +98,12 @@ export const docsZh = {
   name: 'AppShell',
   usage: {
     description:
-      'AppShell is an application-level layout providing header, side navigation, and main content areas. Use it to scaffold the top-level structure of a dashboard or admin interface with consistent navigation patterns.',
+      'The outermost layout for an application. Provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page — it handles responsive collapse, skip-to-content, and mobile navigation automatically.',
     bestPractices: [
-      {guidance: true, description: 'Choose the height mode that matches your content — use "fill" for dashboards with independent scroll regions and "auto" for content-driven pages.'},
-      {guidance: true, description: 'When a TopNav is present, omit SideNavHeading from the SideNav to avoid duplicating the app identity.'},
-      {guidance: false, description: 'Nest an AppShell inside another AppShell or use it for sub-page layouts — it is intended as the outermost layout frame.'},
-      {guidance: false, description: 'Mix multiple navigation patterns within the same shell — pick either topNav, sideNav, or both and use them consistently.'},
+      {guidance: true, description: 'Choose the right height — use "fill" for dashboards with internal scrolling and "auto" for pages that grow with content.'},
+      {guidance: true, description: 'Set `contentPadding` based on content type — 4 for forms and settings, 0 for tables and dashboards.'},
+      {guidance: false, description: "Nest one AppShell inside another — it's the outermost layout frame."},
+      {guidance: false, description: 'Use for sub-page layouts — use Layout for content areas within AppShell.'},
     ],
   },
   props: [
@@ -169,12 +169,12 @@ export const docsDense = {
     'app-level layout shell w/ header, side nav, main content; composes XDSLayout internally, replaces XDSPage+XDSPageLayout',
   usage: {
     description:
-      'AppShell is an application-level layout providing header, side navigation, and main content areas. Use it to scaffold the top-level structure of a dashboard or admin interface with consistent navigation patterns.',
+      'The outermost layout for an application. Provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page — it handles responsive collapse, skip-to-content, and mobile navigation automatically.',
     bestPractices: [
-      {guidance: true, description: 'Choose the height mode that matches your content — use "fill" for dashboards with independent scroll regions and "auto" for content-driven pages.'},
-      {guidance: true, description: 'When a TopNav is present, omit SideNavHeading from the SideNav to avoid duplicating the app identity.'},
-      {guidance: false, description: 'Nest an AppShell inside another AppShell or use it for sub-page layouts — it is intended as the outermost layout frame.'},
-      {guidance: false, description: 'Mix multiple navigation patterns within the same shell — pick either topNav, sideNav, or both and use them consistently.'},
+      {guidance: true, description: 'Choose the right height — use "fill" for dashboards with internal scrolling and "auto" for pages that grow with content.'},
+      {guidance: true, description: 'Set `contentPadding` based on content type — 4 for forms and settings, 0 for tables and dashboards.'},
+      {guidance: false, description: "Nest one AppShell inside another — it's the outermost layout frame."},
+      {guidance: false, description: 'Use for sub-page layouts — use Layout for content areas within AppShell.'},
     ],
   },
   propDescriptions: {

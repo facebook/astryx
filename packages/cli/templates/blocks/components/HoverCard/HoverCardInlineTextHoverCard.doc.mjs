@@ -1,10 +1,10 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'HoverCard — Inline Text',
+  name: 'HoverCard — Definition',
   description:
-    'Hover cards wrapping inline text nodes within a paragraph, useful for user mentions or link previews.',
+    'Shows a term definition on hover within a paragraph. Use for technical terms, jargon, or concepts that some readers may not know — like a glossary built into the text.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['HoverCard', 'VStack'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['HoverCard', 'Layout', 'Text'],
 };

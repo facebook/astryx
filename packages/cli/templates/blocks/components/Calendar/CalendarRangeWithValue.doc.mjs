@@ -1,10 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Calendar — Range Selection',
-  description:
-    'Calendar in range mode with a pre-selected start and end date.',
+  name: 'Calendar — Range',
+  description: 'Pick a start and end date with the range highlighted between them. Use for booking dates, time-off requests, or report filters.',
   isReady: true,
-  aspectRatio: 1,
-  componentsUsed: ['Calendar'],
+  aspectRatio: 4 / 3,
+  componentsUsed: ['Calendar', 'Layout', 'Text'],
 };

@@ -1961,7 +1961,7 @@ function ThemeEditorComponent() {
 // =============================================================================
 
 const meta: Meta = {
-  title: 'Theme Editor',
+  title: 'Patterns/Theme Editor',
   parameters: {
     layout: 'fullscreen',
     docs: {

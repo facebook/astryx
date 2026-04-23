@@ -4,7 +4,7 @@ import {XDSCard} from '@xds/core/Card';
 import {XDSHStack, XDSVStack} from '@xds/core/Layout';
 
 const meta: Meta<typeof XDSSkeleton> = {
-  title: 'Core/XDSSkeleton',
+  title: 'Core/Skeleton',
   component: XDSSkeleton,
   tags: ['autodocs'],
   argTypes: {

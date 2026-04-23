@@ -134,6 +134,73 @@ describe('XDSHoverCard', () => {
     expect(wrapper).toHaveAttribute('aria-describedby');
   });
 
+  describe('isDefaultOpen', () => {
+    it('shows hover card on mount when isDefaultOpen is true', async () => {
+      vi.mocked(HTMLElement.prototype.showPopover).mockClear();
+      render(
+        <XDSHoverCard content={<span>Default open card</span>} isDefaultOpen>
+          <button>Trigger</button>
+        </XDSHoverCard>,
+      );
+
+      await waitFor(() => {
+        expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+      });
+    });
+
+    it('calls onOpenChange(true) on mount when isDefaultOpen is true', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <XDSHoverCard
+          content={<span>Default open card</span>}
+          isDefaultOpen
+          onOpenChange={onOpenChange}>
+          <button>Trigger</button>
+        </XDSHoverCard>,
+      );
+
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+    });
+
+    it('does not show hover card on mount when isDefaultOpen is not set', async () => {
+      vi.mocked(HTMLElement.prototype.showPopover).mockClear();
+      render(
+        <XDSHoverCard content={<span>Not default open</span>}>
+          <button>Trigger</button>
+        </XDSHoverCard>,
+      );
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+    });
+
+    it('hover card is still dismissible after isDefaultOpen', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <XDSHoverCard
+          content={<span>Dismissible card</span>}
+          isDefaultOpen
+          onOpenChange={onOpenChange}
+          hideDelay={0}>
+          <button>Trigger</button>
+        </XDSHoverCard>,
+      );
+
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+
+      const trigger = screen.getByRole('button', {name: 'Trigger'});
+      fireEvent.mouseLeave(trigger);
+
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+      });
+    });
+  });
+
   describe('Escape key behavior', () => {
     it('hides hover card when Escape is pressed on trigger', async () => {
       const onOpenChange = vi.fn();

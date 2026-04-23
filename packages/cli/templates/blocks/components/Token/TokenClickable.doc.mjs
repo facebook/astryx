@@ -2,8 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'Token — Clickable',
-  description: 'Interactive tokens that respond to click events.',
+  description: 'Interactive tokens that respond to clicks. Use for toggleable filters or tokens that open a detail view when selected.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['Token'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Token', 'Layout', 'Text'],
 };

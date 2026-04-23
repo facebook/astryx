@@ -2,6 +2,7 @@
 
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSCard} from '@xds/core/Card';
+import {XDSVStack} from '@xds/core/Stack';
 import {XDSText} from '@xds/core/Text';
 
 const cards = [
@@ -20,20 +21,14 @@ export default function GridGalleryExample() {
     <XDSGrid columns={{minWidth: 280}} gap={5}>
       {cards.map(card => (
         <XDSCard key={card.title}>
-          <div
-            style={{
-              height: 120,
-              backgroundColor: 'var(--color-background-body)',
-              borderRadius: 'var(--radius-element, 8px)',
-              marginBottom: 12,
-            }}
-          />
-          <XDSText type="label" display="block">
-            {card.title}
-          </XDSText>
-          <XDSText type="supporting" display="block">
-            {card.description}
-          </XDSText>
+          <XDSVStack gap={1}>
+            <XDSText type="label" display="block">
+              {card.title}
+            </XDSText>
+            <XDSText type="supporting" display="block">
+              {card.description}
+            </XDSText>
+          </XDSVStack>
         </XDSCard>
       ))}
     </XDSGrid>

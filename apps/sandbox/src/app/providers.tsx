@@ -2,6 +2,7 @@
 
 import {useState, createContext, useContext, useEffect} from 'react';
 import {XDSTheme} from '@xds/core/theme';
+import {XDSLayerProvider} from '@xds/core/Layer';
 import {defaultTheme} from '@xds/theme-default/built';
 import {neutralTheme} from '@xds/theme-neutral/built';
 import {brutalistTheme} from '@xds/theme-brutalist/built';
@@ -47,7 +48,7 @@ export function Providers({children}: {children: React.ReactNode}) {
   return (
     <ThemeContext.Provider value={{themeName, setThemeName, mode, setMode}}>
       <XDSTheme theme={theme} mode={mode}>
-        {children}
+        <XDSLayerProvider>{children}</XDSLayerProvider>
       </XDSTheme>
     </ThemeContext.Provider>
   );

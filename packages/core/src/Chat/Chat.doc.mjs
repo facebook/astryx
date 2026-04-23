@@ -2,6 +2,7 @@
 
 export const docs = {
   name: 'Chat',
+  group: 'Chat',
   keywords: ['chat', 'message', 'bubble', 'conversation', 'ai', 'assistant', 'thread', 'system-message', 'composer', 'mention', 'trigger', 'typeahead', 'token', 'imperative', 'tokenized-text'],
   theming: {
     targets: [

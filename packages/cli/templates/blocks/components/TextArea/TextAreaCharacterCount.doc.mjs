@@ -1,0 +1,9 @@
+/** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
+export const doc = {
+  type: 'block',
+  name: 'TextArea — Character Count',
+  description: 'Textareas with maxLength and a live character counter. The counter turns red when the limit is exceeded.',
+  isReady: true,
+  aspectRatio: 16 / 9,
+  componentsUsed: ['TextArea'],
+};

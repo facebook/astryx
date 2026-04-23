@@ -23,35 +23,57 @@ afterEach(() => {
 });
 
 describe('discoverComponents', () => {
-  it('groups XDS*.tsx files by category', () => {
+  it('reads group from .doc.mjs and groups components', () => {
     const srcDir = path.join(tmpDir, 'src');
-    // Create Button dir with XDSButton.tsx
+
+    // Button with group: 'Buttons'
     const buttonDir = path.join(srcDir, 'Button');
     fs.mkdirSync(buttonDir, {recursive: true});
     fs.writeFileSync(path.join(buttonDir, 'XDSButton.tsx'), '');
+    fs.writeFileSync(path.join(buttonDir, 'Button.doc.mjs'), "export const docs = {\n  name: 'Button',\n  group: 'Buttons',\n};");
 
-    // Create Avatar dir with XDSAvatar.tsx
+    // IconButton with group: 'Buttons'
+    const iconBtnDir = path.join(srcDir, 'IconButton');
+    fs.mkdirSync(iconBtnDir, {recursive: true});
+    fs.writeFileSync(path.join(iconBtnDir, 'XDSIconButton.tsx'), '');
+    fs.writeFileSync(path.join(iconBtnDir, 'IconButton.doc.mjs'), "export const docs = {\n  name: 'IconButton',\n  group: 'Buttons',\n};");
+
+    // Avatar with no group
     const avatarDir = path.join(srcDir, 'Avatar');
     fs.mkdirSync(avatarDir, {recursive: true});
     fs.writeFileSync(path.join(avatarDir, 'XDSAvatar.tsx'), '');
 
-    // Create Grid dir with XDSGrid.tsx
-    const gridDir = path.join(srcDir, 'Grid');
-    fs.mkdirSync(gridDir, {recursive: true});
-    fs.writeFileSync(path.join(gridDir, 'XDSGrid.tsx'), '');
-
-    // Skip dirs
-    const themeDir = path.join(srcDir, 'theme');
-    fs.mkdirSync(themeDir, {recursive: true});
-    fs.writeFileSync(path.join(themeDir, 'XDSTheme.tsx'), '');
-
     const result = discoverComponents(tmpDir);
 
     expect(result).toEqual({
-      Layout: ['Grid'],
-      Display: ['Avatar'],
-      Action: ['Button'],
+      Avatar: ['Avatar'],
+      Buttons: ['Button', 'IconButton'],
     });
+  });
+
+  it('sorts groups and ungrouped components alphabetically', () => {
+    const srcDir = path.join(tmpDir, 'src');
+
+    // Zebra (ungrouped)
+    const zebraDir = path.join(srcDir, 'Zebra');
+    fs.mkdirSync(zebraDir, {recursive: true});
+    fs.writeFileSync(path.join(zebraDir, 'XDSZebra.tsx'), '');
+
+    // Alpha (ungrouped)
+    const alphaDir = path.join(srcDir, 'Alpha');
+    fs.mkdirSync(alphaDir, {recursive: true});
+    fs.writeFileSync(path.join(alphaDir, 'XDSAlpha.tsx'), '');
+
+    // Middle in group 'Inputs'
+    const middleDir = path.join(srcDir, 'Middle');
+    fs.mkdirSync(middleDir, {recursive: true});
+    fs.writeFileSync(path.join(middleDir, 'XDSMiddle.tsx'), '');
+    fs.writeFileSync(path.join(middleDir, 'Middle.doc.mjs'), "export const docs = {\n  name: 'Middle',\n  group: 'Inputs',\n};");
+
+    const result = discoverComponents(tmpDir);
+    const keys = Object.keys(result);
+
+    expect(keys).toEqual(['Alpha', 'Inputs', 'Zebra']);
   });
 
   it('skips test files', () => {
@@ -62,17 +84,31 @@ describe('discoverComponents', () => {
     fs.writeFileSync(path.join(buttonDir, 'XDSButton.test.tsx'), '');
 
     const result = discoverComponents(tmpDir);
-    expect(result).toEqual({Action: ['Button']});
+    expect(result).toEqual({Button: ['Button']});
   });
 
-  it('puts unknown directories under Other', () => {
+  it('ungrouped components without .doc.mjs appear as standalone entries', () => {
     const srcDir = path.join(tmpDir, 'src');
     const customDir = path.join(srcDir, 'CustomWidget');
     fs.mkdirSync(customDir, {recursive: true});
     fs.writeFileSync(path.join(customDir, 'XDSCustomWidget.tsx'), '');
 
     const result = discoverComponents(tmpDir);
-    expect(result).toEqual({Other: ['CustomWidget']});
+    expect(result).toEqual({CustomWidget: ['CustomWidget']});
+  });
+
+  it('skips hooks/utils directories', () => {
+    const srcDir = path.join(tmpDir, 'src');
+    const hooksDir = path.join(srcDir, 'hooks');
+    fs.mkdirSync(hooksDir, {recursive: true});
+    fs.writeFileSync(path.join(hooksDir, 'XDSHook.tsx'), '');
+
+    const utilsDir = path.join(srcDir, 'utils');
+    fs.mkdirSync(utilsDir, {recursive: true});
+    fs.writeFileSync(path.join(utilsDir, 'XDSUtil.tsx'), '');
+
+    const result = discoverComponents(tmpDir);
+    expect(result).toEqual({});
   });
 });
 

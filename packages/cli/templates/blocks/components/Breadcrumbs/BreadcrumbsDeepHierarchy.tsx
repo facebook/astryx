@@ -1,11 +1,17 @@
 'use client';
 
 import {XDSBreadcrumbs, XDSBreadcrumbItem} from '@xds/core/Breadcrumbs';
+import {XDSIcon} from '@xds/core/Icon';
+import {HomeIcon} from '@heroicons/react/24/outline';
 
 export default function BreadcrumbsDeepHierarchy() {
   return (
     <XDSBreadcrumbs>
-      <XDSBreadcrumbItem href="/">Home</XDSBreadcrumbItem>
+      <XDSBreadcrumbItem
+        href="/"
+        startIcon={<XDSIcon icon={HomeIcon} size="sm" />}>
+        Home
+      </XDSBreadcrumbItem>
       <XDSBreadcrumbItem href="/products">Products</XDSBreadcrumbItem>
       <XDSBreadcrumbItem href="/products/electronics">
         Electronics

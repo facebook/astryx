@@ -2,6 +2,7 @@
 
 export const docs = {
   name: 'Avatar',
+  group: 'Avatar',
   keywords: ["avatar","profile","user","photo","thumbnail","initials","gravatar","pfp","userpic"],
   usage: {
     description:
@@ -86,6 +87,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Avatar',
+  group: 'Avatar',
   usage: {
     description:
       'Avatar displays a user or entity\'s profile picture with automatic fallback to initials or a default icon. Use it alongside user information to visually represent people, teams, or entities throughout the interface.',

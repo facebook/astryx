@@ -2,9 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'Toast — Deduplication',
-  description:
-    'Prevent duplicate toasts with uniqueID, using ignore or overwrite collision strategies.',
+  description: 'Prevent duplicate toasts with uniqueID. Use ignore to keep the first toast, or overwrite to replace it with updated content like a progress percentage.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['Toast', 'Button', 'Stack'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Toast', 'Button', 'Layout', 'Text'],
 };

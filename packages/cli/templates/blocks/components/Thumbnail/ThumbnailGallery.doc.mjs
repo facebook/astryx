@@ -2,9 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'Thumbnail — Gallery',
-  description:
-    'Row of removable thumbnails forming an image gallery with a reset action when all are removed.',
+  description: 'A row of clickable thumbnails with labels that open a detail view. Use for image attachment lists where users need to preview and manage uploads.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['Thumbnail'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Thumbnail', 'Layout', 'Text'],
 };

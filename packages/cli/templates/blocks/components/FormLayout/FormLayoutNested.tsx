@@ -5,12 +5,12 @@ import {XDSFormLayout} from '@xds/core/FormLayout';
 import {XDSTextInput} from '@xds/core/TextInput';
 
 export default function FormLayoutNested() {
-  const [first, setFirst] = useState('');
-  const [last, setLast] = useState('');
-  const [email, setEmail] = useState('');
-  const [city, setCity] = useState('');
-  const [state, setState] = useState('');
-  const [zip, setZip] = useState('');
+  const [first, setFirst] = useState('Priya');
+  const [last, setLast] = useState('Sharma');
+  const [email, setEmail] = useState('priya.sharma@example.com');
+  const [city, setCity] = useState('San Francisco');
+  const [state, setState] = useState('CA');
+  const [zip, setZip] = useState('94105');
 
   return (
     <XDSFormLayout>

@@ -71,6 +71,11 @@ export const docs = {
           description: 'Shows a dashed underline on the trigger element.',
           default: "'auto'",
         },
+        {
+          name: 'isDefaultOpen',
+          type: 'boolean',
+          description: 'Whether the tooltip should be shown on mount. Still dismissible.',
+        },
       ],
     },
     {
@@ -115,6 +120,11 @@ export const docs = {
           default: 'true',
         },
         {
+          name: 'isDefaultOpen',
+          type: 'boolean',
+          description: 'Whether the tooltip should be shown on mount. Still dismissible.',
+        },
+        {
           name: 'onShow',
           type: '() => void',
           description: 'Callback fired when the tooltip becomes visible.',
@@ -134,12 +144,12 @@ export const docs = {
   },
   usage: {
     description:
-      'Tooltip displays a short, non-interactive text hint anchored to a trigger element on hover or focus. Use Tooltip for progressive disclosure of supplementary information, such as describing an icon-only button or showing the full text of a truncated label.',
+      'A short text hint that appears on hover or focus, anchored to a trigger element. Use it to describe icon-only buttons, show the full text of truncated labels, or provide supplementary context without cluttering the UI.',
     bestPractices: [
       {guidance: true, description: 'Keep tooltip content concise — aim for under 140 characters of plain text.'},
       {guidance: true, description: 'Add a tooltip to icon-only buttons and controls that lack a visible label.'},
-      {guidance: false, description: 'Avoid placing interactive elements like links or buttons inside a tooltip — use HoverCard or Popover instead.'},
-      {guidance: false, description: 'Avoid using tooltips for essential information that users must see to complete a task.'},
+      {guidance: false, description: 'Place interactive elements like links or buttons inside a tooltip — use HoverCard or Popover instead.'},
+      {guidance: false, description: 'Use tooltips for essential information that users must see to complete a task.'},
     ],
   },
 };
@@ -216,6 +226,11 @@ export const docsZh = {
           description: '在触发元素上显示虚线下划线。',
           default: "'auto'",
         },
+        {
+          name: 'isDefaultOpen',
+          type: 'boolean',
+          description: '是否在挂载时显示工具提示。仍然可以关闭。',
+        },
       ],
     },
     {
@@ -260,6 +275,11 @@ export const docsZh = {
           default: 'true',
         },
         {
+          name: 'isDefaultOpen',
+          type: 'boolean',
+          description: '是否在挂载时显示工具提示。仍然可以关闭。',
+        },
+        {
           name: 'onShow',
           type: '() => void',
           description: '工具提示变为可见时触发的回调。',
@@ -279,12 +299,12 @@ export const docsZh = {
   },
   usage: {
     description:
-      'Tooltip displays a short, non-interactive text hint anchored to a trigger element on hover or focus. Use Tooltip for progressive disclosure of supplementary information, such as describing an icon-only button or showing the full text of a truncated label.',
+      'A short text hint that appears on hover or focus, anchored to a trigger element. Use it to describe icon-only buttons, show the full text of truncated labels, or provide supplementary context without cluttering the UI.',
     bestPractices: [
       {guidance: true, description: 'Keep tooltip content concise — aim for under 140 characters of plain text.'},
       {guidance: true, description: 'Add a tooltip to icon-only buttons and controls that lack a visible label.'},
-      {guidance: false, description: 'Avoid placing interactive elements like links or buttons inside a tooltip — use HoverCard or Popover instead.'},
-      {guidance: false, description: 'Avoid using tooltips for essential information that users must see to complete a task.'},
+      {guidance: false, description: 'Place interactive elements like links or buttons inside a tooltip — use HoverCard or Popover instead.'},
+      {guidance: false, description: 'Use tooltips for essential information that users must see to complete a task.'},
     ],
   },
 };
@@ -294,12 +314,12 @@ export const docsDense = {
   description: 'Hover/focus triggered tooltip for displaying short, non-interactive text anchored to trigger element.',
   usage: {
     description:
-      'Tooltip displays a short, non-interactive text hint anchored to a trigger element on hover or focus. Use Tooltip for progressive disclosure of supplementary information, such as describing an icon-only button or showing the full text of a truncated label.',
+      'A short text hint that appears on hover or focus, anchored to a trigger element. Use it to describe icon-only buttons, show the full text of truncated labels, or provide supplementary context without cluttering the UI.',
     bestPractices: [
       {guidance: true, description: 'Keep tooltip content concise — aim for under 140 characters of plain text.'},
       {guidance: true, description: 'Add a tooltip to icon-only buttons and controls that lack a visible label.'},
-      {guidance: false, description: 'Avoid placing interactive elements like links or buttons inside a tooltip — use HoverCard or Popover instead.'},
-      {guidance: false, description: 'Avoid using tooltips for essential information that users must see to complete a task.'},
+      {guidance: false, description: 'Place interactive elements like links or buttons inside a tooltip — use HoverCard or Popover instead.'},
+      {guidance: false, description: 'Use tooltips for essential information that users must see to complete a task.'},
     ],
   },
   components: [
@@ -318,6 +338,7 @@ export const docsDense = {
         isEnabled: 'Enables/disables tooltip triggers.',
         onOpenChange: 'Callback when visibility changes; true=shown, false=hidden.',
         hasHoverIndication: 'Dashed underline on trigger element.',
+        isDefaultOpen: 'Show tooltip on mount. Still dismissible.',
       },
     },
     {
@@ -330,6 +351,7 @@ export const docsDense = {
         hideDelay: 'Hide delay in ms.',
         focusTrigger: 'Controls when focus events trigger tooltip.',
         isEnabled: 'Enables/disables all hover+focus triggers.',
+        isDefaultOpen: 'Show tooltip on mount. Still dismissible.',
         onShow: 'Fired when tooltip becomes visible.',
         onHide: 'Fired when tooltip hidden.',
       },

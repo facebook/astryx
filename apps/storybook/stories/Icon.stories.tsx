@@ -19,7 +19,7 @@ import {
 } from '@heroicons/react/24/solid';
 
 const meta: Meta<typeof XDSIcon> = {
-  title: 'Core/XDSIcon',
+  title: 'Core/Icon',
   component: XDSIcon,
   tags: ['autodocs'],
   argTypes: {
@@ -252,7 +252,20 @@ export const InheritColor: Story = {
 export const NonSemanticColors: Story = {
   render: () => (
     <XDSHStack gap={4} wrap="wrap">
-      {(['blue', 'red', 'green', 'gray', 'cyan', 'teal', 'yellow', 'orange', 'pink', 'purple'] as const).map(color => (
+      {(
+        [
+          'blue',
+          'red',
+          'green',
+          'gray',
+          'cyan',
+          'teal',
+          'yellow',
+          'orange',
+          'pink',
+          'purple',
+        ] as const
+      ).map(color => (
         <XDSVStack key={color} gap={1} hAlign="center">
           <XDSIcon icon={StarIcon} color={color} />
           <XDSText type="supporting">{color}</XDSText>

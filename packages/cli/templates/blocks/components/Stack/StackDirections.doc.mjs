@@ -2,8 +2,10 @@
 export const doc = {
   type: 'block',
   name: 'Stack — Directions',
-  description: 'Horizontal and vertical stack directions side by side.',
+  description:
+    'Badges arranged horizontally and vertically in side-by-side cards.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['Stack'],
+  isShowcase: true,
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Layout', 'Badge', 'Text'],
 };
