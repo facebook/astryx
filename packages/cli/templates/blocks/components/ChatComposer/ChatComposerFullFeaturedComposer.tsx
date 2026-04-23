@@ -1,9 +1,6 @@
 'use client';
 
-import {
-  XDSChatComposer,
-  XDSChatComposerAttachments,
-} from '@xds/core/Chat';
+import {XDSChatComposer, XDSChatComposerDrawer} from '@xds/core/Chat';
 import {XDSToken} from '@xds/core/Token';
 import {XDSButton} from '@xds/core/Button';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
@@ -14,9 +11,9 @@ export default function ChatComposerFullFeaturedComposer() {
       onSubmit={() => {}}
       placeholder="Ask me anything..."
       attachments={
-        <XDSChatComposerAttachments>
+        <XDSChatComposerDrawer>
           <XDSToken label="design-spec.pdf" onRemove={() => {}} />
-        </XDSChatComposerAttachments>
+        </XDSChatComposerDrawer>
       }
       headerContext={
         <XDSProgressBar label="Context window" value={3} isLabelHidden />

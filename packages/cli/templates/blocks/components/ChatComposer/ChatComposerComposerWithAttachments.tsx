@@ -1,9 +1,6 @@
 'use client';
 
-import {
-  XDSChatComposer,
-  XDSChatComposerAttachments,
-} from '@xds/core/Chat';
+import {XDSChatComposer, XDSChatComposerDrawer} from '@xds/core/Chat';
 import {XDSToken} from '@xds/core/Token';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
 
@@ -12,10 +9,10 @@ export default function ChatComposerComposerWithAttachments() {
     <XDSChatComposer
       onSubmit={() => {}}
       attachments={
-        <XDSChatComposerAttachments>
+        <XDSChatComposerDrawer>
           <XDSToken label="report.pdf" onRemove={() => {}} />
           <XDSToken label="data.csv" onRemove={() => {}} />
-        </XDSChatComposerAttachments>
+        </XDSChatComposerDrawer>
       }
       headerContext={
         <XDSProgressBar label="Context window" value={3} isLabelHidden />

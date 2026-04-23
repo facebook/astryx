@@ -7,7 +7,7 @@ import {
   XDSChatMessageMetadata,
   XDSChatSystemMessage,
   XDSChatComposer,
-  XDSChatComposerAttachments,
+  XDSChatComposerDrawer,
   XDSChatComposerInput,
   XDSChatTokenizedText,
   XDSChatToolCalls,
@@ -15,7 +15,6 @@ import {
   type XDSChatComposerToken,
   type XDSChatComposerTrigger,
   type XDSChatToolCallItem,
-
 } from '@xds/core/Chat';
 import {XDSMarkdown} from '@xds/core/Markdown';
 import {XDSToken} from '@xds/core/Token';
@@ -176,7 +175,12 @@ const SEED_MESSAGES: Message[] = [
       },
     ],
   },
-  {id: 4, role: 'user', text: 'Nice, can you also check the Card component?', sentAt: new Date('2026-03-15T14:35:00')},
+  {
+    id: 4,
+    role: 'user',
+    text: 'Nice, can you also check the Card component?',
+    sentAt: new Date('2026-03-15T14:35:00'),
+  },
 ];
 
 // =============================================================================
@@ -228,7 +232,13 @@ export const FullAIChat: StoryObj = {
 
         setMessages(prev => [
           ...prev,
-          {id: msgId, role: 'assistant', text: '', introText, isStreaming: true},
+          {
+            id: msgId,
+            role: 'assistant',
+            text: '',
+            introText,
+            isStreaming: true,
+          },
         ]);
 
         let i = 0;
@@ -404,7 +414,7 @@ export const FullAIChat: StoryObj = {
         isStreaming={isStreaming}
         attachments={
           files.length > 0 ? (
-            <XDSChatComposerAttachments>
+            <XDSChatComposerDrawer>
               {files.map(f => (
                 <XDSToken
                   key={f}
@@ -412,7 +422,7 @@ export const FullAIChat: StoryObj = {
                   onRemove={() => setFiles(prev => prev.filter(x => x !== f))}
                 />
               ))}
-            </XDSChatComposerAttachments>
+            </XDSChatComposerDrawer>
           ) : undefined
         }
         headerActions={
@@ -492,17 +502,20 @@ export const FullAIChat: StoryObj = {
                 return (
                   <XDSChatMessage key={msg.id} sender="user">
                     {msg.files && (
-                      <XDSChatComposerAttachments>
+                      <XDSChatComposerDrawer>
                         {msg.files.map(f => (
                           <XDSToken key={f} label={f} />
                         ))}
-                      </XDSChatComposerAttachments>
+                      </XDSChatComposerDrawer>
                     )}
                     <XDSChatMessageBubble
                       metadata={
                         <XDSChatMessageMetadata
                           timestamp={
-                            <XDSTimestamp value={msg.sentAt ?? new Date(msg.id)} format="time" />
+                            <XDSTimestamp
+                              value={msg.sentAt ?? new Date(msg.id)}
+                              format="time"
+                            />
                           }
                           status={msg.isSending ? 'sending' : undefined}
                         />
@@ -514,13 +527,19 @@ export const FullAIChat: StoryObj = {
                   </XDSChatMessage>
                 );
               }
-              {/* Assistant: intro text → tool calls → rest of text */}
+              {
+                /* Assistant: intro text → tool calls → rest of text */
+              }
               const introEnd = msg.introText?.length ?? 0;
               const hasToolCalls = msg.toolCalls && msg.toolCalls.length > 0;
-              const introContent = introEnd > 0 ? msg.text.slice(0, introEnd) : null;
-              const restContent = introEnd > 0 && msg.text.length > introEnd
-                ? msg.text.slice(introEnd).replace(/^\n+/, '')
-                : !introEnd ? msg.text : null;
+              const introContent =
+                introEnd > 0 ? msg.text.slice(0, introEnd) : null;
+              const restContent =
+                introEnd > 0 && msg.text.length > introEnd
+                  ? msg.text.slice(introEnd).replace(/^\n+/, '')
+                  : !introEnd
+                    ? msg.text
+                    : null;
               return (
                 <XDSChatMessage key={msg.id} sender="assistant">
                   {introContent && (
@@ -534,28 +553,42 @@ export const FullAIChat: StoryObj = {
                   )}
                   {!msg.isStreaming && msg.text && (
                     <XDSChatMessageMetadata
-                      timestamp={<XDSTimestamp value={new Date(msg.id)} format="time" />}
+                      timestamp={
+                        <XDSTimestamp value={new Date(msg.id)} format="time" />
+                      }
                       footer={
                         <>
                           <span>Claude Opus 4.6</span>
                           <span>·</span>
                           <XDSButton
                             label="Thumbs up"
-                            icon={<HandThumbUpIcon style={{width: 14, height: 14}} />}
+                            icon={
+                              <HandThumbUpIcon
+                                style={{width: 14, height: 14}}
+                              />
+                            }
                             variant="ghost"
                             size="sm"
                             isIconOnly
                           />
                           <XDSButton
                             label="Thumbs down"
-                            icon={<HandThumbDownIcon style={{width: 14, height: 14}} />}
+                            icon={
+                              <HandThumbDownIcon
+                                style={{width: 14, height: 14}}
+                              />
+                            }
                             variant="ghost"
                             size="sm"
                             isIconOnly
                           />
                           <XDSButton
                             label="Copy"
-                            icon={<ClipboardDocumentIcon style={{width: 14, height: 14}} />}
+                            icon={
+                              <ClipboardDocumentIcon
+                                style={{width: 14, height: 14}}
+                              />
+                            }
                             variant="ghost"
                             size="sm"
                             isIconOnly
@@ -683,7 +716,7 @@ export const PanelView: StoryObj = {
         isStreaming={isStreaming}
         attachments={
           files.length > 0 ? (
-            <XDSChatComposerAttachments>
+            <XDSChatComposerDrawer>
               {files.map(f => (
                 <XDSToken
                   key={f}
@@ -691,7 +724,7 @@ export const PanelView: StoryObj = {
                   onRemove={() => setFiles(prev => prev.filter(x => x !== f))}
                 />
               ))}
-            </XDSChatComposerAttachments>
+            </XDSChatComposerDrawer>
           ) : undefined
         }
         headerActions={
@@ -752,11 +785,11 @@ export const PanelView: StoryObj = {
                 return (
                   <XDSChatMessage key={msg.id} sender="user">
                     {msg.files && (
-                      <XDSChatComposerAttachments>
+                      <XDSChatComposerDrawer>
                         {msg.files.map(f => (
                           <XDSToken key={f} label={f} />
                         ))}
-                      </XDSChatComposerAttachments>
+                      </XDSChatComposerDrawer>
                     )}
                     <XDSChatMessageBubble>
                       <XDSChatTokenizedText tokens={mentionTokens}>
