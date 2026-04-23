@@ -33,13 +33,13 @@ const TERMS = [
 export default function DialogScrollingContent() {
   const [isOpen, setIsOpen] = useState(false);
 
-  const dialogContent = (onClose: (open: boolean) => void) => (
+  const dialogContent = (
+    onClose: (open: boolean) => void,
+    startAction?: React.ReactNode,
+  ) => (
     <XDSLayout
       header={
-        <XDSDialogHeader
-          title="Terms and Conditions"
-          onOpenChange={onClose}
-        />
+        <XDSDialogHeader title="Terms and Conditions" onOpenChange={onClose} />
       }
       content={
         <XDSLayoutContent>
@@ -54,17 +54,20 @@ export default function DialogScrollingContent() {
       }
       footer={
         <XDSLayoutFooter>
-          <XDSHStack gap={2} hAlign="end">
-            <XDSButton
-              label="Decline"
-              variant="secondary"
-              onClick={() => onClose(false)}
-            />
-            <XDSButton
-              label="Accept"
-              variant="primary"
-              onClick={() => onClose(false)}
-            />
+          <XDSHStack gap={2} hAlign={startAction ? 'space-between' : 'end'}>
+            {startAction}
+            <XDSHStack gap={2}>
+              <XDSButton
+                label="Decline"
+                variant="secondary"
+                onClick={() => onClose(false)}
+              />
+              <XDSButton
+                label="Accept"
+                variant="primary"
+                onClick={() => onClose(false)}
+              />
+            </XDSHStack>
           </XDSHStack>
         </XDSLayoutFooter>
       }
@@ -72,19 +75,21 @@ export default function DialogScrollingContent() {
   );
 
   return (
-    <XDSVStack gap={3}>
+    <>
       <XDSDialog isOpen isInline onOpenChange={() => {}} maxHeight="50vh">
-        {dialogContent(() => {})}
+        {dialogContent(
+          () => {},
+          <XDSButton
+            label="Open dialog"
+            variant="secondary"
+            size="sm"
+            onClick={() => setIsOpen(true)}
+          />,
+        )}
       </XDSDialog>
-      <XDSButton
-        label="Open dialog"
-        variant="secondary"
-        size="sm"
-        onClick={() => setIsOpen(true)}
-      />
       <XDSDialog isOpen={isOpen} onOpenChange={setIsOpen} maxHeight="50vh">
         {dialogContent(setIsOpen)}
       </XDSDialog>
-    </XDSVStack>
+    </>
   );
 }

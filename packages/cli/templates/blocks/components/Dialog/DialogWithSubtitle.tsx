@@ -7,7 +7,6 @@ import {
   XDSLayoutContent,
   XDSLayoutFooter,
   XDSHStack,
-  XDSVStack,
 } from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
@@ -15,7 +14,10 @@ import {XDSText} from '@xds/core/Text';
 export default function DialogWithSubtitle() {
   const [isOpen, setIsOpen] = useState(false);
 
-  const dialogContent = (onClose: (open: boolean) => void) => (
+  const dialogContent = (
+    onClose: (open: boolean) => void,
+    startAction?: React.ReactNode,
+  ) => (
     <XDSLayout
       header={
         <XDSDialogHeader
@@ -33,17 +35,20 @@ export default function DialogWithSubtitle() {
       }
       footer={
         <XDSLayoutFooter>
-          <XDSHStack gap={2} hAlign="end">
-            <XDSButton
-              label="Cancel"
-              variant="secondary"
-              onClick={() => onClose(false)}
-            />
-            <XDSButton
-              label="Transfer"
-              variant="primary"
-              onClick={() => onClose(false)}
-            />
+          <XDSHStack gap={2} hAlign={startAction ? 'space-between' : 'end'}>
+            {startAction}
+            <XDSHStack gap={2}>
+              <XDSButton
+                label="Cancel"
+                variant="secondary"
+                onClick={() => onClose(false)}
+              />
+              <XDSButton
+                label="Transfer"
+                variant="primary"
+                onClick={() => onClose(false)}
+              />
+            </XDSHStack>
           </XDSHStack>
         </XDSLayoutFooter>
       }
@@ -51,19 +56,21 @@ export default function DialogWithSubtitle() {
   );
 
   return (
-    <XDSVStack gap={3}>
+    <>
       <XDSDialog isOpen isInline onOpenChange={() => {}} purpose="required">
-        {dialogContent(() => {})}
+        {dialogContent(
+          () => {},
+          <XDSButton
+            label="Open dialog"
+            variant="secondary"
+            size="sm"
+            onClick={() => setIsOpen(true)}
+          />,
+        )}
       </XDSDialog>
-      <XDSButton
-        label="Open dialog"
-        variant="secondary"
-        size="sm"
-        onClick={() => setIsOpen(true)}
-      />
       <XDSDialog isOpen={isOpen} onOpenChange={setIsOpen} purpose="required">
         {dialogContent(setIsOpen)}
       </XDSDialog>
-    </XDSVStack>
+    </>
   );
 }

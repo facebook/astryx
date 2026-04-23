@@ -18,7 +18,10 @@ export default function DialogFormDialog() {
   const [name, setName] = useState('Ruby Cheung');
   const [bio, setBio] = useState('Design systems engineer');
 
-  const dialogContent = (onClose: (open: boolean) => void) => (
+  const dialogContent = (
+    onClose: (open: boolean) => void,
+    startAction?: React.ReactNode,
+  ) => (
     <XDSLayout
       header={
         <XDSDialogHeader
@@ -47,17 +50,20 @@ export default function DialogFormDialog() {
       }
       footer={
         <XDSLayoutFooter>
-          <XDSHStack gap={2} hAlign="end">
-            <XDSButton
-              label="Cancel"
-              variant="secondary"
-              onClick={() => onClose(false)}
-            />
-            <XDSButton
-              label="Save"
-              variant="primary"
-              onClick={() => onClose(false)}
-            />
+          <XDSHStack gap={2} hAlign={startAction ? 'space-between' : 'end'}>
+            {startAction}
+            <XDSHStack gap={2}>
+              <XDSButton
+                label="Cancel"
+                variant="secondary"
+                onClick={() => onClose(false)}
+              />
+              <XDSButton
+                label="Save"
+                variant="primary"
+                onClick={() => onClose(false)}
+              />
+            </XDSHStack>
           </XDSHStack>
         </XDSLayoutFooter>
       }
@@ -65,21 +71,23 @@ export default function DialogFormDialog() {
   );
 
   return (
-    <XDSVStack gap={3}>
+    <>
       <XDSDialog
         isOpen
         isInline
         onOpenChange={() => {}}
         purpose="form"
         width={480}>
-        {dialogContent(() => {})}
+        {dialogContent(
+          () => {},
+          <XDSButton
+            label="Open dialog"
+            variant="secondary"
+            size="sm"
+            onClick={() => setIsOpen(true)}
+          />,
+        )}
       </XDSDialog>
-      <XDSButton
-        label="Open dialog"
-        variant="secondary"
-        size="sm"
-        onClick={() => setIsOpen(true)}
-      />
       <XDSDialog
         isOpen={isOpen}
         onOpenChange={setIsOpen}
@@ -87,6 +95,6 @@ export default function DialogFormDialog() {
         width={480}>
         {dialogContent(setIsOpen)}
       </XDSDialog>
-    </XDSVStack>
+    </>
   );
 }
