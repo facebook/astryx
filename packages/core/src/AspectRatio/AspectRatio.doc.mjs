@@ -5,11 +5,12 @@ export const docs = {
   keywords: ["aspect-ratio","ratio","proportion","responsive","embed","container","widescreen","thumbnail","letterbox","crop"],
   usage: {
     description:
-      'AspectRatio maintains a specific width-to-height ratio for its children. Use it for responsive media containers like embedded videos, images, or thumbnails that need consistent proportions.',
+      'Maintains a fixed width-to-height ratio for its children, regardless of screen size. Use it for media containers like videos, images, thumbnails, or any content that needs consistent proportions.',
     bestPractices: [
-      {guidance: true, description: 'Express the ratio as a width/height fraction such as 16/9 or 4/3 for readability.'},
-      {guidance: true, description: 'Use for media containers like videos and images where consistent proportions are critical across screen sizes.'},
-      {guidance: false, description: 'Use AspectRatio for general layout containers that don\'t require a fixed proportion — use standard layout components instead.'},
+      {guidance: true, description: 'Express the ratio as a fraction like `16/9` or `4/3` for readability.'},
+      {guidance: true, description: 'Use for media that needs consistent proportions across screen sizes.'},
+      {guidance: false, description: 'Use for general layout containers — use standard layout components instead.'},
+      {guidance: false, description: 'Nest AspectRatio containers — one level is sufficient.'},
     ],
   },
   props: [
@@ -44,11 +45,12 @@ export const docsZh = {
   name: 'AspectRatio',
   usage: {
     description:
-      'AspectRatio maintains a specific width-to-height ratio for its children. Use it for responsive media containers like embedded videos, images, or thumbnails that need consistent proportions.',
+      'Maintains a fixed width-to-height ratio for its children, regardless of screen size. Use it for media containers like videos, images, thumbnails, or any content that needs consistent proportions.',
     bestPractices: [
-      {guidance: true, description: 'Express the ratio as a width/height fraction such as 16/9 or 4/3 for readability.'},
-      {guidance: true, description: 'Use for media containers like videos and images where consistent proportions are critical across screen sizes.'},
-      {guidance: false, description: 'Use AspectRatio for general layout containers that don\'t require a fixed proportion — use standard layout components instead.'},
+      {guidance: true, description: 'Express the ratio as a fraction like `16/9` or `4/3` for readability.'},
+      {guidance: true, description: 'Use for media that needs consistent proportions across screen sizes.'},
+      {guidance: false, description: 'Use for general layout containers — use standard layout components instead.'},
+      {guidance: false, description: 'Nest AspectRatio containers — one level is sufficient.'},
     ],
   },
   props: [
@@ -73,11 +75,12 @@ export const docsDense = {
   description: 'maintains specific aspect ratio for children',
   usage: {
     description:
-      'AspectRatio maintains a specific width-to-height ratio for its children. Use it for responsive media containers like embedded videos, images, or thumbnails that need consistent proportions.',
+      'Maintains a fixed width-to-height ratio for its children, regardless of screen size. Use it for media containers like videos, images, thumbnails, or any content that needs consistent proportions.',
     bestPractices: [
-      {guidance: true, description: 'Express the ratio as a width/height fraction such as 16/9 or 4/3 for readability.'},
-      {guidance: true, description: 'Use for media containers like videos and images where consistent proportions are critical across screen sizes.'},
-      {guidance: false, description: 'Use AspectRatio for general layout containers that don\'t require a fixed proportion — use standard layout components instead.'},
+      {guidance: true, description: 'Express the ratio as a fraction like `16/9` or `4/3` for readability.'},
+      {guidance: true, description: 'Use for media that needs consistent proportions across screen sizes.'},
+      {guidance: false, description: 'Use for general layout containers — use standard layout components instead.'},
+      {guidance: false, description: 'Nest AspectRatio containers — one level is sufficient.'},
     ],
   },
   propDescriptions: {

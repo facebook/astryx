@@ -2,13 +2,14 @@
 
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSSkeleton} from '@xds/core/Skeleton';
+import {XDSCenter} from '@xds/core/Center';
 
 export default function AspectRatioWithSkeleton() {
   return (
-    <div style={{maxWidth: 600}}>
+    <XDSCenter width={600}>
       <XDSAspectRatio ratio={16 / 9}>
         <XDSSkeleton width="100%" height="100%" />
       </XDSAspectRatio>
-    </div>
+    </XDSCenter>
   );
 }

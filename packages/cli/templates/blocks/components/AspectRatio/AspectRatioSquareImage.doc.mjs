@@ -5,5 +5,5 @@ export const doc = {
   description: '1:1 square aspect ratio, ideal for avatars and Instagram-style images.',
   isReady: true,
   aspectRatio: 1,
-  componentsUsed: ['AspectRatio'],
+  componentsUsed: ['AspectRatio', 'Center'],
 };
