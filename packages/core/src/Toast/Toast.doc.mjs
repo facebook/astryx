@@ -3,7 +3,7 @@
 export const docs = {
   name: 'Toast',
   group: 'Toast',
-  internalComponents: ['ToastViewport'],
+  hiddenComponents: ['ToastViewport'],
   keywords: ["toast","notification","snackbar","alert","message","feedback","status"],
 
   props: [

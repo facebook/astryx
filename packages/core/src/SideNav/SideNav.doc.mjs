@@ -2,7 +2,7 @@
 
 export const docs = {
   name: 'SideNav',
-  group: 'Navigation',
+  group: 'SideNav',
   keywords: ["sidenav","sidebar","navigation","drawer","menu","nav","aside","sidemenu","navmenu","sider","treeview"],
   theming: {
     targets: [
