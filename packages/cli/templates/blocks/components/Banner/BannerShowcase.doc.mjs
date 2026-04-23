@@ -1,8 +1,11 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'Banner',
+  name: 'Banner — Statuses',
+  description:
+    'All four status banners stacked — info, success, warning, and error. A quick visual reference for choosing the right status.',
   isReady: true,
-  aspectRatio: 4 / 3,
   isShowcase: true,
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Banner', 'Layout'],
 };

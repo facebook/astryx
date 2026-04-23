@@ -2,7 +2,10 @@
 export const doc = {
   type: 'block',
   name: 'Center',
+  description:
+    'Content centered horizontally and vertically inside a fixed-height container.',
   isReady: true,
-  aspectRatio: 4 / 3,
   isShowcase: true,
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Center', 'Layout', 'Text'],
 };
