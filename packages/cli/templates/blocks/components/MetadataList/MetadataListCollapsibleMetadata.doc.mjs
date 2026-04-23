@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'MetadataList — Collapsible',
   description:
-    'Metadata list that truncates after a set number of items with a show-more toggle.',
+    'Metadata list with a show-more toggle after a set number of items.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['MetadataList'],
