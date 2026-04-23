@@ -1,34 +1,52 @@
+// In production, use useXDSToast() hook for proper positioning, stacking, and lifecycle.
 'use client';
 
+import {XDSToast} from '@xds/core/Toast';
 import {useXDSToast} from '@xds/core/Toast';
 import {XDSButton} from '@xds/core/Button';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {XDSVStack} from '@xds/core/Layout';
 
 export default function ToastTypes() {
   const toast = useXDSToast();
 
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSText type="supporting" color="secondary">
-        Click each button to see the toast variant
-      </XDSText>
-      <XDSStack direction="horizontal" gap={3} vAlign="center">
-        <XDSButton
-          label="Info toast"
-          variant="secondary"
-          onClick={() =>
-            toast({body: 'Changes saved successfully.', type: 'info'})
-          }
-        />
-        <XDSButton
-          label="Error toast"
-          variant="destructive"
-          onClick={() =>
-            toast({body: 'Failed to save changes.', type: 'error'})
-          }
-        />
-      </XDSStack>
-    </XDSStack>
+    <XDSVStack gap={3}>
+      <XDSToast
+        type="info"
+        body="Changes saved successfully."
+        endContent={
+          <XDSButton
+            label="Show toast"
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              toast({body: 'Changes saved successfully.', type: 'info'})
+            }
+          />
+        }
+        isAutoHide={false}
+        autoHideDuration={5000}
+        isExiting={false}
+        onDismiss={() => {}}
+      />
+      <XDSToast
+        type="error"
+        body="Failed to save changes."
+        endContent={
+          <XDSButton
+            label="Show toast"
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              toast({body: 'Failed to save changes.', type: 'error'})
+            }
+          />
+        }
+        isAutoHide={false}
+        autoHideDuration={5000}
+        isExiting={false}
+        onDismiss={() => {}}
+      />
+    </XDSVStack>
   );
 }
