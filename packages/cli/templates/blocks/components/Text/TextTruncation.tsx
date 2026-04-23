@@ -15,19 +15,21 @@ const LINES = [
 
 export default function TextTruncation() {
   return (
-    <XDSStack direction="vertical" gap={3}>
-      {LINES.map(({maxLines, label}) => (
-        <XDSStack key={maxLines} direction="vertical" gap={1}>
-          <XDSText type="supporting" color="secondary">
-            {label}
-          </XDSText>
-          <XDSSection padding={2} variant="wash">
-            <XDSText type="body" maxLines={maxLines}>
-              {LONG_TEXT}
+    <div style={{maxWidth: 480, overflow: 'hidden'}}>
+      <XDSStack direction="vertical" gap={3}>
+        {LINES.map(({maxLines, label}) => (
+          <XDSStack key={maxLines} direction="vertical" gap={1}>
+            <XDSText type="supporting" color="secondary">
+              {label}
             </XDSText>
-          </XDSSection>
-        </XDSStack>
-      ))}
-    </XDSStack>
+            <XDSSection padding={2} variant="wash">
+              <XDSText type="body" maxLines={maxLines}>
+                {LONG_TEXT}
+              </XDSText>
+            </XDSSection>
+          </XDSStack>
+        ))}
+      </XDSStack>
+    </div>
   );
 }
