@@ -2,11 +2,12 @@
 
 import {useState} from 'react';
 import {XDSNumberInput} from '@xds/core/NumberInput';
+import {XDSCenter} from '@xds/core/Center';
 
 export default function NumberInputWithUnits() {
   const [value, setValue] = useState<number | null>(50);
   return (
-    <div style={{maxWidth: 300}}>
+    <XDSCenter width={300}>
       <XDSNumberInput
         label="Discount"
         placeholder="Enter discount"
@@ -16,6 +17,6 @@ export default function NumberInputWithUnits() {
         value={value}
         onChange={setValue}
       />
-    </div>
+    </XDSCenter>
   );
 }
