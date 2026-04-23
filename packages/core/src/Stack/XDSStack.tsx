@@ -74,6 +74,24 @@ export interface XDSStackProps extends XDSBaseProps<HTMLDivElement> {
   vAlign?: XDSStackAlignment;
 
   /**
+   * Main-axis alignment alias. Resolves based on `direction`:
+   * - `horizontal` → `hAlign` (justify-content)
+   * - `vertical` → `vAlign` (justify-content)
+   *
+   * Mirrors CSS `justify-content` / Tailwind `justify-*`.
+   */
+  justify?: StackMainAlignment;
+
+  /**
+   * Cross-axis alignment alias. Resolves based on `direction`:
+   * - `horizontal` → `vAlign` (align-items)
+   * - `vertical` → `hAlign` (align-items)
+   *
+   * Mirrors CSS `align-items` / Tailwind `items-*`.
+   */
+  align?: StackCrossAlignment;
+
+  /**
    * Spacing between items.
    * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
    */
@@ -149,6 +167,8 @@ export function XDSStack({
   direction,
   hAlign,
   vAlign,
+  justify,
+  align,
   gap,
   wrap,
   element = 'div',
@@ -159,15 +179,27 @@ export function XDSStack({
   ref,
   ...props
 }: XDSStackProps) {
+  // Resolve align/justify aliases based on direction
+  const resolvedHAlign =
+    hAlign ??
+    (direction === 'horizontal'
+      ? (justify as XDSStackAlignment | undefined)
+      : (align as XDSStackAlignment | undefined));
+  const resolvedVAlign =
+    vAlign ??
+    (direction === 'horizontal'
+      ? (align as XDSStackAlignment | undefined)
+      : (justify as XDSStackAlignment | undefined));
+
   // Map hAlign/vAlign to mainAlign/crossAlign based on direction
   const mainAlign =
     direction === 'horizontal'
-      ? (hAlign as StackMainAlignment | undefined)
-      : (vAlign as StackMainAlignment | undefined);
+      ? (resolvedHAlign as StackMainAlignment | undefined)
+      : (resolvedVAlign as StackMainAlignment | undefined);
   const crossAlign =
     direction === 'horizontal'
-      ? (vAlign as StackCrossAlignment | undefined)
-      : (hAlign as StackCrossAlignment | undefined);
+      ? (resolvedVAlign as StackCrossAlignment | undefined)
+      : (resolvedHAlign as StackCrossAlignment | undefined);
 
   const stylexProps = stylex.props(
     ...stack({

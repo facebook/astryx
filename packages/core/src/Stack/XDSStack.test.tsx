@@ -165,4 +165,41 @@ describe('XDSStack', () => {
     const element = screen.getByTestId('stack');
     expect(element).toHaveAttribute('aria-label', 'Stack container');
   });
+
+  it('accepts justify as main-axis alias (horizontal)', () => {
+    const {container} = render(
+      <XDSStack direction="horizontal" justify="between">
+        <div>A</div>
+        <div>B</div>
+      </XDSStack>,
+    );
+    expect(container.firstChild).toBeInTheDocument();
+  });
+
+  it('accepts align as cross-axis alias (horizontal)', () => {
+    const {container} = render(
+      <XDSStack direction="horizontal" align="center">
+        <div>A</div>
+      </XDSStack>,
+    );
+    expect(container.firstChild).toBeInTheDocument();
+  });
+
+  it('accepts justify as main-axis alias (vertical)', () => {
+    const {container} = render(
+      <XDSStack direction="vertical" justify="center">
+        <div>A</div>
+      </XDSStack>,
+    );
+    expect(container.firstChild).toBeInTheDocument();
+  });
+
+  it('prefers explicit hAlign/vAlign over aliases', () => {
+    const {container} = render(
+      <XDSStack direction="horizontal" hAlign="center" justify="end">
+        <div>A</div>
+      </XDSStack>,
+    );
+    expect(container.firstChild).toBeInTheDocument();
+  });
 });

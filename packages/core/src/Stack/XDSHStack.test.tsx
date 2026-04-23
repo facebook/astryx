@@ -96,4 +96,32 @@ describe('XDSHStack', () => {
     );
     expect(screen.getByTestId('hstack')).toBeInTheDocument();
   });
+
+  it('accepts justify as alias for hAlign', () => {
+    const {container} = render(
+      <XDSHStack justify="between">
+        <div>A</div>
+        <div>B</div>
+      </XDSHStack>,
+    );
+    expect(container.firstChild).toBeInTheDocument();
+  });
+
+  it('accepts align as alias for vAlign', () => {
+    const {container} = render(
+      <XDSHStack align="center">
+        <div>A</div>
+      </XDSHStack>,
+    );
+    expect(container.firstChild).toBeInTheDocument();
+  });
+
+  it('prefers explicit hAlign over justify', () => {
+    const {container} = render(
+      <XDSHStack hAlign="center" justify="end">
+        <div>A</div>
+      </XDSHStack>,
+    );
+    expect(container.firstChild).toBeInTheDocument();
+  });
 });
