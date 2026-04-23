@@ -34,15 +34,18 @@ import type {XDSBaseProps} from '../XDSBaseProps';
 
 /**
  * Background color variant for XDSCard.
- * - `default`: the standard card background (`--color-background-card`)
- * - `muted`: subtle muted background (`--color-background-muted`) for de-emphasised cards
+ * - `default`: standard card background with visible border
+ * - `transparent`: no background, no visible border — for grouping content without visual weight
+ * - `muted`: subtle muted background for de-emphasised cards
  * - Non-semantic palette: `blue | cyan | gray | green | orange | pink | purple | red | teal | yellow`
  *   Each uses the corresponding `--color-background-<name>` token (20% opacity tint).
  *
- * Non-default variants have no border — the background provides its own visual separation.
+ * All variants include a transparent border to prevent layout jitter
+ * when switching variants. Themes can override borderWidth/borderColor.
  */
 export type XDSCardVariant =
   | 'default'
+  | 'transparent'
   | 'muted'
   | 'blue'
   | 'cyan'
@@ -64,10 +67,11 @@ const styles = stylex.create({
     '--_card-radius': radiusVars['--radius-container'],
     borderRadius: 'var(--_card-radius)',
     overflow: 'clip',
-  },
-  withBorder: {
     borderWidth: borderVars['--border-width'],
     borderStyle: 'solid',
+    borderColor: 'transparent',
+  },
+  withBorder: {
     borderColor: colorVars['--color-border-emphasized'],
   },
   // Fixed-height cards scroll content; overflow: auto also clips to border-radius
@@ -80,6 +84,9 @@ const styles = stylex.create({
 const variantStyles = stylex.create({
   default: {
     backgroundColor: colorVars['--color-background-card'],
+  },
+  transparent: {
+    backgroundColor: 'transparent',
   },
   muted: {
     backgroundColor: colorVars['--color-background-muted'],
@@ -182,9 +189,10 @@ export interface XDSCardProps extends XDSBaseProps<HTMLDivElement> {
 
   /**
    * Background color variant.
-   * - `default`: standard card background with border
-   * - `muted`: subtle muted background for de-emphasised cards (no border)
-   * - Non-semantic: `blue`, `cyan`, `gray`, `green`, `orange`, `pink`, `purple`, `red`, `teal`, `yellow` (no border)
+   * - `default`: standard card background with visible border
+   * - `transparent`: no background, no visible border — for grouping without visual weight
+   * - `muted`: subtle muted background for de-emphasised cards
+   * - Non-semantic: `blue`, `cyan`, `gray`, `green`, `orange`, `pink`, `purple`, `red`, `teal`, `yellow`
    * @default 'default'
    */
   variant?: XDSCardVariant;
