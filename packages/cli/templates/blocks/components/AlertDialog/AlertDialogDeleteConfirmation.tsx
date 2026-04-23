@@ -1,12 +1,13 @@
 'use client';
 
-import {useState} from 'react';
-import {XDSAlertDialog} from '@xds/core/AlertDialog';
-import {XDSButton} from '@xds/core/Button';
-import {XDSVStack} from '@xds/core/Layout';
+import {
+  XDSAlertDialog,
+  useXDSImperativeAlertDialog,
+} from '@xds/core/AlertDialog';
 
+// Remove isInline for production — alert dialogs should be modal.
 export default function AlertDialogDeleteConfirmation() {
-  const [isOpen, setIsOpen] = useState(false);
+  const alert = useXDSImperativeAlertDialog();
 
   const alertProps = {
     title: 'Delete item?',
@@ -16,25 +17,17 @@ export default function AlertDialogDeleteConfirmation() {
   } as const;
 
   return (
-    <XDSVStack gap={3}>
+    <>
       <XDSAlertDialog
         isOpen
         isInline
         onOpenChange={() => {}}
         {...alertProps}
-        onAction={() => {}}
+        onAction={() =>
+          alert.show({...alertProps, onAction: () => alert.hide()})
+        }
       />
-      <XDSButton
-        label="Delete item"
-        variant="destructive"
-        onClick={() => setIsOpen(true)}
-      />
-      <XDSAlertDialog
-        isOpen={isOpen}
-        onOpenChange={setIsOpen}
-        {...alertProps}
-        onAction={() => setIsOpen(false)}
-      />
-    </XDSVStack>
+      {alert.element}
+    </>
   );
 }

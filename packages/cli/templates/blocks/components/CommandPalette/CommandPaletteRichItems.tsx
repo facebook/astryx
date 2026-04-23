@@ -14,11 +14,6 @@ type RichCommand = XDSSearchableItem<{
 
 const commands: RichCommand[] = [
   {
-    id: 'dashboard',
-    label: 'Go to Dashboard',
-    auxiliaryData: {group: 'Navigation'},
-  },
-  {
     id: 'settings',
     label: 'Open Settings',
     auxiliaryData: {group: 'Navigation', shortcut: 'mod+,'},
@@ -27,11 +22,6 @@ const commands: RichCommand[] = [
     id: 'profile',
     label: 'View Profile',
     auxiliaryData: {group: 'Navigation'},
-  },
-  {
-    id: 'dark-mode',
-    label: 'Toggle Dark Mode',
-    auxiliaryData: {group: 'Actions'},
   },
   {
     id: 'new-file',

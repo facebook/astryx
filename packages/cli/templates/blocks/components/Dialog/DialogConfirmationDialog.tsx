@@ -1,7 +1,10 @@
 'use client';
 
-import {useState} from 'react';
-import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
+import {
+  XDSDialog,
+  XDSDialogHeader,
+  useXDSImperativeDialog,
+} from '@xds/core/Dialog';
 import {
   XDSLayout,
   XDSLayoutContent,
@@ -11,16 +14,14 @@ import {
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
 
-export default function DialogConfirmationDialog() {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const dialogContent = (
-    onClose: (open: boolean) => void,
-    startAction?: React.ReactNode,
-  ) => (
+function Content({onClose}: {onClose: () => void}) {
+  return (
     <XDSLayout
       header={
-        <XDSDialogHeader title="Delete project?" onOpenChange={onClose} />
+        <XDSDialogHeader
+          title="Delete project?"
+          onOpenChange={() => onClose()}
+        />
       }
       content={
         <XDSLayoutContent>
@@ -32,25 +33,19 @@ export default function DialogConfirmationDialog() {
       }
       footer={
         <XDSLayoutFooter>
-          <XDSHStack gap={2} hAlign={startAction ? 'space-between' : 'end'}>
-            {startAction}
-            <XDSHStack gap={2}>
-              <XDSButton
-                label="Cancel"
-                variant="secondary"
-                onClick={() => onClose(false)}
-              />
-              <XDSButton
-                label="Delete"
-                variant="destructive"
-                onClick={() => onClose(false)}
-              />
-            </XDSHStack>
+          <XDSHStack gap={2} hAlign="end">
+            <XDSButton label="Cancel" variant="secondary" onClick={onClose} />
+            <XDSButton label="Delete" variant="destructive" onClick={onClose} />
           </XDSHStack>
         </XDSLayoutFooter>
       }
     />
   );
+}
+
+// Remove isInline for production — dialogs should be modal.
+export default function DialogConfirmationDialog() {
+  const dialog = useXDSImperativeDialog({width: 400, purpose: 'form'});
 
   return (
     <>
@@ -60,23 +55,11 @@ export default function DialogConfirmationDialog() {
         onOpenChange={() => {}}
         width={400}
         purpose="form">
-        {dialogContent(
-          () => {},
-          <XDSButton
-            label="Open dialog"
-            variant="secondary"
-            size="sm"
-            onClick={() => setIsOpen(true)}
-          />,
-        )}
+        <Content
+          onClose={() => dialog.show(<Content onClose={() => dialog.hide()} />)}
+        />
       </XDSDialog>
-      <XDSDialog
-        isOpen={isOpen}
-        onOpenChange={setIsOpen}
-        width={400}
-        purpose="form">
-        {dialogContent(setIsOpen)}
-      </XDSDialog>
+      {dialog.element}
     </>
   );
 }

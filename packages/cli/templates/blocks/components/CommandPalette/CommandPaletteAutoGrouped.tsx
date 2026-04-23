@@ -14,18 +14,8 @@ export default function CommandPaletteAutoGrouped() {
           label: 'Settings',
           auxiliaryData: {group: 'Navigation'},
         },
-        {
-          id: 'profile',
-          label: 'Profile',
-          auxiliaryData: {group: 'Navigation'},
-        },
-        {
-          id: 'new-file',
-          label: 'New File',
-          auxiliaryData: {group: 'Actions'},
-        },
+        {id: 'new-file', label: 'New File', auxiliaryData: {group: 'Actions'}},
         {id: 'save', label: 'Save', auxiliaryData: {group: 'Actions'}},
-        {id: 'export', label: 'Export', auxiliaryData: {group: 'Actions'}},
       ]),
     [],
   );

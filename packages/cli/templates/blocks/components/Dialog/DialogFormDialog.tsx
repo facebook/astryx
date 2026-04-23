@@ -1,7 +1,11 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
+import {
+  XDSDialog,
+  XDSDialogHeader,
+  useXDSImperativeDialog,
+} from '@xds/core/Dialog';
 import {
   XDSLayout,
   XDSLayoutContent,
@@ -13,21 +17,17 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSTextArea} from '@xds/core/TextArea';
 
-export default function DialogFormDialog() {
-  const [isOpen, setIsOpen] = useState(false);
+function Content({onClose}: {onClose: () => void}) {
   const [name, setName] = useState('Ruby Cheung');
   const [bio, setBio] = useState('Design systems engineer');
 
-  const dialogContent = (
-    onClose: (open: boolean) => void,
-    startAction?: React.ReactNode,
-  ) => (
+  return (
     <XDSLayout
       header={
         <XDSDialogHeader
           title="Edit profile"
           subtitle="Update your display name and bio"
-          onOpenChange={onClose}
+          onOpenChange={() => onClose()}
         />
       }
       content={
@@ -50,25 +50,19 @@ export default function DialogFormDialog() {
       }
       footer={
         <XDSLayoutFooter>
-          <XDSHStack gap={2} hAlign={startAction ? 'space-between' : 'end'}>
-            {startAction}
-            <XDSHStack gap={2}>
-              <XDSButton
-                label="Cancel"
-                variant="secondary"
-                onClick={() => onClose(false)}
-              />
-              <XDSButton
-                label="Save"
-                variant="primary"
-                onClick={() => onClose(false)}
-              />
-            </XDSHStack>
+          <XDSHStack gap={2} hAlign="end">
+            <XDSButton label="Cancel" variant="secondary" onClick={onClose} />
+            <XDSButton label="Save" variant="primary" onClick={onClose} />
           </XDSHStack>
         </XDSLayoutFooter>
       }
     />
   );
+}
+
+// Remove isInline for production — dialogs should be modal.
+export default function DialogFormDialog() {
+  const dialog = useXDSImperativeDialog({purpose: 'form', width: 480});
 
   return (
     <>
@@ -78,23 +72,11 @@ export default function DialogFormDialog() {
         onOpenChange={() => {}}
         purpose="form"
         width={480}>
-        {dialogContent(
-          () => {},
-          <XDSButton
-            label="Open dialog"
-            variant="secondary"
-            size="sm"
-            onClick={() => setIsOpen(true)}
-          />,
-        )}
+        <Content
+          onClose={() => dialog.show(<Content onClose={() => dialog.hide()} />)}
+        />
       </XDSDialog>
-      <XDSDialog
-        isOpen={isOpen}
-        onOpenChange={setIsOpen}
-        purpose="form"
-        width={480}>
-        {dialogContent(setIsOpen)}
-      </XDSDialog>
+      {dialog.element}
     </>
   );
 }

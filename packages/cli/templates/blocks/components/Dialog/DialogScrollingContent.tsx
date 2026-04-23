@@ -1,7 +1,10 @@
 'use client';
 
-import {useState} from 'react';
-import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
+import {
+  XDSDialog,
+  XDSDialogHeader,
+  useXDSImperativeDialog,
+} from '@xds/core/Dialog';
 import {
   XDSLayout,
   XDSLayoutContent,
@@ -30,16 +33,14 @@ const TERMS = [
   'Violation of these terms may result in immediate termination of your account without prior notice or refund.',
 ];
 
-export default function DialogScrollingContent() {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const dialogContent = (
-    onClose: (open: boolean) => void,
-    startAction?: React.ReactNode,
-  ) => (
+function Content({onClose}: {onClose: () => void}) {
+  return (
     <XDSLayout
       header={
-        <XDSDialogHeader title="Terms and Conditions" onOpenChange={onClose} />
+        <XDSDialogHeader
+          title="Terms and Conditions"
+          onOpenChange={() => onClose()}
+        />
       }
       content={
         <XDSLayoutContent>
@@ -54,42 +55,28 @@ export default function DialogScrollingContent() {
       }
       footer={
         <XDSLayoutFooter>
-          <XDSHStack gap={2} hAlign={startAction ? 'space-between' : 'end'}>
-            {startAction}
-            <XDSHStack gap={2}>
-              <XDSButton
-                label="Decline"
-                variant="secondary"
-                onClick={() => onClose(false)}
-              />
-              <XDSButton
-                label="Accept"
-                variant="primary"
-                onClick={() => onClose(false)}
-              />
-            </XDSHStack>
+          <XDSHStack gap={2} hAlign="end">
+            <XDSButton label="Decline" variant="secondary" onClick={onClose} />
+            <XDSButton label="Accept" variant="primary" onClick={onClose} />
           </XDSHStack>
         </XDSLayoutFooter>
       }
     />
   );
+}
+
+// Remove isInline for production — dialogs should be modal.
+export default function DialogScrollingContent() {
+  const dialog = useXDSImperativeDialog({maxHeight: '50vh'});
 
   return (
     <>
-      <XDSDialog isOpen isInline onOpenChange={() => {}} maxHeight="50vh">
-        {dialogContent(
-          () => {},
-          <XDSButton
-            label="Open dialog"
-            variant="secondary"
-            size="sm"
-            onClick={() => setIsOpen(true)}
-          />,
-        )}
+      <XDSDialog isOpen isInline onOpenChange={() => {}} maxHeight={360}>
+        <Content
+          onClose={() => dialog.show(<Content onClose={() => dialog.hide()} />)}
+        />
       </XDSDialog>
-      <XDSDialog isOpen={isOpen} onOpenChange={setIsOpen} maxHeight="50vh">
-        {dialogContent(setIsOpen)}
-      </XDSDialog>
+      {dialog.element}
     </>
   );
 }
