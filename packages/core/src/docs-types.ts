@@ -288,6 +288,7 @@ interface BaseDoc {
     | 'Avatar'
     | 'Breadcrumbs'
     | 'Button'
+    | 'Card'
     | 'Chat'
     | 'Checkbox'
     | 'Collapsible'
