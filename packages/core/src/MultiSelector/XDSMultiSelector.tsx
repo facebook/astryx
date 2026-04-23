@@ -496,7 +496,7 @@ export interface XDSMultiSelectorProps<
    * Useful for showcases and previews.
    * @default false
    */
-  defaultOpen?: boolean;
+  isDefaultOpen?: boolean;
 
   /**
    * Test ID for testing frameworks.
@@ -543,7 +543,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
   triggerDisplay = 'count',
   maxBadges = 3,
   children,
-  defaultOpen = false,
+  isDefaultOpen = false,
   'data-testid': testId,
   xstyle,
   className,
@@ -673,12 +673,11 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
     dialogLabel: `${label} options`,
   });
 
-  // Open dropdown on mount when defaultOpen is true
+  // Open dropdown on mount when isDefaultOpen is true
   useEffect(() => {
-    if (defaultOpen) {
+    if (isDefaultOpen) {
       popover.show();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Handle toggle

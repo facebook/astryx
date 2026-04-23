@@ -6,7 +6,7 @@ export default function SelectorShowcase() {
   return (
     <XDSSelector
       label="Fruit"
-      defaultOpen
+      isDefaultOpen
       options={['Apple', 'Banana', 'Orange', 'Mango', 'Pineapple']}
       placeholder="Select a fruit..."
       onChange={() => {}}

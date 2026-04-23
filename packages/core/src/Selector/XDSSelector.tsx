@@ -381,7 +381,7 @@ interface XDSSelectorPropsBase<
    * Useful for showcases and previews.
    * @default false
    */
-  defaultOpen?: boolean;
+  isDefaultOpen?: boolean;
 
   /**
    * Test ID for testing frameworks.
@@ -467,7 +467,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
     status,
     labelTooltip,
     children,
-    defaultOpen = false,
+    isDefaultOpen = false,
     'data-testid': testId,
     xstyle,
     className,
@@ -531,12 +531,11 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
     hasAutoFocus: false,
   });
 
-  // Open dropdown on mount when defaultOpen is true
+  // Open dropdown on mount when isDefaultOpen is true
   useEffect(() => {
-    if (defaultOpen) {
+    if (isDefaultOpen) {
       popover.show();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Calculate offset to position selected item over trigger

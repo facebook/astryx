@@ -5,7 +5,7 @@ export default function MultiSelectorShowcase() {
     <div style={{width: 300}}>
       <XDSMultiSelector
         label="Columns"
-        defaultOpen
+        isDefaultOpen
         options={['Name', 'Email', 'Role', 'Status', 'Created']}
         value={[]}
         onChange={() => {}}
