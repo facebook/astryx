@@ -2,7 +2,7 @@
 
 import {XDSIconButton} from '@xds/core/IconButton';
 import {XDSIcon} from '@xds/core/Icon';
-import {XDSHStack} from '@xds/core/Layout';
+import {XDSHStack} from '@xds/core/Stack';
 
 export default function IconButtonActionBar() {
   return (
