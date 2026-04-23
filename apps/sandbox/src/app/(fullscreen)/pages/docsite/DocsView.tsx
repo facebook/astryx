@@ -1283,6 +1283,7 @@ export function DocsView({
       <XDSAppShell
         variant="surface"
         height="fill"
+        mobileNav={{breakpoint: 'none'}}
         topNav={
           <XDSTopNav
             label="XDS navigation"
