@@ -110,9 +110,17 @@ export async function findRelatedBlocks(componentName) {
 
 export async function findShowcase(componentName) {
   const blocks = await discoverBlocks();
-  const match = blocks.find(b =>
-    b.isShowcase && b.name.toLowerCase() === componentName.toLowerCase(),
-  );
+  const lc = componentName.toLowerCase();
+  // Match by directory name (category is "components/Badge" → ends with "/Badge"),
+  // by componentsUsed, or by exact display name.
+  const match = blocks.find(b => {
+    if (!b.isShowcase) return false;
+    const catDir = b.category.split('/').pop()?.toLowerCase();
+    if (catDir === lc) return true;
+    if (b.componentsUsed.some(c => c.toLowerCase() === lc)) return true;
+    if (b.name.toLowerCase() === lc) return true;
+    return false;
+  });
   if (!match) return null;
   return {
     name: match.name,

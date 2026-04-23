@@ -24,6 +24,9 @@ Follow the full component lifecycle documented on the XDS wiki:
   - `{ComponentName}.doc.mjs` — typed docs (ComponentDoc)
   - `index.ts` — public exports
 - Create `apps/storybook/stories/{ComponentName}.stories.tsx`
+- Create showcase block in `packages/cli/templates/blocks/components/{ComponentName}/`:
+  - `{ComponentName}Showcase.tsx` — visual preview (renders the component in a representative state)
+  - `{ComponentName}Showcase.doc.mjs` — must set `isShowcase: true` and `componentsUsed: ['{ComponentName}']`
 - Wire up: add to `packages/core/src/index.ts`
 - Run `node scripts/sync-exports.js` to update package.json exports
 - Run `yarn build && yarn test && yarn lint`
