@@ -831,7 +831,10 @@ function LibraryOverview({
                     />
                   </div>
                   <XDSStack direction="vertical" gap={1} style={{flex: 1}}>
-                    <XDSStack direction="horizontal" gap={2} vAlign="baseline">
+                    <XDSStack
+                      direction="horizontal"
+                      gap={2}
+                      style={{alignItems: 'baseline'}}>
                       <XDSText
                         type="body"
                         weight="bold"
