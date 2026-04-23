@@ -6,7 +6,7 @@ import {XDSIcon} from '@xds/core/Icon';
 import {XDSHeading} from '@xds/core/Text';
 import {XDSCard} from '@xds/core/Card';
 import {XDSSection} from '@xds/core/Section';
-import {FunnelIcon, PlusIcon} from '@heroicons/react/24/outline';
+import {ArrowLeftIcon} from '@heroicons/react/24/outline';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
@@ -17,27 +17,25 @@ const styles = stylex.create({
   },
 });
 
-export default function ToolbarCardHeader() {
+export default function ToolbarThreeSlot() {
   return (
     <XDSCard xstyle={styles.card}>
       <XDSToolbar
-        label="User list actions"
-        size="sm"
+        label="Document toolbar"
         dividers={['bottom']}
-        startContent={<XDSHeading level={4}>Card title</XDSHeading>}
+        startContent={
+          <XDSButton
+            label="Back"
+            variant="ghost"
+            icon={<XDSIcon icon={ArrowLeftIcon} />}
+            isIconOnly
+          />
+        }
+        centerContent={<XDSHeading level={4}>Title</XDSHeading>}
         endContent={
           <>
-            <XDSButton
-              label="Filter"
-              variant="ghost"
-              icon={<XDSIcon icon={FunnelIcon} />}
-              isIconOnly
-            />
-            <XDSButton
-              label="Add user"
-              icon={<XDSIcon icon={PlusIcon} />}
-              isIconOnly
-            />
+            <XDSButton label="Discard" variant="secondary" />
+            <XDSButton label="Save" variant="primary" />
           </>
         }
       />
