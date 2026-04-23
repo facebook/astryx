@@ -1,37 +1,72 @@
 'use client';
 
 import {XDSGrid, XDSGridSpan} from '@xds/core/Grid';
-
-const itemStyle = {
-  padding: 16,
-  backgroundColor: 'var(--color-background-body)',
-  borderRadius: 'var(--radius-element, 8px)',
-  textAlign: 'center' as const,
-};
-
-const featuredStyle = {
-  padding: 24,
-  backgroundColor: 'var(--color-accent-muted)',
-  borderRadius: 'var(--radius-element, 8px)',
-  textAlign: 'center' as const,
-  height: '100%',
-  boxSizing: 'border-box' as const,
-};
+import {XDSCard} from '@xds/core/Card';
+import {XDSVStack} from '@xds/core/Stack';
+import {XDSText} from '@xds/core/Text';
 
 export default function GridWithGridSpan() {
   return (
     <XDSGrid columns={4} gap={4}>
       <XDSGridSpan columns={2}>
-        <div style={featuredStyle}>Spans 2 columns</div>
+        <XDSCard variant="cyan">
+          <XDSVStack gap={1}>
+            <XDSText type="label" display="block">
+              Featured Release
+            </XDSText>
+            <XDSText type="supporting" display="block">
+              XDS 4.0 is now available with new layout primitives
+            </XDSText>
+          </XDSVStack>
+        </XDSCard>
       </XDSGridSpan>
-      <div style={itemStyle}>Normal</div>
-      <div style={itemStyle}>Normal</div>
-      <div style={itemStyle}>Normal</div>
+      <XDSCard>
+        <XDSText type="label" display="block">
+          Components
+        </XDSText>
+        <XDSText type="supporting" display="block">
+          54 available
+        </XDSText>
+      </XDSCard>
+      <XDSCard>
+        <XDSText type="label" display="block">
+          Templates
+        </XDSText>
+        <XDSText type="supporting" display="block">
+          28 available
+        </XDSText>
+      </XDSCard>
+      <XDSCard>
+        <XDSText type="label" display="block">
+          Tokens
+        </XDSText>
+        <XDSText type="supporting" display="block">
+          120 defined
+        </XDSText>
+      </XDSCard>
       <XDSGridSpan columns={3}>
-        <div style={featuredStyle}>Spans 3 columns</div>
+        <XDSCard variant="cyan">
+          <XDSVStack gap={1}>
+            <XDSText type="label" display="block">
+              Migration Guide
+            </XDSText>
+            <XDSText type="supporting" display="block">
+              Step-by-step instructions for upgrading from v3 to v4
+            </XDSText>
+          </XDSVStack>
+        </XDSCard>
       </XDSGridSpan>
       <XDSGridSpan columns="full">
-        <div style={featuredStyle}>Full width (spans all columns)</div>
+        <XDSCard variant="cyan">
+          <XDSVStack gap={1}>
+            <XDSText type="label" display="block">
+              Community Showcase
+            </XDSText>
+            <XDSText type="supporting" display="block">
+              See how teams are building with XDS across the organization
+            </XDSText>
+          </XDSVStack>
+        </XDSCard>
       </XDSGridSpan>
     </XDSGrid>
   );

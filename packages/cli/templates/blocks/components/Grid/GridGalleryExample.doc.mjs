@@ -2,9 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'Grid — Card Gallery',
-  description:
-    'Responsive card gallery using auto-fill columns with image placeholders',
+  description: 'Card gallery with responsive columns that maintain consistent widths',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Grid', 'Card', 'Text'],
+  componentsUsed: ['Grid', 'Card', 'VStack', 'Text'],
 };

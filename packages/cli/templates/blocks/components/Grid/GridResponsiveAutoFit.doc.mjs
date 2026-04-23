@@ -2,9 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'Grid — Responsive Auto-Fit',
-  description:
-    'Responsive grid using minChildWidth so items stretch to fill available space',
+  description: 'Responsive grid where cards stretch to fill remaining space',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['Grid'],
+  aspectRatio: 3 / 4,
+  componentsUsed: ['Grid', 'Card', 'VStack', 'Text'],
 };

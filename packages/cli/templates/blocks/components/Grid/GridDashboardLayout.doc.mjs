@@ -2,8 +2,7 @@
 export const doc = {
   type: 'block',
   name: 'Grid — Dashboard Layout',
-  description:
-    'Dashboard-style grid with a featured chart spanning 2x2, metric cards, and a full-width section',
+  description: 'Dashboard layout with mixed-size widgets and a full-width summary row',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['Grid', 'GridSpan', 'Card', 'Text'],

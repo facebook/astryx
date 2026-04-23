@@ -6,11 +6,13 @@ export const docs = {
   keywords: ["grid","columns","responsive","auto-fill","auto-fit","masonry","tiles","row","col","simplegrid","responsive grid","card grid"],
   usage: {
     description:
-      'CSS Grid-based layout with responsive column support. Use for any grid layout instead of manual CSS grid — it handles gap tokens and responsive behavior automatically.',
+      'A CSS grid layout container for arranging children in rows and columns. Use Grid for card galleries, dashboards, and any multi-column layout. Supports fixed column counts and responsive columns that reflow based on available width.',
     bestPractices: [
-      { guidance: true, description: 'Use `columns={{minWidth: 280}}` for responsive layouts that adapt to container size with consistent item widths.' },
-      { guidance: true, description: 'Use `columns={{minWidth: 280, max: 4}}` to set a maximum column count while still allowing responsive wrapping.' },
-      { guidance: false, description: 'Write manual CSS grid styles when Grid already supports your layout — it ensures consistent spacing through design tokens.' },
+      { guidance: true, description: 'Use responsive columns for layouts that should adapt to screen size — `columns={{minWidth: 280}}`.' },
+      { guidance: true, description: 'Cap the column count with `max` to prevent rows from getting too wide on large screens.' },
+      { guidance: true, description: 'Use `repeat: \'fill\'` (the default) for consistent item widths. Use `\'fit\'` when items should stretch to fill leftover space.' },
+      { guidance: false, description: 'Write manual CSS grid — Grid handles spacing and responsive behavior for you.' },
+      { guidance: false, description: 'Use `XDSHStack` with wrapping for grids — use Grid instead.' },
     ],
   },
   theming: {
@@ -209,11 +211,14 @@ export const docsZh = {
     },
   ],
   usage: {
-    description: '基于 CSS Grid 的布局组件，支持响应式列。',
+    description:
+      'A CSS grid layout container for arranging children in rows and columns. Use Grid for card galleries, dashboards, and any multi-column layout. Supports fixed column counts and responsive columns that reflow based on available width.',
     bestPractices: [
-      { guidance: true, description: '使用 \`columns={{minWidth: 280}}\` 实现自适应容器宽度的响应式布局。' },
-      { guidance: true, description: '使用 \`columns={{minWidth: 280, max: 4}}\` 限制最大列数。' },
-      { guidance: false, description: '当 Grid 已支持你的布局时，不要编写手动 CSS grid 样式。' },
+      { guidance: true, description: 'Use responsive columns for layouts that should adapt to screen size — `columns={{minWidth: 280}}`.' },
+      { guidance: true, description: 'Cap the column count with `max` to prevent rows from getting too wide on large screens.' },
+      { guidance: true, description: 'Use `repeat: \'fill\'` (the default) for consistent item widths. Use `\'fit\'` when items should stretch to fill leftover space.' },
+      { guidance: false, description: 'Write manual CSS grid — Grid handles spacing and responsive behavior for you.' },
+      { guidance: false, description: 'Use `XDSHStack` with wrapping for grids — use Grid instead.' },
     ],
   },
 };
@@ -222,11 +227,13 @@ export const docsZh = {
 export const docsDense = {
   description: 'CSS Grid-based layout w/ responsive column support.',
   usage: {
-    description: 'CSS Grid-based layout with responsive column support. Use for any grid layout instead of manual CSS grid.',
+    description: 'A CSS grid layout container for arranging children in rows and columns. Use Grid for card galleries, dashboards, and any multi-column layout. Supports fixed column counts and responsive columns that reflow based on available width.',
     bestPractices: [
-      { guidance: true, description: 'Use columns={{minWidth: 280}} for responsive layouts with consistent widths.' },
-      { guidance: true, description: 'Use columns={{minWidth: 280, max: 4}} to cap columns while keeping responsive wrapping.' },
-      { guidance: false, description: 'Write manual CSS grid when Grid supports your layout.' },
+      { guidance: true, description: 'Use responsive columns for layouts that should adapt to screen size — columns={{minWidth: 280}}.' },
+      { guidance: true, description: 'Cap the column count with max to prevent rows from getting too wide on large screens.' },
+      { guidance: true, description: 'Use repeat: \'fill\' (the default) for consistent item widths. Use \'fit\' when items should stretch to fill leftover space.' },
+      { guidance: false, description: 'Write manual CSS grid — Grid handles spacing and responsive behavior for you.' },
+      { guidance: false, description: 'Use XDSHStack with wrapping for grids — use Grid instead.' },
     ],
   },
 

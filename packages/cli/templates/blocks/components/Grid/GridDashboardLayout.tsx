@@ -5,10 +5,10 @@ import {XDSCard} from '@xds/core/Card';
 import {XDSText} from '@xds/core/Text';
 
 const metrics = [
-  {label: 'Metric 1', description: 'Quick stat'},
-  {label: 'Metric 2', description: 'Quick stat'},
-  {label: 'Metric 3', description: 'Quick stat'},
-  {label: 'Metric 4', description: 'Quick stat'},
+  {label: 'Revenue', value: '$48,290'},
+  {label: 'Active Users', value: '12,841'},
+  {label: 'Conversion', value: '3.2%'},
+  {label: 'Avg Response', value: '245ms'},
 ];
 
 export default function GridDashboardLayout() {
@@ -17,30 +17,30 @@ export default function GridDashboardLayout() {
       <XDSGridSpan columns={2} rows={2}>
         <XDSCard>
           <XDSText type="label" display="block">
-            Main Chart
+            Weekly Traffic
           </XDSText>
           <XDSText type="supporting" display="block">
-            Large visualization widget
+            Page views and unique visitors over the last 7 days
           </XDSText>
         </XDSCard>
       </XDSGridSpan>
       {metrics.map(m => (
         <XDSCard key={m.label}>
-          <XDSText type="label" display="block">
+          <XDSText type="supporting" display="block">
             {m.label}
           </XDSText>
-          <XDSText type="supporting" display="block">
-            {m.description}
+          <XDSText type="label" display="block">
+            {m.value}
           </XDSText>
         </XDSCard>
       ))}
       <XDSGridSpan columns="full">
         <XDSCard>
           <XDSText type="label" display="block">
-            Full-width Section
+            Recent Activity
           </XDSText>
           <XDSText type="supporting" display="block">
-            This section spans the entire width of the grid
+            Latest events across all projects
           </XDSText>
         </XDSCard>
       </XDSGridSpan>
