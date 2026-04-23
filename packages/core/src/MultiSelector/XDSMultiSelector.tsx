@@ -13,6 +13,7 @@
 
 import React, {
   useCallback,
+  useEffect,
   useId,
   useMemo,
   useOptimistic,
@@ -491,6 +492,13 @@ export interface XDSMultiSelectorProps<
   children?: (option: XDSMultiSelectorOptionData) => ReactNode;
 
   /**
+   * Whether the dropdown starts open on mount.
+   * Useful for showcases and previews.
+   * @default false
+   */
+  defaultOpen?: boolean;
+
+  /**
    * Test ID for testing frameworks.
    */
   'data-testid'?: string;
@@ -535,6 +543,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
   triggerDisplay = 'count',
   maxBadges = 3,
   children,
+  defaultOpen = false,
   'data-testid': testId,
   xstyle,
   className,
@@ -663,6 +672,14 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
     hasAutoFocus: false,
     dialogLabel: `${label} options`,
   });
+
+  // Open dropdown on mount when defaultOpen is true
+  useEffect(() => {
+    if (defaultOpen) {
+      popover.show();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Handle toggle
   // Handle clear button click
