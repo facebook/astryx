@@ -2,13 +2,21 @@
 
 import {useState} from 'react';
 import {XDSCheckboxList, XDSCheckboxListItem} from '@xds/core/CheckboxList';
+import {XDSDivider} from '@xds/core/Divider';
 
-const allItems = ['email', 'sms', 'push'];
+const DOCUMENTS = [
+  {id: 'transactions', label: 'Transaction history'},
+  {id: 'statements', label: 'Account statements'},
+  {id: 'tax', label: 'Tax documents'},
+  {id: 'invoices', label: 'Invoices'},
+];
+
+const ALL_IDS = DOCUMENTS.map(d => d.id);
 
 export default function CheckboxListSelectAllPattern() {
-  const [selected, setSelected] = useState<string[]>(['email']);
+  const [selected, setSelected] = useState<string[]>(['transactions']);
 
-  const allChecked = allItems.every(item => selected.includes(item));
+  const allChecked = ALL_IDS.every(id => selected.includes(id));
   const noneChecked = selected.length === 0;
   const selectAllState = allChecked
     ? true
@@ -16,25 +24,24 @@ export default function CheckboxListSelectAllPattern() {
       ? false
       : ('indeterminate' as const);
 
-  const handleSelectAll = (checked: boolean) => {
-    setSelected(checked ? [...allItems] : []);
-  };
-
   return (
-    <XDSCheckboxList label="Notifications" hasDividers>
+    <XDSCheckboxList label="Include in export">
       <XDSCheckboxListItem
         label="Select all"
         isChecked={selectAllState}
-        onCheck={handleSelectAll}
+        onCheck={checked => {
+          setSelected(checked ? [...ALL_IDS] : []);
+        }}
       />
-      {allItems.map(item => (
+      <XDSDivider />
+      {DOCUMENTS.map(doc => (
         <XDSCheckboxListItem
-          key={item}
-          label={item.charAt(0).toUpperCase() + item.slice(1)}
-          isChecked={selected.includes(item)}
+          key={doc.id}
+          label={doc.label}
+          isChecked={selected.includes(doc.id)}
           onCheck={checked => {
             setSelected(prev =>
-              checked ? [...prev, item] : prev.filter(v => v !== item),
+              checked ? [...prev, doc.id] : prev.filter(v => v !== doc.id),
             );
           }}
         />

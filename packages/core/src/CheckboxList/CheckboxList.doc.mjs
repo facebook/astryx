@@ -131,12 +131,13 @@ export const docs = {
     },
   ],
   usage: {
-    description: 'CheckboxList is a grouped set of checkboxes for selecting multiple options from a visible list. Use it when users need to pick several items at once. For single selection use RadioList; for long option sets consider MultiSelector.',
+    description: 'CheckboxList shows a small group of checkboxes so users can turn several options on or off at once. Place it in settings pages, filter panels, or forms where every choice should be visible without scrolling. For a single standalone checkbox — like "I agree to the terms" — use CheckboxInput instead. If only one option can be picked, use RadioList. If the list is long enough to need searching or scrolling, use MultiSelector instead.',
     bestPractices: [
-      { guidance: true, description: 'Provide a clear group label that describes what the options represent.' },
-      { guidance: true, description: 'Use collection mode (value/onChange on the group) to let the parent manage selected state as a string array.' },
-      { guidance: false, description: 'Use CheckboxList when only one option can be selected — use RadioList instead.' },
-      { guidance: false, description: 'Place interactive elements in endContent that conflict with the full-row click target.' },
+      { guidance: true, description: 'Keep the list short — three to seven options is the sweet spot. Beyond that, switch to MultiSelector which adds search and scrolling.' },
+      { guidance: true, description: 'Turn on dividers (hasDividers) when items have helper text underneath — without them the labels and descriptions blur together.' },
+      { guidance: true, description: 'Write a group label that says what the choices represent — "Export formats" tells users more than "Options".' },
+      { guidance: false, description: 'Show a CheckboxList when the user can only pick one thing — that is what RadioList is for.' },
+      { guidance: false, description: 'Put buttons or links inside the trailing slot (endContent) — the whole row is already tappable, so a nested button creates two competing click targets.' },
     ],
   },
 };
@@ -145,12 +146,13 @@ export const docs = {
 export const docsZh = {
   name: 'CheckboxList',
   usage: {
-    description: 'CheckboxList is a grouped set of checkboxes for selecting multiple options from a visible list. Use it when users need to pick several items at once. For single selection use RadioList; for long option sets consider MultiSelector.',
+    description: 'CheckboxList shows a small group of checkboxes so users can turn several options on or off at once. Place it in settings pages, filter panels, or forms where every choice should be visible without scrolling. For a single standalone checkbox — like "I agree to the terms" — use CheckboxInput instead. If only one option can be picked, use RadioList. If the list is long enough to need searching or scrolling, use MultiSelector instead.',
     bestPractices: [
-      { guidance: true, description: 'Provide a clear group label that describes what the options represent.' },
-      { guidance: true, description: 'Use collection mode (value/onChange on the group) to let the parent manage selected state as a string array.' },
-      { guidance: false, description: 'Use CheckboxList when only one option can be selected — use RadioList instead.' },
-      { guidance: false, description: 'Place interactive elements in endContent that conflict with the full-row click target.' },
+      { guidance: true, description: 'Keep the list short — three to seven options is the sweet spot. Beyond that, switch to MultiSelector which adds search and scrolling.' },
+      { guidance: true, description: 'Turn on dividers (hasDividers) when items have helper text underneath — without them the labels and descriptions blur together.' },
+      { guidance: true, description: 'Write a group label that says what the choices represent — "Export formats" tells users more than "Options".' },
+      { guidance: false, description: 'Show a CheckboxList when the user can only pick one thing — that is what RadioList is for.' },
+      { guidance: false, description: 'Put buttons or links inside the trailing slot (endContent) — the whole row is already tappable, so a nested button creates two competing click targets.' },
     ],
   },
   components: [
@@ -194,12 +196,13 @@ export const docsDense = {
   description:
     'Checkbox group component for multi-value selection. Collection mode (parent state) + standalone mode (per-item state).',
   usage: {
-    description: 'CheckboxList is a grouped set of checkboxes for selecting multiple options from a visible list. Use it when users need to pick several items at once. For single selection use RadioList; for long option sets consider MultiSelector.',
+    description: 'CheckboxList shows a small group of checkboxes so users can turn several options on or off at once. Place it in settings pages, filter panels, or forms where every choice should be visible without scrolling. For a single standalone checkbox — like "I agree to the terms" — use CheckboxInput instead. If only one option can be picked, use RadioList. If the list is long enough to need searching or scrolling, use MultiSelector instead.',
     bestPractices: [
-      { guidance: true, description: 'Provide a clear group label that describes what the options represent.' },
-      { guidance: true, description: 'Use collection mode (value/onChange on the group) to let the parent manage selected state as a string array.' },
-      { guidance: false, description: 'Use CheckboxList when only one option can be selected — use RadioList instead.' },
-      { guidance: false, description: 'Place interactive elements in endContent that conflict with the full-row click target.' },
+      { guidance: true, description: 'Keep the list short — three to seven options is the sweet spot. Beyond that, switch to MultiSelector which adds search and scrolling.' },
+      { guidance: true, description: 'Turn on dividers (hasDividers) when items have helper text underneath — without them the labels and descriptions blur together.' },
+      { guidance: true, description: 'Write a group label that says what the choices represent — "Export formats" tells users more than "Options".' },
+      { guidance: false, description: 'Show a CheckboxList when the user can only pick one thing — that is what RadioList is for.' },
+      { guidance: false, description: 'Put buttons or links inside the trailing slot (endContent) — the whole row is already tappable, so a nested button creates two competing click targets.' },
     ],
   },
   components: [

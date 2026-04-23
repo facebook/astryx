@@ -3,8 +3,8 @@ export const doc = {
   type: 'block',
   name: 'CheckboxList — With End Content',
   description:
-    'Checkbox list items with pricing labels as end content for an add-on selection pattern.',
+    'Badges in the trailing slot show contextual info — like a price or status — next to each option without cluttering the label, so users can compare choices at a glance.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['CheckboxList'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['CheckboxList', 'Badge'],
 };

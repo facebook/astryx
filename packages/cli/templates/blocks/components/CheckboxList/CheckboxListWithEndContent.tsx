@@ -2,6 +2,7 @@
 
 import {useState} from 'react';
 import {XDSCheckboxList, XDSCheckboxListItem} from '@xds/core/CheckboxList';
+import {XDSBadge} from '@xds/core/Badge';
 
 export default function CheckboxListWithEndContent() {
   const [value, setValue] = useState<string[]>(['free']);
@@ -15,19 +16,19 @@ export default function CheckboxListWithEndContent() {
         label="Free tier"
         value="free"
         description="Basic features included"
-        endContent={<span style={{color: '#0D8626'}}>$0/mo</span>}
+        endContent={<XDSBadge variant="success" label="$0/mo" />}
       />
       <XDSCheckboxListItem
         label="Pro tier"
         value="pro"
-        description="Advanced features"
-        endContent={<span style={{color: '#0064E0'}}>$9/mo</span>}
+        description="Advanced analytics and integrations"
+        endContent={<XDSBadge variant="info" label="$9/mo" />}
       />
       <XDSCheckboxListItem
         label="Enterprise"
         value="enterprise"
-        description="Custom solutions"
-        endContent={<span style={{color: '#5B08D8'}}>Custom</span>}
+        description="Custom solutions and dedicated support"
+        endContent={<XDSBadge variant="purple" label="Custom" />}
       />
     </XDSCheckboxList>
   );

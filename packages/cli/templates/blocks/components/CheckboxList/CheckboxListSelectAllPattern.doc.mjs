@@ -3,8 +3,8 @@ export const doc = {
   type: 'block',
   name: 'CheckboxList — Select All With Indeterminate',
   description:
-    'Checkbox list with a "select all" item that shows indeterminate state for partial selection.',
+    'A "select all" toggle at the top of a checkbox list that switches to an indeterminate dash when only some items are checked — useful for bulk actions like exporting documents or assigning permissions where users often want everything at once.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['CheckboxList'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['CheckboxList', 'Divider'],
 };
