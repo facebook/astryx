@@ -88,12 +88,12 @@ export const docs = {
   ],
   usage: {
     description:
-      'MetadataList displays key-value pairs of metadata using semantic definition list markup. Use it in detail panels, summary sections, or anywhere an object\'s attributes need a structured overview.',
+      'MetadataList displays key-value pairs for object attributes like quality, condition, and status, in a structured layout. Use it for detail panels, settings summaries, and record information.',
     bestPractices: [
-      { guidance: true, description: 'Choose label position based on content length — use \'start\' for short values and \'top\' for long or complex values.' },
-      { guidance: true, description: 'Use maxNumOfItems to collapse long lists and keep the page scannable.' },
-      { guidance: false, description: 'Use MetadataList for tabular data with multiple columns of values — use a table component instead.' },
-      { guidance: false, description: 'Mix unrelated metadata items within the same list — group related attributes together.' },
+      { guidance: true, description: 'Choose label position based on content — "start" for short values, "top" for long or complex values.' },
+      { guidance: true, description: 'Collapse long lists with `maxNumOfItems` to keep the page scannable.' },
+      { guidance: false, description: 'Use for extensive form input — use a form layout instead.' },
+      { guidance: false, description: "Use for data that doesn't have a clear key-value structure." },
     ],
     anatomy: [
       {name: 'Title', required: false, description: 'Optional title for the metadata list.'},
@@ -132,12 +132,12 @@ export const docsZh = {
   ],
   usage: {
     description:
-      'MetadataList displays key-value pairs of metadata using semantic definition list markup. Use it in detail panels, summary sections, or anywhere an object\'s attributes need a structured overview.',
+      'MetadataList displays key-value pairs for object attributes like quality, condition, and status, in a structured layout. Use it for detail panels, settings summaries, and record information.',
     bestPractices: [
-      { guidance: true, description: 'Choose label position based on content length — use \'start\' for short values and \'top\' for long or complex values.' },
-      { guidance: true, description: 'Use maxNumOfItems to collapse long lists and keep the page scannable.' },
-      { guidance: false, description: 'Use MetadataList for tabular data with multiple columns of values — use a table component instead.' },
-      { guidance: false, description: 'Mix unrelated metadata items within the same list — group related attributes together.' },
+      { guidance: true, description: 'Choose label position based on content — "start" for short values, "top" for long or complex values.' },
+      { guidance: true, description: 'Collapse long lists with `maxNumOfItems` to keep the page scannable.' },
+      { guidance: false, description: 'Use for extensive form input — use a form layout instead.' },
+      { guidance: false, description: "Use for data that doesn't have a clear key-value structure." },
     ],
     anatomy: [
       {name: 'Title', required: false, description: 'Optional title for the metadata list.'},
@@ -153,12 +153,12 @@ export const docsDense = {
   description: 'label/value metadata display; column layout, collapse, orientation variants',
   usage: {
     description:
-      'MetadataList displays key-value pairs of metadata using semantic definition list markup. Use it in detail panels, summary sections, or anywhere an object\'s attributes need a structured overview.',
+      'MetadataList displays key-value pairs for object attributes like quality, condition, and status, in a structured layout. Use it for detail panels, settings summaries, and record information.',
     bestPractices: [
-      { guidance: true, description: 'Choose label position based on content length — use \'start\' for short values and \'top\' for long or complex values.' },
-      { guidance: true, description: 'Use maxNumOfItems to collapse long lists and keep the page scannable.' },
-      { guidance: false, description: 'Use MetadataList for tabular data with multiple columns of values — use a table component instead.' },
-      { guidance: false, description: 'Mix unrelated metadata items within the same list — group related attributes together.' },
+      { guidance: true, description: 'Choose label position based on content — "start" for short values, "top" for long or complex values.' },
+      { guidance: true, description: 'Collapse long lists with `maxNumOfItems` to keep the page scannable.' },
+      { guidance: false, description: 'Use for extensive form input — use a form layout instead.' },
+      { guidance: false, description: "Use for data that doesn't have a clear key-value structure." },
     ],
     anatomy: [
       {name: 'Title', required: false, description: 'Optional title for the metadata list.'},

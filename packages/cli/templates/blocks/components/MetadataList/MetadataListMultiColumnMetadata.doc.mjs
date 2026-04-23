@@ -3,8 +3,8 @@ export const doc = {
   type: 'block',
   name: 'MetadataList — Multi-Column',
   description:
-    'Multi-column metadata grid with token tags for dense information display.',
+    'Multi-column metadata grid with token tags.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['MetadataList', 'Token'],
+  componentsUsed: ['MetadataList', 'Token', 'HStack'],
 };
