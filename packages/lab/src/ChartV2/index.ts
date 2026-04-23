@@ -1,6 +1,5 @@
-// Public API
 export {XDSChart, type XDSChartProps} from './XDSChart';
-export {bar, line, dot, area, band, candlestick} from './series';
-export type {BarConfig, LineConfig, DotConfig, AreaConfig, BandConfig, CandlestickConfig, SeriesConfig} from './series';
+export {bar, line, dot, area, band, candlestick} from './marks';
+export type {BarOptions, LineOptions, DotOptions, AreaOptions, BandOptions, CandlestickOptions} from './marks';
 export {useChartV2} from './ChartV2Context';
-export type {ChartV2Context, ChartPointerEvent, ResolvedPoint, ResolvedPositions} from './types';
+export type {SeriesDef, ChartV2Context, ChartPointerEvent, ResolvedPoint, ResolvedPositions, SeriesContext} from './types';

@@ -204,4 +204,9 @@ export {
   type ChartPointerEvent,
   type ResolvedPoint,
   type ResolvedPositions,
+  type SeriesDef,
+  type ChartPointerEvent,
+  type ResolvedPoint,
+  type ResolvedPositions,
+  type SeriesContext,
 } from './ChartV2';
