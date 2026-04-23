@@ -612,6 +612,7 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
         placeholder={placeholder}
         disabled={isDisabled}
         autoFocus={hasAutoFocus}
+        data-autofocus={hasAutoFocus || undefined}
         autoComplete="off"
         {...stylex.props(
           styles.input,
