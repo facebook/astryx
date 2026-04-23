@@ -61,6 +61,36 @@ const styles = stylex.create({
   selected: {
     borderColor: colorVars['--color-accent'],
   },
+  selectedBlue: {
+    borderColor: colorVars['--color-border-blue'],
+  },
+  selectedCyan: {
+    borderColor: colorVars['--color-border-cyan'],
+  },
+  selectedGray: {
+    borderColor: colorVars['--color-border-gray'],
+  },
+  selectedGreen: {
+    borderColor: colorVars['--color-border-green'],
+  },
+  selectedOrange: {
+    borderColor: colorVars['--color-border-orange'],
+  },
+  selectedPink: {
+    borderColor: colorVars['--color-border-pink'],
+  },
+  selectedPurple: {
+    borderColor: colorVars['--color-border-purple'],
+  },
+  selectedRed: {
+    borderColor: colorVars['--color-border-red'],
+  },
+  selectedTeal: {
+    borderColor: colorVars['--color-border-teal'],
+  },
+  selectedYellow: {
+    borderColor: colorVars['--color-border-yellow'],
+  },
   hoverState: {
     '::after': {
       content: '""',
@@ -265,6 +295,22 @@ const dynamicStyles = stylex.create({
  * ))}
  * ```
  */
+const selectedStyleForVariant = (variant: XDSCardVariant) => {
+  switch (variant) {
+    case 'blue': return styles.selectedBlue;
+    case 'cyan': return styles.selectedCyan;
+    case 'gray': return styles.selectedGray;
+    case 'green': return styles.selectedGreen;
+    case 'orange': return styles.selectedOrange;
+    case 'pink': return styles.selectedPink;
+    case 'purple': return styles.selectedPurple;
+    case 'red': return styles.selectedRed;
+    case 'teal': return styles.selectedTeal;
+    case 'yellow': return styles.selectedYellow;
+    default: return styles.selected;
+  }
+};
+
 export function XDSSelectableCard({
   label,
   isSelected,
@@ -336,7 +382,7 @@ export function XDSSelectableCard({
         stylex.props(
           styles.card,
           variantStyles[variant] ?? variantStyles.default,
-          isSelected && styles.selected,
+          isSelected && selectedStyleForVariant(variant),
           !isDisabled && styles.hoverState,
           isDisabled && styles.disabled,
           dynamicStyles.sizing(
