@@ -96,4 +96,31 @@ describe('XDSVStack', () => {
     );
     expect(screen.getByTestId('vstack')).toBeInTheDocument();
   });
+
+  it('accepts justify as alias for vAlign', () => {
+    const {container} = render(
+      <XDSVStack justify="center">
+        <div>A</div>
+      </XDSVStack>,
+    );
+    expect(container.firstChild).toBeInTheDocument();
+  });
+
+  it('accepts align as alias for hAlign', () => {
+    const {container} = render(
+      <XDSVStack align="center">
+        <div>A</div>
+      </XDSVStack>,
+    );
+    expect(container.firstChild).toBeInTheDocument();
+  });
+
+  it('prefers explicit vAlign over justify', () => {
+    const {container} = render(
+      <XDSVStack vAlign="center" justify="end">
+        <div>A</div>
+      </XDSVStack>,
+    );
+    expect(container.firstChild).toBeInTheDocument();
+  });
 });

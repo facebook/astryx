@@ -34,6 +34,18 @@ export interface XDSVStackProps extends Omit<
    * - `evenly`: Even space distribution
    */
   vAlign?: StackMainAlignment;
+
+  /**
+   * Main-axis alignment alias. Maps to `vAlign` on VStack.
+   * Mirrors CSS `justify-content` / Tailwind `justify-*`.
+   */
+  justify?: StackMainAlignment;
+
+  /**
+   * Cross-axis alignment alias. Maps to `hAlign` on VStack.
+   * Mirrors CSS `align-items` / Tailwind `items-*`.
+   */
+  align?: StackCrossAlignment;
 }
 
 /**
@@ -48,8 +60,23 @@ export interface XDSVStackProps extends Omit<
  * </XDSVStack>
  * ```
  */
-export function XDSVStack({ref, ...props}: XDSVStackProps) {
-  return <XDSStack {...props} direction="vertical" ref={ref} />;
+export function XDSVStack({
+  ref,
+  justify,
+  align,
+  hAlign,
+  vAlign,
+  ...props
+}: XDSVStackProps) {
+  return (
+    <XDSStack
+      {...props}
+      direction="vertical"
+      hAlign={hAlign ?? align}
+      vAlign={vAlign ?? justify}
+      ref={ref}
+    />
+  );
 }
 
 XDSVStack.displayName = 'XDSVStack';
