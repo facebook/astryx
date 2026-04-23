@@ -3,8 +3,8 @@ export const doc = {
   type: 'block',
   name: 'MoreMenu — In Toolbar',
   description:
-    'Overflow menu alongside primary and secondary buttons in a toolbar layout.',
+    'A three-dot menu alongside icon buttons in a card header toolbar.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['MoreMenu', 'Button'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['MoreMenu', 'Button', 'Icon', 'Toolbar', 'Text', 'Card', 'Section'],
 };

@@ -2,7 +2,10 @@
 export const doc = {
   type: 'block',
   name: 'MoreMenu',
+  description:
+    'A basic three-dot menu with simple action items.',
   isReady: true,
-  aspectRatio: 1,
   isShowcase: true,
+  aspectRatio: 1,
+  componentsUsed: ['MoreMenu'],
 };

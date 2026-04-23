@@ -3,8 +3,8 @@ export const doc = {
   type: 'block',
   name: 'MoreMenu — With Dividers',
   description:
-    'Overflow menu with icon items and a divider separating destructive actions.',
+    'A three-dot menu with a divider separating destructive actions from safe ones.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['MoreMenu'],
 };
