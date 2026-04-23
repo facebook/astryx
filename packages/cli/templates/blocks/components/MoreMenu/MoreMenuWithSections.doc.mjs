@@ -3,8 +3,8 @@ export const doc = {
   type: 'block',
   name: 'MoreMenu — With Sections',
   description:
-    'Overflow menu organized into labeled sections for grouped actions.',
+    'A three-dot menu with actions organized into labeled groups.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['MoreMenu'],
 };

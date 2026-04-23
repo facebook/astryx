@@ -62,12 +62,11 @@ export const docs = {
   },
   usage: {
     description:
-      'MoreMenu is a compact overflow menu triggered by a three-dot icon button. Use it to present secondary or overflow actions in tight spaces such as table rows, card headers, or toolbars.',
+      'MoreMenu is a three-dot button that opens a list of actions. Use it for secondary actions that don\'t need to be always visible, like in table rows, card headers, or toolbars.',
     bestPractices: [
-      { guidance: true, description: 'Use for secondary or overflow actions that do not need to be always visible.' },
-      { guidance: true, description: 'Provide a meaningful label to describe the menu context for screen reader users.' },
-      { guidance: false, description: 'Place primary actions inside a MoreMenu — primary actions should be directly visible.' },
-      { guidance: false, description: 'Use MoreMenu when you need a labeled trigger button with a chevron — use DropdownMenu instead.' },
+      { guidance: true, description: 'Use for overflow or secondary actions — keep primary actions visible outside the menu.' },
+      { guidance: true, description: 'Use dividers or sections to group related actions when the menu has many items.' },
+      { guidance: false, description: 'Hide primary actions inside a MoreMenu — they should be directly visible.' },
     ],
   },
 };
@@ -133,12 +132,11 @@ export const docsZh = {
   },
   usage: {
     description:
-      'MoreMenu is a compact overflow menu triggered by a three-dot icon button. Use it to present secondary or overflow actions in tight spaces such as table rows, card headers, or toolbars.',
+      'MoreMenu is a three-dot button that opens a list of actions. Use it for secondary actions that don\'t need to be always visible, like in table rows, card headers, or toolbars.',
     bestPractices: [
-      { guidance: true, description: 'Use for secondary or overflow actions that do not need to be always visible.' },
-      { guidance: true, description: 'Provide a meaningful label to describe the menu context for screen reader users.' },
-      { guidance: false, description: 'Place primary actions inside a MoreMenu — primary actions should be directly visible.' },
-      { guidance: false, description: 'Use MoreMenu when you need a labeled trigger button with a chevron — use DropdownMenu instead.' },
+      { guidance: true, description: 'Use for overflow or secondary actions — keep primary actions visible outside the menu.' },
+      { guidance: true, description: 'Use dividers or sections to group related actions when the menu has many items.' },
+      { guidance: false, description: 'Hide primary actions inside a MoreMenu — they should be directly visible.' },
     ],
   },
 };
@@ -149,12 +147,11 @@ export const docsDense = {
     'Overflow menu w/ three-dot icon trigger. Convenience wrapper composing icon-only XDSButton w/ dropdown menu, eliminating boilerplate for state management, positioning, accessibility.',
   usage: {
     description:
-      'MoreMenu is a compact overflow menu triggered by a three-dot icon button. Use it to present secondary or overflow actions in tight spaces such as table rows, card headers, or toolbars.',
+      'MoreMenu is a three-dot button that opens a list of actions. Use it for secondary actions that don\'t need to be always visible, like in table rows, card headers, or toolbars.',
     bestPractices: [
-      { guidance: true, description: 'Use for secondary or overflow actions that do not need to be always visible.' },
-      { guidance: true, description: 'Provide a meaningful label to describe the menu context for screen reader users.' },
-      { guidance: false, description: 'Place primary actions inside a MoreMenu — primary actions should be directly visible.' },
-      { guidance: false, description: 'Use MoreMenu when you need a labeled trigger button with a chevron — use DropdownMenu instead.' },
+      { guidance: true, description: 'Use for overflow or secondary actions — keep primary actions visible outside the menu.' },
+      { guidance: true, description: 'Use dividers or sections to group related actions when the menu has many items.' },
+      { guidance: false, description: 'Hide primary actions inside a MoreMenu — they should be directly visible.' },
     ],
   },
   propDescriptions: {
