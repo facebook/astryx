@@ -11,25 +11,25 @@ export default function TimestampColors() {
     <XDSStack direction="vertical" gap={4}>
       <XDSStack direction="vertical" gap={1}>
         <XDSText type="supporting" color="secondary">
-          primary
+          Primary
         </XDSText>
         <XDSTimestamp value={DATE} format="date_time" color="primary" />
       </XDSStack>
       <XDSStack direction="vertical" gap={1}>
         <XDSText type="supporting" color="secondary">
-          secondary
+          Secondary
         </XDSText>
         <XDSTimestamp value={DATE} format="date_time" color="secondary" />
       </XDSStack>
       <XDSStack direction="vertical" gap={1}>
         <XDSText type="supporting" color="secondary">
-          disabled
+          Disabled
         </XDSText>
         <XDSTimestamp value={DATE} format="date_time" color="disabled" />
       </XDSStack>
       <XDSStack direction="vertical" gap={1}>
         <XDSText type="supporting" color="secondary">
-          active
+          Active
         </XDSText>
         <XDSTimestamp value={DATE} format="date_time" color="active" />
       </XDSStack>
