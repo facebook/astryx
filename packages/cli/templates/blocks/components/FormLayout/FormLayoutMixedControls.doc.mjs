@@ -2,9 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'FormLayout — Mixed Controls',
-  description:
-    'Form combining text inputs, a selector, and a custom checkbox group via XDSField',
+  description: 'Form with different control types — text input, selector, and checkboxes',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['FormLayout', 'TextInput', 'Selector', 'Field'],
+  componentsUsed: ['FormLayout', 'TextInput', 'Selector', 'CheckboxList'],
 };

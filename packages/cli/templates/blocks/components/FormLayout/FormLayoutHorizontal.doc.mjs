@@ -2,7 +2,7 @@
 export const doc = {
   type: 'block',
   name: 'FormLayout — Horizontal',
-  description: 'Side-by-side form fields for short related inputs like names',
+  description: 'Two fields side by side for naturally paired inputs like first and last name',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['FormLayout', 'TextInput'],

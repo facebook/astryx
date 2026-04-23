@@ -4,15 +4,16 @@ import {useState} from 'react';
 import {XDSFormLayout} from '@xds/core/FormLayout';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSSelector} from '@xds/core/Selector';
-import {XDSField} from '@xds/core/Field';
+import {XDSCheckboxList, XDSCheckboxListItem} from '@xds/core/CheckboxList';
 
 export default function FormLayoutMixedControls() {
-  const [name, setName] = useState('');
-  const [role, setRole] = useState('viewer');
+  const [name, setName] = useState('Maya Torres');
+  const [role, setRole] = useState('editor');
+  const [notifications, setNotifications] = useState(['email', 'push']);
 
   return (
     <XDSFormLayout>
-      <XDSTextInput label="Name" value={name} onChange={setName} />
+      <XDSTextInput label="Full Name" value={name} onChange={setName} />
       <XDSSelector
         label="Role"
         value={role}
@@ -23,21 +24,14 @@ export default function FormLayoutMixedControls() {
           {label: 'Admin', value: 'admin'},
         ]}
       />
-      <XDSField label="Notifications" inputID="notif-group">
-        <div
-          id="notif-group"
-          style={{display: 'flex', flexDirection: 'column', gap: 4}}>
-          <label style={{display: 'flex', alignItems: 'center', gap: 8}}>
-            <input type="checkbox" defaultChecked /> Email
-          </label>
-          <label style={{display: 'flex', alignItems: 'center', gap: 8}}>
-            <input type="checkbox" /> SMS
-          </label>
-          <label style={{display: 'flex', alignItems: 'center', gap: 8}}>
-            <input type="checkbox" defaultChecked /> Push
-          </label>
-        </div>
-      </XDSField>
+      <XDSCheckboxList
+        label="Notifications"
+        value={notifications}
+        onChange={setNotifications}>
+        <XDSCheckboxListItem label="Email" value="email" />
+        <XDSCheckboxListItem label="SMS" value="sms" />
+        <XDSCheckboxListItem label="Push" value="push" />
+      </XDSCheckboxList>
     </XDSFormLayout>
   );
 }
