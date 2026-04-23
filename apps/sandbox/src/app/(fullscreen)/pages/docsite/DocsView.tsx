@@ -216,51 +216,33 @@ const RESOURCE_ITEMS: {
 const XDS_OFFERINGS: {
   title: string;
   subtitle: string;
-  pkg: string;
+  pkg: string | null;
   color: string;
-  features: string[];
+  description: string;
 }[] = [
   {
-    title: 'XDS OSS (External)',
-    subtitle: 'Open source for everyone',
+    title: 'XDS on GitHub / Vercel',
+    subtitle: 'Open source, use anywhere',
     pkg: '@xds/core',
     color: '#059669',
-    features: [
-      'TypeScript + StyleX with full type safety',
-      'MIT licensed — use anywhere, no restrictions',
-      'Source-level distribution with tree-shaking',
-      'Themeable via @xds/theme-* packages',
-      'CLI tooling and AI agent docs',
-      'Fork & swizzle any component',
-    ],
+    description:
+      'Install @xds/core from npm-internal (public npm coming soon). Works with Next.js, Vite, or any React framework. Use @xds/theme-default for the default look, or swap in any theme. Follow the quickstart in the @xds/core README to get started.',
   },
   {
-    title: 'XDS OSS (Nest)',
+    title: 'XDS on Nest',
     subtitle: 'Same library, internal platform',
     pkg: '@xds/core',
     color: '#2563EB',
-    features: [
-      'Same @xds/core package as external',
-      'Works natively on the Nest platform',
-      'Same components, same API, same themes',
-      'No separate library or migration needed',
-      'Build internal tools with production-grade UI',
-      'Access to all CLI tooling and templates',
-    ],
+    description:
+      'The fastest way to start is nest init and pick the XDS template, or add to an existing app with nest add xds. Same @xds/core package, installed from npm-internal (migrating to Metaccio). Uses @nest/xds-common for the Meta theme with Meta icons.',
   },
   {
-    title: 'XDS WWW (Intern)',
-    subtitle: 'Legacy internal system',
-    pkg: '@xds/www',
+    title: 'XDS on WWW',
+    subtitle: 'Internal \u2014 OSS components coming soon',
+    pkg: null,
     color: '#6B7280',
-    features: [
-      'Flow types for Meta monorepo',
-      'Pre-built dist/ artifacts',
-      'Legacy component API patterns',
-      'Maintained by the XDS team',
-      'internalfb.com only — not available in Nest',
-      'Tightly coupled to Intern platform',
-    ],
+    description:
+      'XDS WWW components are Haste modules in the Meta monorepo \u2014 no package to install. Uses Flow types and pre-built dist/ artifacts. OSS components are not yet available on www but are coming later. For now, use the existing XDS WWW components.',
   },
 ];
 
@@ -1160,20 +1142,24 @@ function ResourcePage({resourceKey}: {resourceKey: string}) {
 // GettingStartedPage component
 // ---------------------------------------------------------------------------
 
-const INSTALL_CODE = `# Install the core package
-npm install @xds/core
+const INSTALL_CODE = `# Install XDS and a theme
+npm install @xds/core @xds/theme-default`;
 
-# Or with yarn
-yarn add @xds/core`;
+const PROVIDER_CODE = `// app/globals.css
+@import "@xds/core/reset.css";
+@import "@xds/core/xds.css";
+@import "@xds/theme-default/theme.css";
 
-const PROVIDER_CODE = `import {XDSThemeProvider} from '@xds/core/ThemeProvider';
-import '@xds/theme-default';
+// app/providers.tsx
+import {XDSTheme} from '@xds/core/theme';
+import {XDSLinkProvider} from '@xds/core/Link';
+import {defaultTheme} from '@xds/theme-default/built';
 
-export default function App({children}) {
+export function Providers({children}: {children: React.ReactNode}) {
   return (
-    <XDSThemeProvider>
-      {children}
-    </XDSThemeProvider>
+    <XDSTheme theme={defaultTheme}>
+      <XDSLinkProvider>{children}</XDSLinkProvider>
+    </XDSTheme>
   );
 }`;
 
@@ -1197,19 +1183,19 @@ export function WelcomeCard() {
   );
 }`;
 
-const THEME_CODE = `# Install a theme
+const THEME_CODE = `# Install a different theme
 npm install @xds/theme-neutral
 
 # Available themes:
-# @xds/theme-default   — Clean blue accent
-# @xds/theme-neutral   — Warm gray palette
-# @xds/theme-daily     — Soft blues for everyday tools`;
+# @xds/theme-default  — Clean, professional (Heroicons)
+# @xds/theme-neutral  — Muted, minimal (Lucide)
+# @xds/theme-daily    — Warm, productivity-focused (Lucide)`;
 
 const CLI_CODE = `# Install the CLI
 npm install -g @xds/cli
 
-# Scaffold a new project
-xds init my-app
+# Initialize XDS in your project
+xds init
 
 # Generate a page template
 xds template dashboard
@@ -1232,18 +1218,18 @@ const GETTING_STARTED_STEPS: {
     step: '01',
     title: 'Install',
     description:
-      'Add @xds/core to your project. XDS works with any React framework — Next.js, Vite, Remix, or plain React.',
+      'Add @xds/core and a theme to your project. XDS works with Next.js, Vite, or any React framework. On Nest, use nest init with the XDS template or nest add xds instead.',
     code: INSTALL_CODE,
     codeLabel: 'Terminal',
     language: 'bash',
   },
   {
     step: '02',
-    title: 'Add the theme provider',
+    title: 'Set up styles and theme',
     description:
-      'Wrap your app in XDSThemeProvider. This sets up design tokens for colors, typography, spacing, and radius that all components inherit.',
+      'Import the XDS CSS reset, base styles, and theme CSS. Then wrap your app in XDSTheme with your chosen theme. This provides design tokens for colors, typography, spacing, and radius that all components inherit.',
     code: PROVIDER_CODE,
-    codeLabel: 'app/layout.tsx',
+    codeLabel: 'app/globals.css + app/providers.tsx',
     language: 'tsx',
   },
   {
@@ -1268,7 +1254,7 @@ const GETTING_STARTED_STEPS: {
     step: '05',
     title: 'Use the CLI',
     description:
-      'The XDS CLI scaffolds projects, generates page templates, ejects components for customization, and produces agent docs for AI coding assistants.',
+      'The XDS CLI generates page templates, ejects components for customization, and produces agent docs for AI coding assistants.',
     code: CLI_CODE,
     codeLabel: 'Terminal',
     language: 'bash',
@@ -1652,8 +1638,8 @@ function LibraryOverview({
           type="body"
           color="secondary"
           style={{marginTop: 8, marginBottom: 24, maxWidth: 680}}>
-          XDS is available in three contexts. Choose the right one based on
-          where you&#39;re building.
+          XDS is available in three contexts. Choose the right one based
+          on where you're building.
         </XDSText>
         <div
           style={{
@@ -1685,32 +1671,20 @@ function LibraryOverview({
                 <XDSText type="supporting" color="secondary">
                   {offering.subtitle}
                 </XDSText>
-                <XDSText
-                  type="supporting"
-                  color="secondary"
-                  style={{fontFamily: 'monospace', display: 'block', marginTop: 8}}>
-                  {offering.pkg}
+                {offering.pkg && (
+                  <XDSText
+                    type="supporting"
+                    color="secondary"
+                    style={{fontFamily: 'monospace', display: 'block', marginTop: 8}}>
+                    {offering.pkg}
+                  </XDSText>
+                )}
+              </div>
+              <div style={{padding: '16px 24px'}}>
+                <XDSText type="supporting" color="secondary">
+                  {offering.description}
                 </XDSText>
               </div>
-              <XDSStack direction="vertical" gap={3} style={{padding: '16px 24px'}}>
-                {offering.features.map(feature => (
-                  <XDSStack key={feature} direction="horizontal" gap={2}>
-                    <div
-                      style={{
-                        width: 5,
-                        height: 5,
-                        borderRadius: '50%',
-                        backgroundColor: offering.color,
-                        flexShrink: 0,
-                        marginTop: 7,
-                      }}
-                    />
-                    <XDSText type="supporting" color="secondary">
-                      {feature}
-                    </XDSText>
-                  </XDSStack>
-                ))}
-              </XDSStack>
             </XDSCard>
           ))}
         </div>
