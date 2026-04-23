@@ -13,6 +13,7 @@
 
 import React, {
   useCallback,
+  useEffect,
   useId,
   useMemo,
   useOptimistic,
@@ -376,6 +377,13 @@ interface XDSSelectorPropsBase<
   children?: (option: XDSSelectorOptionData) => ReactNode;
 
   /**
+   * Whether the dropdown starts open on mount.
+   * Useful for showcases and previews.
+   * @default false
+   */
+  isDefaultOpen?: boolean;
+
+  /**
    * Test ID for testing frameworks.
    */
   'data-testid'?: string;
@@ -459,6 +467,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
     status,
     labelTooltip,
     children,
+    isDefaultOpen = false,
     'data-testid': testId,
     xstyle,
     className,
@@ -521,6 +530,13 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
     hasCloseButton: false,
     hasAutoFocus: false,
   });
+
+  // Open dropdown on mount when isDefaultOpen is true
+  useEffect(() => {
+    if (isDefaultOpen) {
+      popover.show();
+    }
+  }, []);
 
   // Calculate offset to position selected item over trigger
   const {offset: selectedItemOffset, isPositioned} = useSelectedItemOffset({
