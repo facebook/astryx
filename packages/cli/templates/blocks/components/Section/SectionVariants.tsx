@@ -35,7 +35,7 @@ export default function SectionVariants() {
           </XDSText>
         </XDSStack>
       </XDSSection>
-      <XDSStack xstyle={styles.transparentWrapper}>
+      <XDSStack direction="vertical" xstyle={styles.transparentWrapper}>
         <XDSSection variant="transparent" padding={5}>
           <XDSStack direction="vertical" gap={1}>
             <XDSText type="body" weight="bold">
