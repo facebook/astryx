@@ -5,14 +5,15 @@ import {XDSAlertDialog} from '@xds/core/AlertDialog';
 import {XDSButton} from '@xds/core/Button';
 import {XDSVStack} from '@xds/core/Layout';
 
-export default function AlertDialogDeleteConfirmation() {
+export default function AlertDialogInformationalAlert() {
   const [isOpen, setIsOpen] = useState(false);
 
   const alertProps = {
-    title: 'Delete item?',
+    title: 'Session expired',
     description:
-      'This action cannot be undone. The item and all its data will be permanently removed.',
-    actionLabel: 'Delete',
+      'Your session has expired. You will be redirected to the login page.',
+    actionLabel: 'Sign in',
+    actionVariant: 'primary',
   } as const;
 
   return (
@@ -25,8 +26,8 @@ export default function AlertDialogDeleteConfirmation() {
         onAction={() => {}}
       />
       <XDSButton
-        label="Delete item"
-        variant="destructive"
+        label="Show notice"
+        variant="secondary"
         onClick={() => setIsOpen(true)}
       />
       <XDSAlertDialog

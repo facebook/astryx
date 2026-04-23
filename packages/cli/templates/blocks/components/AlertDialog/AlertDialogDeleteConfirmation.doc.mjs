@@ -1,11 +1,10 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'AlertDialog — Delete',
+  name: 'AlertDialog — Delete Confirmation',
   description:
-    'A delete button that asks the user to confirm before deleting.',
+    'Destructive confirmation dialog triggered by a button, the most common alert dialog pattern.',
   isReady: true,
-  isShowcase: true,
-  aspectRatio: 16 / 9,
-  componentsUsed: ['AlertDialog', 'Button'],
+  aspectRatio: 4 / 3,
+  componentsUsed: ['AlertDialog', 'Button', 'Layout'],
 };
