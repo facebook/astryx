@@ -2,7 +2,7 @@
 
 export const docs = {
   name: 'MediaTheme',
-  group: 'Utility',
+  group: 'Utilities',
   keywords: ['theme', 'dark-mode', 'light-mode', 'media', 'prefers-color-scheme'],
   usage: {
     description: 'Applies a theme that adapts to the system light/dark preference via prefers-color-scheme.',

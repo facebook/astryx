@@ -2,7 +2,7 @@
 
 export const docs = {
   name: 'Theme',
-  group: 'Utility',
+  group: 'Utilities',
   keywords: ['theme', 'theming', 'provider', 'color-scheme'],
   usage: {
     description: 'Wraps a subtree with a specific XDS theme. Use at the app root or around sections that need a different visual treatment.',

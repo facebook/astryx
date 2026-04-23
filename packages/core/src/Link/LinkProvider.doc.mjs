@@ -2,7 +2,7 @@
 
 export const docs = {
   name: 'LinkProvider',
-  group: 'Utility',
+  group: 'Utilities',
   keywords: ['link', 'provider', 'router', 'nextjs', 'client-side-routing'],
   usage: {
     description: 'Wraps your app to replace the default <a> tag with a framework-specific link component (e.g. Next.js Link) for client-side routing across all XDS components.',

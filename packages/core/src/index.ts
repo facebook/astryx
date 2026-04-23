@@ -157,4 +157,5 @@ export type {
   ComponentVar,
   DerivedVar,
   TranslationDoc,
+  GroupDoc,
 } from './docs-types';

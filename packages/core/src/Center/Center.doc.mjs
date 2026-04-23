@@ -2,6 +2,7 @@
 
 export const docs = {
   name: 'Center',
+  group: 'Layout',
   keywords: ["center","centered","centering","align","alignment","justify","flexbox","middle"],
   props: [
     {
