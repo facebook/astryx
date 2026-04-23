@@ -8,7 +8,7 @@ import {XDSText} from '@xds/core/Text';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
 
 const styles = stylex.create({
-  wide: {minWidth: 320},
+  fixed: {width: 400},
 });
 
 const emptySource: XDSSearchSource = {
@@ -47,7 +47,7 @@ export default function TokenizerCreatable() {
           onChange={items => setTags(items)}
           hasCreate
           placeholder="Type a tag and press Enter..."
-          xstyle={styles.wide}
+          xstyle={styles.fixed}
         />
       </XDSStack>
       <XDSStack direction="vertical" gap={1}>
@@ -62,7 +62,7 @@ export default function TokenizerCreatable() {
           hasCreate
           hasEntriesOnFocus
           placeholder="Search or type a new name..."
-          xstyle={styles.wide}
+          xstyle={styles.fixed}
         />
       </XDSStack>
     </XDSStack>

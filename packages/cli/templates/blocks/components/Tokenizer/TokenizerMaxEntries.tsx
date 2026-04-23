@@ -8,7 +8,7 @@ import {XDSText} from '@xds/core/Text';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
 
 const styles = stylex.create({
-  wide: {minWidth: 320},
+  fixed: {width: 400},
 });
 
 const skills: XDSSearchableItem[] = [
@@ -50,7 +50,7 @@ export default function TokenizerMaxEntries() {
         value={value}
         onChange={items => setValue(items)}
         maxEntries={MAX_SKILLS}
-        xstyle={styles.wide}
+        xstyle={styles.fixed}
       />
     </XDSStack>
   );

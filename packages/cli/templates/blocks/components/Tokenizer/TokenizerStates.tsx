@@ -7,7 +7,7 @@ import {XDSStack} from '@xds/core/Layout';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
 
 const styles = stylex.create({
-  wide: {minWidth: 320},
+  fixed: {width: 400},
 });
 
 const users: XDSSearchableItem[] = [
@@ -42,7 +42,7 @@ export default function TokenizerStates() {
         value={[users[0], users[2]]}
         onChange={() => {}}
         isDisabled
-        xstyle={styles.wide}
+        xstyle={styles.fixed}
       />
       <XDSTokenizer
         label="Error message"
@@ -52,7 +52,7 @@ export default function TokenizerStates() {
         onChange={items => setErrorValue(items)}
         isRequired
         status={{type: 'error', message: 'At least one reviewer is required'}}
-        xstyle={styles.wide}
+        xstyle={styles.fixed}
       />
       <XDSTokenizer
         label="Warning message"
@@ -64,7 +64,7 @@ export default function TokenizerStates() {
           type: 'warning',
           message: 'Consider adding at least 2 approvers',
         }}
-        xstyle={styles.wide}
+        xstyle={styles.fixed}
       />
       <XDSTokenizer
         label="Success message"
@@ -73,7 +73,7 @@ export default function TokenizerStates() {
         value={successValue}
         onChange={items => setSuccessValue(items)}
         status={{type: 'success', message: 'All required reviewers added'}}
-        xstyle={styles.wide}
+        xstyle={styles.fixed}
       />
     </XDSStack>
   );

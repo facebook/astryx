@@ -9,7 +9,7 @@ import {XDSText} from '@xds/core/Text';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
 
 const styles = stylex.create({
-  wide: {minWidth: 320},
+  fixed: {width: 400},
 });
 
 const users: XDSSearchableItem[] = [
@@ -42,7 +42,7 @@ export default function TokenizerEndContent() {
         value={value}
         onChange={items => setValue(items)}
         endContent={<XDSButton label="Apply" variant="primary" size="sm" />}
-        xstyle={styles.wide}
+        xstyle={styles.fixed}
       />
     </XDSStack>
   );

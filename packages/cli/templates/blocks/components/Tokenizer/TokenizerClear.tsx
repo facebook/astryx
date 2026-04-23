@@ -8,7 +8,7 @@ import {XDSText} from '@xds/core/Text';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
 
 const styles = stylex.create({
-  wide: {minWidth: 320},
+  fixed: {width: 400},
 });
 
 const users: XDSSearchableItem[] = [
@@ -44,7 +44,7 @@ export default function TokenizerClear() {
         value={value}
         onChange={items => setValue(items)}
         hasClear
-        xstyle={styles.wide}
+        xstyle={styles.fixed}
       />
     </XDSStack>
   );

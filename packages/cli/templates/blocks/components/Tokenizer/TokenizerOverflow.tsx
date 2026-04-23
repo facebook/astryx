@@ -8,7 +8,7 @@ import {XDSText} from '@xds/core/Text';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
 
 const styles = stylex.create({
-  wide: {minWidth: 320},
+  fixed: {width: 400},
 });
 
 const users: XDSSearchableItem[] = [
@@ -43,7 +43,7 @@ export default function TokenizerOverflow() {
           value={inlineValue}
           onChange={items => setInlineValue(items)}
           tokenOverflowBehavior="unfocusedInline"
-          xstyle={styles.wide}
+          xstyle={styles.fixed}
         />
       </XDSStack>
       <XDSStack direction="vertical" gap={1}>
@@ -57,7 +57,7 @@ export default function TokenizerOverflow() {
           value={layerValue}
           onChange={items => setLayerValue(items)}
           tokenOverflowBehavior="unfocusedLayer"
-          xstyle={styles.wide}
+          xstyle={styles.fixed}
         />
       </XDSStack>
     </XDSStack>
