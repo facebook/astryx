@@ -2,7 +2,7 @@
 
 export const docs = {
   name: 'NavMenu',
-  group: 'Navigation',
+  group: 'NavMenu',
   keywords: ['nav', 'menu', 'navigation', 'menu-item'],
   usage: {
     description: 'Menu item used within navigation components like SideNav and TopNav.',

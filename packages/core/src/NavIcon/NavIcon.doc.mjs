@@ -2,7 +2,7 @@
 
 export const docs = {
   name: 'NavIcon',
-  group: 'Navigation',
+  group: 'NavIcon',
   keywords: ["navicon","iconbutton","toolbar icon","appbar icon","nav button"],
   props: [
     {
