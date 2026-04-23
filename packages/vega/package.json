@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.12",
   "description": "XDS Vega wrapper \u2014 chart and data visualization components",
+  "license": "MIT",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
