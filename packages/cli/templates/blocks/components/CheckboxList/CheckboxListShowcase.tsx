@@ -2,7 +2,6 @@
 
 import {useState} from 'react';
 import {XDSCheckboxList, XDSCheckboxListItem} from '@xds/core/CheckboxList';
-
 export default function CheckboxListShowcase() {
   const [value, setValue] = useState<string[]>(['email']);
   return (
