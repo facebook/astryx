@@ -65,11 +65,10 @@ export const docs = {
   },
   usage: {
     description:
-      'Section is a container with background variants for creating visually distinct regions on a page. It automatically escapes parent padding for edge-to-edge fills. Use sections as the default page structure; reach for cards only when stronger visual distinction is needed.',
+      'Section is a container that is used to create visual separation. Use the default variant for standard content (white), wash to emphasize or group related content (gray), and transparent for no background while still using Section\'s padding and dividers.',
     bestPractices: [
-      { guidance: true, description: 'Use dividers to separate adjacent sections when background variants alone do not provide enough visual contrast.' },
-      { guidance: true, description: 'Default to the section variant for standard content regions; reserve wash for highlighted or grouped areas.' },
-      { guidance: false, description: 'Wrap content in a Section and a Card together — choose one container type to avoid redundant nesting.' },
+      { guidance: true, description: 'Start with the default variant. Use wash only to call attention to a specific region.' },
+      { guidance: true, description: 'Add dividers between same-background sections that need separation.' },
     ],
   },
 };
@@ -139,11 +138,10 @@ export const docsZh = {
   },
   usage: {
     description:
-      'Section is a container with background variants for creating visually distinct regions on a page. It automatically escapes parent padding for edge-to-edge fills. Use sections as the default page structure; reach for cards only when stronger visual distinction is needed.',
+      'Section is a container that is used to create visual separation. Use the default variant for standard content (white), wash to emphasize or group related content (gray), and transparent for no background while still using Section\'s padding and dividers.',
     bestPractices: [
-      { guidance: true, description: 'Use dividers to separate adjacent sections when background variants alone do not provide enough visual contrast.' },
-      { guidance: true, description: 'Default to the section variant for standard content regions; reserve wash for highlighted or grouped areas.' },
-      { guidance: false, description: 'Wrap content in a Section and a Card together — choose one container type to avoid redundant nesting.' },
+      { guidance: true, description: 'Start with the default variant. Use wash only to call attention to a specific region.' },
+      { guidance: true, description: 'Add dividers between same-background sections that need separation.' },
     ],
   },
 };
@@ -154,11 +152,10 @@ export const docsDense = {
     'Container w/ background variants for creating visually distinct regions; auto-escapes parent container padding for edge-to-edge fills.',
   usage: {
     description:
-      'Section is a container with background variants for creating visually distinct regions on a page. It automatically escapes parent padding for edge-to-edge fills. Use sections as the default page structure; reach for cards only when stronger visual distinction is needed.',
+      'Section is a container that is used to create visual separation. Use the default variant for standard content (white), wash to emphasize or group related content (gray), and transparent for no background while still using Section\'s padding and dividers.',
     bestPractices: [
-      { guidance: true, description: 'Use dividers to separate adjacent sections when background variants alone do not provide enough visual contrast.' },
-      { guidance: true, description: 'Default to the section variant for standard content regions; reserve wash for highlighted or grouped areas.' },
-      { guidance: false, description: 'Wrap content in a Section and a Card together — choose one container type to avoid redundant nesting.' },
+      { guidance: true, description: 'Start with the default variant. Use wash only to call attention to a specific region.' },
+      { guidance: true, description: 'Add dividers between same-background sections that need separation.' },
     ],
   },
   propDescriptions: {
