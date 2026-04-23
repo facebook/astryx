@@ -2,28 +2,26 @@
 """
 Post Night Watch design judge results as a GitHub issue comment.
 
-Images are served from GitHub Pages (gh-pages branch) under
-reports/{iteration}/screenshots/. No GitHub releases needed.
+Images are uploaded as GitHub release assets under a per-iteration release
+tag (design-judge-{iteration}). This ensures images render inline in issue
+comments even for private repositories — GitHub Pages URLs don't work
+because the repo is private and GitHub's image proxy can't authenticate.
 
 Usage:
     python3 post-design-results.py \
         --scores /tmp/design-scores-gemini.json \
         --iteration fd6afde6 \
-        --issue 1041 \
-        --repo facebookexperimental/xds \
-        --token $GITHUB_TOKEN
-
-    # Legacy flag still accepted for backward compat:
-    python3 post-design-results.py \
-        --scores /tmp/design-scores-gemini.json \
-        --release-tag design-judge-fd6afde6 \
+        --screenshots /tmp/night-watch-judge/fd6afde6 \
+        --ideals ~/xds/worktrees/main/internal/vibe-tests/ideals \
         --issue 1041 \
         --repo facebookexperimental/xds \
         --token $GITHUB_TOKEN
 """
 import argparse
 import json
+import os
 import sys
+import time
 import urllib.request
 import urllib.error
 
@@ -33,10 +31,12 @@ PROMPT_LABELS = {
     "dd-1": "Data table with sortable columns",
     "dd-2": "Transaction list with amount, date, status",
     "dd-3": "Analytics dashboard with charts",
+    "dd-7": "Service status dashboard",
     "fwc-1": "Login form with validation",
     "fwc-2": "Multi-step form wizard",
     "fwc-3": "Search with autocomplete",
     "fwc-4": "Confirmation delete dialog",
+    "fwc-7": "Price range filter",
     "io-1": "Empty state with call to action",
     "io-2": "Loading skeleton screens",
     "io-3": "Toast notification stack",
@@ -50,9 +50,11 @@ PROMPT_LABELS = {
     "rc-3": "Responsive data table to cards",
     "sd-1": "Button with loading state",
     "sd-2": "Loading to success button states",
+    "sd-5": "Notification preferences",
     "tc-1": "Color scheme switcher",
     "tc-3": "Typography scale demo",
     "tc-6": "Settings page with theme controls",
+    "tc-9": "Dual themes",
     "ty-1": "Article with rich typography",
     "ty-3": "Metrics dashboard card",
     "wd-1": "E-commerce checkout flow",
@@ -64,41 +66,132 @@ PROMPT_LABELS = {
 }
 
 
-# GitHub Pages base URL for the XDS repo
-GH_PAGES_BASE = "https://studious-broccoli-o7e61n3.pages.github.io"
+# ── GitHub Release Asset Upload ────────────────────────────────────────
+
+def gh_api(method, path, token, data=None, content_type="application/json",
+           accept="application/vnd.github.v3+json", base="https://api.github.com"):
+    """Make a GitHub API request."""
+    url = f"{base}/{path}" if not path.startswith("http") else path
+    body = json.dumps(data).encode() if isinstance(data, dict) else data
+    req = urllib.request.Request(url, data=body, method=method, headers={
+        "Authorization": f"token {token}",
+        "Accept": accept,
+        **({"Content-Type": content_type} if body else {}),
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return json.load(r)
+    except urllib.error.HTTPError as e:
+        err = e.read().decode()
+        raise RuntimeError(f"GitHub API {method} {url} → {e.code}: {err}")
 
 
-def img_url(iteration_id, filename):
-    """Build image URL from gh-pages screenshots directory."""
-    return f"{GH_PAGES_BASE}/reports/{iteration_id}/screenshots/{filename}"
+def ensure_release(repo, tag, token):
+    """Get or create a published release for the given tag. Returns release dict.
+
+    Must be a published (non-draft) release — draft release asset URLs
+    don't render inline in issue comments for private repos.
+    """
+    # Check if release already exists
+    try:
+        return gh_api("GET", f"repos/{repo}/releases/tags/{tag}", token)
+    except RuntimeError:
+        pass
+
+    # Create new published release (not draft — draft assets don't render inline)
+    return gh_api("POST", f"repos/{repo}/releases", token, data={
+        "tag_name": tag,
+        "name": f"Design Judge — {tag.replace('design-judge-', '')}",
+        "body": "Screenshots uploaded by the Night Watch Design Judge pipeline.",
+        "draft": False,
+    })
 
 
-def ideal_url(filename):
-    """Build image URL for ideal reference images on gh-pages."""
-    return f"{GH_PAGES_BASE}/reports/ideals/{filename}"
+def upload_asset(release, filepath, token):
+    """Upload a file as a release asset. Returns the download URL."""
+    filename = os.path.basename(filepath)
+    upload_url = release["upload_url"].split("{")[0]  # strip template suffix
+
+    # Check if asset already exists
+    for asset in release.get("assets", []):
+        if asset["name"] == filename:
+            return asset["browser_download_url"]
+
+    # Also check via API (release dict may not have all assets if just created)
+    try:
+        assets = gh_api("GET", release["assets_url"], token)
+        for asset in assets:
+            if asset["name"] == filename:
+                return asset["browser_download_url"]
+    except RuntimeError:
+        pass
+
+    with open(filepath, "rb") as f:
+        data = f.read()
+
+    url = f"{upload_url}?name={urllib.request.quote(filename)}"
+    result = gh_api("POST", url, token, data=data,
+                    content_type="application/octet-stream",
+                    base="")  # upload_url is already absolute
+    return result["browser_download_url"]
 
 
-def score_emoji(score):
-    if score is None or score == "—":
-        return "—"
-    if score >= 80:
-        return f"✅ **{score}**"
-    if score >= 50:
-        return f"🟡 **{score}**"
-    return f"🔴 **{score}**"
+def upload_screenshots(repo, iteration_id, screenshots_dir, ideals_dir,
+                       needed_files, token):
+    """Upload all needed screenshots and ideals to a GitHub release.
+
+    Returns a dict mapping filename → download URL.
+    """
+    tag = f"design-judge-{iteration_id}"
+    print(f"  Ensuring release '{tag}'...")
+    release = ensure_release(repo, tag, token)
+
+    url_map = {}
+    for filename in needed_files:
+        # Check screenshots dir first, then ideals dir
+        filepath = os.path.join(screenshots_dir, filename) if screenshots_dir else None
+        if not filepath or not os.path.exists(filepath):
+            if ideals_dir:
+                filepath = os.path.join(ideals_dir, filename)
+        if not filepath or not os.path.exists(filepath):
+            print(f"    ⚠ Missing: {filename}")
+            continue
+
+        print(f"    Uploading {filename}...")
+        try:
+            url_map[filename] = upload_asset(release, filepath, token)
+            time.sleep(0.3)  # rate limiting
+        except RuntimeError as e:
+            print(f"    ⚠ Upload failed for {filename}: {e}")
+
+    print(f"  Uploaded {len(url_map)}/{len(needed_files)} images")
+    return url_map
 
 
-def build_comment(data, iteration_id_override=None):
+# ── Comment Builder ────────────────────────────────────────────────────
+
+def build_comment(data, iteration_id, image_urls):
+    """Build the GitHub issue comment markdown.
+
+    image_urls: dict mapping filename → download URL (from release assets).
+    Falls back to a placeholder if an image URL is missing.
+    """
     results = data["results"]
     averages = data.get("averages", {})
-    iteration_id = iteration_id_override or data["iterationId"]
     model = data["model"]
     targets = ["xds", "baseline", "html"]
+
+    def img(filename, width=220):
+        url = image_urls.get(filename)
+        if url:
+            return f'<img src="{url}" width="{width}">'
+        return f'`{filename}` _(missing)_'
 
     lines = []
     lines.append(f"## 🔬 Night Watch Design Judge — Gemini Vision")
     lines.append("")
-    lines.append(f"**Judge:** `{model}` via Meta Plugboard | **Iteration:** `{iteration_id}` | **Method:** mTLS (no external API key)")
+    lines.append(f"**Judge:** `{model}` via Meta Plugboard | "
+                 f"**Iteration:** `{iteration_id}` | **Method:** mTLS (no external API key)")
     lines.append("")
 
     # Overall averages table
@@ -124,7 +217,6 @@ def build_comment(data, iteration_id_override=None):
         valid = [s for s in scores.values() if s is not None]
         best = max(valid) if valid else None
 
-        # Section header with best scores
         score_parts = " | ".join(
             f"{t.upper()}: {s if s is not None else 'n/a'}"
             for t, s in scores.items()
@@ -152,30 +244,41 @@ def build_comment(data, iteration_id_override=None):
         lines.append("")
 
         # Screenshot images
+        ideal = img(f"{pid}.png")
+        xds = img(f"{pid}-xds-desktop-light.png")
+        html_img = img(f"{pid}-html-desktop-light.png")
+
         has_baseline = "baseline" in pd
         if has_baseline:
+            baseline = img(f"{pid}-baseline-desktop-light.png")
             lines.append("**Ideal** | **XDS** | **Baseline** | **HTML**")
             lines.append(":--: | :--: | :--: | :--:")
-            lines.append(
-                f'<img src="{ideal_url(f"{pid}.png")}" width="220"> | '
-                f'<img src="{img_url(iteration_id, f"{pid}-xds-desktop-light.png")}" width="220"> | '
-                f'<img src="{img_url(iteration_id, f"{pid}-baseline-desktop-light.png")}" width="220"> | '
-                f'<img src="{img_url(iteration_id, f"{pid}-html-desktop-light.png")}" width="220">'
-            )
+            lines.append(f"{ideal} | {xds} | {baseline} | {html_img}")
         else:
             lines.append("**Ideal** | **XDS** | **HTML**")
             lines.append(":--: | :--: | :--:")
-            lines.append(
-                f'<img src="{ideal_url(f"{pid}.png")}" width="220"> | '
-                f'<img src="{img_url(iteration_id, f"{pid}-xds-desktop-light.png")}" width="220"> | '
-                f'<img src="{img_url(iteration_id, f"{pid}-html-desktop-light.png")}" width="220">'
-            )
+            lines.append(f"{ideal} | {xds} | {html_img}")
         lines.append("")
         lines.append("---")
         lines.append("")
 
     lines.append("— via Navi on behalf of Ernest Tien")
     return "\n".join(lines)
+
+
+def collect_needed_files(data):
+    """Collect all image filenames needed for the comment."""
+    results = data["results"]
+    targets = ["xds", "baseline", "html"]
+    files = set()
+
+    for pid, pd in results.items():
+        files.add(f"{pid}.png")  # ideal
+        for t in targets:
+            if t in pd:
+                files.add(f"{pid}-{t}-desktop-light.png")
+
+    return sorted(files)
 
 
 def post_comment(body, repo, issue_number, token):
@@ -204,8 +307,10 @@ def post_comment(body, repo, issue_number, token):
 def main():
     p = argparse.ArgumentParser(description="Post design judge results to GitHub issue")
     p.add_argument("--scores", required=True, help="Path to design-scores-gemini.json")
-    p.add_argument("--iteration", help="Iteration ID (images served from gh-pages)")
-    p.add_argument("--release-tag", help="(deprecated) GitHub release tag — ignored, kept for backward compat")
+    p.add_argument("--iteration", help="Iteration ID")
+    p.add_argument("--screenshots", help="Directory containing screenshot PNGs")
+    p.add_argument("--ideals", help="Directory containing ideal reference PNGs")
+    p.add_argument("--release-tag", help="(deprecated) Ignored, kept for backward compat")
     p.add_argument("--issue", required=True, type=int, help="GitHub issue number")
     p.add_argument("--repo", default="facebookexperimental/xds", help="GitHub repo")
     p.add_argument("--token", required=True, help="GitHub token")
@@ -215,18 +320,32 @@ def main():
     with open(args.scores) as f:
         data = json.load(f)
 
-    # Resolve iteration ID: explicit flag > extract from release-tag > scores file
+    # Resolve iteration ID
     iteration_id = args.iteration
     if not iteration_id and args.release_tag:
-        # Extract from legacy release tag: "design-judge-fd6afde6" -> "fd6afde6"
         iteration_id = args.release_tag.replace("design-judge-", "")
     if not iteration_id:
         iteration_id = data.get("iterationId")
     if not iteration_id:
-        print("Error: --iteration is required (or iterationId must be in scores file)", file=sys.stderr)
+        print("Error: --iteration is required", file=sys.stderr)
         sys.exit(1)
 
-    body = build_comment(data, iteration_id)
+    # Collect needed files and upload to release
+    needed_files = collect_needed_files(data)
+    image_urls = {}
+
+    if args.screenshots or args.ideals:
+        print(f"Uploading {len(needed_files)} images to GitHub release...")
+        image_urls = upload_screenshots(
+            args.repo, iteration_id,
+            args.screenshots, args.ideals,
+            needed_files, args.token,
+        )
+    else:
+        print("Warning: No --screenshots or --ideals provided. Images will show as missing.",
+              file=sys.stderr)
+
+    body = build_comment(data, iteration_id, image_urls)
 
     if args.dry_run:
         print(body)
