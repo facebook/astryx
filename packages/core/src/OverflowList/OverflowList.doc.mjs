@@ -67,11 +67,11 @@ export const docs = {
   },
   usage: {
     description:
-      'OverflowList is a horizontal list that automatically hides items exceeding the available width and shows a custom overflow indicator. Use it for breadcrumbs, toolbars, tag lists, or any row of items that needs to collapse gracefully at smaller widths.',
+      'A horizontal list that automatically hides items when they exceed the available width. Use OverflowList for breadcrumbs, toolbars, tag lists, or any row that needs to collapse gracefully at smaller sizes.',
     bestPractices: [
-      { guidance: true, description: 'Provide a meaningful overflow indicator via overflowRenderer, such as a "+N more" badge or dropdown.' },
-      { guidance: true, description: 'Set minVisibleItems to guarantee key items remain visible regardless of container size.' },
-      { guidance: false, description: 'Use OverflowList for vertical layouts — it is designed exclusively for horizontal item rows.' },
+      { guidance: true, description: 'Provide a meaningful overflowRenderer — a "+N more" badge, a dropdown, or a count indicator.' },
+      { guidance: true, description: 'Set minVisibleItems to keep key items visible regardless of container size.' },
+      { guidance: false, description: 'Use OverflowList for vertical layouts — it only works with horizontal rows.' },
     ],
   },
 };
@@ -127,11 +127,11 @@ export const docsZh = {
   ],
   usage: {
     description:
-      'OverflowList is a horizontal list that automatically hides items exceeding the available width and shows a custom overflow indicator. Use it for breadcrumbs, toolbars, tag lists, or any row of items that needs to collapse gracefully at smaller widths.',
+      'A horizontal list that automatically hides items when they exceed the available width. Use OverflowList for breadcrumbs, toolbars, tag lists, or any row that needs to collapse gracefully at smaller sizes.',
     bestPractices: [
-      { guidance: true, description: 'Provide a meaningful overflow indicator via overflowRenderer, such as a "+N more" badge or dropdown.' },
-      { guidance: true, description: 'Set minVisibleItems to guarantee key items remain visible regardless of container size.' },
-      { guidance: false, description: 'Use OverflowList for vertical layouts — it is designed exclusively for horizontal item rows.' },
+      { guidance: true, description: 'Provide a meaningful overflowRenderer — a "+N more" badge, a dropdown, or a count indicator.' },
+      { guidance: true, description: 'Set minVisibleItems to keep key items visible regardless of container size.' },
+      { guidance: false, description: 'Use OverflowList for vertical layouts — it only works with horizontal rows.' },
     ],
   },
 };
@@ -141,11 +141,11 @@ export const docsDense = {
   description: 'horizontal list w/ overflow indicator — hides items beyond container width',
   usage: {
     description:
-      'OverflowList is a horizontal list that automatically hides items exceeding the available width and shows a custom overflow indicator. Use it for breadcrumbs, toolbars, tag lists, or any row of items that needs to collapse gracefully at smaller widths.',
+      'A horizontal list that automatically hides items when they exceed the available width. Use OverflowList for breadcrumbs, toolbars, tag lists, or any row that needs to collapse gracefully at smaller sizes.',
     bestPractices: [
-      { guidance: true, description: 'Provide a meaningful overflow indicator via overflowRenderer, such as a "+N more" badge or dropdown.' },
-      { guidance: true, description: 'Set minVisibleItems to guarantee key items remain visible regardless of container size.' },
-      { guidance: false, description: 'Use OverflowList for vertical layouts — it is designed exclusively for horizontal item rows.' },
+      { guidance: true, description: 'Provide a meaningful overflowRenderer — a "+N more" badge, a dropdown, or a count indicator.' },
+      { guidance: true, description: 'Set minVisibleItems to keep key items visible regardless of container size.' },
+      { guidance: false, description: 'Use OverflowList for vertical layouts — it only works with horizontal rows.' },
     ],
   },
   propDescriptions: {

@@ -1,19 +1,22 @@
 'use client';
 
+import * as stylex from '@stylexjs/stylex';
 import {XDSOverflowList} from '@xds/core/OverflowList';
 import {XDSBadge} from '@xds/core/Badge';
+import {XDSCard} from '@xds/core/Card';
+
+const styles = stylex.create({
+  resizable: {
+    resize: 'horizontal',
+    overflow: 'hidden',
+    minWidth: 80,
+    width: 300,
+  },
+});
 
 export default function OverflowListOverflowBadges() {
   return (
-    <div
-      style={{
-        resize: 'horizontal',
-        overflow: 'hidden',
-        border: '1px dashed #ccc',
-        padding: 8,
-        width: 300,
-        minWidth: 80,
-      }}>
+    <XDSCard padding={2} xstyle={styles.resizable}>
       <XDSOverflowList
         gap={1}
         overflowRenderer={overflowItems => (
@@ -25,6 +28,6 @@ export default function OverflowListOverflowBadges() {
         <XDSBadge variant="neutral" label="Storybook" />
         <XDSBadge variant="error" label="Vitest" />
       </XDSOverflowList>
-    </div>
+    </XDSCard>
   );
 }
