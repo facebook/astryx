@@ -2,9 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'NumberInput — Status Variants',
-  description:
-    'Three number inputs showing error, warning, and success validation states with messages.',
+  description: 'Number inputs showing error, warning, and success validation states',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['NumberInput'],
+  componentsUsed: ['NumberInput', 'VStack', 'Center'],
 };

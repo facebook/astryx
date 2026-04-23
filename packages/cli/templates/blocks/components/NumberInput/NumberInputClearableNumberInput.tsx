@@ -2,11 +2,12 @@
 
 import {useState} from 'react';
 import {XDSNumberInput} from '@xds/core/NumberInput';
+import {XDSCenter} from '@xds/core/Center';
 
 export default function NumberInputClearableNumberInput() {
   const [value, setValue] = useState<number | null>(75);
   return (
-    <div style={{maxWidth: 300}}>
+    <XDSCenter width={300}>
       <XDSNumberInput
         label="Progress"
         units="%"
@@ -16,6 +17,6 @@ export default function NumberInputClearableNumberInput() {
         onChange={setValue}
         hasClear
       />
-    </div>
+    </XDSCenter>
   );
 }
