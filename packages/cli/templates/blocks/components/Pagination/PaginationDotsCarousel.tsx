@@ -46,9 +46,6 @@ const styles = stylex.create({
     maxWidth: 480,
     width: '100%',
   },
-  stars: {
-    color: '#f59e0b',
-  },
   pagination: {
     justifyContent: 'center',
     paddingTop: 4,
@@ -59,7 +56,7 @@ function Stars({count}: {count: number}) {
   return (
     <XDSStack direction="horizontal" gap={0}>
       {Array.from({length: count}, (_, i) => (
-        <XDSIcon key={i} icon={StarIcon} size="sm" xstyle={styles.stars} />
+        <XDSIcon key={i} icon={StarIcon} size="sm" color="warning" />
       ))}
     </XDSStack>
   );
