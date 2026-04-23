@@ -101,6 +101,12 @@ export const docs = {
           description: 'Maximum height of the dialog.',
           default: '480',
         },
+        {
+          name: 'isInline',
+          type: 'boolean',
+          description: 'Renders command palette content inline without modal behavior. For documentation previews and showcases only.',
+          default: 'false',
+        },
       ],
     },
     {
@@ -327,6 +333,7 @@ export const docsZh = {
         label: '命令面板对话框的无障碍标签。',
         width: '对话框宽度。',
         maxHeight: '对话框最大高度。',
+        isInline: '以内联方式渲染命令面板内容，不带模态行为。仅用于文档预览和展示。',
       },
     },
     {
@@ -408,6 +415,7 @@ export const docsDense = {
         label: 'a11y label for dialog',
         width: 'dialog width',
         maxHeight: 'dialog max height',
+        isInline: 'inline rendering for docs previews, no modal behavior',
       },
     },
     {
