@@ -47,7 +47,7 @@ export default function SectionDefaultWithWash() {
               /month
             </XDSText>
           </XDSStack>
-          <XDSButton variant="primary">Upgrade</XDSButton>
+          <XDSButton label="Upgrade" variant="primary" />
         </XDSStack>
       </XDSSection>
     </XDSStack>
