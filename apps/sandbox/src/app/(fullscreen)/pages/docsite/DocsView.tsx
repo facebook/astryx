@@ -1875,83 +1875,75 @@ export function DocsView({
         }
         sideNav={
           <XDSSideNav style={{paddingLeft: 8}}>
-            <XDSSideNavSection title="Navigation" isHeaderHidden>
+            <XDSSideNavSection title="Overview" isHeaderHidden>
               <XDSSideNavItem
                 label="Overview"
                 isSelected={selectedComponent === null}
-                onClick={() => setSelectedComponent(null)}
-              />
-              <XDSSideNavItem
-                label="Getting Started"
-                isSelected={
-                  selectedComponent !== null && activeNav === 'getting-started'
-                }
-                onClick={() => {
-                  setSelectedComponent('getting-started');
-                  setActiveNav('getting-started');
-                }}
-              />
-              <XDSSideNavItem
-                label="What's New"
-                isSelected={selectedComponent === 'whats-new'}
-                onClick={() => {
-                  setSelectedComponent('whats-new');
-                  setActiveNav('whats-new');
-                }}
-              />
-            </XDSSideNavSection>
-
-            <XDSSideNavSection title="Foundations" isHeaderHidden>
-              <XDSSideNavItem label="Foundations" collapsible>
-                {FOUNDATION_ITEMS.map(item => (
-                  <XDSSideNavItem
-                    key={item.key}
-                    label={item.title}
-                    isSelected={
-                      selectedComponent !== null && activeNav === item.key
-                    }
-                    onClick={() => {
-                      setSelectedComponent(item.key);
-                      setActiveNav(item.key);
-                    }}
-                  />
-                ))}
-              </XDSSideNavItem>
-            </XDSSideNavSection>
-
-            <XDSSideNavSection title="Libraries" isHeaderHidden>
-              <XDSSideNavItem label="Libraries" collapsible>
-                {LIBRARY_PACKAGES.map(pkg => (
-                  <XDSSideNavItem
-                    key={pkg.key}
-                    label={pkg.name}
-                    isSelected={
-                      selectedComponent !== null && activeNav === pkg.key
-                    }
-                    onClick={() => {
-                      setSelectedComponent(pkg.key);
-                      setActiveNav(pkg.key);
-                    }}
-                  />
-                ))}
-              </XDSSideNavItem>
-            </XDSSideNavSection>
-
-            <XDSSideNavSection title="Resources" isHeaderHidden>
-              <XDSSideNavItem label="Resources" collapsible>
-                {RESOURCE_ITEMS.filter(r => r.key).map(resource => (
-                  <XDSSideNavItem
-                    key={resource.key}
-                    label={resource.title}
-                    isSelected={
-                      selectedComponent !== null && activeNav === resource.key
-                    }
-                    onClick={() => {
-                      setSelectedComponent(resource.key!);
-                      setActiveNav(resource.key!);
-                    }}
-                  />
-                ))}
+                collapsible
+                onClick={() => setSelectedComponent(null)}>
+                <XDSSideNavItem
+                  label="Getting Started"
+                  isSelected={
+                    selectedComponent !== null && activeNav === 'getting-started'
+                  }
+                  onClick={() => {
+                    setSelectedComponent('getting-started');
+                    setActiveNav('getting-started');
+                  }}
+                />
+                <XDSSideNavItem
+                  label="What's New"
+                  isSelected={selectedComponent === 'whats-new'}
+                  onClick={() => {
+                    setSelectedComponent('whats-new');
+                    setActiveNav('whats-new');
+                  }}
+                />
+                <XDSSideNavItem label="Foundations" collapsible>
+                  {FOUNDATION_ITEMS.map(item => (
+                    <XDSSideNavItem
+                      key={item.key}
+                      label={item.title}
+                      isSelected={
+                        selectedComponent !== null && activeNav === item.key
+                      }
+                      onClick={() => {
+                        setSelectedComponent(item.key);
+                        setActiveNav(item.key);
+                      }}
+                    />
+                  ))}
+                </XDSSideNavItem>
+                <XDSSideNavItem label="Libraries" collapsible>
+                  {LIBRARY_PACKAGES.map(pkg => (
+                    <XDSSideNavItem
+                      key={pkg.key}
+                      label={pkg.name}
+                      isSelected={
+                        selectedComponent !== null && activeNav === pkg.key
+                      }
+                      onClick={() => {
+                        setSelectedComponent(pkg.key);
+                        setActiveNav(pkg.key);
+                      }}
+                    />
+                  ))}
+                </XDSSideNavItem>
+                <XDSSideNavItem label="Resources" collapsible>
+                  {RESOURCE_ITEMS.filter(r => r.key).map(resource => (
+                    <XDSSideNavItem
+                      key={resource.key}
+                      label={resource.title}
+                      isSelected={
+                        selectedComponent !== null && activeNav === resource.key
+                      }
+                      onClick={() => {
+                        setSelectedComponent(resource.key!);
+                        setActiveNav(resource.key!);
+                      }}
+                    />
+                  ))}
+                </XDSSideNavItem>
               </XDSSideNavItem>
             </XDSSideNavSection>
 
