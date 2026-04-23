@@ -1186,7 +1186,7 @@ export function DocsView({
               />
             }
             centerContent={
-              <div style={{display: 'flex', gap: 4}}>
+              <div style={{display: 'flex', gap: 4, paddingLeft: 260}}>
                 {[
                   {
                     label: 'Home',
