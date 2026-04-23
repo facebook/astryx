@@ -882,23 +882,87 @@ function LibraryPackagePage({
   if (packageKey === 'pkg-chat') {
     return <PackageGridPage packageKey={packageKey} components={CHAT_COMPONENTS} onSelectComponent={onSelectComponent} />;
   }
-  const pkg = LIBRARY_PACKAGES.find(p => p.key === packageKey);
-  if (!pkg) return null;
+  if (packageKey === 'pkg-cli') {
+    return <CliPage />;
+  }
+  return null;
+}
+
+function CliPage() {
   return (
     <div style={{maxWidth: 840, margin: '0 auto', padding: '32px 40px'}}>
       <XDSStack direction="vertical" gap={2}>
         <XDSStack direction="horizontal" gap={3} vAlign="center">
-          <XDSText type="display-1">{pkg.name}</XDSText>
-          {pkg.version && (
-            <XDSText type="supporting" color="secondary" style={{fontFamily: 'monospace'}}>
-              v{pkg.version}
-            </XDSText>
-          )}
+          <XDSText type="display-1">@xds/cli</XDSText>
+          <XDSText type="supporting" color="secondary" style={{fontFamily: 'monospace'}}>
+            v0.0.12
+          </XDSText>
         </XDSStack>
-        <XDSText type="body" color="secondary">{pkg.description}</XDSText>
+        <XDSText type="body" color="secondary">
+          Command-line tool for scaffolding projects, generating templates, swizzling components, and producing AI agent docs.
+        </XDSText>
       </XDSStack>
-      <div style={{marginTop: 48, padding: 64, borderRadius: 12, backgroundColor: 'var(--color-background-muted, #f5f5f5)', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-        <XDSText type="body" color="secondary">Documentation coming soon</XDSText>
+
+      <div style={{marginTop: 40}}>
+        <XDSHeading level={2} style={{marginBottom: 16}}>Install</XDSHeading>
+        <XDSCard padding={0}>
+          <XDSCodeBlock code="npm install -g @xds/cli" title="Terminal" language="bash" hasCopyButton />
+        </XDSCard>
+      </div>
+
+      <div style={{marginTop: 40}}>
+        <XDSHeading level={2} style={{marginBottom: 16}}>Bootstrap commands</XDSHeading>
+        <XDSText type="body" color="secondary" style={{marginBottom: 16}}>
+          Run these on every branch to load the latest API context. Takes under 500ms.
+        </XDSText>
+        <XDSCard padding={0}>
+          <XDSCodeBlock
+            code={`xds help                        # discover all commands and options\nxds docs                        # list available doc topics\nxds docs principles --dense     # design rules, anti-patterns, tokens\nxds docs tokens --dense         # spacing, color, radius, typography\nxds docs theme --dense          # theme provider, light/dark, overrides\nxds component --list            # all components grouped by category\nxds template --list             # available page templates`}
+            title="Terminal"
+            language="bash"
+            hasCopyButton
+          />
+        </XDSCard>
+      </div>
+
+      <div style={{marginTop: 40}}>
+        <XDSHeading level={2} style={{marginBottom: 16}}>On-demand commands</XDSHeading>
+        <XDSCard padding={0}>
+          <XDSCodeBlock
+            code={`xds component Button --dense    # props, variants, usage, anatomy\nxds template dashboard          # emit full page source\nxds template dashboard --skeleton  # layout skeleton with annotations\nxds swizzle Button              # eject component source into your project\nxds upgrade --apply             # run version migration codemods`}
+            title="Terminal"
+            language="bash"
+            hasCopyButton
+          />
+        </XDSCard>
+      </div>
+
+      <div style={{marginTop: 40}}>
+        <XDSHeading level={2} style={{marginBottom: 16}}>Options</XDSHeading>
+        <XDSTable
+          data={[
+            {flag: '--dense', description: 'Token-efficient output optimized for AI assistants'},
+            {flag: '--detail compact', description: 'Less output, focused on essentials'},
+            {flag: '--detail brief', description: 'Minimal output'},
+            {flag: '--zh', description: 'Chinese language output'},
+            {flag: '--skeleton', description: 'Layout skeleton with spatial annotations (templates only)'},
+            {flag: '--gap', description: 'Report missing capabilities when swizzling'},
+          ] as {[key: string]: unknown}[]}
+          columns={[
+            {key: 'flag', header: 'Flag'},
+            {key: 'description', header: 'Description'},
+          ]}
+        />
+      </div>
+
+      <div style={{marginTop: 40}}>
+        <XDSHeading level={2} style={{marginBottom: 16}}>Best practices</XDSHeading>
+        <XDSList density="spacious" listStyle="disc">
+          <XDSListItem label="Always run bootstrap commands on each new branch — docs reflect the branch's actual API" />
+          <XDSListItem label="Run xds component <Name> --dense before modifying any component" />
+          <XDSListItem label="After an @xds/core version bump, run xds upgrade --apply" />
+          <XDSListItem label="When swizzling, use --gap to report missing capabilities" />
+        </XDSList>
       </div>
     </div>
   );
