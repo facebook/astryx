@@ -10,28 +10,30 @@ export default function TextInputSizes() {
   const [lg, setLg] = useState('');
 
   return (
-    <XDSStack direction="vertical" gap={3}>
-      <XDSTextInput
-        label="Small"
-        value={sm}
-        onChange={setSm}
-        placeholder="Enter a value"
-        size="sm"
-      />
-      <XDSTextInput
-        label="Medium"
-        value={md}
-        onChange={setMd}
-        placeholder="Enter a value"
-        size="md"
-      />
-      <XDSTextInput
-        label="Large"
-        value={lg}
-        onChange={setLg}
-        placeholder="Enter a value"
-        size="lg"
-      />
-    </XDSStack>
+    <div style={{width: 300}}>
+      <XDSStack direction="vertical" gap={3}>
+        <XDSTextInput
+          label="Small"
+          value={sm}
+          onChange={setSm}
+          placeholder="Enter a value"
+          size="sm"
+        />
+        <XDSTextInput
+          label="Medium"
+          value={md}
+          onChange={setMd}
+          placeholder="Enter a value"
+          size="md"
+        />
+        <XDSTextInput
+          label="Large"
+          value={lg}
+          onChange={setLg}
+          placeholder="Enter a value"
+          size="lg"
+        />
+      </XDSStack>
+    </div>
   );
 }

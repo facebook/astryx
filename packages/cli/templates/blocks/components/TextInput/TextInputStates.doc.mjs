@@ -2,8 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'TextInput — States',
-  description: 'Text, password, and email inputs in default, disabled, and loading states. Shows the three input types side by side with realistic data.',
+  description: 'Error, warning, and success validation states with status messages. Use to show users what went wrong and how to fix it.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 9 / 16,
   componentsUsed: ['TextInput', 'Layout'],
 };

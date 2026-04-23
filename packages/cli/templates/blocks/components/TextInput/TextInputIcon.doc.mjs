@@ -4,6 +4,6 @@ export const doc = {
   name: 'TextInput — Icon',
   description: 'Inputs with a leading icon that hints at the expected content. Use when the icon helps users identify the field faster, like a lock for passwords or an envelope for email.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['TextInput', 'Layout'],
 };
