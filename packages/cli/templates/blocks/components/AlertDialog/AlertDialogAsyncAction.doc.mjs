@@ -6,5 +6,5 @@ export const doc = {
     'Alert dialog with an async action that shows a loading state while processing.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['AlertDialog', 'Button'],
+  componentsUsed: ['AlertDialog', 'Button', 'Layout'],
 };

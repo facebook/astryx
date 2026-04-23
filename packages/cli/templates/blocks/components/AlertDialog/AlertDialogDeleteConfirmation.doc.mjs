@@ -6,5 +6,5 @@ export const doc = {
     'Destructive confirmation dialog triggered by a button, the most common alert dialog pattern.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['AlertDialog', 'Button'],
+  componentsUsed: ['AlertDialog', 'Button', 'Layout'],
 };

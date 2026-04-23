@@ -6,5 +6,5 @@ export const doc = {
     'Non-destructive confirmation dialog with a primary action button for informational notices.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['AlertDialog', 'Button'],
+  componentsUsed: ['AlertDialog', 'Button', 'Layout'],
 };
