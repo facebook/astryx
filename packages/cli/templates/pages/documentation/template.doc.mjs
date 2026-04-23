@@ -2,6 +2,6 @@
 export const doc = {
   type: 'page',
   name: 'Documentation Overview',
-  description: 'Documentation landing page with component category grid, quick links, changelog, and getting started guide.',
+  description: 'Documentation landing page with hero banner and component category grid organized by Core, Layout, Navigation, and Form.',
   isReady: true,
 };

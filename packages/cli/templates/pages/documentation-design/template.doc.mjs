@@ -1,7 +1,7 @@
 /** @type {import('../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'page',
-  name: 'Design Documentation',
-  description: 'Design system foundations with typography scale, color palette, spacing tokens, shape reference, and usage guidelines.',
+  name: 'Component Page',
+  description: 'Component documentation page with live preview, usage guide, best practices table, and code examples.',
   isReady: true,
 };
