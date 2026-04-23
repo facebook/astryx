@@ -6,13 +6,6 @@ import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
 import {CheckIcon} from '@heroicons/react/24/solid';
-import * as stylex from '@stylexjs/stylex';
-
-const styles = stylex.create({
-  root: {
-    width: '100%',
-  },
-});
 
 const FEATURES = [
   '10 team members',
@@ -23,7 +16,7 @@ const FEATURES = [
 
 export default function SectionDefaultWithWash() {
   return (
-    <XDSStack direction="vertical" gap={0} xstyle={styles.root}>
+    <XDSStack direction="vertical" gap={0}>
       <XDSSection variant="section" padding={5}>
         <XDSStack direction="vertical" gap={3} hAlign="center">
           <XDSStack direction="vertical" gap={1} hAlign="center">

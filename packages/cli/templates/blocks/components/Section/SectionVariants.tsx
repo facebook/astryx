@@ -4,19 +4,17 @@ import {XDSSection} from '@xds/core/Section';
 import {XDSStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import * as stylex from '@stylexjs/stylex';
+import {colorVars} from '@xds/core/theme/tokens.stylex';
 
 const styles = stylex.create({
-  root: {
-    width: '100%',
-  },
   transparentWrapper: {
-    backgroundColor: '#e8f0fe',
+    backgroundColor: colorVars['--color-background-blue'],
   },
 });
 
 export default function SectionVariants() {
   return (
-    <XDSStack direction="vertical" gap={0} xstyle={styles.root}>
+    <XDSStack direction="vertical" gap={0}>
       <XDSSection variant="section" padding={5}>
         <XDSStack direction="vertical" gap={1}>
           <XDSText type="body" weight="bold">
