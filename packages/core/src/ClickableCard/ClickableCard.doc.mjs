@@ -1,69 +1,34 @@
 /** @type {import('../docs-types').ComponentDoc} */
-export default {
-  name: 'XDSClickableCard',
-  description:
-    'An interactive card that acts as a single navigation or action target. ' +
-    'Nested interactive elements (buttons, links) work independently.',
-  container: true,
-  props: {
-    label: {
-      type: 'string',
-      required: true,
-      description: 'Accessibility label for the card.',
-    },
-    onClick: {
-      type: '(event: MouseEvent) => void',
-      description:
-        'Click handler. Fires when the card surface is clicked, not when nested interactive elements are clicked.',
-    },
-    href: {
-      type: 'string',
-      description: 'Navigation URL. Ctrl/Cmd+click opens in a new tab.',
-    },
-    target: {
-      type: 'string',
-      default: '_self',
-      description: 'Link target for href navigation.',
-    },
-    isDisabled: {
-      type: 'boolean',
-      default: false,
-      description: 'Disables the card.',
-    },
-    children: {
-      type: 'ReactNode',
-      description:
-        'Card content. Can include nested buttons/links that work independently.',
-    },
-    padding: {
-      type: 'SpacingStep',
-      default: 4,
-      description: 'Inner padding using the spacing scale.',
-    },
-    variant: {
-      type: "'default' | 'transparent' | 'muted'",
-      default: 'default',
-      description: 'Background color variant.',
-    },
-    width: {type: 'SizeValue', description: 'Card width.'},
-    height: {type: 'SizeValue', description: 'Card height.'},
-    maxWidth: {type: 'SizeValue', description: 'Maximum card width.'},
+export const docs = {
+  name: 'ClickableCard',
+  keywords: ['card', 'clickable', 'interactive', 'navigation', 'action', 'link'],
+  usage: {
+    description: 'An interactive card for navigation or action targets. Nested interactive elements work independently.',
+    bestPractices: [
+      {guidance: true, description: 'Use for cards that navigate to a detail page or trigger a single action.'},
+      {guidance: true, description: 'Nest buttons or links freely inside — they handle their own events.'},
+      {guidance: false, description: 'Use for toggling selection — use SelectableCard for that.'},
+    ],
+    anatomy: [
+      {name: 'Container', required: true, description: 'Interactive div with hover/focus/active states.'},
+      {name: 'Content', required: true, description: 'Children, which may include nested interactive elements.'},
+    ],
   },
-  examples: [
-    {
-      title: 'Navigation card',
-      code: `<XDSClickableCard label="Settings" href="/settings">
-  <XDSText weight="bold">Settings</XDSText>
-  <XDSText color="secondary">Manage your preferences</XDSText>
-</XDSClickableCard>`,
-    },
-    {
-      title: 'Action card with nested button',
-      code: `<XDSClickableCard label="Product" href="/product/123">
-  <XDSText weight="bold">Product Name</XDSText>
-  <XDSButton label="Add to cart" onClick={handleAddToCart} />
-</XDSClickableCard>`,
-    },
+  props: [
+    {name: 'label', type: 'string', description: 'Accessibility label.', required: true},
+    {name: 'onClick', type: '(event: MouseEvent) => void', description: 'Click handler — fires on card surface only.'},
+    {name: 'href', type: 'string', description: 'Navigation URL.'},
+    {name: 'target', type: 'string', description: 'Link target.', default: "'_self'"},
+    {name: 'isDisabled', type: 'boolean', description: 'Disables the card.', default: 'false'},
+    {name: 'children', type: 'ReactNode', description: 'Card content.'},
+    {name: 'padding', type: "SpacingStep", description: 'Inner padding.', default: '4'},
+    {name: 'variant', type: "'default' | 'transparent' | 'muted'", description: 'Background variant.', default: "'default'"},
+    {name: 'width', type: 'SizeValue', description: 'Card width.'},
+    {name: 'height', type: 'SizeValue', description: 'Card height.'},
+    {name: 'maxWidth', type: 'SizeValue', description: 'Maximum card width.'},
   ],
-  seeAlso: ['XDSCard', 'XDSSelectableCard'],
+  theming: {
+    container: true,
+    targets: [{className: 'xds-clickable-card', visualProps: ['variant']}],
+  },
 };

@@ -1,82 +1,32 @@
 /** @type {import('../docs-types').ComponentDoc} */
-export default {
-  name: 'XDSSelectableCard',
-  description:
-    'A card that toggles between selected and unselected states. ' +
-    'Shows an accent border when selected.',
-  container: true,
-  props: {
-    label: {
-      type: 'string',
-      required: true,
-      description: 'Accessibility label for the card.',
-    },
-    isSelected: {
-      type: 'boolean',
-      required: true,
-      description: 'Controlled selection state. Accent border when true.',
-    },
-    onChange: {
-      type: '(isSelected: boolean) => void',
-      required: true,
-      description: 'Called with the new selection state when toggled.',
-    },
-    isDisabled: {
-      type: 'boolean',
-      default: false,
-      description: 'Disables the card.',
-    },
-    children: {
-      type: 'ReactNode',
-      description: 'Card content.',
-    },
-    padding: {
-      type: 'SpacingStep',
-      default: 4,
-      description: 'Inner padding using the spacing scale.',
-    },
-    width: {type: 'SizeValue', description: 'Card width.'},
-    height: {type: 'SizeValue', description: 'Card height.'},
-    maxWidth: {type: 'SizeValue', description: 'Maximum card width.'},
+export const docs = {
+  name: 'SelectableCard',
+  keywords: ['card', 'selectable', 'toggle', 'checkbox', 'radio', 'selection'],
+  usage: {
+    description: 'A card that toggles between selected and unselected states with an accent border. For navigation use ClickableCard.',
+    bestPractices: [
+      {guidance: true, description: 'Use for plan pickers, filter chips, or option grids.'},
+      {guidance: true, description: 'For single-select track one ID; for multi-select use a Set.'},
+      {guidance: false, description: 'Use for navigation — use ClickableCard for that.'},
+    ],
+    anatomy: [
+      {name: 'Container', required: true, description: 'Interactive div with accent border on selection.'},
+      {name: 'Content', required: true, description: 'Children rendered inside the card.'},
+    ],
   },
-  examples: [
-    {
-      title: 'Single select (radio behavior)',
-      code: `const [selected, setSelected] = useState(null);
-
-{plans.map(plan => (
-  <XDSSelectableCard
-    key={plan.id}
-    label={plan.name}
-    isSelected={selected === plan.id}
-    onChange={() => setSelected(plan.id)}
-  >
-    <XDSText weight="bold">{plan.name}</XDSText>
-    <XDSText color="secondary">{plan.price}</XDSText>
-  </XDSSelectableCard>
-))}`,
-    },
-    {
-      title: 'Multi-select (checkbox behavior)',
-      code: `const [selected, setSelected] = useState(new Set());
-
-{filters.map(f => (
-  <XDSSelectableCard
-    key={f.id}
-    label={f.name}
-    isSelected={selected.has(f.id)}
-    onChange={(isNow) => {
-      setSelected(prev => {
-        const next = new Set(prev);
-        isNow ? next.add(f.id) : next.delete(f.id);
-        return next;
-      });
-    }}
-  >
-    <XDSText>{f.name}</XDSText>
-  </XDSSelectableCard>
-))}`,
-    },
+  props: [
+    {name: 'label', type: 'string', description: 'Accessibility label.', required: true},
+    {name: 'isSelected', type: 'boolean', description: 'Controlled selection state.', required: true},
+    {name: 'onChange', type: '(isSelected: boolean) => void', description: 'Called when toggled.', required: true},
+    {name: 'isDisabled', type: 'boolean', description: 'Disables the card.', default: 'false'},
+    {name: 'children', type: 'ReactNode', description: 'Card content.'},
+    {name: 'padding', type: "SpacingStep", description: 'Inner padding.', default: '4'},
+    {name: 'width', type: 'SizeValue', description: 'Card width.'},
+    {name: 'height', type: 'SizeValue', description: 'Card height.'},
+    {name: 'maxWidth', type: 'SizeValue', description: 'Maximum card width.'},
   ],
-  seeAlso: ['XDSCard', 'XDSClickableCard'],
+  theming: {
+    container: true,
+    targets: [{className: 'xds-selectable-card', visualProps: ['selected']}],
+  },
 };

@@ -18,7 +18,7 @@
  * - /apps/storybook/stories/SelectableCard.stories.tsx
  */
 
-import {type ReactNode, type MouseEvent, useRef, useCallback} from 'react';
+import {type ReactNode, type MouseEvent, type MutableRefObject, useRef, useCallback, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars} from '../theme/tokens.stylex';
 import {container} from '../Layout/container.stylex';
@@ -88,7 +88,10 @@ const styles = stylex.create({
 // Props
 // =============================================================================
 
-export interface XDSSelectableCardProps extends XDSBaseProps {
+export interface XDSSelectableCardProps extends Omit<XDSBaseProps, 'onChange'> {
+  /** Ref forwarded to the root element. */
+  ref?: Ref<HTMLDivElement>;
+
   /**
    * Accessibility label for the card (required).
    * Describes the card's purpose to screen readers.
@@ -224,7 +227,7 @@ export function XDSSelectableCard({
   ref,
   ...props
 }: XDSSelectableCardProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   const handleClick = useCallback(
     (_event: MouseEvent<HTMLElement>) => {
@@ -247,10 +250,11 @@ export function XDSSelectableCard({
 
   return (
     <div
-      ref={(node) => {
-        (containerRef as any).current = node;
+      ref={(node: HTMLDivElement | null) => {
+        containerRef.current = node;
         if (typeof ref === 'function') ref(node);
-        else if (ref) (ref as any).current = node;
+        else if (ref != null)
+          (ref as MutableRefObject<HTMLDivElement | null>).current = node;
       }}
       role="checkbox"
       tabIndex={isDisabled ? -1 : 0}
