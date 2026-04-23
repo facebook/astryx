@@ -31,12 +31,14 @@ import {
   ChatIcon,
   ChartsIcon,
   DownloadIcon,
+  SendIcon,
 } from './docsite-icons';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSTextInput} from '@xds/core/TextInput';
+import {XDSChatComposer} from '@xds/core/Chat';
 import {XDSLink} from '@xds/core/Link';
 import {COMPONENT_PREVIEWS} from './ComponentPreviews';
 import {SEARCH_COMMANDS, basePath} from './constants';
@@ -773,7 +775,7 @@ function LibraryOverview({
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
+            gridTemplateColumns: 'repeat(4, 1fr)',
             gap: 16,
           }}>
           {LIBRARY_PACKAGES.map(pkg => {
@@ -1045,24 +1047,31 @@ function LibraryOverview({
         gap={3}
         hAlign="center"
         style={{marginBottom: 64, textAlign: 'center'}}>
-        <XDSHeading level={2}>Have a question?</XDSHeading>
-        <XDSText type="body" weight="bold">
-          Please use this support first
+        <XDSText type="display-1">Need help?</XDSText>
+        <XDSText type="body" color="secondary">
+          Ask our AI assistant first — it knows the docs better than we do.
         </XDSText>
-        <XDSTextInput
-          label="Ask a question"
-          isLabelHidden
-          placeholder="Search for answers..."
-          size="lg"
-          style={{width: '100%', maxWidth: 560}}
-        />
+        <div
+          style={{
+            width: '100%',
+            maxWidth: 560,
+            marginTop: 16,
+            marginBottom: 16,
+          }}>
+          <XDSChatComposer
+            onSubmit={() => {}}
+            placeholder="How do I theme a Button?"
+            density="compact"
+          />
+        </div>
         <XDSText type="supporting" color="secondary">
-          if you really want to talk a human,{' '}
-          <XDSLink label="go here" color="secondary">
-            go here
+          Prefer a human? Drop us a message in{' '}
+          <XDSLink label="#xds-support" color="secondary">
+            #xds-support
           </XDSLink>
         </XDSText>
       </XDSStack>
+      <div style={{height: 100}} />
     </div>
   );
 }
