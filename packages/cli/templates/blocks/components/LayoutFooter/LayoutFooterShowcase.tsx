@@ -3,38 +3,48 @@
 import {
   XDSLayout,
   XDSLayoutContent,
+  XDSLayoutHeader,
   XDSLayoutFooter,
+  XDSLayoutPanel,
+  XDSCard,
   XDSHStack,
 } from '@xds/core/Layout';
-import {XDSCard} from '@xds/core/Card';
+import {XDSCenter} from '@xds/core/Center';
 import {XDSButton} from '@xds/core/Button';
-import {XDSText} from '@xds/core/Text';
 
 export default function LayoutFooterShowcase() {
   return (
-    <XDSLayout
-      height="fill"
-      content={
-        <XDSLayoutContent>
-          <XDSCard variant="muted" padding={3}>
-            <XDSText type="supporting" color="secondary">
-              Content area
-            </XDSText>
-          </XDSCard>
-        </XDSLayoutContent>
-      }
-      footer={
-        <XDSLayoutFooter hasDivider>
-          <XDSHStack gap={2} hAlign="end">
-            <XDSButton label="Cancel" variant="secondary">
-              Cancel
-            </XDSButton>
-            <XDSButton label="Save" variant="primary">
-              Save
-            </XDSButton>
-          </XDSHStack>
-        </XDSLayoutFooter>
-      }
-    />
+    <XDSCenter width={600}>
+      <XDSLayout
+        height="fill"
+        header={
+          <XDSLayoutHeader hasDivider>
+            <XDSCard variant="muted" />
+          </XDSLayoutHeader>
+        }
+        start={
+          <XDSLayoutPanel hasDivider width={140}>
+            <XDSCard variant="muted" />
+          </XDSLayoutPanel>
+        }
+        content={
+          <XDSLayoutContent>
+            <XDSCard variant="muted" />
+          </XDSLayoutContent>
+        }
+        footer={
+          <XDSLayoutFooter hasDivider>
+            <XDSHStack gap={2} hAlign="end">
+              <XDSButton label="Cancel" variant="secondary">
+                Cancel
+              </XDSButton>
+              <XDSButton label="Save" variant="primary">
+                Save
+              </XDSButton>
+            </XDSHStack>
+          </XDSLayoutFooter>
+        }
+      />
+    </XDSCenter>
   );
 }

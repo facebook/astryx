@@ -4,34 +4,44 @@ import {
   XDSLayout,
   XDSLayoutPanel,
   XDSLayoutContent,
+  XDSLayoutHeader,
+  XDSLayoutFooter,
+  XDSCard,
 } from '@xds/core/Layout';
-import {XDSCard} from '@xds/core/Card';
-import {XDSText} from '@xds/core/Text';
+import {XDSCenter} from '@xds/core/Center';
 import {XDSList, XDSListItem} from '@xds/core/List';
 
 export default function LayoutPanelShowcase() {
   return (
-    <XDSLayout
-      height="fill"
-      start={
-        <XDSLayoutPanel hasDivider width={180} role="navigation">
-          <XDSList>
-            <XDSListItem label="Overview" isSelected />
-            <XDSListItem label="Analytics" />
-            <XDSListItem label="Reports" />
-            <XDSListItem label="Settings" />
-          </XDSList>
-        </XDSLayoutPanel>
-      }
-      content={
-        <XDSLayoutContent role="main">
-          <XDSCard variant="muted" padding={3}>
-            <XDSText type="supporting" color="secondary">
-              Content area
-            </XDSText>
-          </XDSCard>
-        </XDSLayoutContent>
-      }
-    />
+    <XDSCenter width={600}>
+      <XDSLayout
+        height="fill"
+        header={
+          <XDSLayoutHeader hasDivider>
+            <XDSCard variant="muted" />
+          </XDSLayoutHeader>
+        }
+        start={
+          <XDSLayoutPanel hasDivider width={140} role="navigation">
+            <XDSList>
+              <XDSListItem label="Overview" isSelected />
+              <XDSListItem label="Analytics" />
+              <XDSListItem label="Reports" />
+              <XDSListItem label="Settings" />
+            </XDSList>
+          </XDSLayoutPanel>
+        }
+        content={
+          <XDSLayoutContent>
+            <XDSCard variant="muted" />
+          </XDSLayoutContent>
+        }
+        footer={
+          <XDSLayoutFooter hasDivider>
+            <XDSCard variant="muted" />
+          </XDSLayoutFooter>
+        }
+      />
+    </XDSCenter>
   );
 }
