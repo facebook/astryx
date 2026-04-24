@@ -75,43 +75,43 @@ export const colorDefaults = {
 
   // Blue
   '--color-background-blue': 'light-dark(#0171E333, #0171E333)',
-  '--color-border-blue': 'light-dark(#0171E3, #4BA9FE)',
+  '--color-border-blue': 'light-dark(#0064E0, #2694FE)',  // Blue 650 / 500
   '--color-icon-blue': 'light-dark(#0064E0, #2694FE)',
   '--color-text-blue': 'light-dark(#042F97, #AFD7FF)',
 
   // Cyan
   '--color-background-cyan': 'light-dark(#03A7D733, #03A7D733)',
-  '--color-border-cyan': 'light-dark(#00BCD4, #4DD0E1)',
+  '--color-border-cyan': 'light-dark(#089DD0, #0171A4)',  // Cyan 500 / 650
   '--color-icon-cyan': 'light-dark(#00ACC1, #26C6DA)',
   '--color-text-cyan': 'light-dark(#014975, #A1EEF9)',
 
   // Gray
   '--color-background-gray': 'light-dark(#0A131733, #666A724C)',
-  '--color-border-gray': 'light-dark(#647685, #8C939B)',
+  '--color-border-gray': 'light-dark(#647685, #748695)',  // Gray 600 / 550
   '--color-icon-gray': 'light-dark(#4E606F, #AAAFB5)',
   '--color-text-gray': 'light-dark(#0A1317, #E7EAED)',
 
   // Green
   '--color-background-green': 'light-dark(#24BB5E33, #24BB5E33)',
-  '--color-border-green': 'light-dark(#24BB5E, #4CD964)',
+  '--color-border-green': 'light-dark(#0D8626, #0B991F)',  // Green 600 / 550
   '--color-icon-green': 'light-dark(#0D8626, #26A756)',
   '--color-text-green': 'light-dark(#09441F, #A5F690)',
 
   // Orange
   '--color-background-orange': 'light-dark(#F2790233, #F2790233)',
-  '--color-border-orange': 'light-dark(#F27902, #FFA040)',
+  '--color-border-orange': 'light-dark(#EB6E00, #B34A01)',  // Orange 500 / 650
   '--color-icon-orange': 'light-dark(#E9690B, #FB8C00)',
   '--color-text-orange': 'light-dark(#6B2203, #FDB876)',
 
   // Pink
   '--color-background-pink': 'light-dark(#E638B333, #E638B333)',
-  '--color-border-pink': 'light-dark(#E91E63, #F48FB1)',
+  '--color-border-pink': 'light-dark(#F351C0, #C02294)',  // Pink 500 / 650
   '--color-icon-pink': 'light-dark(#C2185B, #EC407A)',
   '--color-text-pink': 'light-dark(#650053, #FEADE3)',
 
   // Purple
   '--color-background-purple': 'light-dark(#7952FF33, #7952FF33)',
-  '--color-border-purple': 'light-dark(#7952FF, #9575CD)',
+  '--color-border-purple': 'light-dark(#9081FF, #7340FE)',  // Purple 500 / 650
   '--color-icon-purple': 'light-dark(#5B08D8, #7952FF)',
   '--color-text-purple': 'light-dark(#3E0697, #B3B0FE)',
 
@@ -123,13 +123,13 @@ export const colorDefaults = {
 
   // Teal
   '--color-background-teal': 'light-dark(#0DB7AF33, #0DB7AF33)',
-  '--color-border-teal': 'light-dark(#0DB7AF, #4DB6AC)',
+  '--color-border-teal': 'light-dark(#08A3A3, #08767D)',  // Teal 500 / 650
   '--color-icon-teal': 'light-dark(#009688, #26A69A)',
   '--color-text-teal': 'light-dark(#083943, #40DCCD)',
 
   // Yellow
   '--color-background-yellow': 'light-dark(#E2A40033, #E2A40033)',
-  '--color-border-yellow': 'light-dark(#FFEB3B, #FFF176)',
+  '--color-border-yellow': 'light-dark(#C58600, #B47700)',  // Yellow 500 / 550
   '--color-icon-yellow': 'light-dark(#FBC02D, #FFEE58)',
   '--color-text-yellow': 'light-dark(#753F07, #FBCE03)',
 

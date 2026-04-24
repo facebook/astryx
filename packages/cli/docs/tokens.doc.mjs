@@ -222,8 +222,8 @@ export const docs = {
             ],
             [
               "--color-border-blue",
-              "#0171E3",
-              "#4BA9FE"
+              "#0064E0",
+              "#2694FE"
             ],
             [
               "--color-icon-blue",
@@ -242,8 +242,8 @@ export const docs = {
             ],
             [
               "--color-border-cyan",
-              "#00BCD4",
-              "#4DD0E1"
+              "#089DD0",
+              "#0171A4"
             ],
             [
               "--color-icon-cyan",
@@ -263,7 +263,7 @@ export const docs = {
             [
               "--color-border-gray",
               "#647685",
-              "#8C939B"
+              "#748695"
             ],
             [
               "--color-icon-gray",
@@ -282,8 +282,8 @@ export const docs = {
             ],
             [
               "--color-border-green",
-              "#24BB5E",
-              "#4CD964"
+              "#0D8626",
+              "#0B991F"
             ],
             [
               "--color-icon-green",
@@ -302,8 +302,8 @@ export const docs = {
             ],
             [
               "--color-border-orange",
-              "#F27902",
-              "#FFA040"
+              "#EB6E00",
+              "#B34A01"
             ],
             [
               "--color-icon-orange",
@@ -322,8 +322,8 @@ export const docs = {
             ],
             [
               "--color-border-pink",
-              "#E91E63",
-              "#F48FB1"
+              "#F351C0",
+              "#C02294"
             ],
             [
               "--color-icon-pink",
@@ -342,8 +342,8 @@ export const docs = {
             ],
             [
               "--color-border-purple",
-              "#7952FF",
-              "#9575CD"
+              "#9081FF",
+              "#7340FE"
             ],
             [
               "--color-icon-purple",
@@ -382,8 +382,8 @@ export const docs = {
             ],
             [
               "--color-border-teal",
-              "#0DB7AF",
-              "#4DB6AC"
+              "#08A3A3",
+              "#08767D"
             ],
             [
               "--color-icon-teal",
@@ -402,8 +402,8 @@ export const docs = {
             ],
             [
               "--color-border-yellow",
-              "#FFEB3B",
-              "#FFF176"
+              "#C58600",
+              "#B47700"
             ],
             [
               "--color-icon-yellow",
