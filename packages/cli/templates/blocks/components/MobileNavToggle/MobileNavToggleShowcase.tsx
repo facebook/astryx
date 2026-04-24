@@ -21,7 +21,7 @@ export default function MobileNavToggleShowcase() {
         isIconOnly
         onClick={() => setIsOpen(true)}
       />
-      <XDSMobileNav isOpen={isOpen} onOpenChange={setIsOpen} title="Navigation">
+      <XDSMobileNav isOpen={isOpen} onOpenChange={setIsOpen} header="Navigation">
         <XDSSideNavSection title="Pages">
           <XDSSideNavItem label="Home" isSelected href="#" />
           <XDSSideNavItem label="Settings" href="#" />
