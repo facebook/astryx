@@ -129,7 +129,7 @@ export const colorDefaults = {
 
   // Yellow
   '--color-background-yellow': 'light-dark(#E2A40033, #E2A40033)',
-  '--color-border-yellow': 'light-dark(#C58600, #965E03)',  // Yellow 500 / 650
+  '--color-border-yellow': 'light-dark(#C58600, #B47700)',  // Yellow 500 / 550
   '--color-icon-yellow': 'light-dark(#FBC02D, #FFEE58)',
   '--color-text-yellow': 'light-dark(#753F07, #FBCE03)',
 
