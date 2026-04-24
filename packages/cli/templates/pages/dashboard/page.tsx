@@ -31,6 +31,7 @@ import {XDSTable, proportional, pixel} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSLink} from '@xds/core/Link';
+import {XDSIcon} from '@xds/core/Icon';
 
 // ============= ICONS =============
 
@@ -47,6 +48,7 @@ import {
 import {
   Squares2X2Icon as Squares2X2IconSolid,
   ChartBarIcon as ChartBarIconSolid,
+  StopIcon,
 } from '@heroicons/react/24/solid';
 
 // ============= DATA =============
@@ -371,6 +373,32 @@ const topPagesData: PageRow[] = [
   },
 ];
 
+const topPagesMaxViews = Math.max(...topPagesData.map(d => d.views));
+
+const topPagesColumns: XDSTableColumn<PageRow>[] = [
+  {key: 'page', header: 'Page', width: pixel(160)},
+  {
+    key: 'views',
+    header: 'Views',
+    width: proportional(1),
+    renderCell: (item: PageRow) => (
+      <XDSVStack gap={1}>
+        <XDSProgressBar
+          value={item.views}
+          max={topPagesMaxViews}
+          label={`${item.page} views`}
+          isLabelHidden
+        />
+        <XDSText type="supporting">
+          {item.views.toLocaleString()} views
+        </XDSText>
+      </XDSVStack>
+    ),
+  },
+  {key: 'newUsers', header: 'New Users', width: pixel(120)},
+  {key: 'avgTime', header: 'Avg. Time', width: pixel(120)},
+];
+
 // Engagement — Top events
 interface EventRow extends Record<string, unknown> {
   id: string;
@@ -393,6 +421,40 @@ const topEventsData: EventRow[] = [
   {id: '10', event: 'share', count: 580, users: 410, newUsers: 160},
 ];
 
+const topEventsMaxCount = Math.max(...topEventsData.map(d => d.count));
+
+const topEventsColumns: XDSTableColumn<EventRow>[] = [
+  {key: 'event', header: 'Event', width: pixel(160)},
+  {
+    key: 'count',
+    header: 'Count',
+    width: proportional(1),
+    renderCell: (item: EventRow) => (
+      <XDSVStack gap={1}>
+        <XDSProgressBar
+          value={item.count}
+          max={topEventsMaxCount}
+          label={`${item.count}`}
+          isLabelHidden
+        />
+        <XDSText type="supporting">{item.count.toLocaleString()}</XDSText>
+      </XDSVStack>
+    ),
+  },
+  {
+    key: 'users',
+    header: 'Users',
+    width: pixel(120),
+    renderCell: (item: EventRow) => item.users.toLocaleString(),
+  },
+  {
+    key: 'newUsers',
+    header: 'New Users',
+    width: pixel(120),
+    renderCell: (item: EventRow) => item.newUsers.toLocaleString(),
+  },
+];
+
 // ============= CHART COMPONENTS =============
 
 // Chart line colors via XDS design tokens (CSS custom properties)
@@ -405,9 +467,7 @@ const chartColors = {
 function ChartLegendItem({color, label}: {color: string; label: string}) {
   return (
     <XDSHStack gap={2} vAlign="center">
-      <svg width="16" height="3">
-        <line x1="0" y1="1.5" x2="16" y2="1.5" stroke={color} strokeWidth="2" />
-      </svg>
+      <XDSIcon icon={StopIcon} size="xsm" style={{color}} />
       <XDSText type="supporting" color="secondary">
         {label}
       </XDSText>
@@ -427,30 +487,21 @@ function ChartTooltip({
   if (!active || !payload?.length) return null;
   const point = activeUsersData.find(d => d.hour === label);
   return (
-    <div
-      style={{
-        backgroundColor: 'var(--color-background-popover, #fff)',
-        border: '1px solid var(--color-border, rgba(5, 54, 89, 0.1))',
-        borderRadius: 'var(--radius-element, 8px)',
-        padding: 'var(--spacing-3, 12px)',
-        boxShadow: 'var(--shadow-med)',
-      }}>
+    <XDSCard padding={3}>
       <XDSVStack gap={1}>
         <XDSText type="supporting" color="secondary">
           {point?.label ?? ''}
         </XDSText>
         {payload.map(entry => (
           <XDSHStack key={entry.name} gap={2} vAlign="center">
-            <svg width={8} height={8} style={{flexShrink: 0}}>
-              <circle cx={4} cy={4} r={4} fill={entry.color} />
-            </svg>
+            <XDSIcon icon={StopIcon} size="xsm" style={{color: entry.color}} />
             <XDSText type="supporting">
               {entry.name}: {entry.value}
             </XDSText>
           </XDSHStack>
         ))}
       </XDSVStack>
-    </div>
+    </XDSCard>
   );
 }
 
@@ -570,21 +621,9 @@ function MetricCard({
           <XDSHeading level={2}>{value}</XDSHeading>
           <XDSHStack gap={1} vAlign="center">
             {positive ? (
-              <ArrowUpIcon
-                style={{
-                  width: 12,
-                  height: 12,
-                  color: 'var(--color-success, #0D8626)',
-                }}
-              />
+              <XDSIcon icon={ArrowUpIcon} size="xsm" color="positive" />
             ) : (
-              <ArrowDownIcon
-                style={{
-                  width: 12,
-                  height: 12,
-                  color: 'var(--color-error, #E3193B)',
-                }}
-              />
+              <XDSIcon icon={ArrowDownIcon} size="xsm" color="negative" />
             )}
             <XDSText type="body" color="secondary">
               {change}
@@ -646,9 +685,7 @@ function StackedBarCard({
           {data.map(d => (
             <XDSVStack key={d.label} gap={0}>
               <XDSHStack gap={2} vAlign="center">
-                <svg width={8} height={8} style={{flexShrink: 0}}>
-                  <circle cx={4} cy={4} r={4} fill={d.color} />
-                </svg>
+                <XDSIcon icon={StopIcon} size="xsm" style={{color: d.color}} />
                 <XDSText type="supporting">{d.label}</XDSText>
               </XDSHStack>
               <XDSText type="supporting" color="secondary">
@@ -664,117 +701,30 @@ function StackedBarCard({
 
 // ============= TABLE COMPONENTS =============
 
-function TopPagesCard() {
-  const maxViews = Math.max(...topPagesData.map(d => d.views));
-
-  const columns: XDSTableColumn<PageRow>[] = [
-    {key: 'page', header: 'Page', width: pixel(160)},
-    {
-      key: 'views',
-      header: 'Views',
-      width: proportional(1),
-      renderCell: (item: PageRow) => (
-        <XDSVStack gap={1}>
-          <XDSProgressBar
-            value={item.views}
-            max={maxViews}
-            label={`${item.page} views`}
-            isLabelHidden
-          />
-          <XDSText type="supporting">
-            {item.views.toLocaleString()} views
-          </XDSText>
-        </XDSVStack>
-      ),
-    },
-    {
-      key: 'newUsers',
-      header: 'New Users',
-      width: pixel(120),
-    },
-    {
-      key: 'avgTime',
-      header: 'Avg. Time',
-      width: pixel(120),
-    },
-  ];
-
+function TableCard<T extends {id: string}>({
+  title,
+  linkLabel,
+  linkHref,
+  data,
+  columns,
+}: {
+  title: string;
+  linkLabel: string;
+  linkHref: string;
+  data: T[];
+  columns: XDSTableColumn<T>[];
+}) {
   return (
-    <XDSCard padding={0}>
-      <XDSVStack>
-        <XDSHStack
-          hAlign="between"
-          vAlign="center"
-          style={{padding: 'var(--spacing-4, 16px)'}}>
-          <XDSHeading level={4}>Top pages</XDSHeading>
-          <XDSLink label="All pages" href="#">
-            All pages
+    <XDSCard>
+      <XDSVStack gap={6}>
+        <XDSHStack hAlign="between" vAlign="center">
+          <XDSHeading level={4}>{title}</XDSHeading>
+          <XDSLink label={linkLabel} href={linkHref}>
+            {linkLabel}
           </XDSLink>
         </XDSHStack>
-        <XDSTable<PageRow>
-          data={topPagesData}
-          columns={columns}
-          idKey="id"
-          density="compact"
-          dividers="rows"
-          hasHover
-        />
-      </XDSVStack>
-    </XDSCard>
-  );
-}
-
-function TopEventsCard() {
-  const maxCount = Math.max(...topEventsData.map(d => d.count));
-
-  const columns: XDSTableColumn<EventRow>[] = [
-    {key: 'event', header: 'Event', width: pixel(160)},
-    {
-      key: 'count',
-      header: 'Count',
-      width: proportional(1),
-      renderCell: (item: EventRow) => (
-        <XDSVStack gap={1}>
-          <XDSProgressBar
-            value={item.count}
-            max={maxCount}
-            label={`${item.count}`}
-            isLabelHidden
-          />
-          <XDSText type="supporting">{item.count.toLocaleString()}</XDSText>
-        </XDSVStack>
-      ),
-    },
-    {
-      key: 'users',
-      header: 'Users',
-      width: pixel(120),
-      renderCell: (item: EventRow) => item.users.toLocaleString(),
-    },
-    {
-      key: 'newUsers',
-      header: 'New Users',
-      width: pixel(120),
-      renderCell: (item: EventRow) => item.newUsers.toLocaleString(),
-    },
-  ];
-
-  return (
-    <XDSCard padding={0}>
-      <XDSVStack>
-        <XDSHStack
-          vAlign="center"
-          hAlign="between"
-          style={{
-            padding: 'var(--spacing-4, 16px)',
-          }}>
-          <XDSHeading level={4}>Top events</XDSHeading>
-          <XDSLink label="All events" href="#">
-            All events
-          </XDSLink>
-        </XDSHStack>
-        <XDSTable<EventRow>
-          data={topEventsData}
+        <XDSTable<T>
+          data={data}
           columns={columns}
           idKey="id"
           density="compact"
@@ -796,7 +746,7 @@ function DashboardSideNav() {
         <XDSSideNavHeading
           icon={
             <XDSNavIcon
-              icon={<ChartBarIconSolid style={{width: 16, height: 16}} />}
+              icon={<XDSIcon icon={ChartBarIconSolid} size="sm" />}
             />
           }
           heading="Analytics"
@@ -850,25 +800,36 @@ export default function DashboardTemplate() {
       variant="elevated"
       height="auto"
       contentPadding={6}>
-      <XDSVStack gap={6} style={{paddingBottom: 'var(--spacing-12, 48px)'}}>
+      <XDSVStack gap={6}>
         {/* Active Users Chart */}
-        <XDSVStack gap={4}>
+        <XDSVStack gap={6}>
           <XDSHStack hAlign="between" vAlign="center">
             <XDSHeading level={3}>Active users</XDSHeading>
             <XDSButton
               label="Reload"
               variant="secondary"
               size="md"
-              icon={<ArrowPathIcon style={{width: 16, height: 16}} />}
+              icon={<XDSIcon icon={ArrowPathIcon} size="sm" />}
             />
           </XDSHStack>
           <ActiveUsersChart />
         </XDSVStack>
 
         {/* Metric Cards */}
-        <XDSGrid minChildWidth={240} gap={4}>
-          {metrics.map((m, i) => (
-            <MetricCard key={m.label} {...m} sparkline={sparklines[i]} />
+        <XDSGrid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
+          {[0, 2].map((start) => (
+            <XDSGrid
+              key={start}
+              columns={{minWidth: 240, repeat: 'fit'}}
+              gap={4}>
+              {metrics.slice(start, start + 2).map((m, i) => (
+                <MetricCard
+                  key={m.label}
+                  {...m}
+                  sparkline={sparklines[start + i]}
+                />
+              ))}
+            </XDSGrid>
           ))}
         </XDSGrid>
 
@@ -879,7 +840,7 @@ export default function DashboardTemplate() {
           <XDSHeading level={3}>Demographics</XDSHeading>
           <XDSButton label="View more" variant="secondary" size="md" />
         </XDSHStack>
-        <XDSGrid minChildWidth={480} gap={4}>
+        <XDSGrid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
           <StackedBarCard title="Region" data={regionData} />
           <StackedBarCard title="Role" data={roleData} />
         </XDSGrid>
@@ -891,9 +852,21 @@ export default function DashboardTemplate() {
           <XDSHeading level={3}>Engagement</XDSHeading>
           <XDSButton label="View more" variant="secondary" size="md" />
         </XDSHStack>
-        <XDSGrid minChildWidth={480} gap={4}>
-          <TopPagesCard />
-          <TopEventsCard />
+        <XDSGrid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
+          <TableCard
+            title="Top pages"
+            linkLabel="All pages"
+            linkHref="#"
+            data={topPagesData}
+            columns={topPagesColumns}
+          />
+          <TableCard
+            title="Top events"
+            linkLabel="All events"
+            linkHref="#"
+            data={topEventsData}
+            columns={topEventsColumns}
+          />
         </XDSGrid>
       </XDSVStack>
     </XDSAppShell>
