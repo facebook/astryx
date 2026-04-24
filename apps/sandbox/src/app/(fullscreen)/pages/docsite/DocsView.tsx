@@ -13,7 +13,10 @@ import {XDSCard} from '@xds/core/Card';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSNavMenuItem} from '@xds/core/NavMenu';
-import {XDSTable} from '@xds/core/Table';
+import {XDSTable, pixel} from '@xds/core/Table';
+import {XDSSection} from '@xds/core/Section';
+import {XDSCenter} from '@xds/core/Center';
+import {XDSIconButton} from '@xds/core/IconButton';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {XDSCommandPalette} from '@xds/core/CommandPalette';
 import {
@@ -33,6 +36,7 @@ import {
   ChartsIcon,
   DownloadIcon,
   SendIcon,
+  MetaLogo,
 } from './docsite-icons';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSIcon} from '@xds/core/Icon';
@@ -41,19 +45,25 @@ import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSChatComposer} from '@xds/core/Chat';
 import {XDSLink} from '@xds/core/Link';
+
 import {XDSPopover} from '@xds/core/Popover';
+import {XDSGrid} from '@xds/core/Grid';
 import {COMPONENT_PREVIEWS} from './ComponentPreviews';
 import {SEARCH_COMMANDS, basePath} from './constants';
 import {
   COMPONENT_CATEGORIES,
   getComponentName,
   getComponentDocs,
+  getComponentDesc,
 } from './docsview-data';
 
 const localStyles = stylex.create({
   previewCard: {
     borderRadius: 12,
     cursor: 'pointer',
+  },
+  tabListFlush: {
+    marginInlineStart: '-12px',
   },
   pageContainer: {
     maxWidth: 840,
@@ -117,43 +127,25 @@ const FOUNDATION_ITEMS: {
   },
 ];
 
+type PackageCategory = 'building' | 'designing';
+
+const PACKAGE_FILTERS: {label: string; value: PackageCategory | 'all'}[] = [
+  {label: 'All', value: 'all'},
+  {label: 'Building', value: 'building'},
+  {label: 'Designing', value: 'designing'},
+];
+
 const LIBRARY_PACKAGES: {
   key: string;
   name: string;
   description: string;
   version?: string;
   status: 'Stable' | 'Published' | 'Experimental' | 'Coming Soon';
-  iconType: 'core' | 'charts' | 'chat' | 'cli';
+  iconType: 'core' | 'charts' | 'chat' | 'cli' | 'theme' | 'design';
   image: string;
+  category: PackageCategory;
+  href?: string;
 }[] = [
-  {
-    key: 'pkg-core',
-    name: '@xds/core',
-    description:
-      'Core UI component library with 60+ accessible, themeable React components built on StyleX.',
-    version: '0.0.12',
-    status: 'Stable',
-    iconType: 'core',
-    image: `${basePath}/docsite/LibrariesCore.png`,
-  },
-  {
-    key: 'pkg-vega',
-    name: '@xds/vega',
-    description:
-      'Chart and data visualization components. Bar, line, area, pie, and more — built for dashboards and analytics.',
-    status: 'Coming Soon',
-    iconType: 'charts',
-    image: `${basePath}/docsite/LibrariesVega.png`,
-  },
-  {
-    key: 'pkg-chat',
-    name: '@xds/chat',
-    description:
-      'Conversational UI components for AI assistants, messaging, and chat interfaces with thread support.',
-    status: 'Stable',
-    iconType: 'chat',
-    image: `${basePath}/docsite/LibrariesChat.png`,
-  },
   {
     key: 'pkg-cli',
     name: '@xds/cli',
@@ -163,86 +155,144 @@ const LIBRARY_PACKAGES: {
     status: 'Stable',
     iconType: 'cli',
     image: `${basePath}/docsite/LibrariesCli.png`,
+    category: 'building',
+  },
+  {
+    key: 'pkg-core',
+    name: '@xds/core',
+    description:
+      'Core UI component library with 60+ accessible, themeable React components built on StyleX.',
+    version: '0.0.12',
+    status: 'Stable',
+    iconType: 'core',
+    image: `${basePath}/docsite/LibrariesCore.png`,
+    category: 'building',
+  },
+  {
+    key: 'pkg-vega',
+    name: '@xds/vega',
+    description:
+      'Chart and data visualization components. Bar, line, area, pie, and more — built for dashboards and analytics.',
+    status: 'Coming Soon',
+    iconType: 'charts',
+    image: `${basePath}/docsite/LibrariesVega.png`,
+    category: 'building',
+  },
+  {
+    key: 'pkg-chat',
+    name: '@xds/chat',
+    description:
+      'Conversational UI components for AI assistants, messaging, and chat interfaces with thread support.',
+    status: 'Stable',
+    iconType: 'chat',
+    image: `${basePath}/docsite/LibrariesChat.png`,
+    category: 'building',
+  },
+  {
+    key: 'pkg-xds-common',
+    name: '@nest/xds-common',
+    description:
+      'Data-backed components with Meta theme and Meta icons for Nest applications.',
+    version: '0.0.12',
+    status: 'Stable',
+    iconType: 'core',
+    image: `${basePath}/docsite/LibrariesCore.png`,
+    category: 'building',
+  },
+  {
+    key: 'pkg-theme-default',
+    name: '@xds/theme-default',
+    description:
+      'Clean, professional theme with blue accent and Heroicons. The default look for XDS applications.',
+    version: '0.0.12',
+    status: 'Stable',
+    iconType: 'theme',
+    image: `${basePath}/docsite/theme-preview-forest.png`,
+    category: 'building',
+  },
+  {
+    key: 'pkg-theme-neutral',
+    name: '@xds/theme-neutral',
+    description:
+      'Muted, minimal theme with warm gray tones and Lucide icons. Ideal for productivity tools.',
+    version: '0.0.12',
+    status: 'Stable',
+    iconType: 'theme',
+    image: `${basePath}/docsite/theme-preview-daily.png`,
+    category: 'building',
+  },
+  {
+    key: 'figma',
+    name: 'Figma Library',
+    description: 'Design files, tokens, and component specs for designers.',
+    status: 'Stable',
+    iconType: 'design',
+    image: `${basePath}/docsite/figma-logo.png`,
+    category: 'designing',
+    href: 'https://www.figma.com/design/c9CR0F4jJQwhue60Ec7qOz/XDS-Open-Source-Library',
   },
 ];
 
-const RESOURCE_ITEMS: {
-  key?: string;
-  title: string;
-  description: string;
-  icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-  image?: string;
-  iconBg: string;
-  iconColor: string;
-  isExternal?: boolean;
-  href?: string;
-}[] = [
-  {
-    title: 'Figma Library',
-    description: 'Design files, tokens, and component specs for designers.',
-    image: `${basePath}/docsite/figma-logo.png`,
-    iconBg: 'transparent',
-    iconColor: '#7C3AED',
-    isExternal: true,
-    href: 'https://www.figma.com/design/c9CR0F4jJQwhue60Ec7qOz/XDS-Open-Source-Library',
-  },
-  {
-    key: 'res-npm',
-    title: 'NPM Packages',
-    description: 'Published packages on the npm registry under the @xds scope.',
-    icon: DownloadIcon,
-    iconBg: '#FEE2E2',
-    iconColor: '#DC2626',
-  },
-  {
-    key: 'res-agent-docs',
-    title: 'AI / Agent Docs',
-    description:
-      'AGENTS.md and CLI docs for using XDS with AI coding assistants.',
-    icon: SparklesIcon,
-    iconBg: '#FEF3C7',
-    iconColor: '#D97706',
-  },
-  {
-    key: 'res-publishing',
-    title: 'Publishing',
-    description: 'How to publish components, themes, and templates to Craft.',
-    icon: HeartIcon,
-    iconBg: '#FCE7F3',
-    iconColor: '#EC4899',
-  },
+const RESOURCE_NAV_ITEMS: {key: string; title: string}[] = [
+  {key: 'res-npm', title: 'NPM Packages'},
+  {key: 'res-agent-docs', title: 'AI / Agent Docs'},
+  {key: 'res-publishing', title: 'Publishing'},
 ];
+
+const GitHubIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+    <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+  </svg>
+);
+
+const VercelIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+    <circle cx="12" cy="12" r="12" />
+    <path d="M12 7l6.928 10.5H5.072L12 7z" fill="white" />
+  </svg>
+);
 
 const XDS_OFFERINGS: {
   title: string;
   subtitle: string;
   pkg: string | null;
-  color: string;
   description: string;
+  label?: string;
+  href?: string;
+  descriptionLinkText?: string;
+  descriptionLinkHref?: string;
+  icons?: React.ComponentType<React.SVGProps<SVGSVGElement>>[];
+  logos?: string[];
 }[] = [
   {
-    title: 'XDS on GitHub / Vercel',
+    title: 'GitHub or Vercel',
     subtitle: 'Open source, use anywhere',
     pkg: '@xds/core',
-    color: '#059669',
+    icons: [GitHubIcon, VercelIcon],
     description:
       'Install @xds/core from npm-internal (public npm coming soon). Works with Next.js, Vite, or any React framework. Use @xds/theme-default for the default look, or swap in any theme. Follow the quickstart in the @xds/core README to get started.',
+    descriptionLinkText: '@xds/core README',
+    descriptionLinkHref: 'https://github.com/facebookexperimental/xds',
   },
   {
-    title: 'XDS on Nest',
+    title: 'Nest',
     subtitle: 'Same library, internal platform',
     pkg: '@xds/core',
-    color: '#2563EB',
+    logos: [`${basePath}/docsite/nest-logo.png`],
     description:
       'The fastest way to start is nest init and pick the XDS template, or add to an existing app with nest add xds. Same @xds/core package, installed from npm-internal (migrating to Metaccio). Uses @nest/xds-common for the Meta theme with Meta icons.',
   },
   {
-    title: 'XDS on WWW',
-    subtitle: 'Internal \u2014 OSS components coming soon',
+    title: 'WWW',
+    subtitle: 'Internal platform',
     pkg: null,
-    color: '#6B7280',
+    label: 'OSS components coming soon',
+    href: 'https://www.internalfb.com/dimsum/xds',
+    logos: [`${basePath}/docsite/meta-logo.png`],
     description:
       'XDS WWW components are Haste modules in the Meta monorepo \u2014 no package to install. Uses Flow types and pre-built dist/ artifacts. OSS components are not yet available on www but are coming later. For now, use the existing XDS WWW components.',
+    descriptionLinkText: 'XDS WWW components',
+    descriptionLinkHref: 'https://www.internalfb.com/dimsum/xds',
   },
 ];
 
@@ -337,7 +387,7 @@ const CHANGELOG_ENTRIES: {
     date: 'Mar.20',
     type: 'Release',
     title:
-      'Theme packages: @xds/theme-default, @xds/theme-neutral, @xds/theme-daily',
+      'Theme packages: @xds/theme-default, @xds/theme-neutral',
     tags: ['themes'],
   },
   {
@@ -758,7 +808,7 @@ function PackageGridPage({
                 {totalComponents} components
               </XDSText>
               {pkg.status === 'Coming Soon' ? (
-                <XDSBadge label="Coming Soon" variant="info" />
+                <XDSBadge label="Coming Soon" variant="blue" />
               ) : (
                 <XDSText type="supporting" color="secondary" style={{maxWidth: 300}}>
                   Hover a component on the right to preview it here.
@@ -860,6 +910,279 @@ function PackageGridPage({
   );
 }
 
+// ---------------------------------------------------------------------------
+// Theme package detail data
+// ---------------------------------------------------------------------------
+
+type ThemeCharacteristic = {
+  label: string;
+  value: string;
+  detail?: string;
+};
+
+type ThemeTokenOverride = {
+  token: string;
+  default: string;
+  override: string;
+};
+
+type ThemeDetail = {
+  name: string;
+  npmName: string;
+  version: string;
+  description: string;
+  characteristics: ThemeCharacteristic[];
+  setupCode: string;
+  tokenOverrides: ThemeTokenOverride[];
+};
+
+const THEME_DETAILS: Record<string, ThemeDetail> = {
+  'pkg-theme-default': {
+    name: 'Default',
+    npmName: '@xds/theme-default',
+    version: '0.0.12',
+    description:
+      'The reference theme for XDS. Clean and professional with a blue accent, system fonts, and Heroicons. Designed to work out of the box with zero configuration.',
+    characteristics: [
+      {label: 'Typography', value: 'System fonts', detail: 'Scale base 14px, ratio 1.2'},
+      {label: 'Icons', value: 'Heroicons', detail: 'Outline + solid variants'},
+      {label: 'Accent', value: 'Blue (#0066FF)', detail: 'Semantic color palette'},
+      {label: 'Radius', value: 'Standard', detail: 'element 8px, container 12px'},
+      {label: 'Motion', value: 'Balanced', detail: 'fast 175ms, medium 410ms, slow 975ms'},
+      {label: 'Syntax', value: 'GitHub theme', detail: 'Light + dark variants'},
+    ],
+    setupCode: `// app/globals.css
+@import "@xds/core/reset.css";
+@import "@xds/core/xds.css";
+@import "@xds/theme-default/theme.css";
+
+// app/providers.tsx
+import {XDSTheme} from '@xds/core/theme';
+import {defaultTheme} from '@xds/theme-default/built';
+
+export function Providers({children}: {children: React.ReactNode}) {
+  return (
+    <XDSTheme theme={defaultTheme}>
+      {children}
+    </XDSTheme>
+  );
+}`,
+    tokenOverrides: [],
+  },
+  'pkg-theme-neutral': {
+    name: 'Neutral',
+    npmName: '@xds/theme-neutral',
+    version: '0.0.12',
+    description:
+      'A muted, minimal theme with warm gray tones and desaturated colors. Uses Geist font for body and headings, Geist Mono for code, and Lucide icons. Ideal for productivity tools and developer-facing interfaces.',
+    characteristics: [
+      {label: 'Typography', value: 'Geist / Geist Mono', detail: 'Scale base 14px, ratio 1.2, h3/h4 bold'},
+      {label: 'Icons', value: 'Lucide', detail: 'Outline style'},
+      {label: 'Accent', value: 'Desaturated', detail: 'Full oklch color space'},
+      {label: 'Radius', value: 'Larger', detail: 'element 10px, container 12px'},
+      {label: 'Motion', value: 'Snappy', detail: 'fast 125ms, medium 300ms, slow 700ms'},
+      {label: 'Syntax', value: 'Desaturated', detail: 'Matches grayscale palette'},
+    ],
+    setupCode: `// app/globals.css
+@import "@xds/core/reset.css";
+@import "@xds/core/xds.css";
+@import "@xds/theme-neutral/theme.css";
+
+// app/providers.tsx
+import {XDSTheme} from '@xds/core/theme';
+import {neutralTheme} from '@xds/theme-neutral/built';
+
+export function Providers({children}: {children: React.ReactNode}) {
+  return (
+    <XDSTheme theme={neutralTheme}>
+      {children}
+    </XDSTheme>
+  );
+}`,
+    tokenOverrides: [
+      {token: '--radius-element', default: '0.5rem', override: '0.625rem'},
+      {token: '--radius-container', default: '0.625rem', override: '0.75rem'},
+      {token: '--radius-page', default: '0.75rem', override: '1rem'},
+      {token: '--font-family-body', default: 'system-ui', override: 'Geist, sans-serif'},
+      {token: '--font-family-heading', default: 'system-ui', override: 'Geist, sans-serif'},
+      {token: '--font-family-code', default: 'monospace', override: 'Geist Mono, monospace'},
+      {token: '--duration-fast', default: '175ms', override: '125ms'},
+      {token: '--duration-medium', default: '410ms', override: '300ms'},
+      {token: '--duration-slow', default: '975ms', override: '700ms'},
+    ],
+  },
+};
+
+// ---------------------------------------------------------------------------
+// ThemePackagePage component
+// ---------------------------------------------------------------------------
+
+function ThemePackagePage({packageKey}: {packageKey: string}) {
+  const theme = THEME_DETAILS[packageKey];
+  if (!theme) return null;
+  const pkg = LIBRARY_PACKAGES.find(p => p.key === packageKey)!;
+
+  return (
+    <div style={{maxWidth: 840, margin: '0 auto', padding: '32px 40px'}}>
+      {/* Header */}
+      <XDSStack direction="vertical" gap={2}>
+        <XDSStack direction="horizontal" gap={3} vAlign="center">
+          <XDSText type="display-1">{theme.npmName}</XDSText>
+          <XDSText
+            type="supporting"
+            color="secondary"
+            style={{fontFamily: 'monospace'}}>
+            v{theme.version}
+          </XDSText>
+        </XDSStack>
+        <XDSText type="body" color="secondary" style={{maxWidth: 640}}>
+          {theme.description}
+        </XDSText>
+      </XDSStack>
+
+      {/* Characteristics grid */}
+      <div style={{marginTop: 40}}>
+        <XDSHeading level={2} style={{marginBottom: 16}}>
+          Characteristics
+        </XDSHeading>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: 12,
+          }}>
+          {theme.characteristics.map(char => (
+            <XDSCard key={char.label} padding={4}>
+              <XDSStack direction="vertical" gap={1}>
+                <XDSText
+                  type="supporting"
+                  color="secondary"
+                  style={{
+                    fontFamily: 'monospace',
+                    fontSize: 11,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                  }}>
+                  {char.label}
+                </XDSText>
+                <XDSText type="body" weight="bold">
+                  {char.value}
+                </XDSText>
+                {char.detail && (
+                  <XDSText type="supporting" color="secondary">
+                    {char.detail}
+                  </XDSText>
+                )}
+              </XDSStack>
+            </XDSCard>
+          ))}
+        </div>
+      </div>
+
+      {/* Install */}
+      <div style={{marginTop: 40}}>
+        <XDSHeading level={2} style={{marginBottom: 16}}>
+          Install
+        </XDSHeading>
+        <XDSCard padding={0}>
+          <XDSCodeBlock
+            code={`npm install ${theme.npmName}`}
+            title="Terminal"
+            language="bash"
+            hasCopyButton
+          />
+        </XDSCard>
+      </div>
+
+      {/* Setup */}
+      <div style={{marginTop: 40}}>
+        <XDSHeading level={2} style={{marginBottom: 16}}>
+          Setup
+        </XDSHeading>
+        <XDSText
+          type="body"
+          color="secondary"
+          style={{marginBottom: 16}}>
+          Import the theme CSS and wrap your app in XDSTheme. All components
+          will inherit the theme's tokens for colors, typography, spacing, and
+          radius.
+        </XDSText>
+        <XDSCard padding={0}>
+          <XDSCodeBlock
+            code={theme.setupCode}
+            title={`Using ${theme.npmName}`}
+            language="tsx"
+            hasCopyButton
+          />
+        </XDSCard>
+      </div>
+
+      {/* Token overrides — only if the theme has them */}
+      {theme.tokenOverrides.length > 0 && (
+        <div style={{marginTop: 40}}>
+          <XDSHeading level={2} style={{marginBottom: 8}}>
+            Token overrides
+          </XDSHeading>
+          <XDSText
+            type="body"
+            color="secondary"
+            style={{marginBottom: 16}}>
+            These tokens differ from the default theme. All other tokens use
+            built-in defaults.
+          </XDSText>
+          <XDSTable
+            data={
+              theme.tokenOverrides as {[key: string]: unknown}[]
+            }
+            columns={[
+              {key: 'token', header: 'Token'},
+              {key: 'default', header: 'Default'},
+              {key: 'override', header: theme.name},
+            ]}
+          />
+        </div>
+      )}
+
+      {/* What's included */}
+      <div style={{marginTop: 40}}>
+        <XDSHeading level={2} style={{marginBottom: 16}}>
+          What&#39;s included
+        </XDSHeading>
+        <XDSList density="spacious" listStyle="disc">
+          <XDSListItem label="Full color palette with light and dark mode support" />
+          <XDSListItem label="Typography scale with heading, body, label, code, and supporting sizes" />
+          <XDSListItem label="Radius, spacing, shadow, and motion tokens" />
+          <XDSListItem label="Icon registry with 26 semantic icon slots" />
+          <XDSListItem label="Syntax highlighting theme for CodeBlock" />
+          <XDSListItem label="Component-level style overrides (e.g. Button secondary)" />
+        </XDSList>
+      </div>
+
+      {/* Switching themes */}
+      <div style={{marginTop: 40, marginBottom: 64}}>
+        <XDSHeading level={2} style={{marginBottom: 16}}>
+          Switching themes
+        </XDSHeading>
+        <XDSText
+          type="body"
+          color="secondary"
+          style={{marginBottom: 16}}>
+          Swap themes by changing the CSS import and theme object. No
+          component code changes required.
+        </XDSText>
+        <XDSCard padding={0}>
+          <XDSCodeBlock
+            code={`# Available themes:\nnpm install @xds/theme-default   # Clean blue, Heroicons\nnpm install @xds/theme-neutral   # Muted gray, Lucide`}
+            title="Terminal"
+            language="bash"
+            hasCopyButton
+          />
+        </XDSCard>
+      </div>
+    </div>
+  );
+}
+
 function LibraryPackagePage({
   packageKey,
   onSelectComponent,
@@ -878,6 +1201,9 @@ function LibraryPackagePage({
   }
   if (packageKey === 'pkg-cli') {
     return <CliPage />;
+  }
+  if (THEME_DETAILS[packageKey]) {
+    return <ThemePackagePage packageKey={packageKey} />;
   }
   return null;
 }
@@ -1029,7 +1355,6 @@ function NpmPackagesPage() {
             {package: '@xds/cli', description: 'CLI for scaffolding & tooling', version: '0.0.12', status: 'Stable'},
             {package: '@xds/theme-default', description: 'Default theme (blue accent)', version: '0.0.12', status: 'Stable'},
             {package: '@xds/theme-neutral', description: 'Neutral warm gray theme', version: '0.0.12', status: 'Stable'},
-            {package: '@xds/theme-daily', description: 'Soft blues for everyday tools', version: '0.0.12', status: 'Stable'},
           ] as {[key: string]: unknown}[]}
           columns={[
             {key: 'package', header: 'Package'},
@@ -1189,7 +1514,7 @@ npm install @xds/theme-neutral
 # Available themes:
 # @xds/theme-default  — Clean, professional (Heroicons)
 # @xds/theme-neutral  — Muted, minimal (Lucide)
-# @xds/theme-daily    — Warm, productivity-focused (Lucide)`;
+`;
 
 const CLI_CODE = `# Install the CLI
 npm install -g @xds/cli
@@ -1379,6 +1704,10 @@ function LibraryOverview({
   onSelectComponent: (key: string) => void;
   onCraft: () => void;
 }) {
+  const [packageFilter, setPackageFilter] = useState<PackageCategory | 'all'>('all');
+  const filteredPackages = packageFilter === 'all'
+    ? LIBRARY_PACKAGES
+    : LIBRARY_PACKAGES.filter(pkg => pkg.category === packageFilter);
   return (
     <div style={{maxWidth: 1200, margin: '0 auto', padding: '32px 40px'}}>
       {/* ── Section 1: Hero ── */}
@@ -1405,6 +1734,14 @@ function LibraryOverview({
             XDS OSS
             <br />
             Build with AI
+          </XDSText>
+          <XDSText
+            type="body"
+            color="secondary"
+            style={{marginTop: 12, maxWidth: 480}}>
+            An open-source design system
+            <br />
+            for building Nest products and external apps.
           </XDSText>
           <XDSStack direction="horizontal" gap={3} style={{marginTop: 28}}>
             <XDSButton
@@ -1434,13 +1771,7 @@ function LibraryOverview({
           style={{marginTop: 8, marginBottom: 24}}>
           The design tokens and primitives that every component is built on.
         </XDSText>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            columnGap: 16,
-            rowGap: 32,
-          }}>
+        <XDSGrid columns={3} gap={4} style={{rowGap: 32}}>
           {FOUNDATION_ITEMS.map(item => (
             <div
               key={item.key}
@@ -1466,7 +1797,7 @@ function LibraryOverview({
               </XDSText>
             </div>
           ))}
-        </div>
+        </XDSGrid>
       </XDSStack>
 
       {/* ── Section 3: Libraries & Packages ── */}
@@ -1485,13 +1816,18 @@ function LibraryOverview({
           </XDSText>{' '}
           scope.
         </XDSText>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: 16,
-          }}>
-          {LIBRARY_PACKAGES.map(pkg => {
+
+        <XDSTabList
+          value={packageFilter}
+          onChange={v => setPackageFilter(v as PackageCategory | 'all')}
+          size="sm"
+          style={{marginBottom: 24}}>
+          {PACKAGE_FILTERS.map(filter => (
+            <XDSTab key={filter.value} value={filter.value} label={filter.label} />
+          ))}
+        </XDSTabList>
+        <XDSGrid columns={4} gap={4}>
+          {filteredPackages.map(pkg => {
             const ICON_MAP: Record<
               string,
               React.ComponentType<React.SVGProps<SVGSVGElement>>
@@ -1501,11 +1837,16 @@ function LibraryOverview({
               chat: ChatIcon,
               cli: TerminalIcon,
             };
-            const IconComp = ICON_MAP[pkg.iconType] ?? CodeIcon;
+            const IconComp = ICON_MAP[pkg.iconType];
+            const isDesign = pkg.category === 'designing';
             return (
               <div
                 key={pkg.key}
-                onClick={() => onSelectComponent(pkg.key)}
+                onClick={
+                  pkg.href
+                    ? () => window.open(pkg.href, '_blank')
+                    : () => onSelectComponent(pkg.key)
+                }
                 style={{cursor: 'pointer'}}>
                 <div
                   style={{
@@ -1520,17 +1861,19 @@ function LibraryOverview({
                     position: 'relative',
                     marginBottom: 12,
                   }}>
-                  <XDSIcon icon={IconComp} size="lg" style={{width: 48, height: 48, color: '#484233', strokeWidth: 1.8}} />
+                  {IconComp && (
+                    <XDSIcon icon={IconComp} size="lg" style={{width: 48, height: 48, color: '#484233', strokeWidth: 1.8}} />
+                  )}
                   {pkg.status === 'Coming Soon' && (
                     <div style={{position: 'absolute', top: 12, right: 12}}>
-                      <XDSBadge label="Coming Soon" variant="info" />
+                      <XDSBadge label="Coming Soon" variant="blue" />
                     </div>
                   )}
                 </div>
                 <XDSText
                   type="body"
                   weight="bold"
-                  style={{fontFamily: 'monospace', fontSize: 14, display: 'block', marginBottom: 4}}>
+                  style={{fontFamily: pkg.category !== 'designing' ? 'monospace' : undefined, fontSize: 14, display: 'block', marginBottom: 4}}>
                   {pkg.name}
                   {pkg.version && (
                     <XDSText
@@ -1547,61 +1890,7 @@ function LibraryOverview({
               </div>
             );
           })}
-        </div>
-      </XDSStack>
-
-      {/* ── Section 3: Resources ── */}
-      <XDSStack direction="vertical" gap={0} style={{marginBottom: 64}}>
-        <XDSHeading level={2}>Resources</XDSHeading>
-        <XDSText
-          type="body"
-          color="secondary"
-          style={{marginTop: 8, marginBottom: 24}}>
-          Everything you need to design, build, and contribute.
-        </XDSText>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: 16,
-          }}>
-          {RESOURCE_ITEMS.map(resource => {
-            return (
-              <div
-                key={resource.title}
-                onClick={
-                  resource.href
-                    ? () => window.open(resource.href, '_blank')
-                    : resource.key
-                      ? () => onSelectComponent(resource.key!)
-                      : undefined
-                }
-                style={{cursor: 'pointer'}}>
-              <XDSCard padding={4} style={{height: '100%'}}>
-                <XDSStack direction="vertical" gap={4} style={{height: '100%'}}>
-                  <XDSText type="body" weight="bold">
-                    {resource.title}
-                  </XDSText>
-                  <XDSText type="supporting" color="secondary" style={{flex: 1}}>
-                    {resource.description}
-                  </XDSText>
-                  <div>
-                    {resource.image ? (
-                      <img
-                        src={resource.image}
-                        alt={resource.title}
-                        style={{width: 28, height: 28, objectFit: 'contain'}}
-                      />
-                    ) : resource.icon ? (
-                      <XDSIcon icon={resource.icon} size="md" color="secondary" />
-                    ) : null}
-                  </div>
-                </XDSStack>
-              </XDSCard>
-              </div>
-            );
-          })}
-        </div>
+        </XDSGrid>
       </XDSStack>
 
       {/* ── Section 4: Where to use XDS ── */}
@@ -1614,53 +1903,60 @@ function LibraryOverview({
           XDS is available in three contexts. Choose the right one based
           on where you're building.
         </XDSText>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: 16,
-          }}>
+        <XDSGrid columns={3} gap={4}>
           {XDS_OFFERINGS.map(offering => (
-            <XDSCard key={offering.title} padding={0} style={{height: '100%'}}>
-              <div
-                style={{
-                  padding: '20px 24px',
-                  borderBottom: `3px solid ${offering.color}`,
-                }}>
-                <XDSStack direction="horizontal" gap={2} vAlign="center" style={{marginBottom: 4}}>
-                  <div
-                    style={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: '50%',
-                      backgroundColor: offering.color,
-                      flexShrink: 0,
-                    }}
-                  />
-                  <XDSText type="body" weight="bold">
-                    {offering.title}
-                  </XDSText>
-                </XDSStack>
-                <XDSText type="supporting" color="secondary">
-                  {offering.subtitle}
-                </XDSText>
-                {offering.pkg && (
+            <XDSCard key={offering.title} padding={6} style={{height: '100%'}}>
+              <XDSStack direction="vertical" gap={0} style={{height: '100%'}}>
+                {(offering.icons?.length || offering.logos?.length) ? (
+                  <XDSStack direction="horizontal" gap={2} vAlign="center" style={{marginBottom: 24}}>
+                    {offering.icons?.map((IconComp, idx) => (
+                      <IconComp key={idx} width={28} height={28} />
+                    ))}
+                    {offering.logos?.map((src, idx) => (
+                      <img key={idx} src={src} alt="" width={28} height={28} style={{objectFit: 'contain'}} />
+                    ))}
+                  </XDSStack>
+                ) : null}
+                {(offering.pkg || offering.label) && (
                   <XDSText
                     type="supporting"
                     color="secondary"
-                    style={{fontFamily: 'monospace', display: 'block', marginTop: 8}}>
-                    {offering.pkg}
+                    style={{fontFamily: offering.pkg ? 'monospace' : 'inherit', fontStyle: offering.label && !offering.pkg ? 'italic' : undefined, marginBottom: 8}}>
+                    {offering.pkg ?? offering.label}
                   </XDSText>
                 )}
-              </div>
-              <div style={{padding: '16px 24px'}}>
-                <XDSText type="supporting" color="secondary">
-                  {offering.description}
+                <XDSText type="display-2" style={{marginBottom: 4}}>
+                  {offering.title}
                 </XDSText>
-              </div>
+                <XDSText type="supporting" color="secondary" style={{marginBottom: 16}}>
+                  {offering.subtitle}
+                </XDSText>
+                <XDSText type="supporting" color="secondary">
+                  {offering.descriptionLinkText && offering.descriptionLinkHref
+                    ? (() => {
+                        const idx = offering.description.lastIndexOf(offering.descriptionLinkText);
+                        if (idx === -1) return offering.description;
+                        return (
+                          <>
+                            {offering.description.slice(0, idx)}
+                            <XDSLink
+                              label={offering.descriptionLinkText}
+                              href={offering.descriptionLinkHref}
+                              type="supporting"
+                              color="secondary"
+                              hasUnderline>
+                              {offering.descriptionLinkText}
+                            </XDSLink>
+                            {offering.description.slice(idx + offering.descriptionLinkText.length)}
+                          </>
+                        );
+                      })()
+                    : offering.description}
+                </XDSText>
+              </XDSStack>
             </XDSCard>
           ))}
-        </div>
+        </XDSGrid>
       </XDSStack>
 
       {/* ── Section 5: Have a question? ── */}
@@ -1679,18 +1975,20 @@ function LibraryOverview({
             maxWidth: 560,
             marginTop: 16,
             marginBottom: 16,
+            textAlign: 'left',
           }}>
           <XDSChatComposer
             onSubmit={() => {}}
-            placeholder="How do I theme a Button?"
+            placeholder="Ask a question about XDS..."
             density="compact"
           />
         </div>
         <XDSText type="supporting" color="secondary">
           Prefer a human? Drop us a message in{' '}
-          <XDSLink label="#xds-support" color="secondary">
-            #xds-support
-          </XDSLink>
+          <XDSLink label="XDS OSS" href="https://fb.workplace.com/groups/xdsoss" color="secondary" type="supporting">
+            XDS OSS
+          </XDSLink>{' '}
+          on Workplace
         </XDSText>
       </XDSStack>
       <div style={{height: 100}} />
@@ -1725,6 +2023,172 @@ const XDS_WORDMARK = (
     />
   </svg>
 );
+
+// ---------------------------------------------------------------------------
+// ComponentDetailPage — documentation-design template style
+// ---------------------------------------------------------------------------
+
+function ComponentDetailPage({
+  activeNav,
+  onCraft,
+}: {
+  activeNav: string;
+  onCraft: () => void;
+}) {
+  const [exampleTabs, setExampleTabs] = useState<Record<string, string>>({});
+  const docs = useMemo(() => getComponentDocs(activeNav), [activeNav]);
+  const componentName = getComponentName(activeNav);
+  const desc = getComponentDesc(activeNav);
+
+  const bestPractices = [
+    {type: 'do' as const, text: `Use ${componentName} in the appropriate context to provide the functionality described above.`},
+    {type: 'do' as const, text: `Pair ${componentName} with related components to create cohesive, accessible interfaces.`},
+    {type: 'dont' as const, text: `Use ${componentName} when a simpler alternative achieves the same goal with less complexity.`},
+  ];
+
+  const examples = [
+    {
+      title: `Basic ${componentName}`,
+      description: `A simple example of the ${componentName} component with default settings.`,
+      code: `<XDS${componentName} />`,
+    },
+  ];
+
+  return (
+    <div style={{maxWidth: 960, margin: '0 auto', padding: '32px 40px'}}>
+      <XDSStack direction="vertical" gap={8}>
+        {/* Header */}
+        <XDSStack direction="vertical" gap={2}>
+          <XDSText type="display-1">{componentName}</XDSText>
+          <XDSText type="supporting" color="secondary">
+            March 30, 2026 · Updated 5:40 p.m. PST
+          </XDSText>
+        </XDSStack>
+
+        <XDSDivider />
+
+        {/* Preview */}
+        <XDSCard variant="muted" padding={0}>
+          <XDSCenter height={360}>
+            {COMPONENT_PREVIEWS[activeNav] ?? (
+              <XDSText type="supporting" color="secondary">
+                Preview coming soon
+              </XDSText>
+            )}
+          </XDSCenter>
+        </XDSCard>
+
+        {/* Usage + Best Practices */}
+        <XDSStack direction="vertical" gap={4}>
+          <XDSHeading level={2}>Usage</XDSHeading>
+          <XDSText type="large" weight="normal">{desc}</XDSText>
+          <XDSHeading level={3}>Best practices</XDSHeading>
+          <XDSTable
+            data={bestPractices as Record<string, unknown>[]}
+            columns={[
+              {
+                key: 'type',
+                header: 'Guidance',
+                width: pixel(125),
+                renderCell: (item: Record<string, unknown>) => (
+                  <XDSBadge
+                    label={item.type === 'do' ? 'Do' : 'Dont'}
+                    variant={item.type === 'do' ? 'success' : 'error'}
+                  />
+                ),
+              },
+              {
+                key: 'text',
+                header: 'Practices',
+                renderCell: (item: Record<string, unknown>) => (
+                  <XDSText type="body" textWrap="wrap">
+                    {item.text as string}
+                  </XDSText>
+                ),
+              },
+            ]}
+            density="spacious"
+            dividers="rows"
+          />
+        </XDSStack>
+
+        <XDSDivider />
+
+        {/* Examples */}
+        <XDSStack direction="vertical" gap={4}>
+          <XDSHeading level={2}>Examples</XDSHeading>
+          <XDSText type="large" weight="normal">
+            Explore common configurations, variations, and states for this
+            component.
+          </XDSText>
+        </XDSStack>
+        <XDSStack direction="vertical" gap={8}>
+          {examples.map((example, i) => {
+            const tabKey = `${activeNav}-${i}`;
+            const activeTab = exampleTabs[tabKey] ?? 'description';
+            return (
+              <XDSCard key={i} padding={0}>
+                <XDSSection padding={3} variant="transparent">
+                  <XDSStack direction="horizontal" gap={3} vAlign="center">
+                    <div style={{flex: 1}}>
+                      <XDSText type="body" weight="medium">
+                        {example.title}
+                      </XDSText>
+                    </div>
+                    <XDSStack direction="horizontal" gap={1} vAlign="center">
+                      <XDSButton
+                        label="Open in Craft"
+                        variant="ghost"
+                        size="sm"
+                        icon={<ExternalLinkIcon />}
+                        onClick={onCraft}
+                      />
+                      <XDSIconButton
+                        label="Fullscreen"
+                        variant="ghost"
+                        size="sm"
+                        icon={<XDSIcon icon={FullscreenIcon} />}
+                      />
+                    </XDSStack>
+                  </XDSStack>
+                </XDSSection>
+                <XDSCenter height={280}>
+                  {COMPONENT_PREVIEWS[activeNav] ?? (
+                    <XDSText type="supporting" color="secondary">
+                      Preview coming soon
+                    </XDSText>
+                  )}
+                </XDSCenter>
+                <XDSSection variant="wash" padding={3} dividers={['top']}>
+                  <XDSStack direction="vertical" gap={3}>
+                    <XDSTabList
+                      value={activeTab}
+                      onChange={value =>
+                        setExampleTabs(prev => ({
+                          ...prev,
+                          [tabKey]: value,
+                        }))
+                      }
+                      size="sm"
+                      xstyle={localStyles.tabListFlush}>
+                      <XDSTab value="description" label="Description" />
+                      <XDSTab value="code" label="Code" />
+                    </XDSTabList>
+                    {activeTab === 'description' ? (
+                      <XDSText type="body">{example.description}</XDSText>
+                    ) : (
+                      <XDSCodeBlock code={example.code} language="tsx" />
+                    )}
+                  </XDSStack>
+                </XDSSection>
+              </XDSCard>
+            );
+          })}
+        </XDSStack>
+      </XDSStack>
+    </div>
+  );
+}
 
 export function DocsView({
   activeView: _activeView,
@@ -1881,7 +2345,7 @@ export function DocsView({
                   ))}
                 </XDSSideNavItem>
                 <XDSSideNavItem label="Resources" collapsible>
-                  {RESOURCE_ITEMS.filter(r => r.key).map(resource => (
+                  {RESOURCE_NAV_ITEMS.map(resource => (
                     <XDSSideNavItem
                       key={resource.key}
                       label={resource.title}
@@ -1889,8 +2353,8 @@ export function DocsView({
                         selectedComponent !== null && activeNav === resource.key
                       }
                       onClick={() => {
-                        setSelectedComponent(resource.key!);
-                        setActiveNav(resource.key!);
+                        setSelectedComponent(resource.key);
+                        setActiveNav(resource.key);
                       }}
                     />
                   ))}
@@ -1944,169 +2408,13 @@ export function DocsView({
               setActiveNav(key);
             }}
           />
-        ) : RESOURCE_ITEMS.some(r => r.key === selectedComponent) ? (
+        ) : RESOURCE_NAV_ITEMS.some(r => r.key === selectedComponent) ? (
           <ResourcePage resourceKey={selectedComponent} />
         ) : (
-          <div style={{maxWidth: 840, margin: '0 auto', padding: '32px 40px'}}>
-            {/* Header */}
-            <div style={{marginBottom: 8}}>
-              <XDSText type="display-1">{getComponentName(activeNav)}</XDSText>
-            </div>
-            <div style={{marginBottom: 32}}>
-              <XDSText type="supporting" color="secondary">
-                March 30, 2026 · Updated 5:40 p.m. PST
-              </XDSText>
-            </div>
-
-            {/* Live Preview Card */}
-            <div
-              style={{
-                border: '1px solid var(--color-divider, rgba(0,0,0,0.1))',
-                borderRadius: 12,
-                overflow: 'hidden',
-                marginBottom: 48,
-              }}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '8px 12px',
-                  borderBottom:
-                    '1px solid var(--color-divider, rgba(0,0,0,0.08))',
-                  backgroundColor: 'var(--color-background-surface, #ffffff)',
-                }}>
-                <XDSText type="supporting" weight="semibold" color="secondary">
-                  Live preview
-                </XDSText>
-                <div style={{display: 'flex', alignItems: 'center', gap: 4}}>
-                  <XDSButton
-                    label="Open in Craft"
-                    variant="ghost"
-                    size="sm"
-                    icon={<ExternalLinkIcon />}
-                    onClick={() => setActiveView('craft')}
-                  />
-                  <XDSDropdownMenu
-                    button={{
-                      label: 'Variants',
-                      variant: 'ghost',
-                      size: 'sm',
-                    }}
-                    hasChevron={false}
-                    items={[
-                      {label: 'Primary', onClick: () => {}},
-                      {label: 'Secondary', onClick: () => {}},
-                      {label: 'Ghost', onClick: () => {}},
-                    ]}
-                  />
-                  <XDSButton
-                    label="Toggle theme"
-                    variant="ghost"
-                    size="sm"
-                    isIconOnly
-                    icon={<ContrastIcon />}
-                  />
-                  <XDSButton
-                    label="Fullscreen"
-                    variant="ghost"
-                    size="sm"
-                    isIconOnly
-                    icon={<FullscreenIcon />}
-                  />
-                </div>
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  height: 280,
-                  backgroundColor: 'var(--color-background-muted, #f5f5f5)',
-                }}>
-                {COMPONENT_PREVIEWS[activeNav] ?? (
-                  <XDSText type="supporting" color="secondary">
-                    Preview coming soon
-                  </XDSText>
-                )}
-              </div>
-            </div>
-
-            {/* Description */}
-            {(() => {
-              const docs = getComponentDocs(activeNav);
-              return (
-                <div style={{marginBottom: 48}}>
-                  <XDSHeading level={3}>{docs.tagline}</XDSHeading>
-                  <div style={{marginTop: 12}}>
-                    <XDSText type="body">{docs.description}</XDSText>
-                  </div>
-                  <div style={{marginTop: 24}}>
-                    <XDSHeading level={4}>When to use</XDSHeading>
-                    <div style={{marginTop: 8}}>
-                      <XDSList density="compact" listStyle="disc">
-                        {docs.whenToUse.map((item, i) => (
-                          <XDSListItem key={i} label={item} />
-                        ))}
-                      </XDSList>
-                    </div>
-                  </div>
-                  <div style={{marginTop: 24}}>
-                    <XDSHeading level={4}>When NOT to use</XDSHeading>
-                    <div style={{marginTop: 8}}>
-                      <XDSList density="compact" listStyle="disc">
-                        {docs.whenNotToUse.map((item, i) => (
-                          <XDSListItem key={i} label={item} />
-                        ))}
-                      </XDSList>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Anatomy */}
-            {(() => {
-              const docs = getComponentDocs(activeNav);
-              return (
-                <div style={{marginBottom: 48}}>
-                  <XDSHeading level={2}>Anatomy</XDSHeading>
-                  <div
-                    style={{
-                      marginTop: 16,
-                      height: 320,
-                      backgroundColor: 'var(--color-background-muted, #f5f5f5)',
-                      borderRadius: 12,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}>
-                    <XDSText type="supporting" color="secondary">
-                      Anatomy diagram
-                    </XDSText>
-                  </div>
-                  <div style={{marginTop: 16}}>
-                    <XDSText type="body">
-                      The {getComponentName(activeNav)} is composed of the
-                      following elements. Required elements must always be
-                      present, while optional elements can be included as
-                      needed.
-                    </XDSText>
-                  </div>
-                  <div style={{marginTop: 16}}>
-                    <XDSTable
-                      data={docs.anatomy as {[key: string]: unknown}[]}
-                      columns={[
-                        {key: 'element', header: 'Element'},
-                        {key: 'required', header: 'Required'},
-                        {key: 'description', header: 'Description'},
-                      ]}
-                    />
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
+          <ComponentDetailPage
+            activeNav={activeNav}
+            onCraft={() => setActiveView('craft')}
+          />
         )}
       </XDSAppShell>
 
