@@ -1,61 +1,73 @@
 'use client';
 
-import {XDSChatDictationButton} from '@xds/core/Chat';
-import type {UseSpeechRecognitionReturn} from '@xds/core/Chat';
+import {useRef} from 'react';
+import {
+  XDSChatDictationButton,
+  XDSChatComposer,
+  XDSChatComposerInput,
+  useXDSChatDictation,
+} from '@xds/core/Chat';
+import type {XDSChatComposerInputHandle} from '@xds/core/Chat';
 import {XDSHStack, XDSVStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
-const noop = () => {};
-
-const base: UseSpeechRecognitionReturn = {
-  volume: 0,
-  rawBands: [0, 0, 0, 0, 0],
-  bands: [0, 0, 0, 0, 0],
-  isSupported: true,
-  isListening: false,
-  isSpeaking: false,
-  interimTranscript: '',
-  start: noop,
-  stop: noop,
-  abort: noop,
-  toggle: noop,
-};
-
-const idle: UseSpeechRecognitionReturn = {...base};
-
-const listening: UseSpeechRecognitionReturn = {
-  ...base,
-  volume: 0.05,
-  rawBands: [0.08, 0.06, 0.04, 0.02, 0.01],
-  bands: [0.08, 0.06, 0.04, 0.02, 0.01],
-  isListening: true,
-};
-
-const speaking: UseSpeechRecognitionReturn = {
-  ...base,
-  volume: 0.12,
-  rawBands: [0.15, 0.12, 0.08, 0.05, 0.02],
-  bands: [0.15, 0.12, 0.08, 0.05, 0.02],
-  isListening: true,
-  isSpeaking: true,
-  interimTranscript: 'hello world',
-};
-
 export default function ChatDictationButtonShowcase() {
+  const inputRef = useRef<XDSChatComposerInputHandle>(null);
+
+  const dictation = useXDSChatDictation({
+    inputRef,
+    hasSounds: true,
+    onResult: (text) => {
+      console.log('Dictation result:', text);
+    },
+  });
+
   return (
-    <XDSHStack gap={8} vAlign="center">
-      <XDSVStack gap={2} hAlign="center">
-        <XDSChatDictationButton dictation={idle} />
-        <XDSText type="supporting" color="secondary">Idle</XDSText>
-      </XDSVStack>
-      <XDSVStack gap={2} hAlign="center">
-        <XDSChatDictationButton dictation={listening} />
-        <XDSText type="supporting" color="secondary">Listening</XDSText>
-      </XDSVStack>
-      <XDSVStack gap={2} hAlign="center">
-        <XDSChatDictationButton dictation={speaking} />
-        <XDSText type="supporting" color="secondary">Speaking</XDSText>
-      </XDSVStack>
-    </XDSHStack>
+    <XDSVStack gap={4}>
+      <XDSText type="supporting" color="secondary">
+        Click the microphone to start dictating. Speech is transcribed into the
+        input.
+      </XDSText>
+
+      <XDSChatComposer
+        onSubmit={(v) => console.log('Submit:', v)}
+        input={<XDSChatComposerInput ref={inputRef} />}
+        sendActions={<XDSChatDictationButton dictation={dictation} />}
+      />
+
+      {dictation.isListening && (
+        <XDSHStack gap={2} vAlign="center">
+          <XDSText type="supporting" color="secondary">
+            {dictation.isSpeaking ? 'Speaking detected' : 'Listening...'}
+          </XDSText>
+          <div
+            style={{
+              width: 80,
+              height: 6,
+              backgroundColor: 'var(--color-surface-secondary)',
+              borderRadius: 3,
+              overflow: 'hidden',
+            }}>
+            <div
+              style={{
+                height: '100%',
+                backgroundColor: dictation.isSpeaking
+                  ? 'var(--color-accent)'
+                  : 'var(--color-text-secondary)',
+                borderRadius: 3,
+                transition: 'width 0.08s ease-out',
+                width: `${Math.min(dictation.volume * 200, 100)}%`,
+              }}
+            />
+          </div>
+        </XDSHStack>
+      )}
+
+      {!dictation.isSupported && (
+        <XDSText type="supporting" color="error">
+          SpeechRecognition is not supported in this browser.
+        </XDSText>
+      )}
+    </XDSVStack>
   );
 }

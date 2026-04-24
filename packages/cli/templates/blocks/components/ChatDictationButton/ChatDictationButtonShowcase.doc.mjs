@@ -2,9 +2,9 @@
 export const doc = {
   type: 'block',
   name: 'ChatDictationButton',
-  description: 'Dictation button showing idle, listening, and speaking states.',
+  description: 'Interactive dictation button connected to the SpeechRecognition API via useXDSChatDictation. Click the mic to dictate into the composer.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['Chat', 'ChatDictationButton'],
+  componentsUsed: ['Chat', 'ChatDictationButton', 'ChatComposer', 'ChatComposerInput'],
 };

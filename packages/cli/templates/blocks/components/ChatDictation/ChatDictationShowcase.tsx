@@ -1,26 +1,30 @@
 'use client';
 
-import {XDSChatDictationButton, XDSChatComposer} from '@xds/core/Chat';
-
-const idleDictation = {
-  volume: 0,
-  rawBands: [0, 0, 0, 0, 0],
-  bands: [0, 0, 0, 0, 0],
-  isSupported: true,
-  isListening: false,
-  isSpeaking: false,
-  interimTranscript: '',
-  start: () => {},
-  stop: () => {},
-  abort: () => {},
-  toggle: () => {},
-};
+import {useRef} from 'react';
+import {
+  XDSChatDictationButton,
+  XDSChatComposer,
+  XDSChatComposerInput,
+  useXDSChatDictation,
+} from '@xds/core/Chat';
+import type {XDSChatComposerInputHandle} from '@xds/core/Chat';
 
 export default function ChatDictationShowcase() {
+  const inputRef = useRef<XDSChatComposerInputHandle>(null);
+
+  const dictation = useXDSChatDictation({
+    inputRef,
+    hasSounds: true,
+    onResult: (text) => {
+      console.log('Dictation result:', text);
+    },
+  });
+
   return (
     <XDSChatComposer
-      onSubmit={() => {}}
-      sendActions={<XDSChatDictationButton dictation={idleDictation} />}
+      onSubmit={(v) => console.log('Submit:', v)}
+      input={<XDSChatComposerInput ref={inputRef} />}
+      sendActions={<XDSChatDictationButton dictation={dictation} />}
     />
   );
 }

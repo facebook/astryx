@@ -2,9 +2,9 @@
 export const doc = {
   type: 'block',
   name: 'CommandPaletteGroup',
-  description: 'Command palette with items organized into labeled groups.',
+  description: 'Command palette groups in both data-driven (auxiliaryData.group) and composed (XDSCommandPaletteGroup + XDSCommandPaletteItem) forms.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['CommandPalette', 'CommandPaletteGroup'],
+  componentsUsed: ['CommandPalette', 'CommandPaletteGroup', 'CommandPaletteItem', 'CommandPaletteList', 'Layout', 'Text'],
 };
