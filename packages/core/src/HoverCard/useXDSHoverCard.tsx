@@ -280,14 +280,14 @@ export function useXDSHoverCard(
     }
   }, []);
 
-  // Schedule show with delay
+  // Schedule show with delay (suppressed when isOpen is false)
   const scheduleShow = useCallback(() => {
-    if (!isEnabled) return;
+    if (!isEnabled || isOpen === false) return;
     clearTimeouts();
     showTimeoutRef.current = setTimeout(() => {
       layer.show();
     }, delay);
-  }, [isEnabled, clearTimeouts, layer, delay]);
+  }, [isEnabled, isOpen, clearTimeouts, layer, delay]);
 
   // Schedule hide with delay (suppressed when isOpen is true)
   const scheduleHide = useCallback(() => {
