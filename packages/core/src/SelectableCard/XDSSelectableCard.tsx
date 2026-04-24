@@ -37,9 +37,7 @@ import {useClickableContainer} from '../hooks/useClickableContainer';
 const styles = stylex.create({
   interactive: {
     cursor: 'pointer',
-    // Override Card's border for selection: always 2px to prevent layout jitter
-    borderWidth: '2px',
-    transition: 'border-color 0.15s ease',
+    transition: 'box-shadow 0.15s ease',
     outlineOffset: '2px',
     ':focus-visible': {
       outline: `2px solid ${colorVars['--color-accent']}`,
@@ -66,40 +64,40 @@ const styles = stylex.create({
     cursor: 'not-allowed',
     opacity: 0.5,
   },
-  // Selection border colors — accent for default/muted/transparent,
-  // color-matched for non-semantic variants
+  // Selection indicator — uses inset box-shadow so the card's border-width
+  // stays identical to XDSCard. Zero layout jitter between Card and SelectableCard.
   selected: {
-    borderColor: colorVars['--color-accent'],
+    boxShadow: `inset 0 0 0 2px ${colorVars['--color-accent']}`,
   },
   selectedBlue: {
-    borderColor: colorVars['--color-border-blue'],
+    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-blue']}`,
   },
   selectedCyan: {
-    borderColor: colorVars['--color-border-cyan'],
+    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-cyan']}`,
   },
   selectedGray: {
-    borderColor: colorVars['--color-border-gray'],
+    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-gray']}`,
   },
   selectedGreen: {
-    borderColor: colorVars['--color-border-green'],
+    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-green']}`,
   },
   selectedOrange: {
-    borderColor: colorVars['--color-border-orange'],
+    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-orange']}`,
   },
   selectedPink: {
-    borderColor: colorVars['--color-border-pink'],
+    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-pink']}`,
   },
   selectedPurple: {
-    borderColor: colorVars['--color-border-purple'],
+    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-purple']}`,
   },
   selectedRed: {
-    borderColor: colorVars['--color-border-red'],
+    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-red']}`,
   },
   selectedTeal: {
-    borderColor: colorVars['--color-border-teal'],
+    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-teal']}`,
   },
   selectedYellow: {
-    borderColor: colorVars['--color-border-yellow'],
+    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-yellow']}`,
   },
 });
 
