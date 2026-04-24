@@ -64,7 +64,7 @@ export default function ChatDictationButtonShowcase() {
       )}
 
       {!dictation.isSupported && (
-        <XDSText type="supporting" color="error">
+        <XDSText type="supporting" color="active">
           SpeechRecognition is not supported in this browser.
         </XDSText>
       )}
