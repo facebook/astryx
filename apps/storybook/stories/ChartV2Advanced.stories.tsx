@@ -89,7 +89,7 @@ export const Candlestick: StoryObj = {
       data={stockData}
       xKey="day"
       series={[
-        candlestick({open: 'open', high: 'high', low: 'low', close: 'close'}),
+        candlestick({open: 'open', high: 'high', low: 'low', close: 'close', upColor: '#22c55e', downColor: '#ef4444'}),
       ]}
       grid={<XDSChartGrid horizontal />}
       axes={<><XDSChartAxis position="bottom" /><XDSChartAxis position="left" /></>}
@@ -114,7 +114,7 @@ export const FinancialComposite: StoryObj = {
         data={data}
         xKey="day"
         series={[
-          candlestick({open: 'open', high: 'high', low: 'low', close: 'close'}),
+          candlestick({open: 'open', high: 'high', low: 'low', close: 'close', upColor: '#22c55e', downColor: '#ef4444'}),
           line('ma5', {color: '#f59e0b', strokeWidth: 1.5}),
           bar('volume', {color: '#94a3b8', opacity: 0.3}),
         ]}
