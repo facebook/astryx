@@ -3,6 +3,7 @@
 import {XDSTypeahead, XDSTypeaheadItem} from '@xds/core/Typeahead';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
 import {XDSAvatar} from '@xds/core/Avatar';
+import {XDSCenter} from '@xds/core/Center';
 
 interface PersonItem extends XDSSearchableItem {
   auxiliaryData: {role: string};
@@ -24,7 +25,7 @@ const peopleSource: XDSSearchSource = {
 
 export default function TypeaheadItemShowcase() {
   return (
-    <div style={{width: 320}}>
+    <XDSCenter width={320}>
       <XDSTypeahead
         label="Assignee"
         placeholder="Search people..."
@@ -39,6 +40,6 @@ export default function TypeaheadItemShowcase() {
           />
         )}
       />
-    </div>
+    </XDSCenter>
   );
 }
