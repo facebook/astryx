@@ -378,16 +378,9 @@ const styles = stylex.create({
     top: 0,
     zIndex: 1,
   },
-  // Wrapper for auto height mode — stretches to full content height
-  sideNavAutoWrapper: {
-    alignSelf: 'stretch',
-  },
-  // Panel fill for auto mode — panel fills the sticky container vertically
-  panelAutoFill: {
-    flex: 1,
-  },
   // Sticky sideNav for auto height mode — sticks within the wrapper
   sideNavSticky: {
+    alignSelf: 'stretch',
     position: 'sticky',
     top: 'var(--appshell-header-height, 0px)',
     height: 'calc(100dvh - var(--appshell-header-height, 0px))',
@@ -395,6 +388,10 @@ const styles = stylex.create({
     // Ensure children (XDSLayoutPanel → XDSSideNav) fill the sticky container
     display: 'flex',
     flexDirection: 'column',
+  },
+  // Panel fill for auto mode — panel fills the sticky container vertically
+  panelAutoFill: {
+    flex: 1,
   },
 });
 
@@ -659,11 +656,10 @@ export function XDSAppShell({
 
   const headerInner =
     hasTopNav || hasBanner ? (
-      <XDSLayoutHeader
-        padding={0}
-        hasDivider={navHasDividers && hasTopNav}
-        xstyle={navAreaStyle}>
-        {hasBanner && <div {...stylex.props(styles.banner)}>{banner}</div>}
+      <XDSLayoutHeader padding={0} hasDivider={navHasDividers && hasTopNav}>
+        {hasBanner && (
+          <div {...stylex.props(styles.banner, navAreaStyle)}>{banner}</div>
+        )}
         {hasTopNav && (
           <div ref={topNavRef} style={{display: 'contents'}}>
             {topNavContent}
@@ -676,9 +672,9 @@ export function XDSAppShell({
     headerInner != null ? (
       <div
         ref={headerRef}
-        {...stylex.props(
-          isAuto && styles.headerSticky,
-          isAuto && stickyBgStyle,
+        {...mergeProps(
+          xdsClassName('app-shell-header', {variant}),
+          stylex.props(isAuto && styles.headerSticky, isAuto && stickyBgStyle),
         )}>
         {headerInner}
       </div>
@@ -697,7 +693,12 @@ export function XDSAppShell({
       padding={0}
       hasDivider={navHasDividers}
       isScrollable={isFill}
-      xstyle={[navAreaStyle, isAuto && styles.panelAutoFill]}>
+      className={xdsClassName('app-shell-sidenav', {variant})}
+      xstyle={[
+        navAreaStyle,
+        isAuto && stickyBgStyle,
+        isAuto && styles.panelAutoFill,
+      ]}>
       <div ref={sideNavRef} style={{display: 'contents'}}>
         {sideNav}
       </div>
@@ -706,11 +707,7 @@ export function XDSAppShell({
 
   const sideNavContent =
     sideNavPanel != null && isAuto ? (
-      <div {...stylex.props(styles.sideNavAutoWrapper)}>
-        <div {...stylex.props(styles.sideNavSticky, stickyBgStyle)}>
-          {sideNavPanel}
-        </div>
-      </div>
+      <div {...stylex.props(styles.sideNavSticky)}>{sideNavPanel}</div>
     ) : (
       sideNavPanel
     );
@@ -759,14 +756,11 @@ export function XDSAppShell({
   const autoMobileTopBar =
     shouldShowAutoToggle && !hasTopNavContent && hasSideNav ? (
       <div
-        {...stylex.props(
-          isAuto && styles.headerSticky,
-          isAuto && stickyBgStyle,
+        {...mergeProps(
+          xdsClassName('app-shell-header', {variant}),
+          stylex.props(isAuto && styles.headerSticky, isAuto && stickyBgStyle),
         )}>
-        <XDSLayoutHeader
-          padding={0}
-          hasDivider={navHasDividers}
-          xstyle={navAreaStyle}>
+        <XDSLayoutHeader padding={0} hasDivider={navHasDividers}>
           <div
             {...stylex.props(styles.autoMobileTopBar)}
             role="navigation"
@@ -788,7 +782,7 @@ export function XDSAppShell({
         ref={setShellRef}
         data-testid={dataTestId}
         {...mergeProps(
-          xdsClassName('app-shell', {height, variant}),
+          xdsClassName('app-shell', {variant}),
           stylex.props(
             styles.root,
             variant === 'wash'
