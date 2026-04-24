@@ -259,6 +259,8 @@ const XDS_OFFERINGS: {
   description: string;
   label?: string;
   href?: string;
+  descriptionLinkText?: string;
+  descriptionLinkHref?: string;
   icons?: React.ComponentType<React.SVGProps<SVGSVGElement>>[];
   logos?: string[];
 }[] = [
@@ -269,6 +271,8 @@ const XDS_OFFERINGS: {
     icons: [GitHubIcon, VercelIcon],
     description:
       'Install @xds/core from npm-internal (public npm coming soon). Works with Next.js, Vite, or any React framework. Use @xds/theme-default for the default look, or swap in any theme. Follow the quickstart in the @xds/core README to get started.',
+    descriptionLinkText: '@xds/core README',
+    descriptionLinkHref: 'https://github.com/facebookexperimental/xds',
   },
   {
     title: 'Nest',
@@ -287,6 +291,8 @@ const XDS_OFFERINGS: {
     logos: [`${basePath}/docsite/meta-logo.png`],
     description:
       'XDS WWW components are Haste modules in the Meta monorepo \u2014 no package to install. Uses Flow types and pre-built dist/ artifacts. OSS components are not yet available on www but are coming later. For now, use the existing XDS WWW components.',
+    descriptionLinkText: 'XDS WWW components',
+    descriptionLinkHref: 'https://www.internalfb.com/dimsum/xds',
   },
 ];
 
@@ -1926,7 +1932,26 @@ function LibraryOverview({
                   {offering.subtitle}
                 </XDSText>
                 <XDSText type="supporting" color="secondary">
-                  {offering.description}
+                  {offering.descriptionLinkText && offering.descriptionLinkHref
+                    ? (() => {
+                        const idx = offering.description.lastIndexOf(offering.descriptionLinkText);
+                        if (idx === -1) return offering.description;
+                        return (
+                          <>
+                            {offering.description.slice(0, idx)}
+                            <XDSLink
+                              label={offering.descriptionLinkText}
+                              href={offering.descriptionLinkHref}
+                              type="supporting"
+                              color="secondary"
+                              hasUnderline>
+                              {offering.descriptionLinkText}
+                            </XDSLink>
+                            {offering.description.slice(idx + offering.descriptionLinkText.length)}
+                          </>
+                        );
+                      })()
+                    : offering.description}
                 </XDSText>
               </XDSStack>
             </XDSCard>
