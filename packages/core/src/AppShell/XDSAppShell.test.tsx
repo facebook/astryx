@@ -292,6 +292,26 @@ describe('XDSAppShell', () => {
     expect(screen.getByRole('dialog', {hidden: true})).toBeInTheDocument();
   });
 
+  it('renders mobile layout on first render when defaultIsMobile is true', () => {
+    // matchMedia says mobile too — simulates correct SSR hint
+    mockMql = createMockMatchMedia(true);
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
+
+    const {container} = render(
+      <XDSAppShell
+        sideNav={<TestSideNav />}
+        mobileNav={{defaultIsMobile: true}}>
+        <div>Content</div>
+      </XDSAppShell>,
+    );
+
+    // SideNav should NOT be rendered inline — it's in the mobile drawer
+    const inlinePanel = container.querySelector(
+      '.xds-app-shell > .xds-layout .xds-layout-panel',
+    );
+    expect(inlinePanel).toBeNull();
+  });
+
   // ===========================================================================
   // Height modes
   // ===========================================================================
