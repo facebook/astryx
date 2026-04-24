@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'LayoutFooter',
   description:
-    'A fixed footer area with action buttons, pinned to the bottom of a Layout.',
+    'LayoutFooter is a fixed footer slot within a Layout, pinned to the bottom for persistent actions like form buttons or navigation.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,

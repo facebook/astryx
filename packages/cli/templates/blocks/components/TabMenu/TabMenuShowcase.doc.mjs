@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'TabMenu',
   description:
-    'A TabList with a TabMenu dropdown for overflow items that do not fit in the main row.',
+    'TabMenu is an overflow menu within a TabList that groups additional tab options into a dropdown, showing the selected option\'s label as the trigger text.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,

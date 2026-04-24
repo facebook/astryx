@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'ToggleButtonGroup',
   description:
-    'Toggle button groups in single-select and multi-select modes for view switching and filtering.',
+    'ToggleButtonGroup manages a set of ToggleButtons with single-select or multi-select behavior for options like view modes or filters.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,

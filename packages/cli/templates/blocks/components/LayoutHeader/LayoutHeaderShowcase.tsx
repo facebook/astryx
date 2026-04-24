@@ -6,6 +6,7 @@ import {
   XDSLayoutContent,
   XDSHStack,
 } from '@xds/core/Layout';
+import {XDSCard} from '@xds/core/Card';
 import {XDSHeading} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
@@ -31,9 +32,11 @@ export default function LayoutHeaderShowcase() {
       }
       content={
         <XDSLayoutContent>
-          <XDSText type="body" color="secondary">
-            Page content below the header.
-          </XDSText>
+          <XDSCard variant="muted" padding={3}>
+            <XDSText type="supporting" color="secondary">
+              Content area
+            </XDSText>
+          </XDSCard>
         </XDSLayoutContent>
       }
     />

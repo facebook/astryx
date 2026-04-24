@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'CollapsibleGroup',
   description:
-    'An accordion-style group where expanding one section collapses the others.',
+    'CollapsibleGroup coordinates multiple Collapsible components so that expanding one can automatically collapse the others, creating accordion behavior.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,

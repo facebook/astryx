@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'DialogHeader',
   description:
-    'Dialog header with title, subtitle, close button, and optional start/end content.',
+    'DialogHeader provides a structured header for dialogs with slots for title, subtitle, close button, and optional start or end content.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,

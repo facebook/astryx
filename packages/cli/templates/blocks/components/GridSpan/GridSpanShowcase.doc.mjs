@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'GridSpan',
   description:
-    'A grid item spanning multiple columns using GridSpan, alongside regular single-column items.',
+    'GridSpan lets a grid item span multiple columns or rows within an XDSGrid, enabling masonry-style and asymmetric layouts.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,

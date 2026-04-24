@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'StackItem',
   description:
-    'Stack items with size control — one item fills remaining space while others stay fixed.',
+    'StackItem can be used within XDSHStack or XDSVStack for more granular control over individual item sizing and alignment, but is optional — stack children work without it.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,

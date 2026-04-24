@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'LayoutContent',
   description:
-    'The scrollable main content area of a Layout, with automatic padding and scroll containment.',
+    'LayoutContent is the scrollable main content area within a Layout, providing automatic padding and scroll containment between the header and footer.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,

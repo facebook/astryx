@@ -4,7 +4,7 @@ import {XDSTabList, XDSTab, XDSTabMenu} from '@xds/core/TabList';
 
 export default function TabMenuShowcase() {
   return (
-    <XDSTabList value="overview" onChange={() => {}}>
+    <XDSTabList value="settings" onChange={() => {}}>
       <XDSTab value="overview" label="Overview" />
       <XDSTab value="activity" label="Activity" />
       <XDSTabMenu

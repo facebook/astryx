@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'AvatarStatusDot',
   description:
-    'Avatar status dots in positive, neutral, and negative variants showing online presence.',
+    'AvatarStatusDot renders a presence indicator on an Avatar, with variants for positive, neutral, and negative states. The dot size automatically coordinates with the Avatar size.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,

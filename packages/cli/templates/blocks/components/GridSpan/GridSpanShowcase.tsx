@@ -2,17 +2,41 @@
 
 import {XDSGrid, XDSGridSpan} from '@xds/core/Grid';
 import {XDSCard} from '@xds/core/Card';
+import {XDSText} from '@xds/core/Text';
 
 export default function GridSpanShowcase() {
   return (
     <XDSGrid columns={3} gap={3}>
       <XDSGridSpan columns={2}>
-        <XDSCard padding={3}>Spans 2 columns</XDSCard>
+        <XDSCard variant="muted" padding={4} height={160}>
+          <XDSText type="body" color="secondary">
+            Spans 2 columns
+          </XDSText>
+        </XDSCard>
       </XDSGridSpan>
-      <XDSCard padding={3}>1 col</XDSCard>
-      <XDSCard padding={3}>1 col</XDSCard>
+      <XDSCard variant="muted" padding={4} height={100}>
+        <XDSText type="body" color="secondary">
+          1 col
+        </XDSText>
+      </XDSCard>
+      <XDSCard variant="muted" padding={4} height={120}>
+        <XDSText type="body" color="secondary">
+          1 col
+        </XDSText>
+      </XDSCard>
+      <XDSGridSpan columns={2}>
+        <XDSCard variant="muted" padding={4} height={80}>
+          <XDSText type="body" color="secondary">
+            Spans 2 columns
+          </XDSText>
+        </XDSCard>
+      </XDSGridSpan>
       <XDSGridSpan columns="full">
-        <XDSCard padding={3}>Full width row</XDSCard>
+        <XDSCard variant="muted" padding={4} height={60}>
+          <XDSText type="body" color="secondary">
+            Full-width row
+          </XDSText>
+        </XDSCard>
       </XDSGridSpan>
     </XDSGrid>
   );

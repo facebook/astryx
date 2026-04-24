@@ -4,9 +4,9 @@ import {
   XDSLayout,
   XDSLayoutPanel,
   XDSLayoutContent,
-  XDSVStack,
 } from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
+import {XDSCard} from '@xds/core/Card';
+import {XDSText} from '@xds/core/Text';
 import {XDSList, XDSListItem} from '@xds/core/List';
 
 export default function LayoutPanelShowcase() {
@@ -25,13 +25,11 @@ export default function LayoutPanelShowcase() {
       }
       content={
         <XDSLayoutContent role="main">
-          <XDSVStack gap={2}>
-            <XDSHeading level={5}>Overview</XDSHeading>
-            <XDSText type="body" color="secondary">
-              The side panel provides persistent navigation alongside the
-              content area.
+          <XDSCard variant="muted" padding={3}>
+            <XDSText type="supporting" color="secondary">
+              Content area
             </XDSText>
-          </XDSVStack>
+          </XDSCard>
         </XDSLayoutContent>
       }
     />

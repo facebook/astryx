@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'Tab',
   description:
-    'Individual tabs with icons and end content, showing different visual states.',
+    'Tab is an individual tab item within a TabList, supporting labels, icons, selected icons, and end content slots.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,

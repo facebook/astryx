@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'LayoutPanel',
   description:
-    'A sidebar panel used for navigation or detail views alongside the main content area.',
+    'LayoutPanel is a sidebar slot within a Layout, used for navigation, detail views, or secondary content alongside the main content area.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,

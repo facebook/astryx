@@ -3,7 +3,7 @@ export const doc = {
   type: 'block',
   name: 'BreadcrumbItem',
   description:
-    'Breadcrumb items with links, a current page marker, and an optional start icon.',
+    'BreadcrumbItem represents a single step in a breadcrumb trail, supporting links, icons, current-page markers, and custom link components.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,
