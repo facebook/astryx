@@ -155,6 +155,18 @@ export interface XDSMobileNavConfig {
    * @default 'md'
    */
   breakpoint?: XDSAppShellBreakpoint;
+
+  /**
+   * SSR hint: whether the initial render should assume mobile layout.
+   * Seeds the breakpoint state so the server-rendered HTML matches
+   * the client on mobile devices, avoiding a layout flash.
+   *
+   * Derive from the User-Agent header or a device-detection cookie
+   * in a server component, then pass down.
+   *
+   * @default false
+   */
+  defaultIsMobile?: boolean;
 }
 
 export interface XDSAppShellProps {
@@ -478,6 +490,7 @@ export function XDSAppShell({
   const mobileNavConfigContent: ReactNode | null =
     mobileNavConfig?.content ?? null;
   const mobileNavHasToggle = mobileNavConfig?.hasToggle !== false;
+  const mobileNavDefaultIsMobile = mobileNavConfig?.defaultIsMobile ?? false;
   const mobileNavIsControlled = mobileNavConfig?.isOpen !== undefined;
 
   // =========================================================================
@@ -495,7 +508,9 @@ export function XDSAppShell({
   // =========================================================================
   // Mobile nav open state (controlled + uncontrolled)
   // =========================================================================
-  const [isBelowBreakpoint, setIsBelowBreakpoint] = useState(false);
+  const [isBelowBreakpoint, setIsBelowBreakpoint] = useState(
+    mobileNavDefaultIsMobile,
+  );
   const [uncontrolledMobileOpen, setUncontrolledMobileOpen] = useState(false);
   const isMobileNavOpen = mobileNavIsControlled
     ? mobileNavConfig!.isOpen!
