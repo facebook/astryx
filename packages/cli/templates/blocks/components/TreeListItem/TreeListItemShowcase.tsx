@@ -13,7 +13,7 @@ export default function TreeListItemShowcase() {
           id: 'inbox',
           label: 'Inbox',
           description: '12 unread messages',
-          endContent: <XDSBadge variant="bold">12</XDSBadge>,
+          endContent: <XDSBadge label="12" variant="info" />,
           onClick: noop,
         },
         {
