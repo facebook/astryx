@@ -201,7 +201,7 @@ describe('XDSBreadcrumbItem', () => {
     expect(screen.getByText('Third').tagName).toBe('A');
   });
 
-  it('handles onClick', async () => {
+  it('handles onClick on link items', async () => {
     const handleClick = vi.fn();
     render(
       <XDSBreadcrumbs>
@@ -213,6 +213,21 @@ describe('XDSBreadcrumbItem', () => {
     );
     const link = screen.getByRole('link', {name: 'Home'});
     await userEvent.click(link);
+    expect(handleClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders onClick-only items as buttons with link styling', async () => {
+    const handleClick = vi.fn();
+    render(
+      <XDSBreadcrumbs>
+        <XDSBreadcrumbItem onClick={handleClick}>Home</XDSBreadcrumbItem>
+        <XDSBreadcrumbItem isCurrent>Current</XDSBreadcrumbItem>
+      </XDSBreadcrumbs>,
+    );
+    const button = screen.getByRole('button', {name: 'Home'});
+    expect(button.tagName).toBe('BUTTON');
+    expect(button).toHaveAttribute('type', 'button');
+    await userEvent.click(button);
     expect(handleClick).toHaveBeenCalledTimes(1);
   });
 
