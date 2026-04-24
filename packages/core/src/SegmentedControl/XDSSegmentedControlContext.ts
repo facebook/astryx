@@ -13,11 +13,13 @@
 import {createContext, useContext} from 'react';
 
 export type XDSSegmentedControlSize = 'sm' | 'md' | 'lg';
+export type XDSSegmentedControlLayout = 'hug' | 'fill';
 
 export interface XDSSegmentedControlContextValue {
   value: string;
   onChange: (value: string) => void;
   size: XDSSegmentedControlSize;
+  layout: XDSSegmentedControlLayout;
   isDisabled: boolean;
 }
 

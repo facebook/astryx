@@ -50,6 +50,12 @@ export const docs = {
           default: "'md'",
         },
         {
+          name: 'layout',
+          type: "'hug' | 'fill'",
+          description: 'Layout mode. hug (default) sizes segments to content; fill stretches them equally to fill the container.',
+          default: "'hug'",
+        },
+        {
           name: 'isDisabled',
           type: 'boolean',
           description: 'Whether the entire control is disabled.',
@@ -131,6 +137,7 @@ export const docsZh = {
         onChange: '选中分段时触发的回调。',
         label: '单选组的无障碍标签（用作 aria-label，不会渲染为可见内容）。',
         size: '控件的尺寸变体。',
+        layout: '布局模式。hug（默认）根据内容调整分段宽度；fill 将分段等宽拉伸以填满容器。',
         isDisabled: '是否禁用整个控件。',
         children: 'XDSSegmentedControlItem 子组件。',
         xstyle: '容器的额外 StyleX 样式。',
@@ -178,6 +185,7 @@ export const docsDense = {
     onChange: 'callback on segment selection',
     label: 'aria-label for radio group (never rendered)',
     size: 'size variant',
+    layout: 'hug (default) sizes to content; fill stretches equally',
     isDisabled: 'disables entire control',
     children: 'XDSSegmentedControlItem children',
     xstyle: 'additional StyleX styles for container',
@@ -185,12 +193,13 @@ export const docsDense = {
   components: [
     {
       name: 'XDSSegmentedControl',
-      description: 'container; provides context (value/onChange/size/isDisabled) to children',
+      description: 'container; provides context (value/onChange/size/layout/isDisabled) to children',
       propDescriptions: {
         value: 'selected value (controlled)',
         onChange: 'selection callback',
         label: 'aria-label for radio group (not rendered)',
         size: 'size variant',
+        layout: 'hug (default) sizes to content; fill stretches equally',
         isDisabled: 'disables entire control',
         children: 'XDSSegmentedControlItem children',
         xstyle: 'extra StyleX styles',
