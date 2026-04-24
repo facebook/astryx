@@ -21,10 +21,10 @@ const employees: Employee[] = [
 ];
 
 const columns: XDSTableColumn<Employee>[] = [
-  {key: 'name', header: 'Name', width: proportional(2), sortKey: 'name'},
-  {key: 'department', header: 'Department', sortKey: 'department'},
-  {key: 'tenure', header: 'Years', width: pixel(80), sortKey: 'tenure'},
-  {key: 'salary', header: 'Salary', width: pixel(100), sortKey: 'salary'},
+  {key: 'name', header: 'Name', width: proportional(2), sortable: true},
+  {key: 'department', header: 'Department', sortable: true},
+  {key: 'tenure', header: 'Years', width: pixel(80), sortable: true},
+  {key: 'salary', header: 'Salary', width: pixel(100), sortable: true},
 ];
 
 export default function TableHeaderCellShowcase() {
