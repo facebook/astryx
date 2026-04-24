@@ -12,7 +12,6 @@
  * - /apps/storybook/stories/Grid.stories.tsx
  */
 
-
 import {type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
@@ -36,7 +35,9 @@ export type GridAlignment = 'start' | 'center' | 'end' | 'stretch';
  *   - `minWidth` — minimum width (px) for each column track
  *   - `repeat` — `'fill'` (default) preserves empty tracks for consistent widths;
  *     `'fit'` collapses empty tracks so items stretch to fill
- *   - `max` — caps the maximum number of columns via max-width
+ *   - `max` — caps the maximum number of columns by limiting track max size.
+ *     The grid stretches to 100% of its parent; `max` only limits how many
+ *     columns appear.
  */
 export type XDSGridColumns =
   | number
@@ -296,38 +297,48 @@ const columnGapStyles = stylex.create({
   },
 });
 
-// Spacing token values in pixels for max-width calculation
-const spacingPixels: Record<SpacingStep, number> = {
-  0: 0,
-  0.5: 2,
-  1: 4,
-  1.5: 6,
-  2: 8,
-  3: 12,
-  4: 16,
-  5: 20,
-  6: 24,
-  8: 32,
-  10: 40,
+/**
+ * Spacing token CSS var names for gap calculation in track-max expressions.
+ */
+const spacingVarNames: Record<SpacingStep, string> = {
+  0: '--spacing-0',
+  0.5: '--spacing-0-5',
+  1: '--spacing-1',
+  1.5: '--spacing-1-5',
+  2: '--spacing-2',
+  3: '--spacing-3',
+  4: '--spacing-4',
+  5: '--spacing-5',
+  6: '--spacing-6',
+  8: '--spacing-8',
+  10: '--spacing-10',
 };
 
 /**
- * Calculate max-width when capping columns.
- * maxWidth = maxCols * minWidth + (maxCols - 1) * gapPx
+ * Build a grid-template-columns value that caps columns at `max` by
+ * limiting each track's max size to `(100% - (max-1) * gap) / max`.
+ * The grid stays 100% width; the track-max prevents more than `max` columns.
  */
-function calculateMaxWidth(
-  maxCols: number,
+function buildCappedTemplate(
   minWidth: number,
+  maxCols: number,
+  repeatMode: 'auto-fill' | 'auto-fit',
   gap: SpacingStep | undefined,
   columnGap: SpacingStep | undefined,
-): number {
-  const gapPx =
+): string {
+  const gapVar =
     columnGap != null
-      ? spacingPixels[columnGap]
+      ? spacingVarNames[columnGap]
       : gap != null
-        ? spacingPixels[gap]
-        : 0;
-  return maxCols * minWidth + (maxCols - 1) * gapPx;
+        ? spacingVarNames[gap]
+        : null;
+
+  // trackMax = (100% - (maxCols - 1) * gap) / maxCols
+  const trackMax = gapVar
+    ? `calc((100% - ${maxCols - 1} * var(${gapVar})) / ${maxCols})`
+    : `calc(100% / ${maxCols})`;
+
+  return `repeat(${repeatMode}, minmax(${minWidth}px, ${trackMax}))`;
 }
 
 /**
@@ -368,33 +379,36 @@ export function XDSGrid({
 }: XDSGridProps) {
   // Determine grid-template-columns value
   let gridTemplateColumns: string;
-  let calculatedMaxWidth: number | undefined;
 
   if (typeof columns === 'object' && columns != null) {
-    // New responsive API: columns={{minWidth, max?, repeat?}}
+    // Responsive API: columns={{minWidth, max?, repeat?}}
     const repeatMode = columns.repeat === 'fit' ? 'auto-fit' : 'auto-fill';
-    gridTemplateColumns = `repeat(${repeatMode}, minmax(${columns.minWidth}px, 1fr))`;
 
     if (columns.max != null && columns.max > 0) {
-      calculatedMaxWidth = calculateMaxWidth(
-        columns.max,
+      // Cap column count by limiting each track's max size
+      gridTemplateColumns = buildCappedTemplate(
         columns.minWidth,
+        columns.max,
+        repeatMode,
         gap,
         columnGap,
       );
+    } else {
+      gridTemplateColumns = `repeat(${repeatMode}, minmax(${columns.minWidth}px, 1fr))`;
     }
   } else if (minChildWidth > 0) {
     // Deprecated path: minChildWidth uses auto-fit for backward compat
-    gridTemplateColumns = `repeat(auto-fit, minmax(${minChildWidth}px, 1fr))`;
-
     const numColumns = typeof columns === 'number' ? columns : 0;
     if (numColumns > 0) {
-      calculatedMaxWidth = calculateMaxWidth(
-        numColumns,
+      gridTemplateColumns = buildCappedTemplate(
         minChildWidth,
+        numColumns,
+        'auto-fit',
         gap,
         columnGap,
       );
+    } else {
+      gridTemplateColumns = `repeat(auto-fit, minmax(${minChildWidth}px, 1fr))`;
     }
   } else if (typeof columns === 'number' && columns > 0) {
     // Fixed columns mode
@@ -408,7 +422,6 @@ export function XDSGrid({
   const inlineStyle: React.CSSProperties = {
     gridTemplateColumns,
     ...(rowHeight != null && {gridAutoRows: `${rowHeight}px`}),
-    ...(calculatedMaxWidth != null && {maxWidth: `${calculatedMaxWidth}px`}),
     ...(width != null && {
       width: typeof width === 'number' ? `${width}px` : width,
     }),
