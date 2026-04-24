@@ -351,7 +351,8 @@ export function XDSTextArea({
           className,
           style,
         )}>
-        {startIcon && renderIconSlot(startIcon, {size: 'sm', color: 'primary'})}
+        {startIcon &&
+          renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
         <textarea
           {...rest}
           ref={ref}

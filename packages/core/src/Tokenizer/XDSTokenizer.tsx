@@ -669,7 +669,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
               ),
             )}>
             {startIcon &&
-              renderIconSlot(startIcon, {size: 'sm', color: 'primary'})}
+              renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
             {isTruncated ? (
               <XDSOverflowList
                 gap={1}
@@ -768,7 +768,10 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
                 {isTruncated && (
                   <>
                     {startIcon &&
-                      renderIconSlot(startIcon, {size: 'sm', color: 'primary'})}
+                      renderIconSlot(startIcon, {
+                        size: 'sm',
+                        color: 'secondary',
+                      })}
                     <XDSOverflowList
                       gap={1}
                       behavior="observeParent"
