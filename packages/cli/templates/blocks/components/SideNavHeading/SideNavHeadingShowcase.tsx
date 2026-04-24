@@ -1,6 +1,6 @@
 'use client';
 
-import {XDSSideNav, XDSSideNavHeading} from '@xds/core/SideNav';
+import {XDSSideNav, XDSSideNavHeading, XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
 import {XDSHStack} from '@xds/core/Layout';
 
 function AppIcon() {
@@ -21,8 +21,11 @@ export default function SideNavHeadingShowcase() {
             icon={<AppIcon />}
             headingHref="/"
           />
-        }
-      />
+        }>
+        <XDSSideNavSection title="Menu">
+          <XDSSideNavItem label="Overview" href="#" isSelected />
+        </XDSSideNavSection>
+      </XDSSideNav>
       <XDSSideNav
         header={
           <XDSSideNavHeading
@@ -32,8 +35,11 @@ export default function SideNavHeadingShowcase() {
             subheading="Production"
             headingHref="/"
           />
-        }
-      />
+        }>
+        <XDSSideNavSection title="Menu">
+          <XDSSideNavItem label="Overview" href="#" isSelected />
+        </XDSSideNavSection>
+      </XDSSideNav>
     </XDSHStack>
   );
 }
