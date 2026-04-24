@@ -12,7 +12,6 @@
  * - /apps/storybook/stories/AspectRatio.stories.tsx
  */
 
-
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -64,7 +63,7 @@ const styles = stylex.create({
   child: {
     position: 'absolute',
     top: 0,
-    left: 0,
+    insetInlineStart: 0,
     width: '100%',
     height: '100%',
   },
