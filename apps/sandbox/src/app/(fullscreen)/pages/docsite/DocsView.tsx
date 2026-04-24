@@ -1762,13 +1762,7 @@ function LibraryOverview({
           style={{marginTop: 8, marginBottom: 24}}>
           The design tokens and primitives that every component is built on.
         </XDSText>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            columnGap: 16,
-            rowGap: 32,
-          }}>
+        <XDSGrid columns={3} gap={4} style={{rowGap: 32}}>
           {FOUNDATION_ITEMS.map(item => (
             <div
               key={item.key}
@@ -1794,7 +1788,7 @@ function LibraryOverview({
               </XDSText>
             </div>
           ))}
-        </div>
+        </XDSGrid>
       </XDSStack>
 
       {/* ── Section 3: Libraries & Packages ── */}
@@ -1940,12 +1934,7 @@ function LibraryOverview({
           style={{marginTop: 8, marginBottom: 24}}>
           Everything you need to design, build, and contribute.
         </XDSText>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: 16,
-          }}>
+        <XDSGrid columns={4} gap={4}>
           {RESOURCE_ITEMS.map(resource => {
             return (
               <div
@@ -1982,7 +1971,7 @@ function LibraryOverview({
               </div>
             );
           })}
-        </div>
+        </XDSGrid>
       </XDSStack>
 
       {/* ── Section 4: Where to use XDS ── */}
