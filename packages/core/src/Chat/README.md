@@ -29,7 +29,7 @@ XDSChatMessageList             — scrollable container, auto-scroll
     (any other content)        — asset lists, tool calls, images
 
 XDSChatComposer                — layout shell with named slots
-  XDSChatComposerDrawer   — collapsible drawer (attachments, context, etc.)
+  XDSChatComposerDrawer    — collapsible drawer (attachments, context, etc.)
   XDSChatComposerInput         — contentEditable with trigger menus
     useTriggerMenu             — @ mentions, / commands via XDSSearchSource
 ```
@@ -80,7 +80,8 @@ defineTheme({
 
 ### Theming Targets
 
-| Class                     | Variants | States |
-| ------------------------- | -------- | ------ |
-| `xds-chat-composer`       | density  | —      |
-| `xds-chat-composer-input` | —        | —      |
+| Class                      | Variants  | States |
+| -------------------------- | --------- | ------ |
+| `xds-chat-composer`        | density   | —      |
+| `xds-chat-composer-input`  | —         | —      |
+| `xds-chat-composer-drawer` | collapsed | —      |

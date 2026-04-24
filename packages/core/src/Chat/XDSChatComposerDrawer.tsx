@@ -40,7 +40,7 @@ export interface XDSChatComposerDrawerProps extends XDSBaseProps<HTMLDivElement>
   count?: number;
   /**
    * Label shown next to the count in collapsed state.
-   * @default 'Attachments'
+   * @default 'Items'
    */
   label?: string;
   /**
@@ -204,7 +204,7 @@ export function XDSChatComposerDrawer({
   ref,
   children,
   count,
-  label = 'Attachments',
+  label = 'Items',
   isCollapsed: controlledCollapsed,
   defaultIsCollapsed = false,
   onCollapsedChange,
