@@ -40,6 +40,7 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSToken} from '@xds/core/Token';
 import {XDSCard} from '@xds/core/Card';
 import {XDSGrid} from '@xds/core/Grid';
+import {XDSIcon} from '@xds/core/Icon';
 
 import {XDSDropdownMenu, XDSDropdownMenuItem} from '@xds/core/DropdownMenu';
 import {
@@ -284,7 +285,7 @@ function AIChatSideNav() {
       header={
         <XDSSideNavHeading
           icon={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+            <XDSNavIcon icon={<XDSIcon icon={CubeIcon} size="sm" />} />
           }
           heading="My App"
           headingHref="/"
@@ -493,9 +494,7 @@ export default function AIChatTemplate() {
                           label: 'Reference',
                           variant: 'ghost',
                           size: 'sm',
-                          icon: (
-                            <AtSymbolIcon style={{width: 16, height: 16}} />
-                          ),
+                          icon: <XDSIcon icon={AtSymbolIcon} size="sm" />,
                           isIconOnly: true,
                         }}
                         hasChevron={false}
@@ -529,7 +528,7 @@ export default function AIChatTemplate() {
                         label="Attach"
                         variant="ghost"
                         size="sm"
-                        icon={<PaperClipIcon style={{width: 16, height: 16}} />}
+                        icon={<XDSIcon icon={PaperClipIcon} size="sm" />}
                         isIconOnly
                         onClick={() => fileInputRef.current?.click()}
                       />
@@ -542,9 +541,7 @@ export default function AIChatTemplate() {
                           label: activeMode.label,
                           variant: 'ghost',
                           size: 'md',
-                          icon: (
-                            <activeMode.icon style={{width: 16, height: 16}} />
-                          ),
+                          icon: <XDSIcon icon={activeMode.icon} size="sm" />,
                           children: activeMode.label,
                         }}
                         menuWidth={200}
@@ -590,9 +587,7 @@ export default function AIChatTemplate() {
                           label: 'Settings',
                           variant: 'ghost',
                           size: 'md',
-                          icon: (
-                            <Cog6ToothIcon style={{width: 16, height: 16}} />
-                          ),
+                          icon: <XDSIcon icon={Cog6ToothIcon} size="sm" />,
                           children: 'Settings',
                         }}
                         menuWidth={200}
@@ -682,13 +677,7 @@ export default function AIChatTemplate() {
         {/* Greeting */}
         <XDSVStack gap={1} style={{paddingInline: 'var(--spacing-4)'}}>
           <XDSHStack gap={2} vAlign="center">
-            <SparklesIcon
-              style={{
-                width: 20,
-                height: 20,
-                color: 'var(--color-primary, #5B5BD6)',
-              }}
-            />
+            <XDSIcon icon={SparklesIcon} size="md" color="accent" />
             <XDSText type="large" as="h2">
               Hi, Andrew
             </XDSText>
@@ -746,7 +735,7 @@ export default function AIChatTemplate() {
                   label: 'Reference',
                   variant: 'ghost',
                   size: 'sm',
-                  icon: <AtSymbolIcon style={{width: 16, height: 16}} />,
+                  icon: <XDSIcon icon={AtSymbolIcon} size="sm" />,
                   isIconOnly: true,
                 }}
                 hasChevron={false}
@@ -780,7 +769,7 @@ export default function AIChatTemplate() {
                 label="Attach"
                 variant="ghost"
                 size="sm"
-                icon={<PaperClipIcon style={{width: 16, height: 16}} />}
+                icon={<XDSIcon icon={PaperClipIcon} size="sm" />}
                 isIconOnly
                 onClick={() => fileInputRef.current?.click()}
               />
@@ -793,7 +782,7 @@ export default function AIChatTemplate() {
                   label: activeMode.label,
                   variant: 'ghost',
                   size: 'md',
-                  icon: <activeMode.icon style={{width: 16, height: 16}} />,
+                  icon: <XDSIcon icon={activeMode.icon} size="sm" />,
                   children: activeMode.label,
                 }}
                 menuWidth={200}
@@ -841,7 +830,7 @@ export default function AIChatTemplate() {
                   label: 'Settings',
                   variant: 'ghost',
                   size: 'md',
-                  icon: <Cog6ToothIcon style={{width: 16, height: 16}} />,
+                  icon: <XDSIcon icon={Cog6ToothIcon} size="sm" />,
                   children: 'Settings',
                 }}
                 menuWidth={200}
@@ -868,7 +857,7 @@ export default function AIChatTemplate() {
                 key={cat.key}
                 value={cat.key}
                 label={cat.label}
-                icon={<cat.icon style={{width: 16, height: 16}} />}
+                icon={<XDSIcon icon={cat.icon} size="sm" />}
               />
             ))}
           </XDSToggleButtonGroup>
