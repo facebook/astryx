@@ -1,9 +1,6 @@
 'use client';
 
-import {
-  XDSChatComposer,
-  XDSChatComposerAttachments,
-} from '@xds/core/Chat';
+import {XDSChatComposer, XDSChatComposerDrawer} from '@xds/core/Chat';
 import {XDSToken} from '@xds/core/Token';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
 import {XDSStack} from '@xds/core/Layout';
@@ -18,11 +15,11 @@ export default function ChatComposerAttachments() {
         </XDSText>
         <XDSChatComposer
           onSubmit={() => {}}
-          attachments={
-            <XDSChatComposerAttachments>
+          drawer={
+            <XDSChatComposerDrawer>
               <XDSToken label="report.pdf" onRemove={() => {}} />
               <XDSToken label="data.csv" onRemove={() => {}} />
-            </XDSChatComposerAttachments>
+            </XDSChatComposerDrawer>
           }
           headerContext={
             <XDSProgressBar label="Context window" value={3} isLabelHidden />
@@ -35,15 +32,15 @@ export default function ChatComposerAttachments() {
         </XDSText>
         <XDSChatComposer
           onSubmit={() => {}}
-          attachments={
-            <XDSChatComposerAttachments count={6}>
+          drawer={
+            <XDSChatComposerDrawer count={6}>
               <XDSToken label="new_feature_prd.docx" onRemove={() => {}} />
               <XDSToken label="2026_roadmap.docx" onRemove={() => {}} />
               <XDSToken label="user_flow.pdf" onRemove={() => {}} />
               <XDSToken label="launch_plan.docx" onRemove={() => {}} />
               <XDSToken label="user_feedback.csv" onRemove={() => {}} />
               <XDSToken label="kpis.csv" onRemove={() => {}} />
-            </XDSChatComposerAttachments>
+            </XDSChatComposerDrawer>
           }
         />
       </XDSStack>
