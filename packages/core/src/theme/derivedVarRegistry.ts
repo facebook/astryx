@@ -43,6 +43,14 @@ export const derivedVarRegistry: Record<string, DerivedVarEntry[]> = {
     {property: 'borderRadius', vars: ['--_card-radius']},
     {property: 'padding', expand: 'container'},
   ],
+  'clickable-card': [
+    {property: 'borderRadius', vars: ['--_card-radius']},
+    {property: 'padding', expand: 'container'},
+  ],
+  'selectable-card': [
+    {property: 'borderRadius', vars: ['--_card-radius']},
+    {property: 'padding', expand: 'container'},
+  ],
   chat: [
     {property: 'borderRadius', vars: ['--_chat-composer-radius']},
     {property: 'padding', vars: ['--_chat-composer-padding']},

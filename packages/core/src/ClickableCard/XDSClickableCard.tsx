@@ -21,7 +21,7 @@
 
 import {type ReactNode, type MouseEvent, type MutableRefObject, useRef, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, radiusVars} from '../theme/tokens.stylex';
+import {borderVars, colorVars, radiusVars} from '../theme/tokens.stylex';
 import {container} from '../Layout/container.stylex';
 import type {SpacingToken} from '../Layout/container.stylex';
 import {
@@ -46,7 +46,7 @@ const styles = stylex.create({
     '--_card-radius': radiusVars['--radius-container'],
     borderRadius: 'var(--_card-radius)',
     overflow: 'clip',
-    borderWidth: '1px',
+    borderWidth: borderVars['--border-width'],
     borderStyle: 'solid',
     borderColor: colorVars['--color-border-emphasized'],
     backgroundColor: colorVars['--color-background-card'],
@@ -320,7 +320,7 @@ export function XDSClickableCard({
           : undefined
       }
       {...mergeProps(
-        xdsClassName('clickable-card', {variant}),
+        'xds-card ' + xdsClassName('clickable-card', {variant}),
         stylex.props(
           styles.card,
           variantStyles[variant] ?? variantStyles.default,

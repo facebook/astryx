@@ -20,7 +20,7 @@
 
 import {type ReactNode, type MouseEvent, type MutableRefObject, useRef, useCallback, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, radiusVars} from '../theme/tokens.stylex';
+import {borderVars, colorVars, radiusVars} from '../theme/tokens.stylex';
 import {container} from '../Layout/container.stylex';
 import type {SpacingToken} from '../Layout/container.stylex';
 import {
@@ -375,7 +375,7 @@ export function XDSSelectableCard({
           : undefined
       }
       {...mergeProps(
-        xdsClassName('selectable-card', {
+        'xds-card ' + xdsClassName('selectable-card', {
           variant,
           selected: isSelected ? 'true' : 'false',
         }),

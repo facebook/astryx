@@ -29,5 +29,13 @@ export const docs = {
   theming: {
     container: true,
     targets: [{className: 'xds-selectable-card', visualProps: ['selected']}],
+    vars: [
+      {name: '--_card-radius', description: 'Border radius of the card', default: 'var(--radius-container)', private: true},
+    ],
+    derived: [
+      {property: 'borderRadius', vars: ['--_card-radius']},
+      {property: 'borderColor', vars: ['--color-accent']},
+      {property: 'padding', expand: 'container'},
+    ],
   },
 };

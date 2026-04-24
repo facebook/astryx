@@ -30,5 +30,12 @@ export const docs = {
   theming: {
     container: true,
     targets: [{className: 'xds-clickable-card', visualProps: ['variant']}],
+    vars: [
+      {name: '--_card-radius', description: 'Border radius of the card', default: 'var(--radius-container)', private: true},
+    ],
+    derived: [
+      {property: 'borderRadius', vars: ['--_card-radius']},
+      {property: 'padding', expand: 'container'},
+    ],
   },
 };
