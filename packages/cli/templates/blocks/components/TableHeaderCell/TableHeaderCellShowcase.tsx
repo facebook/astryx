@@ -29,7 +29,7 @@ const columns: XDSTableColumn<Employee>[] = [
 
 export default function TableHeaderCellShowcase() {
   const [sort, setSort] = useState<XDSTableSortState<string>>([
-    {sortKey: 'name', direction: 'asc'},
+    {sortKey: 'name', direction: 'ascending'},
   ]);
 
   const sortPlugin = useXDSTableSortable({sort, onSortChange: setSort});
