@@ -152,7 +152,6 @@ const DIR_TO_REGISTRY_KEY: Record<string, string> = {
   Button: 'button',
   Card: 'card',
   Chat: 'chat',
-  ClickableCard: 'clickable-card',
   Dialog: 'dialog',
   DropdownMenu: 'dropdown-menu',
   Field: 'field',
@@ -160,7 +159,6 @@ const DIR_TO_REGISTRY_KEY: Record<string, string> = {
   Popover: 'popover',
   Section: 'section',
   SegmentedControl: 'segmented-control',
-  SelectableCard: 'selectable-card',
 };
 
 /**

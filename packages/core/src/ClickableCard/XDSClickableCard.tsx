@@ -6,62 +6,43 @@
  * @output Exports XDSClickableCard component and XDSClickableCardProps
  * @position Interactive card for navigation or action targets
  *
- * An interactive card that acts as a single navigation or action target.
- * Nested interactive elements (buttons, links) work independently —
- * clicking them does NOT trigger the card's onClick or navigation.
+ * Composes XDSCard for all visual styling (radius, padding, variants,
+ * container tokens, theming). Adds an interactive wrapper with
+ * useClickableContainer for safe nested interactive elements.
  *
  * For static display, use XDSCard.
  * For toggle selection, use XDSSelectableCard.
- *
- * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/ClickableCard/ClickableCard.doc.mjs
- * - /packages/core/src/ClickableCard/index.ts
- * - /apps/storybook/stories/ClickableCard.stories.tsx
  */
 
-import {type ReactNode, type MouseEvent, type MutableRefObject, useRef, type Ref} from 'react';
-import * as stylex from '@stylexjs/stylex';
-import {borderVars, colorVars, radiusVars} from '../theme/tokens.stylex';
-import {container} from '../Layout/container.stylex';
-import type {SpacingToken} from '../Layout/container.stylex';
 import {
-  paddingStyles,
-  containerPaddingInlineVarStyles,
-  containerPaddingBlockStartVarStyles,
-  containerPaddingBlockEndVarStyles,
-  spacingStepToToken,
-} from '../Layout/padding.stylex';
+  type ReactNode,
+  type MouseEvent,
+  type MutableRefObject,
+  useRef,
+  type Ref,
+} from 'react';
+import * as stylex from '@stylexjs/stylex';
+import {colorVars} from '../theme/tokens.stylex';
 import type {SizeValue, SpacingStep} from '../utils/types';
-import {xdsClassName, mergeProps} from '../utils';
-import type {XDSBaseProps} from '../XDSBaseProps';
-import {useClickableContainer} from '../hooks/useClickableContainer';
+import {xdsClassName} from '../utils';
+import {XDSCard} from '../Card/XDSCard';
 import type {XDSCardVariant} from '../Card/XDSCard';
+import {useClickableContainer} from '../hooks/useClickableContainer';
 
 // =============================================================================
-// Styles
+// Styles — only the interactive layer, Card handles everything else
 // =============================================================================
 
 const styles = stylex.create({
-  card: {
-    '--_card-radius': radiusVars['--radius-container'],
-    borderRadius: 'var(--_card-radius)',
-    overflow: 'clip',
-    borderWidth: borderVars['--border-width'],
-    borderStyle: 'solid',
-    borderColor: colorVars['--color-border-emphasized'],
-    backgroundColor: colorVars['--color-background-card'],
-    position: 'relative',
+  interactive: {
     cursor: 'pointer',
-    // Remove default anchor styles
     textDecoration: 'none',
     color: 'inherit',
-    // Focus visible outline
     outlineOffset: '2px',
     ':focus-visible': {
       outline: `2px solid ${colorVars['--color-accent']}`,
     },
   },
-  // Hover/active states applied to the card itself via ::after pseudo-element
   hoverState: {
     '::after': {
       content: '""',
@@ -83,69 +64,13 @@ const styles = stylex.create({
     cursor: 'not-allowed',
     opacity: 0.5,
   },
-
-});
-
-const variantStyles = stylex.create({
-  default: {
-    backgroundColor: colorVars['--color-background-card'],
-    borderColor: colorVars['--color-border-emphasized'],
-  },
-  transparent: {
-    backgroundColor: 'transparent',
-    borderColor: 'transparent',
-  },
-  muted: {
-    backgroundColor: colorVars['--color-background-muted'],
-    borderColor: 'transparent',
-  },
-  blue: {
-    backgroundColor: colorVars['--color-background-blue'],
-    borderColor: 'transparent',
-  },
-  cyan: {
-    backgroundColor: colorVars['--color-background-cyan'],
-    borderColor: 'transparent',
-  },
-  gray: {
-    backgroundColor: colorVars['--color-background-gray'],
-    borderColor: 'transparent',
-  },
-  green: {
-    backgroundColor: colorVars['--color-background-green'],
-    borderColor: 'transparent',
-  },
-  orange: {
-    backgroundColor: colorVars['--color-background-orange'],
-    borderColor: 'transparent',
-  },
-  pink: {
-    backgroundColor: colorVars['--color-background-pink'],
-    borderColor: 'transparent',
-  },
-  purple: {
-    backgroundColor: colorVars['--color-background-purple'],
-    borderColor: 'transparent',
-  },
-  red: {
-    backgroundColor: colorVars['--color-background-red'],
-    borderColor: 'transparent',
-  },
-  teal: {
-    backgroundColor: colorVars['--color-background-teal'],
-    borderColor: 'transparent',
-  },
-  yellow: {
-    backgroundColor: colorVars['--color-background-yellow'],
-    borderColor: 'transparent',
-  },
 });
 
 // =============================================================================
 // Props
 // =============================================================================
 
-export interface XDSClickableCardProps extends Omit<XDSBaseProps, 'onChange'> {
+export interface XDSClickableCardProps {
   /** Ref forwarded to the root element. */
   ref?: Ref<HTMLDivElement>;
 
@@ -188,7 +113,6 @@ export interface XDSClickableCardProps extends Omit<XDSBaseProps, 'onChange'> {
 
   /**
    * Internal padding of the card using the spacing scale.
-   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
    * @default 4 (16px)
    */
   padding?: SpacingStep;
@@ -203,34 +127,18 @@ export interface XDSClickableCardProps extends Omit<XDSBaseProps, 'onChange'> {
    */
   variant?: XDSCardVariant;
 
-  /**
-   * Width of the card.
-   */
+  /** Width of the card. */
   width?: SizeValue;
 
-  /**
-   * Height of the card.
-   */
+  /** Height of the card. */
   height?: SizeValue;
 
-  /**
-   * Maximum width of the card.
-   */
+  /** Maximum width of the card. */
   maxWidth?: SizeValue;
-}
 
-// Dynamic sizing styles
-const dynamicStyles = stylex.create({
-  sizing: (
-    width: SizeValue | null,
-    height: SizeValue | null,
-    maxWidth: SizeValue | null,
-  ) => ({
-    width: width ?? undefined,
-    height: height ?? undefined,
-    maxWidth: maxWidth ?? undefined,
-  }),
-});
+  /** Allow data-* attributes. */
+  [key: `data-${string}`]: string | undefined;
+}
 
 // =============================================================================
 // Component
@@ -239,9 +147,10 @@ const dynamicStyles = stylex.create({
 /**
  * An interactive card that acts as a single navigation or action target.
  *
- * Nested interactive elements (buttons, links, inputs) work independently —
- * clicking them does NOT trigger the card's onClick or navigation.
- * This is handled automatically via the useClickableContainer hook.
+ * Composes XDSCard for visual styling and adds an interactive layer
+ * with useClickableContainer. Nested interactive elements (buttons,
+ * links, inputs) work independently — clicking them does NOT trigger
+ * the card's onClick or navigation.
  *
  * @compositionHint Use for cards that navigate to a detail page or trigger an action.
  * For toggle selection cards, use XDSSelectableCard instead.
@@ -250,15 +159,15 @@ const dynamicStyles = stylex.create({
  * @example
  * ```tsx
  * <XDSClickableCard label="Settings" href="/settings">
- *   <XDSText weight="bold">Settings</XDSText>
- *   <XDSText color="secondary">Manage your preferences</XDSText>
+ *   <XDSText type="body" weight="bold">Settings</XDSText>
+ *   <XDSText type="supporting" color="secondary">Manage your preferences</XDSText>
  * </XDSClickableCard>
  * ```
  *
  * @example
  * ```tsx
  * <XDSClickableCard label="Open modal" onClick={() => setShowModal(true)}>
- *   <XDSText>Click anywhere to open</XDSText>
+ *   <XDSText type="body">Click anywhere to open</XDSText>
  *   <XDSButton label="Other action" onClick={handleOther} />
  * </XDSClickableCard>
  * ```
@@ -275,9 +184,6 @@ export function XDSClickableCard({
   width,
   height,
   maxWidth,
-  xstyle,
-  className,
-  style,
   ref,
   ...props
 }: XDSClickableCardProps) {
@@ -291,18 +197,25 @@ export function XDSClickableCard({
     disabled: isDisabled,
   });
 
-  const useThemeDefault = padding == null;
-  const effectivePadding = padding ?? 4;
-  const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;
-
   return (
-    <div
+    <XDSCard
       ref={(node: HTMLDivElement | null) => {
         containerRef.current = node;
         if (typeof ref === 'function') ref(node);
         else if (ref != null)
           (ref as MutableRefObject<HTMLDivElement | null>).current = node;
       }}
+      width={width}
+      height={height}
+      maxWidth={maxWidth}
+      padding={padding}
+      variant={variant}
+      className={xdsClassName('clickable-card', {variant})}
+      xstyle={[
+        styles.interactive,
+        !isDisabled && styles.hoverState,
+        isDisabled && styles.disabled,
+      ]}
       role={href ? 'link' : 'button'}
       tabIndex={isDisabled ? -1 : 0}
       aria-label={label}
@@ -311,7 +224,7 @@ export function XDSClickableCard({
       onMouseUp={!isDisabled ? onMouseUp : undefined}
       onKeyDown={
         !isDisabled
-          ? (e) => {
+          ? (e: React.KeyboardEvent) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 onClick(e as unknown as MouseEvent<HTMLElement>);
@@ -319,49 +232,9 @@ export function XDSClickableCard({
             }
           : undefined
       }
-      {...mergeProps(
-        'xds-card ' + xdsClassName('clickable-card', {variant}),
-        stylex.props(
-          styles.card,
-          variantStyles[variant] ?? variantStyles.default,
-          !isDisabled && styles.hoverState,
-          isDisabled && styles.disabled,
-          dynamicStyles.sizing(
-            width ?? null,
-            height ?? null,
-            maxWidth ?? null,
-          ),
-          ...container(
-            useThemeDefault
-              ? {useThemeDefault: 'card'}
-              : {
-                  paddingInnerX: paddingToken,
-                  paddingInnerY: paddingToken,
-                  paddingOuterX: paddingToken,
-                  paddingOuterY: paddingToken,
-                },
-          ),
-          !useThemeDefault &&
-            effectivePadding !== 4 &&
-            paddingStyles[effectivePadding],
-          !useThemeDefault &&
-            effectivePadding !== 4 &&
-            containerPaddingInlineVarStyles[effectivePadding],
-          !useThemeDefault &&
-            effectivePadding !== 4 &&
-            containerPaddingBlockStartVarStyles[effectivePadding],
-          !useThemeDefault &&
-            effectivePadding !== 4 &&
-            containerPaddingBlockEndVarStyles[effectivePadding],
-          xstyle,
-        ),
-        className,
-        style,
-      )}
-      {...props}
-    >
+      {...props}>
       {children}
-    </div>
+    </XDSCard>
   );
 }
 

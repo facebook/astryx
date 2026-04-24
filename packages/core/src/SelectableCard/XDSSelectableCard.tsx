@@ -2,62 +2,72 @@
 
 /**
  * @file XDSSelectableCard.tsx
- * @input Uses XDSCard styles, useClickableContainer, StyleX
+ * @input Uses XDSCard, useClickableContainer, StyleX
  * @output Exports XDSSelectableCard component and XDSSelectableCardProps
  * @position Interactive card for toggle selection
  *
- * A card that toggles between selected and unselected states.
- * Visually indicates selection with an accent border.
+ * Composes XDSCard for all visual styling. Adds selection state with
+ * an accent border (color-matched per variant) and useClickableContainer
+ * for safe nested interactive elements.
  *
  * For static display, use XDSCard.
  * For navigation or action cards, use XDSClickableCard.
- *
- * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/SelectableCard/SelectableCard.doc.mjs
- * - /packages/core/src/SelectableCard/index.ts
- * - /apps/storybook/stories/SelectableCard.stories.tsx
  */
 
-import {type ReactNode, type MouseEvent, type MutableRefObject, useRef, useCallback, type Ref} from 'react';
-import * as stylex from '@stylexjs/stylex';
-import {borderVars, colorVars, radiusVars} from '../theme/tokens.stylex';
-import {container} from '../Layout/container.stylex';
-import type {SpacingToken} from '../Layout/container.stylex';
 import {
-  paddingStyles,
-  containerPaddingInlineVarStyles,
-  containerPaddingBlockStartVarStyles,
-  containerPaddingBlockEndVarStyles,
-  spacingStepToToken,
-} from '../Layout/padding.stylex';
+  type ReactNode,
+  type MouseEvent,
+  type MutableRefObject,
+  useRef,
+  useCallback,
+  type Ref,
+} from 'react';
+import * as stylex from '@stylexjs/stylex';
+import {colorVars} from '../theme/tokens.stylex';
 import type {SizeValue, SpacingStep} from '../utils/types';
-import {xdsClassName, mergeProps} from '../utils';
-import type {XDSBaseProps} from '../XDSBaseProps';
-import {useClickableContainer} from '../hooks/useClickableContainer';
+import {xdsClassName} from '../utils';
+import {XDSCard} from '../Card/XDSCard';
 import type {XDSCardVariant} from '../Card/XDSCard';
+import {useClickableContainer} from '../hooks/useClickableContainer';
 
 // =============================================================================
-// Styles
+// Styles — selection + interaction overlay; Card handles the rest
 // =============================================================================
 
 const styles = stylex.create({
-  card: {
-    '--_card-radius': radiusVars['--radius-container'],
-    borderRadius: 'var(--_card-radius)',
-    overflow: 'clip',
-    // Always 2px border to prevent layout jitter on selection toggle.
-    // Unselected uses the standard border color; selected uses accent.
-    borderWidth: '2px',
-    borderStyle: 'solid',
-    borderColor: colorVars['--color-border-emphasized'],
-    position: 'relative',
+  interactive: {
     cursor: 'pointer',
+    // Override Card's border for selection: always 2px to prevent layout jitter
+    borderWidth: '2px',
     transition: 'border-color 0.15s ease',
     outlineOffset: '2px',
     ':focus-visible': {
       outline: `2px solid ${colorVars['--color-accent']}`,
     },
   },
+  hoverState: {
+    '::after': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      borderRadius: 'inherit',
+      pointerEvents: 'none',
+      transition: 'background-color 0.15s ease',
+      backgroundColor: 'transparent',
+    },
+    ':hover::after': {
+      backgroundColor: 'color-mix(in srgb, currentColor 5%, transparent)',
+    },
+    ':active::after': {
+      backgroundColor: 'color-mix(in srgb, currentColor 10%, transparent)',
+    },
+  },
+  disabled: {
+    cursor: 'not-allowed',
+    opacity: 0.5,
+  },
+  // Selection border colors — accent for default/muted/transparent,
+  // color-matched for non-semantic variants
   selected: {
     borderColor: colorVars['--color-accent'],
   },
@@ -91,76 +101,40 @@ const styles = stylex.create({
   selectedYellow: {
     borderColor: colorVars['--color-border-yellow'],
   },
-  hoverState: {
-    '::after': {
-      content: '""',
-      position: 'absolute',
-      inset: 0,
-      borderRadius: 'inherit',
-      pointerEvents: 'none',
-      transition: 'background-color 0.15s ease',
-      backgroundColor: 'transparent',
-    },
-    ':hover::after': {
-      backgroundColor: 'color-mix(in srgb, currentColor 5%, transparent)',
-    },
-    ':active::after': {
-      backgroundColor: 'color-mix(in srgb, currentColor 10%, transparent)',
-    },
-  },
-  disabled: {
-    cursor: 'not-allowed',
-    opacity: 0.5,
-  },
 });
 
-const variantStyles = stylex.create({
-  default: {
-    backgroundColor: colorVars['--color-background-card'],
-  },
-  transparent: {
-    backgroundColor: 'transparent',
-  },
-  muted: {
-    backgroundColor: colorVars['--color-background-muted'],
-  },
-  blue: {
-    backgroundColor: colorVars['--color-background-blue'],
-  },
-  cyan: {
-    backgroundColor: colorVars['--color-background-cyan'],
-  },
-  gray: {
-    backgroundColor: colorVars['--color-background-gray'],
-  },
-  green: {
-    backgroundColor: colorVars['--color-background-green'],
-  },
-  orange: {
-    backgroundColor: colorVars['--color-background-orange'],
-  },
-  pink: {
-    backgroundColor: colorVars['--color-background-pink'],
-  },
-  purple: {
-    backgroundColor: colorVars['--color-background-purple'],
-  },
-  red: {
-    backgroundColor: colorVars['--color-background-red'],
-  },
-  teal: {
-    backgroundColor: colorVars['--color-background-teal'],
-  },
-  yellow: {
-    backgroundColor: colorVars['--color-background-yellow'],
-  },
-});
+const selectedStyleForVariant = (variant: XDSCardVariant) => {
+  switch (variant) {
+    case 'blue':
+      return styles.selectedBlue;
+    case 'cyan':
+      return styles.selectedCyan;
+    case 'gray':
+      return styles.selectedGray;
+    case 'green':
+      return styles.selectedGreen;
+    case 'orange':
+      return styles.selectedOrange;
+    case 'pink':
+      return styles.selectedPink;
+    case 'purple':
+      return styles.selectedPurple;
+    case 'red':
+      return styles.selectedRed;
+    case 'teal':
+      return styles.selectedTeal;
+    case 'yellow':
+      return styles.selectedYellow;
+    default:
+      return styles.selected;
+  }
+};
 
 // =============================================================================
 // Props
 // =============================================================================
 
-export interface XDSSelectableCardProps extends Omit<XDSBaseProps, 'onChange'> {
+export interface XDSSelectableCardProps {
   /** Ref forwarded to the root element. */
   ref?: Ref<HTMLDivElement>;
 
@@ -188,56 +162,33 @@ export interface XDSSelectableCardProps extends Omit<XDSBaseProps, 'onChange'> {
    */
   isDisabled?: boolean;
 
-  /**
-   * Content to render inside the card.
-   */
+  /** Content to render inside the card. */
   children?: ReactNode;
 
   /**
    * Internal padding of the card using the spacing scale.
-   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
    * @default 4 (16px)
    */
   padding?: SpacingStep;
 
   /**
-   * Width of the card.
-   */
-  width?: SizeValue;
-
-  /**
-   * Height of the card.
-   */
-  height?: SizeValue;
-
-  /**
-   * Maximum width of the card.
-   */
-  maxWidth?: SizeValue;
-
-  /**
    * Background color variant.
-   * - `default`: standard card background
-   * - `transparent`: no background
-   * - `muted`: subtle muted background
-   * - Non-semantic palette: `blue | cyan | gray | green | orange | pink | purple | red | teal | yellow`
    * @default 'default'
    */
   variant?: XDSCardVariant;
-}
 
-// Dynamic sizing styles
-const dynamicStyles = stylex.create({
-  sizing: (
-    width: SizeValue | null,
-    height: SizeValue | null,
-    maxWidth: SizeValue | null,
-  ) => ({
-    width: width ?? undefined,
-    height: height ?? undefined,
-    maxWidth: maxWidth ?? undefined,
-  }),
-});
+  /** Width of the card. */
+  width?: SizeValue;
+
+  /** Height of the card. */
+  height?: SizeValue;
+
+  /** Maximum width of the card. */
+  maxWidth?: SizeValue;
+
+  /** Allow data-* attributes. */
+  [key: `data-${string}`]: string | undefined;
+}
 
 // =============================================================================
 // Component
@@ -246,8 +197,8 @@ const dynamicStyles = stylex.create({
 /**
  * A card that toggles between selected and unselected states.
  *
- * Visually indicates selection with an accent border. Supports hover,
- * pressed, focus, and disabled states.
+ * Composes XDSCard for visual styling and adds selection state with
+ * an accent border. Supports hover, pressed, focus, and disabled states.
  *
  * @compositionHint Use for multi-select or single-select card groups.
  * Manage selection state externally — use a Set for multi-select
@@ -266,8 +217,7 @@ const dynamicStyles = stylex.create({
  *     isSelected={selected === plan.id}
  *     onChange={() => setSelected(plan.id)}
  *   >
- *     <XDSText weight="bold">{plan.name}</XDSText>
- *     <XDSText color="secondary">{plan.price}</XDSText>
+ *     <XDSText type="body" weight="bold">{plan.name}</XDSText>
  *   </XDSSelectableCard>
  * ))}
  * ```
@@ -290,27 +240,11 @@ const dynamicStyles = stylex.create({
  *       });
  *     }}
  *   >
- *     <XDSText>{filter.name}</XDSText>
+ *     <XDSText type="body">{filter.name}</XDSText>
  *   </XDSSelectableCard>
  * ))}
  * ```
  */
-const selectedStyleForVariant = (variant: XDSCardVariant) => {
-  switch (variant) {
-    case 'blue': return styles.selectedBlue;
-    case 'cyan': return styles.selectedCyan;
-    case 'gray': return styles.selectedGray;
-    case 'green': return styles.selectedGreen;
-    case 'orange': return styles.selectedOrange;
-    case 'pink': return styles.selectedPink;
-    case 'purple': return styles.selectedPurple;
-    case 'red': return styles.selectedRed;
-    case 'teal': return styles.selectedTeal;
-    case 'yellow': return styles.selectedYellow;
-    default: return styles.selected;
-  }
-};
-
 export function XDSSelectableCard({
   label,
   isSelected,
@@ -318,13 +252,10 @@ export function XDSSelectableCard({
   isDisabled = false,
   children,
   padding,
+  variant = 'default',
   width,
   height,
   maxWidth,
-  variant = 'default',
-  xstyle,
-  className,
-  style,
   ref,
   ...props
 }: XDSSelectableCardProps) {
@@ -345,18 +276,29 @@ export function XDSSelectableCard({
     disabled: isDisabled,
   });
 
-  const useThemeDefault = padding == null;
-  const effectivePadding = padding ?? 4;
-  const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;
-
   return (
-    <div
+    <XDSCard
       ref={(node: HTMLDivElement | null) => {
         containerRef.current = node;
         if (typeof ref === 'function') ref(node);
         else if (ref != null)
           (ref as MutableRefObject<HTMLDivElement | null>).current = node;
       }}
+      width={width}
+      height={height}
+      maxWidth={maxWidth}
+      padding={padding}
+      variant={variant}
+      className={xdsClassName('selectable-card', {
+        variant,
+        selected: isSelected ? 'true' : 'false',
+      })}
+      xstyle={[
+        styles.interactive,
+        isSelected && selectedStyleForVariant(variant),
+        !isDisabled && styles.hoverState,
+        isDisabled && styles.disabled,
+      ]}
       role="checkbox"
       tabIndex={isDisabled ? -1 : 0}
       aria-label={label}
@@ -366,7 +308,7 @@ export function XDSSelectableCard({
       onMouseUp={!isDisabled ? onMouseUp : undefined}
       onKeyDown={
         !isDisabled
-          ? (e) => {
+          ? (e: React.KeyboardEvent) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 onChange(!isSelected);
@@ -374,53 +316,9 @@ export function XDSSelectableCard({
             }
           : undefined
       }
-      {...mergeProps(
-        'xds-card ' + xdsClassName('selectable-card', {
-          variant,
-          selected: isSelected ? 'true' : 'false',
-        }),
-        stylex.props(
-          styles.card,
-          variantStyles[variant] ?? variantStyles.default,
-          isSelected && selectedStyleForVariant(variant),
-          !isDisabled && styles.hoverState,
-          isDisabled && styles.disabled,
-          dynamicStyles.sizing(
-            width ?? null,
-            height ?? null,
-            maxWidth ?? null,
-          ),
-          ...container(
-            useThemeDefault
-              ? {useThemeDefault: 'card'}
-              : {
-                  paddingInnerX: paddingToken,
-                  paddingInnerY: paddingToken,
-                  paddingOuterX: paddingToken,
-                  paddingOuterY: paddingToken,
-                },
-          ),
-          !useThemeDefault &&
-            effectivePadding !== 4 &&
-            paddingStyles[effectivePadding],
-          !useThemeDefault &&
-            effectivePadding !== 4 &&
-            containerPaddingInlineVarStyles[effectivePadding],
-          !useThemeDefault &&
-            effectivePadding !== 4 &&
-            containerPaddingBlockStartVarStyles[effectivePadding],
-          !useThemeDefault &&
-            effectivePadding !== 4 &&
-            containerPaddingBlockEndVarStyles[effectivePadding],
-          xstyle,
-        ),
-        className,
-        style,
-      )}
-      {...props}
-    >
+      {...props}>
       {children}
-    </div>
+    </XDSCard>
   );
 }
 
