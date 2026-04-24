@@ -17,7 +17,7 @@ const people: PersonItem[] = [
   {id: '5', label: 'Eve Davis', auxiliaryData: {role: 'QA Engineer'}},
 ];
 
-const peopleSource: XDSSearchSource = {
+const peopleSource: XDSSearchSource<PersonItem> = {
   search: (query: string) =>
     people.filter(p => p.label.toLowerCase().includes(query.toLowerCase())),
   bootstrap: () => people.slice(0, 4),
