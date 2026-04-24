@@ -19,7 +19,7 @@ import {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSIcon} from '../Icon';
-import type {XDSIconType} from '../Icon';
+import {renderIconSlot, type XDSIconType} from '../Icon';
 import {XDSText} from '../Text';
 import {
   colorVars,
@@ -75,7 +75,7 @@ const itemSizeStyles = stylex.create({
 
 export interface XDSDropdownMenuItemProps {
   /** Icon to display before the label. */
-  icon?: XDSIconType;
+  icon?: ReactNode | XDSIconType;
   /** Primary label text. */
   label: ReactNode;
   /** Secondary description text displayed below the label. */
@@ -145,7 +145,7 @@ export function XDSDropdownMenuItem({
         className,
         style,
       )}>
-      {icon && <XDSIcon icon={icon} size="sm" color="secondary" />}
+      {icon && renderIconSlot(icon, {size: 'sm', color: 'secondary'})}
       <span {...stylex.props(styles.content)}>
         {typeof label === 'string' ? (
           <XDSText type="body" maxLines={1}>

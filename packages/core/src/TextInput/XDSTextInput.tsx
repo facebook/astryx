@@ -21,6 +21,7 @@ import {
   useRef,
   type ChangeEvent,
   type KeyboardEvent,
+  type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSIconName} from '../Icon';
@@ -41,7 +42,7 @@ import {
   inputStatusHoverShadowStyles,
   inputStatusFocusWithinStyles,
 } from '../Field';
-import {XDSIcon, type XDSIconType} from '../Icon';
+import {XDSIcon, renderIconSlot, type XDSIconType} from '../Icon';
 import {XDSSpinner} from '../Spinner';
 
 const styles = stylex.create({
@@ -157,9 +158,9 @@ export interface XDSTextInputProps extends Omit<
   isDisabled?: boolean;
   /**
    * Icon to display at the start of the input.
-   * Pass an SVG icon component (e.g. from heroicons, lucide, etc.).
+   * Accepts a ReactNode (e.g. `<XDSIcon icon={SearchIcon} />`) or an SVG icon component directly.
    */
-  startIcon?: XDSIconType;
+  startIcon?: ReactNode | XDSIconType;
   /**
    * Status indicator for the input.
    * When set, displays a colored border and status icon.
@@ -359,7 +360,7 @@ export function XDSTextInput({
           className,
           style,
         )}>
-        {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
+        {startIcon && renderIconSlot(startIcon, {size: 'sm', color: 'primary'})}
         <input
           {...rest}
           ref={setRefs}

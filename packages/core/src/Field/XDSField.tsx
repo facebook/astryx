@@ -18,9 +18,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSFieldLabel} from './XDSFieldLabel';
 import {XDSFieldStatus} from './XDSFieldStatus';
-import {
-  spacingVars,
-} from '../theme/tokens.stylex';
+import {spacingVars} from '../theme/tokens.stylex';
 import type {XDSIconType} from '../Icon';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -101,7 +99,7 @@ export interface XDSFieldProps extends Omit<
   /**
    * Icon to display before the label text.
    */
-  labelIcon?: XDSIconType;
+  labelIcon?: ReactNode | XDSIconType;
   /**
    * Status indicator for the field.
    * When set with a message, displays a colored message box below the input.

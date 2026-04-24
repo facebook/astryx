@@ -35,7 +35,7 @@ import {
 } from '../Field';
 import {XDSToken} from '../Token';
 import {XDSIcon} from '../Icon';
-import type {XDSIconType} from '../Icon';
+import {renderIconSlot, type XDSIconType} from '../Icon';
 import {XDSOverflowList} from '../OverflowList';
 import {useXDSLayer} from '../Layer/useXDSLayer';
 import {
@@ -105,9 +105,9 @@ export interface XDSTokenizerProps<T extends XDSSearchableItem> {
   status?: XDSInputStatus;
   /**
    * Icon to display at the start of the input.
-   * Pass an SVG icon component (e.g. from heroicons, lucide, etc.).
+   * Accepts a ReactNode (e.g. `<XDSIcon icon={SearchIcon} />`) or an SVG icon component directly.
    */
-  startIcon?: XDSIconType;
+  startIcon?: ReactNode | XDSIconType;
   /** Label tooltip. */
   labelTooltip?: string;
   /** Search source providing items. */
@@ -668,9 +668,8 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
                 status && inputStatusFocusWithinStyles[status.type],
               ),
             )}>
-            {startIcon && (
-              <XDSIcon icon={startIcon} size="sm" color="primary" />
-            )}
+            {startIcon &&
+              renderIconSlot(startIcon, {size: 'sm', color: 'primary'})}
             {isTruncated ? (
               <XDSOverflowList
                 gap={1}
@@ -768,9 +767,8 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
                 )}>
                 {isTruncated && (
                   <>
-                    {startIcon && (
-                      <XDSIcon icon={startIcon} size="sm" color="primary" />
-                    )}
+                    {startIcon &&
+                      renderIconSlot(startIcon, {size: 'sm', color: 'primary'})}
                     <XDSOverflowList
                       gap={1}
                       behavior="observeParent"
