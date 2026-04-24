@@ -45,9 +45,20 @@ import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSChatComposer} from '@xds/core/Chat';
 import {XDSLink} from '@xds/core/Link';
+import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
 
 import {XDSPopover} from '@xds/core/Popover';
 import {XDSGrid} from '@xds/core/Grid';
+import {XDSTheme, expandTypeScale, defineTheme} from '@xds/core/theme';
+import type {XDSDefinedTheme} from '@xds/core/theme';
+import {defaultTheme} from '@xds/theme-default/built';
+import {neutralTheme} from '@xds/theme-neutral/built';
+import {brutalistTheme} from '@xds/theme-brutalist/built';
+import {metaTheme} from '@xds/theme-meta/built';
+import {whatsappTheme} from '@xds/theme-whatsapp/built';
+import {XDSNumberInput} from '@xds/core/NumberInput';
+import {XDSSelector} from '@xds/core/Selector';
+import {defaultIconRegistry} from '@xds/theme-default';
 import {COMPONENT_PREVIEWS} from './ComponentPreviews';
 import {SEARCH_COMMANDS, basePath} from './constants';
 import {
@@ -310,6 +321,7 @@ const CHANGELOG_ENTRIES: {
   date: string;
   type: ChangelogType;
   title: string;
+  description: string;
   tags: string[];
 }[] = [
   // April 2026
@@ -318,6 +330,8 @@ const CHANGELOG_ENTRIES: {
     type: 'Release',
     title:
       '@xds/chat package with message bubbles, thread view, and AI composer',
+    description:
+      'New package for conversational UI. Includes Chat, ChatComposer, ChatComposerInput, ChatLayout, ChatTokenizedText, ChatToolCalls, and ChatDictation components. Supports AI assistant interfaces, messaging UIs, and threaded conversations.',
     tags: ['chat', '@xds/chat'],
   },
   {
@@ -325,12 +339,16 @@ const CHANGELOG_ENTRIES: {
     type: 'Release',
     title:
       '@xds/vega charts: Bar, Line, Area, and Pie components for dashboards',
+    description:
+      'Data visualization package with BarChart, LineChart, AreaChart, and PieChart components. Includes ChartLegend, ChartTooltip, and ChartAxis utilities for building analytics dashboards.',
     tags: ['charts', '@xds/vega'],
   },
   {
     date: 'Apr.18',
     type: 'Release',
     title: 'Calendar component with single date and date range selection',
+    description:
+      'New Calendar component with single date picker and date range selection modes. Supports min/max date constraints, disabled dates, and two-month view. Integrates with DateInput for form usage.',
     tags: ['core', 'form'],
   },
   {
@@ -338,48 +356,64 @@ const CHANGELOG_ENTRIES: {
     type: 'Improvement',
     title:
       'Dialog entry animations now use @starting-style instead of JS state',
+    description:
+      'Replaced JavaScript-based entry animations with CSS @starting-style for dialogs. This eliminates the flash of unstyled content and removes the need for useState + requestAnimationFrame workarounds.',
     tags: ['core', 'animation'],
   },
   {
     date: 'Apr.14',
     type: 'Fix',
     title: 'Popover focus trap no longer breaks with nested popovers',
+    description:
+      'Fixed an issue where opening a popover inside another popover would cause the focus trap to fight between the two layers, making keyboard navigation impossible.',
     tags: ['core', 'accessibility'],
   },
   {
     date: 'Apr.10',
     type: 'Improvement',
     title: 'Button loading state preserves width to prevent layout shift',
+    description:
+      'When a Button enters loading state, it now preserves its previous width so surrounding content doesn\'t shift. The spinner replaces the label in-place.',
     tags: ['core'],
   },
   {
     date: 'Apr.08',
     type: 'Improvement',
     title: 'TextInput now supports startIcon and endIcon slots',
+    description:
+      'Added startIcon and endIcon props to TextInput for placing icons inside the input field. Useful for search fields, currency inputs, and status indicators.',
     tags: ['core', 'form'],
   },
   {
     date: 'Apr.04',
     type: 'Release',
     title: 'xds swizzle command for ejecting components into your codebase',
+    description:
+      'Run xds swizzle <ComponentName> to eject any XDS component\'s source into your project for full customization. Use --gap to report missing capabilities back to the XDS team.',
     tags: ['cli', '@xds/cli'],
   },
   {
     date: 'Apr.04',
     type: 'Release',
     title: 'xds template command for scaffolding full page layouts',
+    description:
+      'Generate complete page templates with xds template <name>. Includes dashboard, settings, login, gallery, and documentation layouts. Use --skeleton for layout-only output with spatial annotations.',
     tags: ['cli', '@xds/cli'],
   },
   {
     date: 'Apr.04',
     type: 'Release',
     title: 'Agent docs generation via xds docs for AI coding assistants',
+    description:
+      'Generate AGENTS.md and component-level docs optimized for AI coding assistants. Use xds docs --dense for token-efficient output that Cursor, Copilot, and Claude can use as context.',
     tags: ['cli', '@xds/cli'],
   },
   {
     date: 'Apr.02',
     type: 'Fix',
     title: 'Table sort indicator alignment on narrow columns',
+    description:
+      'Fixed sort arrows overlapping column text when columns are narrower than their header content. The indicator now wraps gracefully.',
     tags: ['core'],
   },
   // March 2026
@@ -388,30 +422,40 @@ const CHANGELOG_ENTRIES: {
     type: 'Release',
     title:
       'Theme packages: @xds/theme-default, @xds/theme-neutral',
+    description:
+      'Two theme packages available on npm. theme-default uses system fonts, blue accent, and Heroicons. theme-neutral uses Geist fonts, desaturated oklch colors, and Lucide icons. Swap themes by changing a single CSS import.',
     tags: ['themes'],
   },
   {
     date: 'Mar.20',
     type: 'Release',
     title: 'CommandPalette with fuzzy search and keyboard navigation',
+    description:
+      'Keyboard-driven command menu opened with a hotkey. Supports fuzzy search, grouped results, custom rendering, and picker mode for item selection.',
     tags: ['core'],
   },
   {
     date: 'Mar.20',
     type: 'Release',
     title: 'PowerSearch component for advanced filter-based search interfaces',
+    description:
+      'Composable search bar with tokenized filters, operators, and preset filter groups. Designed for data-heavy interfaces like admin panels and analytics dashboards.',
     tags: ['core', 'form'],
   },
   {
     date: 'Mar.18',
     type: 'Improvement',
     title: 'SideNav collapse animation is smoother with CSS transitions',
+    description:
+      'Replaced JavaScript-driven width animation with CSS transitions for collapsing the SideNav. Results in smoother 60fps animation with no layout thrashing.',
     tags: ['core', 'animation'],
   },
   {
     date: 'Mar.15',
     type: 'Fix',
     title: 'DropdownMenu keyboard navigation skipping disabled items',
+    description:
+      'Arrow key navigation in DropdownMenu now correctly skips disabled items and wraps around at the beginning and end of the list.',
     tags: ['core', 'accessibility'],
   },
   {
@@ -419,24 +463,32 @@ const CHANGELOG_ENTRIES: {
     type: 'Breaking',
     title:
       'XDSThemeProvider: theme prop now accepts a theme package instead of a config object',
+    description:
+      'Migration required: replace XDSThemeProvider with XDSTheme and pass the theme object from a theme package (e.g. defaultTheme from @xds/theme-default/built). Run xds upgrade --apply to auto-migrate.',
     tags: ['core', 'themes'],
   },
   {
     date: 'Mar.05',
     type: 'Release',
     title: 'MultiSelector component for multi-value tokenized selection',
+    description:
+      'Dropdown-based multi-select with tokenized display of selected values. Supports search, sections, and custom option rendering.',
     tags: ['core', 'form'],
   },
   {
     date: 'Mar.05',
     type: 'Release',
     title: 'Tokenizer component for tag-style multi-value inputs',
+    description:
+      'Free-form tag input with typeahead suggestions, create-on-enter, max entry limits, and overflow handling. Ideal for labels, categories, and email recipients.',
     tags: ['core', 'form'],
   },
   {
     date: 'Mar.05',
     type: 'Release',
     title: 'FormLayout component for structured form field arrangement',
+    description:
+      'Arranges form fields in vertical or horizontal layouts with consistent spacing, optional labels, and section grouping. Supports nested layouts for complex forms.',
     tags: ['core', 'form'],
   },
   {
@@ -444,6 +496,8 @@ const CHANGELOG_ENTRIES: {
     type: 'Improvement',
     title:
       'All form components now announce validation errors to screen readers',
+    description:
+      'Added aria-describedby linking between form fields and their error messages. Screen readers now announce validation errors when they appear, improving accessibility for all form components.',
     tags: ['core', 'accessibility'],
   },
   {
@@ -451,6 +505,8 @@ const CHANGELOG_ENTRIES: {
     type: 'Fix',
     title:
       'CheckboxInput indeterminate state not rendering correctly in Safari',
+    description:
+      'Fixed a Safari-specific rendering bug where the indeterminate dash icon wasn\'t visible. The fix uses a CSS workaround for WebKit\'s handling of the :indeterminate pseudo-class.',
     tags: ['core', 'form'],
   },
   // February 2026
@@ -459,36 +515,48 @@ const CHANGELOG_ENTRIES: {
     type: 'Release',
     title:
       'AppShell component for foundational page layout with header, sidebar, and content',
+    description:
+      'Provides the top-level page structure with TopNav, SideNav, and content regions. Supports surface and section variants, fill height, and responsive mobile navigation.',
     tags: ['core', 'layout'],
   },
   {
     date: 'Feb.18',
     type: 'Release',
     title: 'TopNav with mega menu support and responsive mobile drawer',
+    description:
+      'Application-level navigation bar with branding, primary links, search, and user actions. Supports mega menu dropdowns, centered navigation, and a mobile drawer for small screens.',
     tags: ['core', 'navigation'],
   },
   {
     date: 'Feb.18',
     type: 'Release',
     title: 'Breadcrumbs component with overflow truncation',
+    description:
+      'Shows the user\'s current location in a navigation hierarchy with links back to parent pages. Automatically truncates with an overflow menu when the breadcrumb trail is too long.',
     tags: ['core', 'navigation'],
   },
   {
     date: 'Feb.14',
     type: 'Improvement',
     title: 'Card hover state uses CSS transitions instead of JS state',
+    description:
+      'Replaced onMouseEnter/onMouseLeave JS handlers with pure CSS :hover transitions for Card hover effects. Smoother animation and less React re-rendering.',
     tags: ['core'],
   },
   {
     date: 'Feb.10',
     type: 'Improvement',
     title: 'Slider supports keyboard step, page-step, and home/end shortcuts',
+    description:
+      'Added full keyboard support to Slider: arrow keys for single step, Page Up/Down for large steps, and Home/End to jump to min/max values.',
     tags: ['core', 'accessibility'],
   },
   {
     date: 'Feb.05',
     type: 'Fix',
     title: 'Stack gap prop not applying when direction changes at breakpoints',
+    description:
+      'Fixed a bug where changing Stack direction via media queries would lose the gap value. The gap now correctly re-applies when the flex direction changes at different breakpoints.',
     tags: ['core', 'layout'],
   },
 ];
@@ -540,6 +608,7 @@ function WhatsNewPage() {
   const [activeFilter, setActiveFilter] = useState<ChangelogType | 'All'>(
     'All',
   );
+  const [selectedEntry, setSelectedEntry] = useState<typeof CHANGELOG_ENTRIES[number] | null>(null);
 
   const filtered =
     activeFilter === 'All'
@@ -600,7 +669,9 @@ function WhatsNewPage() {
             const overflowCount = entry.tags.length - MAX_VISIBLE_TAGS;
             return (
               <div key={`${entry.date}-${i}`}>
-                <div style={{padding: '20px 0'}}>
+                <div
+                  style={{padding: '20px 0', cursor: 'pointer'}}
+                  onClick={() => setSelectedEntry(entry)}>
                   {/* Line 1: date + badge */}
                   <XDSStack
                     direction="horizontal"
@@ -684,15 +755,79 @@ function WhatsNewPage() {
           })}
         </div>
       ))}
+
+      <XDSDialog
+        isOpen={selectedEntry !== null}
+        onOpenChange={open => {
+          if (!open) setSelectedEntry(null);
+        }}>
+        {selectedEntry && (
+          <>
+            <XDSDialogHeader
+              title={selectedEntry.title}
+              onOpenChange={open => {
+                if (!open) setSelectedEntry(null);
+              }}
+            />
+            <div style={{padding: '16px 24px 24px'}}>
+              <XDSStack direction="horizontal" gap={2} vAlign="center" style={{marginBottom: 16}}>
+                <XDSText
+                  type="supporting"
+                  color="secondary"
+                  style={{
+                    fontFamily: 'monospace',
+                    fontSize: 12,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                  }}>
+                  {selectedEntry.date}
+                </XDSText>
+                <XDSBadge
+                  label={selectedEntry.type}
+                  variant={
+                    selectedEntry.type === 'Release'
+                      ? 'green'
+                      : selectedEntry.type === 'Improvement'
+                        ? 'blue'
+                        : selectedEntry.type === 'Fix'
+                          ? 'orange'
+                          : 'red'
+                  }
+                />
+                {selectedEntry.tags.map(tag => (
+                  <XDSText
+                    key={tag}
+                    type="supporting"
+                    color="secondary"
+                    style={{
+                      fontSize: 11,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      fontFamily: 'monospace',
+                    }}>
+                    {tag}
+                  </XDSText>
+                ))}
+              </XDSStack>
+              <XDSText type="body" color="secondary">
+                {selectedEntry.description}
+              </XDSText>
+            </div>
+          </>
+        )}
+      </XDSDialog>
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// FoundationPage component (placeholder)
+// FoundationPage component (placeholder for non-typography foundations)
 // ---------------------------------------------------------------------------
 
 function FoundationPage({foundationKey}: {foundationKey: string}) {
+  if (foundationKey === 'typography') {
+    return <TypographyFoundationPage />;
+  }
   const item = FOUNDATION_ITEMS.find(f => f.key === foundationKey);
   if (!item) return null;
   return (
@@ -717,6 +852,671 @@ function FoundationPage({foundationKey}: {foundationKey: string}) {
           Documentation coming soon
         </XDSText>
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// TypographyFoundationPage
+// ---------------------------------------------------------------------------
+
+const TYPO_RATIO_OPTIONS = [
+  {value: 1.067, label: '1.067 — Minor Second'},
+  {value: 1.125, label: '1.125 — Major Second'},
+  {value: 1.2, label: '1.200 — Minor Third'},
+  {value: 1.25, label: '1.250 — Major Third'},
+  {value: 1.333, label: '1.333 — Perfect Fourth'},
+  {value: 1.414, label: '1.414 — Augmented Fourth'},
+  {value: 1.5, label: '1.500 — Perfect Fifth'},
+  {value: 1.618, label: '1.618 — Golden Ratio'},
+];
+
+const TYPO_THEME_OPTIONS: {key: string; label: string; theme: XDSDefinedTheme; desc: string; fonts: {body: string; heading: string; code: string}}[] = [
+  {key: 'default', label: 'Default', theme: defaultTheme, desc: 'System fonts · base 14px · ratio 1.2', fonts: {body: 'System', heading: 'System', code: 'SF Mono'}},
+  {key: 'neutral', label: 'Neutral', theme: neutralTheme, desc: 'Geist · base 14px · ratio 1.2 · bold h3/h4', fonts: {body: 'Geist', heading: 'Geist', code: 'Geist Mono'}},
+  {key: 'brutalist', label: 'Brutalist', theme: brutalistTheme, desc: 'Courier New · monospace everywhere', fonts: {body: 'Courier New', heading: 'Courier New', code: 'Courier New'}},
+  {key: 'meta', label: 'Meta', theme: metaTheme, desc: 'Figtree · base 14px', fonts: {body: 'Figtree', heading: 'Figtree', code: 'SF Mono'}},
+  {key: 'whatsapp', label: 'WhatsApp', theme: whatsappTheme, desc: 'System fonts · rounded accent', fonts: {body: 'System', heading: 'System', code: 'SF Mono'}},
+];
+
+const TYPO_SCALE_STEPS: {label: string; step: number}[] = [
+  {label: 'Display 1', step: 6},
+  {label: 'Display 2', step: 5},
+  {label: 'Display 3', step: 4},
+  {label: 'Heading 1', step: 3},
+  {label: 'Heading 2', step: 2},
+  {label: 'Heading 3', step: 1},
+  {label: 'H4 / Body', step: 0},
+  {label: 'Supporting', step: -1},
+  {label: 'Heading 6', step: -2},
+];
+
+const TYPE_SCALE_ROWS: {
+  label: string;
+  step: number;
+  weight: string;
+  family: string;
+  render: (text: string) => React.ReactNode;
+}[] = [
+  {label: 'Display 1', step: 6, weight: 'Normal', family: 'Heading', render: t => <XDSText type="display-1">{t}</XDSText>},
+  {label: 'Display 2', step: 5, weight: 'Normal', family: 'Heading', render: t => <XDSText type="display-2">{t}</XDSText>},
+  {label: 'Display 3', step: 4, weight: 'Normal', family: 'Heading', render: t => <XDSText type="display-3">{t}</XDSText>},
+  {label: 'Heading 1', step: 3, weight: 'Semibold', family: 'Heading', render: t => <XDSHeading level={1}>{t}</XDSHeading>},
+  {label: 'Heading 2', step: 2, weight: 'Semibold', family: 'Heading', render: t => <XDSHeading level={2}>{t}</XDSHeading>},
+  {label: 'Heading 3', step: 1, weight: 'Semibold', family: 'Heading', render: t => <XDSHeading level={3}>{t}</XDSHeading>},
+  {label: 'Heading 4', step: 0, weight: 'Semibold', family: 'Heading', render: t => <XDSHeading level={4}>{t}</XDSHeading>},
+  {label: 'Body', step: 0, weight: 'Normal', family: 'Body', render: t => <XDSText type="body">{t}</XDSText>},
+  {label: 'Label', step: 0, weight: 'Medium', family: 'Body', render: t => <XDSText type="label">{t}</XDSText>},
+  {label: 'Supporting', step: -1, weight: 'Normal', family: 'Body', render: t => <XDSText type="supporting">{t}</XDSText>},
+  {label: 'Code', step: 0, weight: 'Normal', family: 'Code', render: t => <XDSText type="code">{t}</XDSText>},
+];
+
+function TypographyFoundationPage() {
+  const [previewTheme, setPreviewTheme] = useState('default');
+  const [scaleTheme, setScaleTheme] = useState('default');
+  const [scaleBase, setScaleBase] = useState(14);
+  const [scaleRatio, setScaleRatio] = useState(1.2);
+  const [refTab, setRefTab] = useState<'usage' | 'api'>('usage');
+
+  const activeThemeOption = TYPO_THEME_OPTIONS.find(t => t.key === previewTheme) ?? TYPO_THEME_OPTIONS[0];
+
+  const scaleSizes = useMemo(
+    () => TYPO_SCALE_STEPS.map(s => ({...s, px: Math.round(scaleBase * Math.pow(scaleRatio, s.step))})),
+    [scaleBase, scaleRatio],
+  );
+  const scalePreviewTheme = useMemo(
+    () => defineTheme({name: 'scale-preview', typography: {scale: {base: scaleBase, ratio: scaleRatio}}, tokens: {}, icons: defaultIconRegistry}),
+    [scaleBase, scaleRatio],
+  );
+  const maxPx = scaleSizes[0]?.px ?? 42;
+
+  return (
+    <div {...stylex.props(localStyles.pageContainer)}>
+      <XDSStack direction="vertical" gap={8}>
+        {/* Header */}
+        <XDSStack direction="vertical" gap={2}>
+          <XDSText type="display-1">Typography</XDSText>
+          <XDSText type="large" weight="normal" color="secondary">
+            Typography establishes hierarchy, readability, and accessibility
+            across your UI. XDS handles it with two components and a
+            token-driven type scale.
+          </XDSText>
+        </XDSStack>
+
+        <XDSStack direction="vertical" gap={0}>
+          <XDSTabList
+            value={refTab}
+          onChange={v => setRefTab(v as 'usage' | 'api')}
+          size="sm">
+          <XDSTab value="usage" label="Usage" />
+          <XDSTab value="api" label="API" />
+          </XDSTabList>
+          <XDSDivider />
+        </XDSStack>
+
+        {refTab === 'usage' && (<>
+
+        {/* Type scale preview */}
+        {(() => {
+          const scaleThemeOption = TYPO_THEME_OPTIONS.find(t => t.key === scaleTheme) ?? TYPO_THEME_OPTIONS[0];
+          return (
+        <XDSCard variant="muted" padding={0}>
+          <XDSSection padding={3} variant="transparent">
+            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+              <XDSText type="label" color="secondary">Scale</XDSText>
+              <XDSStack direction="horizontal" gap={1} vAlign="center">
+                {TYPO_THEME_OPTIONS.map(opt => (
+                  <XDSButton
+                    key={opt.key}
+                    label={opt.label}
+                    variant={scaleTheme === opt.key ? 'primary' : 'ghost'}
+                    size="sm"
+                    onClick={() => setScaleTheme(opt.key)}
+                  />
+                ))}
+              </XDSStack>
+            </div>
+          </XDSSection>
+          <XDSTheme theme={scaleThemeOption.theme}>
+              <div style={{padding: '8px 24px 24px'}}>
+                <XDSStack direction="vertical" gap={0}>
+                  {TYPE_SCALE_ROWS.map(row => {
+                    const px = Math.round(scaleBase * Math.pow(scaleRatio, row.step));
+                    const fontName = row.family === 'Code'
+                      ? scaleThemeOption.fonts.code
+                      : row.family === 'Heading'
+                        ? scaleThemeOption.fonts.heading
+                        : scaleThemeOption.fonts.body;
+                    return (
+                      <div
+                        key={row.label}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'baseline',
+                          gap: 16,
+                          paddingBlock: 12,
+                          borderBottom: '1px solid var(--color-border, rgba(0,0,0,0.06))',
+                        }}>
+                        <div style={{flex: 1, minWidth: 0}}>
+                          {row.render(row.label)}
+                        </div>
+                        <XDSText type="supporting" color="secondary" style={{width: 80, flexShrink: 0}}>
+                          {fontName}
+                        </XDSText>
+                        <XDSText type="supporting" color="secondary" style={{width: 70, flexShrink: 0}}>
+                          {row.weight}
+                        </XDSText>
+                        <XDSText type="supporting" color="secondary" style={{width: 40, flexShrink: 0, textAlign: 'right'}}>
+                          {px}px
+                        </XDSText>
+                      </div>
+                    );
+                  })}
+                </XDSStack>
+              </div>
+          </XDSTheme>
+        </XDSCard>
+          );
+        })()}
+
+        {/* Pick the right type */}
+        <XDSStack direction="vertical" gap={4}>
+          <XDSHeading level={2}>Pick the right type</XDSHeading>
+          <XDSText type="body" color="secondary">
+            Every piece of text uses one of two components. Pick based on
+            semantic purpose, not visual size.
+          </XDSText>
+
+          <XDSTable
+            data={[
+              {component: 'XDSHeading', when: 'Section titles that define document structure (renders h1–h6)'},
+              {component: 'XDSText type="display-*"', when: 'Large decorative text without heading semantics (hero headlines, splash screens)'},
+              {component: 'XDSText type="large"', when: 'Introductory or emphasized body text (section intros, feature lead-ins)'},
+              {component: 'XDSText type="body"', when: 'General content, paragraphs, and descriptions'},
+              {component: 'XDSText type="label"', when: 'Form labels, column headers, and category names'},
+              {component: 'XDSText type="supporting"', when: 'Secondary metadata, captions, and helper text'},
+              {component: 'XDSText type="code"', when: 'Inline code, variable names, and token references'},
+            ] as Record<string, unknown>[]}
+            columns={[
+              {
+                key: 'component',
+                header: 'Component',
+                width: pixel(250),
+                renderCell: (row: Record<string, unknown>) => (
+                  <XDSText type="code" textWrap="wrap">{row.component as string}</XDSText>
+                ),
+              },
+              {
+                key: 'when',
+                header: 'When to use',
+                renderCell: (row: Record<string, unknown>) => (
+                  <XDSText type="body" textWrap="wrap">{row.when as string}</XDSText>
+                ),
+              },
+            ]}
+            density="spacious"
+            dividers="rows"
+          />
+
+          <XDSHeading level={3}>Best practices</XDSHeading>
+          <XDSTable
+            data={[
+              {type: 'do', text: 'Use XDSHeading with sequential levels to create a real document outline that screen readers can navigate'},
+              {type: 'do', text: 'Use XDSText type="display-*" or type="large" for visually large text that is not a section title'},
+              {type: 'do', text: 'Use color="secondary" on supporting text instead of reducing opacity — tokens adapt to light/dark mode'},
+              {type: 'do', text: 'Use maxLines for truncation — the component handles ellipsis and line clamping'},
+              {type: 'dont', text: 'Don\'t use XDSText for section titles — screen readers only build a navigable outline from heading elements (h1–h6). XDSText renders a span, which is invisible to assistive technology'},
+              {type: 'dont', text: 'Don\'t use XDSHeading just for visual size — it creates false document structure that confuses screen reader navigation'},
+              {type: 'dont', text: 'Don\'t skip heading levels (e.g. h1 → h3) — screen readers expose headings as a navigable tree'},
+              {type: 'dont', text: 'Don\'t set font-size or font-family in inline styles — always use component props or design tokens'},
+            ] as Record<string, unknown>[]}
+            columns={[
+              {
+                key: 'type',
+                header: 'Guidance',
+                width: pixel(100),
+                renderCell: (item: Record<string, unknown>) => (
+                  <XDSBadge
+                    label={item.type === 'do' ? 'Do' : 'Dont'}
+                    variant={item.type === 'do' ? 'success' : 'error'}
+                  />
+                ),
+              },
+              {
+                key: 'text',
+                header: '',
+                renderCell: (item: Record<string, unknown>) => (
+                  <XDSText type="body" textWrap="wrap">{item.text as string}</XDSText>
+                ),
+              },
+            ]}
+            density="spacious"
+            dividers="rows"
+          />
+        </XDSStack>
+
+        {/* ================================================================
+            SECTION 2 — Preview (theme toggle + scale explorer merged)
+            ================================================================ */}
+        <XDSStack direction="vertical" gap={4}>
+          <XDSHeading level={2}>Preview</XDSHeading>
+          <XDSText type="body" color="secondary">
+            Toggle between themes and adjust the type scale to see how
+            typography adapts across the system.
+          </XDSText>
+
+          {/* Side-by-side: controls panel + live specimen */}
+          <div style={{display: 'flex', gap: 16, alignItems: 'stretch'}}>
+            {/* Left panel — controls + scale chart */}
+            <div style={{width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12}}>
+              {/* Theme */}
+              <XDSCard padding={3}>
+                <XDSText type="label" color="secondary" display="block" style={{marginBottom: 8}}>
+                  Theme
+                </XDSText>
+                <XDSStack direction="horizontal" gap={1} vAlign="center" style={{flexWrap: 'wrap'}}>
+                  {TYPO_THEME_OPTIONS.map(opt => (
+                    <XDSButton
+                      key={opt.key}
+                      label={opt.label}
+                      variant={previewTheme === opt.key ? 'primary' : 'secondary'}
+                      size="sm"
+                      onClick={() => setPreviewTheme(opt.key)}
+                    />
+                  ))}
+                </XDSStack>
+                <XDSText type="supporting" color="secondary" style={{marginTop: 6}}>
+                  {activeThemeOption.desc}
+                </XDSText>
+              </XDSCard>
+
+              {/* Scale controls + bar chart */}
+              <XDSCard padding={3} style={{flex: 1}}>
+                <XDSStack direction="vertical" gap={3}>
+                  <div>
+                    <XDSText type="label" color="secondary" display="block" style={{marginBottom: 6}}>
+                      Base size
+                    </XDSText>
+                    <XDSStack direction="horizontal" gap={1} vAlign="center">
+                      {([
+                        {label: 'S', value: 12},
+                        {label: 'M', value: 14},
+                        {label: 'L', value: 16},
+                        {label: 'XL', value: 18},
+                      ] as const).map(p => (
+                        <XDSButton
+                          key={p.value}
+                          label={p.label}
+                          variant={scaleBase === p.value ? 'primary' : 'ghost'}
+                          size="sm"
+                          onClick={() => setScaleBase(p.value)}
+                        />
+                      ))}
+                      <div style={{flex: 1}} />
+                      <XDSNumberInput
+                        label="Base size"
+                        isLabelHidden
+                        value={scaleBase}
+                        onChange={(v: number) => setScaleBase(v)}
+                        min={10}
+                        max={24}
+                        step={1}
+                        units="px"
+                        size="sm"
+                      />
+                    </XDSStack>
+                  </div>
+                  <div>
+                    <XDSText type="label" color="secondary" display="block" style={{marginBottom: 6}}>
+                      Scale ratio
+                    </XDSText>
+                    <XDSSelector
+                      label="Scale ratio"
+                      isLabelHidden
+                      options={[
+                        ...TYPO_RATIO_OPTIONS.map(opt => ({value: String(opt.value), label: opt.label})),
+                        {
+                          value: 'custom',
+                          label: !TYPO_RATIO_OPTIONS.some(o => Math.abs(o.value - scaleRatio) < 0.001)
+                            ? `Custom — ${scaleRatio.toFixed(3)}`
+                            : 'Custom...',
+                        },
+                      ]}
+                      value={
+                        !TYPO_RATIO_OPTIONS.some(o => Math.abs(o.value - scaleRatio) < 0.001)
+                          ? 'custom'
+                          : String(scaleRatio)
+                      }
+                      onChange={(v: string) => { if (v !== 'custom') setScaleRatio(Number(v)); }}
+                    />
+                  </div>
+                  <XDSDivider />
+                  <XDSStack direction="vertical" gap={1}>
+                    {scaleSizes.map(s => (
+                      <div key={s.label} style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                        <div style={{width: 72, flexShrink: 0}}>
+                          <XDSText type="supporting" color="secondary">{s.label}</XDSText>
+                        </div>
+                        <div style={{width: 32, flexShrink: 0, textAlign: 'right'}}>
+                          <XDSText type="supporting" color="secondary">{s.px}</XDSText>
+                        </div>
+                        <div style={{flex: 1, minWidth: 0}}>
+                          <div style={{
+                            height: Math.max(s.px * 0.45, 3),
+                            width: `${(s.px / maxPx) * 100}%`,
+                            borderRadius: 2,
+                            backgroundColor: s.step === 0
+                              ? 'var(--color-accent)'
+                              : 'var(--color-accent-muted, rgba(0,100,224,0.25))',
+                            transition: 'width 300ms ease, height 300ms ease',
+                          }} />
+                        </div>
+                      </div>
+                    ))}
+                  </XDSStack>
+                </XDSStack>
+              </XDSCard>
+            </div>
+
+            {/* Right — live themed specimen */}
+            <div style={{flex: 1, minWidth: 0}}>
+              <XDSTheme theme={activeThemeOption.theme}>
+                <XDSTheme theme={scalePreviewTheme}>
+                  <div style={{
+                    padding: 32,
+                    borderRadius: 12,
+                    backgroundColor: 'var(--color-background-surface)',
+                    color: 'var(--color-text-primary)',
+                    border: '1px solid var(--color-border)',
+                    height: '100%',
+                    boxSizing: 'border-box',
+                  }}>
+                    <XDSStack direction="vertical" gap={5}>
+                      {/* display */}
+                      <XDSStack direction="vertical" gap={1}>
+                        <XDSText type="display-1">Welcome back</XDSText>
+                        <XDSText type="large">Here&apos;s what&apos;s happening with your projects today.</XDSText>
+                      </XDSStack>
+                      <XDSDivider />
+                      {/* h1 + body */}
+                      <XDSStack direction="vertical" gap={2}>
+                        <XDSHeading level={1}>Project settings</XDSHeading>
+                        <XDSText type="body">
+                          Manage who has access to this project and what
+                          permissions they have. Changes take effect immediately.
+                        </XDSText>
+                      </XDSStack>
+                      {/* h2 + label + supporting */}
+                      <XDSStack direction="vertical" gap={2}>
+                        <XDSHeading level={2}>Team members</XDSHeading>
+                        <XDSStack direction="vertical" gap={1}>
+                          <XDSText type="label">Email address</XDSText>
+                          <XDSText type="supporting" color="secondary">
+                            We&apos;ll send an invite to this address.
+                          </XDSText>
+                        </XDSStack>
+                      </XDSStack>
+                      {/* h3 + h4 */}
+                      <XDSStack direction="vertical" gap={2}>
+                        <XDSHeading level={3}>Notifications</XDSHeading>
+                        <XDSHeading level={4}>Email preferences</XDSHeading>
+                        <XDSText type="body" color="secondary">
+                          Choose which updates you&apos;d like to receive.
+                        </XDSText>
+                      </XDSStack>
+                      <XDSDivider />
+                      {/* h5 + h6 + code + supporting */}
+                      <XDSStack direction="vertical" gap={2}>
+                        <XDSHeading level={5}>Advanced</XDSHeading>
+                        <XDSHeading level={6}>API Configuration</XDSHeading>
+                        <XDSText type="code">const config = &#123; theme: &apos;default&apos; &#125;;</XDSText>
+                        <XDSText type="supporting" color="secondary">
+                          Last updated 2 hours ago · 3 members online
+                        </XDSText>
+                      </XDSStack>
+                    </XDSStack>
+                  </div>
+                </XDSTheme>
+              </XDSTheme>
+            </div>
+          </div>
+        </XDSStack>
+
+        {/* Why typography matters — context at the bottom */}
+        <XDSStack direction="vertical" gap={4}>
+          <XDSHeading level={2}>Why typography matters</XDSHeading>
+          <XDSText type="body" color="secondary">
+            In most interfaces, text makes up over 80% of the content users
+            interact with. Typography is not decoration — it is the interface.
+            When type is inconsistent, users slow down, miss actions, and lose
+            trust in the product.
+          </XDSText>
+          <XDSList density="spacious" listStyle="disc">
+            <XDSListItem label={<><XDSHeading level={4}>Users scan before they read.</XDSHeading>{' '}<XDSText type="body" textWrap="wrap">Size and weight differences create a visual hierarchy that tells people where to look first, what&apos;s actionable, and what&apos;s secondary — without reading a single word.</XDSText></>} />
+            <XDSListItem label={<><XDSHeading level={4}>Inconsistent sizing breaks rhythm.</XDSHeading>{' '}<XDSText type="body" textWrap="wrap">When one screen uses 13px body text and another uses 15px, the interface feels stitched together. A shared type scale eliminates this drift across teams.</XDSText></>} />
+            <XDSListItem label={<><XDSHeading level={4}>Screen readers depend on heading elements.</XDSHeading>{' '}<XDSText type="body" textWrap="wrap">If a section title uses XDSText instead of XDSHeading, assistive technology can&apos;t build a page outline. Users who navigate by headings will miss entire sections.</XDSText></>} />
+            <XDSListItem label={<><XDSHeading level={4}>Font loading affects perceived performance.</XDSHeading>{' '}<XDSText type="body" textWrap="wrap">System fonts render instantly; custom fonts can cause layout shift. XDS font declarations include fallback stacks so text is always readable while fonts load.</XDSText></>} />
+            <XDSListItem label={<><XDSHeading level={4}>Line height and measure affect comprehension.</XDSHeading>{' '}<XDSText type="body" textWrap="wrap">Lines that are too tight or too wide make readers lose their place. The XDS type scale snaps line heights to a 4px grid and targets proven ratios by size tier.</XDSText></>} />
+          </XDSList>
+          <XDSText type="body" color="secondary">
+            A design system centralizes these decisions so individual features
+            don&apos;t reinvent them. Every text element in XDS inherits from
+            the same token-driven scale, which means switching themes updates
+            every heading, label, and caption system-wide — no manual
+            migration required.
+          </XDSText>
+        </XDSStack>
+
+        </>)}
+
+        {refTab === 'api' && (
+          <XDSStack direction="vertical" gap={8}>
+            {/* How it works */}
+            <XDSStack direction="vertical" gap={4}>
+              <XDSHeading level={2}>How it works</XDSHeading>
+              <XDSText type="body" color="secondary">
+                Typography is built on three layers: raw size tokens (geometric
+                scale in rem), semantic tokens (size + weight + line height
+                bundles), and components that consume them. Themes can override
+                any layer.
+              </XDSText>
+              <XDSCard padding={0}>
+                <XDSCodeBlock
+                  title="Layers 1-2: Design tokens (CSS)"
+                  code={`/* Layer 1: Raw size token — set by theme scale */
+--font-size-2xl: 1.5rem;   /* 24px */
+
+/* Layer 2: Semantic token — references Layer 1 */
+--text-heading-1-size: var(--font-size-2xl);
+--text-heading-1-weight: var(--font-weight-semibold);
+--text-heading-1-leading: 1.3333;   /* 24px → 32px (4px grid) */`}
+                  language="css"
+                  hasCopyButton
+                />
+              </XDSCard>
+              <XDSCard padding={0}>
+                <XDSCodeBlock
+                  title="Layer 3: Component (TSX)"
+                  code={`// Component consumes the semantic tokens automatically
+<XDSHeading level={1}>Page title</XDSHeading>`}
+                  language="tsx"
+                  hasCopyButton
+                />
+              </XDSCard>
+            </XDSStack>
+
+            {/* Code */}
+            <XDSStack direction="vertical" gap={4}>
+              <XDSHeading level={2}>Code</XDSHeading>
+              <XDSCard padding={0}>
+                <XDSCodeBlock
+                  title="Basic usage"
+                  code={`import { XDSHeading, XDSText } from '@xds/core/Text';
+
+// Section structure — use XDSHeading
+<XDSHeading level={1}>Page title</XDSHeading>
+<XDSHeading level={2}>Section title</XDSHeading>
+
+// Content — use XDSText with a type
+<XDSText type="display-1">Hero headline</XDSText>
+<XDSText type="body">Paragraph content.</XDSText>
+<XDSText type="body" weight="bold">Emphasized.</XDSText>
+<XDSText type="label">Form label</XDSText>
+<XDSText type="supporting" color="secondary">Helper text</XDSText>
+<XDSText type="code">variableName</XDSText>
+
+// Truncation
+<XDSText type="body" maxLines={2}>Long content...</XDSText>
+<XDSHeading level={2} textWrap="balance">Balanced heading</XDSHeading>`}
+                  language="tsx"
+                  hasCopyButton
+                />
+              </XDSCard>
+              <XDSCard padding={0}>
+                <XDSCodeBlock
+                  title="Theming typography"
+                  code={`import { defineTheme } from '@xds/core/theme';
+
+export const myTheme = defineTheme({
+  name: 'my-theme',
+  typography: {
+    scale: { base: 16, ratio: 1.25 },  // Dense: 12/1.125, Default: 14/1.2, Airy: 16/1.25
+    body: { family: 'Geist', fallbacks: '-apple-system, sans-serif' },
+    heading: { weight: 'semibold', weights: { 3: 'bold', 4: 'bold' } },
+    code: { family: 'Geist Mono', fallbacks: '"SF Mono", monospace' },
+  },
+});`}
+                  language="tsx"
+                  hasCopyButton
+                />
+              </XDSCard>
+            </XDSStack>
+
+            {/* Props */}
+            <XDSStack direction="vertical" gap={4}>
+              <XDSHeading level={2}>Props</XDSHeading>
+              <XDSHeading level={3}>XDSHeading</XDSHeading>
+              <XDSTable
+                data={[
+                  {prop: 'level', type: '1 | 2 | 3 | 4 | 5 | 6', req: 'Yes', desc: 'HTML heading tag and visual size.'},
+                  {prop: 'weight', type: "'normal' | 'medium' | 'semibold' | 'bold'", req: 'No', desc: 'Override default weight (semibold).'},
+                  {prop: 'color', type: "'primary' | 'secondary' | 'disabled' | 'active' | 'inherit'", req: 'No', desc: 'Semantic text color.'},
+                  {prop: 'maxLines', type: 'number', req: 'No', desc: 'Truncate with ellipsis after N lines.'},
+                  {prop: 'textWrap', type: "'wrap' | 'nowrap' | 'balance' | 'pretty'", req: 'No', desc: 'CSS text-wrap value.'},
+                ] as Record<string, unknown>[]}
+                columns={[
+                  {key: 'prop', header: 'Prop', width: pixel(100), renderCell: (r: Record<string, unknown>) => <XDSText type="code">{r.prop as string}</XDSText>},
+                  {key: 'type', header: 'Type', width: pixel(220), renderCell: (r: Record<string, unknown>) => <XDSText type="code" maxLines={2}>{r.type as string}</XDSText>},
+                  {key: 'req', header: 'Req', width: pixel(50)},
+                  {key: 'desc', header: 'Description', renderCell: (r: Record<string, unknown>) => <XDSText type="body" textWrap="wrap">{r.desc as string}</XDSText>},
+                ]}
+                density="spacious"
+                dividers="rows"
+              />
+              <XDSHeading level={3}>XDSText</XDSHeading>
+              <XDSTable
+                data={[
+                  {prop: 'type', type: "'body' | 'large' | 'label' | 'supporting' | 'code' | 'display-1' | 'display-2' | 'display-3'", req: 'Yes', desc: 'Semantic text role. Controls size, weight, font family.'},
+                  {prop: 'weight', type: "'normal' | 'medium' | 'semibold' | 'bold'", req: 'No', desc: 'Override default weight for the type.'},
+                  {prop: 'color', type: "'primary' | 'secondary' | 'disabled' | 'active' | 'inherit'", req: 'No', desc: 'Semantic text color.'},
+                  {prop: 'display', type: "'inline' | 'block'", req: 'No', desc: 'CSS display. Default inline.'},
+                  {prop: 'maxLines', type: 'number', req: 'No', desc: 'Truncate with ellipsis after N lines.'},
+                  {prop: 'textWrap', type: "'wrap' | 'nowrap' | 'balance' | 'pretty'", req: 'No', desc: 'CSS text-wrap value.'},
+                ] as Record<string, unknown>[]}
+                columns={[
+                  {key: 'prop', header: 'Prop', width: pixel(100), renderCell: (r: Record<string, unknown>) => <XDSText type="code">{r.prop as string}</XDSText>},
+                  {key: 'type', header: 'Type', width: pixel(220), renderCell: (r: Record<string, unknown>) => <XDSText type="code" maxLines={2}>{r.type as string}</XDSText>},
+                  {key: 'req', header: 'Req', width: pixel(50)},
+                  {key: 'desc', header: 'Description', renderCell: (r: Record<string, unknown>) => <XDSText type="body" textWrap="wrap">{r.desc as string}</XDSText>},
+                ]}
+                density="spacious"
+                dividers="rows"
+              />
+            </XDSStack>
+
+            {/* Tokens */}
+            <XDSStack direction="vertical" gap={4}>
+              <XDSHeading level={2}>Tokens</XDSHeading>
+              <XDSTable
+                data={[
+                  {type: 'Display 1', sizeToken: '--text-display-1-size', weightToken: '--text-display-1-weight', component: '<XDSText type="display-1">'},
+                  {type: 'Display 2', sizeToken: '--text-display-2-size', weightToken: '--text-display-2-weight', component: '<XDSText type="display-2">'},
+                  {type: 'Display 3', sizeToken: '--text-display-3-size', weightToken: '--text-display-3-weight', component: '<XDSText type="display-3">'},
+                  {type: 'Heading 1', sizeToken: '--text-heading-1-size', weightToken: '--text-heading-1-weight', component: '<XDSHeading level={1}>'},
+                  {type: 'Heading 2', sizeToken: '--text-heading-2-size', weightToken: '--text-heading-2-weight', component: '<XDSHeading level={2}>'},
+                  {type: 'Heading 3', sizeToken: '--text-heading-3-size', weightToken: '--text-heading-3-weight', component: '<XDSHeading level={3}>'},
+                  {type: 'Heading 4', sizeToken: '--text-heading-4-size', weightToken: '--text-heading-4-weight', component: '<XDSHeading level={4}>'},
+                  {type: 'Heading 5', sizeToken: '--text-heading-5-size', weightToken: '--text-heading-5-weight', component: '<XDSHeading level={5}>'},
+                  {type: 'Heading 6', sizeToken: '--text-heading-6-size', weightToken: '--text-heading-6-weight', component: '<XDSHeading level={6}>'},
+                  {type: 'Large', sizeToken: '--text-large-size', weightToken: '--text-large-weight', component: '<XDSText type="large">'},
+                  {type: 'Body', sizeToken: '--text-body-size', weightToken: '--text-body-weight', component: '<XDSText type="body">'},
+                  {type: 'Label', sizeToken: '--text-label-size', weightToken: '--text-label-weight', component: '<XDSText type="label">'},
+                  {type: 'Supporting', sizeToken: '--text-supporting-size', weightToken: '--text-supporting-weight', component: '<XDSText type="supporting">'},
+                  {type: 'Code', sizeToken: '--text-code-size', weightToken: '--text-code-weight', component: '<XDSText type="code">'},
+                ] as Record<string, unknown>[]}
+                columns={[
+                  {key: 'type', header: 'Type', width: pixel(100), renderCell: (r: Record<string, unknown>) => <XDSText type="label">{r.type as string}</XDSText>},
+                  {key: 'sizeToken', header: 'Size token', renderCell: (r: Record<string, unknown>) => <XDSText type="code">{r.sizeToken as string}</XDSText>},
+                  {key: 'weightToken', header: 'Weight token', renderCell: (r: Record<string, unknown>) => <XDSText type="code">{r.weightToken as string}</XDSText>},
+                  {key: 'component', header: 'Component', renderCell: (r: Record<string, unknown>) => <XDSText type="code">{r.component as string}</XDSText>},
+                ]}
+                density="spacious"
+                dividers="rows"
+              />
+              <XDSGrid columns={2} gap={4}>
+                <XDSCard padding={4}>
+                  <XDSText type="label" display="block" style={{marginBottom: 8}}>Font families</XDSText>
+                  <XDSStack direction="vertical" gap={2}>
+                    {[
+                      {token: '--font-family-body', note: 'body, large, label, supporting'},
+                      {token: '--font-family-heading', note: 'headings, display sizes'},
+                      {token: '--font-family-code', note: 'code text, CodeBlock'},
+                    ].map(f => (
+                      <div key={f.token}>
+                        <XDSText type="code" display="block">{f.token}</XDSText>
+                        <XDSText type="supporting" color="secondary">{f.note}</XDSText>
+                      </div>
+                    ))}
+                  </XDSStack>
+                </XDSCard>
+                <XDSCard padding={4}>
+                  <XDSText type="label" display="block" style={{marginBottom: 8}}>Weights</XDSText>
+                  <XDSStack direction="vertical" gap={2}>
+                    {[
+                      {token: '--font-weight-normal', val: '400', note: 'body, code, supporting'},
+                      {token: '--font-weight-medium', val: '500', note: 'label'},
+                      {token: '--font-weight-semibold', val: '600', note: 'headings, large'},
+                      {token: '--font-weight-bold', val: '700', note: 'weight="bold" prop'},
+                    ].map(w => (
+                      <div key={w.token} style={{display: 'flex', gap: 8, alignItems: 'baseline'}}>
+                        <XDSText type="code">{w.val}</XDSText>
+                        <XDSText type="supporting" color="secondary">{w.note}</XDSText>
+                      </div>
+                    ))}
+                  </XDSStack>
+                </XDSCard>
+              </XDSGrid>
+              <XDSCard padding={4}>
+                <XDSText type="label" display="block" style={{marginBottom: 8}}>Text colors (color prop)</XDSText>
+                <XDSStack direction="horizontal" gap={6} style={{flexWrap: 'wrap'}}>
+                  {[
+                    {prop: 'primary', note: 'Default — body, headings'},
+                    {prop: 'secondary', note: 'Descriptions, metadata'},
+                    {prop: 'disabled', note: 'Inactive content'},
+                    {prop: 'active', note: 'Links, accents'},
+                    {prop: 'inherit', note: 'Parent color'},
+                  ].map(c => (
+                    <XDSStack key={c.prop} direction="vertical" gap={0}>
+                      <XDSText type="code" display="block">{`"${c.prop}"`}</XDSText>
+                      <XDSText type="supporting" color="secondary">{c.note}</XDSText>
+                    </XDSStack>
+                  ))}
+                </XDSStack>
+              </XDSCard>
+            </XDSStack>
+          </XDSStack>
+        )}
+      </XDSStack>
     </div>
   );
 }
