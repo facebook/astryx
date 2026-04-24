@@ -21,6 +21,7 @@ import {XDSLayoutAreaContext} from './XDSLayoutAreaContext';
 import {XDSLayoutSlotsContext} from './XDSLayoutSlotsContext';
 import {xdsClassName, mergeProps} from '../utils';
 import type {SpacingStep} from '../utils/types';
+import type {ResizableProps} from '../Resizable/useXDSResizable';
 import {
   paddingStyles,
   containerPaddingInlineVarStyles,
@@ -148,8 +149,25 @@ export interface XDSLayoutPanelProps extends XDSBaseProps<HTMLDivElement> {
   /**
    * Width of the panel.
    * Numbers are treated as pixels, strings are used as-is.
+   * When `resizable` is provided, this is ignored — the hook controls width.
    */
   width?: number | string;
+
+  /**
+   * Resize props from `useXDSResizable()`. When provided, the panel width
+   * is driven by the hook and a resize handle should be placed adjacent
+   * to this panel.
+   *
+   * @example
+   * ```tsx
+   * const sidebar = useXDSResizable({ defaultSize: 250, minSizePx: 200 });
+   * <XDSLayoutPanel resizable={sidebar.props}>
+   *   <Navigation />
+   * </XDSLayoutPanel>
+   * <XDSResizeHandle resizable={sidebar.props} />
+   * ```
+   */
+  resizable?: ResizableProps;
 }
 
 /**
@@ -188,6 +206,7 @@ export function XDSLayoutPanel({
   padding,
   role,
   width,
+  resizable,
   xstyle,
   className,
   style,
@@ -196,6 +215,9 @@ export function XDSLayoutPanel({
 }: XDSLayoutPanelProps) {
   const area = useContext(XDSLayoutAreaContext);
   const {hasHeader, hasFooter} = useContext(XDSLayoutSlotsContext);
+
+  // When resizable props are provided, use the hook-driven size
+  const effectiveWidth = resizable ? resizable._size : width;
 
   // Determine panel position
   const isStartPanel = area === 'start';
@@ -230,7 +252,7 @@ export function XDSLayoutPanel({
         xdsClassName('layout-panel'),
         stylex.props(
           styles.panel,
-          dynamicStyles.sizing(width ?? null),
+          dynamicStyles.sizing(effectiveWidth ?? null),
           // Outer padding on container edges (unless component is full bleed)
           isStartPanel &&
             !isZeroPadding &&

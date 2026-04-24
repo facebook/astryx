@@ -2,19 +2,19 @@
 
 /**
  * @file index.ts
- * @input Imports from useResizable and XDSResizeHandle
+ * @input Imports from useXDSResizable and XDSResizeHandle
  * @output Re-exports all public Resizable API
  * @position Package entry point for Resizable
  */
 
-export {useResizable} from './useResizable';
+export {useXDSResizable} from './useXDSResizable';
 export type {
   ResizableRegion,
   ResizableRegionConfig,
   ResizableProps,
-  UseResizableSingleConfig,
-  UseResizableMultiConfig,
-} from './useResizable';
+  UseXDSResizableSingleConfig,
+  UseXDSResizableMultiConfig,
+} from './useXDSResizable';
 
 export {XDSResizeHandle} from './XDSResizeHandle';
 export type {XDSResizeHandleProps} from './XDSResizeHandle';

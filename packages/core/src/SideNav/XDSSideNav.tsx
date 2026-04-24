@@ -22,13 +22,20 @@ import {useCallback, useState, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {borderVars, colorVars, durationVars, easeVars, spacingVars} from '../theme/tokens.stylex';
+import {
+  borderVars,
+  colorVars,
+  durationVars,
+  easeVars,
+  spacingVars,
+} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSSideNavCollapseContext} from './XDSSideNavCollapseContext';
 import {XDSSideNavCollapseButton} from './XDSSideNavCollapseButton';
 import {useXDSSideNavRenderMode} from './XDSSideNavRenderContext';
 import {XDSMobileNav} from '../MobileNav/XDSMobileNav';
 import {useResizable} from './useResizable';
+import type {ResizableProps} from '../Resizable/useXDSResizable';
 
 // =============================================================================
 // Styles
@@ -244,6 +251,7 @@ export interface XDSSideNavProps extends XDSBaseProps<HTMLElement> {
    * - Object — configured:
    *   - `defaultWidth` — initial width in pixels (default: 260)
    *   - `onWidthChange` — called when user finishes resizing
+   * - `ResizableProps` — driven by `useXDSResizable()` hook from `@xds/core/Resizable`
    *
    * @default false
    */
@@ -252,7 +260,8 @@ export interface XDSSideNavProps extends XDSBaseProps<HTMLElement> {
     | {
         defaultWidth?: number;
         onWidthChange?: (width: number) => void;
-      };
+      }
+    | ResizableProps;
 
   /**
    * Enables collapse behavior. The sidebar can be collapsed to a narrow
@@ -323,8 +332,13 @@ export function XDSSideNav({
   const controlledCollapsed = collapsibleConfig.isCollapsed;
   const onCollapsedChange = collapsibleConfig.onCollapsedChange;
 
-  // Resizable config
-  const resizableConfig = typeof resizable === 'object' ? resizable : {};
+  // Resizable config — detect if using new useXDSResizable() hook props
+  const isResizableHook =
+    typeof resizable === 'object' &&
+    resizable !== null &&
+    '_isResizableProps' in resizable;
+  const resizableConfig =
+    !isResizableHook && typeof resizable === 'object' ? resizable : {};
   const isResizable = !!resizable;
 
   // Collapse state (controlled + uncontrolled)
@@ -348,19 +362,31 @@ export function XDSSideNav({
   };
 
   // =========================================================================
-  // Resize — extracted into useResizable hook
+  // Resize — use new ResizableProps when available, else legacy hook
   // =========================================================================
-  const {
-    width,
-    containerRef,
-    showHandle: showResizeHandle,
-    handleProps: resizeHandleProps,
-    isHandleHovered,
-  } = useResizable({
-    enabled: isResizable,
+  const legacyResize = useResizable({
+    enabled: isResizable && !isResizableHook,
     config: resizableConfig,
     collapsed,
   });
+
+  // When using the new hook, derive width/handle state from ResizableProps
+  const resizableHookProps = isResizableHook
+    ? (resizable as ResizableProps)
+    : null;
+  const width = resizableHookProps
+    ? resizableHookProps._size
+    : legacyResize.width;
+  const showResizeHandle = resizableHookProps
+    ? !collapsed
+    : legacyResize.showHandle;
+  const resizeHandleProps = resizableHookProps
+    ? null
+    : legacyResize.handleProps;
+  const isHandleHovered = resizableHookProps
+    ? false
+    : legacyResize.isHandleHovered;
+  const containerRef = resizableHookProps ? null : legacyResize.containerRef;
 
   // Render mode — when inside AppShell mobile layout, render subsets
   const renderMode = useXDSSideNavRenderMode();
@@ -498,11 +524,17 @@ export function XDSSideNav({
     </nav>
   );
 
-  // Wrap in resizable container when isResizable
-  const content = showResizeHandle ? (
+  // Wrap in resizable container when using legacy resize (with built-in handle).
+  // When using new ResizableProps, the consumer places XDSResizeHandle externally,
+  // so we just apply the width — no container wrapper or built-in handle needed.
+  const content = resizableHookProps ? (
+    navElement
+  ) : showResizeHandle ? (
     <div
       ref={containerRef}
-      {...mergeProps(stylex.props(styles.resizableContainer), {style: {width}})}>
+      {...mergeProps(stylex.props(styles.resizableContainer), {
+        style: {width},
+      })}>
       {navElement}
       <div
         data-testid="xds-sidenav-resize-handle"

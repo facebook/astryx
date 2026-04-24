@@ -12,7 +12,7 @@ import type {HTMLAttributes, ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
-import type {ResizableProps} from './useResizable';
+import type {ResizableProps} from './useXDSResizable';
 
 const KEYBOARD_STEP = 10;
 const KEYBOARD_LARGE_STEP = 50;
@@ -91,7 +91,7 @@ export interface XDSResizeHandleProps extends Omit<
   isDisabled?: boolean;
   /** Accessible label. @default 'Resize handle' */
   label?: string;
-  /** Resize props from the preceding panel's useResizable region. */
+  /** Resize props from the preceding panel's useXDSResizable region. */
   resizable?: ResizableProps;
   /** Custom handle content. Default renders pill indicator. */
   children?: ReactNode;

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * @file useResizable.ts
+ * @file useXDSResizable.ts
  * @input Resize configuration (defaultSize, minSizePx, maxSizePx, collapsible, snaps)
  * @output Hook return: size, isCollapsed, collapse/expand/resize methods, props for handle
  * @position Public hook; consumed by layout components via `resizable` prop
@@ -30,12 +30,12 @@ export interface ResizableRegionConfig {
   shrinkOrder?: number;
 }
 
-export interface UseResizableSingleConfig extends ResizableRegionConfig {
+export interface UseXDSResizableSingleConfig extends ResizableRegionConfig {
   /** Unique key for localStorage persistence. */
   autoSaveId?: string;
 }
 
-export interface UseResizableMultiConfig {
+export interface UseXDSResizableMultiConfig {
   /** Layout direction. @default 'horizontal' */
   direction?: 'horizontal' | 'vertical';
   /** Named region configurations. */
@@ -145,7 +145,9 @@ function resolveDefaultSize(defaultSize: number | string | undefined): number {
 // Single-region hook
 // =============================================================================
 
-function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
+function useSingleResizable(
+  config: UseXDSResizableSingleConfig,
+): ResizableRegion {
   const {
     defaultSize,
     minSizePx = DEFAULT_MIN,
@@ -263,7 +265,7 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
  * This is enforced by the caller providing a static `regions` object.
  */
 function useMultiResizable(
-  config: UseResizableMultiConfig,
+  config: UseXDSResizableMultiConfig,
 ): Record<string, ResizableRegion> {
   const {regions, autoSaveId} = config;
 
@@ -291,12 +293,14 @@ function useMultiResizable(
 // Public API
 // =============================================================================
 
-export function useResizable(config: UseResizableSingleConfig): ResizableRegion;
-export function useResizable(
-  config: UseResizableMultiConfig,
+export function useXDSResizable(
+  config: UseXDSResizableSingleConfig,
+): ResizableRegion;
+export function useXDSResizable(
+  config: UseXDSResizableMultiConfig,
 ): Record<string, ResizableRegion>;
-export function useResizable(
-  config: UseResizableSingleConfig | UseResizableMultiConfig,
+export function useXDSResizable(
+  config: UseXDSResizableSingleConfig | UseXDSResizableMultiConfig,
 ): ResizableRegion | Record<string, ResizableRegion> {
   if ('regions' in config) {
     return useMultiResizable(config);
