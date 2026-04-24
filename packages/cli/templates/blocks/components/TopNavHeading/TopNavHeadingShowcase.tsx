@@ -1,6 +1,7 @@
 'use client';
 
 import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
+import {XDSVStack} from '@xds/core/Layout';
 
 function LogoIcon() {
   return (
@@ -12,7 +13,7 @@ function LogoIcon() {
 
 export default function TopNavHeadingShowcase() {
   return (
-    <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+    <XDSVStack gap={4}>
       <XDSTopNav
         label="Plain heading example"
         heading={
@@ -32,6 +33,6 @@ export default function TopNavHeadingShowcase() {
           />
         }
       />
-    </div>
+    </XDSVStack>
   );
 }

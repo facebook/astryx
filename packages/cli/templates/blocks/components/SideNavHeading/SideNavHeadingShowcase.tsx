@@ -1,6 +1,7 @@
 'use client';
 
 import {XDSSideNav, XDSSideNavHeading} from '@xds/core/SideNav';
+import {XDSHStack} from '@xds/core/Layout';
 
 function AppIcon() {
   return (
@@ -12,7 +13,7 @@ function AppIcon() {
 
 export default function SideNavHeadingShowcase() {
   return (
-    <div style={{display: 'flex', gap: 24}}>
+    <XDSHStack gap={6}>
       <XDSSideNav
         header={
           <XDSSideNavHeading
@@ -33,6 +34,6 @@ export default function SideNavHeadingShowcase() {
           />
         }
       />
-    </div>
+    </XDSHStack>
   );
 }

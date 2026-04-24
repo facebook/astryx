@@ -35,29 +35,27 @@ function CogIcon(props: ComponentProps<'svg'>) {
 
 export default function SideNavItemShowcase() {
   return (
-    <div style={{height: 360}}>
-      <XDSSideNav>
-        <XDSSideNavSection title="Navigation">
-          <XDSSideNavItem
-            label="Inbox"
-            icon={InboxIcon}
-            isSelected
-            href="#"
-            endContent={<XDSBadge label="12" />}
-          />
-          <XDSSideNavItem
-            label="Documents"
-            icon={DocumentIcon}
-            href="#"
-          />
-          <XDSSideNavItem
-            label="Settings"
-            icon={CogIcon}
-            href="#"
-            isDisabled
-          />
-        </XDSSideNavSection>
-      </XDSSideNav>
-    </div>
+    <XDSSideNav>
+      <XDSSideNavSection title="Navigation">
+        <XDSSideNavItem
+          label="Inbox"
+          icon={InboxIcon}
+          isSelected
+          href="#"
+          endContent={<XDSBadge label="12" />}
+        />
+        <XDSSideNavItem
+          label="Documents"
+          icon={DocumentIcon}
+          href="#"
+        />
+        <XDSSideNavItem
+          label="Settings"
+          icon={CogIcon}
+          href="#"
+          isDisabled
+        />
+      </XDSSideNavSection>
+    </XDSSideNav>
   );
 }

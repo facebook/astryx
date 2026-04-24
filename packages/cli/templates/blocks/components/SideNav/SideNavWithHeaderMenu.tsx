@@ -29,45 +29,43 @@ function CogIcon(props: ComponentProps<'svg'>) {
 
 export default function SideNavWithHeaderMenu() {
   return (
-    <div style={{height: 400}}>
-      <XDSSideNav
-        header={
-          <XDSSideNavHeading
-            icon={
-              <XDSNavIcon
-                icon={
-                  <svg
-                    style={{width: 16, height: 16}}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9"
-                    />
-                  </svg>
-                }
-              />
-            }
-            heading="Product Name"
-            subheading="Business Account"
-            menu={
-              <>
-                <XDSListItem label="Personal Account" href="#" />
-                <XDSListItem label="Acme Corp" href="#" />
-                <XDSListItem label="Add account" href="#" />
-                <XDSListItem label="Sign out" href="#" />
-              </>
-            }
-          />
-        }>
-        <XDSSideNavSection title="Navigation">
-          <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected />
-          <XDSSideNavItem label="Settings" icon={CogIcon} />
-        </XDSSideNavSection>
-      </XDSSideNav>
-    </div>
+    <XDSSideNav
+      header={
+        <XDSSideNavHeading
+          icon={
+            <XDSNavIcon
+              icon={
+                <svg
+                  style={{width: 16, height: 16}}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9"
+                  />
+                </svg>
+              }
+            />
+          }
+          heading="Product Name"
+          subheading="Business Account"
+          menu={
+            <>
+              <XDSListItem label="Personal Account" href="#" />
+              <XDSListItem label="Acme Corp" href="#" />
+              <XDSListItem label="Add account" href="#" />
+              <XDSListItem label="Sign out" href="#" />
+            </>
+          }
+        />
+      }>
+      <XDSSideNavSection title="Navigation">
+        <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected />
+        <XDSSideNavItem label="Settings" icon={CogIcon} />
+      </XDSSideNavSection>
+    </XDSSideNav>
   );
 }

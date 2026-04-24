@@ -27,17 +27,15 @@ function FolderIcon(props: ComponentProps<'svg'>) {
 
 export default function SideNavCollapseButtonShowcase() {
   return (
-    <div style={{height: 320}}>
-      <XDSSideNav
-        collapsible
-        header={<XDSSideNavHeading heading="Workspace" />}
-        footer={<XDSSideNavCollapseButton />}
-      >
-        <XDSSideNavSection title="Main">
-          <XDSSideNavItem label="Home" icon={HomeIcon} isSelected href="#" />
-          <XDSSideNavItem label="Projects" icon={FolderIcon} href="#" />
-        </XDSSideNavSection>
-      </XDSSideNav>
-    </div>
+    <XDSSideNav
+      collapsible
+      header={<XDSSideNavHeading heading="Workspace" />}
+      footer={<XDSSideNavCollapseButton />}
+    >
+      <XDSSideNavSection title="Main">
+        <XDSSideNavItem label="Home" icon={HomeIcon} isSelected href="#" />
+        <XDSSideNavItem label="Projects" icon={FolderIcon} href="#" />
+      </XDSSideNavSection>
+    </XDSSideNav>
   );
 }
