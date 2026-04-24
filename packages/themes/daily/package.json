@@ -2,8 +2,25 @@
   "name": "@xds/theme-daily",
   "version": "0.0.12",
   "private": false,
-  "description": "Daily theme for XDS components \u2014 warm, productivity-focused (Lucide icons)",
+  "description": "Daily theme for XDS — warm, productivity-focused palette with Lucide icon set",
+  "author": "Meta Open Source",
   "license": "MIT",
+  "homepage": "https://github.com/facebookexperimental/xds#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/facebookexperimental/xds.git",
+    "directory": "packages/themes/daily"
+  },
+  "bugs": {
+    "url": "https://github.com/facebookexperimental/xds/issues"
+  },
+  "keywords": [
+    "xds",
+    "theme",
+    "design-system",
+    "lucide",
+    "design-tokens"
+  ],
   "sideEffects": false,
   "main": "./dist/source.js",
   "types": "./dist/source.d.ts",

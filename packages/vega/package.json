@@ -1,9 +1,26 @@
 {
   "name": "@xds/vega",
-  "private": true,
   "version": "0.0.12",
-  "description": "XDS Vega wrapper \u2014 chart and data visualization components",
+  "private": true,
+  "description": "XDS Vega wrapper — chart and data visualization components",
+  "author": "Meta Open Source",
   "license": "MIT",
+  "homepage": "https://github.com/facebookexperimental/xds#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/facebookexperimental/xds.git",
+    "directory": "packages/vega"
+  },
+  "bugs": {
+    "url": "https://github.com/facebookexperimental/xds/issues"
+  },
+  "keywords": [
+    "xds",
+    "vega",
+    "charts",
+    "data-visualization",
+    "design-system"
+  ],
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
