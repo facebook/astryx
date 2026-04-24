@@ -167,14 +167,14 @@ export const docs = {
     },
   ],
   usage: {
-    description: 'Chat builds conversational interfaces — AI assistants, messaging, or any thread-based UI. Compose with MessageList > Message > Bubble for sender-aware styling, density, and accessible markup out of the box.',
+    description: 'Chat components provide layout primitives and a message composer for building AI chat interfaces. Use Chat components when building conversational UIs that need message display, sender-aware styling, and rich input with trigger menus and attachments.',
     bestPractices: [
       { guidance: true, description: 'Compose messages using MessageList > Message > Bubble for consistent sender-aware styling and density.' },
       { guidance: true, description: 'Use the named slots on XDSChatComposer (drawer, headerActions, footerActions) to keep the input layout structured and extensible.' },
       { guidance: true, description: 'Put name and metadata on the bubble when the content has a visible bubble boundary. Put them on the message wrapper when the content is raw (no bubble).' },
       { guidance: true, description: 'Use XDSChatLayout for full-page chat — it handles auto-scroll, density adaptation, and composer docking automatically.' },
-      { guidance: false, description: 'Place metadata or names on both the bubble and the message wrapper — pick one based on whether the content has a bubble boundary.' },
-      { guidance: false, description: 'Build your own scroll management or density breakpoints — XDSChatLayout handles both via container width observation.' },
+      { guidance: false, description: 'Don\'t place metadata or names on both the bubble and the message wrapper — pick one based on whether the content has a bubble boundary.' },
+      { guidance: false, description: 'Don\'t build your own scroll management or density breakpoints — XDSChatLayout handles both via container width observation.' },
     ],
   },
 };
@@ -207,14 +207,14 @@ docs.components.push(chatLayoutScrollButtonComponent);
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsZh = {
   usage: {
-    description: 'Chat builds conversational interfaces — AI assistants, messaging, or any thread-based UI. Compose with MessageList > Message > Bubble for sender-aware styling, density, and accessible markup out of the box.',
+    description: 'Chat components provide layout primitives and a message composer for building AI chat interfaces. Use Chat components when building conversational UIs that need message display, sender-aware styling, and rich input with trigger menus and attachments.',
     bestPractices: [
       { guidance: true, description: 'Compose messages using MessageList > Message > Bubble for consistent sender-aware styling and density.' },
       { guidance: true, description: 'Use the named slots on XDSChatComposer (drawer, headerActions, footerActions) to keep the input layout structured and extensible.' },
       { guidance: true, description: 'Put name and metadata on the bubble when the content has a visible bubble boundary. Put them on the message wrapper when the content is raw (no bubble).' },
       { guidance: true, description: 'Use XDSChatLayout for full-page chat — it handles auto-scroll, density adaptation, and composer docking automatically.' },
-      { guidance: false, description: 'Place metadata or names on both the bubble and the message wrapper — pick one based on whether the content has a bubble boundary.' },
-      { guidance: false, description: 'Build your own scroll management or density breakpoints — XDSChatLayout handles both via container width observation.' },
+      { guidance: false, description: 'Don\'t place metadata or names on both the bubble and the message wrapper — pick one based on whether the content has a bubble boundary.' },
+      { guidance: false, description: 'Don\'t build your own scroll management or density breakpoints — XDSChatLayout handles both via container width observation.' },
     ],
   },
   components: [
@@ -366,14 +366,14 @@ export const docsZh = {
 export const docsDense = {
   description: 'AI chat components. Layout (MessageList>Message>Bubble+SystemMessage) + Composer (shell w/ slots, ContentEditable input w/ trigger menus, attachments)',
   usage: {
-    description: 'Chat builds conversational interfaces — AI assistants, messaging, or any thread-based UI. Compose with MessageList > Message > Bubble for sender-aware styling, density, and accessible markup out of the box.',
+    description: 'Chat components provide layout primitives and a message composer for building AI chat interfaces. Use Chat components when building conversational UIs that need message display, sender-aware styling, and rich input with trigger menus and attachments.',
     bestPractices: [
       { guidance: true, description: 'Compose messages using MessageList > Message > Bubble for consistent sender-aware styling and density.' },
       { guidance: true, description: 'Use the named slots on XDSChatComposer (drawer, headerActions, footerActions) to keep the input layout structured and extensible.' },
       { guidance: true, description: 'Put name and metadata on the bubble when the content has a visible bubble boundary. Put them on the message wrapper when the content is raw (no bubble).' },
       { guidance: true, description: 'Use XDSChatLayout for full-page chat — it handles auto-scroll, density adaptation, and composer docking automatically.' },
-      { guidance: false, description: 'Place metadata or names on both the bubble and the message wrapper — pick one based on whether the content has a bubble boundary.' },
-      { guidance: false, description: 'Build your own scroll management or density breakpoints — XDSChatLayout handles both via container width observation.' },
+      { guidance: false, description: 'Don\'t place metadata or names on both the bubble and the message wrapper — pick one based on whether the content has a bubble boundary.' },
+      { guidance: false, description: 'Don\'t build your own scroll management or density breakpoints — XDSChatLayout handles both via container width observation.' },
     ],
   },
   components: [
