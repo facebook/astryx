@@ -88,7 +88,9 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-app-shell', visualProps: ['variant', 'height']},
+      {className: 'xds-app-shell', visualProps: ['variant']},
+      {className: 'xds-app-shell-header', visualProps: ['variant']},
+      {className: 'xds-app-shell-sidenav', visualProps: ['variant']},
     ],
   },
 };
@@ -156,9 +158,10 @@ export const docsZh = {
         className: 'xds-app-shell',
         visualProps: [
           'variant',
-          'height',
         ],
       },
+      {className: 'xds-app-shell-header', visualProps: ['variant']},
+      {className: 'xds-app-shell-sidenav', visualProps: ['variant']},
     ],
   },
 };
