@@ -15,7 +15,7 @@ import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {
   XDSChatComposer,
-  XDSChatComposerAttachments,
+  XDSChatComposerDrawer,
   XDSChatComposerInput,
   XDSChatDictationButton,
   XDSChatLayout,
@@ -469,9 +469,9 @@ export default function AIChatTemplate() {
                       style={{minHeight: '44px'}}
                     />
                   }
-                  attachments={
+                  drawer={
                     attachments.length > 0 ? (
-                      <XDSChatComposerAttachments count={attachments.length}>
+                      <XDSChatComposerDrawer count={attachments.length}>
                         {attachments.map((name, i) => (
                           <XDSToken
                             key={i}
@@ -483,7 +483,7 @@ export default function AIChatTemplate() {
                             }
                           />
                         ))}
-                      </XDSChatComposerAttachments>
+                      </XDSChatComposerDrawer>
                     ) : undefined
                   }
                   headerActions={
@@ -722,9 +722,9 @@ export default function AIChatTemplate() {
               style={{minHeight: '44px'}}
             />
           }
-          attachments={
+          drawer={
             attachments.length > 0 ? (
-              <XDSChatComposerAttachments
+              <XDSChatComposerDrawer
                 count={attachments.length}
                 defaultIsCollapsed>
                 {attachments.map((name, i) => (
@@ -736,7 +736,7 @@ export default function AIChatTemplate() {
                     }
                   />
                 ))}
-              </XDSChatComposerAttachments>
+              </XDSChatComposerDrawer>
             ) : undefined
           }
           headerActions={

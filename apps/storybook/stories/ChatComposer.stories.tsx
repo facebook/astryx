@@ -1,7 +1,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {
   XDSChatComposer,
-  XDSChatComposerAttachments,
+  XDSChatComposerDrawer,
   XDSChatComposerInput,
   XDSChatSendButton,
 } from '@xds/core/Chat';
@@ -135,11 +135,11 @@ export const WithAttachments: Story = {
   render: () => (
     <XDSChatComposer
       onSubmit={value => console.log('Submit:', value)}
-      attachments={
-        <XDSChatComposerAttachments>
+      drawer={
+        <XDSChatComposerDrawer>
           <XDSToken label="report.pdf" onRemove={() => {}} />
           <XDSToken label="data.csv" onRemove={() => {}} />
-        </XDSChatComposerAttachments>
+        </XDSChatComposerDrawer>
       }
       headerActions={
         <XDSButton
@@ -173,10 +173,10 @@ export const FullFeatured: Story = {
         isStreaming={isStreaming}
         onStop={() => setIsStreaming(false)}
         placeholder="Ask me anything..."
-        attachments={
-          <XDSChatComposerAttachments>
+        drawer={
+          <XDSChatComposerDrawer>
             <XDSToken label="design-spec.pdf" onRemove={() => {}} />
-          </XDSChatComposerAttachments>
+          </XDSChatComposerDrawer>
         }
         headerActions={
           <>
@@ -241,15 +241,15 @@ export const WithManyAttachments: Story = {
   render: () => (
     <XDSChatComposer
       onSubmit={value => console.log('Submit:', value)}
-      attachments={
-        <XDSChatComposerAttachments count={6}>
+      drawer={
+        <XDSChatComposerDrawer count={6}>
           <XDSToken label="new_feature_prd.docx" onRemove={() => {}} />
           <XDSToken label="2026_roadmap.docx" onRemove={() => {}} />
           <XDSToken label="user_flow.pdf" onRemove={() => {}} />
           <XDSToken label="launch_plan.docx" onRemove={() => {}} />
           <XDSToken label="user_feedback.csv" onRemove={() => {}} />
           <XDSToken label="kpis.csv" onRemove={() => {}} />
-        </XDSChatComposerAttachments>
+        </XDSChatComposerDrawer>
       }
     />
   ),

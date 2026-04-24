@@ -12,6 +12,10 @@ import iconNameDeprecations, {
   meta as iconNameDeprecationsMeta,
 } from './icon-name-deprecations.mjs';
 
+import renameAttachmentsToDrawer, {
+  meta as renameAttachmentsToDrawerMeta,
+} from './rename-attachments-to-drawer.mjs';
+
 export default [
   {
     name: 'toolbar-density-to-size',
@@ -22,5 +26,10 @@ export default [
     name: 'icon-name-deprecations',
     transform: iconNameDeprecations,
     meta: iconNameDeprecationsMeta,
+  },
+  {
+    name: 'rename-attachments-to-drawer',
+    transform: renameAttachmentsToDrawer,
+    meta: renameAttachmentsToDrawerMeta,
   },
 ];

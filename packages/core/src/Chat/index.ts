@@ -16,8 +16,8 @@ export type {
 export {XDSChatSendButton} from './XDSChatSendButton';
 export type {XDSChatSendButtonProps} from './XDSChatSendButton';
 
-export {XDSChatComposerAttachments} from './XDSChatComposerAttachments';
-export type {XDSChatComposerAttachmentsProps} from './XDSChatComposerAttachments';
+export {XDSChatComposerDrawer} from './XDSChatComposerDrawer';
+export type {XDSChatComposerDrawerProps} from './XDSChatComposerDrawer';
 
 export {
   XDSChatComposerInput,

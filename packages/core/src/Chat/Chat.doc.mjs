@@ -9,7 +9,7 @@ export const docs = {
       {className: 'xds-chat-layout', visualProps: ['density']},
       {className: 'xds-chat-composer', visualProps: ['density']},
       {className: 'xds-chat-composer-input'},
-      {className: 'xds-chat-composer-attachments', visualProps: ['collapsed']},
+      {className: 'xds-chat-composer-drawer', visualProps: ['collapsed']},
       {className: 'xds-chat-message', visualProps: ['sender']},
       {className: 'xds-chat-message-bubble', visualProps: ['sender', 'variant']},
       {className: 'xds-chat-message-list', visualProps: ['density']},
@@ -84,7 +84,7 @@ export const docs = {
     },
     {
       name: 'XDSChatComposer',
-      description: 'Layout shell for a chat composer. Arranges named slots (attachments, header, input, footer, send) with page-radius container, hover/focus shadows, and concentric inner radius for child elements.',
+      description: 'Layout shell for a chat composer. Arranges named slots (drawer, header, input, footer, send) with page-radius container, hover/focus shadows, and concentric inner radius for child elements.',
       props: [
         {name: 'onSubmit', type: '(value: string) => void', description: 'Called when the user submits a message.', required: true},
         {name: 'onStop', type: '() => void', description: 'Called when the user requests to stop generation.'},
@@ -94,7 +94,7 @@ export const docs = {
         {name: 'placeholder', type: 'string', description: 'Placeholder text.', default: "'Type a message\u2026'"},
         {name: 'isDisabled', type: 'boolean', description: 'Disables the composer.', default: 'false'},
         {name: 'density', type: "'compact' | 'balanced' | 'spacious'", description: 'Visual density.', default: "'balanced'"},
-        {name: 'attachments', type: 'ReactNode', description: 'Slot: attachment chips above the input. Use XDSChatComposerAttachments.'},
+        {name: 'drawer', type: 'ReactNode', description: 'Slot: collapsible drawer above the input — attachments, context chips, etc. Use XDSChatComposerDrawer.'},
         {name: 'headerActions', type: 'ReactNode', description: 'Slot: left-aligned header actions (attach, mention buttons). Use icon-only size="sm" buttons.'},
         {name: 'headerContext', type: 'ReactNode', description: 'Slot: right-aligned contextual info in the header (context window usage, XDSProgressBar, supporting text).'},
         {name: 'input', type: 'ReactNode', description: 'Slot: custom input element. Replaces the default textarea. Use XDSChatComposerInput for trigger menus.'},
@@ -125,8 +125,8 @@ export const docs = {
       ],
     },
     {
-      name: 'XDSChatComposerAttachments',
-      description: 'Flex-wrap container for attachment items (tokens, thumbnails, previews) inside the composer.',
+      name: 'XDSChatComposerDrawer',
+      description: 'Collapsible drawer panel for the composer. Use for attachments, context chips, or any supplementary content above the input.',
       props: [
         {name: 'children', type: 'ReactNode', description: 'Attachment items to render.', required: true},
         {name: 'count', type: 'number', description: 'Total attachment count. When provided and exceeds visible children, shows a collapse/expand toggle.'},
@@ -170,7 +170,7 @@ export const docs = {
     description: 'Chat builds conversational interfaces — AI assistants, messaging, or any thread-based UI. Compose with MessageList > Message > Bubble for sender-aware styling, density, and accessible markup out of the box.',
     bestPractices: [
       { guidance: true, description: 'Compose messages using MessageList > Message > Bubble for consistent sender-aware styling and density.' },
-      { guidance: true, description: 'Use the named slots on XDSChatComposer (attachments, headerActions, footerActions) to keep the input layout structured and extensible.' },
+      { guidance: true, description: 'Use the named slots on XDSChatComposer (drawer, headerActions, footerActions) to keep the input layout structured and extensible.' },
       { guidance: true, description: 'Put name and metadata on the bubble when the content has a visible bubble boundary. Put them on the message wrapper when the content is raw (no bubble).' },
       { guidance: true, description: 'Use XDSChatLayout for full-page chat — it handles auto-scroll, density adaptation, and composer docking automatically.' },
       { guidance: false, description: 'Place metadata or names on both the bubble and the message wrapper — pick one based on whether the content has a bubble boundary.' },
@@ -210,7 +210,7 @@ export const docsZh = {
     description: 'Chat builds conversational interfaces — AI assistants, messaging, or any thread-based UI. Compose with MessageList > Message > Bubble for sender-aware styling, density, and accessible markup out of the box.',
     bestPractices: [
       { guidance: true, description: 'Compose messages using MessageList > Message > Bubble for consistent sender-aware styling and density.' },
-      { guidance: true, description: 'Use the named slots on XDSChatComposer (attachments, headerActions, footerActions) to keep the input layout structured and extensible.' },
+      { guidance: true, description: 'Use the named slots on XDSChatComposer (drawer, headerActions, footerActions) to keep the input layout structured and extensible.' },
       { guidance: true, description: 'Put name and metadata on the bubble when the content has a visible bubble boundary. Put them on the message wrapper when the content is raw (no bubble).' },
       { guidance: true, description: 'Use XDSChatLayout for full-page chat — it handles auto-scroll, density adaptation, and composer docking automatically.' },
       { guidance: false, description: 'Place metadata or names on both the bubble and the message wrapper — pick one based on whether the content has a bubble boundary.' },
@@ -273,7 +273,7 @@ export const docsZh = {
         placeholder: '占位文本。',
         isDisabled: '禁用编写器。',
         density: '视觉密度。',
-        attachments: '插槽：输入上方的附件标签。使用 XDSChatComposerAttachments。',
+        drawer: '插槽：输入上方的可折叠抽屉——附件、上下文标签等。使用 XDSChatComposerDrawer。',
         headerActions: '插槽：标题左侧操作按钮（附件、提及按钮）。使用仅图标 size="sm" 按钮。',
         headerContext: '插槽：标题右侧上下文信息（上下文窗口使用情况、XDSProgressBar、辅助文本）。',
         input: '插槽：自定义输入元素。替换默认文本区域。使用 XDSChatComposerInput 实现触发菜单。',
@@ -305,8 +305,8 @@ export const docsZh = {
       },
     },
     {
-      name: 'XDSChatComposerAttachments',
-      description: '编写器内附件项目的弹性换行容器。',
+      name: 'XDSChatComposerDrawer',
+      description: '编写器的可折叠抽屉面板。用于附件、上下文标签或输入上方的任何补充内容。',
       propDescriptions: {children: '要渲染的附件项目。', count: '附件总数。超过可见子元素时显示折叠/展开切换。'},
     },
     {
@@ -369,7 +369,7 @@ export const docsDense = {
     description: 'Chat builds conversational interfaces — AI assistants, messaging, or any thread-based UI. Compose with MessageList > Message > Bubble for sender-aware styling, density, and accessible markup out of the box.',
     bestPractices: [
       { guidance: true, description: 'Compose messages using MessageList > Message > Bubble for consistent sender-aware styling and density.' },
-      { guidance: true, description: 'Use the named slots on XDSChatComposer (attachments, headerActions, footerActions) to keep the input layout structured and extensible.' },
+      { guidance: true, description: 'Use the named slots on XDSChatComposer (drawer, headerActions, footerActions) to keep the input layout structured and extensible.' },
       { guidance: true, description: 'Put name and metadata on the bubble when the content has a visible bubble boundary. Put them on the message wrapper when the content is raw (no bubble).' },
       { guidance: true, description: 'Use XDSChatLayout for full-page chat — it handles auto-scroll, density adaptation, and composer docking automatically.' },
       { guidance: false, description: 'Place metadata or names on both the bubble and the message wrapper — pick one based on whether the content has a bubble boundary.' },
@@ -430,7 +430,7 @@ export const docsDense = {
     },
     {
       name: 'XDSChatComposer',
-      description: 'composer layout shell; named slots (attachments/header/input/footer/send) w/ page-radius + concentric inner radius',
+      description: 'composer layout shell; named slots (drawer/header/input/footer/send) w/ page-radius + concentric inner radius',
       propDescriptions: {
         onSubmit: 'submit msg handler',
         onStop: 'stop generation handler',
@@ -440,7 +440,7 @@ export const docsDense = {
         placeholder: 'placeholder text',
         isDisabled: 'disabled state',
         density: 'visual density',
-        attachments: 'slot: attachment chips above input; use XDSChatComposerAttachments',
+        drawer: 'slot: collapsible drawer above input — attachments, context chips, etc.; use XDSChatComposerDrawer',
         headerActions: 'slot: left header actions (attach, mention); icon-only sm buttons',
         headerContext: 'slot: right header context info (window usage, XDSProgressBar, text)',
         input: 'slot: custom input; replaces default textarea; use XDSChatComposerInput for triggers',
@@ -471,8 +471,8 @@ export const docsDense = {
       },
     },
     {
-      name: 'XDSChatComposerAttachments',
-      description: 'flex-wrap container for attachment items in composer',
+      name: 'XDSChatComposerDrawer',
+      description: 'collapsible drawer panel for composer; use for attachments, context chips, or supplementary content',
       propDescriptions: {
         children: 'attachment items to render',
         count: 'total count; shows collapse/expand when exceeds visible',
