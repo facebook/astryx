@@ -66,7 +66,7 @@ describe('XDSClickableCard', () => {
     );
     const card = screen.getByRole('button');
     expect(card).toHaveAttribute('aria-disabled', 'true');
-    expect(card).toHaveAttribute('tabindex', '-1');
+    expect(card).toHaveAttribute('tabindex', '0');
     fireEvent.click(card);
     expect(handleClick).not.toHaveBeenCalled();
   });

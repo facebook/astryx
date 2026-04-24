@@ -35,6 +35,7 @@ import {useClickableContainer} from '../hooks/useClickableContainer';
 
 const styles = stylex.create({
   interactive: {
+    position: 'relative',
     cursor: 'pointer',
     textDecoration: 'none',
     color: 'inherit',
@@ -75,8 +76,10 @@ export interface XDSClickableCardProps {
   ref?: Ref<HTMLDivElement>;
 
   /**
-   * Accessibility label for the card (required).
-   * Describes the card's purpose to screen readers.
+   * Accessibility label for the card.
+   * Used as `aria-label` — provides the accessible name for screen readers.
+   * When the card has visible text that serves as its label, prefer
+   * passing that text here so the screen reader announcement matches.
    */
   label: string;
 
@@ -100,7 +103,8 @@ export interface XDSClickableCardProps {
 
   /**
    * Set to true to disable the card.
-   * Suppresses click/hover/focus states.
+   * Disabled cards remain focusable (tabIndex 0) with aria-disabled
+   * so screen reader users can discover them.
    */
   isDisabled?: boolean;
 
@@ -119,10 +123,6 @@ export interface XDSClickableCardProps {
 
   /**
    * Background color variant.
-   * - `default`: standard card background with visible border
-   * - `transparent`: no background, no border
-   * - `muted`: subtle muted background
-   * - Non-semantic palette: `blue | cyan | gray | green | orange | pink | purple | red | teal | yellow`
    * @default 'default'
    */
   variant?: XDSCardVariant;
@@ -197,6 +197,8 @@ export function XDSClickableCard({
     disabled: isDisabled,
   });
 
+  const isLink = href != null;
+
   return (
     <XDSCard
       ref={(node: HTMLDivElement | null) => {
@@ -216,8 +218,8 @@ export function XDSClickableCard({
         !isDisabled && styles.hoverState,
         isDisabled && styles.disabled,
       ]}
-      role={href ? 'link' : 'button'}
-      tabIndex={isDisabled ? -1 : 0}
+      role={isLink ? 'link' : 'button'}
+      tabIndex={0}
       aria-label={label}
       aria-disabled={isDisabled || undefined}
       onClick={!isDisabled ? onClick : undefined}
@@ -225,7 +227,8 @@ export function XDSClickableCard({
       onKeyDown={
         !isDisabled
           ? (e: React.KeyboardEvent) => {
-              if (e.key === 'Enter' || e.key === ' ') {
+              // Links activate on Enter only; buttons activate on Enter + Space
+              if (e.key === 'Enter' || (!isLink && e.key === ' ')) {
                 e.preventDefault();
                 onClick(e as unknown as MouseEvent<HTMLElement>);
               }

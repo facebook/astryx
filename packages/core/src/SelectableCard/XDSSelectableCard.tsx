@@ -7,7 +7,7 @@
  * @position Interactive card for toggle selection
  *
  * Composes XDSCard for all visual styling. Adds selection state with
- * an accent border (color-matched per variant) and useClickableContainer
+ * an inset box-shadow (zero layout jitter) and useClickableContainer
  * for safe nested interactive elements.
  *
  * For static display, use XDSCard.
@@ -31,11 +31,12 @@ import type {XDSCardVariant} from '../Card/XDSCard';
 import {useClickableContainer} from '../hooks/useClickableContainer';
 
 // =============================================================================
-// Styles — selection + interaction overlay; Card handles the rest
+// Styles — selection + interaction; Card handles the rest
 // =============================================================================
 
 const styles = stylex.create({
   interactive: {
+    position: 'relative',
     cursor: 'pointer',
     transition: 'box-shadow 0.15s ease',
     outlineOffset: '2px',
@@ -65,7 +66,7 @@ const styles = stylex.create({
     opacity: 0.5,
   },
   // Selection indicator — uses inset box-shadow so the card's border-width
-  // stays identical to XDSCard. Zero layout jitter between Card and SelectableCard.
+  // stays identical to XDSCard. Zero layout jitter.
   selected: {
     boxShadow: `inset 0 0 0 2px ${colorVars['--color-accent']}`,
   },
@@ -137,14 +138,14 @@ export interface XDSSelectableCardProps {
   ref?: Ref<HTMLDivElement>;
 
   /**
-   * Accessibility label for the card (required).
-   * Describes the card's purpose to screen readers.
+   * Accessibility label for the card.
+   * Used as `aria-label` — provides the accessible name for screen readers.
    */
   label: string;
 
   /**
    * Controlled selection state.
-   * When true, the card shows an accent border indicating selection.
+   * When true, the card shows an inset accent border indicating selection.
    */
   isSelected: boolean;
 
@@ -156,7 +157,8 @@ export interface XDSSelectableCardProps {
 
   /**
    * Set to true to disable the card.
-   * Suppresses click/hover/focus and selection toggle.
+   * Disabled cards remain focusable (tabIndex 0) with aria-disabled
+   * so screen reader users can discover them.
    */
   isDisabled?: boolean;
 
@@ -196,7 +198,8 @@ export interface XDSSelectableCardProps {
  * A card that toggles between selected and unselected states.
  *
  * Composes XDSCard for visual styling and adds selection state with
- * an accent border. Supports hover, pressed, focus, and disabled states.
+ * an inset box-shadow (zero layout jitter vs plain Card). Supports
+ * hover, pressed, focus, and disabled states.
  *
  * @compositionHint Use for multi-select or single-select card groups.
  * Manage selection state externally — use a Set for multi-select
@@ -298,7 +301,7 @@ export function XDSSelectableCard({
         isDisabled && styles.disabled,
       ]}
       role="checkbox"
-      tabIndex={isDisabled ? -1 : 0}
+      tabIndex={0}
       aria-label={label}
       aria-checked={isSelected}
       aria-disabled={isDisabled || undefined}
