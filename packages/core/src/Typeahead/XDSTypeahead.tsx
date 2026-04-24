@@ -396,7 +396,8 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
             isDisabled && inputWrapperStyles.disabled,
           ),
         )}>
-        {startIcon && renderIconSlot(startIcon, {size: 'sm', color: 'primary'})}
+        {startIcon &&
+          renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
         {showToken && (
           <XDSToken
             ref={tokenRef}

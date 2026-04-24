@@ -360,7 +360,8 @@ export function XDSTextInput({
           className,
           style,
         )}>
-        {startIcon && renderIconSlot(startIcon, {size: 'sm', color: 'primary'})}
+        {startIcon &&
+          renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
         <input
           {...rest}
           ref={setRefs}
