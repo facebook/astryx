@@ -1,11 +1,7 @@
 'use client';
 
 import type {ComponentProps} from 'react';
-import {
-  XDSSideNav,
-  XDSSideNavItem,
-  XDSSideNavSection,
-} from '@xds/core/SideNav';
+import {XDSSideNav, XDSSideNavItem} from '@xds/core/SideNav';
 import {XDSBadge} from '@xds/core/Badge';
 
 function InboxIcon(props: ComponentProps<'svg'>) {
@@ -36,26 +32,24 @@ function CogIcon(props: ComponentProps<'svg'>) {
 export default function SideNavItemShowcase() {
   return (
     <XDSSideNav>
-      <XDSSideNavSection title="Navigation">
-        <XDSSideNavItem
-          label="Inbox"
-          icon={InboxIcon}
-          isSelected
-          href="#"
-          endContent={<XDSBadge label="12" />}
-        />
-        <XDSSideNavItem
-          label="Documents"
-          icon={DocumentIcon}
-          href="#"
-        />
-        <XDSSideNavItem
-          label="Settings"
-          icon={CogIcon}
-          href="#"
-          isDisabled
-        />
-      </XDSSideNavSection>
+      <XDSSideNavItem
+        label="Inbox"
+        icon={InboxIcon}
+        isSelected
+        href="#"
+        endContent={<XDSBadge label="12" />}
+      />
+      <XDSSideNavItem
+        label="Documents"
+        icon={DocumentIcon}
+        href="#"
+      />
+      <XDSSideNavItem
+        label="Settings"
+        icon={CogIcon}
+        href="#"
+        isDisabled
+      />
     </XDSSideNav>
   );
 }

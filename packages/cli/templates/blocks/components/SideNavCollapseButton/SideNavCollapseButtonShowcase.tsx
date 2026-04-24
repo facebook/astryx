@@ -28,7 +28,7 @@ function FolderIcon(props: ComponentProps<'svg'>) {
 export default function SideNavCollapseButtonShowcase() {
   return (
     <XDSSideNav
-      collapsible
+      collapsible={{hasButton: false}}
       header={<XDSSideNavHeading heading="Workspace" />}
       footer={<XDSSideNavCollapseButton />}
     >
