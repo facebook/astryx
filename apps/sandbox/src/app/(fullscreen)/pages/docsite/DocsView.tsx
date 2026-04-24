@@ -218,7 +218,7 @@ const LIBRARY_PACKAGES: {
     version: '0.0.12',
     status: 'Stable',
     iconType: 'theme',
-    image: `${basePath}/docsite/card4-preview-meta.png`,
+    image: `${basePath}/docsite/theme-preview-daily.png`,
     category: 'building',
   },
   {
@@ -1845,10 +1845,9 @@ function LibraryOverview({
                 <div
                   style={{
                     aspectRatio: '16 / 9',
-                    backgroundImage: isDesign ? undefined : `url(${pkg.image})`,
+                    backgroundImage: `url(${pkg.image})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
-                    backgroundColor: isDesign ? 'var(--color-background-muted, #f5f5f5)' : undefined,
                     borderRadius: 12,
                     display: 'flex',
                     alignItems: 'center',
@@ -1856,15 +1855,9 @@ function LibraryOverview({
                     position: 'relative',
                     marginBottom: 12,
                   }}>
-                  {isDesign ? (
-                    <img
-                      src={pkg.image}
-                      alt={pkg.name}
-                      style={{width: 48, height: 48, objectFit: 'contain'}}
-                    />
-                  ) : IconComp ? (
+                  {IconComp && (
                     <XDSIcon icon={IconComp} size="lg" style={{width: 48, height: 48, color: '#484233', strokeWidth: 1.8}} />
-                  ) : null}
+                  )}
                   {pkg.status === 'Coming Soon' && (
                     <div style={{position: 'absolute', top: 12, right: 12}}>
                       <XDSBadge label="Coming Soon" variant="blue" />
@@ -1874,7 +1867,7 @@ function LibraryOverview({
                 <XDSText
                   type="body"
                   weight="bold"
-                  style={{fontFamily: isDesign ? undefined : 'monospace', fontSize: 14, display: 'block', marginBottom: 4}}>
+                  style={{fontFamily: pkg.category !== 'designing' ? 'monospace' : undefined, fontSize: 14, display: 'block', marginBottom: 4}}>
                   {pkg.name}
                   {pkg.version && (
                     <XDSText
