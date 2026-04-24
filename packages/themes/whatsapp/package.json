@@ -2,8 +2,25 @@
   "name": "@xds/theme-whatsapp",
   "version": "0.0.12",
   "private": true,
-  "description": "WhatsApp theme for XDS \u2014 green accent, warm grays, Roboto, rounded surfaces",
+  "description": "WhatsApp theme for XDS — green accent, warm grays, Roboto, rounded surfaces",
+  "author": "Meta Open Source",
   "license": "MIT",
+  "homepage": "https://github.com/facebookexperimental/xds#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/facebookexperimental/xds.git",
+    "directory": "packages/themes/whatsapp"
+  },
+  "bugs": {
+    "url": "https://github.com/facebookexperimental/xds/issues"
+  },
+  "keywords": [
+    "xds",
+    "theme",
+    "whatsapp",
+    "design-system",
+    "design-tokens"
+  ],
   "sideEffects": false,
   "main": "./dist/source.js",
   "module": "./dist/source.mjs",

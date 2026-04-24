@@ -2,8 +2,25 @@
   "name": "@xds/theme-default",
   "version": "0.0.12",
   "private": false,
-  "description": "Default theme for XDS components (Heroicons)",
+  "description": "Default theme for XDS — clean neutrals with Heroicons icon set",
+  "author": "Meta Open Source",
   "license": "MIT",
+  "homepage": "https://github.com/facebookexperimental/xds#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/facebookexperimental/xds.git",
+    "directory": "packages/themes/default"
+  },
+  "bugs": {
+    "url": "https://github.com/facebookexperimental/xds/issues"
+  },
+  "keywords": [
+    "xds",
+    "theme",
+    "design-system",
+    "heroicons",
+    "design-tokens"
+  ],
   "sideEffects": false,
   "main": "./dist/source.js",
   "types": "./dist/source.d.ts",
