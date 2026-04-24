@@ -1,34 +1,76 @@
 /** @type {import('../docs-types').ComponentDoc} */
 export const docs = {
   name: 'Resizable',
-  description:
-    'Hook-based resizable panel system. useResizable() manages size state; ' +
-    'XDSResizeHandle provides the interactive separator. Pass resize props ' +
-    'to existing layout components via their `resizable` prop.',
-
-  features: [
-    'Hook-first architecture — no wrapper components, works with existing XDS layout',
-    'Pill-grip handle: invisible at rest, 0.6 on hover, 1.0 during drag',
-    'Full keyboard support: Arrow keys, Shift+Arrow, Home/End, Enter to collapse',
-    'WAI-ARIA Window Splitter pattern (role=separator)',
-    'Collapsible panels with snap points',
-    'localStorage persistence via autoSaveId',
-    'RTL-aware drag direction',
-    'Single-region and multi-region (coordinated) modes',
-    'shrinkOrder for cascading resize priority',
+  keywords: [
+    'resize',
+    'resizable',
+    'split',
+    'splitter',
+    'panel',
+    'drag',
+    'separator',
+    'divider',
+    'handle',
+    'grip',
   ],
-
+  usage: {
+    description:
+      'Hook-based resizable panel system. useResizable() manages size state ' +
+      'and XDSResizeHandle provides the interactive pill-grip separator. ' +
+      'Pass resize props to existing layout components via their resizable prop.',
+    bestPractices: [
+      {
+        guidance: true,
+        description:
+          'Use useResizable() with existing XDS layout components. ' +
+          'Pass the returned props to the resizable prop on XDSLayoutPanel or XDSSideNav.',
+      },
+      {
+        guidance: true,
+        description:
+          'Provide an accessible label on each XDSResizeHandle when multiple ' +
+          'handles exist (e.g. "Resize sidebar", "Resize terminal").',
+      },
+      {
+        guidance: false,
+        description:
+          'Wrap panels in extra container components for resize. The hook-first ' +
+          'architecture avoids extra DOM — use it directly on existing components.',
+      },
+    ],
+  },
+  theming: {
+    targets: [{className: 'xds-resize-handle', visualProps: ['direction']}],
+    vars: [
+      {
+        name: '--resize-handle-width',
+        description: 'Visual width of the pill indicator',
+        default: '3px',
+      },
+      {
+        name: '--resize-handle-height',
+        description: 'Height of the pill indicator',
+        default: '32px',
+      },
+      {
+        name: '--resize-handle-hit-area',
+        description: 'Clickable area width around the pill',
+        default: '16px',
+      },
+    ],
+  },
   components: [
     {
       name: 'useResizable',
       description:
-        'Hook that manages resize state for one or more panel regions. Returns size, ' +
-        'isCollapsed, collapse/expand/resize methods, and props to pass to handles.',
+        'Hook that manages resize state for one or more panel regions. ' +
+        'Returns size, isCollapsed, collapse/expand/resize methods, and props to pass to handles.',
       props: [
         {
           name: 'defaultSize',
-          type: "number | string",
-          description: 'Initial size in pixels or percentage string.',
+          type: 'number | string',
+          description:
+            'Initial size in pixels or percentage string (e.g. "20%").',
           default: '250',
         },
         {
@@ -52,7 +94,8 @@ export const docs = {
         {
           name: 'collapsedSize',
           type: 'number',
-          description: 'Pixel threshold that triggers collapse during drag.',
+          description:
+            'Pixel threshold that triggers collapse during drag.',
           default: '40',
         },
         {
@@ -63,7 +106,8 @@ export const docs = {
         {
           name: 'shrinkOrder',
           type: 'number',
-          description: 'Cascade priority — lower number shrinks first.',
+          description:
+            'Cascade priority — lower number shrinks first.',
         },
         {
           name: 'autoSaveId',
@@ -71,33 +115,18 @@ export const docs = {
           description: 'Key for persisting sizes to localStorage.',
         },
       ],
-      examples: [
-        {
-          label: 'Single region',
-          code: `const sidebar = useResizable({ defaultSize: 250, minSizePx: 200 });`,
-        },
-        {
-          label: 'Multi-region',
-          code: `const { sidebar, content } = useResizable({
-  direction: 'horizontal',
-  regions: {
-    sidebar: { defaultSize: '20%', minSizePx: 200 },
-    content: { minSizePx: 400 },
-  },
-});`,
-        },
-      ],
     },
     {
       name: 'XDSResizeHandle',
       description:
         'Draggable separator between panels. Pill-grip design: invisible at rest, ' +
-        'visible on hover, fully opaque during drag. Keyboard-accessible.',
+        'visible on hover (0.6 opacity), fully opaque during drag (1.0). Keyboard-accessible.',
       props: [
         {
           name: 'direction',
           type: "'horizontal' | 'vertical'",
-          description: 'Layout direction — determines cursor and pill orientation.',
+          description:
+            'Layout direction — determines cursor and pill orientation.',
           default: "'horizontal'",
         },
         {
@@ -115,54 +144,17 @@ export const docs = {
         {
           name: 'resizable',
           type: 'ResizableProps',
-          description: 'Resize props from useResizable — connects handle to panel.',
+          description:
+            'Resize props from useResizable — connects handle to panel.',
           required: true,
         },
         {
           name: 'children',
           type: 'ReactNode',
-          description: 'Custom handle content. Default renders pill indicator.',
-        },
-      ],
-      examples: [
-        {
-          label: 'Basic',
-          code: '<XDSResizeHandle direction="horizontal" resizable={sidebar.props} />',
-        },
-        {
-          label: 'Vertical',
-          code: '<XDSResizeHandle direction="vertical" resizable={bottom.props} />',
+          description:
+            'Custom handle content. Default renders pill indicator.',
         },
       ],
     },
-  ],
-
-  theming: {
-    targets: [{className: 'xds-resize-handle', visualProps: ['direction']}],
-    vars: [
-      {name: '--resize-handle-width', description: 'Visual width of pill', default: '3px'},
-      {name: '--resize-handle-height', description: 'Height of pill', default: '32px'},
-      {name: '--resize-handle-hit-area', description: 'Clickable area width', default: '16px'},
-    ],
-  },
-
-  accessibility: [
-    'Handle uses role="separator" per WAI-ARIA Window Splitter pattern.',
-    'Arrow keys resize in 10px steps; Shift+Arrow for 50px steps.',
-    'Home/End jump to min/max size.',
-    'Enter toggles collapse on collapsible panels.',
-    'Double-click toggles collapse.',
-    'aria-valuenow/min/max reflect panel size.',
-    'RTL-aware: drag direction inverts in RTL layouts.',
-  ],
-
-  keyboard:
-    'ArrowLeft/Right: resize horizontal; ArrowUp/Down: resize vertical; ' +
-    'Shift+Arrow: large step; Home: min; End: max; Enter: toggle collapse',
-
-  notes: [
-    'Uses hook-first architecture — no wrapper DOM. Pass resizable.props to existing components.',
-    'Pill indicator uses opacity transitions: 0 (idle) → 0.6 (hover) → 1.0 (active).',
-    'Handle hit area (16px) is larger than visual pill (3px) for accessibility.',
   ],
 };
