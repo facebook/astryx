@@ -1,33 +1,39 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, spacingVars} from '@xds/core/theme/tokens.stylex';
-import {useXDSResizable} from '@xds/core/Resizable';
+import {
+  colorVars,
+  spacingVars,
+  radiusVars,
+  typographyVars,
+} from '@xds/core/theme/tokens.stylex';
+import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
 import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSButton} from '@xds/core/Button';
 
-const ps = stylex.create({
-  demo: {
-    padding: spacingVars['--spacing-4'],
+const s = stylex.create({
+  container: {
+    display: 'flex',
+    height: 300,
+    width: '100%',
     borderWidth: 1,
     borderStyle: 'solid',
     borderColor: colorVars['--color-border'],
-    borderRadius: 8,
+    borderRadius: radiusVars['--radius-container'],
+    overflow: 'hidden',
+    backgroundColor: colorVars['--color-background-surface'],
   },
-  row: {
+  containerV: {flexDirection: 'column'},
+  panel: {
     display: 'flex',
-    gap: spacingVars['--spacing-2'],
-    flexWrap: 'wrap',
     alignItems: 'center',
+    justifyContent: 'center',
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: 14,
+    color: colorVars['--color-text-secondary'],
+    overflow: 'hidden',
+    flexShrink: 0,
   },
-  mono: {fontFamily: 'monospace', fontSize: 13, opacity: 0.7},
-  bar: {
-    height: 24,
-    borderRadius: 4,
-    backgroundColor: colorVars['--color-accent'],
-    transitionProperty: 'width',
-    transitionDuration: '150ms',
-  },
+  flex: {flex: 1, minWidth: 0, minHeight: 0},
+  muted: {backgroundColor: colorVars['--color-background-muted']},
 });
 
 function HookDemo({children}: {children: React.ReactNode}) {
@@ -43,8 +49,8 @@ const meta: Meta<typeof HookDemo> = {
     docs: {
       description: {
         component:
-          'Hook that manages resize state for panel regions. Returns reactive size, ' +
-          'isCollapsed, and imperative collapse()/expand()/resize() methods.',
+          'Hook that manages resize state for panel regions. ' +
+          'Pair with XDSResizeHandle for interactive resizing.',
       },
     },
   },
@@ -52,214 +58,109 @@ const meta: Meta<typeof HookDemo> = {
 export default meta;
 type Story = StoryObj<typeof HookDemo>;
 
-/** Shows the reactive size value, imperative resize(), and min/max clamping. */
-export const BasicState: Story = {
+/** Two side-by-side panels. Drag the handle to resize. */
+export const Horizontal: Story = {
   render: () => {
-    const region = useXDSResizable({
+    const left = useXDSResizable({
       defaultSize: 200,
-      minSizePx: 50,
-      maxSizePx: 400,
-    });
-    return (
-      <div {...stylex.props(ps.demo)}>
-        <XDSStack gap="space3">
-          <XDSHeading level={4}>useXDSResizable — basic state</XDSHeading>
-          <div {...stylex.props(ps.row)}>
-            <span {...stylex.props(ps.mono)}>size: {region.size}px</span>
-            <span {...stylex.props(ps.mono)}>min: 50 / max: 400</span>
-          </div>
-          <div {...stylex.props(ps.bar)} style={{width: region.size}} />
-          <div {...stylex.props(ps.row)}>
-            <XDSButton
-              variant="secondary"
-              size="sm"
-              label="50px"
-              onClick={() => region.resize(50)}
-            />
-            <XDSButton
-              variant="secondary"
-              size="sm"
-              label="200px"
-              onClick={() => region.resize(200)}
-            />
-            <XDSButton
-              variant="secondary"
-              size="sm"
-              label="400px"
-              onClick={() => region.resize(400)}
-            />
-            <XDSButton
-              variant="secondary"
-              size="sm"
-              label="999 (clamped)"
-              onClick={() => region.resize(999)}
-            />
-          </div>
-        </XDSStack>
-      </div>
-    );
-  },
-};
-
-/** Collapse and expand via imperative API. */
-export const CollapseExpand: Story = {
-  render: () => {
-    const region = useXDSResizable({
-      defaultSize: 250,
       minSizePx: 100,
-      collapsible: true,
-      collapsedSize: 40,
+      maxSizePx: 500,
     });
     return (
-      <div {...stylex.props(ps.demo)}>
-        <XDSStack gap="space3">
-          <XDSHeading level={4}>collapse / expand</XDSHeading>
-          <div {...stylex.props(ps.row)}>
-            <span {...stylex.props(ps.mono)}>
-              size: {region.size}px | collapsed: {String(region.isCollapsed)}
-            </span>
-          </div>
-          <div
-            {...stylex.props(ps.bar)}
-            style={{
-              width: region.isCollapsed ? 4 : region.size,
-              opacity: region.isCollapsed ? 0.3 : 1,
-            }}
-          />
-          <div {...stylex.props(ps.row)}>
-            <XDSButton
-              variant="secondary"
-              size="sm"
-              label="Collapse"
-              onClick={() => region.collapse()}
-              isDisabled={region.isCollapsed}
-            />
-            <XDSButton
-              variant="secondary"
-              size="sm"
-              label="Expand"
-              onClick={() => region.expand()}
-              isDisabled={!region.isCollapsed}
-            />
-            <XDSButton
-              variant="secondary"
-              size="sm"
-              label="Resize 300"
-              onClick={() => region.resize(300)}
-            />
-          </div>
-        </XDSStack>
+      <div {...stylex.props(s.container)}>
+        <div {...stylex.props(s.panel, s.muted)} style={{width: left.size}}>
+          Sidebar
+        </div>
+        <XDSResizeHandle direction="horizontal" resizable={left.props} />
+        <div {...stylex.props(s.panel, s.flex)}>Content</div>
       </div>
     );
   },
 };
 
-/** Snap points — region snaps to nearest defined value. */
-export const WithSnapPoints: Story = {
+/** Vertical layout — top and bottom panels. */
+export const Vertical: Story = {
   render: () => {
-    const region = useXDSResizable({
-      defaultSize: 260,
-      minSizePx: 56,
+    const top = useXDSResizable({
+      defaultSize: 150,
+      minSizePx: 60,
+      maxSizePx: 250,
+    });
+    return (
+      <div {...stylex.props(s.container, s.containerV)}>
+        <div {...stylex.props(s.panel, s.muted)} style={{height: top.size}}>
+          Header
+        </div>
+        <XDSResizeHandle direction="vertical" resizable={top.props} />
+        <div {...stylex.props(s.panel, s.flex)}>Content</div>
+      </div>
+    );
+  },
+};
+
+/** Three panels with two handles — like a mail client layout. */
+export const ThreePanel: Story = {
+  render: () => {
+    const left = useXDSResizable({
+      defaultSize: 180,
+      minSizePx: 120,
+      maxSizePx: 300,
+    });
+    const right = useXDSResizable({
+      defaultSize: 220,
+      minSizePx: 150,
       maxSizePx: 400,
-      snaps: [56, 150, 260],
     });
     return (
-      <div {...stylex.props(ps.demo)}>
-        <XDSStack gap="space3">
-          <XDSHeading level={4}>snap points: 56, 150, 260</XDSHeading>
-          <span {...stylex.props(ps.mono)}>size: {region.size}px</span>
-          <div {...stylex.props(ps.bar)} style={{width: region.size}} />
-          <div {...stylex.props(ps.row)}>
-            <XDSButton
-              variant="secondary"
-              size="sm"
-              label="56"
-              onClick={() => region.resize(56)}
-            />
-            <XDSButton
-              variant="secondary"
-              size="sm"
-              label="60 (snaps 56)"
-              onClick={() => region.resize(60)}
-            />
-            <XDSButton
-              variant="secondary"
-              size="sm"
-              label="150"
-              onClick={() => region.resize(150)}
-            />
-            <XDSButton
-              variant="secondary"
-              size="sm"
-              label="260"
-              onClick={() => region.resize(260)}
-            />
-          </div>
-        </XDSStack>
+      <div {...stylex.props(s.container)}>
+        <div {...stylex.props(s.panel, s.muted)} style={{width: left.size}}>
+          Folders
+        </div>
+        <XDSResizeHandle direction="horizontal" resizable={left.props} />
+        <div {...stylex.props(s.panel, s.flex)}>Inbox</div>
+        <XDSResizeHandle direction="horizontal" resizable={right.props} />
+        <div {...stylex.props(s.panel, s.muted)} style={{width: right.size}}>
+          Preview
+        </div>
       </div>
     );
   },
 };
 
-/** Multi-region — coordinated regions from a single hook call. */
-export const MultiRegion: Story = {
+/** Nested — horizontal split with a vertical split inside the main area. */
+export const Nested: Story = {
   render: () => {
-    const regions = useXDSResizable({
-      direction: 'horizontal',
-      regions: {
-        sidebar: {defaultSize: 200, minSizePx: 100, maxSizePx: 350},
-        inspector: {defaultSize: 180, minSizePx: 80, maxSizePx: 300},
-      },
+    const sidebar = useXDSResizable({
+      defaultSize: 200,
+      minSizePx: 120,
+      maxSizePx: 350,
+    });
+    const editor = useXDSResizable({
+      defaultSize: 200,
+      minSizePx: 80,
+      maxSizePx: 250,
     });
     return (
-      <div {...stylex.props(ps.demo)}>
-        <XDSStack gap="space3">
-          <XDSHeading level={4}>multi-region</XDSHeading>
-          <div {...stylex.props(ps.row)}>
-            <span {...stylex.props(ps.mono)}>
-              sidebar: {regions.sidebar.size}px
-            </span>
-            <span {...stylex.props(ps.mono)}>
-              inspector: {regions.inspector.size}px
-            </span>
+      <div {...stylex.props(s.container)}>
+        <div {...stylex.props(s.panel, s.muted)} style={{width: sidebar.size}}>
+          Explorer
+        </div>
+        <XDSResizeHandle direction="horizontal" resizable={sidebar.props} />
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            minWidth: 0,
+          }}>
+          <div
+            {...stylex.props(s.panel)}
+            style={{height: editor.size, flex: 'none'}}>
+            Editor
           </div>
-          <div style={{display: 'flex', gap: 8}}>
-            <div
-              {...stylex.props(ps.bar)}
-              style={{width: regions.sidebar.size}}
-            />
-            <div
-              {...stylex.props(ps.bar)}
-              style={{width: regions.inspector.size, opacity: 0.6}}
-            />
-          </div>
-          <div {...stylex.props(ps.row)}>
-            <XDSButton
-              variant="secondary"
-              size="sm"
-              label="Sidebar 100"
-              onClick={() => regions.sidebar.resize(100)}
-            />
-            <XDSButton
-              variant="secondary"
-              size="sm"
-              label="Sidebar 300"
-              onClick={() => regions.sidebar.resize(300)}
-            />
-            <XDSButton
-              variant="secondary"
-              size="sm"
-              label="Inspector 80"
-              onClick={() => regions.inspector.resize(80)}
-            />
-            <XDSButton
-              variant="secondary"
-              size="sm"
-              label="Inspector 250"
-              onClick={() => regions.inspector.resize(250)}
-            />
-          </div>
-        </XDSStack>
+          <XDSResizeHandle direction="vertical" resizable={editor.props} />
+          <div {...stylex.props(s.panel, s.muted, s.flex)}>Terminal</div>
+        </div>
       </div>
     );
   },
