@@ -45,6 +45,7 @@ import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSChatComposer} from '@xds/core/Chat';
 import {XDSLink} from '@xds/core/Link';
+
 import {XDSPopover} from '@xds/core/Popover';
 import {XDSGrid} from '@xds/core/Grid';
 import {COMPONENT_PREVIEWS} from './ComponentPreviews';
@@ -126,14 +127,24 @@ const FOUNDATION_ITEMS: {
   },
 ];
 
+type PackageCategory = 'building' | 'designing';
+
+const PACKAGE_FILTERS: {label: string; value: PackageCategory | 'all'}[] = [
+  {label: 'All', value: 'all'},
+  {label: 'Building', value: 'building'},
+  {label: 'Designing', value: 'designing'},
+];
+
 const LIBRARY_PACKAGES: {
   key: string;
   name: string;
   description: string;
   version?: string;
   status: 'Stable' | 'Published' | 'Experimental' | 'Coming Soon';
-  iconType: 'core' | 'charts' | 'chat' | 'cli' | 'theme';
+  iconType: 'core' | 'charts' | 'chat' | 'cli' | 'theme' | 'design';
   image: string;
+  category: PackageCategory;
+  href?: string;
 }[] = [
   {
     key: 'pkg-cli',
@@ -144,6 +155,7 @@ const LIBRARY_PACKAGES: {
     status: 'Stable',
     iconType: 'cli',
     image: `${basePath}/docsite/LibrariesCli.png`,
+    category: 'building',
   },
   {
     key: 'pkg-core',
@@ -154,6 +166,7 @@ const LIBRARY_PACKAGES: {
     status: 'Stable',
     iconType: 'core',
     image: `${basePath}/docsite/LibrariesCore.png`,
+    category: 'building',
   },
   {
     key: 'pkg-vega',
@@ -163,6 +176,7 @@ const LIBRARY_PACKAGES: {
     status: 'Coming Soon',
     iconType: 'charts',
     image: `${basePath}/docsite/LibrariesVega.png`,
+    category: 'building',
   },
   {
     key: 'pkg-chat',
@@ -172,6 +186,18 @@ const LIBRARY_PACKAGES: {
     status: 'Stable',
     iconType: 'chat',
     image: `${basePath}/docsite/LibrariesChat.png`,
+    category: 'building',
+  },
+  {
+    key: 'pkg-xds-common',
+    name: '@nest/xds-common',
+    description:
+      'Data-backed components with Meta theme and Meta icons for Nest applications.',
+    version: '0.0.12',
+    status: 'Stable',
+    iconType: 'core',
+    image: `${basePath}/docsite/LibrariesCore.png`,
+    category: 'building',
   },
   {
     key: 'pkg-theme-default',
@@ -181,7 +207,8 @@ const LIBRARY_PACKAGES: {
     version: '0.0.12',
     status: 'Stable',
     iconType: 'theme',
-    image: `${basePath}/docsite/LibrariesCore.png`,
+    image: `${basePath}/docsite/theme-preview-forest.png`,
+    category: 'building',
   },
   {
     key: 'pkg-theme-neutral',
@@ -191,55 +218,25 @@ const LIBRARY_PACKAGES: {
     version: '0.0.12',
     status: 'Stable',
     iconType: 'theme',
-    image: `${basePath}/docsite/LibrariesCore.png`,
+    image: `${basePath}/docsite/card4-preview-meta.png`,
+    category: 'building',
+  },
+  {
+    key: 'figma',
+    name: 'Figma Library',
+    description: 'Design files, tokens, and component specs for designers.',
+    status: 'Stable',
+    iconType: 'design',
+    image: `${basePath}/docsite/figma-logo.png`,
+    category: 'designing',
+    href: 'https://www.figma.com/design/c9CR0F4jJQwhue60Ec7qOz/XDS-Open-Source-Library',
   },
 ];
 
-const RESOURCE_ITEMS: {
-  key?: string;
-  title: string;
-  description: string;
-  icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-  image?: string;
-  iconBg: string;
-  iconColor: string;
-  isExternal?: boolean;
-  href?: string;
-}[] = [
-  {
-    title: 'Figma Library',
-    description: 'Design files, tokens, and component specs for designers.',
-    image: `${basePath}/docsite/figma-logo.png`,
-    iconBg: 'transparent',
-    iconColor: '#7C3AED',
-    isExternal: true,
-    href: 'https://www.figma.com/design/c9CR0F4jJQwhue60Ec7qOz/XDS-Open-Source-Library',
-  },
-  {
-    key: 'res-npm',
-    title: 'NPM Packages',
-    description: 'Published packages on the npm registry under the @xds scope.',
-    icon: DownloadIcon,
-    iconBg: '#FEE2E2',
-    iconColor: '#DC2626',
-  },
-  {
-    key: 'res-agent-docs',
-    title: 'AI / Agent Docs',
-    description:
-      'AGENTS.md and CLI docs for using XDS with AI coding assistants.',
-    icon: SparklesIcon,
-    iconBg: '#FEF3C7',
-    iconColor: '#D97706',
-  },
-  {
-    key: 'res-publishing',
-    title: 'Publishing',
-    description: 'How to publish components, themes, and templates to Craft.',
-    icon: HeartIcon,
-    iconBg: '#FCE7F3',
-    iconColor: '#EC4899',
-  },
+const RESOURCE_NAV_ITEMS: {key: string; title: string}[] = [
+  {key: 'res-npm', title: 'NPM Packages'},
+  {key: 'res-agent-docs', title: 'AI / Agent Docs'},
+  {key: 'res-publishing', title: 'Publishing'},
 ];
 
 const GitHubIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -261,6 +258,7 @@ const XDS_OFFERINGS: {
   pkg: string | null;
   description: string;
   label?: string;
+  href?: string;
   icons?: React.ComponentType<React.SVGProps<SVGSVGElement>>[];
   logos?: string[];
 }[] = [
@@ -285,6 +283,7 @@ const XDS_OFFERINGS: {
     subtitle: 'Internal platform',
     pkg: null,
     label: 'OSS components coming soon',
+    href: 'https://www.internalfb.com/dimsum/xds',
     logos: [`${basePath}/docsite/meta-logo.png`],
     description:
       'XDS WWW components are Haste modules in the Meta monorepo \u2014 no package to install. Uses Flow types and pre-built dist/ artifacts. OSS components are not yet available on www but are coming later. For now, use the existing XDS WWW components.',
@@ -1699,6 +1698,10 @@ function LibraryOverview({
   onSelectComponent: (key: string) => void;
   onCraft: () => void;
 }) {
+  const [packageFilter, setPackageFilter] = useState<PackageCategory | 'all'>('all');
+  const filteredPackages = packageFilter === 'all'
+    ? LIBRARY_PACKAGES
+    : LIBRARY_PACKAGES.filter(pkg => pkg.category === packageFilter);
   return (
     <div style={{maxWidth: 1200, margin: '0 auto', padding: '32px 40px'}}>
       {/* ── Section 1: Hero ── */}
@@ -1808,16 +1811,17 @@ function LibraryOverview({
           scope.
         </XDSText>
 
-        {/* Libraries sub-section */}
-        <XDSHeading level={3} style={{marginBottom: 4}}>Libraries</XDSHeading>
-        <XDSText
-          type="supporting"
-          color="secondary"
-          style={{marginBottom: 16}}>
-          Core packages for building UI.
-        </XDSText>
+        <XDSTabList
+          value={packageFilter}
+          onChange={v => setPackageFilter(v as PackageCategory | 'all')}
+          size="sm"
+          style={{marginBottom: 24}}>
+          {PACKAGE_FILTERS.map(filter => (
+            <XDSTab key={filter.value} value={filter.value} label={filter.label} />
+          ))}
+        </XDSTabList>
         <XDSGrid columns={4} gap={4}>
-          {LIBRARY_PACKAGES.filter(pkg => pkg.iconType !== 'theme').map(pkg => {
+          {filteredPackages.map(pkg => {
             const ICON_MAP: Record<
               string,
               React.ComponentType<React.SVGProps<SVGSVGElement>>
@@ -1827,18 +1831,24 @@ function LibraryOverview({
               chat: ChatIcon,
               cli: TerminalIcon,
             };
-            const IconComp = ICON_MAP[pkg.iconType] ?? CodeIcon;
+            const IconComp = ICON_MAP[pkg.iconType];
+            const isDesign = pkg.category === 'designing';
             return (
               <div
                 key={pkg.key}
-                onClick={() => onSelectComponent(pkg.key)}
+                onClick={
+                  pkg.href
+                    ? () => window.open(pkg.href, '_blank')
+                    : () => onSelectComponent(pkg.key)
+                }
                 style={{cursor: 'pointer'}}>
                 <div
                   style={{
                     aspectRatio: '16 / 9',
-                    backgroundImage: `url(${pkg.image})`,
+                    backgroundImage: isDesign ? undefined : `url(${pkg.image})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
+                    backgroundColor: isDesign ? 'var(--color-background-muted, #f5f5f5)' : undefined,
                     borderRadius: 12,
                     display: 'flex',
                     alignItems: 'center',
@@ -1846,7 +1856,15 @@ function LibraryOverview({
                     position: 'relative',
                     marginBottom: 12,
                   }}>
-                  <XDSIcon icon={IconComp} size="lg" style={{width: 48, height: 48, color: '#484233', strokeWidth: 1.8}} />
+                  {isDesign ? (
+                    <img
+                      src={pkg.image}
+                      alt={pkg.name}
+                      style={{width: 48, height: 48, objectFit: 'contain'}}
+                    />
+                  ) : IconComp ? (
+                    <XDSIcon icon={IconComp} size="lg" style={{width: 48, height: 48, color: '#484233', strokeWidth: 1.8}} />
+                  ) : null}
                   {pkg.status === 'Coming Soon' && (
                     <div style={{position: 'absolute', top: 12, right: 12}}>
                       <XDSBadge label="Coming Soon" variant="blue" />
@@ -1856,7 +1874,7 @@ function LibraryOverview({
                 <XDSText
                   type="body"
                   weight="bold"
-                  style={{fontFamily: 'monospace', fontSize: 14, display: 'block', marginBottom: 4}}>
+                  style={{fontFamily: isDesign ? undefined : 'monospace', fontSize: 14, display: 'block', marginBottom: 4}}>
                   {pkg.name}
                   {pkg.version && (
                     <XDSText
@@ -1870,104 +1888,6 @@ function LibraryOverview({
                 <XDSText type="supporting" color="secondary">
                   {pkg.description}
                 </XDSText>
-              </div>
-            );
-          })}
-        </XDSGrid>
-
-        {/* Themes sub-section */}
-        <XDSHeading level={3} style={{marginTop: 40, marginBottom: 4}}>Themes</XDSHeading>
-        <XDSText
-          type="supporting"
-          color="secondary"
-          style={{marginBottom: 16}}>
-          Swap the entire look and feel with a single package.
-        </XDSText>
-        <XDSGrid columns={4} gap={4}>
-          {LIBRARY_PACKAGES.filter(pkg => pkg.iconType === 'theme').map(pkg => (
-            <div
-              key={pkg.key}
-              onClick={() => onSelectComponent(pkg.key)}
-              style={{cursor: 'pointer'}}>
-              <div
-                style={{
-                  aspectRatio: '16 / 9',
-                  backgroundImage: `url(${pkg.image})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  borderRadius: 12,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: 12,
-                }}>
-                <XDSIcon icon={PaletteIcon} size="lg" style={{width: 48, height: 48, color: '#484233', strokeWidth: 1.8}} />
-              </div>
-              <XDSText
-                type="body"
-                weight="bold"
-                style={{fontFamily: 'monospace', fontSize: 14, display: 'block', marginBottom: 4}}>
-                {pkg.name}
-                {pkg.version && (
-                  <XDSText
-                    type="supporting"
-                    color="secondary"
-                    style={{fontFamily: 'monospace', fontSize: 12, marginLeft: 8}}>
-                    v{pkg.version}
-                  </XDSText>
-                )}
-              </XDSText>
-              <XDSText type="supporting" color="secondary">
-                {pkg.description}
-              </XDSText>
-            </div>
-          ))}
-        </XDSGrid>
-      </XDSStack>
-
-      {/* ── Section 3: Resources ── */}
-      <XDSStack direction="vertical" gap={0} style={{marginBottom: 64}}>
-        <XDSHeading level={2}>Resources</XDSHeading>
-        <XDSText
-          type="body"
-          color="secondary"
-          style={{marginTop: 8, marginBottom: 24}}>
-          Everything you need to design, build, and contribute.
-        </XDSText>
-        <XDSGrid columns={4} gap={4}>
-          {RESOURCE_ITEMS.map(resource => {
-            return (
-              <div
-                key={resource.title}
-                onClick={
-                  resource.href
-                    ? () => window.open(resource.href, '_blank')
-                    : resource.key
-                      ? () => onSelectComponent(resource.key!)
-                      : undefined
-                }
-                style={{cursor: 'pointer'}}>
-              <XDSCard padding={4} style={{height: '100%'}}>
-                <XDSStack direction="vertical" gap={4} style={{height: '100%'}}>
-                  <XDSText type="body" weight="bold">
-                    {resource.title}
-                  </XDSText>
-                  <XDSText type="supporting" color="secondary" style={{flex: 1}}>
-                    {resource.description}
-                  </XDSText>
-                  <div>
-                    {resource.image ? (
-                      <img
-                        src={resource.image}
-                        alt={resource.title}
-                        style={{width: 28, height: 28, objectFit: 'contain'}}
-                      />
-                    ) : resource.icon ? (
-                      <XDSIcon icon={resource.icon} size="md" color="secondary" />
-                    ) : null}
-                  </div>
-                </XDSStack>
-              </XDSCard>
               </div>
             );
           })}
@@ -2407,7 +2327,7 @@ export function DocsView({
                   ))}
                 </XDSSideNavItem>
                 <XDSSideNavItem label="Resources" collapsible>
-                  {RESOURCE_ITEMS.filter(r => r.key).map(resource => (
+                  {RESOURCE_NAV_ITEMS.map(resource => (
                     <XDSSideNavItem
                       key={resource.key}
                       label={resource.title}
@@ -2415,8 +2335,8 @@ export function DocsView({
                         selectedComponent !== null && activeNav === resource.key
                       }
                       onClick={() => {
-                        setSelectedComponent(resource.key!);
-                        setActiveNav(resource.key!);
+                        setSelectedComponent(resource.key);
+                        setActiveNav(resource.key);
                       }}
                     />
                   ))}
@@ -2470,7 +2390,7 @@ export function DocsView({
               setActiveNav(key);
             }}
           />
-        ) : RESOURCE_ITEMS.some(r => r.key === selectedComponent) ? (
+        ) : RESOURCE_NAV_ITEMS.some(r => r.key === selectedComponent) ? (
           <ResourcePage resourceKey={selectedComponent} />
         ) : (
           <ComponentDetailPage
