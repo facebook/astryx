@@ -2,12 +2,10 @@ import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
-  spacingVars,
   radiusVars,
   typographyVars,
 } from '@xds/core/theme/tokens.stylex';
 import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
-import {XDSText, XDSHeading} from '@xds/core/Text';
 
 const s = stylex.create({
   container: {
@@ -33,7 +31,6 @@ const s = stylex.create({
     flexShrink: 0,
   },
   flex: {flex: 1, minWidth: 0, minHeight: 0},
-  muted: {backgroundColor: colorVars['--color-background-muted']},
 });
 
 function HookDemo({children}: {children: React.ReactNode}) {
@@ -68,10 +65,14 @@ export const Horizontal: Story = {
     });
     return (
       <div {...stylex.props(s.container)}>
-        <div {...stylex.props(s.panel, s.muted)} style={{width: left.size}}>
+        <div {...stylex.props(s.panel)} style={{width: left.size}}>
           Sidebar
         </div>
-        <XDSResizeHandle direction="horizontal" resizable={left.props} />
+        <XDSResizeHandle
+          direction="horizontal"
+          hasDivider
+          resizable={left.props}
+        />
         <div {...stylex.props(s.panel, s.flex)}>Content</div>
       </div>
     );
@@ -88,10 +89,14 @@ export const Vertical: Story = {
     });
     return (
       <div {...stylex.props(s.container, s.containerV)}>
-        <div {...stylex.props(s.panel, s.muted)} style={{height: top.size}}>
+        <div {...stylex.props(s.panel)} style={{height: top.size}}>
           Header
         </div>
-        <XDSResizeHandle direction="vertical" resizable={top.props} />
+        <XDSResizeHandle
+          direction="vertical"
+          hasDivider
+          resizable={top.props}
+        />
         <div {...stylex.props(s.panel, s.flex)}>Content</div>
       </div>
     );
@@ -113,13 +118,22 @@ export const ThreePanel: Story = {
     });
     return (
       <div {...stylex.props(s.container)}>
-        <div {...stylex.props(s.panel, s.muted)} style={{width: left.size}}>
+        <div {...stylex.props(s.panel)} style={{width: left.size}}>
           Folders
         </div>
-        <XDSResizeHandle direction="horizontal" resizable={left.props} />
+        <XDSResizeHandle
+          direction="horizontal"
+          hasDivider
+          resizable={left.props}
+        />
         <div {...stylex.props(s.panel, s.flex)}>Inbox</div>
-        <XDSResizeHandle direction="horizontal" resizable={right.props} />
-        <div {...stylex.props(s.panel, s.muted)} style={{width: right.size}}>
+        <XDSResizeHandle
+          direction="horizontal"
+          hasDivider
+          isReversed
+          resizable={right.props}
+        />
+        <div {...stylex.props(s.panel)} style={{width: right.size}}>
           Preview
         </div>
       </div>
@@ -142,10 +156,14 @@ export const Nested: Story = {
     });
     return (
       <div {...stylex.props(s.container)}>
-        <div {...stylex.props(s.panel, s.muted)} style={{width: sidebar.size}}>
+        <div {...stylex.props(s.panel)} style={{width: sidebar.size}}>
           Explorer
         </div>
-        <XDSResizeHandle direction="horizontal" resizable={sidebar.props} />
+        <XDSResizeHandle
+          direction="horizontal"
+          hasDivider
+          resizable={sidebar.props}
+        />
         <div
           style={{
             flex: 1,
@@ -158,9 +176,38 @@ export const Nested: Story = {
             style={{height: editor.size, flex: 'none'}}>
             Editor
           </div>
-          <XDSResizeHandle direction="vertical" resizable={editor.props} />
-          <div {...stylex.props(s.panel, s.muted, s.flex)}>Terminal</div>
+          <XDSResizeHandle
+            direction="vertical"
+            hasDivider
+            resizable={editor.props}
+          />
+          <div {...stylex.props(s.panel, s.flex)}>Terminal</div>
         </div>
+      </div>
+    );
+  },
+};
+
+/** Always-visible pill grip — for when discoverability matters. */
+export const AlwaysVisible: Story = {
+  render: () => {
+    const left = useXDSResizable({
+      defaultSize: 250,
+      minSizePx: 100,
+      maxSizePx: 500,
+    });
+    return (
+      <div {...stylex.props(s.container)}>
+        <div {...stylex.props(s.panel)} style={{width: left.size}}>
+          Sidebar
+        </div>
+        <XDSResizeHandle
+          direction="horizontal"
+          hasDivider
+          isAlwaysVisible
+          resizable={left.props}
+        />
+        <div {...stylex.props(s.panel, s.flex)}>Content</div>
       </div>
     );
   },

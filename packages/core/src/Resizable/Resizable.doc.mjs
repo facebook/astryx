@@ -126,13 +126,34 @@ export const docs = {
           name: 'direction',
           type: "'horizontal' | 'vertical'",
           description:
-            'Layout direction — determines cursor and pill orientation.',
+            'Layout direction — determines cursor and indicator orientation.',
           default: "'horizontal'",
+        },
+        {
+          name: 'isReversed',
+          type: 'boolean',
+          description:
+            'Reverse drag direction. Use when the handle controls a panel on the end/right/bottom side.',
+          default: 'false',
         },
         {
           name: 'isDisabled',
           type: 'boolean',
           description: 'Whether the handle is interactive.',
+          default: 'false',
+        },
+        {
+          name: 'hasDivider',
+          type: 'boolean',
+          description:
+            'Show a full-length 1px divider line through the handle. Use when adjacent panels share the same background.',
+          default: 'false',
+        },
+        {
+          name: 'isAlwaysVisible',
+          type: 'boolean',
+          description:
+            'Show the pill grip at rest instead of only on hover. Use when discoverability is important.',
           default: 'false',
         },
         {
@@ -152,7 +173,7 @@ export const docs = {
           name: 'children',
           type: 'ReactNode',
           description:
-            'Custom handle content. Default renders pill indicator.',
+            'Custom handle content. Overrides the default pill + divider.',
         },
       ],
     },

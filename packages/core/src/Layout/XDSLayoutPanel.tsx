@@ -115,6 +115,9 @@ export interface XDSLayoutPanelProps extends XDSBaseProps<HTMLDivElement> {
    * - Start panel: border on end edge (right in LTR)
    * - End panel: border on start edge (left in LTR)
    * When false, spacing collapse is applied automatically for seamless visual flow.
+   *
+   * Note: When using `resizable` with an adjacent `XDSResizeHandle hasDivider`,
+   * set this to `false` to avoid a double-line artifact.
    * @default false
    */
   hasDivider?: boolean;

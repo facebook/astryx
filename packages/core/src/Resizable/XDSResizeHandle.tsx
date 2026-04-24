@@ -2,9 +2,12 @@
 
 /**
  * @file XDSResizeHandle.tsx
- * @input direction, isDisabled, label, ResizableProps from adjacent panels
+ * @input direction, isReversed, hasDivider, isAlwaysVisible, ResizableProps
  * @output Styled drag handle with WAI-ARIA separator role and keyboard support
  * @position Between resizable panels; consumed directly by builders
+ *
+ * Pill-grip resize handle with optional divider line.
+ * Follows WAI-ARIA Window Splitter keyboard pattern.
  */
 
 import {useCallback, useEffect, useRef, useState} from 'react';
@@ -23,6 +26,7 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
     zIndex: 1,
     touchAction: 'none',
     userSelect: 'none',
@@ -52,10 +56,13 @@ const styles = stylex.create({
     cursor: 'default',
     pointerEvents: 'none',
   },
+
+  // --- Pill indicator ---
   pill: {
+    position: 'relative',
+    zIndex: 1,
     borderRadius: 2,
     backgroundColor: colorVars['--color-border-emphasized'],
-    opacity: 0,
     transitionProperty: 'opacity, background-color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -68,15 +75,41 @@ const styles = stylex.create({
     height: 'var(--resize-handle-width, 3px)',
     width: 'var(--resize-handle-height, 32px)',
   },
-  pillHover: {
-    opacity: 0.6,
-  },
+  pillHidden: {opacity: 0},
+  pillVisible: {opacity: 0.5},
+  pillHover: {opacity: 0.7},
   pillActive: {
     opacity: 1,
-    backgroundColor: colorVars['--color-icon-primary'],
+    backgroundColor: colorVars['--color-accent'],
   },
-  pillFocusVisible: {
-    opacity: 0.6,
+
+  // --- Divider line ---
+  divider: {
+    position: 'absolute',
+    backgroundColor: colorVars['--color-border'],
+    transitionProperty: 'background-color',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  dividerHorizontal: {
+    width: 1,
+    top: 0,
+    bottom: 0,
+    left: '50%',
+    transform: 'translateX(-0.5px)',
+  },
+  dividerVertical: {
+    height: 1,
+    left: 0,
+    right: 0,
+    top: '50%',
+    transform: 'translateY(-0.5px)',
+  },
+  dividerHover: {
+    backgroundColor: colorVars['--color-accent'],
+  },
+  dividerActive: {
+    backgroundColor: colorVars['--color-accent'],
   },
 });
 
@@ -85,23 +118,64 @@ export interface XDSResizeHandleProps extends Omit<
   'style' | 'className'
 > {
   ref?: React.Ref<HTMLDivElement>;
-  /** Layout direction. @default 'horizontal' */
+
+  /**
+   * Layout direction — determines cursor and indicator orientation.
+   * @default 'horizontal'
+   */
   direction?: 'horizontal' | 'vertical';
-  /** @default false */
+
+  /**
+   * Reverse the drag direction. Use when the handle controls a panel
+   * on the end/right/bottom side — dragging left/up should increase
+   * the panel size.
+   * @default false
+   */
+  isReversed?: boolean;
+
+  /**
+   * Whether the handle is disabled (not interactive).
+   * @default false
+   */
   isDisabled?: boolean;
-  /** Accessible label. @default 'Resize handle' */
+
+  /**
+   * Show a full-length 1px divider line through the handle.
+   * Use when adjacent panels share the same background color
+   * and need a visible boundary.
+   * @default false
+   */
+  hasDivider?: boolean;
+
+  /**
+   * Show the pill grip indicator at rest (0.5 opacity) instead of
+   * only on hover. Use when discoverability is important.
+   * @default false
+   */
+  isAlwaysVisible?: boolean;
+
+  /**
+   * Accessible label for the separator.
+   * @default 'Resize handle'
+   */
   label?: string;
-  /** Resize props from the preceding panel's useXDSResizable region. */
+
+  /** Resize props from useXDSResizable region. */
   resizable?: ResizableProps;
-  /** Custom handle content. Default renders pill indicator. */
+
+  /** Custom handle content. Overrides the default pill + divider. */
   children?: ReactNode;
+
   /** StyleX styles override. */
   xstyle?: stylex.StyleXStyles;
 }
 
 export function XDSResizeHandle({
   direction = 'horizontal',
+  isReversed = false,
   isDisabled = false,
+  hasDivider = false,
+  isAlwaysVisible = false,
   label = 'Resize handle',
   resizable,
   children,
@@ -114,6 +188,7 @@ export function XDSResizeHandle({
   const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const isHorizontal = direction === 'horizontal';
+  const sign = isReversed ? -1 : 1;
 
   const getRTLMultiplier = useCallback((): number => {
     const el = handleRef.current;
@@ -121,6 +196,7 @@ export function XDSResizeHandle({
     return getComputedStyle(el).direction === 'rtl' ? -1 : 1;
   }, []);
 
+  // --- Pointer drag ---
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (isDisabled || !resizable) return;
@@ -135,7 +211,7 @@ export function XDSResizeHandle({
 
       const onMove = (ev: PointerEvent) => {
         const currentPos = isHorizontal ? ev.clientX : ev.clientY;
-        const delta = (currentPos - startPos) * rtl;
+        const delta = (currentPos - startPos) * rtl * sign;
         resizable._onResizeMove(delta);
       };
       const onUp = () => {
@@ -160,9 +236,10 @@ export function XDSResizeHandle({
       window.addEventListener('pointerup', onUp);
       window.addEventListener('pointercancel', onCancel);
     },
-    [isDisabled, resizable, isHorizontal, getRTLMultiplier],
+    [isDisabled, resizable, isHorizontal, getRTLMultiplier, sign],
   );
 
+  // --- Keyboard ---
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (isDisabled || !resizable) return;
@@ -174,7 +251,7 @@ export function XDSResizeHandle({
         case 'ArrowDown': {
           e.preventDefault();
           resizable._onResizeStart();
-          resizable._onResizeMove(step * (isHorizontal ? rtl : 1));
+          resizable._onResizeMove(step * (isHorizontal ? rtl : 1) * sign);
           resizable._onResizeEnd();
           break;
         }
@@ -182,7 +259,7 @@ export function XDSResizeHandle({
         case 'ArrowUp': {
           e.preventDefault();
           resizable._onResizeStart();
-          resizable._onResizeMove(-step * (isHorizontal ? rtl : 1));
+          resizable._onResizeMove(-step * (isHorizontal ? rtl : 1) * sign);
           resizable._onResizeEnd();
           break;
         }
@@ -215,9 +292,10 @@ export function XDSResizeHandle({
         }
       }
     },
-    [isDisabled, resizable, isHorizontal, getRTLMultiplier],
+    [isDisabled, resizable, isHorizontal, getRTLMultiplier, sign],
   );
 
+  // --- Double-click collapse ---
   const handleDoubleClick = useCallback(() => {
     if (isDisabled || !resizable || !resizable._collapsible) return;
     resizable._onResizeStart();
@@ -227,6 +305,7 @@ export function XDSResizeHandle({
     resizable._onResizeEnd();
   }, [isDisabled, resizable]);
 
+  // --- Cleanup on unmount ---
   useEffect(() => {
     return () => {
       if (isDragging) {
@@ -236,6 +315,7 @@ export function XDSResizeHandle({
     };
   }, [isDragging]);
 
+  // --- ARIA ---
   const ariaValueNow = resizable ? resizable._size : undefined;
   const ariaValueMin = resizable ? resizable._minSizePx : undefined;
   const ariaValueMax =
@@ -243,9 +323,8 @@ export function XDSResizeHandle({
       ? resizable._maxSizePx
       : undefined;
 
-  const showPillHover = isHovered && !isDragging;
-  const showPillActive = isDragging;
-  const showPillFocus = isFocused && !isDragging && !isHovered;
+  // --- Interaction state ---
+  const isInteracting = isHovered || isFocused;
 
   return (
     <div
@@ -285,15 +364,34 @@ export function XDSResizeHandle({
       )}
       {...props}>
       {children ?? (
-        <div
-          {...stylex.props(
-            styles.pill,
-            isHorizontal ? styles.pillHorizontal : styles.pillVertical,
-            showPillHover && styles.pillHover,
-            showPillActive && styles.pillActive,
-            showPillFocus && styles.pillFocusVisible,
+        <>
+          {/* Divider line — full-length, behind the pill */}
+          {hasDivider && (
+            <div
+              {...stylex.props(
+                styles.divider,
+                isHorizontal
+                  ? styles.dividerHorizontal
+                  : styles.dividerVertical,
+                isInteracting && !isDragging && styles.dividerHover,
+                isDragging && styles.dividerActive,
+              )}
+            />
           )}
-        />
+          {/* Pill grip — centered */}
+          <div
+            {...stylex.props(
+              styles.pill,
+              isHorizontal ? styles.pillHorizontal : styles.pillVertical,
+              // Idle state
+              isAlwaysVisible ? styles.pillVisible : styles.pillHidden,
+              // Hover / focus
+              isInteracting && !isDragging && styles.pillHover,
+              // Active drag
+              isDragging && styles.pillActive,
+            )}
+          />
+        </>
       )}
     </div>
   );
