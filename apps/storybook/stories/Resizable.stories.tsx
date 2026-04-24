@@ -337,7 +337,7 @@ export const WithXDSLayout: Story = {
           start={
             <div style={{display: 'flex', height: '100%'}}>
               <XDSLayoutPanel
-                width={sidebar.isCollapsed ? 0 : sidebar.size}
+                resizable={sidebar.props}
                 hasDivider={false}
                 role="navigation"
                 label="Sidebar">
