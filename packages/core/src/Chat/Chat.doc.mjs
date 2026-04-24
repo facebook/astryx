@@ -173,8 +173,8 @@ export const docs = {
       { guidance: true, description: 'Use the named slots on XDSChatComposer (drawer, headerActions, footerActions) to keep the input layout structured and extensible.' },
       { guidance: true, description: 'Put name and metadata on the bubble when the content has a visible bubble boundary. Put them on the message wrapper when the content is raw (no bubble).' },
       { guidance: true, description: 'Use XDSChatLayout for full-page chat — it handles auto-scroll, density adaptation, and composer docking automatically.' },
-      { guidance: false, description: 'Don't place metadata or names on both the bubble and the message wrapper — pick one based on whether the content has a bubble boundary.' },
-      { guidance: false, description: 'Don't build your own scroll management or density breakpoints — XDSChatLayout handles both via container width observation.' },
+      { guidance: false, description: 'Don\'t place metadata or names on both the bubble and the message wrapper — pick one based on whether the content has a bubble boundary.' },
+      { guidance: false, description: 'Don\'t build your own scroll management or density breakpoints — XDSChatLayout handles both via container width observation.' },
     ],
   },
 };
@@ -213,8 +213,8 @@ export const docsZh = {
       { guidance: true, description: 'Use the named slots on XDSChatComposer (drawer, headerActions, footerActions) to keep the input layout structured and extensible.' },
       { guidance: true, description: 'Put name and metadata on the bubble when the content has a visible bubble boundary. Put them on the message wrapper when the content is raw (no bubble).' },
       { guidance: true, description: 'Use XDSChatLayout for full-page chat — it handles auto-scroll, density adaptation, and composer docking automatically.' },
-      { guidance: false, description: 'Don't place metadata or names on both the bubble and the message wrapper — pick one based on whether the content has a bubble boundary.' },
-      { guidance: false, description: 'Don't build your own scroll management or density breakpoints — XDSChatLayout handles both via container width observation.' },
+      { guidance: false, description: 'Don\'t place metadata or names on both the bubble and the message wrapper — pick one based on whether the content has a bubble boundary.' },
+      { guidance: false, description: 'Don\'t build your own scroll management or density breakpoints — XDSChatLayout handles both via container width observation.' },
     ],
   },
   components: [
@@ -372,8 +372,8 @@ export const docsDense = {
       { guidance: true, description: 'Use the named slots on XDSChatComposer (drawer, headerActions, footerActions) to keep the input layout structured and extensible.' },
       { guidance: true, description: 'Put name and metadata on the bubble when the content has a visible bubble boundary. Put them on the message wrapper when the content is raw (no bubble).' },
       { guidance: true, description: 'Use XDSChatLayout for full-page chat — it handles auto-scroll, density adaptation, and composer docking automatically.' },
-      { guidance: false, description: 'Don't place metadata or names on both the bubble and the message wrapper — pick one based on whether the content has a bubble boundary.' },
-      { guidance: false, description: 'Don't build your own scroll management or density breakpoints — XDSChatLayout handles both via container width observation.' },
+      { guidance: false, description: 'Don\'t place metadata or names on both the bubble and the message wrapper — pick one based on whether the content has a bubble boundary.' },
+      { guidance: false, description: 'Don\'t build your own scroll management or density breakpoints — XDSChatLayout handles both via container width observation.' },
     ],
   },
   components: [
