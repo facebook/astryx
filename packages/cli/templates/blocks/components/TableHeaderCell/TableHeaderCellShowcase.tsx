@@ -1,8 +1,13 @@
 'use client';
 
-import {useState} from 'react';
-import {XDSTable, useXDSTableSortable, proportional, pixel} from '@xds/core/Table';
-import type {XDSTableColumn, XDSTableSortState} from '@xds/core/Table';
+import {
+  XDSTable,
+  useXDSTableSortable,
+  useXDSTableSortableState,
+  proportional,
+  pixel,
+} from '@xds/core/Table';
+import type {XDSTableColumn} from '@xds/core/Table';
 
 interface Employee extends Record<string, unknown> {
   id: string;
@@ -28,18 +33,19 @@ const columns: XDSTableColumn<Employee>[] = [
 ];
 
 export default function TableHeaderCellShowcase() {
-  const [sort, setSort] = useState<XDSTableSortState<string>>([
-    {sortKey: 'name', direction: 'ascending'},
-  ]);
+  const {sortedData, sortConfig} = useXDSTableSortableState<Employee>({
+    data: employees,
+    defaultSort: [{sortKey: 'name', direction: 'ascending'}],
+  });
 
-  const sortPlugin = useXDSTableSortable({sort, onSortChange: setSort});
+  const sortPlugin = useXDSTableSortable<Employee>(sortConfig);
 
   return (
     <XDSTable
-      data={employees}
+      data={sortedData}
       columns={columns}
       idKey="id"
-      plugins={{sort: sortPlugin}}
+      plugins={{sortable: sortPlugin}}
       hasHover
     />
   );
