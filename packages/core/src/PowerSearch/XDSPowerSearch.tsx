@@ -17,6 +17,7 @@ import React, {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -340,9 +341,9 @@ export interface XDSPowerSearchProps {
   isDisabled?: boolean;
   /**
    * Icon to display at the start of the input.
-   * Pass an SVG icon component (e.g. from heroicons, lucide, etc.).
+   * Accepts a ReactNode (e.g. `<XDSIcon icon={SearchIcon} />`) or an SVG icon component directly.
    */
-  startIcon?: XDSIconType;
+  startIcon?: ReactNode | XDSIconType;
   /** Focus callback. */
   onFocus?: () => void;
   /** Blur callback. */

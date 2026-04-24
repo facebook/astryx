@@ -20,7 +20,7 @@ import {
   typographyVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {XDSIcon, type XDSIconType} from '../Icon';
+import {XDSIcon, renderIconSlot, type XDSIconType} from '../Icon';
 import {XDSTooltip} from '../Tooltip';
 
 const styles = stylex.create({
@@ -103,7 +103,7 @@ export interface XDSFieldLabelProps {
   /**
    * Icon to display before the label text.
    */
-  labelIcon?: XDSIconType;
+  labelIcon?: ReactNode | XDSIconType;
   /**
    * Tooltip text to display in an info icon at the end of the label.
    */
@@ -160,7 +160,7 @@ export function XDSFieldLabel({
             isLabelHidden && styles.srOnly,
           ),
         )}>
-        {labelIcon && <XDSIcon icon={labelIcon} size="sm" color="inherit" />}
+        {labelIcon && renderIconSlot(labelIcon, {size: 'sm', color: 'inherit'})}
         {label}
         {statusText && (
           <span {...stylex.props(styles.optionalRequired)}>
@@ -177,10 +177,7 @@ export function XDSFieldLabel({
       {description && (
         <span
           id={descriptionID}
-          {...stylex.props(
-            styles.description,
-            isLabelHidden && styles.srOnly,
-          )}>
+          {...stylex.props(styles.description, isLabelHidden && styles.srOnly)}>
           {description}
         </span>
       )}

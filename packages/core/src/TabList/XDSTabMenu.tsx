@@ -12,10 +12,10 @@
  * - /packages/core/src/TabList/XDSTabList.test.tsx
  */
 
-import React, {useCallback, useId} from 'react';
+import React, {useCallback, useId, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSIcon} from '../Icon';
-import type {XDSIconType} from '../Icon';
+import {renderIconSlot, type XDSIconType} from '../Icon';
 import {
   colorVars,
   spacingVars,
@@ -39,7 +39,7 @@ export interface XDSTabMenuOption {
   /**
    * Icon to display before the label.
    */
-  icon?: XDSIconType;
+  icon?: ReactNode | XDSIconType;
 }
 
 export interface XDSTabMenuProps {
@@ -360,9 +360,11 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
                   ),
                 )}>
                 <span {...stylex.props(styles.menuItemContent)}>
-                  {option.icon && (
-                    <XDSIcon icon={option.icon} size="sm" color="secondary" />
-                  )}
+                  {option.icon &&
+                    renderIconSlot(option.icon, {
+                      size: 'sm',
+                      color: 'secondary',
+                    })}
                   {option.label}
                 </span>
                 {isSelected && (

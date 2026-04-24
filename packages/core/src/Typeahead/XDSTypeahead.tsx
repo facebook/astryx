@@ -16,7 +16,13 @@
  * - /apps/storybook/stories/Typeahead.stories.tsx
  */
 
-import React, {useCallback, useId, useRef, useState} from 'react';
+import React, {
+  useCallback,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSBaseTypeahead} from './XDSBaseTypeahead';
@@ -31,7 +37,7 @@ import {
 } from '../Field';
 import {XDSToken} from '../Token';
 import {XDSIcon} from '../Icon';
-import type {XDSIconType} from '../Icon';
+import {renderIconSlot, type XDSIconType} from '../Icon';
 import {
   colorVars,
   spacingVars,
@@ -40,7 +46,6 @@ import {
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import type {XDSSearchableItem, XDSSearchSource} from './types';
-import type {ReactNode} from 'react';
 
 export type {
   XDSInputStatus as XDSTypeaheadStatus,
@@ -64,9 +69,9 @@ export interface XDSTypeaheadProps<T extends XDSSearchableItem> {
   status?: XDSInputStatus;
   /**
    * Icon to display at the start of the input.
-   * Pass an SVG icon component (e.g. from heroicons, lucide, etc.).
+   * Accepts a ReactNode (e.g. `<XDSIcon icon={SearchIcon} />`) or an SVG icon component directly.
    */
-  startIcon?: XDSIconType;
+  startIcon?: ReactNode | XDSIconType;
   /** Label tooltip. */
   labelTooltip?: string;
   /** Search source providing items. */
@@ -391,7 +396,7 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
             isDisabled && inputWrapperStyles.disabled,
           ),
         )}>
-        {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
+        {startIcon && renderIconSlot(startIcon, {size: 'sm', color: 'primary'})}
         {showToken && (
           <XDSToken
             ref={tokenRef}

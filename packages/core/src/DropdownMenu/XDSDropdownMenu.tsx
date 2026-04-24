@@ -86,7 +86,7 @@ export interface XDSDropdownMenuItemData {
   label: string;
   onClick?: () => void;
   isDisabled?: boolean;
-  icon?: XDSIconType;
+  icon?: ReactNode | XDSIconType;
 }
 
 export interface XDSDropdownMenuDivider {
