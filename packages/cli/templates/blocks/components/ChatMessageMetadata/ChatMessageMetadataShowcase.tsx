@@ -7,6 +7,7 @@ import {
   XDSChatMessageMetadata,
 } from '@xds/core/Chat';
 import {XDSTimestamp} from '@xds/core/Timestamp';
+import {XDSText} from '@xds/core/Text';
 
 export default function ChatMessageMetadataShowcase() {
   return (
@@ -33,7 +34,7 @@ export default function ChatMessageMetadataShowcase() {
           timestamp={
             <XDSTimestamp value="2026-03-15T14:31:00" format="time" />
           }
-          footer={<span>Claude Opus 4.6</span>}
+          footer={<XDSText type="supporting" color="secondary">Claude Opus 4.6</XDSText>}
         />
       </XDSChatMessage>
 

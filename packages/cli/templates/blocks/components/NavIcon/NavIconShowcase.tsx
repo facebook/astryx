@@ -2,13 +2,14 @@
 
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSIcon} from '@xds/core/Icon';
+import {XDSHStack} from '@xds/core/Layout';
 
 export default function NavIconShowcase() {
   return (
-    <div style={{display: 'flex', gap: 16, alignItems: 'center'}}>
+    <XDSHStack gap={4} vAlign="center">
       <XDSNavIcon icon={<XDSIcon icon="search" />} />
       <XDSNavIcon icon={<XDSIcon icon="calendar" />} />
       <XDSNavIcon icon={<XDSIcon icon="wrench" />} />
-    </div>
+    </XDSHStack>
   );
 }

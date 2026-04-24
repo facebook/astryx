@@ -6,6 +6,13 @@ import {XDSText} from '@xds/core/Text';
 import {XDSKbd} from '@xds/core/Kbd';
 import {createStaticSource} from '@xds/core/Typeahead';
 import type {XDSSearchableItem} from '@xds/core/Typeahead';
+import * as stylex from '@stylexjs/stylex';
+
+const styles = stylex.create({
+  itemLabel: {
+    flexGrow: 1,
+  },
+});
 
 type CommandItem = XDSSearchableItem<{shortcut?: string}>;
 
@@ -28,7 +35,7 @@ export default function CommandPaletteItemShowcase() {
       searchSource={source}
       renderItem={(item: CommandItem) => (
         <>
-          <XDSText type="body" style={{flex: 1}}>
+          <XDSText type="body" xstyle={styles.itemLabel}>
             {item.label}
           </XDSText>
           {item.auxiliaryData?.shortcut && (

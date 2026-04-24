@@ -2,6 +2,8 @@
 
 import {XDSChatDictationButton} from '@xds/core/Chat';
 import type {UseSpeechRecognitionReturn} from '@xds/core/Chat';
+import {XDSHStack, XDSVStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
 
 const noop = () => {};
 
@@ -41,37 +43,19 @@ const speaking: UseSpeechRecognitionReturn = {
 
 export default function ChatDictationButtonShowcase() {
   return (
-    <div style={{display: 'flex', gap: 32, alignItems: 'center'}}>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 8,
-        }}>
+    <XDSHStack gap={8} vAlign="center">
+      <XDSVStack gap={2} hAlign="center">
         <XDSChatDictationButton dictation={idle} />
-        <span style={{fontSize: 12, color: '#888'}}>Idle</span>
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 8,
-        }}>
+        <XDSText type="supporting" color="secondary">Idle</XDSText>
+      </XDSVStack>
+      <XDSVStack gap={2} hAlign="center">
         <XDSChatDictationButton dictation={listening} />
-        <span style={{fontSize: 12, color: '#888'}}>Listening</span>
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 8,
-        }}>
+        <XDSText type="supporting" color="secondary">Listening</XDSText>
+      </XDSVStack>
+      <XDSVStack gap={2} hAlign="center">
         <XDSChatDictationButton dictation={speaking} />
-        <span style={{fontSize: 12, color: '#888'}}>Speaking</span>
-      </div>
-    </div>
+        <XDSText type="supporting" color="secondary">Speaking</XDSText>
+      </XDSVStack>
+    </XDSHStack>
   );
 }

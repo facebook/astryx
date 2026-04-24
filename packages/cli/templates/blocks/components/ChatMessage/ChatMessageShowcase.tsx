@@ -6,6 +6,7 @@ import {
   XDSChatMessageBubble,
 } from '@xds/core/Chat';
 import {XDSAvatar} from '@xds/core/Avatar';
+import {XDSText} from '@xds/core/Text';
 
 export default function ChatMessageShowcase() {
   return (
@@ -21,9 +22,9 @@ export default function ChatMessageShowcase() {
         avatar={<XDSAvatar name="Navi" size="small" />}>
         <XDSChatMessageBubble
           name={
-            <span style={{fontSize: 12, fontWeight: 600, opacity: 0.7}}>
+            <XDSText type="supporting" weight="semibold" color="secondary">
               Navi
-            </span>
+            </XDSText>
           }>
           Sure! I'll take a look at the changes and get back to you shortly.
         </XDSChatMessageBubble>

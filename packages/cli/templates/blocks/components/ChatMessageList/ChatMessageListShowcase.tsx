@@ -6,10 +6,18 @@ import {
   XDSChatMessageBubble,
   XDSChatSystemMessage,
 } from '@xds/core/Chat';
+import {XDSVStack} from '@xds/core/Layout';
+import * as stylex from '@stylexjs/stylex';
+
+const styles = stylex.create({
+  container: {
+    height: 400,
+  },
+});
 
 export default function ChatMessageListShowcase() {
   return (
-    <div style={{height: 400, display: 'flex', flexDirection: 'column'}}>
+    <XDSVStack xstyle={styles.container}>
       <XDSChatMessageList density="balanced">
         <XDSChatSystemMessage variant="divider">
           March 15, 2026
@@ -41,6 +49,6 @@ export default function ChatMessageListShowcase() {
           </XDSChatMessageBubble>
         </XDSChatMessage>
       </XDSChatMessageList>
-    </div>
+    </XDSVStack>
   );
 }
