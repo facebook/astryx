@@ -11,11 +11,18 @@ const UserIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+const descriptions: Record<string, string> = {
+  admin: 'Full access to all resources',
+  editor: 'Can edit and publish content',
+  viewer: 'Read-only access',
+  billing: 'Manage plans and payments',
+};
+
 const roles = [
-  {value: 'admin', label: 'Admin', description: 'Full access to all resources'},
-  {value: 'editor', label: 'Editor', description: 'Can edit and publish content'},
-  {value: 'viewer', label: 'Viewer', description: 'Read-only access'},
-  {value: 'billing', label: 'Billing', description: 'Manage plans and payments'},
+  {value: 'admin', label: 'Admin'},
+  {value: 'editor', label: 'Editor'},
+  {value: 'viewer', label: 'Viewer'},
+  {value: 'billing', label: 'Billing'},
 ];
 
 export default function SelectorOptionShowcase() {
@@ -33,7 +40,7 @@ export default function SelectorOptionShowcase() {
           <XDSSelectorOption
             icon={UserIcon}
             label={option.label}
-            description={option.description}
+            description={descriptions[option.value]}
           />
         )}
       </XDSSelector>
