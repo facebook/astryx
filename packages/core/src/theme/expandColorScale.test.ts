@@ -29,6 +29,8 @@ describe('expandColorScale', () => {
       '--color-background-inverted',
       '--color-border',
       '--color-border-emphasized',
+      '--color-border-hover',
+      '--color-border-selected',
       '--color-skeleton',
       '--color-shadow',
       '--color-tint-hover',

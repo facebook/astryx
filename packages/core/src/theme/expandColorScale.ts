@@ -163,6 +163,14 @@ export function expandColorScale(
     // Border
     '--color-border': ld(hexWithAlpha(N[10], 0.1), hexWithAlpha(N[95], 0.1)),
     '--color-border-emphasized': ld(NV[70], NV[30]),
+    '--color-border-hover': ld(
+      hexWithAlpha(P[40], 0.3),
+      hexWithAlpha(P[80], 0.3),
+    ),
+    '--color-border-selected': ld(
+      hexWithAlpha(P[40], 0.5),
+      hexWithAlpha(P[80], 0.5),
+    ),
 
     // Effects
     '--color-skeleton': ld(NV[70], NV[30]),
