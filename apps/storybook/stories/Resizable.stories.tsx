@@ -1,6 +1,10 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, spacingVars, radiusVars} from '@xds/core/theme';
+import {
+  colorVars,
+  spacingVars,
+  radiusVars,
+} from '@xds/core/theme/tokens.stylex';
 import {XDSResizeHandle, useResizable} from '@xds/core/Resizable';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSStack} from '@xds/core/Layout';
@@ -13,14 +17,14 @@ const ps = stylex.create({
     borderWidth: 1,
     borderStyle: 'solid',
     borderColor: colorVars['--color-border'],
-    borderRadius: radiusVars['--radius-3'],
+    borderRadius: radiusVars['--radius-container'],
     overflow: 'hidden',
   },
   containerV: {flexDirection: 'column'},
   panel: {padding: spacingVars['--spacing-4'], overflow: 'auto', flexShrink: 0},
-  start: {backgroundColor: colorVars['--color-surface-secondary']},
+  start: {backgroundColor: colorVars['--color-background-muted']},
   main: {flex: 1, minWidth: 0, minHeight: 0},
-  end: {backgroundColor: colorVars['--color-surface-secondary']},
+  end: {backgroundColor: colorVars['--color-background-muted']},
   collapsed: {
     padding: spacingVars['--spacing-1'],
     display: 'flex',
