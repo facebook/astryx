@@ -35,7 +35,7 @@ export default function TypeaheadItemShowcase() {
         renderItem={(item: PersonItem) => (
           <XDSTypeaheadItem
             item={item}
-            icon={<XDSAvatar name={item.label} size="sm" />}
+            icon={<XDSAvatar name={item.label} size="small" />}
             description={item.auxiliaryData.role}
           />
         )}
