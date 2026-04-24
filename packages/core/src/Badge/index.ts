@@ -1,7 +1,12 @@
 'use client';
 
 /**
- * @file Badge component barrel export
+ * @file index.ts
+ * @input Imports XDSBadge component and types from XDSBadge.tsx
+ * @output Exports XDSBadge, XDSBadgeProps, XDSBadgeVariant, XDSBadgeVariantMap
+ * @position Component entry point; re-exported by /packages/core/src/index.ts
+ *
+ * SYNC: When modified, update this header and /packages/core/src/Badge/Badge.doc.mjs
  */
 
 export {XDSBadge} from './XDSBadge';
