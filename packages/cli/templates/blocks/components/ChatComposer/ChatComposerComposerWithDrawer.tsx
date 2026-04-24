@@ -4,7 +4,7 @@ import {XDSChatComposer, XDSChatComposerDrawer} from '@xds/core/Chat';
 import {XDSToken} from '@xds/core/Token';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
 
-export default function ChatComposerComposerWithAttachments() {
+export default function ChatComposerComposerWithDrawer() {
   return (
     <XDSChatComposer
       onSubmit={() => {}}
