@@ -111,6 +111,14 @@ export interface XDSHoverCardProps {
   hasHoverIndication?: 'auto' | boolean;
 
   /**
+   * Controlled open state. When provided, overrides hover/focus triggers:
+   * - `true`: force-show the hover card (hover/focus hide is suppressed)
+   * - `false`: force-hide the hover card
+   * - `undefined`: uncontrolled — hover/focus triggers manage visibility
+   */
+  isOpen?: boolean;
+
+  /**
    * Whether the hover card should be shown on mount.
    * The hover card is still dismissible — this just opens it initially.
    */
@@ -158,6 +166,7 @@ export function XDSHoverCard({
   isEnabled = true,
   onOpenChange,
   hasHoverIndication = 'auto',
+  isOpen,
   isDefaultOpen,
 }: XDSHoverCardProps): ReactElement {
   const wrapperRef = useRef<HTMLElement>(null);
@@ -183,6 +192,7 @@ export function XDSHoverCard({
     hideDelay,
     focusTrigger,
     isEnabled,
+    isOpen,
     isDefaultOpen,
     onShow: handleShow,
     onHide: handleHide,
