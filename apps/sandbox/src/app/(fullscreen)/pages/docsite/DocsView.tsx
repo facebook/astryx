@@ -36,6 +36,7 @@ import {
   ChartsIcon,
   DownloadIcon,
   SendIcon,
+  MetaLogo,
 } from './docsite-icons';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSIcon} from '@xds/core/Icon';
@@ -241,34 +242,50 @@ const RESOURCE_ITEMS: {
   },
 ];
 
+const GitHubIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+    <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+  </svg>
+);
+
+const VercelIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+    <circle cx="12" cy="12" r="12" />
+    <path d="M12 7l6.928 10.5H5.072L12 7z" fill="white" />
+  </svg>
+);
+
 const XDS_OFFERINGS: {
   title: string;
   subtitle: string;
   pkg: string | null;
-  color: string;
   description: string;
+  label?: string;
+  icons?: React.ComponentType<React.SVGProps<SVGSVGElement>>[];
+  logos?: string[];
 }[] = [
   {
-    title: 'XDS on GitHub / Vercel',
+    title: 'GitHub or Vercel',
     subtitle: 'Open source, use anywhere',
     pkg: '@xds/core',
-    color: '#059669',
+    icons: [GitHubIcon, VercelIcon],
     description:
       'Install @xds/core from npm-internal (public npm coming soon). Works with Next.js, Vite, or any React framework. Use @xds/theme-default for the default look, or swap in any theme. Follow the quickstart in the @xds/core README to get started.',
   },
   {
-    title: 'XDS on Nest',
+    title: 'Nest',
     subtitle: 'Same library, internal platform',
     pkg: '@xds/core',
-    color: '#2563EB',
+    logos: [`${basePath}/docsite/nest-logo.png`],
     description:
       'The fastest way to start is nest init and pick the XDS template, or add to an existing app with nest add xds. Same @xds/core package, installed from npm-internal (migrating to Metaccio). Uses @nest/xds-common for the Meta theme with Meta icons.',
   },
   {
-    title: 'XDS on WWW',
-    subtitle: 'Internal \u2014 OSS components coming soon',
+    title: 'WWW',
+    subtitle: 'Internal platform',
     pkg: null,
-    color: '#6B7280',
+    label: 'OSS components coming soon',
+    logos: [`${basePath}/docsite/meta-logo.png`],
     description:
       'XDS WWW components are Haste modules in the Meta monorepo \u2014 no package to install. Uses Flow types and pre-built dist/ artifacts. OSS components are not yet available on www but are coming later. For now, use the existing XDS WWW components.',
   },
@@ -786,7 +803,7 @@ function PackageGridPage({
                 {totalComponents} components
               </XDSText>
               {pkg.status === 'Coming Soon' ? (
-                <XDSBadge label="Coming Soon" variant="info" />
+                <XDSBadge label="Coming Soon" variant="blue" />
               ) : (
                 <XDSText type="supporting" color="secondary" style={{maxWidth: 300}}>
                   Hover a component on the right to preview it here.
@@ -1838,7 +1855,7 @@ function LibraryOverview({
                   <XDSIcon icon={IconComp} size="lg" style={{width: 48, height: 48, color: '#484233', strokeWidth: 1.8}} />
                   {pkg.status === 'Coming Soon' && (
                     <div style={{position: 'absolute', top: 12, right: 12}}>
-                      <XDSBadge label="Coming Soon" variant="info" />
+                      <XDSBadge label="Coming Soon" variant="blue" />
                     </div>
                   )}
                 </div>
@@ -1980,36 +1997,32 @@ function LibraryOverview({
         </XDSText>
         <XDSGrid columns={3} gap={4}>
           {XDS_OFFERINGS.map(offering => (
-            <XDSCard key={offering.title} padding={0} style={{height: '100%'}}>
-              <XDSStack direction="vertical" gap={0} style={{padding: '20px 24px'}}>
-                <XDSStack direction="horizontal" gap={2} vAlign="center" style={{marginBottom: 4}}>
-                  <div
-                    style={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: '50%',
-                      backgroundColor: offering.color,
-                      flexShrink: 0,
-                    }}
-                  />
-                  <XDSText type="body" weight="bold">
-                    {offering.title}
-                  </XDSText>
-                </XDSStack>
-                <XDSText type="supporting" color="secondary">
-                  {offering.subtitle}
-                </XDSText>
-                {offering.pkg && (
+            <XDSCard key={offering.title} padding={6} style={{height: '100%'}}>
+              <XDSStack direction="vertical" gap={0} style={{height: '100%'}}>
+                {(offering.icons?.length || offering.logos?.length) ? (
+                  <XDSStack direction="horizontal" gap={2} vAlign="center" style={{marginBottom: 24}}>
+                    {offering.icons?.map((IconComp, idx) => (
+                      <IconComp key={idx} width={28} height={28} />
+                    ))}
+                    {offering.logos?.map((src, idx) => (
+                      <img key={idx} src={src} alt="" width={28} height={28} style={{objectFit: 'contain'}} />
+                    ))}
+                  </XDSStack>
+                ) : null}
+                {(offering.pkg || offering.label) && (
                   <XDSText
                     type="supporting"
                     color="secondary"
-                    style={{fontFamily: 'monospace', display: 'block', marginTop: 8}}>
-                    {offering.pkg}
+                    style={{fontFamily: offering.pkg ? 'monospace' : 'inherit', fontStyle: offering.label && !offering.pkg ? 'italic' : undefined, marginBottom: 8}}>
+                    {offering.pkg ?? offering.label}
                   </XDSText>
                 )}
-              </XDSStack>
-              <XDSDivider />
-              <XDSStack direction="vertical" gap={0} style={{padding: '16px 24px'}}>
+                <XDSText type="display-2" style={{marginBottom: 4}}>
+                  {offering.title}
+                </XDSText>
+                <XDSText type="supporting" color="secondary" style={{marginBottom: 16}}>
+                  {offering.subtitle}
+                </XDSText>
                 <XDSText type="supporting" color="secondary">
                   {offering.description}
                 </XDSText>
