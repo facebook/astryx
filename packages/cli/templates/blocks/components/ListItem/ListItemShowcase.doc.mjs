@@ -1,0 +1,11 @@
+/** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
+export const doc = {
+  type: 'block',
+  name: 'ListItem',
+  description:
+    'List items with icons, descriptions, and end content slots demonstrating the full ListItem API.',
+  isReady: true,
+  isShowcase: true,
+  aspectRatio: 16 / 9,
+  componentsUsed: ['List', 'ListItem'],
+};
