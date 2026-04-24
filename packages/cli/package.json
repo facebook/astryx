@@ -1,7 +1,28 @@
 {
   "name": "@xds/cli",
   "version": "0.0.12",
-  "description": "XDS design system CLI \u2014 init, swizzle, theme, templates, and agent docs",
+  "description": "XDS design system CLI — init, swizzle, theme, templates, and agent docs",
+  "author": "Meta Open Source",
+  "license": "MIT",
+  "homepage": "https://github.com/facebookexperimental/xds#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/facebookexperimental/xds.git",
+    "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/facebookexperimental/xds/issues"
+  },
+  "keywords": [
+    "xds",
+    "cli",
+    "design-system",
+    "init",
+    "swizzle",
+    "scaffolding",
+    "theme",
+    "agent-docs"
+  ],
   "type": "module",
   "bin": {
     "xds": "./bin/xds.mjs"
@@ -32,13 +53,5 @@
     "@clack/prompts": "^1.2.0",
     "commander": "^12.1.0",
     "jiti": "^2.6.1"
-  },
-  "keywords": [
-    "xds",
-    "cli",
-    "design-system",
-    "init",
-    "swizzle"
-  ],
-  "license": "MIT"
+  }
 }

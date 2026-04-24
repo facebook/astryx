@@ -2,8 +2,25 @@
   "name": "@xds/theme-brutalist",
   "version": "0.0.12",
   "private": true,
-  "description": "Brutalist theme for XDS \u2014 zero radius, monospace, heavy borders",
+  "description": "Brutalist theme for XDS — zero radius, monospace, heavy borders",
+  "author": "Meta Open Source",
   "license": "MIT",
+  "homepage": "https://github.com/facebookexperimental/xds#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/facebookexperimental/xds.git",
+    "directory": "packages/themes/brutalist"
+  },
+  "bugs": {
+    "url": "https://github.com/facebookexperimental/xds/issues"
+  },
+  "keywords": [
+    "xds",
+    "theme",
+    "brutalist",
+    "design-system",
+    "design-tokens"
+  ],
   "sideEffects": false,
   "main": "./dist/source.js",
   "module": "./dist/source.mjs",

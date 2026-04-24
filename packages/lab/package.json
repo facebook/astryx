@@ -3,7 +3,23 @@
   "version": "0.0.12",
   "private": true,
   "description": "Experimental XDS components — not published, available in storybook and sandbox for testing",
+  "author": "Meta Open Source",
   "license": "MIT",
+  "homepage": "https://github.com/facebookexperimental/xds#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/facebookexperimental/xds.git",
+    "directory": "packages/lab"
+  },
+  "bugs": {
+    "url": "https://github.com/facebookexperimental/xds/issues"
+  },
+  "keywords": [
+    "xds",
+    "lab",
+    "experimental",
+    "design-system"
+  ],
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "sideEffects": false,

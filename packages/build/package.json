@@ -1,8 +1,26 @@
 {
   "name": "@xds/build",
   "version": "0.0.1",
+  "private": true,
   "description": "Build plugins for XDS source builds — babel, PostCSS, and Vite integrations",
+  "author": "Meta Open Source",
   "license": "MIT",
+  "homepage": "https://github.com/facebookexperimental/xds#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/facebookexperimental/xds.git",
+    "directory": "packages/build"
+  },
+  "bugs": {
+    "url": "https://github.com/facebookexperimental/xds/issues"
+  },
+  "keywords": [
+    "xds",
+    "postcss",
+    "stylex",
+    "css-layers",
+    "design-system"
+  ],
   "main": "./src/config.js",
   "exports": {
     ".": "./src/config.js",
@@ -13,13 +31,6 @@
   },
   "files": [
     "src"
-  ],
-  "keywords": [
-    "xds",
-    "postcss",
-    "stylex",
-    "css-layers",
-    "design-system"
   ],
   "peerDependencies": {
     "@stylexjs/babel-plugin": ">=0.18.0",
@@ -39,6 +50,5 @@
     "vite": {
       "optional": true
     }
-  },
-  "private": true
+  }
 }
