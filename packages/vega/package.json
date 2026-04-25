@@ -52,7 +52,7 @@
     "tsup": "^8.3.0",
     "typescript": "^6.0.3",
     "vega": "^6.2.0",
-    "vega-lite": "^6.4.2",
+    "vega-lite": "^6.4.3",
     "vega-util": "^2.1.0"
   }
 }

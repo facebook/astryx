@@ -15,7 +15,7 @@
     "unplugin": "^2.3.11",
     "@xds/vega": "*",
     "vega": "^6.2.0",
-    "vega-lite": "^6.4.2"
+    "vega-lite": "^6.4.3"
   },
   "devDependencies": {
     "@storybook/addon-docs": "^10.3.5",
