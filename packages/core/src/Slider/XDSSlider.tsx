@@ -521,7 +521,7 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
     (thumbIndex: number, e: KeyboardEvent<HTMLDivElement>) => {
       if (isDisabled) return;
       const currentVal = values[thumbIndex];
-      let newVal = currentVal;
+      let newVal: number;
 
       switch (e.key) {
         case 'ArrowRight':

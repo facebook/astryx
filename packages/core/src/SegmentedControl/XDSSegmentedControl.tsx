@@ -17,7 +17,10 @@ import React, {useMemo, useRef, useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, radiusVars} from '../theme/tokens.stylex';
 import {XDSSegmentedControlContext} from './XDSSegmentedControlContext';
-import type {XDSSegmentedControlSize, XDSSegmentedControlLayout} from './XDSSegmentedControlContext';
+import type {
+  XDSSegmentedControlSize,
+  XDSSegmentedControlLayout,
+} from './XDSSegmentedControlContext';
 import {xdsClassName, mergeProps} from '../utils';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import type {XDSBaseProps} from '../XDSBaseProps';
@@ -144,7 +147,7 @@ export function XDSSegmentedControl({
       const currentIndex = items.findIndex(
         item => item === document.activeElement,
       );
-      let nextIndex: number | null = null;
+      let nextIndex: number;
 
       switch (e.key) {
         case 'ArrowRight':
@@ -167,14 +170,12 @@ export function XDSSegmentedControl({
           return;
       }
 
-      if (nextIndex != null) {
-        e.preventDefault();
-        const nextItem = items[nextIndex];
-        nextItem.focus();
-        const nextValue = nextItem.dataset.value;
-        if (nextValue != null) {
-          onChange(nextValue);
-        }
+      e.preventDefault();
+      const nextItem = items[nextIndex];
+      nextItem.focus();
+      const nextValue = nextItem.dataset.value;
+      if (nextValue != null) {
+        onChange(nextValue);
       }
     },
     [isDisabled, onChange],
