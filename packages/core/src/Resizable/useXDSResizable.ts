@@ -82,7 +82,6 @@ export interface ResizableProps {
 
 const DEFAULT_MIN = 50;
 const DEFAULT_COLLAPSED_SIZE = 40;
-const SNAP_THRESHOLD = 24;
 const STORAGE_PREFIX = 'xds-resizable:';
 
 // =============================================================================
@@ -95,13 +94,23 @@ function clampSize(
   max: number,
   snaps: number[],
 ): number {
-  let clamped = Math.min(max, Math.max(min, size));
-  for (const snap of snaps) {
-    if (Math.abs(clamped - snap) < SNAP_THRESHOLD) {
-      clamped = snap;
-      break;
+  const clamped = Math.min(max, Math.max(min, size));
+
+  // When snap points are defined, always snap to the nearest one.
+  // No intermediate positions — the panel can only rest at snap values.
+  if (snaps.length > 0) {
+    let nearest = snaps[0];
+    let nearestDist = Math.abs(clamped - nearest);
+    for (let i = 1; i < snaps.length; i++) {
+      const dist = Math.abs(clamped - snaps[i]);
+      if (dist < nearestDist) {
+        nearest = snaps[i];
+        nearestDist = dist;
+      }
     }
+    return Math.min(max, Math.max(min, nearest));
   }
+
   return clamped;
 }
 
