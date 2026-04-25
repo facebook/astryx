@@ -6,25 +6,25 @@ import {XDSText} from '@xds/core/Text';
 
 export default function DialogHeaderShowcase() {
   return (
-    <XDSCard variant="muted">
-      <XDSDialog isOpen isInline onOpenChange={() => {}}>
-        <XDSLayout
-          header={
-            <XDSDialogHeader
-              title="Edit Profile"
-              subtitle="Update your personal information"
-              onOpenChange={() => {}}
-            />
-          }
-          content={
-            <XDSLayoutContent>
+    <XDSDialog isOpen isInline onOpenChange={() => {}}>
+      <XDSLayout
+        header={
+          <XDSDialogHeader
+            title="Edit Profile"
+            subtitle="Update your personal information"
+            onOpenChange={() => {}}
+          />
+        }
+        content={
+          <XDSLayoutContent>
+            <XDSCard variant="muted">
               <XDSText type="body" color="secondary">
                 Dialog body content goes here.
               </XDSText>
-            </XDSLayoutContent>
-          }
-        />
-      </XDSDialog>
-    </XDSCard>
+            </XDSCard>
+          </XDSLayoutContent>
+        }
+      />
+    </XDSDialog>
   );
 }

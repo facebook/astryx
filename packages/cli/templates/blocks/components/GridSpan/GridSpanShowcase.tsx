@@ -32,7 +32,7 @@ export default function GridSpanShowcase() {
         </XDSCard>
       </XDSGridSpan>
       <XDSGridSpan columns="full">
-        <XDSCard variant="muted" padding={4} height={48}>
+        <XDSCard variant="muted" padding={4} height={60}>
           <XDSText type="body" color="secondary">
             Full-width row
           </XDSText>
