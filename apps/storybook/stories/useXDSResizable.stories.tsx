@@ -293,6 +293,7 @@ export const MixedContainers: Story = {
               </XDSLayoutPanel>
               <XDSResizeHandle
                 direction="horizontal"
+                isAlwaysVisible
                 resizable={sidebar.props}
               />
             </>
@@ -316,6 +317,7 @@ export const MixedContainers: Story = {
                 </div>
                 <XDSResizeHandle
                   direction="vertical"
+                  isAlwaysVisible
                   resizable={editor.props}
                 />
                 <div
