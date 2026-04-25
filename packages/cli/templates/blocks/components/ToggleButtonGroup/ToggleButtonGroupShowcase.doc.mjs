@@ -1,0 +1,11 @@
+/** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
+export const doc = {
+  type: 'block',
+  name: 'ToggleButtonGroup',
+  description:
+    'ToggleButtonGroup manages a set of ToggleButtons with single-select or multi-select behavior for options like view modes or filters.',
+  isReady: true,
+  isShowcase: true,
+  aspectRatio: 16 / 9,
+  componentsUsed: ['ToggleButton', 'ToggleButtonGroup'],
+};
