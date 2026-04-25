@@ -62,7 +62,7 @@ const styles = stylex.create({
     position: 'relative',
     zIndex: 1,
     borderRadius: 2,
-    backgroundColor: colorVars['--color-border-emphasized'],
+    backgroundColor: colorVars['--color-border'],
     transitionProperty: 'opacity, background-color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -76,11 +76,14 @@ const styles = stylex.create({
     width: 'var(--resize-handle-height, 32px)',
   },
   pillHidden: {opacity: 0},
-  pillVisible: {opacity: 0.5},
-  pillHover: {opacity: 0.7},
+  pillVisible: {opacity: 1},
+  pillHover: {
+    opacity: 1,
+    backgroundColor: colorVars['--color-border-emphasized'],
+  },
   pillActive: {
     opacity: 1,
-    backgroundColor: colorVars['--color-accent'],
+    backgroundColor: colorVars['--color-border-emphasized'],
   },
 
   // --- Divider line ---
@@ -106,10 +109,10 @@ const styles = stylex.create({
     transform: 'translateY(-0.5px)',
   },
   dividerHover: {
-    backgroundColor: colorVars['--color-accent'],
+    backgroundColor: colorVars['--color-border-emphasized'],
   },
   dividerActive: {
-    backgroundColor: colorVars['--color-accent'],
+    backgroundColor: colorVars['--color-border-emphasized'],
   },
 });
 
