@@ -9,7 +9,7 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
 import {PaperClipIcon, AtSymbolIcon} from '@heroicons/react/24/outline';
 
-export default function ChatComposerAttachments() {
+export default function ChatComposerDrawer() {
   return (
     <XDSStack direction="vertical" gap={4} width={450}>
       <XDSChatComposer
