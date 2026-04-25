@@ -3172,21 +3172,23 @@ function ThemePackagePage({
                 ? 'Reference values for the default theme. Other themes override these.'
                 : 'These tokens differ from the default theme. All other tokens use built-in defaults.'}
             </XDSText>
-            <XDSTable
-              data={theme.tokenOverrides as {[key: string]: unknown}[]}
-              columns={
-                isDefault
-                  ? [
-                      {key: 'token', header: 'Token'},
-                      {key: 'override', header: 'Value'},
-                    ]
-                  : [
-                      {key: 'token', header: 'Token'},
-                      {key: 'default', header: 'Default'},
-                      {key: 'override', header: theme.name},
-                    ]
-              }
-            />
+            <XDSCard padding={0}>
+              <XDSTable
+                data={theme.tokenOverrides as {[key: string]: unknown}[]}
+                columns={
+                  isDefault
+                    ? [
+                        {key: 'token', header: 'Token'},
+                        {key: 'override', header: 'Value'},
+                      ]
+                    : [
+                        {key: 'token', header: 'Token'},
+                        {key: 'default', header: 'Default'},
+                        {key: 'override', header: theme.name},
+                      ]
+                }
+              />
+            </XDSCard>
           </XDSStack>
         )}
 
