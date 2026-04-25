@@ -1187,34 +1187,276 @@ function FoundationPage({foundationKey}: {foundationKey: string}) {
   if (foundationKey === 'typography') {
     return <TypographyFoundationPage />;
   }
-  const item = FOUNDATION_ITEMS.find(f => f.key === foundationKey);
-  if (!item) return null;
+  if (foundationKey === 'colors') {
+    return <ColorsFoundationPage />;
+  }
+  if (foundationKey === 'spacing') {
+    return <SpacingFoundationPage />;
+  }
+  if (foundationKey === 'icons') {
+    return <IconsFoundationPage />;
+  }
+  if (foundationKey === 'shape') {
+    return <ShapeFoundationPage />;
+  }
+  if (foundationKey === 'illustrations') {
+    return <IllustrationsFoundationPage />;
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// ColorsFoundationPage
+// ---------------------------------------------------------------------------
+
+type ColorRow = Record<string, unknown>;
+
+const SEMANTIC_PALETTE: ColorRow[] = [
+  {token: 'accent', light: '#0064E0', dark: '#2694FE'},
+  {token: 'success', light: '#0D8626', dark: '#0D8626'},
+  {token: 'warning', light: '#E9AF08', dark: '#F2C00B'},
+  {token: 'error', light: '#E3193B', dark: '#F5394F'},
+];
+
+const TEXT_COLORS: ColorRow[] = [
+  {token: 'primary', light: '#0A1317', dark: '#DFE2E5'},
+  {token: 'secondary', light: '#4E606F', dark: '#AAAFB5'},
+  {token: 'disabled', light: '#A4B0BC', dark: '#6F747C'},
+  {token: 'accent', light: '#0064E0', dark: '#3E9EFB'},
+];
+
+const SURFACE_COLORS: ColorRow[] = [
+  {token: 'surface', light: '#FFFFFF', dark: '#1F1F22'},
+  {token: 'body', light: '#F1F4F7', dark: '#111112'},
+  {token: 'card', light: '#FFFFFF', dark: '#1F1F22'},
+  {token: 'popover', light: '#FFFFFF', dark: '#28292C'},
+  {token: 'muted', light: 'rgba(0,0,0,0.04)', dark: 'rgba(255,255,255,0.06)'},
+];
+
+const BORDER_COLORS: ColorRow[] = [
+  {token: 'border', light: 'rgba(0,0,0,0.08)', dark: 'rgba(255,255,255,0.1)'},
+  {
+    token: 'border-emphasized',
+    light: 'rgba(0,0,0,0.16)',
+    dark: 'rgba(255,255,255,0.2)',
+  },
+];
+
+function ColorSwatch({value}: {value: string}) {
+  return (
+    <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+      <div
+        style={{
+          width: 20,
+          height: 20,
+          borderRadius: 4,
+          backgroundColor: value,
+          border: '1px solid rgba(0,0,0,0.1)',
+          flexShrink: 0,
+        }}
+      />
+      <XDSText type="code">{value}</XDSText>
+    </div>
+  );
+}
+
+function colorColumns() {
+  return [
+    {
+      key: 'token',
+      header: 'Token',
+      width: pixel(180),
+      renderCell: (row: ColorRow) => (
+        <XDSText type="code">{row.token as string}</XDSText>
+      ),
+    },
+    {
+      key: 'light',
+      header: 'Light',
+      renderCell: (row: ColorRow) => (
+        <ColorSwatch value={row.light as string} />
+      ),
+    },
+    {
+      key: 'dark',
+      header: 'Dark',
+      renderCell: (row: ColorRow) => (
+        <ColorSwatch value={row.dark as string} />
+      ),
+    },
+  ];
+}
+
+function ColorsFoundationPage() {
   return (
     <XDSSection
       maxWidth={960}
       padding={8}
       variant="transparent"
       style={{marginInline: 'auto'}}>
-      <XDSStack direction="vertical" gap={2}>
-        <XDSText type="display-1">{item.title}</XDSText>
-        <XDSText type="body" color="secondary">
-          {item.description}
-        </XDSText>
+      <XDSStack direction="vertical" gap={10}>
+        {/* Header */}
+        <XDSStack direction="vertical" gap={2}>
+          <XDSText type="display-1">Colors</XDSText>
+          <XDSText type="large" weight="normal" color="secondary">
+            XDS uses semantic color tokens instead of raw hex values. Tokens
+            adapt automatically across light, dark, and custom themes so your UI
+            stays consistent without manual overrides.
+          </XDSText>
+        </XDSStack>
+
+        {/* Semantic palette */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Semantic palette</XDSHeading>
+          <XDSText type="body" color="secondary">
+            Four intent-based colors that carry meaning across your entire UI.
+            Use accent for interactive elements, success/warning/error for
+            feedback states.
+          </XDSText>
+          <XDSCard padding={0}>
+            <XDSTable
+              data={SEMANTIC_PALETTE}
+              columns={colorColumns()}
+              density="spacious"
+              dividers="rows"
+            />
+          </XDSCard>
+        </XDSStack>
+
+        {/* Text colors */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Text colors</XDSHeading>
+          <XDSText type="body" color="secondary">
+            Text tokens control foreground color for headings, body copy, and
+            labels. They maintain accessible contrast ratios in every theme.
+          </XDSText>
+          <XDSCard padding={0}>
+            <XDSTable
+              data={TEXT_COLORS}
+              columns={colorColumns()}
+              density="spacious"
+              dividers="rows"
+            />
+          </XDSCard>
+        </XDSStack>
+
+        {/* Surface colors */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Surface colors</XDSHeading>
+          <XDSText type="body" color="secondary">
+            Surfaces define backgrounds for pages, cards, popovers, and muted
+            regions. Layering surfaces creates visual depth without shadows.
+          </XDSText>
+          <XDSCard padding={0}>
+            <XDSTable
+              data={SURFACE_COLORS}
+              columns={colorColumns()}
+              density="spacious"
+              dividers="rows"
+            />
+          </XDSCard>
+        </XDSStack>
+
+        {/* Border */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Border</XDSHeading>
+          <XDSText type="body" color="secondary">
+            Border tokens use alpha transparency so they blend naturally over any
+            surface. Use border-emphasized when you need stronger visual
+            separation.
+          </XDSText>
+          <XDSCard padding={0}>
+            <XDSTable
+              data={BORDER_COLORS}
+              columns={colorColumns()}
+              density="spacious"
+              dividers="rows"
+            />
+          </XDSCard>
+        </XDSStack>
+
+        {/* Usage */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Usage</XDSHeading>
+          <XDSGrid columns={2} gap={4}>
+            <XDSCard padding={4}>
+              <XDSStack direction="vertical" gap={2}>
+                <XDSBadge label="Do" variant="positive" />
+                <XDSList>
+                  <XDSListItem>
+                    Use semantic tokens (accent, surface, primary) instead of
+                    hard-coded hex values
+                  </XDSListItem>
+                  <XDSListItem>
+                    Pair text tokens with surface tokens to guarantee accessible
+                    contrast
+                  </XDSListItem>
+                  <XDSListItem>
+                    Use the muted surface for secondary content areas and
+                    disabled backgrounds
+                  </XDSListItem>
+                  <XDSListItem>
+                    Let tokens handle light/dark adaptation — avoid manual
+                    dark-mode overrides
+                  </XDSListItem>
+                </XDSList>
+              </XDSStack>
+            </XDSCard>
+            <XDSCard padding={4}>
+              <XDSStack direction="vertical" gap={2}>
+                <XDSBadge label="Don't" variant="negative" />
+                <XDSList>
+                  <XDSListItem>
+                    Hard-code hex or rgba values in component styles — they break
+                    when themes change
+                  </XDSListItem>
+                  <XDSListItem>
+                    Use opacity to lighten text — use the secondary or disabled
+                    text token instead
+                  </XDSListItem>
+                  <XDSListItem>
+                    Repurpose semantic colors for decoration (e.g. error-red as a
+                    brand color)
+                  </XDSListItem>
+                  <XDSListItem>
+                    Mix raw CSS custom properties with token imports — use
+                    colorVars consistently
+                  </XDSListItem>
+                </XDSList>
+              </XDSStack>
+            </XDSCard>
+          </XDSGrid>
+        </XDSStack>
+
+        {/* Code */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Code</XDSHeading>
+          <XDSText type="body" color="secondary">
+            Import colorVars from the token module and reference tokens inside
+            StyleX styles. Token names map directly to CSS custom properties
+            scoped by the active theme.
+          </XDSText>
+          <XDSCodeBlock
+            language="tsx"
+            code={`import * as stylex from '@stylexjs/stylex';
+import { colorVars } from '@xds/core/tokens';
+
+const styles = stylex.create({
+  container: {
+    backgroundColor: colorVars.backgroundSurface,
+    color: colorVars.textPrimary,
+    borderColor: colorVars.border,
+  },
+  accent: {
+    color: colorVars.accent,
+  },
+  error: {
+    color: colorVars.error,
+  },
+});`}
+          />
+        </XDSStack>
       </XDSStack>
-      <div
-        style={{
-          marginTop: 48,
-          padding: 64,
-          borderRadius: 12,
-          backgroundColor: 'var(--color-background-muted, #f5f5f5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-        <XDSText type="body" color="secondary">
-          Documentation coming soon
-        </XDSText>
-      </div>
     </XDSSection>
   );
 }
@@ -2478,6 +2720,745 @@ export const myTheme = defineTheme({
             </XDSStack>
           </XDSStack>
         )}
+      </XDSStack>
+    </XDSSection>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// SpacingFoundationPage
+// ---------------------------------------------------------------------------
+
+const SPACING_TOKENS: {step: string; token: string; value: string}[] = [
+  {step: '0', token: '--spacing-0', value: '0px'},
+  {step: '0.5', token: '--spacing-0-5', value: '2px'},
+  {step: '1', token: '--spacing-1', value: '4px'},
+  {step: '1.5', token: '--spacing-1-5', value: '6px'},
+  {step: '2', token: '--spacing-2', value: '8px'},
+  {step: '3', token: '--spacing-3', value: '12px'},
+  {step: '4', token: '--spacing-4', value: '16px'},
+  {step: '5', token: '--spacing-5', value: '20px'},
+  {step: '6', token: '--spacing-6', value: '24px'},
+  {step: '7', token: '--spacing-7', value: '28px'},
+  {step: '8', token: '--spacing-8', value: '32px'},
+  {step: '9', token: '--spacing-9', value: '36px'},
+  {step: '10', token: '--spacing-10', value: '40px'},
+  {step: '11', token: '--spacing-11', value: '44px'},
+  {step: '12', token: '--spacing-12', value: '48px'},
+];
+
+const SPACING_RANGES: {range: string; pixels: string; usage: string}[] = [
+  {
+    range: '0–1',
+    pixels: '0–4px',
+    usage: 'Tight gaps between inline elements, icon-to-label spacing',
+  },
+  {
+    range: '1.5–2',
+    pixels: '6–8px',
+    usage: 'Component internal spacing, badge padding',
+  },
+  {
+    range: '3–4',
+    pixels: '12–16px',
+    usage: 'Standard component gaps, card padding, list item spacing',
+  },
+  {
+    range: '5–6',
+    pixels: '20–24px',
+    usage: 'Section spacing, larger card padding',
+  },
+  {
+    range: '8–10',
+    pixels: '32–40px',
+    usage: 'Page-level spacing, section separators',
+  },
+  {
+    range: '11–12',
+    pixels: '44–48px',
+    usage: 'Hero spacing, major section breaks',
+  },
+];
+
+function SpacingFoundationPage() {
+  return (
+    <XDSSection
+      maxWidth={960}
+      padding={8}
+      variant="transparent"
+      style={{marginInline: 'auto'}}>
+      <XDSStack direction="vertical" gap={10}>
+        {/* Header */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSText type="display-1">Spacing</XDSText>
+          <XDSText type="large" weight="normal" color="secondary">
+            XDS uses a 4px-based spacing scale to keep layouts consistent and
+            aligned. Every gap, padding, and margin maps to a token so your UI
+            stays rhythmic across components and pages.
+          </XDSText>
+        </XDSStack>
+
+        {/* Spacing scale */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Spacing scale</XDSHeading>
+          <XDSCard padding={0}>
+            <XDSTable
+              data={SPACING_TOKENS as Record<string, unknown>[]}
+              columns={[
+                {key: 'step', header: 'Step', width: pixel(100)},
+                {
+                  key: 'token',
+                  header: 'Token',
+                  width: pixel(220),
+                  renderCell: (row: Record<string, unknown>) => (
+                    <XDSText type="code">{row.token as string}</XDSText>
+                  ),
+                },
+                {key: 'value', header: 'Value', width: pixel(100)},
+              ]}
+            />
+          </XDSCard>
+        </XDSStack>
+
+        {/* When to use each range */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>When to use each range</XDSHeading>
+          <XDSCard padding={0}>
+            <XDSTable
+              data={SPACING_RANGES as Record<string, unknown>[]}
+              columns={[
+                {key: 'range', header: 'Steps', width: pixel(100)},
+                {key: 'pixels', header: 'Pixels', width: pixel(100)},
+                {key: 'usage', header: 'Usage'},
+              ]}
+            />
+          </XDSCard>
+        </XDSStack>
+
+        {/* Usage */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Usage</XDSHeading>
+          <XDSList>
+            <XDSListItem>
+              Always use spacing tokens instead of hard-coded pixel values.
+            </XDSListItem>
+            <XDSListItem>
+              Prefer the <XDSText type="code">gap</XDSText> prop on{' '}
+              <XDSText type="code">XDSStack</XDSText> over manual margins
+              between siblings.
+            </XDSListItem>
+            <XDSListItem>
+              Use smaller steps (0–2) inside components and larger steps (4+)
+              between sections.
+            </XDSListItem>
+            <XDSListItem>
+              Keep spacing symmetric — if a card has{' '}
+              <XDSText type="code">padding=&#123;4&#125;</XDSText>, use the
+              same value on all sides unless deliberately asymmetric.
+            </XDSListItem>
+            <XDSListItem>
+              Avoid mixing spacing scales; stick to the 4px grid for
+              predictable alignment.
+            </XDSListItem>
+          </XDSList>
+        </XDSStack>
+
+        {/* Code */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Code</XDSHeading>
+          <XDSCodeBlock
+            code={`// StyleX — reference spacing tokens directly
+import { spacingVars } from '@xds/core/theme';
+
+const styles = stylex.create({
+  container: {
+    padding: spacingVars.spacing4,   // 16px
+    gap: spacingVars.spacing3,       // 12px
+    marginBlock: spacingVars.spacing6, // 24px
+  },
+});`}
+            language="tsx"
+          />
+          <XDSCodeBlock
+            code={`// XDSStack — use the gap prop with scale steps
+<XDSStack direction="vertical" gap={4}>
+  <Card />
+  <Card />
+</XDSStack>
+
+<XDSStack direction="horizontal" gap={2}>
+  <Icon />
+  <Label />
+</XDSStack>`}
+            language="tsx"
+          />
+        </XDSStack>
+      </XDSStack>
+    </XDSSection>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// IllustrationsFoundationPage
+// ---------------------------------------------------------------------------
+
+const ILLUSTRATION_CONTEXTS: Record<string, unknown>[] = [
+  {
+    context: 'Empty states',
+    examples: 'No data, first-time experience, search with no results',
+  },
+  {
+    context: 'Onboarding',
+    examples: 'Welcome screens, feature introduction, setup wizards',
+  },
+  {
+    context: 'Feature highlights',
+    examples: 'New feature announcements, upgrade prompts',
+  },
+  {
+    context: 'Error states',
+    examples: 'Permission denied, not found, service unavailable',
+  },
+];
+
+function IllustrationsFoundationPage() {
+  return (
+    <XDSSection
+      maxWidth={960}
+      padding={8}
+      variant="transparent"
+      style={{marginInline: 'auto'}}>
+      <XDSStack direction="vertical" gap={10}>
+        {/* Header */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSText type="display-1">Illustrations</XDSText>
+          <XDSText type="large" weight="normal" color="secondary">
+            Illustration guidelines for empty states, onboarding flows, and
+            feature highlights. Consistent illustration usage reinforces brand
+            identity and helps users understand context at a glance.
+          </XDSText>
+        </XDSStack>
+
+        {/* When to use */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>When to use</XDSHeading>
+          <XDSCard padding={0}>
+            <XDSTable
+              data={ILLUSTRATION_CONTEXTS}
+              columns={[
+                {key: 'context', header: 'Context', width: pixel(180)},
+                {key: 'examples', header: 'Examples'},
+              ]}
+              density="spacious"
+              dividers="rows"
+            />
+          </XDSCard>
+        </XDSStack>
+
+        {/* Guidelines */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Guidelines</XDSHeading>
+          <XDSList>
+            <XDSListItem>
+              Keep illustrations consistent in style across the product.
+            </XDSListItem>
+            <XDSListItem>
+              Use simple, flat illustrations that work in both light and dark
+              mode.
+            </XDSListItem>
+            <XDSListItem>
+              Size illustrations proportionally to the container — typically
+              120–240px.
+            </XDSListItem>
+            <XDSListItem>
+              Center illustrations with supporting text below.
+            </XDSListItem>
+            <XDSListItem>
+              Don't mix illustration styles from different sources.
+            </XDSListItem>
+            <XDSListItem>
+              Don't use illustrations as decoration without purpose.
+            </XDSListItem>
+          </XDSList>
+        </XDSStack>
+
+        {/* Placement */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Placement</XDSHeading>
+          <XDSText type="body" color="secondary">
+            Center illustrations inside{' '}
+            <XDSText type="code">XDSCenter</XDSText> with supporting text
+            stacked below. Typical illustration sizes range from 120px for
+            inline empty states to 240px for full-page onboarding screens.
+            Always pair the illustration with a heading and optional body text
+            to explain what the user should do next.
+          </XDSText>
+        </XDSStack>
+
+        {/* Code */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Code</XDSHeading>
+          <XDSCodeBlock
+            code={`<XDSCenter>
+  <XDSStack direction="vertical" gap={3} hAlign="center">
+    <img
+      src="/illustrations/empty-search.svg"
+      alt="No results"
+      style={{ width: 200, height: 200 }}
+    />
+    <XDSHeading level={3}>No results found</XDSHeading>
+    <XDSText type="body" color="secondary">
+      Try adjusting your search or filters to find what you're
+      looking for.
+    </XDSText>
+  </XDSStack>
+</XDSCenter>`}
+            language="tsx"
+          />
+        </XDSStack>
+      </XDSStack>
+    </XDSSection>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ShapeFoundationPage
+// ---------------------------------------------------------------------------
+
+const SHAPE_TOKENS: {
+  token: string;
+  value: string;
+  usage: string;
+  cssVar: string;
+}[] = [
+  {
+    token: '--radius-none',
+    value: '0px',
+    usage: 'Sharp corners',
+    cssVar: 'var(--radius-none)',
+  },
+  {
+    token: '--radius-inner',
+    value: '4px',
+    usage: 'Grouped corners, chips inside containers',
+    cssVar: 'var(--radius-inner)',
+  },
+  {
+    token: '--radius-element',
+    value: '8px',
+    usage: 'Buttons, inputs, badges',
+    cssVar: 'var(--radius-element)',
+  },
+  {
+    token: '--radius-container',
+    value: '12px',
+    usage: 'Cards, panels, sections',
+    cssVar: 'var(--radius-container)',
+  },
+  {
+    token: '--radius-page',
+    value: '28px',
+    usage: 'Modals, dialogs, chat composer',
+    cssVar: 'var(--radius-page)',
+  },
+  {
+    token: '--radius-full',
+    value: '9999px',
+    usage: 'Pills, avatars, circular buttons',
+    cssVar: 'var(--radius-full)',
+  },
+];
+
+function ShapeFoundationPage() {
+  return (
+    <XDSSection
+      maxWidth={960}
+      padding={8}
+      variant="transparent"
+      style={{marginInline: 'auto'}}>
+      <XDSStack direction="vertical" gap={10}>
+        {/* Header */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSText type="display-1">Shape</XDSText>
+          <XDSText type="large" weight="normal" color="secondary">
+            Border radius tokens define the curvature of UI surfaces. XDS
+            provides a six-step scale from sharp corners to fully rounded pills,
+            giving every element an intentional shape that adapts across themes.
+          </XDSText>
+        </XDSStack>
+
+        {/* Radius scale */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Radius scale</XDSHeading>
+          <XDSText type="body" color="secondary">
+            Six tokens cover every corner radius in the system. Each maps to a
+            semantic role so components pick the right curvature automatically.
+          </XDSText>
+          <XDSCard padding={0}>
+            <XDSTable
+              data={SHAPE_TOKENS as Record<string, unknown>[]}
+              columns={[
+                {
+                  key: 'token',
+                  header: 'Token',
+                  width: pixel(220),
+                  renderCell: (row: Record<string, unknown>) => (
+                    <XDSText type="code">{row.token as string}</XDSText>
+                  ),
+                },
+                {
+                  key: 'value',
+                  header: 'Value',
+                  width: pixel(100),
+                  renderCell: (row: Record<string, unknown>) => (
+                    <XDSText type="body">{row.value as string}</XDSText>
+                  ),
+                },
+                {
+                  key: 'usage',
+                  header: 'Usage',
+                  renderCell: (row: Record<string, unknown>) => (
+                    <XDSText type="body" color="secondary" textWrap="wrap">
+                      {row.usage as string}
+                    </XDSText>
+                  ),
+                },
+              ]}
+              density="spacious"
+              dividers="rows"
+            />
+          </XDSCard>
+        </XDSStack>
+
+        {/* Visual reference */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Visual reference</XDSHeading>
+          <XDSText type="body" color="secondary">
+            Each square below uses the corresponding radius token via CSS custom
+            property, so it responds to theme changes automatically.
+          </XDSText>
+          <XDSGrid columns={3} gap={4}>
+            {SHAPE_TOKENS.map(t => (
+              <XDSStack key={t.token} direction="vertical" gap={1} hAlign="center">
+                <div
+                  style={{
+                    width: 120,
+                    height: 120,
+                    borderRadius: t.cssVar,
+                    backgroundColor: 'var(--color-accent-muted, rgba(0,100,224,0.15))',
+                    border: '2px solid var(--color-accent, #0064E0)',
+                  }}
+                />
+                <XDSText type="code" color="secondary">
+                  {t.token}
+                </XDSText>
+                <XDSText type="supporting" color="secondary">
+                  {t.value}
+                </XDSText>
+              </XDSStack>
+            ))}
+          </XDSGrid>
+        </XDSStack>
+
+        {/* Concentric radius */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Concentric radius</XDSHeading>
+          <XDSText type="body" color="secondary">
+            When an element is nested inside a rounded container, its corner
+            radius should equal the outer radius minus the padding between them.
+            This keeps the inner and outer curves concentric so the whitespace
+            between them stays visually even.
+          </XDSText>
+          <XDSText type="body" color="secondary">
+            <strong>inner radius = outer radius &minus; padding</strong>
+          </XDSText>
+          <XDSCard padding={0}>
+            <XDSCodeBlock
+              language="tsx"
+              hasCopyButton
+              code={`// A card (container radius) with a nested button (element radius).
+// outer = 12px, padding = 4px → inner should be 8px.
+
+<div style={{ borderRadius: 'var(--radius-container)', padding: 4 }}>
+  <button style={{ borderRadius: 'var(--radius-element)' }}>
+    Save
+  </button>
+</div>`}
+            />
+          </XDSCard>
+          <XDSText type="supporting" color="secondary">
+            If the padding is larger than the outer radius, use radius-none (0px)
+            for the inner element instead of going negative.
+          </XDSText>
+        </XDSStack>
+
+        {/* Usage best practices */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Usage</XDSHeading>
+          <XDSList density="balanced" listStyle="disc">
+            <XDSListItem label="Use semantic tokens (--radius-element, --radius-container) instead of hard-coded pixel values so shapes adapt when the theme changes." />
+            <XDSListItem label="Match the token to the element's role: buttons and inputs get --radius-element, cards and panels get --radius-container." />
+            <XDSListItem label="Apply the concentric radius rule whenever nesting rounded surfaces to keep curves optically smooth." />
+            <XDSListItem label="Reserve --radius-full for elements that should always appear circular regardless of size (avatars, status dots, pill badges)." />
+            <XDSListItem label="Use --radius-none intentionally for elements that need a sharp, authoritative edge (data tables, toolbars)." />
+            <XDSListItem label="Never mix token levels on the same surface — e.g. don't combine --radius-page on one corner and --radius-element on another." />
+          </XDSList>
+        </XDSStack>
+
+        {/* Code */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Code</XDSHeading>
+          <XDSText type="body" color="secondary">
+            Import radius tokens from the XDS theme package and apply them with
+            StyleX.
+          </XDSText>
+          <XDSCard padding={0}>
+            <XDSCodeBlock
+              language="typescript"
+              hasCopyButton
+              code={`import * as stylex from '@stylexjs/stylex';
+import { radiusVars } from '@xds/core/theme';
+
+const styles = stylex.create({
+  card: {
+    borderRadius: radiusVars.container,
+  },
+  button: {
+    borderRadius: radiusVars.element,
+  },
+  avatar: {
+    borderRadius: radiusVars.full,
+  },
+  modal: {
+    borderRadius: radiusVars.page,
+  },
+});`}
+            />
+          </XDSCard>
+        </XDSStack>
+      </XDSStack>
+    </XDSSection>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// IconsFoundationPage
+// ---------------------------------------------------------------------------
+
+const ICON_SLOTS: {name: string; purpose: string}[] = [
+  {name: 'close', purpose: 'Dismiss dialogs, remove items'},
+  {name: 'chevronDown', purpose: 'Expand menus, dropdowns'},
+  {name: 'chevronLeft', purpose: 'Navigate back'},
+  {name: 'chevronRight', purpose: 'Navigate forward'},
+  {name: 'check', purpose: 'Confirm, success indicator'},
+  {name: 'success', purpose: 'Success state'},
+  {name: 'error', purpose: 'Error state'},
+  {name: 'warning', purpose: 'Warning state'},
+  {name: 'info', purpose: 'Information callouts'},
+  {name: 'calendar', purpose: 'Date pickers'},
+  {name: 'clock', purpose: 'Time, scheduling'},
+  {name: 'externalLink', purpose: 'External navigation'},
+  {name: 'menu', purpose: 'Mobile nav toggle'},
+  {name: 'moreHorizontal', purpose: 'Overflow actions'},
+  {name: 'search', purpose: 'Search triggers'},
+  {name: 'arrowUp', purpose: 'Sort ascending'},
+  {name: 'arrowDown', purpose: 'Sort descending'},
+  {name: 'arrowsUpDown', purpose: 'Bidirectional sort'},
+  {name: 'funnel', purpose: 'Filter controls'},
+  {name: 'eyeSlash', purpose: 'Hide/reveal toggle'},
+  {name: 'viewColumns', purpose: 'Column visibility'},
+  {name: 'copy', purpose: 'Copy to clipboard'},
+  {name: 'checkDouble', purpose: 'Delivered/read status'},
+  {name: 'wrench', purpose: 'Tool calls, settings'},
+  {name: 'stop', purpose: 'Stop streaming'},
+  {name: 'microphone', purpose: 'Voice input'},
+];
+
+const ICON_SIZES: {size: string; pixels: string}[] = [
+  {size: 'xsm', pixels: '12px'},
+  {size: 'sm', pixels: '16px'},
+  {size: 'md', pixels: '20px'},
+  {size: 'lg', pixels: '24px'},
+];
+
+const ICON_COLORS: {color: string}[] = [
+  {color: 'primary'},
+  {color: 'secondary'},
+  {color: 'disabled'},
+  {color: 'accent'},
+  {color: 'negative'},
+  {color: 'warning'},
+  {color: 'success'},
+  {color: 'inherit'},
+];
+
+function IconsFoundationPage() {
+  return (
+    <XDSSection
+      maxWidth={960}
+      padding={8}
+      variant="transparent"
+      style={{marginInline: 'auto'}}>
+      <XDSStack direction="vertical" gap={10}>
+        {/* Header */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSText type="display-1">Icons</XDSText>
+          <XDSText type="large" weight="normal" color="secondary">
+            XDS uses semantic icon slots so components always get the right icon
+            regardless of which icon library your theme provides. Instead of
+            importing SVGs directly, you reference a slot name and the active
+            theme resolves it at render time.
+          </XDSText>
+        </XDSStack>
+
+        {/* Semantic icon slots */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Semantic icon slots</XDSHeading>
+          <XDSText type="body" color="secondary">
+            Every XDS theme must provide an SVG for each slot. Components like{' '}
+            <XDSText type="code">XDSIcon</XDSText>,{' '}
+            <XDSText type="code">XDSIconButton</XDSText>, and status indicators
+            resolve icons through these names.
+          </XDSText>
+          <XDSCard padding={0}>
+            <XDSTable
+              data={ICON_SLOTS as Record<string, unknown>[]}
+              columns={[
+                {
+                  key: 'name',
+                  header: 'Name',
+                  width: pixel(200),
+                  renderCell: (row: Record<string, unknown>) => (
+                    <XDSText type="code">{row.name as string}</XDSText>
+                  ),
+                },
+                {key: 'purpose', header: 'Purpose'},
+              ]}
+            />
+          </XDSCard>
+        </XDSStack>
+
+        {/* Sizes */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Sizes</XDSHeading>
+          <XDSText type="body" color="secondary">
+            Pass a <XDSText type="code">size</XDSText> prop to control the
+            rendered dimensions. All sizes align to the 4px grid.
+          </XDSText>
+          <XDSCard padding={0}>
+            <XDSTable
+              data={ICON_SIZES as Record<string, unknown>[]}
+              columns={[
+                {
+                  key: 'size',
+                  header: 'Size',
+                  width: pixel(120),
+                  renderCell: (row: Record<string, unknown>) => (
+                    <XDSText type="code">{row.size as string}</XDSText>
+                  ),
+                },
+                {key: 'pixels', header: 'Pixels', width: pixel(120)},
+              ]}
+            />
+          </XDSCard>
+        </XDSStack>
+
+        {/* Colors */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Colors</XDSHeading>
+          <XDSText type="body" color="secondary">
+            The <XDSText type="code">color</XDSText> prop maps to semantic
+            tokens from the active theme. Use{' '}
+            <XDSText type="code">inherit</XDSText> to pick up the parent's text
+            color.
+          </XDSText>
+          <XDSCard padding={0}>
+            <XDSTable
+              data={ICON_COLORS as Record<string, unknown>[]}
+              columns={[
+                {
+                  key: 'color',
+                  header: 'Color',
+                  width: pixel(200),
+                  renderCell: (row: Record<string, unknown>) => (
+                    <XDSText type="code">{row.color as string}</XDSText>
+                  ),
+                },
+              ]}
+            />
+          </XDSCard>
+        </XDSStack>
+
+        {/* Theme icon sets */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Theme icon sets</XDSHeading>
+          <XDSText type="body" color="secondary">
+            Each XDS theme ships its own icon set that fulfills every semantic
+            slot. Switching themes automatically swaps the underlying SVGs.
+          </XDSText>
+          <XDSList>
+            <XDSListItem>
+              <XDSText type="body">
+                <XDSText type="code" weight="bold">
+                  Heroicons
+                </XDSText>{' '}
+                — the default icon set, used by the Default and Meta themes.
+                Outlined style with rounded caps.
+              </XDSText>
+            </XDSListItem>
+            <XDSListItem>
+              <XDSText type="body">
+                <XDSText type="code" weight="bold">
+                  Lucide
+                </XDSText>{' '}
+                — used by the Neutral theme. Slightly thinner stroke with a
+                geometric feel.
+              </XDSText>
+            </XDSListItem>
+            <XDSListItem>
+              <XDSText type="body">
+                <XDSText type="code" weight="bold">
+                  registerIcons()
+                </XDSText>{' '}
+                — supply your own SVG components for any or all slots when
+                defining a custom theme.
+              </XDSText>
+            </XDSListItem>
+          </XDSList>
+        </XDSStack>
+
+        {/* Code */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Code</XDSHeading>
+          <XDSCodeBlock
+            code={`import { XDSIcon } from '@xds/core/Icon';
+
+// Basic usage — reference a semantic slot by name
+<XDSIcon icon="check" size="md" color="success" />
+<XDSIcon icon="close" size="sm" color="secondary" />
+<XDSIcon icon="warning" size="lg" color="warning" />`}
+            language="tsx"
+          />
+          <XDSCodeBlock
+            code={`import { registerIcons } from '@xds/core/Icon';
+import { defineTheme } from '@xds/core/theme';
+
+// Custom theme with your own icon set
+const myIcons = registerIcons({
+  close: MyCloseIcon,
+  check: MyCheckIcon,
+  chevronDown: MyChevronDownIcon,
+  // ... provide all 26 slots
+});
+
+const myTheme = defineTheme({
+  name: 'my-brand',
+  icons: myIcons,
+  tokens: { /* ... */ },
+});`}
+            language="tsx"
+          />
+        </XDSStack>
       </XDSStack>
     </XDSSection>
   );
