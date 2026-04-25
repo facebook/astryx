@@ -17,6 +17,7 @@
  * - /packages/core/src/DropdownMenu/XDSDropdownMenu.test.tsx
  * - /packages/core/src/DropdownMenu/index.ts
  * - /apps/storybook/stories/DropdownMenu.stories.tsx
+ * - /packages/cli/templates/blocks/components/DropdownMenu/ (showcase blocks)
  */
 
 import React, {
@@ -86,7 +87,7 @@ export interface XDSDropdownMenuItemData {
   label: string;
   onClick?: () => void;
   isDisabled?: boolean;
-  icon?: XDSIconType;
+  icon?: ReactNode | XDSIconType;
 }
 
 export interface XDSDropdownMenuDivider {

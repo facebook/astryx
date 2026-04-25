@@ -11,6 +11,7 @@
  * - /packages/core/src/Table/XDSTable.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Table/index.ts (exports if types change)
  * - /apps/storybook/stories/Table.stories.tsx (storybook stories)
+ * - /packages/cli/templates/blocks/components/Table/ (showcase blocks)
  */
 
 import {useMemo, type ReactElement, type Ref} from 'react';

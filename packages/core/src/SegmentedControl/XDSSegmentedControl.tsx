@@ -10,13 +10,14 @@
  * - /packages/core/src/SegmentedControl/SegmentedControl.doc.mjs
  * - /packages/core/src/SegmentedControl/index.ts
  * - /packages/core/src/SegmentedControl/XDSSegmentedControl.test.tsx
+ * - /packages/cli/templates/blocks/components/SegmentedControl/ (showcase blocks)
  */
 
 import React, {useMemo, useRef, useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, radiusVars} from '../theme/tokens.stylex';
 import {XDSSegmentedControlContext} from './XDSSegmentedControlContext';
-import type {XDSSegmentedControlSize} from './XDSSegmentedControlContext';
+import type {XDSSegmentedControlSize, XDSSegmentedControlLayout} from './XDSSegmentedControlContext';
 import {xdsClassName, mergeProps} from '../utils';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import type {XDSBaseProps} from '../XDSBaseProps';
@@ -43,6 +44,13 @@ export interface XDSSegmentedControlProps extends Omit<
    */
   size?: XDSSegmentedControlSize;
   /**
+   * Layout mode for segment sizing.
+   * - `'hug'` (default): each segment hugs its content width.
+   * - `'fill'`: segments stretch equally to fill the container width.
+   * @default 'hug'
+   */
+  layout?: XDSSegmentedControlLayout;
+  /**
    * Whether the entire control is disabled.
    * @default false
    */
@@ -65,6 +73,10 @@ const styles = stylex.create({
     '--_segmented-control-padding': spacingVars['--spacing-0-5'],
     padding: 'var(--_segmented-control-padding)',
     backgroundColor: colorVars['--color-neutral'],
+  },
+  fill: {
+    display: 'flex',
+    width: '100%',
   },
   disabled: {
     opacity: 0.5,
@@ -105,6 +117,7 @@ export function XDSSegmentedControl({
   onChange,
   label,
   size: sizeProp,
+  layout = 'hug',
   isDisabled = false,
   children,
   xstyle,
@@ -168,8 +181,8 @@ export function XDSSegmentedControl({
   );
 
   const contextValue = useMemo(
-    () => ({value, onChange, size, isDisabled}),
-    [value, onChange, size, isDisabled],
+    () => ({value, onChange, size, layout, isDisabled}),
+    [value, onChange, size, layout, isDisabled],
   );
 
   return (
@@ -185,6 +198,7 @@ export function XDSSegmentedControl({
           stylex.props(
             styles.container,
             sizeStyles[size],
+            layout === 'fill' && styles.fill,
             isDisabled && styles.disabled,
             xstyle,
           ),

@@ -7,6 +7,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Field/Field.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Field/index.ts (exports if types change)
+ * - /packages/cli/templates/blocks/components/Field/ (showcase blocks)
  */
 
 'use client';

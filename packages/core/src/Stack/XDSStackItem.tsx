@@ -6,8 +6,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Stack/Stack.doc.mjs
- * - /packages/core/src/Layout/Stack/XDSStackItem.test.tsx
- * - /apps/storybook/stories/StackItem.stories.tsx
+ * - /packages/cli/templates/blocks/components/Stack/ (showcase blocks)
  */
 
 import {

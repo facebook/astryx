@@ -8,7 +8,7 @@ import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSIcon} from '../Icon';
-import type {XDSIconType} from '../Icon';
+import {renderIconSlot, type XDSIconType} from '../Icon';
 import {XDSText} from '../Text';
 import {spacingVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
@@ -33,7 +33,7 @@ export interface XDSSelectorOptionProps {
   /**
    * Icon to display before the label.
    */
-  icon?: XDSIconType;
+  icon?: ReactNode | XDSIconType;
 
   /**
    * Primary label text.
@@ -113,7 +113,7 @@ export function XDSSelectorOption({
         className,
         style,
       )}>
-      {icon && <XDSIcon icon={icon} size="sm" color="secondary" />}
+      {icon && renderIconSlot(icon, {size: 'sm', color: 'secondary'})}
       <span {...stylex.props(styles.content)}>
         {typeof label === 'string' ? (
           <XDSText type="body" maxLines={1}>

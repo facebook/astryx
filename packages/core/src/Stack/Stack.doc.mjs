@@ -23,6 +23,16 @@ export const docs = {
             'Numeric spacing step controlling the gap between items: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
         },
         {
+          name: 'width',
+          type: 'SizeValue',
+          description: "Width of the stack container. Numbers are treated as pixels, strings are used as-is (e.g., '100%').",
+        },
+        {
+          name: 'height',
+          type: 'SizeValue',
+          description: "Height of the stack container. Numbers are treated as pixels, strings are used as-is (e.g., '100%').",
+        },
+        {
           name: 'hAlign',
           type: "'start' | 'center' | 'end' | 'between' | 'around' | 'evenly'",
           description: 'Horizontal (main-axis) alignment of items.',
@@ -77,6 +87,16 @@ export const docs = {
           type: 'SpacingStep',
           description:
             'Numeric spacing step controlling the gap between items: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
+        },
+        {
+          name: 'width',
+          type: 'SizeValue',
+          description: "Width of the stack container. Numbers are treated as pixels, strings are used as-is (e.g., '100%').",
+        },
+        {
+          name: 'height',
+          type: 'SizeValue',
+          description: "Height of the stack container. Numbers are treated as pixels, strings are used as-is (e.g., '100%').",
         },
         {
           name: 'hAlign',
@@ -234,6 +254,16 @@ export const docsZh = {
             '控制元素间距的数值间距步进：0、0.5、1、1.5、2、3、4、5、6、8、10。',
         },
         {
+          name: 'width',
+          type: 'SizeValue',
+          description: '堆叠容器的宽度。数字按像素处理，字符串原样使用（如 \'100%\'）。',
+        },
+        {
+          name: 'height',
+          type: 'SizeValue',
+          description: '堆叠容器的高度。数字按像素处理，字符串原样使用（如 \'100%\'）。',
+        },
+        {
           name: 'hAlign',
           type: "'start' | 'center' | 'end' | 'between' | 'around' | 'evenly'",
           description: '水平（主轴）对齐方式。',
@@ -289,6 +319,16 @@ export const docsZh = {
           type: 'SpacingStep',
           description:
             '控制元素间距的数值间距步进：0、0.5、1、1.5、2、3、4、5、6、8、10。',
+        },
+        {
+          name: 'width',
+          type: 'SizeValue',
+          description: '堆叠容器的宽度。数字按像素处理，字符串原样使用（如 \'100%\'）。',
+        },
+        {
+          name: 'height',
+          type: 'SizeValue',
+          description: '堆叠容器的高度。数字按像素处理，字符串原样使用（如 \'100%\'）。',
         },
         {
           name: 'hAlign',
@@ -441,6 +481,8 @@ export const docsDense = {
       description: 'Horizontal stack; left-to-right, polymorphic rendering.',
       propDescriptions: {
         gap: 'Numeric spacing step for gap: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
+        width: "Width of container. Numbers=pixels, strings=as-is (e.g. '100%').",
+        height: "Height of container. Numbers=pixels, strings=as-is (e.g. '100%').",
         hAlign: 'Horizontal (main-axis) alignment.',
         vAlign: 'Vertical (cross-axis) alignment.',
         justify: 'Main-axis alignment alias for hAlign. Mirrors CSS justify-content.',
@@ -456,6 +498,8 @@ export const docsDense = {
       description: 'Vertical stack; top-to-bottom, polymorphic rendering.',
       propDescriptions: {
         gap: 'Numeric spacing step for gap: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
+        width: "Width of container. Numbers=pixels, strings=as-is (e.g. '100%').",
+        height: "Height of container. Numbers=pixels, strings=as-is (e.g. '100%').",
         hAlign: 'Horizontal (cross-axis) alignment.',
         vAlign: 'Vertical (main-axis) alignment.',
         justify: 'Main-axis alignment alias for vAlign. Mirrors CSS justify-content.',

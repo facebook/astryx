@@ -11,6 +11,7 @@
  * - /packages/core/src/Link/XDSLink.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Link/index.ts (exports if types change)
  * - /apps/storybook/stories/Link.stories.tsx (storybook stories)
+ * - /packages/cli/templates/blocks/components/Link/ (showcase blocks)
  */
 
 import {type MouseEventHandler, type ReactNode} from 'react';

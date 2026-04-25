@@ -10,6 +10,7 @@
  * - /packages/core/src/Center/Center.doc.mjs
  * - /packages/core/src/Center/XDSCenter.test.tsx
  * - /apps/storybook/stories/Center.stories.tsx
+ * - /packages/cli/templates/blocks/components/Center/ (showcase blocks)
  */
 
 

@@ -11,6 +11,7 @@
  * - /packages/core/src/TextArea/XDSTextArea.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/TextArea/index.ts (exports if types change)
  * - /apps/storybook/stories/TextArea.stories.tsx (storybook stories)
+ * - /packages/cli/templates/blocks/components/TextArea/ (showcase blocks)
  */
 
 import {
@@ -20,6 +21,7 @@ import {
   type ChangeEvent,
   type ClipboardEvent,
   type FocusEvent,
+  type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSIconName} from '../Icon';
@@ -36,7 +38,7 @@ import {
   inputStatusHoverShadowStyles,
   inputStatusFocusWithinStyles,
 } from '../Field';
-import {XDSIcon, type XDSIconType} from '../Icon';
+import {XDSIcon, renderIconSlot, type XDSIconType} from '../Icon';
 import {XDSSpinner} from '../Spinner';
 import {xdsClassName, mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
@@ -192,9 +194,9 @@ export interface XDSTextAreaProps extends Omit<
   labelTooltip?: string;
   /**
    * Icon to display at the start of the textarea.
-   * Pass an SVG icon component (e.g. from heroicons, lucide, etc.).
+   * Accepts a ReactNode (e.g. `<XDSIcon icon={SearchIcon} />`) or an SVG icon component directly.
    */
-  startIcon?: XDSIconType;
+  startIcon?: ReactNode | XDSIconType;
   /**
    * Whether to enable browser spell checking.
    * @default true
@@ -350,7 +352,8 @@ export function XDSTextArea({
           className,
           style,
         )}>
-        {startIcon && <XDSIcon icon={startIcon} size="sm" color="primary" />}
+        {startIcon &&
+          renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
         <textarea
           {...rest}
           ref={ref}

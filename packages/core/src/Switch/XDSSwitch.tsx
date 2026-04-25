@@ -11,6 +11,7 @@
  * - /packages/core/src/Switch/XDSSwitch.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Switch/index.ts (exports if types change)
  * - /apps/storybook/stories/Switch.stories.tsx (storybook stories)
+ * - /packages/cli/templates/blocks/components/Switch/ (showcase blocks)
  */
 
 import {
@@ -19,6 +20,7 @@ import {
   useTransition,
   type ChangeEvent,
   type FocusEvent,
+  type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -251,7 +253,7 @@ export interface XDSSwitchProps extends Omit<XDSBaseProps, 'onChange'> {
   /**
    * Icon to display before the label text.
    */
-  labelIcon?: XDSIconType;
+  labelIcon?: ReactNode | XDSIconType;
   /**
    * Tooltip text to display in an info icon at the end of the label.
    */

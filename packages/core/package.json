@@ -1,8 +1,28 @@
 {
   "name": "@xds/core",
   "version": "0.0.12",
-  "description": "Core XDS components",
+  "description": "XDS design system — accessible, themeable React components with automatic spacing and plugin architecture",
+  "author": "Meta Open Source",
   "license": "MIT",
+  "homepage": "https://github.com/facebookexperimental/xds#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/facebookexperimental/xds.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/facebookexperimental/xds/issues"
+  },
+  "keywords": [
+    "xds",
+    "design-system",
+    "react",
+    "components",
+    "ui",
+    "accessible",
+    "themeable",
+    "stylex"
+  ],
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",

@@ -15,4 +15,4 @@ export type {XDSSegmentedControlProps} from './XDSSegmentedControl';
 export {XDSSegmentedControlItem} from './XDSSegmentedControlItem';
 export type {XDSSegmentedControlItemProps} from './XDSSegmentedControlItem';
 
-export type {XDSSegmentedControlSize} from './XDSSegmentedControlContext';
+export type {XDSSegmentedControlSize, XDSSegmentedControlLayout} from './XDSSegmentedControlContext';

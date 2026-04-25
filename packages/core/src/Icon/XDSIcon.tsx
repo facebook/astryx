@@ -17,9 +17,10 @@
  * - /packages/core/src/Icon/XDSIcon.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Icon/index.ts (exports if types change)
  * - /apps/storybook/stories/Icon.stories.tsx (storybook stories)
+ * - /packages/cli/templates/blocks/components/Icon/ (showcase blocks)
  */
 
-import {type ComponentType, type SVGProps} from 'react';
+import React, {type ComponentType, type SVGProps} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {getIcon} from './globalIconRegistry';
@@ -276,4 +277,22 @@ function IconFromRegistry({
       {resolvedIcon}
     </span>
   );
+}
+
+/**
+ * Renders an icon slot value. Handles both ReactNode and component types:
+ * - If the value is a component (function or forwardRef object), wraps it in XDSIcon.
+ * - Otherwise, renders the ReactNode directly.
+ */
+export function renderIconSlot(
+  icon: React.ReactNode | XDSIconType,
+  props?: {size?: XDSIconSize; color?: XDSIconColor},
+): React.ReactNode {
+  if (
+    typeof icon === 'function' ||
+    (typeof icon === 'object' && icon !== null && 'render' in icon)
+  ) {
+    return <XDSIcon icon={icon as unknown as XDSIconType} {...props} />;
+  }
+  return icon;
 }

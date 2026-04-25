@@ -11,6 +11,7 @@
  * - /packages/core/src/Dialog/XDSDialogHeader.test.tsx
  * - /packages/core/src/Dialog/index.ts
  * - /apps/storybook/stories/Dialog.stories.tsx
+ * - /packages/cli/templates/blocks/components/Dialog/ (showcase blocks)
  */
 
 import {useEffect, useRef, type ReactNode} from 'react';

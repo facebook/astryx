@@ -12,6 +12,7 @@
  * SYNC: When modified, update:
  * - /packages/core/src/SideNav/SideNav.doc.mjs
  * - /packages/core/src/SideNav/index.ts
+ * - /packages/cli/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
 import {useCallback, type ReactNode} from 'react';

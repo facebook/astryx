@@ -11,6 +11,7 @@
  * - /packages/core/src/Field/XDSField.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Field/index.ts (exports if types change)
  * - /apps/storybook/stories/Field.stories.tsx (storybook stories)
+ * - /packages/cli/templates/blocks/components/Field/ (showcase blocks)
  */
 
 import {type HTMLAttributes, type ReactNode} from 'react';
@@ -18,9 +19,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSFieldLabel} from './XDSFieldLabel';
 import {XDSFieldStatus} from './XDSFieldStatus';
-import {
-  spacingVars,
-} from '../theme/tokens.stylex';
+import {spacingVars} from '../theme/tokens.stylex';
 import type {XDSIconType} from '../Icon';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -101,7 +100,7 @@ export interface XDSFieldProps extends Omit<
   /**
    * Icon to display before the label text.
    */
-  labelIcon?: XDSIconType;
+  labelIcon?: ReactNode | XDSIconType;
   /**
    * Status indicator for the field.
    * When set with a message, displays a colored message box below the input.

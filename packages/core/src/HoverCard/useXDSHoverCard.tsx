@@ -112,6 +112,14 @@ export interface XDSHoverCardOptions {
   isEnabled?: boolean;
 
   /**
+   * Controlled open state. When provided, overrides hover/focus triggers:
+   * - `true`: force-show the hover card (hover/focus hide is suppressed)
+   * - `false`: force-hide the hover card
+   * - `undefined`: uncontrolled — hover/focus triggers manage visibility
+   */
+  isOpen?: boolean;
+
+  /**
    * Whether the hover card should be shown on mount.
    * The hover card is still dismissible — this just opens it initially.
    */
@@ -232,6 +240,7 @@ export function useXDSHoverCard(
     hideDelay = 200,
     focusTrigger = 'auto',
     isEnabled = true,
+    isOpen,
     isDefaultOpen = false,
     onShow,
     onHide,
@@ -271,17 +280,18 @@ export function useXDSHoverCard(
     }
   }, []);
 
-  // Schedule show with delay
+  // Schedule show with delay (suppressed when isOpen is false)
   const scheduleShow = useCallback(() => {
-    if (!isEnabled) return;
+    if (!isEnabled || isOpen === false) return;
     clearTimeouts();
     showTimeoutRef.current = setTimeout(() => {
       layer.show();
     }, delay);
-  }, [isEnabled, clearTimeouts, layer, delay]);
+  }, [isEnabled, isOpen, clearTimeouts, layer, delay]);
 
-  // Schedule hide with delay
+  // Schedule hide with delay (suppressed when isOpen is true)
   const scheduleHide = useCallback(() => {
+    if (isOpen === true) return;
     clearTimeouts();
     hideTimeoutRef.current = setTimeout(() => {
       // Don't hide if hovering content
@@ -289,7 +299,7 @@ export function useXDSHoverCard(
         layer.hide();
       }
     }, hideDelay);
-  }, [clearTimeouts, layer, hideDelay]);
+  }, [isOpen, clearTimeouts, layer, hideDelay]);
 
   // Event handlers
   const handleMouseEnter = useCallback(() => {
@@ -409,6 +419,18 @@ export function useXDSHoverCard(
     }
     // Only run on mount — isDefaultOpen is not reactive
   }, []);
+
+  // Controlled open state — overrides hover/focus triggers
+  useEffect(() => {
+    if (isOpen === undefined) return;
+    if (isOpen) {
+      clearTimeouts();
+      layer.show();
+    } else {
+      clearTimeouts();
+      layer.hide();
+    }
+  }, [isOpen, clearTimeouts, layer]);
 
   // Render function that wraps layer.render with hover card behavior
   const renderHoverCard = useCallback(

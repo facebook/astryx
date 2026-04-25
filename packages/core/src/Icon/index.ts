@@ -9,7 +9,7 @@
  * SYNC: When modified, update this header and /packages/core/src/Icon/Icon.doc.mjs
  */
 
-export {XDSIcon} from './XDSIcon';
+export {XDSIcon, renderIconSlot} from './XDSIcon';
 export type {
   XDSIconProps,
   XDSIconColor,

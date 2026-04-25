@@ -13,6 +13,7 @@
  * - /packages/core/src/SideNav/XDSSideNav.test.tsx
  * - /packages/core/src/SideNav/index.ts
  * - /apps/storybook/stories/SideNav.stories.tsx
+ * - /packages/cli/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
 import {useCallback, useId, useRef, useState, type ReactNode} from 'react';
@@ -29,7 +30,7 @@ import {
   radiusVars,
 } from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
-import type {XDSIconType} from '../Icon';
+import {renderIconSlot, type XDSIconType} from '../Icon';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {useXDSPopover} from '../Popover/useXDSPopover';
@@ -249,11 +250,11 @@ export interface XDSSideNavItemProps {
   /**
    * Icon (outline variant).
    */
-  icon?: XDSIconType;
+  icon?: ReactNode | XDSIconType;
   /**
    * Icon when selected (filled variant).
    */
-  selectedIcon?: XDSIconType;
+  selectedIcon?: ReactNode | XDSIconType;
   /**
    * Current page indicator.
    * @default false
@@ -392,7 +393,8 @@ export function XDSSideNavItem({
   // toggle are independent: clicking the label navigates/fires onClick,
   // clicking the chevron expands/collapses children.
   const hasPrimaryAction = !!href || !!onClick;
-  const hasIndependentToggle = isItemCollapsible && hasPrimaryAction && !isCollapsed;
+  const hasIndependentToggle =
+    isItemCollapsible && hasPrimaryAction && !isCollapsed;
 
   const handleClick = (e: React.MouseEvent) => {
     if (isDisabled) {
@@ -463,13 +465,12 @@ export function XDSSideNavItem({
   // Collapsed mode — icon-only items, popover for items with children
   // =========================================================================
   if (isCollapsed) {
-    const collapsedIcon = displayIcon && (
-      <XDSIcon
-        icon={displayIcon}
-        size="sm"
-        color={isSelected ? 'primary' : isDisabled ? 'disabled' : 'secondary'}
-      />
-    );
+    const collapsedIcon =
+      displayIcon &&
+      renderIconSlot(displayIcon, {
+        size: 'sm',
+        color: isSelected ? 'primary' : isDisabled ? 'disabled' : 'secondary',
+      });
 
     // Shared collapsed item styles — used by trigger, link, and button
     const collapsedItemStyles = mergeProps(
@@ -560,13 +561,11 @@ export function XDSSideNavItem({
 
   const itemContent = (
     <>
-      {displayIcon && (
-        <XDSIcon
-          icon={displayIcon}
-          size="sm"
-          color={isSelected ? 'primary' : isDisabled ? 'disabled' : 'secondary'}
-        />
-      )}
+      {displayIcon &&
+        renderIconSlot(displayIcon, {
+          size: 'sm',
+          color: isSelected ? 'primary' : isDisabled ? 'disabled' : 'secondary',
+        })}
       {!isCollapsed && <span {...stylex.props(styles.label)}>{label}</span>}
       {!isCollapsed && endContent && (
         <span {...stylex.props(styles.endContent)}>{endContent}</span>

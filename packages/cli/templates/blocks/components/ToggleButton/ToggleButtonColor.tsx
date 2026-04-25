@@ -87,7 +87,7 @@ export default function ToggleButtonColor() {
           <XDSToggleButton
             label="Link"
             icon={<XDSIcon icon={LinkIcon} color="secondary" />}
-            pressedIcon={<XDSIcon icon={LinkIcon} color="positive" />}
+            pressedIcon={<XDSIcon icon={LinkIcon} color="accent" />}
             isPressed={toolbar.link}
             onPressedChange={() => toggleToolbar('link')}
             isIconOnly

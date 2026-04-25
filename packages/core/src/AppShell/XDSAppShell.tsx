@@ -15,6 +15,7 @@ import React from 'react';
  * - /packages/core/src/AppShell/index.ts
  * - /packages/core/src/AppShell/XDSAppShell.test.tsx
  * - /apps/storybook/stories/AppShell.stories.tsx
+ * - /packages/cli/templates/blocks/components/AppShell/ (showcase blocks)
  */
 
 import {
@@ -27,7 +28,6 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
   fontWeightVars,
@@ -48,6 +48,7 @@ import {XDSAppShellMobileContext} from './XDSAppShellMobileContext';
 import {useXDSSlotPresence} from './useXDSSlotPresence';
 import type {XDSAppShellMobileContextValue} from './XDSAppShellMobileContext';
 import type {SpacingStep} from '../utils/types';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps} from '../utils';
 
 const HasActivity = typeof React.Activity !== 'undefined';
@@ -155,9 +156,21 @@ export interface XDSMobileNavConfig {
    * @default 'md'
    */
   breakpoint?: XDSAppShellBreakpoint;
+
+  /**
+   * SSR hint: whether the initial render should assume mobile layout.
+   * Seeds the breakpoint state so the server-rendered HTML matches
+   * the client on mobile devices, avoiding a layout flash.
+   *
+   * Derive from the User-Agent header or a device-detection cookie
+   * in a server component, then pass down.
+   *
+   * @default false
+   */
+  defaultIsMobile?: boolean;
 }
 
-export interface XDSAppShellProps {
+export interface XDSAppShellProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
   /**
@@ -190,11 +203,6 @@ export interface XDSAppShellProps {
    * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
    */
   contentPadding?: SpacingStep;
-
-  /**
-   * Test ID for the root element.
-   */
-  'data-testid'?: string;
 
   /**
    * Height behavior:
@@ -237,28 +245,6 @@ export interface XDSAppShellProps {
    * Top navigation — typically an XDSTopNav.
    */
   topNav?: ReactNode;
-
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
 }
 
 // =============================================================================
@@ -393,16 +379,9 @@ const styles = stylex.create({
     top: 0,
     zIndex: 1,
   },
-  // Wrapper for auto height mode — stretches to full content height
-  sideNavAutoWrapper: {
-    alignSelf: 'stretch',
-  },
-  // Panel fill for auto mode — panel fills the sticky container vertically
-  panelAutoFill: {
-    flex: 1,
-  },
   // Sticky sideNav for auto height mode — sticks within the wrapper
   sideNavSticky: {
+    alignSelf: 'stretch',
     position: 'sticky',
     top: 'var(--appshell-header-height, 0px)',
     height: 'calc(100dvh - var(--appshell-header-height, 0px))',
@@ -410,6 +389,10 @@ const styles = stylex.create({
     // Ensure children (XDSLayoutPanel → XDSSideNav) fill the sticky container
     display: 'flex',
     flexDirection: 'column',
+  },
+  // Panel fill for auto mode — panel fills the sticky container vertically
+  panelAutoFill: {
+    flex: 1,
   },
 });
 
@@ -478,6 +461,7 @@ export function XDSAppShell({
   const mobileNavConfigContent: ReactNode | null =
     mobileNavConfig?.content ?? null;
   const mobileNavHasToggle = mobileNavConfig?.hasToggle !== false;
+  const mobileNavDefaultIsMobile = mobileNavConfig?.defaultIsMobile ?? false;
   const mobileNavIsControlled = mobileNavConfig?.isOpen !== undefined;
 
   // =========================================================================
@@ -495,7 +479,9 @@ export function XDSAppShell({
   // =========================================================================
   // Mobile nav open state (controlled + uncontrolled)
   // =========================================================================
-  const [isBelowBreakpoint, setIsBelowBreakpoint] = useState(false);
+  const [isBelowBreakpoint, setIsBelowBreakpoint] = useState(
+    mobileNavDefaultIsMobile,
+  );
   const [uncontrolledMobileOpen, setUncontrolledMobileOpen] = useState(false);
   const isMobileNavOpen = mobileNavIsControlled
     ? mobileNavConfig!.isOpen!
@@ -671,11 +657,10 @@ export function XDSAppShell({
 
   const headerInner =
     hasTopNav || hasBanner ? (
-      <XDSLayoutHeader
-        padding={0}
-        hasDivider={navHasDividers && hasTopNav}
-        xstyle={navAreaStyle}>
-        {hasBanner && <div {...stylex.props(styles.banner)}>{banner}</div>}
+      <XDSLayoutHeader padding={0} hasDivider={navHasDividers && hasTopNav}>
+        {hasBanner && (
+          <div {...stylex.props(styles.banner, navAreaStyle)}>{banner}</div>
+        )}
         {hasTopNav && (
           <div ref={topNavRef} style={{display: 'contents'}}>
             {topNavContent}
@@ -688,9 +673,9 @@ export function XDSAppShell({
     headerInner != null ? (
       <div
         ref={headerRef}
-        {...stylex.props(
-          isAuto && styles.headerSticky,
-          isAuto && stickyBgStyle,
+        {...mergeProps(
+          xdsClassName('app-shell-header', {variant}),
+          stylex.props(isAuto && styles.headerSticky, isAuto && stickyBgStyle),
         )}>
         {headerInner}
       </div>
@@ -709,7 +694,12 @@ export function XDSAppShell({
       padding={0}
       hasDivider={navHasDividers}
       isScrollable={isFill}
-      xstyle={[navAreaStyle, isAuto && styles.panelAutoFill]}>
+      className={xdsClassName('app-shell-sidenav', {variant})}
+      xstyle={[
+        navAreaStyle,
+        isAuto && stickyBgStyle,
+        isAuto && styles.panelAutoFill,
+      ]}>
       <div ref={sideNavRef} style={{display: 'contents'}}>
         {sideNav}
       </div>
@@ -718,11 +708,7 @@ export function XDSAppShell({
 
   const sideNavContent =
     sideNavPanel != null && isAuto ? (
-      <div {...stylex.props(styles.sideNavAutoWrapper)}>
-        <div {...stylex.props(styles.sideNavSticky, stickyBgStyle)}>
-          {sideNavPanel}
-        </div>
-      </div>
+      <div {...stylex.props(styles.sideNavSticky)}>{sideNavPanel}</div>
     ) : (
       sideNavPanel
     );
@@ -771,14 +757,11 @@ export function XDSAppShell({
   const autoMobileTopBar =
     shouldShowAutoToggle && !hasTopNavContent && hasSideNav ? (
       <div
-        {...stylex.props(
-          isAuto && styles.headerSticky,
-          isAuto && stickyBgStyle,
+        {...mergeProps(
+          xdsClassName('app-shell-header', {variant}),
+          stylex.props(isAuto && styles.headerSticky, isAuto && stickyBgStyle),
         )}>
-        <XDSLayoutHeader
-          padding={0}
-          hasDivider={navHasDividers}
-          xstyle={navAreaStyle}>
+        <XDSLayoutHeader padding={0} hasDivider={navHasDividers}>
           <div
             {...stylex.props(styles.autoMobileTopBar)}
             role="navigation"
@@ -800,7 +783,7 @@ export function XDSAppShell({
         ref={setShellRef}
         data-testid={dataTestId}
         {...mergeProps(
-          xdsClassName('app-shell', {height, variant}),
+          xdsClassName('app-shell', {variant}),
           stylex.props(
             styles.root,
             variant === 'wash'

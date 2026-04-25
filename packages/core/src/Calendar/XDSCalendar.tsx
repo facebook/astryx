@@ -11,6 +11,7 @@
  * - /packages/core/src/Calendar/XDSCalendar.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Calendar/index.ts (exports if types change)
  * - /apps/storybook/stories/Calendar.stories.tsx (storybook stories)
+ * - /packages/cli/templates/blocks/components/Calendar/ (showcase blocks)
  */
 
 import {

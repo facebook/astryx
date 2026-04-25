@@ -5,7 +5,6 @@
  * @position Utility; convenience factory for static search sources
  *
  * SYNC: When modified, update:
- * - /packages/core/src/Typeahead/README.md
  * - /packages/core/src/Typeahead/index.ts
  */
 

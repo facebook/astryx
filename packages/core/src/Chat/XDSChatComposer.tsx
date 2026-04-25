@@ -6,7 +6,7 @@
  * @output Exports XDSChatComposer layout shell component
  * @position Core implementation; consumed by index.ts
  *
- * Layout shell for a chat composer. Arranges slots (attachments, header,
+ * Layout shell for a chat composer. Arranges slots (drawer, header,
  * input, footer actions, send button, status) in a vertical stack with
  * page-radius container, hover/focus shadows, and concentric inner radius.
  *
@@ -17,8 +17,8 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/Chat.doc.mjs
- * - /packages/core/src/Chat/README.md
  * - /apps/storybook/stories/ChatComposer.stories.tsx
+ * - /packages/cli/templates/blocks/components/Chat/ (showcase blocks)
  */
 
 import {
@@ -81,8 +81,8 @@ export interface XDSChatComposerProps extends Omit<
 
   // --- Slot props ---
 
-  /** Attachment chips rendered above the input */
-  attachments?: ReactNode;
+  /** Collapsible drawer rendered above the input — attachments, context chips, etc. Use XDSChatComposerDrawer. */
+  drawer?: ReactNode;
   /** Actions rendered on the left side of the header (e.g. attach, mention buttons). Use icon-only `size="sm"` buttons. */
   headerActions?: ReactNode;
   /** Contextual info rendered on the right side of the header (e.g. context window usage, XDSProgressBar). */
@@ -250,7 +250,7 @@ const styles = stylex.create({
 // =============================================================================
 
 /**
- * Layout shell for a chat composer with slots for attachments, input,
+ * Layout shell for a chat composer with slots for drawer, input,
  * actions, and a send button.
  *
  * @example
@@ -271,7 +271,7 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
     placeholder = 'Type a message\u2026',
     isDisabled = false,
     density = 'balanced',
-    attachments,
+    drawer,
     headerActions,
     headerContext,
     input,
@@ -381,7 +381,7 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
         )}
         {...rest}>
         {statusPosition === 'top' && statusEl}
-        {attachments}
+        {drawer}
 
         <div
           ref={bodyRef}

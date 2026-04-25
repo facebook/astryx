@@ -1,15 +1,16 @@
 'use client';
 
 /**
- * @file XDSChatComposerAttachments.tsx
+ * @file XDSChatComposerDrawer.tsx
  * @input Uses React, StyleX, theme tokens
- * @output Exports XDSChatComposerAttachments component
- * @position Layout container for attachment items inside XDSChatComposer.
+ * @output Exports XDSChatComposerDrawer component
+ * @position Collapsible drawer panel for XDSChatComposer.
  *   Supports expanded (full content) and collapsed (count + label) states
  *   with fade animation and grid-template-rows height transition.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts (exports)
+ * - /packages/cli/templates/blocks/components/Chat/ (showcase blocks)
  */
 
 import {useState, type ReactNode} from 'react';
@@ -27,20 +28,20 @@ import {XDSBadge} from '../Badge';
 import {xdsClassName, mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
-export interface XDSChatComposerAttachmentsProps extends XDSBaseProps<HTMLDivElement> {
+export interface XDSChatComposerDrawerProps extends XDSBaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
   /**
-   * Attachment items — thumbnails, tokens, previews.
+   * Content to render inside the drawer — attachments, context chips, previews, etc.
    */
   children: ReactNode;
   /**
-   * Total attachment count — shown in the collapsed badge.
+   * Total item count — shown in the collapsed badge.
    * When omitted, the component doesn't support collapse.
    */
   count?: number;
   /**
    * Label shown next to the count in collapsed state.
-   * @default 'Attachments'
+   * @default 'Items'
    */
   label?: string;
   /**
@@ -189,22 +190,22 @@ const styles = stylex.create({
 });
 
 /**
- * Container for attachment previews inside a chat composer.
- * Supports collapsible behavior with a count badge.
+ * Collapsible drawer panel for a chat composer.
+ * Use for attachments, context chips, or any supplementary content above the input.
  *
  * @example
  * ```
- * <XDSChatComposerAttachments count={3}>
+ * <XDSChatComposerDrawer count={3}>
  *   <AttachmentThumbnail />
  *   <AttachmentThumbnail />
- * </XDSChatComposerAttachments>
+ * </XDSChatComposerDrawer>
  * ```
  */
-export function XDSChatComposerAttachments({
+export function XDSChatComposerDrawer({
   ref,
   children,
   count,
-  label = 'Attachments',
+  label = 'Items',
   isCollapsed: controlledCollapsed,
   defaultIsCollapsed = false,
   onCollapsedChange,
@@ -213,7 +214,7 @@ export function XDSChatComposerAttachments({
   style,
   'data-testid': testId,
   ...htmlProps
-}: XDSChatComposerAttachmentsProps): React.ReactElement {
+}: XDSChatComposerDrawerProps): React.ReactElement {
   const [internalCollapsed, setInternalCollapsed] =
     useState(defaultIsCollapsed);
   const isControlled = controlledCollapsed !== undefined;
@@ -232,7 +233,7 @@ export function XDSChatComposerAttachments({
       ref={ref}
       data-testid={testId}
       {...mergeProps(
-        xdsClassName('chat-composer-attachments', {
+        xdsClassName('chat-composer-drawer', {
           collapsed: isCollapsed ? 'collapsed' : null,
         }),
         stylex.props(styles.root, xstyle),
@@ -292,4 +293,4 @@ export function XDSChatComposerAttachments({
   );
 }
 
-XDSChatComposerAttachments.displayName = 'XDSChatComposerAttachments';
+XDSChatComposerDrawer.displayName = 'XDSChatComposerDrawer';

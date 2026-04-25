@@ -1,29 +1,43 @@
 'use client';
 
 import {
+  XDSChatLayout,
   XDSChatMessageList,
   XDSChatMessage,
   XDSChatMessageBubble,
+  XDSChatComposer,
+  XDSChatTokenizedText,
 } from '@xds/core/Chat';
-import {XDSMarkdown} from '@xds/core/Markdown';
+import {XDSAvatar} from '@xds/core/Avatar';
+import {XDSVStack} from '@xds/core/Stack';
+
+const TOKENS = [{value: '/review', label: '/review', variant: 'blue' as const}];
 
 export default function ChatShowcase() {
   return (
-    <XDSChatMessageList>
-      <XDSChatMessage sender="user">
-        <XDSChatMessageBubble>
-          How should I handle state management in a React app?
-        </XDSChatMessageBubble>
-      </XDSChatMessage>
-      <XDSChatMessage sender="assistant">
-        <XDSMarkdown density="compact">{`For most cases, **React's built-in state** is sufficient:
-
-- \`useState\` for local component state
-- \`useReducer\` for complex state logic
-- \`useContext\` for shared state across a subtree
-
-For **server state**, use a library like **TanStack Query** or **SWR**.`}</XDSMarkdown>
-      </XDSChatMessage>
-    </XDSChatMessageList>
+    <XDSVStack width={450}>
+      <XDSChatLayout
+        composer={
+          <XDSChatComposer
+            onSubmit={() => {}}
+            placeholder="Ask something..."
+          />
+        }>
+        <XDSChatMessageList>
+          <XDSChatMessage sender="user">
+            <XDSChatMessageBubble>
+              <XDSChatTokenizedText tokens={TOKENS}>
+                /review the changes in this file
+              </XDSChatTokenizedText>
+            </XDSChatMessageBubble>
+          </XDSChatMessage>
+          <XDSChatMessage sender="assistant">
+            <XDSChatMessageBubble variant="ghost">
+              Reading the file now...
+            </XDSChatMessageBubble>
+          </XDSChatMessage>
+        </XDSChatMessageList>
+      </XDSChatLayout>
+    </XDSVStack>
   );
 }

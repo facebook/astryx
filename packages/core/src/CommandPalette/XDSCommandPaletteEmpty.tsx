@@ -5,7 +5,7 @@
  * @position Sub-component; empty state shown when there are no items to display
  *
  * SYNC: When modified, update:
- * - /packages/lab/src/CommandPalette/README.md
+ * - /packages/cli/templates/blocks/components/CommandPalette/ (showcase blocks)
  */
 
 'use client';

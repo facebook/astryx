@@ -202,4 +202,54 @@ describe('XDSStack', () => {
     );
     expect(container.firstChild).toBeInTheDocument();
   });
+
+  it('applies numeric width as pixels', () => {
+    render(
+      <XDSStack direction="vertical" width={300} data-testid="stack">
+        <div>Item</div>
+      </XDSStack>,
+    );
+    expect(screen.getByTestId('stack')).toHaveStyle({width: '300px'});
+  });
+
+  it('applies string width as-is', () => {
+    render(
+      <XDSStack direction="vertical" width="100%" data-testid="stack">
+        <div>Item</div>
+      </XDSStack>,
+    );
+    expect(screen.getByTestId('stack')).toHaveStyle({width: '100%'});
+  });
+
+  it('applies numeric height as pixels', () => {
+    render(
+      <XDSStack direction="horizontal" height={200} data-testid="stack">
+        <div>Item</div>
+      </XDSStack>,
+    );
+    expect(screen.getByTestId('stack')).toHaveStyle({height: '200px'});
+  });
+
+  it('applies string height as-is', () => {
+    render(
+      <XDSStack direction="horizontal" height="50vh" data-testid="stack">
+        <div>Item</div>
+      </XDSStack>,
+    );
+    expect(screen.getByTestId('stack')).toHaveStyle({height: '50vh'});
+  });
+
+  it('applies both width and height together', () => {
+    render(
+      <XDSStack
+        direction="vertical"
+        width={400}
+        height="100%"
+        data-testid="stack">
+        <div>Item</div>
+      </XDSStack>,
+    );
+    const el = screen.getByTestId('stack');
+    expect(el).toHaveStyle({width: '400px', height: '100%'});
+  });
 });

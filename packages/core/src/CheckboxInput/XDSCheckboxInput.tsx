@@ -11,6 +11,7 @@
  * - /packages/core/src/CheckboxInput/XDSCheckboxInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/CheckboxInput/index.ts (exports if types change)
  * - /apps/storybook/stories/CheckboxInput.stories.tsx (storybook stories)
+ * - /packages/cli/templates/blocks/components/CheckboxInput/ (showcase blocks)
  */
 
 import {
@@ -20,6 +21,7 @@ import {
   useTransition,
   type ChangeEvent,
   type FocusEvent,
+  type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -291,7 +293,7 @@ export interface XDSCheckboxInputProps extends Omit<XDSBaseProps, 'onChange'> {
   /**
    * Icon to display before the label text.
    */
-  labelIcon?: XDSIconType;
+  labelIcon?: ReactNode | XDSIconType;
   /**
    * Status indicator for the checkbox.
    * When set with a message, displays a colored message box below the checkbox.

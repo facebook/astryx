@@ -9,6 +9,7 @@
  * - /packages/core/src/StatusDot/XDSStatusDot.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/StatusDot/index.ts (exports if types change)
  * - /apps/storybook/stories/StatusDot.stories.tsx (storybook stories)
+ * - /packages/cli/templates/blocks/components/StatusDot/ (showcase blocks)
  */
 
 import * as stylex from '@stylexjs/stylex';

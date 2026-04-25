@@ -11,6 +11,7 @@
  * - /packages/core/src/Breadcrumbs/XDSBreadcrumbs.test.tsx
  * - /packages/core/src/Breadcrumbs/index.ts
  * - /apps/storybook/stories/Breadcrumbs.stories.tsx
+ * - /packages/cli/templates/blocks/components/Breadcrumbs/ (showcase blocks)
  */
 
 import {
@@ -106,6 +107,14 @@ const itemStyles = stylex.create({
       },
     },
     cursor: 'pointer',
+  },
+  // Reset native button styles so onClick-only items match link appearance
+  buttonReset: {
+    background: 'none',
+    border: 'none',
+    padding: 0,
+    margin: 0,
+    font: 'inherit',
   },
   defaultLink: {
     color: colorVars['--color-text-secondary'],
@@ -259,6 +268,17 @@ export function XDSBreadcrumbItem({
           )}>
           {content}
         </LinkComponent>
+      ) : onClick != null ? (
+        <button
+          type="button"
+          onClick={onClick}
+          {...stylex.props(
+            itemStyles.link,
+            itemStyles.buttonReset,
+            isSupporting ? itemStyles.supportingLink : itemStyles.defaultLink,
+          )}>
+          {content}
+        </button>
       ) : (
         <span
           {...stylex.props(

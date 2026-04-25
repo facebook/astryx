@@ -9,6 +9,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Tooltip/index.ts
  * - /apps/storybook/stories/Tooltip.stories.tsx
+ * - /packages/cli/templates/blocks/components/Tooltip/ (showcase blocks)
  */
 
 import React, {
@@ -121,6 +122,14 @@ export interface XDSTooltipProps {
   hasHoverIndication?: 'auto' | boolean;
 
   /**
+   * Controlled open state. When provided, overrides hover/focus triggers:
+   * - `true`: force-show the tooltip (hover/focus hide is suppressed)
+   * - `false`: force-hide the tooltip
+   * - `undefined`: uncontrolled — hover/focus triggers manage visibility
+   */
+  isOpen?: boolean;
+
+  /**
    * Whether the tooltip should be shown on mount.
    * The tooltip is still dismissible — this just opens it initially.
    */
@@ -168,6 +177,7 @@ export function XDSTooltip({
   isEnabled = true,
   onOpenChange,
   hasHoverIndication = 'auto',
+  isOpen,
   isDefaultOpen,
 }: XDSTooltipProps): ReactElement {
   const wrapperRef = useRef<HTMLElement>(null);
@@ -193,6 +203,7 @@ export function XDSTooltip({
     hideDelay,
     focusTrigger,
     isEnabled,
+    isOpen,
     isDefaultOpen,
     onShow: handleShow,
     onHide: handleHide,

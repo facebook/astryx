@@ -4,6 +4,7 @@
  * @position Type definitions; used by XDSSelector.tsx
  */
 
+import type {ReactNode} from 'react';
 import type {XDSIconType} from '../Icon';
 
 /**
@@ -13,7 +14,7 @@ export type XDSSelectorOptionData = {
   value: string;
   label?: string;
   disabled?: boolean;
-  icon?: XDSIconType;
+  icon?: ReactNode | XDSIconType;
 };
 
 /**

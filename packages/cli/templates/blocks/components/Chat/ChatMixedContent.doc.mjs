@@ -5,6 +5,6 @@ export const doc = {
   description:
     'AI chat with multiple bubble variants, code blocks, file tokens, system messages, and markdown.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 3 / 4,
   componentsUsed: ['Chat', 'Markdown', 'Token', 'Stack', 'CodeBlock'],
 };

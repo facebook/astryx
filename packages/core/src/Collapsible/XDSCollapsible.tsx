@@ -16,6 +16,7 @@
  * - /packages/core/src/Collapsible/index.ts (exports)
  * - /packages/core/src/Collapsible/Collapsible.doc.mjs
  * - /apps/storybook/stories/Collapsible.stories.tsx
+ * - /packages/cli/templates/blocks/components/Collapsible/ (showcase blocks)
  */
 
 import {type ReactNode} from 'react';
@@ -52,7 +53,12 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-semibold'],
     color: colorVars['--color-text-primary'],
     textAlign: 'start',
-    paddingBlock: spacingVars['--spacing-1'],
+    paddingBlock: 0,
+  },
+  // Capsize: trim leading from text triggers
+  triggerLabel: {
+    textBoxEdge: 'cap alphabetic',
+    textBoxTrim: 'trim-both',
   },
   // Chevron indicator
   chevron: {
@@ -200,7 +206,7 @@ export function XDSCollapsible({
         onClick={toggle}
         aria-expanded={isOpen}
         {...stylex.props(styles.trigger)}>
-        <span>{trigger}</span>
+        <span {...stylex.props(styles.triggerLabel)}>{trigger}</span>
         <span
           {...stylex.props(
             styles.chevron,

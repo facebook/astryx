@@ -10,8 +10,8 @@
  * - /packages/core/src/AspectRatio/AspectRatio.doc.mjs
  * - /packages/core/src/AspectRatio/XDSAspectRatio.test.tsx
  * - /apps/storybook/stories/AspectRatio.stories.tsx
+ * - /packages/cli/templates/blocks/components/AspectRatio/ (showcase blocks)
  */
-
 
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -64,7 +64,7 @@ const styles = stylex.create({
   child: {
     position: 'absolute',
     top: 0,
-    left: 0,
+    insetInlineStart: 0,
     width: '100%',
     height: '100%',
   },

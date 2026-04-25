@@ -15,6 +15,7 @@
  * - /packages/core/src/TopNav/XDSTopNav.test.tsx
  * - /packages/core/src/TopNav/index.ts
  * - /apps/storybook/stories/TopNav.stories.tsx
+ * - /packages/cli/templates/blocks/components/TopNav/ (showcase blocks)
  */
 
 import {useCallback, useRef, type ReactNode} from 'react';

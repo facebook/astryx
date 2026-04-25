@@ -10,6 +10,7 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Carousel/index.ts (exports)
  * - /apps/storybook/stories/Carousel.stories.tsx
+ * - /packages/cli/templates/blocks/components/Carousel/ (showcase blocks)
  */
 
 import {type ReactNode, useRef, useCallback, useEffect, Children} from 'react';
@@ -29,7 +30,6 @@ import {useXDSLayer} from '../Layer';
 import {useScrollOverflow} from '../hooks/useScrollOverflow';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps} from '../utils';
-import {carouselScope} from './carousel.markers.stylex';
 
 export interface XDSCarouselProps extends XDSBaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
@@ -41,7 +41,7 @@ export interface XDSCarouselProps extends XDSBaseProps<HTMLDivElement> {
    */
   gap?: 0 | 0.5 | 1 | 1.5 | 2 | 3 | 4;
   /**
-   * Show prev/next navigation buttons on hover (desktop only).
+   * Show prev/next navigation buttons when content is scrollable.
    * @default true
    */
   hasButtons?: boolean;
@@ -138,12 +138,7 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-full'],
     boxShadow: shadowVars['--shadow-med'],
     pointerEvents: 'auto',
-    opacity: {
-      default: 0,
-      [stylex.when.ancestor(':hover', carouselScope)]: {
-        '@media (hover: hover)': 1,
-      },
-    },
+    opacity: 1,
     transitionProperty: 'opacity',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -182,9 +177,9 @@ const gapStyles = stylex.create({
  * optional navigation buttons.
  *
  * Wraps any content in a scrollable row. When content overflows, gradient
- * fades appear at the edges to signal more items exist. On desktop, hover
- * reveals prev/next buttons rendered on the top layer via XDSLayer so they
- * escape any parent overflow clipping.
+ * fades appear at the edges to signal more items exist. When content overflows, prev/next buttons appear at the edges,
+ * rendered on the top layer via XDSLayer so they escape any parent overflow
+ * clipping.
  *
  * @example
  * ```
@@ -267,7 +262,7 @@ export function XDSCarousel({
       aria-roledescription="carousel"
       {...mergeProps(
         xdsClassName('carousel'),
-        stylex.props(styles.root, carouselScope, xstyle),
+        stylex.props(styles.root, xstyle),
         className,
         style,
       )}

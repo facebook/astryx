@@ -11,6 +11,7 @@
  * - /packages/core/src/ProgressBar/XDSProgressBar.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/ProgressBar/index.ts (exports if types change)
  * - /apps/storybook/stories/ProgressBar.stories.tsx (storybook stories)
+ * - /packages/cli/templates/blocks/components/ProgressBar/ (showcase blocks)
  */
 
 import {useId} from 'react';

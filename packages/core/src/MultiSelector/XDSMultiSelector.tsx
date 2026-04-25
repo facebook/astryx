@@ -9,6 +9,7 @@
  * SYNC: When modified, update:
  * - /packages/core/src/MultiSelector/MultiSelector.doc.mjs
  * - /packages/core/src/MultiSelector/index.ts
+ * - /packages/cli/templates/blocks/components/MultiSelector/ (showcase blocks)
  */
 
 import React, {

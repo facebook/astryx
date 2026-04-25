@@ -11,11 +11,13 @@
  * - /packages/core/src/Slider/XDSSlider.test.tsx
  * - /packages/core/src/Slider/index.ts
  * - /apps/storybook/stories/Slider.stories.tsx
+ * - /packages/cli/templates/blocks/components/Slider/ (showcase blocks)
  */
 
 import {
   useId,
   useRef,
+  useState,
   useCallback,
   type KeyboardEvent,
   type PointerEvent,
@@ -347,6 +349,7 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
 
   const trackRef = useRef<HTMLDivElement>(null);
   const draggingThumbRef = useRef<number | null>(null);
+  const [draggingThumb, setDraggingThumb] = useState<number | null>(null);
 
   // Build aria-describedby
   const describedByParts: string[] = [];
@@ -474,6 +477,7 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
         : getValueFromPosition(e.clientX, e.clientY);
       const thumbIndex = getClosestThumb(newVal);
       draggingThumbRef.current = thumbIndex;
+      setDraggingThumb(thumbIndex);
       updateValue(thumbIndex, newVal);
 
       // Focus the closest thumb
@@ -505,6 +509,7 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
     (_e: PointerEvent<HTMLDivElement>) => {
       if (draggingThumbRef.current !== null) {
         draggingThumbRef.current = null;
+        setDraggingThumb(null);
         fireChangeEnd();
       }
     },
@@ -643,7 +648,8 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
           content={displayValue(val)}
           placement={tooltipPlacement}
           delay={0}
-          focusTrigger="always">
+          focusTrigger="always"
+          isOpen={draggingThumb === thumbIndex ? true : undefined}>
           {thumbElement}
         </XDSTooltip>
       );

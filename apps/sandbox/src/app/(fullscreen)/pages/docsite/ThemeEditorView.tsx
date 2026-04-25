@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 import {XDSButton} from '@xds/core/Button';
-import type {} from '@xds/core/ToggleButton';
+import {XDSIconButton} from '@xds/core/IconButton';
+import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSNumberInput} from '@xds/core/NumberInput';
 import {XDSBadge} from '@xds/core/Badge';
@@ -18,8 +19,10 @@ import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSSwitch} from '@xds/core/Switch';
 import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSBanner} from '@xds/core/Banner';
+import {XDSChatToolCalls} from '@xds/core/Chat';
+import type {XDSChatToolCallItem} from '@xds/core/Chat';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
-import {XDSDialog} from '@xds/core/Dialog';
+import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
 import {XDSToken} from '@xds/core/Token';
 import {XDSSlider} from '@xds/core/Slider';
 import {XDSSelector} from '@xds/core/Selector';
@@ -101,6 +104,10 @@ import {
   SunIcon,
   ClockIcon,
   BoltIcon,
+  SparklesIcon,
+  CodeBracketIcon,
+  ViewfinderCircleIcon,
+  ArrowLeftIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeIconSolid,
@@ -142,19 +149,34 @@ const FONT_OPTIONS = [
 function CollapsibleSection({
   title,
   children,
-  defaultIsOpen = true,
+  onTarget,
 }: {
   id: string;
   title: string;
-  collapsed: Record<string, boolean>;
-  onToggle: (id: string) => void;
+  collapsed?: Record<string, boolean>;
+  onToggle?: (id: string) => void;
   children: React.ReactNode;
   defaultIsOpen?: boolean;
+  onTarget?: () => void;
 }) {
   return (
-    <XDSCollapsible trigger={title} defaultIsOpen={defaultIsOpen}>
+    <XDSVStack gap={3}>
+      <XDSHStack gap={1} align="center">
+        <XDSText type="label" weight="semibold">
+          {title}
+        </XDSText>
+        {onTarget && (
+          <XDSIconButton
+            icon={<ViewfinderCircleIcon width="1em" height="1em" />}
+            label={`Highlight ${title} in preview`}
+            variant="ghost"
+            size="sm"
+            onClick={onTarget}
+          />
+        )}
+      </XDSHStack>
       {children}
-    </XDSCollapsible>
+    </XDSVStack>
   );
 }
 
@@ -255,6 +277,39 @@ const SPACING_OPTIONS = [
   {value: 'var(--spacing-6)', label: '6'},
   {value: 'var(--spacing-8)', label: '8'},
 ];
+
+const COMPONENT_VAR_TO_OVERRIDE: Record<
+  string,
+  {component: string; cssProperty: string}
+> = {
+  '--button-radius': {component: 'button', cssProperty: 'borderRadius'},
+  '--button-focus-offset': {
+    component: 'button',
+    cssProperty: '--button-focus-offset',
+  },
+  '--button-icon-only-aspect': {
+    component: 'button',
+    cssProperty: '--button-icon-only-aspect',
+  },
+  '--card-radius': {component: 'card', cssProperty: 'borderRadius'},
+  '--dialog-radius': {component: 'dialog', cssProperty: 'borderRadius'},
+  '--dropdown-radius': {
+    component: 'dropdown-menu',
+    cssProperty: 'borderRadius',
+  },
+  '--dropdown-padding': {component: 'dropdown-menu', cssProperty: 'padding'},
+  '--popover-radius': {component: 'popover', cssProperty: 'borderRadius'},
+  '--hovercard-radius': {component: 'hovercard', cssProperty: 'borderRadius'},
+  '--input-radius': {component: 'field', cssProperty: 'borderRadius'},
+  '--banner-radius': {component: 'banner', cssProperty: 'borderRadius'},
+  '--composer-radius': {
+    component: 'chat-composer',
+    cssProperty: 'borderRadius',
+  },
+  '--composer-padding': {component: 'chat-composer', cssProperty: 'padding'},
+};
+
+const COMPONENT_VAR_NAMES = new Set(Object.keys(COMPONENT_VAR_TO_OVERRIDE));
 
 const COMPONENT_VARS: Record<string, {label: string; vars: ComponentVar[]}> = {
   button: {
@@ -3489,14 +3544,28 @@ function generateThemeCode(
     (typeScaleBase !== 14 || typeScaleRatio !== 1.2);
   const typeScaleTokenKeys = new Set(Object.keys(typeScaleDefaults));
 
+  const componentOverrides: Record<
+    string,
+    Record<string, Record<string, string>>
+  > = {};
+
   for (const [key, value] of Object.entries(tokens)) {
-    if (value !== defaults[key]) {
-      if (hasCustomTypeScale && typeScaleTokenKeys.has(key)) continue;
+    if (value === defaults[key]) continue;
+    if (hasCustomTypeScale && typeScaleTokenKeys.has(key)) continue;
+    const mapping = COMPONENT_VAR_TO_OVERRIDE[key];
+    if (mapping) {
+      const {component, cssProperty} = mapping;
+      if (!componentOverrides[component]) componentOverrides[component] = {};
+      if (!componentOverrides[component].base)
+        componentOverrides[component].base = {};
+      componentOverrides[component].base[cssProperty] = value;
+    } else {
       changedTokens[key] = value;
     }
   }
 
   const hasTokenOverrides = Object.keys(changedTokens).length > 0;
+  const hasComponentOverrides = Object.keys(componentOverrides).length > 0;
 
   const setupComment = [
     `// Setup:`,
@@ -3511,7 +3580,7 @@ function generateThemeCode(
     `//    </XDSTheme>`,
   ].join('\n');
 
-  if (!hasTokenOverrides && !hasCustomTypeScale) {
+  if (!hasTokenOverrides && !hasCustomTypeScale && !hasComponentOverrides) {
     return `import { defineTheme } from '@xds/core/theme';\n\n${setupComment}\n\nexport const ${themeName}Theme = defineTheme({\n  name: '${themeName}',\n  tokens: {},\n});`;
   }
 
@@ -3533,6 +3602,22 @@ function generateThemeCode(
     parts.push(`  tokens: {\n${tokenEntries}\n  },`);
   } else {
     parts.push(`  tokens: {},`);
+  }
+  if (hasComponentOverrides) {
+    const compEntries = Object.entries(componentOverrides)
+      .map(([comp, rules]) => {
+        const ruleEntries = Object.entries(rules)
+          .map(([ruleKey, props]) => {
+            const propEntries = Object.entries(props)
+              .map(([prop, val]) => `        ${prop}: '${val}',`)
+              .join('\n');
+            return `      '${ruleKey}': {\n${propEntries}\n      },`;
+          })
+          .join('\n');
+        return `    '${comp}': {\n${ruleEntries}\n    },`;
+      })
+      .join('\n');
+    parts.push(`  components: {\n${compEntries}\n  },`);
   }
 
   return `import { defineTheme } from '@xds/core/theme';\n\n${setupComment}\n\nexport const ${themeName}Theme = defineTheme({\n  name: '${themeName}',\n${parts.join('\n')}\n});`;
@@ -3631,6 +3716,10 @@ export function ThemeEditorView({
   );
   const [aiAnalyzing, setAiAnalyzing] = React.useState(false);
   const [aiError, setAiError] = React.useState<string | null>(null);
+  const [showGenerate, setShowGenerate] = React.useState(false);
+  const [aiToolCalls, setAiToolCalls] = React.useState<XDSChatToolCallItem[]>(
+    [],
+  );
 
   const UNIFIED_PRESETS = React.useMemo(
     () => ({
@@ -3652,8 +3741,8 @@ export function ThemeEditorView({
         typeBase: 16,
         typeRatio: 1.25,
         spacing: 6,
-        radius: 8,
-        sizeMd: 44,
+        radius: 6,
+        sizeMd: 40,
       },
       gigantic: {
         typeBase: 18,
@@ -3908,14 +3997,39 @@ export function ThemeEditorView({
     async (file: File) => {
       setAiError(null);
       setAiAnalyzing(true);
+      setShowGenerate(true);
 
       const previewUrl = URL.createObjectURL(file);
       setAiImagePreview(previewUrl);
 
+      const steps: XDSChatToolCallItem[] = [
+        {name: 'Analyzing image', target: file.name, status: 'running'},
+        {name: 'Extracting color palette', status: 'pending'},
+        {name: 'Detecting typography', status: 'pending'},
+        {name: 'Generating theme tokens', status: 'pending'},
+      ];
+      setAiToolCalls([...steps]);
+
       try {
-        // Client-side mock — demonstrates the AI extraction flow.
-        // In production, connect to your own vision API endpoint.
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await new Promise(resolve => setTimeout(resolve, 600));
+        steps[0] = {...steps[0], status: 'complete', duration: '0.6s'};
+        steps[1] = {...steps[1], status: 'running'};
+        setAiToolCalls([...steps]);
+
+        await new Promise(resolve => setTimeout(resolve, 400));
+        steps[1] = {...steps[1], status: 'complete', duration: '0.4s'};
+        steps[2] = {...steps[2], status: 'running'};
+        setAiToolCalls([...steps]);
+
+        await new Promise(resolve => setTimeout(resolve, 300));
+        steps[2] = {...steps[2], status: 'complete', duration: '0.3s'};
+        steps[3] = {...steps[3], status: 'running'};
+        setAiToolCalls([...steps]);
+
+        await new Promise(resolve => setTimeout(resolve, 200));
+        steps[3] = {...steps[3], status: 'complete', duration: '0.2s'};
+        setAiToolCalls([...steps]);
+
         const mockResult = {
           accentColor: '#0064E0',
           headingFont: 'Inter',
@@ -3932,7 +4046,17 @@ export function ThemeEditorView({
 
         applyAITheme(mockResult);
       } catch (err) {
-        setAiError(err instanceof Error ? err.message : String(err));
+        const errMsg = err instanceof Error ? err.message : String(err);
+        setAiError(errMsg);
+        const runningIdx = steps.findIndex(s => s.status === 'running');
+        if (runningIdx >= 0) {
+          steps[runningIdx] = {
+            ...steps[runningIdx],
+            status: 'error',
+            errorMessage: errMsg,
+          };
+          setAiToolCalls([...steps]);
+        }
       } finally {
         setAiAnalyzing(false);
       }
@@ -4011,8 +4135,22 @@ export function ThemeEditorView({
 
   const currentTheme = React.useMemo(() => {
     const tokenOverrides: Record<string, string> = {};
+    const componentOverrides: Record<
+      string,
+      Record<string, Record<string, string>>
+    > = {};
     for (const [key, value] of Object.entries(tokens)) {
-      if (typeScaleKeys.has(key) || value !== allDefaults[key]) {
+      const mapping = COMPONENT_VAR_TO_OVERRIDE[key];
+      if (mapping && value !== allDefaults[key]) {
+        const {component, cssProperty} = mapping;
+        if (!componentOverrides[component]) {
+          componentOverrides[component] = {};
+        }
+        if (!componentOverrides[component].base) {
+          componentOverrides[component].base = {};
+        }
+        componentOverrides[component].base[cssProperty] = value;
+      } else if (typeScaleKeys.has(key) || value !== allDefaults[key]) {
         tokenOverrides[key] = value;
       }
     }
@@ -4020,6 +4158,10 @@ export function ThemeEditorView({
       name: themeName,
       typography: {scale: {base: typeScaleBase, ratio: typeScaleRatio}},
       tokens: tokenOverrides as Partial<Record<string, string>>,
+      components:
+        Object.keys(componentOverrides).length > 0
+          ? componentOverrides
+          : undefined,
       icons: defaultIconRegistry,
     });
   }, [
@@ -4238,74 +4380,44 @@ export function ThemeEditorView({
           gap: 0,
         }}>
         {/* Sidebar Navigation Rail */}
-        <div
-          style={{
-            width: 48,
-            flexShrink: 0,
-            display: 'flex',
-            flexDirection: 'column' as const,
-            alignItems: 'center',
-            paddingTop: 12,
-            gap: 4,
-          }}>
-          <button
-            onClick={() => setActiveView('craft')}
-            aria-label="Back"
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 8,
-              border: 'none',
-              background: 'transparent',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--color-text-secondary)',
-              marginBottom: 8,
-            }}>
-            <span style={{fontSize: 18}}>&#8592;</span>
-          </button>
-          {(
-            [
-              {id: 'editor', label: 'Editor', icon: '✦'},
-              {id: 'target', label: 'Component', icon: '◇'},
-              {id: 'raw', label: 'Tokens', icon: '{ }'},
-            ] as const
-          ).map(item => (
-            <button
-              key={item.id}
+        <XDSSideNav
+          collapsible={{isCollapsed: true, hasButton: false}}
+          header={
+            <XDSIconButton
+              icon={<ArrowLeftIcon width="1em" height="1em" />}
+              label="Back"
+              variant="ghost"
+              size="md"
+              onClick={() => setActiveView('craft')}
+            />
+          }>
+          <XDSSideNavSection title="Views" isHeaderHidden>
+            <XDSSideNavItem
+              label="Theme Editor"
+              icon={SparklesIcon}
+              selectedIcon={SparklesIcon}
+              isSelected={panelMode === 'editor'}
+              onClick={() => setPanelMode('editor')}
+            />
+            <XDSSideNavItem
+              label="Component Tokens"
+              icon={CubeIcon}
+              selectedIcon={CubeIcon}
+              isSelected={panelMode === 'target'}
               onClick={() => {
-                setPanelMode(item.id);
-                if (item.id === 'target') setActivePreview('preview');
+                setPanelMode('target');
+                setActivePreview('preview');
               }}
-              aria-label={item.label}
-              title={item.label}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 8,
-                border: 'none',
-                background:
-                  panelMode === item.id
-                    ? 'var(--color-accent-muted, rgba(0,100,224,0.1))'
-                    : 'transparent',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 14,
-                fontWeight: panelMode === item.id ? 600 : 400,
-                color:
-                  panelMode === item.id
-                    ? 'var(--color-accent, #0064E0)'
-                    : 'var(--color-text-secondary)',
-                transition: 'background 150ms ease, color 150ms ease',
-              }}>
-              {item.icon}
-            </button>
-          ))}
-        </div>
+            />
+            <XDSSideNavItem
+              label="Raw Tokens"
+              icon={CodeBracketIcon}
+              selectedIcon={CodeBracketIcon}
+              isSelected={panelMode === 'raw'}
+              onClick={() => setPanelMode('raw')}
+            />
+          </XDSSideNavSection>
+        </XDSSideNav>
 
         {/* Editor Panel Content */}
         <div
@@ -4317,7 +4429,7 @@ export function ThemeEditorView({
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column' as const,
-            margin: '16px 0 16px 0',
+            margin: '8px 0 8px 0',
           }}>
           {/* Panel Header */}
           <div
@@ -4328,29 +4440,19 @@ export function ThemeEditorView({
               alignItems: 'center',
               justifyContent: 'space-between',
             }}>
-            <XDSHeading level={2}>
+            <XDSHeading level={4}>
               {panelMode === 'editor'
-                ? 'Theme Builder'
+                ? 'Theme Editor'
                 : panelMode === 'target'
                   ? 'Component Tokens'
                   : 'Raw Tokens'}
             </XDSHeading>
             <XDSHStack gap={1}>
               <XDSButton
-                label={aiAnalyzing ? 'Importing...' : 'Import'}
+                label="Generate"
                 variant="ghost"
                 size="sm"
-                onClick={() => {
-                  if (aiAnalyzing) return;
-                  const input = document.createElement('input');
-                  input.type = 'file';
-                  input.accept = 'image/png,image/jpeg,image/webp';
-                  input.onchange = () => {
-                    const file = input.files?.[0];
-                    if (file) handleImageUpload(file);
-                  };
-                  input.click();
-                }}
+                onClick={() => setShowGenerate(true)}
               />
               <XDSButton
                 label="Reset"
@@ -4366,70 +4468,39 @@ export function ThemeEditorView({
             <div
               style={{
                 padding: '8px 12px',
+                marginLeft: 0,
+                marginRight: 0,
                 borderBottom: '1px solid var(--color-border)',
-                display: 'flex',
-                gap: 2,
                 overflowX: 'auto',
-                scrollbarWidth: 'none',
               }}>
-              {(Object.keys(TOKEN_GROUPS) as TokenGroupKey[]).map(groupKey => {
-                const IconComp = TOKEN_GROUP_ICONS[groupKey];
-                const isActive = activeGroup === groupKey;
-                if (isActive) {
-                  return (
-                    <button
-                      key={groupKey}
-                      onClick={() => setActiveGroup(groupKey)}
-                      aria-label={TOKEN_GROUPS[groupKey].label}
-                      style={{
-                        padding: '5px 10px',
-                        borderRadius: 6,
-                        border: 'none',
-                        fontSize: 11,
-                        fontWeight: 600,
-                        background:
-                          'var(--color-accent-muted, rgba(0,100,224,0.1))',
-                        color: 'var(--color-accent, #0064E0)',
-                        cursor: 'pointer',
-                        transition: 'background 150ms ease',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 5,
-                        whiteSpace: 'nowrap',
-                      }}>
-                      {IconComp && (
-                        <IconComp
-                          style={{width: 14, height: 14, flexShrink: 0}}
-                        />
-                      )}
-                      {TOKEN_GROUPS[groupKey].label}
-                    </button>
-                  );
-                }
-                return (
-                  <XDSTooltip
-                    content={TOKEN_GROUPS[groupKey].label}
-                    key={groupKey}>
-                    <button
-                      onClick={() => setActiveGroup(groupKey)}
-                      aria-label={TOKEN_GROUPS[groupKey].label}
-                      style={{
-                        padding: 7,
-                        borderRadius: 6,
-                        border: 'none',
-                        background: 'transparent',
-                        color: 'var(--color-text-secondary)',
-                        cursor: 'pointer',
-                        transition: 'background 150ms ease',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}>
-                      {IconComp && <IconComp style={{width: 16, height: 16}} />}
-                    </button>
-                  </XDSTooltip>
-                );
-              })}
+              <XDSToggleButtonGroup
+                label="Token category"
+                type="single"
+                size="sm"
+                value={activeGroup}
+                onChange={(v: string | null) => {
+                  if (v != null) setActiveGroup(v as TokenGroupKey);
+                }}>
+                {(Object.keys(TOKEN_GROUPS) as TokenGroupKey[]).map(
+                  groupKey => {
+                    const IconComp = TOKEN_GROUP_ICONS[groupKey];
+                    const isActive = activeGroup === groupKey;
+                    return (
+                      <XDSToggleButton
+                        key={groupKey}
+                        label={TOKEN_GROUPS[groupKey].label}
+                        value={groupKey}
+                        isIconOnly={!isActive}
+                        icon={
+                          IconComp ? (
+                            <XDSIcon icon={IconComp} size="xsm" />
+                          ) : undefined
+                        }
+                      />
+                    );
+                  },
+                )}
+              </XDSToggleButtonGroup>
             </div>
           )}
 
@@ -4675,44 +4746,28 @@ export function ThemeEditorView({
                       </XDSHStack>
                       <div
                         style={{display: 'flex', alignItems: 'center', gap: 8}}>
-                        <div style={{display: 'flex', gap: 4}}>
-                          {(
-                            [
-                              {label: 'S', value: 12},
-                              {label: 'M', value: 14},
-                              {label: 'L', value: 16},
-                              {label: 'XL', value: 18},
-                            ] as const
-                          ).map(p => (
-                            <button
-                              key={p.value}
-                              onClick={() =>
-                                applyTypeScale(p.value, typeScaleRatio)
-                              }
-                              style={{
-                                padding: '5px 0',
-                                minWidth: 38,
-                                borderRadius: 6,
-                                textAlign: 'center' as const,
-                                border: 'none',
-                                fontSize: 12,
-                                fontWeight: 500,
-                                background:
-                                  typeScaleBase === p.value
-                                    ? 'var(--color-accent-muted, rgba(0,100,224,0.1))'
-                                    : 'var(--color-background-wash, rgba(0,0,0,0.04))',
-                                color:
-                                  typeScaleBase === p.value
-                                    ? 'var(--color-accent, #0064E0)'
-                                    : 'var(--color-text-secondary)',
-                                cursor: 'pointer',
-                                transition:
-                                  'border-color 150ms ease, background 150ms ease',
-                              }}>
-                              {p.label}
-                            </button>
-                          ))}
-                        </div>
+                        <XDSToggleButtonGroup
+                          label="Type size preset"
+                          type="single"
+                          size="sm"
+                          value={String(typeScaleBase)}
+                          onChange={(v: string | null) => {
+                            if (v != null)
+                              applyTypeScale(Number(v), typeScaleRatio);
+                          }}>
+                          <XDSToggleButton label="S" value="12">
+                            S
+                          </XDSToggleButton>
+                          <XDSToggleButton label="M" value="14">
+                            M
+                          </XDSToggleButton>
+                          <XDSToggleButton label="L" value="16">
+                            L
+                          </XDSToggleButton>
+                          <XDSToggleButton label="XL" value="18">
+                            XL
+                          </XDSToggleButton>
+                        </XDSToggleButtonGroup>
                         <div style={{flex: 1}} />
                         <XDSNumberInput
                           label="Type size"
@@ -4791,42 +4846,27 @@ export function ThemeEditorView({
                       </XDSHStack>
                       <div
                         style={{display: 'flex', alignItems: 'center', gap: 8}}>
-                        <div style={{display: 'flex', gap: 4}}>
-                          {(
-                            [
-                              {label: 'S', value: 2},
-                              {label: 'M', value: 4},
-                              {label: 'L', value: 8},
-                              {label: 'XL', value: 12},
-                            ] as const
-                          ).map(p => (
-                            <button
-                              key={p.value}
-                              onClick={() => applyRadiusScale(p.value)}
-                              style={{
-                                padding: '5px 0',
-                                minWidth: 38,
-                                borderRadius: 6,
-                                textAlign: 'center' as const,
-                                border: 'none',
-                                fontSize: 12,
-                                fontWeight: 500,
-                                background:
-                                  radiusBase === p.value
-                                    ? 'var(--color-accent-muted, rgba(0,100,224,0.1))'
-                                    : 'var(--color-background-wash, rgba(0,0,0,0.04))',
-                                color:
-                                  radiusBase === p.value
-                                    ? 'var(--color-accent, #0064E0)'
-                                    : 'var(--color-text-secondary)',
-                                cursor: 'pointer',
-                                transition:
-                                  'border-color 150ms ease, background 150ms ease',
-                              }}>
-                              {p.label}
-                            </button>
-                          ))}
-                        </div>
+                        <XDSToggleButtonGroup
+                          label="Radius preset"
+                          type="single"
+                          size="sm"
+                          value={String(radiusBase)}
+                          onChange={(v: string | null) => {
+                            if (v != null) applyRadiusScale(Number(v));
+                          }}>
+                          <XDSToggleButton label="S" value="2">
+                            S
+                          </XDSToggleButton>
+                          <XDSToggleButton label="M" value="4">
+                            M
+                          </XDSToggleButton>
+                          <XDSToggleButton label="L" value="6">
+                            L
+                          </XDSToggleButton>
+                          <XDSToggleButton label="XL" value="12">
+                            XL
+                          </XDSToggleButton>
+                        </XDSToggleButtonGroup>
                         <div style={{flex: 1}} />
                         <XDSNumberInput
                           label="Radius"
@@ -4856,42 +4896,27 @@ export function ThemeEditorView({
                       </XDSHStack>
                       <div
                         style={{display: 'flex', alignItems: 'center', gap: 8}}>
-                        <div style={{display: 'flex', gap: 4}}>
-                          {(
-                            [
-                              {label: 'S', value: 2},
-                              {label: 'M', value: 4},
-                              {label: 'L', value: 6},
-                              {label: 'XL', value: 8},
-                            ] as const
-                          ).map(p => (
-                            <button
-                              key={p.value}
-                              onClick={() => applySpacingScale(p.value)}
-                              style={{
-                                padding: '5px 0',
-                                minWidth: 38,
-                                borderRadius: 6,
-                                textAlign: 'center' as const,
-                                border: 'none',
-                                fontSize: 12,
-                                fontWeight: 500,
-                                background:
-                                  spacingBase === p.value
-                                    ? 'var(--color-accent-muted, rgba(0,100,224,0.1))'
-                                    : 'var(--color-background-wash, rgba(0,0,0,0.04))',
-                                color:
-                                  spacingBase === p.value
-                                    ? 'var(--color-accent, #0064E0)'
-                                    : 'var(--color-text-secondary)',
-                                cursor: 'pointer',
-                                transition:
-                                  'border-color 150ms ease, background 150ms ease',
-                              }}>
-                              {p.label}
-                            </button>
-                          ))}
-                        </div>
+                        <XDSToggleButtonGroup
+                          label="Spacing preset"
+                          type="single"
+                          size="sm"
+                          value={String(spacingBase)}
+                          onChange={(v: string | null) => {
+                            if (v != null) applySpacingScale(Number(v));
+                          }}>
+                          <XDSToggleButton label="S" value="2">
+                            S
+                          </XDSToggleButton>
+                          <XDSToggleButton label="M" value="4">
+                            M
+                          </XDSToggleButton>
+                          <XDSToggleButton label="L" value="6">
+                            L
+                          </XDSToggleButton>
+                          <XDSToggleButton label="XL" value="8">
+                            XL
+                          </XDSToggleButton>
+                        </XDSToggleButtonGroup>
                         <div style={{flex: 1}} />
                         <XDSNumberInput
                           label="Spacing"
@@ -4921,42 +4946,27 @@ export function ThemeEditorView({
                       </XDSHStack>
                       <div
                         style={{display: 'flex', alignItems: 'center', gap: 8}}>
-                        <div style={{display: 'flex', gap: 4}}>
-                          {(
-                            [
-                              {label: 'S', value: 28},
-                              {label: 'M', value: 32},
-                              {label: 'L', value: 44},
-                              {label: 'XL', value: 48},
-                            ] as const
-                          ).map(p => (
-                            <button
-                              key={p.value}
-                              onClick={() => applySizeScale(p.value)}
-                              style={{
-                                padding: '5px 0',
-                                minWidth: 38,
-                                borderRadius: 6,
-                                textAlign: 'center' as const,
-                                border: 'none',
-                                fontSize: 12,
-                                fontWeight: 500,
-                                background:
-                                  sizeBase === p.value
-                                    ? 'var(--color-accent-muted, rgba(0,100,224,0.1))'
-                                    : 'var(--color-background-wash, rgba(0,0,0,0.04))',
-                                color:
-                                  sizeBase === p.value
-                                    ? 'var(--color-accent, #0064E0)'
-                                    : 'var(--color-text-secondary)',
-                                cursor: 'pointer',
-                                transition:
-                                  'border-color 150ms ease, background 150ms ease',
-                              }}>
-                              {p.label}
-                            </button>
-                          ))}
-                        </div>
+                        <XDSToggleButtonGroup
+                          label="Element size preset"
+                          type="single"
+                          size="sm"
+                          value={String(sizeBase)}
+                          onChange={(v: string | null) => {
+                            if (v != null) applySizeScale(Number(v));
+                          }}>
+                          <XDSToggleButton label="S" value="28">
+                            S
+                          </XDSToggleButton>
+                          <XDSToggleButton label="M" value="32">
+                            M
+                          </XDSToggleButton>
+                          <XDSToggleButton label="L" value="40">
+                            L
+                          </XDSToggleButton>
+                          <XDSToggleButton label="XL" value="48">
+                            XL
+                          </XDSToggleButton>
+                        </XDSToggleButtonGroup>
                         <div style={{flex: 1}} />
                         <XDSNumberInput
                           label="Element size"
@@ -4990,42 +5000,27 @@ export function ThemeEditorView({
                     </XDSTooltip>
                   </XDSHStack>
                   <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
-                    <div style={{display: 'flex', gap: 4}}>
-                      {(
-                        [
-                          {label: '0.5×', value: 0.5},
-                          {label: '1×', value: 1},
-                          {label: '1.5×', value: 1.5},
-                          {label: '2×', value: 2},
-                        ] as const
-                      ).map(p => (
-                        <button
-                          key={p.value}
-                          onClick={() => applyDurationScale(p.value)}
-                          style={{
-                            padding: '5px 0',
-                            minWidth: 38,
-                            borderRadius: 6,
-                            textAlign: 'center' as const,
-                            border: 'none',
-                            fontSize: 12,
-                            fontWeight: 500,
-                            background:
-                              Math.abs(durationStep - p.value) < 0.01
-                                ? 'var(--color-accent-muted, rgba(0,100,224,0.1))'
-                                : 'var(--color-background-wash, rgba(0,0,0,0.04))',
-                            color:
-                              Math.abs(durationStep - p.value) < 0.01
-                                ? 'var(--color-accent, #0064E0)'
-                                : 'var(--color-text-secondary)',
-                            cursor: 'pointer',
-                            transition:
-                              'border-color 150ms ease, background 150ms ease',
-                          }}>
-                          {p.label}
-                        </button>
-                      ))}
-                    </div>
+                    <XDSToggleButtonGroup
+                      label="Duration preset"
+                      type="single"
+                      size="sm"
+                      value={String(durationStep)}
+                      onChange={(v: string | null) => {
+                        if (v != null) applyDurationScale(Number(v));
+                      }}>
+                      <XDSToggleButton label="0.5×" value="0.5">
+                        0.5×
+                      </XDSToggleButton>
+                      <XDSToggleButton label="1×" value="1">
+                        1×
+                      </XDSToggleButton>
+                      <XDSToggleButton label="1.5×" value="1.5">
+                        1.5×
+                      </XDSToggleButton>
+                      <XDSToggleButton label="2×" value="2">
+                        2×
+                      </XDSToggleButton>
+                    </XDSToggleButtonGroup>
                     <div style={{flex: 1}} />
                     <XDSNumberInput
                       label="Duration"
@@ -5053,8 +5048,8 @@ export function ThemeEditorView({
                     collapsed={collapsedSections}
                     onToggle={id => {
                       toggleSection(id);
-                      setFlashComponent(key);
-                    }}>
+                    }}
+                    onTarget={() => setFlashComponent(key)}>
                     <XDSVStack gap={1}>
                       {comp.vars.map(v => {
                         const currentValue = tokens[v.name] || '';
@@ -5180,12 +5175,12 @@ export function ThemeEditorView({
           minWidth: 0,
           overflow: 'hidden',
           marginLeft: -16,
-          paddingLeft: 16,
+          paddingLeft: 0,
         }}>
         {/* Preview toolbar */}
         <div
           style={{
-            padding: '16px',
+            padding: '8px 16px',
             backgroundColor: 'var(--color-background-surface)',
             display: 'flex',
             alignItems: 'center',
@@ -5304,6 +5299,8 @@ export function ThemeEditorView({
                 overflow: 'auto',
                 position: 'relative',
                 padding: 24,
+                marginLeft: 16,
+                marginRight: 16,
                 backgroundColor: 'var(--color-background-surface)',
                 borderRadius: 'var(--radius-container)',
               }}>
@@ -5408,6 +5405,62 @@ export function ThemeEditorView({
           </XDSTheme>
         </div>
       </div>
+      <XDSDialog
+        isOpen={showGenerate}
+        onOpenChange={setShowGenerate}
+        width={480}>
+        <XDSDialogHeader
+          title="Generate from image"
+          onOpenChange={setShowGenerate}
+        />
+        <XDSVStack gap={3} style={{padding: 'var(--spacing-3)'}}>
+          <XDSText type="body" color="secondary">
+            Upload a screenshot or design mockup and the AI will extract accent
+            colors, typography, spacing, and radius to generate a complete
+            theme.
+          </XDSText>
+          <XDSButton
+            label={aiAnalyzing ? 'Analyzing...' : 'Upload image'}
+            variant="secondary"
+            size="sm"
+            isDisabled={aiAnalyzing}
+            onClick={() => {
+              const input = document.createElement('input');
+              input.type = 'file';
+              input.accept = 'image/png,image/jpeg,image/webp';
+              input.onchange = () => {
+                const file = input.files?.[0];
+                if (file) handleImageUpload(file);
+              };
+              input.click();
+            }}
+          />
+          {aiImagePreview && (
+            <img
+              src={aiImagePreview}
+              alt="Uploaded reference"
+              style={{
+                width: '100%',
+                borderRadius: 8,
+                objectFit: 'cover',
+                maxHeight: 240,
+              }}
+            />
+          )}
+          {aiToolCalls.length > 0 && (
+            <XDSChatToolCalls calls={aiToolCalls} defaultIsExpanded />
+          )}
+          {aiError && (
+            <XDSBanner
+              status="error"
+              title="Generation failed"
+              description={aiError}
+              isDismissable
+              onDismiss={() => setAiError(null)}
+            />
+          )}
+        </XDSVStack>
+      </XDSDialog>
     </div>
   );
 }

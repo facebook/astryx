@@ -10,6 +10,7 @@
  * - /packages/core/src/TopNav/TopNav.doc.mjs
  * - /packages/core/src/TopNav/XDSTopNavMenu.test.tsx
  * - /packages/core/src/TopNav/index.ts
+ * - /packages/cli/templates/blocks/components/TopNav/ (showcase blocks)
  */
 
 import {

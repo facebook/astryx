@@ -233,8 +233,7 @@ export const CappedResponsive: Story = {
   render: () => (
     <div {...stylex.props(styles.container)}>
       <XDSText type="supporting" xstyle={styles.sectionLabel}>
-        Responsive with max 3 columns (min 250px per item, capped via
-        max-width)
+        Responsive with max 3 columns (min 250px per item, capped via track-max)
       </XDSText>
       <XDSGrid columns={{minWidth: 250, max: 3}} gap={4}>
         <GridItem>Item 1</GridItem>

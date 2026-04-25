@@ -25,14 +25,14 @@ export default function ChatMixedContent() {
           <XDSChatMessageBubble>
             Sure! Here's an overview of the component architecture.
           </XDSChatMessageBubble>
-          <XDSChatMessageBubble variant="ghost">
+          <XDSChatMessageBubble>
             <XDSMarkdown density="compact">{`The system uses a **compound component** pattern with three layers:
 
 1. **MessageList** — scrollable container with auto-scroll
 2. **Message** — layout wrapper with sender context
 3. **Bubble** — styled content container`}</XDSMarkdown>
           </XDSChatMessageBubble>
-          <XDSChatMessageBubble variant="ghost">
+          <XDSChatMessageBubble>
             <XDSMarkdown density="compact">Here are the files:</XDSMarkdown>
             <XDSHStack gap={2} wrap="wrap">
               <XDSToken label="Button.tsx" />
@@ -56,26 +56,6 @@ export default function ChatMixedContent() {
           <XDSChatMessageBubble>Open Button.tsx</XDSChatMessageBubble>
         </XDSChatMessage>
 
-        <XDSChatSystemMessage>Navi opened Button.tsx</XDSChatSystemMessage>
-
-        <XDSChatMessage sender="assistant">
-          <XDSChatMessageBubble variant="ghost">
-            <XDSCodeBlock
-              code={`export function XDSButton({ label, variant = 'primary' }) {
-  return (
-    <button className={styles[variant]}>
-      {label}
-    </button>
-  );
-}`}
-              language="tsx"
-            />
-            <XDSMarkdown density="compact">
-              The Button reads variant from props and maps it to the matching
-              style.
-            </XDSMarkdown>
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
       </XDSChatMessageList>
     </div>
   );
