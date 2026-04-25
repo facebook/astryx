@@ -17,6 +17,11 @@
  * container tokens, theming). Adds an interactive wrapper with
  * useClickableContainer for safe nested interactive elements.
  *
+ * A hidden <button> or <a> inside the card provides the accessible role,
+ * label, and focus ring — the card surface itself has no role/tabIndex.
+ * This gives screen readers a real interactive element to announce while
+ * keeping the visual hover/active overlay on the full card.
+ *
  * For static display, use XDSCard.
  * For toggle selection, use XDSSelectableCard.
  */
@@ -29,6 +34,7 @@ import {
   type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import type {SizeValue, SpacingStep} from '../utils/types';
 import {xdsClassName} from '../utils';
@@ -47,8 +53,11 @@ const styles = stylex.create({
     textDecoration: 'none',
     color: 'inherit',
     outlineOffset: '2px',
-    ':focus-visible': {
+  },
+  focusWithin: {
+    ':has(:focus-visible)': {
       outline: `2px solid ${colorVars['--color-accent']}`,
+      outlineOffset: '2px',
     },
   },
   hoverState: {
@@ -71,6 +80,17 @@ const styles = stylex.create({
   disabled: {
     cursor: 'not-allowed',
     opacity: 0.5,
+  },
+  srOnly: {
+    position: 'absolute',
+    width: '1px',
+    height: '1px',
+    padding: 0,
+    margin: '-1px',
+    overflow: 'hidden',
+    clip: 'rect(0, 0, 0, 0)',
+    whiteSpace: 'nowrap',
+    borderWidth: 0,
   },
 });
 
@@ -159,6 +179,10 @@ export interface XDSClickableCardProps {
  * links, inputs) work independently — clicking them does NOT trigger
  * the card's onClick or navigation.
  *
+ * A visually-hidden <button> or <a> inside the card provides the
+ * accessible role and label. The card surface is a plain <div> —
+ * no role or tabIndex on the container.
+ *
  * @compositionHint Use for cards that navigate to a detail page or trigger an action.
  * For toggle selection cards, use XDSSelectableCard instead.
  * Nest XDSButton or other interactive elements freely inside — they won't conflict.
@@ -195,9 +219,11 @@ export function XDSClickableCard({
   ...props
 }: XDSClickableCardProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const interactiveRef = useRef<HTMLElement | null>(null);
 
   const {onClick, onMouseUp} = useClickableContainer({
     containerRef,
+    interactiveRef,
     onClick: onClickProp,
     href,
     target,
@@ -222,27 +248,33 @@ export function XDSClickableCard({
       className={xdsClassName('clickable-card', {variant})}
       xstyle={[
         styles.interactive,
+        styles.focusWithin,
         !isDisabled && styles.hoverState,
         isDisabled && styles.disabled,
-      ]}
-      role={isLink ? 'link' : 'button'}
-      tabIndex={0}
-      aria-label={label}
-      aria-disabled={isDisabled || undefined}
+      ] as unknown as StyleXStyles}
       onClick={!isDisabled ? onClick : undefined}
       onMouseUp={!isDisabled ? onMouseUp : undefined}
-      onKeyDown={
-        !isDisabled
-          ? (e: React.KeyboardEvent) => {
-              // Links activate on Enter only; buttons activate on Enter + Space
-              if (e.key === 'Enter' || (!isLink && e.key === ' ')) {
-                e.preventDefault();
-                onClick(e as unknown as MouseEvent<HTMLElement>);
-              }
-            }
-          : undefined
-      }
       {...props}>
+      {isLink ? (
+        <a
+          ref={interactiveRef as React.Ref<HTMLAnchorElement>}
+          href={href}
+          target={target}
+          aria-label={label}
+          aria-disabled={isDisabled || undefined}
+          tabIndex={isDisabled ? -1 : 0}
+          {...stylex.props(styles.srOnly)}
+        />
+      ) : (
+        <button
+          ref={interactiveRef as React.Ref<HTMLButtonElement>}
+          type="button"
+          aria-label={label}
+          disabled={isDisabled}
+          onClick={onClickProp}
+          {...stylex.props(styles.srOnly)}
+        />
+      )}
       {children}
     </XDSCard>
   );

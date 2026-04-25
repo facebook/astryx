@@ -12,50 +12,71 @@ describe('XDSSelectableCard', () => {
     expect(screen.getByText('Card content')).toBeInTheDocument();
   });
 
-  it('calls onChange with toggled value on click', () => {
+  it('renders a hidden checkbox', () => {
+    render(
+      <XDSSelectableCard label="Test" isSelected={false} onChange={() => {}}>
+        Content
+      </XDSSelectableCard>,
+    );
+    const checkbox = screen.getByRole('checkbox', {name: 'Test'});
+    expect(checkbox).toBeInTheDocument();
+  });
+
+  it('checkbox reflects isSelected=true as checked', () => {
+    render(
+      <XDSSelectableCard label="Plan A" isSelected={true} onChange={() => {}}>
+        Content
+      </XDSSelectableCard>,
+    );
+    const checkbox = screen.getByRole('checkbox', {name: 'Plan A'});
+    expect(checkbox).toBeChecked();
+  });
+
+  it('checkbox reflects isSelected=false as unchecked', () => {
+    render(
+      <XDSSelectableCard label="Plan B" isSelected={false} onChange={() => {}}>
+        Content
+      </XDSSelectableCard>,
+    );
+    const checkbox = screen.getByRole('checkbox', {name: 'Plan B'});
+    expect(checkbox).not.toBeChecked();
+  });
+
+  it('calls onChange with true when card surface is clicked (unselected)', () => {
+    const handleChange = vi.fn();
+    render(
+      <XDSSelectableCard label="Test" isSelected={false} onChange={handleChange}>
+        <span>Content</span>
+      </XDSSelectableCard>,
+    );
+    fireEvent.click(screen.getByText('Content'));
+    expect(handleChange).toHaveBeenCalledWith(true);
+  });
+
+  it('calls onChange with false when card surface is clicked (selected)', () => {
+    const handleChange = vi.fn();
+    render(
+      <XDSSelectableCard label="Test" isSelected={true} onChange={handleChange}>
+        <span>Content</span>
+      </XDSSelectableCard>,
+    );
+    fireEvent.click(screen.getByText('Content'));
+    expect(handleChange).toHaveBeenCalledWith(false);
+  });
+
+  it('calls onChange when checkbox itself is clicked', () => {
     const handleChange = vi.fn();
     render(
       <XDSSelectableCard label="Test" isSelected={false} onChange={handleChange}>
         Content
       </XDSSelectableCard>,
     );
-    fireEvent.click(screen.getByRole('checkbox'));
+    const checkbox = screen.getByRole('checkbox', {name: 'Test'});
+    fireEvent.click(checkbox);
     expect(handleChange).toHaveBeenCalledWith(true);
   });
 
-  it('calls onChange with false when deselecting', () => {
-    const handleChange = vi.fn();
-    render(
-      <XDSSelectableCard label="Test" isSelected={true} onChange={handleChange}>
-        Content
-      </XDSSelectableCard>,
-    );
-    fireEvent.click(screen.getByRole('checkbox'));
-    expect(handleChange).toHaveBeenCalledWith(false);
-  });
-
-  it('has correct ARIA attributes when selected', () => {
-    render(
-      <XDSSelectableCard label="Plan A" isSelected={true} onChange={() => {}}>
-        Content
-      </XDSSelectableCard>,
-    );
-    const card = screen.getByRole('checkbox');
-    expect(card).toHaveAttribute('aria-checked', 'true');
-    expect(card).toHaveAttribute('aria-label', 'Plan A');
-  });
-
-  it('has correct ARIA attributes when unselected', () => {
-    render(
-      <XDSSelectableCard label="Plan B" isSelected={false} onChange={() => {}}>
-        Content
-      </XDSSelectableCard>,
-    );
-    const card = screen.getByRole('checkbox');
-    expect(card).toHaveAttribute('aria-checked', 'false');
-  });
-
-  it('handles disabled state', () => {
+  it('disabled checkbox is disabled', () => {
     const handleChange = vi.fn();
     render(
       <XDSSelectableCard
@@ -67,31 +88,23 @@ describe('XDSSelectableCard', () => {
         Content
       </XDSSelectableCard>,
     );
-    const card = screen.getByRole('checkbox');
-    expect(card).toHaveAttribute('aria-disabled', 'true');
-    fireEvent.click(card);
+    const checkbox = screen.getByRole('checkbox', {name: 'Disabled'});
+    expect(checkbox).toBeDisabled();
+  });
+
+  it('does not call onChange when disabled card is clicked', () => {
+    const handleChange = vi.fn();
+    render(
+      <XDSSelectableCard
+        label="Disabled"
+        isSelected={false}
+        onChange={handleChange}
+        isDisabled
+      >
+        <span>Content</span>
+      </XDSSelectableCard>,
+    );
+    fireEvent.click(screen.getByText('Content'));
     expect(handleChange).not.toHaveBeenCalled();
-  });
-
-  it('toggles on Enter key', () => {
-    const handleChange = vi.fn();
-    render(
-      <XDSSelectableCard label="Test" isSelected={false} onChange={handleChange}>
-        Content
-      </XDSSelectableCard>,
-    );
-    fireEvent.keyDown(screen.getByRole('checkbox'), {key: 'Enter'});
-    expect(handleChange).toHaveBeenCalledWith(true);
-  });
-
-  it('toggles on Space key', () => {
-    const handleChange = vi.fn();
-    render(
-      <XDSSelectableCard label="Test" isSelected={true} onChange={handleChange}>
-        Content
-      </XDSSelectableCard>,
-    );
-    fireEvent.keyDown(screen.getByRole('checkbox'), {key: ' '});
-    expect(handleChange).toHaveBeenCalledWith(false);
   });
 });

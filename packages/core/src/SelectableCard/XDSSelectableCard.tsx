@@ -17,6 +17,9 @@
  * an inset box-shadow (zero layout jitter) and useClickableContainer
  * for safe nested interactive elements.
  *
+ * A hidden <input type="checkbox"> inside the card provides the accessible
+ * role, label, and checked state — the card surface itself has no role/tabIndex.
+ *
  * For static display, use XDSCard.
  * For navigation or action cards, use XDSClickableCard.
  */
@@ -30,6 +33,7 @@ import {
   type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import type {SizeValue, SpacingStep} from '../utils/types';
 import {xdsClassName} from '../utils';
@@ -47,8 +51,11 @@ const styles = stylex.create({
     cursor: 'pointer',
     transition: 'box-shadow 0.15s ease, border-color 0.15s ease',
     outlineOffset: '2px',
-    ':focus-visible': {
+  },
+  focusWithin: {
+    ':has(:focus-visible)': {
       outline: `2px solid ${colorVars['--color-accent']}`,
+      outlineOffset: '2px',
     },
   },
   hoverState: {
@@ -71,6 +78,17 @@ const styles = stylex.create({
   disabled: {
     cursor: 'not-allowed',
     opacity: 0.5,
+  },
+  srOnly: {
+    position: 'absolute',
+    width: '1px',
+    height: '1px',
+    padding: 0,
+    margin: '-1px',
+    overflow: 'hidden',
+    clip: 'rect(0, 0, 0, 0)',
+    whiteSpace: 'nowrap',
+    borderWidth: 0,
   },
   // Selection indicator — inset box-shadow for the thick inner ring (zero layout
   // jitter) plus borderColor change on the card's own border for a cohesive look.
@@ -219,6 +237,10 @@ export interface XDSSelectableCardProps {
  * an inset box-shadow (zero layout jitter vs plain Card). Supports
  * hover, pressed, focus, and disabled states.
  *
+ * A visually-hidden <input type="checkbox"> inside the card provides
+ * the accessible role, label, and checked state. The card surface
+ * is a plain <div> — no role or tabIndex on the container.
+ *
  * @compositionHint Use for multi-select or single-select card groups.
  * Manage selection state externally — use a Set for multi-select
  * or a single value for radio-style selection.
@@ -279,6 +301,7 @@ export function XDSSelectableCard({
   ...props
 }: XDSSelectableCardProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const interactiveRef = useRef<HTMLInputElement | null>(null);
 
   const handleClick = useCallback(
     (_event: MouseEvent<HTMLElement>) => {
@@ -291,6 +314,7 @@ export function XDSSelectableCard({
 
   const {onClick, onMouseUp} = useClickableContainer({
     containerRef,
+    interactiveRef,
     onClick: handleClick,
     disabled: isDisabled,
   });
@@ -314,28 +338,23 @@ export function XDSSelectableCard({
       })}
       xstyle={[
         styles.interactive,
+        styles.focusWithin,
         isSelected && selectedStyleForVariant(variant),
         !isDisabled && styles.hoverState,
         isDisabled && styles.disabled,
-      ]}
-      role="checkbox"
-      tabIndex={0}
-      aria-label={label}
-      aria-checked={isSelected}
-      aria-disabled={isDisabled || undefined}
+      ] as unknown as StyleXStyles}
       onClick={!isDisabled ? onClick : undefined}
       onMouseUp={!isDisabled ? onMouseUp : undefined}
-      onKeyDown={
-        !isDisabled
-          ? (e: React.KeyboardEvent) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                onChange(!isSelected);
-              }
-            }
-          : undefined
-      }
       {...props}>
+      <input
+        ref={interactiveRef}
+        type="checkbox"
+        checked={isSelected}
+        aria-label={label}
+        disabled={isDisabled}
+        onChange={() => onChange(!isSelected)}
+        {...stylex.props(styles.srOnly)}
+      />
       {children}
     </XDSCard>
   );
