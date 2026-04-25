@@ -7,6 +7,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /apps/storybook/stories/CommandPalette.stories.tsx
+ * - /packages/cli/templates/blocks/components/CommandPalette/ (showcase blocks)
  */
 
 import {
