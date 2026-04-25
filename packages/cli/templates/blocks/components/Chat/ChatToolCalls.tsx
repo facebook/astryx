@@ -6,27 +6,13 @@ import {XDSText} from '@xds/core/Text';
 
 export default function ChatToolCalls() {
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
-          Single call
-        </XDSText>
-        <XDSChatToolCalls
-          calls={[
-            {
-              name: 'bash',
-              target: 'git status',
-              status: 'complete',
-              duration: '1.2s',
-            },
-          ]}
-        />
-      </XDSStack>
+    <XDSStack direction="vertical" gap={6}>
       <XDSStack direction="vertical" gap={1}>
         <XDSText type="supporting" color="secondary">
           Multiple calls with stats
         </XDSText>
         <XDSChatToolCalls
+          defaultIsExpanded
           calls={[
             {
               name: 'bash',
@@ -53,9 +39,10 @@ export default function ChatToolCalls() {
       </XDSStack>
       <XDSStack direction="vertical" gap={1}>
         <XDSText type="supporting" color="secondary">
-          With error
+          Multiple calls with an error
         </XDSText>
         <XDSChatToolCalls
+          defaultIsExpanded
           calls={[
             {
               name: 'bash',
