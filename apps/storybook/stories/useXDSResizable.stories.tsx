@@ -3,6 +3,7 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   radiusVars,
+  spacingVars,
   typographyVars,
 } from '@xds/core/theme/tokens.stylex';
 import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
@@ -31,6 +32,15 @@ const s = stylex.create({
     flexShrink: 0,
   },
   flex: {flex: 1, minWidth: 0, minHeight: 0},
+  muted: {backgroundColor: colorVars['--color-background-muted']},
+  card: {
+    backgroundColor: colorVars['--color-background-card'],
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-border'],
+    borderRadius: radiusVars['--radius-container'],
+    margin: 8,
+  },
 });
 
 function HookDemo({children}: {children: React.ReactNode}) {
@@ -208,6 +218,45 @@ export const AlwaysVisible: Story = {
           resizable={left.props}
         />
         <div {...stylex.props(s.panel, s.flex)}>Content</div>
+      </div>
+    );
+  },
+};
+
+/** Mixed container styles — gray sidebar, white editor, carded terminal. No divider lines. */
+export const MixedContainers: Story = {
+  render: () => {
+    const sidebar = useXDSResizable({
+      defaultSize: 200,
+      minSizePx: 120,
+      maxSizePx: 350,
+    });
+    const editor = useXDSResizable({
+      defaultSize: 200,
+      minSizePx: 80,
+      maxSizePx: 250,
+    });
+    return (
+      <div {...stylex.props(s.container)}>
+        <div {...stylex.props(s.panel, s.muted)} style={{width: sidebar.size}}>
+          Explorer
+        </div>
+        <XDSResizeHandle direction="horizontal" resizable={sidebar.props} />
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            minWidth: 0,
+          }}>
+          <div
+            {...stylex.props(s.panel)}
+            style={{height: editor.size, flex: 'none'}}>
+            Editor
+          </div>
+          <XDSResizeHandle direction="vertical" resizable={editor.props} />
+          <div {...stylex.props(s.panel, s.card, s.flex)}>Terminal</div>
+        </div>
       </div>
     );
   },
