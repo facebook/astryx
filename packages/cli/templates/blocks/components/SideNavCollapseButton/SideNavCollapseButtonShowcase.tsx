@@ -30,7 +30,7 @@ export default function SideNavCollapseButtonShowcase() {
     <XDSSideNav
       collapsible={{hasButton: false}}
       header={<XDSSideNavHeading heading="Workspace" />}
-      footer={<XDSSideNavCollapseButton />}
+      footerIcons={<XDSSideNavCollapseButton />}
     >
       <XDSSideNavSection title="Main">
         <XDSSideNavItem label="Home" icon={HomeIcon} isSelected href="#" />

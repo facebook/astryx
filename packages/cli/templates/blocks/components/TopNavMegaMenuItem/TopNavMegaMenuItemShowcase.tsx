@@ -1,11 +1,7 @@
 'use client';
 
-import {
-  XDSTopNav,
-  XDSTopNavHeading,
-  XDSTopNavMegaMenu,
-  XDSTopNavMegaMenuItem,
-} from '@xds/core/TopNav';
+import {XDSTopNavMegaMenuItem} from '@xds/core/TopNav';
+import {XDSGrid} from '@xds/core/Grid';
 
 function BoltIcon() {
   return (
@@ -41,42 +37,31 @@ function WrenchIcon() {
 
 export default function TopNavMegaMenuItemShowcase() {
   return (
-    <XDSTopNav
-      label="Mega menu items demo"
-      heading={<XDSTopNavHeading heading="Suite" />}
-      startContent={
-        <XDSTopNavMegaMenu
-          label="Services"
-          items={
-            <>
-              <XDSTopNavMegaMenuItem
-                title="Edge Functions"
-                description="Run serverless code at the network edge"
-                icon={<BoltIcon />}
-                href="#edge"
-              />
-              <XDSTopNavMegaMenuItem
-                title="Storage"
-                description="Object and file storage for your application"
-                icon={<CubeIcon />}
-                href="#storage"
-              />
-              <XDSTopNavMegaMenuItem
-                title="CDN"
-                description="Global content delivery with instant purging"
-                icon={<GlobeIcon />}
-                href="#cdn"
-              />
-              <XDSTopNavMegaMenuItem
-                title="Build Tools"
-                description="Optimized bundling and compilation pipeline"
-                icon={<WrenchIcon />}
-                href="#build"
-              />
-            </>
-          }
-        />
-      }
-    />
+    <XDSGrid columns={2} gap={2}>
+      <XDSTopNavMegaMenuItem
+        title="Edge Functions"
+        description="Run serverless code at the network edge"
+        icon={<BoltIcon />}
+        href="#edge"
+      />
+      <XDSTopNavMegaMenuItem
+        title="Storage"
+        description="Object and file storage for your application"
+        icon={<CubeIcon />}
+        href="#storage"
+      />
+      <XDSTopNavMegaMenuItem
+        title="CDN"
+        description="Global content delivery with instant purging"
+        icon={<GlobeIcon />}
+        href="#cdn"
+      />
+      <XDSTopNavMegaMenuItem
+        title="Build Tools"
+        description="Optimized bundling and compilation pipeline"
+        icon={<WrenchIcon />}
+        href="#build"
+      />
+    </XDSGrid>
   );
 }
