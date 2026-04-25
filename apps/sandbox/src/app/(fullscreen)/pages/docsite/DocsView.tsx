@@ -700,6 +700,82 @@ const CHANGELOG_ENTRIES: {
     tags: ['core', 'form'],
   },
   {
+    date: 'Apr.18',
+    type: 'Release',
+    title: 'v0.0.12 — Theme syntax, Toast, Thumbnail, and 15 new features',
+    description:
+      'Version 0.0.12 ships 15 new features including XDSThumbnail, XDSToast, theme syntax with 11 presets, and XDSMediaTheme. 1 breaking change (Button isIconOnly) and 11 bug fixes.',
+    tags: ['release', 'v0.0.12'],
+    details: (
+      <XDSStack direction="vertical" gap={8}>
+        <XDSText type="body" color="secondary">
+          Version 0.0.12 ships 15 new features, 1 breaking change, and 11 bug
+          fixes across @xds/core, @xds/chat, and @xds/cli.
+        </XDSText>
+
+        <XDSStack direction="vertical" gap={2}>
+          <XDSHeading level={4}>Breaking Changes</XDSHeading>
+          <XDSList>
+            <XDSListItem>
+              Button <code>isIconOnly</code> is now required for icon-only
+              buttons
+            </XDSListItem>
+          </XDSList>
+        </XDSStack>
+
+        <XDSStack direction="vertical" gap={2}>
+          <XDSHeading level={4}>New Features</XDSHeading>
+          <XDSList>
+            <XDSListItem>XDSThumbnail component</XDSListItem>
+            <XDSListItem>XDSChatLayout component</XDSListItem>
+            <XDSListItem>XDSToast notification system</XDSListItem>
+            <XDSListItem>
+              Chat reasoning display (collapsible thinking)
+            </XDSListItem>
+            <XDSListItem>useXDSImperativeDialog hook</XDSListItem>
+            <XDSListItem>Theme syntax system with 11 presets</XDSListItem>
+            <XDSListItem>XDSMediaTheme for media-scoped theming</XDSListItem>
+            <XDSListItem>Card background variants</XDSListItem>
+            <XDSListItem>Daily theme rotation</XDSListItem>
+            <XDSListItem>SideNav and TopNav menu variants</XDSListItem>
+            <XDSListItem>TextInput onEnter callback</XDSListItem>
+            <XDSListItem>Button isPressed state</XDSListItem>
+            <XDSListItem>CLI programmatic API</XDSListItem>
+            <XDSListItem>
+              ChatComposer headerActions and headerContext slots
+            </XDSListItem>
+            <XDSListItem>Chat trigger menu system</XDSListItem>
+          </XDSList>
+        </XDSStack>
+
+        <XDSStack direction="vertical" gap={2}>
+          <XDSHeading level={4}>Fixes</XDSHeading>
+          <XDSList>
+            <XDSListItem>Dialog animation and focus restoration</XDSListItem>
+            <XDSListItem>CodeBlock copy and syntax highlighting</XDSListItem>
+            <XDSListItem>Chat scroll and message rendering</XDSListItem>
+            <XDSListItem>SegmentedControl layout consistency</XDSListItem>
+            <XDSListItem>XDSBaseProps type alignment</XDSListItem>
+            <XDSListItem>Theme hot-reload and token fallbacks</XDSListItem>
+            <XDSListItem>ProgressBar and Section sizing</XDSListItem>
+            <XDSListItem>Input validation and focus ring</XDSListItem>
+          </XDSList>
+        </XDSStack>
+
+        <XDSStack direction="vertical" gap={2}>
+          <XDSHeading level={4}>Upgrade</XDSHeading>
+          <XDSCard width="100%">
+            <XDSCodeBlock
+              language="bash"
+              code="npx xds upgrade --apply --to 0.0.12"
+              hasCopyButton
+            />
+          </XDSCard>
+        </XDSStack>
+      </XDSStack>
+    ),
+  },
+  {
     date: 'Apr.16',
     type: 'Improvement',
     title:
@@ -815,6 +891,79 @@ const CHANGELOG_ENTRIES: {
     tags: ['core', 'themes'],
   },
   {
+    date: 'Mar.10',
+    type: 'Breaking',
+    title:
+      'v0.0.10 — StatusDot and ProgressBar single size, Layout dividers',
+    description:
+      'Version 0.0.10 consolidates StatusDot and ProgressBar to single sizes. Adds Layout defaultHasDividers and Button href. Includes 7 component fixes.',
+    tags: ['release', 'v0.0.10'],
+    details: (
+      <XDSStack direction="vertical" gap={8}>
+        <XDSText type="body" color="secondary">
+          Version 0.0.10 simplifies sizing APIs and adds layout and navigation
+          improvements.
+        </XDSText>
+
+        <XDSStack direction="vertical" gap={2}>
+          <XDSHeading level={4}>Breaking Changes</XDSHeading>
+          <XDSList>
+            <XDSListItem>
+              StatusDot consolidated to a single size (remove size prop)
+            </XDSListItem>
+            <XDSListItem>
+              ProgressBar consolidated to a single size (remove size prop)
+            </XDSListItem>
+          </XDSList>
+        </XDSStack>
+
+        <XDSStack direction="vertical" gap={2}>
+          <XDSHeading level={4}>New Features</XDSHeading>
+          <XDSList>
+            <XDSListItem>
+              Layout defaultHasDividers prop for automatic section dividers
+            </XDSListItem>
+            <XDSListItem>
+              Button href prop for link-style buttons without anchor wrappers
+            </XDSListItem>
+          </XDSList>
+        </XDSStack>
+
+        <XDSStack direction="vertical" gap={2}>
+          <XDSHeading level={4}>Fixes</XDSHeading>
+          <XDSList>
+            <XDSListItem>
+              Dialog close animation and focus restoration
+            </XDSListItem>
+            <XDSListItem>
+              Popover positioning in scrollable containers
+            </XDSListItem>
+            <XDSListItem>
+              Menu keyboard navigation with disabled items
+            </XDSListItem>
+            <XDSListItem>Avatar fallback initials rendering</XDSListItem>
+            <XDSListItem>Table column resize handle alignment</XDSListItem>
+            <XDSListItem>AppShell mobile nav overlay z-index</XDSListItem>
+            <XDSListItem>
+              DialogHeader close button accessibility
+            </XDSListItem>
+          </XDSList>
+        </XDSStack>
+
+        <XDSStack direction="vertical" gap={2}>
+          <XDSHeading level={4}>Upgrade</XDSHeading>
+          <XDSCard width="100%">
+            <XDSCodeBlock
+              language="bash"
+              code="npx xds upgrade --apply --to 0.0.10"
+              hasCopyButton
+            />
+          </XDSCard>
+        </XDSStack>
+      </XDSStack>
+    ),
+  },
+  {
     date: 'Mar.05',
     type: 'Release',
     title: 'MultiSelector component for multi-value tokenized selection',
@@ -883,6 +1032,89 @@ const CHANGELOG_ENTRIES: {
     tags: ['core', 'navigation'],
   },
   {
+    date: 'Feb.15',
+    type: 'Breaking',
+    title:
+      'v0.0.6 — Token renames, dynamic theming, motion tokens, and mobile AppShell',
+    description:
+      'Major release with 5 breaking changes including token renames, shadow tokens, Collapse\u2192Collapsible, radius tokens, and Badge children\u2192label. Adds dynamic theming, motion tokens, mobile AppShell, and 15+ fixes.',
+    tags: ['release', 'v0.0.6'],
+    details: (
+      <XDSStack direction="vertical" gap={8}>
+        <XDSText type="body" color="secondary">
+          The token rename release &mdash; 5 breaking changes, major new
+          features for theming and mobile, and 15+ bug fixes.
+        </XDSText>
+
+        <XDSStack direction="vertical" gap={2}>
+          <XDSHeading level={4}>Breaking Changes</XDSHeading>
+          <XDSList>
+            <XDSListItem>
+              Token renames across color, spacing, and typography tokens
+            </XDSListItem>
+            <XDSListItem>
+              Shadow tokens restructured (elevation-based naming)
+            </XDSListItem>
+            <XDSListItem>
+              Collapse component renamed to Collapsible
+            </XDSListItem>
+            <XDSListItem>
+              Radius tokens consolidated and renamed
+            </XDSListItem>
+            <XDSListItem>
+              Badge: <code>children</code> prop renamed to{' '}
+              <code>label</code>
+            </XDSListItem>
+          </XDSList>
+        </XDSStack>
+
+        <XDSStack direction="vertical" gap={2}>
+          <XDSHeading level={4}>New Features</XDSHeading>
+          <XDSList>
+            <XDSListItem>
+              Dynamic theming with runtime theme switching
+            </XDSListItem>
+            <XDSListItem>
+              Motion tokens for consistent animation timing
+            </XDSListItem>
+            <XDSListItem>
+              Type scale system with semantic sizing
+            </XDSListItem>
+            <XDSListItem>
+              Mobile AppShell with bottom navigation
+            </XDSListItem>
+            <XDSListItem>TopNav mobile responsive mode</XDSListItem>
+            <XDSListItem>SideNav collapsible mode</XDSListItem>
+            <XDSListItem>PowerSearch filter component</XDSListItem>
+            <XDSListItem>TreeList hierarchical display</XDSListItem>
+            <XDSListItem>
+              NavItem component for navigation menus
+            </XDSListItem>
+          </XDSList>
+        </XDSStack>
+
+        <XDSStack direction="vertical" gap={2}>
+          <XDSHeading level={4}>Fixes</XDSHeading>
+          <XDSText type="supporting" color="secondary">
+            15+ bug fixes across Dialog, Popover, Menu, Table, Form
+            components, and accessibility improvements.
+          </XDSText>
+        </XDSStack>
+
+        <XDSStack direction="vertical" gap={2}>
+          <XDSHeading level={4}>Upgrade</XDSHeading>
+          <XDSCard width="100%">
+            <XDSCodeBlock
+              language="bash"
+              code="npx xds upgrade --apply --to 0.0.6"
+              hasCopyButton
+            />
+          </XDSCard>
+        </XDSStack>
+      </XDSStack>
+    ),
+  },
+  {
     date: 'Feb.14',
     type: 'Improvement',
     title: 'Card hover state uses CSS transitions instead of JS state',
@@ -905,6 +1137,70 @@ const CHANGELOG_ENTRIES: {
     description:
       'Fixed a bug where changing Stack direction via media queries would lose the gap value. The gap now correctly re-applies when the flex direction changes at different breakpoints.',
     tags: ['core', 'layout'],
+  },
+  // January 2026
+  {
+    date: 'Jan.15',
+    type: 'Breaking',
+    title:
+      'v0.0.2 — CSS-based theming, className/style props, and API rework',
+    description:
+      'Major API rework with CSS-based theming, className/style prop support, numeric spacing, RSC icon registry, React 19 ref forwarding, and component renames. 12 codemods available.',
+    tags: ['release', 'v0.0.2'],
+    details: (
+      <XDSStack direction="vertical" gap={8}>
+        <XDSText type="body" color="secondary">
+          The foundational API rework release &mdash; CSS-based theming
+          replaces the JavaScript theme provider, and all components gain
+          className and style escape hatches. 12 codemods available for
+          automated migration.
+        </XDSText>
+
+        <XDSStack direction="vertical" gap={2}>
+          <XDSHeading level={4}>Breaking Changes</XDSHeading>
+          <XDSList>
+            <XDSListItem>
+              CSS-based theming replaces JavaScript ThemeProvider
+            </XDSListItem>
+            <XDSListItem>
+              All components accept className and style props
+            </XDSListItem>
+            <XDSListItem>
+              Spacing props use numeric scale instead of string tokens
+            </XDSListItem>
+            <XDSListItem>
+              RSC-compatible icon registry replaces direct icon imports
+            </XDSListItem>
+            <XDSListItem>
+              React 19 ref forwarding (no more forwardRef wrappers)
+            </XDSListItem>
+            <XDSListItem>
+              Component and prop renames for API consistency
+            </XDSListItem>
+          </XDSList>
+        </XDSStack>
+
+        <XDSStack direction="vertical" gap={2}>
+          <XDSHeading level={4}>Codemods</XDSHeading>
+          <XDSText type="supporting" color="secondary">
+            12 codemods handle the migration automatically &mdash; theme
+            provider swap, spacing prop conversion, icon registry setup, ref
+            updates, and all component renames.
+          </XDSText>
+        </XDSStack>
+
+        <XDSStack direction="vertical" gap={2}>
+          <XDSHeading level={4}>Upgrade</XDSHeading>
+          <XDSCard width="100%">
+            <XDSCodeBlock
+              language="bash"
+              code="npx xds upgrade --apply --to 0.0.2"
+              hasCopyButton
+            />
+          </XDSCard>
+        </XDSStack>
+      </XDSStack>
+    ),
   },
 ];
 
@@ -937,7 +1233,9 @@ function groupByMonth(entries: typeof CHANGELOG_ENTRIES) {
           ? 'March 2026'
           : month === 'Feb'
             ? 'February 2026'
-            : month;
+            : month === 'Jan'
+              ? 'January 2026'
+              : month;
     if (!map.has(key)) {
       map.set(key, []);
       months.push({label: key, items: map.get(key)!});
