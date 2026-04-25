@@ -320,6 +320,103 @@ const CHANGELOG_ENTRIES: {
 }[] = [
   // April 2026
   {
+    date: 'Apr.25',
+    type: 'Improvement',
+    title: 'Stack now supports width and height props',
+    description:
+      'XDSStack, XDSVStack, and XDSHStack accept width and height props directly, eliminating the need for wrapper divs or inline styles for common sizing.',
+    tags: ['core', 'layout'],
+  },
+  {
+    date: 'Apr.25',
+    type: 'Improvement',
+    title: 'Carousel always shows nav buttons when content is scrollable',
+    description:
+      'Navigation arrows now remain visible whenever the carousel has overflowing content, making it clearer that more items are available.',
+    tags: ['core'],
+  },
+  {
+    date: 'Apr.24',
+    type: 'Improvement',
+    title:
+      'Icon slots standardized to ReactNode across all components',
+    description:
+      'All icon props (startIcon, endIcon, icon) now accept ReactNode instead of requiring specific icon component types. Pass any JSX element as an icon.',
+    tags: ['core'],
+  },
+  {
+    date: 'Apr.24',
+    type: 'Fix',
+    title: 'Input startIcon slots now use secondary color',
+    description:
+      'Icons in the startIcon slot of TextInput and other input components now correctly render in the secondary color token instead of inheriting the text color.',
+    tags: ['core', 'form'],
+  },
+  {
+    date: 'Apr.24',
+    type: 'Fix',
+    title: 'Grid column count capped via track-max instead of container max-width',
+    description:
+      'Grid no longer uses container max-width to limit columns. Instead, it uses track-max for more predictable column behavior at different container widths.',
+    tags: ['core', 'layout'],
+  },
+  {
+    date: 'Apr.24',
+    type: 'Fix',
+    title: 'Palette border colors updated from DSP color ramp',
+    description:
+      'Border color tokens across all palette hues (blue, green, red, etc.) now pull from the correct DSP color ramp values for better contrast and consistency.',
+    tags: ['core', 'tokens'],
+  },
+  {
+    date: 'Apr.24',
+    type: 'Fix',
+    title: 'AppShell: targeting class names on sticky wrappers and condensed sidenav DOM',
+    description:
+      'Sticky header and footer wrappers in AppShell now have stable class names for CSS targeting. SideNav DOM structure is more compact.',
+    tags: ['core', 'layout'],
+  },
+  {
+    date: 'Apr.24',
+    type: 'Improvement',
+    title: 'AppShell supports defaultIsMobile for SSR',
+    description:
+      'MobileNavConfig now accepts defaultIsMobile to set the initial mobile state during server-side rendering, preventing layout flash on mobile devices.',
+    tags: ['core', 'layout'],
+  },
+  {
+    date: 'Apr.24',
+    type: 'Fix',
+    title: 'Collapsible trigger padding removed and label uses capsize',
+    description:
+      'Collapsible trigger no longer has extra padding, and the label text uses capsize trimming for precise vertical alignment.',
+    tags: ['core'],
+  },
+  {
+    date: 'Apr.24',
+    type: 'Fix',
+    title: 'Breadcrumbs onClick-only items now match link color',
+    description:
+      'Breadcrumb items using onClick (without an href) now render with the same link color as href-based items for visual consistency.',
+    tags: ['core', 'navigation'],
+  },
+  {
+    date: 'Apr.24',
+    type: 'Fix',
+    title: 'Slider tooltip stays visible during thumb drag',
+    description:
+      'The Slider value tooltip no longer disappears when dragging the thumb. It remains visible throughout the entire drag interaction.',
+    tags: ['core', 'form'],
+  },
+  {
+    date: 'Apr.24',
+    type: 'Fix',
+    title: 'Component audit fixes for AppShell, AspectRatio, and Badge',
+    description:
+      'AppShell now extends XDSBaseProps correctly. AspectRatio handles RTL layouts. Badge supports header-level usage with proper semantics.',
+    tags: ['core'],
+  },
+  {
     date: 'Apr.18',
     type: 'Release',
     title:
@@ -3634,9 +3731,11 @@ npm install @xds/core @xds/theme-default`;
 
 const PROVIDER_CODE = `// app/globals.css
 @import "@xds/core/reset.css";
+@import "@xds/core/xds.css";
 @import "@xds/theme-default/theme.css";
 
 // app/providers.tsx
+import Link from 'next/link';
 import {XDSTheme} from '@xds/core/theme';
 import {XDSLinkProvider} from '@xds/core/Link';
 import {defaultTheme} from '@xds/theme-default/built';
@@ -3644,7 +3743,7 @@ import {defaultTheme} from '@xds/theme-default/built';
 export function Providers({children}: {children: React.ReactNode}) {
   return (
     <XDSTheme theme={defaultTheme}>
-      <XDSLinkProvider>{children}</XDSLinkProvider>
+      <XDSLinkProvider component={Link}>{children}</XDSLinkProvider>
     </XDSTheme>
   );
 }`;
@@ -3677,20 +3776,23 @@ npm install @xds/theme-neutral
 # @xds/theme-neutral  — Muted, minimal (Lucide)
 `;
 
-const CLI_CODE = `# Install the CLI
-npm install -g @xds/cli
+const CLI_CODE = `# Install the CLI as a dev dependency
+npm install -D @xds/cli
 
 # Initialize XDS in your project
-xds init
+npx xds init
+
+# Look up component docs
+npx xds component Button
 
 # Generate a page template
-xds template dashboard
+npx xds template dashboard
 
 # Eject a component for customization
-xds swizzle Button
+npx xds swizzle Button
 
 # Load agent docs for AI assistants
-xds docs`;
+npx xds docs`;
 
 const GETTING_STARTED_STEPS: {
   step: string;
@@ -3713,7 +3815,7 @@ const GETTING_STARTED_STEPS: {
     step: '02',
     title: 'Set up styles and theme',
     description:
-      'Import the CSS reset and theme, then wrap your app in XDSTheme. This provides design tokens — colors, typography, spacing, and radius — that all components inherit.',
+      'Import the CSS reset, component styles, and theme, then wrap your app in XDSTheme with a link provider. This provides design tokens — colors, typography, spacing, and radius — that all components inherit.',
     code: PROVIDER_CODE,
     codeLabel: 'app/globals.css + app/providers.tsx',
     language: 'tsx',
