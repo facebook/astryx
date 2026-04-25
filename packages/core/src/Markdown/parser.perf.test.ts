@@ -1,5 +1,9 @@
 import {describe, it, expect} from 'vitest';
-import {parseMarkdown, parseMarkdownIncremental, createIncrementalState} from './parser';
+import {
+  parseMarkdown,
+  parseMarkdownIncremental,
+  createIncrementalState,
+} from './parser';
 import type {BlockNode} from './parser';
 
 function generateAIResponse(paragraphs: number): string {
@@ -8,45 +12,59 @@ function generateAIResponse(paragraphs: number): string {
     const mod = i % 6;
     switch (mod) {
       case 0:
-        sections.push(`## Section ${i + 1}\n\nThis is paragraph ${i + 1} of the AI response. It contains analysis about the data and provides context for the following sections.`);
+        sections.push(
+          `## Section ${i + 1}\n\nThis is paragraph ${i + 1} of the AI response. It contains analysis about the data and provides context for the following sections.`,
+        );
         break;
       case 1:
-        sections.push('```typescript\nfunction process(data: Record<string, unknown>[]) {\n  return data.filter(item => item.valid)\n    .map(item => transform(item))\n    .reduce((acc, val) => merge(acc, val), {});\n}\n```');
+        sections.push(
+          '```typescript\nfunction process(data: Record<string, unknown>[]) {\n  return data.filter(item => item.valid)\n    .map(item => transform(item))\n    .reduce((acc, val) => merge(acc, val), {});\n}\n```',
+        );
         break;
       case 2:
-        sections.push(`- First point about topic ${i}\n- Second important finding\n- Third observation with **bold emphasis**\n- Fourth conclusion`);
+        sections.push(
+          `- First point about topic ${i}\n- Second important finding\n- Third observation with **bold emphasis**\n- Fourth conclusion`,
+        );
         break;
       case 3:
-        sections.push(`| Metric | Value | Change |\n| :--- | :---: | ---: |\n| Accuracy | ${90 + (i % 10)}% | +${i % 5}% |\n| Latency | ${10 + i}ms | -${i % 3}ms |`);
+        sections.push(
+          `| Metric | Value | Change |\n| :--- | :---: | ---: |\n| Accuracy | ${90 + (i % 10)}% | +${i % 5}% |\n| Latency | ${10 + i}ms | -${i % 3}ms |`,
+        );
         break;
       case 4:
-        sections.push(`> **Note:** This is an important observation about item ${i}.\n> It spans multiple lines and contains *italic* text.`);
+        sections.push(
+          `> **Note:** This is an important observation about item ${i}.\n> It spans multiple lines and contains *italic* text.`,
+        );
         break;
       case 5:
-        sections.push(`1. Step one of process ${i}\n2. Step two with \`inline code\`\n3. Final step with [link](https://example.com/${i})`);
+        sections.push(
+          `1. Step one of process ${i}\n2. Step two with \`inline code\`\n3. Final step with [link](https://example.com/${i})`,
+        );
         break;
     }
   }
   return sections.join('\n\n');
 }
 
-function simulateStreamingFullReparse(fullText: string, chunkSize = 50): BlockNode[] {
-  let result: BlockNode[] = [];
+function simulateStreamingFullReparse(
+  fullText: string,
+  chunkSize = 50,
+): BlockNode[] {
   for (let i = chunkSize; i <= fullText.length; i += chunkSize) {
-    result = parseMarkdown(fullText.slice(0, i));
+    parseMarkdown(fullText.slice(0, i));
   }
-  result = parseMarkdown(fullText);
-  return result;
+  return parseMarkdown(fullText);
 }
 
-function simulateStreamingIncremental(fullText: string, chunkSize = 50): BlockNode[] {
+function simulateStreamingIncremental(
+  fullText: string,
+  chunkSize = 50,
+): BlockNode[] {
   const state = createIncrementalState();
-  let result: BlockNode[] = [];
   for (let i = chunkSize; i <= fullText.length; i += chunkSize) {
-    result = parseMarkdownIncremental(fullText.slice(0, i), state);
+    parseMarkdownIncremental(fullText.slice(0, i), state);
   }
-  result = parseMarkdownIncremental(fullText, state);
-  return result;
+  return parseMarkdownIncremental(fullText, state);
 }
 
 describe('parseMarkdown performance', () => {
@@ -63,7 +81,9 @@ describe('parseMarkdown performance', () => {
     for (const size of sizes) {
       const text = generateAIResponse(size.paragraphs);
       const lines = text.split('\n').length;
-      console.log(`${size.name} (${size.paragraphs} paragraphs): ${text.length} chars, ${lines} lines`);
+      console.log(
+        `${size.name} (${size.paragraphs} paragraphs): ${text.length} chars, ${lines} lines`,
+      );
     }
   });
 
@@ -74,14 +94,19 @@ describe('parseMarkdown performance', () => {
       const start = performance.now();
       const result = parseMarkdown(text);
       const elapsed = performance.now() - start;
-      console.log(`  ${size.name} full parse: ${elapsed.toFixed(2)}ms → ${result.length} blocks`);
+      console.log(
+        `  ${size.name} full parse: ${elapsed.toFixed(2)}ms → ${result.length} blocks`,
+      );
       expect(elapsed).toBeLessThan(size.maxMs);
       expect(result.length).toBeGreaterThan(0);
     });
   }
 
   // Streaming with full re-parse
-  for (const size of [{name: 'Medium', paragraphs: 50, maxMs: 5000}, {name: 'XL', paragraphs: 500, maxMs: 30000}]) {
+  for (const size of [
+    {name: 'Medium', paragraphs: 50, maxMs: 5000},
+    {name: 'XL', paragraphs: 500, maxMs: 30000},
+  ]) {
     it(`streaming full re-parse ${size.name} under ${size.maxMs}ms`, () => {
       const text = generateAIResponse(size.paragraphs);
       const chunkSize = 50;
@@ -89,14 +114,19 @@ describe('parseMarkdown performance', () => {
       const start = performance.now();
       const result = simulateStreamingFullReparse(text, chunkSize);
       const elapsed = performance.now() - start;
-      console.log(`  ${size.name} streaming full re-parse: ${elapsed.toFixed(2)}ms (${iterations} iterations)`);
+      console.log(
+        `  ${size.name} streaming full re-parse: ${elapsed.toFixed(2)}ms (${iterations} iterations)`,
+      );
       expect(elapsed).toBeLessThan(size.maxMs);
       expect(result.length).toBeGreaterThan(0);
     });
   }
 
   // Streaming with incremental parse
-  for (const size of [{name: 'Medium', paragraphs: 50, maxMs: 5000}, {name: 'XL', paragraphs: 500, maxMs: 30000}]) {
+  for (const size of [
+    {name: 'Medium', paragraphs: 50, maxMs: 5000},
+    {name: 'XL', paragraphs: 500, maxMs: 30000},
+  ]) {
     it(`streaming incremental ${size.name} under ${size.maxMs}ms`, () => {
       const text = generateAIResponse(size.paragraphs);
       const chunkSize = 50;
@@ -104,7 +134,9 @@ describe('parseMarkdown performance', () => {
       const start = performance.now();
       const result = simulateStreamingIncremental(text, chunkSize);
       const elapsed = performance.now() - start;
-      console.log(`  ${size.name} streaming incremental: ${elapsed.toFixed(2)}ms (${iterations} iterations)`);
+      console.log(
+        `  ${size.name} streaming incremental: ${elapsed.toFixed(2)}ms (${iterations} iterations)`,
+      );
       expect(elapsed).toBeLessThan(size.maxMs);
       expect(result.length).toBeGreaterThan(0);
     });

@@ -215,13 +215,9 @@ export function XDSChartTooltip({
     (e: React.PointerEvent<SVGRectElement>) => {
       const dataPoint = pointerToData(e);
 
-      let result: {index: number; point: DataPoint} | null = null;
-
-      if (snap) {
-        result = findNearest(dataPoint.px, dataPoint.py);
-      } else {
-        result = {index: -1, point: dataPoint};
-      }
+      const result = snap
+        ? findNearest(dataPoint.px, dataPoint.py)
+        : {index: -1, point: dataPoint};
 
       if (result) {
         setHoverState(result);
