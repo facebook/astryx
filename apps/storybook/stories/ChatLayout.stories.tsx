@@ -24,7 +24,6 @@ import {HandThumbUpIcon, HandThumbDownIcon} from '@heroicons/react/24/outline';
 import {ClipboardDocumentIcon} from '@heroicons/react/24/outline';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
-import {XDSAvatar} from '@xds/core/Avatar';
 import {useXDSTooltip} from '@xds/core/Tooltip';
 import {createStaticSource} from '@xds/core/Typeahead';
 import {XDSEmptyState} from '@xds/core/EmptyState';

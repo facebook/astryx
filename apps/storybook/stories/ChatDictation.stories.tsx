@@ -7,7 +7,7 @@ import {
 } from '@xds/core/Chat';
 import type {XDSChatComposerInputHandle} from '@xds/core/Chat';
 import type {UseSpeechRecognitionReturn} from '@xds/core/Chat';
-import {useState, useRef} from 'react';
+import {useRef} from 'react';
 
 // =============================================================================
 // Mock dictation values for non-interactive stories

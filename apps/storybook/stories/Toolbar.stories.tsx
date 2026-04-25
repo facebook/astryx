@@ -17,7 +17,6 @@ import {XDSHeading} from '@xds/core/Text';
 import {
   Cog6ToothIcon,
   FunnelIcon,
-  MagnifyingGlassIcon,
   PlusIcon,
   ArrowDownTrayIcon,
   ArrowPathIcon,

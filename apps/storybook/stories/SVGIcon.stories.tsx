@@ -14,7 +14,6 @@ import {
   searchIcon,
   mailIcon,
   lockIcon,
-  iconVars,
 } from '@xds/lab';
 import {XDSStack, XDSText, XDSDivider} from '@xds/core';
 

@@ -4,7 +4,6 @@ import {XDSPowerSearch} from '@xds/core/PowerSearch';
 import type {
   PowerSearchConfig,
   PowerSearchFilter,
-  PowerSearchChangeType,
 } from '@xds/core/PowerSearch';
 import type {XDSSearchSource, XDSSearchableItem} from '@xds/core/Typeahead';
 import {XDSButton} from '@xds/core/Button';
@@ -351,7 +350,7 @@ export const FullFeatured: Story = {
           {...args}
           config={fullConfig}
           filters={filters}
-          onChange={(newFilters, changeType, index) => {
+          onChange={(newFilters, _changeType, _index) => {
             setFilters([...newFilters]);
           }}
         />
@@ -717,7 +716,7 @@ export const WithOnChangeTracking: Story = {
           {...args}
           config={basicConfig}
           filters={filters}
-          onChange={(newFilters, changeType, index) => {
+          onChange={(newFilters, _changeType, _index) => {
             setFilters([...newFilters]);
             setLog(prev => [
               ...prev,

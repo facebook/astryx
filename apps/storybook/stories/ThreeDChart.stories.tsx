@@ -6,7 +6,6 @@ import {
   XDS3DGrid,
   XDS3DAxis,
   XDS3DSurface,
-  XDSChartLegend,
   useXDSChartColors,
 } from '@xds/lab';
 import {XDSStack, XDSText} from '@xds/core';

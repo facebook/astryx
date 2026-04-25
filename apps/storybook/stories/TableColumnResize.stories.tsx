@@ -5,7 +5,6 @@ import {
   useXDSTableColumnResize,
   useXDSTableSelection,
   useXDSTableSelectionState,
-  proportional,
   pixel,
 } from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';

@@ -1,5 +1,5 @@
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSChartV2 as XDSChart, bar, line, dot, area, band} from '@xds/lab';
+import {XDSChartV2 as XDSChart, bar, line, area} from '@xds/lab';
 import {XDSChartGrid, XDSChartAxis} from '@xds/lab';
 
 const meta: Meta<typeof XDSChart> = {

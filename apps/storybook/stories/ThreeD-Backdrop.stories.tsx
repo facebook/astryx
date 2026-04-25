@@ -1,6 +1,6 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {useMemo} from 'react';
-import {XDS3DChart, XDS3DScatter, use3D, useXDSChartColors} from '@xds/lab';
+import {XDS3DChart, use3D} from '@xds/lab';
 
 const meta: Meta = {title: 'Lab/3DChart/Backdrop'};
 export default meta;

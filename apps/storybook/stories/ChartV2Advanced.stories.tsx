@@ -4,8 +4,6 @@ import {
   XDSChartV2 as XDSChart,
   bar,
   line,
-  dot,
-  area,
   band,
   candlestick,
   errorBar,
@@ -15,7 +13,6 @@ import {
   streamGL,
 } from '@xds/lab';
 import {XDSChartGrid, XDSChartAxis} from '@xds/lab';
-import {XDSText} from '@xds/core';
 
 const meta: Meta<typeof XDSChart> = {
   title: 'Lab/XDSChart v2/Advanced',
@@ -61,7 +58,7 @@ const salesData = [
   {month: 'Jun', sales: 70, target: 50, errorHigh: 76, errorLow: 64},
 ];
 
-const scatterData = Array.from({length: 200}, (_, i) => ({
+const scatterData = Array.from({length: 200}, (_) => ({
   x: Math.random() * 100,
   y: Math.random() * 100,
 }));

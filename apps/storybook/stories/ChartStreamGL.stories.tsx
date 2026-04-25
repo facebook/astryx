@@ -1,5 +1,5 @@
 import type {Meta, StoryObj} from '@storybook/react';
-import {useRef, useEffect, useState, useCallback} from 'react';
+import {useRef, useEffect, useState} from 'react';
 import {
   XDSChart,
   XDSChartAxis,

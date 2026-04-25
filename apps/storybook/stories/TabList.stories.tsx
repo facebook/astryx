@@ -2,9 +2,6 @@ import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSTabList, XDSTab, XDSTabMenu} from '@xds/core/TabList';
 import {XDSButton} from '@xds/core/Button';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSHStack} from '@xds/core/Stack';
-import {XDSStackItem} from '@xds/core/Stack';
 import {PlusIcon, FunnelIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSTabList> = {

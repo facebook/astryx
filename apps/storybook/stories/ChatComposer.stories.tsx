@@ -2,7 +2,6 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {
   XDSChatComposer,
   XDSChatComposerDrawer,
-  XDSChatComposerInput,
   XDSChatSendButton,
 } from '@xds/core/Chat';
 import {XDSToken} from '@xds/core/Token';
