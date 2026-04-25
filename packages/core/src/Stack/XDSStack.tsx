@@ -28,6 +28,7 @@ import {
   type StackWrap,
   type SpacingStep,
 } from './stack.stylex';
+import type {SizeValue} from '../utils/types';
 import {xdsClassName, mergeProps} from '../utils';
 
 /**
@@ -90,6 +91,18 @@ export interface XDSStackProps extends XDSBaseProps<HTMLDivElement> {
    * Mirrors CSS `align-items` / Tailwind `items-*`.
    */
   align?: StackCrossAlignment;
+
+  /**
+   * Width of the stack container.
+   * Numbers are treated as pixels, strings are used as-is (e.g., '100%').
+   */
+  width?: SizeValue;
+
+  /**
+   * Height of the stack container.
+   * Numbers are treated as pixels, strings are used as-is (e.g., '100%').
+   */
+  height?: SizeValue;
 
   /**
    * Spacing between items.
@@ -170,6 +183,8 @@ export function XDSStack({
   justify,
   align,
   gap,
+  width,
+  height,
   wrap,
   element = 'div',
   xstyle,
@@ -212,6 +227,16 @@ export function XDSStack({
     xstyle,
   );
 
+  // Build inline style for dynamic sizing values
+  const sizingStyle: React.CSSProperties = {
+    ...(width != null && {
+      width: typeof width === 'number' ? `${width}px` : width,
+    }),
+    ...(height != null && {
+      height: typeof height === 'number' ? `${height}px` : height,
+    }),
+  };
+
   return createElement(
     element,
     {
@@ -220,7 +245,7 @@ export function XDSStack({
         xdsClassName('stack', {direction, gap, wrap}),
         stylexProps,
         className,
-        style,
+        {...style, ...sizingStyle},
       ),
       ...props,
     },
