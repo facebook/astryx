@@ -11,7 +11,12 @@ import {
 } from '@xds/core/SideNav';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSBadge} from '@xds/core/Badge';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {
+  XDSLayout,
+  XDSLayoutContent,
+  XDSVStack,
+  XDSHStack,
+} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {
   XDSChatComposer,
@@ -40,6 +45,7 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSToken} from '@xds/core/Token';
 import {XDSCard} from '@xds/core/Card';
 import {XDSGrid} from '@xds/core/Grid';
+import {XDSIcon} from '@xds/core/Icon';
 
 import {XDSDropdownMenu, XDSDropdownMenuItem} from '@xds/core/DropdownMenu';
 import {
@@ -273,19 +279,17 @@ type ChatMessage =
   | {id: number; role: 'system'; text: string};
 
 const SIMULATED_RESPONSE =
-  'Thanks for your message! I\u2019m looking into this now.\n\nHere\u2019s what I found so far:\n\n1. **First**, I reviewed the relevant context from the attached files\n2. **Next**, I cross-referenced with the latest documentation\n3. **Finally**, I have a few recommendations\n\nLet me know if you\u2019d like me to dive deeper into any of these areas, or if you have follow-up questions.';
+  'Thanks for your message! I’m looking into this now.\n\nHere’s what I found so far:\n\n1. **First**, I reviewed the relevant context from the attached files\n2. **Next**, I cross-referenced with the latest documentation\n3. **Finally**, I have a few recommendations\n\nLet me know if you’d like me to dive deeper into any of these areas, or if you have follow-up questions.';
 
 // ============= SIDENAV =============
 
 function AIChatSideNav() {
-  const [active, setActive] = useState('dashboard');
+  const [active, setActive] = useState('ai-chat');
   return (
     <XDSSideNav
       header={
         <XDSSideNavHeading
-          icon={
-            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
-          }
+          icon={<XDSNavIcon icon={<XDSIcon icon={CubeIcon} size="sm" />} />}
           heading="My App"
           headingHref="/"
         />
@@ -295,8 +299,8 @@ function AIChatSideNav() {
           label="AI Chat"
           icon={ChatBubbleOvalLeftIcon}
           selectedIcon={ChatBubbleOvalLeftIconSolid}
-          isSelected={active === 'dashboard'}
-          onClick={() => setActive('dashboard')}
+          isSelected={active === 'ai-chat'}
+          onClick={() => setActive('ai-chat')}
         />
         <XDSSideNavItem
           label="Projects"
@@ -405,7 +409,10 @@ export default function AIChatTemplate() {
       };
 
       if (view === 'landing') {
-        setMessages([{id: 1, role: 'system', text: 'Today'}, userMsg]);
+        setMessages([
+          {id: userMsg.id - 1, role: 'system', text: 'Today'},
+          userMsg,
+        ]);
         setAttachments([]);
         setView('chat');
         setTimeout(() => streamResponse(SIMULATED_RESPONSE), 600);
@@ -417,20 +424,177 @@ export default function AIChatTemplate() {
     [view, attachments, streamResponse],
   );
 
-  const appendSuggestion = (prompt: string) => {
+  const replaceWithSuggestion = (prompt: string) => {
     const input = composerInputRef.current;
     if (!input) return;
     input.focus();
-    // Move cursor to end so text is always appended
+    // Select all existing content so insertText replaces it
     const sel = window.getSelection();
     if (sel) {
       sel.selectAllChildren(document.activeElement!);
-      sel.collapseToEnd();
     }
     input.insertText(prompt);
     // Dispatch input event to trigger emitChange and clear placeholder
     document.activeElement?.dispatchEvent(new Event('input', {bubbles: true}));
   };
+
+  // ---------------------------------------------------------------------------
+  // Composer (shared between landing and chat views)
+  // ---------------------------------------------------------------------------
+
+  const insertMentionToken = (item: (typeof MENTION_ITEMS)[number]) => {
+    composerInputRef.current?.focus();
+    // Move cursor to end so token is appended
+    const sel = window.getSelection();
+    if (sel && document.activeElement) {
+      sel.selectAllChildren(document.activeElement);
+      sel.collapseToEnd();
+    }
+    composerInputRef.current?.insertToken({
+      value: `@${item.id}`,
+      label: item.label,
+      variant: 'blue',
+    });
+    document.activeElement?.dispatchEvent(new Event('input', {bubbles: true}));
+  };
+
+  const insertModeToken = (label: string) => {
+    composerInputRef.current?.focus();
+    composerInputRef.current?.insertToken({
+      value: label,
+      label,
+      variant: 'orange',
+    });
+    // Dispatch input event to trigger emitChange and clear placeholder
+    document.activeElement?.dispatchEvent(new Event('input', {bubbles: true}));
+  };
+
+  const fileInput = (
+    <input
+      ref={fileInputRef}
+      type="file"
+      multiple
+      style={{display: 'none'}}
+      onChange={e => {
+        const files = Array.from(e.target.files ?? []);
+        setAttachments(prev => [...prev, ...files.map(f => f.name)]);
+        e.target.value = '';
+      }}
+    />
+  );
+
+  const renderComposer = ({
+    inputMinHeight,
+    extraFooterActions = null,
+  }: {
+    inputMinHeight: string;
+    extraFooterActions?: React.ReactNode;
+  }) => (
+    <XDSChatComposer
+      onSubmit={handleSubmit}
+      onStop={handleStop}
+      isStreaming={isStreaming}
+      placeholder="Ask anything"
+      input={
+        <XDSChatComposerInput
+          ref={composerInputRef}
+          triggers={composerTriggers}
+          style={{minHeight: inputMinHeight}}
+        />
+      }
+      drawer={
+        attachments.length > 0 ? (
+          <XDSChatComposerDrawer count={attachments.length}>
+            {attachments.map(name => (
+              <XDSToken
+                key={name}
+                label={name}
+                onRemove={() =>
+                  setAttachments(prev => prev.filter(n => n !== name))
+                }
+              />
+            ))}
+          </XDSChatComposerDrawer>
+        ) : undefined
+      }
+      headerActions={
+        <>
+          <XDSDropdownMenu
+            button={{
+              label: 'Reference',
+              variant: 'ghost',
+              size: 'sm',
+              icon: <XDSIcon icon={AtSymbolIcon} size="sm" />,
+              isIconOnly: true,
+            }}
+            hasChevron={false}
+            menuWidth={240}>
+            {MENTION_ITEMS.map(item => (
+              <XDSDropdownMenuItem
+                key={item.id}
+                label={item.label}
+                description={item.auxiliaryData?.role}
+                onClick={() => insertMentionToken(item)}
+              />
+            ))}
+          </XDSDropdownMenu>
+          <XDSButton
+            label="Attach"
+            variant="ghost"
+            size="sm"
+            icon={<XDSIcon icon={PaperClipIcon} size="sm" />}
+            isIconOnly
+            onClick={() => fileInputRef.current?.click()}
+          />
+        </>
+      }
+      footerActions={
+        <>
+          <XDSDropdownMenu
+            button={{
+              label: activeMode.label,
+              variant: 'ghost',
+              size: 'md',
+              icon: <XDSIcon icon={activeMode.icon} size="sm" />,
+              children: activeMode.label,
+            }}
+            menuWidth={200}
+            isMenuOpen={isModeMenuOpen}
+            onOpenChange={(isOpen: boolean) => {
+              setIsModeMenuOpen(isOpen);
+              if (!isOpen && shouldFocusComposerRef.current) {
+                shouldFocusComposerRef.current = false;
+                // Delay focus until after menu restores focus to its trigger button
+                setTimeout(() => {
+                  composerInputRef.current?.focus();
+                }, 50);
+              }
+            }}
+            items={MODE_OPTIONS.flatMap(opt => {
+              const item = {
+                label: opt.label,
+                icon: opt.icon,
+                onClick: () => {
+                  const tokenLabel = TOKEN_MODES[opt.key];
+                  if (tokenLabel) {
+                    insertModeToken(tokenLabel);
+                    shouldFocusComposerRef.current = true;
+                  } else {
+                    setMode(opt.key);
+                  }
+                },
+              };
+              return opt.key === 'sensitive'
+                ? [{type: 'divider' as const}, item]
+                : [item];
+            })}
+          />
+          {extraFooterActions}
+        </>
+      }
+      sendActions={<XDSChatDictationButton dictation={dictation} />}
+    />
+  );
 
   // ---------------------------------------------------------------------------
   // Chat view
@@ -439,226 +603,62 @@ export default function AIChatTemplate() {
   if (view === 'chat') {
     return (
       <XDSAppShell sideNav={<AIChatSideNav />} variant="elevated">
-        <div style={{height: '100%', display: 'flex', flexDirection: 'column'}}>
-          <XDSChatLayout
-            composer={
-              <>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  style={{display: 'none'}}
-                  onChange={e => {
-                    const files = Array.from(e.target.files ?? []);
-                    setAttachments(prev => [
-                      ...prev,
-                      ...files.map(f => f.name),
-                    ]);
-                    e.target.value = '';
-                  }}
-                />
-                <XDSChatComposer
-                  onSubmit={handleSubmit}
-                  onStop={handleStop}
-                  isStreaming={isStreaming}
-                  placeholder="Ask anything"
-                  input={
-                    <XDSChatComposerInput
-                      ref={composerInputRef}
-                      triggers={composerTriggers}
-                      style={{minHeight: '44px'}}
-                    />
-                  }
-                  drawer={
-                    attachments.length > 0 ? (
-                      <XDSChatComposerDrawer count={attachments.length}>
-                        {attachments.map((name, i) => (
-                          <XDSToken
-                            key={i}
-                            label={name}
-                            onRemove={() =>
-                              setAttachments(prev =>
-                                prev.filter((_, j) => j !== i),
-                              )
-                            }
-                          />
-                        ))}
-                      </XDSChatComposerDrawer>
-                    ) : undefined
-                  }
-                  headerActions={
-                    <>
-                      <XDSDropdownMenu
-                        button={{
-                          label: 'Reference',
-                          variant: 'ghost',
-                          size: 'sm',
-                          icon: (
-                            <AtSymbolIcon style={{width: 16, height: 16}} />
-                          ),
-                          isIconOnly: true,
-                        }}
-                        hasChevron={false}
-                        menuWidth={240}>
-                        {MENTION_ITEMS.map(item => (
-                          <XDSDropdownMenuItem
-                            key={item.id}
-                            label={item.label}
-                            description={item.auxiliaryData?.role}
-                            onClick={() => {
-                              composerInputRef.current?.focus();
-                              // Move cursor to end so token is appended
-                              const sel = window.getSelection();
-                              if (sel && document.activeElement) {
-                                sel.selectAllChildren(document.activeElement);
-                                sel.collapseToEnd();
-                              }
-                              composerInputRef.current?.insertToken({
-                                value: `@${item.id}`,
-                                label: item.label,
-                                variant: 'blue',
-                              });
-                              document.activeElement?.dispatchEvent(
-                                new Event('input', {bubbles: true}),
-                              );
-                            }}
-                          />
-                        ))}
-                      </XDSDropdownMenu>
-                      <XDSButton
-                        label="Attach"
-                        variant="ghost"
-                        size="sm"
-                        icon={<PaperClipIcon style={{width: 16, height: 16}} />}
-                        isIconOnly
-                        onClick={() => fileInputRef.current?.click()}
-                      />
-                    </>
-                  }
-                  footerActions={
-                    <>
-                      <XDSDropdownMenu
-                        button={{
-                          label: activeMode.label,
-                          variant: 'ghost',
-                          size: 'md',
-                          icon: (
-                            <activeMode.icon style={{width: 16, height: 16}} />
-                          ),
-                          children: activeMode.label,
-                        }}
-                        menuWidth={200}
-                        isMenuOpen={isModeMenuOpen}
-                        onOpenChange={(isOpen: boolean) => {
-                          setIsModeMenuOpen(isOpen);
-                          if (!isOpen && shouldFocusComposerRef.current) {
-                            shouldFocusComposerRef.current = false;
-                            setTimeout(() => {
-                              composerInputRef.current?.focus();
-                            }, 50);
-                          }
-                        }}
-                        items={MODE_OPTIONS.flatMap(opt => {
-                          const item = {
-                            label: opt.label,
-                            icon: opt.icon,
-                            onClick: () => {
-                              const tokenLabel = TOKEN_MODES[opt.key];
-                              if (tokenLabel) {
-                                composerInputRef.current?.focus();
-                                composerInputRef.current?.insertToken({
-                                  value: tokenLabel,
-                                  label: tokenLabel,
-                                  variant: 'orange',
-                                });
-                                document.activeElement?.dispatchEvent(
-                                  new Event('input', {bubbles: true}),
-                                );
-                                shouldFocusComposerRef.current = true;
-                              } else {
-                                setMode(opt.key);
-                              }
-                            },
-                          };
-                          return opt.key === 'sensitive'
-                            ? [{type: 'divider' as const}, item]
-                            : [item];
-                        })}
-                      />
-                      <XDSDropdownMenu
-                        button={{
-                          label: 'Settings',
-                          variant: 'ghost',
-                          size: 'md',
-                          icon: (
-                            <Cog6ToothIcon style={{width: 16, height: 16}} />
-                          ),
-                          children: 'Settings',
-                        }}
-                        menuWidth={200}
-                        items={[
-                          {label: 'Preferences', onClick: () => {}},
-                          {label: 'Keyboard shortcuts', onClick: () => {}},
-                          {label: 'About', onClick: () => {}},
-                        ]}
-                      />
-                    </>
-                  }
-                  sendActions={<XDSChatDictationButton dictation={dictation} />}
-                />
-              </>
-            }>
-            <XDSChatMessageList>
-              {messages.map(msg => {
-                if (msg.role === 'system') {
-                  return (
-                    <XDSChatSystemMessage key={msg.id} variant="divider">
-                      {msg.text}
-                    </XDSChatSystemMessage>
-                  );
-                }
-                if (msg.role === 'user') {
-                  return (
-                    <XDSChatMessage key={msg.id} sender="user">
-                      {msg.attachments && msg.attachments.length > 0 && (
-                        <XDSHStack gap={1} style={{flexWrap: 'wrap'}}>
-                          {msg.attachments.map(f => (
-                            <XDSToken key={f} label={f} />
-                          ))}
-                        </XDSHStack>
-                      )}
-                      <XDSChatMessageBubble
-                        metadata={
-                          <XDSChatMessageMetadata
-                            timestamp={
-                              <XDSTimestamp
-                                value={msg.sentAt.getTime()}
-                                format="time"
-                              />
-                            }
-                          />
-                        }>
-                        {msg.text}
-                      </XDSChatMessageBubble>
-                    </XDSChatMessage>
-                  );
-                }
+        <XDSChatLayout
+          style={{height: '100%'}}
+          composer={
+            <>
+              {fileInput}
+              {renderComposer({inputMinHeight: '44px'})}
+            </>
+          }>
+          <XDSChatMessageList>
+            {messages.map(msg => {
+              if (msg.role === 'system') {
                 return (
-                  <XDSChatMessage key={msg.id} sender="assistant">
-                    <XDSMarkdown density="compact">{msg.text}</XDSMarkdown>
-                    {!msg.isStreaming && msg.text && (
-                      <XDSChatMessageMetadata
-                        timestamp={
-                          <XDSTimestamp value={msg.id} format="time" />
-                        }
-                      />
+                  <XDSChatSystemMessage key={msg.id} variant="divider">
+                    {msg.text}
+                  </XDSChatSystemMessage>
+                );
+              }
+              if (msg.role === 'user') {
+                return (
+                  <XDSChatMessage key={msg.id} sender="user">
+                    {msg.attachments && msg.attachments.length > 0 && (
+                      <XDSHStack gap={1} style={{flexWrap: 'wrap'}}>
+                        {msg.attachments.map(f => (
+                          <XDSToken key={f} label={f} />
+                        ))}
+                      </XDSHStack>
                     )}
+                    <XDSChatMessageBubble
+                      metadata={
+                        <XDSChatMessageMetadata
+                          timestamp={
+                            <XDSTimestamp
+                              value={msg.sentAt.getTime()}
+                              format="time"
+                            />
+                          }
+                        />
+                      }>
+                      {msg.text}
+                    </XDSChatMessageBubble>
                   </XDSChatMessage>
                 );
-              })}
-            </XDSChatMessageList>
-          </XDSChatLayout>
-        </div>
+              }
+              return (
+                <XDSChatMessage key={msg.id} sender="assistant">
+                  <XDSMarkdown density="compact">{msg.text}</XDSMarkdown>
+                  {!msg.isStreaming && msg.text && (
+                    <XDSChatMessageMetadata
+                      timestamp={<XDSTimestamp value={msg.id} format="time" />}
+                    />
+                  )}
+                </XDSChatMessage>
+              );
+            })}
+          </XDSChatMessageList>
+        </XDSChatLayout>
       </XDSAppShell>
     );
   }
@@ -669,244 +669,104 @@ export default function AIChatTemplate() {
 
   return (
     <XDSAppShell sideNav={<AIChatSideNav />} variant="elevated">
-      <XDSVStack
-        gap={8}
-        style={{
-          maxWidth: 720,
-          margin: '0 auto',
-          paddingBlock: 'var(--spacing-8)',
-          paddingInline: 'var(--spacing-4)',
-          minHeight: '100%',
-          justifyContent: 'center',
-        }}>
-        {/* Greeting */}
-        <XDSVStack gap={1} style={{paddingInline: 'var(--spacing-4)'}}>
-          <XDSHStack gap={2} vAlign="center">
-            <SparklesIcon
-              style={{
-                width: 20,
-                height: 20,
-                color: 'var(--color-primary, #5B5BD6)',
-              }}
-            />
-            <XDSText type="large" as="h2">
-              Hi, Andrew
-            </XDSText>
-          </XDSHStack>
-          <XDSText type="display-2" as="h1">
-            Where should we start?
-          </XDSText>
-        </XDSVStack>
+      <XDSLayout
+        contentWidth={720}
+        padding={6}
+        content={
+          <XDSLayoutContent>
+            <XDSVStack gap={8} vAlign="center" style={{minHeight: '100%'}}>
+              {/* Greeting */}
+              <XDSVStack gap={1}>
+                <XDSHStack gap={2} vAlign="center">
+                  <XDSIcon icon={SparklesIcon} size="md" color="accent" />
+                  <XDSText type="large" as="h2">
+                    Hi, Andrew
+                  </XDSText>
+                </XDSHStack>
+                <XDSText type="display-2" as="h1">
+                  Where should we start?
+                </XDSText>
+              </XDSVStack>
 
-        {/* Composer */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          style={{display: 'none'}}
-          onChange={e => {
-            const files = Array.from(e.target.files ?? []);
-            setAttachments(prev => [...prev, ...files.map(f => f.name)]);
-            e.target.value = '';
-          }}
-        />
-        <XDSChatComposer
-          onSubmit={handleSubmit}
-          onStop={handleStop}
-          isStreaming={isStreaming}
-          placeholder="Ask anything"
-          input={
-            <XDSChatComposerInput
-              ref={composerInputRef}
-              triggers={composerTriggers}
-              style={{minHeight: '44px'}}
-            />
-          }
-          drawer={
-            attachments.length > 0 ? (
-              <XDSChatComposerDrawer
-                count={attachments.length}
-                defaultIsCollapsed>
-                {attachments.map((name, i) => (
-                  <XDSToken
-                    key={i}
-                    label={name}
-                    onRemove={() =>
-                      setAttachments(prev => prev.filter((_, j) => j !== i))
-                    }
-                  />
-                ))}
-              </XDSChatComposerDrawer>
-            ) : undefined
-          }
-          headerActions={
-            <>
-              <XDSDropdownMenu
-                button={{
-                  label: 'Reference',
-                  variant: 'ghost',
-                  size: 'sm',
-                  icon: <AtSymbolIcon style={{width: 16, height: 16}} />,
-                  isIconOnly: true,
-                }}
-                hasChevron={false}
-                menuWidth={240}>
-                {MENTION_ITEMS.map(item => (
-                  <XDSDropdownMenuItem
-                    key={item.id}
-                    label={item.label}
-                    description={item.auxiliaryData?.role}
-                    onClick={() => {
-                      composerInputRef.current?.focus();
-                      // Move cursor to end so token is appended
-                      const sel = window.getSelection();
-                      if (sel && document.activeElement) {
-                        sel.selectAllChildren(document.activeElement);
-                        sel.collapseToEnd();
-                      }
-                      composerInputRef.current?.insertToken({
-                        value: `@${item.id}`,
-                        label: item.label,
-                        variant: 'blue',
-                      });
-                      document.activeElement?.dispatchEvent(
-                        new Event('input', {bubbles: true}),
-                      );
+              {/* Composer */}
+              {fileInput}
+              {renderComposer({
+                inputMinHeight: '84px',
+                extraFooterActions: (
+                  <XDSDropdownMenu
+                    button={{
+                      label: 'Settings',
+                      variant: 'ghost',
+                      size: 'md',
+                      icon: <XDSIcon icon={Cog6ToothIcon} size="sm" />,
+                      children: 'Settings',
                     }}
+                    menuWidth={200}
+                    items={[
+                      {label: 'Preferences', onClick: () => {}},
+                      {label: 'Keyboard shortcuts', onClick: () => {}},
+                      {label: 'About', onClick: () => {}},
+                    ]}
                   />
-                ))}
-              </XDSDropdownMenu>
-              <XDSButton
-                label="Attach"
-                variant="ghost"
-                size="sm"
-                icon={<PaperClipIcon style={{width: 16, height: 16}} />}
-                isIconOnly
-                onClick={() => fileInputRef.current?.click()}
-              />
-            </>
-          }
-          footerActions={
-            <>
-              <XDSDropdownMenu
-                button={{
-                  label: activeMode.label,
-                  variant: 'ghost',
-                  size: 'md',
-                  icon: <activeMode.icon style={{width: 16, height: 16}} />,
-                  children: activeMode.label,
-                }}
-                menuWidth={200}
-                isMenuOpen={isModeMenuOpen}
-                onOpenChange={(isOpen: boolean) => {
-                  setIsModeMenuOpen(isOpen);
-                  if (!isOpen && shouldFocusComposerRef.current) {
-                    shouldFocusComposerRef.current = false;
-                    // Delay focus until after menu restores focus to its trigger button
-                    setTimeout(() => {
-                      composerInputRef.current?.focus();
-                    }, 50);
-                  }
-                }}
-                items={MODE_OPTIONS.flatMap(opt => {
-                  const item = {
-                    label: opt.label,
-                    icon: opt.icon,
-                    onClick: () => {
-                      const tokenLabel = TOKEN_MODES[opt.key];
-                      if (tokenLabel) {
-                        composerInputRef.current?.focus();
-                        composerInputRef.current?.insertToken({
-                          value: tokenLabel,
-                          label: tokenLabel,
-                          variant: 'orange',
-                        });
-                        // Dispatch input event to trigger emitChange and clear placeholder
-                        document.activeElement?.dispatchEvent(
-                          new Event('input', {bubbles: true}),
-                        );
-                        shouldFocusComposerRef.current = true;
-                      } else {
-                        setMode(opt.key);
-                      }
-                    },
-                  };
-                  return opt.key === 'sensitive'
-                    ? [{type: 'divider' as const}, item]
-                    : [item];
-                })}
-              />
-              <XDSDropdownMenu
-                button={{
-                  label: 'Settings',
-                  variant: 'ghost',
-                  size: 'md',
-                  icon: <Cog6ToothIcon style={{width: 16, height: 16}} />,
-                  children: 'Settings',
-                }}
-                menuWidth={200}
-                items={[
-                  {label: 'Preferences', onClick: () => {}},
-                  {label: 'Keyboard shortcuts', onClick: () => {}},
-                  {label: 'About', onClick: () => {}},
-                ]}
-              />
-            </>
-          }
-          sendActions={<XDSChatDictationButton dictation={dictation} />}
-        />
+                ),
+              })}
 
-        {/* Category toggle buttons */}
-        <XDSVStack gap={6} style={{paddingInline: 'var(--spacing-3)'}}>
-          <XDSToggleButtonGroup
-            label="Category"
-            value={category}
-            onChange={setCategory}
-            size="lg">
-            {CATEGORIES.map(cat => (
-              <XDSToggleButton
-                key={cat.key}
-                value={cat.key}
-                label={cat.label}
-                icon={<cat.icon style={{width: 16, height: 16}} />}
-              />
-            ))}
-          </XDSToggleButtonGroup>
+              {/* Category toggle buttons */}
+              <XDSVStack gap={6} style={{paddingInline: 'var(--spacing-3)'}}>
+                <XDSToggleButtonGroup
+                  label="Category"
+                  value={category}
+                  onChange={setCategory}
+                  size="lg">
+                  {CATEGORIES.map(cat => (
+                    <XDSToggleButton
+                      key={cat.key}
+                      value={cat.key}
+                      label={cat.label}
+                      icon={<XDSIcon icon={cat.icon} size="sm" />}
+                    />
+                  ))}
+                </XDSToggleButtonGroup>
 
-          {/* Suggestion cards */}
-          {suggestions && (
-            <XDSGrid minChildWidth={280} gap={3}>
-              {suggestions.map(suggestion => (
-                <XDSCard
-                  variant="muted"
-                  key={suggestion.heading}
-                  padding={3}
-                  style={{cursor: 'pointer'}}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => {
-                    appendSuggestion(suggestion.prompt);
-                    setMode(category);
-                  }}
-                  onKeyDown={(e: React.KeyboardEvent) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      appendSuggestion(suggestion.prompt);
-                      setMode(category);
-                    }
-                  }}>
-                  <XDSVStack gap={0.5}>
-                    <XDSHeading level={4}>{suggestion.heading}</XDSHeading>
-                    <XDSText type="body" color="secondary" size="xsm">
-                      {suggestion.body}
-                    </XDSText>
-                  </XDSVStack>
-                </XDSCard>
-              ))}
-            </XDSGrid>
-          )}
-        </XDSVStack>
-      </XDSVStack>
+                {/* Suggestion cards */}
+                {suggestions && (
+                  <XDSGrid columns={{minWidth: 280}} gap={3}>
+                    {suggestions.map(suggestion => (
+                      <XDSCard
+                        variant="muted"
+                        key={suggestion.heading}
+                        padding={3}
+                        style={{cursor: 'pointer'}}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => {
+                          replaceWithSuggestion(suggestion.prompt);
+                          setMode(category);
+                        }}
+                        onKeyDown={(e: React.KeyboardEvent) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            replaceWithSuggestion(suggestion.prompt);
+                            setMode(category);
+                          }
+                        }}>
+                        <XDSVStack gap={0.5}>
+                          <XDSHeading level={4}>
+                            {suggestion.heading}
+                          </XDSHeading>
+                          <XDSText type="body" color="secondary" size="xsm">
+                            {suggestion.body}
+                          </XDSText>
+                        </XDSVStack>
+                      </XDSCard>
+                    ))}
+                  </XDSGrid>
+                )}
+              </XDSVStack>
+            </XDSVStack>
+          </XDSLayoutContent>
+        }
+      />
     </XDSAppShell>
   );
 }
