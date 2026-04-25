@@ -2,7 +2,9 @@
 export const doc = {
   type: 'block',
   name: 'ChatDictation',
+  description: 'Interactive dictation in a composer — connected to the SpeechRecognition API via useXDSChatDictation.',
   isReady: true,
-  aspectRatio: 4 / 3,
   isShowcase: true,
+  aspectRatio: 4 / 3,
+  componentsUsed: ['Chat', 'ChatDictation', 'ChatComposer', 'ChatComposerInput'],
 };
