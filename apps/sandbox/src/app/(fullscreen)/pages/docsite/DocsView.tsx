@@ -54,11 +54,16 @@ import {XDSLink} from '@xds/core/Link';
 import {
   changelogVersions,
   deprecations,
-  peerDeps,
   GITHUB_REPO,
   type ChangelogVersion,
   type ChangelogItem,
 } from '@/generated/changelogRegistry';
+import {
+  commands as cliCommands,
+  globalOptions as cliGlobalOptions,
+  CLI_VERSION,
+  type CliCommand,
+} from '@/generated/cliRegistry';
 import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
 
 import {XDSPopover} from '@xds/core/Popover';
@@ -515,7 +520,14 @@ function VersionCard({
         gap={3}
         vAlign="start"
         onClick={toggle}
+        onKeyDown={(e: React.KeyboardEvent) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggle();
+          }
+        }}
         role="button"
+        tabIndex={0}
         aria-expanded={isOpen}
         style={{padding: '16px 24px', cursor: 'pointer'}}>
         <XDSStack direction="vertical" gap={0} style={{flex: 1, minWidth: 0}}>
@@ -594,44 +606,49 @@ function VersionCard({
               />
             )}
 
-            {!visibleSection && version.codemods.length > 0 && (
-              <XDSStack direction="vertical" gap={0} style={{marginBottom: 20}}>
+            {(!visibleSection || visibleSection === 'Breaking') &&
+              version.codemods.length > 0 && (
                 <XDSStack
-                  direction="horizontal"
-                  gap={2}
-                  vAlign="center"
-                  style={{marginBottom: 10}}>
-                  <XDSStatusDot variant="info" label="Codemods" />
-                  <XDSText
-                    type="supporting"
-                    color="secondary"
-                    weight="bold"
-                    style={{
-                      fontSize: 11,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.08em',
-                    }}>
-                    Codemods
-                  </XDSText>
+                  direction="vertical"
+                  gap={0}
+                  style={{marginBottom: 20}}>
+                  <XDSStack
+                    direction="horizontal"
+                    gap={2}
+                    vAlign="center"
+                    style={{marginBottom: 10}}>
+                    <XDSStatusDot variant="info" label="Codemods" />
+                    <XDSText
+                      type="supporting"
+                      color="secondary"
+                      weight="bold"
+                      style={{
+                        fontSize: 11,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                      }}>
+                      Codemods
+                    </XDSText>
+                  </XDSStack>
+                  <XDSStack
+                    direction="horizontal"
+                    gap={1}
+                    style={{flexWrap: 'wrap'}}>
+                    {version.codemods.map((item, i) => (
+                      <XDSBadge
+                        key={i}
+                        label={
+                          item.codemod ||
+                          item.text.replace(/^`([\w-]+)`.*/, '$1')
+                        }
+                        variant="neutral"
+                      />
+                    ))}
+                  </XDSStack>
                 </XDSStack>
-                <XDSStack
-                  direction="horizontal"
-                  gap={1}
-                  style={{flexWrap: 'wrap'}}>
-                  {version.codemods.map((item, i) => (
-                    <XDSBadge
-                      key={i}
-                      label={
-                        item.codemod || item.text.replace(/^`([\w-]+)`.*/, '$1')
-                      }
-                      variant="neutral"
-                    />
-                  ))}
-                </XDSStack>
-              </XDSStack>
-            )}
+              )}
 
-            {!visibleSection &&
+            {(!visibleSection || visibleSection === 'Breaking') &&
               (version.upgradeCommand || version.dryRunCommand) && (
                 <>
                   {!showUpgrade ? (
@@ -778,7 +795,7 @@ function WhatsNewPage() {
           position: 'sticky',
           top: 0,
           zIndex: 10,
-          backgroundColor: 'var(--color-background-surface, #fff)',
+          backgroundColor: 'var(--color-background-surface)',
           marginBottom: 24,
           paddingTop: 8,
           paddingBottom: 1,
@@ -1013,14 +1030,22 @@ function ColorsFoundationPage() {
               <XDSStack direction="vertical" gap={2}>
                 <XDSBadge label="Do" variant="success" />
                 <XDSList>
-                  <XDSListItem label="Use semantic tokens (accent, surface, primary) instead of
-                    hard-coded hex values" />
-                  <XDSListItem label="Pair text tokens with surface tokens to guarantee accessible
-                    contrast" />
-                  <XDSListItem label="Use the muted surface for secondary content areas and
-                    disabled backgrounds" />
-                  <XDSListItem label="Let tokens handle light/dark adaptation — avoid manual
-                    dark-mode overrides" />
+                  <XDSListItem
+                    label="Use semantic tokens (accent, surface, primary) instead of
+                    hard-coded hex values"
+                  />
+                  <XDSListItem
+                    label="Pair text tokens with surface tokens to guarantee accessible
+                    contrast"
+                  />
+                  <XDSListItem
+                    label="Use the muted surface for secondary content areas and
+                    disabled backgrounds"
+                  />
+                  <XDSListItem
+                    label="Let tokens handle light/dark adaptation — avoid manual
+                    dark-mode overrides"
+                  />
                 </XDSList>
               </XDSStack>
             </XDSCard>
@@ -1028,14 +1053,22 @@ function ColorsFoundationPage() {
               <XDSStack direction="vertical" gap={2}>
                 <XDSBadge label="Don't" variant="error" />
                 <XDSList>
-                  <XDSListItem label="Hard-code hex or rgba values in component styles — they
-                    break when themes change" />
-                  <XDSListItem label="Use opacity to lighten text — use the secondary or disabled
-                    text token instead" />
-                  <XDSListItem label="Repurpose semantic colors for decoration (e.g. error-red as
-                    a brand color)" />
-                  <XDSListItem label="Mix raw CSS custom properties with token imports — use
-                    colorVars consistently" />
+                  <XDSListItem
+                    label="Hard-code hex or rgba values in component styles — they
+                    break when themes change"
+                  />
+                  <XDSListItem
+                    label="Use opacity to lighten text — use the secondary or disabled
+                    text token instead"
+                  />
+                  <XDSListItem
+                    label="Repurpose semantic colors for decoration (e.g. error-red as
+                    a brand color)"
+                  />
+                  <XDSListItem
+                    label="Mix raw CSS custom properties with token imports — use
+                    colorVars consistently"
+                  />
                 </XDSList>
               </XDSStack>
             </XDSCard>
@@ -2454,16 +2487,32 @@ function SpacingFoundationPage() {
           <XDSHeading level={2}>Usage</XDSHeading>
           <XDSList>
             <XDSListItem label="Always use spacing tokens instead of hard-coded pixel values." />
-            <XDSListItem label={<>Prefer the <XDSText type="code">gap</XDSText> prop on{' '}
-              <XDSText type="code">XDSStack</XDSText> over manual margins
-              between siblings.</>} />
-            <XDSListItem label="Use smaller steps (0–2) inside components and larger steps (4+)
-              between sections." />
-            <XDSListItem label={<>Keep spacing symmetric — if a card has{' '}
-              <XDSText type="code">padding=&#123;4&#125;</XDSText>, use the same
-              value on all sides unless deliberately asymmetric.</>} />
-            <XDSListItem label="Avoid mixing spacing scales; stick to the 4px grid for predictable
-              alignment." />
+            <XDSListItem
+              label={
+                <>
+                  Prefer the <XDSText type="code">gap</XDSText> prop on{' '}
+                  <XDSText type="code">XDSStack</XDSText> over manual margins
+                  between siblings.
+                </>
+              }
+            />
+            <XDSListItem
+              label="Use smaller steps (0–2) inside components and larger steps (4+)
+              between sections."
+            />
+            <XDSListItem
+              label={
+                <>
+                  Keep spacing symmetric — if a card has{' '}
+                  <XDSText type="code">padding=&#123;4&#125;</XDSText>, use the
+                  same value on all sides unless deliberately asymmetric.
+                </>
+              }
+            />
+            <XDSListItem
+              label="Avoid mixing spacing scales; stick to the 4px grid for predictable
+              alignment."
+            />
           </XDSList>
         </XDSStack>
 
@@ -2564,10 +2613,14 @@ function IllustrationsFoundationPage() {
           <XDSHeading level={2}>Guidelines</XDSHeading>
           <XDSList>
             <XDSListItem label="Keep illustrations consistent in style across the product." />
-            <XDSListItem label="Use simple, flat illustrations that work in both light and dark
-              mode." />
-            <XDSListItem label="Size illustrations proportionally to the container — typically
-              120–240px." />
+            <XDSListItem
+              label="Use simple, flat illustrations that work in both light and dark
+              mode."
+            />
+            <XDSListItem
+              label="Size illustrations proportionally to the container — typically
+              120–240px."
+            />
             <XDSListItem label="Center illustrations with supporting text below." />
             <XDSListItem label="Don't mix illustration styles from different sources." />
             <XDSListItem label="Don't use illustrations as decoration without purpose." />
@@ -2993,27 +3046,45 @@ function IconsFoundationPage() {
             slot. Switching themes automatically swaps the underlying SVGs.
           </XDSText>
           <XDSList>
-            <XDSListItem label={<><XDSText type="body">
-                <XDSText type="code" weight="bold">
-                  Heroicons
-                </XDSText>{' '}
-                — the default icon set, used by the Default and Meta themes.
-                Outlined style with rounded caps.
-              </XDSText></>} />
-            <XDSListItem label={<><XDSText type="body">
-                <XDSText type="code" weight="bold">
-                  Lucide
-                </XDSText>{' '}
-                — used by the Neutral theme. Slightly thinner stroke with a
-                geometric feel.
-              </XDSText></>} />
-            <XDSListItem label={<><XDSText type="body">
-                <XDSText type="code" weight="bold">
-                  registerIcons()
-                </XDSText>{' '}
-                — supply your own SVG components for any or all slots when
-                defining a custom theme.
-              </XDSText></>} />
+            <XDSListItem
+              label={
+                <>
+                  <XDSText type="body">
+                    <XDSText type="code" weight="bold">
+                      Heroicons
+                    </XDSText>{' '}
+                    — the default icon set, used by the Default and Meta themes.
+                    Outlined style with rounded caps.
+                  </XDSText>
+                </>
+              }
+            />
+            <XDSListItem
+              label={
+                <>
+                  <XDSText type="body">
+                    <XDSText type="code" weight="bold">
+                      Lucide
+                    </XDSText>{' '}
+                    — used by the Neutral theme. Slightly thinner stroke with a
+                    geometric feel.
+                  </XDSText>
+                </>
+              }
+            />
+            <XDSListItem
+              label={
+                <>
+                  <XDSText type="body">
+                    <XDSText type="code" weight="bold">
+                      registerIcons()
+                    </XDSText>{' '}
+                    — supply your own SVG components for any or all slots when
+                    defining a custom theme.
+                  </XDSText>
+                </>
+              }
+            />
           </XDSList>
         </XDSStack>
 
@@ -3833,6 +3904,45 @@ function LibraryPackagePage({
   return null;
 }
 
+function CliCommandView({cmd}: {cmd: CliCommand}) {
+  const allOptions = [
+    ...cmd.arguments.map(a => ({
+      flags: a.required
+        ? `<${a.name}${a.variadic ? '...' : ''}>`
+        : `[${a.name}]`,
+      description: a.description || 'Positional argument',
+    })),
+    ...cmd.options.map(o => ({flags: o.flags, description: o.description})),
+    ...cmd.subcommands.flatMap(sub => [
+      {flags: sub.name, description: `Subcommand: ${sub.description}`},
+      ...sub.options.map(o => ({
+        flags: `${sub.name} ${o.flags}`,
+        description: o.description,
+      })),
+    ]),
+  ];
+
+  return (
+    <XDSStack direction="vertical" gap={3}>
+      <XDSHeading level={2}>xds {cmd.name}</XDSHeading>
+      <XDSText type="body" color="secondary">
+        {cmd.description}
+      </XDSText>
+      {allOptions.length > 0 && (
+        <XDSCard padding={0} style={{overflow: 'auto'}}>
+          <XDSTable
+            data={allOptions as {[key: string]: unknown}[]}
+            columns={[
+              {key: 'flags', header: 'Flag / Argument'},
+              {key: 'description', header: 'Description'},
+            ]}
+          />
+        </XDSCard>
+      )}
+    </XDSStack>
+  );
+}
+
 function CliPage() {
   return (
     <XDSSection
@@ -3845,13 +3955,12 @@ function CliPage() {
         <XDSStack direction="vertical" gap={2}>
           <XDSStack direction="horizontal" gap={3} vAlign="center">
             <XDSText type="display-1">@xds/cli</XDSText>
-            <XDSText type="code" color="secondary" size="xsm">
-              v0.0.12
-            </XDSText>
+            <XDSBadge label={`v${CLI_VERSION}`} variant="neutral" />
           </XDSStack>
           <XDSText type="body" color="secondary">
             Command-line interface for project setup, component docs, page
-            templates, component ejection, and AI agent context generation.
+            templates, theming, component ejection, upgrade codemods, and AI
+            agent context generation.
           </XDSText>
         </XDSStack>
 
@@ -3860,54 +3969,7 @@ function CliPage() {
           <XDSHeading level={2}>Install</XDSHeading>
           <XDSCard padding={0}>
             <XDSCodeBlock
-              code="npm install -g @xds/cli"
-              title="Terminal"
-              language="bash"
-              hasCopyButton
-            />
-          </XDSCard>
-        </XDSStack>
-
-        {/* Setup */}
-        <XDSStack direction="vertical" gap={3}>
-          <XDSHeading level={2}>Setup</XDSHeading>
-          <XDSText type="body" color="secondary">
-            Interactive wizard that installs AI agent docs, scaffolds a custom
-            theme, and copies a starter template. Safe to re-run.
-          </XDSText>
-          <XDSCard padding={0}>
-            <XDSCodeBlock
-              code={`xds init                        # interactive setup wizard\nxds init --features agents      # install AGENTS.md for AI assistants\nxds init --features theme       # scaffold a custom theme file\nxds init --features template    # copy a starter page template`}
-              title="Terminal"
-              language="bash"
-              hasCopyButton
-            />
-          </XDSCard>
-        </XDSStack>
-
-        {/* Quick reference */}
-        <XDSStack direction="vertical" gap={3}>
-          <XDSHeading level={2}>Quick reference</XDSHeading>
-          <XDSText type="body" color="secondary">
-            Reference commands for looking up component APIs, design tokens, and
-            available templates.
-          </XDSText>
-          <XDSCard padding={0}>
-            <XDSCodeBlock
-              code={`xds help                        # all commands and options\nxds docs                        # list available doc topics\nxds docs principles --dense     # design rules, anti-patterns, tokens\nxds docs tokens --dense         # spacing, color, radius, typography\nxds docs theme --dense          # theme provider, light/dark, overrides\nxds component --list            # all components grouped by category\nxds template --list             # available page and block templates\nxds discover                    # find external XDS packages`}
-              title="Terminal"
-              language="bash"
-              hasCopyButton
-            />
-          </XDSCard>
-        </XDSStack>
-
-        {/* Component & template commands */}
-        <XDSStack direction="vertical" gap={3}>
-          <XDSHeading level={2}>Component and template commands</XDSHeading>
-          <XDSCard padding={0}>
-            <XDSCodeBlock
-              code={`xds component Button --dense    # props, variants, usage, anatomy\nxds component Table --props     # props table only\nxds template dashboard          # emit full page source\nxds template dashboard --skeleton  # layout skeleton with spatial annotations\nxds swizzle Button              # eject component source for customization\nxds upgrade --apply             # run version migration codemods`}
+              code={`# Run without installing\nnpx xds <command>\n\n# Or install globally\nnpm install -g @xds/cli`}
               title="Terminal"
               language="bash"
               hasCopyButton
@@ -3918,59 +3980,61 @@ function CliPage() {
         {/* Global options */}
         <XDSStack direction="vertical" gap={3}>
           <XDSHeading level={2}>Global options</XDSHeading>
-          <XDSTable
-            data={
-              [
-                {
-                  flag: '--dense',
-                  description:
-                    'Token-efficient output for AI assistants. Omits examples and verbose prose.',
-                },
-                {
-                  flag: '--json',
-                  description:
-                    'Structured JSON output (envelope: { type, data }). For programmatic consumption.',
-                },
-                {
-                  flag: '--detail compact',
-                  description: 'Reduced output focused on essentials',
-                },
-                {flag: '--detail brief', description: 'Minimal output'},
-                {
-                  flag: '--zh',
-                  description: 'Chinese (Simplified) language output',
-                },
-                {
-                  flag: '--skeleton',
-                  description:
-                    'Layout skeleton with spatial annotations (templates only)',
-                },
-                {
-                  flag: '--gap',
-                  description:
-                    'File a gap report when swizzling to explain why you needed to eject',
-                },
-              ] as {[key: string]: unknown}[]
-            }
-            columns={[
-              {key: 'flag', header: 'Flag'},
-              {key: 'description', header: 'Description'},
-            ]}
-          />
+          <XDSText type="body" color="secondary">
+            These flags work with any command.
+          </XDSText>
+          <XDSCard padding={0} style={{overflow: 'auto'}}>
+            <XDSTable
+              data={
+                [
+                  {flags: '--version, -V', description: 'Print CLI version'},
+                  ...cliGlobalOptions.map(o => ({
+                    flags: o.flags,
+                    description: o.description,
+                  })),
+                  {flags: '--help', description: 'Show help for any command'},
+                ] as {[key: string]: unknown}[]
+              }
+              columns={[
+                {key: 'flags', header: 'Flag'},
+                {key: 'description', header: 'Description'},
+              ]}
+            />
+          </XDSCard>
         </XDSStack>
 
-        {/* AI integration */}
+        {/* Commands */}
+        {cliCommands.map(cmd => (
+          <CliCommandView key={cmd.name} cmd={cmd} />
+        ))}
+
+        {/* Configuration */}
         <XDSStack direction="vertical" gap={3}>
-          <XDSHeading level={2}>AI integration</XDSHeading>
+          <XDSHeading level={2}>Configuration</XDSHeading>
           <XDSText type="body" color="secondary">
-            The CLI generates context that AI coding assistants (Cursor,
-            Copilot, Claude) can use when building with XDS.
+            Create an xds.config.mjs in your project root to configure package
+            discovery paths, gap report delivery, and theme settings.
           </XDSText>
           <XDSCard padding={0}>
             <XDSCodeBlock
-              code={`# Generate AGENTS.md for your project\nxds init --features agents\n\n# Get component docs in AI-friendly format\nxds component Button --dense\nxds component Table --dense\n\n# Get structured JSON for tool integrations\nxds component Button --json\nxds docs tokens --json`}
-              title="Terminal"
-              language="bash"
+              code={`// xds.config.mjs\nexport default {\n  packageDirs: ['./packages'],\n  gapReport: { target: 'github' },\n};`}
+              language="javascript"
+              hasCopyButton
+            />
+          </XDSCard>
+        </XDSStack>
+
+        {/* Programmatic API */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Programmatic API</XDSHeading>
+          <XDSText type="body" color="secondary">
+            Use the CLI programmatically via @xds/cli/api for build scripts, CI
+            pipelines, and custom tooling.
+          </XDSText>
+          <XDSCard padding={0}>
+            <XDSCodeBlock
+              code={`import { component, docs, discover, template } from '@xds/cli/api';\n\nconst buttonDocs = await component('Button', { dense: true });\nconst tokenDocs = await docs('tokens', { json: true });\nconst templates = await template({ list: true });\nconst packages = await discover();`}
+              language="typescript"
               hasCopyButton
             />
           </XDSCard>
@@ -3982,8 +4046,10 @@ function CliPage() {
           <XDSList density="balanced" listStyle="disc">
             <XDSListItem label="Run xds init when setting up a new project to generate AI agent docs and a starter theme" />
             <XDSListItem label="Use xds component <Name> --dense before modifying or building with any component" />
-            <XDSListItem label="After upgrading @xds/core, run xds upgrade --apply to auto-migrate breaking changes" />
-            <XDSListItem label="When swizzling, use --gap to report why you needed to eject — helps the team close gaps" />
+            <XDSListItem label="After upgrading @xds/core, run xds upgrade --apply --to <version> to auto-migrate breaking changes" />
+            <XDSListItem label="When swizzling, use --gap to report why you needed to eject" />
+            <XDSListItem label="Use xds gap-report to request missing components or features" />
+            <XDSListItem label="Use xds theme build to compile custom themes for production" />
           </XDSList>
         </XDSStack>
       </XDSStack>
@@ -4070,48 +4136,50 @@ function NpmPackagesPage() {
         <XDSHeading level={2} style={{marginBottom: 16}}>
           Packages
         </XDSHeading>
-        <XDSTable
-          data={
-            [
-              {
-                package: '@xds/core',
-                description: 'Core UI components (60+)',
-                version: '0.0.12',
-                status: 'Stable',
-              },
-              {
-                package: '@xds/vega',
-                description: 'Charts & data visualization',
-                version: '—',
-                status: 'Coming Soon',
-              },
-              {
-                package: '@xds/cli',
-                description: 'CLI for scaffolding & tooling',
-                version: '0.0.12',
-                status: 'Stable',
-              },
-              {
-                package: '@xds/theme-default',
-                description: 'Default theme (blue accent)',
-                version: '0.0.12',
-                status: 'Stable',
-              },
-              {
-                package: '@xds/theme-neutral',
-                description: 'Neutral warm gray theme',
-                version: '0.0.12',
-                status: 'Stable',
-              },
-            ] as {[key: string]: unknown}[]
-          }
-          columns={[
-            {key: 'package', header: 'Package'},
-            {key: 'description', header: 'Description'},
-            {key: 'version', header: 'Version'},
-            {key: 'status', header: 'Status'},
-          ]}
-        />
+        <XDSCard padding={0} style={{overflow: 'auto'}}>
+          <XDSTable
+            data={
+              [
+                {
+                  package: '@xds/core',
+                  description: 'Core UI components (60+)',
+                  version: '0.0.12',
+                  status: 'Stable',
+                },
+                {
+                  package: '@xds/vega',
+                  description: 'Charts & data visualization',
+                  version: '—',
+                  status: 'Coming Soon',
+                },
+                {
+                  package: '@xds/cli',
+                  description: 'CLI for scaffolding & tooling',
+                  version: '0.0.12',
+                  status: 'Stable',
+                },
+                {
+                  package: '@xds/theme-default',
+                  description: 'Default theme (blue accent)',
+                  version: '0.0.12',
+                  status: 'Stable',
+                },
+                {
+                  package: '@xds/theme-neutral',
+                  description: 'Neutral warm gray theme',
+                  version: '0.0.12',
+                  status: 'Stable',
+                },
+              ] as {[key: string]: unknown}[]
+            }
+            columns={[
+              {key: 'package', header: 'Package'},
+              {key: 'description', header: 'Description'},
+              {key: 'version', header: 'Version'},
+              {key: 'status', header: 'Status'},
+            ]}
+          />
+        </XDSCard>
       </div>
       <div style={{marginTop: 40}}>
         <XDSHeading level={2} style={{marginBottom: 16}}>

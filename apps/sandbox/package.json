@@ -6,9 +6,10 @@
     "build:deps": "yarn workspace @xds/theme-default build && yarn workspace @xds/theme-neutral build && yarn workspace @xds/theme-brutalist build && yarn workspace @xds/theme-meta build && yarn workspace @xds/theme-whatsapp build && yarn workspace @xds/theme-daily build",
     "generate:versions": "node scripts/generate-versions.js",
     "generate:changelog": "node scripts/generate-changelog.js",
-    "predev": "node ../../scripts/sync-templates.js && yarn generate:versions && yarn generate:changelog",
+    "generate:cli": "node scripts/generate-cli-registry.mjs",
+    "predev": "node ../../scripts/sync-templates.js && yarn generate:versions && yarn generate:changelog && yarn generate:cli",
     "dev": "node ../../scripts/sync-templates.js --watch & next dev",
-    "prebuild": "node ../../scripts/sync-templates.js && yarn generate:versions && yarn generate:changelog",
+    "prebuild": "node ../../scripts/sync-templates.js && yarn generate:versions && yarn generate:changelog && yarn generate:cli",
     "build": "next build",
     "start": "next start",
     "postinstall": "xds agent-docs"
