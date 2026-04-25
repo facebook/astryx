@@ -11,6 +11,7 @@
  * - /packages/core/src/Breadcrumbs/XDSBreadcrumbs.test.tsx
  * - /packages/core/src/Breadcrumbs/index.ts
  * - /apps/storybook/stories/Breadcrumbs.stories.tsx
+ * - /packages/cli/templates/blocks/components/Breadcrumbs/ (showcase blocks)
  */
 
 import {

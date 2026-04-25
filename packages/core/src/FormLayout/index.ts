@@ -7,7 +7,6 @@
  * @position Entry point for FormLayout module
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/FormLayout/README.md
  */
 
 export {XDSFormLayout} from './XDSFormLayout';

@@ -13,6 +13,7 @@
  * - /packages/core/src/Layout/Layout.doc.mjs
  * - /packages/core/src/Layout/XDSLayout/index.ts
  * - /apps/storybook/stories/Layout.stories.tsx
+ * - /packages/cli/templates/blocks/components/Layout/ (showcase blocks)
  */
 
 import {type ReactNode, useMemo} from 'react';

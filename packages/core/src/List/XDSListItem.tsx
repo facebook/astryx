@@ -11,6 +11,7 @@
  * - /packages/core/src/List/XDSList.test.tsx
  * - /packages/core/src/List/index.ts
  * - /apps/storybook/stories/List.stories.tsx
+ * - /packages/cli/templates/blocks/components/List/ (showcase blocks)
  */
 
 import {useContext, type ReactNode} from 'react';

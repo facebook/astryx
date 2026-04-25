@@ -7,6 +7,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Stack/Stack.doc.mjs
  * - /packages/core/src/Stack/XDSHStack.test.tsx
+ * - /packages/cli/templates/blocks/components/Stack/ (showcase blocks)
  */
 
 import {XDSStack, type XDSStackProps} from './XDSStack';

@@ -10,6 +10,7 @@
  * - /packages/core/src/Avatar/Avatar.doc.mjs (features, files table)
  * - /packages/core/src/Avatar/index.ts (exports)
  * - /apps/storybook/stories/Avatar.stories.tsx (storybook stories)
+ * - /packages/cli/templates/blocks/components/Avatar/ (showcase blocks)
  */
 
 import {useContext, type ReactNode} from 'react';

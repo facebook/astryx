@@ -9,6 +9,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Tooltip/index.ts
  * - /apps/storybook/stories/Tooltip.stories.tsx
+ * - /packages/cli/templates/blocks/components/Tooltip/ (showcase blocks)
  */
 
 import React, {

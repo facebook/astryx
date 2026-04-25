@@ -5,7 +5,6 @@
  * @position Shared type definitions; consumed by XDSBaseTypeahead, XDSTypeahead, XDSTokenizer
  *
  * SYNC: When modified, update:
- * - /packages/core/src/Typeahead/README.md
  * - /packages/core/src/Typeahead/index.ts
  */
 

@@ -20,6 +20,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Link/index.ts
  * - /packages/core/src/Link/Link.doc.mjs
+ * - /packages/cli/templates/blocks/components/Link/ (showcase blocks)
  */
 
 

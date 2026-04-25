@@ -16,6 +16,7 @@
  * - /packages/core/src/Thumbnail/XDSThumbnail.test.tsx
  * - /packages/core/src/Thumbnail/index.ts
  * - /apps/storybook/stories/Thumbnail.stories.tsx
+ * - /packages/cli/templates/blocks/components/Thumbnail/ (showcase blocks)
  */
 
 import {type ReactNode} from 'react';

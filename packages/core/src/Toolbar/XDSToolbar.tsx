@@ -11,6 +11,7 @@
  * - /packages/core/src/Toolbar/XDSToolbar.test.tsx
  * - /packages/core/src/Toolbar/index.ts
  * - /apps/storybook/stories/Toolbar.stories.tsx
+ * - /packages/cli/templates/blocks/components/Toolbar/ (showcase blocks)
  */
 
 import {type ReactNode} from 'react';

@@ -18,6 +18,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/TopNav/TopNav.doc.mjs
  * - /packages/core/src/TopNav/index.ts
+ * - /packages/cli/templates/blocks/components/TopNav/ (showcase blocks)
  */
 
 import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';

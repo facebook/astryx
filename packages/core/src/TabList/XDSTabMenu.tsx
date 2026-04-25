@@ -10,6 +10,7 @@
  * - /packages/core/src/TabList/TabList.doc.mjs
  * - /packages/core/src/TabList/index.ts
  * - /packages/core/src/TabList/XDSTabList.test.tsx
+ * - /packages/cli/templates/blocks/components/TabList/ (showcase blocks)
  */
 
 import React, {useCallback, useId, type ReactNode} from 'react';

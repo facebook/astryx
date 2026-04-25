@@ -5,7 +5,7 @@
  * @position Sub-component; visual grouping with heading
  *
  * SYNC: When modified, update:
- * - /packages/lab/src/CommandPalette/README.md
+ * - /packages/cli/templates/blocks/components/CommandPalette/ (showcase blocks)
  */
 
 'use client';

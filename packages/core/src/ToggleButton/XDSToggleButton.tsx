@@ -15,6 +15,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/ToggleButton/index.ts (exports if types change)
  * - /apps/storybook/stories/ToggleButton.stories.tsx
+ * - /packages/cli/templates/blocks/components/ToggleButton/ (showcase blocks)
  */
 
 import {useCallback, type ReactNode} from 'react';

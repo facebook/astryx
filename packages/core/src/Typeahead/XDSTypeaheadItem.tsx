@@ -5,8 +5,8 @@
  * @position Presentational component; used as default renderItem in XDSBaseTypeahead
  *
  * SYNC: When modified, update:
- * - /packages/core/src/Typeahead/README.md
  * - /packages/core/src/Typeahead/index.ts
+ * - /packages/cli/templates/blocks/components/Typeahead/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';
