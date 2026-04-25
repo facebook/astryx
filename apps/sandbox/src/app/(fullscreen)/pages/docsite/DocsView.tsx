@@ -1011,7 +1011,7 @@ function ColorsFoundationPage() {
           <XDSGrid columns={2} gap={4}>
             <XDSCard padding={4}>
               <XDSStack direction="vertical" gap={2}>
-                <XDSBadge label="Do" variant="positive" />
+                <XDSBadge label="Do" variant="success" />
                 <XDSList>
                   <XDSListItem>
                     Use semantic tokens (accent, surface, primary) instead of
@@ -1034,7 +1034,7 @@ function ColorsFoundationPage() {
             </XDSCard>
             <XDSCard padding={4}>
               <XDSStack direction="vertical" gap={2}>
-                <XDSBadge label="Don't" variant="negative" />
+                <XDSBadge label="Don't" variant="error" />
                 <XDSList>
                   <XDSListItem>
                     Hard-code hex or rgba values in component styles — they
