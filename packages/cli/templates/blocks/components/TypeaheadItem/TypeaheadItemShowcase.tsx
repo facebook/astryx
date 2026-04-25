@@ -1,5 +1,6 @@
 'use client';
 
+import {useState} from 'react';
 import {XDSTypeahead, XDSTypeaheadItem} from '@xds/core/Typeahead';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
 import {XDSAvatar} from '@xds/core/Avatar';
@@ -24,14 +25,16 @@ const peopleSource: XDSSearchSource<PersonItem> = {
 };
 
 export default function TypeaheadItemShowcase() {
+  const [value, setValue] = useState<PersonItem | null>(null);
+
   return (
     <XDSCenter width={320}>
       <XDSTypeahead
         label="Assignee"
         placeholder="Search people..."
         searchSource={peopleSource}
-        value={null}
-        onChange={() => {}}
+        value={value}
+        onChange={setValue}
         renderItem={(item: PersonItem) => (
           <XDSTypeaheadItem
             item={item}
