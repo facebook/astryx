@@ -22,7 +22,7 @@
 
 import {useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
 import type {XDSIconName} from '../Icon';
@@ -92,7 +92,7 @@ export interface XDSBannerContainerMap {
  */
 export type XDSBannerContainer = keyof XDSBannerContainerMap;
 
-export interface XDSBannerProps {
+export interface XDSBannerProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
   /**
@@ -152,31 +152,6 @@ export interface XDSBannerProps {
    * When provided, a collapse/expand toggle button appears in the header.
    */
   children?: ReactNode;
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
-  /**
-   * Test ID for the root element.
-   */
-  'data-testid'?: string;
 }
 
 // =============================================================================
@@ -385,8 +360,8 @@ export function XDSBanner({
   xstyle,
   className,
   style,
-  'data-testid': testId,
   ref,
+  ...rest
 }: XDSBannerProps) {
   const [isDismissed, setIsDismissed] = useState(false);
   const [isExpanded, setIsExpanded] = useState(defaultIsExpanded);
@@ -419,7 +394,6 @@ export function XDSBanner({
     <div
       ref={ref}
       role={role}
-      data-testid={testId}
       {...mergeProps(
         xdsClassName('banner', {container, status}),
         stylex.props(
@@ -430,7 +404,8 @@ export function XDSBanner({
         ),
         className,
         style,
-      )}>
+      )}
+      {...rest}>
       {/* Header: colored status background */}
       <div
         {...stylex.props(
