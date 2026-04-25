@@ -11,6 +11,7 @@
  * - /packages/core/src/Badge/XDSBadge.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Badge/index.ts (exports if types change)
  * - /apps/storybook/stories/Badge.stories.tsx (storybook stories)
+ * - /packages/cli/templates/blocks/components/Badge/ (showcase blocks)
  */
 
 import {type ReactNode} from 'react';

@@ -21,6 +21,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/MobileNav/index.ts (exports if types change)
+ * - /packages/cli/templates/blocks/components/MobileNav/ (showcase blocks)
  */
 
 import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';

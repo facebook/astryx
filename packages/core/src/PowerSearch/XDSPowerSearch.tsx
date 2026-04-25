@@ -8,7 +8,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/PowerSearch/index.ts
- * - /packages/core/src/PowerSearch/XDSPowerSearch.doc.mjs
+ * - /packages/cli/templates/blocks/components/PowerSearch/ (showcase blocks)
  */
 
 import React, {

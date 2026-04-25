@@ -9,6 +9,7 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Selector/Selector.doc.mjs
  * - /packages/core/src/Selector/index.ts
+ * - /packages/cli/templates/blocks/components/Selector/ (showcase blocks)
  */
 
 import React, {

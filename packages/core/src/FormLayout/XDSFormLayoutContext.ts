@@ -7,7 +7,6 @@
  * @position Context for form layout direction detection
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/FormLayout/README.md
  */
 
 

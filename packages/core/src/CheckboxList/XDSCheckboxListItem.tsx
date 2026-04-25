@@ -11,6 +11,7 @@
  * - /packages/core/src/CheckboxList/XDSCheckboxList.test.tsx
  * - /packages/core/src/CheckboxList/index.ts
  * - /apps/storybook/stories/CheckboxList.stories.tsx
+ * - /packages/cli/templates/blocks/components/CheckboxList/ (showcase blocks)
  */
 
 import {useContext, useState, type ReactNode} from 'react';

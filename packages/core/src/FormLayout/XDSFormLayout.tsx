@@ -7,10 +7,10 @@
  * @position Core implementation; consumed by index.ts, tested by XDSFormLayout.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/FormLayout/README.md (props table, features, implementation notes)
  * - /packages/core/src/FormLayout/XDSFormLayout.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/FormLayout/index.ts (exports if types change)
  * - /apps/storybook/stories/FormLayout.stories.tsx (storybook stories)
+ * - /packages/cli/templates/blocks/components/FormLayout/ (showcase blocks)
  */
 
 import {useMemo, type ReactNode} from 'react';

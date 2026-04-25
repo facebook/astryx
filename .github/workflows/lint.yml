@@ -26,5 +26,8 @@ jobs:
       - name: Clear ESLint cache
         run: rm -rf .eslintcache node_modules/.cache
 
+      - name: Check SYNC comments
+        run: node scripts/check-sync.js
+
       - name: Run ESLint
         run: yarn lint

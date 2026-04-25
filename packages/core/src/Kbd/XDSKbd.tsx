@@ -7,8 +7,8 @@
  * @position Core implementation; renders styled keyboard shortcut indicators
  *
  * SYNC: When modified, update:
- * - /packages/core/src/Kbd/README.md
  * - /packages/core/src/Kbd/index.ts
+ * - /packages/cli/templates/blocks/components/Kbd/ (showcase blocks)
  */
 
 import {useState} from 'react';

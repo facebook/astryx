@@ -18,6 +18,7 @@
  * - /packages/core/src/Collapsible/Collapsible.doc.mjs
  * - /packages/core/src/Collapsible/index.ts (exports)
  * - /apps/storybook/stories/Collapsible.stories.tsx
+ * - /packages/cli/templates/blocks/components/Collapsible/ (showcase blocks)
  */
 
 

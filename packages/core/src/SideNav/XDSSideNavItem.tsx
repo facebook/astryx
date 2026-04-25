@@ -13,6 +13,7 @@
  * - /packages/core/src/SideNav/XDSSideNav.test.tsx
  * - /packages/core/src/SideNav/index.ts
  * - /apps/storybook/stories/SideNav.stories.tsx
+ * - /packages/cli/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
 import {useCallback, useId, useRef, useState, type ReactNode} from 'react';

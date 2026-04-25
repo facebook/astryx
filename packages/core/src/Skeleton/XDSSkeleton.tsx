@@ -10,6 +10,7 @@
  * - /packages/core/src/Skeleton/Skeleton.doc.mjs
  * - /packages/core/src/Skeleton/index.ts
  * - /apps/storybook/stories/Skeleton.stories.tsx
+ * - /packages/cli/templates/blocks/components/Skeleton/ (showcase blocks)
  */
 
 import type {XDSBaseProps} from '../XDSBaseProps';

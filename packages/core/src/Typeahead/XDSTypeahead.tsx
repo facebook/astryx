@@ -11,9 +11,9 @@
  * search, keyboard navigation, and dropdown to XDSBaseTypeahead.
  *
  * SYNC: When modified, update:
- * - /packages/core/src/Typeahead/README.md
  * - /packages/core/src/Typeahead/index.ts
  * - /apps/storybook/stories/Typeahead.stories.tsx
+ * - /packages/cli/templates/blocks/components/Typeahead/ (showcase blocks)
  */
 
 import React, {

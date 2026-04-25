@@ -11,6 +11,7 @@
  * - /packages/core/src/CheckboxInput/XDSCheckboxInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/CheckboxInput/index.ts (exports if types change)
  * - /apps/storybook/stories/CheckboxInput.stories.tsx (storybook stories)
+ * - /packages/cli/templates/blocks/components/CheckboxInput/ (showcase blocks)
  */
 
 import {

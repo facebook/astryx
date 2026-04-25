@@ -7,10 +7,10 @@
  * @position Core implementation; consumed by index.ts, tested by XDSPagination.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Pagination/README.md (props table, features, implementation notes)
  * - /packages/core/src/Pagination/XDSPagination.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Pagination/index.ts (exports if types change)
  * - /apps/storybook/stories/Pagination.stories.tsx (storybook stories)
+ * - /packages/cli/templates/blocks/components/Pagination/ (showcase blocks)
  *
  * Last synced props: page, onChange, onChangeAction, totalItems, totalPages, hasMore,
  *   pageSize, pageSizeOptions, onPageSizeChange, variant, siblingCount, size, isDisabled,

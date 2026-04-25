@@ -5,8 +5,8 @@
  * @position Sub-component; scrollable results container
  *
  * SYNC: When modified, update:
- * - /packages/core/src/CommandPalette/README.md
  * - /packages/core/src/CommandPalette/index.ts
+ * - /packages/cli/templates/blocks/components/CommandPalette/ (showcase blocks)
  */
 
 'use client';

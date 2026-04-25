@@ -11,6 +11,7 @@
  * - /packages/core/src/Slider/XDSSlider.test.tsx
  * - /packages/core/src/Slider/index.ts
  * - /apps/storybook/stories/Slider.stories.tsx
+ * - /packages/cli/templates/blocks/components/Slider/ (showcase blocks)
  */
 
 import {

@@ -10,6 +10,7 @@
  * - /packages/core/src/SegmentedControl/SegmentedControl.doc.mjs
  * - /packages/core/src/SegmentedControl/index.ts
  * - /packages/core/src/SegmentedControl/XDSSegmentedControl.test.tsx
+ * - /packages/cli/templates/blocks/components/SegmentedControl/ (showcase blocks)
  */
 
 import {useCallback, type ReactNode} from 'react';

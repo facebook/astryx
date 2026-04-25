@@ -10,10 +10,10 @@
  * XDSDropdownMenu with icon-only button defaults.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/MoreMenu/README.md
  * - /packages/core/src/MoreMenu/XDSMoreMenu.test.tsx
  * - /packages/core/src/MoreMenu/index.ts
  * - /apps/storybook/stories/MoreMenu.stories.tsx
+ * - /packages/cli/templates/blocks/components/MoreMenu/ (showcase blocks)
  */
 
 import {type ReactNode} from 'react';

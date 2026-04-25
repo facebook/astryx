@@ -10,6 +10,7 @@
  * - /packages/core/src/HoverCard/XDSHoverCard.test.tsx
  * - /packages/core/src/HoverCard/index.ts
  * - /apps/storybook/stories/HoverCard.stories.tsx
+ * - /packages/cli/templates/blocks/components/HoverCard/ (showcase blocks)
  */
 
 import React, {

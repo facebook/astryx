@@ -10,6 +10,7 @@
  * - /packages/core/src/AspectRatio/AspectRatio.doc.mjs
  * - /packages/core/src/AspectRatio/XDSAspectRatio.test.tsx
  * - /apps/storybook/stories/AspectRatio.stories.tsx
+ * - /packages/cli/templates/blocks/components/AspectRatio/ (showcase blocks)
  */
 
 import {type ReactNode} from 'react';

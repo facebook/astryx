@@ -9,7 +9,6 @@
  * - /packages/core/src/NavIcon/XDSNavIcon.test.tsx
  * - /packages/core/src/NavIcon/index.ts
  * - /apps/storybook/stories/TopNav.stories.tsx
- * - /apps/storybook/stories/PageNav.stories.tsx
  */
 
 import {type ReactNode} from 'react';
