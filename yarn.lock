@@ -2599,10 +2599,19 @@
     invariant "^2.2.4"
     styleq "0.2.1"
 
-"@stylexjs/stylex@0.18.2", "@stylexjs/stylex@^0.18.2":
+"@stylexjs/stylex@0.18.2":
   version "0.18.2"
   resolved "https://registry.yarnpkg.com/@stylexjs/stylex/-/stylex-0.18.2.tgz#e95b71394ab690c5408436b038125cb5d9db56df"
   integrity sha512-wXYe9MBlxE9Lz26KbbM9vwKy746sJWe6NdhY+573KMjcEbrswjFU+121b7TeBAc8gcvC5DOUzDOlBrT3N2xsxA==
+  dependencies:
+    css-mediaquery "^0.1.2"
+    invariant "^2.2.4"
+    styleq "0.2.1"
+
+"@stylexjs/stylex@^0.18.3":
+  version "0.18.3"
+  resolved "https://registry.yarnpkg.com/@stylexjs/stylex/-/stylex-0.18.3.tgz#5e30a3de90ac1b536aded8dbcd6ab5aab460c0e5"
+  integrity sha512-15gDzAJAorOE0yzxaWLNxldW2aqdmCiLG5QcPD8nmVCVqvrWp0Asgv45zk7LtN86WJb/4Ym9eQ6qT5MJW59tWQ==
   dependencies:
     css-mediaquery "^0.1.2"
     invariant "^2.2.4"
@@ -6498,10 +6507,10 @@ vega-label@~2.1.0:
     vega-scenegraph "^5.1.0"
     vega-util "^2.1.0"
 
-vega-lite@^6.4.2:
-  version "6.4.2"
-  resolved "https://registry.yarnpkg.com/vega-lite/-/vega-lite-6.4.2.tgz#80558d3815ff924b5669043f6d3bedf732a008d5"
-  integrity sha512-Mv2PaRIpijz256LM0NdOJd9Md8cqyrXina54xW6Qp865YfY502zlXGUst+W/XznVwISGfatt0yLZuDqCUbBDuw==
+vega-lite@^6.4.3:
+  version "6.4.3"
+  resolved "https://registry.yarnpkg.com/vega-lite/-/vega-lite-6.4.3.tgz#9973d3afe1391fb08807bc2585e129e2daf7a36b"
+  integrity sha512-d/7hPjfz560UERaQuTmGgIVfXAe3g2hJWeC+igDeaGohUdEoNrHLXgR/yTOBT8vV/lIuuKnw+0/xWWblkDwkMQ==
   dependencies:
     json-stringify-pretty-compact "~4.0.0"
     tslib "~2.8.1"

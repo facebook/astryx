@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@stylexjs/stylex": "^0.18.2",
+    "@stylexjs/stylex": "^0.18.3",
     "@xds/core": "*",
     "@xds/theme-default": "*",
     "react": "^19.2.5",
