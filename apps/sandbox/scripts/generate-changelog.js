@@ -1,4 +1,3 @@
-/* eslint-env node */
 /* eslint-disable no-undef, @typescript-eslint/no-require-imports */
 /**
  * Generates apps/sandbox/src/generated/changelogRegistry.ts from CHANGELOG.md
