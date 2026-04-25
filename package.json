@@ -36,7 +36,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.11.2",
     "@changesets/cli": "^2.31.0",
-    "@eslint/js": "^9.39.2",
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.59.1",
     "@testing-library/user-event": "^14.5.0",
     "@types/node": "^25.6.0",
