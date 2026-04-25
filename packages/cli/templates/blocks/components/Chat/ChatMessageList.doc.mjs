@@ -4,6 +4,6 @@ export const doc = {
   name: 'Chat — Message List',
   description: 'Full conversation with user bubbles, assistant markdown, avatars, timestamps, delivery status, multi-bubble grouping, and system messages. Shows the core MessageList > Message > Bubble composition pattern.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: .85,
   componentsUsed: ['Chat', 'Avatar', 'Markdown', 'Timestamp'],
 };

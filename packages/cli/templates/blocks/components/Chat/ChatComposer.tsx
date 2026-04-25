@@ -1,59 +1,95 @@
 'use client';
 
-import {XDSChatComposer} from '@xds/core/Chat';
+import {useState} from 'react';
+import {
+  XDSChatComposer,
+  XDSChatComposerDrawer,
+  XDSChatComposerInput,
+} from '@xds/core/Chat';
 import {XDSButton} from '@xds/core/Button';
+import {XDSToken} from '@xds/core/Token';
+import {XDSIcon} from '@xds/core/Icon';
+import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {XDSProgressBar} from '@xds/core/ProgressBar';
+import {
+  AtSymbolIcon,
+  CodeBracketIcon,
+  ListBulletIcon,
+  PaperClipIcon,
+  SparklesIcon,
+} from '@heroicons/react/24/outline';
+
+const MODES = [
+  {label: 'Auto', icon: SparklesIcon},
+  {label: 'Code', icon: CodeBracketIcon},
+  {label: 'Plan', icon: ListBulletIcon},
+];
 
 export default function ChatComposer() {
+  const [mode, setMode] = useState(MODES[0]);
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
-          Default
-        </XDSText>
+    <XDSStack direction="vertical" gap={4} width={450}>
         <XDSChatComposer
           onSubmit={() => {}}
-          placeholder="Type a message…"
-        />
-      </XDSStack>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
-          With footer actions
-        </XDSText>
-        <XDSChatComposer
-          onSubmit={() => {}}
-          placeholder="Ask me anything…"
+          input={<XDSChatComposerInput style={{minHeight: 66}} />}
+          drawer={
+            <XDSChatComposerDrawer count={2}>
+              <XDSToken label="report.pdf" onRemove={() => {}} />
+              <XDSToken label="data.csv" onRemove={() => {}} />
+            </XDSChatComposerDrawer>
+          }
+          headerContext={
+            <XDSProgressBar label="Context window" value={42} isLabelHidden />
+          }
+          headerActions={
+            <>
+              <XDSButton
+                label="Mention"
+                variant="ghost"
+                size="sm"
+                icon={<XDSIcon icon={AtSymbolIcon} size="sm" />}
+                isIconOnly
+                onClick={() => {}}
+              />
+              <XDSButton
+                label="Attach"
+                variant="ghost"
+                size="sm"
+                icon={<XDSIcon icon={PaperClipIcon} size="sm" />}
+                isIconOnly
+                onClick={() => {}}
+              />
+            </>
+          }
           footerActions={
             <>
-              <XDSButton label="Auto" variant="ghost" size="md" />
-              <XDSButton label="Settings" variant="ghost" size="md" />
+              <XDSDropdownMenu
+                button={{
+                  label: mode.label,
+                  variant: 'ghost',
+                  size: 'md',
+                  icon: <XDSIcon icon={mode.icon} size="sm" />,
+                }}
+                menuWidth={120}
+                items={MODES.map((m) => ({
+                  label: m.label,
+                  icon: m.icon,
+                  onClick: () => setMode(m),
+                }))}
+              />
+              <XDSDropdownMenu
+                button={{label: 'Settings', variant: 'ghost', size: 'md'}}
+                menuWidth={180}
+                items={[
+                  {label: 'Personalization', onClick: () => {}},
+                  {label: 'Memory & history', onClick: () => {}},
+                  {label: 'Data controls', onClick: () => {}},
+                ]}
+              />
             </>
           }
         />
-      </XDSStack>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
-          Error status
-        </XDSText>
-        <XDSChatComposer
-          onSubmit={() => {}}
-          status={{
-            type: 'error',
-            message: 'Failed to send message. Please try again.',
-          }}
-        />
-      </XDSStack>
-      <XDSStack direction="vertical" gap={1}>
-        <XDSText type="supporting" color="secondary">
-          Disabled
-        </XDSText>
-        <XDSChatComposer
-          onSubmit={() => {}}
-          isDisabled
-          placeholder="Composer is disabled"
-        />
-      </XDSStack>
     </XDSStack>
   );
 }
