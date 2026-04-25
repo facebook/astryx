@@ -5,6 +5,7 @@
  * Usage:
  *   tsx src/universal-compare.ts --xds abc123 --baseline def456
  *   tsx src/universal-compare.ts --xds abc123 --baseline def456 --html ghi789
+ *   tsx src/universal-compare.ts --xds abc123 --baseline def456 --html ghi789 --xds-tailwind jkl012
  *   tsx src/universal-compare.ts --xds abc123 --baseline def456 --json
  *   tsx src/universal-compare.ts --xds abc123 --baseline def456 --html ghi789 --markdown
  */
@@ -16,6 +17,7 @@ import type {
   UniversalAggregate,
   UniversalComparison,
   UniversalDimension,
+  TargetName,
 } from './types.js';
 import {writeJson, getResultsDir} from './utils.js';
 import {getDimensionNames, getAverageScore} from './universal-eval.js';
@@ -50,22 +52,25 @@ function loadOrGenerate(iterationId: string): UniversalAggregate {
   return JSON.parse(fs.readFileSync(universalPath, 'utf-8'));
 }
 
-type WinnerType = 'xds' | 'baseline' | 'html' | 'tie';
+type WinnerType = TargetName | 'tie';
 
-function winner(xdsVal: number, baseVal: number, htmlVal?: number): WinnerType {
-  if (htmlVal != null) {
-    const max = Math.max(xdsVal, baseVal, htmlVal);
-    const atMax = [xdsVal === max, baseVal === max, htmlVal === max].filter(
-      Boolean,
-    ).length;
-    if (atMax > 1) return 'tie';
-    if (xdsVal === max) return 'xds';
-    if (baseVal === max) return 'baseline';
-    return 'html';
-  }
-  if (xdsVal > baseVal) return 'xds';
-  if (baseVal > xdsVal) return 'baseline';
-  return 'tie';
+function winner(
+  xdsVal: number,
+  baseVal: number,
+  htmlVal?: number,
+  xdsTailwindVal?: number,
+): WinnerType {
+  const entries: [TargetName, number][] = [
+    ['xds', xdsVal],
+    ['baseline', baseVal],
+  ];
+  if (htmlVal != null) entries.push(['html', htmlVal]);
+  if (xdsTailwindVal != null) entries.push(['xds-tailwind', xdsTailwindVal]);
+
+  const max = Math.max(...entries.map(([, v]) => v));
+  const atMax = entries.filter(([, v]) => v === max);
+  if (atMax.length > 1) return 'tie';
+  return atMax[0][0];
 }
 
 function winnerIcon(w: WinnerType): string {
@@ -76,6 +81,8 @@ function winnerIcon(w: WinnerType): string {
       return '🔵 Base';
     case 'html':
       return '🟡 HTML';
+    case 'xds-tailwind':
+      return '🟣 XDS+TW';
     case 'tie':
       return '⚪ Tie';
   }
@@ -85,6 +92,7 @@ function parseArgs(): {
   xds: string;
   baseline: string;
   html?: string;
+  xdsTailwind?: string;
   json: boolean;
   markdown: boolean;
 } {
@@ -92,6 +100,7 @@ function parseArgs(): {
   let xds = '';
   let baseline = '';
   let html: string | undefined;
+  let xdsTailwind: string | undefined;
   let json = false;
   let markdown = false;
 
@@ -102,6 +111,8 @@ function parseArgs(): {
       baseline = args[++i];
     } else if (args[i] === '--html' && args[i + 1]) {
       html = args[++i];
+    } else if (args[i] === '--xds-tailwind' && args[i + 1]) {
+      xdsTailwind = args[++i];
     } else if (args[i] === '--json') {
       json = true;
     } else if (args[i] === '--markdown' || args[i] === '--md') {
@@ -111,12 +122,12 @@ function parseArgs(): {
 
   if (!xds || !baseline) {
     console.error(
-      'Usage: tsx src/universal-compare.ts --xds <id> --baseline <id> [--html <id>] [--json] [--markdown]',
+      'Usage: tsx src/universal-compare.ts --xds <id> --baseline <id> [--html <id>] [--xds-tailwind <id>] [--json] [--markdown]',
     );
     process.exit(1);
   }
 
-  return {xds, baseline, html, json, markdown};
+  return {xds, baseline, html, xdsTailwind, json, markdown};
 }
 
 /**
@@ -128,30 +139,22 @@ function toMarkdown(opts: {
   xdsId: string;
   baselineId: string;
   htmlId?: string;
+  xdsTailwindId?: string;
   byPrompt: UniversalComparison['byPrompt'];
 }): string {
-  const {comparison, xdsId, baselineId, htmlId, byPrompt} = opts;
-  const {xds, baseline, html: htmlData, winners} = comparison;
+  const {comparison, xdsId, baselineId, htmlId, xdsTailwindId, byPrompt} =
+    opts;
+  const {xds, baseline, html: htmlData, xdsTailwind: twData, winners} =
+    comparison;
   const dimensions = getDimensionNames();
-  const isThreeWay = !!htmlData;
   const lines: string[] = [];
 
-  // Summary table
-  if (isThreeWay) {
-    lines.push(
-      '| Target | Iteration | Overall | Correctness | Accessibility | Code Quality | Efficiency | Maintainability |',
-    );
-    lines.push(
-      '|--------|-----------|---------|-------------|---------------|--------------|------------|-----------------|',
-    );
-  } else {
-    lines.push(
-      '| Target | Iteration | Overall | Correctness | Accessibility | Code Quality | Efficiency | Maintainability |',
-    );
-    lines.push(
-      '|--------|-----------|---------|-------------|---------------|--------------|------------|-----------------|',
-    );
-  }
+  lines.push(
+    '| Target | Iteration | Overall | Correctness | Accessibility | Code Quality | Efficiency | Maintainability |',
+  );
+  lines.push(
+    '|--------|-----------|---------|-------------|---------------|--------------|------------|-----------------|',
+  );
 
   const dimOrder: UniversalDimension[] = [
     'correctness',
@@ -169,10 +172,17 @@ function toMarkdown(opts: {
     `| **Baseline** | \`${baselineId}\` | ${baseline.overall} | ${baseRow} |`,
   );
 
-  if (isThreeWay && htmlData) {
+  if (htmlData) {
     const htmlRow = dimOrder.map(d => htmlData.averages[d]).join(' | ');
     lines.push(
       `| **HTML** | \`${htmlId}\` | ${htmlData.overall} | ${htmlRow} |`,
+    );
+  }
+
+  if (twData) {
+    const twRow = dimOrder.map(d => twData.averages[d]).join(' | ');
+    lines.push(
+      `| **XDS+TW** | \`${xdsTailwindId}\` | ${twData.overall} | ${twRow} |`,
     );
   }
 
@@ -184,43 +194,47 @@ function toMarkdown(opts: {
     let xWins = 0;
     let bWins = 0;
     let hWins = 0;
+    let twWins = 0;
     let ties = 0;
     for (const [, data] of promptEntries) {
       if (data.winner === 'xds') xWins++;
       else if (data.winner === 'baseline') bWins++;
       else if (data.winner === 'html') hWins++;
+      else if (data.winner === 'xds-tailwind') twWins++;
       else ties++;
     }
-    if (isThreeWay) {
-      lines.push(
-        `**Per-prompt wins:** XDS ${xWins} · Baseline ${bWins} · HTML ${hWins} · Tie ${ties} (${promptEntries.length} prompts)`,
-      );
-    } else {
-      lines.push(
-        `**Per-prompt wins:** XDS ${xWins} · Baseline ${bWins} · Tie ${ties} (${promptEntries.length} prompts)`,
-      );
-    }
+    const parts = [`XDS ${xWins}`, `Baseline ${bWins}`];
+    if (htmlData) parts.push(`HTML ${hWins}`);
+    if (twData) parts.push(`XDS+TW ${twWins}`);
+    parts.push(`Tie ${ties}`);
+    lines.push(
+      `**Per-prompt wins:** ${parts.join(' · ')} (${promptEntries.length} prompts)`,
+    );
     lines.push('');
   }
 
   // Dark mode
-  if (isThreeWay && htmlData) {
-    lines.push(
-      `**Dark mode:** XDS ${xds.darkModeRate}% · Baseline ${baseline.darkModeRate}% · HTML ${htmlData.darkModeRate}%`,
-    );
-  } else {
-    lines.push(
-      `**Dark mode:** XDS ${xds.darkModeRate}% · Baseline ${baseline.darkModeRate}%`,
-    );
-  }
+  const dmParts = [
+    `XDS ${xds.darkModeRate}%`,
+    `Baseline ${baseline.darkModeRate}%`,
+  ];
+  if (htmlData) dmParts.push(`HTML ${htmlData.darkModeRate}%`);
+  if (twData) dmParts.push(`XDS+TW ${twData.darkModeRate}%`);
+  lines.push(`**Dark mode:** ${dmParts.join(' · ')}`);
 
   // Dimension winners
   lines.push('');
   lines.push('**Dimension winners:**');
   for (const d of dimensions) {
     const w = winners[d];
-    const icon =
-      w === 'xds' ? '🟢' : w === 'baseline' ? '🔵' : w === 'html' ? '🟡' : '⚪';
+    const iconMap: Record<string, string> = {
+      xds: '🟢',
+      baseline: '🔵',
+      html: '🟡',
+      'xds-tailwind': '🟣',
+      tie: '⚪',
+    };
+    const icon = iconMap[w] ?? '⚪';
     const label = DIMENSION_LABELS[d] || d;
     lines.push(`- ${label}: ${icon} ${w === 'tie' ? 'Tie' : w.toUpperCase()}`);
   }
@@ -233,6 +247,7 @@ async function main() {
     xds: xdsId,
     baseline: baselineId,
     html: htmlId,
+    xdsTailwind: xdsTailwindId,
     json,
     markdown,
   } = parseArgs();
@@ -240,9 +255,11 @@ async function main() {
   const xds = loadOrGenerate(xdsId);
   const baseline = loadOrGenerate(baselineId);
   const htmlData = htmlId ? loadOrGenerate(htmlId) : undefined;
+  const twData = xdsTailwindId ? loadOrGenerate(xdsTailwindId) : undefined;
 
   const dimensions = getDimensionNames();
   const isThreeWay = !!htmlData;
+  const isFourWay = !!twData;
 
   // Build comparison
   const winners = {} as Record<UniversalDimension, WinnerType>;
@@ -251,6 +268,7 @@ async function main() {
       xds.averages[d],
       baseline.averages[d],
       htmlData?.averages[d],
+      twData?.averages[d],
     );
   }
 
@@ -259,6 +277,7 @@ async function main() {
     ...Object.keys(xds.byPrompt),
     ...Object.keys(baseline.byPrompt),
     ...(htmlData ? Object.keys(htmlData.byPrompt) : []),
+    ...(twData ? Object.keys(twData.byPrompt) : []),
   ]);
 
   const byPrompt: UniversalComparison['byPrompt'] = {};
@@ -266,15 +285,18 @@ async function main() {
     const xdsScore = xds.byPrompt[promptId];
     const baselineScore = baseline.byPrompt[promptId];
     const htmlScore = htmlData?.byPrompt[promptId];
+    const twScore = twData?.byPrompt[promptId];
     if (xdsScore && baselineScore) {
       byPrompt[promptId] = {
         xds: xdsScore,
         baseline: baselineScore,
         ...(htmlScore ? {html: htmlScore} : {}),
+        ...(twScore ? {xdsTailwind: twScore} : {}),
         winner: winner(
           getAverageScore(xdsScore),
           getAverageScore(baselineScore),
           htmlScore ? getAverageScore(htmlScore) : undefined,
+          twScore ? getAverageScore(twScore) : undefined,
         ),
       };
     }
@@ -284,14 +306,16 @@ async function main() {
     xds,
     baseline,
     ...(htmlData ? {html: htmlData} : {}),
+    ...(twData ? {xdsTailwind: twData} : {}),
     winners,
     byPrompt,
   };
 
-  // Save
-  const outputFilename = htmlId
-    ? `comparison-${xdsId}-${baselineId}-${htmlId}.json`
-    : `comparison-${xdsId}-${baselineId}.json`;
+  // Save — include all IDs in filename for uniqueness
+  const idParts = [xdsId, baselineId];
+  if (htmlId) idParts.push(htmlId);
+  if (xdsTailwindId) idParts.push(xdsTailwindId);
+  const outputFilename = `comparison-${idParts.join('-')}.json`;
   const outputPath = path.join(getResultsDir(), outputFilename);
   writeJson(outputPath, comparison);
 
@@ -307,6 +331,7 @@ async function main() {
         xdsId,
         baselineId,
         htmlId,
+        xdsTailwindId,
         byPrompt,
       }),
     );
@@ -314,216 +339,153 @@ async function main() {
   }
 
   // --- Print report ---
+  const targetNames = ['XDS', 'Baseline'];
+  if (isThreeWay) targetNames.push('HTML');
+  if (isFourWay) targetNames.push('XDS+TW');
 
-  const title = isThreeWay
-    ? '📊 Universal Comparison: XDS vs Baseline vs HTML'
-    : '📊 Universal Comparison: XDS vs Baseline';
+  const title = `📊 Universal Comparison: ${targetNames.join(' vs ')}`;
   console.log(`\n${title}`);
-  console.log('═'.repeat(isThreeWay ? 66 : 52));
+  console.log('═'.repeat(title.length + 2));
 
-  if (isThreeWay) {
-    // Three-way table
-    console.log('┌─────────────────────┬───────┬──────────┬──────┬──────────┐');
-    console.log('│ Dimension           │  XDS  │ Baseline │ HTML │  Winner  │');
-    console.log('├─────────────────────┼───────┼──────────┼──────┼──────────┤');
-    for (const d of dimensions) {
-      const label = (DIMENSION_LABELS[d] || d).padEnd(19);
-      const xScore = String(xds.averages[d]).padStart(3);
-      const bScore = String(baseline.averages[d]).padStart(3);
-      const hScore = String(htmlData!.averages[d]).padStart(3);
-      const w = winnerIcon(winners[d]).padEnd(8);
-      console.log(
-        `│ ${label} │  ${xScore}  │   ${bScore}    │ ${hScore}  │ ${w} │`,
-      );
-    }
-    console.log('├─────────────────────┼───────┼──────────┼──────┼──────────┤');
-    const xOverall = String(xds.overall).padStart(3);
-    const bOverall = String(baseline.overall).padStart(3);
-    const hOverall = String(htmlData!.overall).padStart(3);
-    const overallW = winnerIcon(
-      winner(xds.overall, baseline.overall, htmlData!.overall),
-    ).padEnd(8);
-    console.log(
-      `│ ${'Overall'.padEnd(19)} │  ${xOverall}  │   ${bOverall}    │ ${hOverall}  │ ${overallW} │`,
-    );
-    console.log('└─────────────────────┴───────┴──────────┴──────┴──────────┘');
-  } else {
-    // Two-way table (unchanged)
-    console.log('┌─────────────────────┬───────┬──────────┬──────────┐');
-    console.log('│ Dimension           │  XDS  │ Baseline │  Winner  │');
-    console.log('├─────────────────────┼───────┼──────────┼──────────┤');
-    for (const d of dimensions) {
-      const label = (DIMENSION_LABELS[d] || d).padEnd(19);
-      const xScore = String(xds.averages[d]).padStart(3);
-      const bScore = String(baseline.averages[d]).padStart(3);
-      const w = winnerIcon(winners[d]).padEnd(8);
-      console.log(`│ ${label} │  ${xScore}  │   ${bScore}    │ ${w} │`);
-    }
-    console.log('├─────────────────────┼───────┼──────────┼──────────┤');
-    const xOverall = String(xds.overall).padStart(3);
-    const bOverall = String(baseline.overall).padStart(3);
-    const overallW = winnerIcon(winner(xds.overall, baseline.overall)).padEnd(
-      8,
-    );
-    console.log(
-      `│ ${'Overall'.padEnd(19)} │  ${xOverall}  │   ${bOverall}    │ ${overallW} │`,
-    );
-    console.log('└─────────────────────┴───────┴──────────┴──────────┘');
+  // Build a generic table for any number of targets
+  type TargetEntry = {label: string; data: typeof xds};
+  const targets: TargetEntry[] = [
+    {label: 'XDS', data: xds},
+    {label: 'Baseline', data: baseline},
+  ];
+  if (isThreeWay) targets.push({label: 'HTML', data: htmlData!});
+  if (isFourWay) targets.push({label: 'XDS+TW', data: twData!});
+
+  // Use markdown-style table for CLI (simpler than box-drawing for N targets)
+  const header = ['Dimension', ...targets.map(t => t.label), 'Winner'];
+  const rows: string[][] = [];
+  for (const d of dimensions) {
+    const row = [
+      DIMENSION_LABELS[d] || d,
+      ...targets.map(t => String(t.data.averages[d])),
+      winnerIcon(winners[d]),
+    ];
+    rows.push(row);
   }
+  // Overall row
+  const overallWinner = winner(
+    xds.overall,
+    baseline.overall,
+    htmlData?.overall,
+    twData?.overall,
+  );
+  rows.push([
+    'Overall',
+    ...targets.map(t => String(t.data.overall)),
+    winnerIcon(overallWinner),
+  ]);
+
+  // Compute column widths and print
+  const allRows = [header, ...rows];
+  const colWidths = header.map((_, ci) =>
+    Math.max(...allRows.map(r => r[ci].length)),
+  );
+  const sep = colWidths.map(w => '─'.repeat(w + 2)).join('┼');
+  console.log('┌' + sep.replaceAll('┼', '┬') + '┐');
+  console.log(
+    '│' +
+      header.map((h, i) => ` ${h.padEnd(colWidths[i])} `).join('│') +
+      '│',
+  );
+  console.log('├' + sep + '┤');
+  for (let ri = 0; ri < rows.length; ri++) {
+    if (ri === rows.length - 1) {
+      console.log('├' + sep + '┤');
+    }
+    console.log(
+      '│' +
+        rows[ri].map((c, i) => ` ${c.padEnd(colWidths[i])} `).join('│') +
+        '│',
+    );
+  }
+  console.log('└' + sep.replaceAll('┼', '┴') + '┘');
 
   // Dark mode
-  const darkModeStr = isThreeWay
-    ? `\n🌙 Dark Mode: XDS ${xds.darkModeRate}% | Baseline ${baseline.darkModeRate}% | HTML ${htmlData!.darkModeRate}%`
-    : `\n🌙 Dark Mode: XDS ${xds.darkModeRate}% | Baseline ${baseline.darkModeRate}%`;
-  console.log(darkModeStr);
+  const dmParts = targets.map(t => `${t.label} ${t.data.darkModeRate}%`);
+  console.log(`\n🌙 Dark Mode: ${dmParts.join(' | ')}`);
 
   // Efficiency metrics comparison
-  const xdsEff = Object.values(xds.byPrompt).map(s => s.efficiency.metrics!);
-  const baseEff = Object.values(baseline.byPrompt).map(
-    s => s.efficiency.metrics!,
-  );
-  const htmlEff = htmlData
-    ? Object.values(htmlData.byPrompt).map(s => s.efficiency.metrics!)
-    : [];
-  if (xdsEff.length > 0 && baseEff.length > 0) {
-    const xDpe =
-      xdsEff.reduce((s, m) => s + m.decisionsPerElement, 0) / xdsEff.length;
-    const bDpe =
-      baseEff.reduce((s, m) => s + m.decisionsPerElement, 0) / baseEff.length;
-    const xLines = xdsEff.reduce((s, m) => s + m.codeLines, 0) / xdsEff.length;
-    const bLines =
-      baseEff.reduce((s, m) => s + m.codeLines, 0) / baseEff.length;
+  const targetEffMetrics = targets.map(t => ({
+    label: t.label,
+    metrics: Object.values(t.data.byPrompt).map(s => s.efficiency.metrics!),
+  }));
+  if (targetEffMetrics.every(t => t.metrics.length > 0)) {
+    const avgDpe = targetEffMetrics.map(
+      t => t.metrics.reduce((s, m) => s + m.decisionsPerElement, 0) / t.metrics.length,
+    );
+    const avgLines = targetEffMetrics.map(
+      t => t.metrics.reduce((s, m) => s + m.codeLines, 0) / t.metrics.length,
+    );
     console.log(`\n⚡ Efficiency Metrics:`);
-
-    if (isThreeWay && htmlEff.length > 0) {
-      const hDpe =
-        htmlEff.reduce((s, m) => s + m.decisionsPerElement, 0) / htmlEff.length;
-      const hLines =
-        htmlEff.reduce((s, m) => s + m.codeLines, 0) / htmlEff.length;
-      console.log(
-        `   Decisions/element: XDS ${xDpe.toFixed(1)} | Baseline ${bDpe.toFixed(1)} | HTML ${hDpe.toFixed(1)} | ${winnerIcon(winner(bDpe, xDpe, hDpe))}`,
-      );
-      console.log(
-        `   Avg code lines:   XDS ${Math.round(xLines)} | Baseline ${Math.round(bLines)} | HTML ${Math.round(hLines)} | ${winnerIcon(winner(bLines, xLines, hLines))}`,
-      );
-    } else {
-      console.log(
-        `   Decisions/element: XDS ${xDpe.toFixed(1)} | Baseline ${bDpe.toFixed(1)} | ${winnerIcon(winner(bDpe, xDpe))}`,
-      );
-      console.log(
-        `   Avg code lines:   XDS ${Math.round(xLines)} | Baseline ${Math.round(bLines)} | ${winnerIcon(winner(bLines, xLines))}`,
-      );
-    }
+    // For decisions/element, lower is better (reverse args for winner)
+    const dpeParts = targetEffMetrics.map((t, i) => `${t.label} ${avgDpe[i].toFixed(1)}`);
+    console.log(`   Decisions/element: ${dpeParts.join(' | ')}`);
+    const linesParts = targetEffMetrics.map((t, i) => `${t.label} ${Math.round(avgLines[i])}`);
+    console.log(`   Avg code lines:   ${linesParts.join(' | ')}`);
   }
 
   // Maintainability metrics comparison
-  const xdsMaint = Object.values(xds.byPrompt).map(
-    s => s.maintainability.metrics!,
-  );
-  const baseMaint = Object.values(baseline.byPrompt).map(
-    s => s.maintainability.metrics!,
-  );
-  const htmlMaint = htmlData
-    ? Object.values(htmlData.byPrompt).map(s => s.maintainability.metrics!)
-    : [];
-  if (xdsMaint.length > 0 && baseMaint.length > 0) {
-    const xSem =
-      xdsMaint.reduce((s, m) => s + m.semanticRatio, 0) / xdsMaint.length;
-    const bSem =
-      baseMaint.reduce((s, m) => s + m.semanticRatio, 0) / baseMaint.length;
-    const xMagic = xdsMaint.reduce((s, m) => s + m.magicValueCount, 0);
-    const bMagic = baseMaint.reduce((s, m) => s + m.magicValueCount, 0);
+  const targetMaintMetrics = targets.map(t => ({
+    label: t.label,
+    metrics: Object.values(t.data.byPrompt).map(s => s.maintainability.metrics!),
+  }));
+  if (targetMaintMetrics.every(t => t.metrics.length > 0)) {
+    const avgSem = targetMaintMetrics.map(
+      t => t.metrics.reduce((s, m) => s + m.semanticRatio, 0) / t.metrics.length,
+    );
+    const totalMagic = targetMaintMetrics.map(
+      t => t.metrics.reduce((s, m) => s + m.magicValueCount, 0),
+    );
     console.log(`\n🔧 Maintainability Metrics:`);
-
-    if (isThreeWay && htmlMaint.length > 0) {
-      const hSem =
-        htmlMaint.reduce((s, m) => s + m.semanticRatio, 0) / htmlMaint.length;
-      const hMagic = htmlMaint.reduce((s, m) => s + m.magicValueCount, 0);
-      console.log(
-        `   Semantic ratio:   XDS ${(xSem * 100).toFixed(0)}% | Baseline ${(bSem * 100).toFixed(0)}% | HTML ${(hSem * 100).toFixed(0)}% | ${winnerIcon(winner(xSem, bSem, hSem))}`,
-      );
-      console.log(
-        `   Magic values:     XDS ${xMagic} | Baseline ${bMagic} | HTML ${hMagic} | ${winnerIcon(winner(bMagic, xMagic, hMagic))}`,
-      );
-    } else {
-      console.log(
-        `   Semantic ratio:   XDS ${(xSem * 100).toFixed(0)}% | Baseline ${(bSem * 100).toFixed(0)}% | ${winnerIcon(winner(xSem, bSem))}`,
-      );
-      console.log(
-        `   Magic values:     XDS ${xMagic} | Baseline ${bMagic} | ${winnerIcon(winner(bMagic, xMagic))}`,
-      );
-    }
+    const semParts = targetMaintMetrics.map((t, i) => `${t.label} ${(avgSem[i] * 100).toFixed(0)}%`);
+    console.log(`   Semantic ratio:   ${semParts.join(' | ')}`);
+    const magicParts = targetMaintMetrics.map((t, i) => `${t.label} ${totalMagic[i]}`);
+    console.log(`   Magic values:     ${magicParts.join(' | ')}`);
   }
 
   // Cost comparison
   if (xds.cost && baseline.cost) {
     console.log(`\n💰 Cost:`);
-    const xAvgMs = xds.cost.avgDurationMs;
-    const bAvgMs = baseline.cost.avgDurationMs;
-    if (isThreeWay && htmlData?.cost) {
-      const hAvgMs = htmlData.cost.avgDurationMs;
-      if (xAvgMs > 0 && bAvgMs > 0) {
-        console.log(
-          `   Avg duration:     XDS ${(xAvgMs / 1000).toFixed(1)}s | Baseline ${(bAvgMs / 1000).toFixed(1)}s | HTML ${(hAvgMs / 1000).toFixed(1)}s | ${winnerIcon(winner(bAvgMs, xAvgMs, hAvgMs))}`,
-        );
-      }
-      console.log(
-        `   Avg output lines: XDS ${xds.cost.avgOutputLines} | Baseline ${baseline.cost.avgOutputLines} | HTML ${htmlData.cost.avgOutputLines} | ${winnerIcon(winner(baseline.cost.avgOutputLines, xds.cost.avgOutputLines, htmlData.cost.avgOutputLines))}`,
-      );
-      console.log(
-        `   Avg docs read:    XDS ${xds.cost.avgDocsRead} | Baseline ${baseline.cost.avgDocsRead} | HTML ${htmlData.cost.avgDocsRead}`,
-      );
-      const xTokens =
-        xds.cost.estimatedInputTokens + xds.cost.estimatedOutputTokens;
-      const bTokens =
-        baseline.cost.estimatedInputTokens +
-        baseline.cost.estimatedOutputTokens;
-      const hTokens =
-        htmlData.cost.estimatedInputTokens +
-        htmlData.cost.estimatedOutputTokens;
-      console.log(
-        `   Est. tokens:      XDS ~${xTokens} | Baseline ~${bTokens} | HTML ~${hTokens} | ${winnerIcon(winner(bTokens, xTokens, hTokens))}`,
-      );
-    } else {
-      if (xAvgMs > 0 && bAvgMs > 0) {
-        console.log(
-          `   Avg duration:     XDS ${(xAvgMs / 1000).toFixed(1)}s | Baseline ${(bAvgMs / 1000).toFixed(1)}s | ${winnerIcon(winner(bAvgMs, xAvgMs))}`,
-        );
-      }
-      console.log(
-        `   Avg output lines: XDS ${xds.cost.avgOutputLines} | Baseline ${baseline.cost.avgOutputLines} | ${winnerIcon(winner(baseline.cost.avgOutputLines, xds.cost.avgOutputLines))}`,
-      );
-      console.log(
-        `   Avg docs read:    XDS ${xds.cost.avgDocsRead} | Baseline ${baseline.cost.avgDocsRead}`,
-      );
-      console.log(
-        `   Est. tokens:      XDS ~${xds.cost.estimatedInputTokens + xds.cost.estimatedOutputTokens} | Baseline ~${baseline.cost.estimatedInputTokens + baseline.cost.estimatedOutputTokens} | ${winnerIcon(winner(baseline.cost.estimatedInputTokens + baseline.cost.estimatedOutputTokens, xds.cost.estimatedInputTokens + xds.cost.estimatedOutputTokens))}`,
-      );
+    const costTargets = targets.filter(t => t.data.cost);
+    const hasDuration = costTargets.some(t => t.data.cost!.avgDurationMs > 0);
+    if (hasDuration) {
+      const durParts = costTargets.map(t => `${t.label} ${(t.data.cost!.avgDurationMs / 1000).toFixed(1)}s`);
+      console.log(`   Avg duration:     ${durParts.join(' | ')}`);
     }
+    const linesParts = costTargets.map(t => `${t.label} ${t.data.cost!.avgOutputLines}`);
+    console.log(`   Avg output lines: ${linesParts.join(' | ')}`);
+    const docsParts = costTargets.map(t => `${t.label} ${t.data.cost!.avgDocsRead}`);
+    console.log(`   Avg docs read:    ${docsParts.join(' | ')}`);
+    const tokenParts = costTargets.map(t => {
+      const total = t.data.cost!.estimatedInputTokens + t.data.cost!.estimatedOutputTokens;
+      return `${t.label} ~${total}`;
+    });
+    console.log(`   Est. tokens:      ${tokenParts.join(' | ')}`);
   }
 
   // Per-prompt wins
   const promptEntries = Object.entries(byPrompt);
   if (promptEntries.length > 0) {
-    let xWins = 0;
-    let bWins = 0;
-    let hWins = 0;
-    let ties = 0;
+    const winCounts: Record<string, number> = {};
+    for (const t of targets) winCounts[t.label] = 0;
+    winCounts['Tie'] = 0;
     for (const [, data] of promptEntries) {
-      if (data.winner === 'xds') xWins++;
-      else if (data.winner === 'baseline') bWins++;
-      else if (data.winner === 'html') hWins++;
-      else ties++;
+      if (data.winner === 'xds') winCounts['XDS']++;
+      else if (data.winner === 'baseline') winCounts['Baseline']++;
+      else if (data.winner === 'html') winCounts['HTML']++;
+      else if (data.winner === 'xds-tailwind') winCounts['XDS+TW']++;
+      else winCounts['Tie']++;
     }
-    if (isThreeWay) {
-      console.log(
-        `\n📝 Per-Prompt: XDS wins ${xWins} | Baseline wins ${bWins} | HTML wins ${hWins} | Ties ${ties} (${promptEntries.length} prompts)`,
-      );
-    } else {
-      console.log(
-        `\n📝 Per-Prompt: XDS wins ${xWins} | Baseline wins ${bWins} | Ties ${ties} (${promptEntries.length} prompts)`,
-      );
-    }
+    const parts = targets.map(t => `${t.label} wins ${winCounts[t.label]}`);
+    parts.push(`Ties ${winCounts['Tie']}`);
+    console.log(
+      `\n📝 Per-Prompt: ${parts.join(' | ')} (${promptEntries.length} prompts)`,
+    );
   }
 
   console.log(`\nSaved: ${outputPath}\n`);

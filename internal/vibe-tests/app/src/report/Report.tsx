@@ -159,7 +159,7 @@ export function Report() {
   const [activeTab, setActiveTab] = useState('overview');
   const [codeModal, setCodeModal] = useState<{
     promptId: string;
-    target: 'xds' | 'baseline' | 'html';
+    target: 'xds' | 'baseline' | 'html' | 'xds-tailwind';
   } | null>(null);
 
   const data: ReportData | undefined = window.__REPORT_DATA__;
@@ -246,6 +246,14 @@ export function Report() {
                       compareLabel="HTML"
                     />
                   )}
+                  {comparison?.xdsTailwind && (
+                    <ScoreCard
+                      label="Overall Score vs XDS+TW"
+                      score={universal.overall}
+                      compareScore={comparison.xdsTailwind.overall}
+                      compareLabel="XDS+TW"
+                    />
+                  )}
 
                   {/* Dimension scores grid */}
                   <XDSVStack gap={3}>
@@ -274,9 +282,15 @@ export function Report() {
                   {comparison && (
                     <XDSVStack gap={3}>
                       <XDSHeading level={3}>
-                        {comparison.html
-                          ? 'XDS vs Baseline vs HTML Comparison'
-                          : 'XDS vs Baseline Comparison'}
+                        {[
+                          'XDS',
+                          'Baseline',
+                          comparison.html ? 'HTML' : null,
+                          comparison.xdsTailwind ? 'XDS+TW' : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' vs ')}{' '}
+                        Comparison
                       </XDSHeading>
                       <CompareView comparison={comparison} />
                     </XDSVStack>
@@ -299,9 +313,15 @@ export function Report() {
                         xdsScore={universal.byPrompt[promptId]}
                         baselineScore={comparison?.baseline.byPrompt[promptId]}
                         htmlScore={comparison?.html?.byPrompt[promptId]}
+                        xdsTailwindScore={
+                          comparison?.xdsTailwind?.byPrompt[promptId]
+                        }
                         hasXdsCode={!!data.sourceCode?.[promptId]}
                         hasBaselineCode={!!data.baselineSourceCode?.[promptId]}
                         hasHtmlCode={!!data.htmlSourceCode?.[promptId]}
+                        hasXdsTailwindCode={
+                          !!data.xdsTailwindSourceCode?.[promptId]
+                        }
                         onViewCode={target => setCodeModal({promptId, target})}
                         previewUrls={data.previews?.[promptId]}
                       />
@@ -318,7 +338,9 @@ export function Report() {
                       ? data.sourceCode?.[codeModal.promptId]
                       : codeModal.target === 'baseline'
                         ? data.baselineSourceCode?.[codeModal.promptId]
-                        : data.htmlSourceCode?.[codeModal.promptId];
+                        : codeModal.target === 'xds-tailwind'
+                          ? data.xdsTailwindSourceCode?.[codeModal.promptId]
+                          : data.htmlSourceCode?.[codeModal.promptId];
                   return code ? (
                     <CodeModal
                       isOpen

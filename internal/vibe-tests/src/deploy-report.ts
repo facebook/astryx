@@ -23,6 +23,7 @@ function parseArgs(): {
   iteration: string;
   baseline?: string;
   html?: string;
+  xdsTailwind?: string;
   dryRun: boolean;
   skipPreviews: boolean;
 } {
@@ -30,6 +31,7 @@ function parseArgs(): {
   let iteration = '';
   let baseline: string | undefined;
   let html: string | undefined;
+  let xdsTailwind: string | undefined;
   let dryRun = false;
   let skipPreviews = false;
 
@@ -40,6 +42,8 @@ function parseArgs(): {
       baseline = args[++i];
     } else if (args[i] === '--html' && args[i + 1]) {
       html = args[++i];
+    } else if (args[i] === '--xds-tailwind' && args[i + 1]) {
+      xdsTailwind = args[++i];
     } else if (args[i] === '--dry-run') {
       dryRun = true;
     } else if (args[i] === '--skip-previews') {
@@ -49,12 +53,12 @@ function parseArgs(): {
 
   if (!iteration) {
     console.error(
-      'Usage: tsx src/deploy-report.ts --iteration <id> [--baseline <id>] [--html <id>] [--dry-run] [--skip-previews]',
+      'Usage: tsx src/deploy-report.ts --iteration <id> [--baseline <id>] [--html <id>] [--xds-tailwind <id>] [--dry-run] [--skip-previews]',
     );
     process.exit(1);
   }
 
-  return {iteration, baseline, html, dryRun, skipPreviews};
+  return {iteration, baseline, html, xdsTailwind, dryRun, skipPreviews};
 }
 
 function run(cmd: string, opts?: {cwd?: string; silent?: boolean}): string {
@@ -68,7 +72,8 @@ function runSilent(cmd: string, opts?: {cwd?: string}): string {
 }
 
 async function main() {
-  const {iteration, baseline, html, dryRun, skipPreviews} = parseArgs();
+  const {iteration, baseline, html, xdsTailwind, dryRun, skipPreviews} =
+    parseArgs();
 
   const deployPath = `reports/${iteration}`;
 
@@ -82,7 +87,9 @@ async function main() {
   // Step 1: Build previews if result files exist (.tsx or .json)
   if (!skipPreviews) {
     const iterationsWithCode: string[] = [];
-    for (const id of [iteration, baseline, html].filter(Boolean) as string[]) {
+    for (const id of [iteration, baseline, html, xdsTailwind].filter(
+      Boolean,
+    ) as string[]) {
       const codeDir = path.join(VIBE_DIR, 'results', id, 'results');
       if (
         fs.existsSync(codeDir) &&
@@ -116,6 +123,7 @@ async function main() {
   const buildArgs = [`--iteration ${iteration}`];
   if (baseline) buildArgs.push(`--baseline ${baseline}`);
   if (html) buildArgs.push(`--html ${html}`);
+  if (xdsTailwind) buildArgs.push(`--xds-tailwind ${xdsTailwind}`);
 
   run(`npx tsx src/build-report.ts ${buildArgs.join(' ')}`, {cwd: VIBE_DIR});
 
@@ -182,7 +190,9 @@ async function main() {
     }
 
     // Second: copy any local screenshots (may add to or overwrite gh-pages ones)
-    for (const id of [iteration, baseline, html].filter(Boolean) as string[]) {
+    for (const id of [iteration, baseline, html, xdsTailwind].filter(
+      Boolean,
+    ) as string[]) {
       const screenshotsDir = path.join(VIBE_DIR, 'results', id, 'screenshots');
       if (fs.existsSync(screenshotsDir)) {
         copyDirRecursive(screenshotsDir, targetScreenshotsDir);

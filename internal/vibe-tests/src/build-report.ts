@@ -72,6 +72,7 @@ function parseArgs(): {
   iteration: string;
   baseline?: string;
   html?: string;
+  xdsTailwind?: string;
   withScreenshots: boolean;
   dev: boolean;
 } {
@@ -79,6 +80,7 @@ function parseArgs(): {
   let iteration = '';
   let baseline: string | undefined;
   let html: string | undefined;
+  let xdsTailwind: string | undefined;
   let withScreenshots = false;
   let dev = false;
 
@@ -92,6 +94,9 @@ function parseArgs(): {
     } else if (args[i] === '--html' && args[i + 1]) {
       html = args[i + 1];
       i++;
+    } else if (args[i] === '--xds-tailwind' && args[i + 1]) {
+      xdsTailwind = args[i + 1];
+      i++;
     } else if (args[i] === '--with-screenshots') {
       withScreenshots = true;
     } else if (args[i] === '--dev') {
@@ -101,12 +106,12 @@ function parseArgs(): {
 
   if (!iteration) {
     console.error(
-      'Usage: tsx src/build-report.ts --iteration <id> [--baseline <id>] [--with-screenshots] [--dev]',
+      'Usage: tsx src/build-report.ts --iteration <id> [--baseline <id>] [--html <id>] [--xds-tailwind <id>] [--with-screenshots] [--dev]',
     );
     process.exit(1);
   }
 
-  return {iteration, baseline, html, withScreenshots, dev};
+  return {iteration, baseline, html, xdsTailwind, withScreenshots, dev};
 }
 
 function ensureUniversalJson(iteration: string): UniversalAggregate {
@@ -128,20 +133,24 @@ function ensureComparison(
   xdsId: string,
   baselineId: string,
   htmlId?: string,
+  xdsTailwindId?: string,
 ): UniversalComparison {
   const resultsDir = getResultsDir();
-  const comparisonFilename = htmlId
-    ? `comparison-${xdsId}-${baselineId}-${htmlId}.json`
-    : `comparison-${xdsId}-${baselineId}.json`;
+  const idParts = [xdsId, baselineId];
+  if (htmlId) idParts.push(htmlId);
+  if (xdsTailwindId) idParts.push(xdsTailwindId);
+  const comparisonFilename = `comparison-${idParts.join('-')}.json`;
   const comparisonPath = path.join(resultsDir, comparisonFilename);
 
   if (!fs.existsSync(comparisonPath)) {
     const htmlFlag = htmlId ? ` --html ${htmlId}` : '';
-    console.log(
-      `Generating comparison for ${xdsId} vs ${baselineId}${htmlId ? ` vs ${htmlId}` : ''}...`,
-    );
+    const twFlag = xdsTailwindId ? ` --xds-tailwind ${xdsTailwindId}` : '';
+    const vsLabel = [baselineId, htmlId, xdsTailwindId]
+      .filter(Boolean)
+      .join(' vs ');
+    console.log(`Generating comparison for ${xdsId} vs ${vsLabel}...`);
     execSync(
-      `tsx ${path.join(import.meta.dirname, 'universal-compare.ts')} --xds ${xdsId} --baseline ${baselineId}${htmlFlag}`,
+      `tsx ${path.join(import.meta.dirname, 'universal-compare.ts')} --xds ${xdsId} --baseline ${baselineId}${htmlFlag}${twFlag}`,
       {cwd: path.join(import.meta.dirname, '..'), stdio: 'inherit'},
     );
   }
@@ -180,6 +189,7 @@ function buildDataScript(opts: {
   sourceCode?: Record<string, string>;
   baselineSourceCode?: Record<string, string>;
   htmlSourceCode?: Record<string, string>;
+  xdsTailwindSourceCode?: Record<string, string>;
   previews?: Record<string, Record<string, string>>;
   screenshots?: Record<string, string>;
   prompts?: Record<string, string>;
@@ -192,6 +202,7 @@ function buildDataScript(opts: {
     sourceCode: opts.sourceCode,
     baselineSourceCode: opts.baselineSourceCode,
     htmlSourceCode: opts.htmlSourceCode,
+    xdsTailwindSourceCode: opts.xdsTailwindSourceCode,
     previews: opts.previews,
     screenshots: opts.screenshots,
     prompts: opts.prompts,
@@ -241,6 +252,7 @@ async function main() {
     iteration,
     baseline,
     html,
+    xdsTailwind,
     withScreenshots: _withScreenshots,
     dev,
   } = parseArgs();
@@ -267,7 +279,10 @@ async function main() {
     if (html) {
       ensureUniversalJson(html);
     }
-    comparison = ensureComparison(iteration, baseline, html);
+    if (xdsTailwind) {
+      ensureUniversalJson(xdsTailwind);
+    }
+    comparison = ensureComparison(iteration, baseline, html, xdsTailwind);
   }
 
   // Step 3: Load source code for per-prompt inspection
@@ -320,6 +335,24 @@ async function main() {
     }
   }
 
+  let xdsTailwindSourceCode: Record<string, string> | undefined;
+  if (xdsTailwind) {
+    xdsTailwindSourceCode = {};
+    const twCodeDir = path.join(resultsDir, xdsTailwind, 'results');
+    if (fs.existsSync(twCodeDir)) {
+      ensureTsxFiles(twCodeDir);
+      for (const file of fs
+        .readdirSync(twCodeDir)
+        .filter(f => f.endsWith('.tsx'))) {
+        const promptId = path.basename(file, '.tsx');
+        xdsTailwindSourceCode[promptId] = fs.readFileSync(
+          path.join(twCodeDir, file),
+          'utf-8',
+        );
+      }
+    }
+  }
+
   // Load preview manifest if available
   const previewManifestPath = path.join(iterDir, 'previews', 'manifest.json');
   let previews: Record<string, Record<string, string>> | undefined;
@@ -334,7 +367,9 @@ async function main() {
   // Screenshots use relative paths (screenshots/filename.png) that resolve
   // when deployed to gh-pages alongside the report.
   let screenshots: Record<string, string> | undefined;
-  for (const id of [iteration, baseline, html].filter(Boolean) as string[]) {
+  for (const id of [iteration, baseline, html, xdsTailwind].filter(
+    Boolean,
+  ) as string[]) {
     const screenshotManifestPath = path.join(
       resultsDir,
       id,
@@ -388,6 +423,7 @@ async function main() {
     sourceCode,
     baselineSourceCode,
     htmlSourceCode,
+    xdsTailwindSourceCode,
     previews,
     screenshots,
     prompts,

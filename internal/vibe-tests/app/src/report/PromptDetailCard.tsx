@@ -94,10 +94,12 @@ interface PromptDetailCardProps {
   xdsScore?: UniversalScore;
   baselineScore?: UniversalScore;
   htmlScore?: UniversalScore;
+  xdsTailwindScore?: UniversalScore;
   hasXdsCode: boolean;
   hasBaselineCode: boolean;
   hasHtmlCode: boolean;
-  onViewCode: (target: 'xds' | 'baseline' | 'html') => void;
+  hasXdsTailwindCode: boolean;
+  onViewCode: (target: 'xds' | 'baseline' | 'html' | 'xds-tailwind') => void;
   /** Relative preview URLs keyed by target (e.g. { xds: "previews/sd-1/xds.html" }) */
   previewUrls?: Record<string, string>;
 }
@@ -108,23 +110,40 @@ export function PromptDetailCard({
   xdsScore,
   baselineScore,
   htmlScore,
+  xdsTailwindScore,
   hasXdsCode,
   hasBaselineCode,
   hasHtmlCode,
+  hasXdsTailwindCode,
   onViewCode,
   previewUrls,
 }: PromptDetailCardProps) {
   const hasBoth = !!(xdsScore && baselineScore);
   const hasAll = !!(xdsScore && baselineScore && htmlScore);
+  const hasFourWay = !!(xdsScore && baselineScore && xdsTailwindScore);
   const hasAnyPreview =
-    previewUrls?.xds || previewUrls?.baseline || previewUrls?.html;
-  const hasAnyCode = hasXdsCode || hasBaselineCode || hasHtmlCode;
+    previewUrls?.xds ||
+    previewUrls?.baseline ||
+    previewUrls?.html ||
+    previewUrls?.['xds-tailwind'];
+  const hasAnyCode =
+    hasXdsCode || hasBaselineCode || hasHtmlCode || hasXdsTailwindCode;
 
-  const scoresClassName = hasAll
-    ? 'report-promptDetail-scoresRow3'
-    : hasBoth
-      ? 'report-promptDetail-scoresRow'
-      : 'report-promptDetail-scoresRowSingle';
+  // Count how many score blocks we have
+  const scoreCount = [
+    xdsScore,
+    baselineScore,
+    htmlScore,
+    xdsTailwindScore,
+  ].filter(Boolean).length;
+  const scoresClassName =
+    scoreCount >= 4
+      ? 'report-promptDetail-scoresRow4'
+      : scoreCount === 3
+        ? 'report-promptDetail-scoresRow3'
+        : scoreCount === 2
+          ? 'report-promptDetail-scoresRow'
+          : 'report-promptDetail-scoresRowSingle';
 
   return (
     <XDSCard>
@@ -164,6 +183,16 @@ export function PromptDetailCard({
                     label="HTML Preview"
                   />
                 )}
+                {previewUrls?.['xds-tailwind'] && (
+                  <XDSButton
+                    variant="secondary"
+                    size="sm"
+                    onClick={() =>
+                      window.open(previewUrls['xds-tailwind'], '_blank')
+                    }
+                    label="XDS+TW Preview"
+                  />
+                )}
                 {hasXdsCode && (
                   <XDSButton
                     variant="ghost"
@@ -188,18 +217,29 @@ export function PromptDetailCard({
                     label="HTML Code"
                   />
                 )}
+                {hasXdsTailwindCode && (
+                  <XDSButton
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onViewCode('xds-tailwind')}
+                    label="XDS+TW Code"
+                  />
+                )}
               </div>
             )}
           </div>
 
           {/* Score summaries in constrained grid */}
-          {(xdsScore || baselineScore || htmlScore) && (
+          {(xdsScore || baselineScore || htmlScore || xdsTailwindScore) && (
             <div className={scoresClassName}>
               {xdsScore && <ScoreSummary label="XDS" score={xdsScore} />}
               {baselineScore && (
                 <ScoreSummary label="Baseline" score={baselineScore} />
               )}
               {htmlScore && <ScoreSummary label="HTML" score={htmlScore} />}
+              {xdsTailwindScore && (
+                <ScoreSummary label="XDS+TW" score={xdsTailwindScore} />
+              )}
             </div>
           )}
 
@@ -236,6 +276,18 @@ export function PromptDetailCard({
                   <XDSText type="label">HTML Findings</XDSText>
                 </div>
                 <Findings score={htmlScore} />
+              </div>
+            </>
+          )}
+
+          {xdsTailwindScore && (
+            <>
+              <XDSDivider />
+              <div className="report-promptDetail-section">
+                <div className="report-promptDetail-sectionLabel">
+                  <XDSText type="label">XDS+TW Findings</XDSText>
+                </div>
+                <Findings score={xdsTailwindScore} />
               </div>
             </>
           )}
