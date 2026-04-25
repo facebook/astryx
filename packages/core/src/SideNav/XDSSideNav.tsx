@@ -526,10 +526,15 @@ export function XDSSideNav({
   );
 
   // Wrap in resizable container when using legacy resize (with built-in handle).
-  // When using new ResizableProps, render the new XDSResizeHandle alongside
-  // the nav. When using legacy resize, use the old built-in drag handle.
+  // When using new ResizableProps, wrap in a flex container with the new
+  // XDSResizeHandle. The container ensures the handle sits outside the nav's
+  // overflow boundary (AppShell wraps sideNav in a LayoutPanel with overflow:clip).
+  // When using legacy resize, use the old built-in drag handle.
   const content = resizableHookProps ? (
-    <>
+    <div
+      {...mergeProps(stylex.props(styles.resizableContainer), undefined, {
+        width: collapsed ? undefined : width,
+      })}>
       {navElement}
       {!collapsed && (
         <XDSResizeHandle
@@ -539,7 +544,7 @@ export function XDSSideNav({
           label="Resize sidebar"
         />
       )}
-    </>
+    </div>
   ) : showResizeHandle ? (
     <div
       ref={containerRef}
