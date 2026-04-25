@@ -36,6 +36,7 @@ import {useXDSSideNavRenderMode} from './XDSSideNavRenderContext';
 import {XDSMobileNav} from '../MobileNav/XDSMobileNav';
 import {useResizable} from './useResizable';
 import type {ResizableProps} from '../Resizable/useXDSResizable';
+import {XDSResizeHandle} from '../Resizable/XDSResizeHandle';
 
 // =============================================================================
 // Styles
@@ -525,10 +526,20 @@ export function XDSSideNav({
   );
 
   // Wrap in resizable container when using legacy resize (with built-in handle).
-  // When using new ResizableProps, the consumer places XDSResizeHandle externally,
-  // so we just apply the width — no container wrapper or built-in handle needed.
+  // When using new ResizableProps, render the new XDSResizeHandle alongside
+  // the nav. When using legacy resize, use the old built-in drag handle.
   const content = resizableHookProps ? (
-    navElement
+    <>
+      {navElement}
+      {!collapsed && (
+        <XDSResizeHandle
+          direction="horizontal"
+          hasDivider
+          resizable={resizableHookProps}
+          label="Resize sidebar"
+        />
+      )}
+    </>
   ) : showResizeHandle ? (
     <div
       ref={containerRef}

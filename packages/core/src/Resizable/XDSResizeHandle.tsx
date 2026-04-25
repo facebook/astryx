@@ -57,7 +57,7 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
   },
   handleHover: {
-    backgroundColor: colorVars['--color-border-emphasized'],
+    backgroundColor: colorVars['--color-border'],
   },
   handleActive: {
     backgroundColor: colorVars['--color-border-emphasized'],
@@ -357,8 +357,8 @@ export function XDSResizeHandle({
           styles.handle,
           isHorizontal ? styles.horizontal : styles.vertical,
           !hasDivider && styles.noDivider,
-          isInteracting && !isDragging && hasDivider && styles.handleHover,
-          isDragging && hasDivider && styles.handleActive,
+          isInteracting && !isDragging && styles.handleHover,
+          isDragging && styles.handleActive,
           isDisabled && styles.disabled,
           xstyle,
         ),

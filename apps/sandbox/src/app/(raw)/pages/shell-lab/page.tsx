@@ -34,7 +34,7 @@ import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSBanner} from '@xds/core/Banner';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSNavMenuItem} from '@xds/core/NavMenu';
-import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
+import {useXDSResizable} from '@xds/core/Resizable';
 
 // =============================================================================
 // Configuration types
@@ -707,15 +707,6 @@ function SampleSideNav({
           <XDSSideNavItem label="Support" href="#" />
         </XDSSideNavSection>
       </XDSSideNav>
-      {config.isResizable && (
-        <XDSResizeHandle
-          direction="horizontal"
-          hasDivider
-          isAlwaysVisible
-          resizable={sidebar.props}
-          label="Resize sidebar"
-        />
-      )}
     </>
   );
 }
