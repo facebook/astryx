@@ -42,7 +42,7 @@ const SECTION_MAP = {
   'minor changes': 'features',
   fixes: 'fixes',
   'patch changes': 'fixes',
-  refactors: 'fixes',
+  refactors: 'features',
   codemods: 'codemods',
 };
 
@@ -111,6 +111,11 @@ function parseChangelog(markdown, pkg) {
     if (sectionMatch) {
       const heading = sectionMatch[1].trim().toLowerCase();
       currentSection = SECTION_MAP[heading] || heading;
+      if (!SECTION_MAP[heading] && heading !== 'upgrade') {
+        console.warn(
+          `Warning: unrecognized section "${heading}" in ${pkg} v${currentVersion.version} — items will be dropped`,
+        );
+      }
       inNote = false;
       continue;
     }
@@ -138,7 +143,7 @@ function parseChangelog(markdown, pkg) {
       const applyMatch = line.match(
         /`(npx xds upgrade --apply --to [\d.]+)`/,
       );
-      if (applyMatch) currentVersion.upgradeCommand = applyMatch[0];
+      if (applyMatch) currentVersion.upgradeCommand = applyMatch[1];
       continue;
     }
 

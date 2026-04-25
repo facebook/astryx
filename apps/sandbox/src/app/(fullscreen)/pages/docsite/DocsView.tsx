@@ -54,7 +54,6 @@ import {XDSLink} from '@xds/core/Link';
 import {
   changelogVersions,
   deprecations,
-  peerDeps,
   GITHUB_REPO,
   type ChangelogVersion,
   type ChangelogItem,
@@ -515,7 +514,14 @@ function VersionCard({
         gap={3}
         vAlign="start"
         onClick={toggle}
+        onKeyDown={(e: React.KeyboardEvent) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggle();
+          }
+        }}
         role="button"
+        tabIndex={0}
         aria-expanded={isOpen}
         style={{padding: '16px 24px', cursor: 'pointer'}}>
         <XDSStack direction="vertical" gap={0} style={{flex: 1, minWidth: 0}}>
@@ -594,44 +600,49 @@ function VersionCard({
               />
             )}
 
-            {!visibleSection && version.codemods.length > 0 && (
-              <XDSStack direction="vertical" gap={0} style={{marginBottom: 20}}>
+            {(!visibleSection || visibleSection === 'Breaking') &&
+              version.codemods.length > 0 && (
                 <XDSStack
-                  direction="horizontal"
-                  gap={2}
-                  vAlign="center"
-                  style={{marginBottom: 10}}>
-                  <XDSStatusDot variant="info" label="Codemods" />
-                  <XDSText
-                    type="supporting"
-                    color="secondary"
-                    weight="bold"
-                    style={{
-                      fontSize: 11,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.08em',
-                    }}>
-                    Codemods
-                  </XDSText>
+                  direction="vertical"
+                  gap={0}
+                  style={{marginBottom: 20}}>
+                  <XDSStack
+                    direction="horizontal"
+                    gap={2}
+                    vAlign="center"
+                    style={{marginBottom: 10}}>
+                    <XDSStatusDot variant="info" label="Codemods" />
+                    <XDSText
+                      type="supporting"
+                      color="secondary"
+                      weight="bold"
+                      style={{
+                        fontSize: 11,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                      }}>
+                      Codemods
+                    </XDSText>
+                  </XDSStack>
+                  <XDSStack
+                    direction="horizontal"
+                    gap={1}
+                    style={{flexWrap: 'wrap'}}>
+                    {version.codemods.map((item, i) => (
+                      <XDSBadge
+                        key={i}
+                        label={
+                          item.codemod ||
+                          item.text.replace(/^`([\w-]+)`.*/, '$1')
+                        }
+                        variant="neutral"
+                      />
+                    ))}
+                  </XDSStack>
                 </XDSStack>
-                <XDSStack
-                  direction="horizontal"
-                  gap={1}
-                  style={{flexWrap: 'wrap'}}>
-                  {version.codemods.map((item, i) => (
-                    <XDSBadge
-                      key={i}
-                      label={
-                        item.codemod || item.text.replace(/^`([\w-]+)`.*/, '$1')
-                      }
-                      variant="neutral"
-                    />
-                  ))}
-                </XDSStack>
-              </XDSStack>
-            )}
+              )}
 
-            {!visibleSection &&
+            {(!visibleSection || visibleSection === 'Breaking') &&
               (version.upgradeCommand || version.dryRunCommand) && (
                 <>
                   {!showUpgrade ? (
@@ -751,7 +762,7 @@ function WhatsNewPage() {
 
   return (
     <XDSSection
-      maxWidth={800}
+      maxWidth={960}
       padding={8}
       variant="transparent"
       style={{marginInline: 'auto'}}>
@@ -778,7 +789,7 @@ function WhatsNewPage() {
           position: 'sticky',
           top: 0,
           zIndex: 10,
-          backgroundColor: 'var(--color-background-surface, #fff)',
+          backgroundColor: 'var(--color-background-surface)',
           marginBottom: 24,
           paddingTop: 8,
           paddingBottom: 1,
@@ -3962,9 +3973,9 @@ function CliPage() {
           code={`xds init                        # interactive setup wizard\nxds init --features agents      # install AGENTS.md for AI assistants\nxds init --features theme       # scaffold a custom theme file\nxds init --features template    # copy a starter page template\nxds init --all                  # install all features without prompts`}
           flags={[
             {
-              flag: '--features <name>',
+              flag: '--features <list>',
               description:
-                'Install a specific feature: agents, theme, template',
+                'Comma-separated features to install: agents, theme, template',
             },
             {
               flag: '--all',
@@ -4008,6 +4019,21 @@ function CliPage() {
           ]}
         />
 
+        {/* docs */}
+        <CliCommandSection
+          title="xds docs"
+          description="Print XDS reference documentation — design principles, token specs, theming guides, and more."
+          code={`xds docs                        # list available doc topics\nxds docs principles             # design rules, anti-patterns, tokens\nxds docs tokens                 # spacing, color, radius, typography\nxds docs theme                  # theme provider, light/dark, overrides\nxds docs tokens spacing         # print a specific section`}
+          flags={[
+            {
+              flag: '[topic]',
+              description:
+                'Doc topic to display (e.g. principles, tokens, theme)',
+            },
+            {flag: '[section]', description: 'Specific section within a topic'},
+          ]}
+        />
+
         {/* template */}
         <CliCommandSection
           title="xds template"
@@ -4032,33 +4058,22 @@ function CliPage() {
 
         {/* theme */}
         <CliCommandSection
-          title="xds theme"
-          description="Create and build custom themes. Interactive wizard for scaffolding, or compile a defineTheme() file to production CSS/JS."
-          code={`xds theme                       # interactive theme wizard\nxds theme default               # generate from a preset (default, neutral)\nxds theme --list                # list existing themes\nxds theme build ./my-theme.ts   # compile defineTheme() to CSS/JS/TS\nxds theme build ./my-theme.ts -o dist/theme.css`}
+          title="xds theme build"
+          description="Compile a defineTheme() file to production CSS, JS, and TypeScript declarations. Use xds init --features theme to scaffold a theme file first."
+          code={`xds theme build ./my-theme.ts   # compile defineTheme() to CSS/JS/TS\nxds theme build ./my-theme.ts -o dist/theme.css\nxds theme build ./my-theme.ts --no-prose`}
           flags={[
             {
-              flag: '[preset]',
-              description: 'Generate from a preset: default, neutral',
-            },
-            {
-              flag: '--list',
-              description: 'List existing themes in the project',
-            },
-            {
-              flag: '--output <path>',
-              description: 'Output location for scaffolded theme',
-            },
-            {
-              flag: 'build <file>',
-              description: 'Compile a defineTheme() file to CSS + JS + .d.ts',
+              flag: '<file>',
+              description: 'Path to the defineTheme() source file',
             },
             {
               flag: '-o, --out <path>',
-              description: 'Output CSS file path (for theme build)',
+              description: 'Output CSS file path',
             },
             {
               flag: '--no-prose',
-              description: 'Skip prose/typography mappings (for theme build)',
+              description:
+                'Skip prose/typography mappings (h1, p, code, hr, etc.)',
             },
           ]}
         />
@@ -4131,6 +4146,11 @@ function CliPage() {
               description: 'Skip package manager install after bumping',
             },
             {
+              flag: '--force-install',
+              description:
+                'Pass --force to package manager install (busts stale lockfile resolutions)',
+            },
+            {
               flag: '--install-deps',
               description:
                 'Auto-install jscodeshift without prompting (CI/LLM)',
@@ -4144,12 +4164,12 @@ function CliPage() {
           description="Find external XDS packages, components, and integrations."
           code={`xds discover                    # list all packages\nxds discover --components       # list components only\nxds discover @scope/name        # look up a specific package\nxds discover searchterm         # search packages`}
           flags={[
-            {flag: '--components', description: 'List components only'},
-            {flag: '@scope/name', description: 'Look up a specific package'},
             {
-              flag: '@scope/name/Component',
-              description: 'Look up component docs from a package',
+              flag: '[query]',
+              description:
+                'Package name (@scope/name), component path (@scope/name/Component), or search term',
             },
+            {flag: '--components', description: 'List components only'},
           ]}
         />
 
