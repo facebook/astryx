@@ -62,76 +62,74 @@ function GlobeIcon() {
 
 export default function TopNavMegaMenu() {
   return (
-    <div style={{position: 'relative'}}>
-      <XDSTopNav
-        label="Marketing navigation"
-        heading={
-          <XDSTopNavHeading
-            heading="Acme"
-            logo={<XDSNavIcon icon={<CubeIcon />} />}
-            href="#"
-          />
-        }
-        startContent={
-          <>
-            <XDSTopNavMegaMenu
-              label="Products"
-              items={
-                <>
-                  <XDSTopNavMegaMenuItem
-                    title="Analytics"
-                    description="Track and analyze user behavior across your apps"
-                    icon={<ChartIcon />}
-                    href="#analytics"
-                  />
-                  <XDSTopNavMegaMenuItem
-                    title="Security"
-                    description="Enterprise-grade protection for your data"
-                    icon={<ShieldIcon />}
-                    href="#security"
-                  />
-                  <XDSTopNavMegaMenuItem
-                    title="Automation"
-                    description="Streamline workflows with intelligent tools"
-                    icon={<BoltIcon />}
-                    href="#automation"
-                  />
-                  <XDSTopNavMegaMenuItem
-                    title="Developer Tools"
-                    description="APIs, SDKs, and CLI for integration"
-                    icon={<CodeIcon />}
-                    href="#dev-tools"
-                  />
-                  <XDSTopNavMegaMenuItem
-                    title="Global Network"
-                    description="Low-latency edge infra in 40+ regions"
-                    icon={<GlobeIcon />}
-                    href="#network"
-                  />
-                </>
-              }
-              featured={
-                <XDSTopNavMegaMenuFeaturedCard
-                  title="What's new in v4.0"
-                  description="AI-powered analytics and real-time collaboration."
-                  image="https://images.unsplash.com/photo-1551434678-e076c223a692?w=560&h=280&fit=crop"
-                  imageAlt="Team collaboration"
-                  linkLabel="Read the announcement"
-                  linkHref="#announcement"
+    <XDSTopNav
+      label="Marketing navigation"
+      heading={
+        <XDSTopNavHeading
+          heading="Acme"
+          logo={<XDSNavIcon icon={<CubeIcon />} />}
+          href="#"
+        />
+      }
+      startContent={
+        <>
+          <XDSTopNavMegaMenu
+            label="Products"
+            items={
+              <>
+                <XDSTopNavMegaMenuItem
+                  title="Analytics"
+                  description="Track and analyze user behavior across your apps"
+                  icon={<ChartIcon />}
+                  href="#analytics"
                 />
-              }
-            />
-            <XDSTopNavItem label="Pricing" href="#" />
-            <XDSTopNavItem label="Docs" href="#" />
-          </>
-        }
-        endContent={
-          <>
-            <XDSButton label="Sign in" variant="ghost" />
-            <XDSButton label="Get started" variant="primary" />
-          </>
-        }
-      />
-    </div>
+                <XDSTopNavMegaMenuItem
+                  title="Security"
+                  description="Enterprise-grade protection for your data"
+                  icon={<ShieldIcon />}
+                  href="#security"
+                />
+                <XDSTopNavMegaMenuItem
+                  title="Automation"
+                  description="Streamline workflows with intelligent tools"
+                  icon={<BoltIcon />}
+                  href="#automation"
+                />
+                <XDSTopNavMegaMenuItem
+                  title="Developer Tools"
+                  description="APIs, SDKs, and CLI for integration"
+                  icon={<CodeIcon />}
+                  href="#dev-tools"
+                />
+                <XDSTopNavMegaMenuItem
+                  title="Global Network"
+                  description="Low-latency edge infra in 40+ regions"
+                  icon={<GlobeIcon />}
+                  href="#network"
+                />
+              </>
+            }
+            featured={
+              <XDSTopNavMegaMenuFeaturedCard
+                title="What's new in v4.0"
+                description="AI-powered analytics and real-time collaboration."
+                image="https://images.unsplash.com/photo-1551434678-e076c223a692?w=560&h=280&fit=crop"
+                imageAlt="Team collaboration"
+                linkLabel="Read the announcement"
+                linkHref="#announcement"
+              />
+            }
+          />
+          <XDSTopNavItem label="Pricing" href="#" />
+          <XDSTopNavItem label="Docs" href="#" />
+        </>
+      }
+      endContent={
+        <>
+          <XDSButton label="Sign in" variant="ghost" />
+          <XDSButton label="Get started" variant="primary" />
+        </>
+      }
+    />
   );
 }

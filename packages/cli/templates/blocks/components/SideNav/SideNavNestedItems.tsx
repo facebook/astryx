@@ -27,20 +27,18 @@ function CogIcon(props: ComponentProps<'svg'>) {
 
 export default function SideNavNestedItems() {
   return (
-    <div style={{height: 400}}>
-      <XDSSideNav header={<XDSSideNavHeading heading="My App" />}>
-        <XDSSideNavSection title="Main">
-          <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected />
-          <XDSSideNavItem label="Settings" icon={CogIcon}>
-            <XDSSideNavItem label="General" href="/settings/general" />
-            <XDSSideNavItem label="Security" href="/settings/security" />
-            <XDSSideNavItem
-              label="Notifications"
-              href="/settings/notifications"
-            />
-          </XDSSideNavItem>
-        </XDSSideNavSection>
-      </XDSSideNav>
-    </div>
+    <XDSSideNav header={<XDSSideNavHeading heading="My App" />}>
+      <XDSSideNavSection title="Main">
+        <XDSSideNavItem label="Dashboard" icon={HomeIcon} isSelected />
+        <XDSSideNavItem label="Settings" icon={CogIcon}>
+          <XDSSideNavItem label="General" href="/settings/general" />
+          <XDSSideNavItem label="Security" href="/settings/security" />
+          <XDSSideNavItem
+            label="Notifications"
+            href="/settings/notifications"
+          />
+        </XDSSideNavItem>
+      </XDSSideNavSection>
+    </XDSSideNav>
   );
 }

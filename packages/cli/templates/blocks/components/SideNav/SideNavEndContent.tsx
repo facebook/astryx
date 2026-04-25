@@ -45,49 +45,47 @@ function UserGroupIcon(props: ComponentProps<'svg'>) {
 
 export default function SideNavEndContent() {
   return (
-    <div style={{height: 400}}>
-      <XDSSideNav
-        header={<XDSSideNavHeading heading="My App" headingHref="/" />}>
-        <XDSSideNavSection title="Navigation" isHeaderHidden>
-          <XDSSideNavItem
-            label="Dashboard"
-            icon={HomeIcon}
-            isSelected
-            href="/dashboard"
-            endContent={
-              <XDSMoreMenu
-                size="sm"
-                items={[
-                  {label: 'Pin to top', onClick: () => {}},
-                  {label: 'Rename', onClick: () => {}},
-                ]}
-              />
-            }
-          />
-          <XDSSideNavItem
-            label="Projects"
-            icon={FolderIcon}
-            href="/projects"
-            endContent={<XDSBadge label={12} />}
-          />
-          <XDSSideNavItem
-            label="Analytics"
-            icon={ChartBarIcon}
-            href="/analytics"
-            endContent={<XDSBadge label="New" />}
-          />
-          <XDSSideNavItem
-            label="Team"
-            icon={UserGroupIcon}
-            href="/team"
-            endContent={
-              <XDSText type="supporting" color="secondary">
-                8 members
-              </XDSText>
-            }
-          />
-        </XDSSideNavSection>
-      </XDSSideNav>
-    </div>
+    <XDSSideNav
+      header={<XDSSideNavHeading heading="My App" headingHref="/" />}>
+      <XDSSideNavSection title="Navigation" isHeaderHidden>
+        <XDSSideNavItem
+          label="Dashboard"
+          icon={HomeIcon}
+          isSelected
+          href="/dashboard"
+          endContent={
+            <XDSMoreMenu
+              size="sm"
+              items={[
+                {label: 'Pin to top', onClick: () => {}},
+                {label: 'Rename', onClick: () => {}},
+              ]}
+            />
+          }
+        />
+        <XDSSideNavItem
+          label="Projects"
+          icon={FolderIcon}
+          href="/projects"
+          endContent={<XDSBadge label={12} />}
+        />
+        <XDSSideNavItem
+          label="Analytics"
+          icon={ChartBarIcon}
+          href="/analytics"
+          endContent={<XDSBadge label="New" />}
+        />
+        <XDSSideNavItem
+          label="Team"
+          icon={UserGroupIcon}
+          href="/team"
+          endContent={
+            <XDSText type="supporting" color="secondary">
+              8 members
+            </XDSText>
+          }
+        />
+      </XDSSideNavSection>
+    </XDSSideNav>
   );
 }
