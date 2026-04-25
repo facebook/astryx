@@ -4348,7 +4348,6 @@ npm install @xds/core @xds/theme-default`;
 
 const PROVIDER_CODE = `// app/globals.css
 @import "@xds/core/reset.css";
-@import "@xds/core/xds.css";
 @import "@xds/theme-default/theme.css";
 
 // app/providers.tsx

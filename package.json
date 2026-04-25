@@ -53,7 +53,7 @@
     "react-dom": "^19.2.5",
     "tsup": "^8.3.0",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.58.2",
+    "typescript-eslint": "^8.59.0",
     "vite-plugin-singlefile": "^2.3.3",
     "vitest": "^2.1.0"
   },

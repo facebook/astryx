@@ -15,14 +15,14 @@
     "unplugin": "^2.3.11",
     "@xds/vega": "*",
     "vega": "^6.2.0",
-    "vega-lite": "^6.4.2"
+    "vega-lite": "^6.4.3"
   },
   "devDependencies": {
     "@storybook/addon-docs": "^10.3.5",
     "@storybook/addon-links": "^10.3.5",
     "@storybook/react": "^10.3.5",
     "@storybook/react-vite": "^10.3.5",
-    "@stylexjs/unplugin": "^0.18.2",
+    "@stylexjs/unplugin": "^0.18.3",
     "@xds/build": "*",
     "storybook": "^10.3.5"
   }
