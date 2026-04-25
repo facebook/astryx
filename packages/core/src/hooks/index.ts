@@ -38,3 +38,9 @@ export type {
 } from './useXDSStreamingText';
 export {useImageMode} from './useImageMode';
 export type {ImageSampleRegion, UseImageModeOptions} from './useImageMode';
+
+export {useClickableContainer} from './useClickableContainer';
+export type {
+  UseClickableContainerOptions,
+  ClickableContainerResult,
+} from './useClickableContainer';

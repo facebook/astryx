@@ -156,6 +156,12 @@
       "import": "./dist/CheckboxList/index.mjs",
       "require": "./dist/CheckboxList/index.js"
     },
+    "./ClickableCard": {
+      "source": "./src/ClickableCard/index.ts",
+      "types": "./dist/ClickableCard/index.d.ts",
+      "import": "./dist/ClickableCard/index.mjs",
+      "require": "./dist/ClickableCard/index.js"
+    },
     "./CodeBlock": {
       "source": "./src/CodeBlock/index.ts",
       "types": "./dist/CodeBlock/index.d.ts",
@@ -365,6 +371,12 @@
       "types": "./dist/SegmentedControl/index.d.ts",
       "import": "./dist/SegmentedControl/index.mjs",
       "require": "./dist/SegmentedControl/index.js"
+    },
+    "./SelectableCard": {
+      "source": "./src/SelectableCard/index.ts",
+      "types": "./dist/SelectableCard/index.d.ts",
+      "import": "./dist/SelectableCard/index.mjs",
+      "require": "./dist/SelectableCard/index.js"
     },
     "./Selector": {
       "source": "./src/Selector/index.ts",

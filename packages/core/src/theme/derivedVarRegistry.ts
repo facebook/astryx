@@ -33,12 +33,8 @@ export interface DerivedVarEntry {
  * entries share the same property.
  */
 export const derivedVarRegistry: Record<string, DerivedVarEntry[]> = {
-  banner: [
-    {property: 'borderRadius', vars: ['--_banner-radius']},
-  ],
-  button: [
-    {property: 'borderRadius', vars: ['--_button-radius']},
-  ],
+  banner: [{property: 'borderRadius', vars: ['--_banner-radius']}],
+  button: [{property: 'borderRadius', vars: ['--_button-radius']}],
   card: [
     {property: 'borderRadius', vars: ['--_card-radius']},
     {property: 'padding', expand: 'container'},
@@ -55,18 +51,10 @@ export const derivedVarRegistry: Record<string, DerivedVarEntry[]> = {
     {property: 'borderRadius', vars: ['--_dropdown-menu-radius']},
     {property: 'padding', vars: ['--_dropdown-menu-padding']},
   ],
-  field: [
-    {property: 'borderRadius', vars: ['--_field-radius']},
-  ],
-  hovercard: [
-    {property: 'borderRadius', vars: ['--_hovercard-radius']},
-  ],
-  popover: [
-    {property: 'borderRadius', vars: ['--_popover-radius']},
-  ],
-  section: [
-    {property: 'padding', expand: 'container'},
-  ],
+  field: [{property: 'borderRadius', vars: ['--_field-radius']}],
+  hovercard: [{property: 'borderRadius', vars: ['--_hovercard-radius']}],
+  popover: [{property: 'borderRadius', vars: ['--_popover-radius']}],
+  section: [{property: 'padding', expand: 'container'}],
   'segmented-control': [
     {property: 'borderRadius', vars: ['--_segmented-control-radius']},
     {property: 'padding', vars: ['--_segmented-control-padding']},
