@@ -37,8 +37,11 @@ import {
   DownloadIcon,
   SendIcon,
   MetaLogo,
+  ChevronDownIcon,
 } from './docsite-icons';
 import {XDSBadge} from '@xds/core/Badge';
+import {XDSStatusDot} from '@xds/core/StatusDot';
+import {useXDSCollapsible} from '@xds/core/Collapsible';
 import {XDSSwitch} from '@xds/core/Switch';
 import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
@@ -48,6 +51,14 @@ import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSChatComposer} from '@xds/core/Chat';
 import {XDSLink} from '@xds/core/Link';
+import {
+  changelogVersions,
+  deprecations,
+  peerDeps,
+  GITHUB_REPO,
+  type ChangelogVersion,
+  type ChangelogItem,
+} from '@/generated/changelogRegistry';
 import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
 
 import {XDSPopover} from '@xds/core/Popover';
@@ -305,1754 +316,476 @@ const XDS_OFFERINGS: {
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
-// What's New changelog data (GitHub Changelog style)
+// What's New — driven by generated changelogRegistry.ts
 // ---------------------------------------------------------------------------
 
-type ChangelogType = 'Release' | 'Improvement' | 'Fix' | 'Breaking';
+type ChangelogFilter =
+  | 'All'
+  | 'Breaking'
+  | 'Features'
+  | 'Fixes'
+  | 'Deprecations';
 
-const CHANGELOG_ENTRIES: {
-  date: string;
-  type: ChangelogType;
-  title: string;
-  description: string;
-  tags: string[];
-  details?: React.ReactNode;
-}[] = [
-  // April 2026
-  {
-    date: 'Apr.25',
-    type: 'Improvement',
-    title: 'Stack now supports width and height props',
-    description:
-      'XDSStack, XDSVStack, and XDSHStack accept width and height props directly, eliminating the need for wrapper divs or inline styles for common sizing.',
-    tags: ['core', 'layout'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          XDSStack, XDSVStack, and XDSHStack now accept width and height props
-          directly. This eliminates wrapper divs that were previously needed
-          for common sizing patterns.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            language="tsx"
-            code={`// Before — wrapper div needed
-<div style={{ width: 300 }}>
-  <XDSStack direction="vertical" gap={2}>...</XDSStack>
-</div>
-
-// After — direct prop
-<XDSStack direction="vertical" gap={2} width={300}>...</XDSStack>`}
-          />
-        </XDSCard>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Apr.25',
-    type: 'Improvement',
-    title: 'Carousel always shows nav buttons when content is scrollable',
-    description:
-      'Navigation arrows now remain visible whenever the carousel has overflowing content, making it clearer that more items are available.',
-    tags: ['core'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          Previously, carousel navigation arrows only appeared on hover or when
-          using keyboard navigation. Now they remain visible whenever the
-          content overflows, giving users a persistent affordance that more
-          items exist. This is especially helpful on touch devices where hover
-          states are unavailable.
-        </XDSText>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Apr.24',
-    type: 'Improvement',
-    title:
-      'Icon slots standardized to ReactNode across all components',
-    description:
-      'All icon props (startIcon, endIcon, icon) now accept ReactNode instead of requiring specific icon component types. Pass any JSX element as an icon.',
-    tags: ['core'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          All icon props (startIcon, endIcon, icon) across Button, TextInput,
-          ListItem, NavMenuItem, and others now accept ReactNode. You can pass
-          any JSX — registry icons, inline SVGs, or custom components — without
-          type errors.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            language="tsx"
-            code={`// Any JSX works in icon slots now
-<XDSButton startIcon={<SearchIcon />} label="Search" />
-<XDSButton startIcon={<img src="/logo.svg" width={16} />} label="Custom" />
-<XDSTextInput startIcon={<SearchIcon />} placeholder="Search..." />`}
-          />
-        </XDSCard>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Apr.24',
-    type: 'Fix',
-    title: 'Input startIcon slots now use secondary color',
-    description:
-      'Icons in the startIcon slot of TextInput and other input components now correctly render in the secondary color token instead of inheriting the text color.',
-    tags: ['core', 'form'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          Icons in the startIcon slot of XDSTextInput, XDSNumberInput, and
-          XDSSelector were inheriting the primary text color, making them
-          visually compete with user input. They now render using the secondary
-          color token (--color-text-secondary) for a subtler, standard look.
-        </XDSText>
-        <XDSText type="body" color="secondary">
-          Affects any input component using startIcon. No code changes needed
-          — the fix is in the component internals.
-        </XDSText>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Apr.24',
-    type: 'Fix',
-    title: 'Grid column count capped via track-max instead of container max-width',
-    description:
-      'Grid no longer uses container max-width to limit columns. Instead, it uses track-max for more predictable column behavior at different container widths.',
-    tags: ['core', 'layout'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          Previously XDSGrid used container max-width to infer column limits,
-          which broke when grids were nested or placed in flexible containers.
-          The new approach uses CSS track-max sizing so column count is
-          determined by actual track constraints, not parent width.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            language="tsx"
-            code={`// columns prop now works predictably regardless of container
-<XDSGrid columns={3} gap={4}>
-  <XDSCard>Item 1</XDSCard>
-  <XDSCard>Item 2</XDSCard>
-  <XDSCard>Item 3</XDSCard>
-</XDSGrid>`}
-          />
-        </XDSCard>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Apr.24',
-    type: 'Fix',
-    title: 'Palette border colors updated from DSP color ramp',
-    description:
-      'Border color tokens across all palette hues (blue, green, red, etc.) now pull from the correct DSP color ramp values for better contrast and consistency.',
-    tags: ['core', 'tokens'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          Border tokens for all palette hues (--color-border-blue,
-          --color-border-green, --color-border-red, etc.) were referencing
-          incorrect steps in the DSP color ramp, resulting in borders that were
-          too subtle in light mode and too harsh in dark mode. They now map to
-          the correct ramp values for WCAG-compliant contrast.
-        </XDSText>
-        <XDSText type="body" color="secondary">
-          Visually, colored borders on XDSBadge, XDSCard, and status
-          indicators will appear slightly more prominent in light mode. No code
-          changes required.
-        </XDSText>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Apr.24',
-    type: 'Fix',
-    title: 'AppShell: targeting class names on sticky wrappers and condensed sidenav DOM',
-    description:
-      'Sticky header and footer wrappers in AppShell now have stable class names for CSS targeting. SideNav DOM structure is more compact.',
-    tags: ['core', 'layout'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          AppShell&apos;s sticky header and footer wrappers now expose stable
-          class names (xds-appshell-header, xds-appshell-footer) for CSS
-          targeting. The SideNav DOM was also simplified — redundant wrapper
-          divs were removed, reducing nesting depth.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            language="css"
-            code={`.xds-appshell-header {
-  backdrop-filter: blur(8px);
-}
-.xds-appshell-footer {
-  border-top: 1px solid var(--color-border-secondary);
-}`}
-          />
-        </XDSCard>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Apr.24',
-    type: 'Improvement',
-    title: 'AppShell supports defaultIsMobile for SSR',
-    description:
-      'MobileNavConfig now accepts defaultIsMobile to set the initial mobile state during server-side rendering, preventing layout flash on mobile devices.',
-    tags: ['core', 'layout'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          Server-rendered pages using XDSAppShell would briefly flash the
-          desktop layout on mobile before hydration toggled it. The new
-          defaultIsMobile prop on MobileNavConfig lets you set the initial
-          state server-side (e.g. from User-Agent), preventing the layout
-          shift.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            language="tsx"
-            code={`<XDSAppShell
-  mobileNav={{
-    defaultIsMobile: isMobileUA,
-    breakpoint: 768,
-  }}
-  sideNav={<XDSSideNav>...</XDSSideNav>}
->
-  {children}
-</XDSAppShell>`}
-          />
-        </XDSCard>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Apr.24',
-    type: 'Fix',
-    title: 'Collapsible trigger padding removed and label uses capsize',
-    description:
-      'Collapsible trigger no longer has extra padding, and the label text uses capsize trimming for precise vertical alignment.',
-    tags: ['core'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          The Collapsible trigger had extra padding that caused misalignment
-          when placed inside lists or stacks. The padding has been removed and
-          the label now uses capsize trimming, which strips the leading/ascent
-          whitespace from the font metrics for pixel-perfect vertical
-          alignment with adjacent elements.
-        </XDSText>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Apr.24',
-    type: 'Fix',
-    title: 'Breadcrumbs onClick-only items now match link color',
-    description:
-      'Breadcrumb items using onClick (without an href) now render with the same link color as href-based items for visual consistency.',
-    tags: ['core', 'navigation'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          Breadcrumb items that use onClick without an href were rendering in
-          the default text color instead of the link color. They now match
-          href-based items visually, so mixed breadcrumb trails (some with
-          client-side navigation, some with real links) look uniform.
-        </XDSText>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Apr.24',
-    type: 'Fix',
-    title: 'Slider tooltip stays visible during thumb drag',
-    description:
-      'The Slider value tooltip no longer disappears when dragging the thumb. It remains visible throughout the entire drag interaction.',
-    tags: ['core', 'form'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          The value tooltip on XDSSlider was tied to the :hover pseudo-class
-          on the thumb, so it would vanish as soon as the pointer moved
-          slightly off the thumb during a drag. The tooltip now stays visible
-          for the entire pointerdown→pointermove→pointerup cycle, giving
-          users continuous feedback on the selected value.
-        </XDSText>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Apr.24',
-    type: 'Fix',
-    title: 'Component audit fixes for AppShell, AspectRatio, and Badge',
-    description:
-      'AppShell now extends XDSBaseProps correctly. AspectRatio handles RTL layouts. Badge supports header-level usage with proper semantics.',
-    tags: ['core'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          Three components were updated as part of an internal audit:
-        </XDSText>
-        <XDSList>
-          <XDSListItem>
-            XDSAppShell now extends XDSBaseProps, gaining className, style, and
-            data-testid support
-          </XDSListItem>
-          <XDSListItem>
-            XDSAspectRatio flips its internal positioning for RTL layouts so
-            overlaid content stays correctly placed
-          </XDSListItem>
-          <XDSListItem>
-            XDSBadge can now be used in headings — it renders as a span instead
-            of a div when placed inside header-level elements
-          </XDSListItem>
-        </XDSList>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Apr.18',
-    type: 'Release',
-    title:
-      '@xds/chat package with message bubbles, thread view, and AI composer',
-    description:
-      'New package for conversational UI. Includes Chat, ChatComposer, ChatComposerInput, ChatLayout, ChatTokenizedText, ChatToolCalls, and ChatDictation components. Supports AI assistant interfaces, messaging UIs, and threaded conversations.',
-    tags: ['chat', '@xds/chat'],
-    details: (
-      <XDSStack direction="vertical" gap={8}>
-        <XDSText type="body" color="secondary">
-          New package for conversational UI. Supports AI assistant interfaces,
-          messaging UIs, and threaded conversations.
-        </XDSText>
-
-        {/* Architecture */}
-        <XDSStack direction="vertical" gap={2}>
-          <XDSHeading level={2}>Architecture</XDSHeading>
-          <XDSCard width="100%">
-            <XDSCodeBlock
-              language="text"
-              code={`XDSChatLayout                    layout shell, sticky composer dock
-├─ XDSChatMessageList            scrollable container (role="log")
-│  ├─ XDSChatSystemMessage       date separators, status notices
-│  └─ XDSChatMessage             sender context (avatar, name, alignment)
-│     ├─ XDSChatMessageBubble    styled bubble (filled / ghost)
-│     ├─ XDSChatToolCalls        tool call display with status
-│     └─ XDSChatMessageMetadata  timestamp + delivery status
-└─ XDSChatComposer               layout shell with named slots
-   ├─ XDSChatComposerAttachments attachment tokens / thumbnails
-   ├─ XDSChatComposerInput       contentEditable + trigger menus
-   ├─ XDSChatSendButton          send / stop toggle
-   └─ XDSChatDictationButton     speech-to-text toggle`}
-            />
-          </XDSCard>
-        </XDSStack>
-
-        {/* Layout Components */}
-        <XDSStack direction="vertical" gap={2}>
-          <XDSHeading level={2}>Layout Components</XDSHeading>
-          <XDSStack direction="vertical" gap={3}>
-            <XDSStack direction="vertical" gap={1}>
-              <XDSHeading level={4}>XDSChatLayout</XDSHeading>
-              <XDSText type="supporting" color="secondary">
-                Full-page chat layout — messages flow in the page, composer
-                fixed to bottom with frosted glass dock. Container-query
-                density: compact (&lt;480px), balanced (480–768px), spacious
-                (&gt;768px). Auto-scroll via useXDSChatStreamScroll.
-              </XDSText>
-            </XDSStack>
-            <XDSStack direction="vertical" gap={1}>
-              <XDSHeading level={4}>XDSChatMessageList</XDSHeading>
-              <XDSText type="supporting" color="secondary">
-                Scrollable message container with role=&quot;log&quot;, density
-                context, bottom-spacer that pushes content down, and an
-                infinite-scroll sentinel for loading older messages.
-              </XDSText>
-            </XDSStack>
-            <XDSStack direction="vertical" gap={1}>
-              <XDSHeading level={4}>XDSChatLayoutScrollButton</XDSHeading>
-              <XDSText type="supporting" color="secondary">
-                Animated scroll-to-bottom button with optional &quot;New
-                messages&quot; label.
-              </XDSText>
-            </XDSStack>
-          </XDSStack>
-        </XDSStack>
-
-        {/* Message Components */}
-        <XDSStack direction="vertical" gap={2}>
-          <XDSHeading level={2}>Message Components</XDSHeading>
-          <XDSStack direction="vertical" gap={3}>
-            <XDSStack direction="vertical" gap={1}>
-              <XDSHeading level={4}>XDSChatMessage</XDSHeading>
-              <XDSText type="supporting" color="secondary">
-                Sender context wrapper — handles avatar, name, and alignment by
-                role (user right-aligned, assistant left-aligned, system
-                centered). Provides sender + density context to children.
-              </XDSText>
-            </XDSStack>
-            <XDSStack direction="vertical" gap={1}>
-              <XDSStack direction="horizontal" gap={2} vAlign="center">
-                <XDSHeading level={4}>XDSChatMessageBubble</XDSHeading>
-                <XDSBadge label="filled" variant="neutral" />
-                <XDSBadge label="ghost" variant="neutral" />
-              </XDSStack>
-              <XDSText type="supporting" color="secondary">
-                Styled chat bubble. Reads sender from context to auto-style
-                background. Supports multi-bubble grouping with tightened
-                corners via the group prop (first / middle / last).
-              </XDSText>
-            </XDSStack>
-            <XDSStack direction="vertical" gap={1}>
-              <XDSHeading level={4}>XDSChatMessageMetadata</XDSHeading>
-              <XDSText type="supporting" color="secondary">
-                Composable metadata row: timestamp, footer, delivery status
-                (sending → sent → delivered → read → error). Direction reverses
-                for user sender.
-              </XDSText>
-            </XDSStack>
-            <XDSStack direction="vertical" gap={1}>
-              <XDSStack direction="horizontal" gap={2} vAlign="center">
-                <XDSHeading level={4}>XDSChatSystemMessage</XDSHeading>
-                <XDSBadge label="default" variant="neutral" />
-                <XDSBadge label="divider" variant="neutral" />
-              </XDSStack>
-              <XDSText type="supporting" color="secondary">
-                Centered system/notice messages for date separators,
-                &quot;conversation started&quot;, &quot;user joined&quot;, etc.
-              </XDSText>
-            </XDSStack>
-          </XDSStack>
-        </XDSStack>
-
-        {/* AI Components */}
-        <XDSStack direction="vertical" gap={2}>
-          <XDSHeading level={2}>AI Components</XDSHeading>
-          <XDSStack direction="vertical" gap={3}>
-            <XDSStack direction="vertical" gap={1}>
-              <XDSHeading level={4}>XDSChatToolCalls</XDSHeading>
-              <XDSText type="supporting" color="secondary">
-                Displays tool/function call invocations from LLM responses.
-                Accepts a calls array matching the shape LLM APIs return. Single
-                call renders inline; multiple calls get a collapsible summary.
-                Each call shows status (pending / running / complete / error),
-                target, duration, additions/deletions, and expandable result
-                detail.
-              </XDSText>
-            </XDSStack>
-            <XDSStack direction="vertical" gap={1}>
-              <XDSHeading level={4}>XDSChatTokenizedText</XDSHeading>
-              <XDSText type="supporting" color="secondary">
-                Renders text with inline token badges — @mentions, /commands, or
-                any structured tokens embedded in message text.
-              </XDSText>
-            </XDSStack>
-            <XDSStack direction="vertical" gap={1}>
-              <XDSStack direction="horizontal" gap={2} vAlign="center">
-                <XDSHeading level={4}>XDSChatReasoning</XDSHeading>
-                <XDSBadge label="@xds/lab" variant="orange" />
-              </XDSStack>
-              <XDSText type="supporting" color="secondary">
-                Compact collapsible reasoning/thinking display with shimmer
-                animation while streaming. One line with ellipsis by default,
-                expandable on click.
-              </XDSText>
-            </XDSStack>
-          </XDSStack>
-        </XDSStack>
-
-        {/* Composer Components */}
-        <XDSStack direction="vertical" gap={2}>
-          <XDSHeading level={2}>Composer Components</XDSHeading>
-          <XDSStack direction="vertical" gap={3}>
-            <XDSStack direction="vertical" gap={1}>
-              <XDSHeading level={4}>XDSChatComposer</XDSHeading>
-              <XDSText type="supporting" color="secondary">
-                Layout shell with named slots (headerActions, headerContext,
-                footerActions, sendActions, attachments), concentric radius, and
-                hover/focus shadows. Manages controlled/uncontrolled input,
-                submit, and streaming stop.
-              </XDSText>
-            </XDSStack>
-            <XDSStack direction="vertical" gap={1}>
-              <XDSHeading level={4}>XDSChatComposerInput</XDSHeading>
-              <XDSText type="supporting" color="secondary">
-                ContentEditable rich input with trigger menus (@ mentions, /
-                commands via XDSSearchSource), inline token badges, message
-                history (arrow keys), Enter/Shift+Enter, paste/drop file
-                handling, and paste-as-token for long content (&gt;200 chars).
-              </XDSText>
-            </XDSStack>
-            <XDSStack direction="vertical" gap={1}>
-              <XDSHeading level={4}>XDSChatComposerAttachments</XDSHeading>
-              <XDSText type="supporting" color="secondary">
-                Flex-wrap container for file thumbnails and image previews above
-                the input.
-              </XDSText>
-            </XDSStack>
-            <XDSStack direction="vertical" gap={1}>
-              <XDSHeading level={4}>XDSChatDictationButton</XDSHeading>
-              <XDSText type="supporting" color="secondary">
-                Microphone toggle with volume-reactive frequency bars (equalizer
-                style). Hue-shifts the accent color when volume clips past 10%.
-              </XDSText>
-            </XDSStack>
-          </XDSStack>
-        </XDSStack>
-
-        {/* Hooks */}
-        <XDSStack direction="vertical" gap={2}>
-          <XDSHeading level={2}>Hooks</XDSHeading>
-          <XDSStack direction="vertical" gap={3}>
-            <XDSStack direction="vertical" gap={1}>
-              <XDSHeading level={4}>useXDSChatStreamScroll</XDSHeading>
-              <XDSText type="supporting" color="secondary">
-                Spring-based scroll-to-bottom with lock/unlock. Locked by
-                default — content growth auto-scrolls. Scrolling up unlocks.
-                Re-locks on scrollend when user settles at bottom.
-              </XDSText>
-            </XDSStack>
-            <XDSStack direction="vertical" gap={1}>
-              <XDSHeading level={4}>useXDSChatNewMessages</XDSHeading>
-              <XDSText type="supporting" color="secondary">
-                Tracks new message arrivals via ResizeObserver. Flags
-                hasNewMessages when a new message appears while scroll is
-                unlocked.
-              </XDSText>
-            </XDSStack>
-            <XDSStack direction="vertical" gap={1}>
-              <XDSHeading level={4}>useXDSChatDictation</XDSHeading>
-              <XDSText type="supporting" color="secondary">
-                Full voice-to-text hook — wraps SpeechRecognition with
-                AudioContext for volume, frequency bands, noise floor
-                calibration, audio feedback, and CAPS LOCK on sustained volume.
-              </XDSText>
-            </XDSStack>
-            <XDSStack direction="vertical" gap={1}>
-              <XDSHeading level={4}>useXDSChatPasteAsToken</XDSHeading>
-              <XDSText type="supporting" color="secondary">
-                Converts long pastes (&gt;200 chars) into collapsible token
-                chips.
-              </XDSText>
-            </XDSStack>
-            <XDSStack direction="vertical" gap={1}>
-              <XDSHeading level={4}>useXDSChatComposerTokens</XDSHeading>
-              <XDSText type="supporting" color="secondary">
-                Internal token management — insertion, expansion, cleanup, and
-                React portal rendering for inline badges.
-              </XDSText>
-            </XDSStack>
-          </XDSStack>
-        </XDSStack>
-
-        {/* Theming */}
-        <XDSStack direction="vertical" gap={2}>
-          <XDSHeading level={2}>Theming</XDSHeading>
-          <XDSText type="supporting" color="secondary">
-            The composer supports CSS custom properties with concentric radius
-            math. Inner elements auto-derive their radius:
-            calc(--composer-radius - --composer-padding).
-          </XDSText>
-          <XDSCard width="100%">
-            <XDSCodeBlock
-              language="typescript"
-              code={`defineTheme({
-  components: {
-    'chat-composer': {
-      base: {
-        '--composer-radius': '20px',
-        '--composer-padding': '16px',
-      },
-    },
-  },
-});`}
-            />
-          </XDSCard>
-          <XDSText type="supporting" color="secondary">
-            Theming targets: xds-chat-composer, xds-chat-composer-input,
-            xds-chat-message, xds-chat-message-bubble, xds-chat-system-message,
-            xds-chat-tool-calls, xds-chat-layout.
-          </XDSText>
-        </XDSStack>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Apr.18',
-    type: 'Release',
-    title:
-      '@xds/vega charts: Bar, Line, Area, and Pie components for dashboards',
-    description:
-      'Data visualization package with BarChart, LineChart, AreaChart, and PieChart components. Includes ChartLegend, ChartTooltip, and ChartAxis utilities for building analytics dashboards.',
-    tags: ['charts', '@xds/vega'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          The @xds/vega package provides four chart components — BarChart,
-          LineChart, AreaChart, and PieChart — along with composable utilities
-          like ChartLegend, ChartTooltip, and ChartAxis. Charts are
-          theme-aware and use XDS color tokens automatically.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            language="tsx"
-            code={`import { BarChart, ChartLegend } from '@xds/vega';
-
-<BarChart
-  data={[
-    { label: 'Jan', value: 120 },
-    { label: 'Feb', value: 200 },
-    { label: 'Mar', value: 150 },
-  ]}
-  xAxis="label"
-  yAxis="value"
-  height={300}
-/>
-<ChartLegend items={[{ label: 'Revenue', color: 'accent' }]} />`}
-          />
-        </XDSCard>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Apr.18',
-    type: 'Release',
-    title: 'Calendar component with single date and date range selection',
-    description:
-      'New Calendar component with single date picker and date range selection modes. Supports min/max date constraints, disabled dates, and two-month view. Integrates with DateInput for form usage.',
-    tags: ['core', 'form'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          XDSCalendar supports single date and date range selection, with
-          min/max constraints, disabled dates, and a two-month side-by-side
-          view for range picking. Pair it with XDSDateInput for popover-based
-          date form fields.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            language="tsx"
-            code={`import { XDSCalendar } from '@xds/core/Calendar';
-
-<XDSCalendar
-  mode="range"
-  value={{ start: new Date('2026-04-01'), end: new Date('2026-04-15') }}
-  onChange={setRange}
-  minDate={new Date('2026-01-01')}
-  months={2}
-/>`}
-          />
-        </XDSCard>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Apr.18',
-    type: 'Release',
-    title: 'v0.0.12 — Theme syntax, Toast, Thumbnail, and 15 new features',
-    description:
-      'Version 0.0.12 ships 15 new features including XDSThumbnail, XDSToast, theme syntax with 11 presets, and XDSMediaTheme. 1 breaking change (Button isIconOnly) and 11 bug fixes.',
-    tags: ['release', 'v0.0.12'],
-    details: (
-      <XDSStack direction="vertical" gap={8}>
-        <XDSText type="body" color="secondary">
-          Version 0.0.12 ships 15 new features, 1 breaking change, and 11 bug
-          fixes across @xds/core, @xds/chat, and @xds/cli.
-        </XDSText>
-
-        <XDSStack direction="vertical" gap={2}>
-          <XDSHeading level={4}>Breaking Changes</XDSHeading>
-          <XDSList>
-            <XDSListItem>
-              Button <code>isIconOnly</code> is now required for icon-only
-              buttons
-            </XDSListItem>
-          </XDSList>
-        </XDSStack>
-
-        <XDSStack direction="vertical" gap={2}>
-          <XDSHeading level={4}>New Features</XDSHeading>
-          <XDSList>
-            <XDSListItem>XDSThumbnail component</XDSListItem>
-            <XDSListItem>XDSChatLayout component</XDSListItem>
-            <XDSListItem>XDSToast notification system</XDSListItem>
-            <XDSListItem>
-              Chat reasoning display (collapsible thinking)
-            </XDSListItem>
-            <XDSListItem>useXDSImperativeDialog hook</XDSListItem>
-            <XDSListItem>Theme syntax system with 11 presets</XDSListItem>
-            <XDSListItem>XDSMediaTheme for media-scoped theming</XDSListItem>
-            <XDSListItem>Card background variants</XDSListItem>
-            <XDSListItem>Daily theme rotation</XDSListItem>
-            <XDSListItem>SideNav and TopNav menu variants</XDSListItem>
-            <XDSListItem>TextInput onEnter callback</XDSListItem>
-            <XDSListItem>Button isPressed state</XDSListItem>
-            <XDSListItem>CLI programmatic API</XDSListItem>
-            <XDSListItem>
-              ChatComposer headerActions and headerContext slots
-            </XDSListItem>
-            <XDSListItem>Chat trigger menu system</XDSListItem>
-          </XDSList>
-        </XDSStack>
-
-        <XDSStack direction="vertical" gap={2}>
-          <XDSHeading level={4}>Fixes</XDSHeading>
-          <XDSList>
-            <XDSListItem>Dialog animation and focus restoration</XDSListItem>
-            <XDSListItem>CodeBlock copy and syntax highlighting</XDSListItem>
-            <XDSListItem>Chat scroll and message rendering</XDSListItem>
-            <XDSListItem>SegmentedControl layout consistency</XDSListItem>
-            <XDSListItem>XDSBaseProps type alignment</XDSListItem>
-            <XDSListItem>Theme hot-reload and token fallbacks</XDSListItem>
-            <XDSListItem>ProgressBar and Section sizing</XDSListItem>
-            <XDSListItem>Input validation and focus ring</XDSListItem>
-          </XDSList>
-        </XDSStack>
-
-        <XDSStack direction="vertical" gap={2}>
-          <XDSHeading level={4}>Upgrade</XDSHeading>
-          <XDSCard width="100%">
-            <XDSCodeBlock
-              language="bash"
-              code="npx xds upgrade --apply --to 0.0.12"
-              hasCopyButton
-            />
-          </XDSCard>
-        </XDSStack>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Apr.16',
-    type: 'Improvement',
-    title:
-      'Dialog entry animations now use @starting-style instead of JS state',
-    description:
-      'Replaced JavaScript-based entry animations with CSS @starting-style for dialogs. This eliminates the flash of unstyled content and removes the need for useState + requestAnimationFrame workarounds.',
-    tags: ['core', 'animation'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          XDSDialog previously used useState + requestAnimationFrame to
-          trigger entry animations, which caused a brief flash of the dialog
-          at its final position. The new implementation uses CSS
-          @starting-style to define the initial animation state declaratively,
-          eliminating the flash and reducing JavaScript overhead.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            language="css"
-            code={`/* How it works internally */
-dialog[open] {
-  opacity: 1;
-  transform: translateY(0);
-  @starting-style {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-}`}
-          />
-        </XDSCard>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Apr.14',
-    type: 'Fix',
-    title: 'Popover focus trap no longer breaks with nested popovers',
-    description:
-      'Fixed an issue where opening a popover inside another popover would cause the focus trap to fight between the two layers, making keyboard navigation impossible.',
-    tags: ['core', 'accessibility'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          When a XDSPopover was opened inside another popover (e.g. a color
-          picker inside a toolbar popover), both focus traps would fight for
-          focus, creating an infinite loop that locked keyboard navigation.
-          The fix scopes each trap to its own layer — the parent trap pauses
-          while a child popover is open and resumes when it closes.
-        </XDSText>
-        <XDSText type="body" color="secondary">
-          This also affects XDSDropdownMenu when nested inside a popover.
-        </XDSText>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Apr.10',
-    type: 'Improvement',
-    title: 'Button loading state preserves width to prevent layout shift',
-    description:
-      "When a Button enters loading state, it now preserves its previous width so surrounding content doesn't shift. The spinner replaces the label in-place.",
-    tags: ['core'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          Previously, setting isLoading on XDSButton would swap the label for
-          a smaller spinner, causing the button to shrink and shift
-          surrounding layout. The button now locks its width before swapping
-          content, so the spinner replaces the label in-place without any
-          layout shift.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            language="tsx"
-            code={`<XDSButton
-  label="Save changes"
-  isLoading={isSaving}
-  onClick={handleSave}
-/>`}
-          />
-        </XDSCard>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Apr.08',
-    type: 'Improvement',
-    title: 'TextInput now supports startIcon and endIcon slots',
-    description:
-      'Added startIcon and endIcon props to TextInput for placing icons inside the input field. Useful for search fields, currency inputs, and status indicators.',
-    tags: ['core', 'form'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          XDSTextInput now accepts startIcon and endIcon props for placing
-          icons inside the input field. Icons are sized automatically and use
-          the secondary color token. Useful for search fields, currency
-          inputs, validation indicators, and clear buttons.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            language="tsx"
-            code={`<XDSTextInput
-  startIcon={<SearchIcon />}
-  placeholder="Search components..."
-/>
-
-<XDSTextInput
-  startIcon={<span>$</span>}
-  endIcon={<span>.00</span>}
-  placeholder="0"
-/>`}
-          />
-        </XDSCard>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Apr.04',
-    type: 'Release',
-    title: 'xds swizzle command for ejecting components into your codebase',
-    description:
-      "Run xds swizzle <ComponentName> to eject any XDS component's source into your project for full customization. Use --gap to report missing capabilities back to the XDS team.",
-    tags: ['cli', '@xds/cli'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          Swizzling copies a component&apos;s source into your project so you
-          can modify it freely. The ejected code is fully standalone — no
-          runtime dependency on the original. Use --gap to file a gap report
-          with the XDS team explaining what the component lacks.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            language="bash"
-            code={`# Eject Button source into ./components/Button
-npx xds swizzle Button
-
-# Eject and report a gap
-npx xds swizzle Card --gap "Need collapsible card variant"`}
-          />
-        </XDSCard>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Apr.04',
-    type: 'Release',
-    title: 'xds template command for scaffolding full page layouts',
-    description:
-      'Generate complete page templates with xds template <name>. Includes dashboard, settings, login, gallery, and documentation layouts. Use --skeleton for layout-only output with spatial annotations.',
-    tags: ['cli', '@xds/cli'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          Scaffolds complete page layouts using XDS components. Templates
-          include dashboard, settings, login, gallery, and documentation.
-          Use --skeleton for layout-only output with spatial annotations
-          that AI coding assistants can refine.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            language="bash"
-            code={`# Generate a full dashboard page
-npx xds template dashboard
-
-# Layout-only skeleton for AI refinement
-npx xds template settings --skeleton
-
-# List all available templates
-npx xds template --list`}
-          />
-        </XDSCard>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Apr.04',
-    type: 'Release',
-    title: 'Agent docs generation via xds docs for AI coding assistants',
-    description:
-      'Generate AGENTS.md and component-level docs optimized for AI coding assistants. Use xds docs --dense for token-efficient output that Cursor, Copilot, and Claude can use as context.',
-    tags: ['cli', '@xds/cli'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          Generates AGENTS.md and per-component docs formatted for AI coding
-          assistants. The --dense flag produces token-efficient output
-          optimized for context windows. Cursor, Copilot, and Claude can use
-          these docs to write correct XDS code without hallucinating props.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            language="bash"
-            code={`# Generate full agent docs
-npx xds docs
-
-# Token-efficient format for AI context
-npx xds docs --dense
-
-# Single component docs
-npx xds docs Button`}
-          />
-        </XDSCard>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Apr.02',
-    type: 'Fix',
-    title: 'Table sort indicator alignment on narrow columns',
-    description:
-      'Fixed sort arrows overlapping column text when columns are narrower than their header content. The indicator now wraps gracefully.',
-    tags: ['core'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          On narrow XDSTable columns, the sort arrow icon would overlap the
-          header text, making both unreadable. The sort indicator now wraps
-          below the text when space is tight and uses a min-width guard to
-          prevent the icon from being clipped entirely.
-        </XDSText>
-      </XDSStack>
-    ),
-  },
-  // March 2026
-  {
-    date: 'Mar.20',
-    type: 'Release',
-    title: 'Theme packages: @xds/theme-default, @xds/theme-neutral',
-    description:
-      'Two theme packages available on npm. theme-default uses system fonts, blue accent, and Heroicons. theme-neutral uses Geist fonts, desaturated oklch colors, and Lucide icons. Swap themes by changing a single CSS import.',
-    tags: ['themes'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          Two complete theme packages are now on npm. theme-default ships
-          system fonts, blue accent, and Heroicons. theme-neutral uses Geist
-          fonts, desaturated oklch palette, and Lucide icons. Switch themes by
-          swapping one import — all tokens, icons, and type scales update
-          automatically.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            language="tsx"
-            code={`// Switch themes by changing the import
-import { defaultTheme } from '@xds/theme-default/built';
-// or
-import { neutralTheme } from '@xds/theme-neutral/built';
-
-<XDSTheme theme={defaultTheme}>
-  <App />
-</XDSTheme>`}
-          />
-        </XDSCard>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Mar.20',
-    type: 'Release',
-    title: 'CommandPalette with fuzzy search and keyboard navigation',
-    description:
-      'Keyboard-driven command menu opened with a hotkey. Supports fuzzy search, grouped results, custom rendering, and picker mode for item selection.',
-    tags: ['core'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          XDSCommandPalette provides a keyboard-driven command menu (Cmd+K /
-          Ctrl+K). Features include fuzzy search, grouped results, custom
-          item rendering, and a picker mode for selecting items from a list.
-          Fully accessible with arrow-key navigation and type-ahead.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            language="tsx"
-            code={`<XDSCommandPalette
-  commands={[
-    { id: 'new', label: 'New file', group: 'Actions', onSelect: handleNew },
-    { id: 'open', label: 'Open file', group: 'Actions', onSelect: handleOpen },
-    { id: 'theme', label: 'Toggle theme', group: 'Settings', onSelect: toggleTheme },
-  ]}
-  hotkey="mod+k"
-/>`}
-          />
-        </XDSCard>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Mar.20',
-    type: 'Release',
-    title: 'PowerSearch component for advanced filter-based search interfaces',
-    description:
-      'Composable search bar with tokenized filters, operators, and preset filter groups. Designed for data-heavy interfaces like admin panels and analytics dashboards.',
-    tags: ['core', 'form'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          XDSPowerSearch is a composable search bar with tokenized filters,
-          comparison operators, and preset filter groups. Designed for
-          data-heavy interfaces like admin panels where users need to build
-          complex queries visually.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            language="tsx"
-            code={`<XDSPowerSearch
-  filters={[
-    { key: 'status', label: 'Status', type: 'select', options: ['Active', 'Archived'] },
-    { key: 'created', label: 'Created', type: 'date' },
-    { key: 'owner', label: 'Owner', type: 'text' },
-  ]}
-  presets={[
-    { label: 'My active items', filters: { status: 'Active', owner: currentUser } },
-  ]}
-  onChange={setFilters}
-/>`}
-          />
-        </XDSCard>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Mar.18',
-    type: 'Improvement',
-    title: 'SideNav collapse animation is smoother with CSS transitions',
-    description:
-      'Replaced JavaScript-driven width animation with CSS transitions for collapsing the SideNav. Results in smoother 60fps animation with no layout thrashing.',
-    tags: ['core', 'animation'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          The SideNav collapse/expand animation was previously driven by
-          JavaScript (requestAnimationFrame + width interpolation), which
-          caused layout thrashing on every frame. It now uses a CSS transition
-          on width with will-change: width for GPU-accelerated, 60fps
-          animation with no JS involvement during the transition.
-        </XDSText>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Mar.15',
-    type: 'Fix',
-    title: 'DropdownMenu keyboard navigation skipping disabled items',
-    description:
-      'Arrow key navigation in DropdownMenu now correctly skips disabled items and wraps around at the beginning and end of the list.',
-    tags: ['core', 'accessibility'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          Arrow key navigation in XDSDropdownMenu was stopping on disabled
-          items instead of skipping over them, and would not wrap from the
-          last item back to the first. Both behaviors are now fixed — disabled
-          items are skipped and navigation wraps at both ends, matching WAI-ARIA
-          Menu pattern requirements.
-        </XDSText>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Mar.12',
-    type: 'Breaking',
-    title:
-      'XDSThemeProvider: theme prop now accepts a theme package instead of a config object',
-    description:
-      'Migration required: replace XDSThemeProvider with XDSTheme and pass the theme object from a theme package (e.g. defaultTheme from @xds/theme-default/built). Run xds upgrade --apply to auto-migrate.',
-    tags: ['core', 'themes'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          XDSThemeProvider has been replaced by XDSTheme, which accepts a
-          pre-built theme object from a theme package instead of a raw config.
-          This enables tree-shaking, faster startup, and consistent theming.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            language="tsx"
-            code={`// Before — config object
-<XDSThemeProvider theme={{ accent: 'blue', radius: 8 }}>
-  <App />
-</XDSThemeProvider>
-
-// After — theme package
-import { defaultTheme } from '@xds/theme-default/built';
-<XDSTheme theme={defaultTheme}>
-  <App />
-</XDSTheme>`}
-          />
-        </XDSCard>
-        <XDSText type="body" color="secondary">
-          Run npx xds upgrade --apply to auto-migrate. The codemod handles
-          import swaps and prop changes.
-        </XDSText>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Mar.10',
-    type: 'Breaking',
-    title:
-      'v0.0.10 — StatusDot and ProgressBar single size, Layout dividers',
-    description:
-      'Version 0.0.10 consolidates StatusDot and ProgressBar to single sizes. Adds Layout defaultHasDividers and Button href. Includes 7 component fixes.',
-    tags: ['release', 'v0.0.10'],
-    details: (
-      <XDSStack direction="vertical" gap={8}>
-        <XDSText type="body" color="secondary">
-          Version 0.0.10 simplifies sizing APIs and adds layout and navigation
-          improvements.
-        </XDSText>
-
-        <XDSStack direction="vertical" gap={2}>
-          <XDSHeading level={4}>Breaking Changes</XDSHeading>
-          <XDSList>
-            <XDSListItem>
-              StatusDot consolidated to a single size (remove size prop)
-            </XDSListItem>
-            <XDSListItem>
-              ProgressBar consolidated to a single size (remove size prop)
-            </XDSListItem>
-          </XDSList>
-        </XDSStack>
-
-        <XDSStack direction="vertical" gap={2}>
-          <XDSHeading level={4}>New Features</XDSHeading>
-          <XDSList>
-            <XDSListItem>
-              Layout defaultHasDividers prop for automatic section dividers
-            </XDSListItem>
-            <XDSListItem>
-              Button href prop for link-style buttons without anchor wrappers
-            </XDSListItem>
-          </XDSList>
-        </XDSStack>
-
-        <XDSStack direction="vertical" gap={2}>
-          <XDSHeading level={4}>Fixes</XDSHeading>
-          <XDSList>
-            <XDSListItem>
-              Dialog close animation and focus restoration
-            </XDSListItem>
-            <XDSListItem>
-              Popover positioning in scrollable containers
-            </XDSListItem>
-            <XDSListItem>
-              Menu keyboard navigation with disabled items
-            </XDSListItem>
-            <XDSListItem>Avatar fallback initials rendering</XDSListItem>
-            <XDSListItem>Table column resize handle alignment</XDSListItem>
-            <XDSListItem>AppShell mobile nav overlay z-index</XDSListItem>
-            <XDSListItem>
-              DialogHeader close button accessibility
-            </XDSListItem>
-          </XDSList>
-        </XDSStack>
-
-        <XDSStack direction="vertical" gap={2}>
-          <XDSHeading level={4}>Upgrade</XDSHeading>
-          <XDSCard width="100%">
-            <XDSCodeBlock
-              language="bash"
-              code="npx xds upgrade --apply --to 0.0.10"
-              hasCopyButton
-            />
-          </XDSCard>
-        </XDSStack>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Mar.05',
-    type: 'Release',
-    title: 'MultiSelector component for multi-value tokenized selection',
-    description:
-      'Dropdown-based multi-select with tokenized display of selected values. Supports search, sections, and custom option rendering.',
-    tags: ['core', 'form'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          XDSMultiSelector is a dropdown-based multi-select that displays
-          selected values as removable tokens. Supports search filtering,
-          grouped sections, custom option rendering, and max-selection limits.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            language="tsx"
-            code={`<XDSMultiSelector
-  label="Assign labels"
-  options={[
-    { value: 'bug', label: 'Bug' },
-    { value: 'feature', label: 'Feature' },
-    { value: 'docs', label: 'Documentation' },
-  ]}
-  value={selectedLabels}
-  onChange={setSelectedLabels}
-  searchable
-/>`}
-          />
-        </XDSCard>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Mar.05',
-    type: 'Release',
-    title: 'Tokenizer component for tag-style multi-value inputs',
-    description:
-      'Free-form tag input with typeahead suggestions, create-on-enter, max entry limits, and overflow handling. Ideal for labels, categories, and email recipients.',
-    tags: ['core', 'form'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          XDSTokenizer is a free-form tag input that creates tokens on Enter
-          or comma. Supports typeahead suggestions from a static list or async
-          source, max entry limits, and overflow handling with a +N indicator.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            language="tsx"
-            code={`<XDSTokenizer
-  label="Recipients"
-  value={recipients}
-  onChange={setRecipients}
-  suggestions={['alice@co.com', 'bob@co.com']}
-  maxTokens={10}
-  placeholder="Add email..."
-/>`}
-          />
-        </XDSCard>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Mar.05',
-    type: 'Release',
-    title: 'FormLayout component for structured form field arrangement',
-    description:
-      'Arranges form fields in vertical or horizontal layouts with consistent spacing, optional labels, and section grouping. Supports nested layouts for complex forms.',
-    tags: ['core', 'form'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          XDSFormLayout arranges form fields with consistent spacing, label
-          alignment, and optional section grouping. Supports vertical and
-          horizontal orientations, and nests for multi-column form sections.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            language="tsx"
-            code={`<XDSFormLayout>
-  <XDSFormLayout direction="horizontal">
-    <XDSTextInput label="First name" />
-    <XDSTextInput label="Last name" />
-  </XDSFormLayout>
-  <XDSTextInput label="Email" type="email" />
-  <XDSSelector label="Role" options={roles} />
-</XDSFormLayout>`}
-          />
-        </XDSCard>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Mar.03',
-    type: 'Improvement',
-    title:
-      'All form components now announce validation errors to screen readers',
-    description:
-      'Added aria-describedby linking between form fields and their error messages. Screen readers now announce validation errors when they appear, improving accessibility for all form components.',
-    tags: ['core', 'accessibility'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          All form components (XDSTextInput, XDSNumberInput, XDSSelector,
-          XDSCheckboxInput, XDSSwitch) now link their error messages via
-          aria-describedby. When a validation error appears, screen readers
-          announce it immediately. The error container also uses
-          role=&quot;alert&quot; for live announcements.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            language="tsx"
-            code={`// Error messages are automatically linked — no extra props needed
-<XDSTextInput
-  label="Email"
-  value={email}
-  error={!isValid ? 'Please enter a valid email address' : undefined}
-/>`}
-          />
-        </XDSCard>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Mar.01',
-    type: 'Fix',
-    title:
-      'CheckboxInput indeterminate state not rendering correctly in Safari',
-    description:
-      "Fixed a Safari-specific rendering bug where the indeterminate dash icon wasn't visible. The fix uses a CSS workaround for WebKit's handling of the :indeterminate pseudo-class.",
-    tags: ['core', 'form'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          Safari&apos;s WebKit engine does not properly apply styles via the
-          :indeterminate pseudo-class on custom checkbox elements. The
-          indeterminate dash icon was invisible in Safari while working in
-          Chrome and Firefox. The fix uses a data-attribute selector as a
-          fallback, ensuring the dash renders correctly across all browsers.
-        </XDSText>
-        <XDSText type="body" color="secondary">
-          Affects XDSCheckboxInput with indeterminate=true (commonly used in
-          &quot;select all&quot; patterns for tables and lists).
-        </XDSText>
-      </XDSStack>
-    ),
-  },
-  // February 2026
-  {
-    date: 'Feb.18',
-    type: 'Release',
-    title:
-      'AppShell component for foundational page layout with header, sidebar, and content',
-    description:
-      'Provides the top-level page structure with TopNav, SideNav, and content regions. Supports surface and section variants, fill height, and responsive mobile navigation.',
-    tags: ['core', 'layout'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          XDSAppShell provides the foundational page structure — TopNav,
-          SideNav, and content area — with built-in responsive behavior. Use
-          surface or section variants to control background treatment, and
-          fillHeight to make the content area stretch to the viewport.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            language="tsx"
-            code={`<XDSAppShell
-  topNav={<XDSTopNav><XDSTopNavHeading>My App</XDSTopNavHeading></XDSTopNav>}
-  sideNav={
-    <XDSSideNav>
-      <XDSSideNavItem label="Dashboard" href="/" />
-      <XDSSideNavItem label="Settings" href="/settings" />
-    </XDSSideNav>
-  }
-  fillHeight
->
-  <XDSSection padding={6}>{children}</XDSSection>
-</XDSAppShell>`}
-          />
-        </XDSCard>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Feb.18',
-    type: 'Release',
-    title: 'TopNav with mega menu support and responsive mobile drawer',
-    description:
-      'Application-level navigation bar with branding, primary links, search, and user actions. Supports mega menu dropdowns, centered navigation, and a mobile drawer for small screens.',
-    tags: ['core', 'navigation'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          XDSTopNav is an application-level header with slots for branding,
-          navigation links, search, and user actions. Supports mega menu
-          dropdowns for complex navigation trees and collapses into a
-          hamburger drawer on mobile.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            language="tsx"
-            code={`<XDSTopNav>
-  <XDSTopNavHeading>My App</XDSTopNavHeading>
-  <XDSNavMenuItem label="Products" href="/products" />
-  <XDSNavMenuItem label="Docs" href="/docs" />
-</XDSTopNav>`}
-          />
-        </XDSCard>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Feb.18',
-    type: 'Release',
-    title: 'Breadcrumbs component with overflow truncation',
-    description:
-      "Shows the user's current location in a navigation hierarchy with links back to parent pages. Automatically truncates with an overflow menu when the breadcrumb trail is too long.",
-    tags: ['core', 'navigation'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          XDSBreadcrumbs shows the user&apos;s position in a navigation
-          hierarchy. When the trail is too long for the available width, it
-          automatically collapses middle items into a &quot;...&quot; overflow
-          menu while keeping the first and last items visible.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            language="tsx"
-            code={`<XDSBreadcrumbs
-  items={[
-    { label: 'Home', href: '/' },
-    { label: 'Products', href: '/products' },
-    { label: 'Widgets', href: '/products/widgets' },
-    { label: 'Edit' },
-  ]}
-/>`}
-          />
-        </XDSCard>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Feb.15',
-    type: 'Breaking',
-    title:
-      'v0.0.6 — Token renames, dynamic theming, motion tokens, and mobile AppShell',
-    description:
-      'Major release with 5 breaking changes including token renames, shadow tokens, Collapse\u2192Collapsible, radius tokens, and Badge children\u2192label. Adds dynamic theming, motion tokens, mobile AppShell, and 15+ fixes.',
-    tags: ['release', 'v0.0.6'],
-    details: (
-      <XDSStack direction="vertical" gap={8}>
-        <XDSText type="body" color="secondary">
-          The token rename release &mdash; 5 breaking changes, major new
-          features for theming and mobile, and 15+ bug fixes.
-        </XDSText>
-
-        <XDSStack direction="vertical" gap={2}>
-          <XDSHeading level={4}>Breaking Changes</XDSHeading>
-          <XDSList>
-            <XDSListItem>
-              Token renames across color, spacing, and typography tokens
-            </XDSListItem>
-            <XDSListItem>
-              Shadow tokens restructured (elevation-based naming)
-            </XDSListItem>
-            <XDSListItem>
-              Collapse component renamed to Collapsible
-            </XDSListItem>
-            <XDSListItem>
-              Radius tokens consolidated and renamed
-            </XDSListItem>
-            <XDSListItem>
-              Badge: <code>children</code> prop renamed to{' '}
-              <code>label</code>
-            </XDSListItem>
-          </XDSList>
-        </XDSStack>
-
-        <XDSStack direction="vertical" gap={2}>
-          <XDSHeading level={4}>New Features</XDSHeading>
-          <XDSList>
-            <XDSListItem>
-              Dynamic theming with runtime theme switching
-            </XDSListItem>
-            <XDSListItem>
-              Motion tokens for consistent animation timing
-            </XDSListItem>
-            <XDSListItem>
-              Type scale system with semantic sizing
-            </XDSListItem>
-            <XDSListItem>
-              Mobile AppShell with bottom navigation
-            </XDSListItem>
-            <XDSListItem>TopNav mobile responsive mode</XDSListItem>
-            <XDSListItem>SideNav collapsible mode</XDSListItem>
-            <XDSListItem>PowerSearch filter component</XDSListItem>
-            <XDSListItem>TreeList hierarchical display</XDSListItem>
-            <XDSListItem>
-              NavItem component for navigation menus
-            </XDSListItem>
-          </XDSList>
-        </XDSStack>
-
-        <XDSStack direction="vertical" gap={2}>
-          <XDSHeading level={4}>Fixes</XDSHeading>
-          <XDSText type="supporting" color="secondary">
-            15+ bug fixes across Dialog, Popover, Menu, Table, Form
-            components, and accessibility improvements.
-          </XDSText>
-        </XDSStack>
-
-        <XDSStack direction="vertical" gap={2}>
-          <XDSHeading level={4}>Upgrade</XDSHeading>
-          <XDSCard width="100%">
-            <XDSCodeBlock
-              language="bash"
-              code="npx xds upgrade --apply --to 0.0.6"
-              hasCopyButton
-            />
-          </XDSCard>
-        </XDSStack>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Feb.14',
-    type: 'Improvement',
-    title: 'Card hover state uses CSS transitions instead of JS state',
-    description:
-      'Replaced onMouseEnter/onMouseLeave JS handlers with pure CSS :hover transitions for Card hover effects. Smoother animation and less React re-rendering.',
-    tags: ['core'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          XDSCard previously used onMouseEnter/onMouseLeave handlers to toggle
-          a hover state in React, causing a re-render on every hover. The
-          hover effect now uses pure CSS :hover transitions for shadow and
-          border changes — smoother animation with zero React re-renders.
-        </XDSText>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Feb.10',
-    type: 'Improvement',
-    title: 'Slider supports keyboard step, page-step, and home/end shortcuts',
-    description:
-      'Added full keyboard support to Slider: arrow keys for single step, Page Up/Down for large steps, and Home/End to jump to min/max values.',
-    tags: ['core', 'accessibility'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          XDSSlider now supports the full WAI-ARIA Slider keyboard pattern:
-        </XDSText>
-        <XDSList>
-          <XDSListItem>Arrow Left/Down — decrease by step</XDSListItem>
-          <XDSListItem>Arrow Right/Up — increase by step</XDSListItem>
-          <XDSListItem>Page Down — decrease by 10× step</XDSListItem>
-          <XDSListItem>Page Up — increase by 10× step</XDSListItem>
-          <XDSListItem>Home — jump to min value</XDSListItem>
-          <XDSListItem>End — jump to max value</XDSListItem>
-        </XDSList>
-      </XDSStack>
-    ),
-  },
-  {
-    date: 'Feb.05',
-    type: 'Fix',
-    title: 'Stack gap prop not applying when direction changes at breakpoints',
-    description:
-      'Fixed a bug where changing Stack direction via media queries would lose the gap value. The gap now correctly re-applies when the flex direction changes at different breakpoints.',
-    tags: ['core', 'layout'],
-    details: (
-      <XDSStack direction="vertical" gap={4}>
-        <XDSText type="body" color="secondary">
-          When XDSStack&apos;s direction changed via responsive props (e.g.
-          vertical on mobile, horizontal on desktop), the gap value was lost
-          because the CSS gap property was scoped to the initial flex
-          direction. The gap is now applied independently of direction so it
-          persists across breakpoint changes.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            language="tsx"
-            code={`// gap now works correctly when direction changes at breakpoints
-<XDSStack
-  direction={{ base: 'vertical', md: 'horizontal' }}
-  gap={4}
->
-  <XDSCard>A</XDSCard>
-  <XDSCard>B</XDSCard>
-</XDSStack>`}
-          />
-        </XDSCard>
-      </XDSStack>
-    ),
-  },
-  // January 2026
-  {
-    date: 'Jan.15',
-    type: 'Breaking',
-    title:
-      'v0.0.2 — CSS-based theming, className/style props, and API rework',
-    description:
-      'Major API rework with CSS-based theming, className/style prop support, numeric spacing, RSC icon registry, React 19 ref forwarding, and component renames. 12 codemods available.',
-    tags: ['release', 'v0.0.2'],
-    details: (
-      <XDSStack direction="vertical" gap={8}>
-        <XDSText type="body" color="secondary">
-          The foundational API rework release &mdash; CSS-based theming
-          replaces the JavaScript theme provider, and all components gain
-          className and style escape hatches. 12 codemods available for
-          automated migration.
-        </XDSText>
-
-        <XDSStack direction="vertical" gap={2}>
-          <XDSHeading level={4}>Breaking Changes</XDSHeading>
-          <XDSList>
-            <XDSListItem>
-              CSS-based theming replaces JavaScript ThemeProvider
-            </XDSListItem>
-            <XDSListItem>
-              All components accept className and style props
-            </XDSListItem>
-            <XDSListItem>
-              Spacing props use numeric scale instead of string tokens
-            </XDSListItem>
-            <XDSListItem>
-              RSC-compatible icon registry replaces direct icon imports
-            </XDSListItem>
-            <XDSListItem>
-              React 19 ref forwarding (no more forwardRef wrappers)
-            </XDSListItem>
-            <XDSListItem>
-              Component and prop renames for API consistency
-            </XDSListItem>
-          </XDSList>
-        </XDSStack>
-
-        <XDSStack direction="vertical" gap={2}>
-          <XDSHeading level={4}>Codemods</XDSHeading>
-          <XDSText type="supporting" color="secondary">
-            12 codemods handle the migration automatically &mdash; theme
-            provider swap, spacing prop conversion, icon registry setup, ref
-            updates, and all component renames.
-          </XDSText>
-        </XDSStack>
-
-        <XDSStack direction="vertical" gap={2}>
-          <XDSHeading level={4}>Upgrade</XDSHeading>
-          <XDSCard width="100%">
-            <XDSCodeBlock
-              language="bash"
-              code="npx xds upgrade --apply --to 0.0.2"
-              hasCopyButton
-            />
-          </XDSCard>
-        </XDSStack>
-      </XDSStack>
-    ),
-  },
-];
-
-const CHANGELOG_TYPE_STYLES: Record<
-  ChangelogType,
-  {bg: string; color: string}
-> = {
-  Release: {bg: '#D1FAE5', color: '#065F46'},
-  Improvement: {bg: '#DBEAFE', color: '#1E40AF'},
-  Fix: {bg: '#FEF3C7', color: '#92400E'},
-  Breaking: {bg: '#FEE2E2', color: '#991B1B'},
-};
-
-const CHANGELOG_FILTERS: ChangelogType[] = [
-  'Release',
-  'Improvement',
-  'Fix',
+const CHANGELOG_FILTERS: ChangelogFilter[] = [
   'Breaking',
+  'Features',
+  'Fixes',
+  'Deprecations',
 ];
 
-function groupByMonth(entries: typeof CHANGELOG_ENTRIES) {
-  const months: {label: string; items: typeof CHANGELOG_ENTRIES}[] = [];
-  const map = new Map<string, typeof CHANGELOG_ENTRIES>();
-  for (const e of entries) {
-    const month = e.date.split('.')[0];
-    const key =
-      month === 'Apr'
-        ? 'April 2026'
-        : month === 'Mar'
-          ? 'March 2026'
-          : month === 'Feb'
-            ? 'February 2026'
-            : month === 'Jan'
-              ? 'January 2026'
-              : month;
-    if (!map.has(key)) {
-      map.set(key, []);
-      months.push({label: key, items: map.get(key)!});
-    }
-    map.get(key)!.push(e);
+function versionMatchesFilter(
+  v: ChangelogVersion,
+  filter: ChangelogFilter,
+): boolean {
+  switch (filter) {
+    case 'All':
+      return true;
+    case 'Breaking':
+      return v.breakingChanges.length > 0;
+    case 'Features':
+      return v.features.length > 0;
+    case 'Fixes':
+      return v.fixes.length > 0;
+    case 'Deprecations':
+      return false;
   }
-  return months;
 }
 
-// ---------------------------------------------------------------------------
-// WhatsNewPage component
-// ---------------------------------------------------------------------------
+function ItemText({item}: {item: ChangelogItem}) {
+  const text = item.text;
+  const hasExplicitBold = text.includes('**');
+
+  if (hasExplicitBold) {
+    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    return (
+      <span>
+        {parts.map((part, i) => {
+          const boldMatch = part.match(/^\*\*(.+)\*\*$/);
+          if (boldMatch) return <strong key={i}>{boldMatch[1]}</strong>;
+          return <span key={i}>{part}</span>;
+        })}
+      </span>
+    );
+  }
+
+  const delimIdx = Math.min(
+    text.includes(' — ') ? text.indexOf(' — ') : Infinity,
+    text.includes(': ') ? text.indexOf(': ') : Infinity,
+  );
+  if (delimIdx !== Infinity) {
+    const delim = text[delimIdx + 1] === '—' ? ' — ' : ': ';
+    return (
+      <span>
+        <strong>{text.slice(0, delimIdx)}</strong>
+        {delim}
+        {text.slice(delimIdx + delim.length)}
+      </span>
+    );
+  }
+
+  return <span>{text}</span>;
+}
+
+function ChangelogItemRow({item}: {item: ChangelogItem}) {
+  return (
+    <XDSStack
+      direction="horizontal"
+      gap={2}
+      vAlign="start"
+      style={{padding: '5px 0', lineHeight: 1.55}}>
+      <XDSText type="body" style={{flex: 1, minWidth: 0}}>
+        <ItemText item={item} />
+      </XDSText>
+      {item.pr != null && (
+        <XDSLink
+          label={`Pull request #${item.pr}`}
+          href={`https://github.com/${GITHUB_REPO}/pull/${item.pr}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          size="sm"
+          color="secondary"
+          style={{
+            fontFamily: 'monospace',
+            fontSize: 11,
+            flexShrink: 0,
+            opacity: 0.5,
+          }}>
+          #{item.pr}
+        </XDSLink>
+      )}
+    </XDSStack>
+  );
+}
+
+function ChangelogSection({
+  label,
+  items,
+  dotVariant,
+}: {
+  label: string;
+  items: ChangelogItem[];
+  dotVariant: 'negative' | 'positive' | 'warning' | 'info';
+}) {
+  if (items.length === 0) return null;
+  return (
+    <XDSStack direction="vertical" gap={0} style={{marginBottom: 20}}>
+      <XDSStack
+        direction="horizontal"
+        gap={2}
+        vAlign="center"
+        style={{marginBottom: 10}}>
+        <XDSStatusDot variant={dotVariant} label={label} />
+        <XDSText
+          type="supporting"
+          color="secondary"
+          weight="bold"
+          style={{
+            fontSize: 11,
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+          }}>
+          {label}
+        </XDSText>
+      </XDSStack>
+      {items.map((item, i) => (
+        <ChangelogItemRow key={`${item.text.slice(0, 30)}-${i}`} item={item} />
+      ))}
+    </XDSStack>
+  );
+}
+
+function hasContent(v: ChangelogVersion) {
+  return (
+    v.breakingChanges.length > 0 ||
+    v.features.length > 0 ||
+    v.fixes.length > 0 ||
+    v.codemods.length > 0 ||
+    v.note
+  );
+}
+
+function VersionCard({
+  version,
+  defaultIsOpen,
+  visibleSection,
+}: {
+  version: ChangelogVersion;
+  defaultIsOpen: boolean;
+  visibleSection: 'Breaking' | 'Features' | 'Fixes' | null;
+}) {
+  const {isOpen, toggle} = useXDSCollapsible({
+    isCollapsible: {defaultIsOpen: defaultIsOpen},
+  });
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const totalChanges =
+    version.breakingChanges.length +
+    version.features.length +
+    version.fixes.length;
+
+  if (!hasContent(version)) {
+    return (
+      <XDSCard padding={4} style={{marginBottom: 8}}>
+        <XDSStack direction="horizontal" gap={3} vAlign="center">
+          <XDSText
+            type="body"
+            weight="bold"
+            style={{fontFamily: 'monospace', fontSize: 14}}>
+            v{version.version}
+          </XDSText>
+          <XDSText type="supporting" color="secondary">
+            {version.packages.join(', ')}
+          </XDSText>
+          {version.note && (
+            <XDSText
+              type="supporting"
+              color="secondary"
+              style={{fontStyle: 'italic'}}>
+              — {version.note.replace(/\*\*/g, '')}
+            </XDSText>
+          )}
+        </XDSStack>
+      </XDSCard>
+    );
+  }
+
+  return (
+    <XDSCard padding={0} style={{marginBottom: 12, overflow: 'hidden'}}>
+      <XDSStack
+        direction="horizontal"
+        gap={3}
+        vAlign="start"
+        onClick={toggle}
+        role="button"
+        aria-expanded={isOpen}
+        style={{padding: '16px 24px', cursor: 'pointer'}}>
+        <XDSStack direction="vertical" gap={0} style={{flex: 1, minWidth: 0}}>
+          <XDSHeading level={3} style={{fontFamily: 'monospace', fontSize: 16}}>
+            v{version.version}
+          </XDSHeading>
+          <XDSStack direction="horizontal" gap={2} vAlign="center">
+            {totalChanges > 0 && (
+              <XDSText
+                type="supporting"
+                color="secondary"
+                style={{fontSize: 12}}>
+                {totalChanges} change{totalChanges !== 1 ? 's' : ''}
+              </XDSText>
+            )}
+            {totalChanges > 0 && (
+              <XDSText type="supporting" color="secondary">
+                ·
+              </XDSText>
+            )}
+            <XDSText type="supporting" color="secondary" style={{fontSize: 12}}>
+              {version.packages.join(', ')}
+            </XDSText>
+          </XDSStack>
+        </XDSStack>
+        {version.breakingChanges.length > 0 && (
+          <XDSBadge label="Breaking" variant="red" />
+        )}
+        <XDSIcon
+          icon={ChevronDownIcon}
+          size="sm"
+          color="secondary"
+          style={{
+            flexShrink: 0,
+            transition: 'transform 150ms ease',
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+          }}
+        />
+      </XDSStack>
+      {isOpen && (
+        <>
+          <XDSDivider />
+          <XDSStack direction="vertical" gap={0} style={{padding: '20px 24px'}}>
+            {version.note && (
+              <>
+                <XDSText
+                  type="supporting"
+                  color="secondary"
+                  display="block"
+                  style={{fontStyle: 'italic', paddingBottom: 16}}>
+                  {version.note.replace(/\*\*/g, '')}
+                </XDSText>
+                <XDSDivider style={{marginBottom: 16}} />
+              </>
+            )}
+
+            {(!visibleSection || visibleSection === 'Breaking') && (
+              <ChangelogSection
+                label="Breaking Changes"
+                items={version.breakingChanges}
+                dotVariant="negative"
+              />
+            )}
+            {(!visibleSection || visibleSection === 'Features') && (
+              <ChangelogSection
+                label="New Features"
+                items={version.features}
+                dotVariant="positive"
+              />
+            )}
+            {(!visibleSection || visibleSection === 'Fixes') && (
+              <ChangelogSection
+                label="Fixes"
+                items={version.fixes}
+                dotVariant="warning"
+              />
+            )}
+
+            {!visibleSection && version.codemods.length > 0 && (
+              <XDSStack direction="vertical" gap={0} style={{marginBottom: 20}}>
+                <XDSStack
+                  direction="horizontal"
+                  gap={2}
+                  vAlign="center"
+                  style={{marginBottom: 10}}>
+                  <XDSStatusDot variant="info" label="Codemods" />
+                  <XDSText
+                    type="supporting"
+                    color="secondary"
+                    weight="bold"
+                    style={{
+                      fontSize: 11,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                    }}>
+                    Codemods
+                  </XDSText>
+                </XDSStack>
+                <XDSStack
+                  direction="horizontal"
+                  gap={1}
+                  style={{flexWrap: 'wrap'}}>
+                  {version.codemods.map((item, i) => (
+                    <XDSBadge
+                      key={i}
+                      label={
+                        item.codemod || item.text.replace(/^`([\w-]+)`.*/, '$1')
+                      }
+                      variant="neutral"
+                    />
+                  ))}
+                </XDSStack>
+              </XDSStack>
+            )}
+
+            {!visibleSection &&
+              (version.upgradeCommand || version.dryRunCommand) && (
+                <>
+                  {!showUpgrade ? (
+                    <XDSButton
+                      label="Show upgrade commands"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowUpgrade(true)}
+                    />
+                  ) : (
+                    <XDSCard padding={0}>
+                      <XDSCodeBlock
+                        language="bash"
+                        code={[
+                          version.upgradeCommand,
+                          version.dryRunCommand
+                            ? `# Dry run: ${version.dryRunCommand}`
+                            : null,
+                        ]
+                          .filter(Boolean)
+                          .join('\n')}
+                        hasCopyButton
+                      />
+                    </XDSCard>
+                  )}
+                </>
+              )}
+          </XDSStack>
+        </>
+      )}
+    </XDSCard>
+  );
+}
+
+function DeprecationsPanel() {
+  const grouped = useMemo(() => {
+    const map = new Map<string, typeof deprecations>();
+    for (const d of deprecations) {
+      const key = d.file;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(d);
+    }
+    return Array.from(map.entries());
+  }, []);
+
+  return (
+    <XDSStack direction="vertical" gap={2}>
+      <XDSText
+        type="body"
+        color="secondary"
+        display="block"
+        style={{marginBottom: 8}}>
+        These symbols are deprecated in the current codebase. Migrate away from
+        them before they are removed in a future release.
+      </XDSText>
+
+      {grouped.map(([file, items]) => (
+        <XDSCard key={file} padding={0}>
+          <XDSStack
+            direction="horizontal"
+            gap={2}
+            vAlign="center"
+            style={{
+              padding: '10px 16px',
+              background: 'var(--color-background-secondary, #f9fafb)',
+            }}>
+            <XDSText type="code" style={{fontSize: 12}}>
+              {file}
+            </XDSText>
+          </XDSStack>
+          <XDSDivider />
+          <XDSStack direction="vertical" gap={0} style={{padding: '4px 16px'}}>
+            {items.map((d, i) => (
+              <React.Fragment key={i}>
+                <XDSStack
+                  direction="horizontal"
+                  gap={3}
+                  vAlign="start"
+                  style={{padding: '8px 0'}}>
+                  <XDSText
+                    type="code"
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 600,
+                      flexShrink: 0,
+                      minWidth: 140,
+                      color: 'var(--color-error, #e3193b)',
+                    }}>
+                    {d.symbol}
+                  </XDSText>
+                  <XDSText type="body" color="secondary" style={{fontSize: 13}}>
+                    {d.message}
+                  </XDSText>
+                </XDSStack>
+                {i < items.length - 1 && <XDSDivider />}
+              </React.Fragment>
+            ))}
+          </XDSStack>
+        </XDSCard>
+      ))}
+    </XDSStack>
+  );
+}
 
 function WhatsNewPage() {
-  const [activeFilter, setActiveFilter] = useState<ChangelogType | 'All'>(
-    'All',
+  const [activeFilter, setActiveFilter] = useState<ChangelogFilter>('All');
+
+  const showDeprecations = activeFilter === 'Deprecations';
+
+  const filteredVersions = useMemo(
+    () =>
+      activeFilter === 'All' || activeFilter === 'Deprecations'
+        ? changelogVersions
+        : changelogVersions.filter(v => versionMatchesFilter(v, activeFilter)),
+    [activeFilter],
   );
-  const [selectedEntry, setSelectedEntry] = useState<
-    (typeof CHANGELOG_ENTRIES)[number] | null
-  >(null);
-
-  const filtered =
-    activeFilter === 'All'
-      ? CHANGELOG_ENTRIES
-      : CHANGELOG_ENTRIES.filter(e => e.type === activeFilter);
-
-  const months = groupByMonth(filtered);
 
   return (
     <XDSSection
-      maxWidth={960}
+      maxWidth={800}
       padding={8}
       variant="transparent"
       style={{marginInline: 'auto'}}>
-      <XDSStack direction="vertical" gap={2}>
-        <XDSText type="display-1">What&#39;s New</XDSText>
-        <XDSText type="body" color="secondary">
-          Latest updates, new components, improvements, and breaking changes.
+      {/* Header */}
+      <XDSStack direction="vertical" gap={2} style={{marginBottom: 32}}>
+        <XDSText type="display-1" display="block">
+          What&#39;s New
+        </XDSText>
+        <XDSText
+          type="body"
+          color="secondary"
+          display="block"
+          style={{maxWidth: 520}}>
+          Release history across all XDS packages — features, breaking changes,
+          fixes, and codemods.
         </XDSText>
       </XDSStack>
 
       {/* Filter tabs */}
-      <div
+      <XDSStack
+        direction="vertical"
+        gap={0}
         style={{
           position: 'sticky',
           top: 0,
           zIndex: 10,
           backgroundColor: 'var(--color-background-surface, #fff)',
-          marginTop: 24,
-          marginBottom: 40,
-          paddingTop: 12,
+          marginBottom: 24,
+          paddingTop: 8,
+          paddingBottom: 1,
         }}>
         <XDSTabList
           value={activeFilter}
-          onChange={v => setActiveFilter(v as ChangelogType | 'All')}
+          onChange={v => setActiveFilter(v as ChangelogFilter)}
           size="sm">
           <XDSTab value="All" label="All" />
           {CHANGELOG_FILTERS.map(filter => (
@@ -2060,181 +793,20 @@ function WhatsNewPage() {
           ))}
         </XDSTabList>
         <XDSDivider />
-      </div>
+      </XDSStack>
 
-      {/* Entries grouped by month */}
-      {months.map(month => (
-        <div key={month.label} style={{marginBottom: 48}}>
-          {/* Month header */}
-          <XDSStack
-            direction="horizontal"
-            gap={2}
-            vAlign="center"
-            style={{marginBottom: 20}}>
-            <XDSHeading level={2}>{month.label}</XDSHeading>
-          </XDSStack>
-
-          {/* Entry list */}
-          {month.items.map((entry, i) => {
-            const typeStyle = CHANGELOG_TYPE_STYLES[entry.type];
-            const MAX_VISIBLE_TAGS = 2;
-            const visibleTags = entry.tags.slice(0, MAX_VISIBLE_TAGS);
-            const overflowCount = entry.tags.length - MAX_VISIBLE_TAGS;
-            return (
-              <div key={`${entry.date}-${i}`}>
-                <div
-                  style={{padding: '20px 0', cursor: 'pointer'}}
-                  onClick={() => setSelectedEntry(entry)}>
-                  {/* Line 1: date + badge */}
-                  <XDSStack
-                    direction="horizontal"
-                    gap={3}
-                    vAlign="center"
-                    style={{marginBottom: 8}}>
-                    <XDSText
-                      type="supporting"
-                      color="secondary"
-                      style={{
-                        fontFamily: 'monospace',
-                        fontSize: 12,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.04em',
-                      }}>
-                      {entry.date}
-                    </XDSText>
-                    <XDSBadge
-                      label={entry.type}
-                      variant={
-                        entry.type === 'Release'
-                          ? 'green'
-                          : entry.type === 'Improvement'
-                            ? 'blue'
-                            : entry.type === 'Fix'
-                              ? 'orange'
-                              : 'red'
-                      }
-                    />
-                  </XDSStack>
-
-                  {/* Line 2: title (left) + tags (right) */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'baseline',
-                      gap: 24,
-                    }}>
-                    <XDSText
-                      type="body"
-                      weight="bold"
-                      style={{flex: 1, minWidth: 0}}>
-                      {entry.title}
-                    </XDSText>
-                    <XDSStack
-                      direction="horizontal"
-                      gap={2}
-                      vAlign="center"
-                      style={{flexShrink: 0}}>
-                      {visibleTags.map(tag => (
-                        <XDSText
-                          key={tag}
-                          type="supporting"
-                          color="secondary"
-                          style={{
-                            fontSize: 11,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.06em',
-                            fontFamily: 'monospace',
-                          }}>
-                          {tag}
-                        </XDSText>
-                      ))}
-                      {overflowCount > 0 && (
-                        <XDSText
-                          type="supporting"
-                          color="secondary"
-                          style={{
-                            fontSize: 11,
-                            fontFamily: 'monospace',
-                          }}>
-                          ... +{overflowCount}
-                        </XDSText>
-                      )}
-                    </XDSStack>
-                  </div>
-                </div>
-                {i < month.items.length - 1 && <XDSDivider />}
-              </div>
-            );
-          })}
-        </div>
-      ))}
-
-      <XDSDialog
-        isOpen={selectedEntry !== null}
-        onOpenChange={open => {
-          if (!open) setSelectedEntry(null);
-        }}
-        width={selectedEntry?.details ? 800 : 400}
-        maxHeight={selectedEntry?.details ? '90vh' : '75vh'}>
-        {selectedEntry && (
-          <>
-            <XDSDialogHeader
-              title={selectedEntry.title}
-              onOpenChange={open => {
-                if (!open) setSelectedEntry(null);
-              }}
-            />
-            <div style={{paddingInline: 16, paddingBottom: 16}}>
-              <XDSStack direction="horizontal" gap={2} vAlign="center">
-                <XDSText
-                  type="supporting"
-                  color="secondary"
-                  style={{
-                    fontFamily: 'monospace',
-                    fontSize: 12,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.04em',
-                  }}>
-                  {selectedEntry.date}
-                </XDSText>
-                <XDSBadge
-                  label={selectedEntry.type}
-                  variant={
-                    selectedEntry.type === 'Release'
-                      ? 'green'
-                      : selectedEntry.type === 'Improvement'
-                        ? 'blue'
-                        : selectedEntry.type === 'Fix'
-                          ? 'orange'
-                          : 'red'
-                  }
-                />
-                {selectedEntry.tags.map(tag => (
-                  <XDSText
-                    key={tag}
-                    type="supporting"
-                    color="secondary"
-                    style={{
-                      fontSize: 11,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.06em',
-                      fontFamily: 'monospace',
-                    }}>
-                    {tag}
-                  </XDSText>
-                ))}
-              </XDSStack>
-            </div>
-            <div style={{padding: 16, overflowY: 'auto'}}>
-              {selectedEntry.details ?? (
-                <XDSText type="body" color="secondary">
-                  {selectedEntry.description}
-                </XDSText>
-              )}
-            </div>
-          </>
-        )}
-      </XDSDialog>
+      {showDeprecations ? (
+        <DeprecationsPanel />
+      ) : (
+        filteredVersions.map((version, i) => (
+          <VersionCard
+            key={version.version}
+            version={version}
+            defaultIsOpen={i === 0 || activeFilter !== 'All'}
+            visibleSection={activeFilter === 'All' ? null : activeFilter}
+          />
+        ))
+      )}
     </XDSSection>
   );
 }
@@ -2340,9 +912,7 @@ function colorColumns() {
     {
       key: 'dark',
       header: 'Dark',
-      renderCell: (row: ColorRow) => (
-        <ColorSwatch value={row.dark as string} />
-      ),
+      renderCell: (row: ColorRow) => <ColorSwatch value={row.dark as string} />,
     },
   ];
 }
@@ -2421,8 +991,8 @@ function ColorsFoundationPage() {
         <XDSStack direction="vertical" gap={3}>
           <XDSHeading level={2}>Border</XDSHeading>
           <XDSText type="body" color="secondary">
-            Border tokens use alpha transparency so they blend naturally over any
-            surface. Use border-emphasized when you need stronger visual
+            Border tokens use alpha transparency so they blend naturally over
+            any surface. Use border-emphasized when you need stronger visual
             separation.
           </XDSText>
           <XDSCard padding={0}>
@@ -2467,16 +1037,16 @@ function ColorsFoundationPage() {
                 <XDSBadge label="Don't" variant="negative" />
                 <XDSList>
                   <XDSListItem>
-                    Hard-code hex or rgba values in component styles — they break
-                    when themes change
+                    Hard-code hex or rgba values in component styles — they
+                    break when themes change
                   </XDSListItem>
                   <XDSListItem>
                     Use opacity to lighten text — use the secondary or disabled
                     text token instead
                   </XDSListItem>
                   <XDSListItem>
-                    Repurpose semantic colors for decoration (e.g. error-red as a
-                    brand color)
+                    Repurpose semantic colors for decoration (e.g. error-red as
+                    a brand color)
                   </XDSListItem>
                   <XDSListItem>
                     Mix raw CSS custom properties with token imports — use
@@ -3913,12 +2483,12 @@ function SpacingFoundationPage() {
             </XDSListItem>
             <XDSListItem>
               Keep spacing symmetric — if a card has{' '}
-              <XDSText type="code">padding=&#123;4&#125;</XDSText>, use the
-              same value on all sides unless deliberately asymmetric.
+              <XDSText type="code">padding=&#123;4&#125;</XDSText>, use the same
+              value on all sides unless deliberately asymmetric.
             </XDSListItem>
             <XDSListItem>
-              Avoid mixing spacing scales; stick to the 4px grid for
-              predictable alignment.
+              Avoid mixing spacing scales; stick to the 4px grid for predictable
+              alignment.
             </XDSListItem>
           </XDSList>
         </XDSStack>
@@ -4046,12 +2616,11 @@ function IllustrationsFoundationPage() {
         <XDSStack direction="vertical" gap={3}>
           <XDSHeading level={2}>Placement</XDSHeading>
           <XDSText type="body" color="secondary">
-            Center illustrations inside{' '}
-            <XDSText type="code">XDSCenter</XDSText> with supporting text
-            stacked below. Typical illustration sizes range from 120px for
-            inline empty states to 240px for full-page onboarding screens.
-            Always pair the illustration with a heading and optional body text
-            to explain what the user should do next.
+            Center illustrations inside <XDSText type="code">XDSCenter</XDSText>{' '}
+            with supporting text stacked below. Typical illustration sizes range
+            from 120px for inline empty states to 240px for full-page onboarding
+            screens. Always pair the illustration with a heading and optional
+            body text to explain what the user should do next.
           </XDSText>
         </XDSStack>
 
@@ -4199,13 +2768,18 @@ function ShapeFoundationPage() {
           </XDSText>
           <XDSGrid columns={3} gap={4}>
             {SHAPE_TOKENS.map(t => (
-              <XDSStack key={t.token} direction="vertical" gap={1} hAlign="center">
+              <XDSStack
+                key={t.token}
+                direction="vertical"
+                gap={1}
+                hAlign="center">
                 <div
                   style={{
                     width: 120,
                     height: 120,
                     borderRadius: t.cssVar,
-                    backgroundColor: 'var(--color-accent-muted, rgba(0,100,224,0.15))',
+                    backgroundColor:
+                      'var(--color-accent-muted, rgba(0,100,224,0.15))',
                     border: '2px solid var(--color-accent, #0064E0)',
                   }}
                 />
@@ -4247,8 +2821,8 @@ function ShapeFoundationPage() {
             />
           </XDSCard>
           <XDSText type="supporting" color="secondary">
-            If the padding is larger than the outer radius, use radius-none (0px)
-            for the inner element instead of going negative.
+            If the padding is larger than the outer radius, use radius-none
+            (0px) for the inner element instead of going negative.
           </XDSText>
         </XDSStack>
 
@@ -5588,7 +4162,7 @@ function NpmPackagesPage() {
           Peer dependencies
         </XDSHeading>
         <XDSText type="body" color="secondary">
-          All packages require React 18+ and StyleX 0.17+. Theme packages are
+          All packages require React 19+ and StyleX 0.10+. Theme packages are
           optional — if no theme is installed, components use built-in defaults.
         </XDSText>
       </div>
