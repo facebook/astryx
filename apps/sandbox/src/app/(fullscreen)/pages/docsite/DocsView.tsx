@@ -768,7 +768,7 @@ function WhatsNewPage() {
 
   return (
     <XDSSection
-      maxWidth={960}
+      maxWidth={800}
       padding={8}
       variant="transparent"
       style={{marginInline: 'auto'}}>

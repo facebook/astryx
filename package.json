@@ -58,7 +58,15 @@
     "vitest": "^2.1.0"
   },
   "resolutions": {
-    "prettier": "^3.8.3"
+    "prettier": "^3.8.3",
+    "postcss": "^8.5.10",
+    "**/picomatch": "^4.0.4",
+    "micromatch/**/picomatch": "^2.3.2",
+    "jscodeshift/**/picomatch": "^2.3.2",
+    "anymatch/**/picomatch": "^2.3.2",
+    "eslint/**/minimatch": "^3.1.4",
+    "test-exclude/**/minimatch": "^9.0.7",
+    "**/brace-expansion": "^1.1.13"
   },
   "packageManager": "yarn@1.22.22",
   "lint-staged": {

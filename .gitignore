@@ -58,3 +58,6 @@ apps/example-nextjs-tailwind/.next
 # Patch files
 *.patch
 *.rej
+
+# Lockfiles (Yarn is the package manager)
+package-lock.json
