@@ -3833,6 +3833,46 @@ function LibraryPackagePage({
   return null;
 }
 
+function CliCommandSection({
+  title,
+  description,
+  code,
+  flags,
+}: {
+  title: string;
+  description: string;
+  code: string;
+  flags?: {flag: string; description: string}[];
+}) {
+  return (
+    <XDSStack direction="vertical" gap={3}>
+      <XDSHeading level={2}>{title}</XDSHeading>
+      <XDSText type="body" color="secondary">
+        {description}
+      </XDSText>
+      <XDSCard padding={0}>
+        <XDSCodeBlock
+          code={code}
+          title="Terminal"
+          language="bash"
+          hasCopyButton
+        />
+      </XDSCard>
+      {flags && flags.length > 0 && (
+        <XDSCard padding={0} style={{overflow: 'auto'}}>
+          <XDSTable
+            data={flags as {[key: string]: unknown}[]}
+            columns={[
+              {key: 'flag', header: 'Flag'},
+              {key: 'description', header: 'Description'},
+            ]}
+          />
+        </XDSCard>
+      )}
+    </XDSStack>
+  );
+}
+
 function CliPage() {
   return (
     <XDSSection
@@ -3851,7 +3891,8 @@ function CliPage() {
           </XDSStack>
           <XDSText type="body" color="secondary">
             Command-line interface for project setup, component docs, page
-            templates, component ejection, and AI agent context generation.
+            templates, theming, component ejection, upgrade codemods, and AI
+            agent context generation.
           </XDSText>
         </XDSStack>
 
@@ -3860,54 +3901,7 @@ function CliPage() {
           <XDSHeading level={2}>Install</XDSHeading>
           <XDSCard padding={0}>
             <XDSCodeBlock
-              code="npm install -g @xds/cli"
-              title="Terminal"
-              language="bash"
-              hasCopyButton
-            />
-          </XDSCard>
-        </XDSStack>
-
-        {/* Setup */}
-        <XDSStack direction="vertical" gap={3}>
-          <XDSHeading level={2}>Setup</XDSHeading>
-          <XDSText type="body" color="secondary">
-            Interactive wizard that installs AI agent docs, scaffolds a custom
-            theme, and copies a starter template. Safe to re-run.
-          </XDSText>
-          <XDSCard padding={0}>
-            <XDSCodeBlock
-              code={`xds init                        # interactive setup wizard\nxds init --features agents      # install AGENTS.md for AI assistants\nxds init --features theme       # scaffold a custom theme file\nxds init --features template    # copy a starter page template`}
-              title="Terminal"
-              language="bash"
-              hasCopyButton
-            />
-          </XDSCard>
-        </XDSStack>
-
-        {/* Quick reference */}
-        <XDSStack direction="vertical" gap={3}>
-          <XDSHeading level={2}>Quick reference</XDSHeading>
-          <XDSText type="body" color="secondary">
-            Reference commands for looking up component APIs, design tokens, and
-            available templates.
-          </XDSText>
-          <XDSCard padding={0}>
-            <XDSCodeBlock
-              code={`xds help                        # all commands and options\nxds docs                        # list available doc topics\nxds docs principles --dense     # design rules, anti-patterns, tokens\nxds docs tokens --dense         # spacing, color, radius, typography\nxds docs theme --dense          # theme provider, light/dark, overrides\nxds component --list            # all components grouped by category\nxds template --list             # available page and block templates\nxds discover                    # find external XDS packages`}
-              title="Terminal"
-              language="bash"
-              hasCopyButton
-            />
-          </XDSCard>
-        </XDSStack>
-
-        {/* Component & template commands */}
-        <XDSStack direction="vertical" gap={3}>
-          <XDSHeading level={2}>Component and template commands</XDSHeading>
-          <XDSCard padding={0}>
-            <XDSCodeBlock
-              code={`xds component Button --dense    # props, variants, usage, anatomy\nxds component Table --props     # props table only\nxds template dashboard          # emit full page source\nxds template dashboard --skeleton  # layout skeleton with spatial annotations\nxds swizzle Button              # eject component source for customization\nxds upgrade --apply             # run version migration codemods`}
+              code={`# Run without installing\nnpx xds <command>\n\n# Or install globally\nnpm install -g @xds/cli\nyarn global add @xds/cli\npnpm add -g @xds/cli`}
               title="Terminal"
               language="bash"
               hasCopyButton
@@ -3918,59 +3912,320 @@ function CliPage() {
         {/* Global options */}
         <XDSStack direction="vertical" gap={3}>
           <XDSHeading level={2}>Global options</XDSHeading>
-          <XDSTable
-            data={
-              [
-                {
-                  flag: '--dense',
-                  description:
-                    'Token-efficient output for AI assistants. Omits examples and verbose prose.',
-                },
-                {
-                  flag: '--json',
-                  description:
-                    'Structured JSON output (envelope: { type, data }). For programmatic consumption.',
-                },
-                {
-                  flag: '--detail compact',
-                  description: 'Reduced output focused on essentials',
-                },
-                {flag: '--detail brief', description: 'Minimal output'},
-                {
-                  flag: '--zh',
-                  description: 'Chinese (Simplified) language output',
-                },
-                {
-                  flag: '--skeleton',
-                  description:
-                    'Layout skeleton with spatial annotations (templates only)',
-                },
-                {
-                  flag: '--gap',
-                  description:
-                    'File a gap report when swizzling to explain why you needed to eject',
-                },
-              ] as {[key: string]: unknown}[]
-            }
-            columns={[
-              {key: 'flag', header: 'Flag'},
-              {key: 'description', header: 'Description'},
-            ]}
-          />
+          <XDSText type="body" color="secondary">
+            These flags work with any command.
+          </XDSText>
+          <XDSCard padding={0} style={{overflow: 'auto'}}>
+            <XDSTable
+              data={
+                [
+                  {flag: '--version, -V', description: 'Print CLI version'},
+                  {
+                    flag: '--dense',
+                    description:
+                      'Token-efficient output for AI assistants. Omits examples and verbose prose.',
+                  },
+                  {
+                    flag: '--json',
+                    description:
+                      'Structured JSON output (envelope: { type, data }). For programmatic consumption.',
+                  },
+                  {
+                    flag: '--lang <locale>',
+                    description: 'Output language/format: en, zh, dense',
+                  },
+                  {
+                    flag: '--detail compact',
+                    description: 'Reduced output focused on essentials',
+                  },
+                  {flag: '--detail brief', description: 'Minimal output'},
+                  {
+                    flag: '--zh',
+                    description:
+                      'Chinese (Simplified) language output (shorthand for --lang zh)',
+                  },
+                  {flag: '--help', description: 'Show help for any command'},
+                ] as {[key: string]: unknown}[]
+              }
+              columns={[
+                {key: 'flag', header: 'Flag'},
+                {key: 'description', header: 'Description'},
+              ]}
+            />
+          </XDSCard>
         </XDSStack>
+
+        {/* init */}
+        <CliCommandSection
+          title="xds init"
+          description="Interactive wizard that installs AI agent docs, scaffolds a custom theme, and copies a starter template. Safe to re-run."
+          code={`xds init                        # interactive setup wizard\nxds init --features agents      # install AGENTS.md for AI assistants\nxds init --features theme       # scaffold a custom theme file\nxds init --features template    # copy a starter page template\nxds init --all                  # install all features without prompts`}
+          flags={[
+            {
+              flag: '--features <name>',
+              description:
+                'Install a specific feature: agents, theme, template',
+            },
+            {
+              flag: '--all',
+              description: 'Install all features without prompts',
+            },
+            {
+              flag: '--agent <tool>',
+              description: 'Target AI tool: claude, cursor, codex, all',
+            },
+            {
+              flag: '--agent-docs-path <path>',
+              description: 'Explicit file path(s) for agent docs',
+            },
+            {
+              flag: '--remove-agents',
+              description: 'Remove AI agent docs from all files',
+            },
+          ]}
+        />
+
+        {/* component */}
+        <CliCommandSection
+          title="xds component"
+          description="Look up component APIs, props, variants, usage patterns, and anatomy."
+          code={`xds component Button --dense    # props, variants, usage, anatomy\nxds component Table --props     # props table only\nxds component --list            # all components grouped by category\nxds component --category layout # list components in a specific category\nxds component Button --source   # print component source code\nxds component Button --showcase # print showcase source code`}
+          flags={[
+            {
+              flag: '--list',
+              description: 'List all components grouped by category',
+            },
+            {
+              flag: '--category <name>',
+              description: 'List components in a specific category',
+            },
+            {flag: '--props', description: 'Show props table only'},
+            {flag: '--source', description: 'Print component source code'},
+            {
+              flag: '--showcase',
+              description: 'Print showcase/example source code',
+            },
+          ]}
+        />
+
+        {/* template */}
+        <CliCommandSection
+          title="xds template"
+          description="Generate page templates and block snippets for common UI patterns."
+          code={`xds template --list             # available page and block templates\nxds template dashboard          # emit full page source\nxds template dashboard --skeleton  # layout skeleton with spatial annotations\nxds template dashboard ./src    # output to a specific directory`}
+          flags={[
+            {flag: '--list', description: 'List available templates'},
+            {
+              flag: '--type <type>',
+              description: 'Filter by template type: page or block',
+            },
+            {
+              flag: '--skeleton',
+              description: 'Layout skeleton with spatial annotations',
+            },
+            {
+              flag: '[path]',
+              description: 'Output directory (positional argument)',
+            },
+          ]}
+        />
+
+        {/* theme */}
+        <CliCommandSection
+          title="xds theme"
+          description="Create and build custom themes. Interactive wizard for scaffolding, or compile a defineTheme() file to production CSS/JS."
+          code={`xds theme                       # interactive theme wizard\nxds theme default               # generate from a preset (default, neutral)\nxds theme --list                # list existing themes\nxds theme build ./my-theme.ts   # compile defineTheme() to CSS/JS/TS\nxds theme build ./my-theme.ts -o dist/theme.css`}
+          flags={[
+            {
+              flag: '[preset]',
+              description: 'Generate from a preset: default, neutral',
+            },
+            {
+              flag: '--list',
+              description: 'List existing themes in the project',
+            },
+            {
+              flag: '--output <path>',
+              description: 'Output location for scaffolded theme',
+            },
+            {
+              flag: 'build <file>',
+              description: 'Compile a defineTheme() file to CSS + JS + .d.ts',
+            },
+            {
+              flag: '-o, --out <path>',
+              description: 'Output CSS file path (for theme build)',
+            },
+            {
+              flag: '--no-prose',
+              description: 'Skip prose/typography mappings (for theme build)',
+            },
+          ]}
+        />
+
+        {/* swizzle */}
+        <CliCommandSection
+          title="xds swizzle"
+          description="Eject a component's source code into your project for customization."
+          code={`xds swizzle Button              # eject Button source\nxds swizzle Button --output ./components/xds\nxds swizzle --list              # list available components\nxds swizzle Button --gap "Need custom focus ring"`}
+          flags={[
+            {
+              flag: '--list',
+              description: 'List components available for swizzling',
+            },
+            {
+              flag: '--output <dir>',
+              description: 'Output directory (default: ./components/xds)',
+            },
+            {
+              flag: '--gap <reason>',
+              description:
+                'File a gap report explaining why you needed to eject',
+            },
+            {flag: '--gap-category <cat>', description: 'Gap report category'},
+            {
+              flag: '--no-report',
+              description: 'Suppress the interactive gap report prompt',
+            },
+          ]}
+        />
+
+        {/* upgrade */}
+        <CliCommandSection
+          title="xds upgrade"
+          description="Run version migration codemods to auto-fix breaking changes when upgrading @xds/core."
+          code={`xds upgrade --to 0.0.12         # preview changes (dry run)\nxds upgrade --apply --to 0.0.12 # apply all codemods for a version\nxds upgrade --apply --codemod add-is-icon-only  # run a specific codemod\nxds upgrade --list              # list available codemods`}
+          flags={[
+            {
+              flag: '--apply',
+              description:
+                'Apply codemods (without this flag, runs as dry run)',
+            },
+            {
+              flag: '--to <version>',
+              description: 'Target version to migrate to',
+            },
+            {
+              flag: '--from <version>',
+              description: 'Override detected current version',
+            },
+            {
+              flag: '--codemod <name>',
+              description: 'Run a specific transform only',
+            },
+            {
+              flag: '--codemod-only',
+              description: 'Skip version bump + install, run codemods only',
+            },
+            {
+              flag: '--path <dir>',
+              description: 'Source directory to scan (default: ./src)',
+            },
+            {flag: '--list', description: 'List available codemods'},
+            {
+              flag: '--force',
+              description: 'Run codemods even if versions appear up to date',
+            },
+            {
+              flag: '--skip-install',
+              description: 'Skip package manager install after bumping',
+            },
+            {
+              flag: '--install-deps',
+              description:
+                'Auto-install jscodeshift without prompting (CI/LLM)',
+            },
+          ]}
+        />
+
+        {/* discover */}
+        <CliCommandSection
+          title="xds discover"
+          description="Find external XDS packages, components, and integrations."
+          code={`xds discover                    # list all packages\nxds discover --components       # list components only\nxds discover @scope/name        # look up a specific package\nxds discover searchterm         # search packages`}
+          flags={[
+            {flag: '--components', description: 'List components only'},
+            {flag: '@scope/name', description: 'Look up a specific package'},
+            {
+              flag: '@scope/name/Component',
+              description: 'Look up component docs from a package',
+            },
+          ]}
+        />
+
+        {/* gap-report */}
+        <CliCommandSection
+          title="xds gap-report"
+          description="File a report when the design system doesn't cover your use case. Helps the team prioritize missing components and features."
+          code={`xds gap-report                  # interactive gap report\nxds gap-report --component Button --reason "Need custom focus ring"\nxds gap-report --list-categories\nxds gap-report setup            # configure where reports are sent`}
+          flags={[
+            {
+              flag: '--component <name>',
+              description: 'Component the report is about',
+            },
+            {flag: '--category <cat>', description: 'Gap category'},
+            {
+              flag: '--reason <text>',
+              description: 'Reason for the gap (non-interactive mode)',
+            },
+            {
+              flag: '--list-categories',
+              description: 'List available gap report categories',
+            },
+            {
+              flag: 'setup',
+              description:
+                'Configure report delivery: GitHub Issues, custom script, or disabled',
+            },
+          ]}
+        />
 
         {/* AI integration */}
         <XDSStack direction="vertical" gap={3}>
           <XDSHeading level={2}>AI integration</XDSHeading>
           <XDSText type="body" color="secondary">
             The CLI generates context that AI coding assistants (Cursor,
-            Copilot, Claude) can use when building with XDS.
+            Copilot, Claude) can use when building with XDS. Agent docs are
+            auto-detected and written to the appropriate file for your tool
+            (AGENTS.md, CLAUDE.md, .cursorrules).
           </XDSText>
           <XDSCard padding={0}>
             <XDSCodeBlock
-              code={`# Generate AGENTS.md for your project\nxds init --features agents\n\n# Get component docs in AI-friendly format\nxds component Button --dense\nxds component Table --dense\n\n# Get structured JSON for tool integrations\nxds component Button --json\nxds docs tokens --json`}
+              code={`# Generate agent docs (auto-detects tool)\nxds init --features agents\n\n# Target a specific AI tool\nxds init --features agents --agent cursor\nxds init --features agents --agent claude\nxds init --features agents --agent all\n\n# Get component docs in AI-friendly format\nxds component Button --dense\nxds component Table --dense\n\n# Structured JSON for tool integrations\nxds component Button --json\nxds docs tokens --json`}
               title="Terminal"
               language="bash"
+              hasCopyButton
+            />
+          </XDSCard>
+        </XDSStack>
+
+        {/* Configuration */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Configuration</XDSHeading>
+          <XDSText type="body" color="secondary">
+            Create an xds.config.mjs in your project root to configure package
+            discovery paths, gap report delivery, and theme settings.
+          </XDSText>
+          <XDSCard padding={0}>
+            <XDSCodeBlock
+              code={`// xds.config.mjs\nexport default {\n  // Directories to scan for XDS packages\n  packageDirs: ['./packages'],\n  // Gap report delivery (configured via xds gap-report setup)\n  gapReport: { target: 'github' },\n};`}
+              language="javascript"
+              hasCopyButton
+            />
+          </XDSCard>
+        </XDSStack>
+
+        {/* Programmatic API */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Programmatic API</XDSHeading>
+          <XDSText type="body" color="secondary">
+            Use the CLI programmatically via @xds/cli/api for build scripts, CI
+            pipelines, and custom tooling.
+          </XDSText>
+          <XDSCard padding={0}>
+            <XDSCodeBlock
+              code={`import { component, docs, discover, template } from '@xds/cli/api';\n\nconst buttonDocs = await component('Button', { dense: true });\nconst tokenDocs = await docs('tokens', { json: true });\nconst templates = await template({ list: true });\nconst packages = await discover();`}
+              language="typescript"
               hasCopyButton
             />
           </XDSCard>
@@ -3982,8 +4237,10 @@ function CliPage() {
           <XDSList density="balanced" listStyle="disc">
             <XDSListItem label="Run xds init when setting up a new project to generate AI agent docs and a starter theme" />
             <XDSListItem label="Use xds component <Name> --dense before modifying or building with any component" />
-            <XDSListItem label="After upgrading @xds/core, run xds upgrade --apply to auto-migrate breaking changes" />
+            <XDSListItem label="After upgrading @xds/core, run xds upgrade --apply --to <version> to auto-migrate breaking changes" />
             <XDSListItem label="When swizzling, use --gap to report why you needed to eject — helps the team close gaps" />
+            <XDSListItem label="Use xds gap-report to request missing components or features" />
+            <XDSListItem label="Use xds theme build to compile custom themes for production" />
           </XDSList>
         </XDSStack>
       </XDSStack>
@@ -4070,48 +4327,50 @@ function NpmPackagesPage() {
         <XDSHeading level={2} style={{marginBottom: 16}}>
           Packages
         </XDSHeading>
-        <XDSTable
-          data={
-            [
-              {
-                package: '@xds/core',
-                description: 'Core UI components (60+)',
-                version: '0.0.12',
-                status: 'Stable',
-              },
-              {
-                package: '@xds/vega',
-                description: 'Charts & data visualization',
-                version: '—',
-                status: 'Coming Soon',
-              },
-              {
-                package: '@xds/cli',
-                description: 'CLI for scaffolding & tooling',
-                version: '0.0.12',
-                status: 'Stable',
-              },
-              {
-                package: '@xds/theme-default',
-                description: 'Default theme (blue accent)',
-                version: '0.0.12',
-                status: 'Stable',
-              },
-              {
-                package: '@xds/theme-neutral',
-                description: 'Neutral warm gray theme',
-                version: '0.0.12',
-                status: 'Stable',
-              },
-            ] as {[key: string]: unknown}[]
-          }
-          columns={[
-            {key: 'package', header: 'Package'},
-            {key: 'description', header: 'Description'},
-            {key: 'version', header: 'Version'},
-            {key: 'status', header: 'Status'},
-          ]}
-        />
+        <XDSCard padding={0} style={{overflow: 'auto'}}>
+          <XDSTable
+            data={
+              [
+                {
+                  package: '@xds/core',
+                  description: 'Core UI components (60+)',
+                  version: '0.0.12',
+                  status: 'Stable',
+                },
+                {
+                  package: '@xds/vega',
+                  description: 'Charts & data visualization',
+                  version: '—',
+                  status: 'Coming Soon',
+                },
+                {
+                  package: '@xds/cli',
+                  description: 'CLI for scaffolding & tooling',
+                  version: '0.0.12',
+                  status: 'Stable',
+                },
+                {
+                  package: '@xds/theme-default',
+                  description: 'Default theme (blue accent)',
+                  version: '0.0.12',
+                  status: 'Stable',
+                },
+                {
+                  package: '@xds/theme-neutral',
+                  description: 'Neutral warm gray theme',
+                  version: '0.0.12',
+                  status: 'Stable',
+                },
+              ] as {[key: string]: unknown}[]
+            }
+            columns={[
+              {key: 'package', header: 'Package'},
+              {key: 'description', header: 'Description'},
+              {key: 'version', header: 'Version'},
+              {key: 'status', header: 'Status'},
+            ]}
+          />
+        </XDSCard>
       </div>
       <div style={{marginTop: 40}}>
         <XDSHeading level={2} style={{marginBottom: 16}}>
