@@ -1,0 +1,11 @@
+/** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
+export const doc = {
+  type: 'block',
+  name: 'Tab',
+  description:
+    'Tab is an individual tab item within a TabList, supporting labels, icons, selected icons, and end content slots.',
+  isReady: true,
+  isShowcase: true,
+  aspectRatio: 16 / 9,
+  componentsUsed: ['TabList', 'Tab'],
+};
