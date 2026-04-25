@@ -39,15 +39,29 @@ import {
   MetaLogo,
 } from './docsite-icons';
 import {XDSBadge} from '@xds/core/Badge';
+import {XDSSwitch} from '@xds/core/Switch';
+import {XDSAvatar} from '@xds/core/Avatar';
+import {XDSProgressBar} from '@xds/core/ProgressBar';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSChatComposer} from '@xds/core/Chat';
 import {XDSLink} from '@xds/core/Link';
+import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
 
 import {XDSPopover} from '@xds/core/Popover';
 import {XDSGrid} from '@xds/core/Grid';
+import {XDSTheme, expandTypeScale, defineTheme} from '@xds/core/theme';
+import type {XDSDefinedTheme} from '@xds/core/theme';
+import {defaultTheme} from '@xds/theme-default/built';
+import {neutralTheme} from '@xds/theme-neutral/built';
+import {brutalistTheme} from '@xds/theme-brutalist/built';
+import {metaTheme} from '@xds/theme-meta/built';
+import {whatsappTheme} from '@xds/theme-whatsapp/built';
+import {XDSNumberInput} from '@xds/core/NumberInput';
+import {XDSSelector} from '@xds/core/Selector';
+import {defaultIconRegistry} from '@xds/theme-default';
 import {COMPONENT_PREVIEWS} from './ComponentPreviews';
 import {SEARCH_COMMANDS, basePath} from './constants';
 import {
@@ -179,16 +193,6 @@ const LIBRARY_PACKAGES: {
     category: 'building',
   },
   {
-    key: 'pkg-chat',
-    name: '@xds/chat',
-    description:
-      'Conversational UI components for AI assistants, messaging, and chat interfaces with thread support.',
-    status: 'Stable',
-    iconType: 'chat',
-    image: `${basePath}/docsite/LibrariesChat.png`,
-    category: 'building',
-  },
-  {
     key: 'pkg-xds-common',
     name: '@nest/xds-common',
     description:
@@ -310,7 +314,9 @@ const CHANGELOG_ENTRIES: {
   date: string;
   type: ChangelogType;
   title: string;
+  description: string;
   tags: string[];
+  details?: React.ReactNode;
 }[] = [
   // April 2026
   {
@@ -318,19 +324,282 @@ const CHANGELOG_ENTRIES: {
     type: 'Release',
     title:
       '@xds/chat package with message bubbles, thread view, and AI composer',
+    description:
+      'New package for conversational UI. Includes Chat, ChatComposer, ChatComposerInput, ChatLayout, ChatTokenizedText, ChatToolCalls, and ChatDictation components. Supports AI assistant interfaces, messaging UIs, and threaded conversations.',
     tags: ['chat', '@xds/chat'],
+    details: (
+      <XDSStack direction="vertical" gap={8}>
+        <XDSText type="body" color="secondary">
+          New package for conversational UI. Supports AI assistant interfaces,
+          messaging UIs, and threaded conversations.
+        </XDSText>
+
+        {/* Architecture */}
+        <XDSStack direction="vertical" gap={2}>
+          <XDSHeading level={2}>Architecture</XDSHeading>
+          <XDSCard width="100%">
+            <XDSCodeBlock
+              language="text"
+              code={`XDSChatLayout                    layout shell, sticky composer dock
+├─ XDSChatMessageList            scrollable container (role="log")
+│  ├─ XDSChatSystemMessage       date separators, status notices
+│  └─ XDSChatMessage             sender context (avatar, name, alignment)
+│     ├─ XDSChatMessageBubble    styled bubble (filled / ghost)
+│     ├─ XDSChatToolCalls        tool call display with status
+│     └─ XDSChatMessageMetadata  timestamp + delivery status
+└─ XDSChatComposer               layout shell with named slots
+   ├─ XDSChatComposerAttachments attachment tokens / thumbnails
+   ├─ XDSChatComposerInput       contentEditable + trigger menus
+   ├─ XDSChatSendButton          send / stop toggle
+   └─ XDSChatDictationButton     speech-to-text toggle`}
+            />
+          </XDSCard>
+        </XDSStack>
+
+        {/* Layout Components */}
+        <XDSStack direction="vertical" gap={2}>
+          <XDSHeading level={2}>Layout Components</XDSHeading>
+          <XDSStack direction="vertical" gap={3}>
+            <XDSStack direction="vertical" gap={1}>
+              <XDSHeading level={4}>XDSChatLayout</XDSHeading>
+              <XDSText type="supporting" color="secondary">
+                Full-page chat layout — messages flow in the page, composer
+                fixed to bottom with frosted glass dock. Container-query
+                density: compact (&lt;480px), balanced (480–768px), spacious
+                (&gt;768px). Auto-scroll via useXDSChatStreamScroll.
+              </XDSText>
+            </XDSStack>
+            <XDSStack direction="vertical" gap={1}>
+              <XDSHeading level={4}>XDSChatMessageList</XDSHeading>
+              <XDSText type="supporting" color="secondary">
+                Scrollable message container with role=&quot;log&quot;, density
+                context, bottom-spacer that pushes content down, and an
+                infinite-scroll sentinel for loading older messages.
+              </XDSText>
+            </XDSStack>
+            <XDSStack direction="vertical" gap={1}>
+              <XDSHeading level={4}>XDSChatLayoutScrollButton</XDSHeading>
+              <XDSText type="supporting" color="secondary">
+                Animated scroll-to-bottom button with optional &quot;New
+                messages&quot; label.
+              </XDSText>
+            </XDSStack>
+          </XDSStack>
+        </XDSStack>
+
+        {/* Message Components */}
+        <XDSStack direction="vertical" gap={2}>
+          <XDSHeading level={2}>Message Components</XDSHeading>
+          <XDSStack direction="vertical" gap={3}>
+            <XDSStack direction="vertical" gap={1}>
+              <XDSHeading level={4}>XDSChatMessage</XDSHeading>
+              <XDSText type="supporting" color="secondary">
+                Sender context wrapper — handles avatar, name, and alignment by
+                role (user right-aligned, assistant left-aligned, system
+                centered). Provides sender + density context to children.
+              </XDSText>
+            </XDSStack>
+            <XDSStack direction="vertical" gap={1}>
+              <XDSStack direction="horizontal" gap={2} vAlign="center">
+                <XDSHeading level={4}>XDSChatMessageBubble</XDSHeading>
+                <XDSBadge label="filled" variant="neutral" />
+                <XDSBadge label="ghost" variant="neutral" />
+              </XDSStack>
+              <XDSText type="supporting" color="secondary">
+                Styled chat bubble. Reads sender from context to auto-style
+                background. Supports multi-bubble grouping with tightened
+                corners via the group prop (first / middle / last).
+              </XDSText>
+            </XDSStack>
+            <XDSStack direction="vertical" gap={1}>
+              <XDSHeading level={4}>XDSChatMessageMetadata</XDSHeading>
+              <XDSText type="supporting" color="secondary">
+                Composable metadata row: timestamp, footer, delivery status
+                (sending → sent → delivered → read → error). Direction reverses
+                for user sender.
+              </XDSText>
+            </XDSStack>
+            <XDSStack direction="vertical" gap={1}>
+              <XDSStack direction="horizontal" gap={2} vAlign="center">
+                <XDSHeading level={4}>XDSChatSystemMessage</XDSHeading>
+                <XDSBadge label="default" variant="neutral" />
+                <XDSBadge label="divider" variant="neutral" />
+              </XDSStack>
+              <XDSText type="supporting" color="secondary">
+                Centered system/notice messages for date separators,
+                &quot;conversation started&quot;, &quot;user joined&quot;, etc.
+              </XDSText>
+            </XDSStack>
+          </XDSStack>
+        </XDSStack>
+
+        {/* AI Components */}
+        <XDSStack direction="vertical" gap={2}>
+          <XDSHeading level={2}>AI Components</XDSHeading>
+          <XDSStack direction="vertical" gap={3}>
+            <XDSStack direction="vertical" gap={1}>
+              <XDSHeading level={4}>XDSChatToolCalls</XDSHeading>
+              <XDSText type="supporting" color="secondary">
+                Displays tool/function call invocations from LLM responses.
+                Accepts a calls array matching the shape LLM APIs return. Single
+                call renders inline; multiple calls get a collapsible summary.
+                Each call shows status (pending / running / complete / error),
+                target, duration, additions/deletions, and expandable result
+                detail.
+              </XDSText>
+            </XDSStack>
+            <XDSStack direction="vertical" gap={1}>
+              <XDSHeading level={4}>XDSChatTokenizedText</XDSHeading>
+              <XDSText type="supporting" color="secondary">
+                Renders text with inline token badges — @mentions, /commands, or
+                any structured tokens embedded in message text.
+              </XDSText>
+            </XDSStack>
+            <XDSStack direction="vertical" gap={1}>
+              <XDSStack direction="horizontal" gap={2} vAlign="center">
+                <XDSHeading level={4}>XDSChatReasoning</XDSHeading>
+                <XDSBadge label="@xds/lab" variant="orange" />
+              </XDSStack>
+              <XDSText type="supporting" color="secondary">
+                Compact collapsible reasoning/thinking display with shimmer
+                animation while streaming. One line with ellipsis by default,
+                expandable on click.
+              </XDSText>
+            </XDSStack>
+          </XDSStack>
+        </XDSStack>
+
+        {/* Composer Components */}
+        <XDSStack direction="vertical" gap={2}>
+          <XDSHeading level={2}>Composer Components</XDSHeading>
+          <XDSStack direction="vertical" gap={3}>
+            <XDSStack direction="vertical" gap={1}>
+              <XDSHeading level={4}>XDSChatComposer</XDSHeading>
+              <XDSText type="supporting" color="secondary">
+                Layout shell with named slots (headerActions, headerContext,
+                footerActions, sendActions, attachments), concentric radius, and
+                hover/focus shadows. Manages controlled/uncontrolled input,
+                submit, and streaming stop.
+              </XDSText>
+            </XDSStack>
+            <XDSStack direction="vertical" gap={1}>
+              <XDSHeading level={4}>XDSChatComposerInput</XDSHeading>
+              <XDSText type="supporting" color="secondary">
+                ContentEditable rich input with trigger menus (@ mentions, /
+                commands via XDSSearchSource), inline token badges, message
+                history (arrow keys), Enter/Shift+Enter, paste/drop file
+                handling, and paste-as-token for long content (&gt;200 chars).
+              </XDSText>
+            </XDSStack>
+            <XDSStack direction="vertical" gap={1}>
+              <XDSHeading level={4}>XDSChatComposerAttachments</XDSHeading>
+              <XDSText type="supporting" color="secondary">
+                Flex-wrap container for file thumbnails and image previews above
+                the input.
+              </XDSText>
+            </XDSStack>
+            <XDSStack direction="vertical" gap={1}>
+              <XDSHeading level={4}>XDSChatDictationButton</XDSHeading>
+              <XDSText type="supporting" color="secondary">
+                Microphone toggle with volume-reactive frequency bars (equalizer
+                style). Hue-shifts the accent color when volume clips past 10%.
+              </XDSText>
+            </XDSStack>
+          </XDSStack>
+        </XDSStack>
+
+        {/* Hooks */}
+        <XDSStack direction="vertical" gap={2}>
+          <XDSHeading level={2}>Hooks</XDSHeading>
+          <XDSStack direction="vertical" gap={3}>
+            <XDSStack direction="vertical" gap={1}>
+              <XDSHeading level={4}>useXDSChatStreamScroll</XDSHeading>
+              <XDSText type="supporting" color="secondary">
+                Spring-based scroll-to-bottom with lock/unlock. Locked by
+                default — content growth auto-scrolls. Scrolling up unlocks.
+                Re-locks on scrollend when user settles at bottom.
+              </XDSText>
+            </XDSStack>
+            <XDSStack direction="vertical" gap={1}>
+              <XDSHeading level={4}>useXDSChatNewMessages</XDSHeading>
+              <XDSText type="supporting" color="secondary">
+                Tracks new message arrivals via ResizeObserver. Flags
+                hasNewMessages when a new message appears while scroll is
+                unlocked.
+              </XDSText>
+            </XDSStack>
+            <XDSStack direction="vertical" gap={1}>
+              <XDSHeading level={4}>useXDSChatDictation</XDSHeading>
+              <XDSText type="supporting" color="secondary">
+                Full voice-to-text hook — wraps SpeechRecognition with
+                AudioContext for volume, frequency bands, noise floor
+                calibration, audio feedback, and CAPS LOCK on sustained volume.
+              </XDSText>
+            </XDSStack>
+            <XDSStack direction="vertical" gap={1}>
+              <XDSHeading level={4}>useXDSChatPasteAsToken</XDSHeading>
+              <XDSText type="supporting" color="secondary">
+                Converts long pastes (&gt;200 chars) into collapsible token
+                chips.
+              </XDSText>
+            </XDSStack>
+            <XDSStack direction="vertical" gap={1}>
+              <XDSHeading level={4}>useXDSChatComposerTokens</XDSHeading>
+              <XDSText type="supporting" color="secondary">
+                Internal token management — insertion, expansion, cleanup, and
+                React portal rendering for inline badges.
+              </XDSText>
+            </XDSStack>
+          </XDSStack>
+        </XDSStack>
+
+        {/* Theming */}
+        <XDSStack direction="vertical" gap={2}>
+          <XDSHeading level={2}>Theming</XDSHeading>
+          <XDSText type="supporting" color="secondary">
+            The composer supports CSS custom properties with concentric radius
+            math. Inner elements auto-derive their radius:
+            calc(--composer-radius - --composer-padding).
+          </XDSText>
+          <XDSCard width="100%">
+            <XDSCodeBlock
+              language="typescript"
+              code={`defineTheme({
+  components: {
+    'chat-composer': {
+      base: {
+        '--composer-radius': '20px',
+        '--composer-padding': '16px',
+      },
+    },
+  },
+});`}
+            />
+          </XDSCard>
+          <XDSText type="supporting" color="secondary">
+            Theming targets: xds-chat-composer, xds-chat-composer-input,
+            xds-chat-message, xds-chat-message-bubble, xds-chat-system-message,
+            xds-chat-tool-calls, xds-chat-layout.
+          </XDSText>
+        </XDSStack>
+      </XDSStack>
+    ),
   },
   {
     date: 'Apr.18',
     type: 'Release',
     title:
       '@xds/vega charts: Bar, Line, Area, and Pie components for dashboards',
+    description:
+      'Data visualization package with BarChart, LineChart, AreaChart, and PieChart components. Includes ChartLegend, ChartTooltip, and ChartAxis utilities for building analytics dashboards.',
     tags: ['charts', '@xds/vega'],
   },
   {
     date: 'Apr.18',
     type: 'Release',
     title: 'Calendar component with single date and date range selection',
+    description:
+      'New Calendar component with single date picker and date range selection modes. Supports min/max date constraints, disabled dates, and two-month view. Integrates with DateInput for form usage.',
     tags: ['core', 'form'],
   },
   {
@@ -338,80 +607,105 @@ const CHANGELOG_ENTRIES: {
     type: 'Improvement',
     title:
       'Dialog entry animations now use @starting-style instead of JS state',
+    description:
+      'Replaced JavaScript-based entry animations with CSS @starting-style for dialogs. This eliminates the flash of unstyled content and removes the need for useState + requestAnimationFrame workarounds.',
     tags: ['core', 'animation'],
   },
   {
     date: 'Apr.14',
     type: 'Fix',
     title: 'Popover focus trap no longer breaks with nested popovers',
+    description:
+      'Fixed an issue where opening a popover inside another popover would cause the focus trap to fight between the two layers, making keyboard navigation impossible.',
     tags: ['core', 'accessibility'],
   },
   {
     date: 'Apr.10',
     type: 'Improvement',
     title: 'Button loading state preserves width to prevent layout shift',
+    description:
+      "When a Button enters loading state, it now preserves its previous width so surrounding content doesn't shift. The spinner replaces the label in-place.",
     tags: ['core'],
   },
   {
     date: 'Apr.08',
     type: 'Improvement',
     title: 'TextInput now supports startIcon and endIcon slots',
+    description:
+      'Added startIcon and endIcon props to TextInput for placing icons inside the input field. Useful for search fields, currency inputs, and status indicators.',
     tags: ['core', 'form'],
   },
   {
     date: 'Apr.04',
     type: 'Release',
     title: 'xds swizzle command for ejecting components into your codebase',
+    description:
+      "Run xds swizzle <ComponentName> to eject any XDS component's source into your project for full customization. Use --gap to report missing capabilities back to the XDS team.",
     tags: ['cli', '@xds/cli'],
   },
   {
     date: 'Apr.04',
     type: 'Release',
     title: 'xds template command for scaffolding full page layouts',
+    description:
+      'Generate complete page templates with xds template <name>. Includes dashboard, settings, login, gallery, and documentation layouts. Use --skeleton for layout-only output with spatial annotations.',
     tags: ['cli', '@xds/cli'],
   },
   {
     date: 'Apr.04',
     type: 'Release',
     title: 'Agent docs generation via xds docs for AI coding assistants',
+    description:
+      'Generate AGENTS.md and component-level docs optimized for AI coding assistants. Use xds docs --dense for token-efficient output that Cursor, Copilot, and Claude can use as context.',
     tags: ['cli', '@xds/cli'],
   },
   {
     date: 'Apr.02',
     type: 'Fix',
     title: 'Table sort indicator alignment on narrow columns',
+    description:
+      'Fixed sort arrows overlapping column text when columns are narrower than their header content. The indicator now wraps gracefully.',
     tags: ['core'],
   },
   // March 2026
   {
     date: 'Mar.20',
     type: 'Release',
-    title:
-      'Theme packages: @xds/theme-default, @xds/theme-neutral',
+    title: 'Theme packages: @xds/theme-default, @xds/theme-neutral',
+    description:
+      'Two theme packages available on npm. theme-default uses system fonts, blue accent, and Heroicons. theme-neutral uses Geist fonts, desaturated oklch colors, and Lucide icons. Swap themes by changing a single CSS import.',
     tags: ['themes'],
   },
   {
     date: 'Mar.20',
     type: 'Release',
     title: 'CommandPalette with fuzzy search and keyboard navigation',
+    description:
+      'Keyboard-driven command menu opened with a hotkey. Supports fuzzy search, grouped results, custom rendering, and picker mode for item selection.',
     tags: ['core'],
   },
   {
     date: 'Mar.20',
     type: 'Release',
     title: 'PowerSearch component for advanced filter-based search interfaces',
+    description:
+      'Composable search bar with tokenized filters, operators, and preset filter groups. Designed for data-heavy interfaces like admin panels and analytics dashboards.',
     tags: ['core', 'form'],
   },
   {
     date: 'Mar.18',
     type: 'Improvement',
     title: 'SideNav collapse animation is smoother with CSS transitions',
+    description:
+      'Replaced JavaScript-driven width animation with CSS transitions for collapsing the SideNav. Results in smoother 60fps animation with no layout thrashing.',
     tags: ['core', 'animation'],
   },
   {
     date: 'Mar.15',
     type: 'Fix',
     title: 'DropdownMenu keyboard navigation skipping disabled items',
+    description:
+      'Arrow key navigation in DropdownMenu now correctly skips disabled items and wraps around at the beginning and end of the list.',
     tags: ['core', 'accessibility'],
   },
   {
@@ -419,24 +713,32 @@ const CHANGELOG_ENTRIES: {
     type: 'Breaking',
     title:
       'XDSThemeProvider: theme prop now accepts a theme package instead of a config object',
+    description:
+      'Migration required: replace XDSThemeProvider with XDSTheme and pass the theme object from a theme package (e.g. defaultTheme from @xds/theme-default/built). Run xds upgrade --apply to auto-migrate.',
     tags: ['core', 'themes'],
   },
   {
     date: 'Mar.05',
     type: 'Release',
     title: 'MultiSelector component for multi-value tokenized selection',
+    description:
+      'Dropdown-based multi-select with tokenized display of selected values. Supports search, sections, and custom option rendering.',
     tags: ['core', 'form'],
   },
   {
     date: 'Mar.05',
     type: 'Release',
     title: 'Tokenizer component for tag-style multi-value inputs',
+    description:
+      'Free-form tag input with typeahead suggestions, create-on-enter, max entry limits, and overflow handling. Ideal for labels, categories, and email recipients.',
     tags: ['core', 'form'],
   },
   {
     date: 'Mar.05',
     type: 'Release',
     title: 'FormLayout component for structured form field arrangement',
+    description:
+      'Arranges form fields in vertical or horizontal layouts with consistent spacing, optional labels, and section grouping. Supports nested layouts for complex forms.',
     tags: ['core', 'form'],
   },
   {
@@ -444,6 +746,8 @@ const CHANGELOG_ENTRIES: {
     type: 'Improvement',
     title:
       'All form components now announce validation errors to screen readers',
+    description:
+      'Added aria-describedby linking between form fields and their error messages. Screen readers now announce validation errors when they appear, improving accessibility for all form components.',
     tags: ['core', 'accessibility'],
   },
   {
@@ -451,6 +755,8 @@ const CHANGELOG_ENTRIES: {
     type: 'Fix',
     title:
       'CheckboxInput indeterminate state not rendering correctly in Safari',
+    description:
+      "Fixed a Safari-specific rendering bug where the indeterminate dash icon wasn't visible. The fix uses a CSS workaround for WebKit's handling of the :indeterminate pseudo-class.",
     tags: ['core', 'form'],
   },
   // February 2026
@@ -459,36 +765,48 @@ const CHANGELOG_ENTRIES: {
     type: 'Release',
     title:
       'AppShell component for foundational page layout with header, sidebar, and content',
+    description:
+      'Provides the top-level page structure with TopNav, SideNav, and content regions. Supports surface and section variants, fill height, and responsive mobile navigation.',
     tags: ['core', 'layout'],
   },
   {
     date: 'Feb.18',
     type: 'Release',
     title: 'TopNav with mega menu support and responsive mobile drawer',
+    description:
+      'Application-level navigation bar with branding, primary links, search, and user actions. Supports mega menu dropdowns, centered navigation, and a mobile drawer for small screens.',
     tags: ['core', 'navigation'],
   },
   {
     date: 'Feb.18',
     type: 'Release',
     title: 'Breadcrumbs component with overflow truncation',
+    description:
+      "Shows the user's current location in a navigation hierarchy with links back to parent pages. Automatically truncates with an overflow menu when the breadcrumb trail is too long.",
     tags: ['core', 'navigation'],
   },
   {
     date: 'Feb.14',
     type: 'Improvement',
     title: 'Card hover state uses CSS transitions instead of JS state',
+    description:
+      'Replaced onMouseEnter/onMouseLeave JS handlers with pure CSS :hover transitions for Card hover effects. Smoother animation and less React re-rendering.',
     tags: ['core'],
   },
   {
     date: 'Feb.10',
     type: 'Improvement',
     title: 'Slider supports keyboard step, page-step, and home/end shortcuts',
+    description:
+      'Added full keyboard support to Slider: arrow keys for single step, Page Up/Down for large steps, and Home/End to jump to min/max values.',
     tags: ['core', 'accessibility'],
   },
   {
     date: 'Feb.05',
     type: 'Fix',
     title: 'Stack gap prop not applying when direction changes at breakpoints',
+    description:
+      'Fixed a bug where changing Stack direction via media queries would lose the gap value. The gap now correctly re-applies when the flex direction changes at different breakpoints.',
     tags: ['core', 'layout'],
   },
 ];
@@ -540,6 +858,9 @@ function WhatsNewPage() {
   const [activeFilter, setActiveFilter] = useState<ChangelogType | 'All'>(
     'All',
   );
+  const [selectedEntry, setSelectedEntry] = useState<
+    (typeof CHANGELOG_ENTRIES)[number] | null
+  >(null);
 
   const filtered =
     activeFilter === 'All'
@@ -549,7 +870,11 @@ function WhatsNewPage() {
   const months = groupByMonth(filtered);
 
   return (
-    <div style={{maxWidth: 960, margin: '0 auto', padding: '32px 40px'}}>
+    <XDSSection
+      maxWidth={960}
+      padding={8}
+      variant="transparent"
+      style={{marginInline: 'auto'}}>
       <XDSStack direction="vertical" gap={2}>
         <XDSText type="display-1">What&#39;s New</XDSText>
         <XDSText type="body" color="secondary">
@@ -577,7 +902,7 @@ function WhatsNewPage() {
             <XDSTab key={filter} value={filter} label={filter} />
           ))}
         </XDSTabList>
-        <XDSDivider style={{marginTop: 12}} />
+        <XDSDivider />
       </div>
 
       {/* Entries grouped by month */}
@@ -600,7 +925,9 @@ function WhatsNewPage() {
             const overflowCount = entry.tags.length - MAX_VISIBLE_TAGS;
             return (
               <div key={`${entry.date}-${i}`}>
-                <div style={{padding: '20px 0'}}>
+                <div
+                  style={{padding: '20px 0', cursor: 'pointer'}}
+                  onClick={() => setSelectedEntry(entry)}>
                   {/* Line 1: date + badge */}
                   <XDSStack
                     direction="horizontal"
@@ -684,19 +1011,93 @@ function WhatsNewPage() {
           })}
         </div>
       ))}
-    </div>
+
+      <XDSDialog
+        isOpen={selectedEntry !== null}
+        onOpenChange={open => {
+          if (!open) setSelectedEntry(null);
+        }}
+        width={selectedEntry?.details ? 800 : 400}
+        maxHeight={selectedEntry?.details ? '90vh' : '75vh'}>
+        {selectedEntry && (
+          <>
+            <XDSDialogHeader
+              title={selectedEntry.title}
+              onOpenChange={open => {
+                if (!open) setSelectedEntry(null);
+              }}
+            />
+            <div style={{paddingInline: 16, paddingBottom: 16}}>
+              <XDSStack direction="horizontal" gap={2} vAlign="center">
+                <XDSText
+                  type="supporting"
+                  color="secondary"
+                  style={{
+                    fontFamily: 'monospace',
+                    fontSize: 12,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                  }}>
+                  {selectedEntry.date}
+                </XDSText>
+                <XDSBadge
+                  label={selectedEntry.type}
+                  variant={
+                    selectedEntry.type === 'Release'
+                      ? 'green'
+                      : selectedEntry.type === 'Improvement'
+                        ? 'blue'
+                        : selectedEntry.type === 'Fix'
+                          ? 'orange'
+                          : 'red'
+                  }
+                />
+                {selectedEntry.tags.map(tag => (
+                  <XDSText
+                    key={tag}
+                    type="supporting"
+                    color="secondary"
+                    style={{
+                      fontSize: 11,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      fontFamily: 'monospace',
+                    }}>
+                    {tag}
+                  </XDSText>
+                ))}
+              </XDSStack>
+            </div>
+            <div style={{padding: 16, overflowY: 'auto'}}>
+              {selectedEntry.details ?? (
+                <XDSText type="body" color="secondary">
+                  {selectedEntry.description}
+                </XDSText>
+              )}
+            </div>
+          </>
+        )}
+      </XDSDialog>
+    </XDSSection>
   );
 }
 
 // ---------------------------------------------------------------------------
-// FoundationPage component (placeholder)
+// FoundationPage component (placeholder for non-typography foundations)
 // ---------------------------------------------------------------------------
 
 function FoundationPage({foundationKey}: {foundationKey: string}) {
+  if (foundationKey === 'typography') {
+    return <TypographyFoundationPage />;
+  }
   const item = FOUNDATION_ITEMS.find(f => f.key === foundationKey);
   if (!item) return null;
   return (
-    <div style={{maxWidth: 840, margin: '0 auto', padding: '32px 40px'}}>
+    <XDSSection
+      maxWidth={960}
+      padding={8}
+      variant="transparent"
+      style={{marginInline: 'auto'}}>
       <XDSStack direction="vertical" gap={2}>
         <XDSText type="display-1">{item.title}</XDSText>
         <XDSText type="body" color="secondary">
@@ -717,7 +1118,1271 @@ function FoundationPage({foundationKey}: {foundationKey: string}) {
           Documentation coming soon
         </XDSText>
       </div>
-    </div>
+    </XDSSection>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// TypographyFoundationPage
+// ---------------------------------------------------------------------------
+
+const TYPO_RATIO_OPTIONS = [
+  {value: 1.067, label: '1.067 — Minor Second'},
+  {value: 1.125, label: '1.125 — Major Second'},
+  {value: 1.2, label: '1.200 — Minor Third'},
+  {value: 1.25, label: '1.250 — Major Third'},
+  {value: 1.333, label: '1.333 — Perfect Fourth'},
+  {value: 1.414, label: '1.414 — Augmented Fourth'},
+  {value: 1.5, label: '1.500 — Perfect Fifth'},
+  {value: 1.618, label: '1.618 — Golden Ratio'},
+];
+
+const TYPO_THEME_OPTIONS: {
+  key: string;
+  label: string;
+  theme: XDSDefinedTheme;
+  desc: string;
+  fonts: {body: string; heading: string; code: string};
+}[] = [
+  {
+    key: 'default',
+    label: 'Default',
+    theme: defaultTheme,
+    desc: 'System fonts · base 14px · ratio 1.2',
+    fonts: {body: 'System', heading: 'System', code: 'SF Mono'},
+  },
+  {
+    key: 'neutral',
+    label: 'Neutral',
+    theme: neutralTheme,
+    desc: 'Geist · base 14px · ratio 1.2 · bold h3/h4',
+    fonts: {body: 'Geist', heading: 'Geist', code: 'Geist Mono'},
+  },
+  {
+    key: 'brutalist',
+    label: 'Brutalist',
+    theme: brutalistTheme,
+    desc: 'Courier New · monospace everywhere',
+    fonts: {body: 'Courier New', heading: 'Courier New', code: 'Courier New'},
+  },
+  {
+    key: 'meta',
+    label: 'Meta',
+    theme: metaTheme,
+    desc: 'Figtree · base 14px',
+    fonts: {body: 'Figtree', heading: 'Figtree', code: 'SF Mono'},
+  },
+  {
+    key: 'whatsapp',
+    label: 'WhatsApp',
+    theme: whatsappTheme,
+    desc: 'System fonts · rounded accent',
+    fonts: {body: 'System', heading: 'System', code: 'SF Mono'},
+  },
+];
+
+const TYPO_SCALE_STEPS: {label: string; step: number}[] = [
+  {label: 'Display 1', step: 6},
+  {label: 'Display 2', step: 5},
+  {label: 'Display 3', step: 4},
+  {label: 'Heading 1', step: 3},
+  {label: 'Heading 2', step: 2},
+  {label: 'Heading 3', step: 1},
+  {label: 'H4 / Body', step: 0},
+  {label: 'Supporting', step: -1},
+  {label: 'Heading 6', step: -2},
+];
+
+const TYPE_SCALE_ROWS: {
+  label: string;
+  step: number;
+  weight: string;
+  family: string;
+  render: (text: string) => React.ReactNode;
+}[] = [
+  {
+    label: 'Display 1',
+    step: 6,
+    weight: 'Normal',
+    family: 'Heading',
+    render: t => <XDSText type="display-1">{t}</XDSText>,
+  },
+  {
+    label: 'Display 2',
+    step: 5,
+    weight: 'Normal',
+    family: 'Heading',
+    render: t => <XDSText type="display-2">{t}</XDSText>,
+  },
+  {
+    label: 'Display 3',
+    step: 4,
+    weight: 'Normal',
+    family: 'Heading',
+    render: t => <XDSText type="display-3">{t}</XDSText>,
+  },
+  {
+    label: 'Heading 1',
+    step: 3,
+    weight: 'Semibold',
+    family: 'Heading',
+    render: t => <XDSHeading level={1}>{t}</XDSHeading>,
+  },
+  {
+    label: 'Heading 2',
+    step: 2,
+    weight: 'Semibold',
+    family: 'Heading',
+    render: t => <XDSHeading level={2}>{t}</XDSHeading>,
+  },
+  {
+    label: 'Heading 3',
+    step: 1,
+    weight: 'Semibold',
+    family: 'Heading',
+    render: t => <XDSHeading level={3}>{t}</XDSHeading>,
+  },
+  {
+    label: 'Heading 4',
+    step: 0,
+    weight: 'Semibold',
+    family: 'Heading',
+    render: t => <XDSHeading level={4}>{t}</XDSHeading>,
+  },
+  {
+    label: 'Body',
+    step: 0,
+    weight: 'Normal',
+    family: 'Body',
+    render: t => <XDSText type="body">{t}</XDSText>,
+  },
+  {
+    label: 'Label',
+    step: 0,
+    weight: 'Medium',
+    family: 'Body',
+    render: t => <XDSText type="label">{t}</XDSText>,
+  },
+  {
+    label: 'Supporting',
+    step: -1,
+    weight: 'Normal',
+    family: 'Body',
+    render: t => <XDSText type="supporting">{t}</XDSText>,
+  },
+  {
+    label: 'Code',
+    step: 0,
+    weight: 'Normal',
+    family: 'Code',
+    render: t => <XDSText type="code">{t}</XDSText>,
+  },
+];
+
+function TypographyFoundationPage() {
+  const [previewTheme, setPreviewTheme] = useState('default');
+  const [scaleTheme, setScaleTheme] = useState('default');
+  const [scaleBase, setScaleBase] = useState(14);
+  const [scaleRatio, setScaleRatio] = useState(1.2);
+  const [refTab, setRefTab] = useState<'usage' | 'api'>('usage');
+
+  const activeThemeOption =
+    TYPO_THEME_OPTIONS.find(t => t.key === previewTheme) ??
+    TYPO_THEME_OPTIONS[0];
+
+  const scaleSizes = useMemo(
+    () =>
+      TYPO_SCALE_STEPS.map(s => ({
+        ...s,
+        px: Math.round(scaleBase * Math.pow(scaleRatio, s.step)),
+      })),
+    [scaleBase, scaleRatio],
+  );
+  const scalePreviewTheme = useMemo(
+    () =>
+      defineTheme({
+        name: 'scale-preview',
+        typography: {scale: {base: scaleBase, ratio: scaleRatio}},
+        tokens: {},
+        icons: defaultIconRegistry,
+      }),
+    [scaleBase, scaleRatio],
+  );
+  const maxPx = scaleSizes[0]?.px ?? 42;
+
+  return (
+    <XDSSection
+      maxWidth={960}
+      padding={8}
+      variant="transparent"
+      style={{marginInline: 'auto'}}>
+      <XDSStack direction="vertical" gap={8}>
+        {/* Header */}
+        <XDSStack direction="vertical" gap={2}>
+          <XDSText type="display-1">Typography</XDSText>
+          <XDSText type="large" weight="normal" color="secondary">
+            Typography establishes hierarchy, readability, and accessibility
+            across your UI. XDS handles it with two components and a
+            token-driven type scale.
+          </XDSText>
+        </XDSStack>
+
+        <XDSStack direction="vertical" gap={0}>
+          <XDSTabList
+            value={refTab}
+            onChange={v => setRefTab(v as 'usage' | 'api')}
+            size="sm">
+            <XDSTab value="usage" label="Usage" />
+            <XDSTab value="api" label="API" />
+          </XDSTabList>
+          <XDSDivider />
+        </XDSStack>
+
+        {refTab === 'usage' && (
+          <>
+            {/* Type scale preview */}
+            {(() => {
+              const scaleThemeOption =
+                TYPO_THEME_OPTIONS.find(t => t.key === scaleTheme) ??
+                TYPO_THEME_OPTIONS[0];
+              return (
+                <XDSCard variant="muted" padding={0}>
+                  <XDSSection padding={3} variant="transparent">
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}>
+                      <XDSText type="label" color="secondary">
+                        Scale
+                      </XDSText>
+                      <XDSStack direction="horizontal" gap={1} vAlign="center">
+                        {TYPO_THEME_OPTIONS.map(opt => (
+                          <XDSButton
+                            key={opt.key}
+                            label={opt.label}
+                            variant={
+                              scaleTheme === opt.key ? 'primary' : 'ghost'
+                            }
+                            size="sm"
+                            onClick={() => setScaleTheme(opt.key)}
+                          />
+                        ))}
+                      </XDSStack>
+                    </div>
+                  </XDSSection>
+                  <XDSTheme theme={scaleThemeOption.theme}>
+                    <div style={{padding: '8px 24px 24px'}}>
+                      <XDSStack direction="vertical" gap={0}>
+                        {TYPE_SCALE_ROWS.map(row => {
+                          const px = Math.round(
+                            scaleBase * Math.pow(scaleRatio, row.step),
+                          );
+                          const fontName =
+                            row.family === 'Code'
+                              ? scaleThemeOption.fonts.code
+                              : row.family === 'Heading'
+                                ? scaleThemeOption.fonts.heading
+                                : scaleThemeOption.fonts.body;
+                          return (
+                            <div
+                              key={row.label}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'baseline',
+                                gap: 16,
+                                paddingBlock: 12,
+                                borderBottom:
+                                  '1px solid var(--color-border, rgba(0,0,0,0.06))',
+                              }}>
+                              <div style={{flex: 1, minWidth: 0}}>
+                                {row.render(row.label)}
+                              </div>
+                              <XDSText
+                                type="supporting"
+                                color="secondary"
+                                style={{width: 80, flexShrink: 0}}>
+                                {fontName}
+                              </XDSText>
+                              <XDSText
+                                type="supporting"
+                                color="secondary"
+                                style={{width: 70, flexShrink: 0}}>
+                                {row.weight}
+                              </XDSText>
+                              <XDSText
+                                type="supporting"
+                                color="secondary"
+                                style={{
+                                  width: 40,
+                                  flexShrink: 0,
+                                  textAlign: 'right',
+                                }}>
+                                {px}px
+                              </XDSText>
+                            </div>
+                          );
+                        })}
+                      </XDSStack>
+                    </div>
+                  </XDSTheme>
+                </XDSCard>
+              );
+            })()}
+
+            {/* Pick the right type */}
+            <XDSStack direction="vertical" gap={4}>
+              <XDSHeading level={2}>Pick the right type</XDSHeading>
+              <XDSText type="body" color="secondary">
+                Every piece of text uses one of two components. Pick based on
+                semantic purpose, not visual size.
+              </XDSText>
+
+              <XDSTable
+                data={
+                  [
+                    {
+                      component: 'XDSHeading',
+                      when: 'Section titles that define document structure (renders h1–h6)',
+                    },
+                    {
+                      component: 'XDSText type="display-*"',
+                      when: 'Large decorative text without heading semantics (hero headlines, splash screens)',
+                    },
+                    {
+                      component: 'XDSText type="large"',
+                      when: 'Introductory or emphasized body text (section intros, feature lead-ins)',
+                    },
+                    {
+                      component: 'XDSText type="body"',
+                      when: 'General content, paragraphs, and descriptions',
+                    },
+                    {
+                      component: 'XDSText type="label"',
+                      when: 'Form labels, column headers, and category names',
+                    },
+                    {
+                      component: 'XDSText type="supporting"',
+                      when: 'Secondary metadata, captions, and helper text',
+                    },
+                    {
+                      component: 'XDSText type="code"',
+                      when: 'Inline code, variable names, and token references',
+                    },
+                  ] as Record<string, unknown>[]
+                }
+                columns={[
+                  {
+                    key: 'component',
+                    header: 'Component',
+                    width: pixel(250),
+                    renderCell: (row: Record<string, unknown>) => (
+                      <XDSText type="code" textWrap="wrap">
+                        {row.component as string}
+                      </XDSText>
+                    ),
+                  },
+                  {
+                    key: 'when',
+                    header: 'When to use',
+                    renderCell: (row: Record<string, unknown>) => (
+                      <XDSText type="body" textWrap="wrap">
+                        {row.when as string}
+                      </XDSText>
+                    ),
+                  },
+                ]}
+                density="spacious"
+                dividers="rows"
+              />
+
+              <XDSHeading level={3}>Best practices</XDSHeading>
+              <XDSTable
+                data={
+                  [
+                    {
+                      type: 'do',
+                      text: 'Use XDSHeading with sequential levels to create a real document outline that screen readers can navigate',
+                    },
+                    {
+                      type: 'do',
+                      text: 'Use XDSText type="display-*" or type="large" for visually large text that is not a section title',
+                    },
+                    {
+                      type: 'do',
+                      text: 'Use color="secondary" on supporting text instead of reducing opacity — tokens adapt to light/dark mode',
+                    },
+                    {
+                      type: 'do',
+                      text: 'Use maxLines for truncation — the component handles ellipsis and line clamping',
+                    },
+                    {
+                      type: 'dont',
+                      text: "Don't use XDSText for section titles — screen readers only build a navigable outline from heading elements (h1–h6). XDSText renders a span, which is invisible to assistive technology",
+                    },
+                    {
+                      type: 'dont',
+                      text: "Don't use XDSHeading just for visual size — it creates false document structure that confuses screen reader navigation",
+                    },
+                    {
+                      type: 'dont',
+                      text: "Don't skip heading levels (e.g. h1 → h3) — screen readers expose headings as a navigable tree",
+                    },
+                    {
+                      type: 'dont',
+                      text: "Don't set font-size or font-family in inline styles — always use component props or design tokens",
+                    },
+                  ] as Record<string, unknown>[]
+                }
+                columns={[
+                  {
+                    key: 'type',
+                    header: 'Guidance',
+                    width: pixel(100),
+                    renderCell: (item: Record<string, unknown>) => (
+                      <XDSBadge
+                        label={item.type === 'do' ? 'Do' : 'Dont'}
+                        variant={item.type === 'do' ? 'success' : 'error'}
+                      />
+                    ),
+                  },
+                  {
+                    key: 'text',
+                    header: '',
+                    renderCell: (item: Record<string, unknown>) => (
+                      <XDSText type="body" textWrap="wrap">
+                        {item.text as string}
+                      </XDSText>
+                    ),
+                  },
+                ]}
+                density="spacious"
+                dividers="rows"
+              />
+            </XDSStack>
+
+            {/* ================================================================
+            SECTION 2 — Preview (theme toggle + scale explorer merged)
+            ================================================================ */}
+            <XDSStack direction="vertical" gap={4}>
+              <XDSHeading level={2}>Preview</XDSHeading>
+              <XDSText type="body" color="secondary">
+                Toggle between themes and adjust the type scale to see how
+                typography adapts across the system.
+              </XDSText>
+
+              {/* Side-by-side: controls panel + live specimen */}
+              <div style={{display: 'flex', gap: 16, alignItems: 'stretch'}}>
+                {/* Left panel — controls + scale chart */}
+                <div
+                  style={{
+                    width: 300,
+                    flexShrink: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 12,
+                  }}>
+                  {/* Theme */}
+                  <XDSCard padding={3}>
+                    <XDSText
+                      type="label"
+                      color="secondary"
+                      display="block"
+                      style={{marginBottom: 8}}>
+                      Theme
+                    </XDSText>
+                    <XDSStack
+                      direction="horizontal"
+                      gap={1}
+                      vAlign="center"
+                      style={{flexWrap: 'wrap'}}>
+                      {TYPO_THEME_OPTIONS.map(opt => (
+                        <XDSButton
+                          key={opt.key}
+                          label={opt.label}
+                          variant={
+                            previewTheme === opt.key ? 'primary' : 'secondary'
+                          }
+                          size="sm"
+                          onClick={() => setPreviewTheme(opt.key)}
+                        />
+                      ))}
+                    </XDSStack>
+                    <XDSText
+                      type="supporting"
+                      color="secondary"
+                      style={{marginTop: 6}}>
+                      {activeThemeOption.desc}
+                    </XDSText>
+                  </XDSCard>
+
+                  {/* Scale controls + bar chart */}
+                  <XDSCard padding={3} style={{flex: 1}}>
+                    <XDSStack direction="vertical" gap={3}>
+                      <div>
+                        <XDSText
+                          type="label"
+                          color="secondary"
+                          display="block"
+                          style={{marginBottom: 6}}>
+                          Base size
+                        </XDSText>
+                        <XDSStack
+                          direction="horizontal"
+                          gap={1}
+                          vAlign="center">
+                          {(
+                            [
+                              {label: 'S', value: 12},
+                              {label: 'M', value: 14},
+                              {label: 'L', value: 16},
+                              {label: 'XL', value: 18},
+                            ] as const
+                          ).map(p => (
+                            <XDSButton
+                              key={p.value}
+                              label={p.label}
+                              variant={
+                                scaleBase === p.value ? 'primary' : 'ghost'
+                              }
+                              size="sm"
+                              onClick={() => setScaleBase(p.value)}
+                            />
+                          ))}
+                          <div style={{flex: 1}} />
+                          <XDSNumberInput
+                            label="Base size"
+                            isLabelHidden
+                            value={scaleBase}
+                            onChange={(v: number) => setScaleBase(v)}
+                            min={10}
+                            max={24}
+                            step={1}
+                            units="px"
+                            size="sm"
+                          />
+                        </XDSStack>
+                      </div>
+                      <div>
+                        <XDSText
+                          type="label"
+                          color="secondary"
+                          display="block"
+                          style={{marginBottom: 6}}>
+                          Scale ratio
+                        </XDSText>
+                        <XDSSelector
+                          label="Scale ratio"
+                          isLabelHidden
+                          options={[
+                            ...TYPO_RATIO_OPTIONS.map(opt => ({
+                              value: String(opt.value),
+                              label: opt.label,
+                            })),
+                            {
+                              value: 'custom',
+                              label: !TYPO_RATIO_OPTIONS.some(
+                                o => Math.abs(o.value - scaleRatio) < 0.001,
+                              )
+                                ? `Custom — ${scaleRatio.toFixed(3)}`
+                                : 'Custom...',
+                            },
+                          ]}
+                          value={
+                            !TYPO_RATIO_OPTIONS.some(
+                              o => Math.abs(o.value - scaleRatio) < 0.001,
+                            )
+                              ? 'custom'
+                              : String(scaleRatio)
+                          }
+                          onChange={(v: string) => {
+                            if (v !== 'custom') setScaleRatio(Number(v));
+                          }}
+                        />
+                      </div>
+                      <XDSDivider />
+                      <XDSStack direction="vertical" gap={1}>
+                        {scaleSizes.map(s => (
+                          <div
+                            key={s.label}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 8,
+                            }}>
+                            <div style={{width: 72, flexShrink: 0}}>
+                              <XDSText type="supporting" color="secondary">
+                                {s.label}
+                              </XDSText>
+                            </div>
+                            <div
+                              style={{
+                                width: 32,
+                                flexShrink: 0,
+                                textAlign: 'right',
+                              }}>
+                              <XDSText type="supporting" color="secondary">
+                                {s.px}
+                              </XDSText>
+                            </div>
+                            <div style={{flex: 1, minWidth: 0}}>
+                              <div
+                                style={{
+                                  height: Math.max(s.px * 0.45, 3),
+                                  width: `${(s.px / maxPx) * 100}%`,
+                                  borderRadius: 2,
+                                  backgroundColor:
+                                    s.step === 0
+                                      ? 'var(--color-accent)'
+                                      : 'var(--color-accent-muted, rgba(0,100,224,0.25))',
+                                  transition:
+                                    'width 300ms ease, height 300ms ease',
+                                }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </XDSStack>
+                    </XDSStack>
+                  </XDSCard>
+                </div>
+
+                {/* Right — live themed specimen */}
+                <div style={{flex: 1, minWidth: 0}}>
+                  <XDSTheme theme={activeThemeOption.theme}>
+                    <XDSTheme theme={scalePreviewTheme}>
+                      <div
+                        style={{
+                          padding: 32,
+                          borderRadius: 12,
+                          backgroundColor: 'var(--color-background-surface)',
+                          color: 'var(--color-text-primary)',
+                          border: '1px solid var(--color-border)',
+                          height: '100%',
+                          boxSizing: 'border-box',
+                        }}>
+                        <XDSStack direction="vertical" gap={5}>
+                          {/* display */}
+                          <XDSStack direction="vertical" gap={1}>
+                            <XDSText type="display-1">Welcome back</XDSText>
+                            <XDSText type="large">
+                              Here&apos;s what&apos;s happening with your
+                              projects today.
+                            </XDSText>
+                          </XDSStack>
+                          <XDSDivider />
+                          {/* h1 + body */}
+                          <XDSStack direction="vertical" gap={2}>
+                            <XDSHeading level={1}>Project settings</XDSHeading>
+                            <XDSText type="body">
+                              Manage who has access to this project and what
+                              permissions they have. Changes take effect
+                              immediately.
+                            </XDSText>
+                          </XDSStack>
+                          {/* h2 + label + supporting */}
+                          <XDSStack direction="vertical" gap={2}>
+                            <XDSHeading level={2}>Team members</XDSHeading>
+                            <XDSStack direction="vertical" gap={1}>
+                              <XDSText type="label">Email address</XDSText>
+                              <XDSText type="supporting" color="secondary">
+                                We&apos;ll send an invite to this address.
+                              </XDSText>
+                            </XDSStack>
+                          </XDSStack>
+                          {/* h3 + h4 */}
+                          <XDSStack direction="vertical" gap={2}>
+                            <XDSHeading level={3}>Notifications</XDSHeading>
+                            <XDSHeading level={4}>Email preferences</XDSHeading>
+                            <XDSText type="body" color="secondary">
+                              Choose which updates you&apos;d like to receive.
+                            </XDSText>
+                          </XDSStack>
+                          <XDSDivider />
+                          {/* h5 + h6 + code + supporting */}
+                          <XDSStack direction="vertical" gap={2}>
+                            <XDSHeading level={5}>Advanced</XDSHeading>
+                            <XDSHeading level={6}>API Configuration</XDSHeading>
+                            <XDSText type="code">
+                              const config = &#123; theme: &apos;default&apos;
+                              &#125;;
+                            </XDSText>
+                            <XDSText type="supporting" color="secondary">
+                              Last updated 2 hours ago · 3 members online
+                            </XDSText>
+                          </XDSStack>
+                        </XDSStack>
+                      </div>
+                    </XDSTheme>
+                  </XDSTheme>
+                </div>
+              </div>
+            </XDSStack>
+
+            {/* Why typography matters — context at the bottom */}
+            <XDSStack direction="vertical" gap={4}>
+              <XDSHeading level={2}>Why typography matters</XDSHeading>
+              <XDSText type="body" color="secondary">
+                In most interfaces, text makes up over 80% of the content users
+                interact with. Typography is not decoration — it is the
+                interface. When type is inconsistent, users slow down, miss
+                actions, and lose trust in the product.
+              </XDSText>
+              <XDSList density="spacious" listStyle="disc">
+                <XDSListItem
+                  label={
+                    <>
+                      <XDSHeading level={4}>
+                        Users scan before they read.
+                      </XDSHeading>{' '}
+                      <XDSText type="body" textWrap="wrap">
+                        Size and weight differences create a visual hierarchy
+                        that tells people where to look first, what&apos;s
+                        actionable, and what&apos;s secondary — without reading
+                        a single word.
+                      </XDSText>
+                    </>
+                  }
+                />
+                <XDSListItem
+                  label={
+                    <>
+                      <XDSHeading level={4}>
+                        Inconsistent sizing breaks rhythm.
+                      </XDSHeading>{' '}
+                      <XDSText type="body" textWrap="wrap">
+                        When one screen uses 13px body text and another uses
+                        15px, the interface feels stitched together. A shared
+                        type scale eliminates this drift across teams.
+                      </XDSText>
+                    </>
+                  }
+                />
+                <XDSListItem
+                  label={
+                    <>
+                      <XDSHeading level={4}>
+                        Screen readers depend on heading elements.
+                      </XDSHeading>{' '}
+                      <XDSText type="body" textWrap="wrap">
+                        If a section title uses XDSText instead of XDSHeading,
+                        assistive technology can&apos;t build a page outline.
+                        Users who navigate by headings will miss entire
+                        sections.
+                      </XDSText>
+                    </>
+                  }
+                />
+                <XDSListItem
+                  label={
+                    <>
+                      <XDSHeading level={4}>
+                        Font loading affects perceived performance.
+                      </XDSHeading>{' '}
+                      <XDSText type="body" textWrap="wrap">
+                        System fonts render instantly; custom fonts can cause
+                        layout shift. XDS font declarations include fallback
+                        stacks so text is always readable while fonts load.
+                      </XDSText>
+                    </>
+                  }
+                />
+                <XDSListItem
+                  label={
+                    <>
+                      <XDSHeading level={4}>
+                        Line height and measure affect comprehension.
+                      </XDSHeading>{' '}
+                      <XDSText type="body" textWrap="wrap">
+                        Lines that are too tight or too wide make readers lose
+                        their place. The XDS type scale snaps line heights to a
+                        4px grid and targets proven ratios by size tier.
+                      </XDSText>
+                    </>
+                  }
+                />
+              </XDSList>
+              <XDSText type="body" color="secondary">
+                A design system centralizes these decisions so individual
+                features don&apos;t reinvent them. Every text element in XDS
+                inherits from the same token-driven scale, which means switching
+                themes updates every heading, label, and caption system-wide —
+                no manual migration required.
+              </XDSText>
+            </XDSStack>
+          </>
+        )}
+
+        {refTab === 'api' && (
+          <XDSStack direction="vertical" gap={8}>
+            {/* How it works */}
+            <XDSStack direction="vertical" gap={4}>
+              <XDSHeading level={2}>How it works</XDSHeading>
+              <XDSText type="body" color="secondary">
+                Typography is built on three layers: raw size tokens (geometric
+                scale in rem), semantic tokens (size + weight + line height
+                bundles), and components that consume them. Themes can override
+                any layer.
+              </XDSText>
+              <XDSCard padding={0}>
+                <XDSCodeBlock
+                  title="Layers 1-2: Design tokens (CSS)"
+                  code={`/* Layer 1: Raw size token — set by theme scale */
+--font-size-2xl: 1.5rem;   /* 24px */
+
+/* Layer 2: Semantic token — references Layer 1 */
+--text-heading-1-size: var(--font-size-2xl);
+--text-heading-1-weight: var(--font-weight-semibold);
+--text-heading-1-leading: 1.3333;   /* 24px → 32px (4px grid) */`}
+                  language="css"
+                  hasCopyButton
+                />
+              </XDSCard>
+              <XDSCard padding={0}>
+                <XDSCodeBlock
+                  title="Layer 3: Component (TSX)"
+                  code={`// Component consumes the semantic tokens automatically
+<XDSHeading level={1}>Page title</XDSHeading>`}
+                  language="tsx"
+                  hasCopyButton
+                />
+              </XDSCard>
+            </XDSStack>
+
+            {/* Code */}
+            <XDSStack direction="vertical" gap={4}>
+              <XDSHeading level={2}>Code</XDSHeading>
+              <XDSCard padding={0}>
+                <XDSCodeBlock
+                  title="Basic usage"
+                  code={`import { XDSHeading, XDSText } from '@xds/core/Text';
+
+// Section structure — use XDSHeading
+<XDSHeading level={1}>Page title</XDSHeading>
+<XDSHeading level={2}>Section title</XDSHeading>
+
+// Content — use XDSText with a type
+<XDSText type="display-1">Hero headline</XDSText>
+<XDSText type="body">Paragraph content.</XDSText>
+<XDSText type="body" weight="bold">Emphasized.</XDSText>
+<XDSText type="label">Form label</XDSText>
+<XDSText type="supporting" color="secondary">Helper text</XDSText>
+<XDSText type="code">variableName</XDSText>
+
+// Truncation
+<XDSText type="body" maxLines={2}>Long content...</XDSText>
+<XDSHeading level={2} textWrap="balance">Balanced heading</XDSHeading>`}
+                  language="tsx"
+                  hasCopyButton
+                />
+              </XDSCard>
+              <XDSCard padding={0}>
+                <XDSCodeBlock
+                  title="Theming typography"
+                  code={`import { defineTheme } from '@xds/core/theme';
+
+export const myTheme = defineTheme({
+  name: 'my-theme',
+  typography: {
+    scale: { base: 16, ratio: 1.25 },  // Dense: 12/1.125, Default: 14/1.2, Airy: 16/1.25
+    body: { family: 'Geist', fallbacks: '-apple-system, sans-serif' },
+    heading: { weight: 'semibold', weights: { 3: 'bold', 4: 'bold' } },
+    code: { family: 'Geist Mono', fallbacks: '"SF Mono", monospace' },
+  },
+});`}
+                  language="tsx"
+                  hasCopyButton
+                />
+              </XDSCard>
+            </XDSStack>
+
+            {/* Props */}
+            <XDSStack direction="vertical" gap={4}>
+              <XDSHeading level={2}>Props</XDSHeading>
+              <XDSHeading level={3}>XDSHeading</XDSHeading>
+              <XDSTable
+                data={
+                  [
+                    {
+                      prop: 'level',
+                      type: '1 | 2 | 3 | 4 | 5 | 6',
+                      req: 'Yes',
+                      desc: 'HTML heading tag and visual size.',
+                    },
+                    {
+                      prop: 'weight',
+                      type: "'normal' | 'medium' | 'semibold' | 'bold'",
+                      req: 'No',
+                      desc: 'Override default weight (semibold).',
+                    },
+                    {
+                      prop: 'color',
+                      type: "'primary' | 'secondary' | 'disabled' | 'active' | 'inherit'",
+                      req: 'No',
+                      desc: 'Semantic text color.',
+                    },
+                    {
+                      prop: 'maxLines',
+                      type: 'number',
+                      req: 'No',
+                      desc: 'Truncate with ellipsis after N lines.',
+                    },
+                    {
+                      prop: 'textWrap',
+                      type: "'wrap' | 'nowrap' | 'balance' | 'pretty'",
+                      req: 'No',
+                      desc: 'CSS text-wrap value.',
+                    },
+                  ] as Record<string, unknown>[]
+                }
+                columns={[
+                  {
+                    key: 'prop',
+                    header: 'Prop',
+                    width: pixel(100),
+                    renderCell: (r: Record<string, unknown>) => (
+                      <XDSText type="code">{r.prop as string}</XDSText>
+                    ),
+                  },
+                  {
+                    key: 'type',
+                    header: 'Type',
+                    width: pixel(220),
+                    renderCell: (r: Record<string, unknown>) => (
+                      <XDSText type="code" maxLines={2}>
+                        {r.type as string}
+                      </XDSText>
+                    ),
+                  },
+                  {key: 'req', header: 'Req', width: pixel(50)},
+                  {
+                    key: 'desc',
+                    header: 'Description',
+                    renderCell: (r: Record<string, unknown>) => (
+                      <XDSText type="body" textWrap="wrap">
+                        {r.desc as string}
+                      </XDSText>
+                    ),
+                  },
+                ]}
+                density="spacious"
+                dividers="rows"
+              />
+              <XDSHeading level={3}>XDSText</XDSHeading>
+              <XDSTable
+                data={
+                  [
+                    {
+                      prop: 'type',
+                      type: "'body' | 'large' | 'label' | 'supporting' | 'code' | 'display-1' | 'display-2' | 'display-3'",
+                      req: 'Yes',
+                      desc: 'Semantic text role. Controls size, weight, font family.',
+                    },
+                    {
+                      prop: 'weight',
+                      type: "'normal' | 'medium' | 'semibold' | 'bold'",
+                      req: 'No',
+                      desc: 'Override default weight for the type.',
+                    },
+                    {
+                      prop: 'color',
+                      type: "'primary' | 'secondary' | 'disabled' | 'active' | 'inherit'",
+                      req: 'No',
+                      desc: 'Semantic text color.',
+                    },
+                    {
+                      prop: 'display',
+                      type: "'inline' | 'block'",
+                      req: 'No',
+                      desc: 'CSS display. Default inline.',
+                    },
+                    {
+                      prop: 'maxLines',
+                      type: 'number',
+                      req: 'No',
+                      desc: 'Truncate with ellipsis after N lines.',
+                    },
+                    {
+                      prop: 'textWrap',
+                      type: "'wrap' | 'nowrap' | 'balance' | 'pretty'",
+                      req: 'No',
+                      desc: 'CSS text-wrap value.',
+                    },
+                  ] as Record<string, unknown>[]
+                }
+                columns={[
+                  {
+                    key: 'prop',
+                    header: 'Prop',
+                    width: pixel(100),
+                    renderCell: (r: Record<string, unknown>) => (
+                      <XDSText type="code">{r.prop as string}</XDSText>
+                    ),
+                  },
+                  {
+                    key: 'type',
+                    header: 'Type',
+                    width: pixel(220),
+                    renderCell: (r: Record<string, unknown>) => (
+                      <XDSText type="code" maxLines={2}>
+                        {r.type as string}
+                      </XDSText>
+                    ),
+                  },
+                  {key: 'req', header: 'Req', width: pixel(50)},
+                  {
+                    key: 'desc',
+                    header: 'Description',
+                    renderCell: (r: Record<string, unknown>) => (
+                      <XDSText type="body" textWrap="wrap">
+                        {r.desc as string}
+                      </XDSText>
+                    ),
+                  },
+                ]}
+                density="spacious"
+                dividers="rows"
+              />
+            </XDSStack>
+
+            {/* Tokens */}
+            <XDSStack direction="vertical" gap={4}>
+              <XDSHeading level={2}>Tokens</XDSHeading>
+              <XDSTable
+                data={
+                  [
+                    {
+                      type: 'Display 1',
+                      sizeToken: '--text-display-1-size',
+                      weightToken: '--text-display-1-weight',
+                      component: '<XDSText type="display-1">',
+                    },
+                    {
+                      type: 'Display 2',
+                      sizeToken: '--text-display-2-size',
+                      weightToken: '--text-display-2-weight',
+                      component: '<XDSText type="display-2">',
+                    },
+                    {
+                      type: 'Display 3',
+                      sizeToken: '--text-display-3-size',
+                      weightToken: '--text-display-3-weight',
+                      component: '<XDSText type="display-3">',
+                    },
+                    {
+                      type: 'Heading 1',
+                      sizeToken: '--text-heading-1-size',
+                      weightToken: '--text-heading-1-weight',
+                      component: '<XDSHeading level={1}>',
+                    },
+                    {
+                      type: 'Heading 2',
+                      sizeToken: '--text-heading-2-size',
+                      weightToken: '--text-heading-2-weight',
+                      component: '<XDSHeading level={2}>',
+                    },
+                    {
+                      type: 'Heading 3',
+                      sizeToken: '--text-heading-3-size',
+                      weightToken: '--text-heading-3-weight',
+                      component: '<XDSHeading level={3}>',
+                    },
+                    {
+                      type: 'Heading 4',
+                      sizeToken: '--text-heading-4-size',
+                      weightToken: '--text-heading-4-weight',
+                      component: '<XDSHeading level={4}>',
+                    },
+                    {
+                      type: 'Heading 5',
+                      sizeToken: '--text-heading-5-size',
+                      weightToken: '--text-heading-5-weight',
+                      component: '<XDSHeading level={5}>',
+                    },
+                    {
+                      type: 'Heading 6',
+                      sizeToken: '--text-heading-6-size',
+                      weightToken: '--text-heading-6-weight',
+                      component: '<XDSHeading level={6}>',
+                    },
+                    {
+                      type: 'Large',
+                      sizeToken: '--text-large-size',
+                      weightToken: '--text-large-weight',
+                      component: '<XDSText type="large">',
+                    },
+                    {
+                      type: 'Body',
+                      sizeToken: '--text-body-size',
+                      weightToken: '--text-body-weight',
+                      component: '<XDSText type="body">',
+                    },
+                    {
+                      type: 'Label',
+                      sizeToken: '--text-label-size',
+                      weightToken: '--text-label-weight',
+                      component: '<XDSText type="label">',
+                    },
+                    {
+                      type: 'Supporting',
+                      sizeToken: '--text-supporting-size',
+                      weightToken: '--text-supporting-weight',
+                      component: '<XDSText type="supporting">',
+                    },
+                    {
+                      type: 'Code',
+                      sizeToken: '--text-code-size',
+                      weightToken: '--text-code-weight',
+                      component: '<XDSText type="code">',
+                    },
+                  ] as Record<string, unknown>[]
+                }
+                columns={[
+                  {
+                    key: 'type',
+                    header: 'Type',
+                    width: pixel(100),
+                    renderCell: (r: Record<string, unknown>) => (
+                      <XDSText type="label">{r.type as string}</XDSText>
+                    ),
+                  },
+                  {
+                    key: 'sizeToken',
+                    header: 'Size token',
+                    renderCell: (r: Record<string, unknown>) => (
+                      <XDSText type="code">{r.sizeToken as string}</XDSText>
+                    ),
+                  },
+                  {
+                    key: 'weightToken',
+                    header: 'Weight token',
+                    renderCell: (r: Record<string, unknown>) => (
+                      <XDSText type="code">{r.weightToken as string}</XDSText>
+                    ),
+                  },
+                  {
+                    key: 'component',
+                    header: 'Component',
+                    renderCell: (r: Record<string, unknown>) => (
+                      <XDSText type="code">{r.component as string}</XDSText>
+                    ),
+                  },
+                ]}
+                density="spacious"
+                dividers="rows"
+              />
+              <XDSGrid columns={2} gap={4}>
+                <XDSCard padding={4}>
+                  <XDSText
+                    type="label"
+                    display="block"
+                    style={{marginBottom: 8}}>
+                    Font families
+                  </XDSText>
+                  <XDSStack direction="vertical" gap={2}>
+                    {[
+                      {
+                        token: '--font-family-body',
+                        note: 'body, large, label, supporting',
+                      },
+                      {
+                        token: '--font-family-heading',
+                        note: 'headings, display sizes',
+                      },
+                      {
+                        token: '--font-family-code',
+                        note: 'code text, CodeBlock',
+                      },
+                    ].map(f => (
+                      <div key={f.token}>
+                        <XDSText type="code" display="block">
+                          {f.token}
+                        </XDSText>
+                        <XDSText type="supporting" color="secondary">
+                          {f.note}
+                        </XDSText>
+                      </div>
+                    ))}
+                  </XDSStack>
+                </XDSCard>
+                <XDSCard padding={4}>
+                  <XDSText
+                    type="label"
+                    display="block"
+                    style={{marginBottom: 8}}>
+                    Weights
+                  </XDSText>
+                  <XDSStack direction="vertical" gap={2}>
+                    {[
+                      {
+                        token: '--font-weight-normal',
+                        val: '400',
+                        note: 'body, code, supporting',
+                      },
+                      {
+                        token: '--font-weight-medium',
+                        val: '500',
+                        note: 'label',
+                      },
+                      {
+                        token: '--font-weight-semibold',
+                        val: '600',
+                        note: 'headings, large',
+                      },
+                      {
+                        token: '--font-weight-bold',
+                        val: '700',
+                        note: 'weight="bold" prop',
+                      },
+                    ].map(w => (
+                      <div
+                        key={w.token}
+                        style={{
+                          display: 'flex',
+                          gap: 8,
+                          alignItems: 'baseline',
+                        }}>
+                        <XDSText type="code">{w.val}</XDSText>
+                        <XDSText type="supporting" color="secondary">
+                          {w.note}
+                        </XDSText>
+                      </div>
+                    ))}
+                  </XDSStack>
+                </XDSCard>
+              </XDSGrid>
+              <XDSCard padding={4}>
+                <XDSText type="label" display="block" style={{marginBottom: 8}}>
+                  Text colors (color prop)
+                </XDSText>
+                <XDSStack
+                  direction="horizontal"
+                  gap={6}
+                  style={{flexWrap: 'wrap'}}>
+                  {[
+                    {prop: 'primary', note: 'Default — body, headings'},
+                    {prop: 'secondary', note: 'Descriptions, metadata'},
+                    {prop: 'disabled', note: 'Inactive content'},
+                    {prop: 'active', note: 'Links, accents'},
+                    {prop: 'inherit', note: 'Parent color'},
+                  ].map(c => (
+                    <XDSStack key={c.prop} direction="vertical" gap={0}>
+                      <XDSText
+                        type="code"
+                        display="block">{`"${c.prop}"`}</XDSText>
+                      <XDSText type="supporting" color="secondary">
+                        {c.note}
+                      </XDSText>
+                    </XDSStack>
+                  ))}
+                </XDSStack>
+              </XDSCard>
+            </XDSStack>
+          </XDSStack>
+        )}
+      </XDSStack>
+    </XDSSection>
   );
 }
 
@@ -725,42 +2390,104 @@ function FoundationPage({foundationKey}: {foundationKey: string}) {
 // LibraryPackagePage components
 // ---------------------------------------------------------------------------
 
-const VEGA_COMPONENTS: {label: string; items: {key: string; name: string; desc: string}[]}[] = [
+const VEGA_COMPONENTS: {
+  label: string;
+  items: {key: string; name: string; desc: string}[];
+}[] = [
   {
     label: 'Charts',
     items: [
-      {key: 'bar-chart', name: 'BarChart', desc: 'Vertical and horizontal bar charts for categorical data comparison.'},
-      {key: 'line-chart', name: 'LineChart', desc: 'Line charts for trends over time with multiple series support.'},
-      {key: 'area-chart', name: 'AreaChart', desc: 'Filled area charts for volume and cumulative data visualization.'},
-      {key: 'pie-chart', name: 'PieChart', desc: 'Pie and donut charts for part-to-whole relationships.'},
+      {
+        key: 'bar-chart',
+        name: 'BarChart',
+        desc: 'Vertical and horizontal bar charts for categorical data comparison.',
+      },
+      {
+        key: 'line-chart',
+        name: 'LineChart',
+        desc: 'Line charts for trends over time with multiple series support.',
+      },
+      {
+        key: 'area-chart',
+        name: 'AreaChart',
+        desc: 'Filled area charts for volume and cumulative data visualization.',
+      },
+      {
+        key: 'pie-chart',
+        name: 'PieChart',
+        desc: 'Pie and donut charts for part-to-whole relationships.',
+      },
     ],
   },
   {
     label: 'Utilities',
     items: [
-      {key: 'chart-legend', name: 'ChartLegend', desc: 'Legend component for labeling chart series and categories.'},
-      {key: 'chart-tooltip', name: 'ChartTooltip', desc: 'Tooltip overlay for displaying data point details on hover.'},
-      {key: 'chart-axis', name: 'ChartAxis', desc: 'Configurable axis component for labels, ticks, and gridlines.'},
+      {
+        key: 'chart-legend',
+        name: 'ChartLegend',
+        desc: 'Legend component for labeling chart series and categories.',
+      },
+      {
+        key: 'chart-tooltip',
+        name: 'ChartTooltip',
+        desc: 'Tooltip overlay for displaying data point details on hover.',
+      },
+      {
+        key: 'chart-axis',
+        name: 'ChartAxis',
+        desc: 'Configurable axis component for labels, ticks, and gridlines.',
+      },
     ],
   },
 ];
 
-const CHAT_COMPONENTS: {label: string; items: {key: string; name: string; desc: string}[]}[] = [
+const CHAT_COMPONENTS: {
+  label: string;
+  items: {key: string; name: string; desc: string}[];
+}[] = [
   {
     label: 'Messaging',
     items: [
-      {key: 'chat', name: 'Chat', desc: 'Conversational message interface with bubbles, input, and thread support.'},
-      {key: 'chat-composer', name: 'ChatComposer', desc: 'Rich text composer with attachments, mentions, and slash commands.'},
-      {key: 'chat-composer-input', name: 'ChatComposerInput', desc: 'Controlled input for the chat composer with mention triggers.'},
-      {key: 'chat-layout', name: 'ChatLayout', desc: 'Full chat page layout with message list, composer, and empty state.'},
+      {
+        key: 'chat',
+        name: 'Chat',
+        desc: 'Conversational message interface with bubbles, input, and thread support.',
+      },
+      {
+        key: 'chat-composer',
+        name: 'ChatComposer',
+        desc: 'Rich text composer with attachments, mentions, and slash commands.',
+      },
+      {
+        key: 'chat-composer-input',
+        name: 'ChatComposerInput',
+        desc: 'Controlled input for the chat composer with mention triggers.',
+      },
+      {
+        key: 'chat-layout',
+        name: 'ChatLayout',
+        desc: 'Full chat page layout with message list, composer, and empty state.',
+      },
     ],
   },
   {
     label: 'Content',
     items: [
-      {key: 'chat-tokenized-text', name: 'ChatTokenizedText', desc: 'Renders text with inline tokens like @mentions and #tags.'},
-      {key: 'chat-tool-calls', name: 'ChatToolCalls', desc: 'Displays AI tool call results with status and expandable details.'},
-      {key: 'chat-dictation', name: 'ChatDictation', desc: 'Voice dictation input with recording states and waveform.'},
+      {
+        key: 'chat-tokenized-text',
+        name: 'ChatTokenizedText',
+        desc: 'Renders text with inline tokens like @mentions and #tags.',
+      },
+      {
+        key: 'chat-tool-calls',
+        name: 'ChatToolCalls',
+        desc: 'Displays AI tool call results with status and expandable details.',
+      },
+      {
+        key: 'chat-dictation',
+        name: 'ChatDictation',
+        desc: 'Voice dictation input with recording states and waveform.',
+      },
     ],
   },
 ];
@@ -771,7 +2498,10 @@ function PackageGridPage({
   onSelectComponent,
 }: {
   packageKey: string;
-  components: {label: string; items: {key: string; name: string; desc: string}[]}[];
+  components: {
+    label: string;
+    items: {key: string; name: string; desc: string}[];
+  }[];
   onSelectComponent: (key: string) => void;
 }) {
   const [hoveredComponent, setHoveredComponent] = useState<string | null>(null);
@@ -802,7 +2532,11 @@ function PackageGridPage({
               </XDSText>
             </XDSStack>
           ) : (
-            <XDSStack direction="vertical" gap={2} hAlign="center" style={{textAlign: 'center'}}>
+            <XDSStack
+              direction="vertical"
+              gap={2}
+              hAlign="center"
+              style={{textAlign: 'center'}}>
               <XDSText type="display-2">{pkg.name}</XDSText>
               <XDSText type="body" color="secondary">
                 {totalComponents} components
@@ -810,7 +2544,10 @@ function PackageGridPage({
               {pkg.status === 'Coming Soon' ? (
                 <XDSBadge label="Coming Soon" variant="blue" />
               ) : (
-                <XDSText type="supporting" color="secondary" style={{maxWidth: 300}}>
+                <XDSText
+                  type="supporting"
+                  color="secondary"
+                  style={{maxWidth: 300}}>
                   Hover a component on the right to preview it here.
                 </XDSText>
               )}
@@ -828,82 +2565,105 @@ function PackageGridPage({
             backgroundColor: 'var(--color-background-surface, #fff)',
             padding: '24px 32px 16px',
           }}>
-          <XDSStack direction="horizontal" gap={3} vAlign="center" style={{marginBottom: 8}}>
+          <XDSStack
+            direction="horizontal"
+            gap={3}
+            vAlign="center"
+            style={{marginBottom: 8}}>
             <XDSText type="display-1">{pkg.name}</XDSText>
             {pkg.version && (
-              <XDSText type="supporting" color="secondary" style={{fontFamily: 'monospace'}}>
+              <XDSText
+                type="supporting"
+                color="secondary"
+                style={{fontFamily: 'monospace'}}>
                 v{pkg.version}
               </XDSText>
             )}
           </XDSStack>
           <XDSStack direction="horizontal" gap={2} vAlign="center">
-          <XDSText type="body" color="secondary" style={{flex: 1}}>
-            {pkg.description}
-          </XDSText>
-          <XDSPopover
-            label="Install"
-            placement="below"
-            alignment="end"
-            width={360}
-            content={
-              <XDSStack direction="vertical" gap={3}>
-                <XDSStack direction="vertical" gap={1}>
-                  <XDSText type="label">1. Install the package</XDSText>
-                  <XDSCard padding={0}>
-                    <XDSCodeBlock
-                      code={`npm install ${pkg.name}`}
-                      language="bash"
-                      hasCopyButton
-                      size="sm"
-                    />
-                  </XDSCard>
+            <XDSText type="body" color="secondary" style={{flex: 1}}>
+              {pkg.description}
+            </XDSText>
+            <XDSPopover
+              label="Install"
+              placement="below"
+              alignment="end"
+              width={360}
+              content={
+                <XDSStack direction="vertical" gap={3}>
+                  <XDSStack direction="vertical" gap={1}>
+                    <XDSText type="label">1. Install the package</XDSText>
+                    <XDSCard padding={0}>
+                      <XDSCodeBlock
+                        code={`npm install ${pkg.name}`}
+                        language="bash"
+                        hasCopyButton
+                        size="sm"
+                      />
+                    </XDSCard>
+                  </XDSStack>
+                  <XDSStack direction="vertical" gap={1}>
+                    <XDSText type="label">2. Import a component</XDSText>
+                    <XDSCard padding={0}>
+                      <XDSCodeBlock
+                        code={`import {...} from '${pkg.name}/ComponentName';`}
+                        language="typescript"
+                        size="sm"
+                      />
+                    </XDSCard>
+                  </XDSStack>
+                  <XDSText type="supporting" color="secondary">
+                    See Getting Started for full setup with ThemeProvider.
+                  </XDSText>
                 </XDSStack>
-                <XDSStack direction="vertical" gap={1}>
-                  <XDSText type="label">2. Import a component</XDSText>
-                  <XDSCard padding={0}>
-                    <XDSCodeBlock
-                      code={`import {...} from '${pkg.name}/ComponentName';`}
-                      language="typescript"
-                      size="sm"
-                    />
-                  </XDSCard>
-                </XDSStack>
-                <XDSText type="supporting" color="secondary">
-                  See Getting Started for full setup with ThemeProvider.
-                </XDSText>
-              </XDSStack>
-            }>
-            <XDSButton label="Install" variant="primary" size="sm" icon={<DownloadIcon />} />
-          </XDSPopover>
-        </XDSStack>
+              }>
+              <XDSButton
+                label="Install"
+                variant="primary"
+                size="sm"
+                icon={<DownloadIcon />}
+              />
+            </XDSPopover>
+          </XDSStack>
         </div>
         <div style={{padding: '24px 32px'}}>
-        {components.map(cat => (
-          <div key={cat.label} style={{marginBottom: 28}}>
-            <XDSText type="label" color="secondary" style={{display: 'block', marginBottom: 10}}>
-              {cat.label}
-            </XDSText>
-            <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10}}>
-              {cat.items.map(item => (
-                <div
-                  key={item.key}
-                  onMouseEnter={() => setHoveredComponent(item.key)}
-                  onMouseLeave={() => setHoveredComponent(null)}
-                  onClick={() => onSelectComponent(item.key)}
-                  style={{cursor: 'pointer'}}>
-                  <XDSCard padding={3}>
-                    <XDSText type="body" weight="bold" style={{display: 'block', marginBottom: 2}}>
-                      {item.name}
-                    </XDSText>
-                    <XDSText type="supporting" color="secondary" maxLines={2}>
-                      {item.desc}
-                    </XDSText>
-                  </XDSCard>
-                </div>
-              ))}
+          {components.map(cat => (
+            <div key={cat.label} style={{marginBottom: 28}}>
+              <XDSText
+                type="label"
+                color="secondary"
+                style={{display: 'block', marginBottom: 10}}>
+                {cat.label}
+              </XDSText>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                  gap: 10,
+                }}>
+                {cat.items.map(item => (
+                  <div
+                    key={item.key}
+                    onMouseEnter={() => setHoveredComponent(item.key)}
+                    onMouseLeave={() => setHoveredComponent(null)}
+                    onClick={() => onSelectComponent(item.key)}
+                    style={{cursor: 'pointer'}}>
+                    <XDSCard padding={3}>
+                      <XDSText
+                        type="body"
+                        weight="bold"
+                        style={{display: 'block', marginBottom: 2}}>
+                        {item.name}
+                      </XDSText>
+                      <XDSText type="supporting" color="secondary" maxLines={2}>
+                        {item.desc}
+                      </XDSText>
+                    </XDSCard>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
         </div>
       </div>
     </div>
@@ -944,16 +2704,31 @@ const THEME_DETAILS: Record<string, ThemeDetail> = {
     description:
       'The reference theme for XDS. Clean and professional with a blue accent, system fonts, and Heroicons. Designed to work out of the box with zero configuration.',
     characteristics: [
-      {label: 'Typography', value: 'System fonts', detail: 'Scale base 14px, ratio 1.2'},
+      {
+        label: 'Typography',
+        value: 'System fonts',
+        detail: 'Scale base 14px, ratio 1.2',
+      },
       {label: 'Icons', value: 'Heroicons', detail: 'Outline + solid variants'},
-      {label: 'Accent', value: 'Blue (#0066FF)', detail: 'Semantic color palette'},
-      {label: 'Radius', value: 'Standard', detail: 'element 8px, container 12px'},
-      {label: 'Motion', value: 'Balanced', detail: 'fast 175ms, medium 410ms, slow 975ms'},
+      {
+        label: 'Accent',
+        value: 'Blue (#0066FF)',
+        detail: 'Semantic color palette',
+      },
+      {
+        label: 'Radius',
+        value: 'Standard',
+        detail: 'element 8px, container 12px',
+      },
+      {
+        label: 'Motion',
+        value: 'Balanced',
+        detail: 'fast 175ms, medium 410ms, slow 975ms',
+      },
       {label: 'Syntax', value: 'GitHub theme', detail: 'Light + dark variants'},
     ],
     setupCode: `// app/globals.css
 @import "@xds/core/reset.css";
-@import "@xds/core/xds.css";
 @import "@xds/theme-default/theme.css";
 
 // app/providers.tsx
@@ -967,7 +2742,26 @@ export function Providers({children}: {children: React.ReactNode}) {
     </XDSTheme>
   );
 }`,
-    tokenOverrides: [],
+    tokenOverrides: [
+      {token: '--radius-element', default: '—', override: '0.5rem (8px)'},
+      {token: '--radius-container', default: '—', override: '0.625rem (10px)'},
+      {token: '--radius-page', default: '—', override: '0.75rem (12px)'},
+      {
+        token: '--font-family-body',
+        default: '—',
+        override: 'system-ui, sans-serif',
+      },
+      {
+        token: '--font-family-heading',
+        default: '—',
+        override: 'system-ui, sans-serif',
+      },
+      {token: '--font-family-code', default: '—', override: 'monospace'},
+      {token: '--color-accent', default: '—', override: '#0064E0 / #2694FE'},
+      {token: '--duration-fast', default: '—', override: '175ms'},
+      {token: '--duration-medium', default: '—', override: '410ms'},
+      {token: '--duration-slow', default: '—', override: '975ms'},
+    ],
   },
   'pkg-theme-neutral': {
     name: 'Neutral',
@@ -976,16 +2770,31 @@ export function Providers({children}: {children: React.ReactNode}) {
     description:
       'A muted, minimal theme with warm gray tones and desaturated colors. Uses Geist font for body and headings, Geist Mono for code, and Lucide icons. Ideal for productivity tools and developer-facing interfaces.',
     characteristics: [
-      {label: 'Typography', value: 'Geist / Geist Mono', detail: 'Scale base 14px, ratio 1.2, h3/h4 bold'},
+      {
+        label: 'Typography',
+        value: 'Geist / Geist Mono',
+        detail: 'Scale base 14px, ratio 1.2, h3/h4 bold',
+      },
       {label: 'Icons', value: 'Lucide', detail: 'Outline style'},
       {label: 'Accent', value: 'Desaturated', detail: 'Full oklch color space'},
-      {label: 'Radius', value: 'Larger', detail: 'element 10px, container 12px'},
-      {label: 'Motion', value: 'Snappy', detail: 'fast 125ms, medium 300ms, slow 700ms'},
-      {label: 'Syntax', value: 'Desaturated', detail: 'Matches grayscale palette'},
+      {
+        label: 'Radius',
+        value: 'Larger',
+        detail: 'element 10px, container 12px',
+      },
+      {
+        label: 'Motion',
+        value: 'Snappy',
+        detail: 'fast 125ms, medium 300ms, slow 700ms',
+      },
+      {
+        label: 'Syntax',
+        value: 'Desaturated',
+        detail: 'Matches grayscale palette',
+      },
     ],
     setupCode: `// app/globals.css
 @import "@xds/core/reset.css";
-@import "@xds/core/xds.css";
 @import "@xds/theme-neutral/theme.css";
 
 // app/providers.tsx
@@ -1003,9 +2812,21 @@ export function Providers({children}: {children: React.ReactNode}) {
       {token: '--radius-element', default: '0.5rem', override: '0.625rem'},
       {token: '--radius-container', default: '0.625rem', override: '0.75rem'},
       {token: '--radius-page', default: '0.75rem', override: '1rem'},
-      {token: '--font-family-body', default: 'system-ui', override: 'Geist, sans-serif'},
-      {token: '--font-family-heading', default: 'system-ui', override: 'Geist, sans-serif'},
-      {token: '--font-family-code', default: 'monospace', override: 'Geist Mono, monospace'},
+      {
+        token: '--font-family-body',
+        default: 'system-ui',
+        override: 'Geist, sans-serif',
+      },
+      {
+        token: '--font-family-heading',
+        default: 'system-ui',
+        override: 'Geist, sans-serif',
+      },
+      {
+        token: '--font-family-code',
+        default: 'monospace',
+        override: 'Geist Mono, monospace',
+      },
       {token: '--duration-fast', default: '175ms', override: '125ms'},
       {token: '--duration-medium', default: '410ms', override: '300ms'},
       {token: '--duration-slow', default: '975ms', override: '700ms'},
@@ -1013,278 +2834,490 @@ export function Providers({children}: {children: React.ReactNode}) {
   },
 };
 
+const THEME_OBJECTS: Record<string, XDSDefinedTheme> = {
+  'pkg-theme-default': defaultTheme,
+  'pkg-theme-neutral': neutralTheme,
+};
+
+const PALETTE_SWATCHES = [
+  {label: 'Accent', var: '--color-accent'},
+  {label: 'Success', var: '--color-success'},
+  {label: 'Warning', var: '--color-warning'},
+  {label: 'Error', var: '--color-error'},
+  {label: 'Surface', var: '--color-background-surface'},
+  {label: 'Body', var: '--color-background-body'},
+  {label: 'Neutral', var: '--color-neutral'},
+];
+
+function ThemePreview() {
+  return (
+    <XDSStack direction="vertical" gap={6}>
+      <XDSGrid columns={7} gap={2}>
+        {PALETTE_SWATCHES.map(swatch => (
+          <XDSStack
+            key={swatch.label}
+            direction="vertical"
+            gap={1}
+            vAlign="center">
+            <div
+              style={{
+                width: '100%',
+                aspectRatio: '1',
+                borderRadius: 'var(--radius-element, 8px)',
+                backgroundColor: `var(${swatch.var})`,
+                border: '1px solid var(--color-border, rgba(0,0,0,0.1))',
+              }}
+            />
+            <XDSText type="supporting" color="secondary">
+              {swatch.label}
+            </XDSText>
+          </XDSStack>
+        ))}
+      </XDSGrid>
+
+      <XDSDivider />
+
+      <XDSGrid columns={2} gap={4}>
+        <XDSStack direction="horizontal" gap={2}>
+          <XDSButton label="Primary" variant="primary" />
+          <XDSButton label="Secondary" variant="secondary" />
+          <XDSButton
+            label="Ghost"
+            variant="ghost"
+            icon={<XDSIcon icon={HeartIcon} size="sm" />}
+          />
+        </XDSStack>
+
+        <XDSStack direction="horizontal" gap={2}>
+          <XDSBadge label="Default" />
+          <XDSBadge label="Info" variant="info" />
+          <XDSBadge label="Success" variant="success" />
+          <XDSBadge label="Warning" variant="warning" />
+        </XDSStack>
+
+        <XDSTextInput
+          label="Example"
+          placeholder="Type something..."
+          value=""
+          onChange={() => {}}
+        />
+
+        <XDSStack direction="horizontal" gap={4} vAlign="center">
+          <XDSSwitch label="Toggle" value={true} onChange={() => {}} />
+          <XDSProgressBar value={65} label="Progress" />
+        </XDSStack>
+      </XDSGrid>
+
+      <XDSGrid columns={2} gap={4}>
+        <XDSCard padding={4}>
+          <XDSStack direction="vertical" gap={2}>
+            <XDSHeading level={4}>Card Title</XDSHeading>
+            <XDSText type="body" color="secondary">
+              A flexible surface for grouping related content and actions.
+            </XDSText>
+            <XDSButton label="Action" variant="secondary" size="sm" />
+          </XDSStack>
+        </XDSCard>
+
+        <XDSStack direction="horizontal" gap={3} vAlign="center">
+          <XDSAvatar name="Alice" size="small" />
+          <XDSAvatar name="Bob" size="medium" />
+          <XDSAvatar name="Charlie" size="large" />
+        </XDSStack>
+      </XDSGrid>
+
+      <XDSTable
+        data={
+          [
+            {name: 'Alice', role: 'Engineer', status: 'Active'},
+            {name: 'Bob', role: 'Designer', status: 'Away'},
+            {name: 'Charlie', role: 'PM', status: 'Active'},
+          ] as {[key: string]: unknown}[]
+        }
+        columns={[
+          {key: 'name', header: 'Name'},
+          {key: 'role', header: 'Role'},
+          {key: 'status', header: 'Status'},
+        ]}
+      />
+    </XDSStack>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // ThemePackagePage component
 // ---------------------------------------------------------------------------
 
-function ThemePackagePage({packageKey}: {packageKey: string}) {
+function ThemePackagePage({
+  packageKey,
+  onCraft,
+}: {
+  packageKey: string;
+  onCraft?: () => void;
+}) {
   const theme = THEME_DETAILS[packageKey];
   if (!theme) return null;
-  const pkg = LIBRARY_PACKAGES.find(p => p.key === packageKey)!;
+  const isDefault = packageKey === 'pkg-theme-default';
+  const themeObject = THEME_OBJECTS[packageKey];
 
   return (
-    <div style={{maxWidth: 840, margin: '0 auto', padding: '32px 40px'}}>
-      {/* Header */}
-      <XDSStack direction="vertical" gap={2}>
-        <XDSStack direction="horizontal" gap={3} vAlign="center">
-          <XDSText type="display-1">{theme.npmName}</XDSText>
-          <XDSText
-            type="supporting"
-            color="secondary"
-            style={{fontFamily: 'monospace'}}>
-            v{theme.version}
+    <XDSSection
+      maxWidth={960}
+      padding={8}
+      variant="transparent"
+      style={{marginInline: 'auto'}}>
+      <XDSStack direction="vertical" gap={10}>
+        {/* Header */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSStack direction="horizontal" gap={3} vAlign="center">
+            <XDSText type="display-1">{theme.npmName}</XDSText>
+            <XDSText type="code" color="secondary" size="xsm">
+              v{theme.version}
+            </XDSText>
+          </XDSStack>
+          <XDSText type="body" color="secondary">
+            {theme.description}
           </XDSText>
+          {onCraft && (
+            <XDSStack direction="horizontal" gap={2}>
+              <XDSButton
+                label="Try in Craft"
+                variant="secondary"
+                icon={<XDSIcon icon={PaletteIcon} size="sm" />}
+                onClick={onCraft}
+              />
+            </XDSStack>
+          )}
         </XDSStack>
-        <XDSText type="body" color="secondary" style={{maxWidth: 640}}>
-          {theme.description}
-        </XDSText>
-      </XDSStack>
 
-      {/* Characteristics grid */}
-      <div style={{marginTop: 40}}>
-        <XDSHeading level={2} style={{marginBottom: 16}}>
-          Characteristics
-        </XDSHeading>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: 12,
-          }}>
-          {theme.characteristics.map(char => (
-            <XDSCard key={char.label} padding={4}>
-              <XDSStack direction="vertical" gap={1}>
-                <XDSText
-                  type="supporting"
-                  color="secondary"
-                  style={{
-                    fontFamily: 'monospace',
-                    fontSize: 11,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                  }}>
-                  {char.label}
-                </XDSText>
-                <XDSText type="body" weight="bold">
-                  {char.value}
-                </XDSText>
-                {char.detail && (
-                  <XDSText type="supporting" color="secondary">
-                    {char.detail}
+        {/* Live preview */}
+        {themeObject && (
+          <XDSStack direction="vertical" gap={3}>
+            <XDSHeading level={2}>Preview</XDSHeading>
+            <XDSTheme theme={themeObject}>
+              <XDSCard variant="muted" padding={6}>
+                <ThemePreview />
+              </XDSCard>
+            </XDSTheme>
+          </XDSStack>
+        )}
+
+        {/* Characteristics grid */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Characteristics</XDSHeading>
+          <XDSGrid columns={3} gap={3}>
+            {theme.characteristics.map(char => (
+              <XDSCard key={char.label} padding={4}>
+                <XDSStack direction="vertical" gap={1}>
+                  <XDSText
+                    type="code"
+                    color="secondary"
+                    size="xsm"
+                    style={{
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                    }}>
+                    {char.label}
                   </XDSText>
-                )}
-              </XDSStack>
-            </XDSCard>
-          ))}
-        </div>
-      </div>
+                  <XDSText type="body" weight="bold">
+                    {char.value}
+                  </XDSText>
+                  {char.detail && (
+                    <XDSText type="supporting" color="secondary">
+                      {char.detail}
+                    </XDSText>
+                  )}
+                </XDSStack>
+              </XDSCard>
+            ))}
+          </XDSGrid>
+        </XDSStack>
 
-      {/* Install */}
-      <div style={{marginTop: 40}}>
-        <XDSHeading level={2} style={{marginBottom: 16}}>
-          Install
-        </XDSHeading>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            code={`npm install ${theme.npmName}`}
-            title="Terminal"
-            language="bash"
-            hasCopyButton
-          />
-        </XDSCard>
-      </div>
+        {/* Install */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Install</XDSHeading>
+          <XDSCard padding={0}>
+            <XDSCodeBlock
+              code={`npm install ${theme.npmName}`}
+              title="Terminal"
+              language="bash"
+              hasCopyButton
+            />
+          </XDSCard>
+        </XDSStack>
 
-      {/* Setup */}
-      <div style={{marginTop: 40}}>
-        <XDSHeading level={2} style={{marginBottom: 16}}>
-          Setup
-        </XDSHeading>
-        <XDSText
-          type="body"
-          color="secondary"
-          style={{marginBottom: 16}}>
-          Import the theme CSS and wrap your app in XDSTheme. All components
-          will inherit the theme's tokens for colors, typography, spacing, and
-          radius.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            code={theme.setupCode}
-            title={`Using ${theme.npmName}`}
-            language="tsx"
-            hasCopyButton
-          />
-        </XDSCard>
-      </div>
-
-      {/* Token overrides — only if the theme has them */}
-      {theme.tokenOverrides.length > 0 && (
-        <div style={{marginTop: 40}}>
-          <XDSHeading level={2} style={{marginBottom: 8}}>
-            Token overrides
-          </XDSHeading>
-          <XDSText
-            type="body"
-            color="secondary"
-            style={{marginBottom: 16}}>
-            These tokens differ from the default theme. All other tokens use
-            built-in defaults.
+        {/* Setup */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Setup</XDSHeading>
+          <XDSText type="body" color="secondary">
+            Import the theme CSS and wrap your app in XDSTheme. All components
+            will inherit the theme&#39;s tokens for colors, typography, spacing,
+            and radius.
           </XDSText>
-          <XDSTable
-            data={
-              theme.tokenOverrides as {[key: string]: unknown}[]
-            }
-            columns={[
-              {key: 'token', header: 'Token'},
-              {key: 'default', header: 'Default'},
-              {key: 'override', header: theme.name},
-            ]}
-          />
-        </div>
-      )}
+          <XDSCard padding={0}>
+            <XDSCodeBlock
+              code={theme.setupCode}
+              title={`Using ${theme.npmName}`}
+              language="tsx"
+              hasCopyButton
+            />
+          </XDSCard>
+        </XDSStack>
 
-      {/* What's included */}
-      <div style={{marginTop: 40}}>
-        <XDSHeading level={2} style={{marginBottom: 16}}>
-          What&#39;s included
-        </XDSHeading>
-        <XDSList density="spacious" listStyle="disc">
-          <XDSListItem label="Full color palette with light and dark mode support" />
-          <XDSListItem label="Typography scale with heading, body, label, code, and supporting sizes" />
-          <XDSListItem label="Radius, spacing, shadow, and motion tokens" />
-          <XDSListItem label="Icon registry with 26 semantic icon slots" />
-          <XDSListItem label="Syntax highlighting theme for CodeBlock" />
-          <XDSListItem label="Component-level style overrides (e.g. Button secondary)" />
-        </XDSList>
-      </div>
+        {/* Token values / overrides */}
+        {theme.tokenOverrides.length > 0 && (
+          <XDSStack direction="vertical" gap={3}>
+            <XDSHeading level={2}>
+              {isDefault ? 'Token values' : 'Token overrides'}
+            </XDSHeading>
+            <XDSText type="body" color="secondary">
+              {isDefault
+                ? 'Reference values for the default theme. Other themes override these.'
+                : 'These tokens differ from the default theme. All other tokens use built-in defaults.'}
+            </XDSText>
+            <XDSTable
+              data={theme.tokenOverrides as {[key: string]: unknown}[]}
+              columns={
+                isDefault
+                  ? [
+                      {key: 'token', header: 'Token'},
+                      {key: 'override', header: 'Value'},
+                    ]
+                  : [
+                      {key: 'token', header: 'Token'},
+                      {key: 'default', header: 'Default'},
+                      {key: 'override', header: theme.name},
+                    ]
+              }
+            />
+          </XDSStack>
+        )}
 
-      {/* Switching themes */}
-      <div style={{marginTop: 40, marginBottom: 64}}>
-        <XDSHeading level={2} style={{marginBottom: 16}}>
-          Switching themes
-        </XDSHeading>
-        <XDSText
-          type="body"
-          color="secondary"
-          style={{marginBottom: 16}}>
-          Swap themes by changing the CSS import and theme object. No
-          component code changes required.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            code={`# Available themes:\nnpm install @xds/theme-default   # Clean blue, Heroicons\nnpm install @xds/theme-neutral   # Muted gray, Lucide`}
-            title="Terminal"
-            language="bash"
-            hasCopyButton
-          />
-        </XDSCard>
-      </div>
-    </div>
+        {/* What's included */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>What&#39;s included</XDSHeading>
+          <XDSList density="balanced" listStyle="disc">
+            <XDSListItem label="Full color palette with light and dark mode support" />
+            <XDSListItem label="Typography scale with heading, body, label, code, and supporting sizes" />
+            <XDSListItem label="Radius, spacing, shadow, and motion tokens" />
+            <XDSListItem label="Icon registry with 26 semantic icon slots" />
+            <XDSListItem label="Syntax highlighting theme for CodeBlock" />
+            <XDSListItem label="Component-level style overrides (e.g. Button secondary)" />
+          </XDSList>
+        </XDSStack>
+
+        {/* Switching themes */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Switching themes</XDSHeading>
+          <XDSText type="body" color="secondary">
+            Swap themes by changing the CSS import and theme object. No
+            component code changes required.
+          </XDSText>
+          <XDSCard padding={0}>
+            <XDSCodeBlock
+              code={`# Available themes:\nnpm install @xds/theme-default   # Clean blue, Heroicons\nnpm install @xds/theme-neutral   # Muted gray, Lucide`}
+              title="Terminal"
+              language="bash"
+              hasCopyButton
+            />
+          </XDSCard>
+        </XDSStack>
+      </XDSStack>
+    </XDSSection>
   );
 }
 
 function LibraryPackagePage({
   packageKey,
   onSelectComponent,
+  onCraft,
 }: {
   packageKey: string;
   onSelectComponent: (key: string) => void;
+  onCraft?: () => void;
 }) {
   if (packageKey === 'pkg-core') {
-    return <PackageGridPage packageKey={packageKey} components={COMPONENT_CATEGORIES} onSelectComponent={onSelectComponent} />;
+    return (
+      <PackageGridPage
+        packageKey={packageKey}
+        components={COMPONENT_CATEGORIES}
+        onSelectComponent={onSelectComponent}
+      />
+    );
   }
   if (packageKey === 'pkg-vega') {
-    return <PackageGridPage packageKey={packageKey} components={VEGA_COMPONENTS} onSelectComponent={onSelectComponent} />;
-  }
-  if (packageKey === 'pkg-chat') {
-    return <PackageGridPage packageKey={packageKey} components={CHAT_COMPONENTS} onSelectComponent={onSelectComponent} />;
+    return (
+      <PackageGridPage
+        packageKey={packageKey}
+        components={VEGA_COMPONENTS}
+        onSelectComponent={onSelectComponent}
+      />
+    );
   }
   if (packageKey === 'pkg-cli') {
     return <CliPage />;
   }
   if (THEME_DETAILS[packageKey]) {
-    return <ThemePackagePage packageKey={packageKey} />;
+    return <ThemePackagePage packageKey={packageKey} onCraft={onCraft} />;
   }
   return null;
 }
 
 function CliPage() {
   return (
-    <div style={{maxWidth: 840, margin: '0 auto', padding: '32px 40px'}}>
-      <XDSStack direction="vertical" gap={2}>
-        <XDSStack direction="horizontal" gap={3} vAlign="center">
-          <XDSText type="display-1">@xds/cli</XDSText>
-          <XDSText type="supporting" color="secondary" style={{fontFamily: 'monospace'}}>
-            v0.0.12
+    <XDSSection
+      maxWidth={960}
+      padding={8}
+      variant="transparent"
+      style={{marginInline: 'auto'}}>
+      <XDSStack direction="vertical" gap={10}>
+        {/* Header */}
+        <XDSStack direction="vertical" gap={2}>
+          <XDSStack direction="horizontal" gap={3} vAlign="center">
+            <XDSText type="display-1">@xds/cli</XDSText>
+            <XDSText type="code" color="secondary" size="xsm">
+              v0.0.12
+            </XDSText>
+          </XDSStack>
+          <XDSText type="body" color="secondary">
+            Command-line interface for project setup, component docs, page
+            templates, component ejection, and AI agent context generation.
           </XDSText>
         </XDSStack>
-        <XDSText type="body" color="secondary">
-          Command-line tool for scaffolding projects, generating templates, swizzling components, and producing AI agent docs.
-        </XDSText>
+
+        {/* Install */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Install</XDSHeading>
+          <XDSCard padding={0}>
+            <XDSCodeBlock
+              code="npm install -g @xds/cli"
+              title="Terminal"
+              language="bash"
+              hasCopyButton
+            />
+          </XDSCard>
+        </XDSStack>
+
+        {/* Setup */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Setup</XDSHeading>
+          <XDSText type="body" color="secondary">
+            Interactive wizard that installs AI agent docs, scaffolds a custom
+            theme, and copies a starter template. Safe to re-run.
+          </XDSText>
+          <XDSCard padding={0}>
+            <XDSCodeBlock
+              code={`xds init                        # interactive setup wizard\nxds init --features agents      # install AGENTS.md for AI assistants\nxds init --features theme       # scaffold a custom theme file\nxds init --features template    # copy a starter page template`}
+              title="Terminal"
+              language="bash"
+              hasCopyButton
+            />
+          </XDSCard>
+        </XDSStack>
+
+        {/* Quick reference */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Quick reference</XDSHeading>
+          <XDSText type="body" color="secondary">
+            Reference commands for looking up component APIs, design tokens, and
+            available templates.
+          </XDSText>
+          <XDSCard padding={0}>
+            <XDSCodeBlock
+              code={`xds help                        # all commands and options\nxds docs                        # list available doc topics\nxds docs principles --dense     # design rules, anti-patterns, tokens\nxds docs tokens --dense         # spacing, color, radius, typography\nxds docs theme --dense          # theme provider, light/dark, overrides\nxds component --list            # all components grouped by category\nxds template --list             # available page and block templates\nxds discover                    # find external XDS packages`}
+              title="Terminal"
+              language="bash"
+              hasCopyButton
+            />
+          </XDSCard>
+        </XDSStack>
+
+        {/* Component & template commands */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Component and template commands</XDSHeading>
+          <XDSCard padding={0}>
+            <XDSCodeBlock
+              code={`xds component Button --dense    # props, variants, usage, anatomy\nxds component Table --props     # props table only\nxds template dashboard          # emit full page source\nxds template dashboard --skeleton  # layout skeleton with spatial annotations\nxds swizzle Button              # eject component source for customization\nxds upgrade --apply             # run version migration codemods`}
+              title="Terminal"
+              language="bash"
+              hasCopyButton
+            />
+          </XDSCard>
+        </XDSStack>
+
+        {/* Global options */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Global options</XDSHeading>
+          <XDSTable
+            data={
+              [
+                {
+                  flag: '--dense',
+                  description:
+                    'Token-efficient output for AI assistants. Omits examples and verbose prose.',
+                },
+                {
+                  flag: '--json',
+                  description:
+                    'Structured JSON output (envelope: { type, data }). For programmatic consumption.',
+                },
+                {
+                  flag: '--detail compact',
+                  description: 'Reduced output focused on essentials',
+                },
+                {flag: '--detail brief', description: 'Minimal output'},
+                {
+                  flag: '--zh',
+                  description: 'Chinese (Simplified) language output',
+                },
+                {
+                  flag: '--skeleton',
+                  description:
+                    'Layout skeleton with spatial annotations (templates only)',
+                },
+                {
+                  flag: '--gap',
+                  description:
+                    'File a gap report when swizzling to explain why you needed to eject',
+                },
+              ] as {[key: string]: unknown}[]
+            }
+            columns={[
+              {key: 'flag', header: 'Flag'},
+              {key: 'description', header: 'Description'},
+            ]}
+          />
+        </XDSStack>
+
+        {/* AI integration */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>AI integration</XDSHeading>
+          <XDSText type="body" color="secondary">
+            The CLI generates context that AI coding assistants (Cursor,
+            Copilot, Claude) can use when building with XDS.
+          </XDSText>
+          <XDSCard padding={0}>
+            <XDSCodeBlock
+              code={`# Generate AGENTS.md for your project\nxds init --features agents\n\n# Get component docs in AI-friendly format\nxds component Button --dense\nxds component Table --dense\n\n# Get structured JSON for tool integrations\nxds component Button --json\nxds docs tokens --json`}
+              title="Terminal"
+              language="bash"
+              hasCopyButton
+            />
+          </XDSCard>
+        </XDSStack>
+
+        {/* Best practices */}
+        <XDSStack direction="vertical" gap={3}>
+          <XDSHeading level={2}>Best practices</XDSHeading>
+          <XDSList density="balanced" listStyle="disc">
+            <XDSListItem label="Run xds init when setting up a new project to generate AI agent docs and a starter theme" />
+            <XDSListItem label="Use xds component <Name> --dense before modifying or building with any component" />
+            <XDSListItem label="After upgrading @xds/core, run xds upgrade --apply to auto-migrate breaking changes" />
+            <XDSListItem label="When swizzling, use --gap to report why you needed to eject — helps the team close gaps" />
+          </XDSList>
+        </XDSStack>
       </XDSStack>
-
-      <div style={{marginTop: 40}}>
-        <XDSHeading level={2} style={{marginBottom: 16}}>Install</XDSHeading>
-        <XDSCard padding={0}>
-          <XDSCodeBlock code="npm install -g @xds/cli" title="Terminal" language="bash" hasCopyButton />
-        </XDSCard>
-      </div>
-
-      <div style={{marginTop: 40}}>
-        <XDSHeading level={2} style={{marginBottom: 16}}>Bootstrap commands</XDSHeading>
-        <XDSText type="body" color="secondary" style={{marginBottom: 16}}>
-          Run these on every branch to load the latest API context. Takes under 500ms.
-        </XDSText>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            code={`xds help                        # discover all commands and options\nxds docs                        # list available doc topics\nxds docs principles --dense     # design rules, anti-patterns, tokens\nxds docs tokens --dense         # spacing, color, radius, typography\nxds docs theme --dense          # theme provider, light/dark, overrides\nxds component --list            # all components grouped by category\nxds template --list             # available page templates`}
-            title="Terminal"
-            language="bash"
-            hasCopyButton
-          />
-        </XDSCard>
-      </div>
-
-      <div style={{marginTop: 40}}>
-        <XDSHeading level={2} style={{marginBottom: 16}}>On-demand commands</XDSHeading>
-        <XDSCard padding={0}>
-          <XDSCodeBlock
-            code={`xds component Button --dense    # props, variants, usage, anatomy\nxds template dashboard          # emit full page source\nxds template dashboard --skeleton  # layout skeleton with annotations\nxds swizzle Button              # eject component source into your project\nxds upgrade --apply             # run version migration codemods`}
-            title="Terminal"
-            language="bash"
-            hasCopyButton
-          />
-        </XDSCard>
-      </div>
-
-      <div style={{marginTop: 40}}>
-        <XDSHeading level={2} style={{marginBottom: 16}}>Options</XDSHeading>
-        <XDSTable
-          data={[
-            {flag: '--dense', description: 'Token-efficient output optimized for AI assistants'},
-            {flag: '--detail compact', description: 'Less output, focused on essentials'},
-            {flag: '--detail brief', description: 'Minimal output'},
-            {flag: '--zh', description: 'Chinese language output'},
-            {flag: '--skeleton', description: 'Layout skeleton with spatial annotations (templates only)'},
-            {flag: '--gap', description: 'Report missing capabilities when swizzling'},
-          ] as {[key: string]: unknown}[]}
-          columns={[
-            {key: 'flag', header: 'Flag'},
-            {key: 'description', header: 'Description'},
-          ]}
-        />
-      </div>
-
-      <div style={{marginTop: 40}}>
-        <XDSHeading level={2} style={{marginBottom: 16}}>Best practices</XDSHeading>
-        <XDSList density="spacious" listStyle="disc">
-          <XDSListItem label="Always run bootstrap commands on each new branch — docs reflect the branch's actual API" />
-          <XDSListItem label="Run xds component <Name> --dense before modifying any component" />
-          <XDSListItem label="After an @xds/core version bump, run xds upgrade --apply" />
-          <XDSListItem label="When swizzling, use --gap to report missing capabilities" />
-        </XDSList>
-      </div>
-    </div>
+    </XDSSection>
   );
 }
 
@@ -1329,7 +3362,9 @@ function ResourceHeader({
       </div>
       <XDSStack direction="vertical" gap={0}>
         <XDSText type="display-2">{title}</XDSText>
-        <XDSText type="body" color="secondary">{description}</XDSText>
+        <XDSText type="body" color="secondary">
+          {description}
+        </XDSText>
       </XDSStack>
     </div>
   );
@@ -1337,25 +3372,69 @@ function ResourceHeader({
 
 function NpmPackagesPage() {
   return (
-    <div style={{maxWidth: 840, margin: '0 auto', padding: '32px 40px'}}>
-      <ResourceHeader icon={DownloadIcon} title="NPM Packages" description="All packages are published under the @xds scope on npm." bg="#FEE2E2" />
+    <XDSSection
+      maxWidth={960}
+      padding={8}
+      variant="transparent"
+      style={{marginInline: 'auto'}}>
+      <ResourceHeader
+        icon={DownloadIcon}
+        title="NPM Packages"
+        description="All packages are published under the @xds scope on npm."
+        bg="#FEE2E2"
+      />
       <div>
-        <XDSHeading level={2} style={{marginBottom: 16}}>Install</XDSHeading>
+        <XDSHeading level={2} style={{marginBottom: 16}}>
+          Install
+        </XDSHeading>
         <XDSCard padding={0}>
-          <XDSCodeBlock code={`# Core components\nnpm install @xds/core\n\n# Charts & data visualization\nnpm install @xds/vega\n\n# Chat & conversational UI\nnpm install @xds/chat\n\n# CLI tooling\nnpm install -g @xds/cli`} title="Terminal" language="bash" hasCopyButton />
+          <XDSCodeBlock
+            code={`# Core components\nnpm install @xds/core\n\n# Charts & data visualization\nnpm install @xds/vega\n\n# CLI tooling\nnpm install -g @xds/cli`}
+            title="Terminal"
+            language="bash"
+            hasCopyButton
+          />
         </XDSCard>
       </div>
       <div style={{marginTop: 40}}>
-        <XDSHeading level={2} style={{marginBottom: 16}}>Packages</XDSHeading>
+        <XDSHeading level={2} style={{marginBottom: 16}}>
+          Packages
+        </XDSHeading>
         <XDSTable
-          data={[
-            {package: '@xds/core', description: 'Core UI components (60+)', version: '0.0.12', status: 'Stable'},
-            {package: '@xds/vega', description: 'Charts & data visualization', version: '—', status: 'Coming Soon'},
-            {package: '@xds/chat', description: 'Conversational UI components', version: '0.0.12', status: 'Stable'},
-            {package: '@xds/cli', description: 'CLI for scaffolding & tooling', version: '0.0.12', status: 'Stable'},
-            {package: '@xds/theme-default', description: 'Default theme (blue accent)', version: '0.0.12', status: 'Stable'},
-            {package: '@xds/theme-neutral', description: 'Neutral warm gray theme', version: '0.0.12', status: 'Stable'},
-          ] as {[key: string]: unknown}[]}
+          data={
+            [
+              {
+                package: '@xds/core',
+                description: 'Core UI components (60+)',
+                version: '0.0.12',
+                status: 'Stable',
+              },
+              {
+                package: '@xds/vega',
+                description: 'Charts & data visualization',
+                version: '—',
+                status: 'Coming Soon',
+              },
+              {
+                package: '@xds/cli',
+                description: 'CLI for scaffolding & tooling',
+                version: '0.0.12',
+                status: 'Stable',
+              },
+              {
+                package: '@xds/theme-default',
+                description: 'Default theme (blue accent)',
+                version: '0.0.12',
+                status: 'Stable',
+              },
+              {
+                package: '@xds/theme-neutral',
+                description: 'Neutral warm gray theme',
+                version: '0.0.12',
+                status: 'Stable',
+              },
+            ] as {[key: string]: unknown}[]
+          }
           columns={[
             {key: 'package', header: 'Package'},
             {key: 'description', header: 'Description'},
@@ -1365,30 +3444,52 @@ function NpmPackagesPage() {
         />
       </div>
       <div style={{marginTop: 40}}>
-        <XDSHeading level={2} style={{marginBottom: 16}}>Peer dependencies</XDSHeading>
+        <XDSHeading level={2} style={{marginBottom: 16}}>
+          Peer dependencies
+        </XDSHeading>
         <XDSText type="body" color="secondary">
-          All packages require React 18+ and StyleX 0.17+. Theme packages are optional — if no theme is installed, components use built-in defaults.
+          All packages require React 18+ and StyleX 0.17+. Theme packages are
+          optional — if no theme is installed, components use built-in defaults.
         </XDSText>
       </div>
-    </div>
+    </XDSSection>
   );
 }
 
 function AgentDocsPage() {
   return (
-    <div style={{maxWidth: 840, margin: '0 auto', padding: '32px 40px'}}>
-      <ResourceHeader icon={SparklesIcon} title="AI / Agent Docs" description="Generate context docs so your AI knows every component, prop, and pattern." bg="#FEF3C7" />
+    <XDSSection
+      maxWidth={960}
+      padding={8}
+      variant="transparent"
+      style={{marginInline: 'auto'}}>
+      <ResourceHeader
+        icon={SparklesIcon}
+        title="AI / Agent Docs"
+        description="Generate context docs so your AI knows every component, prop, and pattern."
+        bg="#FEF3C7"
+      />
       <div>
-        <XDSHeading level={2} style={{marginBottom: 16}}>Generate agent docs</XDSHeading>
+        <XDSHeading level={2} style={{marginBottom: 16}}>
+          Generate agent docs
+        </XDSHeading>
         <XDSText type="body" color="secondary" style={{marginBottom: 16}}>
-          The CLI produces a comprehensive AGENTS.md that AI assistants can use as context when generating XDS code.
+          The CLI produces a comprehensive AGENTS.md that AI assistants can use
+          as context when generating XDS code.
         </XDSText>
         <XDSCard padding={0}>
-          <XDSCodeBlock code={`# Generate docs for all components\nxds docs\n\n# List available doc topics\nxds docs --list\n\n# Get specific docs (dense format for AI)\nxds docs principles --dense\nxds docs tokens --dense\nxds docs theme --dense\n\n# Get docs for a specific component\nxds component Button --dense\nxds component Table --dense`} title="Terminal" language="bash" hasCopyButton />
+          <XDSCodeBlock
+            code={`# Generate docs for all components\nxds docs\n\n# List available doc topics\nxds docs --list\n\n# Get specific docs (dense format for AI)\nxds docs principles --dense\nxds docs tokens --dense\nxds docs theme --dense\n\n# Get docs for a specific component\nxds component Button --dense\nxds component Table --dense`}
+            title="Terminal"
+            language="bash"
+            hasCopyButton
+          />
         </XDSCard>
       </div>
       <div style={{marginTop: 40}}>
-        <XDSHeading level={2} style={{marginBottom: 16}}>What&#39;s included</XDSHeading>
+        <XDSHeading level={2} style={{marginBottom: 16}}>
+          What&#39;s included
+        </XDSHeading>
         <XDSList density="spacious" listStyle="disc">
           <XDSListItem label="Component props, variants, and usage examples for every component" />
           <XDSListItem label="Design token reference — spacing, colors, typography, radius, elevation" />
@@ -1398,38 +3499,90 @@ function AgentDocsPage() {
         </XDSList>
       </div>
       <div style={{marginTop: 40}}>
-        <XDSHeading level={2} style={{marginBottom: 16}}>Using with Cursor / AI assistants</XDSHeading>
+        <XDSHeading level={2} style={{marginBottom: 16}}>
+          Using with Cursor / AI assistants
+        </XDSHeading>
         <XDSText type="body" color="secondary" style={{marginBottom: 16}}>
-          Add the generated AGENTS.md to your project root. AI assistants like Cursor, Copilot, and Claude will automatically use it as context when you ask them to build UI with XDS components.
+          Add the generated AGENTS.md to your project root. AI assistants like
+          Cursor, Copilot, and Claude will automatically use it as context when
+          you ask them to build UI with XDS components.
         </XDSText>
         <XDSCard padding={0}>
-          <XDSCodeBlock code={`# Generate and save to project root\nxds docs > AGENTS.md\n\n# Or use the CLI bootstrap commands\nxds help           # discover all commands\nxds component --list  # all components by category\nxds template --list   # available page templates`} title="Terminal" language="bash" hasCopyButton />
+          <XDSCodeBlock
+            code={`# Generate and save to project root\nxds docs > AGENTS.md\n\n# Or use the CLI bootstrap commands\nxds help           # discover all commands\nxds component --list  # all components by category\nxds template --list   # available page templates`}
+            title="Terminal"
+            language="bash"
+            hasCopyButton
+          />
         </XDSCard>
       </div>
-    </div>
+    </XDSSection>
   );
 }
 
 function PublishingPage() {
   return (
-    <div style={{maxWidth: 840, margin: '0 auto', padding: '32px 40px'}}>
-      <ResourceHeader icon={HeartIcon} title="Publishing" description="Publish components, themes, and templates to Craft for others to discover and use." bg="#FCE7F3" />
+    <XDSSection
+      maxWidth={960}
+      padding={8}
+      variant="transparent"
+      style={{marginInline: 'auto'}}>
+      <ResourceHeader
+        icon={HeartIcon}
+        title="Publishing"
+        description="Publish components, themes, and templates to Craft for others to discover and use."
+        bg="#FCE7F3"
+      />
       <div>
-        <XDSHeading level={2} style={{marginBottom: 16}}>What you can publish</XDSHeading>
-        <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12}}>
+        <XDSHeading level={2} style={{marginBottom: 16}}>
+          What you can publish
+        </XDSHeading>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: 12,
+          }}>
           {[
-            {icon: CodeIcon, title: 'Components', desc: 'Build and publish custom components to the Craft library for others to use.'},
-            {icon: PaletteIcon, title: 'Themes', desc: 'Create and share theme packages with custom colors, typography, and radius.'},
-            {icon: GridIcon, title: 'Templates', desc: 'Publish page templates and layouts that others can browse and use in Craft.'},
+            {
+              icon: CodeIcon,
+              title: 'Components',
+              desc: 'Build and publish custom components to the Craft library for others to use.',
+            },
+            {
+              icon: PaletteIcon,
+              title: 'Themes',
+              desc: 'Create and share theme packages with custom colors, typography, and radius.',
+            },
+            {
+              icon: GridIcon,
+              title: 'Templates',
+              desc: 'Publish page templates and layouts that others can browse and use in Craft.',
+            },
           ].map(item => (
             <XDSCard key={item.title} padding={4}>
               <XDSStack direction="horizontal" gap={3}>
-                <div style={{width: 36, height: 36, borderRadius: 10, backgroundColor: 'var(--color-background-accent-muted, #DBEAFE)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0}}>
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    backgroundColor:
+                      'var(--color-background-accent-muted, #DBEAFE)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
                   <XDSIcon icon={item.icon} size="sm" color="accent" />
                 </div>
                 <XDSStack direction="vertical" gap={0}>
-                  <XDSText type="body" weight="bold">{item.title}</XDSText>
-                  <XDSText type="supporting" color="secondary">{item.desc}</XDSText>
+                  <XDSText type="body" weight="bold">
+                    {item.title}
+                  </XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    {item.desc}
+                  </XDSText>
                 </XDSStack>
               </XDSStack>
             </XDSCard>
@@ -1437,13 +3590,22 @@ function PublishingPage() {
         </div>
       </div>
       <div style={{marginTop: 40}}>
-        <XDSHeading level={2} style={{marginBottom: 16}}>Getting started</XDSHeading>
+        <XDSHeading level={2} style={{marginBottom: 16}}>
+          Getting started
+        </XDSHeading>
         <XDSCard padding={0}>
-          <XDSCodeBlock code={`# Clone the repo\ngit clone https://github.com/facebookexperimental/xds.git\ncd xds\n\n# Install dependencies\nyarn install\n\n# Start the sandbox\nyarn workspace @xds/sandbox dev\n\n# Run tests\nyarn test\n\n# Run storybook\nyarn storybook`} title="Terminal" language="bash" hasCopyButton />
+          <XDSCodeBlock
+            code={`# Clone the repo\ngit clone https://github.com/facebookexperimental/xds.git\ncd xds\n\n# Install dependencies\nyarn install\n\n# Start the sandbox\nyarn workspace @xds/sandbox dev\n\n# Run tests\nyarn test\n\n# Run storybook\nyarn storybook`}
+            title="Terminal"
+            language="bash"
+            hasCopyButton
+          />
         </XDSCard>
       </div>
       <div style={{marginTop: 40}}>
-        <XDSHeading level={2} style={{marginBottom: 16}}>Publishing guidelines</XDSHeading>
+        <XDSHeading level={2} style={{marginBottom: 16}}>
+          Publishing guidelines
+        </XDSHeading>
         <XDSList density="spacious" listStyle="disc">
           <XDSListItem label="Use only XDS components — no raw HTML or inline styles" />
           <XDSListItem label="Include a .doc.mjs file with a description, tags, and preview metadata" />
@@ -1452,7 +3614,7 @@ function PublishingPage() {
           <XDSListItem label="Add block examples that demonstrate your component in realistic contexts" />
         </XDSList>
       </div>
-    </div>
+    </XDSSection>
   );
 }
 
@@ -1472,7 +3634,6 @@ npm install @xds/core @xds/theme-default`;
 
 const PROVIDER_CODE = `// app/globals.css
 @import "@xds/core/reset.css";
-@import "@xds/core/xds.css";
 @import "@xds/theme-default/theme.css";
 
 // app/providers.tsx
@@ -1541,9 +3702,9 @@ const GETTING_STARTED_STEPS: {
 }[] = [
   {
     step: '01',
-    title: 'Install',
+    title: 'Install XDS',
     description:
-      'Add @xds/core and a theme to your project. XDS works with Next.js, Vite, or any React framework. On Nest, use nest init with the XDS template or nest add xds instead.',
+      'Add @xds/core and a theme to your project. XDS works with Next.js, Vite, or any React framework.',
     code: INSTALL_CODE,
     codeLabel: 'Terminal',
     language: 'bash',
@@ -1552,7 +3713,7 @@ const GETTING_STARTED_STEPS: {
     step: '02',
     title: 'Set up styles and theme',
     description:
-      'Import the XDS CSS reset, base styles, and theme CSS. Then wrap your app in XDSTheme with your chosen theme. This provides design tokens for colors, typography, spacing, and radius that all components inherit.',
+      'Import the CSS reset and theme, then wrap your app in XDSTheme. This provides design tokens — colors, typography, spacing, and radius — that all components inherit.',
     code: PROVIDER_CODE,
     codeLabel: 'app/globals.css + app/providers.tsx',
     language: 'tsx',
@@ -1561,7 +3722,7 @@ const GETTING_STARTED_STEPS: {
     step: '03',
     title: 'Use a component',
     description:
-      'Import any component from its subpath. Each component is individually tree-shakeable — you only ship what you use.',
+      'Import any component from its subpath. Only the components you use are included in your bundle.',
     code: FIRST_COMPONENT_CODE,
     codeLabel: 'app/page.tsx',
     language: 'tsx',
@@ -1579,7 +3740,7 @@ const GETTING_STARTED_STEPS: {
     step: '05',
     title: 'Use the CLI',
     description:
-      'The XDS CLI generates page templates, ejects components for customization, and produces agent docs for AI coding assistants.',
+      'The XDS CLI generates page templates, ejects components for customization, and produces structured docs that AI coding assistants can use as context.',
     code: CLI_CODE,
     codeLabel: 'Terminal',
     language: 'bash',
@@ -1588,7 +3749,11 @@ const GETTING_STARTED_STEPS: {
 
 function GettingStartedPage() {
   return (
-    <div {...stylex.props(localStyles.pageContainer)}>
+    <XDSSection
+      maxWidth={960}
+      padding={8}
+      variant="transparent"
+      style={{marginInline: 'auto'}}>
       <XDSStack direction="vertical" gap={2}>
         <XDSText type="display-1">Getting Started</XDSText>
         <XDSText type="large" weight="normal" color="secondary">
@@ -1600,14 +3765,11 @@ function GettingStartedPage() {
         {GETTING_STARTED_STEPS.map(item => (
           <XDSStack key={item.step} direction="vertical" gap={2}>
             <XDSText
-              type="supporting"
-              style={{
-                fontFamily: 'monospace',
-                fontSize: 12,
-                letterSpacing: '0.06em',
-                fontWeight: 600,
-                color: 'var(--color-text-accent, #0066FF)',
-              }}>
+              type="code"
+              color="secondary"
+              weight="semibold"
+              size="xsm"
+              style={{letterSpacing: '0.06em'}}>
               STEP {item.step}
             </XDSText>
             <XDSHeading level={2}>{item.title}</XDSHeading>
@@ -1625,69 +3787,7 @@ function GettingStartedPage() {
           </XDSStack>
         ))}
       </XDSStack>
-
-      <div style={{marginTop: 56, marginBottom: 64}}>
-        <XDSHeading level={2} style={{marginBottom: 20}}>
-          Explore
-        </XDSHeading>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: 12,
-          }}>
-          {[
-            {
-              icon: GridIcon,
-              title: 'Browse components',
-              desc: 'Explore 60+ components in the sidebar.',
-            },
-            {
-              icon: PaletteIcon,
-              title: 'Try Craft',
-              desc: 'Visually explore templates and themes.',
-            },
-            {
-              icon: SparklesIcon,
-              title: 'Agent docs',
-              desc: 'Run xds docs to generate AI context.',
-            },
-            {
-              icon: CodeIcon,
-              title: 'Swizzle',
-              desc: 'Eject and customize any component.',
-            },
-          ].map(item => (
-            <XDSCard key={item.title} padding={4}>
-              <XDSStack direction="horizontal" gap={3}>
-                <div
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 10,
-                    backgroundColor:
-                      'var(--color-background-accent-muted, #DBEAFE)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}>
-                  <XDSIcon icon={item.icon} size="sm" color="accent" />
-                </div>
-                <XDSStack direction="vertical" gap={0}>
-                  <XDSText type="body" weight="bold">
-                    {item.title}
-                  </XDSText>
-                  <XDSText type="supporting" color="secondary">
-                    {item.desc}
-                  </XDSText>
-                </XDSStack>
-              </XDSStack>
-            </XDSCard>
-          ))}
-        </div>
-      </div>
-    </div>
+    </XDSSection>
   );
 }
 
@@ -1704,12 +3804,19 @@ function LibraryOverview({
   onSelectComponent: (key: string) => void;
   onCraft: () => void;
 }) {
-  const [packageFilter, setPackageFilter] = useState<PackageCategory | 'all'>('all');
-  const filteredPackages = packageFilter === 'all'
-    ? LIBRARY_PACKAGES
-    : LIBRARY_PACKAGES.filter(pkg => pkg.category === packageFilter);
+  const [packageFilter, setPackageFilter] = useState<PackageCategory | 'all'>(
+    'all',
+  );
+  const filteredPackages =
+    packageFilter === 'all'
+      ? LIBRARY_PACKAGES
+      : LIBRARY_PACKAGES.filter(pkg => pkg.category === packageFilter);
   return (
-    <div style={{maxWidth: 1200, margin: '0 auto', padding: '32px 40px'}}>
+    <XDSSection
+      maxWidth={960}
+      padding={8}
+      variant="transparent"
+      style={{marginInline: 'auto'}}>
       {/* ── Section 1: Hero ── */}
       <div
         style={{
@@ -1789,7 +3896,10 @@ function LibraryOverview({
                   marginBottom: 12,
                 }}
               />
-              <XDSText type="body" weight="bold" style={{display: 'block', marginBottom: 4}}>
+              <XDSText
+                type="body"
+                weight="bold"
+                style={{display: 'block', marginBottom: 4}}>
                 {item.title}
               </XDSText>
               <XDSText type="supporting" color="secondary">
@@ -1823,7 +3933,11 @@ function LibraryOverview({
           size="sm"
           style={{marginBottom: 24}}>
           {PACKAGE_FILTERS.map(filter => (
-            <XDSTab key={filter.value} value={filter.value} label={filter.label} />
+            <XDSTab
+              key={filter.value}
+              value={filter.value}
+              label={filter.label}
+            />
           ))}
         </XDSTabList>
         <XDSGrid columns={4} gap={4}>
@@ -1862,7 +3976,16 @@ function LibraryOverview({
                     marginBottom: 12,
                   }}>
                   {IconComp && (
-                    <XDSIcon icon={IconComp} size="lg" style={{width: 48, height: 48, color: '#484233', strokeWidth: 1.8}} />
+                    <XDSIcon
+                      icon={IconComp}
+                      size="lg"
+                      style={{
+                        width: 48,
+                        height: 48,
+                        color: '#484233',
+                        strokeWidth: 1.8,
+                      }}
+                    />
                   )}
                   {pkg.status === 'Coming Soon' && (
                     <div style={{position: 'absolute', top: 12, right: 12}}>
@@ -1873,13 +3996,23 @@ function LibraryOverview({
                 <XDSText
                   type="body"
                   weight="bold"
-                  style={{fontFamily: pkg.category !== 'designing' ? 'monospace' : undefined, fontSize: 14, display: 'block', marginBottom: 4}}>
+                  style={{
+                    fontFamily:
+                      pkg.category !== 'designing' ? 'monospace' : undefined,
+                    fontSize: 14,
+                    display: 'block',
+                    marginBottom: 4,
+                  }}>
                   {pkg.name}
                   {pkg.version && (
                     <XDSText
                       type="supporting"
                       color="secondary"
-                      style={{fontFamily: 'monospace', fontSize: 12, marginLeft: 8}}>
+                      style={{
+                        fontFamily: 'monospace',
+                        fontSize: 12,
+                        marginLeft: 8,
+                      }}>
                       v{pkg.version}
                     </XDSText>
                   )}
@@ -1900,20 +4033,31 @@ function LibraryOverview({
           type="body"
           color="secondary"
           style={{marginTop: 8, marginBottom: 24, maxWidth: 680}}>
-          XDS is available in three contexts. Choose the right one based
-          on where you're building.
+          XDS is available in three contexts. Choose the right one based on
+          where you're building.
         </XDSText>
         <XDSGrid columns={3} gap={4}>
           {XDS_OFFERINGS.map(offering => (
             <XDSCard key={offering.title} padding={6} style={{height: '100%'}}>
               <XDSStack direction="vertical" gap={0} style={{height: '100%'}}>
-                {(offering.icons?.length || offering.logos?.length) ? (
-                  <XDSStack direction="horizontal" gap={2} vAlign="center" style={{marginBottom: 24}}>
+                {offering.icons?.length || offering.logos?.length ? (
+                  <XDSStack
+                    direction="horizontal"
+                    gap={2}
+                    vAlign="center"
+                    style={{marginBottom: 24}}>
                     {offering.icons?.map((IconComp, idx) => (
                       <IconComp key={idx} width={28} height={28} />
                     ))}
                     {offering.logos?.map((src, idx) => (
-                      <img key={idx} src={src} alt="" width={28} height={28} style={{objectFit: 'contain'}} />
+                      <img
+                        key={idx}
+                        src={src}
+                        alt=""
+                        width={28}
+                        height={28}
+                        style={{objectFit: 'contain'}}
+                      />
                     ))}
                   </XDSStack>
                 ) : null}
@@ -1921,20 +4065,30 @@ function LibraryOverview({
                   <XDSText
                     type="supporting"
                     color="secondary"
-                    style={{fontFamily: offering.pkg ? 'monospace' : 'inherit', fontStyle: offering.label && !offering.pkg ? 'italic' : undefined, marginBottom: 8}}>
+                    style={{
+                      fontFamily: offering.pkg ? 'monospace' : 'inherit',
+                      fontStyle:
+                        offering.label && !offering.pkg ? 'italic' : undefined,
+                      marginBottom: 8,
+                    }}>
                     {offering.pkg ?? offering.label}
                   </XDSText>
                 )}
                 <XDSText type="display-2" style={{marginBottom: 4}}>
                   {offering.title}
                 </XDSText>
-                <XDSText type="supporting" color="secondary" style={{marginBottom: 16}}>
+                <XDSText
+                  type="supporting"
+                  color="secondary"
+                  style={{marginBottom: 16}}>
                   {offering.subtitle}
                 </XDSText>
                 <XDSText type="supporting" color="secondary">
                   {offering.descriptionLinkText && offering.descriptionLinkHref
                     ? (() => {
-                        const idx = offering.description.lastIndexOf(offering.descriptionLinkText);
+                        const idx = offering.description.lastIndexOf(
+                          offering.descriptionLinkText,
+                        );
                         if (idx === -1) return offering.description;
                         return (
                           <>
@@ -1947,7 +4101,9 @@ function LibraryOverview({
                               hasUnderline>
                               {offering.descriptionLinkText}
                             </XDSLink>
-                            {offering.description.slice(idx + offering.descriptionLinkText.length)}
+                            {offering.description.slice(
+                              idx + offering.descriptionLinkText.length,
+                            )}
                           </>
                         );
                       })()
@@ -1985,14 +4141,18 @@ function LibraryOverview({
         </div>
         <XDSText type="supporting" color="secondary">
           Prefer a human? Drop us a message in{' '}
-          <XDSLink label="XDS OSS" href="https://fb.workplace.com/groups/xdsoss" color="secondary" type="supporting">
+          <XDSLink
+            label="XDS OSS"
+            href="https://fb.workplace.com/groups/xdsoss"
+            color="secondary"
+            type="supporting">
             XDS OSS
           </XDSLink>{' '}
           on Workplace
         </XDSText>
       </XDSStack>
       <div style={{height: 100}} />
-    </div>
+    </XDSSection>
   );
 }
 
@@ -2041,9 +4201,18 @@ function ComponentDetailPage({
   const desc = getComponentDesc(activeNav);
 
   const bestPractices = [
-    {type: 'do' as const, text: `Use ${componentName} in the appropriate context to provide the functionality described above.`},
-    {type: 'do' as const, text: `Pair ${componentName} with related components to create cohesive, accessible interfaces.`},
-    {type: 'dont' as const, text: `Use ${componentName} when a simpler alternative achieves the same goal with less complexity.`},
+    {
+      type: 'do' as const,
+      text: `Use ${componentName} in the appropriate context to provide the functionality described above.`,
+    },
+    {
+      type: 'do' as const,
+      text: `Pair ${componentName} with related components to create cohesive, accessible interfaces.`,
+    },
+    {
+      type: 'dont' as const,
+      text: `Use ${componentName} when a simpler alternative achieves the same goal with less complexity.`,
+    },
   ];
 
   const examples = [
@@ -2055,7 +4224,11 @@ function ComponentDetailPage({
   ];
 
   return (
-    <div style={{maxWidth: 960, margin: '0 auto', padding: '32px 40px'}}>
+    <XDSSection
+      maxWidth={960}
+      padding={8}
+      variant="transparent"
+      style={{marginInline: 'auto'}}>
       <XDSStack direction="vertical" gap={8}>
         {/* Header */}
         <XDSStack direction="vertical" gap={2}>
@@ -2081,7 +4254,9 @@ function ComponentDetailPage({
         {/* Usage + Best Practices */}
         <XDSStack direction="vertical" gap={4}>
           <XDSHeading level={2}>Usage</XDSHeading>
-          <XDSText type="large" weight="normal">{desc}</XDSText>
+          <XDSText type="large" weight="normal">
+            {desc}
+          </XDSText>
           <XDSHeading level={3}>Best practices</XDSHeading>
           <XDSTable
             data={bestPractices as Record<string, unknown>[]}
@@ -2186,7 +4361,7 @@ function ComponentDetailPage({
           })}
         </XDSStack>
       </XDSStack>
-    </div>
+    </XDSSection>
   );
 }
 
@@ -2293,13 +4468,12 @@ export function DocsView({
               />
             </XDSSideNavSection>
             <XDSSideNavSection title="Overview" isHeaderHidden>
-              <XDSSideNavItem
-                label="Guide"
-                collapsible>
+              <XDSSideNavItem label="Guide" collapsible>
                 <XDSSideNavItem
                   label="Getting Started"
                   isSelected={
-                    selectedComponent !== null && activeNav === 'getting-started'
+                    selectedComponent !== null &&
+                    activeNav === 'getting-started'
                   }
                   onClick={() => {
                     setSelectedComponent('getting-started');
@@ -2330,7 +4504,7 @@ export function DocsView({
                   ))}
                 </XDSSideNavItem>
                 <XDSSideNavItem label="Libraries" collapsible>
-                  {LIBRARY_PACKAGES.map(pkg => (
+                  {LIBRARY_PACKAGES.filter(pkg => !pkg.href).map(pkg => (
                     <XDSSideNavItem
                       key={pkg.key}
                       label={pkg.name}
@@ -2340,21 +4514,6 @@ export function DocsView({
                       onClick={() => {
                         setSelectedComponent(pkg.key);
                         setActiveNav(pkg.key);
-                      }}
-                    />
-                  ))}
-                </XDSSideNavItem>
-                <XDSSideNavItem label="Resources" collapsible>
-                  {RESOURCE_NAV_ITEMS.map(resource => (
-                    <XDSSideNavItem
-                      key={resource.key}
-                      label={resource.title}
-                      isSelected={
-                        selectedComponent !== null && activeNav === resource.key
-                      }
-                      onClick={() => {
-                        setSelectedComponent(resource.key);
-                        setActiveNav(resource.key);
                       }}
                     />
                   ))}
@@ -2407,6 +4566,7 @@ export function DocsView({
               setSelectedComponent(key);
               setActiveNav(key);
             }}
+            onCraft={() => setActiveView('craft')}
           />
         ) : RESOURCE_NAV_ITEMS.some(r => r.key === selectedComponent) ? (
           <ResourcePage resourceKey={selectedComponent} />
