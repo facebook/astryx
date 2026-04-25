@@ -9,6 +9,7 @@
  * - /packages/core/src/EmptyState/XDSEmptyState.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/EmptyState/index.ts (exports if types change)
  * - /apps/storybook/stories/EmptyState.stories.tsx (storybook stories)
+ * - /packages/cli/templates/blocks/components/EmptyState/ (showcase blocks)
  */
 
 import {type ReactNode, createElement} from 'react';

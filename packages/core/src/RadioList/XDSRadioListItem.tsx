@@ -11,6 +11,7 @@
  * - /packages/core/src/RadioList/XDSRadioList.test.tsx
  * - /packages/core/src/RadioList/index.ts
  * - /apps/storybook/stories/RadioList.stories.tsx
+ * - /packages/cli/templates/blocks/components/RadioList/ (showcase blocks)
  */
 
 import {useContext, useId, type ReactNode} from 'react';

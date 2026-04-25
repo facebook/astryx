@@ -10,6 +10,7 @@
  * - /packages/core/src/Grid/Grid.doc.mjs
  * - /packages/core/src/Grid/XDSGrid.test.tsx
  * - /apps/storybook/stories/Grid.stories.tsx
+ * - /packages/cli/templates/blocks/components/Grid/ (showcase blocks)
  */
 
 import {type ReactNode} from 'react';

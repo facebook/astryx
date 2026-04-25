@@ -8,9 +8,9 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Avatar/Avatar.doc.mjs (props table, features, implementation notes)
- * - /packages/core/src/Avatar/XDSAvatar.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Avatar/index.ts (exports if types change)
  * - /apps/storybook/stories/Avatar.stories.tsx (storybook stories)
+ * - /packages/cli/templates/blocks/components/Avatar/ (showcase blocks)
  */
 
 import {useState, type ReactNode} from 'react';

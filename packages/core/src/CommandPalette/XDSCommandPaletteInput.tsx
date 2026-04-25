@@ -6,8 +6,8 @@
  * @position Search input for the command palette
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/lab/src/CommandPalette/README.md
  * - /apps/storybook/stories/CommandPalette.stories.tsx
+ * - /packages/cli/templates/blocks/components/CommandPalette/ (showcase blocks)
  */
 
 import {

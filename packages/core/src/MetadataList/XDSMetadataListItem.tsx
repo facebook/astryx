@@ -11,6 +11,7 @@
  * - /packages/core/src/MetadataList/XDSMetadataList.test.tsx
  * - /packages/core/src/MetadataList/index.ts
  * - /apps/storybook/stories/MetadataList.stories.tsx
+ * - /packages/cli/templates/blocks/components/MetadataList/ (showcase blocks)
  */
 
 import {useContext, type ReactNode} from 'react';

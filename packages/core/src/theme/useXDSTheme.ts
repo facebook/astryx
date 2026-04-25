@@ -11,7 +11,6 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/theme/index.ts
- * - /packages/core/src/theme/README.md (if present)
  */
 
 import {createContext, useContext, useMemo} from 'react';

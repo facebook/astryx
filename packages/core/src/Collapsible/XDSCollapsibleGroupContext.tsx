@@ -9,6 +9,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Collapsible/XDSCollapsibleGroup.tsx (provider)
  * - /packages/core/src/Collapsible/Collapsible.doc.mjs
+ * - /packages/cli/templates/blocks/components/Collapsible/ (showcase blocks)
  */
 
 

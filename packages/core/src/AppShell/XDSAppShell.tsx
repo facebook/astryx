@@ -15,6 +15,7 @@ import React from 'react';
  * - /packages/core/src/AppShell/index.ts
  * - /packages/core/src/AppShell/XDSAppShell.test.tsx
  * - /apps/storybook/stories/AppShell.stories.tsx
+ * - /packages/cli/templates/blocks/components/AppShell/ (showcase blocks)
  */
 
 import {

@@ -13,6 +13,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/ToggleButton/index.ts
  * - /apps/storybook/stories/ToggleButton.stories.tsx
+ * - /packages/cli/templates/blocks/components/ToggleButton/ (showcase blocks)
  */
 
 import {

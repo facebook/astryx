@@ -11,6 +11,7 @@
  * - /packages/core/src/TextArea/XDSTextArea.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/TextArea/index.ts (exports if types change)
  * - /apps/storybook/stories/TextArea.stories.tsx (storybook stories)
+ * - /packages/cli/templates/blocks/components/TextArea/ (showcase blocks)
  */
 
 import {

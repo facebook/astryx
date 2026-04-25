@@ -11,6 +11,7 @@
  * - /packages/core/src/Spinner/XDSSpinner.test.tsx
  * - /packages/core/src/Spinner/index.ts
  * - /apps/storybook/stories/Spinner.stories.tsx
+ * - /packages/cli/templates/blocks/components/Spinner/ (showcase blocks)
  */
 
 import {useEffect, useRef, type ReactNode} from 'react';

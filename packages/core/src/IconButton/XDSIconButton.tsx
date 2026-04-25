@@ -11,6 +11,7 @@
  * - /packages/core/src/IconButton/XDSIconButton.test.tsx (tests)
  * - /packages/core/src/IconButton/index.ts (exports if types change)
  * - /apps/storybook/stories/IconButton.stories.tsx (storybook stories)
+ * - /packages/cli/templates/blocks/components/IconButton/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';

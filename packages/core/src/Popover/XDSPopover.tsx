@@ -12,6 +12,7 @@
  * - /packages/core/src/Popover/XDSPopover.test.tsx
  * - /packages/core/src/Popover/index.ts
  * - /apps/storybook/stories/Popover.stories.tsx
+ * - /packages/cli/templates/blocks/components/Popover/ (showcase blocks)
  */
 
 import React, {
