@@ -2133,7 +2133,7 @@ function ThemePreview() {
           <XDSBadge label="Warning" variant="warning" />
         </XDSStack>
 
-        <XDSTextInput placeholder="Type something..." />
+        <XDSTextInput label="Example" placeholder="Type something..." value="" onChange={() => {}} />
 
         <XDSStack direction="horizontal" gap={4} vAlign="center">
           <XDSSwitch label="Toggle" defaultIsSelected />
