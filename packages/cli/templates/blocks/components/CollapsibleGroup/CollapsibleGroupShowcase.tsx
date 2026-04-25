@@ -9,7 +9,7 @@ import {XDSText} from '@xds/core/Text';
 export default function CollapsibleGroupShowcase() {
   return (
     <XDSCenter width={400}>
-      <XDSCollapsibleGroup type="single" defaultValue="shipping" style={{width: '100%'}}>
+      <XDSCollapsibleGroup type="single" defaultValue="shipping">
         <XDSVStack gap={2}>
           <XDSCard>
             <XDSCollapsible trigger="Shipping Information" value="shipping">
