@@ -3,20 +3,13 @@
 import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSButton} from '@xds/core/Button';
+import {XDSIcon} from '@xds/core/Icon';
 
 function CubeIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
       <path strokeLinecap="round" strokeLinejoin="round" d="M21 16.5V7.914a1.5 1.5 0 0 0-.75-1.299l-7.5-4.329a1.5 1.5 0 0 0-1.5 0l-7.5 4.33A1.5 1.5 0 0 0 3 7.913V16.5a1.5 1.5 0 0 0 .75 1.3l7.5 4.328a1.5 1.5 0 0 0 1.5 0l7.5-4.329A1.5 1.5 0 0 0 21 16.5Z" />
       <path strokeLinecap="round" strokeLinejoin="round" d="m3.75 7.5 8.25 4.764 8.25-4.764M12 22.089V12.264" />
-    </svg>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
     </svg>
   );
 }
@@ -52,7 +45,7 @@ export default function TopNavCenteredNavigation() {
           <XDSButton
             label="Search"
             variant="ghost"
-            icon={<SearchIcon />}
+            icon={<XDSIcon icon="search" color="inherit" />}
             isIconOnly
           />
           <XDSButton
