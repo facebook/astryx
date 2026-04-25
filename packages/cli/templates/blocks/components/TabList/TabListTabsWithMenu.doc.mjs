@@ -6,5 +6,5 @@ export const doc = {
     'Tab list with a dropdown menu for additional items that do not fit inline.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['TabList', 'Tab', 'TabMenu'],
+  componentsUsed: ['TabList'],
 };

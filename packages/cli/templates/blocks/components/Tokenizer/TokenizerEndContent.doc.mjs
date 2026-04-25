@@ -5,5 +5,5 @@ export const doc = {
   description: 'Tokenizer with an action button in the end slot. Use for inline actions like applying selections alongside the input.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['Tokenizer', 'Button', 'Layout', 'Text'],
+  componentsUsed: ['Button', 'Layout', 'Text', 'Tokenizer', 'Typeahead'],
 };

@@ -6,5 +6,5 @@ export const doc = {
     'All semantic color variants stacked vertically.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['ProgressBar', 'Center', 'VStack'],
+  componentsUsed: ['Center', 'Layout', 'ProgressBar'],
 };

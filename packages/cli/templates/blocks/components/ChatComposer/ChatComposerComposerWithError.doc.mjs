@@ -6,5 +6,5 @@ export const doc = {
     'Chat composer displaying an error status message below the input.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['ChatComposer'],
+  componentsUsed: ['Chat'],
 };

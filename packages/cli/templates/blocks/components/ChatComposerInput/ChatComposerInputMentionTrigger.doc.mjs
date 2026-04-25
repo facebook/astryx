@@ -6,5 +6,5 @@ export const doc = {
     'Chat input with @ mention trigger that shows a typeahead menu with user names and roles.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['ChatComposer', 'ChatComposerInput', 'Typeahead'],
+  componentsUsed: ['Chat', 'Typeahead'],
 };

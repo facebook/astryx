@@ -5,5 +5,5 @@ export const doc = {
   description: 'Keyboard shortcuts rendered inline within instructional text',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Kbd', 'VStack', 'Text'],
+  componentsUsed: ['Kbd', 'Stack', 'Text'],
 };

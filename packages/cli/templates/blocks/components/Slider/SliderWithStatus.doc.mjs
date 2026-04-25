@@ -6,5 +6,5 @@ export const doc = {
     'Sliders with error, warning, and success validation states.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Slider', 'VStack', 'Center'],
+  componentsUsed: ['Center', 'Layout', 'Slider'],
 };

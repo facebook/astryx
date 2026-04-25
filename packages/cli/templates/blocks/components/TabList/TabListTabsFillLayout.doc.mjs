@@ -6,5 +6,5 @@ export const doc = {
     'Tabs that stretch to fill the available width with a bottom divider.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['TabList', 'Tab'],
+  componentsUsed: ['TabList'],
 };

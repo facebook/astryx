@@ -6,5 +6,5 @@ export const doc = {
     'Default and onMedia shade spinners for light and dark backgrounds.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Spinner'],
+  componentsUsed: ['Layout', 'Spinner'],
 };

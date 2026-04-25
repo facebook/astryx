@@ -6,5 +6,5 @@ export const doc = {
     'Controlled chat input with live value display, showing two-way binding between composer and input.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['ChatComposer', 'ChatComposerInput'],
+  componentsUsed: ['Chat'],
 };

@@ -6,5 +6,5 @@ export const doc = {
     'Spinners with text and rich multi-line labels.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Spinner', 'Text'],
+  componentsUsed: ['Layout', 'Spinner', 'Text'],
 };

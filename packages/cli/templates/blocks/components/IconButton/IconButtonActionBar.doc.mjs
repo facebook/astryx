@@ -5,5 +5,5 @@ export const doc = {
   description: 'Row of ghost icon buttons for a compact action toolbar',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['IconButton', 'Icon', 'HStack'],
+  componentsUsed: ['Icon', 'IconButton', 'Stack'],
 };

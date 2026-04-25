@@ -5,5 +5,5 @@ export const doc = {
   description: 'Dashboard layout with mixed-size widgets and a full-width summary row',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Grid', 'GridSpan', 'Card', 'Text'],
+  componentsUsed: ['Card', 'Grid', 'Text'],
 };

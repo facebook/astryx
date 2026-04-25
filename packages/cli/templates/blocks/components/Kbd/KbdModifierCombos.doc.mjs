@@ -5,5 +5,5 @@ export const doc = {
   description: 'Modifier combinations and special keys rendered as shortcut badges',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Kbd', 'VStack', 'HStack', 'Text'],
+  componentsUsed: ['Kbd', 'Stack', 'Text'],
 };

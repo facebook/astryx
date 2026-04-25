@@ -5,5 +5,5 @@ export const doc = {
   description: 'Icon buttons with tooltips that explain each action on hover',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['IconButton', 'Icon', 'HStack'],
+  componentsUsed: ['Icon', 'IconButton', 'Stack'],
 };

@@ -6,5 +6,5 @@ export const doc = {
     'Command palette with items grouped via auxiliaryData.group.',
   isReady: true,
   aspectRatio: 3 / 4,
-  componentsUsed: ['CommandPalette'],
+  componentsUsed: ['CommandPalette', 'Typeahead'],
 };

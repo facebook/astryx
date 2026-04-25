@@ -6,5 +6,5 @@ export const doc = {
     'Single-value picker with persistent selection and check indicator.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['CommandPalette', 'Text', 'Icon'],
+  componentsUsed: ['CommandPalette', 'Icon', 'Text', 'Typeahead'],
 };

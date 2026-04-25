@@ -5,5 +5,5 @@ export const doc = {
   description: 'Tokenizer with a maximum selection limit. The input hides automatically when the limit is reached, preventing further additions.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['Tokenizer', 'Layout', 'Text'],
+  componentsUsed: ['Layout', 'Text', 'Tokenizer', 'Typeahead'],
 };

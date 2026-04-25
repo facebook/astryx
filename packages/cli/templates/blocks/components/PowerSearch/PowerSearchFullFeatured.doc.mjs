@@ -6,5 +6,5 @@ export const doc = {
     'Power search with multiple field types: enum, multi-select, entity, and text filters.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['PowerSearch'],
+  componentsUsed: ['PowerSearch', 'Typeahead'],
 };

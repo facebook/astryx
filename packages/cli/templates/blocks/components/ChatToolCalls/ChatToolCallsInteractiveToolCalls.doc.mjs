@@ -6,5 +6,5 @@ export const doc = {
     'Tool calls with expandable result details showing diffs and test output in code blocks.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['ChatToolCalls', 'CodeBlock'],
+  componentsUsed: ['Chat', 'CodeBlock'],
 };

@@ -6,5 +6,5 @@ export const doc = {
     'Chat layout showing an empty state placeholder with a docked composer below.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['ChatLayout', 'ChatComposer', 'EmptyState'],
+  componentsUsed: ['Chat', 'EmptyState'],
 };

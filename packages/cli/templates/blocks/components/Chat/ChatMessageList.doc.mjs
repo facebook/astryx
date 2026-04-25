@@ -5,5 +5,5 @@ export const doc = {
   description: 'Full conversation with user bubbles, assistant markdown, avatars, timestamps, delivery status, multi-bubble grouping, and system messages. Shows the core MessageList > Message > Bubble composition pattern.',
   isReady: true,
   aspectRatio: .85,
-  componentsUsed: ['Chat', 'Avatar', 'Markdown', 'Timestamp'],
+  componentsUsed: ['Avatar', 'Chat', 'Markdown', 'Text', 'Timestamp'],
 };

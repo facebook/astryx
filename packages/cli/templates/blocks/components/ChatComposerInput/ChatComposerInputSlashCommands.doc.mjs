@@ -6,5 +6,5 @@ export const doc = {
     'Chat input with / command trigger that shows a typeahead menu with command descriptions.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['ChatComposer', 'ChatComposerInput', 'Typeahead'],
+  componentsUsed: ['Chat', 'Typeahead'],
 };

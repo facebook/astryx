@@ -6,5 +6,5 @@ export const doc = {
     'Message with a single @mention token highlighted inline.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['ChatTokenizedText', 'Chat'],
+  componentsUsed: ['Chat'],
 };

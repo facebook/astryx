@@ -5,5 +5,5 @@ export const doc = {
   description: 'Responsive grid where cards stretch to fill remaining space',
   isReady: true,
   aspectRatio: 3 / 4,
-  componentsUsed: ['Grid', 'Card', 'VStack', 'Text'],
+  componentsUsed: ['Card', 'Grid', 'Stack', 'Text'],
 };

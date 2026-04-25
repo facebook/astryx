@@ -5,5 +5,5 @@ export const doc = {
   description: 'Tokenizer with overflow truncation when unfocused. Inline mode pushes content down on expand; layer mode overlays without shifting layout.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['Tokenizer', 'Layout', 'Text'],
+  componentsUsed: ['Layout', 'Text', 'Tokenizer', 'Typeahead'],
 };

@@ -6,5 +6,5 @@ export const doc = {
     'Collapsible group of completed tool calls with duration and diff stats.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['ChatToolCalls'],
+  componentsUsed: ['Chat'],
 };

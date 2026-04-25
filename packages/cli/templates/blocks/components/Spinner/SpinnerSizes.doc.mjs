@@ -5,5 +5,5 @@ export const doc = {
   description: 'All spinner sizes displayed side by side.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Spinner'],
+  componentsUsed: ['Layout', 'Spinner'],
 };

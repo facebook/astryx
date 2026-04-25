@@ -6,5 +6,5 @@ export const doc = {
     'Tool calls with node badges showing which sandbox or environment ran each tool.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['ChatToolCalls'],
+  componentsUsed: ['Chat'],
 };

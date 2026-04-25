@@ -5,5 +5,5 @@ export const doc = {
   description: 'Card gallery with responsive columns that maintain consistent widths',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Grid', 'Card', 'VStack', 'Text'],
+  componentsUsed: ['Card', 'Grid', 'Stack', 'Text'],
 };

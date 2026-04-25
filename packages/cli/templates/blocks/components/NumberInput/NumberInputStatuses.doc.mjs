@@ -5,5 +5,5 @@ export const doc = {
   description: 'Number inputs showing error, warning, and success validation states',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['NumberInput', 'VStack', 'Center'],
+  componentsUsed: ['Center', 'NumberInput', 'Stack'],
 };

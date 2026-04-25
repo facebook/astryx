@@ -6,5 +6,5 @@ export const doc = {
     'Message with multiple @mention tokens resolved to display names inline.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['ChatTokenizedText', 'Chat'],
+  componentsUsed: ['Chat'],
 };

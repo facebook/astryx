@@ -6,5 +6,5 @@ export const doc = {
   isReady: true,
   aspectRatio: 1,
   isShowcase: true,
-  componentsUsed: ['CommandPalette'],
+  componentsUsed: ['CommandPalette', 'Typeahead'],
 };

@@ -6,5 +6,5 @@ export const doc = {
     'Message with tokens using different color variants for mentions, bugs, and features.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['ChatTokenizedText', 'Chat'],
+  componentsUsed: ['Chat'],
 };

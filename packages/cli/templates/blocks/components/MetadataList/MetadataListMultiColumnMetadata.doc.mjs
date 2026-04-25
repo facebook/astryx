@@ -6,5 +6,5 @@ export const doc = {
     'Multi-column metadata grid with token tags.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['MetadataList', 'Token', 'HStack'],
+  componentsUsed: ['Layout', 'MetadataList', 'Token'],
 };

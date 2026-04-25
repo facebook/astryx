@@ -6,5 +6,5 @@ export const doc = {
     'Navigation bar with multiple hover-triggered dropdown menus that auto-close when switching between them.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['TopNav', 'TopNavMenu'],
+  componentsUsed: ['TopNav'],
 };

@@ -5,5 +5,5 @@ export const doc = {
   description: 'Tokenizer with a built-in clear-all button for bulk removal of all selected tokens.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['Tokenizer', 'Layout', 'Text'],
+  componentsUsed: ['Layout', 'Text', 'Tokenizer', 'Typeahead'],
 };

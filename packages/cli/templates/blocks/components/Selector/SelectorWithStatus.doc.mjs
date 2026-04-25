@@ -6,5 +6,5 @@ export const doc = {
     'Selector showing error, warning, and success validation states.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Selector', 'Center', 'VStack'],
+  componentsUsed: ['Center', 'Layout', 'Selector'],
 };

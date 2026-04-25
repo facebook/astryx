@@ -6,5 +6,5 @@ export const doc = {
     'Dictation button placed in the sendActions slot of a chat composer.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['ChatDictation', 'ChatComposer'],
+  componentsUsed: ['Chat'],
 };

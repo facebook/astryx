@@ -5,5 +5,5 @@ export const doc = {
   description: 'Tabs with leading icons alongside text labels.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['TabList', 'Tab'],
+  componentsUsed: ['TabList'],
 };

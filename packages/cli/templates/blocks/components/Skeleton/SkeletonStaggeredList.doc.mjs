@@ -6,5 +6,5 @@ export const doc = {
     'Staggered skeleton lines with varying widths.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Skeleton', 'VStack'],
+  componentsUsed: ['Layout', 'Skeleton'],
 };

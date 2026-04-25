@@ -6,5 +6,5 @@ export const doc = {
     'Card skeleton with avatar, name, and content lines.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Skeleton', 'Card', 'HStack', 'VStack'],
+  componentsUsed: ['Card', 'Layout', 'Skeleton'],
 };

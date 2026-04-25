@@ -5,5 +5,5 @@ export const doc = {
   description: 'Tokenizer in disabled, error, warning, and success states. Use to communicate validation feedback or lock a selection from editing.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Tokenizer', 'Layout'],
+  componentsUsed: ['Layout', 'Tokenizer', 'Typeahead'],
 };

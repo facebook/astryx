@@ -6,5 +6,5 @@ export const doc = {
     'Narrow sidebar chat layout in a constrained container, suitable for side panels.',
   isReady: true,
   aspectRatio: 3 / 4,
-  componentsUsed: ['ChatLayout', 'Chat', 'ChatComposer', 'Markdown'],
+  componentsUsed: ['Chat', 'Markdown'],
 };

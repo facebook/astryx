@@ -6,5 +6,5 @@ export const doc = {
     'Horizontal row of standalone links with descriptive hover tooltips.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Link', 'HStack'],
+  componentsUsed: ['Layout', 'Link'],
 };

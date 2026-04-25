@@ -7,5 +7,5 @@ export const doc = {
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['Collapsible', 'Text', 'Card'],
+  componentsUsed: ['Card', 'Collapsible', 'Layout', 'Text'],
 };

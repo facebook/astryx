@@ -6,5 +6,5 @@ export const doc = {
     'Tabs with notification badge counts rendered via endContent. Uses error variant for urgent counts and neutral for informational ones.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['TabList', 'Tab', 'Badge'],
+  componentsUsed: ['Badge', 'TabList'],
 };

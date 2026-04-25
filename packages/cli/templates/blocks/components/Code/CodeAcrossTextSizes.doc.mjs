@@ -6,5 +6,5 @@ export const doc = {
     'Inline code rendered inside heading, body, supporting, and label text. XDSCode automatically matches the font size of its parent text element.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['Code', 'Text', 'Stack'],
+  componentsUsed: ['CodeBlock', 'Stack', 'Text'],
 };

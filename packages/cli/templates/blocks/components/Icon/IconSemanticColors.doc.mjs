@@ -6,5 +6,5 @@ export const doc = {
     'All semantic icon color variants with labels.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Icon', 'HStack', 'VStack', 'Text'],
+  componentsUsed: ['Icon', 'Layout', 'Text'],
 };

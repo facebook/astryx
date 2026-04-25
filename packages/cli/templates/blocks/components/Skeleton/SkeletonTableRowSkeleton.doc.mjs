@@ -6,5 +6,5 @@ export const doc = {
     'Table skeleton with staggered column widths.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Skeleton', 'HStack', 'VStack'],
+  componentsUsed: ['Layout', 'Skeleton'],
 };

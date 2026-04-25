@@ -6,5 +6,5 @@ export const doc = {
     'Chat composer with attachment tokens, context progress bar, and footer action buttons.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['ChatComposer', 'Token', 'Button', 'ProgressBar'],
+  componentsUsed: ['Button', 'Chat', 'ProgressBar', 'Token'],
 };

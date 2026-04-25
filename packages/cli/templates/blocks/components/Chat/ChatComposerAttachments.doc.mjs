@@ -5,5 +5,5 @@ export const doc = {
   description: 'Composer with removable file tokens and a collapsible attachment drawer. Use a context progress bar to show how much of the context window is used, and the collapse toggle when many files are attached.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['Chat', 'Token', 'ProgressBar', 'Layout', 'Text'],
+  componentsUsed: ['Button', 'Chat', 'Icon', 'Layout', 'ProgressBar', 'Text', 'Token'],
 };

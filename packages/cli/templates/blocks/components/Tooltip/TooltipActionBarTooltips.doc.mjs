@@ -6,5 +6,5 @@ export const doc = {
     'Tooltips on an action button bar with contextual descriptions.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Tooltip', 'Button', 'HStack', 'Center'],
+  componentsUsed: ['Button', 'Center', 'Layout', 'Tooltip'],
 };

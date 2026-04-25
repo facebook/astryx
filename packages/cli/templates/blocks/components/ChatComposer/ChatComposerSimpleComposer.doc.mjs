@@ -6,5 +6,5 @@ export const doc = {
     'Minimal chat composer with a placeholder and submit handler.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['ChatComposer'],
+  componentsUsed: ['Chat'],
 };

@@ -6,5 +6,5 @@ export const doc = {
     'Switches with error, warning, and success validation states.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Switch', 'VStack', 'Center'],
+  componentsUsed: ['Center', 'Layout', 'Switch'],
 };

@@ -6,5 +6,5 @@ export const doc = {
     'Real-world page layout demonstrating heading levels h1 through h3 with supporting text',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Heading', 'Text'],
+  componentsUsed: ['Text'],
 };

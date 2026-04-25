@@ -5,5 +5,5 @@ export const doc = {
   description: 'Icon buttons that show a loading spinner on click for async feedback',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['IconButton', 'Icon', 'HStack'],
+  componentsUsed: ['Icon', 'IconButton', 'Stack'],
 };

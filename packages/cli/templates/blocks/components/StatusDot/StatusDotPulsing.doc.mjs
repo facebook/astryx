@@ -6,5 +6,5 @@ export const doc = {
   isReady: true,
   aspectRatio: 1,
   scale: 2,
-  componentsUsed: ['StatusDot', 'HStack'],
+  componentsUsed: ['Layout', 'StatusDot'],
 };

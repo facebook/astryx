@@ -6,5 +6,5 @@ export const doc = {
     'Timestamp rendered in each available color variant: primary, secondary, disabled, and active.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['Timestamp', 'Stack', 'Text'],
+  componentsUsed: ['Layout', 'Text', 'Timestamp'],
 };

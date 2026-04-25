@@ -6,5 +6,5 @@ export const doc = {
     'Required and optional field indicators side by side. Use isRequired on fields the user must fill in, and isOptional to clarify which fields can be skipped.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['TextInput', 'Layout', 'Text'],
+  componentsUsed: ['Center', 'Layout', 'TextInput'],
 };

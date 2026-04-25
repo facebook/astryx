@@ -6,5 +6,5 @@ export const doc = {
     'Two multi-selectors in a form with required/optional states.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['MultiSelector', 'Center', 'VStack'],
+  componentsUsed: ['Center', 'Layout', 'MultiSelector'],
 };
