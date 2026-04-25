@@ -91,9 +91,11 @@ const styles = stylex.create({
     cursor: 'row-resize',
   },
 
-  // Pill grip indicator — centered on the line.
+  // Pill grip indicator — absolutely positioned so it's not constrained
+  // by the 1px handle container. Without this, the vertical pill (3px tall)
+  // gets squished to 1px by the flex layout of the 1px-tall handle.
   pill: {
-    position: 'relative',
+    position: 'absolute',
     zIndex: 2,
     borderRadius: 2,
     backgroundColor: colorVars['--color-border'],
@@ -104,10 +106,18 @@ const styles = stylex.create({
   pillHorizontal: {
     width: 'var(--resize-handle-width, 3px)',
     height: 'var(--resize-handle-height, 32px)',
+    // Centered on the 1px vertical line
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
   },
   pillVertical: {
     height: 'var(--resize-handle-width, 3px)',
     width: 'var(--resize-handle-height, 32px)',
+    // Centered on the 1px horizontal line
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
   },
   pillHidden: {opacity: 0},
   pillVisible: {opacity: 1},
