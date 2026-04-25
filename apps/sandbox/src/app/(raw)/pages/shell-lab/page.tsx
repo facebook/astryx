@@ -710,6 +710,8 @@ function SampleSideNav({
       {config.isResizable && (
         <XDSResizeHandle
           direction="horizontal"
+          hasDivider
+          isAlwaysVisible
           resizable={sidebar.props}
           label="Resize sidebar"
         />

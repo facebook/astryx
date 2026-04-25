@@ -6,8 +6,9 @@
  * @output Styled drag handle with WAI-ARIA separator role and keyboard support
  * @position Between resizable panels; consumed directly by builders
  *
- * Pill-grip resize handle with optional divider line.
- * Follows WAI-ARIA Window Splitter keyboard pattern.
+ * Shadcn-inspired approach: the handle element is 1px wide (the divider line
+ * itself), with an absolutely-positioned wider hit area for pointer interaction.
+ * Optional pill grip indicator centered on the line.
  */
 
 import {useCallback, useEffect, useRef, useState} from 'react';
@@ -21,46 +22,79 @@ const KEYBOARD_STEP = 10;
 const KEYBOARD_LARGE_STEP = 50;
 
 const styles = stylex.create({
-  grip: {
+  // The handle is 1px in layout flow — the visible divider line itself.
+  // A wider hit area is achieved via the hitArea child.
+  handle: {
+    position: 'relative',
     flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
-    zIndex: 1,
-    touchAction: 'none',
-    userSelect: 'none',
-    backgroundColor: 'transparent',
-    borderWidth: 0,
-    padding: 0,
+    backgroundColor: colorVars['--color-border'],
+    transitionProperty: 'background-color',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
     outline: {
       default: 'none',
       ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
       default: null,
-      ':focus-visible': '-2px',
+      ':focus-visible': '2px',
     },
   },
   horizontal: {
-    width: 'var(--resize-handle-hit-area, 16px)',
-    cursor: 'col-resize',
+    width: 1,
     height: '100%',
+    cursor: 'col-resize',
   },
   vertical: {
-    height: 'var(--resize-handle-hit-area, 16px)',
-    cursor: 'row-resize',
+    height: 1,
     width: '100%',
+    cursor: 'row-resize',
+  },
+  noDivider: {
+    backgroundColor: 'transparent',
+  },
+  handleHover: {
+    backgroundColor: colorVars['--color-border-emphasized'],
+  },
+  handleActive: {
+    backgroundColor: colorVars['--color-border-emphasized'],
   },
   disabled: {
     cursor: 'default',
     pointerEvents: 'none',
   },
 
-  // --- Pill indicator ---
+  // Wider invisible hit area — extends beyond the 1px line.
+  hitArea: {
+    position: 'absolute',
+    zIndex: 1,
+    touchAction: 'none',
+    userSelect: 'none',
+  },
+  hitAreaHorizontal: {
+    width: 'var(--resize-handle-hit-area, 16px)',
+    top: 0,
+    bottom: 0,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    cursor: 'col-resize',
+  },
+  hitAreaVertical: {
+    height: 'var(--resize-handle-hit-area, 16px)',
+    left: 0,
+    right: 0,
+    top: '50%',
+    transform: 'translateY(-50%)',
+    cursor: 'row-resize',
+  },
+
+  // Pill grip indicator — centered on the line.
   pill: {
     position: 'relative',
-    zIndex: 1,
+    zIndex: 2,
     borderRadius: 2,
     backgroundColor: colorVars['--color-border'],
     transitionProperty: 'opacity, background-color',
@@ -85,35 +119,6 @@ const styles = stylex.create({
     opacity: 1,
     backgroundColor: colorVars['--color-border-emphasized'],
   },
-
-  // --- Divider line ---
-  divider: {
-    position: 'absolute',
-    backgroundColor: colorVars['--color-border'],
-    transitionProperty: 'background-color',
-    transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easeVars['--ease-standard'],
-  },
-  dividerHorizontal: {
-    width: 1,
-    top: 0,
-    bottom: 0,
-    left: '50%',
-    transform: 'translateX(-0.5px)',
-  },
-  dividerVertical: {
-    height: 1,
-    left: 0,
-    right: 0,
-    top: '50%',
-    transform: 'translateY(-0.5px)',
-  },
-  dividerHover: {
-    backgroundColor: colorVars['--color-border-emphasized'],
-  },
-  dividerActive: {
-    backgroundColor: colorVars['--color-border-emphasized'],
-  },
 });
 
 export interface XDSResizeHandleProps extends Omit<
@@ -130,8 +135,7 @@ export interface XDSResizeHandleProps extends Omit<
 
   /**
    * Reverse the drag direction. Use when the handle controls a panel
-   * on the end/right/bottom side — dragging left/up should increase
-   * the panel size.
+   * on the end/right/bottom side.
    * @default false
    */
   isReversed?: boolean;
@@ -143,16 +147,14 @@ export interface XDSResizeHandleProps extends Omit<
   isDisabled?: boolean;
 
   /**
-   * Show a full-length 1px divider line through the handle.
-   * Use when adjacent panels share the same background color
-   * and need a visible boundary.
+   * Show a 1px divider line. The line IS the handle — it takes only
+   * 1px in the layout with a wider invisible hit area for interaction.
    * @default false
    */
   hasDivider?: boolean;
 
   /**
-   * Show the pill grip indicator at rest (0.5 opacity) instead of
-   * only on hover. Use when discoverability is important.
+   * Show the pill grip indicator at rest instead of only on hover.
    * @default false
    */
   isAlwaysVisible?: boolean;
@@ -166,7 +168,7 @@ export interface XDSResizeHandleProps extends Omit<
   /** Resize props from useXDSResizable region. */
   resizable?: ResizableProps;
 
-  /** Custom handle content. Overrides the default pill + divider. */
+  /** Custom handle content. Overrides the default pill. */
   children?: ReactNode;
 
   /** StyleX styles override. */
@@ -198,6 +200,8 @@ export function XDSResizeHandle({
     if (!el) return 1;
     return getComputedStyle(el).direction === 'rtl' ? -1 : 1;
   }, []);
+
+  const isInteracting = isHovered || isFocused;
 
   // --- Pointer drag ---
   const handlePointerDown = useCallback(
@@ -326,9 +330,6 @@ export function XDSResizeHandle({
       ? resizable._maxSizePx
       : undefined;
 
-  // --- Interaction state ---
-  const isInteracting = isHovered || isFocused;
-
   return (
     <div
       ref={node => {
@@ -346,55 +347,48 @@ export function XDSResizeHandle({
       aria-label={label}
       aria-disabled={isDisabled || undefined}
       tabIndex={isDisabled ? -1 : 0}
-      onPointerDown={handlePointerDown}
-      onPointerEnter={() => setIsHovered(true)}
-      onPointerLeave={() => {
-        if (!isDragging) setIsHovered(false);
-      }}
+      onDoubleClick={handleDoubleClick}
       onFocus={() => setIsFocused(true)}
       onBlur={() => setIsFocused(false)}
-      onKeyDown={handleKeyDown}
-      onDoubleClick={handleDoubleClick}
       data-resizing={isDragging || undefined}
       {...mergeProps(
         xdsClassName('resize-handle'),
         stylex.props(
-          styles.grip,
+          styles.handle,
           isHorizontal ? styles.horizontal : styles.vertical,
+          !hasDivider && styles.noDivider,
+          isInteracting && !isDragging && hasDivider && styles.handleHover,
+          isDragging && hasDivider && styles.handleActive,
           isDisabled && styles.disabled,
           xstyle,
         ),
       )}
       {...props}>
+      {/* Wider invisible hit area for pointer interaction */}
+      <div
+        {...stylex.props(
+          styles.hitArea,
+          isHorizontal ? styles.hitAreaHorizontal : styles.hitAreaVertical,
+          isDisabled && styles.disabled,
+        )}
+        onPointerDown={handlePointerDown}
+        onPointerEnter={() => setIsHovered(true)}
+        onPointerLeave={() => {
+          if (!isDragging) setIsHovered(false);
+        }}
+        onKeyDown={handleKeyDown}
+      />
+      {/* Pill grip indicator */}
       {children ?? (
-        <>
-          {/* Divider line — full-length, behind the pill */}
-          {hasDivider && (
-            <div
-              {...stylex.props(
-                styles.divider,
-                isHorizontal
-                  ? styles.dividerHorizontal
-                  : styles.dividerVertical,
-                isInteracting && !isDragging && styles.dividerHover,
-                isDragging && styles.dividerActive,
-              )}
-            />
+        <div
+          {...stylex.props(
+            styles.pill,
+            isHorizontal ? styles.pillHorizontal : styles.pillVertical,
+            isAlwaysVisible ? styles.pillVisible : styles.pillHidden,
+            isInteracting && !isDragging && styles.pillHover,
+            isDragging && styles.pillActive,
           )}
-          {/* Pill grip — centered */}
-          <div
-            {...stylex.props(
-              styles.pill,
-              isHorizontal ? styles.pillHorizontal : styles.pillVertical,
-              // Idle state
-              isAlwaysVisible ? styles.pillVisible : styles.pillHidden,
-              // Hover / focus
-              isInteracting && !isDragging && styles.pillHover,
-              // Active drag
-              isDragging && styles.pillActive,
-            )}
-          />
-        </>
+        />
       )}
     </div>
   );

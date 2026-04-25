@@ -82,7 +82,7 @@ export interface ResizableProps {
 
 const DEFAULT_MIN = 50;
 const DEFAULT_COLLAPSED_SIZE = 40;
-const SNAP_THRESHOLD = 12;
+const SNAP_THRESHOLD = 24;
 const STORAGE_PREFIX = 'xds-resizable:';
 
 // =============================================================================
