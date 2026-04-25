@@ -40,6 +40,7 @@ import {xdsClassName} from '../utils';
 import {XDSCard} from '../Card/XDSCard';
 import type {XDSCardVariant} from '../Card/XDSCard';
 import {useClickableContainer} from '../hooks/useClickableContainer';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 // =============================================================================
 // Styles — selection + interaction; Card handles the rest
@@ -58,7 +59,9 @@ const styles = stylex.create({
       outlineOffset: '2px',
     },
   },
-  hoverState: {
+  // Hover overlay — guarded by @media (hover: hover) so touch devices
+  // don't show a stuck hover state. Active/pressed state works everywhere.
+  overlay: {
     '::after': {
       content: '""',
       position: 'absolute',
@@ -68,11 +71,15 @@ const styles = stylex.create({
       transition: 'background-color 0.15s ease',
       backgroundColor: 'transparent',
     },
-    ':hover::after': {
-      backgroundColor: 'color-mix(in srgb, currentColor 5%, transparent)',
-    },
     ':active::after': {
       backgroundColor: 'color-mix(in srgb, currentColor 10%, transparent)',
+    },
+  },
+  hoverOnPointer: {
+    '@media (hover: hover)': {
+      ':hover::after': {
+        backgroundColor: 'color-mix(in srgb, currentColor 5%, transparent)',
+      },
     },
   },
   disabled: {
@@ -169,7 +176,7 @@ const selectedStyleForVariant = (variant: XDSCardVariant) => {
 // Props
 // =============================================================================
 
-export interface XDSSelectableCardProps {
+export interface XDSSelectableCardProps extends Omit<XDSBaseProps, 'onChange'> {
   /** Ref forwarded to the root element. */
   ref?: Ref<HTMLDivElement>;
 
@@ -222,8 +229,6 @@ export interface XDSSelectableCardProps {
   /** Maximum width of the card. */
   maxWidth?: SizeValue;
 
-  /** Allow data-* attributes. */
-  [key: `data-${string}`]: string | undefined;
 }
 
 // =============================================================================
@@ -247,7 +252,7 @@ export interface XDSSelectableCardProps {
  * For navigation/action cards, use XDSClickableCard instead.
  *
  * @example
- * ```tsx
+ * ```
  * // Single select (radio behavior)
  * const [selected, setSelected] = useState<string | null>(null);
  *
@@ -264,7 +269,7 @@ export interface XDSSelectableCardProps {
  * ```
  *
  * @example
- * ```tsx
+ * ```
  * // Multi-select (checkbox behavior)
  * const [selected, setSelected] = useState(new Set<string>());
  *
@@ -340,7 +345,8 @@ export function XDSSelectableCard({
         styles.interactive,
         styles.focusWithin,
         isSelected && selectedStyleForVariant(variant),
-        !isDisabled && styles.hoverState,
+        !isDisabled && styles.overlay,
+        !isDisabled && styles.hoverOnPointer,
         isDisabled && styles.disabled,
       ] as unknown as StyleXStyles}
       onClick={!isDisabled ? onClick : undefined}

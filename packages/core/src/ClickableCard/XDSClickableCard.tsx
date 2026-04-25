@@ -41,6 +41,7 @@ import {xdsClassName} from '../utils';
 import {XDSCard} from '../Card/XDSCard';
 import type {XDSCardVariant} from '../Card/XDSCard';
 import {useClickableContainer} from '../hooks/useClickableContainer';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 // =============================================================================
 // Styles — only the interactive layer, Card handles everything else
@@ -60,7 +61,9 @@ const styles = stylex.create({
       outlineOffset: '2px',
     },
   },
-  hoverState: {
+  // Hover overlay — guarded by @media (hover: hover) so touch devices
+  // don't show a stuck hover state. Active/pressed state works everywhere.
+  overlay: {
     '::after': {
       content: '""',
       position: 'absolute',
@@ -70,11 +73,15 @@ const styles = stylex.create({
       transition: 'background-color 0.15s ease',
       backgroundColor: 'transparent',
     },
-    ':hover::after': {
-      backgroundColor: 'color-mix(in srgb, currentColor 5%, transparent)',
-    },
     ':active::after': {
       backgroundColor: 'color-mix(in srgb, currentColor 10%, transparent)',
+    },
+  },
+  hoverOnPointer: {
+    '@media (hover: hover)': {
+      ':hover::after': {
+        backgroundColor: 'color-mix(in srgb, currentColor 5%, transparent)',
+      },
     },
   },
   disabled: {
@@ -98,7 +105,7 @@ const styles = stylex.create({
 // Props
 // =============================================================================
 
-export interface XDSClickableCardProps {
+export interface XDSClickableCardProps extends XDSBaseProps {
   /** Ref forwarded to the root element. */
   ref?: Ref<HTMLDivElement>;
 
@@ -163,8 +170,6 @@ export interface XDSClickableCardProps {
   /** Maximum width of the card. */
   maxWidth?: SizeValue;
 
-  /** Allow data-* attributes. */
-  [key: `data-${string}`]: string | undefined;
 }
 
 // =============================================================================
@@ -188,7 +193,7 @@ export interface XDSClickableCardProps {
  * Nest XDSButton or other interactive elements freely inside — they won't conflict.
  *
  * @example
- * ```tsx
+ * ```
  * <XDSClickableCard label="Settings" href="/settings">
  *   <XDSText type="body" weight="bold">Settings</XDSText>
  *   <XDSText type="supporting" color="secondary">Manage your preferences</XDSText>
@@ -196,7 +201,7 @@ export interface XDSClickableCardProps {
  * ```
  *
  * @example
- * ```tsx
+ * ```
  * <XDSClickableCard label="Open modal" onClick={() => setShowModal(true)}>
  *   <XDSText type="body">Click anywhere to open</XDSText>
  *   <XDSButton label="Other action" onClick={handleOther} />
@@ -249,7 +254,8 @@ export function XDSClickableCard({
       xstyle={[
         styles.interactive,
         styles.focusWithin,
-        !isDisabled && styles.hoverState,
+        !isDisabled && styles.overlay,
+        !isDisabled && styles.hoverOnPointer,
         isDisabled && styles.disabled,
       ] as unknown as StyleXStyles}
       onClick={!isDisabled ? onClick : undefined}

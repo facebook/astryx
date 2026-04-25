@@ -6,7 +6,6 @@
  * @output onClick and onMouseUp handlers for the container
  * @position Core hook for clickable containers that safely handle nested interactive elements
  *
- * Adapted from Meta's internal useClickableContainer pattern.
  * Solves the "nested interactive elements" problem: when a card is clickable
  * but contains buttons/links, clicking those should NOT trigger the card's action.
  */
@@ -105,7 +104,7 @@ export interface ClickableContainerResult {
  * For custom interactive containers, pair with a ref to the outer div.
  *
  * @example
- * ```tsx
+ * ```
  * const containerRef = useRef<HTMLDivElement>(null);
  * const { onClick, onMouseUp } = useClickableContainer({
  *   containerRef,
