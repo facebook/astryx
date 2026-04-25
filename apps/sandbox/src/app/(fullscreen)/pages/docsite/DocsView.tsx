@@ -2136,7 +2136,7 @@ function ThemePreview() {
         <XDSTextInput label="Example" placeholder="Type something..." value="" onChange={() => {}} />
 
         <XDSStack direction="horizontal" gap={4} vAlign="center">
-          <XDSSwitch label="Toggle" defaultIsSelected />
+          <XDSSwitch label="Toggle" value={true} onChange={() => {}} />
           <XDSProgressBar value={65} label="Progress" />
         </XDSStack>
       </XDSGrid>
