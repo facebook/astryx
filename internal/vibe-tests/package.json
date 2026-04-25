@@ -55,7 +55,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "cmdk": "^1.0.0",
-    "lucide-react": "^0.400.0",
+    "lucide-react": "^1.11.0",
     "postcss": "^8.5.10",
     "tailwind-merge": "^2.3.0",
     "tailwindcss": "^4.2.1",
