@@ -1013,22 +1013,14 @@ function ColorsFoundationPage() {
               <XDSStack direction="vertical" gap={2}>
                 <XDSBadge label="Do" variant="success" />
                 <XDSList>
-                  <XDSListItem>
-                    Use semantic tokens (accent, surface, primary) instead of
-                    hard-coded hex values
-                  </XDSListItem>
-                  <XDSListItem>
-                    Pair text tokens with surface tokens to guarantee accessible
-                    contrast
-                  </XDSListItem>
-                  <XDSListItem>
-                    Use the muted surface for secondary content areas and
-                    disabled backgrounds
-                  </XDSListItem>
-                  <XDSListItem>
-                    Let tokens handle light/dark adaptation — avoid manual
-                    dark-mode overrides
-                  </XDSListItem>
+                  <XDSListItem label="Use semantic tokens (accent, surface, primary) instead of
+                    hard-coded hex values" />
+                  <XDSListItem label="Pair text tokens with surface tokens to guarantee accessible
+                    contrast" />
+                  <XDSListItem label="Use the muted surface for secondary content areas and
+                    disabled backgrounds" />
+                  <XDSListItem label="Let tokens handle light/dark adaptation — avoid manual
+                    dark-mode overrides" />
                 </XDSList>
               </XDSStack>
             </XDSCard>
@@ -1036,22 +1028,14 @@ function ColorsFoundationPage() {
               <XDSStack direction="vertical" gap={2}>
                 <XDSBadge label="Don't" variant="error" />
                 <XDSList>
-                  <XDSListItem>
-                    Hard-code hex or rgba values in component styles — they
-                    break when themes change
-                  </XDSListItem>
-                  <XDSListItem>
-                    Use opacity to lighten text — use the secondary or disabled
-                    text token instead
-                  </XDSListItem>
-                  <XDSListItem>
-                    Repurpose semantic colors for decoration (e.g. error-red as
-                    a brand color)
-                  </XDSListItem>
-                  <XDSListItem>
-                    Mix raw CSS custom properties with token imports — use
-                    colorVars consistently
-                  </XDSListItem>
+                  <XDSListItem label="Hard-code hex or rgba values in component styles — they
+                    break when themes change" />
+                  <XDSListItem label="Use opacity to lighten text — use the secondary or disabled
+                    text token instead" />
+                  <XDSListItem label="Repurpose semantic colors for decoration (e.g. error-red as
+                    a brand color)" />
+                  <XDSListItem label="Mix raw CSS custom properties with token imports — use
+                    colorVars consistently" />
                 </XDSList>
               </XDSStack>
             </XDSCard>
@@ -2469,27 +2453,17 @@ function SpacingFoundationPage() {
         <XDSStack direction="vertical" gap={3}>
           <XDSHeading level={2}>Usage</XDSHeading>
           <XDSList>
-            <XDSListItem>
-              Always use spacing tokens instead of hard-coded pixel values.
-            </XDSListItem>
-            <XDSListItem>
-              Prefer the <XDSText type="code">gap</XDSText> prop on{' '}
+            <XDSListItem label="Always use spacing tokens instead of hard-coded pixel values." />
+            <XDSListItem label={<>Prefer the <XDSText type="code">gap</XDSText> prop on{' '}
               <XDSText type="code">XDSStack</XDSText> over manual margins
-              between siblings.
-            </XDSListItem>
-            <XDSListItem>
-              Use smaller steps (0–2) inside components and larger steps (4+)
-              between sections.
-            </XDSListItem>
-            <XDSListItem>
-              Keep spacing symmetric — if a card has{' '}
+              between siblings.</>} />
+            <XDSListItem label="Use smaller steps (0–2) inside components and larger steps (4+)
+              between sections." />
+            <XDSListItem label={<>Keep spacing symmetric — if a card has{' '}
               <XDSText type="code">padding=&#123;4&#125;</XDSText>, use the same
-              value on all sides unless deliberately asymmetric.
-            </XDSListItem>
-            <XDSListItem>
-              Avoid mixing spacing scales; stick to the 4px grid for predictable
-              alignment.
-            </XDSListItem>
+              value on all sides unless deliberately asymmetric.</>} />
+            <XDSListItem label="Avoid mixing spacing scales; stick to the 4px grid for predictable
+              alignment." />
           </XDSList>
         </XDSStack>
 
@@ -2589,26 +2563,14 @@ function IllustrationsFoundationPage() {
         <XDSStack direction="vertical" gap={3}>
           <XDSHeading level={2}>Guidelines</XDSHeading>
           <XDSList>
-            <XDSListItem>
-              Keep illustrations consistent in style across the product.
-            </XDSListItem>
-            <XDSListItem>
-              Use simple, flat illustrations that work in both light and dark
-              mode.
-            </XDSListItem>
-            <XDSListItem>
-              Size illustrations proportionally to the container — typically
-              120–240px.
-            </XDSListItem>
-            <XDSListItem>
-              Center illustrations with supporting text below.
-            </XDSListItem>
-            <XDSListItem>
-              Don't mix illustration styles from different sources.
-            </XDSListItem>
-            <XDSListItem>
-              Don't use illustrations as decoration without purpose.
-            </XDSListItem>
+            <XDSListItem label="Keep illustrations consistent in style across the product." />
+            <XDSListItem label="Use simple, flat illustrations that work in both light and dark
+              mode." />
+            <XDSListItem label="Size illustrations proportionally to the container — typically
+              120–240px." />
+            <XDSListItem label="Center illustrations with supporting text below." />
+            <XDSListItem label="Don't mix illustration styles from different sources." />
+            <XDSListItem label="Don't use illustrations as decoration without purpose." />
           </XDSList>
         </XDSStack>
 
@@ -3031,33 +2993,27 @@ function IconsFoundationPage() {
             slot. Switching themes automatically swaps the underlying SVGs.
           </XDSText>
           <XDSList>
-            <XDSListItem>
-              <XDSText type="body">
+            <XDSListItem label={<><XDSText type="body">
                 <XDSText type="code" weight="bold">
                   Heroicons
                 </XDSText>{' '}
                 — the default icon set, used by the Default and Meta themes.
                 Outlined style with rounded caps.
-              </XDSText>
-            </XDSListItem>
-            <XDSListItem>
-              <XDSText type="body">
+              </XDSText></>} />
+            <XDSListItem label={<><XDSText type="body">
                 <XDSText type="code" weight="bold">
                   Lucide
                 </XDSText>{' '}
                 — used by the Neutral theme. Slightly thinner stroke with a
                 geometric feel.
-              </XDSText>
-            </XDSListItem>
-            <XDSListItem>
-              <XDSText type="body">
+              </XDSText></>} />
+            <XDSListItem label={<><XDSText type="body">
                 <XDSText type="code" weight="bold">
                   registerIcons()
                 </XDSText>{' '}
                 — supply your own SVG components for any or all slots when
                 defining a custom theme.
-              </XDSText>
-            </XDSListItem>
+              </XDSText></>} />
           </XDSList>
         </XDSStack>
 
