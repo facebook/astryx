@@ -332,7 +332,7 @@ export const WithSorting: Story = {
     const {filters, onFilterChange} = useXDSTableFilterState();
     const {
       sortedData: _unused,
-      sort,
+      sort: _sort,
       sortConfig,
       applySort,
     } = useXDSTableSortableState<Employee>({

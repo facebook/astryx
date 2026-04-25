@@ -4,7 +4,6 @@ import {
   XDS3DChart,
   XDS3DScatter,
   XDS3DScatterGL,
-  useXDSChartColors,
 } from '@xds/lab';
 import {XDSMediaTheme} from '@xds/core/theme';
 

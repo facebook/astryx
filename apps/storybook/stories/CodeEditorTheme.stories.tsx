@@ -62,11 +62,11 @@ const sampleCode = [
 
 function ThemedEditor({
   theme,
-  title,
+  _title,
   initialCode = sampleCode,
 }: {
   theme: Parameters<typeof SyntaxThemeProvider>[0]['theme'];
-  title?: string;
+  _title?: string;
   initialCode?: string;
 }) {
   const [value, setValue] = useState(initialCode);

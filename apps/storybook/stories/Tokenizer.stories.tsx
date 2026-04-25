@@ -310,7 +310,7 @@ export const Creatable: Story = {
           {...args}
           searchSource={emptySource}
           value={tags}
-          onChange={(items, change) => {
+          onChange={(items, _change) => {
             setTags(items);
           }}
           hasCreate
@@ -336,7 +336,7 @@ export const CreatableWithSearch: Story = {
         {...args}
         searchSource={userSource}
         value={value}
-        onChange={(items, change) => {
+        onChange={(items, _change) => {
           setValue(items);
         }}
         hasCreate

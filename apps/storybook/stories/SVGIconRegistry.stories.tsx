@@ -75,7 +75,7 @@ function jsxSvgToIconDef(name: string, element: ReactElement): SVGIconDef | null
     const type = child.type as string;
     if (!['path', 'circle', 'rect', 'line', 'polyline', 'polygon'].includes(type)) continue;
     
-    const {key, children: _, ...rawAttrs} = child.props as Record<string, unknown>;
+    const {key: _key, children: _, ...rawAttrs} = child.props as Record<string, unknown>;
     
     // Clean attrs
     const attrs: Record<string, string> = {};

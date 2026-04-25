@@ -8,7 +8,7 @@ import {
   XDSChartLegend,
   useXDSChartColors,
 } from '@xds/lab';
-import {XDSStack, XDSText} from '@xds/core';
+import {XDSStack} from '@xds/core';
 import {XDSHeading} from '@xds/core/Text';
 
 const meta: Meta = {

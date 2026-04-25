@@ -10,8 +10,6 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {
   XDSCommandPalette,
   XDSCommandPaletteInput,
-  XDSCommandPaletteItem,
-  XDSCommandPaletteGroup,
   XDSCommandPaletteFooter,
 } from '@xds/core/CommandPalette';
 import {XDSButton} from '@xds/core/Button';

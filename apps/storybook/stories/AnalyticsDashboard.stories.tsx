@@ -3,8 +3,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSCard} from '@xds/core/Card';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSLink} from '@xds/core/Link';
+import {XDSText} from '@xds/core/Text';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
 import {XDSButton} from '@xds/core/Button';
@@ -79,7 +78,7 @@ import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSMoreMenu} from '@xds/core/MoreMenu';
 import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
 import {XDSLayout, XDSLayoutContent, XDSLayoutFooter} from '@xds/core/Layout';
-import {XDSTable, proportional, pixel} from '@xds/core/Table';
+import {XDSTable, proportional} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 import {XDSPagination} from '@xds/core/Pagination';
 import {
