@@ -10,7 +10,7 @@ export default function CollapsibleGroupShowcase() {
   return (
     <XDSCenter width={400}>
       <XDSCollapsibleGroup type="single" defaultValue="shipping">
-        <XDSVStack gap={2}>
+        <XDSVStack gap={2} style={{width: '100%'}}>
           <XDSCard>
             <XDSCollapsible trigger="Shipping Information" value="shipping">
               <XDSText type="body" color="secondary">
