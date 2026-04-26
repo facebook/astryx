@@ -103,8 +103,7 @@ Before any test run, review the generated task prompts:
 
 ```bash
 # Generate an iteration without running it
-node internal/vibe-tests/src/setup-iteration.mjs --sample 3 --target xds
-node internal/vibe-tests/src/setup-iteration.mjs --sample 3 --target baseline
+node internal/vibe-tests/src/setup-nightly.mjs --sample 3
 
 # Read the task files and compare:
 # - Are the prompts identical (same task text)?
@@ -133,7 +132,6 @@ These are intentional and documented — they slightly favor baseline, making XD
 internal/vibe-tests/
 ├── test-sets/           # Prompt batteries (JSON)
 ├── src/                 # Runner scripts and evaluation
-│   ├── setup-iteration.mjs   # Single-target iteration setup
 │   ├── setup-nightly.mjs     # 4-target nightly setup
 │   ├── universal-eval.ts     # Static analysis scoring (5 dimensions)
 │   ├── universal-aggregate.ts # Score aggregation
