@@ -23,8 +23,6 @@ function withXDS(nextConfig = {}) {
     '@xds/theme-default',
     '@xds/theme-neutral',
     '@xds/theme-brutalist',
-    '@xds/theme-meta',
-    '@xds/theme-whatsapp',
     '@xds/theme-daily',
     '@xds/lab',
   ];

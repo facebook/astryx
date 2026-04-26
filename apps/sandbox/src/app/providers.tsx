@@ -6,16 +6,12 @@ import {XDSLayerProvider} from '@xds/core/Layer';
 import {defaultTheme} from '@xds/theme-default/built';
 import {neutralTheme} from '@xds/theme-neutral/built';
 import {brutalistTheme} from '@xds/theme-brutalist/built';
-import {metaTheme} from '@xds/theme-meta/built';
-import {whatsappTheme} from '@xds/theme-whatsapp/built';
 import type {XDSDefinedTheme, ThemeMode} from '@xds/core/theme';
 
 const themes: Record<string, XDSDefinedTheme> = {
   default: defaultTheme,
   neutral: neutralTheme,
   brutalist: brutalistTheme,
-  meta: metaTheme,
-  whatsapp: whatsappTheme,
 };
 
 type ThemeContextValue = {

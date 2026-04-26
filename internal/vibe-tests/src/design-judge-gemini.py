@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
 """
-Night Watch Design Judge — Gemini 2.5 Pro Preview via Meta Plugboard (mTLS).
+Night Watch Design Judge — Gemini 2.5 Pro Vision scoring.
 
-Runs on Meta devvm/devgpu. No external API key needed — authenticates using
-the machine's mTLS identity cert at /var/facebook/x509_identities/server.pem.
+Authenticates via GEMINI_API_KEY environment variable. In GitHub Actions,
+this is read from the GEMINI_API_KEY repository secret.
+
+Environment variables:
+    GEMINI_API_KEY      — Required. Gemini API key.
+    GEMINI_BASE_URL     — Optional. Override the Gemini API base URL.
+                          Default: https://generativelanguage.googleapis.com/v1beta/models
+    GEMINI_CERT         — Optional. Path to client cert for mTLS auth.
+    GEMINI_CA           — Optional. Path to CA cert for mTLS auth.
 
 Usage:
     python3 design-judge-gemini.py \
@@ -28,11 +35,11 @@ import sys
 import tempfile
 import time
 
-CERT = "/var/facebook/x509_identities/server.pem"
-CA = "/var/facebook/rootcanal/ca.pem"
+CERT = os.environ.get("GEMINI_CERT", "")
+CA = os.environ.get("GEMINI_CA", "")
 MODEL = "gemini-2.5-pro-preview"
-BASE = "https://plugboard.x2p.facebook.net/v1beta/models"
-API_KEY = "sk-plugboard-dummy-1234567890"
+BASE = os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/models")
+API_KEY = os.environ.get("GEMINI_API_KEY", "")
 TARGETS = ["xds", "baseline", "html"]
 
 # Prompt registry — maps prompt ID to human-readable description for the judge
@@ -146,15 +153,19 @@ def call_gemini(ideal_path, screenshot_path, prompt_text, model=MODEL, dry_run=F
         tmpfile = f.name
 
     try:
+        curl_cmd = [
+            "curl", "-s", "-w", "\n%{http_code}",
+            "-H", "Content-Type: application/json",
+            "-H", f"x-goog-api-key: {API_KEY}",
+            "-d", f"@{tmpfile}",
+            f"{BASE}/{model}:generateContent",
+        ]
+        # Use mTLS certs if available (e.g. on internal devvms)
+        if CERT and CA and os.path.exists(CERT) and os.path.exists(CA):
+            curl_cmd[2:2] = ["--cert", CERT, "--cacert", CA]
+
         result = subprocess.run(
-            [
-                "curl", "-s", "-w", "\n%{http_code}",
-                "--cert", CERT, "--cacert", CA, "--noproxy", "x2p.facebook.net",
-                "-H", "Content-Type: application/json",
-                "-H", f"x-goog-api-key: {API_KEY}",
-                "-d", f"@{tmpfile}",
-                f"{BASE}/{model}:generateContent",
-            ],
+            curl_cmd,
             capture_output=True,
             text=True,
             timeout=120,
@@ -307,7 +318,7 @@ def main():
             partial = {
                 "iterationId": args.iteration,
                 "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "judge": f"{model}-plugboard",
+                "judge": f"{model}",
                 "model": model,
                 "results": results,
             }
@@ -321,7 +332,7 @@ def main():
     out = {
         "iterationId": args.iteration,
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "judge": f"{model}-plugboard",
+        "judge": f"{model}",
         "model": model,
         "results": results,
         "averages": avg_out,

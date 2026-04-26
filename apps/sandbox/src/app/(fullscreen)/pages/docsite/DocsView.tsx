@@ -209,17 +209,6 @@ const LIBRARY_PACKAGES: {
     category: 'building',
   },
   {
-    key: 'pkg-xds-common',
-    name: '@nest/xds-common',
-    description:
-      'Data-backed components with Meta theme and Meta icons for Nest applications.',
-    version: '0.0.12',
-    status: 'Stable',
-    iconType: 'core',
-    image: `${basePath}/docsite/LibrariesCore.png`,
-    category: 'building',
-  },
-  {
     key: 'pkg-theme-default',
     name: '@xds/theme-default',
     description:
@@ -290,29 +279,9 @@ const XDS_OFFERINGS: {
     pkg: '@xds/core',
     icons: [GitHubIcon, VercelIcon],
     description:
-      'Install @xds/core from npm-internal (public npm coming soon). Works with Next.js, Vite, or any React framework. Use @xds/theme-default for the default look, or swap in any theme. Follow the quickstart in the @xds/core README to get started.',
+      'Install @xds/core from npm. Works with Next.js, Vite, or any React framework. Use @xds/theme-default for the default look, or swap in any theme. Follow the quickstart in the @xds/core README to get started.',
     descriptionLinkText: '@xds/core README',
     descriptionLinkHref: 'https://github.com/facebookexperimental/xds',
-  },
-  {
-    title: 'Nest',
-    subtitle: 'Same library, internal platform',
-    pkg: '@xds/core',
-    logos: [`${basePath}/docsite/nest-logo.png`],
-    description:
-      'The fastest way to start is nest init and pick the XDS template, or add to an existing app with nest add xds. Same @xds/core package, installed from npm-internal (migrating to Metaccio). Uses @nest/xds-common for the Meta theme with Meta icons.',
-  },
-  {
-    title: 'WWW',
-    subtitle: 'Internal platform',
-    pkg: null,
-    label: 'OSS components coming soon',
-    href: 'https://www.internalfb.com/dimsum/xds',
-    logos: [`${basePath}/docsite/meta-logo.png`],
-    description:
-      'XDS WWW components are Haste modules in the Meta monorepo \u2014 no package to install. Uses Flow types and pre-built dist/ artifacts. OSS components are not yet available on www but are coming later. For now, use the existing XDS WWW components.',
-    descriptionLinkText: 'XDS WWW components',
-    descriptionLinkHref: 'https://www.internalfb.com/dimsum/xds',
   },
 ];
 
@@ -4882,15 +4851,14 @@ function LibraryOverview({
           />
         </div>
         <XDSText type="supporting" color="secondary">
-          Prefer a human? Drop us a message in{' '}
+          Prefer a human? Open an issue on{' '}
           <XDSLink
-            label="XDS OSS"
-            href="https://fb.workplace.com/groups/xdsoss"
+            label="GitHub"
+            href="https://github.com/facebookexperimental/xds/issues"
             color="secondary"
             type="supporting">
-            XDS OSS
-          </XDSLink>{' '}
-          on Workplace
+            GitHub
+          </XDSLink>
         </XDSText>
       </XDSStack>
       <div style={{height: 100}} />
