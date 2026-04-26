@@ -1,0 +1,61 @@
+{
+  "name": "@xds/theme-matcha",
+  "version": "0.0.1",
+  "private": false,
+  "description": "Matcha theme for XDS — earthy green palette with Figtree typography and Lucide icons",
+  "author": "Meta Open Source",
+  "license": "MIT",
+  "homepage": "https://github.com/facebookexperimental/xds#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/facebookexperimental/xds.git",
+    "directory": "packages/themes/matcha"
+  },
+  "bugs": {
+    "url": "https://github.com/facebookexperimental/xds/issues"
+  },
+  "keywords": [
+    "xds",
+    "theme",
+    "design-system",
+    "lucide",
+    "design-tokens"
+  ],
+  "sideEffects": false,
+  "main": "./dist/source.js",
+  "types": "./dist/source.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/source.d.ts",
+      "import": "./dist/source.mjs",
+      "require": "./dist/source.js"
+    },
+    "./built": {
+      "types": "./dist/matcha.d.ts",
+      "import": "./dist/matcha.js",
+      "require": "./dist/matcha.js"
+    },
+    "./theme.css": {
+      "types": "./theme.css.d.ts",
+      "default": "./dist/theme.css"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "xds theme build src/matchaTheme.ts -o dist/theme.css && tsup && tsc --project tsconfig.build.json"
+  },
+  "dependencies": {
+    "lucide-react": "^1.11.0"
+  },
+  "peerDependencies": {
+    "@xds/core": "*",
+    "react": ">=19"
+  },
+  "devDependencies": {
+    "@xds/cli": "*"
+  },
+  "module": "./dist/source.mjs"
+}
