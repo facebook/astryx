@@ -32,15 +32,15 @@ function withXDS(nextConfig = {}) {
   const merged = Array.from(new Set([...existingTranspile, ...xdsPackages]));
 
   const existingWebpack = nextConfig.webpack;
-  const existingTurbopack = nextConfig.turbopack;
-
   return {
     ...nextConfig,
     transpilePackages: merged,
-    // Next.js 16+ defaults to Turbopack and errors if only webpack config
-    // is present. An empty turbopack config silences the check, and
-    // transpilePackages handles @xds/* source resolution for both bundlers.
-    turbopack: existingTurbopack || {},
+    // Do NOT add a `turbopack` key here. The @xds/build babel plugin uses
+    // dual class-name prefixes (xds/x) that require webpack's Babel pipeline.
+    // Adding turbopack: {} forces Next.js 16+ to use Turbopack, which skips
+    // the Babel plugin and causes class-name mismatches in the compiled CSS.
+    // Without a turbopack key, Next.js 16 auto-detects babel.config.js and
+    // falls back to webpack.
     webpack: (config, context) => {
       // Resolve to source exports
       config.resolve.conditionNames = [
