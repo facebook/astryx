@@ -360,6 +360,12 @@
       "import": "./dist/RadioList/index.mjs",
       "require": "./dist/RadioList/index.js"
     },
+    "./Resizable": {
+      "source": "./src/Resizable/index.ts",
+      "types": "./dist/Resizable/index.d.ts",
+      "import": "./dist/Resizable/index.mjs",
+      "require": "./dist/Resizable/index.js"
+    },
     "./Section": {
       "source": "./src/Section/index.ts",
       "types": "./dist/Section/index.d.ts",

@@ -121,8 +121,6 @@ export const WithFooterActions: Story = {
           size="md"
           icon={MicIcon}
           isIconOnly
-          iconOnly
-          isIconOnly
         />
       }
     />
@@ -146,8 +144,6 @@ export const WithAttachments: Story = {
           variant="ghost"
           size="sm"
           icon={PaperclipIcon}
-          isIconOnly
-          iconOnly
           isIconOnly
         />
       }
@@ -185,16 +181,12 @@ export const FullFeatured: Story = {
               size="sm"
               icon={AtSignIcon}
               isIconOnly
-              iconOnly
-              isIconOnly
             />
             <XDSButton
               label="Attach file"
               variant="ghost"
               size="sm"
               icon={PaperclipIcon}
-              isIconOnly
-              iconOnly
               isIconOnly
             />
           </>
@@ -214,8 +206,6 @@ export const FullFeatured: Story = {
             variant="ghost"
             size="md"
             icon={MicIcon}
-            isIconOnly
-            iconOnly
             isIconOnly
           />
         }

@@ -33,6 +33,7 @@ export * from './CheckboxInput';
 export * from './CheckboxList';
 export * from './Collapsible';
 export * from './RadioList';
+export * from './Resizable';
 export * from './Divider';
 export * from './EmptyState';
 export * from './Link';

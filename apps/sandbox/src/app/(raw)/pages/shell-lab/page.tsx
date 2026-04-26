@@ -34,6 +34,7 @@ import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSBanner} from '@xds/core/Banner';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSNavMenuItem} from '@xds/core/NavMenu';
+import {useXDSResizable} from '@xds/core/Resizable';
 
 // =============================================================================
 // Configuration types
@@ -536,6 +537,12 @@ function SampleSideNav({
   externalCollapsed?: boolean;
   setExternalCollapsed?: (v: boolean) => void;
 }) {
+  const sidebar = useXDSResizable({
+    defaultSize: 260,
+    minSizePx: 180,
+    maxSizePx: 480,
+  });
+
   const appNavIcon = (
     <XDSNavIcon
       icon={
@@ -601,104 +608,106 @@ function SampleSideNav({
     );
 
   return (
-    <XDSSideNav
-      collapsible={
-        config.isCollapsible
-          ? config.collapseToggleLocation === 'topnav'
-            ? {
-                isCollapsed: externalCollapsed,
-                onCollapsedChange: setExternalCollapsed,
-                hasButton: false,
-              }
-            : true
-          : false
-      }
-      resizable={config.isResizable}
-      header={heading}
-      topContent={
-        config.showTopContent ? (
-          <XDSSideNavItem label="Create New" />
-        ) : undefined
-      }
-      footer={
-        config.showFooter ? (
-          <XDSSideNavSection title="Account">
-            <XDSSideNavItem label="Jane Smith" />
-            <XDSSideNavItem label="Upgrade to Pro" />
-          </XDSSideNavSection>
-        ) : undefined
-      }
-      footerIcons={
-        config.showFooterIcons ? (
-          <>
-            <XDSButton
-              label="Help"
-              icon={
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                  width="16"
-                  height="16">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
-                  <circle cx="12" cy="17" r=".5" fill="currentColor" />
-                </svg>
-              }
-              variant="ghost"
-              isIconOnly
-            />
-            <XDSButton
-              label="Settings"
-              icon={
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                  width="16"
-                  height="16">
-                  <path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
-              }
-              variant="ghost"
-              isIconOnly
-            />
-          </>
-        ) : undefined
-      }>
-      <XDSSideNavSection title="Navigation">
-        <XDSSideNavItem
-          label="Dashboard"
-          isSelected
-          href="#"
-          icon={DashboardIcon}
-        />
-        <XDSSideNavItem
-          label="Projects"
-          href="#"
-          icon={ProjectsIcon}
-          endContent={<XDSBadge label={3} />}
-        />
-        <XDSSideNavItem label="Messages" href="#" icon={MessagesIcon} />
-        {config.showNestedItems && (
-          <XDSSideNavItem label="Settings" href="#" icon={SettingsIcon}>
-            <XDSSideNavItem label="General" href="#" />
-            <XDSSideNavItem label="Security" href="#" />
-            <XDSSideNavItem label="Notifications" href="#" />
-          </XDSSideNavItem>
-        )}
-      </XDSSideNavSection>
-      <XDSSideNavSection title="Resources">
-        <XDSSideNavItem label="Documentation" href="#" icon={DocsIcon} />
-        <XDSSideNavItem label="API Reference" href="#" />
-        <XDSSideNavItem label="Support" href="#" />
-      </XDSSideNavSection>
-    </XDSSideNav>
+    <>
+      <XDSSideNav
+        collapsible={
+          config.isCollapsible
+            ? config.collapseToggleLocation === 'topnav'
+              ? {
+                  isCollapsed: externalCollapsed,
+                  onCollapsedChange: setExternalCollapsed,
+                  hasButton: false,
+                }
+              : true
+            : false
+        }
+        resizable={config.isResizable ? sidebar.props : false}
+        header={heading}
+        topContent={
+          config.showTopContent ? (
+            <XDSSideNavItem label="Create New" />
+          ) : undefined
+        }
+        footer={
+          config.showFooter ? (
+            <XDSSideNavSection title="Account">
+              <XDSSideNavItem label="Jane Smith" />
+              <XDSSideNavItem label="Upgrade to Pro" />
+            </XDSSideNavSection>
+          ) : undefined
+        }
+        footerIcons={
+          config.showFooterIcons ? (
+            <>
+              <XDSButton
+                label="Help"
+                icon={
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                    width="16"
+                    height="16">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
+                    <circle cx="12" cy="17" r=".5" fill="currentColor" />
+                  </svg>
+                }
+                variant="ghost"
+                isIconOnly
+              />
+              <XDSButton
+                label="Settings"
+                icon={
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                    width="16"
+                    height="16">
+                    <path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                }
+                variant="ghost"
+                isIconOnly
+              />
+            </>
+          ) : undefined
+        }>
+        <XDSSideNavSection title="Navigation">
+          <XDSSideNavItem
+            label="Dashboard"
+            isSelected
+            href="#"
+            icon={DashboardIcon}
+          />
+          <XDSSideNavItem
+            label="Projects"
+            href="#"
+            icon={ProjectsIcon}
+            endContent={<XDSBadge label={3} />}
+          />
+          <XDSSideNavItem label="Messages" href="#" icon={MessagesIcon} />
+          {config.showNestedItems && (
+            <XDSSideNavItem label="Settings" href="#" icon={SettingsIcon}>
+              <XDSSideNavItem label="General" href="#" />
+              <XDSSideNavItem label="Security" href="#" />
+              <XDSSideNavItem label="Notifications" href="#" />
+            </XDSSideNavItem>
+          )}
+        </XDSSideNavSection>
+        <XDSSideNavSection title="Resources">
+          <XDSSideNavItem label="Documentation" href="#" icon={DocsIcon} />
+          <XDSSideNavItem label="API Reference" href="#" />
+          <XDSSideNavItem label="Support" href="#" />
+        </XDSSideNavSection>
+      </XDSSideNav>
+    </>
   );
 }
 
