@@ -10,7 +10,7 @@
  * - `onPressedChange` controlled toggle callback
  * - `pressedIcon` for outline-to-filled icon swap
  * - Font weight shift on press with width reservation to prevent layout shift
- * - Group integration via ToggleButtonGroupContext
+ * - Group integration via XDSToggleButtonGroupContext
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/ToggleButton/index.ts (exports if types change)
@@ -21,6 +21,8 @@
 import {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, fontWeightVars} from '../theme/tokens.stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
+import {xdsClassName} from '../utils';
 import {XDSButton, type XDSButtonSize} from '../Button';
 import {useXDSToggleButtonGroup} from './XDSToggleButtonGroup';
 
@@ -167,6 +169,22 @@ export interface XDSToggleButtonProps {
 
   /** Test ID for testing frameworks. */
   'data-testid'?: string;
+
+  /**
+   * StyleX styles created via `stylex.create()`. Merged with the component's
+   * base styles inside a single `stylex.props()` call for optimal deduplication.
+   */
+  xstyle?: StyleXStyles;
+  /**
+   * CSS class name(s) appended to the root element.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+  /**
+   * Inline styles to apply to the root element. Spread after StyleX
+   * inline styles, so these values take priority.
+   */
+  style?: React.CSSProperties;
 }
 
 // =============================================================================
@@ -209,6 +227,9 @@ export function XDSToggleButton({
   children,
   tooltip,
   value,
+  xstyle,
+  className,
+  style,
   ...props
 }: XDSToggleButtonProps): ReactNode {
   // Read group context if inside a group
@@ -284,7 +305,16 @@ export function XDSToggleButton({
       aria-pressed={isPressed}
       icon={resolvedIcon}
       tooltip={tooltip}
-      xstyle={isPressed ? pressedStyles.background : undefined}
+      className={xdsClassName('toggle-button', {
+        isPressed: isPressed ? 'true' : 'false',
+      })}
+      xstyle={
+        [
+          isPressed ? pressedStyles.background : undefined,
+          xstyle,
+        ] as unknown as StyleXStyles
+      }
+      style={style}
       onClick={handleClick}
       {...props}>
       {labelContent}

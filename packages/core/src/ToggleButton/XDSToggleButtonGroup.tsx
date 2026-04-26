@@ -33,7 +33,7 @@ import type {StyleXStyles} from '@stylexjs/stylex';
 // Context
 // =============================================================================
 
-interface ToggleButtonGroupContextValue {
+interface XDSToggleButtonGroupContextValue {
   /** Currently selected value(s). */
   selectedValues: Set<string>;
   /** Toggle a value on/off. */
@@ -44,15 +44,15 @@ interface ToggleButtonGroupContextValue {
   isDisabled?: boolean;
 }
 
-export const ToggleButtonGroupContext =
-  createContext<ToggleButtonGroupContextValue | null>(null);
+export const XDSToggleButtonGroupContext =
+  createContext<XDSToggleButtonGroupContextValue | null>(null);
 
 /**
  * Hook for XDSToggleButton to read group context.
  * Returns null when used outside a group.
  */
-export function useXDSToggleButtonGroup(): ToggleButtonGroupContextValue | null {
-  return useContext(ToggleButtonGroupContext);
+export function useXDSToggleButtonGroup(): XDSToggleButtonGroupContextValue | null {
+  return useContext(XDSToggleButtonGroupContext);
 }
 
 // =============================================================================
@@ -218,7 +218,7 @@ export function XDSToggleButtonGroup(
   );
 
   return (
-    <ToggleButtonGroupContext.Provider value={contextValue}>
+    <XDSToggleButtonGroupContext.Provider value={contextValue}>
       <div
         role="group"
         aria-label={label}
@@ -233,7 +233,7 @@ export function XDSToggleButtonGroup(
         )}>
         {children}
       </div>
-    </ToggleButtonGroupContext.Provider>
+    </XDSToggleButtonGroupContext.Provider>
   );
 }
 
