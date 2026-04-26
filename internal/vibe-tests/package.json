@@ -57,7 +57,7 @@
     "cmdk": "^1.0.0",
     "lucide-react": "^1.11.0",
     "postcss": "^8.5.10",
-    "tailwind-merge": "^2.3.0",
+    "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.1",
     "tsx": "^4.19.0"
   }
