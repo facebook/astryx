@@ -42,7 +42,7 @@
     "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^4.3.0",
+    "@vitejs/plugin-react": "^5.2.0",
     "@vitest/coverage-v8": "^2.1.0",
     "eslint": "^10.2.1",
     "husky": "^9.1.7",
