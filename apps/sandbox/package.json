@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
-    "@stylexjs/stylex": "^0.18.2",
+    "@stylexjs/stylex": "^0.18.3",
     "@xds/cli": "*",
     "@xds/core": "*",
     "@xds/lab": "*",

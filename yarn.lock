@@ -2584,19 +2584,10 @@
     invariant "^2.2.4"
     styleq "0.2.1"
 
-"@stylexjs/stylex@0.18.3":
+"@stylexjs/stylex@0.18.3", "@stylexjs/stylex@^0.18.3":
   version "0.18.3"
   resolved "https://registry.yarnpkg.com/@stylexjs/stylex/-/stylex-0.18.3.tgz#5e30a3de90ac1b536aded8dbcd6ab5aab460c0e5"
   integrity sha512-15gDzAJAorOE0yzxaWLNxldW2aqdmCiLG5QcPD8nmVCVqvrWp0Asgv45zk7LtN86WJb/4Ym9eQ6qT5MJW59tWQ==
-  dependencies:
-    css-mediaquery "^0.1.2"
-    invariant "^2.2.4"
-    styleq "0.2.1"
-
-"@stylexjs/stylex@^0.18.2":
-  version "0.18.2"
-  resolved "https://registry.yarnpkg.com/@stylexjs/stylex/-/stylex-0.18.2.tgz#e95b71394ab690c5408436b038125cb5d9db56df"
-  integrity sha512-wXYe9MBlxE9Lz26KbbM9vwKy746sJWe6NdhY+573KMjcEbrswjFU+121b7TeBAc8gcvC5DOUzDOlBrT3N2xsxA==
   dependencies:
     css-mediaquery "^0.1.2"
     invariant "^2.2.4"
