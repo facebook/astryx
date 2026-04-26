@@ -40,6 +40,7 @@ import {
   typeScaleVars,
   fontWeightVars,
 } from '../theme/tokens.stylex';
+import {xdsClassName} from '../utils';
 import {useInternalConfig} from './useInternalConfig';
 import {usePowerSearchSource} from './usePowerSearchSource';
 import {formatFilterValue} from './formatFilterValue';
@@ -822,7 +823,7 @@ export function XDSPowerSearch({
 
   return (
     <>
-      <div ref={popover.triggerRef}>
+      <div ref={popover.triggerRef} className={xdsClassName('power-search')}>
         <XDSTokenizer
           ref={tokenizerRef}
           label={label}
