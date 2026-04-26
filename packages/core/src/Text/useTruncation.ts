@@ -10,7 +10,6 @@
  * - /packages/core/src/Text/Text.doc.mjs
  */
 
-
 import {useCallback, useRef, useState, type RefCallback} from 'react';
 
 export interface UseTruncationOptions {
@@ -43,7 +42,8 @@ export interface UseTruncationReturn {
  *
  * Uses ResizeObserver for efficient detection when content or container changes.
  * - Single-line: compares scrollWidth > offsetWidth
- * - Multi-line: compares scrollHeight > offsetHeight
+ * - Multi-line: uses Range.getBoundingClientRect() to measure actual content
+ *   height, bypassing -webkit-line-clamp's clamped scrollHeight
  *
  * @example
  * ```
@@ -80,8 +80,21 @@ export function useTruncation(
         // Single-line: check horizontal overflow
         setIsTruncated(element.scrollWidth > element.offsetWidth);
       } else {
-        // Multi-line: check vertical overflow
-        setIsTruncated(element.scrollHeight > element.offsetHeight);
+        // Multi-line: use Range to measure actual content height.
+        // When -webkit-line-clamp is active, browsers may report
+        // scrollHeight === offsetHeight (the clamped size), so the
+        // naive scrollHeight check fails. Range.getBoundingClientRect()
+        // measures the real text content regardless of clamping.
+        let contentHeight = element.scrollHeight;
+        try {
+          const range = document.createRange();
+          range.selectNodeContents(element);
+          contentHeight = range.getBoundingClientRect().height;
+          range.detach();
+        } catch {
+          // Fallback to scrollHeight (e.g. jsdom in tests)
+        }
+        setIsTruncated(contentHeight > element.offsetHeight);
       }
     },
     [maxLines],

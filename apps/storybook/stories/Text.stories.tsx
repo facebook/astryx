@@ -315,6 +315,74 @@ export const TruncationVariants: Story = {
 };
 
 // =============================================================================
+// Multi-Line Truncation Tooltip (fix for #1710)
+// =============================================================================
+
+/**
+ * Demonstrates the fix for #1710: multi-line truncation tooltip now works.
+ * Previously, hovering over clamped multi-line text never showed a tooltip
+ * because `-webkit-line-clamp` caused `scrollHeight === offsetHeight`.
+ */
+export const MultiLineTruncationTooltip: Story = {
+  render: () => (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '24px',
+        maxWidth: '280px',
+      }}>
+      <div>
+        <XDSText type="label" display="block">
+          maxLines=1 (always worked):
+        </XDSText>
+        <div style={{border: '1px solid #ccc', padding: '8px'}}>
+          <XDSText type="body" maxLines={1}>
+            This single-line text is long enough to be truncated with an
+            ellipsis. Hover to see the full content in a tooltip.
+          </XDSText>
+        </div>
+      </div>
+      <div>
+        <XDSText type="label" display="block">
+          maxLines=2 (was broken, now fixed):
+        </XDSText>
+        <div style={{border: '1px solid #ccc', padding: '8px'}}>
+          <XDSText type="body" maxLines={2}>
+            This two-line text should show a tooltip on hover when it overflows
+            past two lines. Previously the tooltip never appeared because
+            truncation was not detected. Now it works correctly.
+          </XDSText>
+        </div>
+      </div>
+      <div>
+        <XDSText type="label" display="block">
+          maxLines=3 (was broken, now fixed):
+        </XDSText>
+        <div style={{border: '1px solid #ccc', padding: '8px'}}>
+          <XDSText type="body" maxLines={3}>
+            This three-line text has even more content to demonstrate that the
+            fix works for any maxLines value greater than one. The tooltip
+            should appear on hover showing the full untruncated text. Previously
+            this was broken because the browser reported clamped dimensions.
+          </XDSText>
+        </div>
+      </div>
+      <div>
+        <XDSText type="label" display="block">
+          maxLines=2, short text (no tooltip expected):
+        </XDSText>
+        <div style={{border: '1px solid #ccc', padding: '8px'}}>
+          <XDSText type="body" maxLines={2}>
+            Short text. No tooltip.
+          </XDSText>
+        </div>
+      </div>
+    </div>
+  ),
+};
+
+// =============================================================================
 // Word Break
 // =============================================================================
 
