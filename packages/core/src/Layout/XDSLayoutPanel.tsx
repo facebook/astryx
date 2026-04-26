@@ -163,7 +163,7 @@ export interface XDSLayoutPanelProps extends XDSBaseProps<HTMLDivElement> {
    * to this panel.
    *
    * @example
-   * ```tsx
+   * ```
    * const sidebar = useXDSResizable({ defaultSize: 250, minSizePx: 200 });
    * <XDSLayoutPanel resizable={sidebar.props}>
    *   <Navigation />

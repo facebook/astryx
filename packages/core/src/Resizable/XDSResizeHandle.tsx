@@ -193,6 +193,19 @@ export interface XDSResizeHandleProps extends Omit<
   xstyle?: stylex.StyleXStyles;
 }
 
+/**
+ * Draggable resize handle placed between resizable panels. Renders as a thin
+ * divider line with a wider invisible hit area and optional pill grip indicator.
+ * Supports keyboard resizing via arrow keys and WAI-ARIA separator role.
+ *
+ * @example
+ * ```
+ * <XDSResizeHandle
+ *   resizable={sidebar.props}
+ *   direction="horizontal"
+ *   hasDivider />
+ * ```
+ */
 export function XDSResizeHandle({
   direction = 'horizontal',
   isReversed = false,

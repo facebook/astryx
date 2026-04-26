@@ -228,7 +228,6 @@ export interface XDSSelectableCardProps extends Omit<XDSBaseProps, 'onChange'> {
 
   /** Maximum width of the card. */
   maxWidth?: SizeValue;
-
 }
 
 // =============================================================================
@@ -253,42 +252,12 @@ export interface XDSSelectableCardProps extends Omit<XDSBaseProps, 'onChange'> {
  *
  * @example
  * ```
- * // Single select (radio behavior)
- * const [selected, setSelected] = useState<string | null>(null);
- *
- * {plans.map(plan => (
- *   <XDSSelectableCard
- *     key={plan.id}
- *     label={plan.name}
- *     isSelected={selected === plan.id}
- *     onChange={() => setSelected(plan.id)}
- *   >
- *     <XDSText type="body" weight="bold">{plan.name}</XDSText>
- *   </XDSSelectableCard>
- * ))}
- * ```
- *
- * @example
- * ```
- * // Multi-select (checkbox behavior)
- * const [selected, setSelected] = useState(new Set<string>());
- *
- * {filters.map(filter => (
- *   <XDSSelectableCard
- *     key={filter.id}
- *     label={filter.name}
- *     isSelected={selected.has(filter.id)}
- *     onChange={(isNowSelected) => {
- *       setSelected(prev => {
- *         const next = new Set(prev);
- *         isNowSelected ? next.add(filter.id) : next.delete(filter.id);
- *         return next;
- *       });
- *     }}
- *   >
- *     <XDSText type="body">{filter.name}</XDSText>
- *   </XDSSelectableCard>
- * ))}
+ * <XDSSelectableCard
+ *   label="Option A"
+ *   isSelected={selected === 'a'}
+ *   onChange={() => setSelected('a')}>
+ *   <XDSText type="body" weight="bold">Option A</XDSText>
+ * </XDSSelectableCard>
  * ```
  */
 export function XDSSelectableCard({
@@ -341,14 +310,16 @@ export function XDSSelectableCard({
         variant,
         selected: isSelected ? 'true' : 'false',
       })}
-      xstyle={[
-        styles.interactive,
-        styles.focusWithin,
-        isSelected && selectedStyleForVariant(variant),
-        !isDisabled && styles.overlay,
-        !isDisabled && styles.hoverOnPointer,
-        isDisabled && styles.disabled,
-      ] as unknown as StyleXStyles}
+      xstyle={
+        [
+          styles.interactive,
+          styles.focusWithin,
+          isSelected && selectedStyleForVariant(variant),
+          !isDisabled && styles.overlay,
+          !isDisabled && styles.hoverOnPointer,
+          isDisabled && styles.disabled,
+        ] as unknown as StyleXStyles
+      }
       onClick={!isDisabled ? onClick : undefined}
       onMouseUp={!isDisabled ? onMouseUp : undefined}
       {...props}>
