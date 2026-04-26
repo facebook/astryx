@@ -315,8 +315,8 @@ export const SnapPoints: Story = {
   },
 };
 
-/** Always-visible pill grip + divider. */
-export const AlwaysVisible: Story = {
+/** Pill hidden at rest — only appears on hover/focus. */
+export const HiddenPill: Story = {
   render: () => {
     const sidebar = useXDSResizable({
       defaultSize: 250,
@@ -335,13 +335,13 @@ export const AlwaysVisible: Story = {
                   <XDSText>
                     <span {...stylex.props(ps.sz)}>{sidebar.size}px</span>
                   </XDSText>
-                  <XDSText>Pill grip is always visible.</XDSText>
+                  <XDSText>Pill only appears on hover.</XDSText>
                 </XDSStack>
               </XDSLayoutPanel>
               <XDSResizeHandle
                 direction="horizontal"
                 hasDivider
-                isAlwaysVisible
+                isAlwaysVisible={false}
                 resizable={sidebar.props}
                 label="Resize sidebar"
               />

@@ -53,8 +53,15 @@ const styles = stylex.create({
     width: '100%',
     cursor: 'row-resize',
   },
-  noDivider: {
+  // Zero-footprint mode: handle takes 0px in layout when no divider.
+  // Hit area + pill use absolute positioning so they still work.
+  noDividerHorizontal: {
     backgroundColor: 'transparent',
+    width: 0,
+  },
+  noDividerVertical: {
+    backgroundColor: 'transparent',
+    height: 0,
   },
   handleHover: {
     backgroundColor: colorVars['--color-border'],
@@ -123,7 +130,7 @@ const styles = stylex.create({
   pillVisible: {opacity: 1},
   pillHover: {
     opacity: 1,
-    backgroundColor: colorVars['--color-border-emphasized'],
+    backgroundColor: colorVars['--color-border'],
   },
   pillActive: {
     opacity: 1,
@@ -164,8 +171,9 @@ export interface XDSResizeHandleProps extends Omit<
   hasDivider?: boolean;
 
   /**
-   * Show the pill grip indicator at rest instead of only on hover.
-   * @default false
+   * Show the pill grip indicator at rest. Set to `false` to only
+   * reveal the pill on hover/focus.
+   * @default true
    */
   isAlwaysVisible?: boolean;
 
@@ -190,7 +198,7 @@ export function XDSResizeHandle({
   isReversed = false,
   isDisabled = false,
   hasDivider = false,
-  isAlwaysVisible = false,
+  isAlwaysVisible = true,
   label = 'Resize handle',
   resizable,
   children,
@@ -366,9 +374,12 @@ export function XDSResizeHandle({
         stylex.props(
           styles.handle,
           isHorizontal ? styles.horizontal : styles.vertical,
-          !hasDivider && styles.noDivider,
-          isInteracting && !isDragging && styles.handleHover,
-          isDragging && styles.handleActive,
+          !hasDivider &&
+            (isHorizontal
+              ? styles.noDividerHorizontal
+              : styles.noDividerVertical),
+          hasDivider && isInteracting && !isDragging && styles.handleHover,
+          hasDivider && isDragging && styles.handleActive,
           isDisabled && styles.disabled,
           xstyle,
         ),

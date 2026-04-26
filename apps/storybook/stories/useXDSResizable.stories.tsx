@@ -254,7 +254,6 @@ export const AlwaysVisible: Story = {
               <XDSResizeHandle
                 direction="horizontal"
                 hasDivider
-                isAlwaysVisible
                 resizable={sidebar.props}
               />
             </>
@@ -293,7 +292,6 @@ export const MixedContainers: Story = {
               </XDSLayoutPanel>
               <XDSResizeHandle
                 direction="horizontal"
-                isAlwaysVisible
                 resizable={sidebar.props}
               />
             </>
@@ -317,7 +315,6 @@ export const MixedContainers: Story = {
                 </div>
                 <XDSResizeHandle
                   direction="vertical"
-                  isAlwaysVisible
                   resizable={editor.props}
                 />
                 <div
