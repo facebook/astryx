@@ -1,6 +1,6 @@
 {
   "name": "@xds/theme-matcha",
-  "version": "0.0.1",
+  "version": "0.0.13",
   "private": false,
   "description": "Matcha theme for XDS — earthy green palette with Figtree typography and Lucide icons",
   "author": "Meta Open Source",
@@ -51,11 +51,11 @@
     "lucide-react": "^1.11.0"
   },
   "peerDependencies": {
-    "@xds/core": "*",
+    "@xds/core": "0.0.13",
     "react": ">=19"
   },
   "devDependencies": {
-    "@xds/cli": "*"
+    "@xds/cli": "0.0.13"
   },
   "module": "./dist/source.mjs"
 }
