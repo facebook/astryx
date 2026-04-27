@@ -417,7 +417,8 @@ export const docs = {
             ]
           ]
         }
-      ]
+      ],
+      "previewType": "swatch"
     },
     {
       "title": "Spacing Tokens",
@@ -495,7 +496,8 @@ export const docs = {
             ]
           ]
         }
-      ]
+      ],
+      "previewType": "spacing-bar"
     },
     {
       "title": "Size Tokens",
@@ -525,7 +527,8 @@ export const docs = {
             ]
           ]
         }
-      ]
+      ],
+      "previewType": "size-bar"
     },
     {
       "title": "Border Tokens",
@@ -547,7 +550,8 @@ export const docs = {
             ]
           ]
         }
-      ]
+      ],
+      "previewType": "border-line"
     },
     {
       "title": "Radius Tokens",
@@ -589,7 +593,8 @@ export const docs = {
             ]
           ]
         }
-      ]
+      ],
+      "previewType": "radius-box"
     },
     {
       "title": "Shadow Tokens",
@@ -639,7 +644,8 @@ export const docs = {
             ]
           ]
         }
-      ]
+      ],
+      "previewType": "shadow-box"
     },
     {
       "title": "Duration Tokens",
@@ -693,7 +699,8 @@ export const docs = {
             ]
           ]
         }
-      ]
+      ],
+      "previewType": "duration-bar"
     },
     {
       "title": "Easing Tokens",
@@ -715,7 +722,8 @@ export const docs = {
             ]
           ]
         }
-      ]
+      ],
+      "previewType": "easing-curve"
     },
     {
       "title": "Font Family Tokens",
@@ -745,7 +753,8 @@ export const docs = {
             ]
           ]
         }
-      ]
+      ],
+      "previewType": "font-sample"
     },
     {
       "title": "Font Size Tokens",
@@ -811,7 +820,8 @@ export const docs = {
             ]
           ]
         }
-      ]
+      ],
+      "previewType": "font-sample"
     },
     {
       "title": "Font Weight Tokens",
@@ -845,7 +855,8 @@ export const docs = {
             ]
           ]
         }
-      ]
+      ],
+      "previewType": "font-sample"
     },
     {
       "title": "Type Scale Tokens",
@@ -1031,7 +1042,8 @@ export const docs = {
             ]
           ]
         }
-      ]
+      ],
+      "previewType": "font-sample"
     },
     {
       "title": "Usage in StyleX",
