@@ -3,7 +3,13 @@
 import {useState} from 'react';
 
 import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
+import {
+  XDSSideNav,
+  XDSSideNavHeading,
+  XDSSideNavItem,
+  XDSSideNavSection,
+} from '@xds/core/SideNav';
+import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSCard} from '@xds/core/Card';
@@ -26,9 +32,19 @@ import {
 
 import {
   ArrowTrendingUpIcon,
-  BellIcon,
+  ChartBarIcon,
+  CurrencyDollarIcon,
+  DocumentTextIcon,
+  ClockIcon,
   Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
+import {
+  ChartBarIcon as ChartBarIconSolid,
+  CurrencyDollarIcon as CurrencyDollarIconSolid,
+  DocumentTextIcon as DocumentTextIconSolid,
+  ClockIcon as ClockIconSolid,
+  Cog6ToothIcon as Cog6ToothIconSolid,
+} from '@heroicons/react/24/solid';
 
 // ============= DATA =============
 
@@ -251,61 +267,60 @@ function AssetRow({
 
 export default function DashboardPortfolioTemplate() {
   const [timeRange, setTimeRange] = useState('1 year');
-  const [activeNav, setActiveNav] = useState('portfolio');
 
   return (
     <XDSAppShell
-      topNav={
-        <XDSTopNav
-          label="Portfolio navigation"
-          heading={
-            <XDSTopNavHeading
+      sideNav={
+        <XDSSideNav
+          header={
+            <XDSSideNavHeading
+              icon={
+                <XDSNavIcon
+                  icon={<XDSIcon icon={ArrowTrendingUpIcon} size="sm" />}
+                />
+              }
               heading="Acme Invest"
-              logo={<XDSIcon icon={ArrowTrendingUpIcon} size="md" />}
+              headingHref="#"
             />
           }
-          startContent={
-            <>
-              <XDSTopNavItem
-                label="Portfolio"
-                isSelected={activeNav === 'portfolio'}
-                href="#"
-              />
-              <XDSTopNavItem
-                label="Markets"
-                isSelected={activeNav === 'markets'}
-                href="#"
-              />
-              <XDSTopNavItem
-                label="Research"
-                isSelected={activeNav === 'research'}
-                href="#"
-              />
-              <XDSTopNavItem
-                label="Transactions"
-                isSelected={activeNav === 'transactions'}
-                href="#"
-              />
-            </>
-          }
-          endContent={
-            <XDSHStack gap={2} vAlign="center">
-              <XDSTopNavItem
-                label="Notifications"
-                isIconOnly
-                icon={<XDSIcon icon={BellIcon} size="sm" />}
-                href="#"
-              />
-              <XDSTopNavItem
+          footer={
+            <XDSSideNavSection title="Account" isHeaderHidden>
+              <XDSSideNavItem
                 label="Settings"
-                isIconOnly
-                icon={<XDSIcon icon={Cog6ToothIcon} size="sm" />}
+                icon={Cog6ToothIcon}
+                selectedIcon={Cog6ToothIconSolid}
                 href="#"
               />
-              <XDSAvatar name="Kara Chen" size="small" />
-            </XDSHStack>
-          }
-        />
+            </XDSSideNavSection>
+          }>
+          <XDSSideNavSection title="Overview" isHeaderHidden>
+            <XDSSideNavItem
+              label="Portfolio"
+              icon={ChartBarIcon}
+              selectedIcon={ChartBarIconSolid}
+              isSelected
+              href="#"
+            />
+            <XDSSideNavItem
+              label="Assets"
+              icon={CurrencyDollarIcon}
+              selectedIcon={CurrencyDollarIconSolid}
+              href="#"
+            />
+            <XDSSideNavItem
+              label="Transactions"
+              icon={ClockIcon}
+              selectedIcon={ClockIconSolid}
+              href="#"
+            />
+            <XDSSideNavItem
+              label="Reports"
+              icon={DocumentTextIcon}
+              selectedIcon={DocumentTextIconSolid}
+              href="#"
+            />
+          </XDSSideNavSection>
+        </XDSSideNav>
       }
       variant="elevated"
       height="auto"
