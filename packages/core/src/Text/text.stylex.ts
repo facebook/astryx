@@ -9,7 +9,12 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, fontWeightVars, typeScaleVars, typographyVars} from '../theme/tokens.stylex';
+import {
+  colorVars,
+  fontWeightVars,
+  typeScaleVars,
+  typographyVars,
+} from '../theme/tokens.stylex';
 
 // =============================================================================
 // Color Styles
@@ -87,14 +92,14 @@ export const defaultWeightByTypeStyles = stylex.create({
 });
 
 // =============================================================================
-// Default Size/Leading by Type (baseline styles from type-scale tokens)
+// Baseline Size/Leading by Type (from type-scale tokens)
 //
 // These ensure XDSText renders with correct sizing even without a theme.
 // Theme component overrides (.xds-text.body { ... }) win when present
 // because they have higher specificity via @scope.
 // =============================================================================
 
-export const defaultSizeByTypeStyles = stylex.create({
+export const sizeByTypeStyles = stylex.create({
   body: {
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
@@ -131,13 +136,13 @@ export const defaultSizeByTypeStyles = stylex.create({
 });
 
 // =============================================================================
-// Default Size/Leading by Heading Level (baseline styles from type-scale tokens)
+// Baseline Size/Leading by Heading Level (from type-scale tokens)
 //
-// Same rationale as defaultSizeByTypeStyles — ensures XDSHeading renders
+// Same rationale as sizeByTypeStyles — ensures XDSHeading renders
 // with correct sizing even without a theme.
 // =============================================================================
 
-export const defaultSizeByLevelStyles = stylex.create({
+export const sizeByLevelStyles = stylex.create({
   1: {
     fontSize: typeScaleVars['--text-heading-1-size'],
     lineHeight: typeScaleVars['--text-heading-1-leading'],
