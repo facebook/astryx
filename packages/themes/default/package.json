@@ -1,6 +1,6 @@
 {
   "name": "@xds/theme-default",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "private": false,
   "description": "Default theme for XDS — clean neutrals with Heroicons icon set",
   "author": "Meta Open Source",
@@ -51,11 +51,11 @@
     "@heroicons/react": "^2.2.0"
   },
   "peerDependencies": {
-    "@xds/core": "*",
+    "@xds/core": "0.0.13",
     "react": ">=19"
   },
   "devDependencies": {
-    "@xds/cli": "*"
+    "@xds/cli": "0.0.13"
   },
   "module": "./dist/source.mjs"
 }
