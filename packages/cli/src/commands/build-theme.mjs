@@ -1026,17 +1026,17 @@ export function registerTheme(program) {
 
         if (_generateThemeRulesSplit) {
           const {component, prose} = _generateThemeRulesSplit(resolvedTheme);
-          if (component.length === 0 && prose.length === 0) {
-            if (!json) console.log('No overrides found — nothing to build.');
-            return;
-          }
           const cssParts = [];
           if (prose.length > 0) {
             const proseInner = prose.join('\n\n');
             cssParts.push(`@layer reset {\n@scope (${scopeSelector}) to (${scopeTo}) {\n${proseInner}\n}\n}`);
           }
-          if (component.length > 0) {
-            const componentInner = component.join('\n\n');
+          // Always emit xds-theme layer to establish layer ordering,
+          // even when the theme has no component overrides.
+          {
+            const componentInner = component.length > 0
+              ? component.join('\n\n')
+              : `  :scope {}`;
             const componentScope = `@scope (${scopeSelector}) to (${scopeTo}) {\n${componentInner}\n}`;
             const colorSchemeDecl = componentScope.includes('light-dark(')
               ? '  :root { color-scheme: light dark; }\n\n'
@@ -1053,11 +1053,9 @@ export function registerTheme(program) {
           css = cssParts.join('\n\n') + '\n';
         } else {
           const rules = _generateThemeRules(resolvedTheme);
-          if (rules.length === 0) {
-            if (!json) console.log('No overrides found — nothing to build.');
-            return;
-          }
-          const inner = rules.join('\n\n');
+          const inner = rules.length > 0
+            ? rules.join('\n\n')
+            : `  :scope {}`;
           const scopeBlock = `@scope (${scopeSelector}) to (${scopeTo}) {\n${inner}\n}`;
           const colorSchemeDecl = scopeBlock.includes('light-dark(')
             ? '  :root { color-scheme: light dark; }\n\n'
