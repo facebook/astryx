@@ -20,9 +20,15 @@ import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSBadge} from '@xds/core/Badge';
+import {XDSButton} from '@xds/core/Button';
+import {XDSTable, proportional, pixel} from '@xds/core/Table';
+import type {XDSTableColumn} from '@xds/core/Table';
+import {XDSDivider} from '@xds/core/Divider';
 import {
   AreaChart,
   Area,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -37,6 +43,8 @@ import {
   DocumentTextIcon,
   ClockIcon,
   Cog6ToothIcon,
+  ArrowUpIcon,
+  ArrowDownIcon,
 } from '@heroicons/react/24/outline';
 import {
   ChartBarIcon as ChartBarIconSolid,
@@ -117,6 +125,62 @@ const topAssets = [
     value: '$45,600',
     change: '+4.2%',
   },
+];
+
+// Market index cards — 24h sparkline data (30 points each)
+// prettier-ignore
+const marketIndices = [
+  {name: 'Dow Jones', ticker: 'DJI', price: '43,821.67', change: '+0.42%', positive: true,
+    spark: [80,78,82,79,81,77,83,80,78,82,84,79,81,83,80,78,82,79,85,83,80,82,84,81,83,85,82,84,86,83]},
+  {name: 'NASDAQ', ticker: 'IXIC', price: '18,942.18', change: '-0.50%', positive: false,
+    spark: [85,87,83,86,84,88,85,83,87,84,82,86,83,81,84,82,85,83,80,82,79,83,80,82,78,81,79,82,80,78]},
+  {name: 'S&P 500', ticker: 'SPX', price: '5,918.33', change: '+0.21%', positive: true,
+    spark: [72,70,74,71,73,69,72,74,71,73,75,72,74,71,73,75,72,74,76,73,75,72,74,76,73,75,77,74,76,73]},
+  {name: 'NYSE Composite', ticker: 'NYA', price: '19,752.41', change: '-0.20%', positive: false,
+    spark: [68,70,67,71,69,72,68,70,67,69,71,68,70,67,69,66,68,70,67,65,68,66,69,67,65,68,66,64,67,65]},
+  {name: 'NVIDIA Corp.', ticker: 'NVDA', price: '$177.39', change: '+0.93%', positive: true,
+    spark: [60,62,58,63,61,64,60,62,65,63,61,64,62,65,63,66,64,62,65,67,64,66,63,65,67,64,66,68,65,67]},
+  {name: 'Intel Corp.', ticker: 'INTC', price: '$50.38', change: '+4.89%', positive: true,
+    spark: [40,38,42,39,41,43,40,42,44,41,43,45,42,44,46,43,45,47,44,46,48,45,47,49,46,48,50,47,49,51]},
+  {name: 'Nokia Corp.', ticker: 'NOK', price: '$8.82', change: '+6.65%', positive: true,
+    spark: [30,28,32,29,31,33,30,32,34,31,33,35,32,34,36,33,35,37,34,36,38,35,37,39,36,38,40,37,39,41]},
+  {name: 'Tesla, Inc.', ticker: 'TSLA', price: '$360.59', change: '-5.42%', positive: false,
+    spark: [90,88,92,89,87,91,88,86,89,87,84,88,85,83,86,84,81,85,82,80,83,81,78,82,79,77,80,78,75,79]},
+];
+
+// Trending stocks table data
+interface StockRow extends Record<string, unknown> {
+  id: string;
+  ticker: string;
+  price: string;
+  dailyPts: number;
+  dailyPct: number;
+  weekChg: number;
+  // prettier-ignore
+  spark: number[];
+}
+
+const trendingStocks: StockRow[] = [
+  // prettier-ignore
+  {id: '1', ticker: 'AAPL', price: '$188.72', dailyPts: 1.35, dailyPct: 0.72, weekChg: 22.4, spark: [60,62,61,63,62,64,63,65,64,66,65,67,66,68,67,69,68,67,69,68,70,69,71,70,69,71,70,72,71,70]},
+  // prettier-ignore
+  {id: '2', ticker: 'MSFT', price: '$415.6', dailyPts: 3.20, dailyPct: 0.78, weekChg: 18.6, spark: [55,57,56,58,57,59,58,60,59,61,60,62,61,60,62,61,63,62,64,63,62,64,63,65,64,63,65,64,66,65]},
+  // prettier-ignore
+  {id: '3', ticker: 'NVDA', price: '$177.39', dailyPts: 1.65, dailyPct: 0.93, weekChg: 45.2, spark: [40,42,44,43,45,47,46,48,50,49,51,53,52,54,53,55,57,56,58,60,59,61,60,62,64,63,65,64,66,68]},
+  // prettier-ignore
+  {id: '4', ticker: 'AMZN', price: '$186.5', dailyPts: -0.80, dailyPct: -0.43, weekChg: 15.3, spark: [70,68,69,67,68,66,67,65,66,64,65,66,64,65,63,64,65,63,64,62,63,64,62,63,61,62,63,61,62,63]},
+  // prettier-ignore
+  {id: '5', ticker: 'GOOGL', price: '$155.72', dailyPts: 2.10, dailyPct: 1.37, weekChg: 12.8, spark: [50,52,51,53,52,54,53,55,54,56,55,57,56,58,57,56,58,57,59,58,60,59,58,60,59,61,60,62,61,60]},
+  // prettier-ignore
+  {id: '6', ticker: 'META', price: '$505.3', dailyPts: 4.50, dailyPct: 0.90, weekChg: 35.1, spark: [45,47,46,48,47,49,48,50,49,51,50,52,51,53,52,54,53,55,54,56,55,57,56,58,57,59,58,60,59,61]},
+  // prettier-ignore
+  {id: '7', ticker: 'TSLA', price: '$360.59', dailyPts: -20.67, dailyPct: -5.42, weekChg: -8.3, spark: [90,88,86,87,85,83,84,82,80,81,79,77,78,76,74,75,73,71,72,70,68,69,67,65,66,64,62,63,61,79]},
+  // prettier-ignore
+  {id: '8', ticker: 'INTC', price: '$50.38', dailyPts: 2.35, dailyPct: 4.89, weekChg: -12.5, spark: [65,63,64,62,60,61,59,57,58,56,54,55,53,51,52,50,48,49,50,52,51,53,52,54,53,55,54,56,55,57]},
+  // prettier-ignore
+  {id: '9', ticker: 'AMD', price: '$162.45', dailyPts: -1.20, dailyPct: -0.73, weekChg: 28.7, spark: [50,52,51,53,55,54,56,55,57,56,58,57,59,58,60,59,61,60,62,61,60,62,61,63,62,64,63,62,64,63]},
+  // prettier-ignore
+  {id: '10', ticker: 'NFLX', price: '$628.9', dailyPts: 5.40, dailyPct: 0.87, weekChg: 42.1, spark: [42,44,43,45,44,46,45,47,46,48,47,49,48,50,49,51,50,52,51,53,52,54,53,55,54,56,55,57,56,58]},
 ];
 
 // ============= CHART COMPONENTS =============
@@ -212,6 +276,145 @@ function PortfolioChart() {
 }
 
 // ============= CARD COMPONENTS =============
+
+function Sparkline({data, positive}: {data: number[]; positive: boolean}) {
+  const chartData = data.map((v, i) => ({i, v}));
+  const color = positive
+    ? 'var(--color-data-categorical-green, #0B991F)'
+    : 'var(--color-data-categorical-red, #E5484D)';
+  return (
+    <ResponsiveContainer width="100%" height={40}>
+      <LineChart data={chartData}>
+        <Line
+          type="linear"
+          dataKey="v"
+          stroke={color}
+          strokeWidth={1.5}
+          dot={false}
+          isAnimationActive={false}
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+function MarketCard({
+  name,
+  ticker,
+  price,
+  change,
+  positive,
+  spark,
+}: {
+  name: string;
+  ticker: string;
+  price: string;
+  change: string;
+  positive: boolean;
+  spark: number[];
+}) {
+  return (
+    <XDSCard>
+      <XDSVStack gap={2}>
+        <XDSVStack gap={0}>
+          <XDSText type="body" weight="semibold">
+            {name}
+          </XDSText>
+          <XDSText type="supporting" color="secondary">
+            {ticker}
+          </XDSText>
+        </XDSVStack>
+        <Sparkline data={spark} positive={positive} />
+        <XDSHStack gap={2} vAlign="center">
+          <XDSHeading level={3}>{price}</XDSHeading>
+          <XDSIcon
+            icon={positive ? ArrowUpIcon : ArrowDownIcon}
+            size="xsm"
+            color={positive ? 'positive' : 'negative'}
+          />
+          <XDSBadge label={change} variant={positive ? 'green' : 'red'} />
+        </XDSHStack>
+        <XDSText type="supporting" color="secondary">
+          Past 24 hrs
+        </XDSText>
+      </XDSVStack>
+    </XDSCard>
+  );
+}
+
+function TrendSparkline({data, positive}: {data: number[]; positive: boolean}) {
+  const chartData = data.map((v, i) => ({i, v}));
+  const color = positive
+    ? 'var(--color-data-categorical-green, #0B991F)'
+    : 'var(--color-data-categorical-red, #E5484D)';
+  return (
+    <ResponsiveContainer width={80} height={24}>
+      <LineChart data={chartData}>
+        <Line
+          type="linear"
+          dataKey="v"
+          stroke={color}
+          strokeWidth={1}
+          dot={false}
+          isAnimationActive={false}
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+function ColoredValue({
+  value,
+  isPositive,
+}: {
+  value: string;
+  isPositive: boolean;
+}) {
+  return <XDSBadge label={value} variant={isPositive ? 'green' : 'red'} />;
+}
+
+const trendingColumns: XDSTableColumn<StockRow>[] = [
+  {key: 'ticker', header: 'Ticker', width: pixel(120)},
+  {key: 'price', header: 'Price', width: pixel(120)},
+  {
+    key: 'dailyPts',
+    header: 'Daily Chg (pts)',
+    width: proportional(1),
+    renderCell: (row: StockRow) => {
+      const isPos = row.dailyPts >= 0;
+      const formatted = (isPos ? '+' : '') + row.dailyPts.toFixed(2);
+      return <ColoredValue value={formatted} isPositive={isPos} />;
+    },
+  },
+  {
+    key: 'dailyPct',
+    header: 'Daily Chg (%)',
+    width: proportional(1),
+    renderCell: (row: StockRow) => {
+      const isPos = row.dailyPct >= 0;
+      const formatted = (isPos ? '+' : '') + row.dailyPct.toFixed(2) + '%';
+      return <ColoredValue value={formatted} isPositive={isPos} />;
+    },
+  },
+  {
+    key: 'weekChg',
+    header: '52W Chg (%)',
+    width: proportional(1),
+    renderCell: (row: StockRow) => {
+      const isPos = row.weekChg >= 0;
+      const formatted = (isPos ? '+' : '') + row.weekChg.toFixed(1) + '%';
+      return <ColoredValue value={formatted} isPositive={isPos} />;
+    },
+  },
+  {
+    key: 'spark',
+    header: '24h Trend',
+    width: pixel(120),
+    renderCell: (row: StockRow) => (
+      <TrendSparkline data={row.spark} positive={row.dailyPct >= 0} />
+    ),
+  },
+];
 
 function MetricCard({
   value,
@@ -383,6 +586,35 @@ export default function DashboardPortfolioTemplate() {
             </XDSVStack>
           </XDSCard>
         </XDSGrid>
+
+        <XDSDivider />
+
+        {/* Market section */}
+        <XDSHStack hAlign="between" vAlign="center">
+          <XDSHeading level={3}>Market</XDSHeading>
+          <XDSButton label="View more" variant="secondary" size="md" />
+        </XDSHStack>
+
+        {/* Market index cards */}
+        <XDSGrid columns={{minWidth: 240, repeat: 'fit'}} gap={4}>
+          {marketIndices.map(m => (
+            <MarketCard key={m.ticker} {...m} />
+          ))}
+        </XDSGrid>
+
+        {/* Trending stocks table */}
+        <XDSCard>
+          <XDSVStack gap={4}>
+            <XDSHeading level={4}>Trending Stocks</XDSHeading>
+            <XDSTable<StockRow>
+              data={trendingStocks}
+              columns={trendingColumns}
+              idKey="id"
+              hasHover
+              dividers="rows"
+            />
+          </XDSVStack>
+        </XDSCard>
       </XDSVStack>
     </XDSAppShell>
   );
