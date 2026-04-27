@@ -40,6 +40,7 @@ export {
   CheckBadgeIcon as VerifiedIcon,
   ChatBubbleLeftRightIcon as ChatIcon,
   ChartBarIcon as ChartsIcon,
+  ArrowTrendingUpIcon as MetricsIcon,
 } from '@heroicons/react/24/outline';
 
 export {

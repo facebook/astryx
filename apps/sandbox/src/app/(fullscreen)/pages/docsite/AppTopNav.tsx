@@ -9,7 +9,12 @@ import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSCommandPalette} from '@xds/core/CommandPalette';
 
-import {SearchIcon, ProfileIcon, FilterIcon} from './docsite-icons';
+import {
+  SearchIcon,
+  ProfileIcon,
+  FilterIcon,
+  MetricsIcon,
+} from './docsite-icons';
 import {SEARCH_COMMANDS, basePath} from './constants';
 
 const XDS_WORDMARK = (
@@ -172,6 +177,13 @@ export function AppTopNav({
               isIconOnly
               icon={<SearchIcon />}
               onClick={() => setIsSearchOpen(true)}
+            />
+            <XDSButton
+              label="Metrics"
+              variant="ghost"
+              size="sm"
+              isIconOnly
+              icon={<MetricsIcon />}
             />
             <XDSButton
               label="Profile"
