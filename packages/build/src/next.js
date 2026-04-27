@@ -15,8 +15,7 @@
 /**
  * Wraps a Next.js config to enable XDS source builds.
  * - Adds transpilePackages for @xds/* packages
- * - Sets conditionNames to resolve source exports (webpack)
- * - Adds empty turbopack config for Next.js 16+ compatibility
+ * - Sets conditionNames to resolve source exports
  */
 function withXDS(nextConfig = {}) {
   const xdsPackages = [
@@ -32,15 +31,10 @@ function withXDS(nextConfig = {}) {
   const merged = Array.from(new Set([...existingTranspile, ...xdsPackages]));
 
   const existingWebpack = nextConfig.webpack;
-  const existingTurbopack = nextConfig.turbopack;
 
   return {
     ...nextConfig,
     transpilePackages: merged,
-    // Next.js 16+ defaults to Turbopack and errors if only webpack config
-    // is present. An empty turbopack config silences the check, and
-    // transpilePackages handles @xds/* source resolution for both bundlers.
-    turbopack: existingTurbopack || {},
     webpack: (config, context) => {
       // Resolve to source exports
       config.resolve.conditionNames = [
