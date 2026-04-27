@@ -9,7 +9,7 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, fontWeightVars, typeScaleVars} from '../theme/tokens.stylex';
+import {colorVars, fontWeightVars, typeScaleVars, typographyVars} from '../theme/tokens.stylex';
 
 // =============================================================================
 // Color Styles
@@ -83,6 +83,90 @@ export const defaultWeightByTypeStyles = stylex.create({
   },
   'display-3': {
     fontWeight: typeScaleVars['--text-display-3-weight'],
+  },
+});
+
+// =============================================================================
+// Default Size/Leading by Type (baseline styles from type-scale tokens)
+//
+// These ensure XDSText renders with correct sizing even without a theme.
+// Theme component overrides (.xds-text.body { ... }) win when present
+// because they have higher specificity via @scope.
+// =============================================================================
+
+export const defaultSizeByTypeStyles = stylex.create({
+  body: {
+    fontSize: typeScaleVars['--text-body-size'],
+    lineHeight: typeScaleVars['--text-body-leading'],
+  },
+  large: {
+    fontSize: typeScaleVars['--text-large-size'],
+    lineHeight: typeScaleVars['--text-large-leading'],
+  },
+  label: {
+    fontSize: typeScaleVars['--text-label-size'],
+    lineHeight: typeScaleVars['--text-label-leading'],
+  },
+  code: {
+    fontSize: typeScaleVars['--text-code-size'],
+    lineHeight: typeScaleVars['--text-code-leading'],
+    fontFamily: typographyVars['--font-family-code'],
+  },
+  supporting: {
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+  },
+  'display-1': {
+    fontSize: typeScaleVars['--text-display-1-size'],
+    lineHeight: typeScaleVars['--text-display-1-leading'],
+  },
+  'display-2': {
+    fontSize: typeScaleVars['--text-display-2-size'],
+    lineHeight: typeScaleVars['--text-display-2-leading'],
+  },
+  'display-3': {
+    fontSize: typeScaleVars['--text-display-3-size'],
+    lineHeight: typeScaleVars['--text-display-3-leading'],
+  },
+});
+
+// =============================================================================
+// Default Size/Leading by Heading Level (baseline styles from type-scale tokens)
+//
+// Same rationale as defaultSizeByTypeStyles — ensures XDSHeading renders
+// with correct sizing even without a theme.
+// =============================================================================
+
+export const defaultSizeByLevelStyles = stylex.create({
+  1: {
+    fontSize: typeScaleVars['--text-heading-1-size'],
+    lineHeight: typeScaleVars['--text-heading-1-leading'],
+    fontWeight: typeScaleVars['--text-heading-1-weight'],
+  },
+  2: {
+    fontSize: typeScaleVars['--text-heading-2-size'],
+    lineHeight: typeScaleVars['--text-heading-2-leading'],
+    fontWeight: typeScaleVars['--text-heading-2-weight'],
+  },
+  3: {
+    fontSize: typeScaleVars['--text-heading-3-size'],
+    lineHeight: typeScaleVars['--text-heading-3-leading'],
+    fontWeight: typeScaleVars['--text-heading-3-weight'],
+  },
+  4: {
+    fontSize: typeScaleVars['--text-heading-4-size'],
+    lineHeight: typeScaleVars['--text-heading-4-leading'],
+    fontWeight: typeScaleVars['--text-heading-4-weight'],
+  },
+  5: {
+    fontSize: typeScaleVars['--text-heading-5-size'],
+    lineHeight: typeScaleVars['--text-heading-5-leading'],
+    fontWeight: typeScaleVars['--text-heading-5-weight'],
+  },
+  6: {
+    fontSize: typeScaleVars['--text-heading-6-size'],
+    lineHeight: typeScaleVars['--text-heading-6-leading'],
+    fontWeight: typeScaleVars['--text-heading-6-weight'],
   },
 });
 

@@ -109,7 +109,7 @@ const preview: Preview = {
     },
   },
   initialGlobals: {
-    xdsTheme: 'default',
+    xdsTheme: 'none',
     colorMode: 'light',
   },
   decorators: [withXDSTheme],

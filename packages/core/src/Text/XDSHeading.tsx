@@ -25,6 +25,7 @@ import type {
 } from '../theme/types';
 import {
   colorStyles,
+  defaultSizeByLevelStyles,
   displayStyles,
   truncationStyles,
   wordBreakStyles,
@@ -227,6 +228,7 @@ export function XDSHeading({
           xdsClassName('heading', {level, color}),
           stylex.props(
             colorStyles[color],
+            defaultSizeByLevelStyles[level],
             // Display: use truncation styles when maxLines > 0
             maxLines === 1
               ? truncationStyles.singleLine
