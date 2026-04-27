@@ -56,6 +56,33 @@ const MicIcon = (
   </svg>
 );
 
+const ChevronLeftIcon = (
+  <svg
+    width="1em"
+    height="1em"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round">
+    <path d="m15 18-6-6 6-6" />
+  </svg>
+);
+const ChevronRightIcon = (
+  <svg
+    width="1em"
+    height="1em"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round">
+    <path d="m9 18 6-6-6-6" />
+  </svg>
+);
+
 const meta: Meta<typeof XDSChatComposer> = {
   title: 'Core/Chat/Composer',
   component: XDSChatComposer,
@@ -334,56 +361,108 @@ export const SendStopToggle: Story = {
   },
 };
 
-/** Drawer with a follow-up question and selectable options (A–F) */
+/** Drawer with follow-up questions, selectable options, and prev/next navigation */
 export const FollowUpQuestion: Story = {
   render: () => {
-    const [selected, setSelected] = useState<string | null>('B');
-
-    const options = [
-      {key: 'A', label: 'Build out the new inbox page template'},
-      {key: 'B', label: 'Fix existing templates for rubric compliance'},
-      {key: 'C', label: 'Work on the Button component'},
-      {key: 'D', label: 'Explore or understand the codebase'},
-      {key: 'E', label: 'Something else entirely'},
-      {key: 'F', label: 'Other...'},
+    const questions = [
+      {
+        question: 'What would you like to work on?',
+        options: [
+          {key: 'A', label: 'Build out the new inbox page template'},
+          {key: 'B', label: 'Fix existing templates for rubric compliance'},
+          {key: 'C', label: 'Work on the Button component'},
+          {key: 'D', label: 'Explore or understand the codebase'},
+        ],
+      },
+      {
+        question: 'How familiar are you with the codebase?',
+        options: [
+          {key: 'A', label: 'Brand new \u2014 never seen it'},
+          {key: 'B', label: 'Somewhat familiar \u2014 browsed a few files'},
+        ],
+      },
+      {
+        question: 'Do you want a guided walkthrough or just the answer?',
+        options: [
+          {key: 'A', label: 'Guided walkthrough with explanations'},
+          {key: 'B', label: 'Just give me the answer'},
+        ],
+      },
     ];
+
+    const [currentQ, setCurrentQ] = useState(0);
+    const [answers, setAnswers] = useState<Record<number, string>>({});
+    const q = questions[currentQ];
+    const selected = answers[currentQ] ?? null;
 
     return (
       <XDSChatComposer
         onSubmit={value => {
-          const answer = selected ?? 'none';
-          console.log('Submit:', value, '| Selected:', answer);
-          alert(`Sent: "${value}" with option ${answer}`);
+          console.log('Submit:', value, '| Answers:', answers);
+          alert(
+            `Sent: "${value}"\nAnswers: ${JSON.stringify(answers, null, 2)}`,
+          );
         }}
-        placeholder="Add more optional details"
+        placeholder="Add context or just pick an option above\u2026"
         drawer={
-          <XDSChatComposerDrawer count={1} label="Questions">
-            <XDSList density="compact">
-              <XDSListItem
-                label={
-                  <XDSText weight="bold">
-                    1. What would you like to work on?
-                  </XDSText>
-                }
-              />
-              {options.map(opt => (
+          <XDSChatComposerDrawer count={questions.length} label="Questions">
+            <div style={{width: '100%'}}>
+              <XDSList>
                 <XDSListItem
-                  key={opt.key}
-                  label={opt.label}
-                  startContent={
-                    <XDSBadge
-                      variant={selected === opt.key ? 'info' : 'neutral'}
-                      label={opt.key}
-                    />
+                  label={
+                    <XDSText weight="bold">
+                      {currentQ + 1}. {q.question}
+                    </XDSText>
                   }
-                  isSelected={selected === opt.key}
-                  onClick={() => setSelected(opt.key)}
                 />
-              ))}
-            </XDSList>
+                {q.options.map(opt => (
+                  <XDSListItem
+                    key={opt.key}
+                    label={opt.label}
+                    startContent={
+                      <XDSBadge
+                        variant={selected === opt.key ? 'info' : 'neutral'}
+                        label={opt.key}
+                      />
+                    }
+                    isSelected={selected === opt.key}
+                    onClick={() =>
+                      setAnswers(prev => ({...prev, [currentQ]: opt.key}))
+                    }
+                  />
+                ))}
+              </XDSList>
+            </div>
           </XDSChatComposerDrawer>
         }
-        footerActions={<XDSButton label="Skip" variant="ghost" size="md" />}
+        headerActions={
+          <>
+            <XDSButton
+              label="Previous question"
+              variant="ghost"
+              size="sm"
+              icon={ChevronLeftIcon}
+              isIconOnly
+              isDisabled={currentQ === 0}
+              onClick={() => setCurrentQ(i => i - 1)}
+            />
+            <XDSButton
+              label="Next question"
+              variant="ghost"
+              size="sm"
+              icon={ChevronRightIcon}
+              isIconOnly
+              isDisabled={currentQ === questions.length - 1}
+              onClick={() => setCurrentQ(i => i + 1)}
+            />
+          </>
+        }
+        headerContext={
+          <XDSText color="secondary">
+            {currentQ + 1} of {questions.length}
+          </XDSText>
+        }
+        footerActions={<XDSButton label="Skip all" variant="ghost" size="md" />}
       />
     );
   },
