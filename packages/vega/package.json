@@ -1,6 +1,6 @@
 {
   "name": "@xds/vega",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "private": true,
   "description": "XDS Vega wrapper — chart and data visualization components",
   "author": "Meta Open Source",

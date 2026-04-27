@@ -1,6 +1,6 @@
 {
   "name": "@xds/cli",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "description": "XDS design system CLI — init, swizzle, theme, templates, and agent docs",
   "author": "Meta Open Source",
   "license": "MIT",

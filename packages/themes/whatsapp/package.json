@@ -1,6 +1,6 @@
 {
   "name": "@xds/theme-whatsapp",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "private": true,
   "description": "WhatsApp theme for XDS — green accent, warm grays, Roboto, rounded surfaces",
   "author": "Meta Open Source",
@@ -49,10 +49,10 @@
     "build": "xds theme build src/whatsappTheme.ts -o dist/theme.css && tsup && tsc --project tsconfig.build.json"
   },
   "peerDependencies": {
-    "@xds/core": "*",
+    "@xds/core": "0.0.13",
     "react": ">=19"
   },
   "devDependencies": {
-    "@xds/cli": "*"
+    "@xds/cli": "0.0.13"
   }
 }
