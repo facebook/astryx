@@ -7,6 +7,9 @@ import {
 import {XDSToken} from '@xds/core/Token';
 import {XDSButton} from '@xds/core/Button';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
+import {XDSList, XDSListItem} from '@xds/core/List';
+import {XDSText} from '@xds/core/Text';
+import {XDSBadge} from '@xds/core/Badge';
 import {useState} from 'react';
 
 // Inline icons for story demos (not in the default icon registry)
@@ -326,6 +329,61 @@ export const SendStopToggle: Story = {
           setIsStreaming(false);
         }}
         placeholder="Send a message to start streaming..."
+      />
+    );
+  },
+};
+
+/** Drawer with a follow-up question and selectable options (A–F) */
+export const FollowUpQuestion: Story = {
+  render: () => {
+    const [selected, setSelected] = useState<string | null>('B');
+
+    const options = [
+      {key: 'A', label: 'Build out the new inbox page template'},
+      {key: 'B', label: 'Fix existing templates for rubric compliance'},
+      {key: 'C', label: 'Work on the Button component'},
+      {key: 'D', label: 'Explore or understand the codebase'},
+      {key: 'E', label: 'Something else entirely'},
+      {key: 'F', label: 'Other...'},
+    ];
+
+    return (
+      <XDSChatComposer
+        onSubmit={value => {
+          const answer = selected ?? 'none';
+          console.log('Submit:', value, '| Selected:', answer);
+          alert(`Sent: "${value}" with option ${answer}`);
+        }}
+        placeholder="Add more optional details"
+        drawer={
+          <XDSChatComposerDrawer count={1} label="Questions">
+            <XDSList density="compact">
+              <XDSListItem
+                label={
+                  <XDSText weight="bold">
+                    1. What would you like to work on?
+                  </XDSText>
+                }
+              />
+              {options.map(opt => (
+                <XDSListItem
+                  key={opt.key}
+                  label={opt.label}
+                  startContent={
+                    <XDSBadge
+                      variant={selected === opt.key ? 'info' : 'neutral'}
+                      label={opt.key}
+                    />
+                  }
+                  isSelected={selected === opt.key}
+                  onClick={() => setSelected(opt.key)}
+                />
+              ))}
+            </XDSList>
+          </XDSChatComposerDrawer>
+        }
+        footerActions={<XDSButton label="Skip" variant="ghost" size="md" />}
       />
     );
   },
