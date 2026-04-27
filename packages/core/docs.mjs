@@ -105,6 +105,32 @@ async function loadDoc(docPath) {
   return mod.docs;
 }
 
+// ── Example extraction ───────────────────────────────────────────────
+
+function extractExamples(docPath) {
+  const dir = path.dirname(docPath);
+  const examples = [];
+  try {
+    for (const file of fs.readdirSync(dir)) {
+      if (!file.endsWith('.tsx') || file.includes('.test')) continue;
+      const content = fs.readFileSync(path.join(dir, file), 'utf-8');
+      const regex = /@example\s*\n\s*\*\s*```[\w]*\n([\s\S]*?)```/g;
+      let match;
+      while ((match = regex.exec(content)) !== null) {
+        const code = match[1]
+          .split('\n')
+          .map(line => line.replace(/^\s*\*\s?/, ''))
+          .join('\n')
+          .trim();
+        if (code.includes('declare module')) continue;
+        if (code.includes('stylex.create') && !code.includes('XDS')) continue;
+        if (code.length > 0) examples.push(code);
+      }
+    }
+  } catch {}
+  return examples;
+}
+
 // ── Formatting ───────────────────────────────────────────────────────
 
 function formatPropsTable(props) {
@@ -118,10 +144,21 @@ function formatPropsTable(props) {
   return lines.join('\n');
 }
 
-function formatFull(docs) {
+function formatFull(docs, docPath) {
   const s = [];
   s.push(`# ${docs.name}\n`);
   s.push((docs.usage?.description || '') + '\n');
+
+  // Examples from @example JSDoc blocks in component source
+  if (docPath) {
+    const examples = extractExamples(docPath);
+    if (examples.length) {
+      s.push('## Example\n');
+      s.push('```tsx');
+      s.push(examples.join('\n\n'));
+      s.push('```\n');
+    }
+  }
 
   if (docs.usage?.anatomy?.length) {
     s.push('## Anatomy\n');
@@ -225,7 +262,7 @@ if (isList) {
     process.exit(1);
   }
   const docs = await loadDoc(docPath);
-  console.log(formatFull(docs));
+  console.log(formatFull(docs, docPath));
 } else {
   console.log('Usage:');
   console.log('  node docs.mjs <ComponentName>   Show full component docs');
