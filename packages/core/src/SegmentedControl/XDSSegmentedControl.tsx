@@ -195,7 +195,7 @@ export function XDSSegmentedControl({
         aria-disabled={isDisabled || undefined}
         onKeyDown={handleKeyDown}
         {...mergeProps(
-          xdsClassName('segmented-control', {size}),
+          xdsClassName('segmented-control', {size, layout}),
           stylex.props(
             styles.container,
             sizeStyles[size],
