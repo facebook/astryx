@@ -121,6 +121,12 @@ export const categories: SandboxCategory[] = [
           'Token reference docs with live theme previews — color, spacing, typography, and more',
       },
       {
+        name: 'Theme Docs',
+        href: '/pages/theme-doc-preview/',
+        description:
+          'Auto-generated theme documentation — tokens, components, variants, and icons',
+      },
+      {
         name: 'Docsite',
         href: '/pages/docsite/',
         description:
