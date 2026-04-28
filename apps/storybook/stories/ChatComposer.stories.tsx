@@ -366,26 +366,34 @@ export const FollowUpQuestion: Story = {
   render: () => {
     const questions = [
       {
-        question: 'What would you like to work on?',
+        question: 'Which environment should this deploy to?',
         options: [
-          {key: 'A', label: 'Build out the new inbox page template'},
-          {key: 'B', label: 'Fix existing templates for rubric compliance'},
-          {key: 'C', label: 'Work on the Button component'},
-          {key: 'D', label: 'Explore or understand the codebase'},
+          {key: 'A', label: 'Production (requires approval)'},
+          {key: 'B', label: 'Staging'},
+          {key: 'C', label: 'Local development only'},
         ],
       },
       {
-        question: 'How familiar are you with the codebase?',
+        question:
+          'This will modify 12 files. How should I handle breaking changes?',
         options: [
-          {key: 'A', label: 'Brand new \u2014 never seen it'},
-          {key: 'B', label: 'Somewhat familiar \u2014 browsed a few files'},
+          {key: 'A', label: 'Add a migration and keep backward compatibility'},
+          {
+            key: 'B',
+            label: 'Breaking change is fine \u2014 bump the major version',
+          },
         ],
       },
       {
-        question: 'Do you want a guided walkthrough or just the answer?',
+        question:
+          'I found 3 existing implementations. Which one should I extend?',
         options: [
-          {key: 'A', label: 'Guided walkthrough with explanations'},
-          {key: 'B', label: 'Just give me the answer'},
+          {key: 'A', label: 'UserService in src/services/ (most recent)'},
+          {
+            key: 'B',
+            label: 'UserManager in src/legacy/ (has more test coverage)',
+          },
+          {key: 'C', label: 'Neither \u2014 start fresh'},
         ],
       },
     ];
@@ -403,7 +411,7 @@ export const FollowUpQuestion: Story = {
             `Sent: "${value}"\nAnswers: ${JSON.stringify(answers, null, 2)}`,
           );
         }}
-        placeholder="Add context or just pick an option above\u2026"
+        placeholder="Or describe what you need in your own words\u2026"
         drawer={
           <XDSChatComposerDrawer count={questions.length} label="Questions">
             <div style={{width: '100%'}}>
