@@ -133,12 +133,12 @@ export type {
 export {useXDSTheme} from './useXDSTheme';
 export type {UseXDSThemeReturn} from './useXDSTheme';
 
-
-
 export type {
   ThemeMode,
   HeadingLevel,
   XDSTextType,
+  XDSBuiltinTextType,
+  XDSCustomTextTypes,
   XDSTextSize,
   XDSTextWeight,
   XDSTextColor,
@@ -147,5 +147,3 @@ export type {
   TypographyRole,
   FontWeight,
 } from './types';
-
-
