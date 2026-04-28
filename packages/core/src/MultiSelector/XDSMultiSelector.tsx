@@ -69,8 +69,8 @@ import {XDSBaseProps} from '../XDSBaseProps';
 const SELECT_ALL_VALUE = '__xds_select_all__';
 
 const styles = stylex.create({
-  // Trigger button
-  trigger: {
+  // Trigger container — the enhanced click target wrapping the combobox button and clear button as siblings
+  triggerContainer: {
     position: 'relative',
     display: 'flex',
     alignItems: 'center',
@@ -105,9 +105,36 @@ const styles = stylex.create({
     },
     outline: {
       default: 'none',
-      ':focus': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
+      ':focus-within': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: '0',
+  },
+  // Trigger button — the actual combobox button, visually integrated with the container
+  trigger: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacingVars['--spacing-2'],
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    minWidth: 0,
+    padding: 0,
+    margin: 0,
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
+    fontFamily: 'inherit',
+    fontSize: 'inherit',
+    lineHeight: 'inherit',
+    color: 'inherit',
+    cursor: 'pointer',
+    outline: {
+      default: 'none',
+      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: '0',
+    borderRadius: radiusVars['--radius-element'],
   },
   triggerDisabled: {
     cursor: 'not-allowed',
@@ -1088,36 +1115,16 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
           : undefined
       }
       labelTooltip={labelTooltip}>
-      <button
+      <div
         ref={el => {
-          (
-            triggerRef as React.MutableRefObject<HTMLButtonElement | null>
-          ).current = el;
           popover.triggerRef(el);
         }}
-        id={triggerId}
-        type="button"
-        role="combobox"
-        aria-haspopup="listbox"
-        aria-expanded={popover.isOpen}
-        aria-controls={listboxId}
-        aria-activedescendant={
-          popover.isOpen && highlightedIndex >= 0
-            ? getItemId(highlightedIndex)
-            : undefined
-        }
-        aria-describedby={ariaDescribedBy}
-        aria-required={isRequired ? 'true' : undefined}
-        aria-invalid={status?.type === 'error' ? 'true' : undefined}
-        aria-busy={isBusy || undefined}
-        disabled={isDisabled}
         onClick={onTriggerClick}
-        onKeyDown={onKeyDown}
         data-testid={testId}
         {...mergeProps(
           xdsClassName('multi-selector', {size, status: status?.type ?? null}),
           stylex.props(
-            styles.trigger,
+            styles.triggerContainer,
             sizeStyles[size],
             isDisabled && styles.triggerDisabled,
             optimisticValue.length === 0 && styles.triggerPlaceholder,
@@ -1128,9 +1135,32 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
           className,
           style,
         )}>
-        <span {...stylex.props(styles.triggerContent)}>
-          {renderTriggerContent()}
-        </span>
+        <button
+          ref={triggerRef}
+          id={triggerId}
+          type="button"
+          role="combobox"
+          aria-haspopup="listbox"
+          aria-expanded={popover.isOpen}
+          aria-controls={listboxId}
+          aria-activedescendant={
+            popover.isOpen && highlightedIndex >= 0
+              ? getItemId(highlightedIndex)
+              : undefined
+          }
+          aria-describedby={ariaDescribedBy}
+          aria-required={isRequired ? 'true' : undefined}
+          aria-invalid={status?.type === 'error' ? 'true' : undefined}
+          aria-busy={isBusy || undefined}
+          disabled={isDisabled}
+          onKeyDown={onKeyDown}
+          tabIndex={-1}
+          {...stylex.props(styles.trigger)}>
+          <span {...stylex.props(styles.triggerContent)}>
+            {renderTriggerContent()}
+          </span>
+        </button>
+        {isBusy && <XDSSpinner size="sm" />}
         {hasClear && value.length > 0 && !isDisabled && (
           <button
             type="button"
@@ -1141,7 +1171,6 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
             <XDSIcon icon="close" size="sm" color="secondary" />
           </button>
         )}
-        {isBusy && <XDSSpinner size="sm" />}
         <span
           {...stylex.props(
             styles.triggerIcon,
@@ -1158,7 +1187,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
             <XDSIcon icon="chevronDown" size="sm" color="inherit" />
           )}
         </span>
-      </button>
+      </div>
 
       {popover.render(
         <div {...stylex.props(styles.dropdown)}>
