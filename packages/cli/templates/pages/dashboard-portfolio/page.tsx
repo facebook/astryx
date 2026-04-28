@@ -706,7 +706,7 @@ export default function DashboardPortfolioTemplate() {
     <XDSAppShell
       sideNav={<DashboardSideNav />}
       variant="elevated"
-      height="auto"
+      height="fill"
       contentPadding={6}>
       <XDSVStack gap={6}>
         {/* Page header */}
