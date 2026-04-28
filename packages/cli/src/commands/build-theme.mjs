@@ -1053,12 +1053,8 @@ export function registerTheme(program) {
             const proseInner = prose.join('\n\n');
             cssParts.push(`@layer reset {\n@scope (${scopeSelector}) to (${scopeTo}) {\n${proseInner}\n}\n}`);
           }
-          // Always emit xds-theme layer to establish layer ordering,
-          // even when the theme has no component overrides.
-          {
-            const componentInner = component.length > 0
-              ? component.join('\n\n')
-              : `  :scope {}`;
+          if (component.length > 0) {
+            const componentInner = component.join('\n\n');
             const componentScope = `@scope (${scopeSelector}) to (${scopeTo}) {\n${componentInner}\n}`;
             const colorSchemeDecl = componentScope.includes('light-dark(')
               ? '  :root { color-scheme: light dark; }\n\n'
@@ -1075,19 +1071,19 @@ export function registerTheme(program) {
           css = cssParts.join('\n\n') + '\n';
         } else {
           const rules = _generateThemeRules(resolvedTheme);
-          const inner = rules.length > 0
-            ? rules.join('\n\n')
-            : `  :scope {}`;
-          const scopeBlock = `@scope (${scopeSelector}) to (${scopeTo}) {\n${inner}\n}`;
-          const colorSchemeDecl = scopeBlock.includes('light-dark(')
-            ? '  :root { color-scheme: light dark; }\n\n'
-            : '';
-          css = `@layer xds-theme {\n${colorSchemeDecl}${scopeBlock}\n}\n`;
-          // On-media rules (legacy path)
-          if (_generateOnMediaCSS) {
-            const onMediaCss = _generateOnMediaCSS(resolvedTheme);
-            if (onMediaCss) {
-              css += `\n@layer xds-theme {\n${onMediaCss}\n}\n`;
+          if (rules.length > 0) {
+            const inner = rules.join('\n\n');
+            const scopeBlock = `@scope (${scopeSelector}) to (${scopeTo}) {\n${inner}\n}`;
+            const colorSchemeDecl = scopeBlock.includes('light-dark(')
+              ? '  :root { color-scheme: light dark; }\n\n'
+              : '';
+            css = `@layer xds-theme {\n${colorSchemeDecl}${scopeBlock}\n}\n`;
+            // On-media rules (legacy path)
+            if (_generateOnMediaCSS) {
+              const onMediaCss = _generateOnMediaCSS(resolvedTheme);
+              if (onMediaCss) {
+                css += `\n@layer xds-theme {\n${onMediaCss}\n}\n`;
+              }
             }
           }
         }
