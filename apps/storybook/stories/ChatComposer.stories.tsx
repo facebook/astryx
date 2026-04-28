@@ -407,6 +407,35 @@ export const FollowUpQuestion: Story = {
         drawer={
           <XDSChatComposerDrawer count={questions.length} label="Questions">
             <div style={{width: '100%'}}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBlockEnd: 4,
+                }}>
+                <XDSButton
+                  label="Previous question"
+                  variant="ghost"
+                  size="sm"
+                  icon={ChevronLeftIcon}
+                  isIconOnly
+                  isDisabled={currentQ === 0}
+                  onClick={() => setCurrentQ(i => i - 1)}
+                />
+                <XDSText color="secondary">
+                  {currentQ + 1} of {questions.length}
+                </XDSText>
+                <XDSButton
+                  label="Next question"
+                  variant="ghost"
+                  size="sm"
+                  icon={ChevronRightIcon}
+                  isIconOnly
+                  isDisabled={currentQ === questions.length - 1}
+                  onClick={() => setCurrentQ(i => i + 1)}
+                />
+              </div>
               <XDSList>
                 <XDSListItem
                   label={
@@ -434,33 +463,6 @@ export const FollowUpQuestion: Story = {
               </XDSList>
             </div>
           </XDSChatComposerDrawer>
-        }
-        headerActions={
-          <>
-            <XDSButton
-              label="Previous question"
-              variant="ghost"
-              size="sm"
-              icon={ChevronLeftIcon}
-              isIconOnly
-              isDisabled={currentQ === 0}
-              onClick={() => setCurrentQ(i => i - 1)}
-            />
-            <XDSButton
-              label="Next question"
-              variant="ghost"
-              size="sm"
-              icon={ChevronRightIcon}
-              isIconOnly
-              isDisabled={currentQ === questions.length - 1}
-              onClick={() => setCurrentQ(i => i + 1)}
-            />
-          </>
-        }
-        headerContext={
-          <XDSText color="secondary">
-            {currentQ + 1} of {questions.length}
-          </XDSText>
         }
         footerActions={<XDSButton label="Skip all" variant="ghost" size="md" />}
       />
