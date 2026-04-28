@@ -564,7 +564,8 @@
     "src",
     "docs.mjs",
     "groups.doc.mjs",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "prepack": "yarn build",

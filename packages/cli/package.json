@@ -42,7 +42,8 @@
     "bin",
     "src",
     "templates",
-    "docs"
+    "docs",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "xds": "node bin/xds.mjs",
