@@ -17,6 +17,7 @@ import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
+import {tableRowMarker} from './table.stylex';
 import {XDSTableContext} from './XDSTableContext';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -99,7 +100,10 @@ export function XDSTableRow({
       <tr
         ref={ref}
         {...props}
-        {...mergeProps(xdsClassName('table-row'), stylex.props(xstyle))}>
+        {...mergeProps(
+          xdsClassName('table-row'),
+          stylex.props(tableRowMarker, xstyle),
+        )}>
         {children}
       </tr>
     );
@@ -129,7 +133,10 @@ export function XDSTableRow({
     <tr
       ref={ref}
       {...props}
-      {...mergeProps(xdsClassName('table-row'), stylex.props(...rowStyles))}>
+      {...mergeProps(
+        xdsClassName('table-row'),
+        stylex.props(tableRowMarker, ...rowStyles),
+      )}>
       {children}
     </tr>
   );

@@ -22,7 +22,11 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
-import {overflowStyles, containerEdgeStyles} from './table.stylex';
+import {
+  overflowStyles,
+  containerEdgeStyles,
+  tableRowMarker,
+} from './table.stylex';
 import {
   useTableContext,
   buildDividerStyles,
@@ -73,7 +77,10 @@ const dividerRowStyles = stylex.create({
       default: borderVars['--border-width'],
       // Skip border on cells in the last body row to avoid a
       // redundant line at the bottom of the table.
-      [stylex.when.ancestor(':last-child')]: '0',
+      // Scoped to tableRowMarker so only the parent <tr> is checked —
+      // without the scope, <tbody> (also a :last-child) would match
+      // and suppress borders on every row.
+      [stylex.when.ancestor(':last-child', tableRowMarker)]: '0',
     },
     borderBottomStyle: 'solid',
     borderBottomColor: colorVars['--color-border'],

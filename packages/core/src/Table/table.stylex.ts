@@ -1,16 +1,27 @@
 /**
  * @file table.stylex.ts
  * @input StyleX, theme tokens
- * @output Shared table styles used by XDSTableCell and XDSTableHeaderCell
- * @position Utility styles; consumed by cell components
+ * @output Shared table styles used by XDSTableCell, XDSTableHeaderCell, XDSTableRow
+ * @position Utility styles; consumed by cell and row components
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Table/XDSTableCell.tsx
  * - /packages/core/src/Table/XDSTableHeaderCell.tsx
+ * - /packages/core/src/Table/XDSTableRow.tsx
  */
 
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
+
+/**
+ * Scoped marker for table row ancestor selectors.
+ *
+ * Applied to each `<tr>` via XDSTableRow so that cell-level
+ * `stylex.when.ancestor(':last-child', tableRowMarker)` only matches
+ * the parent row — not other ancestors like `<tbody>` or `<table>`.
+ */
+export const tableRowMarker: ReturnType<typeof stylex.defineMarker> =
+  stylex.defineMarker();
 
 /**
  * Overflow truncation for table cells.
