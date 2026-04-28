@@ -2,7 +2,7 @@ import {withXDS} from '@xds/build/next';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
+  output: process.env.NODE_ENV === 'production' ? 'export' : undefined,
   reactStrictMode: false,
   trailingSlash: true,
   basePath: process.env.SANDBOX_BASE_PATH || '',
