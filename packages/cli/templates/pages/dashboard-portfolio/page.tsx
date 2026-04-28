@@ -3,17 +3,12 @@
 import {useState} from 'react';
 
 import {XDSAppShell} from '@xds/core/AppShell';
-import {
-  XDSSideNav,
-  XDSSideNavHeading,
-  XDSSideNavItem,
-  XDSSideNavSection,
-} from '@xds/core/SideNav';
+import {XDSSideNav, XDSSideNavHeading, XDSSideNavItem} from '@xds/core/SideNav';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSCard} from '@xds/core/Card';
-import {XDSGrid} from '@xds/core/Grid';
+import {XDSGrid, XDSGridSpan} from '@xds/core/Grid';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSLink} from '@xds/core/Link';
 import {XDSAvatar} from '@xds/core/Avatar';
@@ -21,7 +16,7 @@ import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSButton} from '@xds/core/Button';
-import {XDSTable, proportional, pixel} from '@xds/core/Table';
+import {XDSTable, proportional} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 import {XDSDivider} from '@xds/core/Divider';
 import {
@@ -37,59 +32,74 @@ import {
 } from 'recharts';
 
 import {
-  ArrowTrendingUpIcon,
-  ChartBarIcon,
-  CurrencyDollarIcon,
   DocumentTextIcon,
-  ClockIcon,
-  Cog6ToothIcon,
   ArrowUpIcon,
   ArrowDownIcon,
+  ArrowTrendingUpIcon,
+  Squares2X2Icon,
 } from '@heroicons/react/24/outline';
 import {
-  ChartBarIcon as ChartBarIconSolid,
-  CurrencyDollarIcon as CurrencyDollarIconSolid,
-  DocumentTextIcon as DocumentTextIconSolid,
-  ClockIcon as ClockIconSolid,
-  Cog6ToothIcon as Cog6ToothIconSolid,
+  CurrencyDollarIcon,
+  Squares2X2Icon as Squares2X2IconSolid,
 } from '@heroicons/react/24/solid';
 
 // ============= DATA =============
 
-// Portfolio value over ~12 months (Oct 2024 → Oct 2025)
-// Realistic fluctuations: dips in Feb–Mar, recovery in summer, climb into fall
-const portfolioData = [
-  {month: 0, label: 'Oct 1', value: 230000},
-  {month: 0.4, label: 'Oct 15', value: 238000},
-  {month: 0.8, label: 'Oct 29', value: 245000},
-  {month: 1.2, label: 'Nov 12', value: 250000},
-  {month: 1.6, label: 'Nov 26', value: 245000},
-  {month: 2, label: 'Dec 10', value: 258000},
-  {month: 2.4, label: 'Dec 24', value: 252000},
-  {month: 3, label: 'Jan 7', value: 260000},
-  {month: 3.4, label: 'Jan 21', value: 255000},
-  {month: 3.8, label: 'Feb 4', value: 245000},
-  {month: 4.2, label: 'Feb 18', value: 222000},
-  {month: 4.6, label: 'Mar 4', value: 218000},
-  {month: 5, label: 'Mar 18', value: 225000},
-  {month: 5.4, label: 'Apr 1', value: 232000},
-  {month: 5.8, label: 'Apr 15', value: 225000},
-  {month: 6.2, label: 'Apr 29', value: 235000},
-  {month: 6.6, label: 'May 13', value: 240000},
-  {month: 7, label: 'May 27', value: 245000},
-  {month: 7.4, label: 'Jun 10', value: 235000},
-  {month: 7.8, label: 'Jun 24', value: 248000},
-  {month: 8.2, label: 'Jul 8', value: 255000},
-  {month: 8.6, label: 'Jul 22', value: 260000},
-  {month: 9, label: 'Aug 5', value: 268000},
-  {month: 9.4, label: 'Aug 19', value: 275000},
-  {month: 9.8, label: 'Sep 2', value: 278000},
-  {month: 10.2, label: 'Sep 16', value: 285000},
-  {month: 10.6, label: 'Sep 30', value: 288000},
-  {month: 11, label: 'Oct 4', value: 290000},
-  {month: 11.4, label: 'Oct 8', value: 292000},
-  {month: 11.8, label: 'Oct 15', value: 294200},
-];
+// Portfolio value over ~12 months (Oct 2024 → Oct 2025), one data point per day.
+// Realistic fluctuations: dips in Feb–Mar, recovery in summer, climb into fall.
+const portfolioData = (() => {
+  const anchors: Array<[number, number]> = [
+    [0, 230000],
+    [14, 238000],
+    [28, 245000],
+    [42, 250000],
+    [56, 245000],
+    [70, 258000],
+    [84, 252000],
+    [98, 260000],
+    [112, 255000],
+    [126, 245000],
+    [140, 222000],
+    [154, 218000],
+    [168, 225000],
+    [182, 232000],
+    [196, 225000],
+    [210, 235000],
+    [224, 240000],
+    [238, 245000],
+    [252, 235000],
+    [266, 248000],
+    [280, 255000],
+    [294, 260000],
+    [308, 268000],
+    [322, 275000],
+    [336, 278000],
+    [350, 285000],
+    [364, 288000],
+    [378, 290000],
+    [392, 292000],
+    [406, 294200],
+  ];
+  const totalDays = anchors[anchors.length - 1][0];
+  const monthPerDay = 12 / totalDays;
+  const out: Array<{month: number; label: string; value: number}> = [];
+  let ai = 0;
+  for (let day = 0; day <= totalDays; day++) {
+    while (ai < anchors.length - 2 && day >= anchors[ai + 1][0]) ai++;
+    const [d0, v0] = anchors[ai];
+    const [d1, v1] = anchors[ai + 1];
+    const t = (day - d0) / (d1 - d0);
+    const base = v0 + (v1 - v0) * t;
+    const seed = Math.sin(day * 12.9898 + 78.233) * 43758.5453;
+    const noise = (seed - Math.floor(seed) - 0.5) * 3600;
+    out.push({
+      month: day * monthPerDay,
+      label: `Day ${day + 1}`,
+      value: Math.round(base + noise),
+    });
+  }
+  return out;
+})();
 
 const xAxisTicks = [0, 3, 6, 9, 12];
 const xAxisLabels: Record<number, string> = {
@@ -127,25 +137,106 @@ const topAssets = [
   },
 ];
 
-// Market index cards — 24h sparkline data (30 points each)
-// prettier-ignore
+// 96 points per series = one tick every 15 minutes across a 24h window.
+// Deterministic LCG so the sparklines are stable across renders.
+function genSpark(
+  seed: number,
+  start: number,
+  end: number,
+  volatility: number,
+  N: number = 96,
+): number[] {
+  let s = seed >>> 0;
+  const rand = () => {
+    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+    return s / 0x100000000;
+  };
+  const points: number[] = [];
+  let drift = 0;
+  for (let i = 0; i < N; i++) {
+    const t = i / (N - 1);
+    const trend = start + (end - start) * t;
+    // Multiple overlaid waves at different frequencies for session-like rhythm
+    // plus high-frequency chop.
+    const wave =
+      Math.sin(t * Math.PI * 2.3 + seed * 0.13) * volatility * 1.4 +
+      Math.sin(t * Math.PI * 5.7 + seed * 0.41) * volatility * 0.9 +
+      Math.sin(t * Math.PI * 13.1 + seed * 0.07) * volatility * 0.5;
+    // Loosely-correlated random walk so adjacent ticks jitter rather than glide.
+    drift = drift * 0.55 + (rand() - 0.5) * volatility * 2.2;
+    // Occasional sharper spike to mimic news-driven moves.
+    const spike = rand() < 0.04 ? (rand() - 0.5) * volatility * 4 : 0;
+    points.push(trend + wave + drift + spike);
+  }
+  return points;
+}
+
+// Market index cards — 24h sparkline data (every 15min, 96 points)
 const marketIndices = [
-  {name: 'Dow Jones', ticker: 'DJI', price: '43,821.67', change: '+0.42%', positive: true,
-    spark: [80,78,82,79,81,77,83,80,78,82,84,79,81,83,80,78,82,79,85,83,80,82,84,81,83,85,82,84,86,83]},
-  {name: 'NASDAQ', ticker: 'IXIC', price: '18,942.18', change: '-0.50%', positive: false,
-    spark: [85,87,83,86,84,88,85,83,87,84,82,86,83,81,84,82,85,83,80,82,79,83,80,82,78,81,79,82,80,78]},
-  {name: 'S&P 500', ticker: 'SPX', price: '5,918.33', change: '+0.21%', positive: true,
-    spark: [72,70,74,71,73,69,72,74,71,73,75,72,74,71,73,75,72,74,76,73,75,72,74,76,73,75,77,74,76,73]},
-  {name: 'NYSE Composite', ticker: 'NYA', price: '19,752.41', change: '-0.20%', positive: false,
-    spark: [68,70,67,71,69,72,68,70,67,69,71,68,70,67,69,66,68,70,67,65,68,66,69,67,65,68,66,64,67,65]},
-  {name: 'NVIDIA Corp.', ticker: 'NVDA', price: '$177.39', change: '+0.93%', positive: true,
-    spark: [60,62,58,63,61,64,60,62,65,63,61,64,62,65,63,66,64,62,65,67,64,66,63,65,67,64,66,68,65,67]},
-  {name: 'Intel Corp.', ticker: 'INTC', price: '$50.38', change: '+4.89%', positive: true,
-    spark: [40,38,42,39,41,43,40,42,44,41,43,45,42,44,46,43,45,47,44,46,48,45,47,49,46,48,50,47,49,51]},
-  {name: 'Nokia Corp.', ticker: 'NOK', price: '$8.82', change: '+6.65%', positive: true,
-    spark: [30,28,32,29,31,33,30,32,34,31,33,35,32,34,36,33,35,37,34,36,38,35,37,39,36,38,40,37,39,41]},
-  {name: 'Tesla, Inc.', ticker: 'TSLA', price: '$360.59', change: '-5.42%', positive: false,
-    spark: [90,88,92,89,87,91,88,86,89,87,84,88,85,83,86,84,81,85,82,80,83,81,78,82,79,77,80,78,75,79]},
+  {
+    name: 'Dow Jones',
+    ticker: 'DJI',
+    price: '43,821.67',
+    change: '+0.42%',
+    positive: true,
+    spark: genSpark(1337, 78, 84, 3.2),
+  },
+  {
+    name: 'NASDAQ',
+    ticker: 'IXIC',
+    price: '18,942.18',
+    change: '-0.50%',
+    positive: false,
+    spark: genSpark(2042, 86, 78, 3.8),
+  },
+  {
+    name: 'S&P 500',
+    ticker: 'SPX',
+    price: '5,918.33',
+    change: '+0.21%',
+    positive: true,
+    spark: genSpark(3155, 71, 75, 2.8),
+  },
+  {
+    name: 'NYSE Composite',
+    ticker: 'NYA',
+    price: '19,752.41',
+    change: '-0.20%',
+    positive: false,
+    spark: genSpark(4287, 70, 65, 3.0),
+  },
+  {
+    name: 'NVIDIA Corp.',
+    ticker: 'NVDA',
+    price: '$177.39',
+    change: '+0.93%',
+    positive: true,
+    spark: genSpark(5519, 60, 67, 3.6),
+  },
+  {
+    name: 'Intel Corp.',
+    ticker: 'INTC',
+    price: '$50.38',
+    change: '+4.89%',
+    positive: true,
+    spark: genSpark(6701, 40, 51, 2.6),
+  },
+  {
+    name: 'Nokia Corp.',
+    ticker: 'NOK',
+    price: '$8.82',
+    change: '+6.65%',
+    positive: true,
+    spark: genSpark(7823, 30, 41, 2.4),
+  },
+  {
+    name: 'Tesla, Inc.',
+    ticker: 'TSLA',
+    price: '$360.59',
+    change: '-5.42%',
+    positive: false,
+    spark: genSpark(8945, 90, 76, 4.2),
+  },
 ];
 
 // Trending stocks table data
@@ -156,31 +247,100 @@ interface StockRow extends Record<string, unknown> {
   dailyPts: number;
   dailyPct: number;
   weekChg: number;
-  // prettier-ignore
   spark: number[];
 }
 
 const trendingStocks: StockRow[] = [
-  // prettier-ignore
-  {id: '1', ticker: 'AAPL', price: '$188.72', dailyPts: 1.35, dailyPct: 0.72, weekChg: 22.4, spark: [60,62,61,63,62,64,63,65,64,66,65,67,66,68,67,69,68,67,69,68,70,69,71,70,69,71,70,72,71,70]},
-  // prettier-ignore
-  {id: '2', ticker: 'MSFT', price: '$415.6', dailyPts: 3.20, dailyPct: 0.78, weekChg: 18.6, spark: [55,57,56,58,57,59,58,60,59,61,60,62,61,60,62,61,63,62,64,63,62,64,63,65,64,63,65,64,66,65]},
-  // prettier-ignore
-  {id: '3', ticker: 'NVDA', price: '$177.39', dailyPts: 1.65, dailyPct: 0.93, weekChg: 45.2, spark: [40,42,44,43,45,47,46,48,50,49,51,53,52,54,53,55,57,56,58,60,59,61,60,62,64,63,65,64,66,68]},
-  // prettier-ignore
-  {id: '4', ticker: 'AMZN', price: '$186.5', dailyPts: -0.80, dailyPct: -0.43, weekChg: 15.3, spark: [70,68,69,67,68,66,67,65,66,64,65,66,64,65,63,64,65,63,64,62,63,64,62,63,61,62,63,61,62,63]},
-  // prettier-ignore
-  {id: '5', ticker: 'GOOGL', price: '$155.72', dailyPts: 2.10, dailyPct: 1.37, weekChg: 12.8, spark: [50,52,51,53,52,54,53,55,54,56,55,57,56,58,57,56,58,57,59,58,60,59,58,60,59,61,60,62,61,60]},
-  // prettier-ignore
-  {id: '6', ticker: 'META', price: '$505.3', dailyPts: 4.50, dailyPct: 0.90, weekChg: 35.1, spark: [45,47,46,48,47,49,48,50,49,51,50,52,51,53,52,54,53,55,54,56,55,57,56,58,57,59,58,60,59,61]},
-  // prettier-ignore
-  {id: '7', ticker: 'TSLA', price: '$360.59', dailyPts: -20.67, dailyPct: -5.42, weekChg: -8.3, spark: [90,88,86,87,85,83,84,82,80,81,79,77,78,76,74,75,73,71,72,70,68,69,67,65,66,64,62,63,61,79]},
-  // prettier-ignore
-  {id: '8', ticker: 'INTC', price: '$50.38', dailyPts: 2.35, dailyPct: 4.89, weekChg: -12.5, spark: [65,63,64,62,60,61,59,57,58,56,54,55,53,51,52,50,48,49,50,52,51,53,52,54,53,55,54,56,55,57]},
-  // prettier-ignore
-  {id: '9', ticker: 'AMD', price: '$162.45', dailyPts: -1.20, dailyPct: -0.73, weekChg: 28.7, spark: [50,52,51,53,55,54,56,55,57,56,58,57,59,58,60,59,61,60,62,61,60,62,61,63,62,64,63,62,64,63]},
-  // prettier-ignore
-  {id: '10', ticker: 'NFLX', price: '$628.9', dailyPts: 5.40, dailyPct: 0.87, weekChg: 42.1, spark: [42,44,43,45,44,46,45,47,46,48,47,49,48,50,49,51,50,52,51,53,52,54,53,55,54,56,55,57,56,58]},
+  {
+    id: '1',
+    ticker: 'AAPL',
+    price: '$188.72',
+    dailyPts: 1.35,
+    dailyPct: 0.72,
+    weekChg: 22.4,
+    spark: genSpark(11023, 60, 70, 2.6, 48),
+  },
+  {
+    id: '2',
+    ticker: 'MSFT',
+    price: '$415.6',
+    dailyPts: 3.2,
+    dailyPct: 0.78,
+    weekChg: 18.6,
+    spark: genSpark(12591, 55, 65, 2.4, 48),
+  },
+  {
+    id: '3',
+    ticker: 'NVDA',
+    price: '$177.39',
+    dailyPts: 1.65,
+    dailyPct: 0.93,
+    weekChg: 45.2,
+    spark: genSpark(13744, 40, 68, 3.8, 48),
+  },
+  {
+    id: '4',
+    ticker: 'AMZN',
+    price: '$186.5',
+    dailyPts: -0.8,
+    dailyPct: -0.43,
+    weekChg: 15.3,
+    spark: genSpark(14882, 70, 63, 2.5, 48),
+  },
+  {
+    id: '5',
+    ticker: 'GOOGL',
+    price: '$155.72',
+    dailyPts: 2.1,
+    dailyPct: 1.37,
+    weekChg: 12.8,
+    spark: genSpark(15967, 50, 60, 2.7, 48),
+  },
+  {
+    id: '6',
+    ticker: 'META',
+    price: '$505.3',
+    dailyPts: 4.5,
+    dailyPct: 0.9,
+    weekChg: 35.1,
+    spark: genSpark(17105, 45, 61, 3.0, 48),
+  },
+  {
+    id: '7',
+    ticker: 'TSLA',
+    price: '$360.59',
+    dailyPts: -20.67,
+    dailyPct: -5.42,
+    weekChg: -8.3,
+    spark: genSpark(18249, 90, 64, 4.4, 48),
+  },
+  {
+    id: '8',
+    ticker: 'INTC',
+    price: '$50.38',
+    dailyPts: 2.35,
+    dailyPct: 4.89,
+    weekChg: -12.5,
+    spark: genSpark(19388, 65, 57, 2.8, 48),
+  },
+  {
+    id: '9',
+    ticker: 'AMD',
+    price: '$162.45',
+    dailyPts: -1.2,
+    dailyPct: -0.73,
+    weekChg: 28.7,
+    spark: genSpark(20471, 50, 63, 2.9, 48),
+  },
+  {
+    id: '10',
+    ticker: 'NFLX',
+    price: '$628.9',
+    dailyPts: 5.4,
+    dailyPct: 0.87,
+    weekChg: 42.1,
+    spark: genSpark(21556, 42, 58, 2.6, 48),
+  },
 ];
 
 // ============= CHART COMPONENTS =============
@@ -262,7 +422,7 @@ function PortfolioChart() {
           cursor={{stroke: 'var(--color-border, rgba(5, 54, 89, 0.1))'}}
         />
         <Area
-          type="monotone"
+          type="linear"
           dataKey="value"
           stroke="var(--color-data-categorical-green, #22c55e)"
           strokeWidth={1.5}
@@ -284,7 +444,10 @@ function Sparkline({data, positive}: {data: number[]; positive: boolean}) {
     : 'var(--color-data-categorical-red, #E5484D)';
   return (
     <ResponsiveContainer width="100%" height={40}>
-      <LineChart data={chartData}>
+      <LineChart
+        data={chartData}
+        margin={{top: 2, right: 0, left: 0, bottom: 2}}>
+        <YAxis hide domain={['dataMin', 'dataMax']} />
         <Line
           type="linear"
           dataKey="v"
@@ -315,28 +478,29 @@ function MarketCard({
 }) {
   return (
     <XDSCard>
-      <XDSVStack gap={2}>
+      <XDSVStack gap={4}>
         <XDSVStack gap={0}>
-          <XDSText type="body" weight="semibold">
-            {name}
-          </XDSText>
+          <XDSHeading level={3}>{name}</XDSHeading>
           <XDSText type="supporting" color="secondary">
             {ticker}
           </XDSText>
         </XDSVStack>
         <Sparkline data={spark} positive={positive} />
-        <XDSHStack gap={2} vAlign="center">
-          <XDSHeading level={3}>{price}</XDSHeading>
-          <XDSIcon
-            icon={positive ? ArrowUpIcon : ArrowDownIcon}
-            size="xsm"
-            color={positive ? 'positive' : 'negative'}
-          />
-          <XDSBadge label={change} variant={positive ? 'green' : 'red'} />
+        <XDSHStack gap={3} vAlign="center">
+          <XDSText type="display-3" weight="bold">
+            {price}
+          </XDSText>
+          <XDSHStack gap={1} vAlign="center">
+            <XDSIcon
+              icon={positive ? ArrowUpIcon : ArrowDownIcon}
+              size="xsm"
+              color={positive ? 'positive' : 'negative'}
+            />
+            <XDSText type="body" color="secondary">
+              {change}
+            </XDSText>
+          </XDSHStack>
         </XDSHStack>
-        <XDSText type="supporting" color="secondary">
-          Past 24 hrs
-        </XDSText>
       </XDSVStack>
     </XDSCard>
   );
@@ -348,8 +512,11 @@ function TrendSparkline({data, positive}: {data: number[]; positive: boolean}) {
     ? 'var(--color-data-categorical-green, #0B991F)'
     : 'var(--color-data-categorical-red, #E5484D)';
   return (
-    <ResponsiveContainer width={80} height={24}>
-      <LineChart data={chartData}>
+    <ResponsiveContainer width="100%" height={24}>
+      <LineChart
+        data={chartData}
+        margin={{top: 2, right: 0, left: 0, bottom: 2}}>
+        <YAxis hide domain={['dataMin', 'dataMax']} />
         <Line
           type="linear"
           dataKey="v"
@@ -374,8 +541,17 @@ function ColoredValue({
 }
 
 const trendingColumns: XDSTableColumn<StockRow>[] = [
-  {key: 'ticker', header: 'Ticker', width: pixel(120)},
-  {key: 'price', header: 'Price', width: pixel(120)},
+  {
+    key: 'ticker',
+    header: 'Ticker',
+    width: proportional(1),
+    renderCell: (row: StockRow) => (
+      <XDSText type="body" weight="bold">
+        {row.ticker}
+      </XDSText>
+    ),
+  },
+  {key: 'price', header: 'Price', width: proportional(1)},
   {
     key: 'dailyPts',
     header: 'Daily Chg (pts)',
@@ -409,7 +585,7 @@ const trendingColumns: XDSTableColumn<StockRow>[] = [
   {
     key: 'spark',
     header: '24h Trend',
-    width: pixel(120),
+    width: proportional(1),
     renderCell: (row: StockRow) => (
       <TrendSparkline data={row.spark} positive={row.dailyPct >= 0} />
     ),
@@ -425,12 +601,24 @@ function MetricCard({
   change: string;
   label: string;
 }) {
+  const positive = !change.startsWith('-');
   return (
     <XDSCard>
       <XDSVStack gap={1}>
-        <XDSHStack gap={2} vAlign="center">
-          <XDSHeading level={3}>{value}</XDSHeading>
-          <XDSBadge label={change} variant="green" />
+        <XDSHStack gap={3} vAlign="center">
+          <XDSText type="display-3" weight="bold">
+            {value}
+          </XDSText>
+          <XDSHStack gap={1} vAlign="center">
+            <XDSIcon
+              icon={positive ? ArrowUpIcon : ArrowDownIcon}
+              size="xsm"
+              color={positive ? 'positive' : 'negative'}
+            />
+            <XDSText type="body" color="secondary">
+              {change}
+            </XDSText>
+          </XDSHStack>
         </XDSHStack>
         <XDSText type="body" color="secondary">
           {label}
@@ -453,16 +641,59 @@ function AssetRow({
 }) {
   return (
     <XDSListItem
-      label={ticker}
+      label={<XDSText weight="bold">{ticker}</XDSText>}
       description={name}
+      href="#"
       startContent={<XDSAvatar name={ticker} size="small" />}
       endContent={
         <XDSVStack gap={0} hAlign="end">
           <XDSText type="body">{value}</XDSText>
-          <XDSBadge label={change} variant="green" />
+          <XDSBadge
+            label={change}
+            variant={change.startsWith('-') ? 'red' : 'green'}
+          />
         </XDSVStack>
       }
     />
+  );
+}
+
+// ============= SIDENAV =============
+
+function DashboardSideNav() {
+  const [active, setActive] = useState('dashboard');
+  return (
+    <XDSSideNav
+      header={
+        <XDSSideNavHeading
+          icon={
+            <XDSNavIcon
+              icon={<XDSIcon icon={CurrencyDollarIcon} size="sm" />}
+            />
+          }
+          heading="Financials"
+          headingHref="/"
+        />
+      }>
+      <XDSSideNavItem
+        label="Dashboard"
+        icon={active === 'dashboard' ? Squares2X2IconSolid : Squares2X2Icon}
+        isSelected={active === 'dashboard'}
+        onClick={() => setActive('dashboard')}
+      />
+      <XDSSideNavItem
+        label="Market"
+        icon={ArrowTrendingUpIcon}
+        isSelected={active === 'data'}
+        onClick={() => setActive('data')}
+      />
+      <XDSSideNavItem
+        label="Reports"
+        icon={DocumentTextIcon}
+        isSelected={active === 'reports'}
+        onClick={() => setActive('reports')}
+      />
+    </XDSSideNav>
   );
 }
 
@@ -473,70 +704,19 @@ export default function DashboardPortfolioTemplate() {
 
   return (
     <XDSAppShell
-      sideNav={
-        <XDSSideNav
-          header={
-            <XDSSideNavHeading
-              icon={
-                <XDSNavIcon
-                  icon={<XDSIcon icon={ArrowTrendingUpIcon} size="sm" />}
-                />
-              }
-              heading="Acme Invest"
-              headingHref="#"
-            />
-          }
-          footer={
-            <XDSSideNavSection title="Account" isHeaderHidden>
-              <XDSSideNavItem
-                label="Settings"
-                icon={Cog6ToothIcon}
-                selectedIcon={Cog6ToothIconSolid}
-                href="#"
-              />
-            </XDSSideNavSection>
-          }>
-          <XDSSideNavSection title="Overview" isHeaderHidden>
-            <XDSSideNavItem
-              label="Portfolio"
-              icon={ChartBarIcon}
-              selectedIcon={ChartBarIconSolid}
-              isSelected
-              href="#"
-            />
-            <XDSSideNavItem
-              label="Assets"
-              icon={CurrencyDollarIcon}
-              selectedIcon={CurrencyDollarIconSolid}
-              href="#"
-            />
-            <XDSSideNavItem
-              label="Transactions"
-              icon={ClockIcon}
-              selectedIcon={ClockIconSolid}
-              href="#"
-            />
-            <XDSSideNavItem
-              label="Reports"
-              icon={DocumentTextIcon}
-              selectedIcon={DocumentTextIconSolid}
-              href="#"
-            />
-          </XDSSideNavSection>
-        </XDSSideNav>
-      }
+      sideNav={<DashboardSideNav />}
       variant="elevated"
-      height="auto"
+      height="fill"
       contentPadding={6}>
       <XDSVStack gap={6}>
         {/* Page header */}
         <XDSHStack hAlign="between" vAlign="center">
-          <XDSHeading level={2}>My Portfolio</XDSHeading>
+          <XDSHeading level={1}>My Portfolio</XDSHeading>
           <XDSDropdownMenu
             button={{
               label: timeRange,
               variant: 'secondary',
-              size: 'sm',
+              size: 'lg',
             }}
             hasChevron
             items={[
@@ -551,52 +731,65 @@ export default function DashboardPortfolioTemplate() {
         </XDSHStack>
 
         {/* KPI metric cards */}
-        <XDSGrid columns={{minWidth: 220, repeat: 'fit'}} gap={4}>
-          {metrics.map(m => (
-            <MetricCard key={m.label} {...m} />
+        <XDSGrid columns={{minWidth: 280, repeat: 'fit'}} gap={4}>
+          {Array.from({length: Math.ceil(metrics.length / 2)}, (_, i) => (
+            <XDSGrid key={i} columns={{minWidth: 280, repeat: 'fit'}} gap={4}>
+              {metrics.slice(i * 2, i * 2 + 2).map(m => (
+                <MetricCard key={m.label} {...m} />
+              ))}
+            </XDSGrid>
           ))}
         </XDSGrid>
 
         {/* Chart + Top assets */}
-        <XDSGrid columns={{minWidth: 300, repeat: 'fit'}} gap={4}>
-          <XDSCard>
-            <XDSVStack gap={4}>
-              <XDSHStack hAlign="between" vAlign="center">
-                <XDSHeading level={4}>Portfolio Value</XDSHeading>
-                <XDSLink label="View details" href="#">
-                  View details
-                </XDSLink>
-              </XDSHStack>
-              <PortfolioChart />
-            </XDSVStack>
-          </XDSCard>
-          <XDSCard>
-            <XDSVStack gap={4}>
-              <XDSHStack hAlign="between" vAlign="center">
-                <XDSHeading level={4}>Top Assets</XDSHeading>
-                <XDSLink label="View all" href="#">
-                  View all
-                </XDSLink>
-              </XDSHStack>
-              <XDSList density="balanced">
-                {topAssets.map(asset => (
-                  <AssetRow key={asset.ticker} {...asset} />
-                ))}
-              </XDSList>
-            </XDSVStack>
-          </XDSCard>
+        <XDSGrid columns={{minWidth: 280, max: 4}} gap={4}>
+          <XDSGridSpan columns={3}>
+            <XDSCard>
+              <XDSVStack gap={4}>
+                <XDSHStack hAlign="between" vAlign="center">
+                  <XDSHeading level={3}>Portfolio Value</XDSHeading>
+                  <XDSLink label="View details" href="#">
+                    View details
+                  </XDSLink>
+                </XDSHStack>
+                <PortfolioChart />
+              </XDSVStack>
+            </XDSCard>
+          </XDSGridSpan>
+          <XDSGridSpan columns={1}>
+            <XDSCard>
+              <XDSVStack gap={4}>
+                <XDSHStack hAlign="between" vAlign="center">
+                  <XDSHeading level={3}>Top Assets</XDSHeading>
+                  <XDSLink label="View all" href="#">
+                    View all
+                  </XDSLink>
+                </XDSHStack>
+                <XDSList density="spacious">
+                  {topAssets.map(asset => (
+                    <AssetRow key={asset.ticker} {...asset} />
+                  ))}
+                </XDSList>
+              </XDSVStack>
+            </XDSCard>
+          </XDSGridSpan>
         </XDSGrid>
 
         <XDSDivider />
 
         {/* Market section */}
-        <XDSHStack hAlign="between" vAlign="center">
-          <XDSHeading level={3}>Market</XDSHeading>
-          <XDSButton label="View more" variant="secondary" size="md" />
+        <XDSHStack hAlign="between" vAlign="start">
+          <XDSVStack gap={1}>
+            <XDSHeading level={1}>Market Today</XDSHeading>
+            <XDSText type="body" color="secondary">
+              Past 24 hours
+            </XDSText>
+          </XDSVStack>
+          <XDSButton label="View more" variant="secondary" size="lg" />
         </XDSHStack>
 
         {/* Market index cards */}
-        <XDSGrid columns={{minWidth: 240, repeat: 'fit'}} gap={4}>
+        <XDSGrid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
           {marketIndices.map(m => (
             <MarketCard key={m.ticker} {...m} />
           ))}
@@ -605,7 +798,7 @@ export default function DashboardPortfolioTemplate() {
         {/* Trending stocks table */}
         <XDSCard>
           <XDSVStack gap={4}>
-            <XDSHeading level={4}>Trending Stocks</XDSHeading>
+            <XDSHeading level={3}>Trending Stocks</XDSHeading>
             <XDSTable<StockRow>
               data={trendingStocks}
               columns={trendingColumns}
