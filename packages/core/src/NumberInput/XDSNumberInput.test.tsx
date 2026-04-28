@@ -8,7 +8,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {HashtagIcon} from '@heroicons/react/24/outline';
 import {XDSNumberInput} from './XDSNumberInput';
@@ -630,6 +630,36 @@ describe('XDSNumberInput', () => {
       );
       await user.click(screen.getByRole('button', {name: 'Clear Qty'}));
       expect(onChange).toHaveBeenCalledWith(null);
+    });
+  });
+
+  describe('click-to-focus', () => {
+    it('focuses input when clicking the start icon', () => {
+      render(
+        <XDSNumberInput
+          label="Qty"
+          value={0}
+          onChange={() => {}}
+          startIcon={<HashtagIcon />}
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      const wrapper = input.parentElement!;
+      const iconElement = wrapper.querySelector('svg')!;
+
+      fireEvent.click(iconElement);
+      expect(input).toHaveFocus();
+    });
+
+    it('focuses input when clicking the wrapper padding', () => {
+      render(<XDSNumberInput label="Qty" value={0} onChange={() => {}} />);
+
+      const input = screen.getByRole('spinbutton');
+      const wrapper = input.parentElement!;
+
+      fireEvent.click(wrapper);
+      expect(input).toHaveFocus();
     });
   });
 });

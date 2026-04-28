@@ -44,3 +44,6 @@ export type {
   UseClickableContainerOptions,
   ClickableContainerResult,
 } from './useClickableContainer';
+
+export {useInputContainer} from './useInputContainer';
+export type {UseInputContainerOptions} from './useInputContainer';

@@ -59,6 +59,7 @@ import {
 } from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
+import {useInputContainer} from '../hooks/useInputContainer';
 
 const styles = stylex.create({
   icon: {
@@ -313,6 +314,7 @@ export function XDSTimeInput({
   const descriptionID = useId();
   const statusMessageID = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
@@ -498,6 +500,14 @@ export function XDSTimeInput({
     [ref],
   );
 
+  // Focus input when clicking anywhere on the wrapper (icons, padding, etc.)
+  const {onClick: handleWrapperClick, onMouseUp: handleWrapperMouseUp} =
+    useInputContainer({
+      containerRef,
+      inputRef,
+      disabled: isDisabled,
+    });
+
   return (
     <XDSField
       label={label}
@@ -519,6 +529,9 @@ export function XDSTimeInput({
       }
       labelTooltip={labelTooltip}>
       <div
+        ref={containerRef}
+        onClick={handleWrapperClick}
+        onMouseUp={handleWrapperMouseUp}
         {...mergeProps(
           xdsClassName('time-input', {size, status: status?.type ?? null}),
           stylex.props(

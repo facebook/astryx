@@ -551,4 +551,34 @@ describe('XDSTextArea', () => {
       expect(screen.getByRole('textbox')).not.toHaveAttribute('name');
     });
   });
+
+  describe('click-to-focus', () => {
+    it('focuses textarea when clicking the start icon', () => {
+      render(
+        <XDSTextArea
+          label="Notes"
+          value=""
+          onChange={() => {}}
+          startIcon={<MagnifyingGlassIcon />}
+        />,
+      );
+
+      const textarea = screen.getByRole('textbox');
+      const wrapper = textarea.parentElement!;
+      const iconElement = wrapper.querySelector('svg')!;
+
+      fireEvent.click(iconElement);
+      expect(textarea).toHaveFocus();
+    });
+
+    it('focuses textarea when clicking the wrapper padding', () => {
+      render(<XDSTextArea label="Notes" value="" onChange={() => {}} />);
+
+      const textarea = screen.getByRole('textbox');
+      const wrapper = textarea.parentElement!;
+
+      fireEvent.click(wrapper);
+      expect(textarea).toHaveFocus();
+    });
+  });
 });
