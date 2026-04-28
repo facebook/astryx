@@ -1,4 +1,5 @@
 import {describe, it, expect, vi} from 'vitest';
+import type {XDSIconRegistry} from '../Icon/globalIconRegistry';
 import {
   defineTheme,
   generateThemeCSS,
@@ -77,8 +78,8 @@ describe('defineTheme', () => {
   });
 
   it('includes icons in the theme', () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const icons = {close: 'X'} as any;
+     
+    const icons = {close: 'X'} as Partial<XDSIconRegistry>;
     const theme = defineTheme({name: 'icons', icons});
     expect(theme.icons).toBe(icons);
   });
@@ -1125,8 +1126,8 @@ describe('defineTheme extends', () => {
   });
 
   it('merges icons — child overrides base', () => {
-    const baseIcons = {close: 'X', menu: 'M'} as any;
-    const childIcons = {close: 'Y'} as any;
+    const baseIcons = {close: 'X', menu: 'M'} as Partial<XDSIconRegistry>;
+    const childIcons = {close: 'Y'} as Partial<XDSIconRegistry>;
     const base = defineTheme({name: 'base', icons: baseIcons});
     const child = defineTheme({
       name: 'child',
@@ -1138,7 +1139,7 @@ describe('defineTheme extends', () => {
   });
 
   it('inherits icons when child has none', () => {
-    const baseIcons = {close: 'X'} as any;
+    const baseIcons = {close: 'X'} as Partial<XDSIconRegistry>;
     const base = defineTheme({name: 'base', icons: baseIcons});
     const child = defineTheme({name: 'child', extends: base});
     expect(child.icons?.close).toBe('X');
@@ -1154,12 +1155,18 @@ describe('defineTheme extends', () => {
     const base = defineTheme({
       name: 'base',
       typography: {
-        body: {family: 'Geist', fallbacks: 'sans-serif', url: 'https://fonts.example.com/geist.css'},
+        body: {
+          family: 'Geist',
+          fallbacks: 'sans-serif',
+          url: 'https://fonts.example.com/geist.css',
+        },
         scale: {base: 14, ratio: 1.2},
       },
     });
     const child = defineTheme({name: 'child', extends: base});
-    expect(child.fonts).toEqual([{family: 'Geist', url: 'https://fonts.example.com/geist.css'}]);
+    expect(child.fonts).toEqual([
+      {family: 'Geist', url: 'https://fonts.example.com/geist.css'},
+    ]);
   });
 
   it('typography in child overrides base typography tokens', () => {
@@ -1173,6 +1180,8 @@ describe('defineTheme extends', () => {
       typography: {scale: {base: 16, ratio: 1.25}},
     });
     // Child's type scale tokens should differ from base
-    expect(child.tokens['--font-size-base']).not.toBe(base.tokens['--font-size-base']);
+    expect(child.tokens['--font-size-base']).not.toBe(
+      base.tokens['--font-size-base'],
+    );
   });
 });
