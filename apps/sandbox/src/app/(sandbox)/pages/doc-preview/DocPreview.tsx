@@ -1,6 +1,6 @@
 'use client';
 
-import {useMemo, useRef, useEffect, useState} from 'react';
+import {useMemo, useRef, useEffect, useState, useContext} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
@@ -11,7 +11,7 @@ import {XDSDivider} from '@xds/core/Divider';
 import {XDSSection} from '@xds/core/Section';
 import {XDSTable, pixel, proportional} from '@xds/core/Table';
 import {XDSTooltip} from '@xds/core/Tooltip';
-import {useXDSTheme} from '@xds/core/theme';
+import {useXDSTheme, XDSThemeContext} from '@xds/core/theme';
 import type {
   ReferenceDoc,
   ReferenceSection,
@@ -142,6 +142,43 @@ const styles = stylex.create({
 });
 
 // =============================================================================
+// Helpers
+// =============================================================================
+
+function parseLightDark(value: string): [string, string] | null {
+  const match = value.match(/^light-dark\(\s*([^,]+?)\s*,\s*(.+?)\s*\)$/);
+  if (!match) return null;
+  return [match[1], match[2]];
+}
+
+function resolveTokenForMode(
+  theme: {
+    __inputTokens?: Partial<Record<string, string | [string, string]>>;
+    tokens: Record<string, string>;
+  },
+  tokenName: string,
+  mode: 'light' | 'dark',
+): string {
+  const inputTokens = theme.__inputTokens;
+  if (inputTokens) {
+    const val = inputTokens[tokenName];
+    if (Array.isArray(val)) return mode === 'dark' ? val[1] : val[0];
+    if (typeof val === 'string') {
+      const parsed = parseLightDark(val);
+      if (parsed) return mode === 'dark' ? parsed[1] : parsed[0];
+      return val;
+    }
+  }
+  const resolved = theme.tokens[tokenName];
+  if (resolved) {
+    const parsed = parseLightDark(resolved);
+    if (parsed) return mode === 'dark' ? parsed[1] : parsed[0];
+    return resolved;
+  }
+  return '';
+}
+
+// =============================================================================
 // Token Preview Renderers
 // =============================================================================
 
@@ -157,6 +194,44 @@ function SwatchPreview({value}: {value: string}) {
         flexShrink: 0,
       }}
     />
+  );
+}
+
+
+/**
+ * Swatch with an explicit surface background so the color is visible in context.
+ */
+function ContextSwatchPreview({
+  value,
+  surface,
+}: {
+  value: string;
+  surface: 'light' | 'dark';
+}) {
+  const isLight = surface === 'light';
+  return (
+    <div
+      style={{
+        width: 28,
+        height: 28,
+        borderRadius: 6,
+        backgroundColor: isLight ? '#FFFFFF' : '#1C1C1E',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+        border: `1px solid ${isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)'}`,
+      }}>
+      <div
+        style={{
+          width: 20,
+          height: 20,
+          borderRadius: 4,
+          backgroundColor: value,
+          border: `1px solid ${isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`,
+        }}
+      />
+    </div>
   );
 }
 
@@ -268,22 +343,65 @@ function DurationBarPreview({value}: {value: string}) {
   );
 }
 
+function evaluateBezier(
+  x1: number, y1: number, x2: number, y2: number, t: number,
+): number {
+  const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+  const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+  const sampleX = (s: number) => ((ax * s + bx) * s + cx) * s;
+  const sampleY = (s: number) => ((ay * s + by) * s + cy) * s;
+  const sampleXDeriv = (s: number) => (3 * ax * s + 2 * bx) * s + cx;
+  let g = t;
+  for (let i = 0; i < 8; i++) {
+    const cur = sampleX(g) - t;
+    if (Math.abs(cur) < 1e-6) break;
+    const d = sampleXDeriv(g);
+    if (Math.abs(d) < 1e-6) break;
+    g -= cur / d;
+  }
+  return sampleY(Math.max(0, Math.min(1, g)));
+}
+
 function EasingCurvePreview({value}: {value: string}) {
-  // Parse cubic-bezier values and draw a mini SVG curve
+  const [progress, setProgress] = useState(0);
+  const animRef = useRef<number | null>(null);
+  const startRef = useRef<number>(0);
   const match = value.match(
     /cubic-bezier\(\s*([\d.]+)\s*,\s*([-\d.]+)\s*,\s*([\d.]+)\s*,\s*([-\d.]+)\s*\)/,
   );
+
+  useEffect(() => {
+    if (!match) return;
+    let running = true;
+    const duration = 1200, pause = 800, cycle = duration + pause;
+    function tick(ts: number) {
+      if (!running) return;
+      if (!startRef.current) startRef.current = ts;
+      const inCycle = (ts - startRef.current) % cycle;
+      setProgress(inCycle < duration ? inCycle / duration : 1);
+      if ((ts - startRef.current) % (cycle * 2) >= cycle * 2 - 16) startRef.current = ts;
+      animRef.current = requestAnimationFrame(tick);
+    }
+    animRef.current = requestAnimationFrame(tick);
+    return () => { running = false; if (animRef.current) cancelAnimationFrame(animRef.current); };
+  }, [match]);
+
   if (!match) return null;
   const [, x1, y1, x2, y2] = match.map(Number);
+  const easedY = evaluateBezier(x1, y1, x2, y2, progress);
+  const pad = 0.12;
+
   return (
-    <svg width={32} height={24} viewBox="0 0 1 1" style={{flexShrink: 0}}>
-      <path
-        d={`M 0 1 C ${x1} ${1 - y1}, ${x2} ${1 - y2}, 1 0`}
-        fill="none"
-        stroke="var(--color-accent)"
-        strokeWidth={0.06}
-      />
-    </svg>
+    <div style={{display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0}}>
+      <svg width={32} height={24} viewBox={`${-pad} ${-pad} ${1+pad*2} ${1+pad*2}`} style={{flexShrink: 0}}>
+        <path d={`M 0 1 C ${x1} ${1-y1}, ${x2} ${1-y2}, 1 0`} fill="none" stroke="var(--color-neutral)" strokeWidth={0.04} />
+        <path d={`M 0 1 C ${x1} ${1-y1}, ${x2} ${1-y2}, 1 0`} fill="none" stroke="var(--color-accent)" strokeWidth={0.06} strokeDasharray="1" strokeDashoffset={1-progress} pathLength={1} />
+        <circle cx={progress} cy={1-easedY} r={0.06} fill="var(--color-accent)" />
+      </svg>
+      <div style={{width: 40, height: 8, borderRadius: 4, backgroundColor: 'var(--color-neutral)', position: 'relative', overflow: 'visible'}}>
+        <div style={{position: 'absolute', left: `${easedY*100}%`, top: 0, width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--color-accent)', transform: 'translateX(-50%)'}} />
+      </div>
+    </div>
   );
 }
 
@@ -560,13 +678,25 @@ function TokenTableInner({
   isDualColor: boolean;
 }) {
   const {token} = useXDSTheme();
-  const data = rows.map((row, i) => ({
-    _idx: i,
-    tokenName: row[0],
-    light: row[1],
-    dark: row[2],
-    value: token(row[0]) ?? row[1],
-  }));
+  const ctx = useContext(XDSThemeContext);
+  const theme = ctx?.theme;
+
+  const data = rows.map((row, i) => {
+    const tokenName = row[0];
+    const liveValue = token(tokenName) ?? row[1];
+
+    let light = row[1] ?? '';
+    let dark = row[2] ?? '';
+    if (isDualColor && theme) {
+      light = resolveTokenForMode(theme, tokenName, 'light') || light;
+      dark = resolveTokenForMode(theme, tokenName, 'dark') || dark;
+    } else if (isDualColor && !dark) {
+      const parsed = parseLightDark(row[1]);
+      if (parsed) { light = parsed[0]; dark = parsed[1]; }
+    }
+
+    return {_idx: i, tokenName, light, dark, value: liveValue};
+  });
 
   const columns = isDualColor
     ? [
@@ -582,7 +712,7 @@ function TokenTableInner({
           header: 'Light',
           renderCell: (item: Record<string, unknown>) => (
             <div {...stylex.props(styles.valueWithPreview)}>
-              <SwatchPreview value={item.light as string} />
+              <ContextSwatchPreview value={item.light as string} surface="light" />
               {item.light as string}
             </div>
           ),
@@ -592,7 +722,7 @@ function TokenTableInner({
           header: 'Dark',
           renderCell: (item: Record<string, unknown>) => (
             <div {...stylex.props(styles.valueWithPreview)}>
-              <SwatchPreview value={item.dark as string} />
+              <ContextSwatchPreview value={item.dark as string} surface="dark" />
               {item.dark as string}
             </div>
           ),
