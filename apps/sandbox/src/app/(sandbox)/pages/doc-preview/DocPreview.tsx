@@ -306,7 +306,6 @@ function TokenPreview({
 // =============================================================================
 
 function TokenTable({
-  headers,
   rows,
   previewType,
 }: {
@@ -379,7 +378,7 @@ function CodeBlockRenderer({
   return (
     <XDSVStack gap={1}>
       {label && (
-        <XDSText variant="supporting" color="secondary">
+        <XDSText type="supporting" color="secondary">
           {label}
         </XDSText>
       )}
@@ -406,12 +405,12 @@ function ListBlock({
             <span {...stylex.props(styles.dontIcon)}>✗</span>
           )}
           {listStyle === 'ordered' && (
-            <XDSText variant="body" color="secondary">
+            <XDSText type="body" color="secondary">
               {i + 1}.
             </XDSText>
           )}
           {listStyle === 'unordered' && (
-            <XDSText variant="body" color="secondary">
+            <XDSText type="body" color="secondary">
               •
             </XDSText>
           )}
@@ -528,7 +527,7 @@ export function DocPreview({doc}: {doc: ReferenceDoc}) {
         {/* Title + Description */}
         <XDSVStack gap={2}>
           <XDSHeading level={1}>{doc.title}</XDSHeading>
-          <XDSText variant="large" color="secondary">
+          <XDSText type="large" color="secondary">
             {doc.description}
           </XDSText>
         </XDSVStack>
