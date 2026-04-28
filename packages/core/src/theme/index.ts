@@ -130,10 +130,8 @@ export type {
   TypeScaleVarName,
 } from './tokens.stylex';
 
-export {useXDSTheme} from './useXDSTheme';
-export type {UseXDSThemeReturn} from './useXDSTheme';
-
-
+export {useXDSTheme, XDSThemeContext} from './useXDSTheme';
+export type {UseXDSThemeReturn, XDSThemeContextValue} from './useXDSTheme';
 
 export type {
   ThemeMode,
@@ -147,5 +145,3 @@ export type {
   TypographyRole,
   FontWeight,
 } from './types';
-
-
