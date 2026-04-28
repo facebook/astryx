@@ -17,6 +17,7 @@ import {
 import {getRunPrefix} from '../../utils/package-manager.mjs';
 import {jsonOut, jsonError} from '../../lib/json.mjs';
 import {hook as hookApi} from '../../api/hook.mjs';
+import {findRelatedBlocks} from '../../api/template.mjs';
 
 export function registerHook(program) {
   program
@@ -104,6 +105,25 @@ export function registerHook(program) {
             console.log(formatHookCompact(result.data, importPath));
           } else {
             console.log(formatHookFull(result.data));
+          }
+          // Show related block templates from relatedComponents
+          const relatedComps = result.data.relatedComponents || [];
+          const allBlocks = [];
+          for (const comp of relatedComps) {
+            const blocks = await findRelatedBlocks(comp);
+            for (const b of blocks) {
+              if (!allBlocks.some(existing => existing.dirName === b.dirName)) {
+                allBlocks.push(b);
+              }
+            }
+          }
+          if (allBlocks.length > 0) {
+            console.log('\nRelated block templates:\n');
+            for (const b of allBlocks) {
+              console.log(`  ${b.dirName}`);
+              if (b.description) console.log(`    ${b.description}`);
+            }
+            console.log('');
           }
           break;
         }

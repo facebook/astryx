@@ -19,7 +19,7 @@ function readHookMeta(docPath) {
     const content = fs.readFileSync(docPath, 'utf-8');
     const categoryMatch = CATEGORY_RE.exec(content);
     return {
-      category: categoryMatch ? categoryMatch[1] : null,
+      category: categoryMatch ? categoryMatch[1].charAt(0).toUpperCase() + categoryMatch[1].slice(1) : null,
     };
   } catch {
     return {category: null};

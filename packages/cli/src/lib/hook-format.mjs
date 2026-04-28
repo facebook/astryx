@@ -1,5 +1,10 @@
 /**
  * @file Hook doc formatting — render HookDoc objects to text
+ *
+ * Mirrors component-format.mjs conventions:
+ * - Full: markdown with ## sections, tables, best practices
+ * - Compact: markdown with import block, params table, abbreviated practices
+ * - Brief: signature line with import hint, description, key params
  */
 
 import {discoverHooks, findHookDoc} from './hook-discovery.mjs';
@@ -36,7 +41,7 @@ function buildSignature(docs) {
 }
 
 /**
- * Format a parameters table.
+ * Format a parameters table (matches component props table style).
  */
 function formatParamsTable(params) {
   if (!params || params.length === 0) return '';
@@ -44,7 +49,7 @@ function formatParamsTable(params) {
   lines.push('| Param | Type | Default | Description |');
   lines.push('|-------|------|---------|-------------|');
   for (const p of params) {
-    const def = p.default ? `\`${p.default}\`` : '—';
+    const def = p.default ? `\`${p.default}\`` : '\u2014';
     const req = p.required ? ' **(required)**' : '';
     lines.push(`| \`${p.name}\` | \`${p.type}\` | ${def} | ${p.description}${req} |`);
   }
@@ -67,9 +72,8 @@ function formatReturnsTable(returns) {
 
 /**
  * Format full hook docs (default mode).
- *
- * @param {object} docs - HookDoc object
- * @returns {string}
+ * Matches component formatFull structure:
+ *   # Name, description, anatomy→params, best practices, props→params+returns, theming→related
  */
 export function formatHookFull(docs) {
   const sections = [];
@@ -79,10 +83,63 @@ export function formatHookFull(docs) {
   const desc = docs.usage?.description || '';
   if (desc) sections.push(desc + '\n');
 
-  // Signature
-  sections.push(`\`\`\`ts\n${buildSignature(docs)}\n\`\`\`\n`);
+  // Best Practices (same position as component format)
+  if (docs.usage?.bestPractices?.length) {
+    sections.push('## Best Practices\n');
+    for (const bp of docs.usage.bestPractices) {
+      const badge = bp.guidance ? '**Do:**' : "**Don\'t:**";
+      sections.push(`- ${badge} ${bp.description}`);
+    }
+    sections.push('');
+  }
 
-  // Parameters
+  // Parameters (analogous to ## Props)
+  if (docs.params?.length) {
+    sections.push('## Parameters\n');
+    sections.push(formatParamsTable(docs.params) + '\n');
+  }
+
+  // Returns (hook-specific, no component equivalent)
+  if (docs.returns?.length) {
+    sections.push('## Returns\n');
+    sections.push(formatReturnsTable(docs.returns) + '\n');
+  }
+
+  return sections.join('\n');
+}
+
+/**
+ * Format compact hook docs for LLM consumption.
+ * Matches component formatCompact structure:
+ *   # Name, description, ## Import, ## Best Practices, ## Parameters, ## Returns
+ */
+export function formatHookCompact(docs, importPath) {
+  const sections = [];
+
+  sections.push(`# ${docs.name}\n`);
+
+  // Description
+  const desc = docs.usage?.description || '';
+  if (desc) sections.push(desc + '\n');
+
+  // Import block (matches component compact)
+  const imp = importPath || docs.importPath;
+  if (imp) {
+    sections.push('## Import\n');
+    sections.push(`\`\`\`tsx\nimport { ${docs.name} } from '${imp}';\n\`\`\`\n`);
+  }
+
+  // Best Practices (matches component compact)
+  if (docs.usage?.bestPractices?.length) {
+    sections.push('## Best Practices\n');
+    for (const bp of docs.usage.bestPractices) {
+      const badge = bp.guidance ? '**Do:**' : "**Don\'t:**";
+      sections.push(`- ${badge} ${bp.description}`);
+    }
+    sections.push('');
+  }
+
+  // Parameters (matches ## Props in component compact)
   if (docs.params?.length) {
     sections.push('## Parameters\n');
     sections.push(formatParamsTable(docs.params) + '\n');
@@ -94,17 +151,7 @@ export function formatHookFull(docs) {
     sections.push(formatReturnsTable(docs.returns) + '\n');
   }
 
-  // Best Practices
-  if (docs.usage?.bestPractices?.length) {
-    sections.push('## Best Practices\n');
-    for (const bp of docs.usage.bestPractices) {
-      const badge = bp.guidance ? '**Do:**' : "**Don't:**";
-      sections.push(`- ${badge} ${bp.description}`);
-    }
-    sections.push('');
-  }
-
-  // Related
+  // Related components (compact footer)
   const relatedParts = [];
   if (docs.relatedComponents?.length) {
     relatedParts.push(`Components: ${docs.relatedComponents.join(', ')}`);
@@ -112,14 +159,9 @@ export function formatHookFull(docs) {
   if (docs.relatedHooks?.length) {
     relatedParts.push(`Hooks: ${docs.relatedHooks.join(', ')}`);
   }
-  if (docs.importPath) {
-    relatedParts.push(`Import: ${docs.importPath}`);
-  }
   if (relatedParts.length) {
     sections.push('## Related\n');
-    for (const part of relatedParts) {
-      sections.push(part);
-    }
+    for (const part of relatedParts) sections.push(part);
     sections.push('');
   }
 
@@ -127,81 +169,46 @@ export function formatHookFull(docs) {
 }
 
 /**
- * Format compact hook docs for LLM consumption.
- * One-liner per param/return with import info.
- *
- * @param {object} docs - HookDoc object
- * @param {string} [importPath] - Import path hint
- * @returns {string}
- */
-export function formatHookCompact(docs, importPath) {
-  const sections = [];
-
-  // Signature line
-  sections.push(buildSignature(docs));
-
-  // Description (shortened)
-  const desc = docs.usage?.description || '';
-  if (desc) {
-    const shortDesc = desc.length > 120 ? desc.slice(0, 117) + '...' : desc;
-    sections.push(`  ${shortDesc}`);
-  }
-
-  // Params (compact)
-  if (docs.params?.length) {
-    for (const p of docs.params) {
-      const req = p.required ? ' (required)' : '';
-      const def = p.default ? ` [=${p.default}]` : '';
-      sections.push(`  ${p.name}: ${p.type}${def}${req} — ${p.description}`);
-    }
-  }
-
-  // Returns (compact)
-  if (docs.returns?.length) {
-    sections.push('  Returns:');
-    for (const r of docs.returns) {
-      sections.push(`    ${r.name}: ${r.type} — ${r.description}`);
-    }
-  }
-
-  // Best practices (compact — first 2 only)
-  const practices = docs.usage?.bestPractices?.slice(0, 2) || [];
-  if (practices.length) {
-    for (const bp of practices) {
-      const badge = bp.guidance ? 'Do:' : "Don't:";
-      sections.push(`  ${badge} ${bp.description}`);
-    }
-  }
-
-  // Import
-  const imp = importPath || docs.importPath;
-  if (imp) {
-    sections.push(`  Import: ${imp}`);
-  }
-
-  return sections.join('\n') + '\n';
-}
-
-/**
- * Format a brief, single-line hook summary.
- *
- * Format: signature  description
- *
- * @param {object} docs - HookDoc object
- * @returns {string}
+ * Format a brief, LLM-optimized hook summary.
+ * Matches component formatBrief conventions:
+ *   signature  ← from 'import/path'
+ *   description
+ *   key params
  */
 export function formatHookBrief(docs) {
+  const output = [];
+
+  // Signature line with import hint (matches component brief)
   const sig = buildSignature(docs);
+  const imp = docs.importPath;
+  output.push(imp ? `${sig}  \u2190 from '${imp}'` : sig);
+
+  // Description (shortened, matches component brief)
   const desc = docs.usage?.description || '';
-  const shortDesc = desc.length > 60 ? desc.slice(0, 57) + '...' : desc;
-  return `${sig}  ${shortDesc}\n`;
+  if (desc) {
+    const shortDesc = desc.length > 80 ? desc.slice(0, 77) + '...' : desc;
+    output.push(`  ${shortDesc}`);
+  }
+
+  // Related components (compact)
+  if (docs.relatedComponents?.length) {
+    output.push(`  Related: ${docs.relatedComponents.join(', ')}`);
+  }
+
+  // Key params (matches component brief 'prop · prop' line)
+  const paramNames = (docs.params || [])
+    .filter(p => !p.name.includes('.'))
+    .map(p => p.required ? `${p.name}: ${p.type.split('|')[0].trim()}` : p.name);
+  if (paramNames.length > 0) {
+    output.push(`  ${paramNames.join(' \u00b7 ')}`);
+  }
+
+  return output.join('\n') + '\n';
 }
 
 /**
  * Format brief summaries for ALL hooks in one output.
- *
- * @param {string} coreDir
- * @returns {Promise<string>}
+ * Matches component formatBriefAll: group headers with ##.
  */
 export async function formatHookBriefAll(coreDir) {
   const hooks = discoverHooks(coreDir);
@@ -228,10 +235,7 @@ export async function formatHookBriefAll(coreDir) {
 }
 
 /**
- * Format only the parameters table.
- *
- * @param {object} docs - HookDoc object
- * @returns {string}
+ * Format only the parameters table (matches component formatProps).
  */
 export function formatHookParams(docs) {
   if (docs.params?.length) {
