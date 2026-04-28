@@ -45,13 +45,17 @@ const TOPICS = [
 export default function DocPreviewPage() {
   const [topic, setTopic] = useState<string>("color");
   const [docs, setDocs] = useState<Record<string, ReferenceDoc>>({});
+  const [version, setVersion] = useState('');
   const [loading, setLoading] = useState(true);
 
   // Load pre-generated doc data
   useEffect(() => {
     import("../../../../generated/foundationDocs.json")
       .then((mod) => {
-        setDocs(mod.default as Record<string, ReferenceDoc>);
+        const data = mod.default as Record<string, unknown>;
+        setVersion((data.__version as string) ?? '');
+        const {__version: _, ...topics} = data;
+        setDocs(topics as Record<string, ReferenceDoc>);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -87,7 +91,7 @@ export default function DocPreviewPage() {
           <XDSSpinner size="md" />
         </div>
       ) : doc ? (
-        <DocPreview doc={doc} />
+        <DocPreview doc={doc} version={version} />
       ) : (
         <div {...stylex.props(styles.loading)}>
           <XDSText color="secondary">No doc found for &quot;{topic}&quot;</XDSText>
