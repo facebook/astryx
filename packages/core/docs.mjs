@@ -226,12 +226,174 @@ function formatBrief(docs) {
 
 // ── Main ─────────────────────────────────────────────────────────────
 
+
+// ── Hook Support ─────────────────────────────────────────────────────
+
+const HOOK_CATEGORY_MAP = {
+  useFocusTrap: 'Focus',
+  useGridFocus: 'Focus',
+  useListFocus: 'Focus',
+  useMediaQuery: 'Media',
+  useOverflow: 'Layout',
+  useScrollOverflow: 'Layout',
+  useScrollLock: 'Layout',
+  useEntryAnimation: 'Animation',
+  useXDSStreamingText: 'Streaming',
+  useImageMode: 'Media',
+  useClickableContainer: 'Interaction',
+  useInputContainer: 'Interaction',
+};
+const HOOK_CATEGORY_ORDER = ['Focus', 'Layout', 'Animation', 'Interaction', 'Media', 'Streaming', 'Other'];
+
+function discoverHookDocs() {
+  const results = [];
+  const hooksDir = path.join(srcDir, 'hooks');
+  if (fs.existsSync(hooksDir)) {
+    for (const file of fs.readdirSync(hooksDir)) {
+      if (file.endsWith('.doc.mjs')) {
+        results.push({name: file.replace('.doc.mjs', ''), docPath: path.join(hooksDir, file)});
+      }
+    }
+  }
+  // Also scan component directories for use*.doc.mjs
+  if (fs.existsSync(srcDir)) {
+    for (const entry of fs.readdirSync(srcDir, {withFileTypes: true})) {
+      if (!entry.isDirectory() || SKIP.has(entry.name)) continue;
+      const dir = path.join(srcDir, entry.name);
+      try {
+        for (const file of fs.readdirSync(dir)) {
+          if (file.startsWith('use') && file.endsWith('.doc.mjs')) {
+            results.push({name: file.replace('.doc.mjs', ''), docPath: path.join(dir, file)});
+          }
+        }
+      } catch {}
+    }
+  }
+  return results;
+}
+
+function findHookDocByName(hookName) {
+  const normalized = hookName.replace(/^use/i, '');
+  const hooksDir = path.join(srcDir, 'hooks');
+
+  // Direct match in hooks/
+  for (const variant of [hookName, `use${normalized}`, `useXDS${normalized}`]) {
+    const p = path.join(hooksDir, `${variant}.doc.mjs`);
+    if (fs.existsSync(p)) return p;
+  }
+
+  // Search component directories
+  if (fs.existsSync(srcDir)) {
+    for (const entry of fs.readdirSync(srcDir, {withFileTypes: true})) {
+      if (!entry.isDirectory() || SKIP.has(entry.name)) continue;
+      const dir = path.join(srcDir, entry.name);
+      for (const variant of [hookName, `use${normalized}`, `useXDS${normalized}`]) {
+        const p = path.join(dir, `${variant}.doc.mjs`);
+        if (fs.existsSync(p)) return p;
+      }
+    }
+  }
+  return null;
+}
+
+function formatHookParamsTable(params) {
+  if (!params?.length) return '';
+  const lines = ['| Param | Type | Default | Description |', '|-------|------|---------|-------------|'];
+  for (const p of params) {
+    const def = p.default ? `\`${p.default}\`` : '\u2014';
+    const req = p.required ? ' **(required)**' : '';
+    lines.push(`| \`${p.name}\` | \`${p.type}\` | ${def} | ${p.description}${req} |`);
+  }
+  return lines.join('\n');
+}
+
+function formatHookReturnsTable(returns) {
+  if (!returns?.length) return '';
+  const lines = ['| Field | Type | Description |', '|-------|------|-------------|'];
+  for (const r of returns) {
+    lines.push(`| \`${r.name}\` | \`${r.type}\` | ${r.description} |`);
+  }
+  return lines.join('\n');
+}
+
+function formatHookFull(docs) {
+  const s = [];
+  s.push(`# ${docs.name}\n`);
+  s.push((docs.usage?.description || '') + '\n');
+
+  if (docs.params?.length) {
+    s.push('## Parameters\n');
+    s.push(formatHookParamsTable(docs.params) + '\n');
+  }
+
+  if (docs.returns?.length) {
+    s.push('## Returns\n');
+    s.push(formatHookReturnsTable(docs.returns) + '\n');
+  }
+
+  if (docs.usage?.bestPractices?.length) {
+    s.push('## Best Practices\n');
+    for (const bp of docs.usage.bestPractices)
+      s.push(`- ${bp.guidance ? '**Do:**' : "**Don't:**"} ${bp.description}`);
+    s.push('');
+  }
+
+  const refs = [];
+  if (docs.relatedComponents?.length) refs.push(`Components: ${docs.relatedComponents.map(c => `XDS${c}`).join(', ')}`);
+  if (docs.relatedHooks?.length) refs.push(`Hooks: ${docs.relatedHooks.join(', ')}`);
+  if (docs.importPath) refs.push(`Import: ${docs.importPath}`);
+  if (refs.length) {
+    s.push('## Related\n');
+    for (const r of refs) s.push(r);
+    s.push('');
+  }
+
+  return s.join('\n');
+}
+
+function formatHookBrief(docs) {
+  const desc = docs.usage?.description || '';
+  const short = desc.length > 80 ? desc.slice(0, 77) + '...' : desc;
+  const params = (docs.params || []).filter(p => p.required).map(p => `${p.name}: ${p.type}`).join(', ');
+  const ret = (docs.returns || []).map(r => r.type).join(' | ');
+  const sig = params ? `${docs.name}(${params})` : docs.name;
+  return ret ? `${sig}: ${ret}  ${short}` : `${sig}  ${short}`;
+}
+
+// ── Main ─────────────────────────────────────────────────────────────
+
 const args = process.argv.slice(2);
 const isList = args.includes('--list');
 const isBrief = args.includes('--brief');
+const isHooks = args.includes('--hooks');
 const name = args.find(a => !a.startsWith('--'));
 
-if (isList) {
+if (isHooks) {
+  // Hook listing mode
+  const hookDocs = discoverHookDocs();
+  const grouped = {};
+  for (const {name: hookName, docPath} of hookDocs) {
+    const cat = HOOK_CATEGORY_MAP[hookName] || 'Other';
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push({name: hookName, docPath});
+  }
+  for (const cat of HOOK_CATEGORY_ORDER) {
+    if (!grouped[cat]) continue;
+    console.log(`\n${cat}:`);
+    for (const {name: hookName, docPath} of grouped[cat]) {
+      if (isBrief) {
+        try {
+          const d = await loadDoc(docPath);
+          console.log('  ' + formatHookBrief(d));
+        } catch {
+          console.log(`  ${hookName}  (error loading docs)`);
+        }
+      } else {
+        console.log(`  ${hookName}`);
+      }
+    }
+  }
+} else if (isList) {
   const docs = discoverDocs();
   const grouped = {};
   for (const {dir, docPath} of docs) {
@@ -256,16 +418,38 @@ if (isList) {
     }
   }
 } else if (name) {
-  const docPath = findDocByComponent(name);
-  if (!docPath) {
-    console.error(`Component "${name}" not found. Run with --list to see available components.`);
-    process.exit(1);
+  // Try hook lookup first for names starting with 'use'
+  if (name.startsWith('use') || name.startsWith('Use')) {
+    const hookDocPath = findHookDocByName(name);
+    if (hookDocPath) {
+      const docs = await loadDoc(hookDocPath);
+      console.log(formatHookFull(docs));
+    } else {
+      // Fall through to component lookup
+      const docPath = findDocByComponent(name);
+      if (!docPath) {
+        console.error(`Hook or component "${name}" not found.`);
+        console.error('Run with --list to see components, or --hooks to see hooks.');
+        process.exit(1);
+      }
+      const docs = await loadDoc(docPath);
+      console.log(formatFull(docs, docPath));
+    }
+  } else {
+    const docPath = findDocByComponent(name);
+    if (!docPath) {
+      console.error(`Component "${name}" not found. Run with --list to see available components.`);
+      process.exit(1);
+    }
+    const docs = await loadDoc(docPath);
+    console.log(formatFull(docs, docPath));
   }
-  const docs = await loadDoc(docPath);
-  console.log(formatFull(docs, docPath));
 } else {
   console.log('Usage:');
   console.log('  node docs.mjs <ComponentName>   Show full component docs');
+  console.log('  node docs.mjs <hookName>        Show full hook docs');
   console.log('  node docs.mjs --list            List all components');
   console.log('  node docs.mjs --list --brief    List with brief descriptions');
+  console.log('  node docs.mjs --hooks           List all hooks');
+  console.log('  node docs.mjs --hooks --brief   List hooks with brief descriptions');
 }

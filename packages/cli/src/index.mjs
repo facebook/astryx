@@ -88,6 +88,7 @@ const commands = [
   {name: 'gap-report', path: './commands/gap-report.mjs', register: 'registerGapReport'},
   {name: 'upgrade', path: './commands/upgrade.mjs', register: 'registerUpgrade'},
   {name: 'theme', path: './commands/build-theme.mjs', register: 'registerTheme'},
+  {name: 'hook', path: './commands/hook/index.mjs', register: 'registerHook'},
   {name: 'discover', path: './commands/discover.mjs', register: 'registerDiscover'},
 ];
 
@@ -129,6 +130,7 @@ ${line('')}
 ${line('  Or run directly:')}
 ${line(`    ${r} init           Setup + AI agent docs`)}
 ${line(`    ${r} component     Browse component docs`)}
+${line(`    ${r} hook          Browse hook docs`)}
 ${line(`    ${r} docs          Design system reference`)}
 ${line(`    ${r} swizzle       Customize a component`)}
 ${line(`    ${r} template      Add a page template`)}

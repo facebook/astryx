@@ -20,6 +20,7 @@ import * as path from 'node:path';
 import {findCoreDir, CLI_ROOT} from '../utils/paths.mjs';
 import {getRunPrefix} from '../utils/package-manager.mjs';
 import {discoverComponents} from '../lib/component-discovery.mjs';
+import {discoverHooks} from '../lib/hook-discovery.mjs';
 
 const AGENTS_MD = 'AGENTS.md';
 const CLAUDE_MD = 'CLAUDE.md';
