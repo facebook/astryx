@@ -16,7 +16,7 @@ import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSButton} from '@xds/core/Button';
-import {XDSTable, proportional, pixel} from '@xds/core/Table';
+import {XDSTable, proportional} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 import {XDSDivider} from '@xds/core/Divider';
 import {
@@ -247,7 +247,6 @@ interface StockRow extends Record<string, unknown> {
   dailyPts: number;
   dailyPct: number;
   weekChg: number;
-  // prettier-ignore
   spark: number[];
 }
 
@@ -481,9 +480,7 @@ function MarketCard({
     <XDSCard>
       <XDSVStack gap={4}>
         <XDSVStack gap={0}>
-          <XDSText type="body" weight="semibold">
-            {name}
-          </XDSText>
+          <XDSHeading level={3}>{name}</XDSHeading>
           <XDSText type="supporting" color="secondary">
             {ticker}
           </XDSText>
@@ -493,7 +490,7 @@ function MarketCard({
           <XDSText type="display-3" weight="bold">
             {price}
           </XDSText>
-          <XDSHStack gap={1} hAlign="center" vAlign="center">
+          <XDSHStack gap={1} vAlign="center">
             <XDSIcon
               icon={positive ? ArrowUpIcon : ArrowDownIcon}
               size="xsm"
@@ -612,7 +609,7 @@ function MetricCard({
           <XDSText type="display-3" weight="bold">
             {value}
           </XDSText>
-          <XDSHStack gap={1} hAlign="center" vAlign="center">
+          <XDSHStack gap={1} vAlign="center">
             <XDSIcon
               icon={positive ? ArrowUpIcon : ArrowDownIcon}
               size="xsm"
@@ -651,7 +648,10 @@ function AssetRow({
       endContent={
         <XDSVStack gap={0} hAlign="end">
           <XDSText type="body">{value}</XDSText>
-          <XDSBadge label={change} variant="green" />
+          <XDSBadge
+            label={change}
+            variant={change.startsWith('-') ? 'red' : 'green'}
+          />
         </XDSVStack>
       }
     />
@@ -731,19 +731,23 @@ export default function DashboardPortfolioTemplate() {
         </XDSHStack>
 
         {/* KPI metric cards */}
-        <XDSGrid columns={4} gap={4}>
-          {metrics.map(m => (
-            <MetricCard key={m.label} {...m} />
+        <XDSGrid columns={{minWidth: 280, repeat: 'fit'}} gap={4}>
+          {Array.from({length: Math.ceil(metrics.length / 2)}, (_, i) => (
+            <XDSGrid key={i} columns={{minWidth: 280, repeat: 'fit'}} gap={4}>
+              {metrics.slice(i * 2, i * 2 + 2).map(m => (
+                <MetricCard key={m.label} {...m} />
+              ))}
+            </XDSGrid>
           ))}
         </XDSGrid>
 
         {/* Chart + Top assets */}
-        <XDSGrid columns={4} gap={4}>
+        <XDSGrid columns={{minWidth: 280, max: 4}} gap={4}>
           <XDSGridSpan columns={3}>
             <XDSCard>
               <XDSVStack gap={4}>
                 <XDSHStack hAlign="between" vAlign="center">
-                  <XDSHeading level={4}>Portfolio Value</XDSHeading>
+                  <XDSHeading level={3}>Portfolio Value</XDSHeading>
                   <XDSLink label="View details" href="#">
                     View details
                   </XDSLink>
@@ -752,28 +756,30 @@ export default function DashboardPortfolioTemplate() {
               </XDSVStack>
             </XDSCard>
           </XDSGridSpan>
-          <XDSCard>
-            <XDSVStack gap={4}>
-              <XDSHStack hAlign="between" vAlign="center">
-                <XDSHeading level={4}>Top Assets</XDSHeading>
-                <XDSLink label="View all" href="#">
-                  View all
-                </XDSLink>
-              </XDSHStack>
-              <XDSList density="spacious">
-                {topAssets.map(asset => (
-                  <AssetRow key={asset.ticker} {...asset} />
-                ))}
-              </XDSList>
-            </XDSVStack>
-          </XDSCard>
+          <XDSGridSpan columns={1}>
+            <XDSCard>
+              <XDSVStack gap={4}>
+                <XDSHStack hAlign="between" vAlign="center">
+                  <XDSHeading level={3}>Top Assets</XDSHeading>
+                  <XDSLink label="View all" href="#">
+                    View all
+                  </XDSLink>
+                </XDSHStack>
+                <XDSList density="spacious">
+                  {topAssets.map(asset => (
+                    <AssetRow key={asset.ticker} {...asset} />
+                  ))}
+                </XDSList>
+              </XDSVStack>
+            </XDSCard>
+          </XDSGridSpan>
         </XDSGrid>
 
         <XDSDivider />
 
         {/* Market section */}
         <XDSHStack hAlign="between" vAlign="start">
-          <XDSVStack gap={1} vAlign="center">
+          <XDSVStack gap={1}>
             <XDSHeading level={1}>Market Today</XDSHeading>
             <XDSText type="body" color="secondary">
               Past 24 hours
@@ -783,7 +789,7 @@ export default function DashboardPortfolioTemplate() {
         </XDSHStack>
 
         {/* Market index cards */}
-        <XDSGrid columns={4} gap={4}>
+        <XDSGrid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
           {marketIndices.map(m => (
             <MarketCard key={m.ticker} {...m} />
           ))}
@@ -792,7 +798,7 @@ export default function DashboardPortfolioTemplate() {
         {/* Trending stocks table */}
         <XDSCard>
           <XDSVStack gap={4}>
-            <XDSHeading level={4}>Trending Stocks</XDSHeading>
+            <XDSHeading level={3}>Trending Stocks</XDSHeading>
             <XDSTable<StockRow>
               data={trendingStocks}
               columns={trendingColumns}
