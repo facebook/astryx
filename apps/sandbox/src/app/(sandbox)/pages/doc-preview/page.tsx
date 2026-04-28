@@ -11,6 +11,8 @@ import {
 import { XDSSpinner } from "@xds/core/Spinner";
 import type { ReferenceDoc } from "@xds/core";
 import { DocPreview } from "./DocPreview";
+import { useXDSTheme, XDSThemeContext } from "@xds/core/theme";
+import { useContext } from "react";
 
 const styles = stylex.create({
   page: {
@@ -61,6 +63,7 @@ export default function DocPreviewPage() {
       .catch(() => setLoading(false));
   }, []);
 
+  const ctx = useContext(XDSThemeContext);
   const doc = docs[topic] ?? null;
 
   return (
@@ -91,7 +94,7 @@ export default function DocPreviewPage() {
           <XDSSpinner size="md" />
         </div>
       ) : doc ? (
-        <DocPreview doc={doc} version={version} />
+        ctx?.theme ? <DocPreview doc={doc} version={version} theme={ctx.theme} /> : null
       ) : (
         <div {...stylex.props(styles.loading)}>
           <XDSText color="secondary">No doc found for &quot;{topic}&quot;</XDSText>

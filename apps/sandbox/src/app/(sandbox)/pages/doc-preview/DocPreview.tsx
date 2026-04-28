@@ -12,6 +12,7 @@ import {XDSSection} from '@xds/core/Section';
 import {XDSTable, pixel, proportional} from '@xds/core/Table';
 import {XDSTooltip} from '@xds/core/Tooltip';
 import {useXDSTheme, XDSThemeContext} from '@xds/core/theme';
+import type {XDSDefinedTheme} from '@xds/core/theme';
 import type {
   ReferenceDoc,
   ReferenceSection,
@@ -993,7 +994,32 @@ function SectionRenderer({section}: {section: ReferenceSection}) {
 // DocPreview
 // =============================================================================
 
-export function DocPreview({doc, version}: {doc: ReferenceDoc; version?: string}) {
+
+/**
+ * Map tokenCategory to the corresponding extracted token table component.
+ * When a theme is available, these render live token values from the theme
+ * instead of static doc data.
+ */
+const TOKEN_TABLE_BY_CATEGORY: Record<
+  string,
+  React.ComponentType<{theme: XDSDefinedTheme}>
+> = {
+  color: ColorTokenTable,
+  spacing: SpacingTokenTable,
+  typography: TypographyTokenTable,
+  elevation: ElevationTokenTable,
+  shape: ShapeTokenTable,
+  motion: MotionTokenTable,
+};
+
+function ThemeTokenSection({category, theme}: {category: string; theme: XDSDefinedTheme}) {
+  const Component = TOKEN_TABLE_BY_CATEGORY[category];
+  if (!Component) return null;
+  return <Component theme={theme} />;
+}
+
+export function DocPreview({doc, version, theme}: {doc: ReferenceDoc; version?: string; theme: XDSDefinedTheme}) {
+
   // Group sections into: token tables, usage/code, best practices, and other
   const {tokenSections, usageSections, practiceSections, overviewSections} =
     useMemo(() => {
@@ -1091,12 +1117,10 @@ export function DocPreview({doc, version}: {doc: ReferenceDoc; version?: string}
         )}
 
         {/* Token tables */}
-        {tokenSections.length > 0 && (
+        {doc.tokenCategory && (
           <>
             <XDSDivider />
-            {tokenSections.map((section, i) => (
-              <SectionRenderer key={`token-${i}`} section={section} />
-            ))}
+            <ThemeTokenSection category={doc.tokenCategory} theme={theme} />
           </>
         )}
       </XDSVStack>
