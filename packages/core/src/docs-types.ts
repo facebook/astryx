@@ -168,6 +168,10 @@ export interface ComponentEntry {
   description: string;
   /** All public props for this component. */
   props: PropDoc[];
+  /** Optional usage documentation for this sub-component. Use when a
+   *  sub-component is significant enough to warrant its own usage guidance
+   *  beyond the parent group's usage section. */
+  usage?: UsageDoc;
 }
 
 /**
