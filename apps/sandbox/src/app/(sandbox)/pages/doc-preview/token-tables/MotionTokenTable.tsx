@@ -2,8 +2,8 @@
 
 import {useState, useEffect, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSHStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
+import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSTable} from '@xds/core/Table';
 import type {TokenTableProps} from './types';
 import {resolveToken, getTokensByPrefix} from './helpers';
@@ -41,6 +41,35 @@ const styles = stylex.create({
     transform: 'translateX(-50%)',
   },
 });
+
+// =============================================================================
+// Duration ordering: band-min, band, band-max
+// =============================================================================
+
+const DURATION_ORDER = [
+  '--duration-fast-min',
+  '--duration-fast',
+  '--duration-fast-max',
+  '--duration-medium-min',
+  '--duration-medium',
+  '--duration-medium-max',
+  '--duration-slow-min',
+  '--duration-slow',
+  '--duration-slow-max',
+];
+
+function sortDurationTokens(tokens: string[]): string[] {
+  const orderMap = new Map(DURATION_ORDER.map((k, i) => [k, i]));
+  return [...tokens].sort((a, b) => {
+    const ai = orderMap.get(a) ?? 99;
+    const bi = orderMap.get(b) ?? 99;
+    return ai - bi;
+  });
+}
+
+// =============================================================================
+// Preview components
+// =============================================================================
 
 function DurationBar({value}: {value: string}) {
   const [animate, setAnimate] = useState(false);
@@ -120,18 +149,16 @@ function EasingCurve({value}: {value: string}) {
   );
 }
 
-export function MotionTokenTable({theme}: TokenTableProps) {
-  const durationTokens = getTokensByPrefix(theme, '--duration-');
-  const easeTokens = getTokensByPrefix(theme, '--ease-');
+// =============================================================================
+// Duration Table
+// =============================================================================
 
-  const data = [
-    ...durationTokens.map(name => ({
-      tokenName: name, value: resolveToken(theme, name), type: 'duration' as const,
-    })),
-    ...easeTokens.map(name => ({
-      tokenName: name, value: resolveToken(theme, name), type: 'easing' as const,
-    })),
-  ];
+export function DurationTokenTable({theme}: TokenTableProps) {
+  const tokens = sortDurationTokens(getTokensByPrefix(theme, '--duration-'));
+  const data = tokens.map(name => ({
+    tokenName: name,
+    value: resolveToken(theme, name),
+  }));
 
   return (
     <XDSTable
@@ -141,21 +168,70 @@ export function MotionTokenTable({theme}: TokenTableProps) {
         {
           key: 'value',
           header: 'Value',
-          renderCell: (item: Record<string, unknown>) => {
-            const val = item.value as string;
-            const type = item.type as string;
-            return (
-              <XDSHStack gap={2} align="center">
-                {type === 'duration' ? <DurationBar value={val} /> : <EasingCurve value={val} />}
-                <XDSText type="code" color="secondary">{val}</XDSText>
-              </XDSHStack>
-            );
-          },
+          renderCell: (item: Record<string, unknown>) => (
+            <XDSHStack gap={2} align="center">
+              <DurationBar value={item.value as string} />
+              <XDSText type="code" color="secondary">{item.value as string}</XDSText>
+            </XDSHStack>
+          ),
         },
       ]}
       density="spacious"
       dividers="rows"
       hasHover
     />
+  );
+}
+
+// =============================================================================
+// Easing Table
+// =============================================================================
+
+export function EasingTokenTable({theme}: TokenTableProps) {
+  const tokens = getTokensByPrefix(theme, '--ease-');
+  const data = tokens.map(name => ({
+    tokenName: name,
+    value: resolveToken(theme, name),
+  }));
+
+  return (
+    <XDSTable
+      data={data as Record<string, unknown>[]}
+      columns={[
+        {key: 'tokenName', header: 'Token'},
+        {
+          key: 'value',
+          header: 'Value',
+          renderCell: (item: Record<string, unknown>) => (
+            <XDSHStack gap={2} align="center">
+              <EasingCurve value={item.value as string} />
+              <XDSText type="code" color="secondary">{item.value as string}</XDSText>
+            </XDSHStack>
+          ),
+        },
+      ]}
+      density="spacious"
+      dividers="rows"
+      hasHover
+    />
+  );
+}
+
+// =============================================================================
+// Combined Motion Table (renders both with headings)
+// =============================================================================
+
+export function MotionTokenTable({theme}: TokenTableProps) {
+  return (
+    <XDSVStack gap={6}>
+      <XDSVStack gap={3}>
+        <XDSHeading level={3}>Duration</XDSHeading>
+        <DurationTokenTable theme={theme} />
+      </XDSVStack>
+      <XDSVStack gap={3}>
+        <XDSHeading level={3}>Easing</XDSHeading>
+        <EasingTokenTable theme={theme} />
+      </XDSVStack>
+    </XDSVStack>
   );
 }
