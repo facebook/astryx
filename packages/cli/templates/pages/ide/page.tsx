@@ -383,7 +383,7 @@ export default function ResizableWorkspacePage() {
                             <XDSTab label="Debug" value="debug" icon={<XDSIcon icon={BugAntIcon} size="sm" />} />
                           </XDSTabList>
                           <div {...stylex.props(styles.terminalWrapper)}>
-                            <XDSSyntaxTheme theme={tokyoNight} style={{height: '100%'}}>
+                            <XDSSyntaxTheme theme={tokyoNight}>
                               <XDSCodeBlock
                                 code={TERMINAL_OUTPUT}
                                 language="bash"
