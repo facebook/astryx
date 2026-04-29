@@ -46,6 +46,8 @@ const TOKEN_TABLE_BY_CATEGORY: Record<
   shadow: ElevationTokenTable,
   radius: ShapeTokenTable,
   duration: MotionTokenTable,
+  easing: MotionTokenTable,
+  motion: MotionTokenTable,
 };
 
 function ThemeTokenSection({
