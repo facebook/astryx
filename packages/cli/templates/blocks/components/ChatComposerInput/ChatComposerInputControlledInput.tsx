@@ -2,11 +2,13 @@
 
 import {useState} from 'react';
 import {XDSChatComposer, XDSChatComposerInput} from '@xds/core/Chat';
+import {XDSStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
 
 export default function ChatComposerInputControlledInput() {
   const [value, setValue] = useState('');
   return (
-    <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
+    <XDSStack direction="vertical" gap={3} style={{width: '100%', maxWidth: 450}}>
       <XDSChatComposer
         onSubmit={() => setValue('')}
         value={value}
@@ -19,9 +21,9 @@ export default function ChatComposerInputControlledInput() {
           />
         }
       />
-      <div style={{fontSize: 12, fontFamily: 'monospace', color: '#888'}}>
+      <XDSText type="supporting" color="secondary">
         Value: {JSON.stringify(value)}
-      </div>
-    </div>
+      </XDSText>
+    </XDSStack>
   );
 }

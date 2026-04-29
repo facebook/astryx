@@ -7,32 +7,33 @@ import {
   type XDSChatComposerTrigger,
 } from '@xds/core/Chat';
 import {createStaticSource} from '@xds/core/Typeahead';
-import {XDSTypeaheadItem} from '@xds/core/Typeahead';
 import type {XDSSearchableItem} from '@xds/core/Typeahead';
 import {XDSStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
-const USERS: XDSSearchableItem<{role: string}>[] = [
-  {id: 'cindy', label: 'Cindy Zhang', auxiliaryData: {role: 'Design Systems'}},
-  {id: 'alex', label: 'Alex Johnson', auxiliaryData: {role: 'Frontend'}},
-  {id: 'sam', label: 'Sam Rivera', auxiliaryData: {role: 'Backend'}},
-  {id: 'jordan', label: 'Jordan Lee', auxiliaryData: {role: 'Product'}},
+const USERS: XDSSearchableItem[] = [
+  {id: 'cindy', label: 'Cindy Zhang'},
+  {id: 'alex', label: 'Alex Johnson'},
+  {id: 'sam', label: 'Sam Rivera'},
+  {id: 'jordan', label: 'Jordan Lee'},
+];
+
+const COMMANDS: XDSSearchableItem[] = [
+  {id: 'summarize', label: 'summarize'},
+  {id: 'translate', label: 'translate'},
+  {id: 'search', label: 'search'},
+  {id: 'code', label: 'code'},
 ];
 
 const userSource = createStaticSource(USERS);
+const commandSource = createStaticSource(COMMANDS);
 
-export default function ChatComposerInputMentionTrigger() {
+export default function ChatComposerInputMultipleTriggers() {
   const [value, setValue] = useState('');
 
   const mentionTrigger: XDSChatComposerTrigger = {
     character: '@',
     searchSource: userSource,
-    renderItem: item => (
-      <XDSTypeaheadItem
-        item={item}
-        description={(item.auxiliaryData as {role: string})?.role}
-      />
-    ),
     onSelect: item => ({
       value: `@${item.id}`,
       label: item.label,
@@ -40,16 +41,29 @@ export default function ChatComposerInputMentionTrigger() {
     }),
   };
 
+  const commandTrigger: XDSChatComposerTrigger = {
+    character: '/',
+    searchSource: commandSource,
+    onSelect: item => ({
+      value: `/${item.label}`,
+      label: `/${item.label}`,
+      variant: 'yellow' as const,
+    }),
+  };
+
   return (
     <XDSStack direction="vertical" gap={3} style={{width: '100%', maxWidth: 450}}>
+      <XDSText type="supporting" color="secondary">
+        Type @ for mentions (blue) or / for commands (yellow)
+      </XDSText>
       <XDSChatComposer
         onSubmit={() => setValue('')}
         input={
           <XDSChatComposerInput
             value={value}
             onChange={setValue}
-            triggers={[mentionTrigger]}
-            placeholder="Type @ to mention someone..."
+            triggers={[mentionTrigger, commandTrigger]}
+            placeholder="Type @ or / ..."
           />
         }
       />
