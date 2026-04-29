@@ -152,7 +152,18 @@ export const docs = {
     },
     {
       name: 'XDSChatToolCalls',
-      description: 'Displays tool/function call invocations from an LLM response. Accepts a `calls` array matching the shape LLM APIs return. Single call renders inline; multiple calls get a collapsible summary with the latest call visible at the surface.',
+      description: 'Displays tool/function call invocations from an LLM response. Pass a `calls` array matching the shape LLM APIs already return — the component handles single-call inline rendering, multi-call collapsible groups, status indicators, node badges, diff stats, and expandable result details automatically.',
+      usage: {
+        description: 'ChatToolCalls renders a compact, scannable summary of tool invocations in an AI chat message. Use it inside XDSChatMessage to show which tools the assistant called, their status, and optional result details like diffs or command output.',
+        bestPractices: [
+          {guidance: true, description: 'Map your LLM SDK\'s tool call array directly to the calls prop — the component is designed to accept the shape that Vercel AI SDK, Anthropic, and OpenAI return.'},
+          {guidance: true, description: 'Provide a `resultDetail` with XDSCodeBlock for tool calls that produce visible output like diffs, command results, or search results so users can inspect what happened.'},
+          {guidance: true, description: 'Include `node` badges when tool calls run across different sandboxes or environments so users can tell where each action executed.'},
+          {guidance: false, description: "Don't build your own tool call list with custom styling — ChatToolCalls handles status icons, collapsible groups, diff stats, and error states consistently."},
+          {guidance: false, description: "Don't set `defaultIsExpanded={true}` for large call groups (>5 calls) — the collapsed summary keeps the chat scannable."},
+          {guidance: false, description: "Don't omit `status` on calls that are still in progress — the running spinner gives users confidence that work is happening."},
+        ],
+      },
       props: [
         {name: 'calls', type: 'XDSChatToolCallItem[]', description: 'Array of tool call data. Each item has name, status, target, duration, node, additions, deletions, stats, resultDetail.', required: true},
         {name: 'label', type: 'string', description: 'Custom summary label for groups. Auto-generated from count if omitted.'},
