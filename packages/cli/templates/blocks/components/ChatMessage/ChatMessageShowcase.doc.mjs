@@ -1,8 +1,8 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'ChatMessage',
-  description: 'Chat messages demonstrating full prop variance: avatar, name, timestamp, metadata with action buttons, multi-bubble groups, delivery status, ghost variant (without visible bubbles), and system messages.',
+  name: 'ChatMessage — Showcase',
+  description: 'Full-featured conversation with avatars, names, timestamps, metadata with action buttons, multi-bubble groups, delivery status, and system messages.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 4 / 3,

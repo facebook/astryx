@@ -12,24 +12,24 @@ import {XDSText} from '@xds/core/Text';
 import {XDSTimestamp} from '@xds/core/Timestamp';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
-import {XDSHStack, XDSVStack} from '@xds/core/Layout';
+import {XDSStack} from '@xds/core/Layout';
 
 export default function ChatMessageShowcase() {
   return (
-    <XDSVStack gap={4}>
+    <XDSStack direction="vertical" gap={4}>
       <XDSText type="supporting" color="secondary">
         With message bubbles
       </XDSText>
       <XDSChatMessageList>
-        <XDSChatSystemMessage variant="divider">
-          Today
-        </XDSChatSystemMessage>
+        <XDSChatSystemMessage variant="divider">Today</XDSChatSystemMessage>
 
         <XDSChatMessage sender="user">
           <XDSChatMessageBubble
             metadata={
               <XDSChatMessageMetadata
-                timestamp={<XDSTimestamp value="2026-03-15T14:30:00" format="time" />}
+                timestamp={
+                  <XDSTimestamp value="2026-03-15T14:30:00" format="time" />
+                }
                 status="read"
               />
             }>
@@ -37,7 +37,7 @@ export default function ChatMessageShowcase() {
           </XDSChatMessageBubble>
         </XDSChatMessage>
 
-        {/* Full props: avatar, name, bubble, multi-bubble group, metadata with actions */}
+        {/* Full props: avatar, name, multi-bubble group, metadata with actions */}
         <XDSChatMessage
           sender="assistant"
           avatar={<XDSAvatar name="Navi" size="small" />}>
@@ -54,9 +54,11 @@ export default function ChatMessageShowcase() {
             group="last"
             metadata={
               <XDSChatMessageMetadata
-                timestamp={<XDSTimestamp value="2026-03-15T14:31:00" format="time" />}
+                timestamp={
+                  <XDSTimestamp value="2026-03-15T14:31:00" format="time" />
+                }
                 footer={
-                  <XDSHStack gap={1}>
+                  <XDSStack direction="horizontal" gap={1}>
                     <XDSButton
                       label="Copy"
                       variant="ghost"
@@ -68,7 +70,7 @@ export default function ChatMessageShowcase() {
                     <XDSText type="supporting" color="secondary">
                       Claude Opus 4.6
                     </XDSText>
-                  </XDSHStack>
+                  </XDSStack>
                 }
               />
             }>
@@ -80,7 +82,9 @@ export default function ChatMessageShowcase() {
           <XDSChatMessageBubble
             metadata={
               <XDSChatMessageMetadata
-                timestamp={<XDSTimestamp value="2026-03-15T14:32:00" format="time" />}
+                timestamp={
+                  <XDSTimestamp value="2026-03-15T14:32:00" format="time" />
+                }
                 status="delivered"
               />
             }>
@@ -103,8 +107,14 @@ export default function ChatMessageShowcase() {
           }
           metadata={
             <XDSChatMessageMetadata
-              timestamp={<XDSTimestamp value="2026-03-15T14:31:00" format="time" />}
-              footer={<XDSText type="supporting" color="secondary">Claude Opus 4.6</XDSText>}
+              timestamp={
+                <XDSTimestamp value="2026-03-15T14:31:00" format="time" />
+              }
+              footer={
+                <XDSText type="supporting" color="secondary">
+                  Claude Opus 4.6
+                </XDSText>
+              }
             />
           }>
           <XDSChatMessageBubble variant="ghost">
@@ -119,6 +129,6 @@ export default function ChatMessageShowcase() {
           </XDSChatMessageBubble>
         </XDSChatMessage>
       </XDSChatMessageList>
-    </XDSVStack>
+    </XDSStack>
   );
 }
