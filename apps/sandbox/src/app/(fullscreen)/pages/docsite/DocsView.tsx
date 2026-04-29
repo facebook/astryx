@@ -65,10 +65,7 @@ import {
   CLI_VERSION,
   type CliCommand,
 } from '@/generated/cliRegistry';
-import {
-  themeDocs,
-  type ThemeDocEntry,
-} from '@/generated/themeDocRegistry';
+import {themeDocs, type ThemeDocEntry} from '@/generated/themeDocRegistry';
 import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
 
 import {XDSPopover} from '@xds/core/Popover';
@@ -84,8 +81,18 @@ import {whatsappTheme} from '@xds/theme-whatsapp/built';
 import {XDSNumberInput} from '@xds/core/NumberInput';
 import {XDSSelector} from '@xds/core/Selector';
 import {defaultIconRegistry} from '@xds/theme-default';
-import {ThemeShowcasePreview, ThemeShowcaseDetails} from '../../../../../../../packages/cli/templates/pages/theme-showcase/page';
-import {TokenScalePreview} from './ThemeEditorView';
+import {
+  ThemeShowcasePreview,
+  ThemeShowcaseDetails,
+} from '../../../../../../../packages/cli/templates/pages/theme-showcase/page';
+import {
+  ColorTokenTable,
+  SpacingTokenTable,
+  TypographyTokenTable,
+  ElevationTokenTable,
+  ShapeTokenTable,
+  MotionTokenTable,
+} from '@/app/(sandbox)/pages/doc-preview/token-tables';
 import {COMPONENT_PREVIEWS} from './ComponentPreviews';
 import {SEARCH_COMMANDS, basePath} from './constants';
 import {
@@ -3412,6 +3419,36 @@ export function Providers({children}: {children: React.ReactNode}) {
 }
 
 // ---------------------------------------------------------------------------
+// ThemeTokensSection — renders all token categories using shared token tables
+// ---------------------------------------------------------------------------
+
+const THEME_TOKEN_GROUPS: {
+  title: string;
+  Component: React.ComponentType<{theme: XDSDefinedTheme}>;
+}[] = [
+  {title: 'Color', Component: ColorTokenTable},
+  {title: 'Typography', Component: TypographyTokenTable},
+  {title: 'Spacing', Component: SpacingTokenTable},
+  {title: 'Shape', Component: ShapeTokenTable},
+  {title: 'Elevation', Component: ElevationTokenTable},
+  {title: 'Motion', Component: MotionTokenTable},
+];
+
+function ThemeTokensSection({theme}: {theme: XDSDefinedTheme}) {
+  return (
+    <XDSStack direction="vertical" gap={8}>
+      <XDSHeading level={2}>Tokens</XDSHeading>
+      {THEME_TOKEN_GROUPS.map(({title, Component}) => (
+        <XDSStack key={title} direction="vertical" gap={3}>
+          <XDSHeading level={3}>{title}</XDSHeading>
+          <Component theme={theme} />
+        </XDSStack>
+      ))}
+    </XDSStack>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // ThemePackagePage component
 // ---------------------------------------------------------------------------
 
@@ -3450,70 +3487,70 @@ function ThemePackagePage({
           </XDSText>
           <XDSStack direction="horizontal" gap={2} vAlign="center">
             <XDSPopover
-                label="Install"
-                placement="below"
-                alignment="end"
-                width={560}
-                content={
-                  <XDSStack direction="vertical" gap={4} style={{padding: 4}}>
+              label="Install"
+              placement="below"
+              alignment="end"
+              width={560}
+              content={
+                <XDSStack direction="vertical" gap={4} style={{padding: 4}}>
+                  <XDSStack direction="vertical" gap={1}>
+                    <XDSText type="label" weight="bold">
+                      Install
+                    </XDSText>
+                    <XDSCard padding={0}>
+                      <XDSCodeBlock
+                        code={`npm install ${doc.npmName}`}
+                        language="bash"
+                        hasCopyButton
+                      />
+                    </XDSCard>
+                  </XDSStack>
+                  <XDSStack direction="vertical" gap={1}>
+                    <XDSText type="label" weight="bold">
+                      Setup
+                    </XDSText>
+                    <XDSText type="supporting" color="secondary">
+                      Import the theme CSS and wrap your app in XDSTheme.
+                    </XDSText>
+                    <XDSCard padding={0}>
+                      <XDSCodeBlock
+                        code={setupCode}
+                        language="tsx"
+                        hasCopyButton
+                      />
+                    </XDSCard>
+                  </XDSStack>
+                  {themeDocs.length > 1 && (
                     <XDSStack direction="vertical" gap={1}>
                       <XDSText type="label" weight="bold">
-                        Install
-                      </XDSText>
-                      <XDSCard padding={0}>
-                        <XDSCodeBlock
-                          code={`npm install ${doc.npmName}`}
-                          language="bash"
-                          hasCopyButton
-                        />
-                      </XDSCard>
-                    </XDSStack>
-                    <XDSStack direction="vertical" gap={1}>
-                      <XDSText type="label" weight="bold">
-                        Setup
+                        Switch themes
                       </XDSText>
                       <XDSText type="supporting" color="secondary">
-                        Import the theme CSS and wrap your app in XDSTheme.
+                        Swap the CSS import and theme object. No component
+                        changes needed.
                       </XDSText>
-                      <XDSCard padding={0}>
-                        <XDSCodeBlock
-                          code={setupCode}
-                          language="tsx"
-                          hasCopyButton
-                        />
-                      </XDSCard>
+                      {themeDocs
+                        .filter(t => t.npmName !== doc.npmName)
+                        .map(t => (
+                          <XDSCard key={t.slug} padding={0}>
+                            <XDSCodeBlock
+                              code={`npm install ${t.npmName}\n\n# @import "${t.npmName}/theme.css";\n# import {${t.slug}Theme} from '${t.npmName}/built';`}
+                              language="bash"
+                              hasCopyButton
+                            />
+                          </XDSCard>
+                        ))}
                     </XDSStack>
-                    {themeDocs.length > 1 && (
-                      <XDSStack direction="vertical" gap={1}>
-                        <XDSText type="label" weight="bold">
-                          Switch themes
-                        </XDSText>
-                        <XDSText type="supporting" color="secondary">
-                          Swap the CSS import and theme object. No component
-                          changes needed.
-                        </XDSText>
-                        {themeDocs
-                          .filter(t => t.npmName !== doc.npmName)
-                          .map(t => (
-                            <XDSCard key={t.slug} padding={0}>
-                              <XDSCodeBlock
-                                code={`npm install ${t.npmName}\n\n# @import "${t.npmName}/theme.css";\n# import {${t.slug}Theme} from '${t.npmName}/built';`}
-                                language="bash"
-                                hasCopyButton
-                              />
-                            </XDSCard>
-                          ))}
-                      </XDSStack>
-                    )}
-                  </XDSStack>
-                }>
-                <XDSButton
-                  label="Install"
-                  variant="primary"
-                  size="lg"
-                  icon={<XDSIcon icon={DownloadIcon} size="sm" />}
-                />
-              </XDSPopover>
+                  )}
+                </XDSStack>
+              }>
+              <XDSButton
+                label="Install"
+                variant="primary"
+                size="lg"
+                icon={<XDSIcon icon={DownloadIcon} size="sm" />}
+              />
+            </XDSPopover>
             {onCraft && (
               <XDSButton
                 label="Try in Craft"
@@ -3532,16 +3569,13 @@ function ThemePackagePage({
               variant="ghost"
               onClick={() => setPreviewDark(prev => !prev)}
             />
-            </XDSStack>
+          </XDSStack>
         </XDSStack>
 
         {/* Preview */}
         {themeObject && (
           <XDSTheme theme={themeObject} mode={previewDark ? 'dark' : 'light'}>
-            <XDSCard
-              variant="muted"
-              padding={6}
-              style={{overflow: 'hidden'}}>
+            <XDSCard variant="muted" padding={6} style={{overflow: 'hidden'}}>
               <XDSStack direction="vertical" gap={6}>
                 <XDSCard
                   padding={0}
@@ -3556,14 +3590,10 @@ function ThemePackagePage({
 
         {/* Tokens */}
         {themeObject && (
-          <XDSStack direction="vertical" gap={3}>
-            <XDSHeading level={2}>Tokens</XDSHeading>
-            <XDSTheme theme={themeObject}>
-              <TokenScalePreview tokens={themeObject.tokens} />
-            </XDSTheme>
-          </XDSStack>
+          <XDSTheme theme={themeObject}>
+            <ThemeTokensSection theme={themeObject} />
+          </XDSTheme>
         )}
-
       </XDSStack>
     </XDSSection>
   );
