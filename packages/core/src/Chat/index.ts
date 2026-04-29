@@ -34,6 +34,9 @@ export type {
 export {XDSChatTokenizedText} from './XDSChatTokenizedText';
 export type {XDSChatTokenizedTextProps} from './XDSChatTokenizedText';
 
+export {XDSChatPastedTextToken} from './XDSChatPastedTextToken';
+export type {XDSChatPastedTextTokenProps} from './XDSChatPastedTextToken';
+
 export {XDSChatMessageList} from './XDSChatMessageList';
 export type {XDSChatMessageListProps} from './XDSChatMessageList';
 

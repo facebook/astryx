@@ -172,6 +172,14 @@ export const docs = {
         {name: 'token', type: 'XDSChatComposerToken', description: 'The token to render. Pass a badge config ({ value, label, variant?, icon? }) for the common case, or a custom render ({ value, render }) for full control.', required: true},
       ],
     },
+    {
+      name: 'XDSChatPastedTextToken',
+      description: 'Inline token that represents pasted text inside the chat composer. Renders a neutral badge showing a character and line count. On hover, a card previews the full text with an optional Expand button to dissolve the token back into editable text.',
+      props: [
+        {name: 'text', type: 'string', description: 'The full pasted text. The badge label auto-formats as "N chars" or "N lines, N chars" based on content.', required: true},
+        {name: 'onExpand', type: '() => void', description: 'Called when the user clicks Expand in the hover card. Dissolves the token into editable text in the composer.'},
+      ],
+    },
   ],
   usage: {
     description: 'Chat components provide layout primitives and a message composer for building AI chat interfaces. XDSChatComposer is the input shell — compose it using named slots (drawer, headerActions, footerActions, sendActions) to assemble features like file attachments, model selectors, and context indicators without building custom layout. Use Chat components when building conversational UIs that need message display, sender-aware styling, and rich input with trigger menus and attachments.',
@@ -388,6 +396,11 @@ export const docsZh = {
       propDescriptions: {token: '徽章配置或自定义渲染。'},
     },
     {
+      name: 'XDSChatPastedTextToken',
+      description: '聊天编辑器中粘贴文本的内联标记。渲染一个中性徽章，显示字符和行数。悬停时显示完整文本预览卡片，带有可选的展开按钮。',
+      propDescriptions: {text: '完整的粘贴文本。徽章标签根据内容自动格式化为"N 个字符"或"N 行，N 个字符"。', onExpand: '用户在悬停卡片中点击展开时调用。将标记溶解为编辑器中的可编辑文本。'},
+    },
+    {
       name: 'XDSChatLayout',
       description: '完整聊天界面的布局外壳。消息在页面中自然流动，编写器固定在底部，带有毛玻璃效果。通过容器宽度自动适配密度。',
       propDescriptions: {
@@ -570,6 +583,14 @@ export const docsDense = {
       name: 'XDSChatComposerTokenElement',
       description: 'token chip outside contentEditable; badge config or custom render in data-xds-token span',
       propDescriptions: {token: 'badge config or custom render'},
+    },
+    {
+      name: 'XDSChatPastedTextToken',
+      description: 'inline pasted-text token in composer; neutral badge w/ char+line count; hover card previews full text w/ optional Expand to dissolve back to editable text',
+      propDescriptions: {
+        text: 'full pasted text; badge auto-formats count label',
+        onExpand: 'expand click handler; dissolves token into editable text',
+      },
     },
     {
       name: 'XDSChatLayout',
