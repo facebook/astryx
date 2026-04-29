@@ -5,8 +5,16 @@
  * @position Theme utility; consumed by defineTheme.ts
  *
  * Computes border-radius values from a base unit and multiplier.
- * radius-0 and radius-rounded are always fixed (never affected by multiplier).
- * radius-1 through radius-4 = base * step * multiplier.
+ * --radius-none and --radius-full are always fixed (never affected by multiplier).
+ * --radius-inner through --radius-page = base * step * multiplier.
+ *
+ * Semantic scale:
+ *   --radius-none      → 0px (fixed)
+ *   --radius-inner     → base × 1 × multiplier (internal corners)
+ *   --radius-element   → base × 2 × multiplier (buttons, inputs)
+ *   --radius-container → base × 3 × multiplier (cards, panels)
+ *   --radius-page      → base × 7 × multiplier (page-level containers)
+ *   --radius-full      → 9999px (fixed, pill shapes)
  *
  * SYNC: When modified, update:
  * - /packages/core/src/theme/expandRadiusScale.test.ts
@@ -35,7 +43,7 @@
 export interface XDSRadiusScaleConfig {
   /** Base radius unit in px. Default: 4 */
   base: number;
-  /** Multiplier applied to all scalable tokens. Default: 1. Range: 0-2 */
+  /** Multiplier applied to scalable tokens (inner through page). Default: 1. Range: 0-2 */
   multiplier: number;
 }
 
@@ -52,18 +60,21 @@ export type RadiusScaleTokens = Record<string, string>;
 /**
  * Expand a radius scale config into token overrides.
  *
- * radius-0 and radius-rounded are always fixed (never affected by multiplier).
- * radius-1 through radius-4 = base * step * multiplier
+ * --radius-none and --radius-full are fixed anchors.
+ * --radius-inner through --radius-page scale with base × step × multiplier.
  *
  * @example
  * ```
  * const tokens = expandRadiusScale({ base: 4, multiplier: 1 });
  * // tokens['--radius-none'] === '0px'
- * // tokens['--radius-inner'] === '4px'
- * // tokens['--radius-element'] === '8px'
- * // tokens['--radius-container'] === '12px'
- * // tokens['--radius-page'] === '28px'
+ * // tokens['--radius-inner'] === '4px'       (4 × 1 × 1)
+ * // tokens['--radius-element'] === '8px'     (4 × 2 × 1)
+ * // tokens['--radius-container'] === '12px'  (4 × 3 × 1)
+ * // tokens['--radius-page'] === '28px'       (4 × 7 × 1)
  * // tokens['--radius-full'] === '9999px'
+ *
+ * const sharp = expandRadiusScale({ base: 4, multiplier: 0 });
+ * // All scalable tokens become '0px', none and full unchanged
  * ```
  */
 export function expandRadiusScale(

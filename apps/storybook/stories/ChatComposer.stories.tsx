@@ -7,6 +7,9 @@ import {
 import {XDSToken} from '@xds/core/Token';
 import {XDSButton} from '@xds/core/Button';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
+import {XDSList, XDSListItem} from '@xds/core/List';
+import {XDSText} from '@xds/core/Text';
+import {XDSBadge} from '@xds/core/Badge';
 import {useState} from 'react';
 
 // Inline icons for story demos (not in the default icon registry)
@@ -50,6 +53,33 @@ const MicIcon = (
     <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
     <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
     <line x1="12" x2="12" y1="19" y2="22" />
+  </svg>
+);
+
+const ChevronLeftIcon = (
+  <svg
+    width="1em"
+    height="1em"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round">
+    <path d="m15 18-6-6 6-6" />
+  </svg>
+);
+const ChevronRightIcon = (
+  <svg
+    width="1em"
+    height="1em"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round">
+    <path d="m9 18 6-6-6-6" />
   </svg>
 );
 
@@ -326,6 +356,123 @@ export const SendStopToggle: Story = {
           setIsStreaming(false);
         }}
         placeholder="Send a message to start streaming..."
+      />
+    );
+  },
+};
+
+/** Drawer with follow-up questions, selectable options, and prev/next navigation */
+export const FollowUpQuestion: Story = {
+  render: () => {
+    const questions = [
+      {
+        question: 'Which environment should this deploy to?',
+        options: [
+          {key: 'A', label: 'Production (requires approval)'},
+          {key: 'B', label: 'Staging'},
+          {key: 'C', label: 'Local development only'},
+        ],
+      },
+      {
+        question:
+          'This will modify 12 files. How should I handle breaking changes?',
+        options: [
+          {key: 'A', label: 'Add a migration and keep backward compatibility'},
+          {
+            key: 'B',
+            label: 'Breaking change is fine \u2014 bump the major version',
+          },
+        ],
+      },
+      {
+        question:
+          'I found 3 existing implementations. Which one should I extend?',
+        options: [
+          {key: 'A', label: 'UserService in src/services/ (most recent)'},
+          {
+            key: 'B',
+            label: 'UserManager in src/legacy/ (has more test coverage)',
+          },
+          {key: 'C', label: 'Neither \u2014 start fresh'},
+        ],
+      },
+    ];
+
+    const [currentQ, setCurrentQ] = useState(0);
+    const [answers, setAnswers] = useState<Record<number, string>>({});
+    const q = questions[currentQ];
+    const selected = answers[currentQ] ?? null;
+
+    return (
+      <XDSChatComposer
+        onSubmit={value => {
+          console.log('Submit:', value, '| Answers:', answers);
+          alert(
+            `Sent: "${value}"\nAnswers: ${JSON.stringify(answers, null, 2)}`,
+          );
+        }}
+        placeholder="Or describe what you need in your own words\u2026"
+        drawer={
+          <XDSChatComposerDrawer count={questions.length} label="Questions">
+            <div style={{width: '100%'}}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBlockEnd: 4,
+                }}>
+                <XDSButton
+                  label="Previous question"
+                  variant="ghost"
+                  size="sm"
+                  icon={ChevronLeftIcon}
+                  isIconOnly
+                  isDisabled={currentQ === 0}
+                  onClick={() => setCurrentQ(i => i - 1)}
+                />
+                <XDSText color="secondary">
+                  {currentQ + 1} of {questions.length}
+                </XDSText>
+                <XDSButton
+                  label="Next question"
+                  variant="ghost"
+                  size="sm"
+                  icon={ChevronRightIcon}
+                  isIconOnly
+                  isDisabled={currentQ === questions.length - 1}
+                  onClick={() => setCurrentQ(i => i + 1)}
+                />
+              </div>
+              <XDSList>
+                <XDSListItem
+                  label={
+                    <XDSText weight="bold">
+                      {currentQ + 1}. {q.question}
+                    </XDSText>
+                  }
+                />
+                {q.options.map(opt => (
+                  <XDSListItem
+                    key={opt.key}
+                    label={opt.label}
+                    startContent={
+                      <XDSBadge
+                        variant={selected === opt.key ? 'info' : 'neutral'}
+                        label={opt.key}
+                      />
+                    }
+                    isSelected={selected === opt.key}
+                    onClick={() =>
+                      setAnswers(prev => ({...prev, [currentQ]: opt.key}))
+                    }
+                  />
+                ))}
+              </XDSList>
+            </div>
+          </XDSChatComposerDrawer>
+        }
+        footerActions={<XDSButton label="Skip all" variant="ghost" size="md" />}
       />
     );
   },

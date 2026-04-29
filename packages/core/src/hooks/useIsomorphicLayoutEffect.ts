@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file useIsomorphicLayoutEffect.ts
  * @input React useLayoutEffect, useEffect

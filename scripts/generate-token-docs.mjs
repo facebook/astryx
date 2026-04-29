@@ -61,6 +61,7 @@ function extractDefaults(name) {
 const groups = [
   {
     key: 'color',
+    previewType: 'swatch',
     exportName: 'colorDefaults',
     title: 'Color Tokens',
     description:
@@ -76,6 +77,7 @@ const groups = [
   },
   {
     key: 'spacing',
+    previewType: 'spacing-bar',
     exportName: 'spacingDefaults',
     title: 'Spacing Tokens',
     description:
@@ -85,6 +87,7 @@ const groups = [
   },
   {
     key: 'size',
+    previewType: 'size-bar',
     exportName: 'sizeDefaults',
     title: 'Size Tokens',
     description:
@@ -94,6 +97,7 @@ const groups = [
   },
   {
     key: 'border',
+    previewType: 'border-line',
     exportName: 'borderDefaults',
     title: 'Border Tokens',
     description: 'Border width for card and input borders.',
@@ -102,6 +106,7 @@ const groups = [
   },
   {
     key: 'radius',
+    previewType: 'radius-box',
     exportName: 'radiusDefaults',
     title: 'Radius Tokens',
     description:
@@ -111,6 +116,7 @@ const groups = [
   },
   {
     key: 'shadow',
+    previewType: 'shadow-box',
     exportName: 'shadowDefaults',
     title: 'Shadow Tokens',
     description:
@@ -120,6 +126,7 @@ const groups = [
   },
   {
     key: 'duration',
+    previewType: 'duration-bar',
     exportName: 'durationDefaults',
     title: 'Duration Tokens',
     description:
@@ -129,6 +136,7 @@ const groups = [
   },
   {
     key: 'ease',
+    previewType: 'easing-curve',
     exportName: 'easeDefaults',
     title: 'Easing Tokens',
     description: 'Easing curves for animations and transitions.',
@@ -137,6 +145,7 @@ const groups = [
   },
   {
     key: 'typography',
+    previewType: 'font-sample',
     exportName: 'typographyDefaults',
     title: 'Font Family Tokens',
     description: 'Font family stacks for body, code, and heading text.',
@@ -145,6 +154,7 @@ const groups = [
   },
   {
     key: 'textSize',
+    previewType: 'font-sample',
     exportName: 'textSizeDefaults',
     title: 'Font Size Tokens',
     description:
@@ -154,6 +164,7 @@ const groups = [
   },
   {
     key: 'fontWeight',
+    previewType: 'font-sample',
     exportName: 'fontWeightDefaults',
     title: 'Font Weight Tokens',
     description: 'Font weight values for body, emphasis, and headings.',
@@ -162,6 +173,7 @@ const groups = [
   },
   {
     key: 'typeScale',
+    previewType: 'font-sample',
     exportName: 'typeScaleDefaults',
     title: 'Type Scale Tokens',
     description:
@@ -189,7 +201,9 @@ for (const group of groups) {
     {type: 'table', headers: group.headers, rows},
   ];
 
-  sections.push({title: group.title, content});
+  const section = {title: group.title, content};
+  if (group.previewType) section.previewType = group.previewType;
+  sections.push(section);
 }
 
 // Add a usage section at the end (hand-written, not generated)

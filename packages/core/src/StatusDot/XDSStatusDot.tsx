@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @file XDSStatusDot.tsx
  * @input Uses React

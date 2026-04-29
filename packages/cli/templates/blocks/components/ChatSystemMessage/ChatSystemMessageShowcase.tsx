@@ -1,9 +1,6 @@
 'use client';
 
-import {
-  XDSChatMessageList,
-  XDSChatSystemMessage,
-} from '@xds/core/Chat';
+import {XDSChatMessageList, XDSChatSystemMessage} from '@xds/core/Chat';
 
 export default function ChatSystemMessageShowcase() {
   return (
@@ -12,17 +9,11 @@ export default function ChatSystemMessageShowcase() {
         March 15, 2026
       </XDSChatSystemMessage>
 
-      <XDSChatSystemMessage>
-        Alex joined the conversation
-      </XDSChatSystemMessage>
+      <XDSChatSystemMessage>Alex joined the conversation</XDSChatSystemMessage>
 
-      <XDSChatSystemMessage>
-        Navi is thinking…
-      </XDSChatSystemMessage>
+      <XDSChatSystemMessage>Agent is thinking…</XDSChatSystemMessage>
 
-      <XDSChatSystemMessage variant="divider">
-        Today
-      </XDSChatSystemMessage>
+      <XDSChatSystemMessage variant="divider">Today</XDSChatSystemMessage>
 
       <XDSChatSystemMessage>
         Conversation marked as resolved

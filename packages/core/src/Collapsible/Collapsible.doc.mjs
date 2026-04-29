@@ -86,7 +86,7 @@ export const docs = {
     },
   ],
   usage: {
-    description: 'Collapsible hides and reveals content behind a trigger button. Use it in settings panels, FAQ pages, or detail views to keep the page scannable while letting users drill into sections they care about. Wrap multiple collapsibles in XDSCollapsibleGroup for accordion behavior.',
+    description: 'Collapsible hides and reveals content behind a trigger button. Use it in settings panels, FAQ pages, or detail views to keep the page scannable while letting users drill into sections they care about. Wrap multiple collapsibles in XDSCollapsibleGroup for accordion behavior. For custom collapsible components, use the `useXDSCollapsible` hook directly (`xds hook useXDSCollapsible`).',
     bestPractices: [
       { guidance: true, description: 'Wrap each XDSCollapsible in an XDSCard for visual separation in accordion layouts.' },
       { guidance: true, description: 'Use XDSCollapsibleGroup with type="single" for settings or FAQ pages where only one section should be open at a time.' },

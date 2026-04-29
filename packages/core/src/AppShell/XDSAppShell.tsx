@@ -379,20 +379,27 @@ const styles = stylex.create({
     top: 0,
     zIndex: 1,
   },
-  // Sticky sideNav for auto height mode — sticks within the wrapper
+  // Sticky sideNav for auto height mode — sticks within the wrapper.
+  // This div replaces the panel as the direct flex child of the middle
+  // (horizontal) container, so it needs the same flex properties that
+  // XDSLayoutPanel applies: flexShrink: 0 prevents the flex container
+  // from collapsing the sidenav, and overflow: clip matches the panel's
+  // default so content doesn't bleed horizontally.
   sideNavSticky: {
-    alignSelf: 'stretch',
+    flexShrink: 0,
+    overflow: 'clip',
     position: 'sticky',
     top: 'var(--appshell-header-height, 0px)',
     height: 'calc(100dvh - var(--appshell-header-height, 0px))',
-    overflow: 'auto',
     // Ensure children (XDSLayoutPanel → XDSSideNav) fill the sticky container
     display: 'flex',
     flexDirection: 'column',
   },
   // Panel fill for auto mode — panel fills the sticky container vertically
+  // and scrolls independently since the page (not the panel) owns the scroll
   panelAutoFill: {
     flex: 1,
+    overflow: 'auto',
   },
 });
 

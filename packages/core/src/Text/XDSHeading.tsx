@@ -14,7 +14,6 @@
  * - /packages/cli/templates/blocks/components/Text/ (showcase blocks)
  */
 
-
 import {lazy, Suspense, useCallback, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {
@@ -25,6 +24,7 @@ import type {
 } from '../theme/types';
 import {
   colorStyles,
+  sizeByLevelStyles,
   displayStyles,
   truncationStyles,
   wordBreakStyles,
@@ -47,7 +47,10 @@ const LazyXDSTooltip = lazy(() =>
  */
 export type XDSHeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
 
-export interface XDSHeadingProps extends Omit<XDSBaseProps<HTMLHeadingElement>, 'children'> {
+export interface XDSHeadingProps extends Omit<
+  XDSBaseProps<HTMLHeadingElement>,
+  'children'
+> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLHeadingElement>;
   /**
@@ -227,6 +230,7 @@ export function XDSHeading({
           xdsClassName('heading', {level, color}),
           stylex.props(
             colorStyles[color],
+            sizeByLevelStyles[level],
             // Display: use truncation styles when maxLines > 0
             maxLines === 1
               ? truncationStyles.singleLine

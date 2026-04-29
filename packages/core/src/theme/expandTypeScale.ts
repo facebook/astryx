@@ -62,7 +62,8 @@ export type HeadingWeightOverrides = Partial<
 
 /**
  * Weight overrides for text types.
- * Keys are text type names, values are CSS font-weight values.
+ * Keys are built-in text type names, values are CSS font-weight values.
+ * Accepts additional string keys for custom theme-defined text types.
  */
 export type TextWeightOverrides = Partial<
   Record<
@@ -73,7 +74,8 @@ export type TextWeightOverrides = Partial<
     | 'supporting'
     | 'display-1'
     | 'display-2'
-    | 'display-3',
+    | 'display-3'
+    | (string & {}),
     FontWeightValue
   >
 >;

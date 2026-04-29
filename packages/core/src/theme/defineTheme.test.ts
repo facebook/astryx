@@ -1,4 +1,5 @@
 import {describe, it, expect, vi} from 'vitest';
+import type {XDSIconRegistry} from '../Icon/globalIconRegistry';
 import {
   defineTheme,
   generateThemeCSS,
@@ -77,8 +78,8 @@ describe('defineTheme', () => {
   });
 
   it('includes icons in the theme', () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const icons = {close: 'X'} as any;
+     
+    const icons = {close: 'X'} as Partial<XDSIconRegistry>;
     const theme = defineTheme({name: 'icons', icons});
     expect(theme.icons).toBe(icons);
   });
@@ -1043,5 +1044,144 @@ describe('container padding mapping', () => {
     const css = generateThemeCSSFlat(theme);
     expect(css).toContain('--xds-card-padding-inline-start: 8px');
     expect(css).toContain('--xds-card-padding-inline-end: 24px');
+  });
+});
+
+describe('defineTheme extends', () => {
+  it('inherits tokens from base theme', () => {
+    const base = defineTheme({
+      name: 'base',
+      tokens: {
+        '--color-accent': '#0077B6',
+        '--radius-container': '16px',
+      },
+    });
+    const child = defineTheme({
+      name: 'child',
+      extends: base,
+    });
+    expect(child.tokens['--color-accent']).toBe('#0077B6');
+    expect(child.tokens['--radius-container']).toBe('16px');
+  });
+
+  it('overrides base tokens with explicit tokens', () => {
+    const base = defineTheme({
+      name: 'base',
+      tokens: {
+        '--color-accent': '#0077B6',
+        '--radius-container': '16px',
+      },
+    });
+    const child = defineTheme({
+      name: 'child',
+      extends: base,
+      tokens: {'--color-accent': '#FF0000'},
+    });
+    expect(child.tokens['--color-accent']).toBe('#FF0000');
+    expect(child.tokens['--radius-container']).toBe('16px');
+  });
+
+  it('inherits component overrides from base theme', () => {
+    const base = defineTheme({
+      name: 'base',
+      components: {
+        button: {
+          base: {fontWeight: '600'},
+          'variant:secondary': {backgroundColor: 'rgba(0,0,0,0.06)'},
+        },
+      },
+    });
+    const child = defineTheme({
+      name: 'child',
+      extends: base,
+    });
+    expect(child.components?.button?.base).toEqual({fontWeight: '600'});
+    expect(child.components?.button?.['variant:secondary']).toEqual({
+      backgroundColor: 'rgba(0,0,0,0.06)',
+    });
+  });
+
+  it('merges component overrides — child wins', () => {
+    const base = defineTheme({
+      name: 'base',
+      components: {
+        button: {
+          base: {fontWeight: '600', borderRadius: '4px'},
+        },
+      },
+    });
+    const child = defineTheme({
+      name: 'child',
+      extends: base,
+      components: {
+        button: {
+          base: {fontWeight: '700'},
+        },
+      },
+    });
+    expect(child.components?.button?.base).toEqual({
+      fontWeight: '700',
+      borderRadius: '4px',
+    });
+  });
+
+  it('merges icons — child overrides base', () => {
+    const baseIcons = {close: 'X', menu: 'M'} as Partial<XDSIconRegistry>;
+    const childIcons = {close: 'Y'} as Partial<XDSIconRegistry>;
+    const base = defineTheme({name: 'base', icons: baseIcons});
+    const child = defineTheme({
+      name: 'child',
+      extends: base,
+      icons: childIcons,
+    });
+    expect(child.icons?.close).toBe('Y');
+    expect(child.icons?.menu).toBe('M');
+  });
+
+  it('inherits icons when child has none', () => {
+    const baseIcons = {close: 'X'} as Partial<XDSIconRegistry>;
+    const base = defineTheme({name: 'base', icons: baseIcons});
+    const child = defineTheme({name: 'child', extends: base});
+    expect(child.icons?.close).toBe('X');
+  });
+
+  it('uses child name, not base name', () => {
+    const base = defineTheme({name: 'base'});
+    const child = defineTheme({name: 'my-brand', extends: base});
+    expect(child.name).toBe('my-brand');
+  });
+
+  it('inherits fonts from base theme', () => {
+    const base = defineTheme({
+      name: 'base',
+      typography: {
+        body: {
+          family: 'Geist',
+          fallbacks: 'sans-serif',
+          url: 'https://fonts.example.com/geist.css',
+        },
+        scale: {base: 14, ratio: 1.2},
+      },
+    });
+    const child = defineTheme({name: 'child', extends: base});
+    expect(child.fonts).toEqual([
+      {family: 'Geist', url: 'https://fonts.example.com/geist.css'},
+    ]);
+  });
+
+  it('typography in child overrides base typography tokens', () => {
+    const base = defineTheme({
+      name: 'base',
+      typography: {scale: {base: 14, ratio: 1.2}},
+    });
+    const child = defineTheme({
+      name: 'child',
+      extends: base,
+      typography: {scale: {base: 16, ratio: 1.25}},
+    });
+    // Child's type scale tokens should differ from base
+    expect(child.tokens['--font-size-base']).not.toBe(
+      base.tokens['--font-size-base'],
+    );
   });
 });

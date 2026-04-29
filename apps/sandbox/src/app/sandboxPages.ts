@@ -115,6 +115,12 @@ export const categories: SandboxCategory[] = [
         description: 'Compare highlight modes and scroll performance',
       },
       {
+        name: 'Foundations',
+        href: '/pages/doc-preview/',
+        description:
+          'Token reference docs with live theme previews — color, spacing, typography, and more',
+      },
+      {
         name: 'Docsite',
         href: '/pages/docsite/',
         description:

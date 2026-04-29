@@ -176,6 +176,43 @@ const myTheme = defineTheme({
       ],
     },
     {
+      title: 'Extending a Theme',
+      content: [
+        {
+          type: 'prose',
+          text: '`extends` lets you derive a new theme from an existing one — inheriting its tokens, component overrides, icons, and fonts. Only specify what you want to change; everything else carries over from the base theme.',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Extending the default theme',
+          code: `import {defineTheme} from '@xds/core/theme';
+import {defaultTheme} from '@xds/theme-default';
+import {myIcons} from './icons';
+
+const brandTheme = defineTheme({
+  name: 'brand',
+  extends: defaultTheme,
+  icons: myIcons,
+  tokens: {
+    '--color-accent': ['#7B61FF', '#9B85FF'],
+  },
+});`,
+        },
+        {
+          type: 'table',
+          headers: ['Field', 'Merge behavior'],
+          rows: [
+            ['tokens', 'Base tokens are copied first, then child tokens override on top.'],
+            ['components', 'Deep-merged — child component rules override matching keys from the base.'],
+            ['icons', 'Shallow-merged — child icons override matching names from the base.'],
+            ['fonts', 'Base fonts included first, then child fonts appended.'],
+            ['typography, motion, radius, color', 'Child config replaces base entirely (these are scale inputs, not additive).'],
+          ],
+        },
+      ],
+    },
+    {
       title: 'Component Style Overrides',
       content: [
         {

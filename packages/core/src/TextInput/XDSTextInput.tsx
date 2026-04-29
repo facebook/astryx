@@ -114,6 +114,7 @@ export type {
 } from '../Field';
 import {xdsClassName, mergeProps} from '../utils';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
+import {useInputContainer} from '../hooks/useInputContainer';
 import {XDSBaseProps} from '../XDSBaseProps';
 
 export type XDSTextInputType = 'text' | 'password' | 'email';
@@ -267,6 +268,7 @@ export function XDSTextInput({
   const descriptionID = useId();
   const statusMessageID = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
@@ -325,6 +327,14 @@ export function XDSTextInput({
     [ref],
   );
 
+  // Focus input when clicking anywhere on the wrapper (icons, padding, etc.)
+  const {onClick: handleWrapperClick, onMouseUp: handleWrapperMouseUp} =
+    useInputContainer({
+      containerRef,
+      inputRef,
+      disabled: isDisabled,
+    });
+
   return (
     <XDSField
       label={label}
@@ -346,6 +356,9 @@ export function XDSTextInput({
       }
       labelTooltip={labelTooltip}>
       <div
+        ref={containerRef}
+        onClick={handleWrapperClick}
+        onMouseUp={handleWrapperMouseUp}
         {...mergeProps(
           xdsClassName('text-input', {size, status: status?.type ?? null}),
           stylex.props(

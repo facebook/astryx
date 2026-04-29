@@ -45,6 +45,7 @@ import {
 } from '../Field';
 import {XDSIcon, renderIconSlot, type XDSIconType} from '../Icon';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
+import {useInputContainer} from '../hooks/useInputContainer';
 
 const styles = stylex.create({
   wrapper: {
@@ -364,6 +365,7 @@ export function XDSNumberInput({
   const descriptionID = useId();
   const statusMessageID = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   // Pending input while user is typing (null = show formatted value)
   const [pendingInput, setPendingInput] = useState<string | null>(null);
@@ -508,6 +510,14 @@ export function XDSNumberInput({
     inputRef.current?.focus();
   }, [hasClear, onChange]);
 
+  // Focus input when clicking anywhere on the wrapper (icons, padding, etc.)
+  const {onClick: handleWrapperClick, onMouseUp: handleWrapperMouseUp} =
+    useInputContainer({
+      containerRef,
+      inputRef,
+      disabled: isDisabled,
+    });
+
   return (
     <XDSField
       label={label}
@@ -530,6 +540,9 @@ export function XDSNumberInput({
       }
       labelTooltip={labelTooltip}>
       <div
+        ref={containerRef}
+        onClick={handleWrapperClick}
+        onMouseUp={handleWrapperMouseUp}
         {...mergeProps(
           xdsClassName('number-input', {size, status: status?.type ?? null}),
           stylex.props(

@@ -18,6 +18,8 @@ import {
   useId,
   useOptimistic,
   useTransition,
+  useCallback,
+  useRef,
   type ChangeEvent,
   type ClipboardEvent,
   type FocusEvent,
@@ -42,6 +44,7 @@ import {XDSIcon, renderIconSlot, type XDSIconType} from '../Icon';
 import {XDSSpinner} from '../Spinner';
 import {xdsClassName, mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {useInputContainer} from '../hooks/useInputContainer';
 
 const COUNTER_WARNING_THRESHOLD = 0.8;
 
@@ -275,6 +278,8 @@ export function XDSTextArea({
   const descriptionID = useId();
   const statusMessageID = useId();
   const counterID = useId();
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
@@ -317,6 +322,28 @@ export function XDSTextArea({
 
   const effectivelyDisabled = isDisabled || isBusy;
 
+  // Combine refs
+  const setRefs = useCallback(
+    (el: HTMLTextAreaElement | null) => {
+      textareaRef.current = el;
+      if (typeof ref === 'function') {
+        ref(el);
+      } else if (ref) {
+        (ref as React.MutableRefObject<HTMLTextAreaElement | null>).current =
+          el;
+      }
+    },
+    [ref],
+  );
+
+  // Focus textarea when clicking anywhere on the wrapper (icons, padding, etc.)
+  const {onClick: handleWrapperClick, onMouseUp: handleWrapperMouseUp} =
+    useInputContainer({
+      containerRef,
+      inputRef: textareaRef,
+      disabled: effectivelyDisabled,
+    });
+
   return (
     <XDSField
       label={label}
@@ -338,6 +365,9 @@ export function XDSTextArea({
       }
       labelTooltip={labelTooltip}>
       <div
+        ref={containerRef}
+        onClick={handleWrapperClick}
+        onMouseUp={handleWrapperMouseUp}
         {...mergeProps(
           xdsClassName('textarea', {status: status?.type ?? null}),
           stylex.props(
@@ -356,7 +386,7 @@ export function XDSTextArea({
           renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
         <textarea
           {...rest}
-          ref={ref}
+          ref={setRefs}
           id={id}
           name={htmlName}
           value={String(optimisticValue)}

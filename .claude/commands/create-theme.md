@@ -147,6 +147,26 @@ Component overrides generate scoped CSS:
 - **Unbuilt**: `XDSTheme` generates CSS and injects `<style>` at runtime
 - **Built**: `npx xds theme build` pre-compiles to a CSS file
 
+## Extending an Existing Theme
+
+Use `extends` to derive from another theme — inherits tokens, components, icons, fonts. Only specify overrides.
+
+```tsx
+import {defineTheme} from '@xds/core/theme';
+import {defaultTheme} from '@xds/theme-default';
+
+export const brandTheme = defineTheme({
+  name: 'brand',
+  extends: defaultTheme,
+  icons: myIcons, // swap icons
+  tokens: {
+    '--color-accent': ['#7B61FF', '#9B85FF'], // override accent
+  },
+});
+```
+
+Child values win. Tokens and components are deep-merged; scale configs (typography, motion, radius) replace entirely.
+
 ## Reference
 
 See existing themes for examples:

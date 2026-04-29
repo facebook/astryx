@@ -162,4 +162,8 @@ export type {
   DerivedVar,
   TranslationDoc,
   GroupDoc,
+  ReferenceDoc,
+  ReferenceSection,
+  ContentBlock,
+  TokenPreviewType,
 } from './docs-types';

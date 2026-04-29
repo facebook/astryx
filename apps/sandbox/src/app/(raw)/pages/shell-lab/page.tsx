@@ -127,6 +127,7 @@ interface ShellConfig {
   showSuperheading: boolean;
   showSubheading: boolean;
   headingIconStyle: 'navicon' | 'icon' | 'none';
+  showHeaderEndContent: boolean;
   showNestedItems: boolean;
   isCollapsible: boolean;
   isResizable: boolean;
@@ -156,6 +157,7 @@ const DEFAULT_CONFIG: ShellConfig = {
   showSuperheading: false,
   showSubheading: false,
   headingIconStyle: 'navicon',
+  showHeaderEndContent: false,
   showNestedItems: true,
   isCollapsible: true,
   isResizable: false,
@@ -279,6 +281,11 @@ function ConfigPanel({
             label="Subheading"
             value={config.showSubheading}
             onChange={v => onChange({showSubheading: v})}
+          />
+          <ToggleRow
+            label="Header End Content"
+            value={config.showHeaderEndContent}
+            onChange={v => onChange({showHeaderEndContent: v})}
           />
           <ToggleRow
             label="Top Content"
@@ -603,6 +610,11 @@ function SampleSideNav({
           config.sideNavHeadingStyle === 'full'
             ? headingMenu
             : undefined
+        }
+        headerEndContent={
+          config.showHeaderEndContent ? (
+            <XDSBadge label="Pro" variant="info" />
+          ) : undefined
         }
       />
     );

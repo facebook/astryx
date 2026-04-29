@@ -162,6 +162,28 @@ export type XDSComponentStyleMap = Record<
 export interface XDSDefineThemeInput {
   /** Theme name — used for data-xds-theme attribute and identification */
   name: string;
+
+  /**
+   * Base theme to extend. When provided, the new theme starts with the
+   * base theme's tokens, components, and fonts, then applies overrides
+   * from this input on top. The base theme's values have lowest precedence.
+   *
+   * Use this to create variant themes that customize only a few aspects
+   * (e.g. icons, accent color) without re-specifying the full theme.
+   *
+   * @example
+   * ```tsx
+   * import {defaultTheme} from '@xds/theme-default';
+   *
+   * const myTheme = defineTheme({
+   *   name: 'my-brand',
+   *   extends: defaultTheme,
+   *   icons: myIcons,
+   *   tokens: { '--color-accent': '#FF0000' },
+   * });
+   * ```
+   */
+  extends?: XDSDefinedTheme;
   /**
    * Unified typography configuration — fonts, scale, and weights.
    *
@@ -201,8 +223,8 @@ export interface XDSDefineThemeInput {
    * Radius configuration. Generates radius token overrides
    * from a base unit and multiplier.
    *
-   * radius-0 and radius-rounded are always fixed (never affected by multiplier).
-   * radius-1 through radius-4 = base * step * multiplier.
+   * --radius-none and --radius-full are always fixed (never affected by multiplier).
+   * --radius-inner through --radius-page = base * step * multiplier.
    *
    * When omitted, themes use the hardcoded defaults (base=4, multiplier=1).
    * Explicit `tokens` overrides take precedence over radius-generated values.
@@ -452,6 +474,14 @@ function buildFontFamily(
 export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
   const tokens: Record<string, string> = {};
 
+  // 0. Pre-seed from base theme when `extends` is provided (lowest precedence)
+  const base = input.extends;
+  if (base) {
+    for (const [key, value] of Object.entries(base.tokens)) {
+      tokens[key] = value;
+    }
+  }
+
   // Build typeScale config from typography if present
   const typo = input.typography;
   let typeScaleConfig: XDSTypeScaleConfig | undefined;
@@ -561,11 +591,14 @@ export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
     }
   }
 
-  // 3. Generate component overrides: typeScale-generated (lowest) + explicit (highest)
+  // 3. Generate component overrides: base (lowest) → typeScale → explicit (highest)
   let components = input.components;
   if (typeScaleConfig) {
     const generated = generateTypeScaleComponents(typeScaleConfig);
     components = deepMergeComponents(generated, input.components);
+  }
+  if (base?.components) {
+    components = deepMergeComponents(base.components, components);
   }
 
   // 4. Derive fonts array from typography roles (for runtime loading)
@@ -588,12 +621,31 @@ export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
   const __onDark = resolveOnMedia('dark', input.onDark);
   const __onLight = resolveOnMedia('light', input.onLight);
 
+  // 6. Merge icons — input icons override base icons
+  const icons =
+    input.icons && base?.icons
+      ? {...base.icons, ...input.icons}
+      : input.icons ?? base?.icons;
+
+  // 7. Merge fonts — input fonts take priority, deduplicate by family
+  let mergedFonts = fonts;
+  if (!mergedFonts && base?.fonts) {
+    mergedFonts = base.fonts;
+  } else if (mergedFonts && base?.fonts) {
+    const seen = new Set(mergedFonts.map(f => f.family));
+    for (const font of base.fonts) {
+      if (!seen.has(font.family)) {
+        mergedFonts.push(font);
+      }
+    }
+  }
+
   return {
     name: input.name,
     tokens,
     components,
-    icons: input.icons,
-    fonts,
+    icons,
+    fonts: mergedFonts,
     __inputTokens: input.tokens,
     __onDark,
     __onLight,

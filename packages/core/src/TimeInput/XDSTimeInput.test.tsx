@@ -8,7 +8,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {XDSTimeInput} from './XDSTimeInput';
 import type {ISOTimeString} from '../utils';
@@ -183,5 +183,29 @@ describe('XDSTimeInput', () => {
 
     // onChange should be called immediately when input is valid, not waiting for blur
     expect(onChange).toHaveBeenCalledWith('15:45');
+  });
+
+  it('focuses input when clicking the clock icon', () => {
+    render(<XDSTimeInput label="Time" onChange={() => {}} />);
+
+    const input = screen.getByRole('textbox');
+    const wrapper = input.parentElement!;
+    // The icon container is the first child div (before the input)
+    const iconContainer = wrapper.querySelector(':scope > div') as HTMLElement;
+
+    fireEvent.click(iconContainer);
+    expect(input).toHaveFocus();
+  });
+
+  it('focuses input when clicking the wrapper padding', () => {
+    render(<XDSTimeInput label="Time" onChange={() => {}} />);
+
+    const input = screen.getByRole('textbox');
+    const wrapper = input.parentElement!;
+
+    // Simulate clicking padding area by dispatching click directly on wrapper
+    // with wrapper as both target and currentTarget
+    fireEvent.click(wrapper);
+    expect(input).toHaveFocus();
   });
 });

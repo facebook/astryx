@@ -421,6 +421,7 @@ export interface TranslationDoc {
  * { type: 'code', lang: 'tsx', code: 'padding: spacingVars[...]' }
  * { type: 'table', headers: ['Token', 'Value'], rows: [['--spacing-4', '16px']] }
  * { type: 'list', style: 'do', items: ['Use semantic tokens'] }
+ * { type: 'token-ref', topic: 'tokens', section: 'Color Tokens' }
  * ```
  */
 export type ContentBlock =
@@ -431,7 +432,43 @@ export type ContentBlock =
       type: 'list';
       style: 'ordered' | 'unordered' | 'do' | 'dont';
       items: string[];
+    }
+  | {
+      /** Reference to a token table in another doc topic.
+       *  The CLI resolves this at read time and inlines the referenced
+       *  section's table. The docsite can render it with live theme values
+       *  and type-specific previews instead of static strings. */
+      type: 'token-ref';
+      /** Doc topic name containing the tokens. e.g. `'tokens'` */
+      topic: string;
+      /** Section title to pull from that topic. e.g. `'Color Tokens'` */
+      section: string;
     };
+
+/**
+ * Preview type hint for token tables. Tells the docsite how to render
+ * a visual preview column for each token row.
+ *
+ * - `'swatch'` — Color circle/square showing the token value
+ * - `'shadow-box'` — Box with the shadow applied
+ * - `'radius-box'` — Box with the border-radius applied
+ * - `'spacing-bar'` — Horizontal bar at the token's width
+ * - `'size-bar'` — Horizontal bar at the token's height
+ * - `'border-line'` — Line at the token's border-width
+ * - `'duration-bar'` — Animated bar showing the timing
+ * - `'easing-curve'` — Bezier curve visualization
+ * - `'font-sample'` — Text sample in the font family/size/weight
+ */
+export type TokenPreviewType =
+  | 'swatch'
+  | 'shadow-box'
+  | 'radius-box'
+  | 'spacing-bar'
+  | 'size-bar'
+  | 'border-line'
+  | 'duration-bar'
+  | 'easing-curve'
+  | 'font-sample';
 
 /**
  * A section within a reference doc. Sections are the primary
@@ -443,6 +480,10 @@ export interface ReferenceSection {
   title: string;
   /** Ordered content blocks. Mix prose, code, tables, and lists freely. */
   content: ContentBlock[];
+  /** Preview type for token tables in this section. When set, the docsite
+   *  renders a visual preview column using the token's computed CSS value
+   *  from the current theme. Omit for non-token sections. */
+  previewType?: TokenPreviewType;
 }
 
 /**
@@ -467,6 +508,11 @@ export interface ReferenceDoc {
   description: string;
   /** Ordered sections that make up the doc. */
   sections: ReferenceSection[];
+  /** Token category for foundational docs that map to a token section.
+   *  When set, the docsite can link from the tokens overview page
+   *  to this doc for detailed guidance on that category.
+   *  e.g. `'color'` links tokens → color foundational doc. */
+  tokenCategory?: string;
 }
 
 /**
@@ -568,4 +614,99 @@ export interface GroupDoc {
   /** One-sentence description of what this group of components does.
    *  Shown in the sidebar, catalog, or group landing page. */
   description: string;
+}
+
+// =============================================================================
+// Hook Documentation Types
+// =============================================================================
+
+/**
+ * Documents a hook parameter/option. Similar to PropDoc but for hook
+ * arguments and options object fields.
+ */
+export interface HookParamDoc {
+  /** Parameter or option field name. */
+  name: string;
+  /** TypeScript type signature as a string. */
+  type: string;
+  /** What this parameter does. 1-2 sentences. */
+  description: string;
+  /** Default value as a string, if optional with a default. */
+  default?: string;
+  /** True if required. Omit if optional. */
+  required?: boolean;
+}
+
+/**
+ * Documents a hook's return value field.
+ */
+export interface HookReturnDoc {
+  /** Field name on the returned object, or 'value' for primitive returns. */
+  name: string;
+  /** TypeScript type. */
+  type: string;
+  /** What this return value provides. */
+  description: string;
+}
+
+/**
+ * Documentation for a standalone hook's .doc.mjs file.
+ *
+ * Hooks that are part of a component's API (e.g. useXDSImperativeDialog)
+ * should be documented in the component's MultiComponentDoc.components array.
+ *
+ * Standalone hooks (e.g. useMediaQuery, useFocusTrap, useOverflow) get
+ * their own {hookName}.doc.mjs file and use this type.
+ *
+ * Every hook .doc.mjs must export a single `docs` constant:
+ *
+ *   /\*\* @type {import('../docs-types').HookDoc} \*\/
+ *   export const docs = { ... };
+ */
+export interface HookDoc {
+  /** Hook name exactly as exported, e.g. 'useMediaQuery', 'useFocusTrap'. */
+  name: string;
+  /** Search keywords for CLI discovery. */
+  keywords?: string[];
+  /** Hook parameters or options object fields. */
+  params: HookParamDoc[];
+  /** Return value documentation. For object returns, list each field.
+   *  For primitive returns, use a single entry. */
+  returns: HookReturnDoc[];
+  /** Usage documentation — description, best practices. */
+  usage: UsageDoc;
+  /** Component names this hook is commonly used with.
+   *  Enables cross-referencing: \`xds component Toast\` can mention useXDSToast,
+   *  and \`xds hook useXDSToast\` can link back to Toast. */
+  relatedComponents?: string[];
+  /** Other hook names this hook is commonly used with. */
+  relatedHooks?: string[];
+  /** Import path, e.g. '@xds/core/hooks' or '@xds/core/Toast'. */
+  importPath?: string;
+  /** Category for grouping in listings. */
+  category?:
+    | 'focus'
+    | 'layout'
+    | 'animation'
+    | 'interaction'
+    | 'data'
+    | 'media'
+    | 'streaming';
+}
+
+/**
+ * Translation overlay for hook documentation.
+ */
+export interface HookTranslationDoc {
+  /** Compressed/translated description. */
+  description?: string;
+  /** Param descriptions keyed by param name. */
+  paramDescriptions?: Record<string, string>;
+  /** Return descriptions keyed by field name. */
+  returnDescriptions?: Record<string, string>;
+  /** Translated usage. */
+  usage?: {
+    description?: string;
+    bestPractices?: BestPractice[];
+  };
 }

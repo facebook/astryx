@@ -8,7 +8,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 import {XDSTextInput} from './XDSTextInput';
@@ -464,6 +464,37 @@ describe('XDSTextInput', () => {
       );
       await user.click(screen.getByRole('button', {name: 'Clear Name'}));
       expect(onChange).toHaveBeenCalledWith('', null);
+    });
+  });
+
+  describe('click-to-focus', () => {
+    it('focuses input when clicking the start icon', () => {
+      render(
+        <XDSTextInput
+          label="Search"
+          value=""
+          onChange={() => {}}
+          startIcon={<MagnifyingGlassIcon />}
+        />,
+      );
+
+      const input = screen.getByRole('textbox');
+      const wrapper = input.parentElement!;
+      // The icon is rendered before the input; grab the first non-input child
+      const iconElement = wrapper.querySelector('svg')!;
+
+      fireEvent.click(iconElement);
+      expect(input).toHaveFocus();
+    });
+
+    it('focuses input when clicking the wrapper padding', () => {
+      render(<XDSTextInput label="Name" value="" onChange={() => {}} />);
+
+      const input = screen.getByRole('textbox');
+      const wrapper = input.parentElement!;
+
+      fireEvent.click(wrapper);
+      expect(input).toHaveFocus();
     });
   });
 });

@@ -6,6 +6,7 @@
 import {render, screen} from '@testing-library/react';
 import {describe, it, expect} from 'vitest';
 import {XDSText} from './XDSText';
+import type {XDSTextType} from './XDSText';
 
 describe('XDSText', () => {
   describe('rendering', () => {
@@ -193,5 +194,29 @@ describe('XDSText', () => {
     const element = screen.getByText('Themed Text');
     expect(element.className).toContain('xds-text');
     expect(element.className).toContain('body');
+  });
+});
+
+describe('XDSText custom types', () => {
+  it('renders custom text types with body fallback styles', () => {
+    render(<XDSText type={'hero' as XDSTextType}>Custom</XDSText>);
+    const el = screen.getByText('Custom');
+    expect(el).toBeInTheDocument();
+    expect(el.className).toContain('xds-text');
+    expect(el.className).toContain('hero');
+  });
+
+  it('applies primary color to custom types by default', () => {
+    render(<XDSText type={'caption' as XDSTextType}>Caption</XDSText>);
+    expect(screen.getByText('Caption').className).toContain('primary');
+  });
+
+  it('allows color override on custom types', () => {
+    render(
+      <XDSText type={'hero' as XDSTextType} color="secondary">
+        Muted
+      </XDSText>,
+    );
+    expect(screen.getByText('Muted').className).toContain('secondary');
   });
 });
