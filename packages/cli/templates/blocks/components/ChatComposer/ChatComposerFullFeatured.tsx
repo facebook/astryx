@@ -77,9 +77,9 @@ export default function ChatComposerFullFeatured() {
               menuWidth={200}
               items={[
                 {label: 'Auto', onClick: () => {}},
-                {label: 'GPT-4o', onClick: () => {}},
-                {label: 'Claude 3.5', onClick: () => {}},
-                {label: 'Llama 3', onClick: () => {}},
+                {label: 'Model A', onClick: () => {}},
+                {label: 'Model B', onClick: () => {}},
+                {label: 'Model C', onClick: () => {}},
               ]}
             />
             <XDSDropdownMenu
