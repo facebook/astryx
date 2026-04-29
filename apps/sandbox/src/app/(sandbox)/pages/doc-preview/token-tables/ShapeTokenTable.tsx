@@ -24,8 +24,27 @@ const styles = stylex.create({
   },
 });
 
+// Semantic ordering from the tokens doc
+const RADIUS_ORDER = [
+  '--radius-none',
+  '--radius-inner',
+  '--radius-element',
+  '--radius-container',
+  '--radius-page',
+  '--radius-full',
+];
+
+function sortByOrder(tokens: string[], order: string[]): string[] {
+  const orderMap = new Map(order.map((k, i) => [k, i]));
+  return [...tokens].sort((a, b) => {
+    const ai = orderMap.get(a) ?? 99;
+    const bi = orderMap.get(b) ?? 99;
+    return ai - bi;
+  });
+}
+
 function RadiusTokenTable({theme}: TokenTableProps) {
-  const tokens = getTokensByPrefix(theme, '--radius-');
+  const tokens = sortByOrder(getTokensByPrefix(theme, '--radius-'), RADIUS_ORDER);
   const data = tokens.map(name => ({
     tokenName: name,
     value: resolveToken(theme, name),
