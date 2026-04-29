@@ -43,7 +43,7 @@ export default function CenteredHero() {
       topNav={
         <XDSTopNav
           label="Main navigation"
-          heading={<XDSTopNavHeading heading="DAIILY" />}
+          heading={<XDSTopNavHeading heading="OCEAN" />}
           endContent={
             <>
               <XDSTopNavItem label="Products" href="#" />
