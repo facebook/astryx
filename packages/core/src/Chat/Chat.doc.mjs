@@ -210,6 +210,8 @@ export const docs = {
       { guidance: true, description: 'Pass a scrollRef when embedding the chat inside a page that already has its own scroll container, so auto-scroll targets the correct element.' },
       { guidance: false, description: 'Don\'t build your own scroll-to-bottom logic or density breakpoints — XDSChatLayout handles both via container width observation and spring-based auto-scroll.' },
       { guidance: false, description: 'Don\'t apply a fixed height directly on XDSChatLayout — wrap it in a sized container and let the layout fill with flex: 1.' },
+      { guidance: true, description: 'Show a label on XDSChatLayoutScrollButton (e.g. "New messages") when unread content arrives below the fold so the user knows there is something to see.' },
+      { guidance: false, description: 'Don\'t rebuild the scroll-to-bottom button from scratch — use XDSChatLayoutScrollButton or pass a custom element to XDSChatLayout\'s scrollButton prop.' },
 ],
     anatomy: [
       { name: 'Message area', required: true, description: 'Scrollable region for messages. Renders children (typically XDSChatMessageList) in a flex column that pushes content to the bottom when the list is short.' },
@@ -241,11 +243,11 @@ docs.components.push(chatLayoutComponent);
 
 const chatLayoutScrollButtonComponent = {
   name: 'XDSChatLayoutScrollButton',
-  description: 'Composable scroll-to-bottom button for use inside XDSChatLayout. Fades in when visible, expands to show a label (e.g. "New messages"). Used as the default scrollButton in XDSChatLayout; override via the scrollButton prop.',
+  description: 'Floating scroll-to-bottom button that appears when the user scrolls away from the latest messages. It fades in as a compact icon button and expands to show a label when new messages arrive. XDSChatLayout renders this by default — pass a custom element to the scrollButton prop to override, or null to hide it entirely.',
   props: [
-    {name: 'isVisible', type: 'boolean', description: 'Whether the button is visible.', required: true},
-    {name: 'label', type: 'string', description: 'Optional label — expands the button (e.g. "New messages").'},
-    {name: 'onClick', type: '() => void', description: 'Click handler — typically scrolls to bottom and dismisses new message indicator.', required: true},
+    {name: 'isVisible', type: 'boolean', description: 'Whether the button is visible. Bind to a scroll-position check so the button only appears when the user has scrolled up.', required: true},
+    {name: 'label', type: 'string', description: 'Optional label that expands the button (e.g. "New messages"). Use to signal unread content below the fold.'},
+    {name: 'onClick', type: '() => void', description: 'Click handler — typically scrolls to bottom and dismisses the new message indicator.', required: true},
   ],
 };
 docs.components.push(chatLayoutScrollButtonComponent);
@@ -285,6 +287,8 @@ export const docsZh = {
       { guidance: true, description: 'Pass a scrollRef when embedding the chat inside a page that already has its own scroll container, so auto-scroll targets the correct element.' },
       { guidance: false, description: 'Don\'t build your own scroll-to-bottom logic or density breakpoints — XDSChatLayout handles both via container width observation and spring-based auto-scroll.' },
       { guidance: false, description: 'Don\'t apply a fixed height directly on XDSChatLayout — wrap it in a sized container and let the layout fill with flex: 1.' },
+      { guidance: true, description: 'Show a label on XDSChatLayoutScrollButton (e.g. "New messages") when unread content arrives below the fold so the user knows there is something to see.' },
+      { guidance: false, description: 'Don\'t rebuild the scroll-to-bottom button from scratch — use XDSChatLayoutScrollButton or pass a custom element to XDSChatLayout\'s scrollButton prop.' },
 ],
     anatomy: [
       { name: 'Message area', required: true, description: 'Scrollable region for messages. Renders children (typically XDSChatMessageList) in a flex column that pushes content to the bottom when the list is short.' },
@@ -478,6 +482,8 @@ export const docsDense = {
       { guidance: true, description: 'Pass scrollRef when the chat is inside a parent scroll container.' },
       { guidance: false, description: 'Custom scroll-to-bottom or density breakpoints — layout handles both.' },
       { guidance: false, description: 'Fixed height on XDSChatLayout directly — wrap in a sized container, let flex: 1 fill.' },
+      { guidance: true, description: 'Show a label on XDSChatLayoutScrollButton when unread content arrives below the fold.' },
+      { guidance: false, description: 'Don\'t rebuild the scroll-to-bottom button — use XDSChatLayoutScrollButton or pass a custom element to scrollButton.' },
 ],
   },
   components: [
@@ -637,9 +643,9 @@ export const docsDense = {
     },
     {
       name: 'XDSChatLayoutScrollButton',
-      description: 'composable scroll-to-bottom btn; fades in when visible, expands w/ label',
+      description: 'floating scroll-to-bottom btn; fades in when scrolled up, expands w/ label for new msgs. Default in XDSChatLayout; override via scrollButton prop.',
       propDescriptions: {
-        isVisible: 'btn visibility',
+        isVisible: 'btn visibility — bind to scroll-position check',
         label: 'optional label; expands btn (e.g. "New messages")',
         onClick: 'click handler',
       },
