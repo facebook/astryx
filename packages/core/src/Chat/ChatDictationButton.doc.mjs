@@ -58,23 +58,10 @@ export const docs = {
     },
   ],
 
-  examples: [
-    {label: 'In composer', code: '<XDSChatComposer onSubmit={handleSubmit} sendActions={<XDSChatDictationButton dictation={dictation} />} />'},
-    {label: 'Small size', code: '<XDSChatDictationButton dictation={dictation} size="sm" />'},
-  ],
-
-  accessibility: [
-    'Uses a native button element via XDSButton with aria-label that updates dynamically ("Start dictation" / "Stop dictation").',
-    'Frequency bars are marked aria-hidden so screen readers only announce the button label.',
-    'Hides completely when SpeechRecognition is unsupported (isHiddenWhenUnsupported), preventing broken interactions.',
-  ],
-
-  keyboard: 'Enter or Space toggles dictation on and off. Tab moves focus to the button.',
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsZh = {
-  name: 'ChatDictationButton',
   usage: {
     description:
       'ChatDictationButton is a toggle button that starts and stops voice dictation inside a chat composer. It pairs with useXDSChatDictation to show a microphone icon when idle and animated frequency bars when listening. Place it in the sendActions slot of XDSChatComposer.',
