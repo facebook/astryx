@@ -13,7 +13,7 @@
  *   --radius-inner     → base × 1 × multiplier (internal corners)
  *   --radius-element   → base × 2 × multiplier (buttons, inputs)
  *   --radius-container → base × 3 × multiplier (cards, panels)
- *   --radius-page      → base × 7 × multiplier (page-level containers)
+ *   --radius-page      → base × 4 × multiplier (page-level containers)
  *   --radius-full      → 9999px (fixed, pill shapes)
  *
  * SYNC: When modified, update:
@@ -70,7 +70,7 @@ export type RadiusScaleTokens = Record<string, string>;
  * // tokens['--radius-inner'] === '4px'       (4 × 1 × 1)
  * // tokens['--radius-element'] === '8px'     (4 × 2 × 1)
  * // tokens['--radius-container'] === '12px'  (4 × 3 × 1)
- * // tokens['--radius-page'] === '28px'       (4 × 7 × 1)
+ * // tokens['--radius-page'] === '16px'       (4 × 4 × 1)
  * // tokens['--radius-full'] === '9999px'
  *
  * const sharp = expandRadiusScale({ base: 4, multiplier: 0 });
@@ -86,7 +86,7 @@ export function expandRadiusScale(
     '--radius-inner': `${Math.round(base * 1 * multiplier)}px`,
     '--radius-element': `${Math.round(base * 2 * multiplier)}px`,
     '--radius-container': `${Math.round(base * 3 * multiplier)}px`,
-    '--radius-page': `${Math.round(base * 7 * multiplier)}px`,
+    '--radius-page': `${Math.round(base * 4 * multiplier)}px`,
     '--radius-full': '9999px',
   };
 }

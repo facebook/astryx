@@ -18,7 +18,7 @@ You will receive:
 | Token              | Value  | Usage                    |
 | ------------------ | ------ | ------------------------ |
 | --radius-full      | 9999px | Pills, avatars           |
-| --radius-page      | 28px   | Page sections, app shell |
+| --radius-page      | 16px   | Page sections, app shell |
 | --radius-container | 12px   | Cards, modals            |
 | --radius-element   | 8px    | Buttons, inputs          |
 | --radius-inner     | 4px    | Small elements           |
@@ -29,7 +29,7 @@ You will receive:
 | Token              | Value  | Usage                           |
 | ------------------ | ------ | ------------------------------- |
 | --radius-full      | 9999px | Pills, avatars                  |
-| --radius-page      | 28px   | Page sections, large containers |
+| --radius-page      | 16px   | Page sections, large containers |
 | --radius-container | 12px   | Cards, modals                   |
 | --radius-element   | 8px    | Buttons, inputs                 |
 | --radius-inner     | 4px    | Small elements                  |

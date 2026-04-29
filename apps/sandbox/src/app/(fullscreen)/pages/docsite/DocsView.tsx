@@ -2670,7 +2670,7 @@ const SHAPE_TOKENS: {
   },
   {
     token: '--radius-page',
-    value: '28px',
+    value: '16px',
     usage: 'Modals, dialogs, chat composer',
     cssVar: 'var(--radius-page)',
   },

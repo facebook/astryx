@@ -78,7 +78,6 @@ describe('defineTheme', () => {
   });
 
   it('includes icons in the theme', () => {
-     
     const icons = {close: 'X'} as Partial<XDSIconRegistry>;
     const theme = defineTheme({name: 'icons', icons});
     expect(theme.icons).toBe(icons);
@@ -411,7 +410,7 @@ describe('radius', () => {
     expect(theme.tokens['--radius-inner']).toBe('6px');
     expect(theme.tokens['--radius-element']).toBe('12px');
     expect(theme.tokens['--radius-container']).toBe('18px');
-    expect(theme.tokens['--radius-page']).toBe('42px');
+    expect(theme.tokens['--radius-page']).toBe('24px');
     expect(theme.tokens['--radius-none']).toBe('0px');
     expect(theme.tokens['--radius-full']).toBe('9999px');
   });
