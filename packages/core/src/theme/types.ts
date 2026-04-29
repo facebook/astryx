@@ -109,9 +109,9 @@ export type ThemeMode = 'system' | 'light' | 'dark';
 export type HeadingLevel = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 
 /**
- * Semantic text types for XDSText
+ * Built-in semantic text types for XDSText.
  */
-export type XDSTextType =
+export type XDSBuiltinTextType =
   | 'body'
   | 'large'
   | 'label'
@@ -120,6 +120,33 @@ export type XDSTextType =
   | 'display-1'
   | 'display-2'
   | 'display-3';
+
+/**
+ * Semantic text types for XDSText.
+ *
+ * Themes can define custom text types via component overrides in defineTheme.
+ * Custom types render with `body` baseline styles and receive their visual
+ * treatment from theme CSS (`.xds-text.<custom-type> { ... }`).
+ *
+ * To add type-safe custom types, use module augmentation:
+ * ```ts
+ * declare module '@xds/core/theme' {
+ *   interface XDSCustomTextTypes {
+ *     hero: true;
+ *     caption: true;
+ *   }
+ * }
+ * ```
+ *
+ * `xds theme build` generates these augmentations automatically when it
+ * detects new `type:*` values in a theme's component overrides.
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface XDSCustomTextTypes {}
+
+export type XDSTextType =
+  | XDSBuiltinTextType
+  | (keyof XDSCustomTextTypes & string);
 
 /**
  * Text size scale for XDSText size prop override

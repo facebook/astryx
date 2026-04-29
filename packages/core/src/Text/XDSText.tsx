@@ -18,6 +18,7 @@ import {lazy, Suspense, useCallback, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {
   XDSTextType,
+  XDSBuiltinTextType,
   XDSTextSize,
   XDSTextColor,
   XDSTextWeight,
@@ -146,8 +147,8 @@ export interface XDSTextProps extends Omit<XDSBaseProps, 'children'> {
   as?: 'span' | 'p' | 'div' | 'label' | 'h1' | 'h2' | 'h3';
 }
 
-// Default color by text type
-const defaultColorByType: Record<XDSTextType, XDSTextColor> = {
+// Default color by text type — custom types fall back to 'primary'
+const defaultColorByType: Record<string, XDSTextColor> = {
   body: 'primary',
   large: 'primary',
   label: 'primary',
@@ -157,6 +158,16 @@ const defaultColorByType: Record<XDSTextType, XDSTextColor> = {
   'display-2': 'primary',
   'display-3': 'primary',
 };
+
+/**
+ * Resolve the StyleX style key for a text type.
+ * Custom (theme-defined) types fall back to 'body' for baseline StyleX styles;
+ * their visual treatment comes from theme CSS overrides (.xds-text.<type>).
+ */
+function resolveStyleType(type: XDSTextType): XDSBuiltinTextType {
+  if (type in sizeByTypeStyles) return type as XDSBuiltinTextType;
+  return 'body';
+}
 
 /**
  * Semantic text component. Renders text with type-based styling from the theme.
@@ -195,7 +206,10 @@ export function XDSText({
   ...props
 }: XDSTextProps) {
   // Resolve color with type-based default
-  const resolvedColor = color ?? defaultColorByType[type];
+  const resolvedColor = color ?? defaultColorByType[type] ?? 'primary';
+
+  // Resolve style type — custom types fall back to 'body' for StyleX baseline
+  const styleType = resolveStyleType(type);
 
   // Resolve wordBreak with smart default
   const resolvedWordBreak =
@@ -244,8 +258,8 @@ export function XDSText({
           xdsClassName('text', {type, color: resolvedColor}),
           stylex.props(
             colorStyles[resolvedColor],
-            sizeByTypeStyles[type],
-            defaultWeightByTypeStyles[type],
+            sizeByTypeStyles[styleType],
+            defaultWeightByTypeStyles[styleType],
             weight && weightStyles[weight],
             // Display: use truncation styles when maxLines > 0
             maxLines === 1
