@@ -4,29 +4,25 @@ import {
   XDSChatTokenizedText,
   XDSChatMessage,
   XDSChatMessageBubble,
+  XDSChatMessageList,
 } from '@xds/core/Chat';
-import {XDSStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
 
-const tokens = [
+const mixedTokens = [
   {value: '@cindy', label: '@Cindy', variant: 'blue' as const},
   {value: '#bug', label: '#bug', variant: 'red' as const},
   {value: '#feat', label: '#feature', variant: 'green' as const},
 ];
 
-export default function ChatTokenizedTextMixedVariantTokens() {
+export default function ChatTokenizedTextColors() {
   return (
-    <XDSStack direction="vertical" gap={3}>
-      <XDSText type="supporting" color="secondary">
-        Color variants distinguish token types
-      </XDSText>
-      <XDSChatMessage sender="user">
+    <XDSChatMessageList>
+      <XDSChatMessage sender="system">
         <XDSChatMessageBubble>
-          <XDSChatTokenizedText tokens={tokens}>
+          <XDSChatTokenizedText tokens={mixedTokens}>
             @cindy filed #bug and #feat for the sprint
           </XDSChatTokenizedText>
         </XDSChatMessageBubble>
       </XDSChatMessage>
-    </XDSStack>
+    </XDSChatMessageList>
   );
 }
