@@ -4,6 +4,6 @@ export const doc = {
   name: 'ChatSystemMessage — Status Updates',
   description: 'Realistic status messages in a conversation flow showing membership changes, timestamps, and resolution notices.',
   isReady: true,
-  aspectRatio: 3 / 4,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Chat', 'Icon'],
 };
