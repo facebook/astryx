@@ -1,0 +1,9 @@
+/** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
+export const doc = {
+  type: 'block',
+  name: 'ChatMessageBubble — Grouping',
+  description: 'Multi-bubble messages using first, middle, and last group positions. Grouped bubbles tighten corner radius on the sender side for a continuous visual flow.',
+  isReady: true,
+  aspectRatio: 4 / 3,
+  componentsUsed: ['Chat', 'Avatar', 'Timestamp', 'Text', 'Layout'],
+};

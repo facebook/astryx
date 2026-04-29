@@ -55,7 +55,7 @@ export const docs = {
     },
     {
       name: 'XDSChatMessageBubble',
-      description: 'Styled bubble container — reads sender from parent context for auto-styling. Supports name/metadata slots aligned with bubble padding, multi-bubble grouping via `group` prop, and a ghost variant for content that needs alignment without a visual boundary.',
+      description: 'Styled content container — the chat “bubble.” Reads sender from parent XDSChatMessage context to auto-style the background. Use filled for standard messages and ghost when content needs alignment without a visible boundary. Supports name/metadata slots aligned with bubble padding, and multi-bubble grouping via the group prop for consecutive messages from the same sender.',
       props: [
         {name: 'children', type: 'ReactNode', description: 'Bubble content — text, XDSMarkdown, or any ReactNode.', required: true},
         {name: 'variant', type: "'filled' | 'ghost'", description: "Visual variant. 'filled' renders sender-colored background (default). 'ghost' renders transparent background but keeps padding for alignment.", default: "'filled'"},
@@ -165,6 +165,13 @@ export const docs = {
         {name: 'tokens', type: 'XDSChatComposerToken[]', description: 'Token definitions — same type returned by trigger onSelect. Each token has a value (the string to match), label (display text), and optional variant and icon. Uses the same type as the composer input, so token definitions work for both input and display.'},
       ],
     },
+    {
+      name: 'XDSChatComposerTokenElement',
+      description: 'Renders a single token chip outside the contentEditable input. Wraps a badge config or custom render function in the correct data-xds-token span so the token serializes properly and stays visually consistent with tokens inside the composer.',
+      props: [
+        {name: 'token', type: 'XDSChatComposerToken', description: 'The token to render. Pass a badge config ({ value, label, variant?, icon? }) for the common case, or a custom render ({ value, render }) for full control.', required: true},
+      ],
+    },
   ],
   usage: {
     description: 'Chat components provide layout primitives and a message composer for building AI chat interfaces. XDSChatComposer is the input shell — compose it using named slots (drawer, headerActions, footerActions, sendActions) to assemble features like file attachments, model selectors, and context indicators without building custom layout. Use Chat components when building conversational UIs that need message display, sender-aware styling, and rich input with trigger menus and attachments.',
@@ -172,7 +179,9 @@ export const docs = {
       { guidance: true, description: 'Compose messages using MessageList > Message > Bubble for consistent sender-aware styling and density.' },
       { guidance: true, description: 'Use the named slots on XDSChatComposer (drawer, headerActions, footerActions, sendActions) to keep the input layout structured. Each slot has a specific position and purpose.' },
       { guidance: true, description: 'Show the streaming state with isStreaming and provide an onStop handler so users can cancel long-running responses.' },
-      { guidance: true, description: 'Put name and metadata on the bubble when the content has a visible bubble boundary. Put them on the message wrapper when the content is raw (no bubble).' },
+      { guidance: true, description: 'Put name on the first bubble and metadata on the last bubble in a message so they align with the bubble\'s inline padding. Use the message wrapper\'s name/metadata props when the content is raw (no bubble).' },
+      { guidance: true, description: 'Use XDSChatComposerTokenElement to display token chips outside the contentEditable \u2014 in message previews, read-only views, or anywhere tokens need to render without the full composer.' },
+      { guidance: true, description: 'Prefer the badge config form ({ value, label, variant }) for XDSChatComposerTokenElement tokens. Reserve the custom render escape hatch for rich content like avatar initials or interactive elements.' },
       { guidance: true, description: 'Use XDSChatLayout for full-page chat — it handles auto-scroll, density adaptation, and composer docking automatically.' },
       { guidance: true, description: 'Use XDSChatSystemMessage with variant="divider" for date separators and default for status notices like joins, leaves, or topic changes.' },
       { guidance: true, description: 'Add an icon to system messages when the type is not obvious from the text alone — membership changes, encryption notices, or AI activity benefit from visual reinforcement.' },
@@ -184,7 +193,9 @@ export const docs = {
       { guidance: false, description: 'Don\'t use XDSChatSystemMessage for sender content — it has no avatar, alignment, or bubble. Use XDSChatMessage with a sender role instead.' },
       { guidance: false, description: 'Don\'t put long or multi-line content in a system message — keep it to a single short sentence. If you need more, use a bubble or a card.' },
       { guidance: false, description: 'Don\'t nest XDSChatMessage inside another XDSChatMessage — each message is a standalone article element with its own sender context.' },
-    ],
+    
+      { guidance: false, description: 'Don\'t mix filled and ghost bubble variants within the same sender\'s messages — pick one style per side and use it consistently.' },
+],
     anatomy: [
       { name: 'Avatar', required: false, description: 'A sender avatar rendered beside the message. Typically XDSAvatar with size="small". Hidden for system messages.' },
       { name: 'Name', required: false, description: 'Sender name above the message body. Place on the bubble when using bubbles, or on the message wrapper for raw content.' },
@@ -227,7 +238,9 @@ export const docsZh = {
       { guidance: true, description: 'Compose messages using MessageList > Message > Bubble for consistent sender-aware styling and density.' },
       { guidance: true, description: 'Use the named slots on XDSChatComposer (drawer, headerActions, footerActions, sendActions) to keep the input layout structured. Each slot has a specific position and purpose.' },
       { guidance: true, description: 'Show the streaming state with isStreaming and provide an onStop handler so users can cancel long-running responses.' },
-      { guidance: true, description: 'Put name and metadata on the bubble when the content has a visible bubble boundary. Put them on the message wrapper when the content is raw (no bubble).' },
+      { guidance: true, description: 'Put name on the first bubble and metadata on the last bubble in a message so they align with the bubble\'s inline padding. Use the message wrapper\'s name/metadata props when the content is raw (no bubble).' },
+      { guidance: true, description: 'Use XDSChatComposerTokenElement to display token chips outside the contentEditable \u2014 in message previews, read-only views, or anywhere tokens need to render without the full composer.' },
+      { guidance: true, description: 'Prefer the badge config form ({ value, label, variant }) for XDSChatComposerTokenElement tokens. Reserve the custom render escape hatch for rich content like avatar initials or interactive elements.' },
       { guidance: true, description: 'Use XDSChatLayout for full-page chat — it handles auto-scroll, density adaptation, and composer docking automatically.' },
       { guidance: true, description: 'Use XDSChatSystemMessage with variant="divider" for date separators and default for status notices like joins, leaves, or topic changes.' },
       { guidance: true, description: 'Add an icon to system messages when the type is not obvious from the text alone — membership changes, encryption notices, or AI activity benefit from visual reinforcement.' },
@@ -239,7 +252,9 @@ export const docsZh = {
       { guidance: false, description: 'Don\'t use XDSChatSystemMessage for sender content — it has no avatar, alignment, or bubble. Use XDSChatMessage with a sender role instead.' },
       { guidance: false, description: 'Don\'t put long or multi-line content in a system message — keep it to a single short sentence. If you need more, use a bubble or a card.' },
       { guidance: false, description: 'Don\'t nest XDSChatMessage inside another XDSChatMessage — each message is a standalone article element with its own sender context.' },
-    ],
+    
+      { guidance: false, description: 'Don\'t mix filled and ghost bubble variants within the same sender\'s messages — pick one style per side and use it consistently.' },
+],
   },
   components: [
     {
@@ -368,6 +383,11 @@ export const docsZh = {
       propDescriptions: {children: '包含序列化标记值的纯文本消息。匹配标记值的模式将被替换为内联徽章组件。', tokens: '标记定义 — 与触发器 onSelect 返回的类型相同。每个包含 value（匹配字符串）、label（显示文本）以及可选的 variant 和 icon。'},
     },
     {
+      name: 'XDSChatComposerTokenElement',
+      description: '在 contentEditable 外部渲染标记芯片。',
+      propDescriptions: {token: '徽章配置或自定义渲染。'},
+    },
+    {
       name: 'XDSChatLayout',
       description: '完整聊天界面的布局外壳。消息在页面中自然流动，编写器固定在底部，带有毛玻璃效果。通过容器宽度自动适配密度。',
       propDescriptions: {
@@ -395,8 +415,9 @@ export const docsDense = {
       { guidance: true, description: 'MessageList > Message > Bubble for sender-aware styling.' },
       { guidance: true, description: 'Named slots on Composer (drawer, headerActions, footerActions, sendActions) — each has a specific position.' },
       { guidance: true, description: 'isStreaming + onStop for cancelable long-running responses.' },
-      { guidance: true, description: 'Name/metadata on bubble if bubble boundary, on message wrapper if raw content.' },
+      { guidance: true, description: 'Name on first bubble, metadata on last — aligns with bubble inline padding. Message wrapper props for raw content.' },
       { guidance: true, description: 'XDSChatLayout for full-page — auto-scroll, density adaptation, composer docking.' },
+      { guidance: true, description: 'Group prop (first/middle/last) on consecutive bubbles for continuous visual flow.' },
       { guidance: true, description: 'SystemMessage: divider variant for date breaks, default for status notices. Add icon for membership/encryption/AI messages.' },
       { guidance: true, description: 'Group prop on bubbles (first/middle/last) for consecutive same-sender messages — tightens corner radius.' },
       { guidance: true, description: 'Ghost bubble variant for AI-style responses without a visual boundary.' },
@@ -406,7 +427,9 @@ export const docsDense = {
       { guidance: false, description: 'SystemMessage for sender content — no avatar/alignment/bubble. Use ChatMessage instead.' },
       { guidance: false, description: 'Long/multi-line system messages — keep to a single short sentence.' },
       { guidance: false, description: 'Nesting XDSChatMessage inside another — each is a standalone article.' },
-    ],
+    
+      { guidance: false, description: 'Mix filled and ghost variants in same sender\'s messages — pick one style per side.' },
+],
   },
   components: [
     {
@@ -542,6 +565,11 @@ export const docsDense = {
         children: 'plain text msg w/ serialized token values; matching patterns become inline badges',
         tokens: 'token defs (same type as composer input): value+label+variant+icon',
       },
+    },
+    {
+      name: 'XDSChatComposerTokenElement',
+      description: 'token chip outside contentEditable; badge config or custom render in data-xds-token span',
+      propDescriptions: {token: 'badge config or custom render'},
     },
     {
       name: 'XDSChatLayout',

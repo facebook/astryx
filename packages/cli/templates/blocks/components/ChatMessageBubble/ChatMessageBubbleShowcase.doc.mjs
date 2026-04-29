@@ -1,0 +1,10 @@
+/** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
+export const doc = {
+  type: 'block',
+  name: 'ChatMessageBubble',
+  description: 'Grouped user bubbles with filled styling and a ghost-variant agent response, with timestamps and delivery status.',
+  isReady: true,
+  isShowcase: true,
+  aspectRatio: 4 / 3,
+  componentsUsed: ['Chat', 'ChatMessageBubble', 'ChatMessage', 'ChatMessageMetadata', 'Timestamp'],
+};
