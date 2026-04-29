@@ -3191,7 +3191,7 @@ const SECTION_TITLE: React.CSSProperties = {
 
 const SCALE_ROW: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: '1fr 200px 200px',
+  gridTemplateColumns: '1fr 200px 200px 200px',
   alignItems: 'center',
   gap: 8,
 };
@@ -3205,13 +3205,107 @@ const CODE_LABEL: React.CSSProperties = {
   textOverflow: 'ellipsis',
 };
 
-function TokenScalePreview({tokens}: {tokens: Record<string, string>}) {
+function rgbToHex(r: number, g: number, b: number): string {
+  return (
+    '#' +
+    [r, g, b]
+      .map(v =>
+        Math.max(0, Math.min(255, Math.round(v)))
+          .toString(16)
+          .padStart(2, '0'),
+      )
+      .join('')
+      .toUpperCase()
+  );
+}
+
+function resolveHex(el: HTMLElement | null): string {
+  if (!el) return '';
+  const computed = getComputedStyle(el).backgroundColor;
+  const match = computed.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  return match
+    ? rgbToHex(parseInt(match[1], 10), parseInt(match[2], 10), parseInt(match[3], 10))
+    : '';
+}
+
+function ColorSwatchRow({token, label}: {token: string; label: string}) {
+  const lightRef = React.useRef<HTMLDivElement>(null);
+  const darkRef = React.useRef<HTMLDivElement>(null);
+  const [lightHex, setLightHex] = React.useState('');
+  const [darkHex, setDarkHex] = React.useState('');
+
+  React.useEffect(() => {
+    setLightHex(resolveHex(lightRef.current));
+    setDarkHex(resolveHex(darkRef.current));
+  }, [token]);
+
+  const swatchBase: React.CSSProperties = {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    backgroundColor: `var(${token})`,
+    flexShrink: 0,
+  };
+
+  return (
+    <div style={SCALE_ROW}>
+      <div style={{display: 'flex', gap: 2}}>
+        <div
+          ref={lightRef}
+          style={{...swatchBase, colorScheme: 'light', border: '1px solid rgba(0,0,0,0.15)'}}
+        />
+        <div
+          ref={darkRef}
+          style={{...swatchBase, colorScheme: 'dark', border: '1px solid rgba(255,255,255,0.2)'}}
+        />
+      </div>
+      <span style={CODE_LABEL}>{label}</span>
+      <span style={CODE_LABEL}>{token}</span>
+      <span style={CODE_LABEL}>{lightHex} / {darkHex}</span>
+    </div>
+  );
+}
+
+function useResolvedTokens(
+  containerRef: React.RefObject<HTMLElement | null>,
+  tokenNames: string[],
+): Record<string, string> {
+  const [resolved, setResolved] = React.useState<Record<string, string>>({});
+
+  React.useEffect(() => {
+    if (!containerRef.current) return;
+    const el = containerRef.current;
+    const computed = getComputedStyle(el);
+    const result: Record<string, string> = {};
+    for (const name of tokenNames) {
+      const val = computed.getPropertyValue(name).trim();
+      if (val) result[name] = val;
+    }
+    setResolved(result);
+  }, [containerRef, tokenNames]);
+
+  return resolved;
+}
+
+const ALL_TOKEN_NAMES = [
+  ...['0-5', '1', '2', '3', '4', '6', '8', '12'].map(s => `--spacing-${s}`),
+  ...['none', 'inner', 'element', 'container', 'page'].map(s => `--radius-${s}`),
+  ...['sm', 'md', 'lg'].map(s => `--size-element-${s}`),
+];
+
+export function TokenScalePreview({tokens}: {tokens: Record<string, string>}) {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const resolvedTokens = useResolvedTokens(containerRef, ALL_TOKEN_NAMES);
+
+  const getToken = (name: string) => tokens[name] || resolvedTokens[name] || '';
+
   const resolveSize = (raw: string) => {
     if (!raw) return raw;
-    const resolved = raw.startsWith('var(')
-      ? tokens[raw.slice(4, -1)] || raw
-      : raw;
-    return resolved;
+    if (raw.startsWith('var(')) {
+      const varName = raw.slice(4, -1);
+      return tokens[varName] || resolvedTokens[varName] || raw;
+    }
+    return raw;
   };
   const toPx = (raw: string) => {
     const resolved = resolveSize(raw);
@@ -3227,33 +3321,85 @@ function TokenScalePreview({tokens}: {tokens: Record<string, string>}) {
         {[
           {token: '--color-accent', label: 'accent'},
           {token: '--color-accent-muted', label: 'accent-muted'},
+          {token: '--color-on-accent', label: 'on-accent'},
+          {token: '--color-success', label: 'success'},
+          {token: '--color-success-muted', label: 'success-muted'},
+          {token: '--color-on-success', label: 'on-success'},
+          {token: '--color-warning', label: 'warning'},
+          {token: '--color-warning-muted', label: 'warning-muted'},
+          {token: '--color-on-warning', label: 'on-warning'},
+          {token: '--color-error', label: 'error'},
+          {token: '--color-error-muted', label: 'error-muted'},
+          {token: '--color-on-error', label: 'on-error'},
           {token: '--color-neutral', label: 'neutral'},
-          {token: '--color-background-card', label: 'card'},
-          {token: '--color-background-surface', label: 'surface'},
-          {token: '--color-text-primary', label: 'text'},
+          {token: '--color-background-body', label: 'bg-body'},
+          {token: '--color-background-surface', label: 'bg-surface'},
+          {token: '--color-background-card', label: 'bg-card'},
+          {token: '--color-background-popover', label: 'bg-popover'},
+          {token: '--color-background-muted', label: 'bg-muted'},
+          {token: '--color-background-inverted', label: 'bg-inverted'},
+          {token: '--color-background-error-inverted', label: 'bg-error-inverted'},
+          {token: '--color-text-primary', label: 'text-primary'},
           {token: '--color-text-secondary', label: 'text-secondary'},
+          {token: '--color-text-disabled', label: 'text-disabled'},
+          {token: '--color-text-accent', label: 'text-accent'},
+          {token: '--color-on-dark', label: 'on-dark'},
+          {token: '--color-on-light', label: 'on-light'},
+          {token: '--color-icon-accent', label: 'icon-accent'},
+          {token: '--color-icon-primary', label: 'icon-primary'},
+          {token: '--color-icon-secondary', label: 'icon-secondary'},
+          {token: '--color-icon-disabled', label: 'icon-disabled'},
           {token: '--color-border', label: 'border'},
-        ].map(({token, label}) => {
-          const raw = tokens[token] || '';
-          const parsed = parseLightDark(raw);
-          const displayVal = parsed ? parsed.light : raw;
-          return (
-            <div key={token} style={SCALE_ROW}>
-              <div
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 8,
-                  backgroundColor: `var(${token})`,
-                  border: '1px solid #ddd',
-                  flexShrink: 0,
-                }}
-              />
-              <span style={CODE_LABEL}>{label}</span>
-              <span style={CODE_LABEL}>{displayVal}</span>
-            </div>
-          );
-        })}
+          {token: '--color-border-emphasized', label: 'border-emphasized'},
+          {token: '--color-overlay', label: 'overlay'},
+          {token: '--color-overlay-hover', label: 'overlay-hover'},
+          {token: '--color-overlay-pressed', label: 'overlay-pressed'},
+          {token: '--color-skeleton', label: 'skeleton'},
+          {token: '--color-shadow', label: 'shadow'},
+          {token: '--color-tint-hover', label: 'tint-hover'},
+          {token: '--color-background-blue', label: 'bg-blue'},
+          {token: '--color-border-blue', label: 'border-blue'},
+          {token: '--color-icon-blue', label: 'icon-blue'},
+          {token: '--color-text-blue', label: 'text-blue'},
+          {token: '--color-background-cyan', label: 'bg-cyan'},
+          {token: '--color-border-cyan', label: 'border-cyan'},
+          {token: '--color-icon-cyan', label: 'icon-cyan'},
+          {token: '--color-text-cyan', label: 'text-cyan'},
+          {token: '--color-background-gray', label: 'bg-gray'},
+          {token: '--color-border-gray', label: 'border-gray'},
+          {token: '--color-icon-gray', label: 'icon-gray'},
+          {token: '--color-text-gray', label: 'text-gray'},
+          {token: '--color-background-green', label: 'bg-green'},
+          {token: '--color-border-green', label: 'border-green'},
+          {token: '--color-icon-green', label: 'icon-green'},
+          {token: '--color-text-green', label: 'text-green'},
+          {token: '--color-background-orange', label: 'bg-orange'},
+          {token: '--color-border-orange', label: 'border-orange'},
+          {token: '--color-icon-orange', label: 'icon-orange'},
+          {token: '--color-text-orange', label: 'text-orange'},
+          {token: '--color-background-pink', label: 'bg-pink'},
+          {token: '--color-border-pink', label: 'border-pink'},
+          {token: '--color-icon-pink', label: 'icon-pink'},
+          {token: '--color-text-pink', label: 'text-pink'},
+          {token: '--color-background-purple', label: 'bg-purple'},
+          {token: '--color-border-purple', label: 'border-purple'},
+          {token: '--color-icon-purple', label: 'icon-purple'},
+          {token: '--color-text-purple', label: 'text-purple'},
+          {token: '--color-background-red', label: 'bg-red'},
+          {token: '--color-border-red', label: 'border-red'},
+          {token: '--color-icon-red', label: 'icon-red'},
+          {token: '--color-text-red', label: 'text-red'},
+          {token: '--color-background-teal', label: 'bg-teal'},
+          {token: '--color-border-teal', label: 'border-teal'},
+          {token: '--color-icon-teal', label: 'icon-teal'},
+          {token: '--color-text-teal', label: 'text-teal'},
+          {token: '--color-background-yellow', label: 'bg-yellow'},
+          {token: '--color-border-yellow', label: 'border-yellow'},
+          {token: '--color-icon-yellow', label: 'icon-yellow'},
+          {token: '--color-text-yellow', label: 'text-yellow'},
+        ].map(({token, label}) => (
+            <ColorSwatchRow key={token} token={token} label={label} />
+          ))}
       </div>
     </div>
   );
@@ -3270,6 +3416,7 @@ function TokenScalePreview({tokens}: {tokens: Record<string, string>}) {
               </XDSText>
             </div>
             <span style={CODE_LABEL}>{type}</span>
+            <span style={CODE_LABEL}>{`--text-${type}-size`}</span>
             <span style={CODE_LABEL}>
               {toPx(tokens[`--text-${type}-size`] || '')}
             </span>
@@ -3283,6 +3430,7 @@ function TokenScalePreview({tokens}: {tokens: Record<string, string>}) {
               </XDSHeading>
             </div>
             <span style={CODE_LABEL}>h{level}</span>
+            <span style={CODE_LABEL}>{`--text-heading-${level}-size`}</span>
             <span style={CODE_LABEL}>
               {toPx(tokens[`--text-heading-${level}-size`] || '')}
             </span>
@@ -3299,6 +3447,7 @@ function TokenScalePreview({tokens}: {tokens: Record<string, string>}) {
                 </XDSText>
               </div>
               <span style={CODE_LABEL}>{type}</span>
+              <span style={CODE_LABEL}>{`--text-${type}-size`}</span>
               <span style={CODE_LABEL}>
                 {toPx(tokens[`--text-${type}-size`] || '')}
               </span>
@@ -3315,7 +3464,7 @@ function TokenScalePreview({tokens}: {tokens: Record<string, string>}) {
       <div style={{display: 'flex', flexDirection: 'column', gap: 4}}>
         {[0.5, 1, 2, 3, 4, 6, 8, 12].map(step => {
           const key = String(step).replace('.', '-');
-          const val = tokens[`--spacing-${key}`] || '0px';
+          const val = getToken(`--spacing-${key}`) || '0px';
           return (
             <div key={step} style={SCALE_ROW}>
               <div style={{display: 'flex', alignItems: 'center'}}>
@@ -3330,6 +3479,7 @@ function TokenScalePreview({tokens}: {tokens: Record<string, string>}) {
                 />
               </div>
               <span style={CODE_LABEL}>{step}</span>
+              <span style={CODE_LABEL}>{`--spacing-${key}`}</span>
               <span style={CODE_LABEL}>{val}</span>
             </div>
           );
@@ -3344,7 +3494,7 @@ function TokenScalePreview({tokens}: {tokens: Record<string, string>}) {
       <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
         {(['none', 'inner', 'element', 'container', 'page'] as const).map(
           name => {
-            const val = tokens[`--radius-${name}`] || '0px';
+            const val = getToken(`--radius-${name}`) || '0px';
             return (
               <div key={name} style={SCALE_ROW}>
                 <div
@@ -3359,6 +3509,7 @@ function TokenScalePreview({tokens}: {tokens: Record<string, string>}) {
                   }}
                 />
                 <span style={CODE_LABEL}>{name}</span>
+                <span style={CODE_LABEL}>{`--radius-${name}`}</span>
                 <span style={CODE_LABEL}>{val}</span>
               </div>
             );
@@ -3373,7 +3524,7 @@ function TokenScalePreview({tokens}: {tokens: Record<string, string>}) {
       <span style={SECTION_TITLE}>Element Size</span>
       <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
         {(['sm', 'md', 'lg'] as const).map(size => {
-          const val = tokens[`--size-element-${size}`] || '32px';
+          const val = getToken(`--size-element-${size}`) || '32px';
           return (
             <div key={size} style={SCALE_ROW}>
               <div
@@ -3388,6 +3539,7 @@ function TokenScalePreview({tokens}: {tokens: Record<string, string>}) {
                 }}
               />
               <span style={CODE_LABEL}>{size}</span>
+              <span style={CODE_LABEL}>{`--size-element-${size}`}</span>
               <span style={CODE_LABEL}>{val}</span>
             </div>
           );
@@ -3397,32 +3549,20 @@ function TokenScalePreview({tokens}: {tokens: Record<string, string>}) {
   );
 
   return (
-    <div style={{containerType: 'inline-size'}}>
+    <div ref={containerRef} style={{containerType: 'inline-size'}}>
       <div
         style={{
           display: 'grid',
           gridTemplateColumns: '1fr',
           gap: 32,
         }}>
-        <style>{`@container (min-width: 720px) { .token-scale-grid { grid-template-columns: 1fr auto 1fr !important; } }`}</style>
-        <div
-          className="token-scale-grid"
-          style={{display: 'grid', gridTemplateColumns: '1fr', gap: 32}}>
-          <div style={{display: 'flex', flexDirection: 'column', gap: 32}}>
-            {colorsSection}
-            {spacingSection}
-            {sizeSection}
-          </div>
-          <div
-            className="token-scale-divider"
-            style={{width: 1, backgroundColor: 'var(--color-border)'}}
-          />
-          <div style={{display: 'flex', flexDirection: 'column', gap: 32}}>
-            {typographySection}
-            {radiusSection}
-          </div>
+        <div style={{display: 'flex', flexDirection: 'column', gap: 32}}>
+          {typographySection}
+          {spacingSection}
+          {radiusSection}
+          {sizeSection}
+          {colorsSection}
         </div>
-        <style>{`@container (max-width: 719px) { .token-scale-divider { display: none !important; } }`}</style>
       </div>
     </div>
   );

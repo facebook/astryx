@@ -85,6 +85,7 @@ import {XDSNumberInput} from '@xds/core/NumberInput';
 import {XDSSelector} from '@xds/core/Selector';
 import {defaultIconRegistry} from '@xds/theme-default';
 import {ThemeShowcasePreview, ThemeShowcaseDetails} from '../../../../../../../packages/cli/templates/pages/theme-showcase/page';
+import {TokenScalePreview} from './ThemeEditorView';
 import {COMPONENT_PREVIEWS} from './ComponentPreviews';
 import {SEARCH_COMMANDS, basePath} from './constants';
 import {
@@ -3391,59 +3392,6 @@ const THEME_DOC_BY_KEY: Record<string, ThemeDocEntry> = Object.fromEntries(
   themeDocs.map(t => [`pkg-theme-${t.slug}`, t]),
 );
 
-const TOKEN_CATEGORIES: {label: string; prefix: string}[] = [
-  {label: 'Color', prefix: '--color-'},
-  {label: 'Typography', prefix: '--font-'},
-  {label: 'Text Style', prefix: '--text-'},
-  {label: 'Radius', prefix: '--radius-'},
-  {label: 'Duration', prefix: '--duration-'},
-  {label: 'Shadow', prefix: '--shadow-'},
-  {label: 'Spacing', prefix: '--spacing-'},
-  {label: 'Syntax', prefix: '--color-syntax-'},
-];
-
-function categorizeTokens(tokens: Record<string, string>) {
-  const categorized: {category: string; items: {token: string; value: string}[]}[] = [];
-  const seen = new Set<string>();
-
-  for (const cat of TOKEN_CATEGORIES) {
-    const items: {token: string; value: string}[] = [];
-    for (const [token, value] of Object.entries(tokens)) {
-      if (token.startsWith(cat.prefix) && !seen.has(token)) {
-        items.push({token, value});
-        seen.add(token);
-      }
-    }
-    if (items.length > 0) {
-      categorized.push({category: cat.label, items});
-    }
-  }
-
-  const remaining = Object.entries(tokens)
-    .filter(([t]) => !seen.has(t))
-    .map(([token, value]) => ({token, value}));
-  if (remaining.length > 0) {
-    categorized.push({category: 'Other', items: remaining});
-  }
-
-  return categorized;
-}
-
-function deriveComponentOverrides(
-  components?: Record<string, Record<string, Record<string, string>>>,
-): {component: string; selector: string; property: string; value: string}[] {
-  if (!components) return [];
-  const rows: {component: string; selector: string; property: string; value: string}[] = [];
-  for (const [comp, selectors] of Object.entries(components)) {
-    for (const [sel, props] of Object.entries(selectors)) {
-      for (const [prop, val] of Object.entries(props)) {
-        rows.push({component: comp, selector: sel, property: prop, value: String(val)});
-      }
-    }
-  }
-  return rows;
-}
-
 function generateSetupCode(doc: ThemeDocEntry): string {
   const exportName = `${doc.slug}Theme`;
   return `// app/globals.css
@@ -3463,119 +3411,6 @@ export function Providers({children}: {children: React.ReactNode}) {
 }`;
 }
 
-function TokenPreview({token, value}: {token: string; value: string}) {
-  if (token.startsWith('--color-') || token.startsWith('--color-syntax-')) {
-    return (
-      <XDSStack direction="horizontal" gap={2} vAlign="center">
-        <XDSStack direction="horizontal" gap={0} vAlign="center">
-          <div
-            style={{
-              width: 20,
-              height: 20,
-              borderRadius: '4px 0 0 4px',
-              backgroundColor: `var(${token})`,
-              border: '1px solid rgba(0,0,0,0.1)',
-              colorScheme: 'light',
-              flexShrink: 0,
-            }}
-          />
-          <div
-            style={{
-              width: 20,
-              height: 20,
-              borderRadius: '0 4px 4px 0',
-              backgroundColor: `var(${token})`,
-              border: '1px solid rgba(255,255,255,0.2)',
-              colorScheme: 'dark',
-              flexShrink: 0,
-            }}
-          />
-        </XDSStack>
-        <XDSText type="code" size="xsm" color="secondary">
-          {value}
-        </XDSText>
-      </XDSStack>
-    );
-  }
-  if (token.startsWith('--radius-')) {
-    return (
-      <XDSStack direction="horizontal" gap={2} vAlign="center">
-        <div
-          style={{
-            width: 24,
-            height: 24,
-            borderRadius: `var(${token})`,
-            border: '2px solid var(--color-accent, #0066FF)',
-            flexShrink: 0,
-          }}
-        />
-        <XDSText type="code" size="xsm" color="secondary">
-          {value}
-        </XDSText>
-      </XDSStack>
-    );
-  }
-  if (token.startsWith('--shadow-')) {
-    return (
-      <XDSStack direction="horizontal" gap={2} vAlign="center">
-        <div
-          style={{
-            width: 24,
-            height: 24,
-            borderRadius: 4,
-            backgroundColor: 'var(--color-background-surface, #fff)',
-            boxShadow: `var(${token})`,
-            flexShrink: 0,
-          }}
-        />
-        <XDSText type="code" size="xsm" color="secondary">
-          {value}
-        </XDSText>
-      </XDSStack>
-    );
-  }
-  if (token.match(/--font-family-/)) {
-    return (
-      <XDSStack direction="horizontal" gap={2} vAlign="center">
-        <span
-          style={{
-            fontFamily: `var(${token})`,
-            fontSize: 14,
-            lineHeight: 1,
-            flexShrink: 0,
-          }}>
-          Aa
-        </span>
-        <XDSText type="code" size="xsm" color="secondary">
-          {value}
-        </XDSText>
-      </XDSStack>
-    );
-  }
-  if (token.match(/--text-.*-size$|--font-size-/)) {
-    return (
-      <XDSStack direction="horizontal" gap={2} vAlign="center">
-        <span
-          style={{
-            fontSize: value.startsWith('var(') ? `var(${token})` : value,
-            lineHeight: 1,
-            flexShrink: 0,
-          }}>
-          A
-        </span>
-        <XDSText type="code" size="xsm" color="secondary">
-          {value}
-        </XDSText>
-      </XDSStack>
-    );
-  }
-  return (
-    <XDSText type="code" size="xsm" color="secondary">
-      {value}
-    </XDSText>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // ThemePackagePage component
 // ---------------------------------------------------------------------------
@@ -3589,33 +3424,9 @@ function ThemePackagePage({
 }) {
   const doc = THEME_DOC_BY_KEY[packageKey];
   const [previewDark, setPreviewDark] = useState(false);
-  const [themeTab, setThemeTab] = useState<'preview' | 'tokens'>('preview');
   if (!doc) return null;
   const themeObject = THEME_OBJECTS[packageKey];
-  const tokenCategories = useMemo(
-    () => (themeObject ? categorizeTokens(themeObject.tokens) : []),
-    [themeObject],
-  );
-  const componentOverrides = useMemo(
-    () =>
-      deriveComponentOverrides(
-        themeObject?.components as
-          | Record<string, Record<string, Record<string, string>>>
-          | undefined,
-      ),
-    [themeObject],
-  );
   const setupCode = useMemo(() => generateSetupCode(doc), [doc]);
-  const switchThemesCode = useMemo(
-    () =>
-      themeDocs
-        .map(
-          t =>
-            `npm install ${t.npmName.padEnd(24)}# ${t.description.split('.')[0]}`,
-        )
-        .join('\n'),
-    [],
-  );
 
   return (
     <XDSSection
@@ -3637,34 +3448,8 @@ function ThemePackagePage({
           <XDSText type="body" color="secondary">
             {doc.description}
           </XDSText>
-          <XDSStack direction="horizontal" gap={2} vAlign="center" style={{flexWrap: 'wrap'}}>
-            <XDSStack direction="horizontal" gap={2} vAlign="center" style={{flex: 1, minWidth: 0}}>
-              <XDSTabList
-                value={themeTab}
-                onChange={v => setThemeTab(v as 'preview' | 'tokens')}
-                size="sm">
-                <XDSTab value="preview" label="Preview" />
-                <XDSTab value="tokens" label="Tokens" />
-              </XDSTabList>
-            </XDSStack>
-            <XDSStack direction="horizontal" gap={2} vAlign="center">
-              <XDSIconButton
-                label={previewDark ? 'Switch to light' : 'Switch to dark'}
-                icon={previewDark ? <ContrastIcon /> : <MoonIcon />}
-                size="sm"
-                variant="ghost"
-                onClick={() => setPreviewDark(d => !d)}
-              />
-              {onCraft && (
-                <XDSButton
-                  label="Try in Craft"
-                  variant="secondary"
-                  size="sm"
-                  icon={<XDSIcon icon={PaletteIcon} size="sm" />}
-                  onClick={onCraft}
-                />
-              )}
-              <XDSPopover
+          <XDSStack direction="horizontal" gap={2} vAlign="center">
+            <XDSPopover
                 label="Install"
                 placement="below"
                 alignment="end"
@@ -3675,11 +3460,13 @@ function ThemePackagePage({
                       <XDSText type="label" weight="bold">
                         Install
                       </XDSText>
-                      <XDSCodeBlock
-                        code={`npm install ${doc.npmName}`}
-                        language="bash"
-                        hasCopyButton
-                      />
+                      <XDSCard padding={0}>
+                        <XDSCodeBlock
+                          code={`npm install ${doc.npmName}`}
+                          language="bash"
+                          hasCopyButton
+                        />
+                      </XDSCard>
                     </XDSStack>
                     <XDSStack direction="vertical" gap={1}>
                       <XDSText type="label" weight="bold">
@@ -3688,11 +3475,13 @@ function ThemePackagePage({
                       <XDSText type="supporting" color="secondary">
                         Import the theme CSS and wrap your app in XDSTheme.
                       </XDSText>
-                      <XDSCodeBlock
-                        code={setupCode}
-                        language="tsx"
-                        hasCopyButton
-                      />
+                      <XDSCard padding={0}>
+                        <XDSCodeBlock
+                          code={setupCode}
+                          language="tsx"
+                          hasCopyButton
+                        />
+                      </XDSCard>
                     </XDSStack>
                     {themeDocs.length > 1 && (
                       <XDSStack direction="vertical" gap={1}>
@@ -3706,12 +3495,13 @@ function ThemePackagePage({
                         {themeDocs
                           .filter(t => t.npmName !== doc.npmName)
                           .map(t => (
-                            <XDSCodeBlock
-                              key={t.slug}
-                              code={`npm install ${t.npmName}\n\n# @import "${t.npmName}/theme.css";\n# import {${t.slug}Theme} from '${t.npmName}/built';`}
-                              language="bash"
-                              hasCopyButton
-                            />
+                            <XDSCard key={t.slug} padding={0}>
+                              <XDSCodeBlock
+                                code={`npm install ${t.npmName}\n\n# @import "${t.npmName}/theme.css";\n# import {${t.slug}Theme} from '${t.npmName}/built';`}
+                                language="bash"
+                                hasCopyButton
+                              />
+                            </XDSCard>
                           ))}
                       </XDSStack>
                     )}
@@ -3720,86 +3510,58 @@ function ThemePackagePage({
                 <XDSButton
                   label="Install"
                   variant="primary"
-                  size="sm"
+                  size="lg"
                   icon={<XDSIcon icon={DownloadIcon} size="sm" />}
                 />
               </XDSPopover>
+            {onCraft && (
+              <XDSButton
+                label="Try in Craft"
+                variant="secondary"
+                size="lg"
+                icon={<XDSIcon icon={PaletteIcon} size="sm" />}
+                onClick={onCraft}
+              />
+            )}
+            <div style={{flex: 1}} />
+            <XDSButton
+              label={previewDark ? 'Light mode' : 'Dark mode'}
+              icon={previewDark ? <MoonIcon /> : <ContrastIcon />}
+              isIconOnly
+              size="lg"
+              variant="ghost"
+              onClick={() => setPreviewDark(prev => !prev)}
+            />
             </XDSStack>
-          </XDSStack>
         </XDSStack>
 
-        {/* ── Preview tab ── */}
-        {themeTab === 'preview' && themeObject && (
-          <XDSCard
-            variant="muted"
-            padding={6}
-            style={{overflow: 'hidden', colorScheme: previewDark ? 'dark' : 'light'}}>
-            <XDSTheme theme={themeObject}>
+        {/* Preview */}
+        {themeObject && (
+          <XDSTheme theme={themeObject} mode={previewDark ? 'dark' : 'light'}>
+            <XDSCard
+              variant="muted"
+              padding={6}
+              style={{overflow: 'hidden'}}>
               <XDSStack direction="vertical" gap={6}>
                 <XDSCard
                   padding={0}
-                  style={{overflow: 'hidden'}}>
+                  style={{overflow: 'hidden', borderColor: 'transparent'}}>
                   <ThemeShowcasePreview />
                 </XDSCard>
                 <ThemeShowcaseDetails />
               </XDSStack>
-            </XDSTheme>
-          </XDSCard>
+            </XDSCard>
+          </XDSTheme>
         )}
 
-        {/* ── Tokens tab ── */}
-        {themeTab === 'tokens' && tokenCategories.length > 0 && themeObject && (
-          <XDSTheme theme={themeObject}>
-            <XDSStack direction="vertical" gap={3}>
-              <XDSText type="body" color="secondary">
-                Design tokens defined by this theme. These CSS custom properties
-                control colors, typography, spacing, motion, and more.
-              </XDSText>
-              {tokenCategories.map(cat => (
-                <XDSStack key={cat.category} direction="vertical" gap={2}>
-                  <XDSText type="label" weight="bold">
-                    {cat.category}
-                  </XDSText>
-                  <XDSCard padding={0}>
-                    <XDSTable<{token: string; value: string}>
-                      data={cat.items}
-                      columns={[
-                        {key: 'token', header: 'Token'},
-                        {
-                          key: 'value',
-                          header: 'Value',
-                          renderCell: (row) => (
-                            <TokenPreview token={row.token} value={row.value} />
-                          ),
-                        },
-                      ]}
-                    />
-                  </XDSCard>
-                </XDSStack>
-              ))}
-
-              {componentOverrides.length > 0 && (
-                <XDSStack direction="vertical" gap={2}>
-                  <XDSText type="label" weight="bold">
-                    Component Overrides
-                  </XDSText>
-                  <XDSCard padding={0}>
-                    <XDSTable
-                      data={
-                        componentOverrides as {[key: string]: unknown}[]
-                      }
-                      columns={[
-                        {key: 'component', header: 'Component'},
-                        {key: 'selector', header: 'Variant'},
-                        {key: 'property', header: 'Property'},
-                        {key: 'value', header: 'Value'},
-                      ]}
-                    />
-                  </XDSCard>
-                </XDSStack>
-              )}
-            </XDSStack>
-          </XDSTheme>
+        {/* Tokens */}
+        {themeObject && (
+          <XDSStack direction="vertical" gap={3}>
+            <XDSHeading level={2}>Tokens</XDSHeading>
+            <XDSTheme theme={themeObject}>
+              <TokenScalePreview tokens={themeObject.tokens} />
+            </XDSTheme>
+          </XDSStack>
         )}
 
       </XDSStack>

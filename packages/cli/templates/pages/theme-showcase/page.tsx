@@ -1,6 +1,6 @@
 'use client';
 
-import {useState} from 'react';
+import React, {useState} from 'react';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSTopNav, XDSTopNavItem, XDSTopNavHeading} from '@xds/core/TopNav';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
@@ -11,6 +11,7 @@ import {XDSCard} from '@xds/core/Card';
 import {XDSButton} from '@xds/core/Button';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSBadge} from '@xds/core/Badge';
+import {XDSIcon} from '@xds/core/Icon';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSSwitch} from '@xds/core/Switch';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
@@ -41,12 +42,6 @@ const styles = stylex.create({
   },
   imageWrapper: {
     position: 'relative' as const,
-  },
-  swatch: {
-    width: 40,
-    height: 40,
-    borderRadius: 'var(--radius-element, 8px)',
-    border: '1px solid var(--color-border, rgba(0,0,0,0.1))',
   },
   fontSample: {
     fontFamily: 'inherit',
@@ -94,33 +89,18 @@ const TABLE_DATA = [
   {name: 'Castle art print', description: 'Art print of a majestic castle by a river.', price: '$65', stock: 74},
 ] as {[key: string]: unknown}[];
 
-const COLOR_ROWS: {label: string; swatches: {label: string; var: string}[]}[] = [
-  {
-    label: 'Semantic',
-    swatches: [
-      {label: 'Success', var: '--color-success'},
-      {label: 'Warning', var: '--color-warning'},
-      {label: 'Error', var: '--color-error'},
-    ],
-  },
-  {
-    label: 'Surface',
-    swatches: [
-      {label: 'Primary', var: '--color-accent'},
-      {label: 'Surface', var: '--color-background-surface'},
-      {label: 'Body', var: '--color-background-body'},
-      {label: 'Neutral', var: '--color-neutral'},
-    ],
-  },
-  {
-    label: 'Category',
-    swatches: [
-      {label: 'Accent 1', var: '--color-category-green-bg'},
-      {label: 'Accent 2', var: '--color-category-yellow-bg'},
-      {label: 'Accent 3', var: '--color-category-orange-bg'},
-      {label: 'Accent 4', var: '--color-category-teal-bg'},
-    ],
-  },
+const COLOR_ROWS: {label: string; var: string}[][] = [
+  [
+    {label: 'Accent', var: '--color-accent'},
+    {label: 'Success', var: '--color-success'},
+    {label: 'Warning', var: '--color-warning'},
+    {label: 'Error', var: '--color-error'},
+  ],
+  [
+    {label: 'Surface', var: '--color-background-surface'},
+    {label: 'Body', var: '--color-background-body'},
+    {label: 'Neutral', var: '--color-neutral'},
+  ],
 ];
 
 function ColorSwatches({
@@ -129,12 +109,17 @@ function ColorSwatches({
   swatches: {label: string; var: string}[];
 }) {
   return (
-    <XDSHStack gap={3}>
+    <XDSHStack gap={6} hAlign="center">
       {swatches.map(s => (
-        <XDSVStack key={s.label} gap={1} hAlign="center">
+        <XDSVStack key={s.label} gap={2} hAlign="center">
           <div
-            {...stylex.props(styles.swatch)}
-            style={{backgroundColor: `var(${s.var})`}}
+            style={{
+              width: 54,
+              height: 54,
+              borderRadius: '50%',
+              backgroundColor: `var(${s.var})`,
+              border: '1px solid var(--color-border-emphasized, rgba(0,0,0,0.15))',
+            }}
           />
           <XDSText type="supporting" color="secondary">
             {s.label}
@@ -142,6 +127,24 @@ function ColorSwatches({
         </XDSVStack>
       ))}
     </XDSHStack>
+  );
+}
+
+function FontLabel({cssVar, fallback}: {cssVar: string; fallback: string}) {
+  const ref = React.useRef<HTMLSpanElement>(null);
+  const [name, setName] = React.useState(fallback);
+
+  React.useEffect(() => {
+    if (!ref.current) return;
+    const computed = getComputedStyle(ref.current).fontFamily;
+    const first = computed.split(',')[0].replace(/["']/g, '').trim();
+    if (first) setName(first);
+  }, []);
+
+  return (
+    <XDSText type="supporting" color="secondary">
+      <span ref={ref} style={{fontFamily: `var(${cssVar})`}}>{name}</span>
+    </XDSText>
   );
 }
 
@@ -236,6 +239,7 @@ export function ThemeShowcasePreview() {
           />
         </XDSVStack>
       </XDSSection>
+      <div style={{height: 8}} />
     </XDSVStack>
   );
 }
@@ -247,23 +251,23 @@ export function ThemeShowcaseDetails() {
     <XDSVStack gap={4}>
           {/* Colors + Fonts */}
           <XDSGrid columns={2} gap={4}>
-            <XDSCard padding={6}>
+            <XDSCard padding={6} style={{borderColor: 'transparent'}}>
               <XDSVStack gap={4}>
                 <XDSText type="label" weight="bold">
                   Colors
                 </XDSText>
-                {COLOR_ROWS.map(row => (
-                  <ColorSwatches key={row.label} swatches={row.swatches} />
+                {COLOR_ROWS.map((row, i) => (
+                  <ColorSwatches key={i} swatches={row} />
                 ))}
               </XDSVStack>
             </XDSCard>
 
-            <XDSCard padding={6}>
-              <XDSVStack gap={4}>
+            <XDSCard padding={6} style={{borderColor: 'transparent'}}>
+              <XDSVStack gap={0} style={{height: '100%'}}>
                 <XDSText type="label" weight="bold">
                   Fonts
                 </XDSText>
-                <XDSHStack gap={8}>
+                <XDSHStack gap={8} hAlign="center" vAlign="center" style={{flex: 1}}>
                   <XDSVStack gap={2} hAlign="center">
                     <XDSText
                       type="display-1"
@@ -272,9 +276,7 @@ export function ThemeShowcaseDetails() {
                       }}>
                       Aa
                     </XDSText>
-                    <XDSText type="supporting" color="secondary">
-                      Body
-                    </XDSText>
+                    <FontLabel cssVar="--font-family-body" fallback="Body" />
                   </XDSVStack>
                   <XDSVStack gap={2} hAlign="center">
                     <XDSText
@@ -284,9 +286,7 @@ export function ThemeShowcaseDetails() {
                       }}>
                       Aa
                     </XDSText>
-                    <XDSText type="supporting" color="secondary">
-                      Code
-                    </XDSText>
+                    <FontLabel cssVar="--font-family-code" fallback="Code" />
                   </XDSVStack>
                 </XDSHStack>
               </XDSVStack>
@@ -294,8 +294,8 @@ export function ThemeShowcaseDetails() {
           </XDSGrid>
 
           {/* Components */}
-          <XDSCard padding={6}>
-            <XDSGrid columns={2} gap={6}>
+          <XDSCard padding={6} style={{borderColor: 'transparent'}}>
+            <XDSGrid columns={2} gap={8}>
               <XDSVStack gap={4}>
                 <XDSText type="label" weight="bold">
                   Components
@@ -331,9 +331,9 @@ export function ThemeShowcaseDetails() {
                       List Header
                     </XDSText>
                     <XDSList density="compact">
-                      <XDSListItem label="Notifications" />
-                      <XDSListItem label="Privacy" />
-                      <XDSListItem label="Security" />
+                      <XDSListItem label="Notifications" startContent={<XDSIcon icon="info" size="sm" />} />
+                      <XDSListItem label="Privacy" startContent={<XDSIcon icon="warning" size="sm" />} />
+                      <XDSListItem label="Security" startContent={<XDSIcon icon="check" size="sm" />} />
                     </XDSList>
                   </XDSVStack>
                 </XDSGrid>
@@ -361,7 +361,6 @@ export function ThemeShowcaseDetails() {
                   onChange={() => {}}
                 />
                 <XDSProgressBar value={75} label="Progress" />
-                <XDSProgressBar value={60} label="Progress" />
                 <XDSSwitch label="Toggle" value={true} onChange={() => {}} />
                 <XDSBanner status="success" title="Banner Title" />
                 <XDSBanner status="warning" title="Banner Title" />
