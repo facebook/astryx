@@ -25,7 +25,7 @@ export default function ChatSystemMessageWithIcon() {
           Messages are end-to-end encrypted
         </XDSChatSystemMessage>
         <XDSChatSystemMessage icon={<XDSIcon icon={SparklesIcon} />}>
-          Navi is generating a response…
+          Agent is generating a response…
         </XDSChatSystemMessage>
         <XDSChatSystemMessage icon={<XDSIcon icon={ShieldCheckIcon} />}>
           Conversation verified by admin
