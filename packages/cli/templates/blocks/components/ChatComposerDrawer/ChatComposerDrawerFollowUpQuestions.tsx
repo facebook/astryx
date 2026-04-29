@@ -56,7 +56,7 @@ export default function ChatComposerDrawerFollowUpQuestions() {
         drawer={
           <XDSChatComposerDrawer count={questions.length} label="Questions">
             <XDSStack direction="vertical" gap={1} width="100%">
-              <XDSStack direction="horizontal" hAlign="space-between" vAlign="center">
+              <XDSStack direction="horizontal" hAlign="between" vAlign="center">
                 <XDSButton
                   label="Previous question"
                   variant="ghost"
