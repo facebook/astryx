@@ -5,5 +5,5 @@ export const doc = {
   description: 'Ghost variant for messages without visible bubble boundaries. Keeps padding for alignment but renders a transparent background, useful for AI-style responses.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Chat', 'ChatMessage', 'ChatMessageBubble', 'ChatMessageMetadata', 'Avatar', 'Timestamp', 'Text', 'Layout'],
+  componentsUsed: ['Chat', 'ChatMessage', 'ChatMessageBubble', 'ChatMessageMetadata', 'Timestamp', 'Text', 'Layout'],
 };
