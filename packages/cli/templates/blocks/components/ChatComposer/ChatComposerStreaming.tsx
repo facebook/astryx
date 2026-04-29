@@ -9,7 +9,7 @@ export default function ChatComposerStreaming() {
   const [isStreaming, setIsStreaming] = useState(false);
 
   return (
-    <XDSStack direction="vertical" gap={4}>
+    <XDSStack direction="vertical" gap={4} style={{width: '100%', maxWidth: 450}}>
       <XDSStack direction="vertical" gap={1}>
         <XDSText type="supporting" color="secondary">
           {isStreaming ? 'Streaming — click stop to cancel' : 'Send a message to start streaming'}

@@ -6,7 +6,7 @@ import {XDSText} from '@xds/core/Text';
 
 export default function ChatComposerSimpleComposer() {
   return (
-    <XDSStack direction="vertical" gap={4}>
+    <XDSStack direction="vertical" gap={4} style={{width: '100%', maxWidth: 450}}>
       <XDSStack direction="vertical" gap={1}>
         <XDSText type="supporting" color="secondary">
           Default placeholder

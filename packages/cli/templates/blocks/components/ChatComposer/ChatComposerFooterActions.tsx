@@ -9,7 +9,7 @@ import {MicrophoneIcon} from '@heroicons/react/24/outline';
 
 export default function ChatComposerFooterActions() {
   return (
-    <XDSStack direction="vertical" gap={4}>
+    <XDSStack direction="vertical" gap={4} style={{width: '100%', maxWidth: 450}}>
       <XDSStack direction="vertical" gap={1}>
         <XDSText type="supporting" color="secondary">
           Model selector and mic button

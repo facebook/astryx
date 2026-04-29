@@ -18,7 +18,7 @@ export default function ChatComposerFullFeaturedComposer() {
   const [isStreaming, setIsStreaming] = useState(false);
 
   return (
-    <XDSStack direction="vertical" gap={4}>
+    <XDSStack direction="vertical" gap={4} style={{width: '100%', maxWidth: 450}}>
       <XDSText type="supporting" color="secondary">
         All slots populated
       </XDSText>
