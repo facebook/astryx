@@ -41,7 +41,7 @@ export default function ChatComposerInputMentionTrigger() {
   };
 
   return (
-    <XDSStack direction="vertical" gap={3}>
+    <XDSStack direction="vertical" gap={3} style={{width: '100%', maxWidth: 450}}>
       <XDSChatComposer
         onSubmit={() => setValue('')}
         input={

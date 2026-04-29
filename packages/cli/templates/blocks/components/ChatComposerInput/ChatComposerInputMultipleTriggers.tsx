@@ -52,7 +52,7 @@ export default function ChatComposerInputMultipleTriggers() {
   };
 
   return (
-    <XDSStack direction="vertical" gap={3}>
+    <XDSStack direction="vertical" gap={3} style={{width: '100%', maxWidth: 450}}>
       <XDSText type="supporting" color="secondary">
         Type @ for mentions (blue) or / for commands (yellow)
       </XDSText>

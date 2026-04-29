@@ -6,5 +6,5 @@ export const doc = {
     'Composer in a disabled state. Use when the input should be visible but not interactive, such as during streaming or when a prerequisite is unmet.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['ChatComposer', 'ChatComposerInput'],
+  componentsUsed: ['ChatComposer', 'ChatComposerInput', 'Layout'],
 };

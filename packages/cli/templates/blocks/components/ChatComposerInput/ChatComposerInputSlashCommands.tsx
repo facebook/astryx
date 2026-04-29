@@ -8,6 +8,7 @@ import {
 import {createStaticSource} from '@xds/core/Typeahead';
 import {XDSTypeaheadItem} from '@xds/core/Typeahead';
 import type {XDSSearchableItem} from '@xds/core/Typeahead';
+import {XDSStack} from '@xds/core/Layout';
 
 const COMMANDS: XDSSearchableItem<{description: string}>[] = [
   {id: 'summarize', label: 'summarize', auxiliaryData: {description: 'Summarize the conversation'}},
@@ -37,14 +38,16 @@ export default function ChatComposerInputSlashCommands() {
   };
 
   return (
-    <XDSChatComposer
-      onSubmit={() => {}}
-      input={
-        <XDSChatComposerInput
-          triggers={[commandTrigger]}
-          placeholder="Type / for commands..."
-        />
-      }
-    />
+    <XDSStack direction="vertical" style={{width: '100%', maxWidth: 450}}>
+      <XDSChatComposer
+        onSubmit={() => {}}
+        input={
+          <XDSChatComposerInput
+            triggers={[commandTrigger]}
+            placeholder="Type / for commands..."
+          />
+        }
+      />
+    </XDSStack>
   );
 }

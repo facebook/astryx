@@ -6,5 +6,5 @@ export const doc = {
     'Chat input with a / trigger for command selection. Use for AI assistants or bots that support structured commands.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['ChatComposer', 'ChatComposerInput', 'Typeahead'],
+  componentsUsed: ['ChatComposer', 'ChatComposerInput', 'Typeahead', 'Layout'],
 };

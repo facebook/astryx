@@ -8,7 +8,7 @@ import {XDSText} from '@xds/core/Text';
 export default function ChatComposerInputControlledInput() {
   const [value, setValue] = useState('');
   return (
-    <XDSStack direction="vertical" gap={3}>
+    <XDSStack direction="vertical" gap={3} style={{width: '100%', maxWidth: 450}}>
       <XDSChatComposer
         onSubmit={() => setValue('')}
         value={value}
