@@ -4,7 +4,6 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSHStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import {XDSTable} from '@xds/core/Table';
-import {xdsTokenDefaults} from '@xds/core/theme';
 import type {TokenTableProps} from './types';
 import {resolveTokenForMode, hasDualMode, getTokensByPrefix} from './helpers';
 
@@ -45,14 +44,30 @@ const styles = stylex.create({
   },
 });
 
-function ContextSwatch({value, surface}: {value: string; surface: 'light' | 'dark'}) {
-      <div {...stylex.props(styles.swatchInner)} style={{backgroundColor: value}} />
+function ContextSwatch({
+  value,
+  surface,
+}: {
+  value: string;
+  surface: 'light' | 'dark';
+}) {
+  return (
+    <div
+      {...stylex.props(
+        surface === 'light' ? styles.contextLight : styles.contextDark,
+      )}>
+      <div
+        {...stylex.props(styles.swatchInner)}
+        style={{backgroundColor: value}}
+      />
     </div>
   );
 }
 
 function Swatch({value}: {value: string}) {
-  return <div {...stylex.props(styles.swatch)} style={{backgroundColor: value}} />;
+  return (
+    <div {...stylex.props(styles.swatch)} style={{backgroundColor: value}} />
+  );
 }
 
 export function ColorTokenTable({theme}: TokenTableProps) {
@@ -77,7 +92,9 @@ export function ColorTokenTable({theme}: TokenTableProps) {
             renderCell: (item: Record<string, unknown>) => (
               <XDSHStack gap={2} align="center">
                 <ContextSwatch value={item.light as string} surface="light" />
-                <XDSText type="code" color="secondary">{item.light as string}</XDSText>
+                <XDSText type="code" color="secondary">
+                  {item.light as string}
+                </XDSText>
               </XDSHStack>
             ),
           },
@@ -87,7 +104,9 @@ export function ColorTokenTable({theme}: TokenTableProps) {
             renderCell: (item: Record<string, unknown>) => (
               <XDSHStack gap={2} align="center">
                 <ContextSwatch value={item.dark as string} surface="dark" />
-                <XDSText type="code" color="secondary">{item.dark as string}</XDSText>
+                <XDSText type="code" color="secondary">
+                  {item.dark as string}
+                </XDSText>
               </XDSHStack>
             ),
           },
@@ -110,7 +129,9 @@ export function ColorTokenTable({theme}: TokenTableProps) {
           renderCell: (item: Record<string, unknown>) => (
             <XDSHStack gap={2} align="center">
               <Swatch value={item.light as string} />
-              <XDSText type="code" color="secondary">{item.light as string}</XDSText>
+              <XDSText type="code" color="secondary">
+                {item.light as string}
+              </XDSText>
             </XDSHStack>
           ),
         },

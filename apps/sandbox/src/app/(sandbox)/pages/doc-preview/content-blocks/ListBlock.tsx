@@ -1,6 +1,5 @@
 'use client';
 
-import * as stylex from '@stylexjs/stylex';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import {XDSBadge} from '@xds/core/Badge';
@@ -55,10 +54,14 @@ export function ListBlock({
       {items.map((item, i) => (
         <XDSHStack key={i} gap={2} vAlign="center">
           {listStyle === 'ordered' && (
-            <XDSText type="body" color="secondary">{i + 1}.</XDSText>
+            <XDSText type="body" color="secondary">
+              {i + 1}.
+            </XDSText>
           )}
           {listStyle === 'unordered' && (
-            <XDSText type="body" color="secondary">•</XDSText>
+            <XDSText type="body" color="secondary">
+              •
+            </XDSText>
           )}
           <XDSText>{item}</XDSText>
         </XDSHStack>
