@@ -11,7 +11,7 @@ const styles = stylex.create({
   shadowBox: {
     width: 32,
     height: 24,
-    borderRadius: 'var(--radius-2)',
+    borderRadius: 'var(--radius-element)',
     backgroundColor: 'var(--color-background-surface)',
     flexShrink: 0,
   },

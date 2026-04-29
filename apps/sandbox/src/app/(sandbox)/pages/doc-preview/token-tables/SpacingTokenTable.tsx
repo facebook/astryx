@@ -12,7 +12,7 @@ const styles = stylex.create({
     minWidth: 2,
     maxWidth: 64,
     height: 12,
-    borderRadius: 'var(--radius-1)',
+    borderRadius: 'var(--radius-element)',
     backgroundColor: 'var(--color-accent)',
     opacity: 0.6,
     flexShrink: 0,

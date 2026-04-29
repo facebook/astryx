@@ -12,14 +12,14 @@ const styles = stylex.create({
   swatch: {
     width: 28,
     height: 28,
-    borderRadius: 'var(--radius-2)',
+    borderRadius: 'var(--radius-element)',
     flexShrink: 0,
     border: '1px solid var(--color-border)',
   },
   contextLight: {
     width: 28,
     height: 28,
-    borderRadius: 'var(--radius-2)',
+    borderRadius: 'var(--radius-element)',
     backgroundColor: '#FFFFFF',
     display: 'flex',
     alignItems: 'center',
@@ -30,7 +30,7 @@ const styles = stylex.create({
   contextDark: {
     width: 28,
     height: 28,
-    borderRadius: 'var(--radius-2)',
+    borderRadius: 'var(--radius-element)',
     backgroundColor: '#1C1C1E',
     display: 'flex',
     alignItems: 'center',
@@ -41,13 +41,11 @@ const styles = stylex.create({
   swatchInner: {
     width: 20,
     height: 20,
-    borderRadius: 'var(--radius-1)',
+    borderRadius: 'var(--radius-inner)',
   },
 });
 
 function ContextSwatch({value, surface}: {value: string; surface: 'light' | 'dark'}) {
-  return (
-    <div {...stylex.props(surface === 'light' ? styles.contextLight : styles.contextDark)}>
       <div {...stylex.props(styles.swatchInner)} style={{backgroundColor: value}} />
     </div>
   );

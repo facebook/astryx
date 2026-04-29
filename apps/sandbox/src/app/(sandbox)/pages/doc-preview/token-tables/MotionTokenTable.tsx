@@ -12,20 +12,20 @@ const styles = stylex.create({
   durationTrack: {
     width: 40,
     height: 8,
-    borderRadius: 'var(--radius-1)',
+    borderRadius: 'var(--radius-element)',
     backgroundColor: 'var(--color-neutral)',
     overflow: 'hidden',
     flexShrink: 0,
   },
   durationFill: {
     height: '100%',
-    borderRadius: 'var(--radius-1)',
+    borderRadius: 'var(--radius-element)',
     backgroundColor: 'var(--color-accent)',
   },
   easingTrack: {
     width: 40,
     height: 8,
-    borderRadius: 'var(--radius-1)',
+    borderRadius: 'var(--radius-element)',
     backgroundColor: 'var(--color-neutral)',
     position: 'relative' as const,
     overflow: 'visible',
