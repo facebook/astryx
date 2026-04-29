@@ -36,7 +36,6 @@ import {
   ChartsIcon,
   DownloadIcon,
   SendIcon,
-  MetaLogo,
   ChevronDownIcon,
 } from './docsite-icons';
 import {XDSBadge} from '@xds/core/Badge';
@@ -73,8 +72,8 @@ import type {XDSDefinedTheme} from '@xds/core/theme';
 import {defaultTheme} from '@xds/theme-default/built';
 import {neutralTheme} from '@xds/theme-neutral/built';
 import {brutalistTheme} from '@xds/theme-brutalist/built';
-import {metaTheme} from '@xds/theme-meta/built';
-import {whatsappTheme} from '@xds/theme-whatsapp/built';
+import {matchaTheme} from '@xds/theme-matcha/built';
+import {dailyTheme} from '@xds/theme-daily/built';
 import {XDSNumberInput} from '@xds/core/NumberInput';
 import {XDSSelector} from '@xds/core/Selector';
 import {defaultIconRegistry} from '@xds/theme-default';
@@ -1121,18 +1120,18 @@ const TYPO_THEME_OPTIONS: {
     fonts: {body: 'Courier New', heading: 'Courier New', code: 'Courier New'},
   },
   {
-    key: 'meta',
-    label: 'Meta',
-    theme: metaTheme,
-    desc: 'Figtree · base 14px',
+    key: 'matcha',
+    label: 'Matcha',
+    theme: matchaTheme,
+    desc: 'Figtree · earthy greens · serif headings',
     fonts: {body: 'Figtree', heading: 'Figtree', code: 'SF Mono'},
   },
   {
-    key: 'whatsapp',
-    label: 'WhatsApp',
-    theme: whatsappTheme,
-    desc: 'System fonts · rounded accent',
-    fonts: {body: 'System', heading: 'System', code: 'SF Mono'},
+    key: 'daily',
+    label: 'Daily',
+    theme: dailyTheme,
+    desc: 'Figtree · warm neutrals · Lucide icons',
+    fonts: {body: 'Figtree', heading: 'Figtree', code: 'SF Mono'},
   },
 ];
 

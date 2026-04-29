@@ -6,12 +6,16 @@ import {XDSLayerProvider} from '@xds/core/Layer';
 import {defaultTheme} from '@xds/theme-default/built';
 import {neutralTheme} from '@xds/theme-neutral/built';
 import {brutalistTheme} from '@xds/theme-brutalist/built';
+import {matchaTheme} from '@xds/theme-matcha/built';
+import {dailyTheme} from '@xds/theme-daily/built';
 import type {XDSDefinedTheme, ThemeMode} from '@xds/core/theme';
 
 const themes: Record<string, XDSDefinedTheme> = {
   default: defaultTheme,
   neutral: neutralTheme,
   brutalist: brutalistTheme,
+  matcha: matchaTheme,
+  daily: dailyTheme,
 };
 
 type ThemeContextValue = {

@@ -328,9 +328,9 @@ export const PROFILE_USED_ITEMS: {
     img: FIRST_CARD_IMAGE,
   },
   {
-    name: 'Meta Theme',
+    name: 'Matcha Theme',
     type: 'Theme',
-    description: 'Meta brand colors with Figtree typography and blue accents.',
+    description: 'Earthy greens and warm browns with serif typography.',
     lastUsed: '2026-04-14T08:00:00Z',
     usageCount: 9,
     img: SHOPPING_DETAILS_IMAGE,
@@ -397,10 +397,10 @@ export const PROFILE_USED_ITEMS: {
     img: DUMMY_IMAGE,
   },
   {
-    name: 'WhatsApp Theme',
+    name: 'Daily Theme',
     type: 'Theme',
     description:
-      'WhatsApp brand greens and warm grays with rounded components.',
+      'Soft blues and warm neutrals for everyday tools.',
     lastUsed: '2026-04-09T10:00:00Z',
     usageCount: 2,
     img: DUMMY_IMAGE,
@@ -424,10 +424,10 @@ export const PROFILE_LIKED_ITEMS: {
   author: string;
 }[] = [
   {
-    name: 'Meta Theme',
+    name: 'Matcha Theme',
     type: 'Theme',
     bookmarkedAt: '2026-04-13T08:00:00Z',
-    description: 'Meta brand colors with Figtree typography.',
+    description: 'Earthy greens and warm browns with serif typography.',
     img: FIRST_CARD_IMAGE,
     author: 'XDS Design',
   },
@@ -486,7 +486,7 @@ export const PROFILE_COLLECTIONS: {
     color: '#3B82F6',
     items: [
       'Admin Dashboard',
-      'Meta Theme',
+      'Matcha Theme',
       'Toast Notification',
       'Kanban Board',
     ],
@@ -496,7 +496,7 @@ export const PROFILE_COLLECTIONS: {
     count: 6,
     color: '#8B5CF6',
     items: [
-      'Meta Theme',
+      'Matcha Theme',
       'Brutalist Theme',
       'Admin Dashboard',
       'Product Detail',
@@ -516,7 +516,7 @@ export const PROFILE_COLLECTIONS: {
     color: '#10B981',
     items: [
       'Admin Dashboard',
-      'Meta Theme',
+      'Matcha Theme',
       'Brutalist Theme',
       'Product Detail',
       'Kanban Board',
@@ -527,13 +527,13 @@ export const PROFILE_COLLECTIONS: {
     count: 8,
     color: '#EF4444',
     items: [
-      'Meta Theme',
+      'Matcha Theme',
       'Brutalist Theme',
       'Admin Dashboard',
       'Product Detail',
       'Toast Notification',
       'Kanban Board',
-      'Meta Theme',
+      'Matcha Theme',
       'Brutalist Theme',
     ],
   },
@@ -773,37 +773,6 @@ export const THEME_PICKER_ENTRIES: ThemePickerEntry[] = [
       text: '#111111',
       radius: 8,
       font: 'system-ui, sans-serif',
-    },
-  },
-  {
-    key: 'meta',
-    name: 'Meta',
-    category: 'official',
-    accent: '#0064E0',
-    isPinnedByDefault: true,
-    description: 'Meta brand with Figtree typography',
-    preview: {
-      bg: '#FFFFFF',
-      surface: '#F2F4F6',
-      accent: '#0064E0',
-      text: '#111112',
-      radius: 10,
-      font: 'Figtree, sans-serif',
-    },
-  },
-  {
-    key: 'whatsapp',
-    name: 'WhatsApp',
-    category: 'official',
-    accent: '#1DAA61',
-    description: 'WhatsApp brand greens and warm grays',
-    preview: {
-      bg: '#FFFFFF',
-      surface: '#F7F5F3',
-      accent: '#1DAA61',
-      text: '#111B21',
-      radius: 12,
-      font: 'Helvetica Neue, sans-serif',
     },
   },
   {

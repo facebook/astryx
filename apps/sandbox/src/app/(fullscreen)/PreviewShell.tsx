@@ -856,8 +856,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
             {label: 'Default', onClick: () => setThemeName('default')},
             {label: 'Neutral', onClick: () => setThemeName('neutral')},
             {label: 'Brutalist', onClick: () => setThemeName('brutalist')},
-            {label: 'Meta', onClick: () => setThemeName('meta')},
-            {label: 'WhatsApp', onClick: () => setThemeName('whatsapp')},
+            {label: 'Matcha', onClick: () => setThemeName('matcha')},
             {label: 'Daily', onClick: () => setThemeName('daily')},
           ]}
         />

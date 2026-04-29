@@ -400,8 +400,8 @@ function DocsiteLandingTemplate() {
     const themeFilters: Record<string, string> = {
       neutral: 'saturate(0.3)',
       brutalist: 'contrast(1.2) saturate(0.5)',
-      meta: 'sepia(0.15) saturate(1.4) hue-rotate(200deg)',
-      whatsapp: 'sepia(0.2) saturate(1.3) hue-rotate(100deg)',
+      matcha: 'sepia(0.2) saturate(1.2) hue-rotate(80deg)',
+      daily: 'sepia(0.1) saturate(1.1) hue-rotate(10deg)',
     };
     if (themeFilters[previewTheme]) {
       filters.push(themeFilters[previewTheme]);
@@ -1360,12 +1360,12 @@ function DocsiteLandingTemplate() {
                                   onClick: () => setPreviewTheme('brutalist'),
                                 },
                                 {
-                                  label: 'Meta',
-                                  onClick: () => setPreviewTheme('meta'),
+                                  label: 'Matcha',
+                                  onClick: () => setPreviewTheme('matcha'),
                                 },
                                 {
-                                  label: 'WhatsApp',
-                                  onClick: () => setPreviewTheme('whatsapp'),
+                                  label: 'Daily',
+                                  onClick: () => setPreviewTheme('daily'),
                                 },
                               ]}
                             />
@@ -2069,7 +2069,7 @@ function DocsiteLandingTemplate() {
               key: 'preview',
               themeImages: {
                 default: `${basePath}/docsite/card4-preview-default.png`,
-                meta: `${basePath}/docsite/card4-preview-meta.png`,
+                matcha: `${basePath}/docsite/card4-preview-meta.png`,
                 daily: `${basePath}/docsite/card4-preview-daily.png`,
                 threads: `${basePath}/docsite/card4-preview-daily.png`,
               },
@@ -2080,7 +2080,7 @@ function DocsiteLandingTemplate() {
               key: 'hero',
               themeImages: {
                 default: `${basePath}/docsite/card4-hero-default.png`,
-                meta: `${basePath}/docsite/card4-hero-meta.png`,
+                matcha: `${basePath}/docsite/card4-hero-meta.png`,
                 daily: `${basePath}/docsite/card4-hero-daily.png`,
                 threads: `${basePath}/docsite/card4-hero-daily.png`,
               },
@@ -2091,7 +2091,7 @@ function DocsiteLandingTemplate() {
               key: 'split',
               themeImages: {
                 default: `${basePath}/docsite/card4-split-default.png`,
-                meta: `${basePath}/docsite/card4-split-meta.png`,
+                matcha: `${basePath}/docsite/card4-split-meta.png`,
                 daily: `${basePath}/docsite/card4-split-daily.png`,
                 threads: `${basePath}/docsite/card4-split-daily.png`,
               },
@@ -2102,7 +2102,7 @@ function DocsiteLandingTemplate() {
               key: 'grid',
               themeImages: {
                 default: `${basePath}/docsite/card4-grid-default.png`,
-                meta: `${basePath}/docsite/card4-grid-meta.png`,
+                matcha: `${basePath}/docsite/card4-grid-meta.png`,
                 daily: `${basePath}/docsite/card4-grid-daily.png`,
                 threads: `${basePath}/docsite/card4-grid-daily.png`,
               },
@@ -2113,7 +2113,7 @@ function DocsiteLandingTemplate() {
               key: 'carousel',
               themeImages: {
                 default: `${basePath}/docsite/card4-carousel-default.png`,
-                meta: `${basePath}/docsite/card4-carousel-meta.png`,
+                matcha: `${basePath}/docsite/card4-carousel-meta.png`,
                 daily: `${basePath}/docsite/card4-carousel-daily.png`,
                 threads: `${basePath}/docsite/card4-carousel-daily.png`,
               },
@@ -2552,8 +2552,8 @@ function DocsiteLandingTemplate() {
                   label: 'Brutalist',
                   onClick: () => setPreviewTheme('brutalist'),
                 },
-                {label: 'Meta', onClick: () => setPreviewTheme('meta')},
-                {label: 'WhatsApp', onClick: () => setPreviewTheme('whatsapp')},
+                {label: 'Matcha', onClick: () => setPreviewTheme('matcha')},
+                {label: 'Daily', onClick: () => setPreviewTheme('daily')},
               ]}
             />
           </XDSStack>

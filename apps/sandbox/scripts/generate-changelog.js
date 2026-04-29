@@ -20,7 +20,8 @@ const CHANGELOG_SOURCES = [
   {pkg: '@xds/theme-default', file: 'packages/themes/default/CHANGELOG.md'},
   {pkg: '@xds/theme-neutral', file: 'packages/themes/neutral/CHANGELOG.md'},
   {pkg: '@xds/theme-brutalist', file: 'packages/themes/brutalist/CHANGELOG.md'},
-  {pkg: '@xds/theme-whatsapp', file: 'packages/themes/whatsapp/CHANGELOG.md'},
+  {pkg: '@xds/theme-matcha', file: 'packages/themes/matcha/CHANGELOG.md'},
+  {pkg: '@xds/theme-daily', file: 'packages/themes/daily/CHANGELOG.md'},
 ];
 
 const DEPRECATED_SCAN_DIRS = [

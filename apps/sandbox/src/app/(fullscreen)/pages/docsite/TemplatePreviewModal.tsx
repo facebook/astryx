@@ -25,8 +25,6 @@ import {
   StarIcon,
   StarFilledIcon,
   SearchIcon,
-  MetaLogo,
-  WhatsAppLogo,
   ThreadsLogo,
   FacebookLogo,
   DefaultThemeIcon,
@@ -40,8 +38,6 @@ const BRAND_LOGOS: Record<
   React.ComponentType<React.SVGProps<SVGSVGElement>>
 > = {
   default: DefaultThemeIcon,
-  meta: MetaLogo,
-  whatsapp: WhatsAppLogo,
   threads: ThreadsLogo,
   facebook: FacebookLogo,
   forest: ForestThemeIcon,
@@ -129,8 +125,6 @@ export function TemplatePreviewModal({
   const themeFilters: Record<string, string> = {
     neutral: 'saturate(0.3)',
     brutalist: 'contrast(1.2) saturate(0.5)',
-    meta: 'sepia(0.15) saturate(1.4) hue-rotate(200deg)',
-    whatsapp: 'sepia(0.2) saturate(1.3) hue-rotate(100deg)',
     threads: 'saturate(0.8) contrast(1.1)',
     facebook: 'sepia(0.1) saturate(1.3) hue-rotate(190deg)',
     matcha: 'sepia(0.2) saturate(1.2) hue-rotate(80deg)',
