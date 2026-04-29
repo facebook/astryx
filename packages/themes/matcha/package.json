@@ -1,8 +1,8 @@
 {
   "name": "@xds/theme-matcha",
   "version": "0.0.13",
-  "private": false,
-  "description": "Matcha theme for XDS — earthy green palette with Figtree typography and Lucide icons",
+  "private": true,
+  "description": "Matcha theme for XDS \u2014 earthy green palette with Figtree typography and Lucide icons",
   "author": "Meta Open Source",
   "license": "MIT",
   "homepage": "https://github.com/facebookexperimental/xds#readme",

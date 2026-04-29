@@ -3426,12 +3426,12 @@ const THEME_TOKEN_GROUPS: {
   title: string;
   Component: React.ComponentType<{theme: XDSDefinedTheme}>;
 }[] = [
-  {title: 'Color', Component: ColorTokenTable},
   {title: 'Typography', Component: TypographyTokenTable},
   {title: 'Spacing', Component: SpacingTokenTable},
   {title: 'Shape', Component: ShapeTokenTable},
   {title: 'Elevation', Component: ElevationTokenTable},
   {title: 'Motion', Component: MotionTokenTable},
+  {title: 'Color', Component: ColorTokenTable},
 ];
 
 function ThemeTokensSection({theme}: {theme: XDSDefinedTheme}) {
