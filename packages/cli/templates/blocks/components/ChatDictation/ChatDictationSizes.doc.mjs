@@ -1,8 +1,8 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'ChatDictation — States',
-  description: 'Dictation button in idle, listening, and speaking states side by side. Shows the three visual phases of a voice input interaction.',
+  name: 'ChatDictation — Sizes',
+  description: 'Small and medium dictation buttons side by side. Use small in compact composer densities and medium for standard layouts.',
   isReady: true,
   aspectRatio: 16 / 9,
   componentsUsed: ['ChatDictation', 'Layout', 'Text'],

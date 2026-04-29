@@ -1,0 +1,119 @@
+/** @type {import('../docs-types').ComponentDoc} */
+
+export const docs = {
+  name: 'ChatDictationButton',
+  group: 'Chat',
+  hidden: true,
+
+  keywords: ['dictation', 'microphone', 'voice', 'speech', 'recording', 'stt', 'speech-to-text', 'voice-input', 'mic'],
+
+  usage: {
+    description:
+      'ChatDictationButton is a toggle button that starts and stops voice dictation inside a chat composer. It pairs with useXDSChatDictation to show a microphone icon when idle and animated frequency bars when listening. Place it in the sendActions slot of XDSChatComposer.',
+    bestPractices: [
+      {guidance: true, description: 'Place the dictation button in the sendActions slot of XDSChatComposer so it sits next to the send button where users expect voice input controls.'},
+      {guidance: true, description: 'Pass an inputRef to useXDSChatDictation so interim transcripts appear as ghost text in the composer input while the user speaks.'},
+      {guidance: true, description: "Enable hasSounds on useXDSChatDictation to give users audio feedback when dictation starts and stops \u2014 especially helpful when the button's visual change is subtle."},
+      {guidance: false, description: "Don't use the dictation button outside a chat composer context \u2014 it's designed for the composer's send-action layout, not as a standalone recording control."},
+      {guidance: false, description: "Don't forget to handle the unsupported case \u2014 the button hides itself by default when the browser lacks SpeechRecognition, but you should still design the composer to work without it."},
+    ],
+    anatomy: [
+      {name: 'Microphone icon', required: true, description: 'Shown in the idle state. Indicates that tapping will start voice input.'},
+      {name: 'Frequency bars', required: false, description: 'Animated equalizer bars that replace the icon during listening. React to real microphone volume.'},
+      {name: 'Ghost button', required: true, description: 'The underlying XDSButton with ghost variant and isIconOnly, providing the hit target and focus ring.'},
+    ],
+  },
+
+  props: [
+    {
+      name: 'dictation',
+      type: 'UseSpeechRecognitionReturn',
+      description:
+        'The return value from useXDSChatDictation or useSpeechRecognition. Controls all button state \u2014 listening, volume, bands, and toggle.',
+      required: true,
+    },
+    {
+      name: 'size',
+      type: "'sm' | 'md'",
+      description: 'Button size. Matches XDSChatComposer density.',
+      default: "'md'",
+    },
+    {
+      name: 'isHiddenWhenUnsupported',
+      type: 'boolean',
+      description:
+        'When true, renders nothing if the browser does not support SpeechRecognition.',
+      default: 'true',
+    },
+    {
+      name: 'label',
+      type: 'string',
+      description:
+        'Accessible label override. Defaults to "Start dictation" or "Stop dictation" based on state.',
+    },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description: 'Additional StyleX styles applied to the wrapper.',
+    },
+  ],
+
+  examples: [
+    {label: 'In composer', code: '<XDSChatComposer onSubmit={handleSubmit} sendActions={<XDSChatDictationButton dictation={dictation} />} />'},
+    {label: 'Small size', code: '<XDSChatDictationButton dictation={dictation} size="sm" />'},
+  ],
+
+  accessibility: [
+    'Uses a native button element via XDSButton with aria-label that updates dynamically ("Start dictation" / "Stop dictation").',
+    'Frequency bars are marked aria-hidden so screen readers only announce the button label.',
+    'Hides completely when SpeechRecognition is unsupported (isHiddenWhenUnsupported), preventing broken interactions.',
+  ],
+
+  keyboard: 'Enter or Space toggles dictation on and off. Tab moves focus to the button.',
+};
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsZh = {
+  name: 'ChatDictationButton',
+  usage: {
+    description:
+      'ChatDictationButton is a toggle button that starts and stops voice dictation inside a chat composer. It pairs with useXDSChatDictation to show a microphone icon when idle and animated frequency bars when listening. Place it in the sendActions slot of XDSChatComposer.',
+    bestPractices: [
+      {guidance: true, description: 'Place the dictation button in the sendActions slot of XDSChatComposer so it sits next to the send button where users expect voice input controls.'},
+      {guidance: true, description: 'Pass an inputRef to useXDSChatDictation so interim transcripts appear as ghost text in the composer input while the user speaks.'},
+      {guidance: true, description: "Enable hasSounds on useXDSChatDictation to give users audio feedback when dictation starts and stops \u2014 especially helpful when the button's visual change is subtle."},
+      {guidance: false, description: "Don't use the dictation button outside a chat composer context \u2014 it's designed for the composer's send-action layout, not as a standalone recording control."},
+      {guidance: false, description: "Don't forget to handle the unsupported case \u2014 the button hides itself by default when the browser lacks SpeechRecognition, but you should still design the composer to work without it."},
+    ],
+  },
+  propDescriptions: {
+    dictation: 'The return value from useXDSChatDictation or useSpeechRecognition. Controls all button state.',
+    size: 'Button size.',
+    isHiddenWhenUnsupported: 'When true, renders nothing if SpeechRecognition is unsupported.',
+    label: 'Accessible label override.',
+    xstyle: 'Additional StyleX styles.',
+  },
+};
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description: 'mic toggle btn for voice input in chat composer; idle=mic icon, listening=freq bars; pairs w/ useXDSChatDictation',
+  usage: {
+    description:
+      'Toggle button for voice dictation in chat composer. Pairs with useXDSChatDictation. Shows mic icon when idle, animated frequency bars when listening. Goes in sendActions slot.',
+    bestPractices: [
+      {guidance: true, description: 'Place in sendActions slot of XDSChatComposer next to send button.'},
+      {guidance: true, description: 'Pass inputRef to useXDSChatDictation for interim ghost text in input.'},
+      {guidance: true, description: 'Enable hasSounds for audio feedback on start/stop.'},
+      {guidance: false, description: "Don't use outside chat composer context \u2014 designed for composer send-action layout only."},
+      {guidance: false, description: "Don't forget unsupported case \u2014 button auto-hides but composer should work without it."},
+    ],
+  },
+  propDescriptions: {
+    dictation: 'return from useXDSChatDictation/useSpeechRecognition; controls state',
+    size: 'btn size',
+    isHiddenWhenUnsupported: 'hide when SpeechRecognition unsupported',
+    label: 'a11y label override',
+    xstyle: 'extra StyleX styles',
+  },
+};

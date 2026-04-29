@@ -1,8 +1,8 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'ChatDictation — In Composer',
-  description: 'Dictation button placed in the sendActions slot of a chat composer. Shows the recommended integration point for voice input alongside the send button.',
+  name: 'ChatDictation — As Send Button',
+  description: 'Dictation button replacing the default send button. Useful for voice-first interfaces where dictation is the primary input method.',
   isReady: true,
   aspectRatio: 16 / 9,
   componentsUsed: ['ChatDictation', 'ChatComposer', 'Layout', 'Text'],
