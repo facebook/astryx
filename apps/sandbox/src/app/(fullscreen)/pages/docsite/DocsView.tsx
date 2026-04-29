@@ -17,7 +17,6 @@ import {XDSTable, pixel} from '@xds/core/Table';
 import {XDSSection} from '@xds/core/Section';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSIconButton} from '@xds/core/IconButton';
-import {XDSToolbar} from '@xds/core/Toolbar';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {XDSCommandPalette} from '@xds/core/CommandPalette';
 import {
@@ -78,13 +77,14 @@ import {XDSTheme, expandTypeScale, defineTheme} from '@xds/core/theme';
 import type {XDSDefinedTheme} from '@xds/core/theme';
 import {defaultTheme} from '@xds/theme-default';
 import {neutralTheme} from '@xds/theme-neutral';
+import {themeObjects as generatedThemeObjects} from '@/generated/themeImports';
 import {brutalistTheme} from '@xds/theme-brutalist/built';
 import {metaTheme} from '@xds/theme-meta/built';
 import {whatsappTheme} from '@xds/theme-whatsapp/built';
 import {XDSNumberInput} from '@xds/core/NumberInput';
 import {XDSSelector} from '@xds/core/Selector';
 import {defaultIconRegistry} from '@xds/theme-default';
-import {ThemeShowcase} from '../../../../../../../packages/cli/templates/pages/theme-showcase/page';
+import {ThemeShowcasePreview, ThemeShowcaseDetails} from '../../../../../../../packages/cli/templates/pages/theme-showcase/page';
 import {COMPONENT_PREVIEWS} from './ComponentPreviews';
 import {SEARCH_COMMANDS, basePath} from './constants';
 import {
@@ -184,11 +184,6 @@ type LibraryPackage = {
   href?: string;
 };
 
-const THEME_PREVIEW_IMAGES: Record<string, string> = {
-  default: `${basePath}/docsite/theme-preview-forest.png`,
-  neutral: `${basePath}/docsite/theme-preview-daily.png`,
-};
-
 const STATIC_LIBRARY_PACKAGES: LibraryPackage[] = [
   {
     key: 'pkg-cli',
@@ -231,9 +226,7 @@ const THEME_LIBRARY_PACKAGES: LibraryPackage[] = themeDocs.map(t => ({
   version: t.version,
   status: 'Stable',
   iconType: 'theme',
-  image:
-    THEME_PREVIEW_IMAGES[t.slug] ??
-    `${basePath}/docsite/theme-preview-${t.slug}.png`,
+  image: `${basePath}/docsite/theme-preview-${t.slug}.png`,
   category: 'building',
 }));
 
@@ -3392,10 +3385,7 @@ function PackageGridPage({
 // Theme package detail data — auto-generated from definedTheme + registry
 // ---------------------------------------------------------------------------
 
-const THEME_OBJECTS: Record<string, XDSDefinedTheme> = {
-  'pkg-theme-default': defaultTheme,
-  'pkg-theme-neutral': neutralTheme,
-};
+const THEME_OBJECTS = generatedThemeObjects;
 
 const THEME_DOC_BY_KEY: Record<string, ThemeDocEntry> = Object.fromEntries(
   themeDocs.map(t => [`pkg-theme-${t.slug}`, t]),
@@ -3599,7 +3589,7 @@ function ThemePackagePage({
 }) {
   const doc = THEME_DOC_BY_KEY[packageKey];
   const [previewDark, setPreviewDark] = useState(false);
-  const [themeTab, setThemeTab] = useState<'overview' | 'tokens'>('overview');
+  const [themeTab, setThemeTab] = useState<'preview' | 'tokens'>('preview');
   if (!doc) return null;
   const themeObject = THEME_OBJECTS[packageKey];
   const tokenCategories = useMemo(
@@ -3636,232 +3626,125 @@ function ThemePackagePage({
       <XDSStack direction="vertical" gap={10}>
         {/* Header */}
         <XDSStack direction="vertical" gap={3}>
-          <XDSStack direction="horizontal" gap={3} vAlign="center">
-            <XDSText type="display-1">{doc.npmName}</XDSText>
+          <XDSStack direction="vertical" gap={1}>
+            <XDSText type="display-1">
+              {doc.slug.charAt(0).toUpperCase() + doc.slug.slice(1)}
+            </XDSText>
             <XDSText type="code" color="secondary" size="xsm">
-              v{doc.version}
+              {doc.npmName} v{doc.version}
             </XDSText>
           </XDSStack>
           <XDSText type="body" color="secondary">
             {doc.description}
           </XDSText>
-          <XDSStack direction="horizontal" gap={2}>
-            <XDSPopover
-              label="Install"
-              placement="below"
-              alignment="start"
-              width={560}
-              content={
-                <XDSStack direction="vertical" gap={4} style={{padding: 4}}>
-                  <XDSStack direction="vertical" gap={1}>
-                    <XDSText type="label" weight="bold">
-                      Install
-                    </XDSText>
-                    <XDSCodeBlock
-                      code={`npm install ${doc.npmName}`}
-                      language="bash"
-                      hasCopyButton
-                    />
-                  </XDSStack>
-                  <XDSStack direction="vertical" gap={1}>
-                    <XDSText type="label" weight="bold">
-                      Setup
-                    </XDSText>
-                    <XDSText type="supporting" color="secondary">
-                      Import the theme CSS and wrap your app in XDSTheme.
-                    </XDSText>
-                    <XDSCodeBlock
-                      code={setupCode}
-                      language="tsx"
-                      hasCopyButton
-                    />
-                  </XDSStack>
-                  {themeDocs.length > 1 && (
+          <XDSStack direction="horizontal" gap={2} vAlign="center" style={{flexWrap: 'wrap'}}>
+            <XDSStack direction="horizontal" gap={2} vAlign="center" style={{flex: 1, minWidth: 0}}>
+              <XDSTabList
+                value={themeTab}
+                onChange={v => setThemeTab(v as 'preview' | 'tokens')}
+                size="sm">
+                <XDSTab value="preview" label="Preview" />
+                <XDSTab value="tokens" label="Tokens" />
+              </XDSTabList>
+            </XDSStack>
+            <XDSStack direction="horizontal" gap={2} vAlign="center">
+              <XDSIconButton
+                label={previewDark ? 'Switch to light' : 'Switch to dark'}
+                icon={previewDark ? <ContrastIcon /> : <MoonIcon />}
+                size="sm"
+                variant="ghost"
+                onClick={() => setPreviewDark(d => !d)}
+              />
+              {onCraft && (
+                <XDSButton
+                  label="Try in Craft"
+                  variant="secondary"
+                  size="sm"
+                  icon={<XDSIcon icon={PaletteIcon} size="sm" />}
+                  onClick={onCraft}
+                />
+              )}
+              <XDSPopover
+                label="Install"
+                placement="below"
+                alignment="end"
+                width={560}
+                content={
+                  <XDSStack direction="vertical" gap={4} style={{padding: 4}}>
                     <XDSStack direction="vertical" gap={1}>
                       <XDSText type="label" weight="bold">
-                        Switch themes
+                        Install
+                      </XDSText>
+                      <XDSCodeBlock
+                        code={`npm install ${doc.npmName}`}
+                        language="bash"
+                        hasCopyButton
+                      />
+                    </XDSStack>
+                    <XDSStack direction="vertical" gap={1}>
+                      <XDSText type="label" weight="bold">
+                        Setup
                       </XDSText>
                       <XDSText type="supporting" color="secondary">
-                        Swap the CSS import and theme object. No component
-                        changes needed.
+                        Import the theme CSS and wrap your app in XDSTheme.
                       </XDSText>
-                      {themeDocs
-                        .filter(t => t.npmName !== doc.npmName)
-                        .map(t => (
-                          <XDSCodeBlock
-                            key={t.slug}
-                            code={`npm install ${t.npmName}\n\n# @import "${t.npmName}/theme.css";\n# import {${t.slug}Theme} from '${t.npmName}/built';`}
-                            language="bash"
-                            hasCopyButton
-                          />
-                        ))}
+                      <XDSCodeBlock
+                        code={setupCode}
+                        language="tsx"
+                        hasCopyButton
+                      />
                     </XDSStack>
-                  )}
-                </XDSStack>
-              }>
-              <XDSButton
-                label="Install"
-                variant="primary"
-                icon={<XDSIcon icon={DownloadIcon} size="sm" />}
-              />
-            </XDSPopover>
-            {onCraft && (
-              <XDSButton
-                label="Try in Craft"
-                variant="secondary"
-                icon={<XDSIcon icon={PaletteIcon} size="sm" />}
-                onClick={onCraft}
-              />
-            )}
+                    {themeDocs.length > 1 && (
+                      <XDSStack direction="vertical" gap={1}>
+                        <XDSText type="label" weight="bold">
+                          Switch themes
+                        </XDSText>
+                        <XDSText type="supporting" color="secondary">
+                          Swap the CSS import and theme object. No component
+                          changes needed.
+                        </XDSText>
+                        {themeDocs
+                          .filter(t => t.npmName !== doc.npmName)
+                          .map(t => (
+                            <XDSCodeBlock
+                              key={t.slug}
+                              code={`npm install ${t.npmName}\n\n# @import "${t.npmName}/theme.css";\n# import {${t.slug}Theme} from '${t.npmName}/built';`}
+                              language="bash"
+                              hasCopyButton
+                            />
+                          ))}
+                      </XDSStack>
+                    )}
+                  </XDSStack>
+                }>
+                <XDSButton
+                  label="Install"
+                  variant="primary"
+                  size="sm"
+                  icon={<XDSIcon icon={DownloadIcon} size="sm" />}
+                />
+              </XDSPopover>
+            </XDSStack>
           </XDSStack>
         </XDSStack>
 
-        <XDSTabList
-          value={themeTab}
-          onChange={v => setThemeTab(v as 'overview' | 'tokens')}
-          size="sm"
-          hasDivider>
-          <XDSTab value="overview" label="Overview" />
-          <XDSTab value="tokens" label="Tokens" />
-        </XDSTabList>
-
-        {/* ── Overview tab ── */}
-        {themeTab === 'overview' && (
-          <>
-
-        {/* Live preview */}
-        {themeObject && (
-          <XDSStack direction="vertical" gap={3}>
-            <XDSToolbar
-              label="Preview controls"
-              size="sm"
-              variant="transparent"
-              endContent={
-                <>
-                  <XDSIconButton
-                    label="Light mode"
-                    icon={<ContrastIcon />}
-                    size="sm"
-                    variant={!previewDark ? 'primary' : 'ghost'}
-                    onClick={() => setPreviewDark(false)}
-                  />
-                  <XDSIconButton
-                    label="Dark mode"
-                    icon={<MoonIcon />}
-                    size="sm"
-                    variant={previewDark ? 'primary' : 'ghost'}
-                    onClick={() => setPreviewDark(true)}
-                  />
-                </>
-              }
-            />
+        {/* ── Preview tab ── */}
+        {themeTab === 'preview' && themeObject && (
+          <XDSCard
+            variant="muted"
+            padding={6}
+            style={{overflow: 'hidden', colorScheme: previewDark ? 'dark' : 'light'}}>
             <XDSTheme theme={themeObject}>
-              <XDSCard
-                variant="muted"
-                padding={0}
-                style={{
-                  overflow: 'hidden',
-                  colorScheme: previewDark ? 'dark' : 'light',
-                }}>
-                <ThemeShowcase />
-              </XDSCard>
+              <XDSStack direction="vertical" gap={6}>
+                <XDSCard
+                  padding={0}
+                  style={{overflow: 'hidden'}}>
+                  <ThemeShowcasePreview />
+                </XDSCard>
+                <ThemeShowcaseDetails />
+              </XDSStack>
             </XDSTheme>
-          </XDSStack>
-        )}
-
-        {/* Characteristics + What's included */}
-        {(doc.characteristics.length > 0 || themeObject) && (
-          <XDSStack direction="vertical" gap={6}>
-            {doc.characteristics.length > 0 && (
-              <XDSStack direction="vertical" gap={3}>
-                <XDSHeading level={2}>Characteristics</XDSHeading>
-                <XDSGrid columns={3} gap={3}>
-                  {doc.characteristics.map(char => (
-                    <XDSCard key={char.label} padding={4}>
-                      <XDSStack direction="vertical" gap={1}>
-                        <XDSText
-                          type="code"
-                          color="secondary"
-                          size="xsm"
-                          style={{
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.06em',
-                          }}>
-                          {char.label}
-                        </XDSText>
-                        <XDSText type="body" weight="bold">
-                          {char.value}
-                        </XDSText>
-                        {char.detail && (
-                          <XDSText type="supporting" color="secondary">
-                            {char.detail}
-                          </XDSText>
-                        )}
-                      </XDSStack>
-                    </XDSCard>
-                  ))}
-                </XDSGrid>
-              </XDSStack>
-            )}
-            {themeObject && (
-              <XDSStack direction="vertical" gap={3}>
-                <XDSHeading level={2}>What&#39;s included</XDSHeading>
-                <XDSGrid columns={3} gap={3}>
-                  {[
-                    ...tokenCategories.map(cat => ({
-                      label: cat.category,
-                      value: `${cat.items.length} token${cat.items.length === 1 ? '' : 's'}`,
-                    })),
-                    ...(themeObject.icons
-                      ? [
-                          {
-                            label: 'Icons',
-                            value: `${Object.keys(themeObject.icons).length} semantic slots`,
-                          },
-                        ]
-                      : []),
-                    ...(componentOverrides.length > 0
-                      ? [
-                          {
-                            label: 'Component overrides',
-                            value: `${componentOverrides.length} style rule${componentOverrides.length === 1 ? '' : 's'}`,
-                          },
-                        ]
-                      : []),
-                    ...(themeObject.fonts && themeObject.fonts.length > 0
-                      ? [
-                          {
-                            label: 'Fonts',
-                            value: `${themeObject.fonts.length} bundled font${themeObject.fonts.length === 1 ? '' : 's'}`,
-                          },
-                        ]
-                      : []),
-                  ].map(item => (
-                    <XDSCard key={item.label} padding={4}>
-                      <XDSStack direction="vertical" gap={1}>
-                        <XDSText
-                          type="code"
-                          color="secondary"
-                          size="xsm"
-                          style={{
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.06em',
-                          }}>
-                          {item.label}
-                        </XDSText>
-                        <XDSText type="body" weight="bold">
-                          {item.value}
-                        </XDSText>
-                      </XDSStack>
-                    </XDSCard>
-                  ))}
-                </XDSGrid>
-              </XDSStack>
-            )}
-          </XDSStack>
-        )}
-
-          </>
+          </XDSCard>
         )}
 
         {/* ── Tokens tab ── */}
