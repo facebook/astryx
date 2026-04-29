@@ -16,28 +16,19 @@
  * - /packages/core/src/SideNav/XDSSideNav.test.tsx
  * - /packages/core/src/SideNav/index.ts
  * - /apps/storybook/stories/SideNav.stories.tsx
- * - /packages/cli/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
-import {useCallback, useState, type ReactNode} from 'react';
+import {useCallback, useRef, useState, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {
-  borderVars,
-  colorVars,
-  durationVars,
-  easeVars,
-  spacingVars,
-} from '../theme/tokens.stylex';
+import {borderVars, colorVars, durationVars, easeVars, spacingVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSSideNavCollapseContext} from './XDSSideNavCollapseContext';
 import {XDSSideNavCollapseButton} from './XDSSideNavCollapseButton';
 import {useXDSSideNavRenderMode} from './XDSSideNavRenderContext';
 import {XDSMobileNav} from '../MobileNav/XDSMobileNav';
-import {useResizable} from './useResizable';
-import type {ResizableProps} from '../Resizable/useXDSResizable';
-import {XDSResizeHandle} from '../Resizable/XDSResizeHandle';
+import {useXDSResizable} from '../Resizable/useXDSResizable';
 
 // =============================================================================
 // Styles
@@ -152,25 +143,38 @@ const styles = stylex.create({
     flexShrink: 0,
     height: '100%',
   },
-  // Drag handle at the inline-end edge
+  // Drag handle overlay at the inline-end edge (inside the nav bounds)
   dragHandle: {
     position: 'absolute',
     insetInlineEnd: 0,
     top: 0,
     bottom: 0,
-    width: 6,
+    width: 'var(--resize-handle-hit-area, 16px)',
     cursor: 'col-resize',
     zIndex: 2,
-    // Invisible by default; visible on hover
-    backgroundColor: 'transparent',
-    transitionProperty: 'background-color',
+    touchAction: 'none',
+    userSelect: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  dragPill: {
+    width: 'var(--resize-handle-width, 3px)',
+    height: 'var(--resize-handle-height, 32px)',
+    borderRadius: 2,
+    backgroundColor: colorVars['--color-border'],
+    opacity: 0,
+    transitionProperty: 'opacity, background-color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    touchAction: 'none',
+    marginInlineEnd: 'var(--resize-handle-pill-gap, 4px)',
   },
-  dragHandleHover: {
-    // Applied via @media (hover: hover) in the component
-    backgroundColor: colorVars['--color-border'],
+  dragPillVisible: {
+    opacity: 1,
+  },
+  dragPillActive: {
+    opacity: 1,
+    backgroundColor: colorVars['--color-border-emphasized'],
   },
   // Topbar mode — horizontal layout for mobile top bar
   topbar: {
@@ -246,14 +250,17 @@ export interface XDSSideNavProps extends XDSBaseProps<HTMLElement> {
   'data-testid'?: string;
 
   /**
-   * Enables a drag handle at the inline-end edge for resizing the sidebar.
-   * When collapsed, the drag handle is hidden.
+   * Enables a resize handle at the inline-end edge for resizing the sidebar.
+   * Uses the `useXDSResizable` hook internally. When collapsed, the handle
+   * is hidden.
    *
-   * - `true` — resizable with defaults (260px initial width)
+   * - `true` — resizable with defaults (260px initial, 180–480px range)
    * - Object — configured:
    *   - `defaultWidth` — initial width in pixels (default: 260)
-   *   - `onWidthChange` — called when user finishes resizing
-   * - `ResizableProps` — driven by `useXDSResizable()` hook from `@xds/core/Resizable`
+   *   - `minWidth` — minimum width in pixels (default: 180)
+   *   - `maxWidth` — maximum width in pixels (default: 480)
+   *   - `autoSaveId` — localStorage key for persisting width
+   *   - `onWidthChange` — called when the width changes
    *
    * @default false
    */
@@ -261,9 +268,11 @@ export interface XDSSideNavProps extends XDSBaseProps<HTMLElement> {
     | boolean
     | {
         defaultWidth?: number;
+        minWidth?: number;
+        maxWidth?: number;
+        autoSaveId?: string;
         onWidthChange?: (width: number) => void;
-      }
-    | ResizableProps;
+      };
 
   /**
    * Enables collapse behavior. The sidebar can be collapsed to a narrow
@@ -334,13 +343,8 @@ export function XDSSideNav({
   const controlledCollapsed = collapsibleConfig.isCollapsed;
   const onCollapsedChange = collapsibleConfig.onCollapsedChange;
 
-  // Resizable config — detect if using new useXDSResizable() hook props
-  const isResizableHook =
-    typeof resizable === 'object' &&
-    resizable !== null &&
-    '_isResizableProps' in resizable;
-  const resizableConfig =
-    !isResizableHook && typeof resizable === 'object' ? resizable : {};
+  // Resizable config
+  const resizableConfig = typeof resizable === 'object' ? resizable : {};
   const isResizable = !!resizable;
 
   // Collapse state (controlled + uncontrolled)
@@ -349,13 +353,19 @@ export function XDSSideNav({
     useState(defaultIsCollapsed);
   const collapsed = isControlled ? controlledCollapsed : uncontrolledCollapsed;
 
+  const setCollapsedState = useCallback(
+    (value: boolean) => {
+      if (!isControlled) {
+        setUncontrolledCollapsed(value);
+      }
+      onCollapsedChange?.(value);
+    },
+    [isControlled, onCollapsedChange],
+  );
+
   const toggle = useCallback(() => {
-    const newValue = !collapsed;
-    if (!isControlled) {
-      setUncontrolledCollapsed(newValue);
-    }
-    onCollapsedChange?.(newValue);
-  }, [collapsed, isControlled, onCollapsedChange]);
+    setCollapsedState(!collapsed);
+  }, [collapsed, setCollapsedState]);
 
   const collapseContext = {
     isCollapsed: collapsed,
@@ -364,31 +374,74 @@ export function XDSSideNav({
   };
 
   // =========================================================================
-  // Resize — use new ResizableProps when available, else legacy hook
+  // Resize — powered by useXDSResizable
   // =========================================================================
-  const legacyResize = useResizable({
-    enabled: isResizable && !isResizableHook,
-    config: resizableConfig,
-    collapsed,
+  const resizableHook = useXDSResizable({
+    defaultSize: resizableConfig.defaultWidth ?? 260,
+    minSizePx: resizableConfig.minWidth ?? 180,
+    maxSizePx: resizableConfig.maxWidth ?? 480,
+    autoSaveId: resizableConfig.autoSaveId,
   });
+  const showResizeHandle = isResizable;
 
-  // When using the new hook, derive width/handle state from ResizableProps
-  const resizableHookProps = isResizableHook
-    ? (resizable as ResizableProps)
-    : null;
-  const width = resizableHookProps
-    ? resizableHookProps._size
-    : legacyResize.width;
-  const showResizeHandle = resizableHookProps
-    ? !collapsed
-    : legacyResize.showHandle;
-  const resizeHandleProps = resizableHookProps
-    ? null
-    : legacyResize.handleProps;
-  const isHandleHovered = resizableHookProps
-    ? false
-    : legacyResize.isHandleHovered;
-  const containerRef = resizableHookProps ? null : legacyResize.containerRef;
+  const [isDragHovered, setIsDragHovered] = useState(false);
+  const isDraggingRef = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLElement>(null);
+
+  const COLLAPSE_THRESHOLD = 160;
+
+  const handleDragPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if (!isResizable) return;
+      e.preventDefault();
+      isDraggingRef.current = true;
+
+      const startX = e.clientX;
+      const startWidth = navRef.current?.offsetWidth ?? resizableHook.size;
+      const min = resizableConfig.minWidth ?? 180;
+      const max = resizableConfig.maxWidth ?? 480;
+      let wasCollapsed = !!collapsed;
+
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+
+      const onMove = (ev: PointerEvent) => {
+        const raw = startWidth + (ev.clientX - startX);
+        if (isCollapsible && raw < COLLAPSE_THRESHOLD) {
+          if (!wasCollapsed) {
+            setCollapsedState(true);
+            wasCollapsed = true;
+          }
+          return;
+        }
+        if (wasCollapsed && raw >= COLLAPSE_THRESHOLD) {
+          setCollapsedState(false);
+          wasCollapsed = false;
+        }
+        const newWidth = Math.min(max, Math.max(min, raw));
+        if (navRef.current) navRef.current.style.width = `${newWidth}px`;
+      };
+      const onUp = (ev: PointerEvent) => {
+        isDraggingRef.current = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+
+        const raw = startWidth + (ev.clientX - startX);
+        if (!wasCollapsed) {
+          const finalWidth = Math.min(max, Math.max(min, raw));
+          resizableHook.resize(finalWidth);
+        }
+        setIsDragHovered(false);
+
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+      };
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+    },
+    [isResizable, isCollapsible, collapsed, setCollapsedState, resizableHook.size, resizableHook.resize, resizableConfig.minWidth, resizableConfig.maxWidth],
+  );
 
   // Render mode — when inside AppShell mobile layout, render subsets
   const renderMode = useXDSSideNavRenderMode();
@@ -467,12 +520,16 @@ export function XDSSideNav({
 
   // When resizable, override the nav width via inline style
   const resizableNavStyle: React.CSSProperties | undefined = isResizable
-    ? {...(style ?? {}), width: collapsed ? undefined : width}
+    ? {...(style ?? {}), width: collapsed ? undefined : resizableHook.size}
     : style;
 
   const navElement = (
     <nav
-      ref={ref}
+      ref={(node) => {
+        navRef.current = node;
+        if (typeof ref === 'function') ref(node);
+        else if (ref) (ref as React.MutableRefObject<HTMLElement | null>).current = node;
+      }}
       role="navigation"
       aria-label="Side navigation"
       data-testid={testId}
@@ -526,44 +583,36 @@ export function XDSSideNav({
     </nav>
   );
 
-  // Wrap in resizable container when using legacy resize (with built-in handle).
-  // When using new ResizableProps, wrap in a flex container with the new
-  // XDSResizeHandle. The container ensures the handle sits outside the nav's
-  // overflow boundary (AppShell wraps sideNav in a LayoutPanel with overflow:clip).
-  // When using legacy resize, use the old built-in drag handle.
-  const content = resizableHookProps ? (
-    <div
-      {...mergeProps(stylex.props(styles.resizableContainer), undefined, {
-        width: collapsed ? undefined : width,
-      })}>
-      {navElement}
-      {!collapsed && (
-        <XDSResizeHandle
-          direction="horizontal"
-          hasDivider
-          resizable={resizableHookProps}
-          label="Resize sidebar"
-        />
-      )}
-    </div>
-  ) : showResizeHandle ? (
-    <div
-      ref={containerRef}
-      {...mergeProps(stylex.props(styles.resizableContainer), {
-        style: {width},
-      })}>
+  // Overlay drag handle inside the nav when resizable.
+  // The handle is absolutely positioned at the inline-end edge so it
+  // stays within the panel's overflow: clip bounds (unlike XDSResizeHandle
+  // which is designed to sit between panels as a sibling).
+  const content = showResizeHandle ? (
+    <div {...stylex.props(styles.resizableContainer)}>
       {navElement}
       <div
         data-testid="xds-sidenav-resize-handle"
         role="separator"
         aria-orientation="vertical"
+        aria-valuenow={resizableHook.size}
+        aria-valuemin={resizableConfig.minWidth ?? 180}
+        aria-valuemax={resizableConfig.maxWidth ?? 480}
         aria-label="Resize sidebar"
-        {...stylex.props(
-          styles.dragHandle,
-          isHandleHovered && styles.dragHandleHover,
-        )}
-        {...resizeHandleProps}
-      />
+        {...stylex.props(styles.dragHandle)}
+        onPointerDown={handleDragPointerDown}
+        onDoubleClick={isCollapsible ? toggle : undefined}
+        onPointerEnter={() => setIsDragHovered(true)}
+        onPointerLeave={() => {
+          if (!isDraggingRef.current) setIsDragHovered(false);
+        }}>
+        <div
+          {...stylex.props(
+            styles.dragPill,
+            isDragHovered && !isDraggingRef.current && styles.dragPillVisible,
+            isDraggingRef.current && styles.dragPillActive,
+          )}
+        />
+      </div>
     </div>
   ) : (
     navElement
