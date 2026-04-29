@@ -223,8 +223,8 @@ export interface XDSDefineThemeInput {
    * Radius configuration. Generates radius token overrides
    * from a base unit and multiplier.
    *
-   * radius-0 and radius-rounded are always fixed (never affected by multiplier).
-   * radius-1 through radius-4 = base * step * multiplier.
+   * --radius-none and --radius-full are always fixed (never affected by multiplier).
+   * --radius-inner through --radius-page = base * step * multiplier.
    *
    * When omitted, themes use the hardcoded defaults (base=4, multiplier=1).
    * Explicit `tokens` overrides take precedence over radius-generated values.
