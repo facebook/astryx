@@ -4,6 +4,6 @@ export const doc = {
   name: 'ChatMessageMetadata — Status',
   description: 'All 5 delivery statuses — sending, sent, delivered, read, and error — each with a timestamp. Use to show message delivery progress or surface failures.',
   isReady: true,
-  aspectRatio: 3 / 4,
+  aspectRatio: 1,
   componentsUsed: ['Chat', 'ChatMessageMetadata', 'Timestamp'],
 };

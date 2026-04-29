@@ -51,8 +51,7 @@ export default function ChatMessageMetadataShowcase() {
                 }
               />
             }>
-            Sorry, I wasn't able to finish analyzing the deployment logs.
-            Something went wrong on my end.
+            Sorry, something went wrong on my end.
           </XDSChatMessageBubble>
         </XDSChatMessage>
 
@@ -118,8 +117,8 @@ export default function ChatMessageMetadataShowcase() {
                 }
               />
             }>
-            Found it — the canary deployment at 11:42 AM triggered a memory
-            spike. Rollback completed at 11:58 AM, all services healthy since.
+            The canary at 11:42 AM caused a memory spike. Rolled back
+            at 11:58 AM.
           </XDSChatMessageBubble>
         </XDSChatMessage>
       </XDSChatMessageList>
