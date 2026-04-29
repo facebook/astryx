@@ -1,5 +1,6 @@
 'use client';
 
+import * as stylex from '@stylexjs/stylex';
 import {
   XDSChatMessageList,
   XDSChatMessage,
@@ -10,109 +11,118 @@ import {XDSTimestamp} from '@xds/core/Timestamp';
 import {XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
-import {XDSHStack} from '@xds/core/Layout';
+import {XDSHStack, XDSVStack} from '@xds/core/Layout';
+import {
+  ClipboardDocumentIcon,
+  ArrowPathIcon,
+  HandThumbUpIcon,
+  HandThumbDownIcon,
+} from '@heroicons/react/24/outline';
+
+const styles = stylex.create({
+  container: {
+    maxWidth: 600,
+  },
+});
 
 export default function ChatMessageMetadataShowcase() {
   return (
-    <XDSChatMessageList>
-      <XDSChatMessage sender="user">
-        <XDSChatMessageBubble
-          metadata={
-            <XDSChatMessageMetadata
-              timestamp={
-                <XDSTimestamp value="2026-03-15T14:30:00" format="time" />
-              }
-              status="read"
-            />
-          }>
-          Did you see the latest deployment?
-        </XDSChatMessageBubble>
-      </XDSChatMessage>
+    <XDSVStack xstyle={styles.container}>
+      <XDSChatMessageList>
+        <XDSChatMessage sender="assistant">
+          <XDSChatMessageBubble
+            metadata={
+              <XDSChatMessageMetadata
+                timestamp={
+                  <XDSTimestamp value="2026-03-15T14:30:00" format="time" />
+                }
+                status="error"
+                footer={
+                  <XDSHStack gap={1}>
+                    <XDSButton
+                      label="Retry"
+                      variant="ghost"
+                      size="sm"
+                      icon={<XDSIcon icon={ArrowPathIcon} size="sm" />}
+                      isIconOnly
+                      onClick={() => {}}
+                    />
+                  </XDSHStack>
+                }
+              />
+            }>
+            Sorry, I wasn't able to finish analyzing the deployment logs.
+            Something went wrong on my end.
+          </XDSChatMessageBubble>
+        </XDSChatMessage>
 
-      <XDSChatMessage sender="assistant">
-        <XDSChatMessageBubble
-          metadata={
-            <XDSChatMessageMetadata
-              timestamp={
-                <XDSTimestamp value="2026-03-15T14:31:00" format="time" />
-              }
-              footer={
-                <XDSHStack gap={1}>
-                  <XDSButton
-                    label="Copy"
-                    variant="ghost"
-                    size="sm"
-                    icon={<XDSIcon icon="copy" size="sm" />}
-                    isIconOnly
-                    onClick={() => {}}
-                  />
-                  <XDSButton
-                    label="Retry"
-                    variant="ghost"
-                    size="sm"
-                    icon={<XDSIcon icon="wrench" size="sm" />}
-                    isIconOnly
-                    onClick={() => {}}
-                  />
-                  <XDSButton
-                    label="Good"
-                    variant="ghost"
-                    size="sm"
-                    icon={<XDSIcon icon="check" size="sm" />}
-                    isIconOnly
-                    onClick={() => {}}
-                  />
-                  <XDSText type="supporting" color="secondary">
-                    Claude Opus 4.6
-                  </XDSText>
-                </XDSHStack>
-              }
-            />
-          }>
-          Yes, everything looks good! The build passed all checks and
-          performance metrics are within target.
-        </XDSChatMessageBubble>
-      </XDSChatMessage>
+        <XDSChatMessage sender="user">
+          <XDSChatMessageBubble
+            metadata={
+              <XDSChatMessageMetadata
+                timestamp={
+                  <XDSTimestamp value="2026-03-15T14:31:00" format="time" />
+                }
+                status="read"
+              />
+            }>
+            No worries — try again with just the last 24 hours of logs.
+          </XDSChatMessageBubble>
+        </XDSChatMessage>
 
-      <XDSChatMessage sender="user">
-        <XDSChatMessageBubble
-          metadata={
-            <XDSChatMessageMetadata
-              timestamp={
-                <XDSTimestamp value="2026-03-15T14:32:00" format="time" />
-              }
-              status="delivered"
-            />
-          }>
-          Great, shipping it now.
-        </XDSChatMessageBubble>
-      </XDSChatMessage>
-
-      <XDSChatMessage sender="assistant">
-        <XDSChatMessageBubble
-          metadata={
-            <XDSChatMessageMetadata
-              timestamp={
-                <XDSTimestamp value="2026-03-15T14:33:00" format="time" />
-              }
-              status="error"
-              footer={
-                <XDSHStack gap={1}>
-                  <XDSButton
-                    label="Retry"
-                    variant="ghost"
-                    size="sm"
-                    icon={<XDSIcon icon="wrench" size="sm" />}
-                    isIconOnly
-                    onClick={() => {}}
-                  />
-                </XDSHStack>
-              }
-            />
-          }>
-          Metadata can also show error status with a retry action.
-        </XDSChatMessageBubble>
-      </XDSChatMessage>
-    </XDSChatMessageList>
+        <XDSChatMessage sender="assistant">
+          <XDSChatMessageBubble
+            metadata={
+              <XDSChatMessageMetadata
+                timestamp={
+                  <XDSTimestamp value="2026-03-15T14:32:00" format="time" />
+                }
+                footer={
+                  <XDSHStack gap={1}>
+                    <XDSButton
+                      label="Copy"
+                      variant="ghost"
+                      size="sm"
+                      icon={<XDSIcon icon={ClipboardDocumentIcon} size="sm" />}
+                      isIconOnly
+                      onClick={() => {}}
+                    />
+                    <XDSButton
+                      label="Retry"
+                      variant="ghost"
+                      size="sm"
+                      icon={<XDSIcon icon={ArrowPathIcon} size="sm" />}
+                      isIconOnly
+                      onClick={() => {}}
+                    />
+                    <XDSButton
+                      label="Good response"
+                      variant="ghost"
+                      size="sm"
+                      icon={<XDSIcon icon={HandThumbUpIcon} size="sm" />}
+                      isIconOnly
+                      onClick={() => {}}
+                    />
+                    <XDSButton
+                      label="Bad response"
+                      variant="ghost"
+                      size="sm"
+                      icon={<XDSIcon icon={HandThumbDownIcon} size="sm" />}
+                      isIconOnly
+                      onClick={() => {}}
+                    />
+                    <XDSText type="supporting" color="secondary">
+                      Claude Opus 4.6
+                    </XDSText>
+                  </XDSHStack>
+                }
+              />
+            }>
+            Found it — the canary deployment at 11:42 AM triggered a memory
+            spike. Rollback completed at 11:58 AM, all services healthy since.
+          </XDSChatMessageBubble>
+        </XDSChatMessage>
+      </XDSChatMessageList>
+    </XDSVStack>
   );
 }

@@ -2,7 +2,7 @@
 export const doc = {
   type: 'block',
   name: 'ChatMessageMetadata',
-  description: 'Message metadata showing timestamps, delivery status, model info, and action buttons (copy, retry, approve) in the footer area.',
+  description: 'Three-message conversation showcasing error status with retry, delivery status, and full footer actions with model label.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 4 / 3,

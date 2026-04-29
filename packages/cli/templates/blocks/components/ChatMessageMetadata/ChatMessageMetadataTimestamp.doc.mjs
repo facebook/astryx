@@ -4,6 +4,6 @@ export const doc = {
   name: 'ChatMessageMetadata — Timestamps',
   description: 'Timestamp-only metadata on user and assistant messages. Supports absolute time and relative formats via XDSTimestamp.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Chat', 'ChatMessageMetadata', 'Timestamp'],
 };

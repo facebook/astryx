@@ -4,6 +4,6 @@ export const doc = {
   name: 'ChatMessageMetadata — Footer Actions',
   description: 'Assistant message with footer actions — copy, retry, thumbs up/down, and model label. Use for AI responses that need feedback or utility controls.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Chat', 'ChatMessageMetadata', 'Timestamp', 'Button', 'Icon', 'Text', 'Layout'],
 };

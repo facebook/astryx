@@ -11,19 +11,6 @@ import {XDSTimestamp} from '@xds/core/Timestamp';
 export default function ChatMessageMetadataTimestamp() {
   return (
     <XDSChatMessageList>
-      <XDSChatMessage sender="assistant">
-        <XDSChatMessageBubble
-          metadata={
-            <XDSChatMessageMetadata
-              timestamp={
-                <XDSTimestamp value="2026-04-29T09:00:00" format="time" />
-              }
-            />
-          }>
-          Good morning! I reviewed the pull request overnight.
-        </XDSChatMessageBubble>
-      </XDSChatMessage>
-
       <XDSChatMessage sender="user">
         <XDSChatMessageBubble
           metadata={
