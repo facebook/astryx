@@ -57,6 +57,12 @@ export const docs = {
         description: 'Clickable area width around the pill',
         default: '16px',
       },
+      {
+        name: '--resize-handle-pill-gap',
+        description:
+          'Gap between the pill indicator and the divider line when pillPlacement is start or end',
+        default: '2px',
+      },
     ],
   },
   components: [
@@ -155,6 +161,15 @@ export const docs = {
           description:
             'Show the pill grip at rest instead of only on hover. Use when discoverability is important.',
           default: 'false',
+        },
+        {
+          name: 'pillPlacement',
+          type: "'start' | 'end' | 'center' | 'auto'",
+          description:
+            'Which side of the divider the pill sits on. ' +
+            'auto = content side (derived from isReversed), flips when collapsed. ' +
+            'start = left/top, end = right/bottom, center = centered on divider.',
+          default: "'auto'",
         },
         {
           name: 'label',
