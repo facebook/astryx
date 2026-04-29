@@ -20,11 +20,11 @@ export default function ChatMessageAvatarName() {
       <XDSChatMessageList>
         <XDSChatMessage
           sender="assistant"
-          avatar={<XDSAvatar name="Navi" size="small" />}>
+          avatar={<XDSAvatar name="Agent" size="small" />}>
           <XDSChatMessageBubble
             name={
               <XDSText type="supporting" weight="semibold" color="secondary">
-                Navi
+                Agent
               </XDSText>
             }
             metadata={
@@ -55,11 +55,11 @@ export default function ChatMessageAvatarName() {
 
         <XDSChatMessage
           sender="assistant"
-          avatar={<XDSAvatar name="Aria" size="small" />}>
+          avatar={<XDSAvatar name="Agent" size="small" />}>
           <XDSChatMessageBubble
             name={
               <XDSText type="supporting" weight="semibold" color="secondary">
-                Aria
+                Agent
               </XDSText>
             }
             metadata={

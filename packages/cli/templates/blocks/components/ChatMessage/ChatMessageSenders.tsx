@@ -34,7 +34,7 @@ export default function ChatMessageSenders() {
         </XDSChatMessage>
 
         <XDSChatSystemMessage>
-          Navi updated the search filters
+          Agent updated the search filters
         </XDSChatSystemMessage>
 
         <XDSChatMessage sender="assistant">

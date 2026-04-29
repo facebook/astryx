@@ -5,110 +5,53 @@ import {
   XDSChatMessage,
   XDSChatMessageBubble,
   XDSChatMessageMetadata,
-  XDSChatSystemMessage,
 } from '@xds/core/Chat';
 import {XDSAvatar} from '@xds/core/Avatar';
-import {XDSText} from '@xds/core/Text';
 import {XDSTimestamp} from '@xds/core/Timestamp';
-import {XDSButton} from '@xds/core/Button';
-import {XDSIcon} from '@xds/core/Icon';
+import {XDSText} from '@xds/core/Text';
 import {XDSStack} from '@xds/core/Layout';
+import * as stylex from '@stylexjs/stylex';
+
+const styles = stylex.create({
+  root: {
+    maxWidth: 600,
+  },
+});
 
 export default function ChatMessageShowcase() {
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSText type="supporting" color="secondary">
-        With message bubbles
-      </XDSText>
+    <XDSStack direction="vertical" gap={4} xstyle={styles.root}>
       <XDSChatMessageList>
-        <XDSChatSystemMessage variant="divider">Today</XDSChatSystemMessage>
-
         <XDSChatMessage sender="user">
-          <XDSChatMessageBubble
-            metadata={
-              <XDSChatMessageMetadata
-                timestamp={
-                  <XDSTimestamp value="2026-03-15T14:30:00" format="time" />
-                }
-                status="read"
-              />
-            }>
-            Can you review my pull request?
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
-
-        {/* Full props: avatar, name, multi-bubble group, metadata with actions */}
-        <XDSChatMessage
-          sender="assistant"
-          avatar={<XDSAvatar name="Navi" size="small" />}>
-          <XDSChatMessageBubble
-            group="first"
-            name={
-              <XDSText type="supporting" weight="semibold" color="secondary">
-                Navi
-              </XDSText>
-            }>
-            Sure! I took a look at PR #1742.
+          <XDSChatMessageBubble group="first">
+            I just pushed the refactored auth module.
           </XDSChatMessageBubble>
           <XDSChatMessageBubble
             group="last"
             metadata={
               <XDSChatMessageMetadata
                 timestamp={
-                  <XDSTimestamp value="2026-03-15T14:31:00" format="time" />
+                  <XDSTimestamp value="2026-04-28T14:30:00" format="time" />
                 }
-                footer={
-                  <XDSStack direction="horizontal" gap={1}>
-                    <XDSButton
-                      label="Copy"
-                      variant="ghost"
-                      size="sm"
-                      icon={<XDSIcon icon="copy" size="sm" />}
-                      isIconOnly
-                      onClick={() => {}}
-                    />
-                    <XDSText type="supporting" color="secondary">
-                      Claude Opus 4.6
-                    </XDSText>
-                  </XDSStack>
-                }
+                status="read"
               />
             }>
-            The changes look great — clean code, good test coverage. Ship it!
+            Can you review the token validation changes?
           </XDSChatMessageBubble>
         </XDSChatMessage>
 
-        <XDSChatMessage sender="user">
-          <XDSChatMessageBubble
-            metadata={
-              <XDSChatMessageMetadata
-                timestamp={
-                  <XDSTimestamp value="2026-03-15T14:32:00" format="time" />
-                }
-                status="delivered"
-              />
-            }>
-            Thanks, shipping now!
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
-      </XDSChatMessageList>
-
-      <XDSText type="supporting" color="secondary">
-        Without message bubbles (ghost variant)
-      </XDSText>
-      <XDSChatMessageList>
         <XDSChatMessage
           sender="assistant"
-          avatar={<XDSAvatar name="Navi" size="small" />}
+          avatar={<XDSAvatar name="Agent" size="small" />}
           name={
             <XDSText type="supporting" weight="semibold" color="secondary">
-              Navi
+              Agent
             </XDSText>
           }
           metadata={
             <XDSChatMessageMetadata
               timestamp={
-                <XDSTimestamp value="2026-03-15T14:31:00" format="time" />
+                <XDSTimestamp value="2026-04-28T14:31:00" format="time" />
               }
               footer={
                 <XDSText type="supporting" color="secondary">
@@ -118,14 +61,8 @@ export default function ChatMessageShowcase() {
             />
           }>
           <XDSChatMessageBubble variant="ghost">
-            Here is a response without a visible bubble boundary. The ghost
-            variant keeps padding for alignment but renders transparent.
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
-
-        <XDSChatMessage sender="user">
-          <XDSChatMessageBubble variant="ghost">
-            User messages can also use the ghost variant for a minimal look.
+            Looks good — the refresh token rotation is solid and the error
+            handling covers all the edge cases. Ship it.
           </XDSChatMessageBubble>
         </XDSChatMessage>
       </XDSChatMessageList>

@@ -41,12 +41,12 @@ export default function ChatMessageMultiBubble() {
 
         <XDSChatMessage
           sender="assistant"
-          avatar={<XDSAvatar name="Navi" size="small" />}>
+          avatar={<XDSAvatar name="Agent" size="small" />}>
           <XDSChatMessageBubble
             group="first"
             name={
               <XDSText type="supporting" weight="semibold" color="secondary">
-                Navi
+                Agent
               </XDSText>
             }>
             Great questions! For pagination, use cursor-based with a limit

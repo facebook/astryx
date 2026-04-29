@@ -20,10 +20,10 @@ export default function ChatMessageGhost() {
       <XDSChatMessageList>
         <XDSChatMessage
           sender="assistant"
-          avatar={<XDSAvatar name="Navi" size="small" />}
+          avatar={<XDSAvatar name="Agent" size="small" />}
           name={
             <XDSText type="supporting" weight="semibold" color="secondary">
-              Navi
+              Agent
             </XDSText>
           }
           metadata={
@@ -54,10 +54,10 @@ export default function ChatMessageGhost() {
 
         <XDSChatMessage
           sender="assistant"
-          avatar={<XDSAvatar name="Navi" size="small" />}
+          avatar={<XDSAvatar name="Agent" size="small" />}
           name={
             <XDSText type="supporting" weight="semibold" color="secondary">
-              Navi
+              Agent
             </XDSText>
           }
           metadata={

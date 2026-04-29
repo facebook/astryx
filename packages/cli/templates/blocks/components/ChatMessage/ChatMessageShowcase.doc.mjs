@@ -2,9 +2,9 @@
 export const doc = {
   type: 'block',
   name: 'ChatMessage — Full Conversation',
-  description: 'Full-featured conversation with avatars, names, timestamps, metadata with action buttons, multi-bubble groups, delivery status, and system messages.',
+  description: 'A user multi-bubble group with delivery status and an assistant ghost response with avatar, name, timestamp, and model info.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['Chat', 'ChatMessage', 'ChatMessageBubble', 'ChatMessageMetadata', 'ChatSystemMessage', 'Avatar', 'Timestamp', 'Button', 'Icon', 'Text', 'Layout'],
+  componentsUsed: ['Chat', 'ChatMessage', 'ChatMessageBubble', 'ChatMessageMetadata', 'Avatar', 'Timestamp', 'Text', 'Layout'],
 };
