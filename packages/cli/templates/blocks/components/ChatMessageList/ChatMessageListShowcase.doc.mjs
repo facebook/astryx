@@ -1,10 +1,10 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'ChatMessageList',
-  description: 'Scrollable message list with density context and system message dividers.',
+  name: 'ChatMessageList — Showcase',
+  description: 'Basic AI chat conversation with user and assistant messages. The simplest way to render a message list with alternating sender bubbles and a date divider.',
   isReady: true,
   isShowcase: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['Chat', 'ChatMessageList'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Chat', 'ChatMessageList', 'Layout'],
 };

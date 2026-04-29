@@ -1,0 +1,79 @@
+'use client';
+
+import {
+  XDSChatMessageList,
+  XDSChatMessage,
+  XDSChatMessageBubble,
+  XDSChatSystemMessage,
+} from '@xds/core/Chat';
+import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSMarkdown} from '@xds/core/Markdown';
+import {XDSCodeBlock} from '@xds/core/CodeBlock';
+import {XDSToken} from '@xds/core/Token';
+import * as stylex from '@stylexjs/stylex';
+
+const styles = stylex.create({
+  container: {
+    height: 480,
+  },
+});
+
+export default function ChatMessageListMixedContent() {
+  return (
+    <XDSVStack xstyle={styles.container}>
+      <XDSChatMessageList>
+        <XDSChatMessage sender="user">
+          <XDSChatMessageBubble>
+            Show me the component files and explain the architecture
+          </XDSChatMessageBubble>
+        </XDSChatMessage>
+
+        <XDSChatMessage sender="assistant">
+          <XDSChatMessageBubble>
+            Sure! Here's an overview of the component architecture.
+          </XDSChatMessageBubble>
+          <XDSChatMessageBubble variant="ghost">
+            <XDSMarkdown density="compact">{`The system uses a **compound component** pattern with three layers:
+
+1. **MessageList** — scrollable container with auto-scroll
+2. **Message** — layout wrapper with sender context
+3. **Bubble** — styled content container`}</XDSMarkdown>
+          </XDSChatMessageBubble>
+          <XDSChatMessageBubble variant="ghost">
+            <XDSMarkdown density="compact">Here are the files:</XDSMarkdown>
+            <XDSHStack gap={2} wrap="wrap">
+              <XDSToken label="Button.tsx" />
+              <XDSToken label="Card.tsx" />
+              <XDSToken label="Dialog.tsx" />
+            </XDSHStack>
+            <XDSCodeBlock
+              code={
+                "export * from './Button';\nexport * from './Card';\nexport * from './Dialog';"
+              }
+              language="typescript"
+            />
+          </XDSChatMessageBubble>
+        </XDSChatMessage>
+
+        <XDSChatSystemMessage>Navi opened Button.tsx</XDSChatSystemMessage>
+
+        <XDSChatMessage sender="assistant">
+          <XDSChatMessageBubble variant="ghost">
+            <XDSCodeBlock
+              code={`import * as stylex from '@stylexjs/stylex';
+
+export function XDSButton({ label, variant = 'primary' }) {
+  return (
+    <button {...stylex.props(styles.base, styles[variant])}>
+      {label}
+    </button>
+  );
+}`}
+              language="tsx"
+            />
+          </XDSChatMessageBubble>
+        </XDSChatMessage>
+      </XDSChatMessageList>
+    </XDSVStack>
+  );
+}
