@@ -13,7 +13,7 @@ import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
   panel: {
-    width: 400,
+    width: 450,
     height: 600,
     borderRadius: 8,
     overflow: 'hidden',
