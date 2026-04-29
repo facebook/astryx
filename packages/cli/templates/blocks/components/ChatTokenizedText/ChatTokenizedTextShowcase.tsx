@@ -4,24 +4,25 @@ import {
   XDSChatTokenizedText,
   XDSChatMessage,
   XDSChatMessageBubble,
+  XDSChatMessageList,
 } from '@xds/core/Chat';
-import {XDSStack} from '@xds/core/Layout';
 
-const mentionTokens = [
-  {value: '@cindy', label: '@Cindy Zhang', variant: 'blue' as const},
+const mixedTokens = [
+  {value: '@cindy', label: '@Cindy', variant: 'blue' as const},
   {value: '#bug', label: '#bug', variant: 'red' as const},
+  {value: '#feat', label: '#feature', variant: 'green' as const},
 ];
 
 export default function ChatTokenizedTextShowcase() {
   return (
-    <XDSStack direction="vertical" gap={3}>
-      <XDSChatMessage sender="user">
+    <XDSChatMessageList>
+      <XDSChatMessage sender="system">
         <XDSChatMessageBubble>
-          <XDSChatTokenizedText tokens={mentionTokens}>
-            Hey @cindy can you look at #bug before the release?
+          <XDSChatTokenizedText tokens={mixedTokens}>
+            @cindy filed #bug and #feat for the sprint
           </XDSChatTokenizedText>
         </XDSChatMessageBubble>
       </XDSChatMessage>
-    </XDSStack>
+    </XDSChatMessageList>
   );
 }
