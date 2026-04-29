@@ -338,6 +338,7 @@ export default function ResizableWorkspacePage() {
             <XDSResizeHandle
               direction="horizontal"
               hasDivider
+              isAlwaysVisible={false}
               resizable={startPanel.props}
               label="Resize file explorer"
             />
@@ -365,6 +366,7 @@ export default function ResizableWorkspacePage() {
                       direction="vertical"
                       hasDivider
                       isReversed
+                      isAlwaysVisible={false}
                       resizable={bottomPanel.props}
                       label="Resize terminal"
                     />
@@ -405,6 +407,7 @@ export default function ResizableWorkspacePage() {
                     direction="horizontal"
                     hasDivider
                     isReversed
+                    isAlwaysVisible={false}
                     resizable={endPanel.props}
                     label="Resize properties panel"
                   />

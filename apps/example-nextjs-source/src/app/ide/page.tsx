@@ -195,6 +195,7 @@ export default function ResizableWorkspacePage() {
             <XDSResizeHandle
               direction="vertical"
               hasDivider
+              isAlwaysVisible={false}
               resizable={headerPanel.props}
               label="Resize header"
             />
@@ -214,6 +215,7 @@ export default function ResizableWorkspacePage() {
             <XDSResizeHandle
               direction="horizontal"
               hasDivider
+              isAlwaysVisible={false}
               resizable={startPanel.props}
               label="Resize start panel"
             />
@@ -265,6 +267,7 @@ export default function ResizableWorkspacePage() {
               direction="horizontal"
               hasDivider
               isReversed
+              isAlwaysVisible={false}
               resizable={endPanel.props}
               label="Resize end panel"
             />
@@ -285,6 +288,7 @@ export default function ResizableWorkspacePage() {
               direction="vertical"
               hasDivider
               isReversed
+              isAlwaysVisible={false}
               resizable={footerPanel.props}
               label="Resize footer"
             />
