@@ -4,17 +4,18 @@ import {XDSChatComposer} from '@xds/core/Chat';
 import {XDSStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
-export default function ChatComposerComposerWithError() {
+export default function ChatComposerValidation() {
   return (
     <XDSStack direction="vertical" gap={4} style={{width: '100%', maxWidth: 450}}>
       <XDSStack direction="vertical" gap={1}>
         <XDSText type="supporting" color="secondary">
-          Error — below the composer
+          Error message (with top position)
         </XDSText>
         <XDSChatComposer
           onSubmit={value => {
             console.log('Sent:', value);
           }}
+          statusPosition="top"
           status={{
             type: 'error',
             message: 'Failed to send message. Please try again.',
@@ -23,13 +24,12 @@ export default function ChatComposerComposerWithError() {
       </XDSStack>
       <XDSStack direction="vertical" gap={1}>
         <XDSText type="supporting" color="secondary">
-          Warning — above the composer
+          Warning message (with bottom position)
         </XDSText>
         <XDSChatComposer
           onSubmit={value => {
             console.log('Sent:', value);
           }}
-          statusPosition="top"
           status={{
             type: 'warning',
             message: 'Context window is 90% full.',

@@ -4,6 +4,6 @@ export const doc = {
   name: 'ChatComposer — Streaming',
   description: 'Chat composer with streaming state and a stop button. Use when the assistant is generating a response and the user can cancel.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['ChatComposer', 'Layout', 'Text'],
 };
