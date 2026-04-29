@@ -167,14 +167,26 @@ export const docs = {
     },
   ],
   usage: {
-    description: 'Chat components provide layout primitives and a message composer for building AI chat interfaces. Use Chat components when building conversational UIs that need message display, sender-aware styling, and rich input with trigger menus and attachments.',
+    description: 'Chat components provide layout primitives and a message composer for building AI chat interfaces. XDSChatComposer is the input shell — compose it using named slots (drawer, headerActions, footerActions, sendActions) to assemble features like file attachments, model selectors, and context indicators without building custom layout. Use Chat components when building conversational UIs that need message display, sender-aware styling, and rich input with trigger menus and attachments.',
     bestPractices: [
       { guidance: true, description: 'Compose messages using MessageList > Message > Bubble for consistent sender-aware styling and density.' },
-      { guidance: true, description: 'Use the named slots on XDSChatComposer (drawer, headerActions, footerActions) to keep the input layout structured and extensible.' },
+      { guidance: true, description: 'Use the named slots on XDSChatComposer (drawer, headerActions, footerActions, sendActions) to keep the input layout structured. Each slot has a specific position and purpose.' },
+      { guidance: true, description: 'Show the streaming state with isStreaming and provide an onStop handler so users can cancel long-running responses.' },
       { guidance: true, description: 'Put name and metadata on the bubble when the content has a visible bubble boundary. Put them on the message wrapper when the content is raw (no bubble).' },
       { guidance: true, description: 'Use XDSChatLayout for full-page chat — it handles auto-scroll, density adaptation, and composer docking automatically.' },
+      { guidance: false, description: 'Don\'t build custom input containers or composer chrome — XDSChatComposer handles the border radius, shadows, focus ring, and slot layout. Customise through slots, not wrapping.' },
       { guidance: false, description: 'Don\'t place metadata or names on both the bubble and the message wrapper — pick one based on whether the content has a bubble boundary.' },
-      { guidance: false, description: 'Don\'t build your own scroll management or density breakpoints — XDSChatLayout handles both via container width observation.' },
+      { guidance: false, description: 'Don\'t use the status prop for transient success messages — it\'s for errors and warnings that need the user\'s attention before they send another message.' },
+    ],
+    anatomy: [
+      { name: 'Drawer', required: false, description: 'Collapsible area above the input for file tokens, context chips, or other attachments. Use XDSChatComposerDrawer.' },
+      { name: 'Header actions', required: false, description: 'Left-aligned icon buttons above the input — attach file, mention, etc. Use icon-only size="sm" buttons.' },
+      { name: 'Header context', required: false, description: 'Right-aligned contextual info — context window progress bar, model info, supporting text.' },
+      { name: 'Input', required: true, description: 'The text input area. Uses a built-in textarea by default, or replace with XDSChatComposerInput for trigger menus and tokens.' },
+      { name: 'Footer actions', required: false, description: 'Left-aligned buttons below the input — model selector, settings, etc.' },
+      { name: 'Send actions', required: false, description: 'Actions to the left of the send button — microphone, voice input, etc.' },
+      { name: 'Send button', required: false, description: 'Circular send/stop toggle. Built-in by default; toggles between send and stop based on isStreaming.' },
+      { name: 'Status', required: false, description: 'Error or warning message rendered above or below the composer.' },
     ],
   },
 };
@@ -207,14 +219,16 @@ docs.components.push(chatLayoutScrollButtonComponent);
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsZh = {
   usage: {
-    description: 'Chat components provide layout primitives and a message composer for building AI chat interfaces. Use Chat components when building conversational UIs that need message display, sender-aware styling, and rich input with trigger menus and attachments.',
+    description: 'Chat components provide layout primitives and a message composer for building AI chat interfaces. XDSChatComposer is the input shell — compose it using named slots (drawer, headerActions, footerActions, sendActions) to assemble features like file attachments, model selectors, and context indicators without building custom layout. Use Chat components when building conversational UIs that need message display, sender-aware styling, and rich input with trigger menus and attachments.',
     bestPractices: [
       { guidance: true, description: 'Compose messages using MessageList > Message > Bubble for consistent sender-aware styling and density.' },
-      { guidance: true, description: 'Use the named slots on XDSChatComposer (drawer, headerActions, footerActions) to keep the input layout structured and extensible.' },
+      { guidance: true, description: 'Use the named slots on XDSChatComposer (drawer, headerActions, footerActions, sendActions) to keep the input layout structured. Each slot has a specific position and purpose.' },
+      { guidance: true, description: 'Show the streaming state with isStreaming and provide an onStop handler so users can cancel long-running responses.' },
       { guidance: true, description: 'Put name and metadata on the bubble when the content has a visible bubble boundary. Put them on the message wrapper when the content is raw (no bubble).' },
       { guidance: true, description: 'Use XDSChatLayout for full-page chat — it handles auto-scroll, density adaptation, and composer docking automatically.' },
+      { guidance: false, description: 'Don\'t build custom input containers or composer chrome — XDSChatComposer handles the border radius, shadows, focus ring, and slot layout. Customise through slots, not wrapping.' },
       { guidance: false, description: 'Don\'t place metadata or names on both the bubble and the message wrapper — pick one based on whether the content has a bubble boundary.' },
-      { guidance: false, description: 'Don\'t build your own scroll management or density breakpoints — XDSChatLayout handles both via container width observation.' },
+      { guidance: false, description: 'Don\'t use the status prop for transient success messages — it\'s for errors and warnings that need the user\'s attention before they send another message.' },
     ],
   },
   components: [
@@ -366,14 +380,16 @@ export const docsZh = {
 export const docsDense = {
   description: 'AI chat components. Layout (MessageList>Message>Bubble+SystemMessage) + Composer (shell w/ slots, ContentEditable input w/ trigger menus, attachments)',
   usage: {
-    description: 'Chat components provide layout primitives and a message composer for building AI chat interfaces. Use Chat components when building conversational UIs that need message display, sender-aware styling, and rich input with trigger menus and attachments.',
+    description: 'Chat layout primitives + composer for AI chat UIs. Composer is a slot-based shell — drawer, headerActions, footerActions, sendActions. Use Chat components for conversational UIs w/ message display, sender-aware styling, rich input.',
     bestPractices: [
-      { guidance: true, description: 'Compose messages using MessageList > Message > Bubble for consistent sender-aware styling and density.' },
-      { guidance: true, description: 'Use the named slots on XDSChatComposer (drawer, headerActions, footerActions) to keep the input layout structured and extensible.' },
-      { guidance: true, description: 'Put name and metadata on the bubble when the content has a visible bubble boundary. Put them on the message wrapper when the content is raw (no bubble).' },
-      { guidance: true, description: 'Use XDSChatLayout for full-page chat — it handles auto-scroll, density adaptation, and composer docking automatically.' },
-      { guidance: false, description: 'Don\'t place metadata or names on both the bubble and the message wrapper — pick one based on whether the content has a bubble boundary.' },
-      { guidance: false, description: 'Don\'t build your own scroll management or density breakpoints — XDSChatLayout handles both via container width observation.' },
+      { guidance: true, description: 'MessageList > Message > Bubble for sender-aware styling.' },
+      { guidance: true, description: 'Named slots on Composer (drawer, headerActions, footerActions, sendActions) — each has a specific position.' },
+      { guidance: true, description: 'isStreaming + onStop for cancelable long-running responses.' },
+      { guidance: true, description: 'Name/metadata on bubble if bubble boundary, on message wrapper if raw content.' },
+      { guidance: true, description: 'XDSChatLayout for full-page — auto-scroll, density adaptation, composer docking.' },
+      { guidance: false, description: 'Custom composer chrome — Composer handles radius, shadows, focus ring. Use slots.' },
+      { guidance: false, description: 'Metadata/names on both bubble and wrapper — pick one.' },
+      { guidance: false, description: 'Status for success toasts — it\'s for errors/warnings before next send.' },
     ],
   },
   components: [

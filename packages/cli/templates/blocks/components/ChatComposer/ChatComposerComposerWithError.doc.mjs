@@ -1,10 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'ChatComposer — Error Status',
-  description:
-    'Chat composer displaying an error status message below the input.',
+  name: 'ChatComposer — Status',
+  description: 'Chat composer with error and warning status messages. Status can appear above or below the composer to surface validation or system feedback.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['ChatComposer'],
+  componentsUsed: ['ChatComposer', 'Layout', 'Text'],
 };
