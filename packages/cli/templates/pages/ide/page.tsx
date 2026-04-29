@@ -167,21 +167,21 @@ function buildFileTree(onFileClick: (name: string) => void): XDSTreeListItemData
   const file = (id: string): XDSTreeListItemData => ({
     id,
     label: id,
-    startContent: <XDSIcon icon={DocumentTextIcon} size="xs" />,
+    startContent: <XDSIcon icon={DocumentTextIcon} size="xsm" />,
     onClick: () => onFileClick(id),
   });
   return [
-    {id: 'src', label: 'src', startContent: <XDSIcon icon={FolderIcon} size="xs" />, isExpanded: true, children: [
-      {id: 'components', label: 'components', startContent: <XDSIcon icon={FolderIcon} size="xs" />, isExpanded: true, children: [
+    {id: 'src', label: 'src', startContent: <XDSIcon icon={FolderIcon} size="xsm" />, isExpanded: true, children: [
+      {id: 'components', label: 'components', startContent: <XDSIcon icon={FolderIcon} size="xsm" />, isExpanded: true, children: [
         file('Counter.tsx'),
         file('Header.tsx'),
         file('Layout.tsx'),
       ]},
-      {id: 'pages', label: 'pages', startContent: <XDSIcon icon={FolderIcon} size="xs" />, isExpanded: true, children: [
+      {id: 'pages', label: 'pages', startContent: <XDSIcon icon={FolderIcon} size="xsm" />, isExpanded: true, children: [
         file('index.tsx'),
         file('about.tsx'),
       ]},
-      {id: 'styles', label: 'styles', startContent: <XDSIcon icon={FolderIcon} size="xs" />, isExpanded: true, children: [
+      {id: 'styles', label: 'styles', startContent: <XDSIcon icon={FolderIcon} size="xsm" />, isExpanded: true, children: [
         file('tokens.stylex.ts'),
         file('theme.ts'),
       ]},
