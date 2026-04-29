@@ -293,8 +293,7 @@ function defaultProps(type: BlockType): Record<string, unknown> {
 
 const editorStyles = stylex.create({
   shell: {
-    position: 'fixed',
-    inset: 0,
+    height: '100%',
     display: 'flex',
     flexDirection: 'column',
     backgroundColor: colorVars['--color-background-body'],
