@@ -87,6 +87,7 @@ export function hasDualMode(theme: XDSDefinedTheme): boolean {
 
 /**
  * Get all token names matching a prefix from the theme + defaults.
+ * Sorts numerically when tokens end with a number (e.g. --spacing-2 before --spacing-10).
  */
 export function getTokensByPrefix(
   theme: XDSDefinedTheme,
@@ -98,5 +99,15 @@ export function getTokensByPrefix(
   ]);
   return [...allKeys]
     .filter(k => k.startsWith(prefix))
-    .sort();
+    .sort((a, b) => {
+      // Extract the suffix after the prefix
+      const suffA = a.slice(prefix.length);
+      const suffB = b.slice(prefix.length);
+      // Try numeric comparison first
+      const numA = parseFloat(suffA);
+      const numB = parseFloat(suffB);
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+      // Non-numeric suffixes: sort alphabetically
+      return suffA.localeCompare(suffB);
+    });
 }
