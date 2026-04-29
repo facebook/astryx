@@ -8,18 +8,17 @@ import {
 } from '@xds/core/Chat';
 
 const tokens = [
-  {value: '@cindy', label: '@Cindy Zhang', variant: 'blue' as const},
-  {value: '@agent', label: '@Agent', variant: 'blue' as const},
-  {value: '@alex', label: '@Alex Rivera', variant: 'blue' as const},
+  {value: '@cindy', label: '@Cindy', variant: 'blue' as const},
+  {value: '@alex', label: '@Alex', variant: 'blue' as const},
 ];
 
-export default function ChatTokenizedTextMultipleMentions() {
+export default function ChatTokenizedTextBasic() {
   return (
     <XDSChatMessageList>
-      <XDSChatMessage sender="user">
+      <XDSChatMessage sender="system">
         <XDSChatMessageBubble>
           <XDSChatTokenizedText tokens={tokens}>
-            @cindy and @alex can @agent help with the review?
+            Assign @cindy and @alex as reviewers.
           </XDSChatTokenizedText>
         </XDSChatMessageBubble>
       </XDSChatMessage>
