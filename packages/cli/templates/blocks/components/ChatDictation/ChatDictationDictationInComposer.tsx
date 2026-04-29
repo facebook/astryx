@@ -26,7 +26,11 @@ const idleDictation: UseSpeechRecognitionReturn = {
 
 export default function ChatDictationDictationInComposer() {
   return (
-    <XDSStack direction="vertical" gap={3}>
+    <XDSStack
+      direction="vertical"
+      gap={3}
+      style={{width: '100%', maxWidth: 450}}
+    >
       <XDSText type="supporting" color="secondary">
         Dictation button in the sendActions slot
       </XDSText>
