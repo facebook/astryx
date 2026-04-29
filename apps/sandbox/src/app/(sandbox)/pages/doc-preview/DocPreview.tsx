@@ -43,9 +43,9 @@ const TOKEN_TABLE_BY_CATEGORY: Record<
   color: ColorTokenTable,
   spacing: SpacingTokenTable,
   typography: TypographyTokenTable,
-  elevation: ElevationTokenTable,
-  shape: ShapeTokenTable,
-  motion: MotionTokenTable,
+  shadow: ElevationTokenTable,
+  radius: ShapeTokenTable,
+  duration: MotionTokenTable,
 };
 
 function ThemeTokenSection({
