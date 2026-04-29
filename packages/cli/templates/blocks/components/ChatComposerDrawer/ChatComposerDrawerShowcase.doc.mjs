@@ -2,9 +2,9 @@
 export const doc = {
   type: 'block',
   name: 'ChatComposerDrawer',
-  description: 'Composer drawer area with file tokens and collapsible overflow.',
+  description: 'Composer drawer with file tokens, a collapsible toggle, and header actions. Use as a starting point for any chat composer with attachments.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['Chat', 'ChatComposerDrawer', 'Token'],
+  componentsUsed: ['Chat', 'Token', 'Icon', 'Button', 'Layout'],
 };

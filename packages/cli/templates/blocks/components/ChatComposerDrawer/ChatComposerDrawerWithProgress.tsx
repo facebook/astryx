@@ -2,20 +2,22 @@
 
 import {XDSChatComposer, XDSChatComposerDrawer} from '@xds/core/Chat';
 import {XDSToken} from '@xds/core/Token';
+import {XDSProgressBar} from '@xds/core/ProgressBar';
 import {XDSStack} from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
 import {PaperClipIcon, AtSymbolIcon} from '@heroicons/react/24/outline';
 
-export default function ChatComposerDrawer() {
+export default function ChatComposerDrawerWithProgress() {
   return (
-    <XDSStack direction="vertical" gap={4} width={450}>
+    <XDSStack direction="vertical" gap={4} width={480}>
       <XDSChatComposer
         onSubmit={() => {}}
         drawer={
-          <XDSChatComposerDrawer count={2}>
-            <XDSToken label="report.pdf" onRemove={() => {}} />
-            <XDSToken label="data.csv" onRemove={() => {}} />
+          <XDSChatComposerDrawer count={3} label="Attachments">
+            <XDSToken label="design-spec.pdf" onRemove={() => {}} />
+            <XDSToken label="api-schema.json" onRemove={() => {}} />
+            <XDSToken label="screenshot.png" onRemove={() => {}} />
           </XDSChatComposerDrawer>
         }
         headerActions={
@@ -37,6 +39,11 @@ export default function ChatComposerDrawer() {
               onClick={() => {}}
             />
           </>
+        }
+        headerContext={
+          <XDSStack direction="horizontal" gap={2} vAlign="center">
+            <XDSProgressBar value={42} label="Context usage" isLabelHidden hasValueLabel />
+          </XDSStack>
         }
       />
     </XDSStack>

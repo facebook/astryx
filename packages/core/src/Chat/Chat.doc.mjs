@@ -126,10 +126,14 @@ export const docs = {
     },
     {
       name: 'XDSChatComposerDrawer',
-      description: 'Collapsible drawer panel for the composer. Use for attachments, context chips, or any supplementary content above the input.',
+      description: 'Collapsible drawer panel that sits above the chat input inside XDSChatComposer. Pass it to the composer\'s `drawer` slot to show attachments, context chips, or any supplementary content. When `count` is provided the drawer gains a collapse toggle — collapsed state shows a badge and label, expanded state shows all children.',
       props: [
-        {name: 'children', type: 'ReactNode', description: 'Attachment items to render.', required: true},
-        {name: 'count', type: 'number', description: 'Total attachment count. When provided and exceeds visible children, shows a collapse/expand toggle.'},
+        {name: 'children', type: 'ReactNode', description: 'Content to render inside the drawer — tokens, chips, previews, or any React elements.', required: true},
+        {name: 'count', type: 'number', description: 'Total item count shown in the collapsed badge. When provided, the drawer gains a collapse/expand toggle.'},
+        {name: 'label', type: 'string', description: 'Label shown next to the count in collapsed state.', default: "'Items'"},
+        {name: 'isCollapsed', type: 'boolean', description: 'Controlled collapsed state. Use with `onCollapsedChange` for external control.'},
+        {name: 'defaultIsCollapsed', type: 'boolean', description: 'Initial collapsed state for uncontrolled usage.', default: 'false'},
+        {name: 'onCollapsedChange', type: '(isCollapsed: boolean) => void', description: 'Callback fired when the user toggles the drawer.'},
       ],
     },
     {
@@ -195,6 +199,10 @@ export const docs = {
       { guidance: false, description: 'Don\'t nest XDSChatMessage inside another XDSChatMessage — each message is a standalone article element with its own sender context.' },
     
       { guidance: false, description: 'Don\'t mix filled and ghost bubble variants within the same sender\'s messages — pick one style per side and use it consistently.' },
+      { guidance: true, description: 'Provide a `count` on XDSChatComposerDrawer that matches the number of children, and set a descriptive `label` like "Attachments" instead of the default "Items".' },
+      { guidance: true, description: 'Use XDSToken with `onRemove` inside XDSChatComposerDrawer so users can remove attachments individually.' },
+      { guidance: false, description: 'Don\'t omit `count` on XDSChatComposerDrawer when there are many items — without it the drawer can\'t collapse and may push the input out of view.' },
+      { guidance: false, description: 'Don\'t render XDSChatComposerDrawer outside of XDSChatComposer\'s `drawer` slot — it relies on the composer for border radius and spacing context.' },
 ],
     anatomy: [
       { name: 'Avatar', required: false, description: 'A sender avatar rendered beside the message. Typically XDSAvatar with size="small". Hidden for system messages.' },
@@ -254,6 +262,10 @@ export const docsZh = {
       { guidance: false, description: 'Don\'t nest XDSChatMessage inside another XDSChatMessage — each message is a standalone article element with its own sender context.' },
     
       { guidance: false, description: 'Don\'t mix filled and ghost bubble variants within the same sender\'s messages — pick one style per side and use it consistently.' },
+      { guidance: true, description: 'Provide a `count` on XDSChatComposerDrawer that matches the number of children, and set a descriptive `label` like "Attachments" instead of the default "Items".' },
+      { guidance: true, description: 'Use XDSToken with `onRemove` inside XDSChatComposerDrawer so users can remove attachments individually.' },
+      { guidance: false, description: 'Don\'t omit `count` on XDSChatComposerDrawer when there are many items — without it the drawer can\'t collapse and may push the input out of view.' },
+      { guidance: false, description: 'Don\'t render XDSChatComposerDrawer outside of XDSChatComposer\'s `drawer` slot — it relies on the composer for border radius and spacing context.' },
 ],
   },
   components: [
@@ -345,8 +357,8 @@ export const docsZh = {
     },
     {
       name: 'XDSChatComposerDrawer',
-      description: '编写器的可折叠抽屉面板。用于附件、上下文标签或输入上方的任何补充内容。',
-      propDescriptions: {children: '要渲染的附件项目。', count: '附件总数。超过可见子元素时显示折叠/展开切换。'},
+      description: '位于聊天输入上方的可折叠抽屉面板。传入 XDSChatComposer 的 `drawer` 插槽，用于显示附件、上下文标签或预览内容。提供 `count` 时启用折叠切换。',
+      propDescriptions: {children: '抽屉内渲染的内容——标记、标签、预览或任何 React 元素。', count: '折叠徽章中显示的总数。提供时，抽屉获得折叠/展开切换。', label: '折叠状态下显示在数量旁边的标签。', isCollapsed: '受控折叠状态。与 onCollapsedChange 一起使用。', defaultIsCollapsed: '非受控模式的初始折叠状态。', onCollapsedChange: '用户切换抽屉时触发的回调。'},
     },
     {
       name: 'XDSChatSendButton',
@@ -429,6 +441,10 @@ export const docsDense = {
       { guidance: false, description: 'Nesting XDSChatMessage inside another — each is a standalone article.' },
     
       { guidance: false, description: 'Mix filled and ghost variants in same sender\'s messages — pick one style per side.' },
+      { guidance: true, description: 'Match `count` to children on XDSChatComposerDrawer; set a descriptive `label` like "Attachments".' },
+      { guidance: true, description: 'Use XDSToken with `onRemove` inside XDSChatComposerDrawer for individually removable attachments.' },
+      { guidance: false, description: 'Don\'t omit `count` on XDSChatComposerDrawer when there are many items — drawer can\'t collapse without it.' },
+      { guidance: false, description: 'Don\'t render XDSChatComposerDrawer outside of XDSChatComposer\'s `drawer` slot.' },
 ],
   },
   components: [
@@ -527,10 +543,14 @@ export const docsDense = {
     },
     {
       name: 'XDSChatComposerDrawer',
-      description: 'collapsible drawer panel for composer; use for attachments, context chips, or supplementary content',
+      description: 'collapsible drawer above chat input; pass to composer `drawer` slot for attachments, context chips, previews. `count` enables collapse toggle',
       propDescriptions: {
-        children: 'attachment items to render',
-        count: 'total count; shows collapse/expand when exceeds visible',
+        children: 'drawer content — tokens, chips, previews, any React elements',
+        count: 'total count for collapsed badge; enables collapse/expand toggle',
+        label: 'collapsed label next to count badge',
+        isCollapsed: 'controlled collapsed state',
+        defaultIsCollapsed: 'initial collapsed state (uncontrolled)',
+        onCollapsedChange: 'callback on collapse toggle',
       },
     },
     {
