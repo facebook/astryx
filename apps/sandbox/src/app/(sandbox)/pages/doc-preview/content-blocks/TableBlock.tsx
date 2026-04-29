@@ -1,10 +1,11 @@
 'use client';
 
+import {XDSText} from '@xds/core/Text';
 import {XDSTable} from '@xds/core/Table';
 
 /**
  * Generic table renderer for ContentBlock type='table'.
- * Renders headers + rows as a simple data table with no token awareness.
+ * Renders headers + rows as a simple data table.
  */
 export function TableBlock({
   headers,
@@ -24,6 +25,9 @@ export function TableBlock({
   const columns = headers.map(h => ({
     key: h,
     header: h,
+    renderCell: (item: Record<string, unknown>) => (
+      <XDSText>{item[h] as string}</XDSText>
+    ),
   }));
 
   return (

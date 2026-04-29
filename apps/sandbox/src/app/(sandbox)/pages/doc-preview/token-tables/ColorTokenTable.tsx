@@ -1,47 +1,60 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
+import {XDSHStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
 import {XDSTable} from '@xds/core/Table';
 import {xdsTokenDefaults} from '@xds/core/theme';
 import type {TokenTableProps} from './types';
 import {resolveTokenForMode, hasDualMode, getTokensByPrefix} from './helpers';
 
 const styles = stylex.create({
-  valueWithPreview: {
+  swatch: {
+    width: 28,
+    height: 28,
+    borderRadius: 'var(--radius-2)',
+    flexShrink: 0,
+    border: '1px solid var(--color-border)',
+  },
+  contextLight: {
+    width: 28,
+    height: 28,
+    borderRadius: 'var(--radius-2)',
+    backgroundColor: '#FFFFFF',
     display: 'flex',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'center',
+    flexShrink: 0,
+    border: '1px solid var(--color-border)',
+  },
+  contextDark: {
+    width: 28,
+    height: 28,
+    borderRadius: 'var(--radius-2)',
+    backgroundColor: '#1C1C1E',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    border: '1px solid var(--color-border)',
+  },
+  swatchInner: {
+    width: 20,
+    height: 20,
+    borderRadius: 'var(--radius-1)',
   },
 });
 
 function ContextSwatch({value, surface}: {value: string; surface: 'light' | 'dark'}) {
-  const isLight = surface === 'light';
   return (
-    <div style={{
-      width: 28, height: 28, borderRadius: 6,
-      backgroundColor: isLight ? '#FFFFFF' : '#1C1C1E',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      flexShrink: 0,
-      border: `1px solid ${isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)'}`,
-    }}>
-      <div style={{
-        width: 20, height: 20, borderRadius: 4,
-        backgroundColor: value,
-        border: `1px solid ${isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`,
-      }} />
+    <div {...stylex.props(surface === 'light' ? styles.contextLight : styles.contextDark)}>
+      <div {...stylex.props(styles.swatchInner)} style={{backgroundColor: value}} />
     </div>
   );
 }
 
 function Swatch({value}: {value: string}) {
-  return (
-    <div style={{
-      width: 28, height: 28, borderRadius: 6,
-      backgroundColor: value,
-      border: '1px solid var(--color-border)',
-      flexShrink: 0,
-    }} />
-  );
+  return <div {...stylex.props(styles.swatch)} style={{backgroundColor: value}} />;
 }
 
 export function ColorTokenTable({theme}: TokenTableProps) {
@@ -64,20 +77,20 @@ export function ColorTokenTable({theme}: TokenTableProps) {
             key: 'light',
             header: 'Light',
             renderCell: (item: Record<string, unknown>) => (
-              <div {...stylex.props(styles.valueWithPreview)}>
+              <XDSHStack gap={2} align="center">
                 <ContextSwatch value={item.light as string} surface="light" />
-                {item.light as string}
-              </div>
+                <XDSText type="code" color="secondary">{item.light as string}</XDSText>
+              </XDSHStack>
             ),
           },
           {
             key: 'dark',
             header: 'Dark',
             renderCell: (item: Record<string, unknown>) => (
-              <div {...stylex.props(styles.valueWithPreview)}>
+              <XDSHStack gap={2} align="center">
                 <ContextSwatch value={item.dark as string} surface="dark" />
-                {item.dark as string}
-              </div>
+                <XDSText type="code" color="secondary">{item.dark as string}</XDSText>
+              </XDSHStack>
             ),
           },
         ]}
@@ -97,10 +110,10 @@ export function ColorTokenTable({theme}: TokenTableProps) {
           key: 'light',
           header: 'Value',
           renderCell: (item: Record<string, unknown>) => (
-            <div {...stylex.props(styles.valueWithPreview)}>
+            <XDSHStack gap={2} align="center">
               <Swatch value={item.light as string} />
-              {item.light as string}
-            </div>
+              <XDSText type="code" color="secondary">{item.light as string}</XDSText>
+            </XDSHStack>
           ),
         },
       ]}

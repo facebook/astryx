@@ -1,27 +1,23 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
+import {XDSHStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
 import {XDSTable} from '@xds/core/Table';
 import type {TokenTableProps} from './types';
 import {resolveToken, getTokensByPrefix} from './helpers';
 
 const styles = stylex.create({
-  valueWithPreview: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
+  bar: {
+    minWidth: 2,
+    maxWidth: 64,
+    height: 12,
+    borderRadius: 'var(--radius-1)',
+    backgroundColor: 'var(--color-accent)',
+    opacity: 0.6,
+    flexShrink: 0,
   },
 });
-
-function SpacingBar({value}: {value: string}) {
-  return (
-    <div style={{
-      width: value, minWidth: 2, maxWidth: 64, height: 12,
-      borderRadius: 2, backgroundColor: 'var(--color-accent)',
-      opacity: 0.6, flexShrink: 0,
-    }} />
-  );
-}
 
 export function SpacingTokenTable({theme}: TokenTableProps) {
   const tokens = getTokensByPrefix(theme, '--spacing-');
@@ -39,10 +35,10 @@ export function SpacingTokenTable({theme}: TokenTableProps) {
           key: 'value',
           header: 'Value',
           renderCell: (item: Record<string, unknown>) => (
-            <div {...stylex.props(styles.valueWithPreview)}>
-              <SpacingBar value={item.value as string} />
-              {item.value as string}
-            </div>
+            <XDSHStack gap={2} align="center">
+              <div {...stylex.props(styles.bar)} style={{width: item.value as string}} />
+              <XDSText type="code" color="secondary">{item.value as string}</XDSText>
+            </XDSHStack>
           ),
         },
       ]}

@@ -2,15 +2,43 @@
 
 import {useState, useEffect, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {XDSHStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
 import {XDSTable} from '@xds/core/Table';
 import type {TokenTableProps} from './types';
 import {resolveToken, getTokensByPrefix} from './helpers';
 
 const styles = stylex.create({
-  valueWithPreview: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
+  durationTrack: {
+    width: 40,
+    height: 8,
+    borderRadius: 'var(--radius-1)',
+    backgroundColor: 'var(--color-neutral)',
+    overflow: 'hidden',
+    flexShrink: 0,
+  },
+  durationFill: {
+    height: '100%',
+    borderRadius: 'var(--radius-1)',
+    backgroundColor: 'var(--color-accent)',
+  },
+  easingTrack: {
+    width: 40,
+    height: 8,
+    borderRadius: 'var(--radius-1)',
+    backgroundColor: 'var(--color-neutral)',
+    position: 'relative' as const,
+    overflow: 'visible',
+    flexShrink: 0,
+  },
+  easingDot: {
+    position: 'absolute' as const,
+    top: 0,
+    width: 8,
+    height: 8,
+    borderRadius: 'var(--radius-full)',
+    backgroundColor: 'var(--color-accent)',
+    transform: 'translateX(-50%)',
   },
 });
 
@@ -21,11 +49,11 @@ function DurationBar({value}: {value: string}) {
     return () => clearInterval(interval);
   }, []);
   return (
-    <div style={{width: 40, height: 8, borderRadius: 4, backgroundColor: 'var(--color-neutral)', overflow: 'hidden', flexShrink: 0}}>
-      <div style={{
-        width: animate ? '100%' : '0%', height: '100%', borderRadius: 4,
-        backgroundColor: 'var(--color-accent)', transition: `width ${value} ease`,
-      }} />
+    <div {...stylex.props(styles.durationTrack)}>
+      <div
+        {...stylex.props(styles.durationFill)}
+        style={{width: animate ? '100%' : '0%', transition: `width ${value} ease`}}
+      />
     </div>
   );
 }
@@ -79,16 +107,16 @@ function EasingCurve({value}: {value: string}) {
   const pad = 0.12;
 
   return (
-    <div style={{display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0}}>
+    <XDSHStack gap={2} align="center">
       <svg width={32} height={24} viewBox={`${-pad} ${-pad} ${1+pad*2} ${1+pad*2}`} style={{flexShrink: 0}}>
         <path d={`M 0 1 C ${x1} ${1-y1}, ${x2} ${1-y2}, 1 0`} fill="none" stroke="var(--color-neutral)" strokeWidth={0.04} />
         <path d={`M 0 1 C ${x1} ${1-y1}, ${x2} ${1-y2}, 1 0`} fill="none" stroke="var(--color-accent)" strokeWidth={0.06} strokeDasharray="1" strokeDashoffset={1-progress} pathLength={1} />
         <circle cx={progress} cy={1-easedY} r={0.06} fill="var(--color-accent)" />
       </svg>
-      <div style={{width: 40, height: 8, borderRadius: 4, backgroundColor: 'var(--color-neutral)', position: 'relative', overflow: 'visible'}}>
-        <div style={{position: 'absolute', left: `${easedY*100}%`, top: 0, width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--color-accent)', transform: 'translateX(-50%)'}} />
+      <div {...stylex.props(styles.easingTrack)}>
+        <div {...stylex.props(styles.easingDot)} style={{left: `${easedY*100}%`}} />
       </div>
-    </div>
+    </XDSHStack>
   );
 }
 
@@ -96,19 +124,14 @@ export function MotionTokenTable({theme}: TokenTableProps) {
   const durationTokens = getTokensByPrefix(theme, '--duration-');
   const easeTokens = getTokensByPrefix(theme, '--ease-');
 
-  const durationData = durationTokens.map(name => ({
-    tokenName: name,
-    value: resolveToken(theme, name),
-    type: 'duration' as const,
-  }));
-
-  const easeData = easeTokens.map(name => ({
-    tokenName: name,
-    value: resolveToken(theme, name),
-    type: 'easing' as const,
-  }));
-
-  const data = [...durationData, ...easeData];
+  const data = [
+    ...durationTokens.map(name => ({
+      tokenName: name, value: resolveToken(theme, name), type: 'duration' as const,
+    })),
+    ...easeTokens.map(name => ({
+      tokenName: name, value: resolveToken(theme, name), type: 'easing' as const,
+    })),
+  ];
 
   return (
     <XDSTable
@@ -122,10 +145,10 @@ export function MotionTokenTable({theme}: TokenTableProps) {
             const val = item.value as string;
             const type = item.type as string;
             return (
-              <div {...stylex.props(styles.valueWithPreview)}>
+              <XDSHStack gap={2} align="center">
                 {type === 'duration' ? <DurationBar value={val} /> : <EasingCurve value={val} />}
-                {val}
-              </div>
+                <XDSText type="code" color="secondary">{val}</XDSText>
+              </XDSHStack>
             );
           },
         },
