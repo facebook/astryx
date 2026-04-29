@@ -8,10 +8,11 @@ import {
   XDSChatComposer,
 } from '@xds/core/Chat';
 import {XDSMarkdown} from '@xds/core/Markdown';
+import {XDSVStack} from '@xds/core/Layout';
 
 export default function ChatLayoutShowcase() {
   return (
-    <div style={{height: 500, display: 'flex', flexDirection: 'column'}}>
+    <XDSVStack height={500}>
       <XDSChatLayout
         composer={
           <XDSChatComposer
@@ -33,6 +34,6 @@ export default function ChatLayoutShowcase() {
           </XDSChatMessage>
         </XDSChatMessageList>
       </XDSChatLayout>
-    </div>
+    </XDSVStack>
   );
 }

@@ -2,10 +2,11 @@
 
 import {XDSChatLayout, XDSChatComposer} from '@xds/core/Chat';
 import {XDSEmptyState} from '@xds/core/EmptyState';
+import {XDSVStack} from '@xds/core/Layout';
 
 export default function ChatLayoutEmptyStateChat() {
   return (
-    <div style={{height: '100vh', display: 'flex', flexDirection: 'column'}}>
+    <XDSVStack height="100vh">
       <XDSChatLayout
         composer={
           <XDSChatComposer
@@ -21,6 +22,6 @@ export default function ChatLayoutEmptyStateChat() {
         }>
         {[]}
       </XDSChatLayout>
-    </div>
+    </XDSVStack>
   );
 }

@@ -9,23 +9,24 @@ import {
   XDSChatComposer,
 } from '@xds/core/Chat';
 import {XDSMarkdown} from '@xds/core/Markdown';
+import * as stylex from '@stylexjs/stylex';
+
+const styles = stylex.create({
+  panel: {
+    width: 400,
+    height: 600,
+    borderRadius: 8,
+    overflow: 'hidden',
+    border: '1px solid var(--color-border)',
+  },
+});
 
 export default function ChatLayoutPanelChat() {
   return (
-    <div
-      style={{
-        width: 400,
-        height: 600,
-        border: '1px solid #ccc',
-        borderRadius: 8,
-        overflow: 'hidden',
-      }}>
+    <div {...stylex.props(styles.panel)}>
       <XDSChatLayout
         composer={
-          <XDSChatComposer
-            onSubmit={() => {}}
-            placeholder="Ask something..."
-          />
+          <XDSChatComposer onSubmit={() => {}} placeholder="Ask something..." />
         }>
         <XDSChatMessageList>
           <XDSChatSystemMessage variant="divider">Today</XDSChatSystemMessage>

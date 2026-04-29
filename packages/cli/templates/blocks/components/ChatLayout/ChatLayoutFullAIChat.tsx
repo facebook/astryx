@@ -14,10 +14,11 @@ import {XDSMarkdown} from '@xds/core/Markdown';
 import {XDSTimestamp} from '@xds/core/Timestamp';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
+import {XDSVStack} from '@xds/core/Layout';
 
 export default function ChatLayoutFullAIChat() {
   return (
-    <div style={{height: '100vh', display: 'flex', flexDirection: 'column'}}>
+    <XDSVStack height="100vh">
       <XDSChatLayout
         composer={
           <XDSChatComposer
@@ -117,6 +118,6 @@ The focus ring meets **WCAG 2.4.7** requirements and uses the theme's focus colo
           </XDSChatMessage>
         </XDSChatMessageList>
       </XDSChatLayout>
-    </div>
+    </XDSVStack>
   );
 }
