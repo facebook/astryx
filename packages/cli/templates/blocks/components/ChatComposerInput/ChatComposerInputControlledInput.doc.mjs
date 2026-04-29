@@ -3,8 +3,8 @@ export const doc = {
   type: 'block',
   name: 'ChatComposerInput — Controlled',
   description:
-    'Controlled chat input with live value display, showing two-way binding between composer and input.',
+    'Controlled chat input with live value display. Use controlled mode when you need to read or transform the input value outside the composer.',
   isReady: true,
-  aspectRatio: 4 / 3,
-  componentsUsed: ['ChatComposer', 'ChatComposerInput'],
+  aspectRatio: 16 / 9,
+  componentsUsed: ['ChatComposer', 'ChatComposerInput', 'Layout', 'Text'],
 };

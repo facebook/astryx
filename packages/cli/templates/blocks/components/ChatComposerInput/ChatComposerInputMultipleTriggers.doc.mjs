@@ -1,9 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'ChatComposerInput — Mentions',
+  name: 'ChatComposerInput — Multiple Triggers',
   description:
-    'Chat input with an @ trigger that opens a typeahead menu for mentioning users. Selected names appear as inline tokens.',
+    'Chat input with both @ mentions and / commands. Each trigger type renders tokens in a distinct color so users can tell them apart at a glance.',
   isReady: true,
   aspectRatio: 16 / 9,
   componentsUsed: ['ChatComposer', 'ChatComposerInput', 'Typeahead', 'Layout', 'Text'],
