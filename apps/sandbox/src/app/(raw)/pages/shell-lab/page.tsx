@@ -633,7 +633,7 @@ function SampleSideNav({
               : true
             : false
         }
-        resizable={config.isResizable ? sidebar.props : false}
+        resizable={config.isResizable}
         header={heading}
         topContent={
           config.showTopContent ? (
