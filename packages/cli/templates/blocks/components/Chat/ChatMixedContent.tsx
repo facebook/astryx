@@ -13,50 +13,68 @@ import {XDSCodeBlock} from '@xds/core/CodeBlock';
 
 export default function ChatMixedContent() {
   return (
-    <div style={{height: 600, display: 'flex', flexDirection: 'column'}}>
-      <XDSChatMessageList>
-        <XDSChatMessage sender="user">
-          <XDSChatMessageBubble>
-            Show me the component files and explain the architecture
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
+    <XDSChatMessageList>
+      <XDSChatMessage sender="user">
+        <XDSChatMessageBubble>
+          Show me the component files and explain the architecture
+        </XDSChatMessageBubble>
+      </XDSChatMessage>
 
-        <XDSChatMessage sender="assistant">
-          <XDSChatMessageBubble>
-            Sure! Here's an overview of the component architecture.
-          </XDSChatMessageBubble>
-          <XDSChatMessageBubble>
-            <XDSMarkdown density="compact">{`The system uses a **compound component** pattern with three layers:
+      <XDSChatMessage sender="assistant">
+        <XDSChatMessageBubble>
+          Sure! Here's an overview of the component architecture.
+        </XDSChatMessageBubble>
+        <XDSChatMessageBubble variant="ghost">
+          <XDSMarkdown density="compact">{`The system uses a **compound component** pattern with three layers:
 
 1. **MessageList** — scrollable container with auto-scroll
 2. **Message** — layout wrapper with sender context
 3. **Bubble** — styled content container`}</XDSMarkdown>
-          </XDSChatMessageBubble>
-          <XDSChatMessageBubble>
-            <XDSMarkdown density="compact">Here are the files:</XDSMarkdown>
-            <XDSHStack gap={2} wrap="wrap">
-              <XDSToken label="Button.tsx" />
-              <XDSToken label="Card.tsx" />
-              <XDSToken label="Dialog.tsx" />
-            </XDSHStack>
-            <XDSCodeBlock
-              code={
-                "export * from './Button';\nexport * from './Card';\nexport * from './Dialog';"
-              }
-              language="typescript"
-            />
-          </XDSChatMessageBubble>
-          <XDSChatMessageBubble>
-            Let me know which one to open — I can walk through the
-            implementation.
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
+        </XDSChatMessageBubble>
+        <XDSChatMessageBubble variant="ghost">
+          <XDSMarkdown density="compact">Here are the files:</XDSMarkdown>
+          <XDSHStack gap={2} wrap="wrap">
+            <XDSToken label="Button.tsx" />
+            <XDSToken label="Card.tsx" />
+            <XDSToken label="Dialog.tsx" />
+          </XDSHStack>
+          <XDSCodeBlock
+            code={
+              "export * from './Button';\nexport * from './Card';\nexport * from './Dialog';"
+            }
+            language="typescript"
+          />
+        </XDSChatMessageBubble>
+        <XDSChatMessageBubble>
+          Let me know which one to open — I can walk through the implementation.
+        </XDSChatMessageBubble>
+      </XDSChatMessage>
 
-        <XDSChatMessage sender="user">
-          <XDSChatMessageBubble>Open Button.tsx</XDSChatMessageBubble>
-        </XDSChatMessage>
+      <XDSChatMessage sender="user">
+        <XDSChatMessageBubble>Open Button.tsx</XDSChatMessageBubble>
+      </XDSChatMessage>
 
-      </XDSChatMessageList>
-    </div>
+      <XDSChatSystemMessage>Navi opened Button.tsx</XDSChatSystemMessage>
+
+      <XDSChatMessage sender="assistant">
+        <XDSChatMessageBubble variant="ghost">
+          <XDSCodeBlock
+            code={`import * as stylex from '@stylexjs/stylex';
+
+export function XDSButton({ label, variant = 'primary' }) {
+  return (
+    <button {...stylex.props(styles.base, styles[variant])}>
+      {label}
+    </button>
+  );
+}`}
+            language="tsx"
+          />
+          <XDSMarkdown density="compact">
+            The Button uses StyleX for styles and reads variant from props.
+          </XDSMarkdown>
+        </XDSChatMessageBubble>
+      </XDSChatMessage>
+    </XDSChatMessageList>
   );
 }
