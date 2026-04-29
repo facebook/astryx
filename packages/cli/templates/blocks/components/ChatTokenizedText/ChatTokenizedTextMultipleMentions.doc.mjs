@@ -5,5 +5,5 @@ export const doc = {
   description: 'A message with several @mention tokens. Each matching pattern is independently replaced with its display name badge, so multiple people can be referenced in a single message.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['ChatTokenizedText', 'Chat', 'Layout', 'Text'],
+  componentsUsed: ['ChatTokenizedText', 'Chat'],
 };
