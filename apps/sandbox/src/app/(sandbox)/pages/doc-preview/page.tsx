@@ -11,7 +11,7 @@ import {
 import { XDSSpinner } from "@xds/core/Spinner";
 import type { ReferenceDoc } from "@xds/core";
 import { DocPreview } from "./DocPreview";
-import { useXDSTheme, XDSThemeContext } from "@xds/core/theme";
+import { XDSThemeContext } from "@xds/core/theme";
 import { useContext } from "react";
 
 const styles = stylex.create({
