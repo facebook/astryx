@@ -3,6 +3,6 @@ export const doc = {
   type: 'block',
   name: 'ChatTokenizedText',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   isShowcase: true,
 };

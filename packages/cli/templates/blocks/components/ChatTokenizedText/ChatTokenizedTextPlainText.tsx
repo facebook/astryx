@@ -8,22 +8,16 @@ import {
 import {XDSStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
-const tokens = [
-  {value: '@cindy', label: '@Cindy Zhang', variant: 'blue' as const},
-  {value: '@navi', label: '@Navi', variant: 'blue' as const},
-  {value: '@alex', label: '@Alex Rivera', variant: 'blue' as const},
-];
-
-export default function ChatTokenizedTextMultipleMentions() {
+export default function ChatTokenizedTextPlainText() {
   return (
     <XDSStack direction="vertical" gap={3}>
       <XDSText type="supporting" color="secondary">
-        Multiple mentions in one message
+        No tokens — renders as plain text
       </XDSText>
       <XDSChatMessage sender="user">
         <XDSChatMessageBubble>
-          <XDSChatTokenizedText tokens={tokens}>
-            @cindy and @alex can @navi help with the review?
+          <XDSChatTokenizedText>
+            Just a regular message with no mentions.
           </XDSChatTokenizedText>
         </XDSChatMessageBubble>
       </XDSChatMessage>

@@ -5,6 +5,8 @@ import {
   XDSChatMessage,
   XDSChatMessageBubble,
 } from '@xds/core/Chat';
+import {XDSStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
 
 const tokens = [
   {value: '@cindy', label: '@Cindy', variant: 'blue' as const},
@@ -14,12 +16,17 @@ const tokens = [
 
 export default function ChatTokenizedTextMixedVariantTokens() {
   return (
-    <XDSChatMessage sender="user">
-      <XDSChatMessageBubble>
-        <XDSChatTokenizedText tokens={tokens}>
-          @cindy filed #bug and #feat for the sprint
-        </XDSChatTokenizedText>
-      </XDSChatMessageBubble>
-    </XDSChatMessage>
+    <XDSStack direction="vertical" gap={3}>
+      <XDSText type="supporting" color="secondary">
+        Color variants distinguish token types
+      </XDSText>
+      <XDSChatMessage sender="user">
+        <XDSChatMessageBubble>
+          <XDSChatTokenizedText tokens={tokens}>
+            @cindy filed #bug and #feat for the sprint
+          </XDSChatTokenizedText>
+        </XDSChatMessageBubble>
+      </XDSChatMessage>
+    </XDSStack>
   );
 }
