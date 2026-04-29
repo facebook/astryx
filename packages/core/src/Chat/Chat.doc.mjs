@@ -75,11 +75,11 @@ export const docs = {
     },
     {
       name: 'XDSChatSystemMessage',
-      description: 'Centered system/notice message for date separators, status updates, and non-sender content.',
+      description: 'Centered system message for non-sender content like date separators, membership changes, and status notices. It is not a chat bubble — it has no avatar, no alignment, and no sender context. Use the divider variant for temporal breaks and default for inline status updates.',
       props: [
-        {name: 'children', type: 'ReactNode', description: 'System message content.', required: true},
-        {name: 'variant', type: "'default' | 'divider'", description: 'Visual variant. Divider adds horizontal lines on each side (uses XDSDivider internally).', default: "'default'"},
-        {name: 'icon', type: 'ReactNode', description: 'Icon rendered before the text. Typically an XDSIcon.'},
+        {name: 'children', type: 'ReactNode', description: 'System message content — a short, factual string like a date, a join/leave notice, or a status change.', required: true},
+        {name: 'variant', type: "'default' | 'divider'", description: "Visual variant. 'default' renders centered text. 'divider' adds horizontal lines on each side via XDSDivider — use for date separators and section breaks.", default: "'default'"},
+        {name: 'icon', type: 'ReactNode', description: 'Leading icon that reinforces the message type. Wrap in XDSIcon for consistent sizing. Use for membership changes, encryption notices, or AI activity.'},
       ],
     },
     {
@@ -174,9 +174,13 @@ export const docs = {
       { guidance: true, description: 'Show the streaming state with isStreaming and provide an onStop handler so users can cancel long-running responses.' },
       { guidance: true, description: 'Put name and metadata on the bubble when the content has a visible bubble boundary. Put them on the message wrapper when the content is raw (no bubble).' },
       { guidance: true, description: 'Use XDSChatLayout for full-page chat — it handles auto-scroll, density adaptation, and composer docking automatically.' },
+      { guidance: true, description: 'Use XDSChatSystemMessage with variant="divider" for date separators and default for status notices like joins, leaves, or topic changes.' },
+      { guidance: true, description: 'Add an icon to system messages when the type is not obvious from the text alone — membership changes, encryption notices, or AI activity benefit from visual reinforcement.' },
       { guidance: false, description: 'Don\'t build custom input containers or composer chrome — XDSChatComposer handles the border radius, shadows, focus ring, and slot layout. Customise through slots, not wrapping.' },
       { guidance: false, description: 'Don\'t place metadata or names on both the bubble and the message wrapper — pick one based on whether the content has a bubble boundary.' },
       { guidance: false, description: 'Don\'t use the status prop for transient success messages — it\'s for errors and warnings that need the user\'s attention before they send another message.' },
+      { guidance: false, description: 'Don\'t use XDSChatSystemMessage for sender content — it has no avatar, alignment, or bubble. Use XDSChatMessage with a sender role instead.' },
+      { guidance: false, description: 'Don\'t put long or multi-line content in a system message — keep it to a single short sentence. If you need more, use a bubble or a card.' },
     ],
     anatomy: [
       { name: 'Drawer', required: false, description: 'Collapsible area above the input for file tokens, context chips, or other attachments. Use XDSChatComposerDrawer.' },
@@ -226,9 +230,13 @@ export const docsZh = {
       { guidance: true, description: 'Show the streaming state with isStreaming and provide an onStop handler so users can cancel long-running responses.' },
       { guidance: true, description: 'Put name and metadata on the bubble when the content has a visible bubble boundary. Put them on the message wrapper when the content is raw (no bubble).' },
       { guidance: true, description: 'Use XDSChatLayout for full-page chat — it handles auto-scroll, density adaptation, and composer docking automatically.' },
+      { guidance: true, description: 'Use XDSChatSystemMessage with variant="divider" for date separators and default for status notices like joins, leaves, or topic changes.' },
+      { guidance: true, description: 'Add an icon to system messages when the type is not obvious from the text alone — membership changes, encryption notices, or AI activity benefit from visual reinforcement.' },
       { guidance: false, description: 'Don\'t build custom input containers or composer chrome — XDSChatComposer handles the border radius, shadows, focus ring, and slot layout. Customise through slots, not wrapping.' },
       { guidance: false, description: 'Don\'t place metadata or names on both the bubble and the message wrapper — pick one based on whether the content has a bubble boundary.' },
       { guidance: false, description: 'Don\'t use the status prop for transient success messages — it\'s for errors and warnings that need the user\'s attention before they send another message.' },
+      { guidance: false, description: 'Don\'t use XDSChatSystemMessage for sender content — it has no avatar, alignment, or bubble. Use XDSChatMessage with a sender role instead.' },
+      { guidance: false, description: 'Don\'t put long or multi-line content in a system message — keep it to a single short sentence. If you need more, use a bubble or a card.' },
     ],
   },
   components: [
@@ -272,8 +280,8 @@ export const docsZh = {
     },
     {
       name: 'XDSChatSystemMessage',
-      description: '居中的系统/通知消息，用于日期分隔、状态更新和非发送者内容。',
-      propDescriptions: {children: '系统消息内容。', variant: '视觉变体。divider 在两侧添加水平线（内部使用 XDSDivider）。', icon: '文本前渲染的图标。通常是 XDSIcon。'},
+      description: '居中的系统消息，用于日期分隔、成员变更和状态通知等非发送者内容。没有头像、对齐或气泡。使用 divider 变体做时间分隔，default 做内联状态更新。',
+      propDescriptions: {children: '系统消息内容 — 简短的事实性文本，如日期、加入/离开通知或状态变更。', variant: "视觉变体。'default' 渲染居中文本。'divider' 通过 XDSDivider 在两侧添加水平线 — 用于日期分隔和段落分隔。", icon: '增强消息类型辨识度的前置图标。使用 XDSIcon 包裹以获得一致的尺寸。'},
     },
     {
       name: 'XDSChatComposer',
@@ -387,9 +395,12 @@ export const docsDense = {
       { guidance: true, description: 'isStreaming + onStop for cancelable long-running responses.' },
       { guidance: true, description: 'Name/metadata on bubble if bubble boundary, on message wrapper if raw content.' },
       { guidance: true, description: 'XDSChatLayout for full-page — auto-scroll, density adaptation, composer docking.' },
+      { guidance: true, description: 'SystemMessage: divider variant for date breaks, default for status notices. Add icon for membership/encryption/AI messages.' },
       { guidance: false, description: 'Custom composer chrome — Composer handles radius, shadows, focus ring. Use slots.' },
       { guidance: false, description: 'Metadata/names on both bubble and wrapper — pick one.' },
       { guidance: false, description: 'Status for success toasts — it\'s for errors/warnings before next send.' },
+      { guidance: false, description: 'SystemMessage for sender content — no avatar/alignment/bubble. Use ChatMessage instead.' },
+      { guidance: false, description: 'Long/multi-line system messages — keep to a single short sentence.' },
     ],
   },
   components: [
@@ -437,11 +448,11 @@ export const docsDense = {
     },
     {
       name: 'XDSChatSystemMessage',
-      description: 'centered system/notice msg for date separators+status updates',
+      description: 'centered non-sender msg; divider variant for date breaks, default for status notices; supports leading icon',
       propDescriptions: {
-        children: 'system msg content',
-        variant: 'visual variant; divider adds horizontal lines via XDSDivider',
-        icon: 'icon before text; typically XDSIcon',
+        children: 'short factual text: date, join/leave, status change',
+        variant: "default=centered text, divider=horizontal lines via XDSDivider for date/section breaks",
+        icon: 'leading icon reinforcing msg type; wrap in XDSIcon',
       },
     },
     {
