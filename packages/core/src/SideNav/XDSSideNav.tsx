@@ -382,7 +382,7 @@ export function XDSSideNav({
     maxSizePx: resizableConfig.maxWidth ?? 480,
     autoSaveId: resizableConfig.autoSaveId,
   });
-  const showResizeHandle = isResizable;
+  const showResizeHandle = isResizable && !collapsed;
 
   const [isDragHovered, setIsDragHovered] = useState(false);
   const isDraggingRef = useRef(false);
@@ -431,6 +431,7 @@ export function XDSSideNav({
         if (!wasCollapsed) {
           const finalWidth = Math.min(max, Math.max(min, raw));
           resizableHook.resize(finalWidth);
+          resizableConfig.onWidthChange?.(finalWidth);
         }
         setIsDragHovered(false);
 
@@ -440,7 +441,7 @@ export function XDSSideNav({
       window.addEventListener('pointermove', onMove);
       window.addEventListener('pointerup', onUp);
     },
-    [isResizable, isCollapsible, collapsed, setCollapsedState, resizableHook.size, resizableHook.resize, resizableConfig.minWidth, resizableConfig.maxWidth],
+    [isResizable, isCollapsible, collapsed, setCollapsedState, resizableHook.size, resizableHook.resize, resizableConfig.minWidth, resizableConfig.maxWidth, resizableConfig.onWidthChange],
   );
 
   // Render mode — when inside AppShell mobile layout, render subsets
