@@ -138,6 +138,12 @@ export const categories: SandboxCategory[] = [
         description:
           'Test voice dictation, tune sound effects, and explore animation',
       },
+      {
+        name: 'Color Studio',
+        href: '/pages/color-studio/',
+        description:
+          'Generate and explore color palettes from an accent color or image',
+      },
     ],
   },
 ];
