@@ -111,23 +111,29 @@ export async function findRelatedBlocks(componentName) {
 export async function findShowcase(componentName) {
   const blocks = await discoverBlocks();
   const lc = componentName.toLowerCase();
-  // Match by directory name (category is "components/Badge" → ends with "/Badge"),
-  // by componentsUsed, or by exact display name.
-  const match = blocks.find(b => {
-    if (!b.isShowcase) return false;
-    const catDir = b.category.split('/').pop()?.toLowerCase();
-    if (catDir === lc) return true;
-    if (b.componentsUsed.some(c => c.toLowerCase() === lc)) return true;
-    if (b.name.toLowerCase() === lc) return true;
-    return false;
+  const showcases = blocks.filter(b => b.isShowcase);
+
+  const toResult = (b) => ({
+    name: b.name,
+    aspectRatio: b.aspectRatio,
+    filePath: b.filePath,
+    docPath: b.docPath,
   });
-  if (!match) return null;
-  return {
-    name: match.name,
-    aspectRatio: match.aspectRatio,
-    filePath: match.filePath,
-    docPath: match.docPath,
-  };
+
+  // Priority 1: own directory (components/Badge/ for "Badge")
+  const dirMatch = showcases.find(b => {
+    const catDir = b.category.split('/').pop()?.toLowerCase();
+    return catDir === lc;
+  });
+  if (dirMatch) return toResult(dirMatch);
+
+  // Priority 2: componentsUsed in any directory (ClickableCard in Card/)
+  const usedMatch = showcases.find(b =>
+    b.componentsUsed.some(c => c.toLowerCase() === lc),
+  );
+  if (usedMatch) return toResult(usedMatch);
+
+  return null;
 }
 
 const UBIQUITOUS = new Set([
