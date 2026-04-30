@@ -139,6 +139,7 @@ export * from './Spinner';
 export * from './Timestamp';
 
 // Overflow list
+export * from './Overlay';
 export * from './OverflowList';
 
 // Hooks

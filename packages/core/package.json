@@ -330,6 +330,12 @@
       "import": "./dist/OverflowList/index.mjs",
       "require": "./dist/OverflowList/index.js"
     },
+    "./Overlay": {
+      "source": "./src/Overlay/index.ts",
+      "types": "./dist/Overlay/index.d.ts",
+      "import": "./dist/Overlay/index.mjs",
+      "require": "./dist/Overlay/index.js"
+    },
     "./Pagination": {
       "source": "./src/Pagination/index.ts",
       "types": "./dist/Pagination/index.d.ts",
