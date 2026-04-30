@@ -2,9 +2,9 @@
 export const doc = {
   type: 'block',
   name: 'ChatSendButton',
-  description: 'Send button in default, active, streaming, custom icon, small size, and standalone states.',
+  description: 'Ready, custom icon, and streaming states of the send button.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['Chat', 'ChatSendButton', 'Icon', 'Layout', 'Text'],
+  componentsUsed: ['Chat', 'ChatSendButton', 'Icon', 'Layout'],
 };

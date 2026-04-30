@@ -138,7 +138,7 @@ export const docs = {
     },
     {
       name: 'XDSChatSendButton',
-      description: 'Circular send/stop toggle button for the composer. Reads state from XDSChatComposerContext by default so it works automatically inside XDSChatComposer. All context values can be overridden via props for standalone usage.',
+      description: 'Circular send/stop toggle button for the chat composer. Place it inside XDSChatComposer where it reads context automatically — no wiring needed. When streaming starts, the button switches from a primary send icon to a secondary stop icon. Override any context value via props for standalone or custom usage.',
       props: [
         {name: 'isStreaming', type: 'boolean', description: 'Whether the assistant is currently streaming. Defaults to context value.'},
         {name: 'isDisabled', type: 'boolean', description: 'Whether the send button is disabled. Defaults to !canSend from context.'},
@@ -212,6 +212,9 @@ export const docs = {
       { guidance: false, description: 'Don\'t apply a fixed height directly on XDSChatLayout — wrap it in a sized container and let the layout fill with flex: 1.' },
       { guidance: true, description: 'Show a label on XDSChatLayoutScrollButton (e.g. "New messages") when unread content arrives below the fold so the user knows there is something to see.' },
       { guidance: false, description: 'Don\'t rebuild the scroll-to-bottom button from scratch — use XDSChatLayoutScrollButton or pass a custom element to XDSChatLayout\'s scrollButton prop.' },
+      { guidance: true, description: 'Let XDSChatSendButton read state from XDSChatComposerContext by default — it handles disabled, send, and stop states automatically. Only override via props when using the button standalone or replacing the default icon.' },
+      { guidance: false, description: 'Don\'t manually wire isDisabled on XDSChatSendButton inside a composer — the context already tracks whether the input has content. Override only for custom validation logic.' },
+      { guidance: false, description: 'Don\'t use XDSChatSendButton for non-chat submit actions — use XDSButton instead. The send button is purpose-built for the chat composer flow.' },
 ],
     anatomy: [
       { name: 'Message area', required: true, description: 'Scrollable region for messages. Renders children (typically XDSChatMessageList) in a flex column that pushes content to the bottom when the list is short.' },
@@ -289,6 +292,9 @@ export const docsZh = {
       { guidance: false, description: 'Don\'t apply a fixed height directly on XDSChatLayout — wrap it in a sized container and let the layout fill with flex: 1.' },
       { guidance: true, description: 'Show a label on XDSChatLayoutScrollButton (e.g. "New messages") when unread content arrives below the fold so the user knows there is something to see.' },
       { guidance: false, description: 'Don\'t rebuild the scroll-to-bottom button from scratch — use XDSChatLayoutScrollButton or pass a custom element to XDSChatLayout\'s scrollButton prop.' },
+      { guidance: true, description: 'Let XDSChatSendButton read state from XDSChatComposerContext by default — it handles disabled, send, and stop states automatically. Only override via props when using the button standalone or replacing the default icon.' },
+      { guidance: false, description: 'Don\'t manually wire isDisabled on XDSChatSendButton inside a composer — the context already tracks whether the input has content. Override only for custom validation logic.' },
+      { guidance: false, description: 'Don\'t use XDSChatSendButton for non-chat submit actions — use XDSButton instead. The send button is purpose-built for the chat composer flow.' },
 ],
     anatomy: [
       { name: 'Message area', required: true, description: 'Scrollable region for messages. Renders children (typically XDSChatMessageList) in a flex column that pushes content to the bottom when the list is short.' },
@@ -484,6 +490,9 @@ export const docsDense = {
       { guidance: false, description: 'Fixed height on XDSChatLayout directly — wrap in a sized container, let flex: 1 fill.' },
       { guidance: true, description: 'Show a label on XDSChatLayoutScrollButton when unread content arrives below the fold.' },
       { guidance: false, description: 'Don\'t rebuild the scroll-to-bottom button — use XDSChatLayoutScrollButton or pass a custom element to scrollButton.' },
+      { guidance: true, description: 'Let ChatSendButton read context by default. Override only for standalone use or custom icons.' },
+      { guidance: false, description: 'Don\'t manually wire isDisabled on ChatSendButton inside a composer — context already tracks it.' },
+      { guidance: false, description: 'Don\'t use ChatSendButton for non-chat actions — use XDSButton instead.' },
 ],
   },
   components: [
