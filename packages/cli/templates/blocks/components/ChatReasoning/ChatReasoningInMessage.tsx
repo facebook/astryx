@@ -1,6 +1,6 @@
 'use client';
 
-import {XDSChatReasoning} from '@xds/lab';
+import {XDSChatReasoning} from '../../../../../lab/src/ChatReasoning/XDSChatReasoning';
 import {
   XDSChatMessageList,
   XDSChatMessage,
