@@ -34,6 +34,7 @@ const styles = stylex.create({
   inputStatusWrapper: {
     display: 'flex',
     flexDirection: 'column',
+    isolation: 'isolate',
   },
 });
 

@@ -47,9 +47,6 @@ import {XDSIcon, renderIconSlot, type XDSIconType} from '../Icon';
 import {XDSSpinner} from '../Spinner';
 
 const styles = stylex.create({
-  wrapper: {
-    zIndex: 1,
-  },
   clearButton: {
     display: 'flex',
     alignItems: 'center',
@@ -363,7 +360,6 @@ export function XDSTextInput({
           xdsClassName('text-input', {size, status: status?.type ?? null}),
           stylex.props(
             inputWrapperStyles.base,
-            styles.wrapper,
             sizeStyles[size],
             isDisabled && inputWrapperStyles.disabled,
             status && inputStatusBorderStyles[status.type],
