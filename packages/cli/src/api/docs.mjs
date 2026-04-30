@@ -14,7 +14,7 @@ function discoverTopics() {
   const topics = {};
   if (!fs.existsSync(DOCS_DIR)) return topics;
   for (const file of fs.readdirSync(DOCS_DIR)) {
-    const match = file.match(/^(\w+)\.doc\.mjs$/);
+    const match = file.match(/^([\w-]+)\.doc\.mjs$/);
     if (match) topics[match[1]] = path.join(DOCS_DIR, file);
   }
   return topics;
