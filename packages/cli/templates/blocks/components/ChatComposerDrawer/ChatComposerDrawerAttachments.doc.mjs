@@ -2,8 +2,8 @@
 export const doc = {
   type: 'block',
   name: 'ChatComposerDrawer — Attachments',
-  description: 'Drawer with removable file tokens. Omit count to keep the drawer always expanded — use when the number of attachments is small and predictable.',
+  description: 'Drawer with two rows: a scrollable carousel of image thumbnails and a row of removable file tokens. Omit count to keep the drawer always expanded.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['Chat', 'Token', 'Layout'],
+  componentsUsed: ['Chat', 'Token', 'Thumbnail', 'Carousel', 'Layout'],
 };
