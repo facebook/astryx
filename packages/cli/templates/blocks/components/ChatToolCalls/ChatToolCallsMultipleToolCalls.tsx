@@ -5,6 +5,7 @@ import {XDSChatToolCalls} from '@xds/core/Chat';
 export default function ChatToolCallsMultipleToolCalls() {
   return (
     <XDSChatToolCalls
+      defaultIsExpanded
       calls={[
         {
           name: 'bash',
@@ -14,13 +15,13 @@ export default function ChatToolCallsMultipleToolCalls() {
         },
         {
           name: 'read',
-          target: 'src/Button.tsx',
+          target: 'src/utils/formatDate.ts',
           status: 'complete',
           duration: '45ms',
         },
         {
           name: 'edit',
-          target: 'src/Button.tsx',
+          target: 'src/utils/formatDate.ts',
           status: 'complete',
           duration: '120ms',
           additions: 12,

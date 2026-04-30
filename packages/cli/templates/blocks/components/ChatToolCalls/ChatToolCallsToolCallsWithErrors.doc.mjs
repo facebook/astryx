@@ -1,10 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'ChatToolCalls — With Errors',
-  description:
-    'Tool call group with a failed test run showing error output in a code block detail.',
+  name: 'ChatToolCalls — Errors',
+  description: 'Tool call group where one call has failed. The error status shows a red indicator, and the resultDetail slot displays the failure output.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['ChatToolCalls', 'CodeBlock'],
 };

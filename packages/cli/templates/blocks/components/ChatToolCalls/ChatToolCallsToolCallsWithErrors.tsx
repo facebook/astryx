@@ -4,20 +4,21 @@ import {XDSChatToolCalls} from '@xds/core/Chat';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 
 const errorOutput = `$ yarn test
- PASS  packages/core/src/Chat/XDSChatReasoning.test.tsx (7 tests)
- FAIL  packages/core/src/Chat/XDSChatToolCalls.test.tsx
+ PASS  src/utils/formatDate.test.ts (3 tests)
+ FAIL  src/components/DataGrid.test.tsx
 
-  ● XDSChatToolCalls > renders group header for multiple calls
+  ● DataGrid > sorts columns on header click
 
-    ReferenceError: hasError is not defined
+    TypeError: Cannot read properties of undefined (reading 'sort')
 
-Test Suites: 1 failed, 6 passed, 7 total
-Tests:       4 failed, 63 passed, 67 total
-Time:        6.84s`;
+Test Suites: 1 failed, 4 passed, 5 total
+Tests:       2 failed, 18 passed, 20 total
+Time:        3.41s`;
 
 export default function ChatToolCallsToolCallsWithErrors() {
   return (
     <XDSChatToolCalls
+      defaultIsExpanded
       calls={[
         {
           name: 'bash',
@@ -28,7 +29,7 @@ export default function ChatToolCallsToolCallsWithErrors() {
         },
         {
           name: 'read',
-          target: 'XDSChatToolCalls.tsx',
+          target: 'src/components/DataGrid.tsx',
           status: 'complete',
           duration: '15ms',
           node: 'cli:devvm',
@@ -37,9 +38,9 @@ export default function ChatToolCallsToolCallsWithErrors() {
           name: 'bash',
           target: 'yarn test',
           status: 'error',
-          duration: '6.8s',
+          duration: '3.4s',
           node: 'cli:devvm',
-          errorMessage: '4 tests failed',
+          errorMessage: '2 tests failed',
           resultDetail: (
             <XDSCodeBlock
               code={errorOutput}

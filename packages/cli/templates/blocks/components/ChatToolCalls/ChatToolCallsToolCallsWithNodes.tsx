@@ -5,6 +5,7 @@ import {XDSChatToolCalls} from '@xds/core/Chat';
 export default function ChatToolCallsToolCallsWithNodes() {
   return (
     <XDSChatToolCalls
+      defaultIsExpanded
       calls={[
         {
           name: 'bash',
