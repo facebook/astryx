@@ -61,7 +61,7 @@ export const docs = {
         name: '--resize-handle-pill-gap',
         description:
           'Gap between the pill indicator and the divider line when pillPlacement is start or end',
-        default: '2px',
+        default: '4px (--spacing-1)',
       },
     ],
   },

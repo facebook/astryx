@@ -23,6 +23,25 @@ import type {ResizableProps} from './useXDSResizable';
 const KEYBOARD_STEP = 10;
 const KEYBOARD_LARGE_STEP = 50;
 
+/**
+ * Hit area bias: the pill sits off-center from the divider, so the grab zone
+ * should shift toward the pill. The bias is derived from the pill width + gap
+ * relative to the total hit area:
+ *
+ *   hit area   = var(--resize-handle-hit-area, 16px)
+ *   pill width = var(--resize-handle-width, 3px)
+ *   pill gap   = var(--resize-handle-pill-gap, 4px)  → 7px offset
+ *
+ *   shift = (pill width + gap) / hit area ÷ 2 ≈ 7/16/2 ≈ 22%
+ *   So the origin shifts from 50% to ~62.5% toward the pill side
+ *   (and 37.5% away from it).
+ *
+ * If these CSS custom properties change, the bias percentages should be
+ * updated to match — or consider computing them with calc().
+ */
+const HIT_AREA_BIAS_TOWARD = '62.5%';
+const HIT_AREA_BIAS_AWAY = '37.5%';
+
 type PillPlacement = 'start' | 'end' | 'center' | 'auto';
 
 function resolveEffectiveSide(
@@ -117,12 +136,13 @@ const styles = stylex.create({
     cursor: 'row-resize',
   },
   // Bias hit area toward the pill so the grab zone covers the visible grip.
+  // See HIT_AREA_BIAS_TOWARD / HIT_AREA_BIAS_AWAY constants for derivation.
   hitAreaHorizontalCenter: {transform: 'translateX(-50%)'},
-  hitAreaHorizontalStart: {transform: 'translateX(-62.5%)'},
-  hitAreaHorizontalEnd: {transform: 'translateX(-37.5%)'},
+  hitAreaHorizontalStart: {transform: `translateX(-${HIT_AREA_BIAS_TOWARD})`},
+  hitAreaHorizontalEnd: {transform: `translateX(-${HIT_AREA_BIAS_AWAY})`},
   hitAreaVerticalCenter: {transform: 'translateY(-50%)'},
-  hitAreaVerticalStart: {transform: 'translateY(-62.5%)'},
-  hitAreaVerticalEnd: {transform: 'translateY(-37.5%)'},
+  hitAreaVerticalStart: {transform: `translateY(-${HIT_AREA_BIAS_TOWARD})`},
+  hitAreaVerticalEnd: {transform: `translateY(-${HIT_AREA_BIAS_AWAY})`},
 
   // Pill grip indicator — absolutely positioned so it's not constrained
   // by the 1px handle container. Without this, the vertical pill (3px tall)
@@ -137,51 +157,43 @@ const styles = stylex.create({
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
   },
-  // Horizontal pill placement variants (vertical bar beside a vertical 1px line)
-  pillHorizontalCenter: {
+  // Base pill dimensions per axis — applied alongside a placement style.
+  pillHorizontal: {
     width: 'var(--resize-handle-width, 3px)',
     height: 'var(--resize-handle-height, 32px)',
+    top: '50%',
+  },
+  pillVertical: {
+    height: 'var(--resize-handle-width, 3px)',
+    width: 'var(--resize-handle-height, 32px)',
+    left: '50%',
+  },
+  // Pill placement: center (on the divider line)
+  pillCenter: {
     top: '50%',
     left: '50%',
     transform: 'translate(-50%, -50%)',
   },
+  // Pill placement: start (left / top of divider)
   pillHorizontalStart: {
-    width: 'var(--resize-handle-width, 3px)',
-    height: 'var(--resize-handle-height, 32px)',
-    top: '50%',
     left: 0,
     transform:
-      'translate(calc(-100% - var(--resize-handle-pill-gap, 4px)), -50%)',
+      'translate(calc(-100% - var(--resize-handle-pill-gap, var(--spacing-1, 4px))), -50%)',
   },
   pillHorizontalEnd: {
-    width: 'var(--resize-handle-width, 3px)',
-    height: 'var(--resize-handle-height, 32px)',
-    top: '50%',
     left: '100%',
-    transform: 'translate(var(--resize-handle-pill-gap, 4px), -50%)',
-  },
-  // Vertical pill placement variants (horizontal bar beside a horizontal 1px line)
-  pillVerticalCenter: {
-    height: 'var(--resize-handle-width, 3px)',
-    width: 'var(--resize-handle-height, 32px)',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
+    transform:
+      'translate(var(--resize-handle-pill-gap, var(--spacing-1, 4px)), -50%)',
   },
   pillVerticalStart: {
-    height: 'var(--resize-handle-width, 3px)',
-    width: 'var(--resize-handle-height, 32px)',
     top: 0,
-    left: '50%',
     transform:
-      'translate(-50%, calc(-100% - var(--resize-handle-pill-gap, 4px)))',
+      'translate(-50%, calc(-100% - var(--resize-handle-pill-gap, var(--spacing-1, 4px))))',
   },
   pillVerticalEnd: {
-    height: 'var(--resize-handle-width, 3px)',
-    width: 'var(--resize-handle-height, 32px)',
     top: '100%',
-    left: '50%',
-    transform: 'translate(-50%, var(--resize-handle-pill-gap, 4px))',
+    transform:
+      'translate(-50%, var(--resize-handle-pill-gap, var(--spacing-1, 4px)))',
   },
   pillHidden: {opacity: 0},
   pillVisible: {opacity: 1},
@@ -501,17 +513,16 @@ export function XDSResizeHandle({
         <div
           {...stylex.props(
             styles.pill,
-            isHorizontal
-              ? effectiveSide === 'start'
-                ? styles.pillHorizontalStart
-                : effectiveSide === 'end'
-                  ? styles.pillHorizontalEnd
-                  : styles.pillHorizontalCenter
-              : effectiveSide === 'start'
-                ? styles.pillVerticalStart
-                : effectiveSide === 'end'
-                  ? styles.pillVerticalEnd
-                  : styles.pillVerticalCenter,
+            isHorizontal ? styles.pillHorizontal : styles.pillVertical,
+            effectiveSide === 'center'
+              ? styles.pillCenter
+              : isHorizontal
+                ? effectiveSide === 'start'
+                  ? styles.pillHorizontalStart
+                  : styles.pillHorizontalEnd
+                : effectiveSide === 'start'
+                  ? styles.pillVerticalStart
+                  : styles.pillVerticalEnd,
             isAlwaysVisible ? styles.pillVisible : styles.pillHidden,
             isInteracting && !isDragging && styles.pillHover,
             isDragging && styles.pillActive,

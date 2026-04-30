@@ -1,7 +1,7 @@
 {
   "name": "@xds/core",
   "version": "0.0.13",
-  "description": "XDS design system \u2014 accessible, themeable React components with automatic spacing and plugin architecture",
+  "description": "XDS design system — accessible, themeable React components with automatic spacing and plugin architecture",
   "author": "Meta Open Source",
   "license": "MIT",
   "homepage": "https://github.com/facebookexperimental/xds#readme",
