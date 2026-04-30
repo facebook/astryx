@@ -1,39 +1,47 @@
 'use client';
 
 import {XDSChatToolCalls} from '@xds/core/Chat';
+import {XDSStack} from '@xds/core/Layout';
 
-export default function ChatToolCallsToolCallsWithNodes() {
+export default function ChatToolCallsSimple() {
   return (
-    <XDSChatToolCalls
-      calls={[
-        {
-          name: 'bash',
-          target: 'yarn test',
-          status: 'complete',
-          duration: '4.2s',
-          node: 'cli:devvm',
-        },
-        {
-          name: 'bash',
-          target: 'yarn build',
-          status: 'complete',
-          duration: '12s',
-          node: 'cli:devvm',
-        },
-        {
-          name: 'read',
-          target: 'README.md',
-          status: 'complete',
-          duration: '30ms',
-          node: 'workspace',
-        },
-        {
-          name: 'web_search',
-          target: 'CSS anchor positioning',
-          status: 'complete',
-          duration: '1.8s',
-        },
-      ]}
-    />
+    <XDSStack direction="vertical" gap={4}>
+      <XDSChatToolCalls
+        calls={[
+          {
+            name: 'bash',
+            target: 'git status',
+            status: 'complete',
+            duration: '1.2s',
+          },
+        ]}
+      />
+      <XDSChatToolCalls
+        defaultIsExpanded
+        calls={[
+          {
+            name: 'read',
+            target: 'src/components/DataGrid.tsx',
+            status: 'complete',
+            duration: '30ms',
+          },
+          {
+            name: 'edit',
+            target: 'src/components/DataGrid.tsx',
+            status: 'complete',
+            duration: '85ms',
+            additions: 24,
+            deletions: 8,
+          },
+          {
+            name: 'edit',
+            target: 'src/components/DataGrid.test.tsx',
+            status: 'complete',
+            duration: '60ms',
+            additions: 45,
+          },
+        ]}
+      />
+    </XDSStack>
   );
 }

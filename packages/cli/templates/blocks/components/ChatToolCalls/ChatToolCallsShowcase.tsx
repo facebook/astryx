@@ -5,12 +5,27 @@ import {XDSChatToolCalls} from '@xds/core/Chat';
 export default function ChatToolCallsShowcase() {
   return (
     <XDSChatToolCalls
+      defaultIsExpanded
       calls={[
         {
           name: 'bash',
-          target: 'git status',
+          target: 'git diff --stat',
           status: 'complete',
-          duration: '1.2s',
+          duration: '340ms',
+        },
+        {
+          name: 'read',
+          target: 'src/utils/formatDate.ts',
+          status: 'complete',
+          duration: '45ms',
+        },
+        {
+          name: 'edit',
+          target: 'src/utils/formatDate.ts',
+          status: 'complete',
+          duration: '120ms',
+          additions: 12,
+          deletions: 3,
         },
       ]}
     />
