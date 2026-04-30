@@ -124,17 +124,16 @@ export default function SideGalleryTemplate() {
             <XDSVStack gap={6} vAlign="center">
               <XDSVStack gap={3}>
                 <XDSText type="supporting" color="secondary" weight="semibold">
-                  DAIILY
+                  COLORFUL
                 </XDSText>
                 <XDSHeading level={1}>
                   Make every day a little more delightful, one small detail at a
                   time.
                 </XDSHeading>
                 <XDSText type="body" color="secondary">
-                  We believe the smallest details are the ones that matter most.
-                  A little color, a thoughtful touch, a moment that catches your
-                  eye and makes you pause; that&apos;s what turns an ordinary
-                  day into something worth remembering.
+                  The smallest details are the ones that matter most. A little
+                  color that catches your eye and makes you pause; that&apos;s
+                  what turns an ordinary day into something worth remembering.
                 </XDSText>
               </XDSVStack>
 
