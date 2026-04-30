@@ -1,7 +1,7 @@
 'use client';
 
 import React, {useState, useEffect, useMemo} from 'react';
-import {useSearchParams} from 'next/navigation';
+
 import * as stylex from '@stylexjs/stylex';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
@@ -5075,52 +5075,25 @@ function ComponentDetailPage({
 }
 
 export function DocsView({
-  activeView: _activeView,
   setActiveView,
+  selectedComponent,
+  onComponentChange,
 }: {
-  activeView: 'craft' | 'explore' | 'docs' | 'profile' | 'theme';
   setActiveView: (
     v: 'craft' | 'explore' | 'docs' | 'profile' | 'theme',
   ) => void;
+  selectedComponent: string | null;
+  onComponentChange: (key: string | null) => void;
 }) {
-  const searchParams = useSearchParams();
-
-  const [activeNav, setActiveNav] = useState(() => {
-    const tab = searchParams.get('tab');
-    const component = searchParams.get('component');
-    if (tab === 'whats-new' || tab === 'getting-started') return tab;
-    if (component) return component;
-    return 'button';
-  });
+  const [activeNav, setActiveNav] = useState(selectedComponent ?? 'button');
   const [_showCode, _setShowCode] = useState(true);
   const [_activeRightNav, _setActiveRightNav] = useState('usage');
-  const [selectedComponent, setSelectedComponent] = useState<string | null>(
-    () => {
-      const tab = searchParams.get('tab');
-      const component = searchParams.get('component');
-      if (tab === 'whats-new' || tab === 'getting-started') return tab;
-      if (component) return component;
-      return null;
-    },
-  );
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   useEffect(() => {
-    const params = new URLSearchParams();
-    params.set('page', 'docs');
-
-    if (selectedComponent === 'whats-new') {
-      params.set('tab', 'whats-new');
-    } else if (selectedComponent === 'getting-started') {
-      params.set('tab', 'getting-started');
-    } else if (selectedComponent !== null) {
-      params.set('component', selectedComponent);
+    if (selectedComponent !== null) {
+      setActiveNav(selectedComponent);
     }
-
-    const qs = params.toString();
-    if (qs === window.location.search.slice(1)) return;
-    const url = `${basePath}/pages/docsite/?${qs}`;
-    window.history.replaceState(window.history.state, '', url);
   }, [selectedComponent]);
 
   const headingMenu = (
@@ -5173,7 +5146,7 @@ export function DocsView({
               <XDSSideNavItem
                 label="Home"
                 isSelected={selectedComponent === null}
-                onClick={() => setSelectedComponent(null)}
+                onClick={() => onComponentChange(null)}
               />
             </XDSSideNavSection>
             <XDSSideNavSection title="Overview" isHeaderHidden>
@@ -5185,7 +5158,7 @@ export function DocsView({
                     activeNav === 'getting-started'
                   }
                   onClick={() => {
-                    setSelectedComponent('getting-started');
+                    onComponentChange('getting-started');
                     setActiveNav('getting-started');
                   }}
                 />
@@ -5193,7 +5166,7 @@ export function DocsView({
                   label="What's New"
                   isSelected={selectedComponent === 'whats-new'}
                   onClick={() => {
-                    setSelectedComponent('whats-new');
+                    onComponentChange('whats-new');
                     setActiveNav('whats-new');
                   }}
                 />
@@ -5206,7 +5179,7 @@ export function DocsView({
                         selectedComponent !== null && activeNav === item.key
                       }
                       onClick={() => {
-                        setSelectedComponent(item.key);
+                        onComponentChange(item.key);
                         setActiveNav(item.key);
                       }}
                     />
@@ -5221,7 +5194,7 @@ export function DocsView({
                         selectedComponent !== null && activeNav === pkg.key
                       }
                       onClick={() => {
-                        setSelectedComponent(pkg.key);
+                        onComponentChange(pkg.key);
                         setActiveNav(pkg.key);
                       }}
                     />
@@ -5240,7 +5213,7 @@ export function DocsView({
                       selectedComponent !== null && activeNav === item.key
                     }
                     onClick={() => {
-                      setSelectedComponent(item.key);
+                      onComponentChange(item.key);
                       setActiveNav(item.key);
                     }}
                   />
@@ -5253,11 +5226,11 @@ export function DocsView({
         {selectedComponent === null ? (
           <LibraryOverview
             onGetStarted={() => {
-              setSelectedComponent('getting-started');
+              onComponentChange('getting-started');
               setActiveNav('getting-started');
             }}
             onSelectComponent={(key: string) => {
-              setSelectedComponent(key);
+              onComponentChange(key);
               setActiveNav(key);
             }}
             onCraft={() => setActiveView('craft')}
@@ -5272,7 +5245,7 @@ export function DocsView({
           <LibraryPackagePage
             packageKey={selectedComponent}
             onSelectComponent={(key: string) => {
-              setSelectedComponent(key);
+              onComponentChange(key);
               setActiveNav(key);
             }}
             onCraft={() => setActiveView('craft')}
