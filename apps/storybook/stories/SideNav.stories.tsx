@@ -589,3 +589,49 @@ export const CollapsibleItems: Story = {
     </XDSSideNav>
   ),
 };
+
+// =============================================================================
+// Iconless Items with Nested Children
+// =============================================================================
+
+export const IconlessNestedItems: Story = {
+  name: 'Iconless Nested Items',
+  render: () => (
+    <XDSSideNav
+      header={
+        <XDSSideNavHeading
+          icon={
+            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+          }
+          heading="My App"
+        />
+      }>
+      <XDSSideNavSection title="Main">
+        <XDSSideNavItem
+          label="Dashboard"
+          icon={HomeIcon}
+          selectedIcon={HomeIconSolid}
+          isSelected
+          href="/dashboard"
+        />
+        <XDSSideNavItem
+          label="Settings"
+          icon={Cog6ToothIcon}
+          collapsible>
+          <XDSSideNavItem label="General" href="/settings/general" />
+          <XDSSideNavItem label="Security" href="/settings/security" />
+          <XDSSideNavItem
+            label="Notifications"
+            href="/settings/notifications"
+          />
+        </XDSSideNavItem>
+        <XDSSideNavItem label="Reports" collapsible>
+          <XDSSideNavItem label="Monthly" href="/reports/monthly" />
+          <XDSSideNavItem label="Quarterly" href="/reports/quarterly" />
+          <XDSSideNavItem label="Annual" href="/reports/annual" />
+        </XDSSideNavItem>
+        <XDSSideNavItem label="Analytics" icon={ChartBarIcon} href="/analytics" />
+      </XDSSideNavSection>
+    </XDSSideNav>
+  ),
+};
