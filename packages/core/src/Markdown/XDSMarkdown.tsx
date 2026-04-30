@@ -29,6 +29,8 @@ import {XDSCheckboxListItem} from '../CheckboxList/XDSCheckboxListItem';
 import {XDSList} from '../List/XDSList';
 import {XDSListItem} from '../List/XDSListItem';
 import {xdsClassName, mergeProps} from '../utils';
+import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
+import type {XDSLinkComponentType} from '../Link/types';
 import {useXDSStreamingText} from '../hooks/useXDSStreamingText';
 import {
   parseMarkdown,
@@ -611,6 +613,7 @@ function renderInline(
   onLinkClick: XDSMarkdownProps['onLinkClick'] | undefined,
   cursor: StreamingCursor,
   citationCtx: CitationContext | null,
+  LinkComponent: XDSLinkComponentType,
 ): React.ReactNode {
   switch (node.type) {
     case 'text':
@@ -619,7 +622,7 @@ function renderInline(
       return (
         <strong key={index} {...stylex.props(styles.bold)}>
           {node.children.map((c, i) =>
-            renderInline(c, i, onLinkClick, cursor, citationCtx),
+            renderInline(c, i, onLinkClick, cursor, citationCtx, LinkComponent),
           )}
         </strong>
       );
@@ -627,7 +630,7 @@ function renderInline(
       return (
         <em key={index}>
           {node.children.map((c, i) =>
-            renderInline(c, i, onLinkClick, cursor, citationCtx),
+            renderInline(c, i, onLinkClick, cursor, citationCtx, LinkComponent),
           )}
         </em>
       );
@@ -635,7 +638,7 @@ function renderInline(
       return (
         <del key={index} {...stylex.props(styles.strikethrough)}>
           {node.children.map((c, i) =>
-            renderInline(c, i, onLinkClick, cursor, citationCtx),
+            renderInline(c, i, onLinkClick, cursor, citationCtx, LinkComponent),
           )}
         </del>
       );
@@ -661,7 +664,7 @@ function renderInline(
         return (
           <span key={index}>
             {node.children.map((c, i) =>
-              renderInline(c, i, onLinkClick, cursor, citationCtx),
+              renderInline(c, i, onLinkClick, cursor, citationCtx, LinkComponent),
             )}
           </span>
         );
@@ -675,8 +678,12 @@ function renderInline(
             }
           }
         : undefined;
+      // Use the provider link component for non-external links so that
+      // framework routers (Next.js Link, React Router, etc.) can handle
+      // client-side navigation. External links keep target="_blank".
+      const Tag = isExternal ? 'a' : LinkComponent;
       return (
-        <a
+        <Tag
           key={index}
           href={safeHref}
           onClick={handleClick}
@@ -685,9 +692,9 @@ function renderInline(
             : {})}
           {...stylex.props(styles.link)}>
           {node.children.map((c, i) =>
-            renderInline(c, i, onLinkClick, cursor, citationCtx),
+            renderInline(c, i, onLinkClick, cursor, citationCtx, LinkComponent),
           )}
-        </a>
+        </Tag>
       );
     }
     case 'image': {
@@ -835,6 +842,7 @@ function renderBlock(
   citationCtx: CitationContext | null,
   contentWidthValue: string | null,
   contentAlign: 'start' | 'center',
+  LinkComponent: XDSLinkComponentType,
 ): React.ReactNode {
   const spacing = getElementSpacing(node, density);
   const isFirst = index === 0;
@@ -867,7 +875,7 @@ function renderBlock(
             isLast && styles.noMarginBlockEnd,
           )}>
           {node.children.map((c, i) =>
-            renderInline(c, i, onLinkClick, cursor, citationCtx),
+            renderInline(c, i, onLinkClick, cursor, citationCtx, LinkComponent),
           )}
         </Tag>
       );
@@ -888,7 +896,7 @@ function renderBlock(
             isLast && styles.noMarginBlockEnd,
           )}>
           {node.children.map((c, i) =>
-            renderInline(c, i, onLinkClick, cursor, citationCtx),
+            renderInline(c, i, onLinkClick, cursor, citationCtx, LinkComponent),
           )}
         </p>
       );
@@ -948,6 +956,7 @@ function renderBlock(
               citationCtx,
               contentWidthValue,
               contentAlign,
+              LinkComponent,
             ),
           )}
         </blockquote>
@@ -991,7 +1000,7 @@ function renderBlock(
                 const label = isInline ? (
                   <>
                     {firstChild.children.map((c, j) =>
-                      renderInline(c, j, onLinkClick, cursor, citationCtx),
+                      renderInline(c, j, onLinkClick, cursor, citationCtx, LinkComponent),
                     )}
                   </>
                 ) : (
@@ -1008,6 +1017,7 @@ function renderBlock(
                         citationCtx,
                         contentWidthValue,
                         contentAlign,
+                        LinkComponent,
                       ),
                     )}
                   </>
@@ -1070,7 +1080,7 @@ function renderBlock(
               const label = isInline ? (
                 <>
                   {firstChild.children.map((c, j) =>
-                    renderInline(c, j, onLinkClick, cursor, citationCtx),
+                    renderInline(c, j, onLinkClick, cursor, citationCtx, LinkComponent),
                   )}
                 </>
               ) : (
@@ -1087,6 +1097,7 @@ function renderBlock(
                       citationCtx,
                       contentWidthValue,
                       contentAlign,
+                      LinkComponent,
                     ),
                   )}
                 </>
@@ -1145,7 +1156,7 @@ function renderBlock(
                       alignStyle(node.alignments[i]),
                     )}>
                     {h.children.map((c, j) =>
-                      renderInline(c, j, onLinkClick, cursor, citationCtx),
+                      renderInline(c, j, onLinkClick, cursor, citationCtx, LinkComponent),
                     )}
                   </th>
                 ))}
@@ -1163,7 +1174,7 @@ function renderBlock(
                       alignStyle(node.alignments[j]),
                     )}>
                     {cell.children.map((c, k) =>
-                      renderInline(c, k, onLinkClick, cursor, citationCtx),
+                      renderInline(c, k, onLinkClick, cursor, citationCtx, LinkComponent),
                     )}
                   </td>
                 ));
@@ -1295,6 +1306,11 @@ export function XDSMarkdown({
 
   // Build citation context — numbers are assigned in encounter order during rendering.
   // This is recreated each render so numbering stays consistent with the AST.
+  // Resolve the link component from XDSLinkProvider context.
+  // Non-external links rendered inside markdown will use this component,
+  // enabling client-side navigation in Next.js, React Router, etc.
+  const LinkComponent = useXDSLinkComponent();
+
   const citationCtx: CitationContext | null = sources
     ? {sources, numberMap: new Map(), nextNumber: 1, style: citationStyle}
     : null;
@@ -1326,6 +1342,7 @@ export function XDSMarkdown({
               : contentWidth
             : null,
           contentAlign,
+          LinkComponent,
         ),
       )}
     </div>

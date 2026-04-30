@@ -1,6 +1,8 @@
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {XDSMarkdown} from './XDSMarkdown';
+import {XDSLinkProvider} from '../Link/XDSLinkProvider';
+import type React from 'react';
 
 describe('XDSMarkdown', () => {
   it('renders with role="document"', () => {
@@ -198,5 +200,126 @@ describe('XDSMarkdown', () => {
     expect(links).toHaveLength(2);
     expect(links[0].getAttribute('href')).toBe('https://example.com');
     expect(links[1].getAttribute('href')).toBe('/page');
+  });
+
+  // ---------------------------------------------------------------------------
+  // XDSLinkProvider integration
+  // ---------------------------------------------------------------------------
+
+  describe('XDSLinkProvider integration', () => {
+    it('renders relative links with the provider component', () => {
+      const CustomLink = ({
+        children,
+        ...props
+      }: React.ComponentPropsWithoutRef<'a'>) => (
+        <a data-custom-link {...props}>
+          {children}
+        </a>
+      );
+
+      const {container} = render(
+        <XDSLinkProvider component={CustomLink}>
+          <XDSMarkdown>{'[docs](/docs/dialog)'}</XDSMarkdown>
+        </XDSLinkProvider>,
+      );
+
+      const link = container.querySelector('[data-custom-link]');
+      expect(link).toBeInTheDocument();
+      expect(link!.getAttribute('href')).toBe('/docs/dialog');
+      expect(link!.textContent).toBe('docs');
+    });
+
+    it('renders external links as native <a> even with provider', () => {
+      const CustomLink = ({
+        children,
+        ...props
+      }: React.ComponentPropsWithoutRef<'a'>) => (
+        <a data-custom-link {...props}>
+          {children}
+        </a>
+      );
+
+      const {container} = render(
+        <XDSLinkProvider component={CustomLink}>
+          <XDSMarkdown>{'[GitHub](https://github.com)'}</XDSMarkdown>
+        </XDSLinkProvider>,
+      );
+
+      // External link should NOT use the custom component
+      const customLink = container.querySelector('[data-custom-link]');
+      expect(customLink).toBeNull();
+
+      // Should be a regular <a> with target="_blank"
+      const link = screen.getByText('GitHub');
+      expect(link.tagName).toBe('A');
+      expect(link.getAttribute('target')).toBe('_blank');
+      expect(link.getAttribute('rel')).toBe('noopener noreferrer');
+    });
+
+    it('falls back to native <a> when no provider is set', () => {
+      render(<XDSMarkdown>{'[page](/about)'}</XDSMarkdown>);
+      const link = screen.getByText('page');
+      expect(link.tagName).toBe('A');
+      expect(link.getAttribute('href')).toBe('/about');
+      // No target="_blank" for relative links
+      expect(link.getAttribute('target')).toBeNull();
+    });
+
+    it('provider component receives onClick from onLinkClick prop', () => {
+      const handleClick = vi.fn();
+      const CustomLink = ({
+        children,
+        ...props
+      }: React.ComponentPropsWithoutRef<'a'>) => (
+        <a data-custom-link {...props}>
+          {children}
+        </a>
+      );
+
+      const {container} = render(
+        <XDSLinkProvider component={CustomLink}>
+          <XDSMarkdown onLinkClick={handleClick}>
+            {'[settings](/settings)'}
+          </XDSMarkdown>
+        </XDSLinkProvider>,
+      );
+
+      const link = container.querySelector('[data-custom-link]')!;
+      fireEvent.click(link);
+      expect(handleClick).toHaveBeenCalledWith(
+        '/settings',
+        expect.any(Object),
+      );
+    });
+
+    it('renders mixed internal and external links correctly', () => {
+      const CustomLink = ({
+        children,
+        ...props
+      }: React.ComponentPropsWithoutRef<'a'>) => (
+        <a data-custom-link {...props}>
+          {children}
+        </a>
+      );
+
+      const {container} = render(
+        <XDSLinkProvider component={CustomLink}>
+          <XDSMarkdown>
+            {'[internal](/docs) and [external](https://example.com)'}
+          </XDSMarkdown>
+        </XDSLinkProvider>,
+      );
+
+      // Internal link uses custom component
+      const customLinks = container.querySelectorAll('[data-custom-link]');
+      expect(customLinks).toHaveLength(1);
+      expect(customLinks[0].getAttribute('href')).toBe('/docs');
+
+      // External link is native <a>
+      const externalLink = screen.getByText('external');
+      expect(externalLink.tagName).toBe('A');
+      expect(externalLink.getAttribute('target')).toBe('_blank');
+      expect(externalLink).not.toHaveAttribute('data-custom-link');
+    });
   });
 });
