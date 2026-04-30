@@ -25,22 +25,11 @@ const KEYBOARD_LARGE_STEP = 50;
 
 /**
  * Hit area bias: the pill sits off-center from the divider, so the grab zone
- * should shift toward the pill. The bias is derived from the pill width + gap
- * relative to the total hit area:
- *
- *   hit area   = var(--resize-handle-hit-area, 16px)
- *   pill width = var(--resize-handle-width, 3px)
- *   pill gap   = var(--resize-handle-pill-gap, 4px)  → 7px offset
- *
- *   shift = (pill width + gap) / hit area ÷ 2 ≈ 7/16/2 ≈ 22%
- *   So the origin shifts from 50% to ~62.5% toward the pill side
- *   (and 37.5% away from it).
- *
- * If these CSS custom properties change, the bias percentages should be
- * updated to match — or consider computing them with calc().
+ * shifts ~2:1 toward the pill side. Two-thirds of the hit area covers the pill,
+ * one-third covers the opposite side.
  */
-const HIT_AREA_BIAS_TOWARD = '62.5%';
-const HIT_AREA_BIAS_AWAY = '37.5%';
+const HIT_AREA_BIAS_TOWARD = '66.67%';
+const HIT_AREA_BIAS_AWAY = '33.33%';
 
 type PillPlacement = 'start' | 'end' | 'center' | 'auto';
 
