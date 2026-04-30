@@ -32,7 +32,6 @@ import {
 import {XDSTooltip} from '../Tooltip/XDSTooltip';
 import {XDSSpinner} from '../Spinner';
 
-import {edgeCompensation} from '../Layout/edgeCompensation.stylex';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {xdsClassName, mergeProps} from '../utils';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
@@ -488,12 +487,6 @@ export function XDSButton({
       }
     : undefined;
 
-  // Ghost buttons opt into edge compensation — they pull back at container
-  // edges via negative margin when placed as first/last child in a slot
-  // that sets --edge-inset-start/--edge-inset-end.
-  const isFlat = variant === 'ghost';
-  const edgeCompStyle = isFlat ? edgeCompensation.item : null;
-
   // Shared StyleX props for both button and link rendering
   const sharedStylexProps = stylex.props(
     styles.base,
@@ -503,7 +496,6 @@ export function XDSButton({
     buttonDisabled && styles.disabled,
     useAriaDisabled && styles.ariaDisabled,
     isLoadingState && loadingStyles.loading,
-    edgeCompStyle,
     renderAsLink && styles.link,
     xstyle,
   );
