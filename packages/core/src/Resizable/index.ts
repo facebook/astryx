@@ -12,6 +12,7 @@ export type {
   ResizableRegion,
   ResizableRegionConfig,
   ResizableProps,
+  XDSResizableConfig,
   UseXDSResizableSingleConfig,
   UseXDSResizableMultiConfig,
 } from './useXDSResizable';
