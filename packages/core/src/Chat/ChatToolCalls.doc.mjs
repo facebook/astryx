@@ -65,7 +65,6 @@ export const docs = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsZh = {
-  name: 'ChatToolCalls',
   usage: {
     description:
       'ChatToolCalls displays tool or function call invocations from an LLM response. Pass an array of calls and the component handles the rest — a single call renders inline, while multiple calls collapse into a summary with the latest call visible at the surface. Use it anywhere an AI agent shows what actions it took.',
