@@ -40,7 +40,6 @@ import {
   DevicePhoneMobileIcon,
   EyeIcon,
   PlusCircleIcon,
-  ArrowLeftEndOnRectangleIcon,
   ShoppingBagIcon,
   ShoppingCartIcon,
   BanknotesIcon,
@@ -858,7 +857,7 @@ export default function EditorPage() {
                   <XDSButton
                     label={isPanelCollapsed ? 'Expand panel' : 'Collapse panel'}
                     icon={
-                      <XDSIcon icon={ArrowLeftEndOnRectangleIcon} size="sm" />
+                      <XDSIcon icon={isPanelCollapsed ? ChevronDownIcon : ChevronUpIcon} size="sm" />
                     }
                     variant="ghost"
                     size="sm"
