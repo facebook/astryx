@@ -910,7 +910,23 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
         {view === 'preview' ? (
           isBlock ? (
             children
-          ) : viewport !== 'desktop' ? (
+          ) : viewport === 'desktop' ? (
+            <div
+              style={{
+                flex: 1,
+                overflow: 'hidden',
+              }}>
+              <iframe
+                src={`${basePath}${pathname}?embed=1`}
+                title={`${pageName} — ${viewport}`}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  border: 'none',
+                }}
+              />
+            </div>
+          ) : (
             <div
               style={{
                 flex: 1,
@@ -932,14 +948,6 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
                   backgroundColor: '#fff',
                 }}
               />
-            </div>
-          ) : (
-            <div
-              style={{
-                flex: 1,
-                overflow: 'auto',
-              }}>
-              {children}
             </div>
           )
         ) : (
