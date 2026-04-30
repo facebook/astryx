@@ -210,7 +210,7 @@ export interface XDSClickableCardProps extends XDSBaseProps {
 export function XDSClickableCard({
   label,
   onClick: onClickProp,
-  onMouseUp: callerOnMouseUp,
+  onMouseUp: onMouseUpProp,
   href,
   target,
   isDisabled = false,
@@ -221,8 +221,8 @@ export function XDSClickableCard({
   height,
   maxWidth,
   ref,
-  xstyle: callerXstyle,
-  className: callerClassName,
+  xstyle: xstyleProp,
+  className: classNameProp,
   style,
   ...props
 }: XDSClickableCardProps) {
@@ -238,10 +238,10 @@ export function XDSClickableCard({
     disabled: isDisabled,
   });
 
-  const handleMouseUp = callerOnMouseUp
+  const handleMouseUp = onMouseUpProp
     ? (e: MouseEvent<HTMLElement>) => {
         onMouseUp(e);
-        callerOnMouseUp(e);
+        onMouseUpProp(e);
       }
     : onMouseUp;
 
@@ -261,8 +261,8 @@ export function XDSClickableCard({
       padding={padding}
       variant={variant}
       className={
-        callerClassName
-          ? `${xdsClassName('clickable-card', {variant})} ${callerClassName}`
+        classNameProp
+          ? `${xdsClassName('clickable-card', {variant})} ${classNameProp}`
           : xdsClassName('clickable-card', {variant})
       }
       xstyle={
@@ -272,7 +272,7 @@ export function XDSClickableCard({
           !isDisabled && styles.overlay,
           !isDisabled && styles.hoverOnPointer,
           isDisabled && styles.disabled,
-          callerXstyle,
+          xstyleProp,
         ] as unknown as StyleXStyles
       }
       style={style}

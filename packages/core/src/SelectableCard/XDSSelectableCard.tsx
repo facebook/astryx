@@ -264,8 +264,8 @@ export function XDSSelectableCard({
   label,
   isSelected,
   onChange,
-  onClick: callerOnClick,
-  onMouseUp: callerOnMouseUp,
+  onClick: onClickProp,
+  onMouseUp: onMouseUpProp,
   isDisabled = false,
   children,
   padding,
@@ -274,8 +274,8 @@ export function XDSSelectableCard({
   height,
   maxWidth,
   ref,
-  xstyle: callerXstyle,
-  className: callerClassName,
+  xstyle: xstyleProp,
+  className: classNameProp,
   style,
   ...props
 }: XDSSelectableCardProps) {
@@ -298,17 +298,17 @@ export function XDSSelectableCard({
     disabled: isDisabled,
   });
 
-  const composedOnClick = callerOnClick
+  const composedOnClick = onClickProp
     ? (e: MouseEvent<HTMLElement>) => {
         onClick(e);
-        callerOnClick(e);
+        onClickProp(e);
       }
     : onClick;
 
-  const composedOnMouseUp = callerOnMouseUp
+  const composedOnMouseUp = onMouseUpProp
     ? (e: MouseEvent<HTMLElement>) => {
         onMouseUp(e);
-        callerOnMouseUp(e);
+        onMouseUpProp(e);
       }
     : onMouseUp;
 
@@ -326,11 +326,11 @@ export function XDSSelectableCard({
       padding={padding}
       variant={variant}
       className={
-        callerClassName
+        classNameProp
           ? `${xdsClassName('selectable-card', {
               variant,
               selected: isSelected ? 'true' : 'false',
-            })} ${callerClassName}`
+            })} ${classNameProp}`
           : xdsClassName('selectable-card', {
               variant,
               selected: isSelected ? 'true' : 'false',
@@ -344,7 +344,7 @@ export function XDSSelectableCard({
           !isDisabled && styles.overlay,
           !isDisabled && styles.hoverOnPointer,
           isDisabled && styles.disabled,
-          callerXstyle,
+          xstyleProp,
         ] as unknown as StyleXStyles
       }
       style={style}
