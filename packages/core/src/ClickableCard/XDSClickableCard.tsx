@@ -210,6 +210,7 @@ export interface XDSClickableCardProps extends XDSBaseProps {
 export function XDSClickableCard({
   label,
   onClick: onClickProp,
+  onMouseUp: _onMouseUp,
   href,
   target,
   isDisabled = false,
@@ -221,6 +222,7 @@ export function XDSClickableCard({
   maxWidth,
   ref,
   xstyle: callerXstyle,
+  className: _className,
   ...props
 }: XDSClickableCardProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
