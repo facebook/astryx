@@ -169,7 +169,6 @@ export interface XDSClickableCardProps extends XDSBaseProps {
 
   /** Maximum width of the card. */
   maxWidth?: SizeValue;
-
 }
 
 // =============================================================================
@@ -221,6 +220,7 @@ export function XDSClickableCard({
   height,
   maxWidth,
   ref,
+  xstyle: callerXstyle,
   ...props
 }: XDSClickableCardProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -251,13 +251,16 @@ export function XDSClickableCard({
       padding={padding}
       variant={variant}
       className={xdsClassName('clickable-card', {variant})}
-      xstyle={[
-        styles.interactive,
-        styles.focusWithin,
-        !isDisabled && styles.overlay,
-        !isDisabled && styles.hoverOnPointer,
-        isDisabled && styles.disabled,
-      ] as unknown as StyleXStyles}
+      xstyle={
+        [
+          styles.interactive,
+          styles.focusWithin,
+          !isDisabled && styles.overlay,
+          !isDisabled && styles.hoverOnPointer,
+          isDisabled && styles.disabled,
+          callerXstyle,
+        ] as unknown as StyleXStyles
+      }
       onClick={!isDisabled ? onClick : undefined}
       onMouseUp={!isDisabled ? onMouseUp : undefined}
       {...props}>
