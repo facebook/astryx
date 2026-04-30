@@ -4,6 +4,6 @@ export const doc = {
   name: 'ChatMessageList — Density',
   description: 'Side-by-side comparison of compact, balanced, and spacious densities. Use compact in sidebars or panels, balanced for most full-page chat, and spacious for long-form reading.',
   isReady: true,
-  aspectRatio: 16 / 9,
+  aspectRatio: 3 / 4,
   componentsUsed: ['Chat', 'ChatMessageList', 'Layout', 'Text', 'Avatar'],
 };

@@ -5,20 +5,13 @@ import {
   XDSChatMessage,
   XDSChatMessageBubble,
 } from '@xds/core/Chat';
-import {XDSHStack, XDSVStack} from '@xds/core/Layout';
+import {XDSVStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import {XDSAvatar} from '@xds/core/Avatar';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
-  root: {
-    height: 420,
-  },
-  column: {
-    flex: 1,
-    minWidth: 0,
-  },
-  list: {
+  section: {
     flex: 1,
     minHeight: 0,
   },
@@ -34,13 +27,13 @@ const AVATAR_SIZE = {
 
 export default function ChatMessageListDensity() {
   return (
-    <XDSHStack gap={4} xstyle={styles.root}>
-      {DENSITIES.map((density) => (
-        <XDSVStack key={density} gap={2} xstyle={styles.column}>
+    <XDSVStack gap={4}>
+      {DENSITIES.map(density => (
+        <XDSVStack key={density} gap={2}>
           <XDSText type="supporting" color="secondary">
-            {density}
+            {density.charAt(0).toUpperCase() + density.slice(1)}
           </XDSText>
-          <XDSVStack xstyle={styles.list}>
+          <XDSVStack xstyle={styles.section}>
             <XDSChatMessageList density={density}>
               <XDSChatMessage sender="user">
                 <XDSChatMessageBubble>
@@ -56,13 +49,10 @@ export default function ChatMessageListDensity() {
                   elements.
                 </XDSChatMessageBubble>
               </XDSChatMessage>
-              <XDSChatMessage sender="user">
-                <XDSChatMessageBubble>Makes sense!</XDSChatMessageBubble>
-              </XDSChatMessage>
             </XDSChatMessageList>
           </XDSVStack>
         </XDSVStack>
       ))}
-    </XDSHStack>
+    </XDSVStack>
   );
 }
