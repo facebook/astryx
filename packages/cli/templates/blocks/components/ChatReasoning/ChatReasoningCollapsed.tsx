@@ -1,6 +1,6 @@
 'use client';
 
-import {XDSChatReasoning} from '../../../../../lab/src/ChatReasoning/XDSChatReasoning';
+import {XDSChatReasoning} from '@xds/lab/ChatReasoning';
 import {XDSStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 

@@ -22,6 +22,18 @@
   ],
   "main": "./src/index.ts",
   "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./ChatReasoning": {
+      "source": "./src/ChatReasoning/XDSChatReasoning.tsx",
+      "types": "./src/ChatReasoning/XDSChatReasoning.tsx",
+      "default": "./src/ChatReasoning/XDSChatReasoning.tsx"
+    }
+  },
   "sideEffects": false,
   "peerDependencies": {
     "@stylexjs/stylex": ">=0.10.0",
