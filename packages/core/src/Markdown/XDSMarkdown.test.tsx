@@ -1,6 +1,7 @@
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {XDSMarkdown} from './XDSMarkdown';
+import type {MarkdownInlinePlugin} from './XDSMarkdown';
 
 describe('XDSMarkdown', () => {
   it('renders with role="document"', () => {
@@ -198,5 +199,188 @@ describe('XDSMarkdown', () => {
     expect(links).toHaveLength(2);
     expect(links[0].getAttribute('href')).toBe('https://example.com');
     expect(links[1].getAttribute('href')).toBe('/page');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// inlinePlugins
+// ---------------------------------------------------------------------------
+
+// Helper: creates a plugin that turns T-numbers into links
+function createTaskPlugin(): MarkdownInlinePlugin {
+  return {
+    pattern: /\bT(\d+)\b/g,
+    render: (match, key) => (
+      <a key={key} href={`https://tasks.example.com/${match[1]}`} data-testid="task-link">
+        {match[0]}
+      </a>
+    ),
+  };
+}
+
+// Helper: creates a plugin that turns D-numbers into links
+function createDiffPlugin(): MarkdownInlinePlugin {
+  return {
+    pattern: /\bD(\d+)\b/g,
+    render: (match, key) => (
+      <a key={key} href={`https://diffs.example.com/${match[1]}`} data-testid="diff-link">
+        {match[0]}
+      </a>
+    ),
+  };
+}
+
+describe('inlinePlugins', () => {
+  it('transforms text patterns into custom elements', () => {
+    const taskPlugin = createTaskPlugin();
+    const {container} = render(
+      <XDSMarkdown inlinePlugins={[taskPlugin]}>
+        {'Check out T12345 for details'}
+      </XDSMarkdown>,
+    );
+    const link = container.querySelector('[data-testid="task-link"]');
+    expect(link).toBeInTheDocument();
+    expect(link!.getAttribute('href')).toBe('https://tasks.example.com/12345');
+    expect(link!.textContent).toBe('T12345');
+  });
+
+  it('supports multiple plugins', () => {
+    const {container} = render(
+      <XDSMarkdown inlinePlugins={[createTaskPlugin(), createDiffPlugin()]}>
+        {'See T12345 and D67890'}
+      </XDSMarkdown>,
+    );
+    const taskLink = container.querySelector('[data-testid="task-link"]');
+    const diffLink = container.querySelector('[data-testid="diff-link"]');
+    expect(taskLink).toBeInTheDocument();
+    expect(taskLink!.getAttribute('href')).toBe('https://tasks.example.com/12345');
+    expect(diffLink).toBeInTheDocument();
+    expect(diffLink!.getAttribute('href')).toBe('https://diffs.example.com/67890');
+  });
+
+  it('does not transform patterns inside fenced code blocks', () => {
+    const {container} = render(
+      <XDSMarkdown inlinePlugins={[createTaskPlugin()]}>
+        {'```\nT12345\n```'}
+      </XDSMarkdown>,
+    );
+    const link = container.querySelector('[data-testid="task-link"]');
+    expect(link).toBeNull();
+    expect(container.textContent).toContain('T12345');
+  });
+
+  it('does not transform patterns inside inline code', () => {
+    const {container} = render(
+      <XDSMarkdown inlinePlugins={[createTaskPlugin()]}>
+        {'Use `T12345` in your code'}
+      </XDSMarkdown>,
+    );
+    const link = container.querySelector('[data-testid="task-link"]');
+    expect(link).toBeNull();
+    expect(container.textContent).toContain('T12345');
+  });
+
+  it('works alongside regular markdown links', () => {
+    const {container} = render(
+      <XDSMarkdown inlinePlugins={[createTaskPlugin()]}>
+        {'Visit [example](https://example.com) and check T12345'}
+      </XDSMarkdown>,
+    );
+    const taskLink = container.querySelector('[data-testid="task-link"]');
+    expect(taskLink).toBeInTheDocument();
+    const mdLink = container.querySelector('a[href="https://example.com"]');
+    expect(mdLink).toBeInTheDocument();
+    expect(mdLink!.textContent).toBe('example');
+  });
+
+  it('first plugin wins for overlapping patterns', () => {
+    const customPlugin: MarkdownInlinePlugin = {
+      pattern: /T\d+/g,
+      render: (match, key) => (
+        <span key={key} data-testid="custom-match">{match[0]}</span>
+      ),
+    };
+    const broaderPlugin: MarkdownInlinePlugin = {
+      pattern: /[A-Z]\d+/g,
+      render: (match, key) => (
+        <span key={key} data-testid="broader-match">{match[0]}</span>
+      ),
+    };
+    const {container} = render(
+      <XDSMarkdown inlinePlugins={[customPlugin, broaderPlugin]}>
+        {'Check T12345'}
+      </XDSMarkdown>,
+    );
+    expect(container.querySelector('[data-testid="custom-match"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-testid="broader-match"]')).toBeNull();
+  });
+
+  it('skips matches when getEndIndex returns false', () => {
+    const plugin: MarkdownInlinePlugin = {
+      pattern: /\bT(\d+)\b/g,
+      getEndIndex: () => false,
+      render: (match, key) => (
+        <a key={key} data-testid="task-link">{match[0]}</a>
+      ),
+    };
+    const {container} = render(
+      <XDSMarkdown inlinePlugins={[plugin]}>
+        {'Check T12345 for details'}
+      </XDSMarkdown>,
+    );
+    const link = container.querySelector('[data-testid="task-link"]');
+    expect(link).toBeNull();
+    expect(container.textContent).toContain('T12345');
+  });
+
+  it('uses getEndIndex to adjust match boundaries', () => {
+    const plugin: MarkdownInlinePlugin = {
+      pattern: /TAG:/g,
+      getEndIndex: (text, match) => {
+        const afterMatch = text.slice(match.index! + match[0].length);
+        const wordMatch = afterMatch.match(/^(\S+)/);
+        if (wordMatch) {
+          return match.index! + match[0].length + wordMatch[1].length;
+        }
+        return match.index! + match[0].length;
+      },
+      render: (match, key) => {
+        return <span key={key} data-testid="tag-match">{match[0]}</span>;
+      },
+    };
+    const {container} = render(
+      <XDSMarkdown inlinePlugins={[plugin]}>
+        {'See TAG:important here'}
+      </XDSMarkdown>,
+    );
+    const tag = container.querySelector('[data-testid="tag-match"]');
+    expect(tag).toBeInTheDocument();
+    expect(container.textContent).toContain('here');
+  });
+
+  it('renders identically when no inlinePlugins are provided', () => {
+    const withPlugins = render(
+      <XDSMarkdown inlinePlugins={[]}>
+        {'Hello **world** and `code`'}
+      </XDSMarkdown>,
+    );
+    const withoutPlugins = render(
+      <XDSMarkdown>
+        {'Hello **world** and `code`'}
+      </XDSMarkdown>,
+    );
+    expect(withPlugins.container.textContent).toBe(withoutPlugins.container.textContent);
+  });
+
+  it('transforms patterns inside bold/italic text', () => {
+    const {container} = render(
+      <XDSMarkdown inlinePlugins={[createTaskPlugin()]}>
+        {'**T12345**'}
+      </XDSMarkdown>,
+    );
+    const link = container.querySelector('[data-testid="task-link"]');
+    expect(link).toBeInTheDocument();
+    expect(link!.textContent).toBe('T12345');
+    expect(link!.closest('strong')).toBeInTheDocument();
   });
 });
