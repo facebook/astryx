@@ -3,7 +3,7 @@
 import {useState, useCallback, useEffect, useMemo, useRef} from 'react';
 import {usePathname, useRouter} from 'next/navigation';
 import {XDSText} from '@xds/core/Text';
-import {XDSSelector} from '@xds/core/Selector';
+import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {XDSCommandPalette} from '@xds/core/CommandPalette';
@@ -845,19 +845,20 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
           </XDSSegmentedControl>
         )}
 
-        <XDSSelector
-          label="Theme"
-          isLabelHidden
-          options={[
-            {value: 'default', label: 'Default'},
-            {value: 'neutral', label: 'Neutral'},
-            {value: 'brutalist', label: 'Brutalist'},
-            {value: 'matcha', label: 'Matcha'},
-            {value: 'daily', label: 'Daily'},
+        <XDSDropdownMenu
+          button={{
+            label: themeName.charAt(0).toUpperCase() + themeName.slice(1),
+            variant: 'ghost',
+            size: 'sm',
+          }}
+          hasChevron
+          items={[
+            {label: 'Default', onClick: () => setThemeName('default')},
+            {label: 'Neutral', onClick: () => setThemeName('neutral')},
+            {label: 'Brutalist', onClick: () => setThemeName('brutalist')},
+            {label: 'Matcha', onClick: () => setThemeName('matcha')},
+            {label: 'Daily', onClick: () => setThemeName('daily')},
           ]}
-          value={themeName}
-          onChange={setThemeName}
-          size="sm"
         />
         <XDSButton
           variant="ghost"

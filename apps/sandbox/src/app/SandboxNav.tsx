@@ -4,7 +4,7 @@ import * as stylex from '@stylexjs/stylex';
 import {usePathname} from 'next/navigation';
 import Link from 'next/link';
 import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
-import {XDSSelector} from '@xds/core/Selector';
+import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSText} from '@xds/core/Text';
 import {useThemeControls} from './providers';
 import type {ThemeMode} from '@xds/core/theme';
@@ -12,6 +12,9 @@ import {categories} from './sandboxPages';
 import {
   HomeIcon,
   WrenchIcon,
+  PaletteIcon,
+  SunIcon,
+  MoonIcon,
   BoxIcon,
   AppWindowIcon,
   BlocksIcon,
@@ -46,19 +49,19 @@ const styles = stylex.create({
 });
 
 function SandboxHeader() {
-  const {themeName, setThemeName, mode, setMode} = useThemeControls();
+  const {setThemeName, mode, setMode} = useThemeControls();
 
-  const themeOptions = [
-    {value: 'default', label: 'Default'},
-    {value: 'neutral', label: 'Neutral'},
-    {value: 'brutalist', label: 'Brutalist'},
-    {value: 'matcha', label: 'Matcha'},
-    {value: 'daily', label: 'Daily'},
+  const themeItems = [
+    {label: 'Default', onClick: () => setThemeName('default')},
+    {label: 'Neutral', onClick: () => setThemeName('neutral')},
+    {label: 'Brutalist', onClick: () => setThemeName('brutalist')},
+    {label: 'Matcha', onClick: () => setThemeName('matcha')},
+    {label: 'Daily', onClick: () => setThemeName('daily')},
   ];
 
-  const modeOptions = [
-    {value: 'light', label: 'Light'},
-    {value: 'dark', label: 'Dark'},
+  const modeItems = [
+    {label: 'Light', onClick: () => setMode('light' as ThemeMode)},
+    {label: 'Dark', onClick: () => setMode('dark' as ThemeMode)},
   ];
 
   return (
@@ -67,21 +70,50 @@ function SandboxHeader() {
         Sandbox
       </XDSText>
       <div {...stylex.props(styles.controls)}>
-        <XDSSelector
-          label="Theme"
-          isLabelHidden
-          options={themeOptions}
-          value={themeName}
-          onChange={setThemeName}
-          size="sm"
+        <XDSDropdownMenu
+          button={{
+            label: 'Theme',
+
+            icon: (
+              <PaletteIcon
+                width={16}
+                height={16}
+                style={{color: 'var(--color-icon-secondary)'}}
+              />
+            ),
+
+            variant: 'ghost',
+            size: 'sm',
+            isIconOnly: true,
+          }}
+          menuWidth={160}
+          items={themeItems}
         />
-        <XDSSelector
-          label="Mode"
-          isLabelHidden
-          options={modeOptions}
-          value={mode === 'system' ? 'light' : mode}
-          onChange={v => setMode(v as ThemeMode)}
-          size="sm"
+        <XDSDropdownMenu
+          button={{
+            label: mode === 'dark' ? 'Dark mode' : 'Light mode',
+
+            icon:
+              mode === 'dark' ? (
+                <MoonIcon
+                  width={16}
+                  height={16}
+                  style={{color: 'var(--color-icon-secondary)'}}
+                />
+              ) : (
+                <SunIcon
+                  width={16}
+                  height={16}
+                  style={{color: 'var(--color-icon-secondary)'}}
+                />
+              ),
+
+            variant: 'ghost',
+            size: 'sm',
+            isIconOnly: true,
+          }}
+          menuWidth={160}
+          items={modeItems}
         />
       </div>
     </div>
