@@ -18,6 +18,7 @@ import docblockExampleFormatRule from './docblock-example-format.js';
 import noStylexNullOverrideRule from './no-stylex-null-override.js';
 import noReactIntrospectionRule from './no-react-introspection.js';
 import noClassnameClobberRule from './no-classname-clobber.js';
+import noHardcodedAnchorRule from './no-hardcoded-anchor.js';
 
 // =============================================================================
 // Rule: no-hardcoded-styles
@@ -224,6 +225,7 @@ const plugin = {
     'no-stylex-null-override': noStylexNullOverrideRule,
     'no-react-introspection': noReactIntrospectionRule,
     'no-classname-clobber': noClassnameClobberRule,
+    'no-hardcoded-anchor': noHardcodedAnchorRule,
   },
   configs: {},
 };
@@ -241,6 +243,7 @@ plugin.configs.strict = {
     '@xds/no-stylex-null-override': 'error',
     '@xds/no-react-introspection': 'error',
     '@xds/no-classname-clobber': 'error',
+    '@xds/no-hardcoded-anchor': 'error',
   },
 };
 
@@ -257,6 +260,7 @@ plugin.configs.recommended = {
     '@xds/no-stylex-null-override': 'warn',
     '@xds/no-react-introspection': 'error',
     '@xds/no-classname-clobber': 'error',
+    '@xds/no-hardcoded-anchor': 'warn',
   },
 };
 

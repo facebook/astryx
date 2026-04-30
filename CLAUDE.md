@@ -111,6 +111,7 @@ Documentation lives in two places:
 |PATTERN: CSS fallback values -> stylex.firstThatWorks() (not manual fallback)
 |PATTERN: dynamic/runtime values -> stylex.create({ s: (val) => ({ prop: val }) }) (not inline styles)
 |PATTERN: conditional styles -> stylex.props(condition && styles.x) (not className toggling)
+|PATTERN: link elements -> useXDSLinkComponent() (not hardcoded <a>). Consumers swap via XDSLinkProvider for framework routers (Next.js, React Router)
 |VERIFY: node internal/stylex-capabilities/scan.mjs
 
 <!-- STYLEX-CAPS:END -->

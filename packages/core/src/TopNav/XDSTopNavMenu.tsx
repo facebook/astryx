@@ -29,6 +29,7 @@ import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useTopNavSlot} from './TopNavContext';
 import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
 import {useXDSAppShellMobile} from '../AppShell/XDSAppShellMobileContext';
+import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import {
   colorVars,
   spacingVars,
@@ -319,6 +320,7 @@ export function XDSTopNavMenu({
 }: XDSTopNavMenuProps) {
   const renderMode = useXDSTopNavRenderMode();
   const {closeMobileNav} = useXDSAppShellMobile();
+  const LinkComponent = useXDSLinkComponent();
   const [drawerExpanded, setDrawerExpanded] = useState(false);
   const menuId = useId();
 
@@ -354,10 +356,10 @@ export function XDSTopNavMenu({
           )}>
           <div {...stylex.props(drawerStyles.itemsInner)}>
             {items.map((item, i) => (
-              <a
+              <LinkComponent
                 key={i}
                 href={item.href}
-                onClick={e => {
+                onClick={(e: React.MouseEvent) => {
                   item.onClick?.();
                   closeMobileNav();
                 }}
@@ -375,7 +377,7 @@ export function XDSTopNavMenu({
                     </span>
                   )}
                 </span>
-              </a>
+              </LinkComponent>
             ))}
           </div>
         </div>

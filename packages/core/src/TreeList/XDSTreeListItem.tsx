@@ -24,6 +24,7 @@ import {
 } from '../theme/tokens.stylex';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {xdsClassName, mergeProps} from '../utils';
+import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import {XDSTreeListBranches} from './XDSTreeListBranches';
 import type {XDSTreeListDensity} from './XDSTreeListTypes';
 
@@ -274,6 +275,7 @@ export function XDSTreeListItem({
 }: XDSTreeListItemInternalProps) {
   const labelId = useId();
   const descriptionId = useId();
+  const LinkComponent = useXDSLinkComponent();
   const isInteractive = onClick != null || href != null;
 
   const handleToggle = useMemo(
@@ -356,7 +358,7 @@ export function XDSTreeListItem({
         <span {...stylex.props(styles.startContent)}>{startContent}</span>
       )}
       {href != null ? (
-        <a
+        <LinkComponent
           href={href}
           target={target}
           aria-disabled={isDisabled || undefined}
@@ -365,7 +367,7 @@ export function XDSTreeListItem({
           tabIndex={isDisabled ? -1 : undefined}
           {...stylex.props(styles.invisibleAnchor)}>
           {labelAndDescription}
-        </a>
+        </LinkComponent>
       ) : onClick != null ? (
         <button
           type="button"

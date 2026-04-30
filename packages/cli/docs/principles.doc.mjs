@@ -80,6 +80,7 @@ const overrides = stylex.create({
             'Inline styles on raw elements. Use xstyle on XDS components',
             'Hardcoded colors (#fff). Use var(--color-*)',
             'Hardcoded spacing (16px). Use spacing tokens or var(--spacing-*)',
+            'Hardcoded <a> elements. Use useXDSLinkComponent() so consumers can swap in their framework router via XDSLinkProvider',
             'Inventing props. Read component docs first',
           ],
         },

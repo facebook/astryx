@@ -25,6 +25,7 @@ import {
   fontWeightVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 
 // =============================================================================
 // Styles
@@ -126,6 +127,7 @@ export function XDSTopNavMegaMenuFeaturedCard({
   linkHref,
   children,
 }: XDSTopNavMegaMenuFeaturedCardProps) {
+  const LinkComponent = useXDSLinkComponent();
   return (
     <div
       {...mergeProps(
@@ -141,9 +143,9 @@ export function XDSTopNavMegaMenuFeaturedCard({
           <span {...stylex.props(styles.description)}>{description}</span>
         )}
         {linkLabel && linkHref && (
-          <a href={linkHref} {...stylex.props(styles.link)}>
+          <LinkComponent href={linkHref} {...stylex.props(styles.link)}>
             {linkLabel} →
-          </a>
+          </LinkComponent>
         )}
         {children}
       </div>

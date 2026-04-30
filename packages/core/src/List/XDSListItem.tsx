@@ -29,6 +29,7 @@ import {
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSListContext} from './XDSListContext';
 import {xdsClassName, mergeProps} from '../utils';
+import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 
 // =============================================================================
 // Types
@@ -343,6 +344,7 @@ export function XDSListItem({
   ...restProps
 }: XDSListItemProps) {
   const ctx = useContext(XDSListContext);
+  const LinkComponent = useXDSLinkComponent();
   const density = ctx?.density ?? 'balanced';
   const hasDividers = ctx?.hasDividers ?? false;
   const listStyle = ctx?.listStyle ?? 'none';
@@ -386,7 +388,7 @@ export function XDSListItem({
       )}
 
       {href != null ? (
-        <a
+        <LinkComponent
           href={href}
           target={target}
           aria-disabled={isDisabled || undefined}
@@ -396,7 +398,7 @@ export function XDSListItem({
             isDisabled && styles.disabledContent,
           )}>
           {labelAndDescription}
-        </a>
+        </LinkComponent>
       ) : onClick != null ? (
         <button
           type="button"

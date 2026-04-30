@@ -25,6 +25,7 @@ import {
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {useXDSNavMenuContext} from './XDSNavMenuContext';
+import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 
 const styles = stylex.create({
   root: {
@@ -120,7 +121,8 @@ export function XDSNavMenuItem({
     ctx?.closeMenu();
   }, [isDisabled, onClick, ctx]);
 
-  const Element = href ? 'a' : 'div';
+  const LinkComponent = useXDSLinkComponent();
+  const Element = href ? LinkComponent : 'div';
 
   return (
     <Element

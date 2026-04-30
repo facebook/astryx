@@ -42,6 +42,7 @@ import {XDSCard} from '../Card/XDSCard';
 import type {XDSCardVariant} from '../Card/XDSCard';
 import {useClickableContainer} from '../hooks/useClickableContainer';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 
 // =============================================================================
 // Styles — only the interactive layer, Card handles everything else
@@ -228,6 +229,7 @@ export function XDSClickableCard({
 }: XDSClickableCardProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const interactiveRef = useRef<HTMLElement | null>(null);
+  const LinkComponent = useXDSLinkComponent();
 
   const {onClick, onMouseUp} = useClickableContainer({
     containerRef,
@@ -280,7 +282,7 @@ export function XDSClickableCard({
       onMouseUp={!isDisabled ? handleMouseUp : undefined}
       {...props}>
       {isLink ? (
-        <a
+        <LinkComponent
           ref={interactiveRef as React.Ref<HTMLAnchorElement>}
           href={href}
           target={target}

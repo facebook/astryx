@@ -30,6 +30,8 @@ import {XDSList} from '../List/XDSList';
 import {XDSListItem} from '../List/XDSListItem';
 import {xdsClassName, mergeProps} from '../utils';
 import {useXDSStreamingText} from '../hooks/useXDSStreamingText';
+import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
+import type {XDSLinkComponentType} from '../Link/types';
 import {
   parseMarkdown,
   parseMarkdownIncremental,
@@ -611,6 +613,7 @@ function renderInline(
   onLinkClick: XDSMarkdownProps['onLinkClick'] | undefined,
   cursor: StreamingCursor,
   citationCtx: CitationContext | null,
+  linkComponent: XDSLinkComponentType = 'a',
 ): React.ReactNode {
   switch (node.type) {
     case 'text':
@@ -619,7 +622,7 @@ function renderInline(
       return (
         <strong key={index} {...stylex.props(styles.bold)}>
           {node.children.map((c, i) =>
-            renderInline(c, i, onLinkClick, cursor, citationCtx),
+            renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent),
           )}
         </strong>
       );
@@ -627,7 +630,7 @@ function renderInline(
       return (
         <em key={index}>
           {node.children.map((c, i) =>
-            renderInline(c, i, onLinkClick, cursor, citationCtx),
+            renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent),
           )}
         </em>
       );
@@ -635,7 +638,7 @@ function renderInline(
       return (
         <del key={index} {...stylex.props(styles.strikethrough)}>
           {node.children.map((c, i) =>
-            renderInline(c, i, onLinkClick, cursor, citationCtx),
+            renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent),
           )}
         </del>
       );
@@ -661,7 +664,7 @@ function renderInline(
         return (
           <span key={index}>
             {node.children.map((c, i) =>
-              renderInline(c, i, onLinkClick, cursor, citationCtx),
+              renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent),
             )}
           </span>
         );
@@ -675,8 +678,12 @@ function renderInline(
             }
           }
         : undefined;
+      // Use linkComponent for internal links, native <a> for external links.
+      // Framework routers (Next.js, React Router) handle internal navigation;
+      // external links with target="_blank" should use a plain anchor.
+      const LinkTag = isExternal ? 'a' : linkComponent;
       return (
-        <a
+        <LinkTag
           key={index}
           href={safeHref}
           onClick={handleClick}
@@ -685,9 +692,9 @@ function renderInline(
             : {})}
           {...stylex.props(styles.link)}>
           {node.children.map((c, i) =>
-            renderInline(c, i, onLinkClick, cursor, citationCtx),
+            renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent),
           )}
-        </a>
+        </LinkTag>
       );
     }
     case 'image': {
@@ -835,6 +842,7 @@ function renderBlock(
   citationCtx: CitationContext | null,
   contentWidthValue: string | null,
   contentAlign: 'start' | 'center',
+  linkComponent: XDSLinkComponentType = 'a',
 ): React.ReactNode {
   const spacing = getElementSpacing(node, density);
   const isFirst = index === 0;
@@ -867,7 +875,7 @@ function renderBlock(
             isLast && styles.noMarginBlockEnd,
           )}>
           {node.children.map((c, i) =>
-            renderInline(c, i, onLinkClick, cursor, citationCtx),
+            renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent),
           )}
         </Tag>
       );
@@ -888,7 +896,7 @@ function renderBlock(
             isLast && styles.noMarginBlockEnd,
           )}>
           {node.children.map((c, i) =>
-            renderInline(c, i, onLinkClick, cursor, citationCtx),
+            renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent),
           )}
         </p>
       );
@@ -948,6 +956,7 @@ function renderBlock(
               citationCtx,
               contentWidthValue,
               contentAlign,
+              linkComponent,
             ),
           )}
         </blockquote>
@@ -991,7 +1000,7 @@ function renderBlock(
                 const label = isInline ? (
                   <>
                     {firstChild.children.map((c, j) =>
-                      renderInline(c, j, onLinkClick, cursor, citationCtx),
+                      renderInline(c, j, onLinkClick, cursor, citationCtx, linkComponent),
                     )}
                   </>
                 ) : (
@@ -1008,6 +1017,7 @@ function renderBlock(
                         citationCtx,
                         contentWidthValue,
                         contentAlign,
+                        linkComponent,
                       ),
                     )}
                   </>
@@ -1070,7 +1080,7 @@ function renderBlock(
               const label = isInline ? (
                 <>
                   {firstChild.children.map((c, j) =>
-                    renderInline(c, j, onLinkClick, cursor, citationCtx),
+                    renderInline(c, j, onLinkClick, cursor, citationCtx, linkComponent),
                   )}
                 </>
               ) : (
@@ -1087,6 +1097,7 @@ function renderBlock(
                       citationCtx,
                       contentWidthValue,
                       contentAlign,
+                      linkComponent,
                     ),
                   )}
                 </>
@@ -1145,7 +1156,7 @@ function renderBlock(
                       alignStyle(node.alignments[i]),
                     )}>
                     {h.children.map((c, j) =>
-                      renderInline(c, j, onLinkClick, cursor, citationCtx),
+                      renderInline(c, j, onLinkClick, cursor, citationCtx, linkComponent),
                     )}
                   </th>
                 ))}
@@ -1163,7 +1174,7 @@ function renderBlock(
                       alignStyle(node.alignments[j]),
                     )}>
                     {cell.children.map((c, k) =>
-                      renderInline(c, k, onLinkClick, cursor, citationCtx),
+                      renderInline(c, k, onLinkClick, cursor, citationCtx, linkComponent),
                     )}
                   </td>
                 ));
@@ -1253,6 +1264,7 @@ export function XDSMarkdown({
   style,
   'data-testid': testId,
 }: XDSMarkdownProps): React.ReactElement {
+  const LinkComponent = useXDSLinkComponent();
   // Derive the set of source IDs for the parser (stable across renders when sources don't change)
   const sourceIds = useMemo(
     () => (sources ? new Set(Object.keys(sources)) : undefined),
@@ -1326,6 +1338,7 @@ export function XDSMarkdown({
               : contentWidth
             : null,
           contentAlign,
+          LinkComponent,
         ),
       )}
     </div>

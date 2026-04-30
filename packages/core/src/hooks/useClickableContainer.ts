@@ -165,6 +165,10 @@ export function useClickableContainer({
           target === '_blank' || event.ctrlKey || event.metaKey;
         if (shouldOpenNewTab) {
           window.open(href, '_blank', 'noopener');
+        } else if (interactiveRef?.current) {
+          // Proxy click to the sr-only link so the framework link component
+          // handles navigation (client-side transitions in Next.js, etc.).
+          interactiveRef.current.click();
         } else {
           window.location.href = href;
         }

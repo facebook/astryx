@@ -29,6 +29,7 @@ import {
 } from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
 import {xdsClassName, mergeProps} from '../utils';
+import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 
 // =============================================================================
 // Types
@@ -340,6 +341,7 @@ export function XDSToken({
   'data-testid': testId,
   ref,
 }: XDSTokenProps) {
+  const LinkComponent = useXDSLinkComponent();
   const content = (
     <>
       {icon}
@@ -372,7 +374,7 @@ export function XDSToken({
 
   if (href != null) {
     return (
-      <a
+      <LinkComponent
         ref={ref as React.Ref<HTMLAnchorElement>}
         href={href}
         aria-disabled={isDisabled || undefined}
@@ -391,7 +393,7 @@ export function XDSToken({
           style,
         )}>
         {content}
-      </a>
+      </LinkComponent>
     );
   }
 
