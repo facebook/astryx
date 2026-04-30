@@ -169,7 +169,6 @@ export interface XDSClickableCardProps extends XDSBaseProps {
 
   /** Maximum width of the card. */
   maxWidth?: SizeValue;
-
 }
 
 // =============================================================================
@@ -211,6 +210,7 @@ export interface XDSClickableCardProps extends XDSBaseProps {
 export function XDSClickableCard({
   label,
   onClick: onClickProp,
+  onMouseUp: onMouseUpProp,
   href,
   target,
   isDisabled = false,
@@ -221,6 +221,9 @@ export function XDSClickableCard({
   height,
   maxWidth,
   ref,
+  xstyle: xstyleProp,
+  className: classNameProp,
+  style,
   ...props
 }: XDSClickableCardProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -234,6 +237,13 @@ export function XDSClickableCard({
     target,
     disabled: isDisabled,
   });
+
+  const handleMouseUp = onMouseUpProp
+    ? (e: MouseEvent<HTMLElement>) => {
+        onMouseUp(e);
+        onMouseUpProp(e);
+      }
+    : onMouseUp;
 
   const isLink = href != null;
 
@@ -250,16 +260,24 @@ export function XDSClickableCard({
       maxWidth={maxWidth}
       padding={padding}
       variant={variant}
-      className={xdsClassName('clickable-card', {variant})}
-      xstyle={[
-        styles.interactive,
-        styles.focusWithin,
-        !isDisabled && styles.overlay,
-        !isDisabled && styles.hoverOnPointer,
-        isDisabled && styles.disabled,
-      ] as unknown as StyleXStyles}
+      className={
+        classNameProp
+          ? `${xdsClassName('clickable-card', {variant})} ${classNameProp}`
+          : xdsClassName('clickable-card', {variant})
+      }
+      xstyle={
+        [
+          styles.interactive,
+          styles.focusWithin,
+          !isDisabled && styles.overlay,
+          !isDisabled && styles.hoverOnPointer,
+          isDisabled && styles.disabled,
+          xstyleProp,
+        ] as unknown as StyleXStyles
+      }
+      style={style}
       onClick={!isDisabled ? onClick : undefined}
-      onMouseUp={!isDisabled ? onMouseUp : undefined}
+      onMouseUp={!isDisabled ? handleMouseUp : undefined}
       {...props}>
       {isLink ? (
         <a

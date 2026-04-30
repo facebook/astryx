@@ -264,6 +264,8 @@ export function XDSSelectableCard({
   label,
   isSelected,
   onChange,
+  onClick: onClickProp,
+  onMouseUp: onMouseUpProp,
   isDisabled = false,
   children,
   padding,
@@ -272,6 +274,9 @@ export function XDSSelectableCard({
   height,
   maxWidth,
   ref,
+  xstyle: xstyleProp,
+  className: classNameProp,
+  style,
   ...props
 }: XDSSelectableCardProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -293,6 +298,20 @@ export function XDSSelectableCard({
     disabled: isDisabled,
   });
 
+  const composedOnClick = onClickProp
+    ? (e: MouseEvent<HTMLElement>) => {
+        onClick(e);
+        onClickProp(e);
+      }
+    : onClick;
+
+  const composedOnMouseUp = onMouseUpProp
+    ? (e: MouseEvent<HTMLElement>) => {
+        onMouseUp(e);
+        onMouseUpProp(e);
+      }
+    : onMouseUp;
+
   return (
     <XDSCard
       ref={(node: HTMLDivElement | null) => {
@@ -306,10 +325,17 @@ export function XDSSelectableCard({
       maxWidth={maxWidth}
       padding={padding}
       variant={variant}
-      className={xdsClassName('selectable-card', {
-        variant,
-        selected: isSelected ? 'true' : 'false',
-      })}
+      className={
+        classNameProp
+          ? `${xdsClassName('selectable-card', {
+              variant,
+              selected: isSelected ? 'true' : 'false',
+            })} ${classNameProp}`
+          : xdsClassName('selectable-card', {
+              variant,
+              selected: isSelected ? 'true' : 'false',
+            })
+      }
       xstyle={
         [
           styles.interactive,
@@ -318,10 +344,12 @@ export function XDSSelectableCard({
           !isDisabled && styles.overlay,
           !isDisabled && styles.hoverOnPointer,
           isDisabled && styles.disabled,
+          xstyleProp,
         ] as unknown as StyleXStyles
       }
-      onClick={!isDisabled ? onClick : undefined}
-      onMouseUp={!isDisabled ? onMouseUp : undefined}
+      style={style}
+      onClick={!isDisabled ? composedOnClick : undefined}
+      onMouseUp={!isDisabled ? composedOnMouseUp : undefined}
       {...props}>
       <input
         ref={interactiveRef}
