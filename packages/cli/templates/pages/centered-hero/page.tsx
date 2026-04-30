@@ -9,8 +9,9 @@ import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 import {ArrowRightIcon} from '@heroicons/react/20/solid';
 
+// light-scene-horizontal-1 from xds_oss asset set
 const IMAGE_URL =
-  'https://scontent.xx.fbcdn.net/v/t39.6806-6/670900322_26625087630454957_5308285999469581630_n.png?_nc_cat=108&ccb=1-7&_nc_sid=56bbc2&_nc_ohc=U_3veUDjN-sQ7kNvwGOQjoE&_nc_oc=Adr6WBPBCTNNZDhcfjcDRMKeKY6ZSrH9G9wM_BM2whjPnTRfNeyRFtm45V1Hp5AA-Og72SBvIYFtUdLhKIarS54C&_nc_zt=14&_nc_ht=scontent.xx&_nc_gid=6CnRZzvBurGWRyBWM3vfBg&_nc_ss=7a30f&oh=00_Af16gCJV1U5IMNkCWMXlufLePHwH_xC5QLD2LD8nTyVJ4g&oe=69E8C1C4';
+  'https://lookaside.facebook.com/assets/xds_oss/light-scene-horizontal-1.png';
 
 const styles = stylex.create({
   textCenter: {
@@ -42,7 +43,7 @@ export default function CenteredHero() {
       topNav={
         <XDSTopNav
           label="Main navigation"
-          heading={<XDSTopNavHeading heading="DAIILY" />}
+          heading={<XDSTopNavHeading heading="OCEAN" />}
           endContent={
             <>
               <XDSTopNavItem label="Products" href="#" />
