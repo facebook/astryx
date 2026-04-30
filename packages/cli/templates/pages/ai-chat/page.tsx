@@ -49,7 +49,7 @@ import {
 // ============= TOKENS =============
 
 const MENTION_TOKENS = [
-  {value: '@navi', label: '@Navi', variant: 'blue' as const},
+  {value: '@agent', label: '@Agent', variant: 'blue' as const},
 ];
 
 // ============= SIDENAV =============
@@ -145,7 +145,7 @@ export default function AIChatConversationTemplate() {
                 />
               }>
               <XDSChatTokenizedText tokens={MENTION_TOKENS}>
-                @navi Can you review these auth files? The JWT refresh logic
+                @agent Can you review these auth files? The JWT refresh logic
                 seems broken — tokens expire but the middleware doesn't catch
                 it.
               </XDSChatTokenizedText>
@@ -155,8 +155,8 @@ export default function AIChatConversationTemplate() {
           {/* ── Assistant message with tool calls ── */}
           <XDSChatMessage
             sender="assistant"
-            avatar={<XDSAvatar name="Navi" size="small" />}>
-            <XDSChatMessageBubble variant="ghost" name="Navi">
+            avatar={<XDSAvatar name="Agent" size="small" />}>
+            <XDSChatMessageBubble variant="ghost" name="Agent">
               Looking into the auth files now. Let me read through the code and
               trace the token refresh flow.
             </XDSChatMessageBubble>
@@ -243,7 +243,7 @@ The fix is to catch \`TokenExpiredError\` specifically and attempt a refresh bef
               }
               footer={
                 <XDSText type="supporting" color="secondary">
-                  Navi
+                  Agent
                 </XDSText>
               }
             />
@@ -271,7 +271,7 @@ The fix is to catch \`TokenExpiredError\` specifically and attempt a refresh bef
           {/* ── Assistant response with test code ── */}
           <XDSChatMessage
             sender="assistant"
-            avatar={<XDSAvatar name="Navi" size="small" />}>
+            avatar={<XDSAvatar name="Agent" size="small" />}>
             <XDSChatToolCalls
               defaultIsExpanded
               calls={[
@@ -361,7 +361,7 @@ The fix is to catch \`TokenExpiredError\` specifically and attempt a refresh bef
           {/* ── Assistant with running tool call ── */}
           <XDSChatMessage
             sender="assistant"
-            avatar={<XDSAvatar name="Navi" size="small" />}>
+            avatar={<XDSAvatar name="Agent" size="small" />}>
             <XDSChatMessageBubble variant="ghost">
               On it — pushing the branch and opening a PR now.
             </XDSChatMessageBubble>
