@@ -56,33 +56,6 @@ const MicIcon = (
   </svg>
 );
 
-const ChevronLeftIcon = (
-  <svg
-    width="1em"
-    height="1em"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.5"
-    strokeLinecap="round"
-    strokeLinejoin="round">
-    <path d="m15 18-6-6 6-6" />
-  </svg>
-);
-const ChevronRightIcon = (
-  <svg
-    width="1em"
-    height="1em"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.5"
-    strokeLinecap="round"
-    strokeLinejoin="round">
-    <path d="m9 18 6-6-6-6" />
-  </svg>
-);
-
 const meta: Meta<typeof XDSChatComposer> = {
   title: 'Core/Chat/Composer',
   component: XDSChatComposer,
@@ -361,98 +334,36 @@ export const SendStopToggle: Story = {
   },
 };
 
-/** Drawer with follow-up questions, selectable options, and prev/next navigation */
-export const FollowUpQuestion: Story = {
+/** Drawer with a feedback prompt, warning badge, and selectable options */
+export const Feedback: Story = {
   render: () => {
-    const questions = [
+    const options = [
+      {key: 'A', label: 'Yes'},
       {
-        question: 'Which environment should this deploy to?',
-        options: [
-          {key: 'A', label: 'Production (requires approval)'},
-          {key: 'B', label: 'Staging'},
-          {key: 'C', label: 'Local development only'},
-        ],
+        key: 'B',
+        label: 'Yes, and don\u2019t ask again for `git add` commands',
       },
-      {
-        question:
-          'This will modify 12 files. How should I handle breaking changes?',
-        options: [
-          {key: 'A', label: 'Add a migration and keep backward compatibility'},
-          {
-            key: 'B',
-            label: 'Breaking change is fine \u2014 bump the major version',
-          },
-        ],
-      },
-      {
-        question:
-          'I found 3 existing implementations. Which one should I extend?',
-        options: [
-          {key: 'A', label: 'UserService in src/services/ (most recent)'},
-          {
-            key: 'B',
-            label: 'UserManager in src/legacy/ (has more test coverage)',
-          },
-          {key: 'C', label: 'Neither \u2014 start fresh'},
-        ],
-      },
+      {key: 'C', label: 'No, and tell me what to do differently'},
     ];
 
-    const [currentQ, setCurrentQ] = useState(0);
-    const [answers, setAnswers] = useState<Record<number, string>>({});
-    const q = questions[currentQ];
-    const selected = answers[currentQ] ?? null;
+    const [selected, setSelected] = useState<string | null>(null);
 
     return (
       <XDSChatComposer
         onSubmit={value => {
-          console.log('Submit:', value, '| Answers:', answers);
-          alert(
-            `Sent: "${value}"\nAnswers: ${JSON.stringify(answers, null, 2)}`,
-          );
+          console.log('Submit:', value, '| Answer:', selected);
+          alert(`Sent: "${value}"\nAnswer: ${selected}`);
         }}
-        placeholder="Or describe what you need in your own words\u2026"
         drawer={
-          <XDSChatComposerDrawer count={questions.length} label="Questions">
+          <XDSChatComposerDrawer count={1} label="User feedback requested">
             <div style={{width: '100%'}}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBlockEnd: 4,
-                }}>
-                <XDSButton
-                  label="Previous question"
-                  variant="ghost"
-                  size="sm"
-                  icon={ChevronLeftIcon}
-                  isIconOnly
-                  isDisabled={currentQ === 0}
-                  onClick={() => setCurrentQ(i => i - 1)}
-                />
-                <XDSText color="secondary">
-                  {currentQ + 1} of {questions.length}
-                </XDSText>
-                <XDSButton
-                  label="Next question"
-                  variant="ghost"
-                  size="sm"
-                  icon={ChevronRightIcon}
-                  isIconOnly
-                  isDisabled={currentQ === questions.length - 1}
-                  onClick={() => setCurrentQ(i => i + 1)}
-                />
-              </div>
               <XDSList>
                 <XDSListItem
                   label={
-                    <XDSText weight="bold">
-                      {currentQ + 1}. {q.question}
-                    </XDSText>
+                    <XDSText weight="bold">Do you want to proceed?</XDSText>
                   }
                 />
-                {q.options.map(opt => (
+                {options.map(opt => (
                   <XDSListItem
                     key={opt.key}
                     label={opt.label}
@@ -463,16 +374,13 @@ export const FollowUpQuestion: Story = {
                       />
                     }
                     isSelected={selected === opt.key}
-                    onClick={() =>
-                      setAnswers(prev => ({...prev, [currentQ]: opt.key}))
-                    }
+                    onClick={() => setSelected(opt.key)}
                   />
                 ))}
               </XDSList>
             </div>
           </XDSChatComposerDrawer>
         }
-        footerActions={<XDSButton label="Skip all" variant="ghost" size="md" />}
       />
     );
   },
