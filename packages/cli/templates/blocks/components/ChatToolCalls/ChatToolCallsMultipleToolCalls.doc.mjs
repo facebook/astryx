@@ -1,9 +1,0 @@
-/** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
-export const doc = {
-  type: 'block',
-  name: 'ChatToolCalls — Group',
-  description: 'Multiple tool calls in a collapsible group with duration and diff stats. Groups auto-collapse when there are more than three calls.',
-  isReady: true,
-  aspectRatio: 16 / 9,
-  componentsUsed: ['ChatToolCalls'],
-};

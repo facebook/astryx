@@ -1,9 +1,9 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  name: 'ChatToolCalls — Nodes',
-  description: 'Tool calls with node badges showing which environment ran each tool. Calls without a node omit the badge.',
+  name: 'ChatToolCalls — Simple',
+  description: 'A single inline tool call above a collapsible multi-call group with diff stats. Shows both layouts side by side.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['ChatToolCalls'],
+  componentsUsed: ['ChatToolCalls', 'Layout'],
 };
