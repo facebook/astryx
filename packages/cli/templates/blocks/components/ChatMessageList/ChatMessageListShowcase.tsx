@@ -4,14 +4,17 @@ import {
   XDSChatMessageList,
   XDSChatMessage,
   XDSChatMessageBubble,
+  XDSChatMessageMetadata,
   XDSChatSystemMessage,
 } from '@xds/core/Chat';
 import {XDSVStack} from '@xds/core/Layout';
+import {XDSTimestamp} from '@xds/core/Timestamp';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
   container: {
-    height: 400,
+    maxWidth: 600,
+    height: '100%',
   },
 });
 
@@ -24,28 +27,44 @@ export default function ChatMessageListShowcase() {
         </XDSChatSystemMessage>
 
         <XDSChatMessage sender="user">
-          <XDSChatMessageBubble>
-            What's the best way to structure a monorepo?
+          <XDSChatMessageBubble
+            metadata={
+              <XDSChatMessageMetadata
+                timestamp={
+                  <XDSTimestamp value="2026-03-15T14:30:00" format="time" />
+                }
+                status="read"
+              />
+            }>
+            How should I structure a monorepo?
           </XDSChatMessageBubble>
         </XDSChatMessage>
 
         <XDSChatMessage sender="assistant">
-          <XDSChatMessageBubble>
-            I'd recommend using workspaces with a shared packages directory.
-            Keep each package focused on a single concern.
+          <XDSChatMessageBubble
+            metadata={
+              <XDSChatMessageMetadata
+                timestamp={
+                  <XDSTimestamp value="2026-03-15T14:30:15" format="time" />
+                }
+              />
+            }>
+            Use workspaces with a shared packages directory. Keep each package
+            focused on a single concern and share config at the root.
           </XDSChatMessageBubble>
         </XDSChatMessage>
 
         <XDSChatMessage sender="user">
-          <XDSChatMessageBubble>
-            Should I use Yarn or pnpm workspaces?
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
-
-        <XDSChatMessage sender="assistant">
-          <XDSChatMessageBubble>
-            Both work well. Yarn is more mature, pnpm is faster with better
-            disk efficiency. Pick whichever your team is comfortable with.
+          <XDSChatMessageBubble
+            metadata={
+              <XDSChatMessageMetadata
+                timestamp={
+                  <XDSTimestamp value="2026-03-15T14:31:00" format="time" />
+                }
+                status="delivered"
+              />
+            }>
+            Should I use Yarn or pnpm for that?
           </XDSChatMessageBubble>
         </XDSChatMessage>
       </XDSChatMessageList>
