@@ -7,17 +7,18 @@ import {
   XDSChatMessageMetadata,
   XDSChatSystemMessage,
 } from '@xds/core/Chat';
-import {XDSVStack} from '@xds/core/Layout';
+import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSMarkdown} from '@xds/core/Markdown';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {XDSTimestamp} from '@xds/core/Timestamp';
+import {XDSToken} from '@xds/core/Token';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
   container: {
     maxWidth: 600,
-    height: '100%',
+    justifyContent: 'center',
   },
 });
 
@@ -28,8 +29,11 @@ export default function ChatMessageListFullFeatured() {
         <XDSChatSystemMessage variant="divider">Today</XDSChatSystemMessage>
 
         <XDSChatMessage sender="user">
+          <XDSHStack gap={2} wrap="wrap">
+            <XDSToken label="useReducer.ts" />
+            <XDSToken label="formState.ts" />
+          </XDSHStack>
           <XDSChatMessageBubble
-            group="first"
             metadata={
               <XDSChatMessageMetadata
                 timestamp={
@@ -38,16 +42,16 @@ export default function ChatMessageListFullFeatured() {
                 status="read"
               />
             }>
-            Can you show me a useReducer example?
+            Can you review these files?
           </XDSChatMessageBubble>
         </XDSChatMessage>
 
         <XDSChatMessage
           sender="assistant"
-          avatar={<XDSAvatar name="Navi" size="small" />}>
+          avatar={<XDSAvatar name="Agent" size="small" />}>
           <XDSChatMessageBubble group="first">
             <XDSMarkdown density="compact">
-              {`Sure! Here's a common pattern for form state:`}
+              {`Sure! Here's the key pattern from **useReducer.ts**:`}
             </XDSMarkdown>
           </XDSChatMessageBubble>
           <XDSChatMessageBubble variant="ghost" group="middle">
@@ -72,12 +76,12 @@ export default function ChatMessageListFullFeatured() {
               />
             }>
             <XDSMarkdown density="compact">
-              {`The reducer is **pure and easy to test** — just pass in state and action, assert on the output.`}
+              {`The reducer is **pure and easy to test** — pass in state and action, assert on the output.`}
             </XDSMarkdown>
           </XDSChatMessageBubble>
         </XDSChatMessage>
 
-        <XDSChatSystemMessage>Navi shared a code snippet</XDSChatSystemMessage>
+        <XDSChatSystemMessage>Agent shared a code snippet</XDSChatSystemMessage>
 
         <XDSChatMessage sender="user">
           <XDSChatMessageBubble

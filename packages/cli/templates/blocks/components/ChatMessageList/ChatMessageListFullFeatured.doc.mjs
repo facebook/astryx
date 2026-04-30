@@ -5,5 +5,5 @@ export const doc = {
   description: 'Conversation showcasing system messages, multi-bubble grouping, markdown, code blocks, and metadata. Combines date dividers, ghost bubbles, grouped messages, and rich content in a single example.',
   isReady: true,
   aspectRatio: 3 / 4,
-  componentsUsed: ['Chat', 'ChatMessageList', 'Layout', 'Markdown', 'CodeBlock', 'Avatar', 'Timestamp'],
+  componentsUsed: ['Chat', 'ChatMessageList', 'Layout', 'Markdown', 'CodeBlock', 'Avatar', 'Timestamp', 'Token'],
 };

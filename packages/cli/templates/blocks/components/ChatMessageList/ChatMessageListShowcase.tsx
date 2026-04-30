@@ -50,7 +50,7 @@ export default function ChatMessageListShowcase() {
               />
             }>
             Use workspaces with a shared packages directory. Keep each package
-            focused on a single concern and share config at the root.
+            focused on a single concern.
           </XDSChatMessageBubble>
         </XDSChatMessage>
 

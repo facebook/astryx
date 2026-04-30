@@ -42,7 +42,7 @@ export default function ChatMessageListDensity() {
               </XDSChatMessage>
               <XDSChatMessage
                 sender="assistant"
-                avatar={<XDSAvatar name="Navi" size={AVATAR_SIZE[density]} />}>
+                avatar={<XDSAvatar name="Agent" size={AVATAR_SIZE[density]} />}>
                 <XDSChatMessageBubble>
                   Density controls spacing at every level — gap between
                   messages, padding inside bubbles, and gap between child
