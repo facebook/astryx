@@ -80,10 +80,7 @@ export const docs = {
       name: 'XDSLinkProvider',
       description:
         'Provider that sets the default link component for all XDS link-rendering components in the subtree. ' +
-        'Wrap your app root to replace native <a> elements with your framework router (Next.js Link, React Router Link, etc.). ' +
-        'Respecting components: XDSLink, XDSButton, XDSClickableCard, XDSListItem, XDSToken, XDSTreeListItem, ' +
-        'XDSBreadcrumbItem, XDSSideNavItem, XDSSideNavHeading, XDSTab, XDSTopNavItem, XDSTopNavHeading, ' +
-        'XDSTopNavMenu, XDSTopNavMegaMenuItem, XDSTopNavMegaMenuFeaturedCard, XDSNavMenuItem, XDSMarkdown.',
+        'Wrap your app root to replace native <a> elements with your framework router (Next.js Link, React Router Link, etc.).',
       props: [
         {
           name: 'component',
