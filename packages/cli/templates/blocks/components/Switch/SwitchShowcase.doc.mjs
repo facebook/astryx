@@ -5,4 +5,7 @@ export const doc = {
   isReady: true,
   aspectRatio: 1,
   isShowcase: true,
+  description:
+    'A toggle switch for enabling notifications.',
+  componentsUsed: ['Switch'],
 };

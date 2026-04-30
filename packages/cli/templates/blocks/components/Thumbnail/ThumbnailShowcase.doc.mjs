@@ -5,4 +5,7 @@ export const doc = {
   isReady: true,
   aspectRatio: 16 / 9,
   isShowcase: true,
+  description:
+    'A thumbnail with an image and label.',
+  componentsUsed: ['Thumbnail'],
 };

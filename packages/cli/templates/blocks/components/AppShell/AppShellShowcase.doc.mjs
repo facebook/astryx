@@ -5,4 +5,7 @@ export const doc = {
   isReady: true,
   aspectRatio: 4 / 3,
   isShowcase: true,
+  description:
+    'A basic app shell with content padding.',
+  componentsUsed: ['AppShell', 'Text'],
 };

@@ -5,4 +5,7 @@ export const doc = {
   isReady: true,
   aspectRatio: 1,
   isShowcase: true,
+  description:
+    'An icon button with a wrench icon.',
+  componentsUsed: ['IconButton', 'Icon'],
 };

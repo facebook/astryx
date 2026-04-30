@@ -5,4 +5,7 @@ export const doc = {
   isReady: true,
   aspectRatio: 4 / 3,
   isShowcase: true,
+  description:
+    'A tokenizer with preset tags and search source.',
+  componentsUsed: ['Tokenizer'],
 };
