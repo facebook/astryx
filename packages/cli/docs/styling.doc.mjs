@@ -4,9 +4,32 @@ export const docs = {
   name: 'styling',
   title: 'Styling XDS Components',
   description:
-    'How to customize component appearance: xstyle prop, className, rest props, compound component patterns, and theming hooks.',
+    'How to customize component appearance: xstyle prop, Tailwind, StyleX, className, rest props, compound component patterns, and theming hooks.',
 
   sections: [
+    {
+      title: 'Overview',
+      content: [
+        {
+          type: 'prose',
+          text: 'XDS gives you several ways to style things. Here is when to use each:',
+        },
+        {
+          type: 'table',
+          headers: ['Approach', 'Use for', 'Example'],
+          rows: [
+            ['xstyle prop', 'Overriding a specific XDS component', 'xstyle={{ maxWidth: 400 }}'],
+            ['Tailwind utilities', 'Layout, wrappers, and utility styling', 'className="flex gap-3 p-4"'],
+            ['stylex.create', 'Reusable styles, pseudo-classes, typed tokens', 'stylex.create({ card: { ... } })'],
+            ['className', 'Integrating with external CSS or Tailwind on components', 'className="my-card shadow-lg"'],
+          ],
+        },
+        {
+          type: 'prose',
+          text: 'All approaches resolve to the same XDS design tokens, so theming and dark mode work regardless of which you choose.',
+        },
+      ],
+    },
     {
       title: 'xstyle Prop',
       content: [
@@ -58,6 +81,35 @@ const overrides = stylex.create({
       ],
     },
     {
+      title: 'Tailwind Integration',
+      content: [
+        {
+          type: 'prose',
+          text: 'XDS ships a Tailwind v4 theme bridge that maps all design tokens to Tailwind utility classes. Import it once and use Tailwind classes backed by XDS tokens — colors, spacing, radius, shadows, and typography all resolve to the active theme.',
+        },
+        {
+          type: 'code',
+          lang: 'css',
+          label: 'globals.css — import the bridge',
+          code: `@import "tailwindcss";
+@import "@xds/core/tailwind-theme.css" layer(theme);`,
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Tailwind utilities alongside XDS components',
+          code: `<div className="text-primary bg-surface rounded-container p-4 flex gap-3">
+  <XDSButton label="Save" variant="primary" />
+  <XDSButton label="Cancel" variant="secondary" />
+</div>`,
+        },
+        {
+          type: 'prose',
+          text: 'The bridge is pure CSS with zero JS. Theme changes (dark mode, custom themes) apply automatically because the utilities reference the same CSS custom properties that XDS components use.',
+        },
+      ],
+    },
+    {
       title: 'className and style Props',
       content: [
         {
@@ -67,12 +119,15 @@ const overrides = stylex.create({
         {
           type: 'code',
           lang: 'tsx',
-          label: 'className for Tailwind or utility classes',
-          code: `<XDSButton label="Save" className="my-app-save-btn" />`,
+          label: 'className with Tailwind utilities',
+          code: `<XDSCard className="shadow-lg hover:shadow-xl transition-shadow">
+  ...
+</XDSCard>
+<XDSButton label="Save" className="my-app-save-btn" />`,
         },
         {
           type: 'prose',
-          text: 'Prefer xstyle over className + style. xstyle integrates with StyleX deduplication and the component\'s internal style pipeline. className and style are escape hatches for integration with external CSS systems.',
+          text: 'For layout and wrapper styling, Tailwind utilities on className work well. For component-specific overrides (padding, colors, borders), prefer xstyle — it integrates with StyleX deduplication and the component\'s internal style pipeline.',
         },
       ],
     },
@@ -230,8 +285,8 @@ const styles = stylex.create({
           style: 'dont',
           items: [
             'style={{}} on raw <div> wrappers. Use xstyle on the XDS component directly.',
-            'Hardcoded colors (#fff, rgb(...)). Use var(--color-*) tokens.',
-            'Hardcoded spacing (16px, 1rem). Use var(--spacing-*) tokens.',
+            'Hardcoded colors (#fff, rgb(...)). Use var(--color-*) tokens or Tailwind semantic classes (text-primary, bg-surface).',
+            'Hardcoded spacing (16px, 1rem). Use var(--spacing-*) tokens or Tailwind spacing utilities (p-4, gap-3).',
             'Wrapping an XDS component in a <div> just to add margin. Use xstyle={{ margin: ... }} on the component.',
             'Using !important. If styles aren\'t applying, check specificity — xstyle is merged last.',
           ],

@@ -1,12 +1,12 @@
 /** @type {import('../../core/src/docs-types').ReferenceTranslationDoc} */
 
 export const docsDense = {
-  description: 'design rules + anti-patterns',
+  description: 'core design principles + rules for XDS',
   sections: [
-    { title: 'Rules', content: [{ type: 'list', items: ['use XDS components', 'StyleX for styling', 'semantic tokens only', 'CSS vars for colors', 'controlled form inputs'] }] },
-    { title: 'xstyle prop', content: [{ type: 'prose', text: 'xstyle accepts inline obj, stylex.create, or CSS class string.' }, null, null, null, { type: 'list', items: ['1-2 props: inline', '3+ props: stylex.create', 'pseudo-classes: stylex.create required', ':hover needs @media (hover: hover)'] }] },
-    { title: 'Anti-Patterns', content: [{ type: 'list', items: ['no inline styles on raw elements', 'no hardcoded colors', 'no hardcoded spacing', 'no hardcoded <a> — use useXDSLinkComponent()', 'read docs before inventing props'] }] },
-    { title: 'StyleX', content: [null] },
-    { title: 'Token Quick Ref', content: [{ type: 'prose', text: 'see xds docs tokens' }, null] },
+    { title: 'Philosophy', content: [{ type: 'list', items: ['components over primitives', 'semantic tokens over hardcoded values', 'theme-agnostic code', 'open internals'] }] },
+    { title: 'Rules', content: [{ type: 'list', items: ['use XDS components', 'StyleX or Tailwind for styling', 'semantic tokens only', 'CSS vars for colors', 'controlled form inputs', 'useXDSLinkComponent() for navigation'] }] },
+    { title: 'Styling', content: [{ type: 'prose', text: 'xstyle prop for component overrides. StyleX or Tailwind for layout. See xds docs styling.' }] },
+    { title: 'Anti-Patterns', content: [{ type: 'list', items: ['no inline styles on raw elements', 'no hardcoded colors — use tokens or Tailwind semantic classes', 'no hardcoded spacing', 'no hardcoded <a> — use useXDSLinkComponent()', 'read docs before inventing props'] }] },
+    { title: 'Tokens', content: [{ type: 'prose', text: 'run npx xds docs tokens for full reference' }] },
   ],
 };

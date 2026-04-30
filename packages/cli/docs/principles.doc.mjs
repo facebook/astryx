@@ -3,9 +3,29 @@
 export const docs = {
   name: 'principles',
   title: 'XDS Principles',
-  description: 'Design principles, rules, and anti-patterns for XDS.',
+  description:
+    'Core design principles and rules for building with XDS.',
 
   sections: [
+    {
+      title: 'Design Philosophy',
+      content: [
+        {
+          type: 'prose',
+          text: 'XDS is a design system that prioritizes consistency, adaptability, and developer experience. Every decision flows from a few core ideas:',
+        },
+        {
+          type: 'list',
+          style: 'unordered',
+          items: [
+            'Components over primitives — use XDS components for everything they cover before reaching for raw HTML',
+            'Semantic tokens over hardcoded values — colors, spacing, and radii are named by purpose, not appearance',
+            'Theme-agnostic code — your app code never references specific colors or measurements, so themes and dark mode work automatically',
+            'Open internals — every primitive is exported and composable, so you can build on top of XDS without fighting it',
+          ],
+        },
+      ],
+    },
     {
       title: 'Rules',
       content: [
@@ -14,59 +34,25 @@ export const docs = {
           style: 'ordered',
           items: [
             'Use XDS components for everything they cover',
-            'StyleX for styling (not inline styles)',
-            'Semantic tokens, not hardcoded values',
-            'CSS variables for colors, not hex',
+            'StyleX or Tailwind for custom styling — both are first-class (see \`npx xds docs styling\`)',
+            'Semantic tokens, not hardcoded values (see \`npx xds docs tokens\`)',
+            'CSS custom properties for colors, not hex values',
             'Form inputs are controlled (value + onChange)',
+            'Use useXDSLinkComponent() for navigation so consumers can plug in their framework router via XDSLinkProvider',
           ],
         },
       ],
     },
     {
-      title: 'Style Overrides: xstyle prop',
+      title: 'Styling Approach',
       content: [
         {
           type: 'prose',
-          text: 'Most XDS components accept an xstyle prop for customizing styles. It supports three formats.',
+          text: 'XDS supports multiple styling approaches. Every component accepts an \`xstyle\` prop for overrides (inline objects, StyleX styles, or CSS class names). For layout and wrapper styling outside of components, use StyleX or Tailwind utilities — both resolve to the same XDS design tokens.',
         },
         {
-          type: 'code',
-          lang: 'tsx',
-          label: 'Inline styles',
-          code: `<XDSTextInput label="Name" xstyle={{ maxWidth: 300 }} />
-<XDSCard xstyle={{ height: 200, padding: 16 }} />`,
-        },
-        {
-          type: 'code',
-          lang: 'tsx',
-          label: 'StyleX styles',
-          code: `import * as stylex from '@stylexjs/stylex';
-const overrides = stylex.create({
-  hoverCard: {
-    boxShadow: {
-      default: 'none',
-      ':hover': {'@media (hover: hover)': '0 4px 12px rgba(0,0,0,0.15)'},
-    },
-  },
-});
-<XDSCard xstyle={overrides.hoverCard} />;`,
-        },
-        {
-          type: 'code',
-          lang: 'tsx',
-          label: 'CSS class name',
-          code: `<XDSCard xstyle="my-custom-card" />
-<XDSCard xstyle={styles.customCard} />  // CSS Module`,
-        },
-        {
-          type: 'list',
-          style: 'unordered',
-          items: [
-            '1-2 simple properties: use inline',
-            '3+ properties, reusable, or named: use stylex.create',
-            'Pseudo-classes (:hover, :focus-visible): use stylex.create (required)',
-            'All :hover MUST use @media (hover: hover) guards',
-          ],
+          type: 'prose',
+          text: 'See \`npx xds docs styling\` for the complete guide with examples.',
         },
       ],
     },
@@ -78,8 +64,8 @@ const overrides = stylex.create({
           style: 'dont',
           items: [
             'Inline styles on raw elements. Use xstyle on XDS components',
-            'Hardcoded colors (#fff). Use var(--color-*)',
-            'Hardcoded spacing (16px). Use spacing tokens or var(--spacing-*)',
+            'Hardcoded colors (#fff). Use var(--color-*) or Tailwind semantic classes (text-primary, bg-surface)',
+            'Hardcoded spacing (16px). Use spacing tokens or Tailwind spacing utilities',
             'Hardcoded <a> elements. Use useXDSLinkComponent() so consumers can swap in their framework router via XDSLinkProvider',
             'Inventing props. Read component docs first',
           ],
@@ -87,41 +73,11 @@ const overrides = stylex.create({
       ],
     },
     {
-      title: 'StyleX Usage',
-      content: [
-        {
-          type: 'code',
-          lang: 'tsx',
-          label: 'Basic StyleX pattern',
-          code: `import * as stylex from '@stylexjs/stylex';
-
-const styles = stylex.create({
-  container: {
-    padding: 'var(--spacing-4)',
-    backgroundColor: 'var(--color-background-surface)',
-    borderRadius: 'var(--radius-element)',
-  },
-});
-
-<div {...stylex.props(styles.container)}>`,
-        },
-      ],
-    },
-    {
-      title: 'Quick Token Reference',
+      title: 'Design Tokens',
       content: [
         {
           type: 'prose',
-          text: 'See `xds docs tokens` for the full list. Key values:',
-        },
-        {
-          type: 'table',
-          headers: ['Category', 'Values'],
-          rows: [
-            ['Spacing', '0=0px | 0.5=2px | 1=4px | 2=8px | 3=12px | 4=16px | 5=20px | 6=24px | 7=32px'],
-            ['Radius', 'rounded=pill | container=12px | element=8px | content=4px'],
-            ['Colors', 'accent, surface, wash, positive, negative, warning'],
-          ],
+          text: 'XDS provides semantic design tokens for spacing, color, radius, shadow, typography, and size. Tokens adapt to the active theme and color mode. Run \`npx xds docs tokens\` for the full reference with all values.',
         },
       ],
     },

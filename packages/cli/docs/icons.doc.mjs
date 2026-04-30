@@ -26,8 +26,8 @@ export const docs = {
             ['chevronLeft', 'Navigate back, previous'],
             ['chevronRight', 'Navigate forward, next'],
             ['check', 'Checkbox checked, confirm'],
-            ['checkCircle', 'Success status indicator'],
-            ['xCircle', 'Error status indicator'],
+            ['success', 'Success status indicator'],
+            ['error', 'Error status indicator'],
             ['warning', 'Warning status indicator'],
             ['info', 'Info status indicator, tooltips'],
             ['calendar', 'Date pickers, scheduling'],
@@ -81,7 +81,7 @@ import { HeartIcon } from 'lucide-react';
           type: 'code',
           lang: 'tsx',
           label: 'Registering theme icons',
-          code: `import { registerIcons } from '@xds/core';
+          code: `import { registerIcons } from '@xds/core/Icon';
 import { XMarkIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 
 registerIcons({
