@@ -436,20 +436,13 @@ export function XDSDialog({
     return () => dialog.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, isInline, allowEscape, onOpenChange]);
 
-  // Handle backdrop click
+  // Handle backdrop click — when the user clicks the ::backdrop pseudo-element,
+  // the event target is the <dialog> element itself; clicks on child content
+  // always target the child. This avoids false positives from native browser
+  // popups (date pickers, selects, color pickers) that render outside the
+  // dialog's bounding rect.
   const handleClick = (event: React.MouseEvent<HTMLDialogElement>) => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-
-    // Check if click was on the backdrop (dialog element itself, not content)
-    const rect = dialog.getBoundingClientRect();
-    const isBackdropClick =
-      event.clientX < rect.left ||
-      event.clientX > rect.right ||
-      event.clientY < rect.top ||
-      event.clientY > rect.bottom;
-
-    if (isBackdropClick && allowBackdropClick) {
+    if (event.target === event.currentTarget && allowBackdropClick) {
       onOpenChange(false);
     }
   };
