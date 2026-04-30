@@ -210,7 +210,7 @@ export interface XDSClickableCardProps extends XDSBaseProps {
 export function XDSClickableCard({
   label,
   onClick: onClickProp,
-  onMouseUp: _onMouseUp,
+  onMouseUp: callerOnMouseUp,
   href,
   target,
   isDisabled = false,
@@ -222,7 +222,8 @@ export function XDSClickableCard({
   maxWidth,
   ref,
   xstyle: callerXstyle,
-  className: _className,
+  className: callerClassName,
+  style,
   ...props
 }: XDSClickableCardProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -236,6 +237,13 @@ export function XDSClickableCard({
     target,
     disabled: isDisabled,
   });
+
+  const handleMouseUp = callerOnMouseUp
+    ? (e: MouseEvent<HTMLElement>) => {
+        onMouseUp(e);
+        callerOnMouseUp(e);
+      }
+    : onMouseUp;
 
   const isLink = href != null;
 
@@ -252,7 +260,11 @@ export function XDSClickableCard({
       maxWidth={maxWidth}
       padding={padding}
       variant={variant}
-      className={xdsClassName('clickable-card', {variant})}
+      className={
+        callerClassName
+          ? `${xdsClassName('clickable-card', {variant})} ${callerClassName}`
+          : xdsClassName('clickable-card', {variant})
+      }
       xstyle={
         [
           styles.interactive,
@@ -263,8 +275,9 @@ export function XDSClickableCard({
           callerXstyle,
         ] as unknown as StyleXStyles
       }
+      style={style}
       onClick={!isDisabled ? onClick : undefined}
-      onMouseUp={!isDisabled ? onMouseUp : undefined}
+      onMouseUp={!isDisabled ? handleMouseUp : undefined}
       {...props}>
       {isLink ? (
         <a
