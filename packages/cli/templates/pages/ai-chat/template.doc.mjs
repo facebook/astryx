@@ -2,6 +2,6 @@
 export const doc = {
   type: 'page',
   name: 'AI Chat',
-  description: 'AI assistant landing page with chat composer, greeting, and category toggles',
+  description: 'AI assistant conversation view with tool calls, system messages, markdown, code blocks, and multi-bubble grouping',
   isReady: true,
 };
