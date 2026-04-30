@@ -540,6 +540,12 @@
       "import": "./dist/Typeahead/index.mjs",
       "require": "./dist/Typeahead/index.js"
     },
+    "./XDSBaseProps": {
+      "source": "./src/XDSBaseProps.ts",
+      "types": "./dist/XDSBaseProps.d.ts",
+      "import": "./src/XDSBaseProps.ts",
+      "require": "./src/XDSBaseProps.ts"
+    },
     "./hooks": {
       "source": "./src/hooks/index.ts",
       "types": "./dist/hooks/index.d.ts",
