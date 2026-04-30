@@ -1,11 +1,6 @@
 'use client';
 
-import {useState, useCallback, useMemo, useRef} from 'react';
-import {XDSButton} from '@xds/core/Button';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSBadge} from '@xds/core/Badge';
-import {XDSSwitch} from '@xds/core/Switch';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {useState, useCallback, useEffect, useMemo, useRef} from 'react';
 import {
   hexToHct,
   hctToHex,
@@ -20,8 +15,6 @@ import {
   extractColorsFromImage,
   parseColorInput,
   type HarmonyType,
-  type HarmonyColor,
-  type SemanticRole,
 } from './colorUtils';
 
 // =============================================================================
@@ -500,6 +493,112 @@ const S = {
 } as const;
 
 // =============================================================================
+// Info Popover
+// =============================================================================
+
+const LAYER_INFO: Record<string, {title: string; description: string}> = {
+  palettes: {
+    title: 'Tonal Palettes',
+    description:
+      'A tonal palette is a single hue stretched across a full lightness range — from black (tone 0) to white (tone 100) in perceptually even steps. Unlike HSL, tone is perceptually uniform: tone 40 blue and tone 40 red look equally dark to human eyes. This uses the HCT color space (the same one behind Material Design 3). Each harmony color gets its own tonal strip. The UI Semantics layer then picks specific tones — e.g. "accent in light mode = tone 40, dark mode = tone 80."',
+  },
+  categorical: {
+    title: 'Categorical Colors',
+    description:
+      "10 colors optimized for mutual distinctness — maximally spread across the hue wheel so they're easy to tell apart. Use these for data visualization series, icon sets, tag categories, or anywhere you need multiple colors that are clearly distinguishable from each other.",
+  },
+  expressive: {
+    title: 'Expressive Colors',
+    description:
+      'Illustration and brand colors that share hue angles with the tonal palette but push wider in chroma and range. Use these when you need more visual energy than the UI palette allows — hero sections, marketing graphics, illustrations, or decorative elements.',
+  },
+  roles: {
+    title: 'Semantic Roles',
+    description:
+      'Colors assigned to specific UI functions: Interactive (accent, hover, focus), Surface (backgrounds at different elevations), Content (text and icon hierarchy), Feedback (error, success, warning), and Border. Each role is automatically derived from the tonal palette with proper contrast for light, dark, and high-contrast modes. Click any role to copy its value.',
+  },
+  accessibility: {
+    title: 'Accessibility',
+    description:
+      "WCAG 2.1 contrast ratios for key foreground/background pairs. AAA (≥ 7:1) is the gold standard. AA (≥ 4.5:1) is the minimum for normal text. AA18 (≥ 3:1) passes for large text (18px+) and UI components. FAIL means the pair doesn't meet any threshold — you'll need to adjust tones.",
+  },
+};
+
+function InfoButton({layerKey}: {layerKey: string}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const info = LAYER_INFO[layerKey];
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  if (!info) return null;
+
+  return (
+    <div ref={ref} style={{position: 'relative', display: 'inline-flex'}}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          width: 18,
+          height: 18,
+          borderRadius: '50%',
+          background: open ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.06)',
+          border: `1px solid ${open ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.1)'}`,
+          color: open ? '#a5b4fc' : '#71717a',
+          fontSize: 11,
+          fontWeight: 600,
+          fontFamily: 'inherit',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all 0.15s',
+          lineHeight: 1,
+          padding: 0,
+        }}
+        title={info.title}>
+        ?
+      </button>
+      {open && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 28,
+            left: 0,
+            zIndex: 50,
+            width: 340,
+            padding: 16,
+            background: '#1f1f23',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 12,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+          }}>
+          <div
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              marginBottom: 8,
+              color: '#fafafa',
+            }}>
+            {info.title}
+          </div>
+          <div style={{fontSize: 12, lineHeight: 1.6, color: '#a1a1aa'}}>
+            {info.description}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
 // Page Component
 // =============================================================================
 
@@ -510,6 +609,10 @@ export default function ColorStudioPage() {
   const [seedHex, setSeedHex] = useState('#0064E0');
   const [harmony, setHarmony] = useState<HarmonyType>('complementary');
   const [warmth, setWarmth] = useState<'warm' | 'cool' | 'neutral'>('cool');
+  const [surfaceStyle, setSurfaceStyle] = useState<'tinted' | 'neutral'>(
+    'tinted',
+  );
+  const [exactAccent, setExactAccent] = useState(false);
   const [tab, setTab] = useState<Tab>('palettes');
   const [previewMode, setPreviewMode] = useState<'light' | 'dark'>('light');
   const [exportFmt, setExportFmt] = useState<ExportFmt>('css');
@@ -532,14 +635,20 @@ export default function ColorStudioPage() {
       label: 'Neutral',
       tones: tonalPalette(
         seed.hue,
-        warmth === 'warm' ? 7 : warmth === 'cool' ? 5 : 3,
+        surfaceStyle === 'neutral'
+          ? 0
+          : warmth === 'warm'
+            ? 7
+            : warmth === 'cool'
+              ? 5
+              : 3,
       ),
     }),
-    [seed.hue, warmth],
+    [seed.hue, warmth, surfaceStyle],
   );
   const roles = useMemo(
-    () => deriveSemanticRoles(seedHex, warmth),
-    [seedHex, warmth],
+    () => deriveSemanticRoles(seedHex, warmth, surfaceStyle, exactAccent),
+    [seedHex, warmth, surfaceStyle, exactAccent],
   );
   const categorical = useMemo(
     () => generateCategorical(seed.hue, seed.chroma),
@@ -794,6 +903,43 @@ export default function ColorStudioPage() {
             ))}
           </div>
         </div>
+
+        <div style={S.section}>
+          <div style={S.sectionTitle}>Surfaces</div>
+          <div style={S.pills}>
+            <button
+              style={S.pill(surfaceStyle === 'tinted')}
+              onClick={() => setSurfaceStyle('tinted')}>
+              Tinted
+            </button>
+            <button
+              style={S.pill(surfaceStyle === 'neutral')}
+              onClick={() => setSurfaceStyle('neutral')}>
+              Pure White
+            </button>
+          </div>
+        </div>
+
+        <div style={S.section}>
+          <div style={S.sectionTitle}>Accent</div>
+          <div style={S.pills}>
+            <button
+              style={S.pill(!exactAccent)}
+              onClick={() => setExactAccent(false)}>
+              Derived
+            </button>
+            <button
+              style={S.pill(exactAccent)}
+              onClick={() => setExactAccent(true)}>
+              Use Exact Color
+            </button>
+          </div>
+          <div style={{fontSize: 11, color: '#52525b', marginTop: 6}}>
+            {exactAccent
+              ? 'Primary button uses your exact chosen color'
+              : 'Accent derived from HCT tone 40 for optimal contrast'}
+          </div>
+        </div>
       </aside>
 
       {/* ═══ Main ═══ */}
@@ -818,7 +964,15 @@ export default function ColorStudioPage() {
         {tab === 'palettes' && (
           <div>
             <div style={{...S.section, marginBottom: 32}}>
-              <div style={S.sectionTitle}>Tonal Palettes</div>
+              <div
+                style={{
+                  ...S.sectionTitle,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}>
+                Tonal Palettes <InfoButton layerKey="palettes" />
+              </div>
               {[...palettes, neutralPalette].map((p, pi) => (
                 <div
                   key={pi}
@@ -830,7 +984,7 @@ export default function ColorStudioPage() {
                   }}>
                   <span style={S.tonaLabel}>{p.label}</span>
                   <div style={S.tonalStrip}>
-                    {TONE_STEPS.map(t => (
+                    {TONE_STEPS.filter(t => t !== 99).map(t => (
                       <div
                         key={t}
                         style={S.tonalCell(p.tones[t])}
@@ -845,20 +999,43 @@ export default function ColorStudioPage() {
             </div>
 
             <div style={S.section}>
-              <div style={S.sectionTitle}>
-                Categorical — 10 Distinguishable Colors
+              <div
+                style={{
+                  ...S.sectionTitle,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}>
+                Categorical — 10 Distinguishable Colors{' '}
+                <InfoButton layerKey="categorical" />
               </div>
-              <div style={S.catRow}>
-                {categorical.map((c, i) => (
+              {categorical.map((c, i) => {
+                const catHct = hexToHct(c.hex);
+                const tones = tonalPalette(catHct.hue, catHct.chroma);
+                return (
                   <div
                     key={i}
-                    style={S.catSwatch(c.hex)}
-                    onClick={() => copy(c.hex)}
-                    title={c.hex}>
-                    <span style={S.catLabel}>{c.label}</span>
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      marginBottom: 6,
+                    }}>
+                    <span style={S.tonaLabel}>{c.label}</span>
+                    <div style={S.tonalStrip}>
+                      {TONE_STEPS.filter(t => t !== 99).map(t => (
+                        <div
+                          key={t}
+                          style={S.tonalCell(tones[t])}
+                          onClick={() => copy(tones[t])}
+                          title={`${c.label} ${tones[t]} (tone ${t})`}>
+                          <span style={S.tonalNum}>{t}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
 
             <div style={S.section}>
@@ -929,8 +1106,14 @@ export default function ColorStudioPage() {
                               copy(`--color-${role.name}: ${role.light}`)
                             }>
                             <div style={S.roleSwatchWrap}>
-                              <div style={S.roleSwatchHalf(role.light)} />
-                              <div style={S.roleSwatchHalf(role.dark)} />
+                              <div
+                                style={S.roleSwatchHalf(
+                                  role.light || '#888888',
+                                )}
+                              />
+                              <div
+                                style={S.roleSwatchHalf(role.dark || '#888888')}
+                              />
                               {grade && (
                                 <span style={S.wcagBadge(grade)}>{grade}</span>
                               )}

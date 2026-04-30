@@ -150,7 +150,9 @@ export function hctToHex(hct: HCT): string {
 }
 
 // === Tonal Palette ===
-export const TONE_STEPS = [0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 100];
+export const TONE_STEPS = [
+  0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 99, 100,
+];
 export function tonalPalette(
   hue: number,
   chroma: number,
@@ -241,34 +243,54 @@ function alpha(hex: string, a: number): string {
 export function deriveSemanticRoles(
   seedHex: string,
   warmth: 'warm' | 'cool' | 'neutral',
+  surfaceStyle: 'tinted' | 'neutral' = 'tinted',
+  exactAccent: boolean = false,
 ): SemanticRole[] {
   const seed = hexToHct(seedHex);
   const h = seed.hue;
   const pc = Math.max(seed.chroma, 48);
-  const nc = warmth === 'warm' ? 7 : warmth === 'cool' ? 5 : 3;
-  const nvc = nc + 3;
+  const nc =
+    surfaceStyle === 'neutral'
+      ? 0
+      : warmth === 'warm'
+        ? 7
+        : warmth === 'cool'
+          ? 5
+          : 3;
+  const nvc = surfaceStyle === 'neutral' ? 2 : nc + 3;
   const P = tonalPalette(h, pc);
   const N = tonalPalette(h, nc);
   const NV = tonalPalette(h, nvc);
-  const E = tonalPalette(25, 70);
-  const S = tonalPalette(145, 60);
-  const W = tonalPalette(90, 70);
-  const I = tonalPalette(250, 50);
+
+  // Feedback colors: fixed hues, but chroma + tone adapt to seed character.
+  // Vivid seeds get punchier feedback; muted seeds get softer feedback.
+  const chromaScale = Math.max(0.7, Math.min(1.3, seed.chroma / 50));
+  const E = tonalPalette(25, Math.round(70 * chromaScale));
+  const S = tonalPalette(145, Math.round(60 * chromaScale));
+  const W = tonalPalette(90, Math.round(70 * chromaScale));
+  const I = tonalPalette(250, Math.round(50 * chromaScale));
 
   return [
     {
       name: 'accent',
       group: 'Interactive',
-      light: P[40],
-      dark: P[80],
+      light: exactAccent ? seedHex : P[40],
+      dark: exactAccent
+        ? hctToHex({hue: h, chroma: pc, tone: Math.max(seed.tone, 70)})
+        : P[80],
       highContrast: P[30],
       pairedWith: 'surface',
     },
     {
       name: 'accent-muted',
       group: 'Interactive',
-      light: alpha(P[40], 0.2),
-      dark: alpha(P[80], 0.25),
+      light: exactAccent ? alpha(seedHex, 0.2) : alpha(P[40], 0.2),
+      dark: exactAccent
+        ? alpha(
+            hctToHex({hue: h, chroma: pc, tone: Math.max(seed.tone, 70)}),
+            0.25,
+          )
+        : alpha(P[80], 0.25),
       highContrast: alpha(P[30], 0.25),
     },
     {
@@ -282,15 +304,23 @@ export function deriveSemanticRoles(
     {
       name: 'accent-hover',
       group: 'Interactive',
-      light: P[30],
-      dark: P[70],
+      light: exactAccent
+        ? hctToHex({hue: h, chroma: pc, tone: Math.max(seed.tone - 8, 15)})
+        : P[30],
+      dark: exactAccent
+        ? hctToHex({hue: h, chroma: pc, tone: Math.min(seed.tone + 8, 85)})
+        : P[70],
       highContrast: P[20],
     },
     {
       name: 'accent-pressed',
       group: 'Interactive',
-      light: P[20],
-      dark: P[60],
+      light: exactAccent
+        ? hctToHex({hue: h, chroma: pc, tone: Math.max(seed.tone - 15, 10)})
+        : P[20],
+      dark: exactAccent
+        ? hctToHex({hue: h, chroma: pc, tone: Math.min(seed.tone + 15, 80)})
+        : P[60],
       highContrast: P[10],
     },
     {
@@ -303,28 +333,28 @@ export function deriveSemanticRoles(
     {
       name: 'surface',
       group: 'Surface',
-      light: N[99],
+      light: surfaceStyle === 'neutral' ? '#ffffff' : N[99],
       dark: N[10],
       highContrast: '#ffffff',
     },
     {
       name: 'body',
       group: 'Surface',
-      light: N[95],
+      light: surfaceStyle === 'neutral' ? '#ffffff' : N[95],
       dark: N[5],
       highContrast: '#ffffff',
     },
     {
       name: 'card',
       group: 'Surface',
-      light: N[99],
+      light: surfaceStyle === 'neutral' ? '#ffffff' : N[99],
       dark: N[10],
       highContrast: '#ffffff',
     },
     {
       name: 'popover',
       group: 'Surface',
-      light: N[99],
+      light: surfaceStyle === 'neutral' ? '#ffffff' : N[99],
       dark: N[20],
       highContrast: '#ffffff',
     },
@@ -346,7 +376,7 @@ export function deriveSemanticRoles(
       name: 'inverted',
       group: 'Surface',
       light: N[10],
-      dark: N[99],
+      dark: surfaceStyle === 'neutral' ? '#ffffff' : N[99],
       highContrast: '#000000',
     },
     {
@@ -376,8 +406,10 @@ export function deriveSemanticRoles(
     {
       name: 'text-accent',
       group: 'Content',
-      light: P[30],
-      dark: P[80],
+      light: exactAccent ? seedHex : P[30],
+      dark: exactAccent
+        ? hctToHex({hue: h, chroma: pc, tone: Math.max(seed.tone, 70)})
+        : P[80],
       highContrast: P[20],
       pairedWith: 'surface',
     },
@@ -513,25 +545,38 @@ export interface CategoricalColor {
   hue: number;
 }
 export function generateCategorical(
-  seedHue: number,
+  _seedHue: number,
   seedChroma: number,
 ): CategoricalColor[] {
-  const labels = [
-    'Blue',
-    'Orange',
-    'Green',
-    'Purple',
-    'Teal',
-    'Pink',
-    'Amber',
-    'Indigo',
-    'Red',
-    'Cyan',
+  // Fixed hues for maximum mutual distinctness. Chroma and tone adapt
+  // to the seed's character — vivid seeds produce vivid categoricals,
+  // muted seeds produce softer ones.
+  const chromaScale = Math.max(0.6, Math.min(1.4, seedChroma / 50));
+  const defs: Array<{
+    label: string;
+    hue: number;
+    baseChroma: number;
+    baseTone: number;
+  }> = [
+    {label: 'Blue', hue: 260, baseChroma: 70, baseTone: 55},
+    {label: 'Orange', hue: 70, baseChroma: 80, baseTone: 65},
+    {label: 'Green', hue: 155, baseChroma: 55, baseTone: 60},
+    {label: 'Purple', hue: 310, baseChroma: 60, baseTone: 50},
+    {label: 'Teal', hue: 200, baseChroma: 40, baseTone: 60},
+    {label: 'Pink', hue: 0, baseChroma: 65, baseTone: 60},
+    {label: 'Amber', hue: 85, baseChroma: 75, baseTone: 75},
+    {label: 'Indigo', hue: 290, baseChroma: 55, baseTone: 45},
+    {label: 'Red', hue: 30, baseChroma: 80, baseTone: 50},
+    {label: 'Cyan', hue: 220, baseChroma: 45, baseTone: 65},
   ];
-  return labels.map((label, i) => {
-    const hue = (((seedHue + i * 36) % 360) + 360) % 360;
-    const c = Math.min(Math.max(seedChroma * 0.8, 40), 80);
-    return {label, hue, hex: hctToHex({hue, chroma: c, tone: 50})};
+  return defs.map(({label, hue, baseChroma, baseTone}) => {
+    const chroma = Math.round(baseChroma * chromaScale);
+    const tone = baseTone;
+    return {
+      label,
+      hue,
+      hex: hctToHex({hue, chroma, tone}),
+    };
   });
 }
 
