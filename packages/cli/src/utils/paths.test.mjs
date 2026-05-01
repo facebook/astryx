@@ -83,6 +83,7 @@ describe('discoverExternalPackages', () => {
         name: 'xds-charts',
         category: 'Data Viz',
         docsDir: path.join(extDir, 'src'),
+        showcasesDir: null,
       },
     ]);
   });
@@ -105,6 +106,7 @@ describe('discoverExternalPackages', () => {
         name: '@acme/xds-widgets',
         category: 'Widgets',
         docsDir: path.join(scopedDir, 'lib'),
+        showcasesDir: null,
       },
     ]);
   });
