@@ -24,6 +24,7 @@ import {
   colorVars,
   durationVars,
   easeVars,
+  radiusVars,
   spacingVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
@@ -131,7 +132,7 @@ const styles = stylex.create({
     position: 'absolute',
     zIndex: 2,
     pointerEvents: 'none',
-    borderRadius: spacingVars['--spacing-0-5'],
+    borderRadius: radiusVars['--radius-full'],
     backgroundColor: colorVars['--color-border'],
     transitionProperty: 'opacity, background-color, transform',
     transitionDuration: durationVars['--duration-fast'],
