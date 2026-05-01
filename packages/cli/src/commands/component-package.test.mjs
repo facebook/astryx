@@ -24,9 +24,27 @@ function createFixture() {
   const extSrc = path.join(extDir, 'src');
   fs.mkdirSync(path.join(extSrc, 'Button'), {recursive: true});
   fs.mkdirSync(path.join(extSrc, 'Employee'), {recursive: true});
+
+  // Blocks directory with an Employee showcase
+  const blocksDir = path.join(extDir, 'blocks', 'components', 'Employee');
+  fs.mkdirSync(blocksDir, {recursive: true});
+  fs.writeFileSync(path.join(blocksDir, 'EmployeeShowcase.doc.mjs'), `
+export const doc = {
+  type: 'block',
+  name: 'Employee — Showcase',
+  description: 'Employee showcase.',
+  isReady: true,
+  isShowcase: true,
+  aspectRatio: 16 / 9,
+  componentsUsed: ['Employee'],
+};
+`);
+  fs.writeFileSync(path.join(blocksDir, 'EmployeeShowcase.tsx'),
+    "'use client';\nexport default function EmployeeShowcase() { return <div>Employee</div>; }");
+
   fs.writeFileSync(path.join(extDir, 'package.json'), JSON.stringify({
     name: '@test/ext',
-    xds: {docs: './src', category: 'Common'},
+    xds: {docs: './src', category: 'Common', blocks: './blocks/components'},
   }));
   fs.writeFileSync(path.join(extSrc, 'Button', 'Button.doc.mjs'), `
 export const docs = {
@@ -91,5 +109,13 @@ describe('component() with --package option', () => {
     await expect(
       component('Avatar', {cwd: tmpDir, package: '@test/ext'}),
     ).rejects.toThrow('No component "Avatar" in package');
+  });
+
+  it('returns showcase from external package when --package + --showcase', async () => {
+    const result = await component('Employee', {cwd: tmpDir, package: '@test/ext', showcase: true});
+    expect(result.type).toBe('component.detail.showcase');
+    expect(result.data.component).toBe('Employee');
+    expect(result.data.source).toContain('EmployeeShowcase');
+    expect(result.data.aspectRatio).toBeCloseTo(16 / 9);
   });
 });

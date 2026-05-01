@@ -170,6 +170,22 @@ export async function component(name, options = {}) {
     if (!ext) {
       throw new XDSError(`External package "${packageScope}" not found`);
     }
+
+    if (showcase) {
+      const match = await findShowcase(dirName, cwd);
+      if (!match) {
+        throw new XDSError(`No showcase found for "${name}" in package "${packageScope}"`);
+      }
+      return {
+        type: 'component.detail.showcase',
+        data: {
+          component: dirName,
+          aspectRatio: match.aspectRatio,
+          source: fs.readFileSync(match.filePath, 'utf-8'),
+        },
+      };
+    }
+
     const extDocPath = findExternalComponentDoc(ext.docsDir, dirName);
     if (extDocPath && extDocPath.endsWith('.doc.mjs')) {
       const docs = await loadDocs(extDocPath, {zh, dense, lang});
