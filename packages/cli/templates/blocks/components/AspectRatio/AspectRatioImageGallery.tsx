@@ -14,7 +14,7 @@ const images = [
 
 export default function AspectRatioImageGallery() {
   return (
-    <XDSGrid columns={3} gap={4}>
+    <XDSGrid columns={3} gap={4} width="100%">
       {images.map(({id, alt}) => (
         <XDSAspectRatio key={id} ratio={4 / 3}>
           <img
