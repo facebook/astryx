@@ -1,8 +1,9 @@
 {
   "name": "@xds/theme-default",
   "version": "0.0.13",
+  "displayName": "Default Theme",
   "private": false,
-  "description": "Default theme for XDS — clean neutrals with Heroicons icon set",
+  "description": "Clean neutrals with a blue accent. Pairs with Heroicons for a polished, professional look.",
   "author": "Meta Open Source",
   "license": "MIT",
   "homepage": "https://github.com/facebookexperimental/xds#readme",

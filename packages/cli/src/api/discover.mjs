@@ -29,7 +29,14 @@ function validateDocs(docs) {
 export async function discover(query, options = {}) {
   const {lang = null, zh = false} = options;
   const config = await loadConfig();
-  const toEntry = (pkg) => ({name: pkg.name, category: pkg.category, components: pkg.components});
+  const toEntry = (pkg) => ({
+    name: pkg.name,
+    category: pkg.category,
+    components: pkg.components,
+    version: pkg.version,
+    description: pkg.description,
+    displayName: pkg.displayName,
+  });
 
   if (config.packages.length === 0) {
     return {type: 'discover.list', data: []};

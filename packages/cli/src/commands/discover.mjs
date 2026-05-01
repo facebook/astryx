@@ -73,7 +73,11 @@ export function registerDiscover(program) {
             for (const pkg of result.data) {
               const count = pkg.components.length;
               const label = count === 1 ? 'component' : 'components';
-              console.log(pkg.name + ' (' + count + ' ' + label + ')');
+              const heading = pkg.displayName
+                ? pkg.displayName + '  ' + pkg.name + ' (' + count + ' ' + label + ')'
+                : pkg.name + ' (' + count + ' ' + label + ')';
+              console.log(heading);
+              if (pkg.description) console.log('  ' + pkg.description);
 
               if (options.components) {
                 for (const comp of pkg.components) console.log('  ' + comp);
@@ -97,7 +101,12 @@ export function registerDiscover(program) {
 
         case 'discover.detail': {
           console.log('');
-          console.log(result.data.name + ' (' + result.data.components.length + ' components)');
+          const d = result.data;
+          const detailHeading = d.displayName
+            ? d.displayName + '  ' + d.name + ' (' + d.components.length + ' components)'
+            : d.name + ' (' + d.components.length + ' components)';
+          console.log(detailHeading);
+          if (d.description) console.log('  ' + d.description);
           console.log('');
           for (const comp of result.data.components) console.log('  ' + comp);
           console.log('');
