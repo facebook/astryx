@@ -4,7 +4,7 @@ import {XDSIconButton} from '@xds/core/IconButton';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSHStack} from '@xds/core/Stack';
 
-export default function IconButtonActionBar() {
+export default function IconButtactionBar() {
   return (
     <XDSHStack gap={1}>
       <XDSIconButton

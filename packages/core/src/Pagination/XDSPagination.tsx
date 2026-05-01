@@ -12,7 +12,7 @@
  * - /apps/storybook/stories/Pagination.stories.tsx (storybook stories)
  * - /packages/cli/templates/blocks/components/Pagination/ (showcase blocks)
  *
- * Last synced props: page, onChange, onChangeAction, totalItems, totalPages, hasMore,
+ * Last synced props: page, onChange, changeAction, totalItems, totalPages, hasMore,
  *   pageSize, pageSizeOptions, onPageSizeChange, variant, siblingCount, size, isDisabled,
  *   label, data-testid, xstyle
  */
@@ -83,7 +83,7 @@ export interface XDSPaginationProps extends Omit<
    * Async action on page change. Fires after onChange.
    * Uses React transitions for built-in loading state.
    */
-  onChangeAction?: (page: number) => void | Promise<void>;
+  changeAction?: (page: number) => void | Promise<void>;
 
   // --- Data shape (provide one) ---
   /**
@@ -328,7 +328,7 @@ export function generatePageRange(
 export function XDSPagination({
   page,
   onChange,
-  onChangeAction,
+  changeAction,
   totalItems,
   totalPages: totalPagesProp,
   hasMore,
@@ -368,9 +368,9 @@ export function XDSPagination({
   const handlePageChange = (newPage: number) => {
     if (isDisabled || isPending) return;
     onChange(newPage);
-    if (onChangeAction) {
+    if (changeAction) {
       startTransition(async () => {
-        await onChangeAction(newPage);
+        await changeAction(newPage);
       });
     }
   };
@@ -392,9 +392,9 @@ export function XDSPagination({
     onPageSizeChange?.(newSize);
     // Reset to page 1 when page size changes
     onChange(1);
-    if (onChangeAction) {
+    if (changeAction) {
       startTransition(async () => {
-        await onChangeAction(1);
+        await changeAction(1);
       });
     }
   };

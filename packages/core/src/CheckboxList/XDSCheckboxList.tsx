@@ -59,7 +59,7 @@ export interface XDSCheckboxListProps {
    * Async action on change. Fires after onChange.
    * While pending, items show reduced opacity and aria-busy.
    */
-  onChangeAction?: (values: string[]) => void | Promise<void>;
+  changeAction?: (values: string[]) => void | Promise<void>;
   /**
    * Whether the checkbox group is in an external loading state.
    * @default false
@@ -145,7 +145,7 @@ export function XDSCheckboxList({
   status,
   value,
   onChange,
-  onChangeAction,
+  changeAction,
   isLoading = false,
   density = 'balanced',
   hasDividers = false,
@@ -170,10 +170,10 @@ export function XDSCheckboxList({
 
   const handleChange = (newValues: string[]) => {
     onChange?.(newValues);
-    if (onChangeAction) {
+    if (changeAction) {
       startTransition(async () => {
         setOptimisticValue(newValues);
-        await onChangeAction(newValues);
+        await changeAction(newValues);
       });
     }
   };

@@ -190,7 +190,7 @@ export interface XDSTimeInputProps extends Omit<
   /**
    * Async action on change. Fires after onChange.
    */
-  onChangeAction?: (value: ISOTimeString | undefined) => void | Promise<void>;
+  changeAction?: (value: ISOTimeString | undefined) => void | Promise<void>;
 
   /**
    * Whether the input is in a loading state.
@@ -290,7 +290,7 @@ export function XDSTimeInput({
   isDisabled = false,
   value,
   onChange,
-  onChangeAction,
+  changeAction,
   isLoading = false,
   min,
   max,
@@ -352,18 +352,18 @@ export function XDSTimeInput({
   const formatDisplayTime =
     hourFormat === '12h' ? formatDisplayTime12h : formatDisplayTime24h;
 
-  // Unified change handler that fires both onChange and onChangeAction
+  // Unified change handler that fires both onChange and changeAction
   const fireChange = useCallback(
     (newValue: ISOTimeString | undefined) => {
       onChange?.(newValue);
-      if (onChangeAction) {
+      if (changeAction) {
         startTransition(async () => {
           setOptimisticValue(newValue);
-          await onChangeAction(newValue);
+          await changeAction(newValue);
         });
       }
     },
-    [onChange, onChangeAction, startTransition, setOptimisticValue],
+    [onChange, changeAction, startTransition, setOptimisticValue],
   );
 
   // Display value: pending input if typing, otherwise formatted value

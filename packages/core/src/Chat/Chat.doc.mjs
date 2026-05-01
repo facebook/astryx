@@ -37,7 +37,7 @@ export const docs = {
       props: [
         {name: 'children', type: 'ReactNode', description: 'Message elements — typically XDSChatMessage or XDSChatSystemMessage.', required: true},
         {name: 'emptyState', type: 'ReactNode', description: 'Content shown when the list has no messages.'},
-        {name: 'onScrollToTopAction', type: '() => Promise<void>', description: 'Async action fired when user scrolls to top. Use for loading older messages. Wrapped in useTransition — shows a spinner at the top while pending.'},
+        {name: 'scrollToTopAction', type: '() => Promise<void>', description: 'Async action fired when user scrolls to top. Use for loading older messages. Wrapped in useTransition — shows a spinner at the top while pending.'},
         {name: 'density', type: "'compact' | 'balanced' | 'spacious'", description: 'Visual density — flows to child messages via context.', default: "'balanced'"},
       ],
     },
@@ -267,7 +267,7 @@ export const docsZh = {
       propDescriptions: {
         children: '消息元素，通常是 XDSChatMessage 或 XDSChatSystemMessage。',
         emptyState: '列表无消息时显示的内容。',
-        onScrollToTopAction: '用户滚动到顶部时触发的异步操作。用于加载更早的消息。',
+        scrollToTopAction: '用户滚动到顶部时触发的异步操作。用于加载更早的消息。',
         density: '视觉密度，通过上下文传递给子消息。',
       },
     },
@@ -438,7 +438,7 @@ export const docsDense = {
       propDescriptions: {
         children: 'msg elements (XDSChatMessage or XDSChatSystemMessage)',
         emptyState: 'content when no msgs',
-        onScrollToTopAction: 'async action at scroll top; load older msgs',
+        scrollToTopAction: 'async action at scroll top; load older msgs',
         density: 'visual density; flows to children via context',
       },
     },

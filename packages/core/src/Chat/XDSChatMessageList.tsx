@@ -31,7 +31,11 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
-import {XDSChatListContext, type XDSChatDensity, useXDSChatLayoutContext} from './XDSChatContext';
+import {
+  XDSChatListContext,
+  type XDSChatDensity,
+  useXDSChatLayoutContext,
+} from './XDSChatContext';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSSpinner} from '../Spinner';
 
@@ -55,7 +59,7 @@ export interface XDSChatMessageListProps {
    * Use for loading older messages. Wrapped in useTransition —
    * shows a spinner at the top while pending.
    */
-  onScrollToTopAction?: () => Promise<void>;
+  scrollToTopAction?: () => Promise<void>;
 
   /**
    * Visual density — flows to child messages via context.
@@ -135,7 +139,7 @@ const styles = stylex.create({
  *
  * Renders messages in a flex column with density-based spacing.
  * A spacer pushes content to the bottom when the list isn't full.
- * Supports loading older messages via `onScrollToTopAction`.
+ * Supports loading older messages via `scrollToTopAction`.
  *
  * Auto-scroll and the scroll-to-bottom button are owned by
  * XDSChatLayout. Use useXDSChatStreamScroll for standalone scroll control.
@@ -152,7 +156,7 @@ const styles = stylex.create({
 export function XDSChatMessageList({
   children,
   emptyState,
-  onScrollToTopAction,
+  scrollToTopAction,
   density = 'balanced',
   xstyle,
   className,
@@ -181,13 +185,13 @@ export function XDSChatMessageList({
   // IntersectionObserver for scroll-to-top infinite scroll
   useEffect(() => {
     const scrollContainer = layoutContext?.scrollContainerRef?.current;
-    if (!onScrollToTopAction || !sentinelRef.current) return;
+    if (!scrollToTopAction || !sentinelRef.current) return;
 
     const observer = new IntersectionObserver(
       entries => {
         if (entries[0]?.isIntersecting) {
           startTransition(async () => {
-            await onScrollToTopAction();
+            await scrollToTopAction();
           });
         }
       },
@@ -196,7 +200,7 @@ export function XDSChatMessageList({
 
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
-  }, [onScrollToTopAction, layoutContext]);
+  }, [scrollToTopAction, layoutContext]);
 
   const contextValue = useMemo(() => ({density}), [density]);
 
@@ -223,7 +227,7 @@ export function XDSChatMessageList({
         )}>
         <div ref={innerRef} {...stylex.props(styles.inner, gapStyle)}>
           {/* Sentinel for infinite scroll */}
-          {onScrollToTopAction && <div ref={sentinelRef} aria-hidden />}
+          {scrollToTopAction && <div ref={sentinelRef} aria-hidden />}
 
           {/* Loading spinner at top */}
           {isLoadingTop && (

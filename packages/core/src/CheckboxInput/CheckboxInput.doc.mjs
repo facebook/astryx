@@ -42,7 +42,7 @@ export const docs = {
       description: 'Callback fired when the checkbox state changes.',
     },
     {
-      name: 'onChangeAction',
+      name: 'changeAction',
       type: '(checked: boolean, e: ChangeEvent<HTMLInputElement>) => void | Promise<void>',
       description:
         'Async action on change. Fires after onChange if not prevented. Shows loading spinner while pending.',
@@ -144,7 +144,7 @@ export const docsZh = {
     {name: 'value', type: "boolean | 'indeterminate'", description: '复选框是否为选中、未选中或不确定状态。', required: true},
     {name: 'onChange', type: '(checked: boolean, e: ChangeEvent<HTMLInputElement>) => void', description: '复选框状态变更时触发的回调。'},
     {
-      name: 'onChangeAction',
+      name: 'changeAction',
       type:
         '(checked: boolean, e: ChangeEvent<HTMLInputElement>) => void | Promise<void>',
       description: '异步变更操作。在 onChange 之后触发（未被阻止时）。等待期间显示加载旋转器。',
@@ -193,7 +193,7 @@ export const docsDense = {
     description: 'text below label',
     value: 'checked, unchecked, or indeterminate',
     onChange: 'callback on state change',
-    onChangeAction: 'async action; fires after onChange, shows spinner while pending',
+    changeAction: 'async action; fires after onChange, shows spinner while pending',
     isLoading: 'shows spinner + prevents interaction',
     isDisabled: 'disable checkbox',
     isOptional: 'mark field as optional (mutually exclusive w/ isRequired)',

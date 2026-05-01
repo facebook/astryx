@@ -28,7 +28,7 @@ export const docs = {
       description: 'Callback fired when the switch state changes.',
     },
     {
-      name: 'onChangeAction',
+      name: 'changeAction',
       type: '(checked: boolean, e: ChangeEvent<HTMLInputElement>) => void | Promise<void>',
       description:
         'Async action fired after onChange. Triggers optimistic UI and shows a loading spinner until the promise resolves.',
@@ -161,7 +161,7 @@ export const docsZh = {
       description: '开关状态变化时触发的回调。',
     },
     {
-      name: 'onChangeAction',
+      name: 'changeAction',
       type: '(checked: boolean, e: ChangeEvent<HTMLInputElement>) => void | Promise<void>',
       description:
         '在 onChange 之后触发的异步操作。触发乐观 UI 并显示加载旋转器直到 Promise 完成。',
@@ -284,7 +284,7 @@ export const docsDense = {
     label: 'Label text (always rendered for a11y).',
     value: 'Whether switch is on or off.',
     onChange: 'Fired when switch state changes.',
-    onChangeAction: 'Async action after onChange; triggers optimistic UI + loading spinner until resolved.',
+    changeAction: 'Async action after onChange; triggers optimistic UI + loading spinner until resolved.',
     isLoading: 'Loading state; shows spinner in thumb.',
     isLabelHidden: 'Visually hides label; still accessible to screen readers.',
     description: 'Description text below label.',

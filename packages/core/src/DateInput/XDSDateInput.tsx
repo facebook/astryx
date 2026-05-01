@@ -179,7 +179,7 @@ export interface XDSDateInputProps extends Omit<
   /**
    * Async action on change. Fires after onChange.
    */
-  onChangeAction?: (value: ISODateString | undefined) => void | Promise<void>;
+  changeAction?: (value: ISODateString | undefined) => void | Promise<void>;
 
   /**
    * Whether the input is in a loading state.
@@ -263,7 +263,7 @@ export function XDSDateInput({
   isDisabled = false,
   value,
   onChange,
-  onChangeAction,
+  changeAction,
   isLoading = false,
   min,
   max,
@@ -369,19 +369,19 @@ export function XDSDateInput({
     }
   }, [isEffectivelyDisabled, popover]);
 
-  // Unified change handler that fires both onChange and onChangeAction
+  // Unified change handler that fires both onChange and changeAction
   const fireChange = useCallback(
     (newValue: ISODateString | undefined) => {
       if (isBusy) return;
       onChange?.(newValue);
-      if (onChangeAction) {
+      if (changeAction) {
         startTransition(async () => {
           setOptimisticValue(newValue);
-          await onChangeAction(newValue);
+          await changeAction(newValue);
         });
       }
     },
-    [isBusy, onChange, onChangeAction, startTransition, setOptimisticValue],
+    [isBusy, onChange, changeAction, startTransition, setOptimisticValue],
   );
 
   // Handle clear button click

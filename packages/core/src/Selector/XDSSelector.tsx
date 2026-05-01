@@ -364,7 +364,7 @@ interface XDSSelectorPropsBase<
    */
   options: T[];
 
-  // value, onChange, onChangeAction, and hasClear are in the discriminated union below
+  // value, onChange, changeAction, and hasClear are in the discriminated union below
 
   /**
    * Whether the selector is in a loading state.
@@ -427,7 +427,7 @@ type XDSSelectorPropsNonClearable<
   hasClear?: false;
   value?: string;
   onChange?: (value: string) => void;
-  onChangeAction?: (value: string) => void | Promise<void>;
+  changeAction?: (value: string) => void | Promise<void>;
 };
 
 type XDSSelectorPropsClearable<
@@ -442,7 +442,7 @@ type XDSSelectorPropsClearable<
   hasClear: true;
   value: string | null;
   onChange?: (value: string | null) => void;
-  onChangeAction?: (value: string | null) => void | Promise<void>;
+  changeAction?: (value: string | null) => void | Promise<void>;
 };
 
 export type XDSSelectorProps<
@@ -488,7 +488,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
     options,
     value,
     onChange,
-    onChangeAction,
+    changeAction,
     isLoading = false,
     placeholder = 'Select...',
     size: sizeProp,
@@ -594,14 +594,14 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
     onSelect: useCallback(
       (newValue: string) => {
         onChange?.(newValue);
-        if (onChangeAction) {
+        if (changeAction) {
           startTransition(async () => {
             setOptimisticValue(newValue);
-            await onChangeAction(newValue);
+            await changeAction(newValue);
           });
         }
       },
-      [onChange, onChangeAction, startTransition, setOptimisticValue],
+      [onChange, changeAction, startTransition, setOptimisticValue],
     ),
     listboxId,
   });
@@ -611,16 +611,16 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
     (e: React.MouseEvent) => {
       e.stopPropagation(); // Don't open dropdown
       (onChange as ((value: string | null) => void) | undefined)?.(null);
-      if (onChangeAction) {
+      if (changeAction) {
         startTransition(async () => {
           setOptimisticValue(undefined as unknown as string);
           await (
-            onChangeAction as (value: string | null) => void | Promise<void>
+            changeAction as (value: string | null) => void | Promise<void>
           )(null);
         });
       }
     },
-    [onChange, onChangeAction, startTransition, setOptimisticValue],
+    [onChange, changeAction, startTransition, setOptimisticValue],
   );
 
   // Render an individual item

@@ -17,7 +17,7 @@ export const docs = {
       required: true,
     },
     {
-      name: 'onChangeAction',
+      name: 'changeAction',
       type: '(page: number) => void | Promise<void>',
       description:
         'Async action on page change. Fires after onChange and uses React transitions for built-in loading state.',
@@ -136,7 +136,7 @@ export const docsZh = {
       required: true,
     },
     {
-      name: 'onChangeAction',
+      name: 'changeAction',
       type: '(page: number) => void | Promise<void>',
       description:
         '页码变化时的异步操作。在 onChange 之后触发，使用 React transitions 实现内置加载状态。',
@@ -259,7 +259,7 @@ export const docsDense = {
   propDescriptions: {
     page: 'Current page number (1-based).',
     onChange: 'Called on page change.',
-    onChangeAction:
+    changeAction:
       'Async action on page change. Fires after onChange; uses React transitions for loading.',
     totalItems: 'Total items. Calculates page count. Precedence over totalPages.',
     totalPages: 'Total pages. Use when page count known but not item count.',

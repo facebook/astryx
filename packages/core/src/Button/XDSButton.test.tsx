@@ -193,27 +193,27 @@ describe('XDSButton', () => {
     expect(button.className).toContain('sm');
   });
 
-  // P0: onClick fires before onClickAction, onClickAction respects preventDefault
-  it('fires onClick before onClickAction', async () => {
+  // P0: onClick fires before clickAction, clickAction respects preventDefault
+  it('fires onClick before clickAction', async () => {
     const user = userEvent.setup();
     const order: string[] = [];
     const handleClick = vi.fn(() => order.push('onClick'));
-    const handleAction = vi.fn(() => order.push('onClickAction'));
+    const handleAction = vi.fn(() => order.push('clickAction'));
     render(
       <XDSButton
         label="Test"
         onClick={handleClick}
-        onClickAction={handleAction}
+        clickAction={handleAction}
       />,
     );
 
     await user.click(screen.getByRole('button'));
     expect(handleClick).toHaveBeenCalledTimes(1);
     expect(handleAction).toHaveBeenCalledTimes(1);
-    expect(order).toEqual(['onClick', 'onClickAction']);
+    expect(order).toEqual(['onClick', 'clickAction']);
   });
 
-  it('does not call onClickAction when onClick calls preventDefault', async () => {
+  it('does not call clickAction when onClick calls preventDefault', async () => {
     const user = userEvent.setup();
     const handleClick = vi.fn((e: React.MouseEvent) => e.preventDefault());
     const handleAction = vi.fn();
@@ -221,7 +221,7 @@ describe('XDSButton', () => {
       <XDSButton
         label="Test"
         onClick={handleClick}
-        onClickAction={handleAction}
+        clickAction={handleAction}
       />,
     );
 

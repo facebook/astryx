@@ -13,7 +13,7 @@
  * - /apps/storybook/stories/Button.stories.tsx (storybook stories)
  * - /packages/cli/templates/blocks/components/Button/ (showcase blocks)
  *
- * Last synced props: label, variant, size, isDisabled, isLoading, onClickAction, icon, isIconOnly, children, tooltip, endContent, href, as, target, rel
+ * Last synced props: label, variant, size, isDisabled, isLoading, clickAction, icon, isIconOnly, children, tooltip, endContent, href, as, target, rel
  */
 
 import {useRef, useTransition, type ReactNode} from 'react';
@@ -315,13 +315,13 @@ export interface XDSButtonProps extends XDSBaseProps<HTMLButtonElement> {
   isLoading?: boolean;
   /**
    * Click handler. For async actions that should show a loading state,
-   * use `onClickAction` instead.
+   * use `clickAction` instead.
    */
   onClick?: React.MouseEventHandler<HTMLButtonElement>;
   /**
    * Async click action. Shows loading state while pending.
    */
-  onClickAction?: (
+  clickAction?: (
     e: React.MouseEvent<HTMLButtonElement>,
   ) => void | Promise<void>;
   /**
@@ -422,7 +422,7 @@ export function XDSButton({
   type = 'button',
   isDisabled = false,
   isLoading = false,
-  onClickAction,
+  clickAction,
   icon,
   isIconOnly = false,
   children,
@@ -464,11 +464,11 @@ export function XDSButton({
       return;
     }
     props.onClick?.(e);
-    if (onClickAction && !e.defaultPrevented) {
+    if (clickAction && !e.defaultPrevented) {
       actionInFlightRef.current = true;
       startTransition(async () => {
         try {
-          await onClickAction(e);
+          await clickAction(e);
         } finally {
           actionInFlightRef.current = false;
         }

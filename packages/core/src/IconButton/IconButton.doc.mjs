@@ -54,7 +54,7 @@ export const docs = {
       description: 'Standard click handler.',
     },
     {
-      name: 'onClickAction',
+      name: 'clickAction',
       type: '(e: MouseEvent) => void | Promise<void>',
       description: 'Async click handler with automatic loading state.',
     },

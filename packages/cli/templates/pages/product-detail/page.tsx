@@ -309,7 +309,7 @@ function ProductInfo() {
             label="Decrease quantity"
             variant="ghost"
             icon={<XDSIcon icon={MinusIcon} size="sm" />}
-            onClickAction={decrement}
+            clickAction={decrement}
             isDisabled={(quantity ?? 1) <= 1}
             isIconOnly
           />
@@ -328,7 +328,7 @@ function ProductInfo() {
             label="Increase quantity"
             variant="ghost"
             icon={<XDSIcon icon={PlusIcon} size="sm" />}
-            onClickAction={increment}
+            clickAction={increment}
             isDisabled={(quantity ?? 1) >= 10}
             isIconOnly
           />

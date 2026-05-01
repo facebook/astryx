@@ -77,7 +77,7 @@ export const docs = {
         'Callback fired when the time changes. Receives undefined when the input is cleared.',
     },
     {
-      name: 'onChangeAction',
+      name: 'changeAction',
       type: '(value: ISOTimeString | undefined) => void | Promise<void>',
       description:
         'Async action fired after onChange. Wrapped in a React transition to provide optimistic UI; triggers the loading spinner while pending.',
@@ -179,7 +179,7 @@ export const docsZh = {
     {name: 'isDisabled', type: 'boolean', description: '禁用输入框并抑制交互。', default: 'false'},
     {name: 'value', type: 'ISOTimeString', description: 'ISO 格式的受控时间值（HH:MM 或 HH:MM:SS）。'},
     {name: 'onChange', type: '(value: ISOTimeString | undefined) => void', description: '时间变化时触发的回调。输入被清除时接收 undefined。'},
-    {name: 'onChangeAction', type: '(value: ISOTimeString | undefined) => void | Promise<void>', description: '在 onChange 之后触发的异步操作。包装在 React transition 中以提供乐观 UI；挂起时触发加载旋转器。'},
+    {name: 'changeAction', type: '(value: ISOTimeString | undefined) => void | Promise<void>', description: '在 onChange 之后触发的异步操作。包装在 React transition 中以提供乐观 UI；挂起时触发加载旋转器。'},
     {name: 'isLoading', type: 'boolean', description: '使输入框进入加载状态，显示旋转器。', default: 'false'},
     {name: 'min', type: 'ISOTimeString', description: 'ISO 格式的最小可选时间。超出范围的值将被拒绝。'},
     {name: 'max', type: 'ISOTimeString', description: 'ISO 格式的最大可选时间。超出范围的值将被拒绝。'},
@@ -245,7 +245,7 @@ export const docsDense = {
     isDisabled: 'Disables input, suppresses interactions.',
     value: 'Controlled time in ISO format (HH:MM or HH:MM:SS).',
     onChange: 'Fired on time change. Receives undefined when cleared.',
-    onChangeAction: 'Async action after onChange in React transition; triggers spinner while pending.',
+    changeAction: 'Async action after onChange in React transition; triggers spinner while pending.',
     isLoading: 'Loading state w/ spinner.',
     min: 'Min selectable time in ISO format. Out-of-range rejected.',
     max: 'Max selectable time in ISO format. Out-of-range rejected.',

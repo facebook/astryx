@@ -96,13 +96,13 @@ export interface XDSToggleButtonProps {
    *   label="Favorite"
    *   isPressed={isFavorited}
    *   onPressedChange={setIsFavorited}
-   *   onPressedChangeAction={async (newState) => {
+   *   pressedChangeAction={async (newState) => {
    *     await api.setFavorite(itemId, newState);
    *   }}
    * />
    * ```
    */
-  onPressedChangeAction?: (isPressed: boolean) => Promise<void>;
+  pressedChangeAction?: (isPressed: boolean) => Promise<void>;
 
   /**
    * The size of the toggle button.
@@ -217,7 +217,7 @@ export function XDSToggleButton({
   label,
   isPressed: isPressedProp,
   onPressedChange: onPressedChangeProp,
-  onPressedChangeAction,
+  pressedChangeAction,
   size: sizeProp,
   isDisabled: isDisabledProp = false,
   isLoading = false,
@@ -255,8 +255,8 @@ export function XDSToggleButton({
       // Standalone toggle
       const newState = !isPressed;
       onPressedChangeProp(newState);
-      if (onPressedChangeAction) {
-        onPressedChangeAction(newState);
+      if (pressedChangeAction) {
+        pressedChangeAction(newState);
       }
     }
   }, [
@@ -265,7 +265,7 @@ export function XDSToggleButton({
     group,
     value,
     onPressedChangeProp,
-    onPressedChangeAction,
+    pressedChangeAction,
     isPressed,
   ]);
 

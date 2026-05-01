@@ -116,7 +116,7 @@ export const docs = {
         'Standard click handler (passed through from ButtonHTMLAttributes).',
     },
     {
-      name: 'onClickAction',
+      name: 'clickAction',
       type: '(e: MouseEvent) => void | Promise<void>',
       description:
         'Async click handler. Shows loading state while the returned promise is pending.',
@@ -192,7 +192,7 @@ export const docsZh = {
     {name: 'tooltip', type: 'string', description: '悬停时显示的提示文本。'},
     {name: 'onClick', type: '(e: MouseEvent) => void', description: '标准点击处理函数（从 ButtonHTMLAttributes 透传）。'},
     {
-      name: 'onClickAction',
+      name: 'clickAction',
       type: '(e: MouseEvent) => void | Promise<void>',
       description: '异步点击处理函数。返回的 Promise 处于 pending 状态时显示加载状态。',
     },
@@ -250,8 +250,8 @@ export const docsDense = {
     children: 'optional visible content; rendered instead of label when provided',
     endContent: 'trailing icon/badge after label; ignored when isIconOnly; color inherited',
     tooltip: 'tooltip on hover',
-    onClick: 'standard click handler; fires before onClickAction',
-    onClickAction: 'async click handler; shows loading while promise pending',
+    onClick: 'standard click handler; fires before clickAction',
+    clickAction: 'async click handler; shows loading while promise pending',
     isDisabled: 'disables button; uses aria-disabled when tooltip present',
   },
 };

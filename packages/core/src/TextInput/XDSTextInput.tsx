@@ -178,7 +178,7 @@ export interface XDSTextInputProps extends Omit<
    */
   onChange?: (value: string, e: ChangeEvent<HTMLInputElement>) => void;
   /** Async action on change. Fires after onChange if not prevented. */
-  onChangeAction?: (
+  changeAction?: (
     value: string,
     e: ChangeEvent<HTMLInputElement>,
   ) => void | Promise<void>;
@@ -243,7 +243,7 @@ export function XDSTextInput({
   status,
   size: sizeProp,
   onChange,
-  onChangeAction,
+  changeAction,
   isLoading = false,
   value = '',
   placeholder,
@@ -297,10 +297,10 @@ export function XDSTextInput({
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     onChange?.(newValue, e);
-    if (onChangeAction && !e.defaultPrevented) {
+    if (changeAction && !e.defaultPrevented) {
       startTransition(async () => {
         setOptimisticValue(newValue);
-        await onChangeAction(newValue, e);
+        await changeAction(newValue, e);
       });
     }
   };

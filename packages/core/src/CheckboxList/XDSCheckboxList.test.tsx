@@ -388,7 +388,7 @@ describe('XDSCheckboxListItem ARIA props', () => {
   });
 
   it('sets aria-busy during async actions', () => {
-    // Render with a pending async action by providing onChangeAction
+    // Render with a pending async action by providing changeAction
     // that returns a promise that never resolves
     render(
       <XDSCheckboxList label="Prefs" value={['a']} onChange={() => {}}>

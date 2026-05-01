@@ -240,7 +240,7 @@ export interface XDSCheckboxInputProps extends Omit<XDSBaseProps, 'onChange'> {
   /**
    * Async action on change. Fires after onChange if not prevented.
    */
-  onChangeAction?: (
+  changeAction?: (
     checked: boolean,
     e: ChangeEvent<HTMLInputElement>,
   ) => void | Promise<void>;
@@ -324,7 +324,7 @@ export function XDSCheckboxInput({
   isLabelHidden = false,
   description,
   onChange,
-  onChangeAction,
+  changeAction,
   isLoading = false,
   value,
   isDisabled = false,
@@ -398,10 +398,10 @@ export function XDSCheckboxInput({
               if (isBusy || isReadOnly) return;
               const checked = e.target.checked;
               onChange?.(checked, e);
-              if (onChangeAction && !e.defaultPrevented) {
+              if (changeAction && !e.defaultPrevented) {
                 startTransition(async () => {
                   setOptimisticValue(checked);
-                  await onChangeAction(checked, e);
+                  await changeAction(checked, e);
                 });
               }
             }}

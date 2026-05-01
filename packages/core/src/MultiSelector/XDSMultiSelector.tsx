@@ -436,7 +436,7 @@ export interface XDSMultiSelectorProps<
   /**
    * Async action on change. Fires after onChange.
    */
-  onChangeAction?: (value: string[]) => void | Promise<void>;
+  changeAction?: (value: string[]) => void | Promise<void>;
 
   /**
    * Whether the selector is in a loading state.
@@ -557,7 +557,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
   options,
   value,
   onChange,
-  onChangeAction,
+  changeAction,
   isLoading = false,
   placeholder = 'Select...',
   size = 'md',
@@ -714,14 +714,14 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
     (e: React.MouseEvent) => {
       e.stopPropagation(); // Don't open dropdown
       onChange([]);
-      if (onChangeAction) {
+      if (changeAction) {
         startTransition(async () => {
           setOptimisticValue([]);
-          await onChangeAction([]);
+          await changeAction([]);
         });
       }
     },
-    [onChange, onChangeAction, startTransition, setOptimisticValue],
+    [onChange, changeAction, startTransition, setOptimisticValue],
   );
 
   const handleToggle = useCallback(
@@ -731,17 +731,17 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
         : [...optimisticValue, itemValue];
 
       onChange(newValue);
-      if (onChangeAction) {
+      if (changeAction) {
         startTransition(async () => {
           setOptimisticValue(newValue);
-          await onChangeAction(newValue);
+          await changeAction(newValue);
         });
       }
     },
     [
       optimisticValue,
       onChange,
-      onChangeAction,
+      changeAction,
       startTransition,
       setOptimisticValue,
     ],
@@ -789,10 +789,10 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
     }
 
     onChange(newValue);
-    if (onChangeAction) {
+    if (changeAction) {
       startTransition(async () => {
         setOptimisticValue(newValue);
-        await onChangeAction(newValue);
+        await changeAction(newValue);
       });
     }
   }, [
@@ -800,7 +800,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
     enabledItems,
     optimisticValue,
     onChange,
-    onChangeAction,
+    changeAction,
     startTransition,
     setOptimisticValue,
   ]);

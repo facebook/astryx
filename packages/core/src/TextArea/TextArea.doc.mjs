@@ -29,7 +29,7 @@ export const docs = {
       description: 'Callback fired when the textarea value changes.',
     },
     {
-      name: 'onChangeAction',
+      name: 'changeAction',
       type: '(value: string, e: ChangeEvent<HTMLTextAreaElement>) => void | Promise<void>',
       description:
         'Async action fired after onChange inside a React transition. Enables optimistic updates via useOptimistic.',
@@ -195,7 +195,7 @@ export const docsZh = {
       description: '文本域值变化时触发的回调。',
     },
     {
-      name: 'onChangeAction',
+      name: 'changeAction',
       type: '(value: string, e: ChangeEvent<HTMLTextAreaElement>) => void | Promise<void>',
       description: '在 React transition 内于 onChange 之后触发的异步操作。通过 useOptimistic 启用乐观更新。',
     },
@@ -344,7 +344,7 @@ export const docsDense = {
     label: 'Label text for textarea; always rendered for a11y.',
     value: 'Current textarea value.',
     onChange: 'Fired on textarea value change.',
-    onChangeAction: 'Async action after onChange in React transition. Enables useOptimistic.',
+    changeAction: 'Async action after onChange in React transition. Enables useOptimistic.',
     isLabelHidden: 'Visually hides label; keeps screen reader access.',
     description: 'Helper text between label+textarea.',
     isOptional: 'Shows "Optional" indicator. Mutually exclusive w/ isRequired.',

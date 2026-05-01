@@ -30,7 +30,7 @@ export const docs = {
       description: 'Callback fired when the input value changes.',
     },
     {
-      name: 'onChangeAction',
+      name: 'changeAction',
       type: '(value: string, e: ChangeEvent<HTMLInputElement>) => void | Promise<void>',
       description:
         'Async action fired after onChange (if not prevented). Triggers optimistic update and shows a loading spinner while pending.',
@@ -182,7 +182,7 @@ export const docsZh = {
       description: '输入框值变化时触发的回调。',
     },
     {
-      name: 'onChangeAction',
+      name: 'changeAction',
       type: '(value: string, e: ChangeEvent<HTMLInputElement>) => void | Promise<void>',
       description:
         '在 onChange 之后（如果未被阻止）触发的异步操作。触发乐观更新并在挂起时显示加载旋转器。',
@@ -334,7 +334,7 @@ export const docsDense = {
     label: 'Label text for input; always rendered for a11y.',
     value: 'Current input value.',
     onChange: 'Fired on input value change.',
-    onChangeAction: 'Async action after onChange (if not prevented). Triggers optimistic update+spinner while pending.',
+    changeAction: 'Async action after onChange (if not prevented). Triggers optimistic update+spinner while pending.',
     size: 'Size variant of input.',
     isLabelHidden: 'Visually hides label; keeps screen reader access.',
     description: 'Description text between label+input.',

@@ -73,22 +73,22 @@ import {XDSSelector, XDSSelectorItem} from '@xds/core';
 
 ### XDSSelector
 
-| Prop           | Type                                                          | Default     | Description                           |
-| -------------- | ------------------------------------------------------------- | ----------- | ------------------------------------- |
-| label          | string                                                        | required    | Label text (always rendered for a11y) |
-| items          | Array<string \| ItemData \| Divider \| Section>               | required    | The items to display                  |
-| value          | string                                                        | —           | Currently selected value              |
-| onChange       | (value: string) => void                                       | —           | Selection change callback             |
-| onChangeAction | (value: string) => Promise<void>                              | —           | Async action on change                |
-| placeholder    | string                                                        | 'Select...' | Placeholder when nothing selected     |
-| size           | 'sm' \| 'md' \| 'lg'                                          | 'md'        | Trigger size                          |
-| isDisabled     | boolean                                                       | false       | Disabled state                        |
-| isLabelHidden  | boolean                                                       | false       | Visually hide label                   |
-| description    | string                                                        | —           | Help text below label                 |
-| isOptional     | boolean                                                       | false       | Show optional indicator               |
-| isRequired     | boolean                                                       | false       | Show required indicator               |
-| status         | { type: 'warning' \| 'error' \| 'success', message?: string } | —           | Validation status                     |
-| children       | (item: ItemData) => ReactNode                                 | —           | Custom item renderer                  |
+| Prop          | Type                                                          | Default     | Description                           |
+| ------------- | ------------------------------------------------------------- | ----------- | ------------------------------------- |
+| label         | string                                                        | required    | Label text (always rendered for a11y) |
+| items         | Array<string \| ItemData \| Divider \| Section>               | required    | The items to display                  |
+| value         | string                                                        | —           | Currently selected value              |
+| onChange      | (value: string) => void                                       | —           | Selection change callback             |
+| changeAction  | (value: string) => Promise<void>                              | —           | Async action on change                |
+| placeholder   | string                                                        | 'Select...' | Placeholder when nothing selected     |
+| size          | 'sm' \| 'md' \| 'lg'                                          | 'md'        | Trigger size                          |
+| isDisabled    | boolean                                                       | false       | Disabled state                        |
+| isLabelHidden | boolean                                                       | false       | Visually hide label                   |
+| description   | string                                                        | —           | Help text below label                 |
+| isOptional    | boolean                                                       | false       | Show optional indicator               |
+| isRequired    | boolean                                                       | false       | Show required indicator               |
+| status        | { type: 'warning' \| 'error' \| 'success', message?: string } | —           | Validation status                     |
+| children      | (item: ItemData) => ReactNode                                 | —           | Custom item renderer                  |
 
 ### XDSSelectorItem (for custom rendering)
 
