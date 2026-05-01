@@ -2,7 +2,7 @@
 
 export const docs = {
   name: 'principles',
-  title: 'XDS Principles',
+  title: 'Principles',
   description:
     'Core design principles and rules for building with XDS.',
 
@@ -48,7 +48,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'XDS supports multiple styling approaches. Every component accepts an \`xstyle\` prop for overrides (inline objects, StyleX styles, or CSS class names). For layout and wrapper styling outside of components, use StyleX or Tailwind utilities — both resolve to the same XDS design tokens.',
+          text: 'XDS supports multiple styling approaches. Every component accepts an \`xstyle\` prop for StyleX style overrides via \`stylex.create()\`. For layout and wrapper styling outside of components, use StyleX or Tailwind utilities — both resolve to the same XDS design tokens.',
         },
         {
           type: 'prose',
