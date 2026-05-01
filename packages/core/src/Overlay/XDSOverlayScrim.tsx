@@ -2,7 +2,7 @@
 
 /**
  * @file XDSOverlayScrim.tsx
- * @input Uses React, stylex, XDSMediaTheme, overlay markers
+ * @input Uses React, stylex, XDSMediaTheme, overlay markers, overlay context
  * @output Exports XDSOverlayScrim component
  * @position Overlay system scrim layer; renders inside any positioned container
  *
@@ -11,12 +11,11 @@
  * stylex.when.ancestor() with the overlay marker for CSS-driven
  * hover/focus visibility, avoiding React state for the common case.
  *
- * Touch behavior:
- * - Strip overlays (position="bottom"/"top") are always visible on touch
- * - Full overlays (position="fill") use tap-to-toggle on touch devices
+ * Touch behavior (provided by XDSOverlay or useXDSOverlay via context):
+ * - Strip overlays (bottom/top) are always visible on touch
+ * - Full overlays (fill) use tap-to-toggle from the container
  *
- * Must be placed inside an element that has the overlayScope marker
- * applied (either via XDSOverlay wrapper or manually via xstyle/className).
+ * Must be placed inside an XDSOverlay wrapper or a container using useXDSOverlay.
  */
 
 import {type ReactNode, type Ref} from 'react';
@@ -26,6 +25,7 @@ import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import {XDSMediaTheme} from '../theme/XDSMediaTheme';
 import {xdsClassName, mergeProps} from '../utils';
 import {overlayScope} from './overlay.markers.stylex';
+import {useOverlayContext} from './OverlayContext';
 
 // =============================================================================
 // Types
@@ -69,9 +69,8 @@ export interface XDSOverlayScrimProps {
    *
    * - `"always"` — scrim is always visible
    * - `"hover"` — visible on hover + focus-within (accessible default).
-   *   Hover is guarded by @media (hover: hover).
-   *   On touch devices: strip overlays (bottom/top) are always visible;
-   *   full overlays (fill) respond to tap-to-toggle on the container.
+   *   Hover is guarded by @media (hover: hover). On touch: strip overlays
+   *   are always visible; full overlays use tap-to-toggle from the container.
    * - `"focus"` — visible on container :focus-within only
    * - `"hover-or-focus"` — alias for "hover" (hover already includes focus)
    * @default "always"
@@ -80,8 +79,7 @@ export interface XDSOverlayScrimProps {
 
   /**
    * JS-controlled visibility override. When provided, takes precedence
-   * over showOn for cases where CSS selectors can't express the trigger
-   * (drag-and-drop, intersection observer, programmatic toggle, etc.).
+   * over showOn and touch toggle.
    */
   isOpen?: boolean;
 
@@ -121,15 +119,14 @@ const styles = stylex.create({
 
   // Scrim backgrounds
   scrimDark: {backgroundColor: colorVars['--color-overlay']},
-  // TODO: Replace with --color-overlay-light token when added to the token set
+  // TODO: Replace with --color-overlay-light token when added
   scrimLight: {backgroundColor: 'color-mix(in srgb, white 60%, transparent)'},
 
-  // JS-controlled states
+  // JS-controlled / touch-toggled states
   hidden: {opacity: 0, visibility: 'hidden'},
   visible: {opacity: 1, visibility: 'visible', pointerEvents: 'auto'},
 
-  // CSS-driven: hover + focus (the accessible default for "hover")
-  // Desktop: hover reveals. Touch strips: always visible. Touch fill: tap-to-toggle (handled by JS).
+  // CSS-driven: ancestor hover + focus (accessible default for showOn="hover")
   hoverReveal: {
     opacity: {
       default: 0,
@@ -200,8 +197,7 @@ const positionMap = {
  * Overlay scrim layer — renders a semi-transparent background with
  * content in a media theme context, positioned absolutely over its container.
  *
- * Place inside an element with the `overlayScope` marker applied
- * (via XDSOverlay wrapper, `xstyle={overlayScope}`, or className).
+ * Must be inside an XDSOverlay wrapper or a container using useXDSOverlay.
  *
  * @compositionHint Place as a sibling of the base content (image, card body)
  * inside a positioned container. Use showOn="hover" for CSS-only hover reveals.
@@ -226,9 +222,23 @@ export function XDSOverlayScrim({
   xstyle,
   ref,
 }: XDSOverlayScrimProps) {
-  const isJSControlled = isOpen !== undefined;
   const isHoverMode = showOn === 'hover' || showOn === 'hover-or-focus';
   const isStrip = position === 'bottom' || position === 'top';
+
+  // Touch context from XDSOverlay or useXDSOverlay
+  const {touchOpen} = useOverlayContext();
+
+  // Resolve effective visibility:
+  // 1. isOpen prop takes precedence (fully JS-controlled)
+  // 2. Touch toggle for full-cover hover scrims
+  // 3. CSS handles the rest
+  const effectiveIsOpen =
+    isOpen !== undefined
+      ? isOpen
+      : touchOpen !== undefined && isHoverMode && !isStrip
+        ? touchOpen
+        : undefined;
+  const isControlled = effectiveIsOpen !== undefined;
 
   // Media theme wrapping
   const themeMode =
@@ -252,21 +262,18 @@ export function XDSOverlayScrim({
           scrim === 'dark' && styles.scrimDark,
           scrim === 'light' && styles.scrimLight,
           // Visibility
-          isJSControlled && isOpen && styles.visible,
-          isJSControlled && !isOpen && styles.hidden,
-          !isJSControlled && showOn === 'always' && styles.visible,
-          !isJSControlled && isHoverMode && styles.hoverReveal,
-          !isJSControlled && showOn === 'focus' && styles.focusReveal,
-          // Touch: strips are always visible, full overlays rely on tap-to-toggle (JS)
-          !isJSControlled &&
-            isHoverMode &&
-            isStrip &&
-            styles.touchAlwaysVisible,
+          isControlled && effectiveIsOpen && styles.visible,
+          isControlled && !effectiveIsOpen && styles.hidden,
+          !isControlled && showOn === 'always' && styles.visible,
+          !isControlled && isHoverMode && styles.hoverReveal,
+          !isControlled && showOn === 'focus' && styles.focusReveal,
+          // Touch: strips always visible
+          !isControlled && isHoverMode && isStrip && styles.touchAlwaysVisible,
           xstyle,
         ),
       )}
       data-position={position}
-      inert={isJSControlled && !isOpen ? true : undefined}>
+      inert={isControlled && !effectiveIsOpen ? true : undefined}>
       {content}
     </div>
   );

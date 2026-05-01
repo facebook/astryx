@@ -1,7 +1,12 @@
 import type {Meta, StoryObj} from '@storybook/react';
-import {useState} from 'react';
+import React, {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSOverlay, XDSOverlayScrim, overlayScope} from '@xds/core/Overlay';
+import {
+  XDSOverlay,
+  XDSOverlayScrim,
+  useXDSOverlay,
+  OverlayContext,
+} from '@xds/core/Overlay';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSCard} from '@xds/core/Card';
 import {XDSButton} from '@xds/core/Button';
@@ -24,24 +29,11 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-background-body'],
     padding: spacingVars['--spacing-6'],
   },
-  storyWrapper: {
-    display: 'flex',
-    gap: spacingVars['--spacing-6'],
-    flexWrap: 'wrap',
-    alignItems: 'start',
-  },
   image: {
     objectFit: 'cover',
     width: '100%',
     height: '100%',
     display: 'block',
-  },
-  label: {
-    margin: 0,
-    fontFamily: typographyVars['--font-family-body'],
-    fontSize: 12,
-    color: colorVars['--color-text-secondary'],
-    marginBottom: spacingVars['--spacing-2'],
   },
   dropZone: {
     minHeight: 200,
@@ -98,23 +90,10 @@ const meta: Meta<typeof XDSOverlayScrim> = {
     showOn: {
       control: 'select',
       options: ['always', 'hover', 'focus', 'hover-or-focus'],
-      description: 'CSS-driven visibility trigger',
     },
-    scrim: {
-      control: 'select',
-      options: ['dark', 'light', false],
-      description: 'Scrim background mode',
-    },
-    position: {
-      control: 'select',
-      options: ['fill', 'bottom', 'top'],
-      description: 'Scrim placement',
-    },
-    align: {
-      control: 'select',
-      options: ['start', 'center', 'end'],
-      description: 'Content alignment',
-    },
+    scrim: {control: 'select', options: ['dark', 'light', false]},
+    position: {control: 'select', options: ['fill', 'bottom', 'top']},
+    align: {control: 'select', options: ['start', 'center', 'end']},
   },
 };
 
@@ -125,7 +104,7 @@ type Story = StoryObj<typeof XDSOverlayScrim>;
 // Stories
 // =============================================================================
 
-/** Basic hover overlay on an image. Hover to see the scrim + button. */
+/** Basic hover overlay on an image. */
 export const HoverOnImage: Story = {
   render: () => (
     <div style={{width: 400}}>
@@ -145,7 +124,7 @@ export const HoverOnImage: Story = {
   ),
 };
 
-/** Always-visible bottom strip with title and subtitle over a hero image. */
+/** Always-visible bottom strip with title over a hero image. */
 export const BottomStrip: Story = {
   render: () => (
     <div style={{width: 600}}>
@@ -156,7 +135,9 @@ export const BottomStrip: Story = {
         <XDSOverlayScrim position="bottom" align="start">
           <XDSVStack gap={1}>
             <XDSHeading level={3}>Gallery Collection</XDSHeading>
-            <XDSText type="detail">24 items · Updated today</XDSText>
+            <XDSText type="supporting" color="secondary">
+              24 items · Updated today
+            </XDSText>
           </XDSVStack>
         </XDSOverlayScrim>
       </XDSOverlay>
@@ -164,34 +145,36 @@ export const BottomStrip: Story = {
   ),
 };
 
-/** Full overlay on Card — clips to Card's rounded corners. Uses overlayScope via xstyle. */
+/** Full overlay on Card — uses XDSOverlay wrapper. */
 export const CardOverlay: Story = {
   render: () => (
-    <XDSCard width={360} xstyle={overlayScope}>
-      <XDSLayout
-        content={
-          <XDSLayoutContent>
-            <XDSVStack gap={2}>
-              <XDSHeading level={3}>Project Alpha</XDSHeading>
-              <XDSText>
-                A comprehensive design system for building internal tools with
-                consistent, accessible interfaces.
-              </XDSText>
-              <XDSText type="detail">
-                Updated 2 hours ago · 12 contributors
-              </XDSText>
-            </XDSVStack>
-          </XDSLayoutContent>
-        }
-      />
+    <XDSOverlay>
+      <XDSCard width={360}>
+        <XDSLayout
+          content={
+            <XDSLayoutContent>
+              <XDSVStack gap={2}>
+                <XDSHeading level={3}>Project Alpha</XDSHeading>
+                <XDSText>
+                  A comprehensive design system for building internal tools with
+                  consistent, accessible interfaces.
+                </XDSText>
+                <XDSText type="supporting" color="secondary">
+                  Updated 2 hours ago · 12 contributors
+                </XDSText>
+              </XDSVStack>
+            </XDSLayoutContent>
+          }
+        />
+      </XDSCard>
       <XDSOverlayScrim showOn="hover" align="center">
         <XDSButton label="View Details" variant="ghost" />
       </XDSOverlayScrim>
-    </XDSCard>
+    </XDSOverlay>
   ),
 };
 
-/** Hover + focus overlay — also appears when the card receives keyboard focus. Tab to the button to see. */
+/** Hover + focus overlay — also appears on keyboard focus. */
 export const HoverOrFocus: Story = {
   render: () => (
     <div style={{width: 400}}>
@@ -211,11 +194,10 @@ export const HoverOrFocus: Story = {
   ),
 };
 
-/** Light scrim for loading/upload states. Toggle the button to simulate upload. */
+/** Light scrim for loading/upload states. */
 export const LoadingOverlay: Story = {
   render: function LoadingOverlayStory() {
     const [isUploading, setIsUploading] = useState(false);
-
     return (
       <XDSVStack gap={4} style={{width: 300}}>
         <XDSButton
@@ -226,7 +208,7 @@ export const LoadingOverlay: Story = {
           <XDSAspectRatio ratio={1}>
             <img
               src={SAMPLE_IMAGE_3}
-              alt="Upload preview"
+              alt="Upload"
               {...stylex.props(styles.image)}
             />
           </XDSAspectRatio>
@@ -253,7 +235,6 @@ export const GalleryGrid: Story = {
       {src: 'https://picsum.photos/seed/g5/400/400', title: 'Desert Dunes'},
       {src: 'https://picsum.photos/seed/g6/400/400', title: 'Snowy Peaks'},
     ];
-
     return (
       <XDSGrid columns={3} gap={4}>
         {images.map(img => (
@@ -275,17 +256,13 @@ export const GalleryGrid: Story = {
   },
 };
 
-/** Video thumbnail with two overlays: always-visible duration badge + hover play button. */
+/** Video thumbnail with two overlays: duration badge + hover play button. */
 export const VideoThumbnail: Story = {
   render: () => (
     <div style={{width: 400}}>
       <XDSOverlay>
         <XDSAspectRatio ratio={16 / 9}>
-          <img
-            src={SAMPLE_IMAGE}
-            alt="Video thumbnail"
-            {...stylex.props(styles.image)}
-          />
+          <img src={SAMPLE_IMAGE} alt="Video" {...stylex.props(styles.image)} />
         </XDSAspectRatio>
         <XDSOverlayScrim
           showOn="always"
@@ -293,7 +270,7 @@ export const VideoThumbnail: Story = {
           scrim={false}
           align="end">
           <div {...stylex.props(styles.durationBadge)}>
-            <XDSText type="detail">12:34</XDSText>
+            <XDSText type="supporting">12:34</XDSText>
           </div>
         </XDSOverlayScrim>
         <XDSOverlayScrim showOn="hover" align="center">
@@ -309,35 +286,46 @@ export const VideoThumbnail: Story = {
   ),
 };
 
-/** Disconnected hover — hovering anywhere on the Card reveals the overlay on the image only. */
+/** Disconnected hover — uses useXDSOverlay hook on Card. Hovering anywhere on Card reveals overlay on image. */
 export const DisconnectedHover: Story = {
-  render: () => (
-    <XDSCard width={360} xstyle={overlayScope}>
-      <div {...stylex.props(styles.imageSection)}>
-        <XDSAspectRatio ratio={16 / 9}>
-          <img
-            src={SAMPLE_IMAGE_2}
-            alt="Article hero"
-            {...stylex.props(styles.image)}
-          />
-        </XDSAspectRatio>
-        <XDSOverlayScrim showOn="hover" position="bottom" align="start">
-          <XDSHeading level={4}>Featured Article</XDSHeading>
-        </XDSOverlayScrim>
-      </div>
-      <XDSVStack gap={1} xstyle={styles.metadata}>
-        <XDSText type="detail">Jan 15, 2026 · 5 min read</XDSText>
-        <XDSText type="detail">By Jane Author</XDSText>
-      </XDSVStack>
-    </XDSCard>
-  ),
+  render: function DisconnectedHoverStory() {
+    const overlay = useXDSOverlay();
+    return (
+      <OverlayContext value={overlay.contextValue}>
+        <XDSCard
+          width={360}
+          ref={overlay.containerRef as React.RefObject<HTMLDivElement>}
+          {...overlay.containerProps}>
+          <div {...stylex.props(styles.imageSection)}>
+            <XDSAspectRatio ratio={16 / 9}>
+              <img
+                src={SAMPLE_IMAGE_2}
+                alt="Article"
+                {...stylex.props(styles.image)}
+              />
+            </XDSAspectRatio>
+            <XDSOverlayScrim showOn="hover" position="bottom" align="start">
+              <XDSHeading level={4}>Featured Article</XDSHeading>
+            </XDSOverlayScrim>
+          </div>
+          <XDSVStack gap={1} xstyle={styles.metadata}>
+            <XDSText type="supporting" color="secondary">
+              Jan 15, 2026 · 5 min read
+            </XDSText>
+            <XDSText type="supporting" color="secondary">
+              By Jane Author
+            </XDSText>
+          </XDSVStack>
+        </XDSCard>
+      </OverlayContext>
+    );
+  },
 };
 
 /** Drag-and-drop overlay — simulated with a toggle button. */
 export const DragAndDrop: Story = {
   render: function DragAndDropStory() {
     const [isDragOver, setIsDragOver] = useState(false);
-
     return (
       <XDSVStack gap={4} style={{width: 400}}>
         <XDSButton
