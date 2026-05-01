@@ -18,7 +18,7 @@ import {
 import {loadDocs} from '../lib/component-loader.mjs';
 import {searchComponents} from '../lib/string-utils.mjs';
 import {XDSError} from './error.mjs';
-import {findShowcase} from './template.mjs';
+import {findShowcase, findRelatedBlocks} from './template.mjs';
 
 /**
  * @param {string} [name]
@@ -29,6 +29,7 @@ import {findShowcase} from './template.mjs';
  * @param {boolean} [options.props]
  * @param {boolean} [options.source]
  * @param {boolean} [options.showcase]
+ * @param {boolean} [options.blocks]
  * @param {'full'|'compact'|'brief'} [options.detail]
  * @param {string} [options.lang]
  * @param {boolean} [options.zh]
@@ -43,6 +44,7 @@ export async function component(name, options = {}) {
     props = false,
     source = false,
     showcase = false,
+    blocks = false,
     detail = 'full',
     lang = null,
     zh = false,
@@ -199,6 +201,71 @@ export async function component(name, options = {}) {
   }
 
   const docs = await loadDocs(readmePath, {zh, dense, lang});
+
+  // ── Blocks mode ──────────────────────────────────────────────
+  if (blocks) {
+    const allBlocks = await findRelatedBlocks(dirName);
+    const toEntry = (b) => ({
+      name: b.dirName,
+      displayName: b.name,
+      description: b.description,
+      isShowcase: b.isShowcase ?? false,
+      category: b.category,
+    });
+
+    // Examples: blocks in the component's own directory, or
+    // componentsUsed match for sub-components without a directory.
+    const ownDir = allBlocks.filter(b => b.category.split('/').pop() === dirName);
+    const examples = ownDir.length > 0
+      ? ownDir
+      : allBlocks.filter(b => b.componentsUsed?.some(c => c === dirName));
+    const exampleSet = new Set(examples.map(b => b.dirName));
+
+    // Showcase: the single hero example from the examples list.
+    const showcaseBlock = examples.find(b => b.isShowcase) || null;
+
+    // Related: everything else that uses this component but isn't
+    // primarily about it (e.g. a Dialog block that has a Button).
+    const related = allBlocks.filter(b => !exampleSet.has(b.dirName));
+
+    return {
+      type: 'component.detail.blocks',
+      data: {
+        component: dirName,
+        showcase: showcaseBlock ? toEntry(showcaseBlock) : null,
+        examples: examples.filter(b => b !== showcaseBlock).map(toEntry),
+        related: related.map(toEntry),
+      },
+    };
+  }
+
+  // ── Sub-component scoping ────────────────────────────────────
+  // If the user asked for "Code" but the doc is for "CodeBlock" (parent),
+  // scope the response to just the matching sub-component.
+  const requestedXDS = `XDS${dirName}`;
+  const isParentDoc = docs.name && docs.name.toLowerCase() !== dirName.toLowerCase();
+  const matchingComponent = isParentDoc && docs.components
+    ? docs.components.find(c => c.name === requestedXDS || c.name === dirName)
+    : null;
+
+  if (matchingComponent) {
+    const scoped = {
+      name: dirName,
+      description: matchingComponent.description,
+      props: matchingComponent.props,
+      // Keep parent context for reference
+      components: [matchingComponent],
+      parentDoc: docs.name,
+      import: resolveImportPath(coreDir, dirName),
+    };
+    if (docs.usage) scoped.usage = docs.usage;
+    if (docs.theming) scoped.theming = docs.theming;
+
+    if (props) {
+      return {type: 'component.detail.props', data: matchingComponent.props || []};
+    }
+    return {type: 'component.detail', data: scoped};
+  }
 
   if (props) {
     const p = docs.props || (docs.components ? docs.components.flatMap(c => c.props || []) : []);

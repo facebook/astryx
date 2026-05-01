@@ -34,6 +34,7 @@ export function registerComponent(program) {
     .option('--props', 'Print only the props table')
     .option('--source', 'Print component source code')
     .option('--showcase', 'Print showcase source code')
+    .option('--blocks', 'List example blocks: showcase, examples, and related')
     .action(async (name, options) => {
       const run = getRunPrefix();
       const zh = program.opts().zh || false;
@@ -59,6 +60,7 @@ export function registerComponent(program) {
           props: options.props,
           source: options.source,
           showcase: options.showcase,
+          blocks: options.blocks,
           detail,
           lang, zh, dense,
         });
@@ -154,6 +156,32 @@ export function registerComponent(program) {
 
         case 'component.detail.showcase': {
           console.log(result.data.source);
+          break;
+        }
+
+        case 'component.detail.blocks': {
+          const {showcase, examples, related} = result.data;
+          if (showcase) {
+            console.log(`\nShowcase: ${showcase.displayName}`);
+            if (showcase.description) console.log(`  ${showcase.description}`);
+          }
+          if (examples.length > 0) {
+            console.log('\nExamples:\n');
+            for (const b of examples) {
+              console.log(`  ${b.name}`);
+              if (b.description) console.log(`    ${b.description}`);
+            }
+          }
+          if (related.length > 0) {
+            console.log(`\nRelated: ${related.length} blocks that use ${result.data.component}\n`);
+            for (const b of related) {
+              console.log(`  ${b.name}`);
+            }
+          }
+          if (!showcase && examples.length === 0 && related.length === 0) {
+            console.log(`\nNo blocks found for ${result.data.component}`);
+          }
+          console.log('');
           break;
         }
       }
