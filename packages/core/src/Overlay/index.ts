@@ -15,6 +15,9 @@ export type {
   OverlayShowOn,
 } from './XDSOverlayScrim';
 
+export {useOverlayTouchToggle} from './useOverlayTouchToggle';
+export type {OverlayTouchToggleResult} from './useOverlayTouchToggle';
+
 export {overlayScope, overlayContainerStyles} from './overlay.markers.stylex';
 
 // Pre-computed className for non-StyleX consumers.
