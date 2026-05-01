@@ -607,11 +607,12 @@ function applyInlinePlugins(
   const allMatches: RawMatch[] = [];
 
   for (const plugin of plugins) {
-    // Clone the regex to reset lastIndex
-    const re = new RegExp(plugin.pattern.source, plugin.pattern.flags);
+    // Reset lastIndex instead of cloning — avoids allocation per call.
+    // Safe because text nodes are processed sequentially (no interleaving).
+    plugin.pattern.lastIndex = 0;
     let m: RegExpExecArray | null;
 
-    while ((m = re.exec(text)) !== null) {
+    while ((m = plugin.pattern.exec(text)) !== null) {
       let end: number;
       if (plugin.getEndIndex) {
         const result = plugin.getEndIndex(text, m);
@@ -659,11 +660,10 @@ function applyInlinePlugins(
     }
 
     // Plugin element
-    const matchText = text.slice(m.start, m.end);
     segments.push({
       type: 'plugin',
       element: m.plugin.render(m.match, `plugin-${i}`),
-      matchLength: matchText.length,
+      matchLength: m.end - m.start,
     });
 
     cursor = m.end;
@@ -756,8 +756,9 @@ function renderInline(
       if (inlinePlugins && inlinePlugins.length > 0) {
         const segments = applyInlinePlugins(node.content, inlinePlugins);
         // If no plugin matched, fall through to the normal path
-        const hasPlugin = segments.some(s => s.type === 'plugin');
-        if (hasPlugin) {
+        // O(1) guard: applyInlinePlugins returns a single text segment when
+        // nothing matched — skip the plugin path entirely in that case.
+        if (!(segments.length === 1 && segments[0].type === 'text')) {
           const result: React.ReactNode[] = [];
           for (let i = 0; i < segments.length; i++) {
             const seg = segments[i];
@@ -1127,7 +1128,7 @@ function renderBlock(
               contentWidthValue,
               contentAlign,
               linkComponent,
-            inlinePlugins,
+              inlinePlugins,
             ),
           )}
         </blockquote>
@@ -1189,7 +1190,7 @@ function renderBlock(
                         contentWidthValue,
                         contentAlign,
                         linkComponent,
-                      inlinePlugins,
+                        inlinePlugins,
                       ),
                     )}
                   </>
@@ -1270,7 +1271,7 @@ function renderBlock(
                       contentWidthValue,
                       contentAlign,
                       linkComponent,
-                    inlinePlugins,
+                      inlinePlugins,
                     ),
                   )}
                 </>
