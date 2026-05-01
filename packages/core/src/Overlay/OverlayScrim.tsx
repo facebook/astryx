@@ -172,7 +172,6 @@ export function OverlayScrim({
           !isControlled && isHoverMode && isStrip && styles.touchAlwaysVisible,
         ),
       )}
-      data-position={position}
       inert={isControlled && !isOpen ? true : undefined}>
       {content}
     </div>
