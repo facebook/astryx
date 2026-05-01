@@ -39,3 +39,33 @@ export {
   lockIcon,
   starterIcons,
 } from './icons';
+
+// XIF spec types
+export type {
+  XIFIcon,
+  XIFPath,
+  XIFPersonality,
+  XIFAnimate,
+  XIFSlot,
+} from './xif-types';
+
+// XIF example icons
+export {
+  xifCheck,
+  xifHome,
+  xifFile,
+  xifShield,
+  xifBell,
+  xifStar,
+  xifBellOverride,
+  xifExamples,
+} from './xif-examples';
+
+// Path transforms
+export {
+  roundCorners,
+  addCurvature,
+  adjustTension,
+  applyPersonality,
+  type PathPersonality,
+} from './pathTransforms';

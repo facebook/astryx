@@ -397,3 +397,229 @@ export const AnimationIntent: StoryObj = {
     </XDSStack>
   ),
 };
+
+// ---------------------------------------------------------------------------
+// Path Transform Playground
+// ---------------------------------------------------------------------------
+
+// Import path transforms
+import {
+  applyPersonality,
+  roundCorners,
+  addCurvature,
+  adjustTension,
+} from '../../../packages/lab/src/SVGIcon/pathTransforms';
+
+/** Simple test shapes for demonstrating transforms */
+const testShapes = {
+  // Square (all 90° corners)
+  square: 'M4 4 L20 4 L20 20 L4 20 Z',
+  // Diamond (45° corners at top/bottom, 135° at sides)
+  diamond: 'M12 2 L22 12 L12 22 L2 12 Z',
+  // Pentagon (108° corners)
+  pentagon: 'M12 2 L21.5 9.5 L18.5 20 L5.5 20 L2.5 9.5 Z',
+  // Arrow (mixed angles: sharp tip, 90° shoulders)
+  arrow: 'M12 2 L20 10 L16 10 L16 22 L8 22 L8 10 L4 10 Z',
+  // House (mixed: 45° roof peak, 90° body corners)
+  house: 'M3 12 L12 3 L21 12 L21 21 L3 21 Z',
+  // Star 5-point (36° tips, 252° inner angles)
+  star: 'M12 2 L14.5 8.5 L21.5 9.5 L16.3 14.5 L17.6 21.5 L12 18 L6.4 21.5 L7.7 14.5 L2.5 9.5 L9.5 8.5 Z',
+};
+
+/**
+ * Interactive path transform playground.
+ * Demonstrates corner rounding, segment curvature, and tension
+ * with live SVG rendering.
+ */
+export const PathTransformPlayground: StoryObj = {
+  render: () => {
+    // We can't use hooks in stories without a wrapper,
+    // so we render multiple preset rows instead
+    const roundingLevels = [0, 0.2, 0.4, 0.6, 0.8, 1.0];
+    const curvatureLevels = [0, 0.2, 0.5, 0.8, 1.0];
+    const tensionLevels = [0, 0.25, 0.5, 0.75, 1.0];
+
+    const shapes = Object.entries(testShapes);
+
+    return (
+      <XDSStack direction="vertical" gap={4}>
+        <XDSText type="heading-3">Path Transform Playground</XDSText>
+        <XDSText type="supporting">
+          Live path manipulation with sagitta-corrected corner rounding. Sharp
+          corners (like star tips) round less aggressively than gentle corners —
+          achieving equal <em>perceived</em> roundness at all angles.
+        </XDSText>
+
+        {/* Corner Rounding */}
+        <XDSText type="heading-4">Corner Rounding (sagitta-corrected)</XDSText>
+        <XDSText type="supporting">
+          Same cornerRounding value across all shapes. Sharp corners get less
+          radius, gentle corners get more — visually balanced.
+        </XDSText>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: `80px repeat(${roundingLevels.length}, 1fr)`,
+            gap: '8px 4px',
+            alignItems: 'center',
+          }}>
+          <div />
+          {roundingLevels.map(r => (
+            <XDSText
+              key={r}
+              type="label"
+              style={{textAlign: 'center', fontSize: 10}}>
+              {r}
+            </XDSText>
+          ))}
+          {shapes.map(([name, d]) => (
+            <Fragment key={name}>
+              <XDSText type="label" style={{fontSize: 11}}>
+                {name}
+              </XDSText>
+              {roundingLevels.map(r => (
+                <div
+                  key={r}
+                  style={{display: 'flex', justifyContent: 'center'}}>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="40"
+                    height="40"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round">
+                    <path d={roundCorners(d, r)} />
+                  </svg>
+                </div>
+              ))}
+            </Fragment>
+          ))}
+        </div>
+
+        <XDSDivider />
+
+        {/* Segment Curvature */}
+        <XDSText type="heading-4">Segment Curvature</XDSText>
+        <XDSText type="supporting">
+          Straight line segments gain a perpendicular bow. Subtle at low values,
+          pronounced at high.
+        </XDSText>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: `80px repeat(${curvatureLevels.length}, 1fr)`,
+            gap: '8px 4px',
+            alignItems: 'center',
+          }}>
+          <div />
+          {curvatureLevels.map(c => (
+            <XDSText
+              key={c}
+              type="label"
+              style={{textAlign: 'center', fontSize: 10}}>
+              {c}
+            </XDSText>
+          ))}
+          {shapes.slice(0, 4).map(([name, d]) => (
+            <Fragment key={name}>
+              <XDSText type="label" style={{fontSize: 11}}>
+                {name}
+              </XDSText>
+              {curvatureLevels.map(c => (
+                <div
+                  key={c}
+                  style={{display: 'flex', justifyContent: 'center'}}>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="40"
+                    height="40"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round">
+                    <path d={addCurvature(d, c)} />
+                  </svg>
+                </div>
+              ))}
+            </Fragment>
+          ))}
+        </div>
+
+        <XDSDivider />
+
+        {/* Combined: Rounding + Curvature presets */}
+        <XDSText type="heading-4">
+          Personality Presets (combined transforms)
+        </XDSText>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: `80px repeat(5, 1fr)`,
+            gap: '8px 4px',
+            alignItems: 'center',
+          }}>
+          <div />
+          {[
+            {label: 'Brutalist', r: 0, c: 0},
+            {label: 'Technical', r: 0.1, c: 0},
+            {label: 'Default', r: 0.25, c: 0.05},
+            {label: 'Friendly', r: 0.5, c: 0.15},
+            {label: 'Playful', r: 0.8, c: 0.3},
+          ].map(p => (
+            <XDSStack
+              key={p.label}
+              direction="vertical"
+              hAlign="center"
+              gap={0}>
+              <XDSText type="label" style={{fontSize: 10}}>
+                {p.label}
+              </XDSText>
+              <XDSText type="supporting" style={{fontSize: 8}}>
+                r:{p.r} c:{p.c}
+              </XDSText>
+            </XDSStack>
+          ))}
+          {shapes.map(([name, d]) => (
+            <Fragment key={name}>
+              <XDSText type="label" style={{fontSize: 11}}>
+                {name}
+              </XDSText>
+              {[
+                {r: 0, c: 0},
+                {r: 0.1, c: 0},
+                {r: 0.25, c: 0.05},
+                {r: 0.5, c: 0.15},
+                {r: 0.8, c: 0.3},
+              ].map((p, i) => {
+                const transformed = applyPersonality(d, {
+                  cornerRounding: p.r,
+                  segmentCurvature: p.c,
+                });
+                return (
+                  <div
+                    key={i}
+                    style={{display: 'flex', justifyContent: 'center'}}>
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="40"
+                      height="40"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round">
+                      <path d={transformed} />
+                    </svg>
+                  </div>
+                );
+              })}
+            </Fragment>
+          ))}
+        </div>
+      </XDSStack>
+    );
+  },
+};
