@@ -17,6 +17,7 @@ module.exports = {
         aliases: {
           '@/*': [path.join(__dirname, '*')],
         },
+        classNamePrefix: 'p',
         unstable_moduleResolution: {
           type: 'commonJS',
         },
