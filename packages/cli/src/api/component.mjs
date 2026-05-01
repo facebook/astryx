@@ -204,18 +204,37 @@ export async function component(name, options = {}) {
 
   // ── Blocks mode ──────────────────────────────────────────────
   if (blocks) {
-    const related = await findRelatedBlocks(dirName);
+    const allBlocks = await findRelatedBlocks(dirName);
+    const toEntry = (b) => ({
+      name: b.dirName,
+      displayName: b.name,
+      description: b.description,
+      isShowcase: b.isShowcase ?? false,
+      category: b.category,
+    });
+
+    // Examples: blocks in the component's own directory, or
+    // componentsUsed match for sub-components without a directory.
+    const ownDir = allBlocks.filter(b => b.category.split('/').pop() === dirName);
+    const examples = ownDir.length > 0
+      ? ownDir
+      : allBlocks.filter(b => b.componentsUsed?.some(c => c === dirName));
+    const exampleSet = new Set(examples.map(b => b.dirName));
+
+    // Showcase: the single hero example from the examples list.
+    const showcaseBlock = examples.find(b => b.isShowcase) || null;
+
+    // Related: everything else that uses this component but isn't
+    // primarily about it (e.g. a Dialog block that has a Button).
+    const related = allBlocks.filter(b => !exampleSet.has(b.dirName));
+
     return {
       type: 'component.detail.blocks',
       data: {
         component: dirName,
-        blocks: related.map(b => ({
-          name: b.dirName,
-          displayName: b.name,
-          description: b.description,
-          isShowcase: b.isShowcase ?? false,
-          category: b.category,
-        })),
+        showcase: showcaseBlock ? toEntry(showcaseBlock) : null,
+        examples: examples.filter(b => b !== showcaseBlock).map(toEntry),
+        related: related.map(toEntry),
       },
     };
   }

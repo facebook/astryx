@@ -25,7 +25,6 @@ describe('component() sub-component scoping', () => {
   it('component("HStack") returns HStack, not Stack', async () => {
     const result = await component('HStack', CWD);
     expect(result.data.name).not.toBe('Stack');
-    // Should have HStack's description, not the family overview
   });
 
   it('component("Heading") returns Heading, not Text', async () => {
@@ -109,43 +108,65 @@ describe('findShowcase() priority', () => {
   });
 });
 
-// ─── Feature: component() → example blocks ─────────────────────
-// The component API should expose related example blocks so consumers
-// (doc site, agents) can discover them without a separate call.
+// ─── Feature: component() → blocks (showcase, examples, related) ─
+// The blocks API returns three separate lists so consumers can use
+// the showcase hero, component-specific examples, and broader related
+// blocks independently.
 
 describe('component() blocks integration', () => {
-  it('component("Card", {blocks: true}) returns related blocks', async () => {
+  it('returns showcase, examples, and related as separate lists', async () => {
     const result = await component('Card', {...CWD, blocks: true});
     expect(result.type).toBe('component.detail.blocks');
     expect(result.data.component).toBe('Card');
-    expect(Array.isArray(result.data.blocks)).toBe(true);
-    expect(result.data.blocks.length).toBeGreaterThan(0);
-    // Each block should have name, description, isShowcase
-    const first = result.data.blocks[0];
-    expect(first).toHaveProperty('name');
-    expect(first).toHaveProperty('description');
-    expect(first).toHaveProperty('isShowcase');
+    expect(result.data).toHaveProperty('showcase');
+    expect(Array.isArray(result.data.examples)).toBe(true);
+    expect(Array.isArray(result.data.related)).toBe(true);
   });
 
-  it('blocks include showcase and non-showcase entries', async () => {
+  it('showcase is the hero block for the component', async () => {
     const result = await component('Card', {...CWD, blocks: true});
-    const showcases = result.data.blocks.filter(b => b.isShowcase);
-    const nonShowcases = result.data.blocks.filter(b => !b.isShowcase);
-    expect(showcases.length).toBeGreaterThan(0);
-    expect(nonShowcases.length).toBeGreaterThan(0);
+    expect(result.data.showcase).not.toBeNull();
+    expect(result.data.showcase.isShowcase).toBe(true);
+    expect(result.data.showcase).toHaveProperty('name');
+    expect(result.data.showcase).toHaveProperty('description');
   });
 
-  it('blocks for sub-component returns that sub-component blocks', async () => {
+  it('examples are component-specific blocks excluding the showcase', async () => {
+    const result = await component('Button', {...CWD, blocks: true});
+    expect(result.data.showcase).not.toBeNull();
+    expect(result.data.examples.length).toBeGreaterThan(0);
+    // Showcase should not appear in examples
+    const exampleNames = result.data.examples.map(b => b.name);
+    expect(exampleNames).not.toContain(result.data.showcase.name);
+    // Examples should be about Button, not random blocks that use Button
+    for (const ex of result.data.examples) {
+      expect(ex.category).toMatch(/Button/);
+    }
+  });
+
+  it('related blocks use the component but are not primarily about it', async () => {
+    const result = await component('Button', {...CWD, blocks: true});
+    // Button is used in many blocks (dialogs, toolbars, etc.)
+    expect(result.data.related.length).toBeGreaterThan(0);
+    // Related should not overlap with examples or showcase
+    const exampleNames = new Set(result.data.examples.map(b => b.name));
+    for (const r of result.data.related) {
+      expect(exampleNames.has(r.name)).toBe(false);
+      expect(r.name).not.toBe(result.data.showcase?.name);
+    }
+  });
+
+  it('sub-component blocks resolve via componentsUsed', async () => {
     const result = await component('ClickableCard', {...CWD, blocks: true});
     expect(result.data.component).toBe('ClickableCard');
-    expect(result.data.blocks.length).toBeGreaterThan(0);
-    // Should include ClickableCardShowcase
-    const names = result.data.blocks.map(b => b.name);
-    expect(names.some(n => n.includes('ClickableCard'))).toBe(true);
+    expect(result.data.showcase).not.toBeNull();
+    expect(result.data.showcase.name).toMatch(/ClickableCard/);
   });
 
-  it('blocks for component with no blocks returns empty array', async () => {
+  it('component with no blocks returns null showcase and empty arrays', async () => {
     const result = await component('Theme', {...CWD, blocks: true});
-    expect(result.data.blocks).toEqual([]);
+    expect(result.data.showcase).toBeNull();
+    expect(result.data.examples).toEqual([]);
+    expect(result.data.related).toEqual([]);
   });
 });
