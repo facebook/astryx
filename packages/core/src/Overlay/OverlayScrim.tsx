@@ -47,7 +47,7 @@ const styles = stylex.create({
     gap: 8,
     padding: 12,
     pointerEvents: 'none',
-    transitionProperty: 'opacity, visibility',
+    transitionProperty: 'opacity, visibility, transform',
     transitionDuration: {
       default: durationVars['--duration-fast'],
       '@media (prefers-reduced-motion: reduce)': '0s',
@@ -55,26 +55,48 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
   },
 
+  // Position variants
   fill: {inset: 0},
   bottom: {insetInline: 0, bottom: 0},
   top: {insetInline: 0, top: 0},
 
+  // Alignment
   alignStart: {alignItems: 'flex-start', justifyContent: 'flex-start'},
   alignCenter: {alignItems: 'center', justifyContent: 'center'},
   alignEnd: {alignItems: 'flex-end', justifyContent: 'flex-start'},
 
+  // Scrim backgrounds
   scrimDark: {backgroundColor: colorVars['--color-overlay']},
   // TODO: Replace with --color-overlay-light token when added
   scrimLight: {backgroundColor: 'color-mix(in srgb, white 60%, transparent)'},
 
+  // Hidden: strips slide out, fill fades
   hidden: {opacity: 0, visibility: 'hidden'},
+  hiddenBottom: {transform: 'translateY(100%)'},
+  hiddenTop: {transform: 'translateY(-100%)'},
+
+  // Visible
   visible: {
     opacity: 1,
     visibility: 'visible',
     pointerEvents: 'auto',
-    // Fade in on initial mount (showOn="always" or first JS-controlled open)
+    transform: 'translateY(0)',
     '@starting-style': {
       opacity: 0,
+    },
+  },
+
+  // @starting-style for strips: slide in on mount
+  visibleFromBottom: {
+    '@starting-style': {
+      opacity: 0,
+      transform: 'translateY(100%)',
+    },
+  },
+  visibleFromTop: {
+    '@starting-style': {
+      opacity: 0,
+      transform: 'translateY(-100%)',
     },
   },
 
@@ -103,15 +125,27 @@ const styles = stylex.create({
     },
   },
 
-  // Touch: strip overlays always visible when hover unavailable
-  touchAlwaysVisible: {
-    '@media (hover: none)': {
-      opacity: 1,
-      visibility: 'visible',
-      pointerEvents: 'auto',
+  // Slide transform for strip hover reveal
+  hoverRevealBottom: {
+    transform: {
+      default: 'translateY(100%)',
+      [stylex.when.ancestor(':hover', overlayScope)]: {
+        '@media (hover: hover)': 'translateY(0)',
+      },
+      [stylex.when.ancestor(':focus-within', overlayScope)]: 'translateY(0)',
+    },
+  },
+  hoverRevealTop: {
+    transform: {
+      default: 'translateY(-100%)',
+      [stylex.when.ancestor(':hover', overlayScope)]: {
+        '@media (hover: hover)': 'translateY(0)',
+      },
+      [stylex.when.ancestor(':focus-within', overlayScope)]: 'translateY(0)',
     },
   },
 
+  // CSS-driven: focus-within only
   focusReveal: {
     opacity: {
       default: 0,
@@ -124,6 +158,19 @@ const styles = stylex.create({
     pointerEvents: {
       default: 'none',
       [stylex.when.ancestor(':focus-within', overlayScope)]: 'auto',
+    },
+  },
+
+  focusRevealBottom: {
+    transform: {
+      default: 'translateY(100%)',
+      [stylex.when.ancestor(':focus-within', overlayScope)]: 'translateY(0)',
+    },
+  },
+  focusRevealTop: {
+    transform: {
+      default: 'translateY(-100%)',
+      [stylex.when.ancestor(':focus-within', overlayScope)]: 'translateY(0)',
     },
   },
 });
@@ -175,12 +222,53 @@ export function OverlayScrim({
           alignMap[align],
           scrim === 'dark' && styles.scrimDark,
           scrim === 'light' && styles.scrimLight,
+
+          // JS-controlled visibility
           isControlled && isOpen && styles.visible,
+          isControlled &&
+            isOpen &&
+            position === 'bottom' &&
+            styles.visibleFromBottom,
+          isControlled && isOpen && position === 'top' && styles.visibleFromTop,
           isControlled && !isOpen && styles.hidden,
+          isControlled &&
+            !isOpen &&
+            position === 'bottom' &&
+            styles.hiddenBottom,
+          isControlled && !isOpen && position === 'top' && styles.hiddenTop,
+
+          // showOn="always"
           !isControlled && showOn === 'always' && styles.visible,
+          !isControlled &&
+            showOn === 'always' &&
+            position === 'bottom' &&
+            styles.visibleFromBottom,
+          !isControlled &&
+            showOn === 'always' &&
+            position === 'top' &&
+            styles.visibleFromTop,
+
+          // showOn="hover" / "hover-or-focus"
           !isControlled && isHoverMode && styles.hoverReveal,
+          !isControlled &&
+            isHoverMode &&
+            position === 'bottom' &&
+            styles.hoverRevealBottom,
+          !isControlled &&
+            isHoverMode &&
+            position === 'top' &&
+            styles.hoverRevealTop,
+
+          // showOn="focus"
           !isControlled && showOn === 'focus' && styles.focusReveal,
-          !isControlled && isHoverMode && isStrip && styles.touchAlwaysVisible,
+          !isControlled &&
+            showOn === 'focus' &&
+            position === 'bottom' &&
+            styles.focusRevealBottom,
+          !isControlled &&
+            showOn === 'focus' &&
+            position === 'top' &&
+            styles.focusRevealTop,
         ),
       )}
       inert={isControlled && !isOpen ? true : undefined}>

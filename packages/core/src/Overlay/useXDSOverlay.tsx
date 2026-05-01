@@ -180,8 +180,8 @@ export function useXDSOverlay({
   const [touchOpen, setTouchOpen] = useState(false);
 
   const isHoverMode = showOn === 'hover' || showOn === 'hover-or-focus';
-  const isStrip = position === 'bottom' || position === 'top';
-  const needsTouchToggle = isTouchDevice && isHoverMode && !isStrip;
+
+  const needsTouchToggle = isTouchDevice && isHoverMode;
 
   const handleToggle = useCallback(() => {
     setTouchOpen(prev => !prev);
