@@ -45,7 +45,7 @@ const styles = stylex.create({
     paddingBlock: 2,
     paddingInline: 8,
     borderRadius: 4,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: colorVars['--color-overlay'],
     fontSize: 12,
     fontWeight: 600,
   },

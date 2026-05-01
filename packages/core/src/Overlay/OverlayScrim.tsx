@@ -12,7 +12,12 @@
 
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
+import {
+  colorVars,
+  durationVars,
+  easeVars,
+  spacingVars,
+} from '../theme/tokens.stylex';
 import {XDSMediaTheme} from '../theme/XDSMediaTheme';
 import {xdsClassName, mergeProps} from '../utils';
 import {overlayScope} from './overlay.markers.stylex';
@@ -44,8 +49,8 @@ const styles = stylex.create({
     position: 'absolute',
     display: 'flex',
     flexDirection: 'column',
-    gap: 8,
-    padding: 12,
+    gap: spacingVars['--spacing-2'],
+    padding: spacingVars['--spacing-3'],
     pointerEvents: 'none',
     transitionProperty: 'opacity, visibility, transform',
     transitionDuration: {
