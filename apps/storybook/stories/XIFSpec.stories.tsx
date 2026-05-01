@@ -328,74 +328,109 @@ export const PersonalityAxes: StoryObj = {
 // ---------------------------------------------------------------------------
 
 export const AnimationIntent: StoryObj = {
-  render: () => (
-    <XDSStack direction="vertical" gap={3}>
-      <XDSText type="heading-3">Animation Declarations</XDSText>
-      <XDSText type="supporting">
-        Icons declare animation <em>intent</em> per path — what type of motion
-        and in what sequence order. The theme resolves all timing (duration,
-        easing, stagger delay). No durations in the icon data.
-      </XDSText>
+  render: () => {
+    const animStyles = `
+      @keyframes xif-draw { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+      @keyframes xif-fade { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes xif-scale { from { transform: scale(0); } to { transform: scale(1); } }
+      @keyframes xif-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      .xif-draw path { stroke-dasharray: 100; stroke-dashoffset: 100; animation: xif-draw 1.2s ease-out forwards; }
+      .xif-draw path:nth-child(2) { animation-delay: 0.4s; }
+      .xif-fade path { opacity: 0; animation: xif-fade 0.6s ease-out forwards; }
+      .xif-fade path:nth-child(2) { animation-delay: 0.3s; }
+      .xif-scale path { transform-origin: center; transform: scale(0); animation: xif-scale 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+      .xif-scale path:nth-child(2) { animation-delay: 0.2s; }
+      .xif-rotate { transform-origin: center; animation: xif-rotate 2s linear infinite; }
+    `;
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '100px 1fr 1fr',
-          gap: 12,
-          alignItems: 'start',
-        }}>
-        <XDSText type="label" style={{fontSize: 10}}>
-          Icon
-        </XDSText>
-        <XDSText type="label" style={{fontSize: 10}}>
-          Preview
-        </XDSText>
-        <XDSText type="label" style={{fontSize: 10}}>
-          Animation Data
+    const demos = [
+      {
+        name: 'draw',
+        desc: 'Stroke reveals along path',
+        cls: 'xif-draw',
+        paths: [
+          'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9',
+          'M10.3 21a1.94 1.94 0 0 0 3.4 0',
+        ],
+      },
+      {
+        name: 'fade',
+        desc: 'Opacity entrance per layer',
+        cls: 'xif-fade',
+        paths: [
+          'M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z',
+          'M9 12l2 2 4-4',
+        ],
+      },
+      {
+        name: 'scale',
+        desc: 'Grow from center',
+        cls: 'xif-scale',
+        paths: [
+          'M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z',
+        ],
+      },
+      {
+        name: 'rotate',
+        desc: 'Continuous spin',
+        cls: 'xif-rotate',
+        paths: [
+          'M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z',
+        ],
+      },
+    ];
+
+    return (
+      <XDSStack direction="vertical" gap={3}>
+        <style dangerouslySetInnerHTML={{__html: animStyles}} />
+        <XDSText type="heading-3">Animation Types (Live)</XDSText>
+        <XDSText type="supporting">
+          Icons declare animation intent per path. The theme resolves timing.
+          Each demo loops on page load.
         </XDSText>
 
-        <XDSText type="label" style={{fontSize: 11}}>
-          bell
-        </XDSText>
-        <XDSSVGIcon
-          icon={xifToSvgIconDef(xifBell)}
-          variation="linear"
-          size="lg"
-        />
-        <div style={{fontSize: 11, fontFamily: 'monospace', lineHeight: 1.5}}>
-          <div>
-            path[0]: <strong>scale</strong> seq:1
-          </div>
-          <div>
-            path[1]: <strong>draw</strong> seq:2
-          </div>
-          <div style={{color: '#888', marginTop: 4}}>
-            Theme resolves: duration, easing, stagger
-          </div>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: 24,
+          }}>
+          {demos.map(demo => (
+            <XDSStack
+              key={demo.name}
+              direction="vertical"
+              gap={1}
+              hAlign="center"
+              style={{padding: 16}}>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                width="48"
+                height="48"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={demo.cls}>
+                {demo.paths.map((d, i) => (
+                  <path key={i} d={d} />
+                ))}
+              </svg>
+              <XDSText type="label" style={{fontSize: 12, marginTop: 8}}>
+                {demo.name}
+              </XDSText>
+              <XDSText
+                type="supporting"
+                style={{fontSize: 10, textAlign: 'center'}}>
+                {demo.desc}
+              </XDSText>
+            </XDSStack>
+          ))}
         </div>
-      </div>
-
-      <XDSText type="heading-4">Animation Types</XDSText>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '80px 1fr',
-          gap: '4px 12px',
-          fontSize: 12,
-        }}>
-        <strong>draw</strong>
-        <span>Stroke reveals along path (dasharray/dashoffset)</span>
-        <strong>fade</strong>
-        <span>Opacity entrance</span>
-        <strong>scale</strong>
-        <span>Grow from center</span>
-        <strong>rotate</strong>
-        <span>Continuous spin (loaders)</span>
-        <strong>morph</strong>
-        <span>Interpolate between variation states (linear → bold)</span>
-      </div>
-    </XDSStack>
-  ),
+      </XDSStack>
+    );
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -412,18 +447,16 @@ import {
 
 /** Simple test shapes for demonstrating transforms */
 const testShapes = {
-  // Square (all 90° corners)
   square: 'M4 4 L20 4 L20 20 L4 20 Z',
-  // Diamond (45° corners at top/bottom, 135° at sides)
   diamond: 'M12 2 L22 12 L12 22 L2 12 Z',
-  // Pentagon (108° corners)
-  pentagon: 'M12 2 L21.5 9.5 L18.5 20 L5.5 20 L2.5 9.5 Z',
-  // Arrow (mixed angles: sharp tip, 90° shoulders)
   arrow: 'M12 2 L20 10 L16 10 L16 22 L8 22 L8 10 L4 10 Z',
-  // House (mixed: 45° roof peak, 90° body corners)
-  house: 'M3 12 L12 3 L21 12 L21 21 L3 21 Z',
-  // Star 5-point (36° tips, 252° inner angles)
   star: 'M12 2 L14.5 8.5 L21.5 9.5 L16.3 14.5 L17.6 21.5 L12 18 L6.4 21.5 L7.7 14.5 L2.5 9.5 L9.5 8.5 Z',
+  bell: 'M4 17 L4 9 L8 5 L12 3 L16 5 L20 9 L20 17 Z',
+  envelope: 'M2 6 L12 13 L22 6 L22 18 L2 18 Z',
+  chat: 'M3 4 L21 4 L21 16 L13 16 L8 21 L8 16 L3 16 Z',
+  shield: 'M4 5 L12 2 L20 5 L20 13 L12 22 L4 13 Z',
+  hexagon: 'M12 2 L20.5 6.5 L20.5 15.5 L12 20 L3.5 15.5 L3.5 6.5 Z',
+  bookmark: 'M6 2 L18 2 L18 22 L12 17 L6 22 Z',
 };
 
 /**
@@ -522,7 +555,7 @@ export const PathTransformPlayground: StoryObj = {
               {c}
             </XDSText>
           ))}
-          {shapes.slice(0, 4).map(([name, d]) => (
+          {shapes.slice(0, 5).map(([name, d]) => (
             <Fragment key={name}>
               <XDSText type="label" style={{fontSize: 11}}>
                 {name}

@@ -266,16 +266,64 @@ export function roundCorners(d: string, cornerRounding: number): string {
   const cmds = parsePath(d);
   const result: PathCommand[] = [];
 
+  // Pre-pass: find the last L before each Z to handle closed path corners
+  // We need to round: last-L → Z → M (the closing corner)
+  // and also: M → first-L (the opening corner, if preceded by Z-closed path)
+
   for (let i = 0; i < cmds.length; i++) {
     const prev = i > 0 ? cmds[i - 1] : null;
     const curr = cmds[i];
     const next = i < cmds.length - 1 ? cmds[i + 1] : null;
 
+    // Handle Z: insert rounding for the closing corner
+    // The corner is: last point → subpath start (M) → first L after M
+    if (curr.type === 'Z' && prev && (prev.type === 'L' || prev.type === 'Q')) {
+      // Find the M that started this subpath
+      let mIdx = i - 1;
+      while (mIdx >= 0 && cmds[mIdx].type !== 'M') mIdx--;
+      if (mIdx >= 0) {
+        const mCmd = cmds[mIdx];
+        const mPt = getEndpoint(mCmd)!;
+        const prevPt = getEndpoint(prev)!;
+        // Find the first L after M
+        let firstL = mIdx + 1;
+        while (firstL < cmds.length && cmds[firstL].type !== 'L') firstL++;
+        if (firstL < cmds.length) {
+          const firstLPt = getEndpoint(cmds[firstL])!;
+
+          const d1 = dist(prevPt, mPt);
+          const d2 = dist(mPt, firstLPt);
+          const maxR = Math.min(d1, d2) / 2;
+
+          const v1: Point = {x: prevPt.x - mPt.x, y: prevPt.y - mPt.y};
+          const v2: Point = {x: firstLPt.x - mPt.x, y: firstLPt.y - mPt.y};
+          const ang = angleBetween(v1, v2);
+          const sharp = 1 - ang / Math.PI;
+          const r = maxR * cornerRounding * sharp * sharp;
+
+          if (r >= 0.1) {
+            const t1 = r / d1;
+            const t2 = r / d2;
+            const pb1 = lerp(mPt, prevPt, t1);
+            const pb2 = lerp(mPt, firstLPt, t2);
+
+            // Insert L to pull-back, Q through M, then Z
+            result.push({type: 'L', x: pb1.x, y: pb1.y});
+            result.push({type: 'Q', cx: mPt.x, cy: mPt.y, x: pb2.x, y: pb2.y});
+            result.push({type: 'Z'});
+            continue;
+          }
+        }
+      }
+      result.push(curr);
+      continue;
+    }
+
     // Only round L commands that have L or M before and L or Z after
     if (
       curr.type === 'L' &&
       prev &&
-      (prev.type === 'L' || prev.type === 'M') &&
+      (prev.type === 'L' || prev.type === 'M' || prev.type === 'Q') &&
       next &&
       (next.type === 'L' || next.type === 'Z')
     ) {
@@ -295,29 +343,18 @@ export function roundCorners(d: string, cornerRounding: number): string {
       const v2: Point = {x: nextPt.x - cornerPt.x, y: nextPt.y - cornerPt.y};
       const angle = angleBetween(v1, v2);
 
-      // Sagitta-corrected rounding: equal PERCEIVED roundness at all angles.
+      // Proportional rounding: sharper corners round MORE, gentle corners round LESS.
       //
-      // Problem: same radius at a 60° corner looks 4× more rounded than at 150°.
-      // Solution: adjust radius per angle so the sagitta (visual depth of the
-      // curve) is equal across all corners.
+      // This feels natural — a sharp 60° corner has more room to soften and
+      // benefits more from rounding. A gentle 150° corner is already soft
+      // and barely needs adjustment.
       //
-      // Formula: R = targetSagitta / (1 - cos((π - angle) / 2))
-      // where targetSagitta scales with cornerRounding × maxRadius
-      //
-      // This means sharper corners get LESS radius (they're already visually
-      // prominent) and gentler corners get MORE radius (they need help).
-      const halfArc = (Math.PI - angle) / 2;
-      const cosHalf = Math.cos(halfArc);
-      const sagittaFactor = 1 - cosHalf;
-
-      // Target sagitta is a fraction of the max possible radius
-      const targetSagitta = maxRadius * cornerRounding * 0.3;
-
-      // Compute the corrected radius, clamped to maxRadius
-      const radius =
-        sagittaFactor > 0.001
-          ? Math.min(targetSagitta / sagittaFactor, maxRadius)
-          : 0;
+      // Sharpness = 1 - (angle / π). Range: 0 (flat/180°) to 1 (fully acute/0°).
+      // Radius scales with sharpness² for a natural curve — the squaring
+      // prevents gentle corners from rounding too aggressively while still
+      // giving sharp corners meaningful rounding.
+      const sharpness = 1 - angle / Math.PI;
+      const radius = maxRadius * cornerRounding * sharpness * sharpness;
 
       if (radius < 0.1) {
         // Too small to round, keep original
