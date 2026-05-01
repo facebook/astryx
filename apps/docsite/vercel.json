@@ -1,0 +1,4 @@
+{
+  "buildCommand": "cd ../.. && yarn install && yarn build && cd apps/docsite && next build",
+  "installCommand": "cd ../.. && yarn install"
+}
