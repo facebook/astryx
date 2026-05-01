@@ -1,45 +1,45 @@
 'use client';
 
 import {XDSAvatar} from '@xds/core/Avatar';
+import {XDSHStack, XDSVStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
 
 export default function AvatarFallbackChain() {
   return (
-    <div style={{display: 'flex', alignItems: 'center', gap: 24}}>
-      <div>
-        <p style={{margin: '0 0 8px', fontSize: 13}}>Valid src</p>
+    <XDSVStack gap={4}>
+      <XDSHStack gap={3} vAlign="center">
         <XDSAvatar
-          src="https://i.pravatar.cc/150?img=10"
+          src="https://lookaside.facebook.com/assets/vs_datakit_profile_photos_t66173184/VS-Design-Tools-Datakit-60.jpg"
+          name="Carol Davis"
+          size="medium"
+        />
+        <XDSText type="supporting">Valid src</XDSText>
+      </XDSHStack>
+      <XDSHStack gap={3} vAlign="center">
+        <XDSAvatar
+          src="https://lookaside.facebook.com/assets/xds_oss/does-not-exist-primary.jpg"
+          fallbackSrc="https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-2.png"
+          name="Invalid User"
+          size="medium"
+        />
+        <XDSText type="supporting">Invalid src, valid fallbackSrc</XDSText>
+      </XDSHStack>
+      <XDSHStack gap={3} vAlign="center">
+        <XDSAvatar
+          src="https://lookaside.facebook.com/assets/xds_oss/does-not-exist-primary.jpg"
+          fallbackSrc="https://lookaside.facebook.com/assets/xds_oss/does-not-exist-fallback.jpg"
           name="Test User"
-          size="large"
+          size="medium"
         />
-      </div>
-      <div>
-        <p style={{margin: '0 0 8px', fontSize: 13}}>
-          Invalid src, valid fallbackSrc
-        </p>
+        <XDSText type="supporting">Both invalid, has name</XDSText>
+      </XDSHStack>
+      <XDSHStack gap={3} vAlign="center">
         <XDSAvatar
-          src="https://invalid-url.example/broken.jpg"
-          fallbackSrc="https://i.pravatar.cc/150?img=11"
-          name="Test User"
-          size="large"
+          src="https://lookaside.facebook.com/assets/xds_oss/does-not-exist-primary.jpg"
+          size="medium"
         />
-      </div>
-      <div>
-        <p style={{margin: '0 0 8px', fontSize: 13}}>Both invalid, has name</p>
-        <XDSAvatar
-          src="https://invalid-url.example/broken.jpg"
-          fallbackSrc="https://also-invalid.example/broken.jpg"
-          name="Test User"
-          size="large"
-        />
-      </div>
-      <div>
-        <p style={{margin: '0 0 8px', fontSize: 13}}>All invalid, no name</p>
-        <XDSAvatar
-          src="https://invalid-url.example/broken.jpg"
-          size="large"
-        />
-      </div>
-    </div>
+        <XDSText type="supporting">All invalid, no name</XDSText>
+      </XDSHStack>
+    </XDSVStack>
   );
 }
