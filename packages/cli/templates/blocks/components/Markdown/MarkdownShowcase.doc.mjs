@@ -5,4 +5,7 @@ export const doc = {
   isReady: true,
   aspectRatio: 1,
   isShowcase: true,
+  description:
+    'Rich markdown content with headings, lists, and formatting.',
+  componentsUsed: ['Markdown'],
 };

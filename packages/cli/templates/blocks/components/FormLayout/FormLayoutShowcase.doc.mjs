@@ -5,4 +5,7 @@ export const doc = {
   isReady: true,
   aspectRatio: 1,
   isShowcase: true,
+  description:
+    'A vertical form layout with text input fields.',
+  componentsUsed: ['FormLayout', 'TextInput'],
 };

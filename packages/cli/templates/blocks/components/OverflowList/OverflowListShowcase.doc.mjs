@@ -5,4 +5,7 @@ export const doc = {
   isReady: true,
   aspectRatio: 1,
   isShowcase: true,
+  description:
+    'A list of buttons that collapses overflowing items into a +N indicator.',
+  componentsUsed: ['OverflowList', 'Button'],
 };

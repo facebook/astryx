@@ -5,4 +5,7 @@ export const doc = {
   isReady: true,
   aspectRatio: 16 / 9,
   isShowcase: true,
+  description:
+    'A time input field.',
+  componentsUsed: ['TimeInput'],
 };
