@@ -285,7 +285,9 @@ export function resolveImportPath(coreDir, componentName) {
 
 /**
  * Discover components from an external package's docs directory.
- * Scans for *.doc.mjs files and returns their names.
+ * Scans for *.doc.mjs files and returns their names as a flat array.
+ *
+ * @deprecated Use discoverExternalComponentsGrouped for group-aware discovery.
  */
 export function discoverExternalComponents(docsDir) {
   if (!fs.existsSync(docsDir)) return [];
@@ -306,6 +308,77 @@ export function discoverExternalComponents(docsDir) {
 
   scanDir(docsDir);
   return components.sort();
+}
+
+/**
+ * Discover components from an external package's docs directory,
+ * reading `group:` fields from each .doc.mjs for subcategories.
+ *
+ * Returns a Record<string, string[]> matching the shape of discoverComponents():
+ * - Grouped components: `{ 'App Chrome': ['AppShell', 'SideNav', 'TopNav'] }`
+ * - Ungrouped components: `{ 'Diff': ['Diff'] }`
+ */
+export function discoverExternalComponentsGrouped(docsDir) {
+  if (!fs.existsSync(docsDir)) return {};
+
+  /** @type {Map<string, string|null>} componentName → group */
+  const componentGroups = new Map();
+
+  function scanDir(dirPath) {
+    const entries = fs.readdirSync(dirPath, {withFileTypes: true});
+    for (const entry of entries) {
+      if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
+      const fullPath = path.join(dirPath, entry.name);
+      if (entry.isDirectory()) {
+        scanDir(fullPath);
+      } else if (entry.name.endsWith('.doc.mjs')) {
+        const name = entry.name.replace('.doc.mjs', '');
+        const {group, hidden} = readDocMeta(fullPath);
+        if (!hidden) {
+          componentGroups.set(name, group);
+        }
+      }
+    }
+  }
+
+  scanDir(docsDir);
+
+  // Build grouped result (same algorithm as discoverComponents)
+  /** @type {Map<string, string[]>} */
+  const groups = new Map();
+  /** @type {string[]} */
+  const ungrouped = [];
+
+  for (const [name, group] of componentGroups) {
+    if (group) {
+      if (!groups.has(group)) groups.set(group, []);
+      groups.get(group).push(name);
+    } else {
+      ungrouped.push(name);
+    }
+  }
+
+  for (const members of groups.values()) {
+    members.sort();
+  }
+
+  /** @type {Array<{key: string, values: string[]}>} */
+  const entries = [];
+  for (const [groupName, members] of groups) {
+    entries.push({key: groupName, values: members});
+  }
+  for (const name of ungrouped) {
+    entries.push({key: name, values: [name]});
+  }
+  entries.sort((a, b) => a.key.localeCompare(b.key));
+
+  /** @type {Record<string, string[]>} */
+  const ordered = {};
+  for (const {key, values} of entries) {
+    ordered[key] = values;
+  }
+
+  return ordered;
 }
 
 /**
