@@ -2,7 +2,7 @@
 
 export const docs = {
   name: 'theme',
-  title: 'XDS Theme System',
+  title: 'Theme System',
   description:
     'XDSTheme provider, custom themes, theme build for production/SSR, light/dark mode, and component style overrides.',
 

@@ -71,13 +71,19 @@ export default function Page() {
       content: [
         {
           type: 'prose',
-          text: 'Every XDS component accepts an `xstyle` prop. Use an inline object for one-off tweaks, or `stylex.create` for reusable styles and pseudo-classes.',
+          text: 'Every XDS component accepts an `xstyle` prop for StyleX style overrides created via `stylex.create()`.',
         },
         {
           type: 'code',
           lang: 'tsx',
-          label: 'Inline overrides',
-          code: `<XDSButton label="Save" xstyle={{alignSelf: 'flex-end', marginTop: 16}} />`,
+          label: 'Style overrides',
+          code: `import * as stylex from '@stylexjs/stylex';
+
+const overrides = stylex.create({
+  save: { alignSelf: 'flex-end', marginTop: 16 },
+});
+
+<XDSButton label="Save" xstyle={overrides.save} />`,
         },
       ],
     },
