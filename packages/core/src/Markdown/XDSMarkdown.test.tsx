@@ -206,24 +206,24 @@ describe('XDSMarkdown', () => {
 // inlinePlugins
 // ---------------------------------------------------------------------------
 
-// Helper: creates a plugin that turns T-numbers into links
-function createTaskPlugin(): MarkdownInlinePlugin {
+// Helper: creates a plugin that turns JIRA-style ticket refs (PROJ-123) into links
+function createTicketPlugin(): MarkdownInlinePlugin {
   return {
-    pattern: /\bT(\d+)\b/g,
+    pattern: /\b([A-Z][A-Z0-9]+-\d+)\b/g,
     render: (match, key) => (
-      <a key={key} href={`https://tasks.example.com/${match[1]}`} data-testid="task-link">
+      <a key={key} href={`https://issues.example.com/browse/${match[1]}`} data-testid="ticket-link">
         {match[0]}
       </a>
     ),
   };
 }
 
-// Helper: creates a plugin that turns D-numbers into links
-function createDiffPlugin(): MarkdownInlinePlugin {
+// Helper: creates a plugin that turns X-numbers (X12345) into links
+function createXRefPlugin(): MarkdownInlinePlugin {
   return {
-    pattern: /\bD(\d+)\b/g,
+    pattern: /\bX(\d+)\b/g,
     render: (match, key) => (
-      <a key={key} href={`https://diffs.example.com/${match[1]}`} data-testid="diff-link">
+      <a key={key} href={`https://xref.example.com/${match[1]}`} data-testid="xref-link">
         {match[0]}
       </a>
     ),
@@ -232,105 +232,105 @@ function createDiffPlugin(): MarkdownInlinePlugin {
 
 describe('inlinePlugins', () => {
   it('transforms text patterns into custom elements', () => {
-    const taskPlugin = createTaskPlugin();
+    const ticketPlugin = createTicketPlugin();
     const {container} = render(
-      <XDSMarkdown inlinePlugins={[taskPlugin]}>
-        {'Check out T12345 for details'}
+      <XDSMarkdown inlinePlugins={[ticketPlugin]}>
+        {'Check out PROJ-123 for details'}
       </XDSMarkdown>,
     );
-    const link = container.querySelector('[data-testid="task-link"]');
+    const link = container.querySelector('[data-testid="ticket-link"]');
     expect(link).toBeInTheDocument();
-    expect(link!.getAttribute('href')).toBe('https://tasks.example.com/12345');
-    expect(link!.textContent).toBe('T12345');
+    expect(link!.getAttribute('href')).toBe('https://issues.example.com/browse/PROJ-123');
+    expect(link!.textContent).toBe('PROJ-123');
   });
 
   it('supports multiple plugins', () => {
     const {container} = render(
-      <XDSMarkdown inlinePlugins={[createTaskPlugin(), createDiffPlugin()]}>
-        {'See T12345 and D67890'}
+      <XDSMarkdown inlinePlugins={[createTicketPlugin(), createXRefPlugin()]}>
+        {'See PROJ-123 and X99999'}
       </XDSMarkdown>,
     );
-    const taskLink = container.querySelector('[data-testid="task-link"]');
-    const diffLink = container.querySelector('[data-testid="diff-link"]');
-    expect(taskLink).toBeInTheDocument();
-    expect(taskLink!.getAttribute('href')).toBe('https://tasks.example.com/12345');
-    expect(diffLink).toBeInTheDocument();
-    expect(diffLink!.getAttribute('href')).toBe('https://diffs.example.com/67890');
+    const ticketLink = container.querySelector('[data-testid="ticket-link"]');
+    const xrefLink = container.querySelector('[data-testid="xref-link"]');
+    expect(ticketLink).toBeInTheDocument();
+    expect(ticketLink!.getAttribute('href')).toBe('https://issues.example.com/browse/PROJ-123');
+    expect(xrefLink).toBeInTheDocument();
+    expect(xrefLink!.getAttribute('href')).toBe('https://xref.example.com/99999');
   });
 
   it('does not transform patterns inside fenced code blocks', () => {
     const {container} = render(
-      <XDSMarkdown inlinePlugins={[createTaskPlugin()]}>
-        {'```\nT12345\n```'}
+      <XDSMarkdown inlinePlugins={[createTicketPlugin()]}>
+        {'```\nPROJ-123\n```'}
       </XDSMarkdown>,
     );
-    const link = container.querySelector('[data-testid="task-link"]');
+    const link = container.querySelector('[data-testid="ticket-link"]');
     expect(link).toBeNull();
-    expect(container.textContent).toContain('T12345');
+    expect(container.textContent).toContain('PROJ-123');
   });
 
   it('does not transform patterns inside inline code', () => {
     const {container} = render(
-      <XDSMarkdown inlinePlugins={[createTaskPlugin()]}>
-        {'Use `T12345` in your code'}
+      <XDSMarkdown inlinePlugins={[createTicketPlugin()]}>
+        {'Use `PROJ-123` in your code'}
       </XDSMarkdown>,
     );
-    const link = container.querySelector('[data-testid="task-link"]');
+    const link = container.querySelector('[data-testid="ticket-link"]');
     expect(link).toBeNull();
-    expect(container.textContent).toContain('T12345');
+    expect(container.textContent).toContain('PROJ-123');
   });
 
   it('works alongside regular markdown links', () => {
     const {container} = render(
-      <XDSMarkdown inlinePlugins={[createTaskPlugin()]}>
-        {'Visit [example](https://example.com) and check T12345'}
+      <XDSMarkdown inlinePlugins={[createTicketPlugin()]}>
+        {'Visit [example](https://example.com) and check PROJ-123'}
       </XDSMarkdown>,
     );
-    const taskLink = container.querySelector('[data-testid="task-link"]');
-    expect(taskLink).toBeInTheDocument();
+    const ticketLink = container.querySelector('[data-testid="ticket-link"]');
+    expect(ticketLink).toBeInTheDocument();
     const mdLink = container.querySelector('a[href="https://example.com"]');
     expect(mdLink).toBeInTheDocument();
     expect(mdLink!.textContent).toBe('example');
   });
 
   it('first plugin wins for overlapping patterns', () => {
-    const customPlugin: MarkdownInlinePlugin = {
-      pattern: /T\d+/g,
+    const narrowPlugin: MarkdownInlinePlugin = {
+      pattern: /PROJ-\d+/g,
       render: (match, key) => (
-        <span key={key} data-testid="custom-match">{match[0]}</span>
+        <span key={key} data-testid="narrow-match">{match[0]}</span>
       ),
     };
-    const broaderPlugin: MarkdownInlinePlugin = {
-      pattern: /[A-Z]\d+/g,
+    const broadPlugin: MarkdownInlinePlugin = {
+      pattern: /[A-Z]+-\d+/g,
       render: (match, key) => (
-        <span key={key} data-testid="broader-match">{match[0]}</span>
+        <span key={key} data-testid="broad-match">{match[0]}</span>
       ),
     };
     const {container} = render(
-      <XDSMarkdown inlinePlugins={[customPlugin, broaderPlugin]}>
-        {'Check T12345'}
+      <XDSMarkdown inlinePlugins={[narrowPlugin, broadPlugin]}>
+        {'Check PROJ-123'}
       </XDSMarkdown>,
     );
-    expect(container.querySelector('[data-testid="custom-match"]')).toBeInTheDocument();
-    expect(container.querySelector('[data-testid="broader-match"]')).toBeNull();
+    expect(container.querySelector('[data-testid="narrow-match"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-testid="broad-match"]')).toBeNull();
   });
 
   it('skips matches when getEndIndex returns false', () => {
     const plugin: MarkdownInlinePlugin = {
-      pattern: /\bT(\d+)\b/g,
+      pattern: /\b([A-Z]+-\d+)\b/g,
       getEndIndex: () => false,
       render: (match, key) => (
-        <a key={key} data-testid="task-link">{match[0]}</a>
+        <a key={key} data-testid="ticket-link">{match[0]}</a>
       ),
     };
     const {container} = render(
       <XDSMarkdown inlinePlugins={[plugin]}>
-        {'Check T12345 for details'}
+        {'Check PROJ-123 for details'}
       </XDSMarkdown>,
     );
-    const link = container.querySelector('[data-testid="task-link"]');
+    const link = container.querySelector('[data-testid="ticket-link"]');
     expect(link).toBeNull();
-    expect(container.textContent).toContain('T12345');
+    expect(container.textContent).toContain('PROJ-123');
   });
 
   it('uses getEndIndex to adjust match boundaries', () => {
@@ -374,13 +374,13 @@ describe('inlinePlugins', () => {
 
   it('transforms patterns inside bold/italic text', () => {
     const {container} = render(
-      <XDSMarkdown inlinePlugins={[createTaskPlugin()]}>
-        {'**T12345**'}
+      <XDSMarkdown inlinePlugins={[createTicketPlugin()]}>
+        {'**PROJ-123**'}
       </XDSMarkdown>,
     );
-    const link = container.querySelector('[data-testid="task-link"]');
+    const link = container.querySelector('[data-testid="ticket-link"]');
     expect(link).toBeInTheDocument();
-    expect(link!.textContent).toBe('T12345');
+    expect(link!.textContent).toBe('PROJ-123');
     expect(link!.closest('strong')).toBeInTheDocument();
   });
 });

@@ -330,15 +330,16 @@ export const ContentAlignCenter: Story = {
 };
 
 export const InlinePlugins: Story = {
-  name: 'Inline Plugins (T/D numbers)',
+  name: 'Inline Plugins',
   render: () => {
     const inlinePlugins = [
       {
-        pattern: /\bT(\d+)\b/g,
+        // JIRA-style ticket references: PROJ-123, BUG-456, etc.
+        pattern: /\b([A-Z][A-Z0-9]+-\d+)\b/g,
         render: (match: RegExpMatchArray, key: string) => (
           <a
             key={key}
-            href={`https://tasks.example.com/${match[1]}`}
+            href={`https://issues.example.com/browse/${match[1]}`}
             style={{
               color: 'var(--color-text-accent, #0066FF)',
               textDecoration: 'none',
@@ -350,22 +351,7 @@ export const InlinePlugins: Story = {
         ),
       },
       {
-        pattern: /\bD(\d+)\b/g,
-        render: (match: RegExpMatchArray, key: string) => (
-          <a
-            key={key}
-            href={`https://diffs.example.com/${match[1]}`}
-            style={{
-              color: 'var(--color-text-accent, #0066FF)',
-              textDecoration: 'none',
-              fontWeight: 600,
-            }}
-          >
-            {match[0]}
-          </a>
-        ),
-      },
-      {
+        // GitHub-style issue references: #123, #456, etc.
         pattern: /#(\d+)/g,
         render: (match: RegExpMatchArray, key: string) => (
           <a
@@ -384,29 +370,29 @@ export const InlinePlugins: Story = {
     ];
 
     const markdown = [
-      '## Release Notes — v0.0.14',
+      '## Release Notes — v2.1.0',
       '',
-      'This release fixes several critical issues reported in T259006394 and introduces',
+      'This release fixes several issues reported in PROJ-42 and introduces',
       'the inline plugins feature requested in #1873.',
       '',
       '### Bug Fixes',
       '',
-      '- Fixed crash in XDSMarkdown streaming mode (D102849636)',
-      '- Resolved memory leak in chat components (T264997558)',
-      '- **Bold context**: Plugin works inside **T12345 formatting**',
+      '- Fixed crash in streaming mode (BUG-789)',
+      '- Resolved memory leak in chat components (PROJ-101)',
+      '- **Bold context**: Plugin works inside **PROJ-55 formatting**',
       '',
       '### Code Example (not linkified)',
       '',
       '```typescript',
-      '// T99999 and D88888 should NOT become links inside code blocks',
-      'const taskId = "T99999";',
+      '// PROJ-999 and BUG-888 should NOT become links inside code blocks',
+      'const ticketId = "PROJ-999";',
       '```',
       '',
-      'Inline code is also safe: `T99999` stays as plain text.',
+      'Inline code is also safe: `PROJ-999` stays as plain text.',
       '',
       '### Migration Guide',
       '',
-      'See D101053026 for the full pattern. Also check [the docs](/docs/markdown)',
+      'See PROJ-200 for the full pattern. Also check [the docs](/docs/markdown)',
       'for usage alongside regular markdown links.',
     ].join('\n');
 
