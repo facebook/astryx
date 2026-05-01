@@ -42,11 +42,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'xds-resize-handle', visualProps: ['direction']},
-      {
-        className: 'xds-resize-handle-pill',
-        description:
-          'The pill grip indicator. Target to change size, shape, or color.',
-      },
+      {className: 'xds-resize-handle-pill'},
     ],
   },
   components: [
