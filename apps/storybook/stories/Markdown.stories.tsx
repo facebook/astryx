@@ -328,3 +328,94 @@ export const ContentAlignCenter: Story = {
     </div>
   ),
 };
+
+export const InlinePlugins: Story = {
+  name: 'Inline Plugins (T/D numbers)',
+  render: () => {
+    const inlinePlugins = [
+      {
+        pattern: /\bT(\d+)\b/g,
+        render: (match: RegExpMatchArray, key: string) => (
+          <a
+            key={key}
+            href={`https://tasks.example.com/${match[1]}`}
+            style={{
+              color: 'var(--color-text-accent, #0066FF)',
+              textDecoration: 'none',
+              fontWeight: 600,
+            }}
+          >
+            {match[0]}
+          </a>
+        ),
+      },
+      {
+        pattern: /\bD(\d+)\b/g,
+        render: (match: RegExpMatchArray, key: string) => (
+          <a
+            key={key}
+            href={`https://diffs.example.com/${match[1]}`}
+            style={{
+              color: 'var(--color-text-accent, #0066FF)',
+              textDecoration: 'none',
+              fontWeight: 600,
+            }}
+          >
+            {match[0]}
+          </a>
+        ),
+      },
+      {
+        pattern: /#(\d+)/g,
+        render: (match: RegExpMatchArray, key: string) => (
+          <a
+            key={key}
+            href={`https://github.com/org/repo/issues/${match[1]}`}
+            style={{
+              color: 'var(--color-text-accent, #0066FF)',
+              textDecoration: 'none',
+              fontWeight: 600,
+            }}
+          >
+            {match[0]}
+          </a>
+        ),
+      },
+    ];
+
+    const markdown = [
+      '## Release Notes — v0.0.14',
+      '',
+      'This release fixes several critical issues reported in T259006394 and introduces',
+      'the inline plugins feature requested in #1873.',
+      '',
+      '### Bug Fixes',
+      '',
+      '- Fixed crash in XDSMarkdown streaming mode (D102849636)',
+      '- Resolved memory leak in chat components (T264997558)',
+      '- **Bold context**: Plugin works inside **T12345 formatting**',
+      '',
+      '### Code Example (not linkified)',
+      '',
+      '```typescript',
+      '// T99999 and D88888 should NOT become links inside code blocks',
+      'const taskId = "T99999";',
+      '```',
+      '',
+      'Inline code is also safe: `T99999` stays as plain text.',
+      '',
+      '### Migration Guide',
+      '',
+      'See D101053026 for the full pattern. Also check [the docs](/docs/markdown)',
+      'for usage alongside regular markdown links.',
+    ].join('\n');
+
+    return (
+      <div style={{maxWidth: 680}}>
+        <XDSMarkdown inlinePlugins={inlinePlugins} density="compact" headingLevelStart={2}>
+          {markdown}
+        </XDSMarkdown>
+      </div>
+    );
+  },
+};
