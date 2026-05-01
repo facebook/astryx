@@ -19,25 +19,26 @@
  * - /packages/cli/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
-import {useCallback, useState, type ReactNode} from 'react';
+import {useCallback, useRef, useState, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {
-  borderVars,
-  colorVars,
-  durationVars,
-  easeVars,
-  spacingVars,
-} from '../theme/tokens.stylex';
+import {borderVars, colorVars, spacingVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSSideNavCollapseContext} from './XDSSideNavCollapseContext';
 import {XDSSideNavCollapseButton} from './XDSSideNavCollapseButton';
 import {useXDSSideNavRenderMode} from './XDSSideNavRenderContext';
 import {XDSMobileNav} from '../MobileNav/XDSMobileNav';
-import {useResizable} from './useResizable';
-import type {ResizableProps} from '../Resizable/useXDSResizable';
+import {useXDSResizable} from '../Resizable/useXDSResizable';
+import type {XDSResizableConfig} from '../Resizable/useXDSResizable';
 import {XDSResizeHandle} from '../Resizable/XDSResizeHandle';
+
+// =============================================================================
+// Constants
+// =============================================================================
+
+/** Width below which dragging collapses the sidebar (when collapsible). */
+const COLLAPSE_THRESHOLD = 160;
 
 // =============================================================================
 // Styles
@@ -152,26 +153,6 @@ const styles = stylex.create({
     flexShrink: 0,
     height: '100%',
   },
-  // Drag handle at the inline-end edge
-  dragHandle: {
-    position: 'absolute',
-    insetInlineEnd: 0,
-    top: 0,
-    bottom: 0,
-    width: 6,
-    cursor: 'col-resize',
-    zIndex: 2,
-    // Invisible by default; visible on hover
-    backgroundColor: 'transparent',
-    transitionProperty: 'background-color',
-    transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easeVars['--ease-standard'],
-    touchAction: 'none',
-  },
-  dragHandleHover: {
-    // Applied via @media (hover: hover) in the component
-    backgroundColor: colorVars['--color-border'],
-  },
   // Topbar mode — horizontal layout for mobile top bar
   topbar: {
     display: 'flex',
@@ -246,24 +227,21 @@ export interface XDSSideNavProps extends XDSBaseProps<HTMLElement> {
   'data-testid'?: string;
 
   /**
-   * Enables a drag handle at the inline-end edge for resizing the sidebar.
-   * When collapsed, the drag handle is hidden.
+   * Enables a resize handle at the inline-end edge for resizing the sidebar.
+   * Uses `useXDSResizable` internally and renders `XDSResizeHandle` in
+   * overlay mode. When collapsed, the handle is hidden.
    *
-   * - `true` — resizable with defaults (260px initial width)
-   * - Object — configured:
+   * - `true` — resizable with defaults (260px initial, 180–480px range)
+   * - Object — configured via `XDSResizableConfig`:
    *   - `defaultWidth` — initial width in pixels (default: 260)
-   *   - `onWidthChange` — called when user finishes resizing
-   * - `ResizableProps` — driven by `useXDSResizable()` hook from `@xds/core/Resizable`
+   *   - `minWidth` — minimum width in pixels (default: 180)
+   *   - `maxWidth` — maximum width in pixels (default: 480)
+   *   - `autoSaveId` — localStorage key for persisting width
+   *   - `onWidthChange` — called when the width changes
    *
    * @default false
    */
-  resizable?:
-    | boolean
-    | {
-        defaultWidth?: number;
-        onWidthChange?: (width: number) => void;
-      }
-    | ResizableProps;
+  resizable?: boolean | XDSResizableConfig;
 
   /**
    * Enables collapse behavior. The sidebar can be collapsed to a narrow
@@ -334,13 +312,8 @@ export function XDSSideNav({
   const controlledCollapsed = collapsibleConfig.isCollapsed;
   const onCollapsedChange = collapsibleConfig.onCollapsedChange;
 
-  // Resizable config — detect if using new useXDSResizable() hook props
-  const isResizableHook =
-    typeof resizable === 'object' &&
-    resizable !== null &&
-    '_isResizableProps' in resizable;
-  const resizableConfig =
-    !isResizableHook && typeof resizable === 'object' ? resizable : {};
+  // Resizable config
+  const resizableConfig = typeof resizable === 'object' ? resizable : {};
   const isResizable = !!resizable;
 
   // Collapse state (controlled + uncontrolled)
@@ -349,13 +322,41 @@ export function XDSSideNav({
     useState(defaultIsCollapsed);
   const collapsed = isControlled ? controlledCollapsed : uncontrolledCollapsed;
 
+  const setCollapsedState = useCallback(
+    (value: boolean) => {
+      if (!isControlled) {
+        setUncontrolledCollapsed(value);
+      }
+      onCollapsedChange?.(value);
+    },
+    [isControlled, onCollapsedChange],
+  );
+
+  // Resize hook — callbacks keep SideNav in sync without effects.
+  const resizableHook = useXDSResizable({
+    defaultSize: resizableConfig.defaultWidth ?? 260,
+    minSizePx: resizableConfig.minWidth ?? 180,
+    maxSizePx: resizableConfig.maxWidth ?? 480,
+    collapsible: isCollapsible,
+    collapsedSize: COLLAPSE_THRESHOLD,
+    autoSaveId: resizableConfig.autoSaveId,
+    onSizeChange: resizableConfig.onWidthChange,
+    onCollapseChange: isCollapsible ? setCollapsedState : undefined,
+  });
+
   const toggle = useCallback(() => {
-    const newValue = !collapsed;
-    if (!isControlled) {
-      setUncontrolledCollapsed(newValue);
+    const next = !collapsed;
+    setCollapsedState(next);
+    if (isResizable) {
+      if (next) {
+        resizableHook.collapse();
+      } else {
+        resizableHook.expand();
+      }
     }
-    onCollapsedChange?.(newValue);
-  }, [collapsed, isControlled, onCollapsedChange]);
+  }, [collapsed, setCollapsedState, isResizable, resizableHook]);
+
+  const showResizeHandle = isResizable && !collapsed;
 
   const collapseContext = {
     isCollapsed: collapsed,
@@ -363,32 +364,7 @@ export function XDSSideNav({
     isCollapsible,
   };
 
-  // =========================================================================
-  // Resize — use new ResizableProps when available, else legacy hook
-  // =========================================================================
-  const legacyResize = useResizable({
-    enabled: isResizable && !isResizableHook,
-    config: resizableConfig,
-    collapsed,
-  });
-
-  // When using the new hook, derive width/handle state from ResizableProps
-  const resizableHookProps = isResizableHook
-    ? (resizable as ResizableProps)
-    : null;
-  const width = resizableHookProps
-    ? resizableHookProps._size
-    : legacyResize.width;
-  const showResizeHandle = resizableHookProps
-    ? !collapsed
-    : legacyResize.showHandle;
-  const resizeHandleProps = resizableHookProps
-    ? null
-    : legacyResize.handleProps;
-  const isHandleHovered = resizableHookProps
-    ? false
-    : legacyResize.isHandleHovered;
-  const containerRef = resizableHookProps ? null : legacyResize.containerRef;
+  const navRef = useRef<HTMLElement>(null);
 
   // Render mode — when inside AppShell mobile layout, render subsets
   const renderMode = useXDSSideNavRenderMode();
@@ -467,12 +443,17 @@ export function XDSSideNav({
 
   // When resizable, override the nav width via inline style
   const resizableNavStyle: React.CSSProperties | undefined = isResizable
-    ? {...(style ?? {}), width: collapsed ? undefined : width}
+    ? {...(style ?? {}), width: collapsed ? undefined : resizableHook.size}
     : style;
 
   const navElement = (
     <nav
-      ref={ref}
+      ref={node => {
+        navRef.current = node;
+        if (typeof ref === 'function') ref(node);
+        else if (ref)
+          (ref as React.MutableRefObject<HTMLElement | null>).current = node;
+      }}
       role="navigation"
       aria-label="Side navigation"
       data-testid={testId}
@@ -526,43 +507,20 @@ export function XDSSideNav({
     </nav>
   );
 
-  // Wrap in resizable container when using legacy resize (with built-in handle).
-  // When using new ResizableProps, wrap in a flex container with the new
-  // XDSResizeHandle. The container ensures the handle sits outside the nav's
-  // overflow boundary (AppShell wraps sideNav in a LayoutPanel with overflow:clip).
-  // When using legacy resize, use the old built-in drag handle.
-  const content = resizableHookProps ? (
-    <div
-      {...mergeProps(stylex.props(styles.resizableContainer), undefined, {
-        width: collapsed ? undefined : width,
-      })}>
+  // Overlay drag handle inside the nav when resizable.
+  // Uses XDSResizeHandle in overlay mode so the handle sits inside
+  // the panel's overflow: clip bounds.
+  const content = showResizeHandle ? (
+    <div {...stylex.props(styles.resizableContainer)}>
       {navElement}
-      {!collapsed && (
-        <XDSResizeHandle
-          direction="horizontal"
-          hasDivider
-          resizable={resizableHookProps}
-          label="Resize sidebar"
-        />
-      )}
-    </div>
-  ) : showResizeHandle ? (
-    <div
-      ref={containerRef}
-      {...mergeProps(stylex.props(styles.resizableContainer), {
-        style: {width},
-      })}>
-      {navElement}
-      <div
+      <XDSResizeHandle
         data-testid="xds-sidenav-resize-handle"
-        role="separator"
-        aria-orientation="vertical"
-        aria-label="Resize sidebar"
-        {...stylex.props(
-          styles.dragHandle,
-          isHandleHovered && styles.dragHandleHover,
-        )}
-        {...resizeHandleProps}
+        direction="horizontal"
+        position="overlay"
+        pillPlacement="end"
+        isAlwaysVisible={false}
+        resizable={resizableHook.props}
+        label="Resize sidebar"
       />
     </div>
   ) : (

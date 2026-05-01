@@ -14,7 +14,9 @@ export interface BlockDocMeta {
 export function ShowcasePreview({children}: {children: React.ReactNode}) {
   return (
     <XDSCenter width="100%" height="100vh">
-      <XDSCard variant="muted" style={{width: '100%', maxWidth: 968, height: 360}}>
+      <XDSCard
+        variant="muted"
+        style={{width: '100%', maxWidth: 968, height: 360}}>
         <XDSCenter width="100%" height="100%">
           {children}
         </XDSCenter>
@@ -34,9 +36,15 @@ export function BlockPreview({
   const scale = meta.scale;
 
   return (
-    <XDSCenter style={{flex: 1, overflow: 'auto', padding: 24, backgroundColor: 'var(--color-background-wash)'}}>
+    <XDSCenter style={{flex: 1, overflow: 'auto', padding: 24}}>
       <XDSVStack gap={2} style={{width: '100%', maxWidth: 600}}>
-        <XDSCard padding={5} style={{overflow: 'hidden'}}>
+        <div
+          style={{
+            border: '1px solid var(--color-border-emphasized)',
+            borderRadius: 'var(--radius-container)',
+            overflow: 'clip',
+            padding: 0,
+          }}>
           <XDSAspectRatio ratio={ar}>
             <XDSCenter
               width="100%"
@@ -48,7 +56,7 @@ export function BlockPreview({
               {children}
             </XDSCenter>
           </XDSAspectRatio>
-        </XDSCard>
+        </div>
         <XDSVStack gap={0} style={{textAlign: 'center'}}>
           <XDSText type="supporting" color="secondary">
             aspect-ratio:{' '}

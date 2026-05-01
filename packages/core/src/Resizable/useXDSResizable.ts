@@ -30,9 +30,31 @@ export interface ResizableRegionConfig {
   shrinkOrder?: number;
 }
 
+/**
+ * Shared config shape for any component that integrates built-in resize
+ * (e.g. XDSSideNav `resizable` prop). Provides a simplified API surface
+ * over the full ResizableRegionConfig.
+ */
+export interface XDSResizableConfig {
+  /** Initial width in pixels. @default 260 */
+  defaultWidth?: number;
+  /** Minimum width in pixels. @default 180 */
+  minWidth?: number;
+  /** Maximum width in pixels. @default 480 */
+  maxWidth?: number;
+  /** localStorage key for persisting width. */
+  autoSaveId?: string;
+  /** Called when the width changes (on drag end). */
+  onWidthChange?: (width: number) => void;
+}
+
 export interface UseXDSResizableSingleConfig extends ResizableRegionConfig {
   /** Unique key for localStorage persistence. */
   autoSaveId?: string;
+  /** Called when size changes during drag. */
+  onSizeChange?: (size: number) => void;
+  /** Called when collapse state changes (via drag or programmatic). */
+  onCollapseChange?: (isCollapsed: boolean) => void;
 }
 
 export interface UseXDSResizableMultiConfig {
@@ -165,6 +187,8 @@ function useSingleResizable(
     collapsedSize = DEFAULT_COLLAPSED_SIZE,
     snaps = [],
     autoSaveId,
+    onSizeChange,
+    onCollapseChange,
   } = config;
 
   const resolvedDefault = resolveDefaultSize(defaultSize);
@@ -191,20 +215,34 @@ function useSingleResizable(
     preCollapseSize.current = size;
     setIsCollapsed(true);
     setSize(0);
-  }, [collapsible, size]);
+    onCollapseChange?.(true);
+    onSizeChange?.(0);
+  }, [collapsible, size, onCollapseChange, onSizeChange]);
 
   const expand = useCallback(() => {
     setIsCollapsed(false);
     const restored = preCollapseSize.current || resolvedDefault;
-    setSize(clampSize(restored, minSizePx, maxSizePx, snaps));
-  }, [resolvedDefault, minSizePx, maxSizePx, snaps]);
+    const newSize = clampSize(restored, minSizePx, maxSizePx, snaps);
+    setSize(newSize);
+    onCollapseChange?.(false);
+    onSizeChange?.(newSize);
+  }, [
+    resolvedDefault,
+    minSizePx,
+    maxSizePx,
+    snaps,
+    onCollapseChange,
+    onSizeChange,
+  ]);
 
   const resize = useCallback(
     (newSize: number) => {
-      setSize(clampSize(newSize, minSizePx, maxSizePx, snaps));
+      const clamped = clampSize(newSize, minSizePx, maxSizePx, snaps);
+      setSize(clamped);
       setIsCollapsed(false);
+      onSizeChange?.(clamped);
     },
-    [minSizePx, maxSizePx, snaps],
+    [minSizePx, maxSizePx, snaps, onSizeChange],
   );
 
   const onResizeStart = useCallback(() => {
@@ -215,15 +253,22 @@ function useSingleResizable(
     (delta: number) => {
       const raw = dragStartSize.current + delta;
       if (collapsible && raw < collapsedSize) {
-        if (!isCollapsed) preCollapseSize.current = size;
+        if (!isCollapsed) {
+          preCollapseSize.current = size;
+          onCollapseChange?.(true);
+        }
         setIsCollapsed(true);
         setSize(0);
+        onSizeChange?.(0);
         return;
       }
       if (isCollapsed && raw >= collapsedSize) {
         setIsCollapsed(false);
+        onCollapseChange?.(false);
       }
-      setSize(clampSize(raw, minSizePx, maxSizePx, snaps));
+      const clamped = clampSize(raw, minSizePx, maxSizePx, snaps);
+      setSize(clamped);
+      onSizeChange?.(clamped);
     },
     [
       collapsible,
@@ -233,6 +278,8 @@ function useSingleResizable(
       minSizePx,
       maxSizePx,
       snaps,
+      onSizeChange,
+      onCollapseChange,
     ],
   );
 

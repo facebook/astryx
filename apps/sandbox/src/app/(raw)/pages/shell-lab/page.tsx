@@ -34,7 +34,6 @@ import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSBanner} from '@xds/core/Banner';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSNavMenuItem} from '@xds/core/NavMenu';
-import {useXDSResizable} from '@xds/core/Resizable';
 
 // =============================================================================
 // Configuration types
@@ -544,12 +543,6 @@ function SampleSideNav({
   externalCollapsed?: boolean;
   setExternalCollapsed?: (v: boolean) => void;
 }) {
-  const sidebar = useXDSResizable({
-    defaultSize: 260,
-    minSizePx: 180,
-    maxSizePx: 480,
-  });
-
   const appNavIcon = (
     <XDSNavIcon
       icon={
@@ -633,7 +626,7 @@ function SampleSideNav({
               : true
             : false
         }
-        resizable={config.isResizable ? sidebar.props : false}
+        resizable={config.isResizable}
         header={heading}
         topContent={
           config.showTopContent ? (

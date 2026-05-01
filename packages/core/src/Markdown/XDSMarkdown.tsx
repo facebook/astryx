@@ -45,6 +45,31 @@ import type {BlockNode, InlineNode, IncrementalState} from './parser';
 // ---------------------------------------------------------------------------
 
 /**
+ * A plugin that transforms text patterns into custom React elements
+ * inside XDSMarkdown. Applied to parsed text nodes only — code blocks,
+ * inline code, and other non-prose contexts are unaffected.
+ *
+ * Follows Lexical's TextMatchTransformer architecture:
+ * - `pattern` for initial regex matching
+ * - `getEndIndex` for programmatic boundary refinement
+ * - `render` for producing the replacement element
+ */
+export interface MarkdownInlinePlugin {
+  /** Regex with global flag. Matched against text nodes only. */
+  pattern: RegExp;
+
+  /**
+   * Optional: refine the match boundary after the regex hits.
+   * Return the end index, or false to reject the match.
+   * Default: match.index + match[0].length
+   */
+  getEndIndex?: (text: string, match: RegExpMatchArray) => number | false;
+
+  /** Render the match as a React element. */
+  render: (match: RegExpMatchArray, key: string) => React.ReactNode;
+}
+
+/**
  * A citation source referenced inline in the markdown via `[id]` or `【id】`.
  * When `sources` is provided, bracket content matching a source key is rendered
  * as a compact superscript citation pill instead of plain text.
@@ -106,6 +131,13 @@ export interface XDSMarkdownProps {
    * @default 'start'
    */
   contentAlign?: 'start' | 'center';
+  /**
+   * Plugins that transform text patterns into custom React elements.
+   * Applied to text nodes after parsing — code blocks and inline code
+   * are unaffected. Patterns are matched in order; first match wins
+   * for overlapping ranges.
+   */
+  inlinePlugins?: MarkdownInlinePlugin[];
   xstyle?: StyleXStyles;
   className?: string;
   style?: React.CSSProperties;
@@ -543,6 +575,109 @@ function sanitizeUrl(url: string): string | null {
 }
 
 // ---------------------------------------------------------------------------
+// Inline plugin matching
+// ---------------------------------------------------------------------------
+
+type InlinePluginSegment =
+  | {type: 'text'; content: string}
+  | {type: 'plugin'; element: React.ReactNode; matchLength: number};
+
+/**
+ * Find all plugin matches in a text string and split it into segments
+ * of plain text and plugin-rendered elements.
+ *
+ * Algorithm mirrors `findMatches` in `useXDSLinkify`:
+ * 1. Run each plugin's regex against the text
+ * 2. Check getEndIndex if provided (default: match.index + match[0].length)
+ * 3. If getEndIndex returns false, skip the match
+ * 4. Collect all non-overlapping matches, sorted by start (first match wins)
+ * 5. Split into text/plugin segments
+ */
+function applyInlinePlugins(
+  text: string,
+  plugins: MarkdownInlinePlugin[],
+): InlinePluginSegment[] {
+  interface RawMatch {
+    start: number;
+    end: number;
+    match: RegExpMatchArray;
+    plugin: MarkdownInlinePlugin;
+  }
+
+  const allMatches: RawMatch[] = [];
+
+  for (const plugin of plugins) {
+    // Reset lastIndex instead of cloning — avoids allocation per call.
+    // Safe because text nodes are processed sequentially (no interleaving).
+    plugin.pattern.lastIndex = 0;
+    let m: RegExpExecArray | null;
+
+    while ((m = plugin.pattern.exec(text)) !== null) {
+      let end: number;
+      if (plugin.getEndIndex) {
+        const result = plugin.getEndIndex(text, m);
+        if (result === false) continue;
+        end = result;
+      } else {
+        end = m.index + m[0].length;
+      }
+
+      allMatches.push({
+        start: m.index,
+        end,
+        match: m,
+        plugin,
+      });
+    }
+  }
+
+  // Sort by start position (stable sort preserves plugin order for same position)
+  allMatches.sort((a, b) => a.start - b.start);
+
+  // Remove overlapping matches (first wins)
+  const resolved: RawMatch[] = [];
+  let lastEnd = 0;
+  for (const m of allMatches) {
+    if (m.start >= lastEnd) {
+      resolved.push(m);
+      lastEnd = m.end;
+    }
+  }
+
+  if (resolved.length === 0) {
+    return [{type: 'text', content: text}];
+  }
+
+  const segments: InlinePluginSegment[] = [];
+  let cursor = 0;
+
+  for (let i = 0; i < resolved.length; i++) {
+    const m = resolved[i];
+
+    // Text before this match
+    if (m.start > cursor) {
+      segments.push({type: 'text', content: text.slice(cursor, m.start)});
+    }
+
+    // Plugin element
+    segments.push({
+      type: 'plugin',
+      element: m.plugin.render(m.match, `plugin-${i}`),
+      matchLength: m.end - m.start,
+    });
+
+    cursor = m.end;
+  }
+
+  // Remaining text
+  if (cursor < text.length) {
+    segments.push({type: 'text', content: text.slice(cursor)});
+  }
+
+  return segments;
+}
+
+// ---------------------------------------------------------------------------
 // Inline renderer
 // ---------------------------------------------------------------------------
 
@@ -614,15 +749,50 @@ function renderInline(
   cursor: StreamingCursor,
   citationCtx: CitationContext | null,
   linkComponent: XDSLinkComponentType = 'a',
+  inlinePlugins?: MarkdownInlinePlugin[],
 ): React.ReactNode {
   switch (node.type) {
-    case 'text':
+    case 'text': {
+      if (inlinePlugins && inlinePlugins.length > 0) {
+        const segments = applyInlinePlugins(node.content, inlinePlugins);
+        // If no plugin matched, fall through to the normal path
+        // O(1) guard: applyInlinePlugins returns a single text segment when
+        // nothing matched — skip the plugin path entirely in that case.
+        if (!(segments.length === 1 && segments[0].type === 'text')) {
+          const result: React.ReactNode[] = [];
+          for (let i = 0; i < segments.length; i++) {
+            const seg = segments[i];
+            if (seg.type === 'text') {
+              result.push(wrapTextWithFade(seg.content, cursor, `${index}-seg-${i}`));
+            } else {
+              // Plugin segment — advance cursor by matchLength, apply fade if new
+              const startOffset = cursor.offset;
+              cursor.offset += seg.matchLength;
+              if (cursor.active && startOffset >= cursor.boundary) {
+                result.push(
+                  <span
+                    key={`fade-plugin-${index}-${i}-${startOffset}`}
+                    {...stylex.props(streamingStyles.fadeIn)}>
+                    {seg.element}
+                  </span>,
+                );
+              } else {
+                result.push(
+                  <Fragment key={`plugin-${index}-${i}`}>{seg.element}</Fragment>,
+                );
+              }
+            }
+          }
+          return <Fragment key={index}>{result}</Fragment>;
+        }
+      }
       return wrapTextWithFade(node.content, cursor, index);
+    }
     case 'bold':
       return (
         <strong key={index} {...stylex.props(styles.bold)}>
           {node.children.map((c, i) =>
-            renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent),
+            renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins),
           )}
         </strong>
       );
@@ -630,7 +800,7 @@ function renderInline(
       return (
         <em key={index}>
           {node.children.map((c, i) =>
-            renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent),
+            renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins),
           )}
         </em>
       );
@@ -638,7 +808,7 @@ function renderInline(
       return (
         <del key={index} {...stylex.props(styles.strikethrough)}>
           {node.children.map((c, i) =>
-            renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent),
+            renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins),
           )}
         </del>
       );
@@ -664,7 +834,7 @@ function renderInline(
         return (
           <span key={index}>
             {node.children.map((c, i) =>
-              renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent),
+              renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins),
             )}
           </span>
         );
@@ -692,7 +862,7 @@ function renderInline(
             : {})}
           {...stylex.props(styles.link)}>
           {node.children.map((c, i) =>
-            renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent),
+            renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins),
           )}
         </LinkTag>
       );
@@ -843,6 +1013,7 @@ function renderBlock(
   contentWidthValue: string | null,
   contentAlign: 'start' | 'center',
   linkComponent: XDSLinkComponentType = 'a',
+  inlinePlugins?: MarkdownInlinePlugin[],
 ): React.ReactNode {
   const spacing = getElementSpacing(node, density);
   const isFirst = index === 0;
@@ -875,7 +1046,7 @@ function renderBlock(
             isLast && styles.noMarginBlockEnd,
           )}>
           {node.children.map((c, i) =>
-            renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent),
+            renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins),
           )}
         </Tag>
       );
@@ -896,7 +1067,7 @@ function renderBlock(
             isLast && styles.noMarginBlockEnd,
           )}>
           {node.children.map((c, i) =>
-            renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent),
+            renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins),
           )}
         </p>
       );
@@ -957,6 +1128,7 @@ function renderBlock(
               contentWidthValue,
               contentAlign,
               linkComponent,
+              inlinePlugins,
             ),
           )}
         </blockquote>
@@ -1000,7 +1172,7 @@ function renderBlock(
                 const label = isInline ? (
                   <>
                     {firstChild.children.map((c, j) =>
-                      renderInline(c, j, onLinkClick, cursor, citationCtx, linkComponent),
+                      renderInline(c, j, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins),
                     )}
                   </>
                 ) : (
@@ -1018,6 +1190,7 @@ function renderBlock(
                         contentWidthValue,
                         contentAlign,
                         linkComponent,
+                        inlinePlugins,
                       ),
                     )}
                   </>
@@ -1080,7 +1253,7 @@ function renderBlock(
               const label = isInline ? (
                 <>
                   {firstChild.children.map((c, j) =>
-                    renderInline(c, j, onLinkClick, cursor, citationCtx, linkComponent),
+                    renderInline(c, j, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins),
                   )}
                 </>
               ) : (
@@ -1098,6 +1271,7 @@ function renderBlock(
                       contentWidthValue,
                       contentAlign,
                       linkComponent,
+                      inlinePlugins,
                     ),
                   )}
                 </>
@@ -1156,7 +1330,7 @@ function renderBlock(
                       alignStyle(node.alignments[i]),
                     )}>
                     {h.children.map((c, j) =>
-                      renderInline(c, j, onLinkClick, cursor, citationCtx, linkComponent),
+                      renderInline(c, j, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins),
                     )}
                   </th>
                 ))}
@@ -1174,7 +1348,7 @@ function renderBlock(
                       alignStyle(node.alignments[j]),
                     )}>
                     {cell.children.map((c, k) =>
-                      renderInline(c, k, onLinkClick, cursor, citationCtx, linkComponent),
+                      renderInline(c, k, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins),
                     )}
                   </td>
                 ));
@@ -1259,6 +1433,7 @@ export function XDSMarkdown({
   citationStyle = 'label',
   contentWidth = 680,
   contentAlign = 'start',
+  inlinePlugins,
   xstyle,
   className,
   style,
@@ -1339,6 +1514,7 @@ export function XDSMarkdown({
             : null,
           contentAlign,
           LinkComponent,
+          inlinePlugins,
         ),
       )}
     </div>

@@ -1,8 +1,9 @@
 {
   "name": "@xds/theme-neutral",
   "version": "0.0.13",
+  "displayName": "Neutral Theme",
   "private": false,
-  "description": "Neutral theme for XDS — understated palette with Lucide icon set",
+  "description": "Understated warm grays with a subtle palette. Pairs with Lucide icons for a minimal, quiet aesthetic.",
   "author": "Meta Open Source",
   "license": "MIT",
   "homepage": "https://github.com/facebookexperimental/xds#readme",

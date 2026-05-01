@@ -428,6 +428,16 @@ function DocsiteLandingTemplate() {
     const CRAFT_TABS = ['all', 'templates', 'components'];
     const isCraftTab = page !== null && CRAFT_TABS.includes(page);
 
+    const component = searchParams.get('component');
+    let docsComponent: string | null = null;
+    if (page === 'docs') {
+      if (tab === 'whats-new' || tab === 'getting-started') {
+        docsComponent = tab;
+      } else if (component) {
+        docsComponent = component;
+      }
+    }
+
     return {
       view: v,
       templateIdx: isNaN(templateIdx as number) ? null : templateIdx,
@@ -444,6 +454,7 @@ function DocsiteLandingTemplate() {
       used,
       settings: settings === '1',
       collection,
+      docsComponent,
     };
   }, [searchParams]);
 
@@ -454,6 +465,9 @@ function DocsiteLandingTemplate() {
       | 'docs'
       | 'profile'
       | 'theme',
+  );
+  const [docsComponent, setDocsComponent] = useState<string | null>(
+    initialView.docsComponent,
   );
   const [profileTab, setProfileTab] = useState<
     'Crafted' | 'Used' | 'Bookmarks'
@@ -605,6 +619,9 @@ function DocsiteLandingTemplate() {
     [editorPanelWidth],
   );
 
+  const isPopstateRef = useRef(false);
+  const prevUrlRef = useRef('');
+
   // Sync URL when view state changes
   useEffect(() => {
     const params = new URLSearchParams();
@@ -621,7 +638,16 @@ function DocsiteLandingTemplate() {
       params.set('page', activeTab);
     } else if (activeView !== 'craft') {
       params.set('page', activeView);
-      if (activeView === 'profile') {
+      if (activeView === 'docs') {
+        if (
+          docsComponent === 'whats-new' ||
+          docsComponent === 'getting-started'
+        ) {
+          params.set('tab', docsComponent);
+        } else if (docsComponent !== null) {
+          params.set('component', docsComponent);
+        }
+      } else if (activeView === 'profile') {
         if (profileCraftName) {
           params.set('tab', 'Crafted');
           params.set('craft', profileCraftName);
@@ -643,19 +669,98 @@ function DocsiteLandingTemplate() {
     const qs = params.toString();
     if (qs === window.location.search.slice(1)) return;
     const url = `${basePath}/pages/docsite/${qs ? '?' + qs : ''}`;
-    window.history.replaceState(window.history.state, '', url);
+
+    if (isPopstateRef.current) {
+      isPopstateRef.current = false;
+      prevUrlRef.current = qs;
+      return;
+    }
+
+    const prevParams = new URLSearchParams(prevUrlRef.current);
+    const prevPage = prevParams.get('page');
+    const prevComponent = prevParams.get('component');
+    const prevTab = prevParams.get('tab');
+    const prevView = prevParams.get('view');
+    const curPage = params.get('page');
+    const curComponent = params.get('component');
+    const curTab = params.get('tab');
+    const curView = params.get('view');
+
+    const isSignificant =
+      curView !== prevView ||
+      curPage !== prevPage ||
+      curComponent !== prevComponent ||
+      (curPage === 'docs' && curTab !== prevTab);
+
+    if (isSignificant) {
+      window.history.pushState(null, '', url);
+    } else {
+      window.history.replaceState(window.history.state, '', url);
+    }
+    prevUrlRef.current = qs;
   }, [
     previewTarget,
     useTarget,
     craftTitle,
     activeView,
     activeTab,
+    docsComponent,
     profileTab,
     profileCraftName,
     profileUsedName,
     profileSettingsOpen,
     profileCollectionName,
   ]);
+
+  useEffect(() => {
+    const onPopState = () => {
+      isPopstateRef.current = true;
+      const params = new URLSearchParams(window.location.search);
+      const page = params.get('page');
+      const view = params.get('view');
+      const template = params.get('template');
+      const q = params.get('q');
+
+      if (view === 'preview' && template !== null) {
+        setPreviewTarget(parseInt(template, 10));
+        setUseTarget(null);
+      } else if (view === 'editor' && template !== null) {
+        setUseTarget(parseInt(template, 10));
+        setPreviewTarget(null);
+      } else if (q) {
+        setCraftTitle(q);
+        setPreviewTarget(null);
+        setUseTarget(null);
+      } else {
+        setPreviewTarget(null);
+        setUseTarget(null);
+        setCraftTitle(null);
+        const CRAFT_TABS = ['all', 'templates', 'components'];
+        if (page && CRAFT_TABS.includes(page)) {
+          setActiveView('craft');
+          setActiveTab(page);
+        } else if (page === 'docs') {
+          setActiveView('docs');
+          const tab = params.get('tab');
+          const component = params.get('component');
+          if (tab === 'whats-new' || tab === 'getting-started') {
+            setDocsComponent(tab);
+          } else if (component) {
+            setDocsComponent(component);
+          } else {
+            setDocsComponent(null);
+          }
+        } else if (page === 'profile' || page === 'theme') {
+          setActiveView(page);
+        } else {
+          setActiveView('craft');
+          setActiveTab('all');
+        }
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
 
   const prevViewRef = useRef(activeView);
   const skipViewResetRef = useRef(false);
@@ -671,6 +776,9 @@ function DocsiteLandingTemplate() {
     setChatOpen(false);
     setCraftTitle(null);
     setResultFilters(new Set());
+    if (activeView !== 'docs') {
+      setDocsComponent(null);
+    }
   }, [activeView]);
   const timerRef = useRef(null as ReturnType<typeof setTimeout> | null);
   const previewTimerRef = useRef(null as ReturnType<typeof setTimeout> | null);
@@ -1066,7 +1174,13 @@ function DocsiteLandingTemplate() {
   }
 
   if (activeView === 'docs') {
-    return <DocsView activeView={activeView} setActiveView={setActiveView} />;
+    return (
+      <DocsView
+        setActiveView={setActiveView}
+        selectedComponent={docsComponent}
+        onComponentChange={setDocsComponent}
+      />
+    );
   }
 
   if (activeView === 'profile') {

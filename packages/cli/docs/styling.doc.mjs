@@ -2,7 +2,7 @@
 
 export const docs = {
   name: 'styling',
-  title: 'Styling XDS Components',
+  title: 'Styling Components',
   description:
     'How to customize component appearance: xstyle prop, Tailwind, StyleX, className, rest props, compound component patterns, and theming hooks.',
 
@@ -18,7 +18,7 @@ export const docs = {
           type: 'table',
           headers: ['Approach', 'Use for', 'Example'],
           rows: [
-            ['xstyle prop', 'Overriding a specific XDS component', 'xstyle={{ maxWidth: 400 }}'],
+            ['xstyle prop', 'Overriding a specific XDS component', 'xstyle={styles.override}'],
             ['Tailwind utilities', 'Layout, wrappers, and utility styling', 'className="flex gap-3 p-4"'],
             ['stylex.create', 'Reusable styles, pseudo-classes, typed tokens', 'stylex.create({ card: { ... } })'],
             ['className', 'Integrating with external CSS or Tailwind on components', 'className="my-card shadow-lg"'],
@@ -35,19 +35,26 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Every XDS component accepts an xstyle prop for style customization. It accepts three formats: inline style objects, StyleX styles from stylex.create(), or CSS class name strings.',
+          text: 'Every XDS component accepts an xstyle prop for style customization. It accepts StyleX styles created via stylex.create() — not inline objects, not class name strings. StyleX styles are compiled at build time for optimal deduplication and dead-code elimination.',
         },
         {
           type: 'code',
           lang: 'tsx',
-          label: 'Inline object — quick overrides',
-          code: `<XDSCard xstyle={{ maxWidth: 400, marginBlock: 16 }} />
-<XDSButton label="Save" xstyle={{ alignSelf: 'flex-end' }} />`,
+          label: 'Simple overrides',
+          code: `import * as stylex from '@stylexjs/stylex';
+
+const overrides = stylex.create({
+  card: { maxWidth: 400, marginBlock: 16 },
+  saveButton: { alignSelf: 'flex-end' },
+});
+
+<XDSCard xstyle={overrides.card} />
+<XDSButton label="Save" xstyle={overrides.saveButton} />`,
         },
         {
           type: 'code',
           lang: 'tsx',
-          label: 'StyleX — reusable, supports pseudo-classes',
+          label: 'Pseudo-classes and conditional styles',
           code: `import * as stylex from '@stylexjs/stylex';
 
 const overrides = stylex.create({
@@ -62,20 +69,13 @@ const overrides = stylex.create({
 <XDSCard xstyle={overrides.card}>...</XDSCard>`,
         },
         {
-          type: 'code',
-          lang: 'tsx',
-          label: 'CSS class name — works with CSS Modules or plain CSS',
-          code: `<XDSCard xstyle="my-custom-card" />
-<XDSCard xstyle={styles.customCard} />  // CSS Module`,
-        },
-        {
           type: 'list',
           style: 'unordered',
           items: [
-            '1-2 simple properties (margin, maxWidth): inline object is fine',
-            '3+ properties or reusable: use stylex.create',
-            'Pseudo-classes (:hover, :focus-visible): requires stylex.create',
+            'All xstyle values must come from stylex.create()',
+            'Pseudo-classes (:hover, :focus-visible) are supported inside stylex.create',
             'All :hover styles MUST use @media (hover: hover) guard',
+            'For non-StyleX styling (Tailwind, external CSS), use className instead',
           ],
         },
       ],
@@ -175,7 +175,14 @@ const overrides = stylex.create({
           type: 'code',
           lang: 'tsx',
           label: 'Dialog with individually styled parts',
-          code: `<XDSDialog isOpen={isOpen} onClose={close} xstyle={{ maxWidth: 500 }}>
+          code: `import * as stylex from '@stylexjs/stylex';
+
+const overrides = stylex.create({
+  dialog: { maxWidth: 500 },
+  content: { gap: 'var(--spacing-4)' },
+});
+
+<XDSDialog isOpen={isOpen} onClose={close} xstyle={overrides.dialog}>
   <XDSLayout
     header={
       <XDSLayoutHeader hasDivider>
@@ -183,7 +190,7 @@ const overrides = stylex.create({
       </XDSLayoutHeader>
     }
     content={
-      <XDSLayoutContent xstyle={{ gap: 'var(--spacing-4)' }}>
+      <XDSLayoutContent xstyle={overrides.content}>
         <XDSTextInput label="Name" value={name} onChange={setName} />
       </XDSLayoutContent>
     }
@@ -246,17 +253,23 @@ const overrides = stylex.create({
         {
           type: 'code',
           lang: 'tsx',
-          label: 'Using tokens in xstyle (inline)',
-          code: `<XDSCard xstyle={{
-  padding: 'var(--spacing-4)',
-  borderRadius: 'var(--radius-container)',
-  backgroundColor: 'var(--color-background-surface)',
-}} />`,
+          label: 'Using tokens in stylex.create',
+          code: `import * as stylex from '@stylexjs/stylex';
+
+const styles = stylex.create({
+  surface: {
+    padding: 'var(--spacing-4)',
+    borderRadius: 'var(--radius-container)',
+    backgroundColor: 'var(--color-background-surface)',
+  },
+});
+
+<XDSCard xstyle={styles.surface} />`,
         },
         {
           type: 'code',
           lang: 'tsx',
-          label: 'Using tokens in stylex.create (type-safe imports)',
+          label: 'Using typed token imports in stylex.create',
           code: `import {colorVars, spacingVars, radiusVars} from '@xds/core/theme/tokens.stylex';
 
 const styles = stylex.create({
@@ -269,7 +282,7 @@ const styles = stylex.create({
         },
         {
           type: 'prose',
-          text: 'Both approaches work — var() strings in inline xstyle, or typed imports from tokens.stylex in stylex.create(). The typed imports give autocomplete and catch typos at build time.',
+          text: 'Both approaches work — var() strings or typed imports from tokens.stylex. The typed imports give autocomplete and catch typos at build time.',
         },
         {
           type: 'prose',
@@ -287,7 +300,7 @@ const styles = stylex.create({
             'style={{}} on raw <div> wrappers. Use xstyle on the XDS component directly.',
             'Hardcoded colors (#fff, rgb(...)). Use var(--color-*) tokens or Tailwind semantic classes (text-primary, bg-surface).',
             'Hardcoded spacing (16px, 1rem). Use var(--spacing-*) tokens or Tailwind spacing utilities (p-4, gap-3).',
-            'Wrapping an XDS component in a <div> just to add margin. Use xstyle={{ margin: ... }} on the component.',
+            'Wrapping an XDS component in a <div> just to add margin. Use xstyle with stylex.create on the component.',
             'Using !important. If styles aren\'t applying, check specificity — xstyle is merged last.',
           ],
         },

@@ -23,6 +23,9 @@ export interface DiscoverListEntry {
   name: string;
   category: string;
   components: string[];
+  version?: string;
+  description?: string;
+  displayName?: string;
 }
 
 /** xds --json discover @scope/name */

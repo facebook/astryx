@@ -77,6 +77,26 @@ const styles = stylex.create({
       ':focus-visible': spacingVars['--spacing-0-5'],
     },
   },
+  // Overlay mode — absolutely positioned inside the parent panel
+  // instead of being a sibling in flex flow. Used when the handle
+  // must stay within a parent's overflow: clip bounds.
+  overlay: {
+    position: 'absolute',
+    zIndex: 2,
+    backgroundColor: 'transparent',
+  },
+  overlayHorizontal: {
+    insetInlineEnd: 0,
+    top: 0,
+    bottom: 0,
+    width: 'var(--resize-handle-hit-area, 16px)',
+  },
+  overlayVertical: {
+    insetBlockEnd: 0,
+    left: 0,
+    right: 0,
+    height: 'var(--resize-handle-hit-area, 16px)',
+  },
   horizontal: {
     width: 1,
     height: '100%',
@@ -196,6 +216,16 @@ export interface XDSResizeHandleProps extends Omit<
   direction?: 'horizontal' | 'vertical';
 
   /**
+   * Positioning mode. `'inline'` (default) puts the handle in normal
+   * flex flow between siblings. `'overlay'` uses absolute positioning
+   * so the handle sits inside a parent panel's bounds — useful when
+   * the parent has `overflow: clip`.
+   * @default 'inline'
+   */
+  position?: 'inline' | 'overlay';
+
+  /**
+  /**
    * Reverse the drag direction. Use when the handle controls a panel
    * on the end/right/bottom side.
    * @default false
@@ -211,6 +241,7 @@ export interface XDSResizeHandleProps extends Omit<
   /**
    * Show a 1px divider line. The line IS the handle — it takes only
    * 1px in the layout with a wider invisible hit area for interaction.
+   * Ignored in overlay mode.
    * @default false
    */
   hasDivider?: boolean;
@@ -265,6 +296,7 @@ export interface XDSResizeHandleProps extends Omit<
  */
 export function XDSResizeHandle({
   direction = 'horizontal',
+  position: positionMode = 'inline',
   isReversed = false,
   isDisabled = false,
   hasDivider = false,
@@ -282,6 +314,7 @@ export function XDSResizeHandle({
   const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const isHorizontal = direction === 'horizontal';
+  const isOverlay = positionMode === 'overlay';
   const sign = isReversed ? -1 : 1;
   const effectiveSide = resolveEffectiveSide(
     pillPlacement,
@@ -449,13 +482,21 @@ export function XDSResizeHandle({
         xdsClassName('resize-handle'),
         stylex.props(
           styles.handle,
-          isHorizontal ? styles.horizontal : styles.vertical,
-          !hasDivider &&
+          isOverlay && styles.overlay,
+          isOverlay &&
+            (isHorizontal ? styles.overlayHorizontal : styles.overlayVertical),
+          !isOverlay && (isHorizontal ? styles.horizontal : styles.vertical),
+          !isOverlay &&
+            !hasDivider &&
             (isHorizontal
               ? styles.noDividerHorizontal
               : styles.noDividerVertical),
-          hasDivider && isInteracting && !isDragging && styles.handleHover,
-          hasDivider && isDragging && styles.handleActive,
+          !isOverlay &&
+            hasDivider &&
+            isInteracting &&
+            !isDragging &&
+            styles.handleHover,
+          !isOverlay && hasDivider && isDragging && styles.handleActive,
           isDisabled && styles.disabled,
           xstyle,
         ),

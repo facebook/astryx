@@ -9,7 +9,7 @@
 
 import React from 'react';
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen, act} from '@testing-library/react';
+import {render, screen, act, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {forwardRef, type ComponentPropsWithoutRef, type ReactNode} from 'react';
 import {XDSSideNav} from './XDSSideNav';
@@ -685,21 +685,13 @@ describe('XDSSideNav resizable', () => {
       </XDSSideNav>,
     );
     const handle = screen.getByTestId('xds-sidenav-resize-handle');
+    // The pointer event handler is on the hit area child inside the handle.
+    const hitArea = handle.firstElementChild as HTMLElement;
 
-    // Simulate pointer drag sequence
     act(() => {
-      handle.dispatchEvent(
-        new PointerEvent('pointerdown', {
-          clientX: 260,
-          bubbles: true,
-        }),
-      );
-      document.dispatchEvent(
-        new PointerEvent('pointermove', {clientX: 310, bubbles: true}),
-      );
-      document.dispatchEvent(
-        new PointerEvent('pointerup', {clientX: 310, bubbles: true}),
-      );
+      fireEvent.pointerDown(hitArea, {clientX: 260});
+      fireEvent.pointerMove(document, {clientX: 310});
+      fireEvent.pointerUp(document, {clientX: 310});
     });
 
     expect(handleWidthChange).toHaveBeenCalledTimes(1);

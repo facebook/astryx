@@ -5,7 +5,7 @@
 /** @type {import('../../core/src/docs-types').ReferenceDoc} */
 export const docs = {
   name: 'icons',
-  title: 'XDS Icons',
+  title: 'Icons',
   description:
     "Semantic icon names available in XDS. These adapt to the active theme's icon registry.",
 

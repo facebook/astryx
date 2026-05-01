@@ -1,6 +1,7 @@
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {XDSMarkdown} from './XDSMarkdown';
+import type {MarkdownInlinePlugin} from './XDSMarkdown';
 
 describe('XDSMarkdown', () => {
   it('renders with role="document"', () => {
@@ -198,5 +199,188 @@ describe('XDSMarkdown', () => {
     expect(links).toHaveLength(2);
     expect(links[0].getAttribute('href')).toBe('https://example.com');
     expect(links[1].getAttribute('href')).toBe('/page');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// inlinePlugins
+// ---------------------------------------------------------------------------
+
+// Helper: creates a plugin that turns JIRA-style ticket refs (PROJ-123) into links
+function createTicketPlugin(): MarkdownInlinePlugin {
+  return {
+    pattern: /\b([A-Z][A-Z0-9]+-\d+)\b/g,
+    render: (match, key) => (
+      <a key={key} href={`https://issues.example.com/browse/${match[1]}`} data-testid="ticket-link">
+        {match[0]}
+      </a>
+    ),
+  };
+}
+
+// Helper: creates a plugin that turns X-numbers (X12345) into links
+function createXRefPlugin(): MarkdownInlinePlugin {
+  return {
+    pattern: /\bX(\d+)\b/g,
+    render: (match, key) => (
+      <a key={key} href={`https://xref.example.com/${match[1]}`} data-testid="xref-link">
+        {match[0]}
+      </a>
+    ),
+  };
+}
+
+describe('inlinePlugins', () => {
+  it('transforms text patterns into custom elements', () => {
+    const ticketPlugin = createTicketPlugin();
+    const {container} = render(
+      <XDSMarkdown inlinePlugins={[ticketPlugin]}>
+        {'Check out PROJ-123 for details'}
+      </XDSMarkdown>,
+    );
+    const link = container.querySelector('[data-testid="ticket-link"]');
+    expect(link).toBeInTheDocument();
+    expect(link!.getAttribute('href')).toBe('https://issues.example.com/browse/PROJ-123');
+    expect(link!.textContent).toBe('PROJ-123');
+  });
+
+  it('supports multiple plugins', () => {
+    const {container} = render(
+      <XDSMarkdown inlinePlugins={[createTicketPlugin(), createXRefPlugin()]}>
+        {'See PROJ-123 and X99999'}
+      </XDSMarkdown>,
+    );
+    const ticketLink = container.querySelector('[data-testid="ticket-link"]');
+    const xrefLink = container.querySelector('[data-testid="xref-link"]');
+    expect(ticketLink).toBeInTheDocument();
+    expect(ticketLink!.getAttribute('href')).toBe('https://issues.example.com/browse/PROJ-123');
+    expect(xrefLink).toBeInTheDocument();
+    expect(xrefLink!.getAttribute('href')).toBe('https://xref.example.com/99999');
+  });
+
+  it('does not transform patterns inside fenced code blocks', () => {
+    const {container} = render(
+      <XDSMarkdown inlinePlugins={[createTicketPlugin()]}>
+        {'```\nPROJ-123\n```'}
+      </XDSMarkdown>,
+    );
+    const link = container.querySelector('[data-testid="ticket-link"]');
+    expect(link).toBeNull();
+    expect(container.textContent).toContain('PROJ-123');
+  });
+
+  it('does not transform patterns inside inline code', () => {
+    const {container} = render(
+      <XDSMarkdown inlinePlugins={[createTicketPlugin()]}>
+        {'Use `PROJ-123` in your code'}
+      </XDSMarkdown>,
+    );
+    const link = container.querySelector('[data-testid="ticket-link"]');
+    expect(link).toBeNull();
+    expect(container.textContent).toContain('PROJ-123');
+  });
+
+  it('works alongside regular markdown links', () => {
+    const {container} = render(
+      <XDSMarkdown inlinePlugins={[createTicketPlugin()]}>
+        {'Visit [example](https://example.com) and check PROJ-123'}
+      </XDSMarkdown>,
+    );
+    const ticketLink = container.querySelector('[data-testid="ticket-link"]');
+    expect(ticketLink).toBeInTheDocument();
+    const mdLink = container.querySelector('a[href="https://example.com"]');
+    expect(mdLink).toBeInTheDocument();
+    expect(mdLink!.textContent).toBe('example');
+  });
+
+  it('first plugin wins for overlapping patterns', () => {
+    const narrowPlugin: MarkdownInlinePlugin = {
+      pattern: /PROJ-\d+/g,
+      render: (match, key) => (
+        <span key={key} data-testid="narrow-match">{match[0]}</span>
+      ),
+    };
+    const broadPlugin: MarkdownInlinePlugin = {
+      pattern: /[A-Z]+-\d+/g,
+      render: (match, key) => (
+        <span key={key} data-testid="broad-match">{match[0]}</span>
+      ),
+    };
+    const {container} = render(
+      <XDSMarkdown inlinePlugins={[narrowPlugin, broadPlugin]}>
+        {'Check PROJ-123'}
+      </XDSMarkdown>,
+    );
+    expect(container.querySelector('[data-testid="narrow-match"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-testid="broad-match"]')).toBeNull();
+  });
+
+  it('skips matches when getEndIndex returns false', () => {
+    const plugin: MarkdownInlinePlugin = {
+      pattern: /\b([A-Z]+-\d+)\b/g,
+      getEndIndex: () => false,
+      render: (match, key) => (
+        <a key={key} data-testid="ticket-link">{match[0]}</a>
+      ),
+    };
+    const {container} = render(
+      <XDSMarkdown inlinePlugins={[plugin]}>
+        {'Check PROJ-123 for details'}
+      </XDSMarkdown>,
+    );
+    const link = container.querySelector('[data-testid="ticket-link"]');
+    expect(link).toBeNull();
+    expect(container.textContent).toContain('PROJ-123');
+  });
+
+  it('uses getEndIndex to adjust match boundaries', () => {
+    const plugin: MarkdownInlinePlugin = {
+      pattern: /TAG:/g,
+      getEndIndex: (text, match) => {
+        const afterMatch = text.slice(match.index! + match[0].length);
+        const wordMatch = afterMatch.match(/^(\S+)/);
+        if (wordMatch) {
+          return match.index! + match[0].length + wordMatch[1].length;
+        }
+        return match.index! + match[0].length;
+      },
+      render: (match, key) => {
+        return <span key={key} data-testid="tag-match">{match[0]}</span>;
+      },
+    };
+    const {container} = render(
+      <XDSMarkdown inlinePlugins={[plugin]}>
+        {'See TAG:important here'}
+      </XDSMarkdown>,
+    );
+    const tag = container.querySelector('[data-testid="tag-match"]');
+    expect(tag).toBeInTheDocument();
+    expect(container.textContent).toContain('here');
+  });
+
+  it('renders identically when no inlinePlugins are provided', () => {
+    const withPlugins = render(
+      <XDSMarkdown inlinePlugins={[]}>
+        {'Hello **world** and `code`'}
+      </XDSMarkdown>,
+    );
+    const withoutPlugins = render(
+      <XDSMarkdown>
+        {'Hello **world** and `code`'}
+      </XDSMarkdown>,
+    );
+    expect(withPlugins.container.textContent).toBe(withoutPlugins.container.textContent);
+  });
+
+  it('transforms patterns inside bold/italic text', () => {
+    const {container} = render(
+      <XDSMarkdown inlinePlugins={[createTicketPlugin()]}>
+        {'**PROJ-123**'}
+      </XDSMarkdown>,
+    );
+    const link = container.querySelector('[data-testid="ticket-link"]');
+    expect(link).toBeInTheDocument();
+    expect(link!.textContent).toBe('PROJ-123');
+    expect(link!.closest('strong')).toBeInTheDocument();
   });
 });
