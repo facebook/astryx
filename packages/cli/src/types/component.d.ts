@@ -11,6 +11,7 @@
  * xds --json component Button --props       -> component.detail.props
  * xds --json component Button --source      -> component.detail.source
  * xds --json component Button --showcase    -> component.detail.showcase
+ * xds --json component Button --blocks      -> component.detail.blocks
  * (not found)                               -> CLIError
  */
 
@@ -56,4 +57,23 @@ export interface ComponentDetailSourceResponse {
 export interface ComponentDetailShowcaseResponse {
   type: 'component.detail.showcase';
   data: {component: string; aspectRatio: number; source: string};
+}
+
+/** xds --json component <name> --blocks */
+export interface ComponentDetailBlocksResponse {
+  type: 'component.detail.blocks';
+  data: {
+    component: string;
+    showcase: BlockEntry | null;
+    examples: BlockEntry[];
+    related: BlockEntry[];
+  };
+}
+
+export interface BlockEntry {
+  name: string;
+  displayName: string;
+  description: string;
+  isShowcase: boolean;
+  category: string;
 }
