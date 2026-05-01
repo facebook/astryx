@@ -562,6 +562,11 @@ interface BaseTemplateDoc {
   /** Whether this template is ready for use. Templates with
    *  isReady: false show as "(WIP)" in the gallery and CLI. */
   isReady?: boolean;
+
+  /** Whether this template is a scaffolding tool only (e.g. blank page).
+   *  Scaffold templates are available via the CLI but hidden from
+   *  browsable template galleries like the craft browser. */
+  scaffold?: boolean;
 }
 
 export interface PageTemplateDoc extends BaseTemplateDoc {

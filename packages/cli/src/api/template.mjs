@@ -58,6 +58,7 @@ async function discoverPages() {
       name: doc?.name || dir.name,
       description: doc?.description || '',
       isReady: doc?.isReady ?? true,
+      scaffold: doc?.scaffold ?? false,
       filePath: path.join(dirPath, 'page.tsx'),
       docPath: path.join(dirPath, 'template.doc.mjs'),
     });
@@ -385,6 +386,7 @@ export async function template(name, options = {}) {
         displayName: t.name,
         description: t.description,
         isReady: t.isReady,
+        scaffold: t.scaffold ?? false,
         type: t.type,
       })),
     };

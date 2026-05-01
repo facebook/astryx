@@ -4,4 +4,5 @@ export const doc = {
   name: 'Blank Page',
   description: 'Minimal page scaffold',
   isReady: true,
+  scaffold: true,
 };

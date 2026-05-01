@@ -22,6 +22,7 @@ export interface TemplateListEntry {
   name: string;
   description: string;
   isReady: boolean;
+  scaffold?: boolean;
 }
 
 /** xds --json template <name> */
