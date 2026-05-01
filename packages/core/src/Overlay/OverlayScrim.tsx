@@ -48,7 +48,10 @@ const styles = stylex.create({
     padding: 12,
     pointerEvents: 'none',
     transitionProperty: 'opacity, visibility',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
   },
 
@@ -65,7 +68,15 @@ const styles = stylex.create({
   scrimLight: {backgroundColor: 'color-mix(in srgb, white 60%, transparent)'},
 
   hidden: {opacity: 0, visibility: 'hidden'},
-  visible: {opacity: 1, visibility: 'visible', pointerEvents: 'auto'},
+  visible: {
+    opacity: 1,
+    visibility: 'visible',
+    pointerEvents: 'auto',
+    // Fade in on initial mount (showOn="always" or first JS-controlled open)
+    '@starting-style': {
+      opacity: 0,
+    },
+  },
 
   // CSS-driven: ancestor hover + focus (accessible default)
   hoverReveal: {
