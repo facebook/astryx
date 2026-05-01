@@ -717,6 +717,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
 
   return (
     <div
+      data-preview-shell
       style={{
         display: 'flex',
         flexDirection: 'column',

@@ -15,6 +15,18 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap"
         />
+        {/* Prevent PreviewShell toolbar flash when loaded inside an iframe.
+            Runs before paint so the toolbar is never visible in embed contexts. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(window.self!==window.top)document.documentElement.classList.add('xds-embed')}catch(e){document.documentElement.classList.add('xds-embed')}`,
+          }}
+        />
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `html.xds-embed [data-preview-shell]{display:none!important}`,
+          }}
+        />
       </head>
       <body>
         <Providers>{children}</Providers>
