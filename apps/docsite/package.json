@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@stylexjs/stylex": "^0.18.3",
     "@xds/core": "*",
     "@xds/theme-default": "*",
     "next": "^15.5.15",
@@ -15,8 +16,17 @@
     "react-dom": "^19.2.5"
   },
   "devDependencies": {
+    "@stylexjs/babel-plugin": "^0.18.3",
+    "@stylexjs/postcss-plugin": "^0.18.3",
+    "@babel/preset-react": "^7.25.0",
+    "@babel/preset-typescript": "^7.25.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "typescript": "^6.0.3"
-  }
+    "autoprefixer": "^10.4.0",
+    "typescript": "^6.0.3",
+    "@xds/build": "*"
+  },
+  "browserslist": [
+    "last 1 Chrome version"
+  ]
 }
