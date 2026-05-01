@@ -40,28 +40,12 @@ export const docs = {
     ],
   },
   theming: {
-    targets: [{className: 'xds-resize-handle', visualProps: ['direction']}],
-    vars: [
+    targets: [
+      {className: 'xds-resize-handle', visualProps: ['direction']},
       {
-        name: '--resize-handle-width',
-        description: 'Visual width of the pill indicator',
-        default: '3px',
-      },
-      {
-        name: '--resize-handle-height',
-        description: 'Height of the pill indicator',
-        default: '32px',
-      },
-      {
-        name: '--resize-handle-hit-area',
-        description: 'Clickable area width around the pill',
-        default: '16px',
-      },
-      {
-        name: '--resize-handle-pill-gap',
+        className: 'xds-resize-handle-pill',
         description:
-          'Gap between the pill indicator and the divider line when pillPlacement is start or end',
-        default: '4px (--spacing-1)',
+          'The pill grip indicator. Target to change size, shape, or color.',
       },
     ],
   },
