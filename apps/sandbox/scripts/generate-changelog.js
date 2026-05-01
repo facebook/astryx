@@ -84,8 +84,8 @@ function parseChangelog(markdown, pkg) {
       continue;
     }
 
-    // Version heading: ## 0.0.12
-    const versionMatch = line.match(/^## (\d+\.\d+\.\d+)/);
+    // Version heading: # 0.0.12 (or legacy ## 0.0.12)
+    const versionMatch = line.match(/^#{1,2} (\d+\.\d+\.\d+)/);
     if (versionMatch) {
       currentVersion = {
         version: versionMatch[1],
@@ -106,8 +106,8 @@ function parseChangelog(markdown, pkg) {
 
     if (!currentVersion) continue;
 
-    // Section heading: ### Breaking Changes
-    const sectionMatch = line.match(/^### (.+)/);
+    // Section heading: #### Breaking Changes (or legacy ### Breaking Changes)
+    const sectionMatch = line.match(/^#{3,4} (.+)/);
     if (sectionMatch) {
       const heading = sectionMatch[1].trim().toLowerCase();
       currentSection = SECTION_MAP[heading] || heading;
