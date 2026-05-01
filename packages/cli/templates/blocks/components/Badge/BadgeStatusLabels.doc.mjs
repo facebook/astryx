@@ -4,6 +4,6 @@ export const doc = {
   name: 'Badge — Status',
   description: 'Show the state of an item like Active, Pending, or Failed. Use in table rows, list items, or detail pages where users need to see status at a glance.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Badge', 'Layout', 'Text'],
 };
