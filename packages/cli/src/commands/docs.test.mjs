@@ -49,3 +49,30 @@ describe('registerDocs', () => {
     expect(errorOutput).toContain('Unknown topic');
   });
 });
+
+describe('hyphenated doc filenames', () => {
+  it('lists hyphenated topics like getting-started', async () => {
+    const program = createProgram();
+    await program.parseAsync(['node', 'xds', 'docs']);
+
+    const output = console.log.mock.calls.map(c => c[0]).join('\n');
+    expect(output).toContain('getting-started');
+  });
+
+  it('loads a hyphenated topic by name', async () => {
+    const program = createProgram();
+    await program.parseAsync(['node', 'xds', 'docs', 'getting-started']);
+
+    const output = console.log.mock.calls.map(c => c[0]).join('\n');
+    expect(output.length).toBeGreaterThan(0);
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
+  it('returns docs.detail via API for hyphenated topic', async () => {
+    const {docs: docsApi} = await import('../api/docs.mjs');
+    const result = await docsApi('getting-started');
+    expect(result.type).toBe('docs.detail');
+    expect(result.data).toBeDefined();
+    expect(result.data.description).toBeDefined();
+  });
+});
