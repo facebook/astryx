@@ -166,6 +166,10 @@ export interface XDSTokenizerProps<T extends XDSSearchableItem> {
   hasCreate?: boolean;
   /** Query change callback. */
   onChangeQuery?: (query: string) => void;
+  /** Fires when focus enters the tokenizer from outside. */
+  onFocus?: (e: React.FocusEvent) => void;
+  /** Fires when focus leaves the tokenizer entirely. */
+  onBlur?: (e: React.FocusEvent) => void;
   /**
    * StyleX styles created via `stylex.create()`. Merged with the component's
    * base styles inside a single `stylex.props()` call for optimal deduplication.
@@ -364,6 +368,8 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
   debounceMs,
   hasCreate = false,
   onChangeQuery,
+  onFocus,
+  onBlur,
   xstyle,
   className,
   style,
@@ -424,30 +430,34 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
 
   const handleFocusCapture = useCallback(
     (e: React.FocusEvent) => {
+      const comingFromOutside = !isFocusInTokenizer(e.relatedTarget as Node);
       setIsFocusedWithin(true);
       if (isLayerMode) {
         layer.show();
       }
-      // When focus enters from outside, redirect to the input so the user
-      // doesn't have to tab through every token remove button.
-      const comingFromOutside = !isFocusInTokenizer(e.relatedTarget as Node);
-      if (comingFromOutside && e.target !== inputRef.current) {
-        inputRef.current?.focus();
+      if (comingFromOutside) {
+        onFocus?.(e);
+        // Redirect to the input so the user doesn't have to tab through
+        // every token remove button.
+        if (e.target !== inputRef.current) {
+          inputRef.current?.focus();
+        }
       }
     },
-    [isLayerMode, layer, isFocusInTokenizer],
+    [isLayerMode, layer, isFocusInTokenizer, onFocus],
   );
 
   const handleBlurCapture = useCallback(
     (e: React.FocusEvent) => {
       if (!isFocusInTokenizer(e.relatedTarget as Node)) {
         setIsFocusedWithin(false);
+        onBlur?.(e);
         if (isLayerMode) {
           layer.hide();
         }
       }
     },
-    [isLayerMode, layer, isFocusInTokenizer],
+    [isLayerMode, layer, isFocusInTokenizer, onBlur],
   );
 
   const isAtMax = maxEntries != null && value.length >= maxEntries;
