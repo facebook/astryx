@@ -4,7 +4,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {CLI_ROOT} from '../utils/paths.mjs';
+import {CLI_ROOT, discoverExternalPackages} from '../utils/paths.mjs';
 import {XDSError} from './error.mjs';
 import {loadConfig} from '../lib/config.mjs';
 
@@ -91,16 +91,67 @@ async function discoverBlocks() {
   return blocks;
 }
 
+/**
+ * Discover blocks from external packages that declare `xds.showcases`.
+ * Same shape as discoverBlocks() output.
+ *
+ * @param {string} [cwd]
+ */
+async function discoverExternalBlocks(cwd = process.cwd()) {
+  const externals = discoverExternalPackages(cwd);
+  const blocks = [];
+
+  for (const ext of externals) {
+    if (!ext.showcasesDir || !fs.existsSync(ext.showcasesDir)) continue;
+    const docFiles = findDocFiles(ext.showcasesDir, /\.doc\.mjs$/);
+    for (const docPath of docFiles) {
+      const basename = path.basename(docPath, '.doc.mjs');
+      const tsxPath = path.join(path.dirname(docPath), basename + '.tsx');
+      if (!fs.existsSync(tsxPath)) continue;
+      const doc = await loadDocModule(docPath);
+      const relPath = path.relative(ext.showcasesDir, path.dirname(docPath));
+      blocks.push({
+        type: 'block',
+        dirName: basename,
+        name: doc?.name || basename,
+        description: doc?.description || '',
+        isReady: doc?.isReady ?? true,
+        aspectRatio: doc?.aspectRatio ?? 1,
+        componentsUsed: doc?.componentsUsed ?? [],
+        isShowcase: doc?.isShowcase ?? false,
+        filePath: tsxPath,
+        docPath,
+        category: relPath,
+        package: ext.name,
+      });
+    }
+  }
+
+  return blocks;
+}
+
+/**
+ * Discover all blocks — core + external packages.
+ * @param {string} [cwd]
+ */
+async function discoverAllBlocks(cwd = process.cwd()) {
+  const [core, external] = await Promise.all([
+    discoverBlocks(),
+    discoverExternalBlocks(cwd),
+  ]);
+  return [...core, ...external];
+}
+
 async function discoverAll() {
   const [pages, blocks] = await Promise.all([
     discoverPages(),
-    discoverBlocks(),
+    discoverAllBlocks(),
   ]);
   return [...pages, ...blocks].sort((a, b) => a.name.localeCompare(b.name));
 }
 
-export async function findRelatedBlocks(componentName) {
-  const blocks = await discoverBlocks();
+export async function findRelatedBlocks(componentName, cwd) {
+  const blocks = await discoverAllBlocks(cwd);
   return blocks.filter(b =>
     b.componentsUsed.some(c =>
       c.toLowerCase() === componentName.toLowerCase(),
@@ -108,8 +159,8 @@ export async function findRelatedBlocks(componentName) {
   );
 }
 
-export async function findShowcase(componentName) {
-  const blocks = await discoverBlocks();
+export async function findShowcase(componentName, cwd) {
+  const blocks = await discoverAllBlocks(cwd);
   const lc = componentName.toLowerCase();
   const showcases = blocks.filter(b => b.isShowcase);
 

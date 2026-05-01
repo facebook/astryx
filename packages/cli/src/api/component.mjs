@@ -192,7 +192,7 @@ export async function component(name, options = {}) {
   }
 
   if (showcase) {
-    const match = await findShowcase(dirName);
+    const match = await findShowcase(dirName, cwd);
     if (!match) {
       throw new XDSError(`No showcase found for "${name}"`);
     }
