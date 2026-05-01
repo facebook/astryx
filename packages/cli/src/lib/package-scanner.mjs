@@ -21,6 +21,9 @@ export function scanDirectory(scanDir) {
     if (components.length === 0) continue;
     packages.push({
       name: pkg.name || entry.name,
+      version: pkg.version,
+      description: pkg.description,
+      displayName: pkg.displayName,
       dir: pkgDir,
       xds: pkg.xds,
       category: pkg.xds.category || pkg.name || entry.name,

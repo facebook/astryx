@@ -1,7 +1,8 @@
 {
   "name": "@xds/cli",
   "version": "0.0.13",
-  "description": "XDS design system CLI — init, swizzle, theme, templates, and agent docs",
+  "displayName": "CLI",
+  "description": "Scaffold projects, browse templates, generate themes, and get agent-ready docs from the command line.",
   "author": "Meta Open Source",
   "license": "MIT",
   "homepage": "https://github.com/facebookexperimental/xds#readme",
