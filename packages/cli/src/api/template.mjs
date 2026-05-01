@@ -92,7 +92,7 @@ async function discoverBlocks() {
 }
 
 /**
- * Discover blocks from external packages that declare `xds.showcases`.
+ * Discover blocks from external packages that declare `xds.blocks`.
  * Same shape as discoverBlocks() output.
  *
  * @param {string} [cwd]
@@ -102,14 +102,14 @@ async function discoverExternalBlocks(cwd = process.cwd()) {
   const blocks = [];
 
   for (const ext of externals) {
-    if (!ext.showcasesDir || !fs.existsSync(ext.showcasesDir)) continue;
-    const docFiles = findDocFiles(ext.showcasesDir, /\.doc\.mjs$/);
+    if (!ext.blocksDir || !fs.existsSync(ext.blocksDir)) continue;
+    const docFiles = findDocFiles(ext.blocksDir, /\.doc\.mjs$/);
     for (const docPath of docFiles) {
       const basename = path.basename(docPath, '.doc.mjs');
       const tsxPath = path.join(path.dirname(docPath), basename + '.tsx');
       if (!fs.existsSync(tsxPath)) continue;
       const doc = await loadDocModule(docPath);
-      const relPath = path.relative(ext.showcasesDir, path.dirname(docPath));
+      const relPath = path.relative(ext.blocksDir, path.dirname(docPath));
       blocks.push({
         type: 'block',
         dirName: basename,

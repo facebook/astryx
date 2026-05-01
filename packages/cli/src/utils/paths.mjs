@@ -71,9 +71,9 @@ export function findProjectRoot(startDir = process.cwd()) {
  * Discover external XDS-compatible packages from node_modules.
  * Scans for packages with an "xds" field in their package.json:
  *
- *   { "xds": { "docs": "./src", "category": "Common", "showcases": "./showcases" } }
+ *   { "xds": { "docs": "./src", "category": "Common", "blocks": "./blocks/components" } }
  *
- * Returns array of { name, category, docsDir, showcasesDir }.
+ * Returns array of { name, category, docsDir, blocksDir }.
  */
 export function discoverExternalPackages(startDir = process.cwd()) {
   const externals = [];
@@ -121,8 +121,8 @@ export function discoverExternalPackages(startDir = process.cwd()) {
             name: pkg.name,
             category: pkg.xds.category || pkg.name,
             docsDir: path.resolve(fullPath, pkg.xds.docs),
-            showcasesDir: pkg.xds.showcases
-              ? path.resolve(fullPath, pkg.xds.showcases)
+            blocksDir: pkg.xds.blocks
+              ? path.resolve(fullPath, pkg.xds.blocks)
               : null,
           });
         }

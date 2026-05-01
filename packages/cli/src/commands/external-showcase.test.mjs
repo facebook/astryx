@@ -5,7 +5,7 @@ import * as os from 'node:os';
 import {findShowcase, findRelatedBlocks} from '../api/template.mjs';
 
 // These tests verify that findShowcase and findRelatedBlocks can discover
-// blocks from external packages that declare xds.showcases in package.json.
+// blocks from external packages that declare xds.blocks in package.json.
 
 let tmpDir;
 
@@ -16,12 +16,12 @@ function createFixture() {
   fs.mkdirSync(path.dirname(coreDir), {recursive: true});
   fs.symlinkSync(realCoreDir, coreDir);
 
-  // External package with showcases
+  // External package with blocks
   const extDir = path.join(tmpDir, 'node_modules', '@test', 'ext');
-  const showcasesDir = path.join(extDir, 'showcases');
+  const blocksDir = path.join(extDir, 'blocks', 'components');
 
   // Employee showcase
-  const employeeDir = path.join(showcasesDir, 'Employee');
+  const employeeDir = path.join(blocksDir, 'Employee');
   fs.mkdirSync(employeeDir, {recursive: true});
   fs.writeFileSync(path.join(employeeDir, 'EmployeeShowcase.doc.mjs'), `
 export const doc = {
@@ -38,7 +38,7 @@ export const doc = {
     "'use client';\nexport default function EmployeeShowcase() { return <div>Employee</div>; }");
 
   // Diff showcase + example
-  const diffDir = path.join(showcasesDir, 'Diff');
+  const diffDir = path.join(blocksDir, 'Diff');
   fs.mkdirSync(diffDir, {recursive: true});
   fs.writeFileSync(path.join(diffDir, 'DiffShowcase.doc.mjs'), `
 export const doc = {
@@ -68,7 +68,7 @@ export const doc = {
 
   fs.writeFileSync(path.join(extDir, 'package.json'), JSON.stringify({
     name: '@test/ext',
-    xds: {docs: './src', category: 'Common', showcases: './showcases'},
+    xds: {docs: './src', category: 'Common', blocks: './blocks/components'},
   }));
 
   // Need src dir for docs (even if empty) since discoverExternalPackages checks it
