@@ -128,29 +128,25 @@ const styles = stylex.create({
   },
 
   // Pill base — themes target .xds-resize-handle-pill for size/shape.
+  // Dimensions are always width=thin, height=long. Vertical mode rotates
+  // the pill 90° so themes only need to style one orientation.
   pill: {
     position: 'absolute',
     zIndex: 2,
     pointerEvents: 'none',
+    width: 3,
+    height: spacingVars['--spacing-8'],
     borderRadius: radiusVars['--radius-full'],
     backgroundColor: colorVars['--color-border'],
     transitionProperty: 'opacity, background-color, transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-  },
-  pillHorizontal: {
-    width: 3,
-    height: spacingVars['--spacing-8'],
     top: '50%',
     left: '50%',
     transform: 'translate(-50%, -50%)',
   },
   pillVertical: {
-    height: 3,
-    width: spacingVars['--spacing-8'],
-    left: '50%',
-    top: '50%',
-    transform: 'translate(-50%, -50%)',
+    transform: 'translate(-50%, -50%) rotate(90deg)',
   },
   pillHidden: {opacity: 0},
   pillVisible: {opacity: 1},
@@ -177,9 +173,11 @@ const dynamicStyles = stylex.create({
     left: 0,
     transform: `translate(calc(${dir} * (100% + ${spacingVars['--spacing-1']})), -50%)`,
   }),
+  // Vertical pill is rotated 90° — translate along X in local space
+  // to offset along Y in screen space.
   pillOffsetY: (dir: number) => ({
     top: 0,
-    transform: `translate(-50%, calc(${dir} * (100% + ${spacingVars['--spacing-1']})))`,
+    transform: `translate(-50%, calc(${dir} * (100% + ${spacingVars['--spacing-1']}))) rotate(90deg)`,
   }),
 });
 
@@ -485,7 +483,7 @@ export function XDSResizeHandle({
             xdsClassName('resize-handle-pill'),
             stylex.props(
               styles.pill,
-              isHorizontal ? styles.pillHorizontal : styles.pillVertical,
+              !isHorizontal && styles.pillVertical,
               effectiveSide !== 'center' &&
                 (isHorizontal
                   ? dynamicStyles.pillOffsetX(
