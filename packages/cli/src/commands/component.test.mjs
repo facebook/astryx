@@ -5,6 +5,7 @@ import * as os from 'node:os';
 import {
   discoverComponents,
   discoverExternalComponents,
+  discoverExternalComponentsGrouped,
   findExternalComponentDoc,
   findComponentReadme,
   findComponentSource,
@@ -332,6 +333,79 @@ describe('discoverExternalComponents', () => {
 
     const result = discoverExternalComponents(docsDir);
     expect(result).toEqual(['Alpha', 'Middle', 'Zebra']);
+  });
+});
+
+describe('discoverExternalComponentsGrouped', () => {
+  it('reads group: from doc files and groups components', () => {
+    const docsDir = path.join(tmpDir, 'src');
+
+    // AppShell with group
+    const shellDir = path.join(docsDir, 'AppShell');
+    fs.mkdirSync(shellDir, {recursive: true});
+    fs.writeFileSync(path.join(shellDir, 'AppShell.doc.mjs'),
+      "export const docs = {\n  name: 'AppShell',\n  group: 'App Chrome',\n};");
+
+    // SideNav with same group
+    const navDir = path.join(docsDir, 'SideNav');
+    fs.mkdirSync(navDir, {recursive: true});
+    fs.writeFileSync(path.join(navDir, 'SideNav.doc.mjs'),
+      "export const docs = {\n  name: 'SideNav',\n  group: 'App Chrome',\n};");
+
+    // Diff with no group
+    const diffDir = path.join(docsDir, 'Diff');
+    fs.mkdirSync(diffDir, {recursive: true});
+    fs.writeFileSync(path.join(diffDir, 'Diff.doc.mjs'),
+      "export const docs = {\n  name: 'Diff',\n};");
+
+    const result = discoverExternalComponentsGrouped(docsDir);
+    expect(result).toEqual({
+      'App Chrome': ['AppShell', 'SideNav'],
+      'Diff': ['Diff'],
+    });
+  });
+
+  it('returns empty object for nonexistent directory', () => {
+    const result = discoverExternalComponentsGrouped(path.join(tmpDir, 'nope'));
+    expect(result).toEqual({});
+  });
+
+  it('skips hidden components', () => {
+    const docsDir = path.join(tmpDir, 'src');
+    const compDir = path.join(docsDir, 'Internal');
+    fs.mkdirSync(compDir, {recursive: true});
+    fs.writeFileSync(path.join(compDir, 'Internal.doc.mjs'),
+      "export const docs = {\n  name: 'Internal',\n  hidden: true,\n};");
+
+    fs.writeFileSync(path.join(docsDir, 'Visible.doc.mjs'),
+      "export const docs = {\n  name: 'Visible',\n};");
+
+    const result = discoverExternalComponentsGrouped(docsDir);
+    expect(result).toEqual({'Visible': ['Visible']});
+  });
+
+  it('sorts groups and ungrouped alphabetically', () => {
+    const docsDir = path.join(tmpDir, 'src');
+
+    const zDir = path.join(docsDir, 'Zebra');
+    fs.mkdirSync(zDir, {recursive: true});
+    fs.writeFileSync(path.join(zDir, 'Zebra.doc.mjs'),
+      "export const docs = {\n  name: 'Zebra',\n  group: 'Animals',\n};");
+
+    const aDir = path.join(docsDir, 'Alpha');
+    fs.mkdirSync(aDir, {recursive: true});
+    fs.writeFileSync(path.join(aDir, 'Alpha.doc.mjs'),
+      "export const docs = {\n  name: 'Alpha',\n};");
+
+    const bDir = path.join(docsDir, 'Bear');
+    fs.mkdirSync(bDir, {recursive: true});
+    fs.writeFileSync(path.join(bDir, 'Bear.doc.mjs'),
+      "export const docs = {\n  name: 'Bear',\n  group: 'Animals',\n};");
+
+    const result = discoverExternalComponentsGrouped(docsDir);
+    const keys = Object.keys(result);
+    expect(keys).toEqual(['Alpha', 'Animals']);
+    expect(result['Animals']).toEqual(['Bear', 'Zebra']);
   });
 });
 

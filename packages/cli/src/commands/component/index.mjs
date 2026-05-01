@@ -35,6 +35,7 @@ export function registerComponent(program) {
     .option('--source', 'Print component source code')
     .option('--showcase', 'Print showcase source code')
     .option('--blocks', 'List example blocks: showcase, examples, and related')
+    .option('--package <name>', 'Scope lookup to an external package (e.g. @nest/xds-common)')
     .action(async (name, options) => {
       const run = getRunPrefix();
       const zh = program.opts().zh || false;
@@ -57,6 +58,7 @@ export function registerComponent(program) {
           cwd: process.cwd(),
           list: options.list,
           category: options.category,
+          package: options.package,
           props: options.props,
           source: options.source,
           showcase: options.showcase,
@@ -191,7 +193,7 @@ export function registerComponent(program) {
 
 // Re-export lib functions for backward compatibility
 // (agent-docs.mjs, tests, and generate-skill-doc.sh import from here)
-export {discoverComponents, discoverExternalComponents, findComponentReadme, findComponentSource, findExternalComponentDoc, resolveImportPath} from '../../lib/component-discovery.mjs';
+export {discoverComponents, discoverExternalComponents, discoverExternalComponentsGrouped, findComponentReadme, findComponentSource, findExternalComponentDoc, resolveImportPath} from '../../lib/component-discovery.mjs';
 export {discoverExternalPackages} from '../../utils/paths.mjs';
 export {loadDocs} from '../../lib/component-loader.mjs';
 export {formatFull, formatCompact, formatBrief, formatProps, formatBriefAll} from '../../lib/component-format.mjs';

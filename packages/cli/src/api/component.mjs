@@ -10,6 +10,7 @@ import {findCoreDir, discoverExternalPackages} from '../utils/paths.mjs';
 import {
   discoverComponents,
   discoverExternalComponents,
+  discoverExternalComponentsGrouped,
   findComponentReadme,
   findComponentSource,
   findExternalComponentDoc,
@@ -21,11 +22,23 @@ import {XDSError} from './error.mjs';
 import {findShowcase, findRelatedBlocks} from './template.mjs';
 
 /**
+ * Resolve an external package by name from the discovered externals list.
+ * @param {string} packageName - e.g. '@nest/xds-common'
+ * @param {string} cwd
+ * @returns {{ name: string, category: string, docsDir: string } | null}
+ */
+function resolveExternalPackage(packageName, cwd) {
+  const externals = discoverExternalPackages(cwd);
+  return externals.find(ext => ext.name === packageName) ?? null;
+}
+
+/**
  * @param {string} [name]
  * @param {object} [options]
  * @param {string} [options.cwd]
  * @param {boolean} [options.list]
  * @param {string} [options.category]
+ * @param {string} [options.package] - Scope to a specific external package (e.g. '@nest/xds-common')
  * @param {boolean} [options.props]
  * @param {boolean} [options.source]
  * @param {boolean} [options.showcase]
@@ -41,6 +54,7 @@ export async function component(name, options = {}) {
     cwd = process.cwd(),
     list = false,
     category,
+    package: packageScope,
     props = false,
     source = false,
     showcase = false,
@@ -93,7 +107,7 @@ export async function component(name, options = {}) {
       return {type: 'component.list', data: {[match[0]]: match[1]}};
     }
 
-    // All components
+    // All components — merge core + external packages with grouped subcategories
     if (detail === 'brief') {
       /** @type {Record<string, Array<import('../types/component').ComponentBriefEntry>>} */
       const result = {};
@@ -118,9 +132,26 @@ export async function component(name, options = {}) {
 
     const externals = discoverExternalPackages(cwd);
     for (const ext of externals) {
-      const extComps = discoverExternalComponents(ext.docsDir);
-      if (extComps.length > 0) {
-        components[`${ext.category} (${ext.name})`] = extComps;
+      const grouped = discoverExternalComponentsGrouped(ext.docsDir);
+      const groupKeys = Object.keys(grouped);
+      if (groupKeys.length === 0) continue;
+
+      // If the package has subcategories (groups), emit each as a separate key.
+      // If no groups exist, fall back to the flat list under one key.
+      const hasGroups = groupKeys.some(
+        k => grouped[k].length > 1 || grouped[k][0] !== k,
+      );
+
+      if (hasGroups) {
+        for (const [group, members] of Object.entries(grouped)) {
+          components[`${group} (${ext.name})`] = members;
+        }
+      } else {
+        // All ungrouped — single flat list under the package category
+        const allComps = Object.values(grouped).flat().sort();
+        if (allComps.length > 0) {
+          components[`${ext.category} (${ext.name})`] = allComps;
+        }
       }
     }
     return {type: 'component.list', data: components};
@@ -129,6 +160,28 @@ export async function component(name, options = {}) {
   // ── Single component ───────────────────────────────────────────
 
   const dirName = name.replace(/^XDS/, '');
+
+  // When scoped to a specific package, search that package first.
+  // This is critical for components that exist in both core and an external
+  // package (e.g. AppShell, Button, SideNav) — the package scope ensures
+  // the external package's docs are returned, not core's.
+  if (packageScope) {
+    const ext = resolveExternalPackage(packageScope, cwd);
+    if (!ext) {
+      throw new XDSError(`External package "${packageScope}" not found`);
+    }
+    const extDocPath = findExternalComponentDoc(ext.docsDir, dirName);
+    if (extDocPath && extDocPath.endsWith('.doc.mjs')) {
+      const docs = await loadDocs(extDocPath, {zh, dense, lang});
+
+      if (props) {
+        const p = docs.props || (docs.components ? docs.components.flatMap(c => c.props || []) : []);
+        return {type: 'component.detail.props', data: p};
+      }
+      return {type: 'component.detail', data: docs};
+    }
+    throw new XDSError(`No component "${name}" in package "${packageScope}"`);
+  }
 
   if (source) {
     const sourcePath = findComponentSource(coreDir, dirName);
