@@ -385,4 +385,21 @@
   :where(html:not([data-theme])) {
     color-scheme: light dark;
   }
+
+  /* ===========================================================================
+     Media Theme Baseline
+     =========================================================================== */
+
+  /*
+   * color-scheme flip for [data-xds-media] — makes light-dark() base
+   * tokens resolve correctly on inverted surfaces without a theme.
+   * Token overrides (text/icon/accent) are theme-level (generateOnMediaCSS).
+   */
+  :where([data-xds-media="dark"]) {
+    color-scheme: dark;
+  }
+
+  :where([data-xds-media="light"]) {
+    color-scheme: light;
+  }
 }

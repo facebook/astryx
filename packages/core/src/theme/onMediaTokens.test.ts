@@ -168,7 +168,9 @@ describe('generateOnMediaCSS', () => {
     });
     const css = generateOnMediaCSS(theme);
     expect(css).toContain('[data-xds-media="dark"] .xds-button.secondary');
-    expect(css).toContain('background-color: color-mix(in srgb, white 20%, transparent)');
+    expect(css).toContain(
+      'background-color: color-mix(in srgb, white 20%, transparent)',
+    );
   });
 
   it('emits pseudo-class rules for on-media components', () => {
@@ -188,5 +190,50 @@ describe('generateOnMediaCSS', () => {
     const css = generateOnMediaCSS(theme);
     expect(css).toContain('.xds-button:hover');
     expect(css).toContain('color: rgba(255,255,255,0.8)');
+  });
+});
+
+describe('reset.css baseline media rules', () => {
+  /**
+   * Validates that reset.css provides the minimum baseline for
+   * XDSMediaTheme: a color-scheme flip on [data-xds-media].
+   *
+   * Token overrides (text-primary, icon-primary, accent) are a
+   * theme-level concern — themes handle those via generateOnMediaCSS.
+   */
+  let resetCSS: string;
+
+  beforeAll(async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    resetCSS = fs.readFileSync(
+      path.resolve(__dirname, '../reset.css'),
+      'utf-8',
+    );
+  });
+
+  it('flips color-scheme on [data-xds-media="dark"]', () => {
+    const darkMatch = resetCSS.match(
+      /:where\(\[data-xds-media="dark"\]\)\s*\{([^}]+)\}/,
+    );
+    expect(darkMatch).not.toBeNull();
+    expect(darkMatch![1]).toContain('color-scheme: dark');
+  });
+
+  it('flips color-scheme on [data-xds-media="light"]', () => {
+    const lightMatch = resetCSS.match(
+      /:where\(\[data-xds-media="light"\]\)\s*\{([^}]+)\}/,
+    );
+    expect(lightMatch).not.toBeNull();
+    expect(lightMatch![1]).toContain('color-scheme: light');
+  });
+
+  it('does NOT include token overrides at baseline level', () => {
+    const darkMatch = resetCSS.match(
+      /:where\(\[data-xds-media="dark"\]\)\s*\{([^}]+)\}/,
+    );
+    expect(darkMatch![1]).not.toContain('--color-text-primary');
+    expect(darkMatch![1]).not.toContain('--color-icon-primary');
+    expect(darkMatch![1]).not.toContain('--color-accent');
   });
 });
