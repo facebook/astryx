@@ -574,9 +574,6 @@ export interface BlockTemplateDoc extends BaseTemplateDoc {
   aspectRatio: number;
   /** Scale factor for the block preview (default 1). */
   scale?: number;
-  /** Background color for the preview card. Maps to the XDS theme color
-   *  token `--color-background-<value>`. Omit to use the default card background. */
-  cardBackground?: 'surface' | 'body';
   /** Component names this block uses, for cross-referencing. */
   componentsUsed?: string[];
   /** When true this block is the canonical "hero" showcase for a component. */

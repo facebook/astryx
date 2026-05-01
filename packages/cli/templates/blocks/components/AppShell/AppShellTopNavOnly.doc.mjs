@@ -7,5 +7,4 @@ export const doc = {
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['AppShell', 'TopNav', 'Heading', 'Text', 'VStack', 'NavIcon'],
-  cardBackground: 'body',
 };
