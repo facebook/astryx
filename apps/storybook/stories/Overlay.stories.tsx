@@ -6,13 +6,7 @@ import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSCard} from '@xds/core/Card';
 import {XDSButton} from '@xds/core/Button';
 import {XDSHeading, XDSText} from '@xds/core/Text';
-import {
-  XDSVStack,
-  XDSHStack,
-  XDSLayout,
-  XDSLayoutContent,
-} from '@xds/core/Layout';
-import {XDSIconButton} from '@xds/core/IconButton';
+import {XDSVStack, XDSLayout, XDSLayoutContent} from '@xds/core/Layout';
 import {XDSSpinner} from '@xds/core/Spinner';
 import {XDSGrid} from '@xds/core/Grid';
 import {

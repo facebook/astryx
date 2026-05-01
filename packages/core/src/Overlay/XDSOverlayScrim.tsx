@@ -15,7 +15,7 @@
  * applied (either via XDSOverlay wrapper or manually via xstyle/className).
  */
 
-import {type ReactNode} from 'react';
+import {type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
@@ -33,6 +33,9 @@ export type OverlayAlign = 'start' | 'center' | 'end';
 export type OverlayShowOn = 'hover' | 'always' | 'focus' | 'hover-or-focus';
 
 export interface XDSOverlayScrimProps {
+  /** Ref forwarded to the scrim root element. */
+  ref?: Ref<HTMLDivElement>;
+
   /**
    * Scrim background mode.
    * - `"dark"` — dark overlay background + dark media theme for children
@@ -76,11 +79,6 @@ export interface XDSOverlayScrimProps {
    */
   isOpen?: boolean;
 
-  /**
-   * Callback when visibility changes. Only meaningful in JS-controlled mode.
-   */
-  onOpenChange?: (open: boolean) => void;
-
   /** Content rendered inside the scrim (buttons, text, icons, etc.) */
   children?: ReactNode;
 
@@ -96,6 +94,8 @@ const styles = stylex.create({
   base: {
     position: 'absolute',
     display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
     padding: 12,
     pointerEvents: 'none',
     transitionProperty: 'opacity, visibility',
@@ -115,6 +115,7 @@ const styles = stylex.create({
 
   // Scrim backgrounds
   scrimDark: {backgroundColor: colorVars['--color-overlay']},
+  // TODO: Replace with --color-overlay-light token when added to the token set
   scrimLight: {backgroundColor: 'color-mix(in srgb, white 60%, transparent)'},
 
   // JS-controlled states
@@ -229,6 +230,7 @@ export function XDSOverlayScrim({
   isOpen,
   children,
   xstyle,
+  ref,
 }: XDSOverlayScrimProps) {
   const isJSControlled = isOpen !== undefined;
 
@@ -244,6 +246,7 @@ export function XDSOverlayScrim({
 
   return (
     <div
+      ref={ref}
       {...mergeProps(
         xdsClassName('overlay-scrim', {position}),
         stylex.props(
@@ -265,7 +268,7 @@ export function XDSOverlayScrim({
         ),
       )}
       data-position={position}
-      {...(isJSControlled && !isOpen ? {inert: '' as unknown as boolean} : {})}>
+      inert={isJSControlled && !isOpen ? true : undefined}>
       {content}
     </div>
   );

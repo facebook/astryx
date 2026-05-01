@@ -14,13 +14,15 @@
  * and overflow: clip, apply overlayScope via xstyle instead.
  */
 
-import {type ReactNode} from 'react';
+import {type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {overlayScope, overlayContainerStyles} from './overlay.markers.stylex';
 
 export interface XDSOverlayProps {
+  /** Ref forwarded to the container element. */
+  ref?: Ref<HTMLDivElement>;
   /** Base content + XDSOverlayScrim children. */
   children?: ReactNode;
   /** StyleX style overrides on the container. */
@@ -58,9 +60,11 @@ export function XDSOverlay({
   xstyle,
   className,
   style,
+  ref,
 }: XDSOverlayProps) {
   return (
     <div
+      ref={ref}
       {...mergeProps(
         xdsClassName('overlay'),
         stylex.props(overlayScope, overlayContainerStyles.root, xstyle),
