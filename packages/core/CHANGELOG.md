@@ -1,12 +1,12 @@
 # @xds/core
 
-## 0.0.12
+# 0.0.12
 
-### Breaking Changes
+#### Breaking Changes
 
 - **Button `isIconOnly` required for icon-only mode** — `XDSButton` and `XDSToggleButton` now require explicit `isIconOnly` for icon-only rendering. (#1257)
 
-### New Features
+#### New Features
 
 - **XDSThumbnail** component (#1255)
 - **XDSChatLayout** with fixed composer dock and container queries (#1249)
@@ -24,7 +24,7 @@
 - **ChatComposer `headerActions` + `headerContext`** replacing `contextToolbar` (#1242)
 - **Chat trigger menu system** for ComposerInput (#1193)
 
-### Fixes
+#### Fixes
 
 - Dialog: reset inherited edge signals, prevent ghost button margin shift (#1237)
 - CodeBlock: syntax highlighting missing on scroll + perf improvements (#1221)
@@ -38,7 +38,7 @@
 - CodeBlock: use semantic `--text-code-size` token for md size (#1273)
 - Input: forward native event handlers via `...rest` spread (#1259, #1291)
 
-### Upgrade
+#### Upgrade
 
 Codemods are available for all breaking changes in this release:
 
@@ -50,25 +50,29 @@ Preview changes first (dry run): `npx xds upgrade --to 0.0.12`
 Run a specific codemod: `npx xds upgrade --apply --codemod add-is-icon-only`
 List all available codemods: `npx xds upgrade --list`
 
-## 0.0.11
+---
 
-### Patch Changes
+# 0.0.11
+
+#### Patch Changes
 
 - Version bump and publish infrastructure fixes
 - No breaking changes
 
-## 0.0.10
+---
 
-### Breaking Changes
+# 0.0.10
+
+#### Breaking Changes
 
 - **StatusDot and ProgressBar single size** — Both components now have a single fixed size (8px). The `size` prop has been removed. (#966)
 
-### New Features
+#### New Features
 
 - **Layout `defaultHasDividers`** — Container-controlled dividers via context (#969)
 - **Button `href` support** — Link-styled buttons (#935)
 
-### Fixes
+#### Fixes
 
 - Dialog: propagate `maxHeight` to layout via `--container-max-height` (#965)
 - Popover: embed surface styles in `useXDSPopover` hook (#964)
@@ -81,7 +85,7 @@ List all available codemods: `npx xds upgrade --list`
 - DialogHeader: re-add capsize with visual adjustment (#956)
 - Hardening sweep (#968)
 
-### Upgrade
+#### Upgrade
 
 Codemods are available for all breaking changes in this release:
 
@@ -93,14 +97,16 @@ Preview changes first (dry run): `npx xds upgrade --to 0.0.10`
 Run a specific codemod: `npx xds upgrade --apply --codemod remove-size-props`
 List all available codemods: `npx xds upgrade --list`
 
-## 0.0.8
+---
 
-### Breaking Changes
+# 0.0.8
+
+#### Breaking Changes
 
 - **Button `endSlot` → `endContent`** — Renamed on XDSButton and forwarded object literals (e.g. XDSDropdownMenu button prop). (#895)
 - **Token renames** — Intermediate token names from v0.0.6 renamed to final v0.0.8 convention per the token spec.
 
-### Fixes
+#### Fixes
 
 - Align cyan, pink, and yellow token colors with WWW (#907)
 - Dialog hardening (#775)
@@ -120,7 +126,7 @@ List all available codemods: `npx xds upgrade --list`
 - Correct neutral gray token semantics across components (#852)
 - Formalize container padding tokens, prevent internal var access (#847)
 
-### Upgrade
+#### Upgrade
 
 Codemods are available for all breaking changes in this release:
 
@@ -132,13 +138,15 @@ Preview changes first (dry run): `npx xds upgrade --to 0.0.8`
 Run a specific codemod: `npx xds upgrade --apply --codemod rename-endslot-to-endcontent`
 List all available codemods: `npx xds upgrade --list`
 
-## 0.0.7
+---
 
-### Breaking Changes
+# 0.0.7
+
+#### Breaking Changes
 
 - **Banner `variant` → `container`** — Renamed the `variant` prop on XDSBanner to `container`. Type references `XDSBannerVariant` → `XDSBannerContainer` and `XDSBannerVariantMap` → `XDSBannerContainerMap`. (#814)
 
-### Upgrade
+#### Upgrade
 
 Codemods are available for all breaking changes in this release:
 
@@ -150,9 +158,11 @@ Preview changes first (dry run): `npx xds upgrade --to 0.0.7`
 Run a specific codemod: `npx xds upgrade --apply --codemod rename-banner-variant-to-container`
 List all available codemods: `npx xds upgrade --list`
 
-## 0.0.6
+---
 
-### Breaking Changes
+# 0.0.6
+
+#### Breaking Changes
 
 - **Token renames** — Design tokens renamed per naming audit: `positive` → `success`, `negative` → `error`, `divider` → `border`, etc. (`migrate-token-names`)
 - **Shadow tokens** — Elevation tokens renamed to `shadow-base`/`shadow-menu`/`shadow-hover`/`shadow-dialog` + `insetshadow-border-*` (`migrate-shadow-tokens`)
@@ -160,7 +170,7 @@ List all available codemods: `npx xds upgrade --list`
 - **Radius tokens** — Semantic radius tokens renamed to numeric scale (`migrate-radius-tokens`, `migrate-skeleton-radius`)
 - **Badge `children` → `label`** — Content passed as children now uses the `label` prop (`migrate-badge-children-to-label`)
 
-### New Features
+#### New Features
 
 - **Dynamic theming primitives:** `radiusScale`, `motionScale`, `typeScale` in `defineTheme`
 - **Motion tokens:** duration, easing, and component migration to token-based transitions
@@ -173,7 +183,7 @@ List all available codemods: `npx xds upgrade --list`
 - **NavItem** component
 - Shared theme CSS generation, removed XDSFontWrapper
 
-### Fixes
+#### Fixes
 
 - Badge: hardcoded height → spacing token; add `label` prop for API consistency (#709)
 - CheckboxInput & Switch: focus rings + indeterminate aria (#723)
@@ -187,7 +197,7 @@ List all available codemods: `npx xds upgrade --list`
 - Sync package.json exports (NavItem, remove stale typography.css)
 - Type-scale: use Math.round for 4px grid snapping in computeLeading
 
-### Upgrade
+#### Upgrade
 
 Codemods are available for all breaking changes in this release:
 
@@ -198,40 +208,46 @@ npx xds upgrade --apply --to 0.0.6
 Preview changes first (dry run): `npx xds upgrade --to 0.0.6`
 List all available codemods: `npx xds upgrade --list`
 
-## 0.0.5
+---
+
+# 0.0.5
 
 > **Note:** v0.0.5 was the published version. Codemods for this release are registered under v0.0.6 in the CLI. Use `--to 0.0.6` to run them.
 
 See 0.0.6 above for breaking changes and upgrade instructions.
 
-## 0.0.4
+---
 
-### New Components
+# 0.0.4
+
+#### New Components
 
 - **XDSTreeList** — Hierarchical tree list component with expand/collapse (#609)
 - **XDSPowerSearch** — Advanced search component with result count, filtering (#561, #593)
 
-### Features
+#### Features
 
 - **AppShell variant system** — New `variant` prop (#597)
 - **AppShell contentPadding** — New `contentPadding` prop (#612)
 - **AppShell auto height mode** — Sidenav and sticky backgrounds (#615)
 - **startIcon** support (#584)
 
-### Fixes
+#### Fixes
 
 - Removed deprecated `isFullBleed` prop from Card and Section (#610, #598)
 - Layout: `padding={0}` treated as equivalent to `isFullBleed` (#595)
 - SideNav: consistent spacing (#601)
 - Nav: consistent gap and heading text sizes (#616)
 
-### Refactors
+#### Refactors
 
 - Popover, HoverCard, Tooltip moved to top-level directories (#557)
 
-## 0.0.3
+---
 
-### Patch Changes
+# 0.0.3
+
+#### Patch Changes
 
 - Bundle StyleX runtime — consumers no longer need @stylexjs/stylex as peer dependency (#545)
 - Add stable token export path at @xds/core/tokens (#544)
@@ -240,9 +256,11 @@ See 0.0.6 above for breaking changes and upgrade instructions.
 - Sync package.json exports map
 - Add verify-exports CI check (#537)
 
-## 0.0.2
+---
 
-### Breaking Changes
+# 0.0.2
+
+#### Breaking Changes
 
 - CSS-based theming replaces StyleX theme system — `defineTheme()` API
 - `className` and `style` props on all components
@@ -253,7 +271,7 @@ See 0.0.6 above for breaking changes and upgrade instructions.
 - `gap="space4"` → `gap={4}`, `isFullBleed` → `padding={0}`
 - Badge dot → StatusDot
 
-### Upgrade
+#### Upgrade
 
 Codemods are available for all breaking changes in this release:
 
@@ -278,6 +296,8 @@ List all available codemods: `npx xds upgrade --list`
 - `migrate-isFullBleed-to-padding` — `isFullBleed` → `padding={0}`
 - `migrate-badge-dot-to-statusdot` — Badge `shape="dot"` → StatusDot
 
-## 0.0.1
+---
+
+# 0.0.1
 
 - Initial release

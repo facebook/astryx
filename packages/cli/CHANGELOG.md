@@ -1,62 +1,70 @@
 # @xds/cli
 
-## 0.0.12
+# 0.0.12
 
-### Codemods
+#### Codemods
 
 - `add-is-icon-only` — Add `isIconOnly` to icon-only Button and ToggleButton usages (#1257)
 
-### Upgrade
+#### Upgrade
 
 ```sh
 npx xds upgrade --apply --to 0.0.12
 ```
 
-## 0.0.10
+---
 
-### Codemods
+# 0.0.10
+
+#### Codemods
 
 - `remove-size-props` — Remove `size` prop from StatusDot and ProgressBar (#966)
 
-### Upgrade
+#### Upgrade
 
 ```sh
 npx xds upgrade --apply --to 0.0.10
 ```
 
-## 0.0.8
+---
 
-### New Features
+# 0.0.8
+
+#### New Features
 
 - CLI: tsx parser for .ts files
 - Update hints in postAction hook
 
-### Codemods
+#### Codemods
 
 - `rename-endslot-to-endcontent` — Button `endSlot` → `endContent` (#895)
 - `migrate-token-renames` — Token name migration to v0.0.8 convention
 
-### Upgrade
+#### Upgrade
 
 ```sh
 npx xds upgrade --apply --to 0.0.8
 ```
 
-## 0.0.7
+---
 
-### Codemods
+# 0.0.7
+
+#### Codemods
 
 - `rename-banner-variant-to-container` — Banner `variant` → `container` (#814)
 
-### Upgrade
+#### Upgrade
 
 ```sh
 npx xds upgrade --apply --to 0.0.7
 ```
 
-## 0.0.6
+---
 
-### Codemods
+# 0.0.6
+
+#### Codemods
 
 - `migrate-token-names` — Design token renames per naming audit
 - `migrate-shadow-tokens` — Elevation → shadow semantic naming
@@ -65,15 +73,17 @@ npx xds upgrade --apply --to 0.0.7
 - `migrate-skeleton-radius` — Skeleton radius prop → numeric scale
 - `migrate-badge-children-to-label` — Badge children → label prop
 
-### Upgrade
+#### Upgrade
 
 ```sh
 npx xds upgrade --apply --to 0.0.6
 ```
 
-## 0.0.5
+---
 
-### New Features
+# 0.0.5
+
+#### New Features
 
 - Generate agent cheat sheet from live CLI metadata (#640)
 - `--detail` and `--lang` flags for typed `.doc.mjs` output (#636)
@@ -81,33 +91,39 @@ npx xds upgrade --apply --to 0.0.6
 
 > **Note:** Codemods for v0.0.5 breaking changes are registered under v0.0.6. Use `--to 0.0.6`.
 
-## 0.0.4
+---
 
-### Features
+# 0.0.4
+
+#### Features
 
 - **`xds theme build`** — Renamed from `build-theme` to `theme build` (#570)
 - **`--lang` flag** — TranslationDoc support for i18n/compressed docs (#611)
 - **`--zh` flag** — Chinese Simplified doc output (#567)
 
-### Refactors
+#### Refactors
 
 - Split `component.mjs` into `lib/` modules with lazy command registry (#613)
 
-## 0.0.3
+---
 
-### Patch Changes
+# 0.0.3
+
+#### Patch Changes
 
 - Sync package.json exports map
 - Add verify-exports CI check (#537)
 
-## 0.0.2
+---
 
-### New Features
+# 0.0.2
+
+#### New Features
 
 - `xds upgrade` command with codemod support
 - `xds theme build` (formerly `build-theme`)
 
-### Codemods
+#### Codemods
 
 12 codemods for the v0.0.2 breaking changes:
 - `rename-selector-items-to-options` — Selector `items` → `options`
@@ -123,12 +139,14 @@ npx xds upgrade --apply --to 0.0.6
 - `migrate-isFullBleed-to-padding` — `isFullBleed` → `padding={0}`
 - `migrate-badge-dot-to-statusdot` — Badge dot → StatusDot
 
-### Upgrade
+#### Upgrade
 
 ```sh
 npx xds upgrade --apply --to 0.0.2
 ```
 
-## 0.0.1
+---
+
+# 0.0.1
 
 - Initial release
