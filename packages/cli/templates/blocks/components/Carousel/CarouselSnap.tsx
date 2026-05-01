@@ -11,6 +11,8 @@ const TEAM = [
   {name: 'Alice Chen', role: 'Engineering Lead', color: 'blue' as const},
   {name: 'Bob Smith', role: 'Product Designer', color: 'purple' as const},
   {name: 'Carol Davis', role: 'Product Manager', color: 'green' as const},
+  {name: 'Andrew Thomas', role: 'Design Manager', color: 'red' as const},
+  {name: 'Gina Wilson', role: 'Software Engineer', color: 'orange' as const},
 ];
 
 export default function CarouselSnap() {

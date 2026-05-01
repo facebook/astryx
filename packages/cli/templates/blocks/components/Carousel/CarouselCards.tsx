@@ -15,8 +15,16 @@ const FEATURES = [
     desc: 'API reference and usage guides',
   },
   {
-    title: 'Storybook',
+    title: 'Sandbox',
     desc: 'Visual testing and previews',
+  },
+  {
+    title: 'Library',
+    desc: 'Component and hook information',
+  },
+  {
+    title: 'Contributing',
+    desc: 'Open source development',
   },
 ];
 
