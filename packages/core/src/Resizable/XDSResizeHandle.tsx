@@ -173,11 +173,14 @@ const dynamicStyles = stylex.create({
     left: 0,
     transform: `translate(calc(${dir} * (100% + ${spacingVars['--spacing-1']})), -50%)`,
   }),
-  // Vertical pill is rotated 90° — translate along X in local space
-  // to offset along Y in screen space.
+  // Vertical offset: no rotation — use explicit landscape dimensions.
+  // Rotation + offset creates confusing coordinate math since translate
+  // operates in pre-rotation local space.
   pillOffsetY: (dir: number) => ({
+    width: spacingVars['--spacing-8'],
+    height: 3,
     top: 0,
-    transform: `translate(-50%, calc(${dir} * (100% + ${spacingVars['--spacing-1']}))) rotate(90deg)`,
+    transform: `translate(-50%, calc(${dir} * (100% + ${spacingVars['--spacing-1']})))`,
   }),
 });
 
