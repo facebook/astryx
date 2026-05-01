@@ -1,2 +1,0 @@
-/* Layer order declaration — must be the first CSS in the bundle. */
-@layer reset, xds-base, xds-theme, product;

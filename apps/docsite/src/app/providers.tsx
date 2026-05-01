@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import {XDSTheme} from '@xds/core/theme';
 import {XDSLinkProvider} from '@xds/core/Link';
-import {defaultTheme} from '@xds/theme-default';
+import {defaultTheme} from '@xds/theme-default/built';
 
 export function Providers({children}: {children: React.ReactNode}) {
   return (

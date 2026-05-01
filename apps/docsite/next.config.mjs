@@ -1,2 +1,4 @@
-import {withXDS} from '@xds/build/next';
-export default withXDS({});
+/** @type {import('next').NextConfig} */
+const nextConfig = {};
+
+export default nextConfig;
