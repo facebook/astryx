@@ -128,14 +128,10 @@ const styles = stylex.create({
   },
 
   // Pill base — themes target .xds-resize-handle-pill for size/shape.
-  // Dimensions are always width=thin, height=long. Vertical mode rotates
-  // the pill 90° so themes only need to style one orientation.
   pill: {
     position: 'absolute',
     zIndex: 2,
     pointerEvents: 'none',
-    width: 3,
-    height: spacingVars['--spacing-8'],
     borderRadius: radiusVars['--radius-full'],
     backgroundColor: colorVars['--color-border'],
     transitionProperty: 'opacity, background-color, transform',
@@ -145,8 +141,13 @@ const styles = stylex.create({
     left: '50%',
     transform: 'translate(-50%, -50%)',
   },
+  pillHorizontal: {
+    width: 3,
+    height: spacingVars['--spacing-8'],
+  },
   pillVertical: {
-    transform: 'translate(-50%, -50%) rotate(90deg)',
+    width: spacingVars['--spacing-8'],
+    height: 3,
   },
   pillHidden: {opacity: 0},
   pillVisible: {opacity: 1},
@@ -177,8 +178,6 @@ const dynamicStyles = stylex.create({
   // Rotation + offset creates confusing coordinate math since translate
   // operates in pre-rotation local space.
   pillOffsetY: (dir: number) => ({
-    width: spacingVars['--spacing-8'],
-    height: 3,
     top: 0,
     transform: `translate(-50%, calc(${dir} * (100% + ${spacingVars['--spacing-1']})))`,
   }),
@@ -486,7 +485,7 @@ export function XDSResizeHandle({
             xdsClassName('resize-handle-pill'),
             stylex.props(
               styles.pill,
-              !isHorizontal && styles.pillVertical,
+              isHorizontal ? styles.pillHorizontal : styles.pillVertical,
               effectiveSide !== 'center' &&
                 (isHorizontal
                   ? dynamicStyles.pillOffsetX(
