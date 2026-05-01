@@ -1,22 +1,23 @@
 'use client';
 
 /**
- * @file useXDSOverlay.ts
+ * @file useXDSOverlay.tsx
  * @input Overlay options (showOn, scrim, position, content, etc.)
- * @output containerRef, containerProps, element (rendered scrim)
+ * @output containerRef, containerProps, element, renderOverlay
  * @position Core hook for overlay system — same pattern as useXDSTooltip
  *
  * For applying overlay behavior to an existing container (XDSCard,
  * custom elements) without a wrapper. Returns props to spread on the
- * container and a pre-rendered scrim element to place inside it.
+ * container and the scrim to render inside it.
  *
  * Handles: marker, positioning, touch toggle (via useClickableContainer),
- * border-radius detection, and scrim rendering.
+ * and scrim rendering.
  */
 
 import {
   type ReactNode,
   type ReactElement,
+  type MouseEvent,
   useState,
   useRef,
   useCallback,
@@ -25,7 +26,6 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useClickableContainer} from '../hooks/useClickableContainer';
-import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {overlayScope, overlayContainerStyles} from './overlay.markers.stylex';
 import {OverlayScrim} from './OverlayScrim';
 import type {
@@ -61,7 +61,7 @@ function getServerSnapshot(): boolean {
 
 export interface UseXDSOverlayOptions {
   /** Content rendered inside the scrim overlay. */
-  content: ReactNode;
+  content?: ReactNode;
 
   /**
    * CSS-driven visibility trigger.
@@ -97,18 +97,36 @@ export interface UseXDSOverlayOptions {
   align?: OverlayAlign;
 }
 
+export interface OverlayContainerProps {
+  /** CSS class names for marker + positioning. */
+  className: string | undefined;
+  /** Inline styles for marker + positioning. */
+  style: React.CSSProperties | undefined;
+  /** Touch tap-to-toggle handler. Only set on touch devices with full overlays. */
+  onClick: ((e: MouseEvent<HTMLElement>) => void) | undefined;
+  /** Touch tap-to-toggle handler. Only set on touch devices with full overlays. */
+  onMouseUp: ((e: MouseEvent<HTMLElement>) => void) | undefined;
+}
+
 export interface UseXDSOverlayResult {
   /** Ref — attach to the container element. */
   containerRef: React.RefObject<HTMLElement | null>;
 
-  /**
-   * Props to spread on the container element.
-   * Includes marker className, positioning, and touch event handlers.
-   */
-  containerProps: Record<string, unknown>;
+  /** Props to spread on the container element. */
+  containerProps: OverlayContainerProps;
 
-  /** The rendered scrim element — place inside the container. */
-  element: ReactElement;
+  /**
+   * Pre-rendered scrim element — place inside the container.
+   * Only available when `content` is provided in options.
+   */
+  element: ReactElement | null;
+
+  /**
+   * Render function for the overlay scrim. Use when you want to
+   * control where/when the scrim mounts, or pass dynamic content.
+   * Same pattern as useXDSTooltip's renderTooltip.
+   */
+  renderOverlay: (children: ReactNode) => ReactElement;
 }
 
 // =============================================================================
@@ -117,7 +135,7 @@ export interface UseXDSOverlayResult {
 
 /**
  * Hook for overlay behavior on an existing container.
- * Returns containerRef, containerProps to spread, and the scrim element to render.
+ * Returns containerRef, containerProps, and scrim element/render function.
  *
  * @example
  * ```
@@ -131,6 +149,17 @@ export interface UseXDSOverlayResult {
  *   {overlay.element}
  * </XDSCard>
  * ```
+ *
+ * @example
+ * ```
+ * // Callback mode — render on demand
+ * const overlay = useXDSOverlay({ showOn: 'hover' });
+ *
+ * <div ref={overlay.containerRef} {...overlay.containerProps}>
+ *   <img src={src} />
+ *   {overlay.renderOverlay(<XDSButton label="Quick view" />)}
+ * </div>
+ * ```
  */
 export function useXDSOverlay({
   content,
@@ -139,7 +168,7 @@ export function useXDSOverlay({
   scrim = 'dark',
   position = 'fill',
   align = 'end',
-}: UseXDSOverlayOptions): UseXDSOverlayResult {
+}: UseXDSOverlayOptions = {}): UseXDSOverlayResult {
   const containerRef = useRef<HTMLElement | null>(null);
 
   const isTouchDevice = useSyncExternalStore(
@@ -158,29 +187,13 @@ export function useXDSOverlay({
     setTouchOpen(prev => !prev);
   }, []);
 
-  // Touch tap-to-toggle via useClickableContainer (excludes interactive children)
   const {onClick, onMouseUp} = useClickableContainer({
     containerRef,
     onClick: needsTouchToggle ? handleToggle : undefined,
     disabled: !needsTouchToggle,
   });
 
-  // Border radius: mirror first child's radius onto container
-  useIsomorphicLayoutEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const firstChild = el.firstElementChild as HTMLElement | null;
-    if (!firstChild) return;
-    const radius = getComputedStyle(firstChild).borderRadius;
-    if (radius && radius !== '0px') {
-      el.style.borderRadius = radius;
-    }
-  }, []);
-
-  // Resolve effective isOpen:
-  // 1. Consumer isOpen prop takes precedence
-  // 2. Touch toggle for full-cover hover scrims
-  // 3. undefined = let CSS handle it
+  // Resolve isOpen: consumer prop > touch toggle > undefined (CSS)
   const effectiveIsOpen =
     isOpenProp !== undefined
       ? isOpenProp
@@ -188,32 +201,41 @@ export function useXDSOverlay({
         ? touchOpen
         : undefined;
 
-  // Container styles
+  // Container styles (marker + positioning)
   const resolved = stylex.props(overlayScope, overlayContainerStyles.root);
 
-  const containerProps = useMemo(
+  const containerProps = useMemo<OverlayContainerProps>(
     () => ({
-      className: resolved.className,
-      style: resolved.style,
-      ...(needsTouchToggle ? {onClick, onMouseUp} : {}),
+      className: resolved.className ?? undefined,
+      style: resolved.style ?? undefined,
+      onClick: needsTouchToggle ? onClick : undefined,
+      onMouseUp: needsTouchToggle ? onMouseUp : undefined,
     }),
     [resolved.className, resolved.style, needsTouchToggle, onClick, onMouseUp],
   );
 
-  const element = (
-    <OverlayScrim
-      scrim={scrim}
-      position={position}
-      align={align}
-      showOn={showOn}
-      isOpen={effectiveIsOpen}>
-      {content}
-    </OverlayScrim>
+  // Render function — matches tooltip's renderTooltip pattern
+  const renderOverlay = useCallback(
+    (children: ReactNode): ReactElement => (
+      <OverlayScrim
+        scrim={scrim}
+        position={position}
+        align={align}
+        showOn={showOn}
+        isOpen={effectiveIsOpen}>
+        {children}
+      </OverlayScrim>
+    ),
+    [scrim, position, align, showOn, effectiveIsOpen],
   );
+
+  // Pre-rendered element when content is provided
+  const element = content != null ? renderOverlay(content) : null;
 
   return {
     containerRef,
     containerProps,
     element,
+    renderOverlay,
   };
 }

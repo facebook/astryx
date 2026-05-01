@@ -14,10 +14,12 @@
  */
 
 import {type ReactNode, type Ref} from 'react';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import * as stylex from '@stylexjs/stylex';
-import {xdsClassName} from '../utils';
+import type {StyleXStyles} from '@stylexjs/stylex';
+import {xdsClassName, mergeProps} from '../utils';
 import {useXDSOverlay} from './useXDSOverlay';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
+import {overlayScope, overlayContainerStyles} from './overlay.markers.stylex';
 import type {
   OverlayScrimMode,
   OverlayPosition,
@@ -32,40 +34,16 @@ export interface XDSOverlayProps {
   children?: ReactNode;
   /** Content rendered inside the overlay scrim. */
   content: ReactNode;
-
-  /**
-   * CSS-driven visibility trigger.
-   * - `"always"` — always visible
-   * - `"hover"` — hover + focus (accessible default)
-   * - `"focus"` — focus-within only
-   * - `"hover-or-focus"` — alias for "hover"
-   * @default "always"
-   */
+  /** @default "always" */
   showOn?: OverlayShowOn;
-
-  /**
-   * JS-controlled visibility override.
-   */
+  /** JS-controlled visibility override. */
   isOpen?: boolean;
-
-  /**
-   * Scrim background mode.
-   * @default "dark"
-   */
+  /** @default "dark" */
   scrim?: OverlayScrimMode;
-
-  /**
-   * Scrim placement.
-   * @default "fill"
-   */
+  /** @default "fill" */
   position?: OverlayPosition;
-
-  /**
-   * Content alignment within the scrim.
-   * @default "end"
-   */
+  /** @default "end" */
   align?: OverlayAlign;
-
   /** StyleX style overrides on the container. */
   xstyle?: StyleXStyles;
   /** CSS class name(s) appended to the root element. */
@@ -78,10 +56,7 @@ export interface XDSOverlayProps {
  * Overlay — renders content on top of media with a scrim background
  * and automatic theme inversion.
  *
- * `children` is the base content, `content` is what appears on top.
- * Same pattern as XDSTooltip.
- *
- * For existing containers (XDSCard), use useXDSOverlay hook instead.
+ * `children` = base content, `content` = what appears on top.
  *
  * @compositionHint Wrap images, video, or media content.
  *
@@ -100,11 +75,11 @@ export interface XDSOverlayProps {
 export function XDSOverlay({
   children,
   content,
-  showOn = 'always',
+  showOn,
   isOpen,
-  scrim = 'dark',
-  position = 'fill',
-  align = 'end',
+  scrim,
+  position,
+  align,
   xstyle,
   className,
   style,
@@ -119,22 +94,18 @@ export function XDSOverlay({
     align,
   });
 
-  // Merge xstyle + className + style on top of hook's container props
-  const xstyleResolved = xstyle ? stylex.props(xstyle) : undefined;
-  const mergedClassName =
-    [
-      overlay.containerProps.className as string,
-      xstyleResolved?.className,
-      className,
-    ]
-      .filter(Boolean)
-      .join(' ') || undefined;
-
-  const mergedStyle = {
-    ...(overlay.containerProps.style as React.CSSProperties),
-    ...xstyleResolved?.style,
-    ...style,
-  };
+  // Border radius: mirror first child's radius onto the wrapper.
+  // Only the component needs this — hook consumers have their own radius.
+  useIsomorphicLayoutEffect(() => {
+    const el = overlay.containerRef.current;
+    if (!el) return;
+    const firstChild = el.firstElementChild as HTMLElement | null;
+    if (!firstChild) return;
+    const radius = getComputedStyle(firstChild).borderRadius;
+    if (radius && radius !== '0px') {
+      el.style.borderRadius = radius;
+    }
+  }, []);
 
   return (
     <div
@@ -146,19 +117,14 @@ export function XDSOverlay({
         else if (ref != null)
           (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
       }}
-      className={mergedClassName}
-      style={Object.keys(mergedStyle).length > 0 ? mergedStyle : undefined}
-      data-xds="overlay"
-      onClick={
-        overlay.containerProps.onClick as
-          | React.MouseEventHandler<HTMLDivElement>
-          | undefined
-      }
-      onMouseUp={
-        overlay.containerProps.onMouseUp as
-          | React.MouseEventHandler<HTMLDivElement>
-          | undefined
-      }>
+      {...mergeProps(
+        xdsClassName('overlay'),
+        stylex.props(overlayScope, overlayContainerStyles.root, xstyle),
+        className,
+        style,
+      )}
+      onClick={overlay.containerProps.onClick}
+      onMouseUp={overlay.containerProps.onMouseUp}>
       {children}
       {overlay.element}
     </div>
