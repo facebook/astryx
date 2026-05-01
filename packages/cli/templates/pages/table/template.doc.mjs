@@ -3,5 +3,5 @@ export const doc = {
   type: 'page',
   name: 'Table',
   description: 'Data table with actions',
-  isReady: true,
+  isReady: false,
 };
