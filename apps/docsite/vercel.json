@@ -1,4 +1,4 @@
 {
   "installCommand": "cd ../.. && yarn install",
-  "buildCommand": "cd ../.. && yarn workspace @xds/docsite build"
+  "buildCommand": "cd ../.. && yarn build && yarn workspace @xds/docsite build"
 }
