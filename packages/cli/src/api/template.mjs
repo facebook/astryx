@@ -160,10 +160,24 @@ export async function findRelatedBlocks(componentName, cwd) {
   );
 }
 
-export async function findShowcase(componentName, cwd) {
+/**
+ * @param {string} componentName
+ * @param {string} [cwd]
+ * @param {{ package?: string }} [options] - When set, only search blocks from this package.
+ *   Core blocks have no `package` field; external blocks have `package` set to the npm name.
+ */
+export async function findShowcase(componentName, cwd, options) {
   const blocks = await discoverAllBlocks(cwd);
   const lc = componentName.toLowerCase();
-  const showcases = blocks.filter(b => b.isShowcase);
+  const packageFilter = options?.package;
+
+  // When scoped to a package, only consider blocks from that package.
+  // Core blocks have no `package` field — filter them out when a package is specified.
+  const showcases = blocks.filter(b => {
+    if (!b.isShowcase) return false;
+    if (packageFilter) return b.package === packageFilter;
+    return true;
+  });
 
   const toResult = (b) => ({
     name: b.name,
