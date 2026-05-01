@@ -7,5 +7,5 @@ export const doc = {
   isShowcase: true,
   description:
     'A basic app shell with content padding.',
-  componentsUsed: ['AppShell', 'Text'],
+  componentsUsed: ['AppShell', 'SideNav', 'Heading', 'Text', 'VStack', 'NavIcon'],
 };

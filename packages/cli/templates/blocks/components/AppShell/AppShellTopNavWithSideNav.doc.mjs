@@ -6,5 +6,6 @@ export const doc = {
     'The most common layout with TopNav for app identity and SideNav for page-level navigation.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['AppShell', 'TopNav', 'SideNav', 'Text', 'NavIcon', 'Icon'],
+  componentsUsed: ['AppShell', 'TopNav', 'SideNav', 'Heading', 'Text', 'VStack', 'NavIcon'],
+  cardBackground: 'body',
 };

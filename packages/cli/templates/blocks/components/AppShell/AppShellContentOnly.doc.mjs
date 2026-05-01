@@ -6,5 +6,5 @@ export const doc = {
     'Minimal shell with no navigation, useful for full-bleed pages, auth screens, or embedded views.',
   isReady: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['AppShell', 'Text'],
+  componentsUsed: ['AppShell', 'Heading', 'Text', 'VStack'],
 };

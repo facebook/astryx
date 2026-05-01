@@ -9,12 +9,15 @@ import {XDSVStack} from '@xds/core/Layout';
 export interface BlockDocMeta {
   aspectRatio: number;
   scale: number;
+  cardBackground?: 'surface' | 'body';
 }
 
 export function ShowcasePreview({children}: {children: React.ReactNode}) {
   return (
     <XDSCenter width="100%" height="100vh">
-      <XDSCard variant="muted" style={{width: '100%', maxWidth: 968, height: 360}}>
+      <XDSCard
+        variant="muted"
+        style={{width: '100%', maxWidth: 968, height: 360}}>
         <XDSCenter width="100%" height="100%">
           {children}
         </XDSCenter>
@@ -32,11 +35,16 @@ export function BlockPreview({
 }) {
   const ar = meta.aspectRatio;
   const scale = meta.scale;
+  const cardBg = meta.cardBackground
+    ? `var(--color-background-${meta.cardBackground})`
+    : undefined;
 
   return (
-    <XDSCenter style={{flex: 1, overflow: 'auto', padding: 24, backgroundColor: 'var(--color-background-wash)'}}>
+    <XDSCenter style={{flex: 1, overflow: 'auto', padding: 24}}>
       <XDSVStack gap={2} style={{width: '100%', maxWidth: 600}}>
-        <XDSCard padding={5} style={{overflow: 'hidden'}}>
+        <XDSCard
+          padding={5}
+          style={{overflow: 'hidden', backgroundColor: cardBg}}>
           <XDSAspectRatio ratio={ar}>
             <XDSCenter
               width="100%"
