@@ -5,6 +5,6 @@ export const doc = {
   description:
     'Demonstrates the avatar fallback chain: primary image, fallback image, initials, then default icon.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Avatar'],
 };

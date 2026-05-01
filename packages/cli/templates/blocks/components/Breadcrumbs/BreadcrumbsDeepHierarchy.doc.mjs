@@ -4,6 +4,6 @@ export const doc = {
   name: 'Breadcrumbs — Deep Path',
   description: 'A 5-level breadcrumb trail for deeply nested content. Use in e-commerce, file browsers, or any UI with several levels of hierarchy.',
   isReady: true,
-  aspectRatio: 16 / 4,
+  aspectRatio: 4 / 1,
   componentsUsed: ['Breadcrumbs', 'Icon'],
 };
