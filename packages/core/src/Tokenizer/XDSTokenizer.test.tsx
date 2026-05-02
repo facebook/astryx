@@ -627,4 +627,35 @@ describe('XDSTokenizer', () => {
       expect(screen.queryByText('Create "Alice"')).not.toBeInTheDocument();
     });
   });
+
+  describe('popover after selection', () => {
+    it('does not show an empty popover after selecting an item with hasEntriesOnFocus', async () => {
+      const onChange = vi.fn();
+      render(
+        <XDSTokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[]}
+          onChange={onChange}
+          hasEntriesOnFocus
+          debounceMs={0}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+
+      // Focus to open bootstrap results
+      fireEvent.focus(input);
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+
+      // Select an item
+      fireEvent.click(screen.getByText('Alice'));
+      expect(onChange).toHaveBeenCalled();
+
+      // Popover should not reopen with an empty menu after selection
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+    });
+  });
 });

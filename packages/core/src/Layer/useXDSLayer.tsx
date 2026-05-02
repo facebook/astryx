@@ -280,17 +280,24 @@ export function useXDSLayer(
   const popoverRef = useRef<HTMLElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
 
+  // Ref mirrors isOpen for synchronous reads inside show/hide.
+  // State drives re-renders; the ref lets the imperative calls avoid
+  // stale-closure reads of the previous isOpen value.
+  const isOpenRef = useRef(false);
+
   const show = useCallback(() => {
-    if (popoverRef.current && !popoverRef.current.matches(':popover-open')) {
+    if (popoverRef.current && !isOpenRef.current) {
       popoverRef.current.showPopover();
+      isOpenRef.current = true;
       setIsOpen(true);
       onShow?.();
     }
   }, [onShow]);
 
   const hide = useCallback(() => {
-    if (popoverRef.current?.matches(':popover-open')) {
-      popoverRef.current.hidePopover();
+    if (isOpenRef.current) {
+      popoverRef.current?.hidePopover();
+      isOpenRef.current = false;
       setIsOpen(false);
       onHide?.();
     }
@@ -316,19 +323,26 @@ export function useXDSLayer(
         }
       : undefined;
 
-  // Handle popover toggle events (for sync with browser-initiated close)
+  // Reconcile browser-initiated closes (light-dismiss, popover="auto" stack
+  // eviction). These are the only cases where the DOM mutates without going
+  // through our show/hide — we sync React state back to match.
+  //
+  // No "open" case: the browser never spontaneously opens a popover. Opens
+  // only happen via showPopover() which we always call from show().
+  //
+  // The isOpenRef guard prevents double-firing: when our hide() already set
+  // the ref to false, the subsequent toggle event (which the browser fires
+  // as a side-effect of hidePopover) sees false and skips.
   const handleToggle = useCallback(
     (e: Event) => {
       const toggleEvent = e as ToggleEvent;
-      if (toggleEvent.newState === 'closed') {
+      if (toggleEvent.newState === 'closed' && isOpenRef.current) {
+        isOpenRef.current = false;
         setIsOpen(false);
         onHide?.();
-      } else if (toggleEvent.newState === 'open') {
-        setIsOpen(true);
-        onShow?.();
       }
     },
-    [onShow, onHide],
+    [onHide],
   );
 
   // Ref callback for popover element — sets up toggle listener

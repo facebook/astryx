@@ -314,6 +314,16 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
   // Debounce ref
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Monotonic counter incremented on selection and query-clear. Async
+  // searches that resolve after a selection compare their captured
+  // generation to the current value and discard stale results.
+  const searchGenRef = useRef(0);
+  // The generation at which results were last populated. handleFocus
+  // compares this to searchGenRef — if they differ, the cached results
+  // in the closure are stale (a selection cleared them) and shouldn't
+  // be re-shown.
+  const resultsGenRef = useRef(0);
+
   // Layer for dropdown
   const handleLayerShow = useCallback(() => {
     onOpenChange?.(true);
@@ -378,20 +388,26 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
   const performSearch = useCallback(
     async (searchQuery: string) => {
       searchSource.cancel?.();
+      const gen = searchGenRef.current;
       setIsLoading(true);
       setHasSearched(true);
       try {
         const searchResults = await searchSource.search(searchQuery);
+        if (searchGenRef.current !== gen) return;
+        resultsGenRef.current = gen;
         setResults(searchResults.slice(0, maxMenuItems));
         setHighlightedIndex(searchResults.length > 0 ? 0 : -1);
         if (searchResults.length > 0 || searchQuery.length > 0) {
           showLayer();
         }
       } catch {
+        if (searchGenRef.current !== gen) return;
         setResults([]);
         setHighlightedIndex(-1);
       } finally {
-        setIsLoading(false);
+        if (searchGenRef.current === gen) {
+          setIsLoading(false);
+        }
       }
     },
     [searchSource, maxMenuItems, showLayer],
@@ -399,18 +415,24 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
 
   // Perform bootstrap
   const performBootstrap = useCallback(async () => {
+    const gen = searchGenRef.current;
     setIsLoading(true);
     try {
       const bootstrapResults = await searchSource.bootstrap();
+      if (searchGenRef.current !== gen) return;
+      resultsGenRef.current = gen;
       setResults(bootstrapResults.slice(0, maxMenuItems));
       setHighlightedIndex(bootstrapResults.length > 0 ? 0 : -1);
       if (bootstrapResults.length > 0) {
         showLayer();
       }
     } catch {
+      if (searchGenRef.current !== gen) return;
       setResults([]);
     } finally {
-      setIsLoading(false);
+      if (searchGenRef.current === gen) {
+        setIsLoading(false);
+      }
     }
   }, [searchSource, maxMenuItems, showLayer]);
 
@@ -425,6 +447,7 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
       }
 
       if (newQuery.length === 0 && !hasEntriesOnFocus) {
+        searchGenRef.current++;
         searchSource.cancel?.();
         setResults([]);
         setHasSearched(false);
@@ -468,6 +491,13 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
   // Handle item selection
   const handleSelect = useCallback(
     (item: T) => {
+      // Bump generation to invalidate any in-flight async searches
+      searchGenRef.current++;
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+        searchTimeoutRef.current = null;
+      }
+      searchSource.cancel?.();
       onChange(item);
       setQuery('');
       setResults([]);
@@ -475,7 +505,7 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
       popover.hide();
       inputRef.current?.focus();
     },
-    [onChange, popover],
+    [onChange, popover, searchSource],
   );
 
   // Handle focus
@@ -483,7 +513,14 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
     if (isDisabled) return;
     if (hasEntriesOnFocus && results.length === 0 && query.length === 0) {
       performBootstrap();
-    } else if (results.length > 0 && (query.length > 0 || hasEntriesOnFocus)) {
+    } else if (
+      results.length > 0 &&
+      (query.length > 0 || hasEntriesOnFocus) &&
+      // Only re-show cached results if they haven't been invalidated by
+      // a selection. Refs are always current, so this check isn't affected
+      // by React's closure staleness the way results.length is.
+      resultsGenRef.current === searchGenRef.current
+    ) {
       showLayer();
     }
   }, [

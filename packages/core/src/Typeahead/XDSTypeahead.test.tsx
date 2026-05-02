@@ -375,6 +375,38 @@ describe('XDSBaseTypeahead hasSearched reset', () => {
   });
 });
 
+describe('XDSBaseTypeahead popover after selection', () => {
+  it('does not show an empty popover after selecting an item with hasEntriesOnFocus', async () => {
+    const onChange = vi.fn();
+    render(
+      <XDSBaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={onChange}
+        hasEntriesOnFocus
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    // Focus to open bootstrap results
+    fireEvent.focus(input);
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    // Select an item — popover should close
+    fireEvent.click(screen.getByText('Apple'));
+    expect(onChange).toHaveBeenCalledWith(fruits[0]);
+
+    // After selection, input is refocused but popover should NOT reopen
+    // with an empty menu. The handleFocus handler should be suppressed.
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+    });
+  });
+});
+
 describe('XDSTypeahead edit mode', () => {
   it('enters edit mode on token container click', () => {
     const onChange = vi.fn();
