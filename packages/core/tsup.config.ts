@@ -15,7 +15,13 @@ import {defineConfig} from 'tsup';
 import babel from 'esbuild-plugin-babel';
 
 export default defineConfig({
-  entry: ['src/index.ts', 'src/*/index.ts', 'src/theme/tokens.stylex.ts', 'src/theme/syntax/index.ts'],
+  entry: [
+    'src/index.ts',
+    'src/*/index.ts',
+    'src/*/utils.ts',
+    'src/theme/tokens.stylex.ts',
+    'src/theme/syntax/index.ts',
+  ],
   format: ['cjs', 'esm'],
   dts: false,
   splitting: true,
