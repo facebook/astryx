@@ -8,7 +8,7 @@ export default function AspectRatioWidescreen() {
     <XDSCenter width={600}>
       <XDSAspectRatio ratio={16 / 9}>
         <img
-          src="https://picsum.photos/800/450"
+          src="https://lookaside.facebook.com/assets/xds_oss/light-scene-horizontal-1.png"
           alt="16:9 widescreen"
           style={{
             width: '100%',

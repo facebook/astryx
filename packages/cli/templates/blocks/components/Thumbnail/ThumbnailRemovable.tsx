@@ -6,9 +6,9 @@ import {XDSStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
 const IMAGES = [
-  {id: 1, src: 'https://picsum.photos/id/1042/200/200', alt: 'Dark cityscape at night', label: 'dark-city.jpg'},
-  {id: 2, src: 'https://picsum.photos/id/1043/200/200', alt: 'Bright snowy landscape', label: 'snow.jpg'},
-  {id: 3, src: 'https://picsum.photos/id/1044/200/200', alt: 'Warm sunset over mountains', label: 'sunset.jpg'},
+  {id: 1, src: 'https://lookaside.facebook.com/assets/xds_oss/moody-scene-vertical-1.png', alt: 'Dark cityscape at night', label: 'dark-city.jpg'},
+  {id: 2, src: 'https://lookaside.facebook.com/assets/xds_oss/moody-scene-vertical-2.png', alt: 'Bright snowy landscape', label: 'snow.jpg'},
+  {id: 3, src: 'https://lookaside.facebook.com/assets/xds_oss/moody-home-vertical-1.png', alt: 'Warm sunset over mountains', label: 'sunset.jpg'},
 ];
 
 export default function ThumbnailRemovable() {

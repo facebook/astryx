@@ -113,7 +113,7 @@ export default function TopNavMegaMenu() {
               <XDSTopNavMegaMenuFeaturedCard
                 title="What's new in v4.0"
                 description="AI-powered analytics and real-time collaboration."
-                image="https://images.unsplash.com/photo-1551434678-e076c223a692?w=560&h=280&fit=crop"
+                image="https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-1.png"
                 imageAlt="Team collaboration"
                 linkLabel="Read the announcement"
                 linkHref="#announcement"

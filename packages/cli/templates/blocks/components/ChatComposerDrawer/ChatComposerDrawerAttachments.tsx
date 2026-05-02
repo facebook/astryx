@@ -9,31 +9,31 @@ import {XDSStack} from '@xds/core/Layout';
 const IMAGE_ATTACHMENTS = [
   {
     id: '1',
-    src: 'https://picsum.photos/id/1015/200/200',
+    src: 'https://lookaside.facebook.com/assets/xds_oss/illustrative-vertical-1.jpg',
     alt: 'River through a valley',
     label: 'valley.jpg',
   },
   {
     id: '2',
-    src: 'https://picsum.photos/id/1018/200/200',
+    src: 'https://lookaside.facebook.com/assets/xds_oss/illustrative-vertical-2.jpg',
     alt: 'Foggy mountain peak',
     label: 'mountain.jpg',
   },
   {
     id: '3',
-    src: 'https://picsum.photos/id/1025/200/200',
+    src: 'https://lookaside.facebook.com/assets/xds_oss/illustrative-vertical-3.jpg',
     alt: 'Golden retriever puppy',
     label: 'puppy.jpg',
   },
   {
     id: '4',
-    src: 'https://picsum.photos/id/1035/200/200',
+    src: 'https://lookaside.facebook.com/assets/xds_oss/illustrative-vertical-4.jpg',
     alt: 'Bridge at sunset',
     label: 'bridge.jpg',
   },
   {
     id: '5',
-    src: 'https://picsum.photos/id/1040/200/200',
+    src: 'https://lookaside.facebook.com/assets/xds_oss/illustrative-vertical-5.jpg',
     alt: 'Lakeside at dusk',
     label: 'lakeside.jpg',
   },

@@ -26,7 +26,7 @@ export default function ThumbnailStates() {
           </XDSStack>
           <XDSStack direction="vertical" gap={1} hAlign="center">
             <XDSThumbnail
-              src="https://picsum.photos/id/1044/200/200"
+              src="https://lookaside.facebook.com/assets/xds_oss/moody-home-vertical-1.png"
               alt="Mountain landscape"
               isLoading
               label="landscape.jpg"
@@ -37,7 +37,7 @@ export default function ThumbnailStates() {
           </XDSStack>
           <XDSStack direction="vertical" gap={1} hAlign="center">
             <XDSThumbnail
-              src="https://picsum.photos/id/1044/200/200"
+              src="https://lookaside.facebook.com/assets/xds_oss/moody-home-vertical-1.png"
               alt="Mountain landscape"
               label="landscape.jpg"
             />

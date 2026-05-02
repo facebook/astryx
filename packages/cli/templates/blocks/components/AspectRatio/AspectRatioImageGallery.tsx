@@ -18,7 +18,7 @@ export default function AspectRatioImageGallery() {
       {images.map(({id, alt}) => (
         <XDSAspectRatio key={id} ratio={4 / 3}>
           <img
-            src={`https://picsum.photos/seed/${id}/400/300`}
+            src="https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-1.jpg"
             alt={alt}
             style={{
               width: '100%',

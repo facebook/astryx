@@ -13,7 +13,7 @@ export default function ThumbnailDisabled() {
         </XDSText>
         <XDSStack direction="horizontal" gap={3} vAlign="center">
           <XDSThumbnail
-            src="https://picsum.photos/id/1043/200/200"
+            src="https://lookaside.facebook.com/assets/xds_oss/moody-scene-vertical-2.png"
             alt="Bright landscape"
             label="landscape.jpg"
             onRemove={() => {}}
@@ -27,7 +27,7 @@ export default function ThumbnailDisabled() {
         </XDSText>
         <XDSStack direction="horizontal" gap={3} vAlign="center">
           <XDSThumbnail
-            src="https://picsum.photos/id/1043/200/200"
+            src="https://lookaside.facebook.com/assets/xds_oss/moody-scene-vertical-2.png"
             alt="Bright landscape"
             label="landscape.jpg"
             onRemove={() => {}}

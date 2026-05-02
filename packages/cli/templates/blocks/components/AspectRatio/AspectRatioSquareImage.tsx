@@ -8,7 +8,7 @@ export default function AspectRatioSquareImage() {
     <XDSCenter width={300}>
       <XDSAspectRatio ratio={1}>
         <img
-          src="https://picsum.photos/400/400"
+          src="https://lookaside.facebook.com/assets/xds_oss/light-home-square-1.png"
           alt="1:1 square"
           style={{
             width: '100%',

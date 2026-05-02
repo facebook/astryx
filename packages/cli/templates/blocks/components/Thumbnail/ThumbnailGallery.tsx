@@ -6,10 +6,10 @@ import {XDSStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
 const ATTACHMENTS = [
-  {id: 1, src: 'https://picsum.photos/id/1015/200/200', alt: 'River through a valley', label: 'valley.jpg'},
-  {id: 2, src: 'https://picsum.photos/id/1018/200/200', alt: 'Foggy mountain peak', label: 'mountain.jpg'},
-  {id: 3, src: 'https://picsum.photos/id/1025/200/200', alt: 'Golden retriever puppy', label: 'puppy.jpg'},
-  {id: 4, src: 'https://picsum.photos/id/1035/200/200', alt: 'Bridge at sunset', label: 'bridge.jpg'},
+  {id: 1, src: 'https://lookaside.facebook.com/assets/xds_oss/illustrative-vertical-1.jpg', alt: 'River through a valley', label: 'valley.jpg'},
+  {id: 2, src: 'https://lookaside.facebook.com/assets/xds_oss/illustrative-vertical-2.jpg', alt: 'Foggy mountain peak', label: 'mountain.jpg'},
+  {id: 3, src: 'https://lookaside.facebook.com/assets/xds_oss/illustrative-vertical-3.jpg', alt: 'Golden retriever puppy', label: 'puppy.jpg'},
+  {id: 4, src: 'https://lookaside.facebook.com/assets/xds_oss/illustrative-vertical-4.jpg', alt: 'Bridge at sunset', label: 'bridge.jpg'},
 ];
 
 export default function ThumbnailGallery() {
