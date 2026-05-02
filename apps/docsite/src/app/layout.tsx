@@ -5,6 +5,7 @@ import {DocsShell} from '../components/DocsShell';
 import {components} from '../generated/componentRegistry';
 import {packages} from '../generated/packageRegistry';
 import {docTopics} from '../generated/docsRegistry';
+import {templates} from '../generated/templateRegistry';
 
 export const metadata: Metadata = {
   title: 'XDS — Design System',
@@ -20,7 +21,8 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
           <DocsShell
             components={components}
             packages={packages}
-            docTopics={docTopics}>
+            docTopics={docTopics}
+            templates={templates}>
             {children}
           </DocsShell>
         </Providers>
