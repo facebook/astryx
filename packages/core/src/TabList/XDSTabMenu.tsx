@@ -33,6 +33,7 @@ import {useXDSTabListContext} from './XDSTabListContext';
 import type {XDSTabListSize} from './XDSTabListContext';
 import {tabScope} from './tab.markers.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 export interface XDSTabMenuOption {
   value: string;
@@ -43,7 +44,10 @@ export interface XDSTabMenuOption {
   icon?: ReactNode | XDSIconType;
 }
 
-export interface XDSTabMenuProps {
+export interface XDSTabMenuProps extends Pick<
+  XDSBaseProps<HTMLButtonElement>,
+  'xstyle' | 'className' | 'style'
+> {
   /**
    * Label for the trigger button and dropdown heading.
    * Displayed as trigger text when no option is selected.
@@ -243,7 +247,13 @@ const hoverSizeStyles = stylex.create({
  * </XDSTabList>
  * ```
  */
-export function XDSTabMenu({label, options}: XDSTabMenuProps) {
+export function XDSTabMenu({
+  label,
+  options,
+  xstyle,
+  className,
+  style,
+}: XDSTabMenuProps) {
   const tabListCtx = useXDSTabListContext();
   const menuId = useId();
 
@@ -295,7 +305,10 @@ export function XDSTabMenu({label, options}: XDSTabMenuProps) {
             sizeStyles[size],
             hasSelectedOption && styles.triggerSelected,
             tabScope,
+            xstyle,
           ),
+          className,
+          style,
         )}>
         <span
           aria-hidden="true"
