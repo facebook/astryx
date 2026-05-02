@@ -1,6 +1,7 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSTabList, XDSTab, XDSTabMenu} from '@xds/core/TabList';
+import {XDSCarousel} from '@xds/core/Carousel';
 import {XDSButton} from '@xds/core/Button';
 import {PlusIcon, FunnelIcon} from '@heroicons/react/24/outline';
 
@@ -190,6 +191,57 @@ export const FillLayout: Story = {
           <XDSTab value="home" label="Home" />
           <XDSTab value="projects" label="Projects" />
           <XDSTab value="settings" label="Settings" />
+        </XDSTabList>
+      </div>
+    );
+  },
+};
+
+/**
+ * When tabs overflow, wrap XDSTabList's children in XDSCarousel.
+ * The Carousel handles scroll, fade masks, and arrow buttons.
+ * Each tab keeps its intrinsic label width — no truncation.
+ */
+export const Overflow: Story = {
+  render: () => {
+    const [value, setValue] = useState('overview');
+    return (
+      <div style={{maxWidth: '400px', border: '1px dashed #ccc'}}>
+        <XDSTabList value={value} onChange={setValue}>
+          <XDSCarousel gap={0.5} hasSnap={false}>
+            <XDSTab value="overview" label="Overview" />
+            <XDSTab value="activity" label="Activity" />
+            <XDSTab value="members" label="Members" />
+            <XDSTab value="settings" label="Settings" />
+            <XDSTab value="integrations" label="Integrations" />
+            <XDSTab value="billing" label="Billing & Plans" />
+            <XDSTab value="security" label="Security" />
+            <XDSTab value="notifications" label="Notifications" />
+            <XDSTab value="api" label="API Keys" />
+          </XDSCarousel>
+        </XDSTabList>
+      </div>
+    );
+  },
+};
+
+/**
+ * Overflow with divider — typical page header in a narrow viewport.
+ */
+export const OverflowWithDivider: Story = {
+  render: () => {
+    const [value, setValue] = useState('dashboard');
+    return (
+      <div style={{maxWidth: '350px'}}>
+        <XDSTabList value={value} onChange={setValue} hasDivider size="lg">
+          <XDSCarousel gap={0.5} hasSnap={false}>
+            <XDSTab value="dashboard" label="Dashboard" />
+            <XDSTab value="analytics" label="Analytics" />
+            <XDSTab value="reports" label="Reports" />
+            <XDSTab value="customers" label="Customers" />
+            <XDSTab value="products" label="Products" />
+            <XDSTab value="orders" label="Orders" />
+          </XDSCarousel>
         </XDSTabList>
       </div>
     );

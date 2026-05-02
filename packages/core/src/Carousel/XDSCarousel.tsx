@@ -81,6 +81,9 @@ const styles = stylex.create({
     position: 'relative',
     display: 'flex',
     alignItems: 'center',
+    minWidth: 0,
+    maxWidth: '100%',
+    overflowX: 'hidden',
   },
   scroller: {
     display: 'flex',
