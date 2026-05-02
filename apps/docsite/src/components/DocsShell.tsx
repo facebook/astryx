@@ -7,6 +7,7 @@ import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
 import {XDSButton} from '@xds/core/Button';
 import {XDSLink} from '@xds/core/Link';
 import {XDSVStack} from '@xds/core/Layout';
+import {GITHUB_REPO} from '../constants';
 import type {ComponentEntry} from '../generated/componentRegistry';
 import type {PackageMeta} from '../generated/packageRegistry';
 import type {DocTopic} from '../generated/docsRegistry';
@@ -201,11 +202,7 @@ export function DocsShell({
           label="XDS navigation"
           heading={<XDSTopNavHeading logo={XDS_WORDMARK} headingHref="/" />}
           endContent={
-            <XDSButton
-              label="GitHub"
-              variant="ghost"
-              href="https://github.com/facebookexperimental/xds"
-            />
+            <XDSButton label="GitHub" variant="ghost" href={GITHUB_REPO} />
           }
         />
       }

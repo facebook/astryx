@@ -1,23 +1,40 @@
-/**
- * Page type: changelog
- * Version history from CHANGELOG.md files across packages.
- * TODO: port generate-changelog.js into the data pipeline.
- */
+import {readFile} from 'node:fs/promises';
+import * as path from 'node:path';
+import {ChangelogView} from '../../components/ChangelogView';
+import {components} from '../../generated/componentRegistry';
+import {packages} from '../../generated/packageRegistry';
 
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSSection} from '@xds/core/Section';
+async function readChangelog(pkg: {
+  name: string;
+  packagePath: string;
+}): Promise<{pkg: string; content: string} | null> {
+  const changelogPath = path.resolve(
+    process.cwd(),
+    '..',
+    '..',
+    pkg.packagePath,
+    'CHANGELOG.md',
+  );
+  try {
+    const content = await readFile(changelogPath, 'utf-8');
+    return {pkg: pkg.name, content};
+  } catch {
+    return null;
+  }
+}
 
-export default function ChangelogPage() {
+export default async function ChangelogPage() {
+  const withChangelog = packages.filter(p => p.hasChangelog);
+  const results = await Promise.all(withChangelog.map(readChangelog));
+  const changelogs = results.filter(
+    (c): c is {pkg: string; content: string} => c != null,
+  );
+
+  const componentNames = Object.values(components)
+    .flat()
+    .map(c => c.name);
+
   return (
-    <XDSSection maxWidth="md" padding={6}>
-      <XDSVStack gap={4}>
-        <XDSHeading level={1}>Changelog</XDSHeading>
-        <XDSText type="body" color="secondary">
-          Version history coming soon.
-        </XDSText>
-        {/* TODO: render from changelogRegistry once ported to pipeline */}
-      </XDSVStack>
-    </XDSSection>
+    <ChangelogView changelogs={changelogs} componentNames={componentNames} />
   );
 }
