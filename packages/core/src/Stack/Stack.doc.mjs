@@ -169,56 +169,6 @@ export const docs = {
         },
       ],
     },
-    {
-      name: 'stack',
-      description:
-        'Low-level StyleX utility for creating flex containers with stack behavior. Use when the component API is insufficient.',
-      props: [
-        {
-          name: 'direction',
-          type: "'horizontal' | 'vertical'",
-          description: 'Stack direction.',
-          required: true,
-        },
-        {
-          name: 'gap',
-          type: 'SpacingStep',
-          description:
-            'Numeric spacing step controlling the gap between items: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
-        },
-        {
-          name: 'crossAlign',
-          type: "'start' | 'center' | 'end' | 'stretch'",
-          description: 'Cross-axis alignment of all items.',
-        },
-        {
-          name: 'wrap',
-          type: "'nowrap' | 'wrap' | 'wrap-reverse'",
-          description: 'Flex wrap behavior.',
-          default: "'nowrap'",
-        },
-      ],
-    },
-    {
-      name: 'stackItem',
-      description:
-        'Low-level StyleX utility for controlling flex item behavior. Use when the component API is insufficient.',
-      props: [
-        {
-          name: 'size',
-          type: "'static' | 'fill'",
-          description:
-            'Flex grow behavior: static keeps natural size, fill expands to consume remaining space.',
-          default: "'static'",
-        },
-        {
-          name: 'crossAlignSelf',
-          type: "'start' | 'center' | 'end' | 'stretch'",
-          description:
-            'Override the cross-axis alignment for this individual item.',
-        },
-      ],
-    },
   ],
   usage: {
     description:
@@ -401,56 +351,6 @@ export const docsZh = {
         },
       ],
     },
-    {
-      name: 'stack',
-      description:
-        '底层 StyleX 工具函数，用于创建具有堆叠行为的 flex 容器。在组件 API 无法满足需求时使用。',
-      props: [
-        {
-          name: 'direction',
-          type: "'horizontal' | 'vertical'",
-          description: '堆叠方向。',
-          required: true,
-        },
-        {
-          name: 'gap',
-          type: 'SpacingStep',
-          description:
-            '控制元素间距的数值间距步进：0、0.5、1、1.5、2、3、4、5、6、8、10。',
-        },
-        {
-          name: 'crossAlign',
-          type: "'start' | 'center' | 'end' | 'stretch'",
-          description: '所有元素的交叉轴对齐方式。',
-        },
-        {
-          name: 'wrap',
-          type: "'nowrap' | 'wrap' | 'wrap-reverse'",
-          description: 'Flex 换行行为。',
-          default: "'nowrap'",
-        },
-      ],
-    },
-    {
-      name: 'stackItem',
-      description:
-        '底层 StyleX 工具函数，用于控制 flex 子元素的行为。在组件 API 无法满足需求时使用。',
-      props: [
-        {
-          name: 'size',
-          type: "'static' | 'fill'",
-          description:
-            'Flex 增长行为：static 保持自然尺寸，fill 扩展以占据剩余空间。',
-          default: "'static'",
-        },
-        {
-          name: 'crossAlignSelf',
-          type: "'start' | 'center' | 'end' | 'stretch'",
-          description:
-            '覆盖此元素的交叉轴对齐方式。',
-        },
-      ],
-    },
   ],
   usage: {
     description:
@@ -517,24 +417,6 @@ export const docsDense = {
         crossAlignSelf: 'Override cross-axis alignment for this item, ignoring parent.',
         element: 'HTML element to render as wrapper.',
         children: 'Item content.',
-      },
-    },
-    {
-      name: 'stack',
-      description: 'Low-level StyleX utility for flex containers w/ stack behavior.',
-      propDescriptions: {
-        direction: 'Stack direction.',
-        gap: 'Numeric spacing step for gap: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
-        crossAlign: 'Cross-axis alignment of all items.',
-        wrap: 'Flex wrap behavior.',
-      },
-    },
-    {
-      name: 'stackItem',
-      description: 'Low-level StyleX utility for flex item behavior.',
-      propDescriptions: {
-        size: 'Flex grow: static=natural size, fill=expand to remaining space.',
-        crossAlignSelf: 'Override cross-axis alignment for this item.',
       },
     },
   ],
