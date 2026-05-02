@@ -12,9 +12,96 @@ import {XDSGrid} from '@xds/core/Grid';
 import {XDSSection} from '@xds/core/Section';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSButton} from '@xds/core/Button';
+import {XDSTheme} from '@xds/core/theme';
+import {defaultTheme} from '@xds/theme-default/built';
+import {neutralTheme} from '@xds/theme-neutral/built';
 import {packages} from '../generated/packageRegistry';
 import {componentCount} from '../generated/componentRegistry';
 import {docTopics} from '../generated/docsRegistry';
+import {ThemeShowcaseTile} from '../components/ThemeShowcaseTile';
+
+// ---------------------------------------------------------------------------
+// Inline SVG icons for package cards
+// ---------------------------------------------------------------------------
+
+const TerminalIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    aria-hidden="true"
+    width="48"
+    height="48"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}>
+    <path d="m7 11 2-2-2-2" />
+    <path d="M11 13h4" />
+    <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+  </svg>
+);
+
+const CodeIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    aria-hidden="true"
+    width="48"
+    height="48"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}>
+    <path d="m18 16 4-4-4-4" />
+    <path d="m6 8-4 4 4 4" />
+    <path d="m14.5 4-5 16" />
+  </svg>
+);
+
+// ---------------------------------------------------------------------------
+// Package asset map
+// ---------------------------------------------------------------------------
+
+const PACKAGE_ASSETS: Record<
+  string,
+  {image?: string; icon?: React.ReactNode; themeKey?: string}
+> = {
+  '@xds/cli': {
+    image: '/LibrariesCli.png',
+    icon: <TerminalIcon />,
+  },
+  '@xds/core': {
+    image: '/LibrariesCore.png',
+    icon: <CodeIcon />,
+  },
+  '@xds/theme-default': {themeKey: 'default'},
+  '@xds/theme-neutral': {themeKey: 'neutral'},
+};
+
+const THEME_MAP: Record<string, {theme: typeof defaultTheme; label: string}> = {
+  default: {theme: defaultTheme, label: 'Default'},
+  neutral: {theme: neutralTheme, label: 'Neutral'},
+};
+
+const DEFAULT_PACKAGE_IMAGE = '/LibrariesCore.png';
+
+// ---------------------------------------------------------------------------
+// Foundation image map
+// ---------------------------------------------------------------------------
+
+const foundationImages: Record<string, string> = {
+  color: '/FoundationsColors.png',
+  icons: '/FoundationsIcons.png',
+  shape: '/FoundationsShape.png',
+  spacing: '/FoundationsSpacing.png',
+  typography: '/FoundationsTypogrpahy.png',
+};
+
+// ---------------------------------------------------------------------------
+// Styles
+// ---------------------------------------------------------------------------
 
 const styles = stylex.create({
   pageContainer: {
@@ -73,10 +160,24 @@ const styles = stylex.create({
   },
   packageImageWrapper: {
     aspectRatio: '2/1',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
     borderRadius: 12,
     position: 'relative' as const,
     marginBottom: 12,
     backgroundColor: 'var(--color-background-card)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  packageIconOverlay: {
+    color: '#484233',
+    opacity: 0.8,
+  },
+  comingSoonBadge: {
+    position: 'absolute' as const,
+    top: 12,
+    right: 12,
   },
   monoText: {
     fontFamily: 'monospace',
@@ -91,15 +192,9 @@ const styles = stylex.create({
   },
 });
 
-const isThemePkg = (name: string) => name.includes('theme-');
-
-const foundationImages: Record<string, string> = {
-  color: '/FoundationsColors.png',
-  icons: '/FoundationsIcons.png',
-  shape: '/FoundationsShape.png',
-  spacing: '/FoundationsSpacing.png',
-  typography: '/FoundationsTypogrpahy.png',
-};
+// ---------------------------------------------------------------------------
+// Data
+// ---------------------------------------------------------------------------
 
 const foundationTopics = docTopics
   .filter(d => d.category === 'foundations')
@@ -109,11 +204,12 @@ const foundationTopics = docTopics
     return a.title.localeCompare(b.title);
   });
 
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
 export default function HomePage() {
   const coreCount = componentCount;
-  const libraryPackages = packages.filter(p => !isThemePkg(p.name));
-  const themePackages = packages.filter(p => isThemePkg(p.name));
-  const allPackages = [...libraryPackages, ...themePackages];
 
   return (
     <div {...stylex.props(styles.pageContainer)}>
@@ -162,29 +258,54 @@ export default function HomePage() {
               columns={{minWidth: 260, repeat: 'fit'}}
               gap={4}
               rowGap={8}>
-              {allPackages.map(pkg => (
-                <Link
-                  key={pkg.name}
-                  href={`/packages/${pkg.name.replace('@xds/', '')}`}
-                  {...stylex.props(styles.linkReset)}>
-                  <div {...stylex.props(styles.packageImageWrapper)} />
-                  <XDSVStack gap={0.5}>
-                    <span {...stylex.props(styles.monoText)}>
-                      <XDSText type="body" weight="bold">
-                        {pkg.name}
-                      </XDSText>
-                      <span {...stylex.props(styles.versionText)}>
-                        <XDSText type="supporting" color="secondary">
-                          v{pkg.version}
+              {packages.map(pkg => {
+                const assets = PACKAGE_ASSETS[pkg.name];
+                const image = assets?.image ?? DEFAULT_PACKAGE_IMAGE;
+                const icon = assets?.icon ?? null;
+                const themeEntry = assets?.themeKey
+                  ? THEME_MAP[assets.themeKey]
+                  : null;
+
+                return (
+                  <Link
+                    key={pkg.name}
+                    href={`/packages/${pkg.name.replace('@xds/', '')}`}
+                    {...stylex.props(styles.linkReset)}>
+                    {themeEntry ? (
+                      <div {...stylex.props(styles.packageImageWrapper)}>
+                        <XDSTheme theme={themeEntry.theme} mode="light">
+                          <ThemeShowcaseTile label={themeEntry.label} />
+                        </XDSTheme>
+                      </div>
+                    ) : (
+                      <div
+                        {...stylex.props(styles.packageImageWrapper)}
+                        style={{backgroundImage: `url(${image})`}}>
+                        {icon && (
+                          <div {...stylex.props(styles.packageIconOverlay)}>
+                            {icon}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <XDSVStack gap={0.5}>
+                      <span {...stylex.props(styles.monoText)}>
+                        <XDSText type="body" weight="bold">
+                          {pkg.name}
                         </XDSText>
+                        <span {...stylex.props(styles.versionText)}>
+                          <XDSText type="supporting" color="secondary">
+                            v{pkg.version}
+                          </XDSText>
+                        </span>
                       </span>
-                    </span>
-                    <XDSText type="supporting" color="secondary">
-                      {pkg.description}
-                    </XDSText>
-                  </XDSVStack>
-                </Link>
-              ))}
+                      <XDSText type="supporting" color="secondary">
+                        {pkg.description}
+                      </XDSText>
+                    </XDSVStack>
+                  </Link>
+                );
+              })}
             </XDSGrid>
           </XDSVStack>
 
