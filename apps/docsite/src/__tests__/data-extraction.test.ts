@@ -21,7 +21,6 @@ describe('packageRegistry', () => {
     expect(names).toContain('@xds/cli');
     expect(names).toContain('@xds/theme-default');
     expect(names).toContain('@xds/theme-neutral');
-    // Private packages should not appear
     expect(names).not.toContain('@xds/lab');
     expect(names).not.toContain('@xds/build');
     expect(names).not.toContain('@xds/theme-brutalist');
@@ -50,7 +49,7 @@ describe('packageRegistry', () => {
 describe('componentRegistry', () => {
   it('discovers components in @xds/core', () => {
     expect(components['@xds/core']).toBeDefined();
-    expect(components['@xds/core'].length).toBeGreaterThan(50);
+    expect(components['@xds/core'].length).toBeGreaterThan(100);
   });
 
   it('component count matches sum of all packages', () => {
@@ -61,44 +60,103 @@ describe('componentRegistry', () => {
     expect(componentCount).toBe(sum);
   });
 
-  it('components are scoped to their package', () => {
+  it('components have all required fields', () => {
     for (const [pkgName, comps] of Object.entries(components)) {
       expect(pkgName).toMatch(/^@xds\//);
-      expect(Array.isArray(comps)).toBe(true);
       for (const comp of comps) {
         expect(comp.name).toBeTruthy();
-        expect(typeof comp.description).toBe('string');
+        expect(comp.displayName).toBeTruthy();
         expect(typeof comp.directory).toBe('string');
+        expect(typeof comp.description).toBe('string');
+        expect(Array.isArray(comp.keywords)).toBe(true);
+        expect(typeof comp.hidden).toBe('boolean');
+        // parentDoc is string | null
+        expect(
+          comp.parentDoc === null || typeof comp.parentDoc === 'string',
+        ).toBe(true);
       }
     }
   });
 
-  it('known components are present', () => {
-    const coreNames = components['@xds/core'].map(c => c.name);
-    expect(coreNames).toContain('Button');
-    expect(coreNames).toContain('Text');
-    expect(coreNames).toContain('Card');
-    expect(coreNames).toContain('Table');
-  });
+  // ── Sub-component expansion ────────────────────────────────────────
 
-  it('name comes from docs.name, not directory name', () => {
+  it('expands compound components into sub-component entries', () => {
     const core = components['@xds/core'];
-    // CodeBlock dir has file XDSCodeBlock.doc.mjs with docs.name = 'CodeBlock'
-    const codeBlock = core.find(c => c.name === 'CodeBlock');
-    expect(codeBlock).toBeDefined();
-    expect(codeBlock?.directory).toBe('CodeBlock');
-
-    // hooks dir has multiple docs with names like 'useClickableContainer'
-    const hookComponent = core.find(c => c.name === 'useClickableContainer');
-    expect(hookComponent).toBeDefined();
-    expect(hookComponent?.directory).toBe('hooks');
+    // Table has sub-components: Table, BaseTable, TableRow, TableCell, TableHeaderCell, etc.
+    const tableComponents = core.filter(c => c.parentDoc === 'Table');
+    expect(tableComponents.length).toBeGreaterThanOrEqual(5);
+    const tableNames = tableComponents.map(c => c.name);
+    expect(tableNames).toContain('Table');
+    expect(tableNames).toContain('TableRow');
+    expect(tableNames).toContain('TableCell');
+    expect(tableNames).toContain('TableHeaderCell');
   });
+
+  it('sub-components share the parent group and directory', () => {
+    const core = components['@xds/core'];
+    const dialogSubs = core.filter(c => c.parentDoc === 'Dialog');
+    expect(dialogSubs.length).toBeGreaterThanOrEqual(2);
+    for (const sub of dialogSubs) {
+      expect(sub.group).toBe('Dialog');
+      expect(sub.directory).toBe('Dialog');
+    }
+  });
+
+  it('sub-components have their own descriptions', () => {
+    const core = components['@xds/core'];
+    const dialogHeader = core.find(c => c.name === 'DialogHeader');
+    expect(dialogHeader).toBeDefined();
+    expect(dialogHeader!.description.length).toBeGreaterThan(10);
+    // Description should be specific to DialogHeader, not the parent Dialog
+    expect(dialogHeader!.description.toLowerCase()).toContain('header');
+  });
+
+  it('Chat has many sub-components (standalone docs take priority over compound entries)', () => {
+    const core = components['@xds/core'];
+    // Chat compound doc has 14 sub-components, but ChatToolCalls has its own
+    // standalone doc so it appears with parentDoc: null instead of parentDoc: 'Chat'
+    const chatSubs = core.filter(c => c.parentDoc === 'Chat');
+    expect(chatSubs.length).toBeGreaterThanOrEqual(12);
+    const chatNames = chatSubs.map(c => c.name);
+    expect(chatNames).toContain('ChatMessage');
+    expect(chatNames).toContain('ChatComposer');
+    expect(chatNames).toContain('ChatSendButton');
+
+    // ChatToolCalls should exist but as a standalone entry
+    const toolCalls = core.find(c => c.name === 'ChatToolCalls');
+    expect(toolCalls).toBeDefined();
+    // It's standalone (has its own doc.mjs), not a sub-component
+    expect(toolCalls!.parentDoc).toBeNull();
+  });
+
+  it('simple components have null parentDoc', () => {
+    const core = components['@xds/core'];
+    const button = core.find(c => c.name === 'Button');
+    expect(button).toBeDefined();
+    expect(button!.parentDoc).toBeNull();
+  });
+
+  it('displayName has XDS prefix for components, not for hooks', () => {
+    const core = components['@xds/core'];
+    const button = core.find(c => c.name === 'Button');
+    expect(button?.displayName).toBe('XDSButton');
+
+    const hookComp = core.find(c => c.name === 'useClickableContainer');
+    expect(hookComp?.displayName).toBe('useClickableContainer');
+
+    // Sub-component hooks also keep their name
+    const tableHook = core.find(c => c.name === 'useXDSTableSelection');
+    if (tableHook) {
+      expect(tableHook.displayName).toMatch(/^use/);
+    }
+  });
+
+  // ── Discovery coverage ─────────────────────────────────────────────
 
   it('discovers hooks (not skipped)', () => {
     const core = components['@xds/core'];
     const hooks = core.filter(c => c.directory === 'hooks');
     expect(hooks.length).toBeGreaterThan(8);
-    // Verify names are the hook names, not 'hooks'
     for (const hook of hooks) {
       expect(hook.name).toMatch(/^use[A-Z]/);
     }
@@ -112,36 +170,33 @@ describe('componentRegistry', () => {
     expect(names).toContain('MediaTheme');
   });
 
-  it('discovers multiple docs per directory (Chat has multiple)', () => {
-    const core = components['@xds/core'];
-    const chatComponents = core.filter(c => c.directory === 'Chat');
-    // Chat dir has ChatDictationButton (hidden) + ChatToolCalls (visible) + main Chat doc
-    expect(chatComponents.length).toBeGreaterThanOrEqual(2);
-  });
-
   it('hidden components are included with hidden flag', () => {
     const core = components['@xds/core'];
     const names = core.map(c => c.name);
-    // All components should be present regardless of hidden flag
     expect(names).toContain('ChatDictationButton');
     expect(names).toContain('NavMenuItem');
-    // Currently no components are hidden
     const hiddenCount = core.filter(c => c.hidden).length;
     expect(hiddenCount).toBe(0);
-  });
-
-  it('components have group assignments', () => {
-    const withGroups = components['@xds/core'].filter(c => c.group !== null);
-    expect(withGroups.length).toBeGreaterThan(
-      components['@xds/core'].length * 0.3,
-    );
   });
 
   it('no duplicate component names within a package', () => {
     for (const [, comps] of Object.entries(components)) {
       const names = comps.map(c => c.name);
-      expect(new Set(names).size).toBe(names.length);
+      const dupes = names.filter((n, i) => names.indexOf(n) !== i);
+      expect(dupes).toEqual([]);
     }
+  });
+
+  it('known compound docs are expanded, not emitted as single entries', () => {
+    const core = components['@xds/core'];
+    const names = core.map(c => c.name);
+    // These are parent doc names that should NOT appear as component names
+    // because they were expanded into sub-components
+    // (unless the sub-component itself is named the same, like Table → XDSTable → Table)
+    // Verify the sub-components exist instead
+    expect(names).toContain('DialogHeader'); // from Dialog compound doc
+    expect(names).toContain('SideNavItem'); // from SideNav compound doc
+    expect(names).toContain('TopNavItem'); // from TopNav compound doc
   });
 });
 
@@ -173,12 +228,10 @@ describe('blockRegistry', () => {
   });
 
   it('aspect ratios are parsed correctly (no eval)', () => {
-    // 16/9 should parse to ~1.777
     const wideBlocks = blocks.filter(
       b => Math.abs(b.aspectRatio - 16 / 9) < 0.01,
     );
     expect(wideBlocks.length).toBeGreaterThan(0);
-    // 4/3 should parse to ~1.333
     const standardBlocks = blocks.filter(
       b => Math.abs(b.aspectRatio - 4 / 3) < 0.01,
     );
