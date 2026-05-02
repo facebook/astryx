@@ -3,6 +3,7 @@
 export const docs = {
   name: 'elevation',
   title: 'Elevation',
+  category: 'foundations',
   description:
     'Shadow tokens for visual elevation and inset state rings.',
   tokenCategory: 'shadow',
@@ -10,6 +11,7 @@ export const docs = {
   sections: [
     {
       title: 'Overview',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -19,6 +21,7 @@ export const docs = {
     },
     {
       title: 'Elevation Scale',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -33,6 +36,7 @@ export const docs = {
     },
     {
       title: 'Usage',
+  category: 'foundations',
       content: [
         {
           type: 'code',
@@ -56,6 +60,7 @@ const styles = stylex.create({
     },
     {
       title: 'Best Practices',
+  category: 'foundations',
       content: [
         {
           type: 'list',

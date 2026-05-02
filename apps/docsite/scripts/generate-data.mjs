@@ -457,16 +457,18 @@ async function generateDocsRegistry() {
 
     let title = '';
     let description = '';
+    let category = '';
     try {
       const mod = await import(`file://${docPath}`);
       title = mod.docs?.title || '';
       description = mod.docs?.description || '';
+      category = mod.docs?.category || '';
     } catch {
       const meta = readDocMeta(docPath);
       description = meta.description;
     }
 
-    docTopics.push({topic, title: title || topic, description});
+    docTopics.push({topic, title: title || topic, description, category: category || null});
   }
 
   docTopics.sort((a, b) => a.topic.localeCompare(b.topic));
@@ -480,6 +482,8 @@ export interface DocTopic {
   title: string;
   /** Short description */
   description: string;
+  /** Navigation category: 'guide' | 'foundations' | null */
+  category: string | null;
 }
 
 export const docTopics: DocTopic[] = ${JSON.stringify(docTopics, null, 2)};

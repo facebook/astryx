@@ -6,12 +6,14 @@
 export const docs = {
   name: 'icons',
   title: 'Icons',
+  category: 'foundations',
   description:
     "Semantic icon names available in XDS. These adapt to the active theme's icon registry.",
 
   sections: [
     {
       title: 'Available Names',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -53,6 +55,7 @@ export const docs = {
     },
     {
       title: 'Custom Icons',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -72,6 +75,7 @@ import { HeartIcon } from 'lucide-react';
     },
     {
       title: 'Theme Overrides',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -94,6 +98,7 @@ registerIcons({
     },
     {
       title: 'Adding New Icons',
+  category: 'foundations',
       content: [
         {
           type: 'prose',

@@ -18,14 +18,17 @@ interface DocsShellProps {
   docTopics: DocTopic[];
 }
 
-// Guide topics (ordered)
-const GUIDE_TOPICS = ['getting-started', 'principles', 'styling', 'theme'];
-// Foundation topics: everything else. Tokens first, then alphabetical.
-const FOUNDATIONS_SORT = (a: DocTopic, b: DocTopic) => {
+/** Guide topics in presentation order (slugs) */
+const GUIDE_TOPIC_SLUGS = ['getting-started', 'principles', 'styling', 'theme'];
+
+/** Foundations: tokens first, then alphabetical */
+const foundationsSort = (a: DocTopic, b: DocTopic) => {
   if (a.topic === 'tokens') return -1;
   if (b.topic === 'tokens') return 1;
   return a.title.localeCompare(b.title);
 };
+
+// ── Component sidebar builder ──────────────────────────────────────────
 
 type SidebarItem =
   | {type: 'entry'; name: string; href: string}
@@ -61,7 +64,6 @@ function buildComponentSidebar(entries: ComponentEntry[]): {
       utilities.push({name: entry.name, href: `/components/${entry.name}`});
       continue;
     }
-
     if (entry.group) {
       if (!groups.has(entry.group)) groups.set(entry.group, []);
       groups
@@ -69,7 +71,6 @@ function buildComponentSidebar(entries: ComponentEntry[]): {
         .push({name: entry.name, href: `/components/${entry.name}`});
       continue;
     }
-
     if (isHook && !entry.parentDoc && entry.directory !== 'hooks') {
       const dir = entry.directory;
       if (!groups.has(dir)) groups.set(dir, []);
@@ -78,7 +79,6 @@ function buildComponentSidebar(entries: ComponentEntry[]): {
         .push({name: entry.name, href: `/components/${entry.name}`});
       continue;
     }
-
     if (
       isHook &&
       entry.parentDoc &&
@@ -91,12 +91,10 @@ function buildComponentSidebar(entries: ComponentEntry[]): {
         .push({name: entry.name, href: `/components/${entry.name}`});
       continue;
     }
-
     if (isHook) {
       utilities.push({name: entry.name, href: `/components/${entry.name}`});
       continue;
     }
-
     ungrouped.push({name: entry.name, href: `/components/${entry.name}`});
   }
 
@@ -126,6 +124,8 @@ function buildComponentSidebar(entries: ComponentEntry[]): {
   };
 }
 
+// ── Shell ──────────────────────────────────────────────────────────────
+
 export function DocsShell({
   children,
   components,
@@ -137,32 +137,38 @@ export function DocsShell({
   const coreComponents = components['@xds/core'] || [];
   const {componentItems, utilities} = buildComponentSidebar(coreComponents);
 
+  // Classify packages
   const isTheme = (p: PackageMeta) => p.name.includes('theme-');
   const themePackages = packages.filter(isTheme);
+  const libraryPackages = packages.filter(p => !isTheme(p));
 
-  const guideTopics = GUIDE_TOPICS.map(slug =>
-    docTopics.find(d => d.topic === slug),
+  // Classify doc topics
+  // Classify doc topics by category (from data)
+  const guideTopics = GUIDE_TOPIC_SLUGS.map(slug =>
+    docTopics.find(d => d.topic === slug && d.category === 'guide'),
   ).filter((d): d is DocTopic => !!d);
-
   const foundationTopics = docTopics
-    .filter(d => !GUIDE_TOPICS.includes(d.topic))
-    .sort(FOUNDATIONS_SORT);
+    .filter(d => d.category === 'foundations')
+    .sort(foundationsSort);
 
+  // Active state detection
   const allComponentHrefs = componentItems.flatMap(item =>
     item.type === 'entry' ? [item.href] : item.entries.map(e => e.href),
   );
-  const isInComponents = allComponentHrefs.includes(pathname);
-  const isInUtilities = utilities.some(u => pathname === u.href);
   const isInGuide =
     guideTopics.some(d => pathname === `/docs/${d.topic}`) ||
-    pathname === '/changelog' ||
     foundationTopics.some(d => pathname === `/docs/${d.topic}`);
   const isInFoundations = foundationTopics.some(
     d => pathname === `/docs/${d.topic}`,
   );
+  const isInLibraries = libraryPackages.some(
+    p => pathname === `/packages/${p.name.replace('@xds/', '')}`,
+  );
   const isInThemes = themePackages.some(
     p => pathname === `/packages/${p.name.replace('@xds/', '')}`,
   );
+  const isInComponents = allComponentHrefs.includes(pathname);
+  const isInUtilities = utilities.some(u => pathname === u.href);
 
   return (
     <XDSAppShell
@@ -209,6 +215,15 @@ export function DocsShell({
             />
           </XDSSideNavSection>
 
+          {/* What's New */}
+          <XDSSideNavSection title="Changelog" isHeaderHidden>
+            <XDSSideNavItem
+              label="What's New"
+              href="/changelog"
+              isSelected={pathname === '/changelog'}
+            />
+          </XDSSideNavSection>
+
           {/* Guide */}
           <XDSSideNavSection title="Guide" isHeaderHidden>
             <XDSSideNavItem
@@ -234,11 +249,42 @@ export function DocsShell({
                   />
                 ))}
               </XDSSideNavItem>
-              <XDSSideNavItem
-                label="Changelog"
-                href="/changelog"
-                isSelected={pathname === '/changelog'}
-              />
+            </XDSSideNavItem>
+          </XDSSideNavSection>
+
+          {/* Libraries */}
+          <XDSSideNavSection title="Libraries" isHeaderHidden>
+            <XDSSideNavItem
+              label="Libraries"
+              collapsible={{defaultIsCollapsed: !isInLibraries}}>
+              {libraryPackages.map(p => (
+                <XDSSideNavItem
+                  key={p.name}
+                  label={p.name}
+                  href={`/packages/${p.name.replace('@xds/', '')}`}
+                  isSelected={
+                    pathname === `/packages/${p.name.replace('@xds/', '')}`
+                  }
+                />
+              ))}
+            </XDSSideNavItem>
+          </XDSSideNavSection>
+
+          {/* Themes */}
+          <XDSSideNavSection title="Themes" isHeaderHidden>
+            <XDSSideNavItem
+              label="Themes"
+              collapsible={{defaultIsCollapsed: !isInThemes}}>
+              {themePackages.map(p => (
+                <XDSSideNavItem
+                  key={p.name}
+                  label={p.displayName}
+                  href={`/packages/${p.name.replace('@xds/', '')}`}
+                  isSelected={
+                    pathname === `/packages/${p.name.replace('@xds/', '')}`
+                  }
+                />
+              ))}
             </XDSSideNavItem>
           </XDSSideNavSection>
 
@@ -276,33 +322,6 @@ export function DocsShell({
                 ),
               )}
             </XDSSideNavItem>
-          </XDSSideNavSection>
-
-          {/* Themes */}
-          <XDSSideNavSection title="Themes" isHeaderHidden>
-            <XDSSideNavItem
-              label="Themes"
-              collapsible={{defaultIsCollapsed: !isInThemes}}>
-              {themePackages.map(p => (
-                <XDSSideNavItem
-                  key={p.name}
-                  label={p.displayName}
-                  href={`/packages/${p.name.replace('@xds/', '')}`}
-                  isSelected={
-                    pathname === `/packages/${p.name.replace('@xds/', '')}`
-                  }
-                />
-              ))}
-            </XDSSideNavItem>
-          </XDSSideNavSection>
-
-          {/* CLI */}
-          <XDSSideNavSection title="CLI" isHeaderHidden>
-            <XDSSideNavItem
-              label="CLI"
-              href="/packages/cli"
-              isSelected={pathname === '/packages/cli'}
-            />
           </XDSSideNavSection>
 
           {/* Utilities */}

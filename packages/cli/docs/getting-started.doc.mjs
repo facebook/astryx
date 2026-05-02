@@ -3,12 +3,14 @@
 export const docs = {
   name: 'getting-started',
   title: 'Getting Started',
+  category: 'guide',
   description:
     'Go from zero to a working XDS app in five steps.',
 
   sections: [
     {
       title: 'Install the CLI',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -25,6 +27,7 @@ cd my-app`,
     },
     {
       title: 'Pick a theme',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -44,6 +47,7 @@ export default function RootLayout({children}) {
     },
     {
       title: 'Add your first component',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -68,6 +72,7 @@ export default function Page() {
     },
     {
       title: 'Customize with xstyle',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -89,6 +94,7 @@ const overrides = stylex.create({
     },
     {
       title: 'Run the dev server',
+  category: 'guide',
       content: [
         {
           type: 'prose',

@@ -3,6 +3,7 @@
 export const docs = {
   name: 'typography',
   title: 'Typography',
+  category: 'foundations',
   description:
     'Font families, geometric type scale, weight, line-height, and semantic text tokens for consistent, accessible text styling.',
   tokenCategory: 'typography',
@@ -11,6 +12,7 @@ export const docs = {
     // ── Overview ────────────────────────────────────────────────────────────
     {
       title: 'Overview',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -26,6 +28,7 @@ export const docs = {
     // ── Font Families ───────────────────────────────────────────────────────
     {
       title: 'Font Families',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -42,6 +45,7 @@ export const docs = {
     // ── Font Sizes ──────────────────────────────────────────────────────────
     {
       title: 'Font Sizes',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -58,6 +62,7 @@ export const docs = {
     // ── Font Weights ────────────────────────────────────────────────────────
     {
       title: 'Font Weights',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -74,6 +79,7 @@ export const docs = {
     // ── Line Height ─────────────────────────────────────────────────────────
     {
       title: 'Line Height',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -89,6 +95,7 @@ export const docs = {
     // ── Type Scale ──────────────────────────────────────────────────────────
     {
       title: 'Type Scale',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -105,6 +112,7 @@ export const docs = {
     // ── Display Text ────────────────────────────────────────────────────────
     {
       title: 'Display Text',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -120,6 +128,7 @@ export const docs = {
     // ── Usage ────────────────────────────────────────────────────────────────
     {
       title: 'Usage',
+  category: 'foundations',
       content: [
         {
           type: 'code',
@@ -183,6 +192,7 @@ const denseTheme = defineTheme({
     // ── Best Practices ──────────────────────────────────────────────────────
     {
       title: 'Best Practices',
+  category: 'foundations',
       content: [
         {
           type: 'list',

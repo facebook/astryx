@@ -3,6 +3,7 @@
 export const docs = {
   name: 'motion',
   title: 'Motion',
+  category: 'foundations',
   description:
     'Duration and easing tokens for animations and transitions.',
   tokenCategory: 'duration',
@@ -10,6 +11,7 @@ export const docs = {
   sections: [
     {
       title: 'Overview',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -27,6 +29,7 @@ export const docs = {
     },
     {
       title: 'Duration',
+  category: 'foundations',
       content: [
         {
           type: 'token-ref',
@@ -37,6 +40,7 @@ export const docs = {
     },
     {
       title: 'Easing',
+  category: 'foundations',
       content: [
         {
           type: 'token-ref',
@@ -47,6 +51,7 @@ export const docs = {
     },
     {
       title: 'Where Motion Helps',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -60,6 +65,7 @@ export const docs = {
     },
     {
       title: 'Where Motion Hurts',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -73,6 +79,7 @@ export const docs = {
     },
     {
       title: 'Movement Principles',
+  category: 'foundations',
       content: [
         {
           type: 'list',
@@ -88,6 +95,7 @@ export const docs = {
     },
     {
       title: 'Respecting User Preferences',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -97,6 +105,7 @@ export const docs = {
     },
     {
       title: 'Usage',
+  category: 'foundations',
       content: [
         {
           type: 'code',
@@ -121,6 +130,7 @@ const styles = stylex.create({
     },
     {
       title: 'Best Practices',
+  category: 'foundations',
       content: [
         {
           type: 'list',

@@ -3,6 +3,7 @@
 export const docs = {
   name: 'color',
   title: 'Color',
+  category: 'foundations',
   description:
     'Semantic color tokens for surfaces, text, icons, borders, and status indicators.',
   tokenCategory: 'color',
@@ -10,6 +11,7 @@ export const docs = {
   sections: [
     {
       title: 'Overview',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -19,6 +21,7 @@ export const docs = {
     },
     {
       title: 'Surface Colors',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -33,6 +36,7 @@ export const docs = {
     },
     {
       title: 'Usage',
+  category: 'foundations',
       content: [
         {
           type: 'code',
@@ -56,6 +60,7 @@ const styles = stylex.create({
     },
     {
       title: 'Best Practices',
+  category: 'foundations',
       content: [
         {
           type: 'list',

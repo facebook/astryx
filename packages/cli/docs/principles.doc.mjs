@@ -3,12 +3,14 @@
 export const docs = {
   name: 'principles',
   title: 'Principles',
+  category: 'guide',
   description:
     'Core design principles and rules for building with XDS.',
 
   sections: [
     {
       title: 'Design Philosophy',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -28,6 +30,7 @@ export const docs = {
     },
     {
       title: 'Rules',
+  category: 'guide',
       content: [
         {
           type: 'list',
@@ -45,6 +48,7 @@ export const docs = {
     },
     {
       title: 'Styling Approach',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -58,6 +62,7 @@ export const docs = {
     },
     {
       title: 'Anti-Patterns',
+  category: 'guide',
       content: [
         {
           type: 'list',
@@ -74,6 +79,7 @@ export const docs = {
     },
     {
       title: 'Design Tokens',
+  category: 'guide',
       content: [
         {
           type: 'prose',

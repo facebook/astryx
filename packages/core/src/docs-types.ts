@@ -476,10 +476,12 @@ export interface ReferenceSection {
 export interface ReferenceDoc {
   /** URL-safe identifier, used as the CLI topic name. e.g. 'tokens', 'principles' */
   name: string;
-  /** Human-readable title. e.g. 'XDS Design Tokens' */
+  /** Human-readable title. e.g. 'All Tokens' */
   title: string;
   /** One-line summary shown in topic listings. */
   description: string;
+  /** Navigation category: 'guide' or 'foundations'. */
+  category?: string;
   /** Ordered sections that make up the doc. */
   sections: ReferenceSection[];
   /** Token category for foundational docs that map to a token section.

@@ -3,12 +3,14 @@
 export const docs = {
   name: 'theme',
   title: 'Theme System',
+  category: 'guide',
   description:
     'XDSTheme provider, custom themes, theme build for production/SSR, light/dark mode, and component style overrides.',
 
   sections: [
     {
       title: 'Quick Start',
+  category: 'guide',
       content: [
         {
           type: 'code',
@@ -49,6 +51,7 @@ function App() {
     },
     {
       title: 'Available Themes',
+  category: 'guide',
       content: [
         {
           type: 'table',
@@ -79,6 +82,7 @@ function App() {
     },
     {
       title: 'XDSTheme Props',
+  category: 'guide',
       content: [
         {
           type: 'table',
@@ -98,6 +102,7 @@ function App() {
     },
     {
       title: 'Creating a Custom Theme',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -113,6 +118,7 @@ function App() {
     },
     {
       title: 'defineTheme',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -177,6 +183,7 @@ const myTheme = defineTheme({
     },
     {
       title: 'Extending a Theme',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -214,6 +221,7 @@ const brandTheme = defineTheme({
     },
     {
       title: 'Component Style Overrides',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -264,6 +272,7 @@ const brandTheme = defineTheme({
     },
     {
       title: 'Custom Variants',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -312,6 +321,7 @@ const brandTheme = defineTheme({
     },
     {
       title: 'Building Themes for Production',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -368,6 +378,7 @@ import './themes/ocean.css';
     },
     {
       title: 'Runtime vs Built Themes',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -430,6 +441,7 @@ import './themes/ocean.css';
     },
     {
       title: 'Light/Dark Mode',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -458,6 +470,7 @@ import './themes/ocean.css';
     },
     {
       title: 'Nesting Themes',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -483,6 +496,7 @@ import './themes/ocean.css';
     },
     {
       title: 'useXDSTheme Hook',
+  category: 'guide',
       content: [
         {
           type: 'code',

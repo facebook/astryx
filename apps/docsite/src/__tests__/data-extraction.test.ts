@@ -339,6 +339,16 @@ describe('docsRegistry', () => {
     expect(topics).toContain('color');
   });
 
+  it('doc topics have category (guide or foundations)', () => {
+    for (const d of docTopics) {
+      expect(d.category === 'guide' || d.category === 'foundations').toBe(true);
+    }
+    const guide = docTopics.filter(d => d.category === 'guide');
+    const foundations = docTopics.filter(d => d.category === 'foundations');
+    expect(guide.length).toBeGreaterThanOrEqual(4);
+    expect(foundations.length).toBeGreaterThanOrEqual(7);
+  });
+
   it('no duplicate topics', () => {
     const topics = docTopics.map(d => d.topic);
     expect(new Set(topics).size).toBe(topics.length);

@@ -259,6 +259,7 @@ export const docs = ${JSON.stringify(
   {
     name: 'tokens',
     title: 'All Tokens',
+    category: 'foundations',
     description:
       'Complete reference for spacing, color, radius, typography, shadow, motion, and size tokens.',
     sections,

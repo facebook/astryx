@@ -3,12 +3,14 @@
 export const docs = {
   name: 'styling',
   title: 'Styling Components',
+  category: 'guide',
   description:
     'How to customize component appearance: xstyle prop, Tailwind, StyleX, className, rest props, compound component patterns, and theming hooks.',
 
   sections: [
     {
       title: 'Overview',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -32,6 +34,7 @@ export const docs = {
     },
     {
       title: 'xstyle Prop',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -82,6 +85,7 @@ const overrides = stylex.create({
     },
     {
       title: 'Tailwind Integration',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -111,6 +115,7 @@ const overrides = stylex.create({
     },
     {
       title: 'className and style Props',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -133,6 +138,7 @@ const overrides = stylex.create({
     },
     {
       title: 'Rest Props (Prop Drilling)',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -166,6 +172,7 @@ const overrides = stylex.create({
     },
     {
       title: 'Compound Components',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -211,6 +218,7 @@ const overrides = stylex.create({
     },
     {
       title: 'Theming via xds-* Class Names',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -245,6 +253,7 @@ const overrides = stylex.create({
     },
     {
       title: 'Design Tokens',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -292,6 +301,7 @@ const styles = stylex.create({
     },
     {
       title: 'What NOT to Do',
+  category: 'guide',
       content: [
         {
           type: 'list',

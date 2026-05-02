@@ -3,6 +3,7 @@
 export const docs = {
   name: 'spacing',
   title: 'Spacing',
+  category: 'foundations',
   description:
     'Spacing scale tokens for padding, gap, and margin — the rhythmic foundation of XDS layouts.',
   tokenCategory: 'spacing',
@@ -10,6 +11,7 @@ export const docs = {
   sections: [
     {
       title: 'Overview',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -19,6 +21,7 @@ export const docs = {
     },
     {
       title: 'Scale',
+  category: 'foundations',
       content: [
         {
           type: 'token-ref',
@@ -29,6 +32,7 @@ export const docs = {
     },
     {
       title: 'Usage',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -55,6 +59,7 @@ const styles = stylex.create({
     },
     {
       title: 'Best Practices',
+  category: 'foundations',
       content: [
         {
           type: 'list',

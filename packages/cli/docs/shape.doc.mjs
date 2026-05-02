@@ -3,6 +3,7 @@
 export const docs = {
   name: 'shape',
   title: 'Shape',
+  category: 'foundations',
   description:
     'Border radius tokens for consistent component rounding — from sharp corners to full pills.',
   tokenCategory: 'radius',
@@ -10,6 +11,7 @@ export const docs = {
   sections: [
     {
       title: 'Overview',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -19,6 +21,7 @@ export const docs = {
     },
     {
       title: 'Radius Scale',
+  category: 'foundations',
       content: [
         {
           type: 'token-ref',
@@ -29,6 +32,7 @@ export const docs = {
     },
     {
       title: 'Concentric Radius',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -45,6 +49,7 @@ export const docs = {
     },
     {
       title: 'Best Practices',
+  category: 'foundations',
       content: [
         {
           type: 'list',
