@@ -1,6 +1,9 @@
 @import "@xds/core/reset.css";
 @import "@xds/core/xds.css";
 @import "@xds/theme-default/theme.css";
+@import "@xds/theme-neutral/theme.css";
+@import "@xds/theme-daily/theme.css";
+@import "@xds/theme-matcha/theme.css";
 
 /* StyleX app styles injected here. useCSSLayers.before declares
    reset, xds-base, xds-theme so product styles always win. */
