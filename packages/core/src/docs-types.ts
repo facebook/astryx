@@ -645,6 +645,8 @@ export interface HookReturnDoc {
 export interface HookDoc {
   /** Hook name exactly as exported, e.g. 'useMediaQuery', 'useFocusTrap'. */
   name: string;
+  /** Optional group for sidebar/docs organization — same as ComponentDoc.group. */
+  group?: string;
   /** Search keywords for CLI discovery. */
   keywords?: string[];
   /** Hook parameters or options object fields. */
@@ -663,14 +665,7 @@ export interface HookDoc {
   /** Import path, e.g. '@xds/core/hooks' or '@xds/core/Toast'. */
   importPath?: string;
   /** Category for grouping in listings. */
-  category?:
-    | 'focus'
-    | 'layout'
-    | 'animation'
-    | 'interaction'
-    | 'data'
-    | 'media'
-    | 'streaming';
+  category?: string;
 }
 
 /**
