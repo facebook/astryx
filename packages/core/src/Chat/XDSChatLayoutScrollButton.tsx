@@ -11,7 +11,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts (exports)
- * - /packages/cli/templates/blocks/components/Chat/ (showcase blocks)
+ * - /packages/cli/templates/blocks/components/ChatLayoutScrollButton/ (block examples)
  */
 
 import * as stylex from '@stylexjs/stylex';

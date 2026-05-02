@@ -13,7 +13,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts (exports)
- * - /packages/cli/templates/blocks/components/Chat/ (showcase blocks)
+ * - /packages/cli/templates/blocks/components/ChatDictationButton/ (block examples)
  */
 
 import type {UseSpeechRecognitionReturn} from './useSpeechRecognition';

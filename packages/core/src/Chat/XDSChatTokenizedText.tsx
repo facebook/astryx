@@ -12,7 +12,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts
- * - /packages/cli/templates/blocks/components/Chat/ (showcase blocks)
+ * - /packages/cli/templates/blocks/components/ChatTokenizedText/ (block examples)
  */
 
 import type {ReactNode} from 'react';

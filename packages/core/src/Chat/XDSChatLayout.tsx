@@ -13,7 +13,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Chat/index.ts (exports)
  * - /apps/storybook/stories/ChatLayout.stories.tsx
- * - /packages/cli/templates/blocks/components/Chat/ (showcase blocks)
+ * - /packages/cli/templates/blocks/components/ChatLayout/ (block examples)
  */
 
 import {
@@ -91,8 +91,6 @@ export interface XDSChatLayoutProps {
    * When omitted, the layout root itself is the scroll container.
    */
   scrollRef?: React.RefObject<HTMLElement | null>;
-
-
 
   /** StyleX overrides. */
   xstyle?: StyleXStyles;
@@ -223,7 +221,6 @@ const styles = stylex.create({
   dockInnerSpacious: {
     maxWidth: 800,
   },
-
 });
 
 // =============================================================================
@@ -245,7 +242,6 @@ function hasVisibleContent(children: ReactNode): boolean {
 // =============================================================================
 // Sub-components
 // =============================================================================
-
 
 // =============================================================================
 // Component
@@ -291,8 +287,6 @@ export function XDSChatLayout({
       }}
     />
   );
-
-
 
   // --- Content ref callback for message list ---
   const setContentRef = useCallback((el: HTMLElement | null) => {

@@ -18,7 +18,7 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/Chat.doc.mjs
  * - /apps/storybook/stories/ChatComposer.stories.tsx
- * - /packages/cli/templates/blocks/components/Chat/ (showcase blocks)
+ * - /packages/cli/templates/blocks/components/ChatComposer/ (block examples)
  */
 
 import {
