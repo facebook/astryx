@@ -48,6 +48,7 @@ const STRUCTURAL_VARS = new Set([
   '--indicator-width',
   '--table-resize-height',
   '--separator-display',
+  '--xds-section-padding',
 ]);
 
 /**
