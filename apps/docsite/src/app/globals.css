@@ -5,3 +5,14 @@
 /* StyleX app styles injected here. useCSSLayers.before declares
    reset, xds-base, xds-theme so product styles always win. */
 @stylex;
+
+/* Translucent top nav — frosted glass effect */
+.xds-layout-header,
+:has(> .xds-layout-header) {
+  background: transparent !important;
+}
+
+.xds-top-nav {
+  background: color-mix(in srgb, var(--color-background-surface) 80%, transparent);
+  backdrop-filter: blur(12px);
+}
