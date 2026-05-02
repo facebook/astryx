@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'TimeInput',
   name: 'TimeInput',
   isReady: true,
   aspectRatio: 16 / 9,

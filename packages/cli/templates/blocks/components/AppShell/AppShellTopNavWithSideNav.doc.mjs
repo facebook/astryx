@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'AppShell',
   name: 'AppShell — Top Nav with Side Nav',
   description:
     'The most common layout with TopNav for app identity and SideNav for page-level navigation.',

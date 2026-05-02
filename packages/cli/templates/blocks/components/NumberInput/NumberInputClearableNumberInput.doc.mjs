@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'NumberInput',
   name: 'NumberInput — Clearable',
   description: 'Number input with a clear button, unit suffix, and min/max constraint',
   isReady: true,

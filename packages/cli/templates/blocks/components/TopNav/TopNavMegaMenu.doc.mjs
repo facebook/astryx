@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'TopNav',
   name: 'TopNav — Mega Menu',
   description:
     'Marketing-style navigation with a full-width mega menu featuring product items and a promotional featured card.',

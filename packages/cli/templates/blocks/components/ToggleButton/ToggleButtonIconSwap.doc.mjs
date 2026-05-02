@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'ToggleButton',
   name: 'ToggleButton — Icon Swap',
   description: 'Icon-only toggle buttons that swap between outline and solid icons when pressed. Use for actions like favorite, bookmark, or mute where the icon itself communicates the state.',
   isReady: true,

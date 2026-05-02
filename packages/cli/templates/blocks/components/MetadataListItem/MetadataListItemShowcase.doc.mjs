@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'MetadataListItem',
   name: 'MetadataListItem',
   description:
     'Metadata list items displaying labeled values in various formats including text, badges, and links.',

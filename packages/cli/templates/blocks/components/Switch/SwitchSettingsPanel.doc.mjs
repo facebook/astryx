@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Switch',
   name: 'Switch — Settings Panel',
   description:
     'Settings panel with spread-spaced switches in a card.',

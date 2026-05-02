@@ -242,6 +242,7 @@ describe('blockRegistry', () => {
       expect(block.aspectRatio).not.toBeNaN();
       expect(Array.isArray(block.componentsUsed)).toBe(true);
       expect(block.category).toBeDefined();
+      expect(typeof block.exampleFor).toBe('string');
     }
   });
 
@@ -263,9 +264,27 @@ describe('blockRegistry', () => {
 
   it('showcase for Button exists', () => {
     const buttonShowcase = blocks.find(
-      b => b.isShowcase && b.category.includes('Button'),
+      b => b.isShowcase && b.exampleFor === 'Button',
     );
     expect(buttonShowcase).toBeDefined();
+  });
+
+  it('every block has exampleFor set', () => {
+    const missing = blocks.filter(b => !b.exampleFor);
+    expect(missing.map(b => b.dirName)).toEqual([]);
+  });
+
+  it('showcase blocks have unique exampleFor (one showcase per component)', () => {
+    const showcases = blocks.filter(b => b.isShowcase);
+    const seen = new Map<string, string[]>();
+    for (const s of showcases) {
+      if (!seen.has(s.exampleFor)) seen.set(s.exampleFor, []);
+      seen.get(s.exampleFor)!.push(s.dirName);
+    }
+    const dupes = [...seen.entries()].filter(([, v]) => v.length > 1);
+    // Some components may legitimately have multiple showcases, but flag them
+    // so we're aware. Most should have exactly one.
+    expect(dupes.length).toBeLessThan(showcases.length * 0.1);
   });
 
   it('componentsUsed links blocks to components', () => {

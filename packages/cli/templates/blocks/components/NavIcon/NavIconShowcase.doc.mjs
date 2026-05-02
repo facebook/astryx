@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'NavIcon',
   name: 'NavIcon',
   description: 'Circular icon containers for navigation headers with accent backgrounds.',
   isReady: true,

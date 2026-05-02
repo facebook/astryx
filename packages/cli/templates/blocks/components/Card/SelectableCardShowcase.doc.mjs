@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Card',
   name: 'SelectableCard',
   description:
     'A plan picker with single-select radio behavior. Cards show an accent border when selected.',

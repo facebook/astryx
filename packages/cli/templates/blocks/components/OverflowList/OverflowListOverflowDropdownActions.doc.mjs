@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'OverflowList',
   name: 'OverflowList — Dropdown Actions',
   description: 'Action toolbar that collapses overflow buttons into a dropdown menu',
   isReady: true,

@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Icon',
   name: 'Icon — Size Variants',
   description:
     'All icon sizes from extra-small to large.',

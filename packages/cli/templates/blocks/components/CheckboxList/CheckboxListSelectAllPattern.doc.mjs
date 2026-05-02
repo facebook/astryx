@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'CheckboxList',
   name: 'CheckboxList — Select All With Indeterminate',
   description:
     'A "select all" toggle at the top of a checkbox list that switches to an indeterminate dash when only some items are checked — useful for bulk actions like exporting documents or assigning permissions where users often want everything at once.',

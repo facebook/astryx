@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'CommandPalette',
   name: 'CommandPalette — Grouped',
   description:
     'Command palette with items grouped via auxiliaryData.group.',

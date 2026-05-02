@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'HStack',
   name: 'HStack',
   description: 'Demonstrates XDSHStack arranging items horizontally with different gaps and alignments.',
   isReady: true,

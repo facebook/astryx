@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Card',
   name: 'ClickableCardWithNestedButton',
   description:
     'A product card that navigates on click but has an independent "Add to cart" button inside.',

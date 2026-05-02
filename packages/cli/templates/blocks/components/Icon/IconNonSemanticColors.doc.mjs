@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Icon',
   name: 'Icon — Non-Semantic Colors',
   description:
     'Non-semantic color palette for icons.',

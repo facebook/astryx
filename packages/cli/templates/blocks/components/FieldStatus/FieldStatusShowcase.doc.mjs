@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'FieldStatus',
   name: 'FieldStatus',
   description:
     'Field status messages in error, warning, and success states with attached and detached variants.',

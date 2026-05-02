@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'TreeList',
   name: 'TreeList — File Tree With Icons',
   description:
     'File browser tree with folder and document icons distinguishing directories from files.',

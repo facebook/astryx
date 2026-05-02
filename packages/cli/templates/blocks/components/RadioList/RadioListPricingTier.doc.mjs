@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'RadioList',
   name: 'RadioList — Pricing Tier',
   description:
     'Radio list with pricing info in end content for plan selection.',

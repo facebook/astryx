@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'CheckboxInput',
   name: 'CheckboxInput',
   description:
     'Interactive checkboxes showing checked, unchecked, and indeterminate states with descriptions.',

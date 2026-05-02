@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'TextInput',
   name: 'TextInput — Types',
   description: 'Text, password, and email types plus field-level features: tooltip, required, optional, description, disabled, and loading.',
   isReady: true,

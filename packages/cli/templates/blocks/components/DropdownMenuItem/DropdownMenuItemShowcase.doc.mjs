@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'DropdownMenuItem',
   name: 'DropdownMenuItem',
   description:
     'Dropdown menu with custom-rendered items using XDSDropdownMenuItem for icons and descriptions.',

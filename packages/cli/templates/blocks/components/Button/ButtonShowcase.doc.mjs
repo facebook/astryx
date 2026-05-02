@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Button',
   name: 'Button — Variants',
   description:
     'All four button variants side by side — primary, secondary, ghost, and destructive. A quick visual reference for choosing the right variant.',

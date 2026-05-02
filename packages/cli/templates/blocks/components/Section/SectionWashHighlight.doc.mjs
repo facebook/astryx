@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Section',
   name: 'Section — Default with Wash',
   description:
     'A default section stacked with a full-width wash section. Shows how wash draws attention to a specific region like an upgrade prompt or banner.',

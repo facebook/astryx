@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'TextInput',
   name: 'TextInput — Search',
   description: 'Search input with a hidden label, start icon, and clear button. Use for toolbar and header search bars where the icon provides sufficient context.',
   isReady: true,

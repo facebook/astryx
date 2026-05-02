@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'StatusDot',
   name: 'StatusDot',
   isReady: true,
   aspectRatio: 1,

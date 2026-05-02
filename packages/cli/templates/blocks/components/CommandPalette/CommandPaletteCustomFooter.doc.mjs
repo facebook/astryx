@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'CommandPalette',
   name: 'CommandPalette — Custom Footer',
   description: 'Command palette with a custom footer tip message.',
   isReady: true,

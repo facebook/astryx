@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Field',
   name: 'Field',
   description:
     'A form field wrapping a text input with a label, description, and validation status.',

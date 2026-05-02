@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'TopNavMegaMenu',
   name: 'TopNavMegaMenu',
   description: 'Demonstrates XDSTopNavMegaMenu with items and a featured card in the mega menu panel.',
   isReady: true,

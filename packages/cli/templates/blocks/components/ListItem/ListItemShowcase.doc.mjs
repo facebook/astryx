@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'ListItem',
   name: 'ListItem',
   description:
     'List items with icons, descriptions, and end content slots demonstrating the full ListItem API.',

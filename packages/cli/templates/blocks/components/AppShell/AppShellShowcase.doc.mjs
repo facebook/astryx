@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'AppShell',
   name: 'AppShell',
   isReady: true,
   aspectRatio: 4 / 3,

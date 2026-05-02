@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'TreeList',
   name: 'TreeList',
   isReady: true,
   aspectRatio: 1,

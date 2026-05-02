@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'PowerSearch',
   name: 'PowerSearch',
   description:
     'Token-based filter bar with enum and text fields, pre-populated with sample filters.',

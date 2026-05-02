@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'TabList',
   name: 'TabList — With Overflow Menu',
   description:
     'Tab list with a dropdown menu for additional items that do not fit inline.',

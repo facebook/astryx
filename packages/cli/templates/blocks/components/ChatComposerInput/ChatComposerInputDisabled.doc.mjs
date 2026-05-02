@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'ChatComposerInput',
   name: 'ChatComposerInput — Disabled',
   description:
     'Composer in a disabled state. Use when the input should be visible but not interactive, such as during streaming or when a prerequisite is unmet.',

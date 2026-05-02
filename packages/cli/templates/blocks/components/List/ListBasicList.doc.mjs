@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'List',
   name: 'List — Basic',
   description: 'Simple list with labels and descriptions for settings-style layouts.',
   isReady: true,

@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'MoreMenu',
   name: 'MoreMenu — Default',
   description:
     'Basic three-dot overflow menu with simple text-only action items.',

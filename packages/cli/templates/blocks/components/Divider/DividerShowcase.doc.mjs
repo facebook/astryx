@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Divider',
   name: 'Divider — Variants',
   description:
     'Horizontal dividers in subtle and strong variants, plus a labeled divider. A quick visual reference for separator styles.',

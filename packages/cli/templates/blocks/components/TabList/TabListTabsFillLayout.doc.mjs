@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'TabList',
   name: 'TabList — Fill Layout',
   description:
     'Tabs that stretch to fill the available width with a bottom divider.',

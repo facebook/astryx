@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Heading',
   name: 'Heading — Card Grid',
   description:
     'Responsive card grid with truncated headings and descriptions for uniform layout',

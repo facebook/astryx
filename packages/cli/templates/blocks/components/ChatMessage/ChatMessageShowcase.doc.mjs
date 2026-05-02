@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'ChatMessage',
   name: 'ChatMessage',
   description: 'A user multi-bubble group with delivery status and an assistant ghost response with avatar, name, timestamp, and model info.',
   isReady: true,

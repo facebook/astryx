@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Breadcrumbs',
   name: 'Breadcrumbs',
   description:
     'A breadcrumb trail showing page hierarchy with linked ancestors and a current page.',

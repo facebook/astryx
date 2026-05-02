@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'MultiSelector',
   name: 'MultiSelector — Column Visibility',
   description:
     'Column visibility toggle with hidden label, search, select-all, and selection count.',

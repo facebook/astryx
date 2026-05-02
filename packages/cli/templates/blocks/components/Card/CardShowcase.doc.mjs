@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Card',
   name: 'Card',
   description:
     'A card with a heading and body text showing the default container style.',

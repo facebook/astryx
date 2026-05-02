@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Token',
   name: 'Token — Clickable',
   description: 'Interactive tokens that respond to clicks. Use for toggleable filters or tokens that open a detail view when selected.',
   isReady: true,

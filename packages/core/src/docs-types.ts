@@ -551,11 +551,16 @@ export interface PageTemplateDoc extends BaseTemplateDoc {
 
 export interface BlockTemplateDoc extends BaseTemplateDoc {
   type: 'block';
+  /** The component this block is an example of.
+   *  Matches the component's doc name (e.g. 'Button', 'Dialog', 'Stack').
+   *  Used by the docsite to show relevant examples on component detail pages. */
+  exampleFor: string;
   /** Width-to-height ratio for preview containers (e.g. 16/9, 1, 3/4). */
   aspectRatio: number;
   /** Scale factor for the block preview (default 1). */
   scale?: number;
-  /** Component names this block uses, for cross-referencing. */
+  /** Component names this block uses, for cross-referencing.
+   *  Powers "See also" and "Used in" sections — not for primary attribution. */
   componentsUsed?: string[];
   /** When true this block is the canonical "hero" showcase for a component. */
   isShowcase?: boolean;

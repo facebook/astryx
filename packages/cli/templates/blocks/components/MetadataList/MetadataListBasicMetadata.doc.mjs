@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'MetadataList',
   name: 'MetadataList — Basic',
   description: 'Single-column key-value metadata list.',
   isReady: true,

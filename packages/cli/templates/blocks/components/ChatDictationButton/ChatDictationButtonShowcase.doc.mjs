@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'ChatDictationButton',
   name: 'ChatDictationButton',
   description: 'Interactive dictation button connected to the SpeechRecognition API via useXDSChatDictation. Click the mic to dictate into the composer.',
   isReady: true,

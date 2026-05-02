@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Layout',
   name: 'Layout — Full Bleed Content',
   description:
     'A layout where content extends edge-to-edge with zero padding, ideal for tables or images.',

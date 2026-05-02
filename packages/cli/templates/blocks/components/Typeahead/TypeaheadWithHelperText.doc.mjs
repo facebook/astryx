@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Typeahead',
   name: 'Typeahead — With Helper Text',
   description:
     'Typeahead with a description below the label.',

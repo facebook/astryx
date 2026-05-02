@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'SegmentedControl',
   name: 'SegmentedControl — With Icons',
   description:
     'Segmented control with icon and label pairs for a view mode switcher.',

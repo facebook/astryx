@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'ToggleButtonGroup',
   name: 'ToggleButtonGroup',
   description:
     'ToggleButtonGroup manages a set of ToggleButtons with single-select or multi-select behavior for options like view modes or filters.',

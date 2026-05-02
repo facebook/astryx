@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Badge',
   name: 'Badge — Variants',
   description:
     'All semantic and color badge variants in a single view. Use semantic variants for status and color variants for categories.',

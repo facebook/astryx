@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Center',
   name: 'Center',
   description:
     'Content centered horizontally and vertically inside a fixed-height container.',

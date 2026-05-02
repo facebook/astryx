@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Token',
   name: 'Token — Colors',
   description: 'All 11 color variants in default and disabled states. Use color to categorize entities or convey status at a glance.',
   isReady: true,

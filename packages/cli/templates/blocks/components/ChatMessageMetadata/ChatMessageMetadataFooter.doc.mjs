@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'ChatMessageMetadata',
   name: 'ChatMessageMetadata — Footer Actions',
   description: 'Assistant message with footer actions — copy, retry, thumbs up/down, and model label. Use for AI responses that need feedback or utility controls.',
   isReady: true,

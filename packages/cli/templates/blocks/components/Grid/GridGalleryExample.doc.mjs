@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Grid',
   name: 'Grid — Card Gallery',
   description: 'Card gallery with responsive columns that maintain consistent widths',
   isReady: true,

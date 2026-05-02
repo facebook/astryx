@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'DialogHeader',
   name: 'DialogHeader',
   description:
     'DialogHeader provides a structured header for dialogs with slots for title, subtitle, close button, and optional start or end content.',

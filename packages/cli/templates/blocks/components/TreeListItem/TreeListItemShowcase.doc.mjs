@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'TreeListItem',
   name: 'TreeListItem',
   description: 'Tree items with descriptions, icons, badges, selection, disabled state, and nested expand/collapse. TreeList is data-driven — no composed children API.',
   isReady: true,

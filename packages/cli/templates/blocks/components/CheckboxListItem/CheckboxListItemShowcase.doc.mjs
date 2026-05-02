@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'CheckboxListItem',
   name: 'CheckboxListItem',
   description:
     'Checkbox list items with labels, descriptions, and different states including disabled.',

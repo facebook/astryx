@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'List',
   name: 'List — Bulleted Features',
   description: 'Bulleted list of feature highlights using disc markers.',
   isReady: true,

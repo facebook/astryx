@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'CollapsibleGroup',
   name: 'CollapsibleGroup',
   description:
     'CollapsibleGroup coordinates multiple Collapsible components so that expanding one can automatically collapse the others, creating accordion behavior.',

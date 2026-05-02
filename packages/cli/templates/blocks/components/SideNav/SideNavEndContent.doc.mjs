@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'SideNav',
   name: 'SideNav — End Content',
   description:
     'Side navigation items with badges, counts, and context menus as trailing content.',

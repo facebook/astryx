@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'CommandPaletteGroup',
   name: 'CommandPaletteGroup',
   description: 'Command palette groups in both data-driven (auxiliaryData.group) and composed (XDSCommandPaletteGroup + XDSCommandPaletteItem) forms.',
   isReady: true,

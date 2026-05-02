@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'AppShell',
   name: 'AppShell — Top Nav Only',
   description:
     'Simple layout with TopNav and no side navigation, suitable for landing pages.',

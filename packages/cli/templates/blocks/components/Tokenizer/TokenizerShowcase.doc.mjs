@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Tokenizer',
   name: 'Tokenizer',
   isReady: true,
   aspectRatio: 4 / 3,

@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'AspectRatio',
   name: 'AspectRatio — 16:9 Widescreen Image',
   description: '16:9 widescreen aspect ratio wrapping an image.',
   isReady: true,

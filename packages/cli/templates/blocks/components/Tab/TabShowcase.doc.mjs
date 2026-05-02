@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Tab',
   name: 'Tab',
   description:
     'Tab is an individual tab item within a TabList, supporting labels, icons, selected icons, and end content slots.',

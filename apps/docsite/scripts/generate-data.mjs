@@ -320,10 +320,11 @@ async function generateBlockRegistry() {
     const meta = readDocMeta(docPath);
     const relCategory = path.relative(BLOCKS_DIR, path.dirname(docPath));
 
-    // Read isShowcase, aspectRatio, componentsUsed from the doc file
+    // Read isShowcase, aspectRatio, componentsUsed, exampleFor from the doc file
     let isShowcase = false;
     let aspectRatio = 1;
     let componentsUsed = [];
+    let exampleFor = '';
     try {
       const content = fs.readFileSync(docPath, 'utf-8');
       isShowcase = /isShowcase:\s*true/.test(content);
@@ -338,12 +339,17 @@ async function generateBlockRegistry() {
       if (cuMatch) {
         componentsUsed = [...cuMatch[1].matchAll(/['"]([^'"]+)['"]/g)].map(m => m[1]);
       }
+      const efMatch = content.match(/exampleFor:\s*['"]([^'"]+)['"]/);
+      if (efMatch) {
+        exampleFor = efMatch[1];
+      }
     } catch { /* ignore */ }
 
     blocks.push({
       dirName: basename,
       name: meta.name || basename,
       description: meta.description,
+      exampleFor,
       isShowcase,
       aspectRatio,
       componentsUsed,
@@ -361,6 +367,8 @@ export interface BlockEntry {
   dirName: string;
   name: string;
   description: string;
+  /** The component this block is an example of (e.g. 'Button', 'Dialog') */
+  exampleFor: string;
   isShowcase: boolean;
   aspectRatio: number;
   componentsUsed: string[];

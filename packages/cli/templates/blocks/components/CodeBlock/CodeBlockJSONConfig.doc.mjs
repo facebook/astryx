@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'CodeBlock',
   name: 'Code — Config',
   description:
     'A JSON configuration file with a title bar and line numbers. The title prop adds a filename label in the header so readers know which file the code belongs to.',

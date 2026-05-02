@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'SelectorOption',
   name: 'SelectorOption',
   description:
     'Selector with custom-rendered options using XDSSelectorOption for icons and descriptions.',

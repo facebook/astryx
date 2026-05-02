@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'LayoutContent',
   name: 'LayoutContent',
   description:
     'LayoutContent is the scrollable main content area within a Layout, providing automatic padding and scroll containment between the header and footer.',

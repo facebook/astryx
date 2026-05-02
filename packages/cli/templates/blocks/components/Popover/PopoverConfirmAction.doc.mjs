@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Popover',
   name: 'Popover — Confirm Action',
   description:
     'Inline confirmation popover for destructive actions with delete and cancel buttons.',

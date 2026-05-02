@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Kbd',
   name: 'Kbd — Inline Instructions',
   description: 'Keyboard shortcuts rendered inline within instructional text',
   isReady: true,

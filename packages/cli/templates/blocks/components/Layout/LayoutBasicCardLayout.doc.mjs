@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Layout',
   name: 'Layout — Basic Card',
   description:
     'A card layout with header, scrollable content area, and footer with action buttons.',

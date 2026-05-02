@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'ChatMessageMetadata',
   name: 'ChatMessageMetadata',
   description: 'Three-message conversation showcasing error status with retry, delivery status, and full footer actions with model label.',
   isReady: true,

@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'ChatComposerInput',
   name: 'ChatComposerInput — Slash Commands',
   description:
     'Chat input with a / trigger for command selection. Use for AI assistants or bots that support structured commands.',

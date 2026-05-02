@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'CommandPaletteItem',
   name: 'CommandPaletteItem',
   description: 'Command palette items with custom content via renderItem and as composed XDSCommandPaletteItem with icons, highlighted, selected, and disabled states.',
   isReady: true,

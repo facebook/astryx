@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'ChatSystemMessage',
   name: 'ChatSystemMessage — Icon',
   description: 'System messages with a leading icon that reinforces the message type. Use icons to help users scan and identify message categories at a glance.',
   isReady: true,

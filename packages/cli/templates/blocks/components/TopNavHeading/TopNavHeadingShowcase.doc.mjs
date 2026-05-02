@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'TopNavHeading',
   name: 'TopNavHeading',
   description: 'Demonstrates XDSTopNavHeading with a logo and text, both as a plain display and as a clickable link.',
   isReady: true,

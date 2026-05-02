@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'CommandPalette',
   name: 'CommandPalette — Picker Mode',
   description:
     'Single-value picker with persistent selection and check indicator.',

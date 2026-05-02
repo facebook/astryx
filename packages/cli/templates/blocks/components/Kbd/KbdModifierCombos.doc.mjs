@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Kbd',
   name: 'Kbd — Modifier Combinations',
   description: 'Modifier combinations and special keys rendered as shortcut badges',
   isReady: true,

@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Collapsible',
   name: 'Collapsible — Controlled',
   description: 'Manage the open section from parent state. Use when the open state needs to sync with a URL param, form, or external control.',
   isReady: true,

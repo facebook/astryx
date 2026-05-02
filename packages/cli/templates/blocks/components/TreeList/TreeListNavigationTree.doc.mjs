@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'TreeList',
   name: 'TreeList — Navigation Tree',
   description:
     'Navigation tree with a selected item for the current page.',

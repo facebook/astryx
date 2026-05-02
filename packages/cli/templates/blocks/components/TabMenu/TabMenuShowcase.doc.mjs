@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'TabMenu',
   name: 'TabMenu',
   description:
     'TabMenu is an overflow menu within a TabList that groups additional tab options into a dropdown, showing the selected option\'s label as the trigger text.',

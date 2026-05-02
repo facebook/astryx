@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'SideNavItem',
   name: 'SideNavItem',
   description: 'Demonstrates XDSSideNavItem with selected, icon, disabled, and nested states.',
   isReady: true,

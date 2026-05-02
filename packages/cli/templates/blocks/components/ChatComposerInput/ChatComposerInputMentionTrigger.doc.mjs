@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'ChatComposerInput',
   name: 'ChatComposerInput — Mentions',
   description:
     'Chat input with an @ trigger that opens a typeahead menu for mentioning users. Selected names appear as inline tokens.',

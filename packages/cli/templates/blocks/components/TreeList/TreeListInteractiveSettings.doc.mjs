@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'TreeList',
   name: 'TreeList — Interactive Settings',
   description:
     'Settings tree with clickable items and a documentation link.',

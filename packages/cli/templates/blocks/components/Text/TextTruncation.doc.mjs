@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Text',
   name: 'Text — Truncation',
   description: 'Single-line and multi-line text truncation with ellipsis using maxLines in a width-constrained container.',
   isReady: true,

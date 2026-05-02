@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Popover',
   name: 'Popover — Filter Panel',
   description:
     'Popover with checkbox filters and apply/reset actions.',

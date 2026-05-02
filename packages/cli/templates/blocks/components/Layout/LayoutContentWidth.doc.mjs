@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Layout',
   name: 'Layout — Content Width',
   description:
     'A layout using contentWidth to constrain and center content while keeping dividers full-bleed.',

@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'MultiSelector',
   name: 'MultiSelector — Form Composition',
   description:
     'Two multi-selectors in a form with required/optional states.',

@@ -1,6 +1,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
+  exampleFor: 'Markdown',
   name: 'Markdown — Compact AI Response',
   description: 'Compact markdown styled for AI responses with shifted heading levels',
   isReady: true,
