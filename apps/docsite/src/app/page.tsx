@@ -32,6 +32,9 @@ const styles = stylex.create({
     borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: 'var(--color-background-card)',
+    backgroundImage: 'url(/hero-bg.png)',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
     minHeight: 300,
     display: 'flex',
     flexDirection: 'column',
@@ -89,6 +92,14 @@ const styles = stylex.create({
 });
 
 const isThemePkg = (name: string) => name.includes('theme-');
+
+const foundationImages: Record<string, string> = {
+  color: '/FoundationsColors.png',
+  icons: '/FoundationsIcons.png',
+  shape: '/FoundationsShape.png',
+  spacing: '/FoundationsSpacing.png',
+  typography: '/FoundationsTypogrpahy.png',
+};
 
 const foundationTopics = docTopics
   .filter(d => d.category === 'foundations')
@@ -195,7 +206,15 @@ export default function HomePage() {
                   key={topic.topic}
                   href={`/docs/${topic.topic}`}
                   {...stylex.props(styles.linkReset)}>
-                  <div {...stylex.props(styles.foundationImage)} />
+                  {foundationImages[topic.topic] ? (
+                    <img
+                      src={foundationImages[topic.topic]}
+                      alt={topic.title}
+                      {...stylex.props(styles.foundationImage)}
+                    />
+                  ) : (
+                    <div {...stylex.props(styles.foundationImage)} />
+                  )}
                   <XDSVStack gap={1}>
                     <XDSText type="body" weight="bold">
                       {topic.title}
