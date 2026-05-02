@@ -8,12 +8,11 @@
 
 import {notFound} from 'next/navigation';
 import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSVStack} from '@xds/core/Layout';
 import {XDSSection} from '@xds/core/Section';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSClickableCard} from '@xds/core/ClickableCard';
-import {XDSMarkdown} from '@xds/core/Markdown';
 import {XDSDivider} from '@xds/core';
 import {packages} from '../../../generated/packageRegistry';
 import {
@@ -29,6 +28,8 @@ import {neutralTheme} from '@xds/theme-neutral/built';
 import {dailyTheme} from '@xds/theme-daily/built';
 import {matchaTheme} from '@xds/theme-matcha/built';
 import type {XDSDefinedTheme} from '@xds/core/theme';
+import {PackageHeading} from './PackageHeading';
+import {PackageStubPage} from './PackageStubPage';
 
 function slugToPackageName(slug: string): string {
   return `@xds/${slug}`;
@@ -57,6 +58,12 @@ function getInstallSteps(pkgName: string): InstallStep[] {
         code: `<XDSTheme theme={${varName}}>{children}</XDSTheme>`,
         language: 'tsx',
       },
+    ];
+  }
+  if (pkgName.endsWith('/cli')) {
+    return [
+      {label: 'Install the CLI', code: `npm install -D ${pkgName}`},
+      {label: 'Run a command', code: `npx xds component --list`},
     ];
   }
   return [
@@ -105,31 +112,30 @@ export default async function PackagePage({
     }
   }
 
+  if (!isComponentPkg) {
+    return (
+      <PackageStubPage
+        name={pkg.name}
+        version={pkg.version}
+        readme={pkg.readme}
+        installSteps={getInstallSteps(pkg.name)}
+      />
+    );
+  }
+
   return (
     <XDSSection maxWidth="lg" padding={6}>
       <XDSVStack gap={6}>
-        {/* Header — shared across all package types */}
-        <XDSVStack gap={2}>
-          <XDSHeading level={1}>{pkg.displayName}</XDSHeading>
-          <XDSHStack gap={2} vAlign="center">
-            <XDSText type="supporting" color="secondary">
-              {pkg.name}
-            </XDSText>
-            <XDSBadge label={`v${pkg.version}`} variant="info" />
-          </XDSHStack>
-          <XDSText type="body" color="secondary">
-            {pkg.description}
-          </XDSText>
-        </XDSVStack>
+        <PackageHeading
+          packageName={pkg.name}
+          version={pkg.version}
+          description={pkg.description}
+          installSteps={getInstallSteps(pkg.name)}
+        />
 
         <XDSDivider />
 
-        {/* Content — adapts by package type */}
-        {isComponentPkg ? (
-          <ComponentPackageContent components={pkgComponents} />
-        ) : (
-          <GenericPackageContent readme={pkg.readme} />
-        )}
+        <ComponentPackageContent components={pkgComponents} />
       </XDSVStack>
     </XDSSection>
   );
@@ -175,16 +181,4 @@ function ComponentPackageContent({
       </XDSGrid>
     </XDSVStack>
   );
-}
-
-function GenericPackageContent({readme}: {readme: string | null}) {
-  if (!readme) {
-    return (
-      <XDSText type="body" color="secondary">
-        No README available.
-      </XDSText>
-    );
-  }
-
-  return <XDSMarkdown>{readme}</XDSMarkdown>;
 }
