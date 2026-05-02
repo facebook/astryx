@@ -21,6 +21,7 @@ import {BestPractices} from '../../../components/component-detail/BestPractices'
 import {Anatomy} from '../../../components/component-detail/Anatomy';
 import {HookSignature} from '../../../components/component-detail/HookSignature';
 import {ExampleBlock} from '../../../components/component-detail/ExampleBlock';
+import {ShowcasePreview} from '../../../components/component-detail/ShowcasePreview';
 
 const allComponents = Object.values(components).flat();
 
@@ -70,9 +71,7 @@ export default async function ComponentPage({
         {/* Preview */}
         <XDSCard variant="muted" padding={0}>
           <XDSCenter height={360}>
-            <XDSText type="supporting" color="secondary">
-              Preview coming soon
-            </XDSText>
+            <ShowcasePreview name={name} />
           </XDSCenter>
         </XDSCard>
 
