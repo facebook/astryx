@@ -37,7 +37,16 @@ export interface XDSChatDictationButtonProps {
   isHiddenWhenUnsupported?: boolean;
   /** Accessible label override. */
   label?: string;
-  /** Additional StyleX styles. */
+  /**
+   * StyleX styles for layout customization (margins, positioning, sizing).
+   * Must be a `stylex.create()` value — not an inline style object.
+   *
+   * @example
+   * ```
+   * const styles = stylex.create({ wrapper: { marginTop: 8 } });
+   * <XDSChatDictationButton xstyle={styles.wrapper} />
+   * ```
+   */
   xstyle?: StyleXStyles;
 }
 

@@ -138,6 +138,16 @@ export interface XDSMarkdownProps {
    * for overlapping ranges.
    */
   inlinePlugins?: MarkdownInlinePlugin[];
+  /**
+   * StyleX styles for layout customization (margins, positioning, sizing).
+   * Must be a `stylex.create()` value — not an inline style object.
+   *
+   * @example
+   * ```
+   * const styles = stylex.create({ wrapper: { marginTop: 8 } });
+   * <XDSMarkdown xstyle={styles.wrapper} />
+   * ```
+   */
   xstyle?: StyleXStyles;
   className?: string;
   style?: React.CSSProperties;

@@ -103,7 +103,16 @@ interface XDSToggleButtonGroupBaseProps {
    */
   isDisabled?: boolean;
 
-  /** StyleX overrides for the group container. */
+  /**
+   * StyleX styles for layout customization (margins, positioning, sizing).
+   * Must be a `stylex.create()` value — not an inline style object.
+   *
+   * @example
+   * ```
+   * const styles = stylex.create({ wrapper: { marginTop: 8 } });
+   * <XDSToggleButtonGroup xstyle={styles.wrapper} />
+   * ```
+   */
   xstyle?: StyleXStyles;
 
   /** Test ID for testing frameworks. */

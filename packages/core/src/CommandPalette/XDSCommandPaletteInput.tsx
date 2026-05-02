@@ -121,7 +121,16 @@ export interface XDSCommandPaletteInputProps extends Omit<
    */
   endContent?: ReactNode;
 
-  /** StyleX styles for the wrapper element. */
+  /**
+   * StyleX styles for layout customization (margins, positioning, sizing).
+   * Must be a `stylex.create()` value — not an inline style object.
+   *
+   * @example
+   * ```
+   * const styles = stylex.create({ wrapper: { marginTop: 8 } });
+   * <XDSCommandPaletteInput xstyle={styles.wrapper} />
+   * ```
+   */
   xstyle?: StyleXStyles;
 }
 

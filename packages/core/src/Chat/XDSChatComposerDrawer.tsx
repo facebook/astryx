@@ -59,6 +59,16 @@ export interface XDSChatComposerDrawerProps extends XDSBaseProps<HTMLDivElement>
    */
   onCollapsedChange?: (isCollapsed: boolean) => void;
 
+  /**
+   * StyleX styles for layout customization (margins, positioning, sizing).
+   * Must be a `stylex.create()` value — not an inline style object.
+   *
+   * @example
+   * ```
+   * const styles = stylex.create({ wrapper: { marginTop: 8 } });
+   * <XDSChatComposerDrawer xstyle={styles.wrapper} />
+   * ```
+   */
   xstyle?: StyleXStyles;
   className?: string;
   style?: React.CSSProperties;

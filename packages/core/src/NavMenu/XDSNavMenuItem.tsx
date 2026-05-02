@@ -75,7 +75,16 @@ export interface XDSNavMenuItemProps {
   onClick?: () => void;
   /** Whether the item is disabled. @default false */
   isDisabled?: boolean;
-  /** StyleX styles merged with the component's base styles. */
+  /**
+   * StyleX styles for layout customization (margins, positioning, sizing).
+   * Must be a `stylex.create()` value — not an inline style object.
+   *
+   * @example
+   * ```
+   * const styles = stylex.create({ wrapper: { marginTop: 8 } });
+   * <XDSNavMenuItem xstyle={styles.wrapper} />
+   * ```
+   */
   xstyle?: StyleXStyles;
   /** CSS class name(s) appended to the root element. */
   className?: string;
