@@ -17,18 +17,8 @@ const styles = stylex.create({
   },
 });
 
-const SHADOW_ORDER = ['--shadow-low', '--shadow-medium', '--shadow-high'];
-
 export function ElevationTokenTable({theme}: TokenTableProps) {
-  const allTokens = getTokensByPrefix(theme, '--shadow-');
-  // Sort by low/medium/high order, then alphabetical for any others
-  const orderMap = new Map(SHADOW_ORDER.map((k, i) => [k, i]));
-  const tokens = [...allTokens].sort((a, b) => {
-    const ai = orderMap.get(a) ?? 99;
-    const bi = orderMap.get(b) ?? 99;
-    if (ai !== bi) return ai - bi;
-    return a.localeCompare(b);
-  });
+  const tokens = getTokensByPrefix(theme, '--shadow-');
 
   const data = tokens.map(name => ({
     tokenName: name,

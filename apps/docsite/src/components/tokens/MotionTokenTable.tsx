@@ -42,27 +42,6 @@ const styles = stylex.create({
   },
 });
 
-const DURATION_ORDER = [
-  '--duration-fast-min',
-  '--duration-fast',
-  '--duration-fast-max',
-  '--duration-medium-min',
-  '--duration-medium',
-  '--duration-medium-max',
-  '--duration-slow-min',
-  '--duration-slow',
-  '--duration-slow-max',
-];
-
-function sortDurationTokens(tokens: string[]): string[] {
-  const orderMap = new Map(DURATION_ORDER.map((k, i) => [k, i]));
-  return [...tokens].sort((a, b) => {
-    const ai = orderMap.get(a) ?? 99;
-    const bi = orderMap.get(b) ?? 99;
-    return ai - bi;
-  });
-}
-
 function DurationBar({value}: {value: string}) {
   const [animate, setAnimate] = useState(false);
   useEffect(() => {
@@ -184,7 +163,7 @@ function EasingCurve({value}: {value: string}) {
 }
 
 export function DurationTokenTable({theme}: TokenTableProps) {
-  const tokens = sortDurationTokens(getTokensByPrefix(theme, '--duration-'));
+  const tokens = getTokensByPrefix(theme, '--duration-');
   const data = tokens.map(name => ({
     tokenName: name,
     value: resolveToken(theme, name),
