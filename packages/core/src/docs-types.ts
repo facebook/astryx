@@ -284,33 +284,7 @@ interface BaseDoc {
    *  Components without a group appear flat in alphabetical order.
    *  Groups cluster related components that are always used together
    *  or are variants of each other. */
-  group?:
-    | 'Avatar'
-    | 'Breadcrumbs'
-    | 'Button'
-    | 'Card'
-    | 'Chat'
-    | 'Checkbox'
-    | 'Collapsible'
-    | 'CommandPalette'
-    | 'Dialog'
-    | 'DropdownMenu'
-    | 'Field'
-    | 'Layout'
-    | 'List'
-    | 'MetadataList'
-    | 'MobileNav'
-    | 'Radio'
-    | 'SegmentedControl'
-    | 'Selector'
-    | 'SideNav'
-    | 'Table'
-    | 'Tabs'
-    | 'Toast'
-    | 'TopNav'
-    | 'TreeList'
-    | 'Typeahead'
-    | 'Utilities';
+  group?: string;
   /** Theming configuration. Documents the stable CSS class names
    *  rendered by this component that themes can target via `@scope`
    *  selectors in `defineTheme`. */
