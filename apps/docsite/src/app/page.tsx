@@ -82,7 +82,7 @@ export default function Home() {
       <div {...stylex.props(styles.container)}>
         <h1 {...stylex.props(styles.heading)}>XDS</h1>
         <p {...stylex.props(styles.subtitle)}>
-          A design system for building internal tools and products.
+          Open-source design system for building internal tools and products.
         </p>
 
         <div {...stylex.props(styles.grid)}>
