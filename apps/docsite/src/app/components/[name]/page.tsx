@@ -1,16 +1,28 @@
+/**
+ * Page type: component
+ * Component or hook/utility detail page. Adapts based on content:
+ * - Visual components: showcase + props + anatomy + examples
+ * - Hooks/utilities: params + usage (no showcase if none exists)
+ * - Compound components: also lists sub-components
+ *
+ * All data comes from componentRegistry. Sub-components (parentDoc != null)
+ * are shown on their parent's page, not as standalone routes.
+ */
+
 import {notFound} from 'next/navigation';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSSection} from '@xds/core/Section';
 import {XDSCard} from '@xds/core/Card';
 import {XDSBadge} from '@xds/core/Badge';
-import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSDivider} from '@xds/core';
 import {components} from '../../../generated/componentRegistry';
 
 const allComponents = Object.values(components).flat();
 
 export function generateStaticParams() {
+  // Generate routes for top-level components only.
+  // Sub-components are rendered on their parent's page.
   return allComponents.filter(c => !c.parentDoc).map(c => ({name: c.name}));
 }
 
@@ -45,6 +57,14 @@ export default async function ComponentPage({
             {pkg && <XDSBadge label={pkg} variant="info" />}
           </XDSHStack>
         </XDSVStack>
+
+        {/* TODO: showcase section — render if blockRegistry has a showcase for this component */}
+
+        {/* TODO: props table — render from pipeline data */}
+
+        {/* TODO: anatomy — render if doc has anatomy data */}
+
+        {/* TODO: examples — render from blockRegistry matches */}
 
         {/* Sub-components */}
         {subComponents.length > 0 && (

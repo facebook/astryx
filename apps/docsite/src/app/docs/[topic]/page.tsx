@@ -1,3 +1,10 @@
+/**
+ * Page type: long-form-doc
+ * Renders documentation topics from CLI docs/*.doc.mjs.
+ * Used for: getting-started, typography, color, spacing, shape, icons,
+ * elevation, motion, principles, styling, tokens, theme.
+ */
+
 import {notFound} from 'next/navigation';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSVStack} from '@xds/core/Layout';
@@ -8,13 +15,13 @@ export function generateStaticParams() {
   return docTopics.map(d => ({topic: d.topic}));
 }
 
-export default async function FoundationPage({
+export default async function DocPage({
   params,
 }: {
   params: Promise<{topic: string}>;
 }) {
-  const {topic: topicSlug} = await params;
-  const topic = docTopics.find(d => d.topic === topicSlug);
+  const {topic: slug} = await params;
+  const topic = docTopics.find(d => d.topic === slug);
   if (!topic) notFound();
 
   return (
@@ -24,6 +31,7 @@ export default async function FoundationPage({
         <XDSText type="body" color="secondary">
           {topic.description}
         </XDSText>
+        {/* TODO: render full doc sections from pipeline */}
       </XDSVStack>
     </XDSSection>
   );

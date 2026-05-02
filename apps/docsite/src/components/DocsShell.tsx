@@ -5,20 +5,11 @@ import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
 import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
 import {XDSButton} from '@xds/core/Button';
+import {XDSLink} from '@xds/core/Link';
+import {XDSVStack} from '@xds/core/Layout';
 import type {ComponentEntry} from '../generated/componentRegistry';
 import type {PackageMeta} from '../generated/packageRegistry';
 import type {DocTopic} from '../generated/docsRegistry';
-
-// Foundation topics to show in sidebar (stable set)
-const FOUNDATION_TOPICS = [
-  'typography',
-  'color',
-  'spacing',
-  'shape',
-  'icons',
-  'elevation',
-  'motion',
-];
 
 interface DocsShellProps {
   children: React.ReactNode;
@@ -34,7 +25,6 @@ function groupComponents(
   const groups: Record<string, ComponentEntry[]> = {};
   for (const entry of entries) {
     if (entry.hidden) continue;
-    // Skip sub-components in the sidebar — show only top-level entries
     if (entry.parentDoc) continue;
     const group = entry.group || 'Other';
     if (!groups[group]) groups[group] = [];
@@ -55,9 +45,7 @@ export function DocsShell({
   const grouped = groupComponents(coreComponents);
   const groupNames = Object.keys(grouped).sort();
 
-  const foundations = docTopics.filter(d =>
-    FOUNDATION_TOPICS.includes(d.topic),
-  );
+  const isTheme = (p: PackageMeta) => p.name.includes('theme-');
 
   return (
     <XDSAppShell
@@ -78,7 +66,23 @@ export function DocsShell({
         />
       }
       sideNav={
-        <XDSSideNav>
+        <XDSSideNav
+          footer={
+            <XDSVStack gap={1}>
+              <XDSLink
+                label="Terms of Use"
+                href="https://opensource.fb.com/legal/terms"
+                isExternalLink>
+                Terms of Use
+              </XDSLink>
+              <XDSLink
+                label="Privacy Policy"
+                href="https://opensource.fb.com/legal/privacy"
+                isExternalLink>
+                Privacy Policy
+              </XDSLink>
+            </XDSVStack>
+          }>
           {/* Home */}
           <XDSSideNavSection title="Home" isHeaderHidden>
             <XDSSideNavItem
@@ -93,32 +97,54 @@ export function DocsShell({
             <XDSSideNavItem label="Guide" collapsible>
               <XDSSideNavItem
                 label="Getting Started"
-                href="/getting-started"
-                isSelected={pathname === '/getting-started'}
+                href="/docs/getting-started"
+                isSelected={pathname === '/docs/getting-started'}
               />
               <XDSSideNavItem
-                label="What's New"
-                href="/whats-new"
-                isSelected={pathname === '/whats-new'}
+                label="Changelog"
+                href="/changelog"
+                isSelected={pathname === '/changelog'}
               />
+
+              {/* Foundations */}
               <XDSSideNavItem label="Foundations" collapsible>
-                {foundations.map(d => (
-                  <XDSSideNavItem
-                    key={d.topic}
-                    label={d.title}
-                    href={`/foundations/${d.topic}`}
-                    isSelected={pathname === `/foundations/${d.topic}`}
-                  />
-                ))}
+                {docTopics
+                  .filter(d => d.topic !== 'getting-started')
+                  .map(d => (
+                    <XDSSideNavItem
+                      key={d.topic}
+                      label={d.title}
+                      href={`/docs/${d.topic}`}
+                      isSelected={pathname === `/docs/${d.topic}`}
+                    />
+                  ))}
               </XDSSideNavItem>
+
+              {/* Packages */}
               <XDSSideNavItem label="Packages" collapsible>
-                {packages.map(p => (
+                {packages
+                  .filter(p => !isTheme(p))
+                  .map(p => (
+                    <XDSSideNavItem
+                      key={p.name}
+                      label={p.displayName}
+                      href={`/packages/${p.name.replace('@xds/', '')}`}
+                      isSelected={
+                        pathname === `/packages/${p.name.replace('@xds/', '')}`
+                      }
+                    />
+                  ))}
+              </XDSSideNavItem>
+
+              {/* Themes */}
+              <XDSSideNavItem label="Themes" collapsible>
+                {packages.filter(isTheme).map(p => (
                   <XDSSideNavItem
                     key={p.name}
                     label={p.displayName}
-                    href={`/packages/${encodeURIComponent(p.name)}`}
+                    href={`/packages/${p.name.replace('@xds/', '')}`}
                     isSelected={
-                      pathname === `/packages/${encodeURIComponent(p.name)}`
+                      pathname === `/packages/${p.name.replace('@xds/', '')}`
                     }
                   />
                 ))}
@@ -126,7 +152,7 @@ export function DocsShell({
             </XDSSideNavItem>
           </XDSSideNavSection>
 
-          {/* Component categories */}
+          {/* Component groups */}
           {groupNames.map(group => (
             <XDSSideNavSection key={group} title={group}>
               {grouped[group].map(comp => (
