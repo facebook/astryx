@@ -125,7 +125,9 @@ const styles = stylex.create({
     borderRadius: 0,
   },
   withDivider: {
-    borderBlockEnd: `${borderVars['--border-width']} solid ${colorVars['--color-border']}`,
+    borderBlockEndWidth: borderVars['--border-width'],
+    borderBlockEndStyle: 'solid',
+    borderBlockEndColor: colorVars['--color-border'],
     ':last-child': {
       borderBlockEnd: 'none',
     },
