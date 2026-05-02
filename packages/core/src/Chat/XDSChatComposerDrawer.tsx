@@ -10,7 +10,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts (exports)
- * - /packages/cli/templates/blocks/components/Chat/ (showcase blocks)
+ * - /packages/cli/templates/blocks/components/ChatComposerDrawer/ (block examples)
  */
 
 import {useState, type ReactNode} from 'react';

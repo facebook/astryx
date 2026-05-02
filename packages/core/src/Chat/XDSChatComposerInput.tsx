@@ -15,7 +15,7 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts
  * - /apps/storybook/stories/ChatComposer.stories.tsx
- * - /packages/cli/templates/blocks/components/Chat/ (showcase blocks)
+ * - /packages/cli/templates/blocks/components/ChatComposerInput/ (block examples)
  */
 
 import {
@@ -566,7 +566,9 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
         {...triggerMenu.ariaProps}
-        {...mergeProps(stylex.props(styles.editable), {style: {maxHeight: `${maxHeight}px`}})}
+        {...mergeProps(stylex.props(styles.editable), {
+          style: {maxHeight: `${maxHeight}px`},
+        })}
       />
       {triggerMenu.renderMenu()}
       {tokens.tokenPortals
