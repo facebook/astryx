@@ -53,8 +53,9 @@ export interface XDSStackProps extends XDSBaseProps<HTMLDivElement> {
    * Direction of the stack layout.
    * - `horizontal`: Items flow left-to-right (like XDSHStack)
    * - `vertical`: Items flow top-to-bottom (like XDSVStack)
+   * @default 'vertical'
    */
-  direction: StackDirection;
+  direction?: StackDirection;
 
   /**
    * Horizontal alignment of items.
@@ -157,7 +158,8 @@ export interface XDSStackProps extends XDSBaseProps<HTMLDivElement> {
  * Unified stack component for arranging items in a horizontal or vertical layout.
  *
  * Replaces `XDSHStack` and `XDSVStack` with a single component that accepts
- * a required `direction` prop so the layout intent is always explicit.
+ * a `direction` prop. Defaults to `'vertical'` since most layouts stack
+ * top-to-bottom.
  *
  * The `hAlign` and `vAlign` props automatically map to the correct CSS axis
  * based on the direction:
@@ -166,7 +168,7 @@ export interface XDSStackProps extends XDSBaseProps<HTMLDivElement> {
  *
  * @example
  * ```
- * <XDSStack direction="vertical" gap={2}>
+ * <XDSStack gap={2}>
  *   <Item />
  *   <Item />
  * </XDSStack>
@@ -177,7 +179,7 @@ export interface XDSStackProps extends XDSBaseProps<HTMLDivElement> {
  * ```
  */
 export function XDSStack({
-  direction,
+  direction = 'vertical',
   hAlign,
   vAlign,
   justify,

@@ -176,7 +176,6 @@ type Story = StoryObj<typeof XDSStack>;
 
 export const Default: Story = {
   args: {
-    direction: 'vertical',
     gap: 2,
     children: null,
   },

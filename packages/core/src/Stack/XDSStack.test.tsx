@@ -12,6 +12,16 @@ import {render, screen} from '@testing-library/react';
 import {XDSStack} from './XDSStack';
 
 describe('XDSStack', () => {
+  it('defaults to vertical direction', () => {
+    render(
+      <XDSStack data-testid="stack">
+        <div>Item 1</div>
+        <div>Item 2</div>
+      </XDSStack>,
+    );
+    expect(screen.getByTestId('stack')).toBeInTheDocument();
+  });
+
   it('renders children correctly', () => {
     render(
       <XDSStack direction="vertical">
