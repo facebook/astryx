@@ -1,10 +1,9 @@
 /**
- * Page type: component-pkg OR theme-pkg
- * Renders a package detail page. Adapts based on whether the package
- * is a theme (theme-pkg) or a component library (component-pkg).
- *
- * component-pkg: grid of components in the package
- * theme-pkg: theme preview, token info, setup instructions
+ * Page type: package
+ * Adapts based on the package type:
+ * - component-pkg (@xds/core): component grid from componentRegistry
+ * - theme-pkg (@xds/theme-*): theme preview + token info (stub)
+ * - generic (@xds/cli, etc.): README rendered via XDSMarkdown
  */
 
 import {notFound} from 'next/navigation';
@@ -14,6 +13,8 @@ import {XDSSection} from '@xds/core/Section';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSClickableCard} from '@xds/core/ClickableCard';
+import {XDSMarkdown} from '@xds/core/Markdown';
+import {XDSDivider} from '@xds/core';
 import {packages} from '../../../generated/packageRegistry';
 import {
   components,
@@ -39,11 +40,13 @@ export default async function PackagePage({
   if (!pkg) notFound();
 
   const isTheme = pkg.name.includes('theme-');
+  const isComponentPkg = pkg.name === '@xds/core';
   const pkgComponents = components[pkg.name] || [];
 
   return (
     <XDSSection maxWidth="lg" padding={6}>
       <XDSVStack gap={6}>
+        {/* Header — shared across all package types */}
         <XDSVStack gap={2}>
           <XDSHeading level={1}>{pkg.displayName}</XDSHeading>
           <XDSHStack gap={2} vAlign="center">
@@ -57,24 +60,18 @@ export default async function PackagePage({
           </XDSText>
         </XDSVStack>
 
-        {isTheme ? (
+        <XDSDivider />
+
+        {/* Content — adapts by package type */}
+        {isComponentPkg ? (
+          <ComponentPackageContent components={pkgComponents} />
+        ) : isTheme ? (
           <ThemePackageContent />
         ) : (
-          <ComponentPackageContent components={pkgComponents} />
+          <GenericPackageContent readme={pkg.readme} />
         )}
       </XDSVStack>
     </XDSSection>
-  );
-}
-
-function ThemePackageContent() {
-  return (
-    <XDSVStack gap={4}>
-      {/* TODO: theme preview, token values, setup code from pipeline */}
-      <XDSText type="body" color="secondary">
-        Theme details coming soon.
-      </XDSText>
-    </XDSVStack>
   );
 }
 
@@ -83,7 +80,6 @@ function ComponentPackageContent({
 }: {
   components: ComponentEntry[];
 }) {
-  // Only show top-level entries (not sub-components) in the grid
   const topLevel = pkgComponents.filter(c => !c.parentDoc);
 
   if (topLevel.length === 0) {
@@ -119,4 +115,27 @@ function ComponentPackageContent({
       </XDSGrid>
     </XDSVStack>
   );
+}
+
+function ThemePackageContent() {
+  return (
+    <XDSVStack gap={4}>
+      {/* TODO: theme preview, token values, setup code from pipeline */}
+      <XDSText type="body" color="secondary">
+        Theme details coming soon.
+      </XDSText>
+    </XDSVStack>
+  );
+}
+
+function GenericPackageContent({readme}: {readme: string | null}) {
+  if (!readme) {
+    return (
+      <XDSText type="body" color="secondary">
+        No README available.
+      </XDSText>
+    );
+  }
+
+  return <XDSMarkdown>{readme}</XDSMarkdown>;
 }

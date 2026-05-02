@@ -18,7 +18,7 @@ interface DocsShellProps {
   docTopics: DocTopic[];
 }
 
-/** Group components by their group field for sidebar sections */
+/** Group top-level components by their group field */
 function groupComponents(
   entries: ComponentEntry[],
 ): Record<string, ComponentEntry[]> {
@@ -152,19 +152,21 @@ export function DocsShell({
             </XDSSideNavItem>
           </XDSSideNavSection>
 
-          {/* Component groups */}
-          {groupNames.map(group => (
-            <XDSSideNavSection key={group} title={group}>
-              {grouped[group].map(comp => (
-                <XDSSideNavItem
-                  key={comp.name}
-                  label={comp.name}
-                  href={`/components/${comp.name}`}
-                  isSelected={pathname === `/components/${comp.name}`}
-                />
-              ))}
-            </XDSSideNavSection>
-          ))}
+          {/* Components — single section with groups as collapsible children */}
+          <XDSSideNavSection title="Components">
+            {groupNames.map(group => (
+              <XDSSideNavItem key={group} label={group} collapsible>
+                {grouped[group].map(comp => (
+                  <XDSSideNavItem
+                    key={comp.name}
+                    label={comp.name}
+                    href={`/components/${comp.name}`}
+                    isSelected={pathname === `/components/${comp.name}`}
+                  />
+                ))}
+              </XDSSideNavItem>
+            ))}
+          </XDSSideNavSection>
         </XDSSideNav>
       }>
       {children}

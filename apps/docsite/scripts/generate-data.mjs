@@ -131,6 +131,9 @@ function generatePackageRegistry() {
 
       const hasReadme = fs.existsSync(path.join(REPO_ROOT, dir, 'README.md'));
       const hasChangelog = fs.existsSync(path.join(REPO_ROOT, dir, 'CHANGELOG.md'));
+      const readme = hasReadme
+        ? fs.readFileSync(path.join(REPO_ROOT, dir, 'README.md'), 'utf-8')
+        : null;
       return {
         name: raw.name,
         displayName: raw.displayName || raw.name.replace('@xds/', '').replace('theme-', 'Theme: ').replace(/^\w/, c => c.toUpperCase()),
@@ -139,6 +142,7 @@ function generatePackageRegistry() {
         packagePath: dir,
         hasReadme,
         hasChangelog,
+        readme,
       };
     })
     .filter(Boolean)
@@ -154,6 +158,7 @@ export interface PackageMeta {
   packagePath: string;
   hasReadme: boolean;
   hasChangelog: boolean;
+  readme: string | null;
 }
 
 export const packages: PackageMeta[] = ${JSON.stringify(packages, null, 2)};

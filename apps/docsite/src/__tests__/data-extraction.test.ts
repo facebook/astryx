@@ -42,6 +42,24 @@ describe('packageRegistry', () => {
     const names = packages.map(p => p.name);
     expect(new Set(names).size).toBe(names.length);
   });
+
+  it('packages with READMEs have readme content', () => {
+    for (const pkg of packages) {
+      if (pkg.hasReadme) {
+        expect(pkg.readme).toBeTruthy();
+        expect(typeof pkg.readme).toBe('string');
+        expect(pkg.readme!.length).toBeGreaterThan(50);
+      } else {
+        expect(pkg.readme).toBeNull();
+      }
+    }
+  });
+
+  it('CLI package has a substantial README', () => {
+    const cli = packages.find(p => p.name === '@xds/cli');
+    expect(cli?.readme).toBeTruthy();
+    expect(cli!.readme!.length).toBeGreaterThan(1000);
+  });
 });
 
 // ── Component Registry ─────────────────────────────────────────────────
