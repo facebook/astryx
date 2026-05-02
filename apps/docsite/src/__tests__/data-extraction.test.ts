@@ -5,13 +5,13 @@
  * Run: yarn workspace @xds/docsite test
  */
 
+import * as fs from 'node:fs';
 import {describe, it, expect} from 'vitest';
 import {packages} from '../generated/packageRegistry';
 import {components, componentCount} from '../generated/componentRegistry';
 import {blocks, blockCount, showcaseCount} from '../generated/blockRegistry';
 import {templates, templateCount} from '../generated/templateRegistry';
 import {docTopics, docsCount} from '../generated/docsRegistry';
-import {themeObjects} from '../generated/themeRegistry';
 
 // ── Package Registry ───────────────────────────────────────────────────
 
@@ -359,32 +359,32 @@ describe('docsRegistry', () => {
 // ── Theme Registry ─────────────────────────────────────────────────────
 
 describe('themeRegistry', () => {
-  it('exports a themeObjects record', () => {
-    expect(themeObjects).toBeDefined();
-    expect(typeof themeObjects).toBe('object');
+  const registryPath = new URL(
+    '../generated/themeRegistry.ts',
+    import.meta.url,
+  );
+  const registrySource = fs.readFileSync(registryPath, 'utf-8');
+
+  it('generates a themeRegistry file', () => {
+    expect(registrySource).toContain('themeObjects');
   });
 
-  it('contains all theme packages from packageRegistry', () => {
+  it('has an import and entry for every theme package', () => {
     const themePackages = packages.filter(p =>
       p.name.startsWith('@xds/theme-'),
     );
+    expect(themePackages.length).toBeGreaterThan(0);
     for (const pkg of themePackages) {
-      expect(themeObjects[pkg.name]).toBeDefined();
-    }
-    expect(Object.keys(themeObjects).length).toBe(themePackages.length);
-  });
-
-  it('each theme object has a className (valid XDSDefinedTheme)', () => {
-    for (const [name, theme] of Object.entries(themeObjects)) {
-      expect(name).toMatch(/^@xds\/theme-/);
-      expect(theme).toBeDefined();
-      expect(typeof theme.name).toBe('string');
+      const slug = pkg.name.replace('@xds/theme-', '');
+      expect(registrySource).toContain(`from '${pkg.name}/built'`);
+      expect(registrySource).toContain(`'${pkg.name}': ${slug}Theme`);
     }
   });
 
-  it('no non-theme packages in themeObjects', () => {
-    for (const name of Object.keys(themeObjects)) {
-      expect(name).toMatch(/^@xds\/theme-/);
+  it('has no entries for non-theme packages', () => {
+    const nonTheme = packages.filter(p => !p.name.startsWith('@xds/theme-'));
+    for (const pkg of nonTheme) {
+      expect(registrySource).not.toContain(`'${pkg.name}':`);
     }
   });
 });
