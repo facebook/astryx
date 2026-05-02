@@ -10,9 +10,9 @@ import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSSection} from '@xds/core/Section';
-import {XDSBadge} from '@xds/core/Badge';
 import {XDSButton} from '@xds/core/Button';
 import {XDSTheme, XDSMediaTheme} from '@xds/core/theme';
+import type {XDSDefinedTheme} from '@xds/core/theme';
 import {defaultTheme} from '@xds/theme-default/built';
 import {neutralTheme} from '@xds/theme-neutral/built';
 import {dailyTheme} from '@xds/theme-daily/built';
@@ -21,10 +21,6 @@ import {packages} from '../generated/packageRegistry';
 import {componentCount} from '../generated/componentRegistry';
 import {docTopics} from '../generated/docsRegistry';
 import {ThemeShowcaseTile} from '../components/ThemeShowcaseTile';
-
-// ---------------------------------------------------------------------------
-// Inline SVG icons for package cards
-// ---------------------------------------------------------------------------
 
 const TerminalIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -62,34 +58,23 @@ const CodeIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-// ---------------------------------------------------------------------------
-// Package asset map
-// ---------------------------------------------------------------------------
-
-const PACKAGE_ASSETS: Record<string, {image?: string; icon?: React.ReactNode}> =
-  {
-    '@xds/cli': {
-      image: '/LibrariesCli.png',
-      icon: <TerminalIcon />,
-    },
-    '@xds/core': {
-      image: '/LibrariesCore.png',
-      icon: <CodeIcon />,
-    },
-  };
-
-const THEME_MAP: Record<string, {theme: typeof defaultTheme; label: string}> = {
-  '@xds/theme-default': {theme: defaultTheme, label: 'Default'},
-  '@xds/theme-neutral': {theme: neutralTheme, label: 'Neutral'},
-  '@xds/theme-daily': {theme: dailyTheme, label: 'Daily'},
-  '@xds/theme-matcha': {theme: matchaTheme, label: 'Matcha'},
+const PACKAGE_ICONS: Record<string, React.ReactNode> = {
+  '@xds/cli': <TerminalIcon />,
+  '@xds/core': <CodeIcon />,
 };
 
-const DEFAULT_PACKAGE_IMAGE = '/LibrariesCore.png';
+const PACKAGE_IMAGES: Record<string, string> = {
+  '@xds/cli': '/LibrariesCli.png',
+  '@xds/core': '/LibrariesCore.png',
+};
 
-// ---------------------------------------------------------------------------
-// Foundation image map
-// ---------------------------------------------------------------------------
+/** Theme objects keyed by package name — imports must be static. */
+const themeObjects: Record<string, XDSDefinedTheme> = {
+  '@xds/theme-default': defaultTheme,
+  '@xds/theme-neutral': neutralTheme,
+  '@xds/theme-daily': dailyTheme,
+  '@xds/theme-matcha': matchaTheme,
+};
 
 const foundationImages: Record<string, string> = {
   color: '/FoundationsColors.png',
@@ -98,10 +83,6 @@ const foundationImages: Record<string, string> = {
   spacing: '/FoundationsSpacing.png',
   typography: '/FoundationsTypogrpahy.png',
 };
-
-// ---------------------------------------------------------------------------
-// Styles
-// ---------------------------------------------------------------------------
 
 const styles = stylex.create({
   pageContainer: {
@@ -174,11 +155,6 @@ const styles = stylex.create({
     color: '#484233',
     opacity: 0.8,
   },
-  comingSoonBadge: {
-    position: 'absolute' as const,
-    top: 12,
-    right: 12,
-  },
   monoText: {
     fontFamily: 'monospace',
   },
@@ -192,10 +168,6 @@ const styles = stylex.create({
   },
 });
 
-// ---------------------------------------------------------------------------
-// Data
-// ---------------------------------------------------------------------------
-
 const foundationTopics = docTopics
   .filter(d => d.category === 'foundations')
   .sort((a, b) => {
@@ -203,10 +175,6 @@ const foundationTopics = docTopics
     if (b.topic === 'tokens') return 1;
     return a.title.localeCompare(b.title);
   });
-
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
 
 export default function HomePage() {
   const coreCount = componentCount;
@@ -261,20 +229,19 @@ export default function HomePage() {
               gap={4}
               rowGap={8}>
               {packages.map(pkg => {
-                const assets = PACKAGE_ASSETS[pkg.name];
-                const image = assets?.image ?? DEFAULT_PACKAGE_IMAGE;
-                const icon = assets?.icon ?? null;
-                const themeEntry = THEME_MAP[pkg.name] ?? null;
+                const theme = themeObjects[pkg.name];
+                const image = PACKAGE_IMAGES[pkg.name] ?? '/LibrariesCore.png';
+                const icon = PACKAGE_ICONS[pkg.name] ?? null;
 
                 return (
                   <Link
                     key={pkg.name}
                     href={`/packages/${pkg.name.replace('@xds/', '')}`}
                     {...stylex.props(styles.linkReset)}>
-                    {themeEntry ? (
+                    {theme ? (
                       <div {...stylex.props(styles.packageImageWrapper)}>
-                        <XDSTheme theme={themeEntry.theme} mode="light">
-                          <ThemeShowcaseTile label={themeEntry.label} />
+                        <XDSTheme theme={theme} mode="light">
+                          <ThemeShowcaseTile label={pkg.displayName} />
                         </XDSTheme>
                       </div>
                     ) : (
