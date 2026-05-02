@@ -33,7 +33,7 @@
     "dev:sandbox:source": "XDS_SOURCE=1 yarn workspace @xds/sandbox dev"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.11.2",
+    "@axe-core/playwright": "^4.11.3",
     "@changesets/cli": "^2.31.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.59.1",
@@ -43,7 +43,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.3.0",
     "@vitest/coverage-v8": "^2.1.0",
-    "eslint": "^10.2.1",
+    "eslint": "^10.3.0",
     "husky": "^9.1.7",
     "jscodeshift": "^17.3.0",
     "jsdom": "^27.4.0",
@@ -52,7 +52,7 @@
     "react-dom": "^19.2.5",
     "tsup": "^8.3.0",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.59.0",
+    "typescript-eslint": "^8.59.1",
     "vite-plugin-singlefile": "^2.3.3",
     "vitest": "^2.1.0"
   },
