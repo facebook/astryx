@@ -12,7 +12,7 @@ import {XDSGrid} from '@xds/core/Grid';
 import {XDSSection} from '@xds/core/Section';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSButton} from '@xds/core/Button';
-import {XDSTheme} from '@xds/core/theme';
+import {XDSTheme, XDSMediaTheme} from '@xds/core/theme';
 import {defaultTheme} from '@xds/theme-default/built';
 import {neutralTheme} from '@xds/theme-neutral/built';
 import {dailyTheme} from '@xds/theme-daily/built';
@@ -217,32 +217,34 @@ export default function HomePage() {
         <XDSVStack gap={10} style={{rowGap: 60}}>
           {/* Hero */}
           <div {...stylex.props(styles.heroContainer)}>
-            <XDSText type="large" weight="semibold" xstyle={styles.heroTitle}>
-              XDS Open Source
-            </XDSText>
-            <XDSText type="display-1" xstyle={styles.heroSubtitle}>
-              Build with AI
-            </XDSText>
-            <XDSText
-              type="body"
-              color="secondary"
-              xstyle={styles.heroDescription}>
-              An open design system for building internal tools with AI-powered
-              development. Ship faster with {coreCount} accessible, themeable
-              components.
-            </XDSText>
-            <XDSHStack gap={3} xstyle={styles.heroButtons}>
-              <XDSButton
-                variant="primary"
-                label="Get started"
-                href="/docs/getting-started"
-              />
-              <XDSButton
-                variant="secondary"
-                label="Browse components"
-                href="/packages/core"
-              />
-            </XDSHStack>
+            <XDSMediaTheme mode="light">
+              <XDSText type="large" weight="semibold" xstyle={styles.heroTitle}>
+                XDS Open Source
+              </XDSText>
+              <XDSText type="display-1" xstyle={styles.heroSubtitle}>
+                Build with AI
+              </XDSText>
+              <XDSText
+                type="body"
+                color="secondary"
+                xstyle={styles.heroDescription}>
+                An open design system for building internal tools with
+                AI-powered development. Ship faster with {coreCount} accessible,
+                themeable components.
+              </XDSText>
+              <XDSHStack gap={3} xstyle={styles.heroButtons}>
+                <XDSButton
+                  variant="primary"
+                  label="Get started"
+                  href="/docs/getting-started"
+                />
+                <XDSButton
+                  variant="secondary"
+                  label="Browse components"
+                  href="/packages/core"
+                />
+              </XDSHStack>
+            </XDSMediaTheme>
           </div>
 
           {/* Libraries & Packages */}
