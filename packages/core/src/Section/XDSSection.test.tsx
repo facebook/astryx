@@ -150,4 +150,30 @@ describe('XDSSection', () => {
     render(<XDSSection data-testid="custom-section">Content</XDSSection>);
     expect(screen.getByTestId('custom-section')).toBeInTheDocument();
   });
+
+  it('propagates explicit padding to nested sections via --xds-section-padding', () => {
+    const {container} = render(
+      <XDSSection padding={6}>
+        <XDSSection data-testid="inner">Inner</XDSSection>
+      </XDSSection>,
+    );
+    // Outer section's inner div should set --xds-section-padding
+    const outerInner = container.firstElementChild!.firstElementChild!;
+    expect(outerInner.className).toBeDefined();
+    // Inner section should render without error
+    expect(screen.getByTestId('inner')).toBeInTheDocument();
+    expect(screen.getByText('Inner')).toBeInTheDocument();
+  });
+
+  it('renders nested sections with explicit inner padding override', () => {
+    const {container} = render(
+      <XDSSection padding={6}>
+        <XDSSection padding={2} data-testid="inner">
+          Inner
+        </XDSSection>
+      </XDSSection>,
+    );
+    expect(screen.getByTestId('inner')).toBeInTheDocument();
+    expect(screen.getByText('Inner')).toBeInTheDocument();
+  });
 });

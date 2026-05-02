@@ -25,6 +25,7 @@ import {
   containerPaddingInlineVarStyles,
   containerPaddingBlockStartVarStyles,
   containerPaddingBlockEndVarStyles,
+  sectionPaddingPropagationStyles,
   spacingStepToToken,
 } from '../Layout/padding.stylex';
 import type {SizeValue, SpacingStep} from '../utils/types';
@@ -289,6 +290,8 @@ export function XDSSection({
             !useThemeDefault &&
               effectivePadding !== 4 &&
               containerPaddingBlockEndVarStyles[effectivePadding],
+            !useThemeDefault &&
+              sectionPaddingPropagationStyles[effectivePadding],
             paddingBlock != null && paddingBlockStyles[paddingBlock],
             paddingBlock != null &&
               containerPaddingBlockStartVarStyles[paddingBlock],

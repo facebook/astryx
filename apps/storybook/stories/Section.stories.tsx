@@ -220,3 +220,47 @@ export const FullBleed: Story = {
     </div>
   ),
 };
+
+export const NestedPaddingInheritance: Story = {
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>
+          padding=6 → nested (inherits 6)
+        </h4>
+        <XDSSection variant="section" width={350} padding={6}>
+          <XDSSection variant="wash">
+            <p {...stylex.props(styles.text)}>
+              Inner section inherits padding=6 from parent. Edge compensation
+              and content inset should both use 24px.
+            </p>
+          </XDSSection>
+        </XDSSection>
+      </div>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>padding=6 → nested padding=2</h4>
+        <XDSSection variant="section" width={350} padding={6}>
+          <XDSSection variant="wash" padding={2}>
+            <p {...stylex.props(styles.text)}>
+              Inner section explicitly sets padding=2, overriding the parent's
+              padding=6. Content inset is 8px.
+            </p>
+          </XDSSection>
+        </XDSSection>
+      </div>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>
+          padding=2 → nested (inherits 2)
+        </h4>
+        <XDSSection variant="section" width={350} padding={2}>
+          <XDSSection variant="wash">
+            <p {...stylex.props(styles.text)}>
+              Inner section inherits padding=2 from parent. Both edge
+              compensation and content inset use 8px.
+            </p>
+          </XDSSection>
+        </XDSSection>
+      </div>
+    </div>
+  ),
+};
