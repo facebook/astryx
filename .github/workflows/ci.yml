@@ -22,10 +22,50 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+
+  # Detect docsite-only changes — lets docsite PRs skip heavy jobs
+  check-scope:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    outputs:
+      docsite_only: ${{ steps.scope.outputs.docsite_only }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Determine change scope
+        id: scope
+        run: |
+          CHANGED=$(git diff --name-only origin/\${{ github.base_ref }}...HEAD)
+          NON_DOCSITE=$(echo "$CHANGED" | grep -v '^apps/docsite/' | head -1)
+          if [ -z "$NON_DOCSITE" ]; then
+            echo "docsite_only=true" >> $GITHUB_OUTPUT
+          else
+            echo "docsite_only=false" >> $GITHUB_OUTPUT
+          fi
+
+  # Docsite data extraction tests — always runs, fast (~2s)
+  docsite-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: 'yarn'
+
+      - run: yarn install --frozen-lockfile
+
+      - name: Generate and test docsite data
+        run: yarn workspace @xds/docsite generate && yarn workspace @xds/docsite test
+
   # Lightweight check — does the PR touch any core components?
   # Gates pr-a11y to avoid unnecessary work
   check-components:
-    if: github.event_name == 'pull_request'
+    needs: [check-scope]
+    if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true'
     runs-on: ubuntu-latest
     outputs:
       has_components: ${{ steps.check.outputs.has_components }}
@@ -44,31 +84,40 @@ jobs:
 
   # Run tests (parallel with build)
   test:
+    needs: [check-scope]
     runs-on: ubuntu-latest
     steps:
+      - name: Skip for docsite-only changes
+        if: needs.check-scope.outputs.docsite_only == 'true'
+        run: echo "Docsite-only PR — skipping full test suite"
+
       - uses: actions/checkout@v6
+        if: needs.check-scope.outputs.docsite_only != 'true'
 
       - uses: actions/setup-node@v6
+        if: needs.check-scope.outputs.docsite_only != 'true'
         with:
           node-version: 20
           cache: 'yarn'
 
       - run: yarn install --frozen-lockfile
+        if: needs.check-scope.outputs.docsite_only != 'true'
 
       - name: Check package.json exports are in sync
+        if: needs.check-scope.outputs.docsite_only != 'true'
         run: node scripts/sync-exports.js --check
 
       - name: Check token docs are in sync
+        if: needs.check-scope.outputs.docsite_only != 'true'
         run: node scripts/generate-token-docs.mjs --check
 
       - run: yarn test
-
-      - name: Docsite data extraction tests
-        run: yarn workspace @xds/docsite generate && yarn workspace @xds/docsite test
+        if: needs.check-scope.outputs.docsite_only != 'true'
 
   # Build storybook + analyze components (parallel with test)
   # Uploads storybook preview and analysis artifacts for downstream jobs
   build:
+    needs: [check-scope]
     runs-on: ubuntu-latest
     outputs:
       storybook_url: ${{ steps.urls.outputs.storybook_url }}
@@ -76,36 +125,47 @@ jobs:
       sandbox_url: ${{ steps.urls.outputs.sandbox_url }}
       pr_number: ${{ steps.urls.outputs.pr_number }}
     steps:
+      - name: Skip for docsite-only changes
+        if: needs.check-scope.outputs.docsite_only == 'true'
+        run: echo "Docsite-only PR — skipping full build"
+
       - name: Checkout
+        if: needs.check-scope.outputs.docsite_only != 'true'
         uses: actions/checkout@v6
 
       - name: Fetch base branch for PR analysis
-        if: github.event_name == 'pull_request'
+        if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
         run: git fetch origin ${{ github.base_ref }} --depth=1
 
       - name: Setup Node.js
+        if: needs.check-scope.outputs.docsite_only != 'true'
         uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: 'yarn'
 
       - name: Install dependencies
+        if: needs.check-scope.outputs.docsite_only != 'true'
         run: yarn install --frozen-lockfile
 
       - name: Build core package
+        if: needs.check-scope.outputs.docsite_only != 'true'
         run: yarn build
 
       - name: Verify package exports
+        if: needs.check-scope.outputs.docsite_only != 'true'
         run: node scripts/verify-exports.mjs
 
       - name: Typecheck component docs
+        if: needs.check-scope.outputs.docsite_only != 'true'
         run: yarn workspace @xds/core typecheck:docs
 
       - name: Typecheck template docs
+        if: needs.check-scope.outputs.docsite_only != 'true'
         run: yarn workspace @xds/cli typecheck:template-docs
 
       - name: Cache Next.js build
-        if: github.event_name == 'pull_request'
+        if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
         uses: actions/cache@v5
         with:
           path: apps/sandbox/.next/cache
@@ -115,10 +175,11 @@ jobs:
             nextjs-sandbox-
 
       - name: Build Storybook
+        if: needs.check-scope.outputs.docsite_only != 'true'
         run: yarn workspace @xds/storybook build
 
       - name: Compute PR preview path
-        if: github.event_name == 'pull_request'
+        if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
         id: urls
         run: |
           PR_NUMBER="${{ github.event.pull_request.number }}"
@@ -133,13 +194,13 @@ jobs:
           echo "sandbox_url=https://${REPO_OWNER}.github.io/${REPO_NAME}/pr/${PR_NUMBER}/sandbox/" >> $GITHUB_OUTPUT
 
       - name: Build Sandbox
-        if: github.event_name == 'pull_request'
+        if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
         run: yarn workspace @xds/sandbox build
         env:
           SANDBOX_BASE_PATH: /pr/${{ steps.urls.outputs.pr_number }}/sandbox
 
       - name: Upload Storybook artifact
-        if: github.event_name == 'pull_request'
+        if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
         uses: actions/upload-artifact@v7
         with:
           name: storybook-${{ steps.urls.outputs.short_hash }}
@@ -147,7 +208,7 @@ jobs:
           retention-days: 30
 
       - name: Upload Sandbox artifact
-        if: github.event_name == 'pull_request'
+        if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
         uses: actions/upload-artifact@v7
         with:
           name: sandbox-${{ steps.urls.outputs.short_hash }}
@@ -155,7 +216,7 @@ jobs:
           retention-days: 30
 
       - name: Analyze components
-        if: github.event_name == 'pull_request'
+        if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
         run: |
           node .github/scripts/analyze-pr.js \
             --base origin/${{ github.base_ref }} \
@@ -163,7 +224,7 @@ jobs:
             --output analysis.json
 
       - name: Upload analysis artifact
-        if: github.event_name == 'pull_request'
+        if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
         uses: actions/upload-artifact@v7
         with:
           name: pr-analysis
@@ -175,8 +236,8 @@ jobs:
   # Instead of peaceiris/actions-gh-pages (which can conflict with main's
   # force-push), we do a manual git push with retry-on-conflict.
   deploy-preview:
-    if: github.event_name == 'pull_request'
-    needs: [build]
+    if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true'
+    needs: [build, check-scope]
     runs-on: ubuntu-latest
     concurrency:
       group: "pr-preview-${{ needs.build.outputs.pr_number }}"
@@ -240,8 +301,8 @@ jobs:
   # Post PR comment with preview links + analysis as soon as build finishes
   # Does NOT wait for test or a11y — those update the comment later
   pr-comment:
-    if: github.event_name == 'pull_request'
-    needs: [build]
+    if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true'
+    needs: [build, check-scope]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
