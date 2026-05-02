@@ -170,7 +170,6 @@ export function DocsShell({
     <XDSAppShell
       variant="surface"
       height="fill"
-      mobileNav={{breakpoint: 'none'}}
       topNav={
         <XDSTopNav
           label="XDS navigation"
