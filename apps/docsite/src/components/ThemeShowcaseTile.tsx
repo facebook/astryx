@@ -19,6 +19,7 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-container'],
     backgroundColor: colorVars['--color-background-body'],
     overflow: 'hidden',
+    width: '100%',
     height: '100%',
     boxSizing: 'border-box',
   },

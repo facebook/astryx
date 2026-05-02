@@ -227,11 +227,11 @@ export default function HomePage() {
                     href={`/packages/${pkg.name.replace('@xds/', '')}`}
                     {...stylex.props(styles.linkReset)}>
                     {theme ? (
-                      <div {...stylex.props(styles.packageImageWrapper)}>
-                        <XDSTheme theme={theme}>
+                      <XDSTheme theme={theme}>
+                        <div {...stylex.props(styles.packageImageWrapper)}>
                           <ThemeShowcaseTile label={pkg.displayName} />
-                        </XDSTheme>
-                      </div>
+                        </div>
+                      </XDSTheme>
                     ) : (
                       <div
                         {...stylex.props(styles.packageImageWrapper)}
