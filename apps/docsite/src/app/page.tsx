@@ -15,6 +15,8 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSTheme} from '@xds/core/theme';
 import {defaultTheme} from '@xds/theme-default/built';
 import {neutralTheme} from '@xds/theme-neutral/built';
+import {dailyTheme} from '@xds/theme-daily/built';
+import {matchaTheme} from '@xds/theme-matcha/built';
 import {packages} from '../generated/packageRegistry';
 import {componentCount} from '../generated/componentRegistry';
 import {docTopics} from '../generated/docsRegistry';
@@ -64,25 +66,23 @@ const CodeIcon = (props: React.SVGProps<SVGSVGElement>) => (
 // Package asset map
 // ---------------------------------------------------------------------------
 
-const PACKAGE_ASSETS: Record<
-  string,
-  {image?: string; icon?: React.ReactNode; themeKey?: string}
-> = {
-  '@xds/cli': {
-    image: '/LibrariesCli.png',
-    icon: <TerminalIcon />,
-  },
-  '@xds/core': {
-    image: '/LibrariesCore.png',
-    icon: <CodeIcon />,
-  },
-  '@xds/theme-default': {themeKey: 'default'},
-  '@xds/theme-neutral': {themeKey: 'neutral'},
-};
+const PACKAGE_ASSETS: Record<string, {image?: string; icon?: React.ReactNode}> =
+  {
+    '@xds/cli': {
+      image: '/LibrariesCli.png',
+      icon: <TerminalIcon />,
+    },
+    '@xds/core': {
+      image: '/LibrariesCore.png',
+      icon: <CodeIcon />,
+    },
+  };
 
 const THEME_MAP: Record<string, {theme: typeof defaultTheme; label: string}> = {
-  default: {theme: defaultTheme, label: 'Default'},
-  neutral: {theme: neutralTheme, label: 'Neutral'},
+  '@xds/theme-default': {theme: defaultTheme, label: 'Default'},
+  '@xds/theme-neutral': {theme: neutralTheme, label: 'Neutral'},
+  '@xds/theme-daily': {theme: dailyTheme, label: 'Daily'},
+  '@xds/theme-matcha': {theme: matchaTheme, label: 'Matcha'},
 };
 
 const DEFAULT_PACKAGE_IMAGE = '/LibrariesCore.png';
@@ -262,9 +262,7 @@ export default function HomePage() {
                 const assets = PACKAGE_ASSETS[pkg.name];
                 const image = assets?.image ?? DEFAULT_PACKAGE_IMAGE;
                 const icon = assets?.icon ?? null;
-                const themeEntry = assets?.themeKey
-                  ? THEME_MAP[assets.themeKey]
-                  : null;
+                const themeEntry = THEME_MAP[pkg.name] ?? null;
 
                 return (
                   <Link
