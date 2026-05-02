@@ -18,9 +18,6 @@ interface DocsShellProps {
   docTopics: DocTopic[];
 }
 
-/** Guide topics in presentation order (slugs) */
-const GUIDE_TOPIC_SLUGS = ['getting-started', 'principles', 'styling', 'theme'];
-
 /** Foundations: tokens first, then alphabetical */
 const foundationsSort = (a: DocTopic, b: DocTopic) => {
   if (a.topic === 'tokens') return -1;
@@ -142,11 +139,10 @@ export function DocsShell({
   const themePackages = packages.filter(isTheme);
   const libraryPackages = packages.filter(p => !isTheme(p));
 
-  // Classify doc topics
   // Classify doc topics by category (from data)
-  const guideTopics = GUIDE_TOPIC_SLUGS.map(slug =>
-    docTopics.find(d => d.topic === slug && d.category === 'guide'),
-  ).filter((d): d is DocTopic => !!d);
+  const guideTopics = docTopics
+    .filter(d => d.category === 'guide')
+    .sort((a, b) => a.title.localeCompare(b.title));
   const foundationTopics = docTopics
     .filter(d => d.category === 'foundations')
     .sort(foundationsSort);
