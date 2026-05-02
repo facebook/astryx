@@ -1,6 +1,7 @@
 /** @type {import('../docs-types').ComponentDoc} */
 export const docs = {
   name: 'Resizable',
+  group: 'Resizable',
   keywords: [
     'resize',
     'resizable',

@@ -18,129 +18,114 @@ interface DocsShellProps {
   docTopics: DocTopic[];
 }
 
-interface SidebarEntry {
-  name: string;
-  href: string;
-}
+// A flat entry or a group with children
+type SidebarItem =
+  | {type: 'entry'; name: string; href: string}
+  | {
+      type: 'group';
+      label: string;
+      entries: Array<{name: string; href: string}>;
+    };
 
 /**
- * Build sidebar entries from the component registry. Pure data-driven,
- * no hardcoded lists.
+ * Build sidebar items from the component registry. Pure data-driven.
  *
- * Classification rules (all from the data):
- * - group === 'Utilities' → Utilities section
- * - Hooks in hooks/ dir with no parentDoc → Utilities section
- * - Hooks with parentDoc → listed after the first component that shares
- *   their parentDoc (e.g. useXDSTableSelection after Table)
- * - Hooks with no parentDoc in a component dir (e.g. useXDSPopover in
- *   Popover/) → listed after the component sharing their directory
- * - Everything else → Components section
+ * - Components with a shared `group` → collapsible group (if 2+ members)
+ * - Components with a group of 1 → flat entry (no collapsible wrapper)
+ * - Ungrouped components → flat entries
+ * - Hooks in hooks/ dir or group=Utilities → Utilities section
+ * - Hooks with parentDoc or in a component dir → included in their component's group
+ *
+ * Groups and ungrouped entries are interleaved alphabetically by the
+ * group name (for groups) or component name (for flat entries).
  */
 function buildSidebar(entries: ComponentEntry[]): {
-  components: SidebarEntry[];
-  utilities: SidebarEntry[];
+  componentItems: SidebarItem[];
+  utilities: Array<{name: string; href: string}>;
 } {
-  const componentEntries: SidebarEntry[] = [];
-  const utilityEntries: SidebarEntry[] = [];
-  // component name → hooks to list after it
-  const pairedHooks = new Map<string, SidebarEntry[]>();
-
-  // Which parentDoc values have at least one non-hook entry?
-  const parentDocsWithComponents = new Set<string>();
-  for (const e of entries) {
-    if (e.parentDoc && !e.name.startsWith('use') && !e.hidden) {
-      parentDocsWithComponents.add(e.parentDoc);
-    }
-  }
+  const utilities: Array<{name: string; href: string}> = [];
+  const groups = new Map<string, Array<{name: string; href: string}>>();
+  const ungrouped: Array<{name: string; href: string}> = [];
 
   for (const entry of entries) {
     if (entry.hidden) continue;
 
     const isHook = entry.name.startsWith('use');
 
-    // Utilities group → Utilities
-    if (entry.group === 'Utilities') {
-      utilityEntries.push({
+    // Utilities: group=Utilities, or standalone hooks in hooks/ dir
+    if (
+      entry.group === 'Utilities' ||
+      (isHook && !entry.parentDoc && entry.directory === 'hooks')
+    ) {
+      utilities.push({name: entry.name, href: `/components/${entry.name}`});
+      continue;
+    }
+
+    // Grouped: has a non-Utilities group
+    if (entry.group) {
+      if (!groups.has(entry.group)) groups.set(entry.group, []);
+      groups.get(entry.group)!.push({
         name: entry.name,
         href: `/components/${entry.name}`,
       });
       continue;
     }
 
-    if (isHook) {
-      // Standalone hooks in hooks/ → Utilities
-      if (!entry.parentDoc && entry.directory === 'hooks') {
-        utilityEntries.push({
-          name: entry.name,
-          href: `/components/${entry.name}`,
-        });
-        continue;
-      }
-
-      // Hook with parentDoc that has real components → pair with parent
-      if (entry.parentDoc && parentDocsWithComponents.has(entry.parentDoc)) {
-        const parent = entry.parentDoc;
-        if (!pairedHooks.has(parent)) pairedHooks.set(parent, []);
-        pairedHooks.get(parent)!.push({
-          name: entry.name,
-          href: `/components/${entry.name}`,
-        });
-        continue;
-      }
-
-      // Hook in a component directory (e.g. useXDSPopover in Popover/)
-      if (!entry.parentDoc && entry.directory !== 'hooks') {
-        const dir = entry.directory;
-        if (!pairedHooks.has(dir)) pairedHooks.set(dir, []);
-        pairedHooks.get(dir)!.push({
-          name: entry.name,
-          href: `/components/${entry.name}`,
-        });
-        continue;
-      }
-
-      // Fallback → Utilities
-      utilityEntries.push({
+    // Hooks in component dirs (useXDSPopover in Popover/) → pair with directory
+    if (isHook && !entry.parentDoc && entry.directory !== 'hooks') {
+      const dir = entry.directory;
+      if (!groups.has(dir)) groups.set(dir, []);
+      groups.get(dir)!.push({
         name: entry.name,
         href: `/components/${entry.name}`,
       });
       continue;
     }
 
-    // Non-hook → Components
-    componentEntries.push({
-      name: entry.name,
-      href: `/components/${entry.name}`,
-    });
+    // Hooks with parentDoc but no group → add to parentDoc group
+    if (isHook && entry.parentDoc) {
+      const parent = entry.parentDoc;
+      if (!groups.has(parent)) groups.set(parent, []);
+      groups.get(parent)!.push({
+        name: entry.name,
+        href: `/components/${entry.name}`,
+      });
+      continue;
+    }
+
+    // Ungrouped non-hook
+    ungrouped.push({name: entry.name, href: `/components/${entry.name}`});
   }
 
-  // Sort and merge paired hooks after the first component sharing their key
-  componentEntries.sort((a, b) => a.name.localeCompare(b.name));
-  const merged: SidebarEntry[] = [];
-  const usedPairKeys = new Set<string>();
+  // Build the interleaved list: groups and ungrouped sorted alphabetically
+  // Sort key: group label for groups, component name for ungrouped
+  const items: Array<{sortKey: string; item: SidebarItem}> = [];
 
-  for (const comp of componentEntries) {
-    merged.push(comp);
-    // Try pairing by component name first, then by parentDoc match
-    for (const [key, hooks] of pairedHooks) {
-      if (usedPairKeys.has(key)) continue;
-      if (comp.name === key) {
-        merged.push(...hooks.sort((a, b) => a.name.localeCompare(b.name)));
-        usedPairKeys.add(key);
-      }
+  for (const [label, members] of groups) {
+    members.sort((a, b) => a.name.localeCompare(b.name));
+    if (members.length === 1) {
+      // Single-member group → flat entry
+      items.push({
+        sortKey: members[0].name,
+        item: {type: 'entry', ...members[0]},
+      });
+    } else {
+      items.push({
+        sortKey: label,
+        item: {type: 'group', label, entries: members},
+      });
     }
   }
 
-  // Any unpaired hooks → Utilities
-  for (const [key, hooks] of pairedHooks) {
-    if (!usedPairKeys.has(key)) {
-      utilityEntries.push(...hooks);
-    }
+  for (const entry of ungrouped) {
+    items.push({sortKey: entry.name, item: {type: 'entry', ...entry}});
   }
+
+  items.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 
   return {
-    components: merged,
-    utilities: utilityEntries.sort((a, b) => a.name.localeCompare(b.name)),
+    componentItems: items.map(i => i.item),
+    utilities: utilities.sort((a, b) => a.name.localeCompare(b.name)),
   };
 }
 
@@ -153,11 +138,13 @@ export function DocsShell({
   const pathname = usePathname();
 
   const coreComponents = components['@xds/core'] || [];
-  const {components: sidebarComponents, utilities} =
-    buildSidebar(coreComponents);
+  const {componentItems, utilities} = buildSidebar(coreComponents);
 
   const isTheme = (p: PackageMeta) => p.name.includes('theme-');
-  const isInComponents = sidebarComponents.some(c => pathname === c.href);
+  const allComponentHrefs = componentItems.flatMap(item =>
+    item.type === 'entry' ? [item.href] : item.entries.map(e => e.href),
+  );
+  const isInComponents = allComponentHrefs.includes(pathname);
   const isInUtilities = utilities.some(u => pathname === u.href);
   const isInDocs = pathname.startsWith('/docs/') || pathname === '/changelog';
   const isInFoundations =
@@ -276,19 +263,39 @@ export function DocsShell({
             </XDSSideNavItem>
           </XDSSideNavSection>
 
-          {/* Components */}
+          {/* Components — flat with collapsible groups */}
           <XDSSideNavSection title="Components" isHeaderHidden>
             <XDSSideNavItem
               label="Components"
               collapsible={{defaultIsCollapsed: !isInComponents}}>
-              {sidebarComponents.map(comp => (
-                <XDSSideNavItem
-                  key={comp.name}
-                  label={comp.name}
-                  href={comp.href}
-                  isSelected={pathname === comp.href}
-                />
-              ))}
+              {componentItems.map(item =>
+                item.type === 'entry' ? (
+                  <XDSSideNavItem
+                    key={item.name}
+                    label={item.name}
+                    href={item.href}
+                    isSelected={pathname === item.href}
+                  />
+                ) : (
+                  <XDSSideNavItem
+                    key={item.label}
+                    label={item.label}
+                    collapsible={{
+                      defaultIsCollapsed: !item.entries.some(
+                        e => pathname === e.href,
+                      ),
+                    }}>
+                    {item.entries.map(entry => (
+                      <XDSSideNavItem
+                        key={entry.name}
+                        label={entry.name}
+                        href={entry.href}
+                        isSelected={pathname === entry.href}
+                      />
+                    ))}
+                  </XDSSideNavItem>
+                ),
+              )}
             </XDSSideNavItem>
           </XDSSideNavSection>
 

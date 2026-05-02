@@ -46,7 +46,7 @@ export default async function ComponentPage({
         {/* Header */}
         <XDSVStack gap={2}>
           <XDSText type="supporting" color="secondary" weight="bold">
-            {comp.displayName}
+            {comp.moduleName}
           </XDSText>
           <XDSHeading level={1}>{comp.name}</XDSHeading>
           <XDSText type="body" color="secondary">
@@ -79,7 +79,7 @@ export default async function ComponentPage({
                   <XDSCard key={sub.name} padding={4}>
                     <XDSVStack gap={1}>
                       <XDSText type="body" weight="bold">
-                        {sub.displayName}
+                        {sub.moduleName}
                       </XDSText>
                       <XDSText type="supporting" color="secondary">
                         {sub.description}
