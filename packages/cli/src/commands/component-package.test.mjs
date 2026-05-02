@@ -6,7 +6,7 @@ import {component} from '../api/component.mjs';
 
 // These tests create a minimal monorepo fixture with:
 // - packages/core (symlinked to real @xds/core for loadDocs compatibility)
-// - node_modules/@test/ext with a Button + Employee component (external package)
+// - node_modules/@test/ext with a Button + ProfileCard component (external package)
 //
 // This tests the --package option for disambiguating overlapping component names.
 
@@ -19,28 +19,28 @@ function createFixture() {
   fs.mkdirSync(path.dirname(coreDir), {recursive: true});
   fs.symlinkSync(realCoreDir, coreDir);
 
-  // External package with Button (different docs) + Employee (unique)
+  // External package with Button (different docs) + ProfileCard (unique)
   const extDir = path.join(tmpDir, 'node_modules', '@test', 'ext');
   const extSrc = path.join(extDir, 'src');
   fs.mkdirSync(path.join(extSrc, 'Button'), {recursive: true});
-  fs.mkdirSync(path.join(extSrc, 'Employee'), {recursive: true});
+  fs.mkdirSync(path.join(extSrc, 'ProfileCard'), {recursive: true});
 
-  // Blocks directory with an Employee showcase
-  const blocksDir = path.join(extDir, 'blocks', 'components', 'Employee');
+  // Blocks directory with a ProfileCard showcase
+  const blocksDir = path.join(extDir, 'blocks', 'components', 'ProfileCard');
   fs.mkdirSync(blocksDir, {recursive: true});
-  fs.writeFileSync(path.join(blocksDir, 'EmployeeShowcase.doc.mjs'), `
+  fs.writeFileSync(path.join(blocksDir, 'ProfileCardShowcase.doc.mjs'), `
 export const doc = {
   type: 'block',
-  name: 'Employee — Showcase',
-  description: 'Employee showcase.',
+  name: 'ProfileCard — Showcase',
+  description: 'ProfileCard showcase.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['Employee'],
+  componentsUsed: ['ProfileCard'],
 };
 `);
-  fs.writeFileSync(path.join(blocksDir, 'EmployeeShowcase.tsx'),
-    "'use client';\nexport default function EmployeeShowcase() { return <div>Employee</div>; }");
+  fs.writeFileSync(path.join(blocksDir, 'ProfileCardShowcase.tsx'),
+    "'use client';\nexport default function ProfileCardShowcase() { return <div>ProfileCard</div>; }");
 
   fs.writeFileSync(path.join(extDir, 'package.json'), JSON.stringify({
     name: '@test/ext',
@@ -48,16 +48,16 @@ export const doc = {
   }));
   fs.writeFileSync(path.join(extSrc, 'Button', 'Button.doc.mjs'), `
 export const docs = {
-  name: 'XDSCommonButton',
+  name: 'AcmeButton',
   usage: { description: 'Common button with platform features.' },
   props: [{ name: 'label', type: 'string', description: 'Button label' }, { name: 'isLoading', type: 'boolean', description: 'Shows spinner' }],
 };
 `);
-  fs.writeFileSync(path.join(extSrc, 'Employee', 'Employee.doc.mjs'), `
+  fs.writeFileSync(path.join(extSrc, 'ProfileCard', 'ProfileCard.doc.mjs'), `
 export const docs = {
-  name: 'XDSCommonEmployee',
-  usage: { description: 'Employee profile component.' },
-  props: [{ name: 'employeeId', type: 'string', description: 'Employee FBID' }],
+  name: 'AcmeProfileCard',
+  usage: { description: 'Profile card component.' },
+  props: [{ name: 'userId', type: 'string', description: 'User identifier' }],
 };
 `);
 }
@@ -75,21 +75,21 @@ describe('component() with --package option', () => {
   it('returns external package docs when --package is specified', async () => {
     const result = await component('Button', {cwd: tmpDir, package: '@test/ext'});
     expect(result.type).toBe('component.detail');
-    expect(result.data.name).toBe('XDSCommonButton');
+    expect(result.data.name).toBe('AcmeButton');
     expect(result.data.usage.description).toContain('platform features');
   });
 
   it('returns core docs when no --package is specified (default behavior)', async () => {
     const result = await component('Button', {cwd: tmpDir});
     expect(result.type).toBe('component.detail');
-    // Core's Button doc has name 'Button', not 'XDSCommonButton'
+    // Core's Button doc has name 'Button', not 'AcmeButton'
     expect(result.data.name).toBe('Button');
   });
 
   it('resolves unique external components without --package', async () => {
-    const result = await component('Employee', {cwd: tmpDir});
+    const result = await component('ProfileCard', {cwd: tmpDir});
     expect(result.type).toBe('component.detail');
-    expect(result.data.name).toBe('XDSCommonEmployee');
+    expect(result.data.name).toBe('AcmeProfileCard');
   });
 
   it('returns props for package-scoped component', async () => {
@@ -112,10 +112,10 @@ describe('component() with --package option', () => {
   });
 
   it('returns showcase from external package when --package + --showcase', async () => {
-    const result = await component('Employee', {cwd: tmpDir, package: '@test/ext', showcase: true});
+    const result = await component('ProfileCard', {cwd: tmpDir, package: '@test/ext', showcase: true});
     expect(result.type).toBe('component.detail.showcase');
-    expect(result.data.component).toBe('Employee');
-    expect(result.data.source).toContain('EmployeeShowcase');
+    expect(result.data.component).toBe('ProfileCard');
+    expect(result.data.source).toContain('ProfileCardShowcase');
     expect(result.data.aspectRatio).toBeCloseTo(16 / 9);
   });
 });

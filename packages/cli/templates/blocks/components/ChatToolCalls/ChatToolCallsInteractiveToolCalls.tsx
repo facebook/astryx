@@ -35,7 +35,7 @@ export default function ChatToolCallsInteractiveToolCalls() {
           target: 'src/utils/formatDate.ts',
           status: 'complete',
           duration: '85ms',
-          node: 'cli:devvm',
+          node: 'cli:remote-server',
           additions: 6,
           deletions: 3,
           resultDetail: (
@@ -51,13 +51,9 @@ export default function ChatToolCallsInteractiveToolCalls() {
           target: 'yarn test',
           status: 'complete',
           duration: '1.8s',
-          node: 'cli:devvm',
+          node: 'cli:remote-server',
           resultDetail: (
-            <XDSCodeBlock
-              code={testOutput}
-              language="bash"
-              maxHeight="50vh"
-            />
+            <XDSCodeBlock code={testOutput} language="bash" maxHeight="50vh" />
           ),
         },
         {

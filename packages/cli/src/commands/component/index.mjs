@@ -35,7 +35,7 @@ export function registerComponent(program) {
     .option('--source', 'Print component source code')
     .option('--showcase', 'Print showcase source code')
     .option('--blocks', 'List example blocks: showcase, examples, and related')
-    .option('--package <name>', 'Scope lookup to an external package (e.g. @nest/xds-common)')
+    .option('--package <name>', 'Scope lookup to an external package (e.g. @acme/xds-widgets)')
     .action(async (name, options) => {
       const run = getRunPrefix();
       const zh = program.opts().zh || false;
