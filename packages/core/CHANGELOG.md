@@ -1,5 +1,82 @@
 # @xds/core
 
+# 0.0.13
+
+#### Breaking Changes
+
+- **Toolbar `density` → `size`** — `XDSToolbar` replaces the `density` prop with `size`, adds `XDSSizeContext` cascade for child components. (#1448)
+- **Icon renames: `checkCircle`/`xCircle` → `success`/`error`** — Default icon registry renames for semantic clarity. (#1503)
+- **`XDSChatComposerAttachments` → `XDSChatComposerDrawer`** — Renamed for clarity. (#1714)
+- **Remove deprecated `XDSSelectorItem`** — Internalized `XDSSelectorOption`; use `XDSSelector` directly. (#1582)
+- **Tighten `XDSBaseProps`** — Omits `title` and obscure HTML attributes; adds `data-*` index signature. (#1505, #1502)
+
+#### New Features
+
+- **XDSClickableCard & XDSSelectableCard** with `useClickableContainer` hook (#1707)
+- **useResizable hook + XDSResizeHandle** — Drag-to-resize for panels and sidebars (#1754)
+- **AlertDialog** — Dedicated confirmation dialog component (#1370)
+- **`isInline` prop** on Dialog, AlertDialog, and CommandPalette for embedded usage (#1676)
+- **Card `transparent` variant** (#1655)
+- **`defaultOpen` prop** on XDSTooltip and XDSHoverCard (#1672)
+- **Stack `width`, `height`, `align`, `justify` props** — Convenience aliases on HStack, VStack, Stack (#1778, #1703)
+- **Text `type` defaults to `'body'`** — No longer required (#1702)
+- **Carousel** — Always show nav buttons when content is scrollable (#1772)
+- **AppShell `defaultIsMobile`** for SSR-safe mobile nav detection (#1755)
+- **SideNav/TopNav hover-to-open menus** via `useXDSMenuHover` (#1419)
+- **DropdownMenu compound-component mode** (#1372)
+- **MobileNav auto-detect drawer side** from trigger position (#1395)
+- **Dialog `padding` prop** (#1169)
+- **Grid unified responsive columns** API (#1422)
+- **Selector/Typeahead/Tokenizer** size cascade to dropdown list items (#1442)
+- **Icon slots standardized to `ReactNode`** across all components (#1746)
+- **Tailwind v4 theme bridge** (#1649)
+- **Theme `expandColorScale`** — Derive full color token ramp from a single accent hex (#1452)
+- **Theme derived var expansion** — CSS properties to internal vars (#1467)
+- **Page and block template system** with 100+ component showcase blocks (#1393)
+
+#### Fixes
+
+- Truncation: use Range API for multi-line detection (#1816)
+- PowerSearch: add `xdsClassName` for theme targeting (#1813)
+- ToggleButton: fix theming + Chat barrel export (#1812)
+- SSR: replace `useLayoutEffect` with SSR-safe alternatives (#1721)
+- Focus: use `:focus-visible` instead of `:focus-within` for outlines (#1511)
+- Focus: remove `outline` from transition to prevent black flash (#1731)
+- iOS Safari: prevent auto-zoom on input focus (#1468)
+- Dialog/MobileNav: replace `:where([open])` with prop-driven open styles (#1652)
+- className/style clobber by `stylex.props` spread + lint rule (#1462)
+- Collapsible: remove trigger padding, add capsize to label (#1770)
+- Breadcrumbs: onClick-only items match link color (#1773)
+- Grid: cap column count via track-max (#1761)
+- Tokens: update palette border colors from DSP color ramp (#1760)
+- Slider: keep tooltip visible during thumb drag (#1751)
+- AppShell: targeting class names on sticky wrappers (#1764)
+- Icon: use secondary color for input startIcon slots (#1765), default to `inherit` (#1588)
+- SideNav: section custom styles, item collapsible+action split (#1666)
+- Table: container padding to directional vars (#1621)
+- Toast viewport: reset UA popover background (#1644)
+- Banner, Breadcrumbs, Spinner, StatusDot, TabList, Text, TextArea, TimeInput: extend XDSBaseProps (#1780, #1640, #1405)
+- CodeBlock: Safari span fallback, per-line token perf (#1487, #1369)
+- TextInput/TextArea: default value to empty string (#1439)
+- MobileNav: close drawer on nav item activation (#1438)
+- Divider: remove opaque background from label (#1426)
+- Field: move description into XDSFieldLabel (#1458)
+- Theme: sync `data-xds-theme` to `<html>` for root provider (#1587)
+
+#### Upgrade
+
+Codemods are available for all breaking changes in this release:
+
+```sh
+npx xds upgrade --apply --to 0.0.13
+```
+
+Preview changes first (dry run): `npx xds upgrade --to 0.0.13`
+Run a specific codemod: `npx xds upgrade --apply --codemod toolbar-density-to-size`
+List all available codemods: `npx xds upgrade --list`
+
+---
+
 # 0.0.12
 
 #### Breaking Changes

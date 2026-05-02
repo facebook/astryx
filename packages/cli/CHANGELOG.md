@@ -1,5 +1,35 @@
 # @xds/cli
 
+# 0.0.13
+
+#### Codemods
+
+- `toolbar-density-to-size` — Migrate Toolbar `density` prop to `size` (#1448)
+- `icon-name-deprecations` — Rename `checkCircle`/`xCircle` icons to `success`/`error` (#1503)
+- `rename-attachments-to-drawer` — Rename `XDSChatComposerAttachments` → `XDSChatComposerDrawer` (#1714)
+
+#### New Features
+
+- `--skip-install` and `--force-install` flags for `xds upgrade` (#1547)
+- `npx xds docs icons` reference + updated icon prop descriptions (#1500)
+- Theme nudge in generated agent docs (#1456)
+- Component groups read from doc files instead of hardcoded map (#1650)
+
+#### Fixes
+
+- Handle prerelease suffixes in `semverCompare` (#1512)
+- Handle ternary/logical expressions in `icon-name-deprecations` codemod (#1513)
+- Don't inject XDS block into files without markers during upgrade (#1495)
+- `findShowcase` matches by directory name and `componentsUsed` (#1728)
+
+#### Upgrade
+
+```sh
+npx xds upgrade --apply --to 0.0.13
+```
+
+---
+
 # 0.0.12
 
 #### Codemods
