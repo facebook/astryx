@@ -4,7 +4,7 @@
  * @output Predefined Vega-Lite Config object for XDS-themed charts
  * @position Utility module; consumed by XDSVegaChart and exported standalone
  *
- * Ported from fbsource XDSDataVizVegaLiteConfig.js — structural config only.
+ * Ported from the internal XDS data-viz config — structural config only.
  * Colors are wired through XDS data tokens (see domainTokens/dataTokens.ts).
  *
  * SYNC: When modified, update this header and /packages/lab/src/VegaChart/README.md

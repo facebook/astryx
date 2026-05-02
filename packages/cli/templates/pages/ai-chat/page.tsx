@@ -180,7 +180,7 @@ export default function AIChatConversationTemplate() {
                   target: 'grep -rn "refreshToken" src/',
                   status: 'complete',
                   duration: '120ms',
-                  node: 'cli:devvm',
+                  node: 'cli:remote-server',
                 },
               ]}
             />
@@ -294,7 +294,7 @@ The fix is to catch \`TokenExpiredError\` specifically and attempt a refresh bef
                   target: 'yarn test middleware',
                   status: 'complete',
                   duration: '3.2s',
-                  node: 'cli:devvm',
+                  node: 'cli:remote-server',
                 },
               ]}
             />
@@ -372,13 +372,13 @@ The fix is to catch \`TokenExpiredError\` specifically and attempt a refresh bef
                   target: 'git push -u origin fix/jwt-refresh',
                   status: 'complete',
                   duration: '1.8s',
-                  node: 'cli:devvm',
+                  node: 'cli:remote-server',
                 },
                 {
                   name: 'bash',
                   target: 'gh pr create --title "fix: handle expired JWT…"',
                   status: 'running',
-                  node: 'cli:devvm',
+                  node: 'cli:remote-server',
                 },
               ]}
             />

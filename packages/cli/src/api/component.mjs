@@ -23,7 +23,7 @@ import {findShowcase, findRelatedBlocks} from './template.mjs';
 
 /**
  * Resolve an external package by name from the discovered externals list.
- * @param {string} packageName - e.g. '@nest/xds-common'
+ * @param {string} packageName - e.g. '@acme/xds-widgets'
  * @param {string} cwd
  * @returns {{ name: string, category: string, docsDir: string } | null}
  */
@@ -38,7 +38,7 @@ function resolveExternalPackage(packageName, cwd) {
  * @param {string} [options.cwd]
  * @param {boolean} [options.list]
  * @param {string} [options.category]
- * @param {string} [options.package] - Scope to a specific external package (e.g. '@nest/xds-common')
+ * @param {string} [options.package] - Scope to a specific external package (e.g. '@acme/xds-widgets')
  * @param {boolean} [options.props]
  * @param {boolean} [options.source]
  * @param {boolean} [options.showcase]

@@ -27,7 +27,7 @@ import * as stylex from '@stylexjs/stylex';
 interface ReviewRow extends Record<string, unknown> {
   id: string;
   title: string;
-  diffId: string;
+  prId: string;
   lines: number;
   reviewTime: string;
   authorName: string;
@@ -45,8 +45,8 @@ interface ReviewRow extends Record<string, unknown> {
 const waitingForAWhile: ReviewRow[] = [
   {
     id: '1',
-    title: '[xds][XDSCommonFilterTokenList]: Promote out of beta',
-    diffId: 'D93462457',
+    title: '[xds][FilterTokenList]: Promote out of beta',
+    prId: 'PR-1042',
     lines: 3,
     reviewTime: '<20sec review',
     authorName: 'Alice Chen',
@@ -62,7 +62,7 @@ const waitingForAWhile: ReviewRow[] = [
   {
     id: '2',
     title: '[xds][Table] Fix column resize regression on Safari',
-    diffId: 'D93471823',
+    prId: 'PR-1038',
     lines: 47,
     reviewTime: '~3min review',
     authorName: 'Bob Martinez',
@@ -78,7 +78,7 @@ const needsCodeReview: ReviewRow[] = [
   {
     id: '3',
     title: '[xds][Avatar] Add XDSAvatarStatusDot size scaling',
-    diffId: 'D93502119',
+    prId: 'PR-1055',
     lines: 128,
     reviewTime: '~8min review',
     authorName: 'Carol Wu',
@@ -95,7 +95,7 @@ const needsCodeReview: ReviewRow[] = [
   {
     id: '4',
     title: '[xds][Badge] Introduce error variant with icon slot',
-    diffId: 'D93508734',
+    prId: 'PR-1061',
     lines: 52,
     reviewTime: '~2min review',
     authorName: 'Dan Kim',
@@ -108,7 +108,7 @@ const needsCodeReview: ReviewRow[] = [
   {
     id: '5',
     title: '[xds][Collapsible] Animate height transitions with CSS',
-    diffId: 'D93510092',
+    prId: 'PR-1063',
     lines: 210,
     reviewTime: '~12min review',
     authorName: 'Eve Patel',
@@ -124,7 +124,7 @@ const needsCodeReview: ReviewRow[] = [
   {
     id: '6',
     title: '[xds][TextInput] Add clearable prop with trailing icon',
-    diffId: 'D93511456',
+    prId: 'PR-1067',
     lines: 34,
     reviewTime: '<1min review',
     authorName: 'Frank Lee',
@@ -137,7 +137,7 @@ const needsCodeReview: ReviewRow[] = [
   {
     id: '7',
     title: '[xds][Layout] Support sticky header in XDSLayoutHeader',
-    diffId: 'D93512890',
+    prId: 'PR-1070',
     lines: 89,
     reviewTime: '~5min review',
     authorName: 'Grace Tan',
@@ -156,7 +156,7 @@ const acceptedAndReady: ReviewRow[] = [
   {
     id: '8',
     title: '[xds][StatusDot] Add isPulsing animation support',
-    diffId: 'D93489001',
+    prId: 'PR-1048',
     lines: 22,
     reviewTime: '<30sec review',
     authorName: 'Hank Zhou',
@@ -172,7 +172,7 @@ const acceptedAndReady: ReviewRow[] = [
   {
     id: '9',
     title: '[xds][Card] Add isFullBleed prop for edge-to-edge content',
-    diffId: 'D93495233',
+    prId: 'PR-1051',
     lines: 15,
     reviewTime: '<20sec review',
     authorName: 'Iris Nakamura',
@@ -244,7 +244,7 @@ const columns: XDSTableColumn<ReviewRow>[] = [
             <span {...stylex.props(styles.titleLink)}>{item.title}</span>
             <span {...stylex.props(styles.supportingLine)}>
               <XDSText type="supporting" color="secondary">
-                {item.diffId} · {item.lines} lines {item.reviewTime}
+                {item.prId} · {item.lines} lines {item.reviewTime}
               </XDSText>
             </span>
           </XDSVStack>
@@ -440,7 +440,7 @@ export default function TableOverviewPage() {
       row =>
         row.title.toLowerCase().includes(q) ||
         row.authorName.toLowerCase().includes(q) ||
-        row.diffId.toLowerCase().includes(q),
+        row.prId.toLowerCase().includes(q),
     );
   };
 

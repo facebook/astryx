@@ -21,7 +21,7 @@ export const docs = {
     anatomy: [
       {name: 'Status icon', required: true, description: 'A colored circle with a check, cross, or spinner indicating whether the call is pending, running, complete, or errored.'},
       {name: 'Tool name', required: true, description: 'The function or tool name displayed in monospace — bash, edit, read, web_search, etc.'},
-      {name: 'Node badge', required: false, description: 'A neutral pill badge showing which sandbox or environment ran the tool, like cli:devvm or workspace.'},
+      {name: 'Node badge', required: false, description: 'A neutral pill badge showing which sandbox or environment ran the tool, like cli:remote-server or workspace.'},
       {name: 'Target label', required: false, description: 'The target of the action — a file path, command, or search query — shown after the tool name.'},
       {name: 'Diff stats', required: false, description: 'Green additions and red deletions counts for edit operations, displayed inline after the target.'},
       {name: 'Duration', required: false, description: 'Execution time shown on the trailing edge for completed calls.'},

@@ -82,14 +82,14 @@ export const WithNodes: Story = {
           target: 'yarn test',
           status: 'complete',
           duration: '4.2s',
-          node: 'cli:devvm',
+          node: 'cli:remote-server',
         },
         {
           name: 'bash',
           target: 'yarn build',
           status: 'complete',
           duration: '12s',
-          node: 'cli:devvm',
+          node: 'cli:remote-server',
         },
         {
           name: 'read',
@@ -119,7 +119,7 @@ export const WithStats: Story = {
           target: 'XDSButton.tsx',
           status: 'complete',
           duration: '85ms',
-          node: 'cli:devvm',
+          node: 'cli:remote-server',
           additions: 24,
           deletions: 8,
         },
@@ -128,7 +128,7 @@ export const WithStats: Story = {
           target: 'XDSButton.test.tsx',
           status: 'complete',
           duration: '60ms',
-          node: 'cli:devvm',
+          node: 'cli:remote-server',
           additions: 45,
         },
         {
@@ -136,7 +136,7 @@ export const WithStats: Story = {
           target: 'grep -r "radius"',
           status: 'complete',
           duration: '200ms',
-          node: 'cli:devvm',
+          node: 'cli:remote-server',
           stats: '6 files · 14 matches',
         },
       ]}
@@ -154,21 +154,21 @@ export const WithErrors: Story = {
           target: 'yarn build',
           status: 'complete',
           duration: '8s',
-          node: 'cli:devvm',
+          node: 'cli:remote-server',
         },
         {
           name: 'read',
           target: 'test-output.log',
           status: 'complete',
           duration: '15ms',
-          node: 'cli:devvm',
+          node: 'cli:remote-server',
         },
         {
           name: 'bash',
           target: 'yarn test',
           status: 'error',
           duration: '2.1s',
-          node: 'cli:devvm',
+          node: 'cli:remote-server',
           errorMessage: 'Process exited with code 1: FAIL src/Button.test.tsx',
         },
       ]}
@@ -185,14 +185,14 @@ export const Running: Story = {
           name: 'bash',
           target: 'yarn test --watch',
           status: 'running',
-          node: 'cli:devvm',
+          node: 'cli:remote-server',
         },
         {
           name: 'read',
           target: 'vitest.config.ts',
           status: 'complete',
           duration: '20ms',
-          node: 'cli:devvm',
+          node: 'cli:remote-server',
         },
       ]}
     />
@@ -216,7 +216,7 @@ export const Streaming: Story = {
         target: 'packages/core/src/Layer/useXDSLayer.tsx',
         status: 'complete',
         duration: '45ms',
-        node: 'cli:devvm',
+        node: 'cli:remote-server',
       },
       {
         key: '3',
@@ -224,7 +224,7 @@ export const Streaming: Story = {
         target: 'npx tsc --noEmit',
         status: 'complete',
         duration: '4.2s',
-        node: 'cli:devvm',
+        node: 'cli:remote-server',
       },
       {
         key: '4',
@@ -232,7 +232,7 @@ export const Streaming: Story = {
         target: 'XDSChatComposer.tsx',
         status: 'complete',
         duration: '120ms',
-        node: 'cli:devvm',
+        node: 'cli:remote-server',
         additions: 8,
         deletions: 2,
       },
@@ -242,7 +242,7 @@ export const Streaming: Story = {
         target: 'yarn test',
         status: 'complete',
         duration: '6.1s',
-        node: 'cli:devvm',
+        node: 'cli:remote-server',
       },
     ];
 
@@ -408,7 +408,7 @@ Time:        6.1s`;
             target: 'XDSButton.tsx',
             status: 'complete',
             duration: '85ms',
-            node: 'cli:devvm',
+            node: 'cli:remote-server',
             additions: 12,
             deletions: 3,
             resultDetail: (
@@ -424,7 +424,7 @@ Time:        6.1s`;
             target: 'yarn test',
             status: 'complete',
             duration: '6.1s',
-            node: 'cli:devvm',
+            node: 'cli:remote-server',
             resultDetail: (
               <XDSCodeBlock
                 code={testOutput}
@@ -468,21 +468,21 @@ Time:        6.84s`;
             target: 'yarn build',
             status: 'complete',
             duration: '8s',
-            node: 'cli:devvm',
+            node: 'cli:remote-server',
           },
           {
             name: 'read',
             target: 'XDSChatToolCalls.tsx',
             status: 'complete',
             duration: '15ms',
-            node: 'cli:devvm',
+            node: 'cli:remote-server',
           },
           {
             name: 'bash',
             target: 'yarn test',
             status: 'error',
             duration: '6.8s',
-            node: 'cli:devvm',
+            node: 'cli:remote-server',
             errorMessage: '4 tests failed',
             resultDetail: (
               <XDSCodeBlock
