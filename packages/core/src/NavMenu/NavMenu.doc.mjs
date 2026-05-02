@@ -1,8 +1,8 @@
 /** @type {import('../docs-types').ComponentDoc} */
 
 export const docs = {
-  name: 'NavMenu',
-  hidden: true,
+  name: 'NavMenuItem',
+  hidden: false,
   keywords: ['nav', 'menu', 'navigation', 'menu-item'],
   usage: {
     description: 'Menu item used within navigation components like SideNav and TopNav.',

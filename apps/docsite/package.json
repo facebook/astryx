@@ -3,14 +3,23 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "generate": "node scripts/generate-data.mjs",
+    "predev": "node scripts/generate-data.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/generate-data.mjs",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@stylexjs/stylex": "^0.18.3",
+    "@xds/cli": "*",
     "@xds/core": "*",
+    "@xds/theme-daily": "*",
     "@xds/theme-default": "*",
+    "@xds/theme-matcha": "*",
+    "@xds/theme-neutral": "*",
     "next": "^15.5.15",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
@@ -23,7 +32,8 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "typescript": "^6.0.3",
-    "autoprefixer": "^10.4.0"
+    "autoprefixer": "^10.4.0",
+    "vitest": "^3.2.1"
   },
   "browserslist": [
     "last 1 Chrome version"

@@ -36,6 +36,7 @@ export default tseslint.config(
       "apps/example-nextjs/next-env.d.ts",
       "apps/example-nextjs-source/*.js",
       "apps/docsite/*.js",
+      "apps/docsite/scripts/**",
       "apps/sandbox/*.js",
       "packages/build/**",
     ],

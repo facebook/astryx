@@ -3,7 +3,7 @@
 export const docs = {
   name: 'ChatDictationButton',
   group: 'Chat',
-  hidden: true,
+  hidden: false,
 
   keywords: ['dictation', 'microphone', 'voice', 'speech', 'recording', 'stt', 'speech-to-text', 'voice-input', 'mic'],
 

@@ -63,6 +63,9 @@ jobs:
 
       - run: yarn test
 
+      - name: Docsite data extraction tests
+        run: yarn workspace @xds/docsite generate && yarn workspace @xds/docsite test
+
   # Build storybook + analyze components (parallel with test)
   # Uploads storybook preview and analysis artifacts for downstream jobs
   build:
