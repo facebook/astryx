@@ -564,6 +564,42 @@
       "types": "./dist/utils/index.d.ts",
       "import": "./dist/utils/index.mjs",
       "require": "./dist/utils/index.js"
+    },
+    "./Calendar/utils": {
+      "source": "./src/Calendar/utils.ts",
+      "types": "./dist/Calendar/utils.d.ts",
+      "import": "./dist/Calendar/utils.mjs",
+      "require": "./dist/Calendar/utils.js"
+    },
+    "./Markdown/utils": {
+      "source": "./src/Markdown/utils.ts",
+      "types": "./dist/Markdown/utils.d.ts",
+      "import": "./dist/Markdown/utils.mjs",
+      "require": "./dist/Markdown/utils.js"
+    },
+    "./PowerSearch/utils": {
+      "source": "./src/PowerSearch/utils.ts",
+      "types": "./dist/PowerSearch/utils.d.ts",
+      "import": "./dist/PowerSearch/utils.mjs",
+      "require": "./dist/PowerSearch/utils.js"
+    },
+    "./Selector/utils": {
+      "source": "./src/Selector/utils.ts",
+      "types": "./dist/Selector/utils.d.ts",
+      "import": "./dist/Selector/utils.mjs",
+      "require": "./dist/Selector/utils.js"
+    },
+    "./Table/utils": {
+      "source": "./src/Table/utils.ts",
+      "types": "./dist/Table/utils.d.ts",
+      "import": "./dist/Table/utils.mjs",
+      "require": "./dist/Table/utils.js"
+    },
+    "./Typeahead/utils": {
+      "source": "./src/Typeahead/utils.ts",
+      "types": "./dist/Typeahead/utils.d.ts",
+      "import": "./dist/Typeahead/utils.mjs",
+      "require": "./dist/Typeahead/utils.js"
     }
   },
   "files": [

@@ -78,6 +78,25 @@ const STATIC_EXPORTS = {
 };
 
 /**
+ * Server-safe utility subpath exports.
+ *
+ * These re-export pure functions from component directories without
+ * the `'use client'` directive, making them importable from React
+ * Server Components. Each entry points to a `utils.ts` file that
+ * re-exports only the server-safe subset of a component's utilities.
+ *
+ * See: https://github.com/facebookexperimental/xds/issues/1977
+ */
+const UTIL_SUBPATH_DIRS = [
+  'Calendar',
+  'Markdown',
+  'PowerSearch',
+  'Selector',
+  'Table',
+  'Typeahead',
+];
+
+/**
  * Discover all exportable directories under src/.
  * A directory is exportable if it contains an index.ts file.
  */
@@ -137,6 +156,16 @@ function buildExports() {
     // Skip if already covered by static exports
     if (exports[key]) continue;
     exports[key] = makeExportEntry(dir);
+  }
+
+  // Server-safe utility subpath exports
+  for (const dir of UTIL_SUBPATH_DIRS) {
+    exports[`./${dir}/utils`] = {
+      source: `./src/${dir}/utils.ts`,
+      types: `./dist/${dir}/utils.d.ts`,
+      import: `./dist/${dir}/utils.mjs`,
+      require: `./dist/${dir}/utils.js`,
+    };
   }
 
   return exports;
