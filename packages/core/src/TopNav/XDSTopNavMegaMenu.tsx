@@ -116,7 +116,9 @@ const styles = stylex.create({
   // Visual styles for the panel content container.
   panelContainer: {
     backgroundColor: colorVars['--color-background-popover'],
-    borderTop: `${borderVars['--border-width']} solid ${colorVars['--color-border']}`,
+    borderTopWidth: borderVars['--border-width'],
+    borderTopStyle: 'solid',
+    borderTopColor: colorVars['--color-border'],
     borderRadius: radiusVars['--radius-container'],
     boxShadow: shadowVars['--shadow-low'],
     overflow: 'hidden',

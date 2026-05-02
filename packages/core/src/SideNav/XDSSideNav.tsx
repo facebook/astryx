@@ -109,7 +109,9 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-2'],
     paddingBlockStart: spacingVars['--spacing-1'],
     paddingBlockEnd: spacingVars['--spacing-2'],
-    borderBlockStart: `${borderVars['--border-width']} solid ${colorVars['--color-border']}`,
+    borderBlockStartWidth: borderVars['--border-width'],
+    borderBlockStartStyle: 'solid',
+    borderBlockStartColor: colorVars['--color-border'],
   },
   footerRow: {
     display: 'flex',
@@ -139,7 +141,9 @@ const styles = stylex.create({
     marginBlockStart: 'auto',
     gap: spacingVars['--spacing-2'],
     paddingBlockStart: spacingVars['--spacing-2'],
-    borderBlockStart: `${borderVars['--border-width']} solid ${colorVars['--color-border']}`,
+    borderBlockStartWidth: borderVars['--border-width'],
+    borderBlockStartStyle: 'solid',
+    borderBlockStartColor: colorVars['--color-border'],
   },
   drawerFooterIcons: {
     display: 'flex',

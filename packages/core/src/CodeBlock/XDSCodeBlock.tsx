@@ -58,7 +58,9 @@ const styles = stylex.create({
     maxWidth: '100%',
     borderRadius: radiusVars['--radius-element'],
     backgroundColor: 'var(--color-syntax-background)',
-    border: `${borderVars['--border-width']} solid ${colorVars['--color-border']}`,
+    borderWidth: borderVars['--border-width'],
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-border'],
     overflow: 'hidden',
   },
   header: {
@@ -73,7 +75,9 @@ const styles = stylex.create({
   },
   headerWithDivider: {
     paddingBlock: spacingVars['--spacing-2'],
-    borderBottom: `${borderVars['--border-width']} solid ${colorVars['--color-border']}`,
+    borderBottomWidth: borderVars['--border-width'],
+    borderBottomStyle: 'solid',
+    borderBottomColor: colorVars['--color-border'],
   },
   headerCompact: {
     paddingBlock: spacingVars['--spacing-2'],
@@ -141,7 +145,9 @@ const styles = stylex.create({
     textAlign: 'end',
     userSelect: 'none',
     color: 'var(--color-syntax-punctuation)',
-    borderRight: `${borderVars['--border-width']} solid ${colorVars['--color-border']}`,
+    borderRightWidth: borderVars['--border-width'],
+    borderRightStyle: 'solid',
+    borderRightColor: colorVars['--color-border'],
   },
   gutterLine: {
     fontFamily: typographyVars['--font-family-code'],

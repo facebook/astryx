@@ -19,6 +19,7 @@ import noStylexNullOverrideRule from './no-stylex-null-override.js';
 import noReactIntrospectionRule from './no-react-introspection.js';
 import noClassnameClobberRule from './no-classname-clobber.js';
 import noHardcodedAnchorRule from './no-hardcoded-anchor.js';
+import noBorderShorthandRule from './no-border-shorthand.js';
 
 // =============================================================================
 // Rule: no-hardcoded-styles
@@ -226,6 +227,7 @@ const plugin = {
     'no-react-introspection': noReactIntrospectionRule,
     'no-classname-clobber': noClassnameClobberRule,
     'no-hardcoded-anchor': noHardcodedAnchorRule,
+    'no-border-shorthand': noBorderShorthandRule,
   },
   configs: {},
 };
@@ -244,6 +246,7 @@ plugin.configs.strict = {
     '@xds/no-react-introspection': 'error',
     '@xds/no-classname-clobber': 'error',
     '@xds/no-hardcoded-anchor': 'error',
+    '@xds/no-border-shorthand': 'error',
   },
 };
 
@@ -261,6 +264,7 @@ plugin.configs.recommended = {
     '@xds/no-react-introspection': 'error',
     '@xds/no-classname-clobber': 'error',
     '@xds/no-hardcoded-anchor': 'warn',
+    '@xds/no-border-shorthand': 'warn',
   },
 };
 
