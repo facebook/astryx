@@ -1,7 +1,6 @@
 'use client';
 
 import {usePathname} from 'next/navigation';
-import Link from 'next/link';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
 import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
@@ -85,7 +84,6 @@ export function DocsShell({
             <XDSSideNavItem
               label="Home"
               href="/"
-              linkComponent={Link}
               isSelected={pathname === '/'}
             />
           </XDSSideNavSection>
@@ -96,13 +94,11 @@ export function DocsShell({
               <XDSSideNavItem
                 label="Getting Started"
                 href="/getting-started"
-                linkComponent={Link}
                 isSelected={pathname === '/getting-started'}
               />
               <XDSSideNavItem
                 label="What's New"
                 href="/whats-new"
-                linkComponent={Link}
                 isSelected={pathname === '/whats-new'}
               />
               <XDSSideNavItem label="Foundations" collapsible>
@@ -111,7 +107,6 @@ export function DocsShell({
                     key={d.topic}
                     label={d.title}
                     href={`/foundations/${d.topic}`}
-                    linkComponent={Link}
                     isSelected={pathname === `/foundations/${d.topic}`}
                   />
                 ))}
@@ -122,7 +117,6 @@ export function DocsShell({
                     key={p.name}
                     label={p.displayName}
                     href={`/packages/${encodeURIComponent(p.name)}`}
-                    linkComponent={Link}
                     isSelected={
                       pathname === `/packages/${encodeURIComponent(p.name)}`
                     }
@@ -140,7 +134,6 @@ export function DocsShell({
                   key={comp.name}
                   label={comp.name}
                   href={`/components/${comp.name}`}
-                  linkComponent={Link}
                   isSelected={pathname === `/components/${comp.name}`}
                 />
               ))}
