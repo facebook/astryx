@@ -12,15 +12,11 @@ import {XDSGrid} from '@xds/core/Grid';
 import {XDSSection} from '@xds/core/Section';
 import {XDSButton} from '@xds/core/Button';
 import {XDSTheme, XDSMediaTheme} from '@xds/core/theme';
-import type {XDSDefinedTheme} from '@xds/core/theme';
-import {defaultTheme} from '@xds/theme-default/built';
-import {neutralTheme} from '@xds/theme-neutral/built';
-import {dailyTheme} from '@xds/theme-daily/built';
-import {matchaTheme} from '@xds/theme-matcha/built';
 import {packages} from '../generated/packageRegistry';
 import {componentCount} from '../generated/componentRegistry';
 import {docTopics} from '../generated/docsRegistry';
 import {ThemeShowcaseTile} from '../components/ThemeShowcaseTile';
+import {themeObjects} from '../generated/themeRegistry';
 
 const TerminalIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -66,14 +62,6 @@ const PACKAGE_ICONS: Record<string, React.ReactNode> = {
 const PACKAGE_IMAGES: Record<string, string> = {
   '@xds/cli': '/LibrariesCli.png',
   '@xds/core': '/LibrariesCore.png',
-};
-
-/** Theme objects keyed by package name — imports must be static. */
-const themeObjects: Record<string, XDSDefinedTheme> = {
-  '@xds/theme-default': defaultTheme,
-  '@xds/theme-neutral': neutralTheme,
-  '@xds/theme-daily': dailyTheme,
-  '@xds/theme-matcha': matchaTheme,
 };
 
 const foundationImages: Record<string, string> = {
@@ -240,7 +228,7 @@ export default function HomePage() {
                     {...stylex.props(styles.linkReset)}>
                     {theme ? (
                       <div {...stylex.props(styles.packageImageWrapper)}>
-                        <XDSTheme theme={theme} mode="light">
+                        <XDSTheme theme={theme}>
                           <ThemeShowcaseTile label={pkg.displayName} />
                         </XDSTheme>
                       </div>
