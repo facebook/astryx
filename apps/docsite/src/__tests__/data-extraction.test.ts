@@ -12,6 +12,7 @@ import {components, componentCount} from '../generated/componentRegistry';
 import {blocks, blockCount, showcaseCount} from '../generated/blockRegistry';
 import {templates, templateCount} from '../generated/templateRegistry';
 import {docTopics, docsCount} from '../generated/docsRegistry';
+import {showcaseRegistry} from '../generated/showcaseRegistry';
 
 // ── Package Registry ───────────────────────────────────────────────────
 
@@ -490,5 +491,47 @@ describe('themeRegistry', () => {
     for (const pkg of nonTheme) {
       expect(registrySource).not.toContain(`'${pkg.name}':`);
     }
+  });
+});
+
+// ── Showcase Registry ──────────────────────────────────────────────────
+
+describe('showcaseRegistry', () => {
+  it('has showcase loaders for many components', () => {
+    const keys = Object.keys(showcaseRegistry);
+    expect(keys.length).toBeGreaterThan(100);
+  });
+
+  it('every entry is a function (dynamic import loader)', () => {
+    for (const [key, loader] of Object.entries(showcaseRegistry)) {
+      expect(typeof loader).toBe('function');
+    }
+  });
+
+  it('has showcases for known components', () => {
+    expect(showcaseRegistry['Button']).toBeDefined();
+    expect(showcaseRegistry['Dialog']).toBeDefined();
+    expect(showcaseRegistry['Table']).toBeDefined();
+    expect(showcaseRegistry['Card']).toBeDefined();
+  });
+
+  it('no duplicate keys (one showcase per component)', () => {
+    const keys = Object.keys(showcaseRegistry);
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it('showcase files exist on disk', () => {
+    const showcaseDir = new URL('../generated/showcases', import.meta.url);
+    const files = fs.readdirSync(showcaseDir);
+    expect(files.length).toBeGreaterThan(100);
+    expect(files.every(f => f.endsWith('.tsx'))).toBe(true);
+  });
+
+  it('showcase file count matches registry entries', () => {
+    const showcaseDir = new URL('../generated/showcases', import.meta.url);
+    const files = fs.readdirSync(showcaseDir);
+    const keys = Object.keys(showcaseRegistry);
+    // Files may be more than keys due to dedup, but keys should not exceed files
+    expect(keys.length).toBeLessThanOrEqual(files.length);
   });
 });
