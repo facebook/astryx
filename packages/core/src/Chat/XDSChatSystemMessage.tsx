@@ -55,7 +55,16 @@ export interface XDSChatSystemMessageProps {
    */
   icon?: ReactNode;
 
-  /** StyleX overrides. */
+  /**
+   * StyleX styles for layout customization (margins, positioning, sizing).
+   * Must be a `stylex.create()` value — not an inline style object.
+   *
+   * @example
+   * ```
+   * const styles = stylex.create({ wrapper: { marginTop: 8 } });
+   * <XDSChatSystemMessage xstyle={styles.wrapper} />
+   * ```
+   */
   xstyle?: StyleXStyles;
   /** CSS class name(s). */
   className?: string;

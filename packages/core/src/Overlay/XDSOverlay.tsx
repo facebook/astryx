@@ -44,7 +44,16 @@ export interface XDSOverlayProps {
   position?: OverlayPosition;
   /** @default "end" */
   align?: OverlayAlign;
-  /** StyleX style overrides on the container. */
+  /**
+   * StyleX styles for layout customization (margins, positioning, sizing).
+   * Must be a `stylex.create()` value — not an inline style object.
+   *
+   * @example
+   * ```
+   * const styles = stylex.create({ wrapper: { marginTop: 8 } });
+   * <XDSOverlay xstyle={styles.wrapper} />
+   * ```
+   */
   xstyle?: StyleXStyles;
   /** CSS class name(s) appended to the root element. */
   className?: string;
@@ -64,8 +73,7 @@ export interface XDSOverlayProps {
  * ```
  * <XDSOverlay
  *   showOn="hover"
- *   content={<XDSButton label="Quick view" variant="ghost" />}
- * >
+ *   content={<XDSButton label="Quick view" variant="ghost" />}>
  *   <XDSAspectRatio ratio={16/9}>
  *     <img src="hero.jpg" style={{objectFit: 'cover', width: '100%', height: '100%'}} />
  *   </XDSAspectRatio>

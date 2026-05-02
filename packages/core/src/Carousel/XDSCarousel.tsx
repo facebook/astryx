@@ -56,6 +56,16 @@ export interface XDSCarouselProps extends XDSBaseProps<HTMLDivElement> {
    */
   'aria-label'?: string;
 
+  /**
+   * StyleX styles for layout customization (margins, positioning, sizing).
+   * Must be a `stylex.create()` value — not an inline style object.
+   *
+   * @example
+   * ```
+   * const styles = stylex.create({ wrapper: { marginTop: 8 } });
+   * <XDSCarousel xstyle={styles.wrapper} />
+   * ```
+   */
   xstyle?: StyleXStyles;
   className?: string;
   style?: React.CSSProperties;

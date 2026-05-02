@@ -92,7 +92,16 @@ export interface XDSChatLayoutProps {
    */
   scrollRef?: React.RefObject<HTMLElement | null>;
 
-  /** StyleX overrides. */
+  /**
+   * StyleX styles for layout customization (margins, positioning, sizing).
+   * Must be a `stylex.create()` value — not an inline style object.
+   *
+   * @example
+   * ```
+   * const styles = stylex.create({ wrapper: { marginTop: 8 } });
+   * <XDSChatLayout xstyle={styles.wrapper} />
+   * ```
+   */
   xstyle?: StyleXStyles;
   /** CSS class name(s) appended to the root element. */
   className?: string;

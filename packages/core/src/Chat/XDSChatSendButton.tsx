@@ -42,7 +42,16 @@ export interface XDSChatSendButtonProps {
   stopIcon?: ReactNode;
   /** Button size. @default 'md' */
   size?: 'sm' | 'md';
-  /** Additional StyleX styles. */
+  /**
+   * StyleX styles for layout customization (margins, positioning, sizing).
+   * Must be a `stylex.create()` value — not an inline style object.
+   *
+   * @example
+   * ```
+   * const styles = stylex.create({ wrapper: { marginTop: 8 } });
+   * <XDSChatSendButton xstyle={styles.wrapper} />
+   * ```
+   */
   xstyle?: StyleXStyles;
 }
 
