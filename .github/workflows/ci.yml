@@ -32,19 +32,26 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 0
+          fetch-depth: 50
+
+      - name: Fetch base branch
+        run: git fetch origin ${{ github.base_ref }} --depth=50
 
       - name: Determine change scope
         id: scope
         run: |
-          CHANGED=$(git diff --name-only origin/\${{ github.base_ref }}...HEAD)
+          MERGE_BASE=$(git merge-base HEAD origin/${{ github.base_ref }} 2>/dev/null || echo "")
+          if [ -z "$MERGE_BASE" ]; then
+            echo "docsite_only=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only "$MERGE_BASE"...HEAD)
           NON_DOCSITE=$(echo "$CHANGED" | grep -v '^apps/docsite/' | head -1)
           if [ -z "$NON_DOCSITE" ]; then
             echo "docsite_only=true" >> $GITHUB_OUTPUT
           else
             echo "docsite_only=false" >> $GITHUB_OUTPUT
           fi
-
   # Docsite data extraction tests — always runs, fast (~2s)
   docsite-test:
     runs-on: ubuntu-latest
