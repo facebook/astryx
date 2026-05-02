@@ -9,6 +9,7 @@
     "prebuild": "node scripts/generate-data.mjs",
     "build": "next build",
     "start": "next start",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },
