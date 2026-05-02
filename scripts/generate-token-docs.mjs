@@ -258,7 +258,7 @@ const output = `\
 export const docs = ${JSON.stringify(
   {
     name: 'tokens',
-    title: 'XDS Design Tokens',
+    title: 'All Tokens',
     description:
       'Complete reference for spacing, color, radius, typography, shadow, motion, and size tokens.',
     sections,
