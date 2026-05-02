@@ -90,6 +90,7 @@ const styles = stylex.create({
     color: colorVars['--color-text-secondary'],
     cursor: 'pointer',
     textDecoration: 'none',
+    whiteSpace: 'nowrap',
     transitionProperty: 'color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],

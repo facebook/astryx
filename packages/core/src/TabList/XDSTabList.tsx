@@ -63,6 +63,7 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'stretch',
     gap: spacingVars['--spacing-0-5'],
+    maxWidth: '100%',
   },
   fill: {
     width: '100%',
