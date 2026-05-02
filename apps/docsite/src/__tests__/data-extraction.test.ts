@@ -11,6 +11,7 @@ import {components, componentCount} from '../generated/componentRegistry';
 import {blocks, blockCount, showcaseCount} from '../generated/blockRegistry';
 import {templates, templateCount} from '../generated/templateRegistry';
 import {docTopics, docsCount} from '../generated/docsRegistry';
+import {themeObjects} from '../generated/themeRegistry';
 
 // ── Package Registry ───────────────────────────────────────────────────
 
@@ -352,5 +353,38 @@ describe('docsRegistry', () => {
   it('no duplicate topics', () => {
     const topics = docTopics.map(d => d.topic);
     expect(new Set(topics).size).toBe(topics.length);
+  });
+});
+
+// ── Theme Registry ─────────────────────────────────────────────────────
+
+describe('themeRegistry', () => {
+  it('exports a themeObjects record', () => {
+    expect(themeObjects).toBeDefined();
+    expect(typeof themeObjects).toBe('object');
+  });
+
+  it('contains all theme packages from packageRegistry', () => {
+    const themePackages = packages.filter(p =>
+      p.name.startsWith('@xds/theme-'),
+    );
+    for (const pkg of themePackages) {
+      expect(themeObjects[pkg.name]).toBeDefined();
+    }
+    expect(Object.keys(themeObjects).length).toBe(themePackages.length);
+  });
+
+  it('each theme object has a className (valid XDSDefinedTheme)', () => {
+    for (const [name, theme] of Object.entries(themeObjects)) {
+      expect(name).toMatch(/^@xds\/theme-/);
+      expect(theme).toBeDefined();
+      expect(typeof theme.name).toBe('string');
+    }
+  });
+
+  it('no non-theme packages in themeObjects', () => {
+    for (const name of Object.keys(themeObjects)) {
+      expect(name).toMatch(/^@xds\/theme-/);
+    }
   });
 });

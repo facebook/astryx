@@ -521,13 +521,14 @@ export const docsCount = ${docTopics.length};
 
 
 function generateThemeRegistry(packages) {
+  console.log('Generating theme registry...');
   const themePackages = packages.filter(p => p.name.startsWith('@xds/theme-'));
   if (!themePackages.length) {
     writeRegistry('themeRegistry.ts', `// Auto-generated — no theme packages found
 import type {XDSDefinedTheme} from '@xds/core/theme';
 export const themeObjects: Record<string, XDSDefinedTheme> = {};
 `);
-    return;
+    return 0;
   }
 
   const imports = themePackages.map(p => {
@@ -551,6 +552,7 @@ ${entries}
 };
 `;
   writeRegistry('themeRegistry.ts', content);
+  return themePackages.length;
 }
 
 // ── Main
@@ -559,7 +561,7 @@ async function main() {
   console.log('Generating docsite data...\n');
 
   const packages = generatePackageRegistry();
-  generateThemeRegistry(packages);
+  const themeCount = generateThemeRegistry(packages);
   const {totalCount: componentCount} = await generateComponentRegistry();
   const {blockCount, showcaseCount} = await generateBlockRegistry();
   const {templateCount} = await generateTemplateRegistry();
@@ -571,6 +573,7 @@ async function main() {
   console.log(`  ${blockCount} blocks (${showcaseCount} showcases)`);
   console.log(`  ${templateCount} templates`);
   console.log(`  ${docsCount} doc topics`);
+  console.log(`  ${themeCount} themes`);
   console.log('Done.');
 }
 
