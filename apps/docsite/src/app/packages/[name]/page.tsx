@@ -2,7 +2,7 @@
  * Page type: package
  * Adapts based on the package type:
  * - component-pkg (@xds/core): component grid from componentRegistry
- * - theme-pkg (@xds/theme-*): theme preview + token info (stub)
+ * - theme-pkg (@xds/theme-*): live theme preview with light/dark toggle
  * - generic (@xds/cli, etc.): README rendered via XDSMarkdown
  */
 
@@ -20,9 +20,53 @@ import {
   components,
   type ComponentEntry,
 } from '../../../generated/componentRegistry';
+import {
+  ThemePackagePage,
+  type InstallStep,
+} from '../../../components/ThemePackagePage';
+import {defaultTheme} from '@xds/theme-default/built';
+import {neutralTheme} from '@xds/theme-neutral/built';
+import {dailyTheme} from '@xds/theme-daily/built';
+import {matchaTheme} from '@xds/theme-matcha/built';
+import type {XDSDefinedTheme} from '@xds/core/theme';
 
 function slugToPackageName(slug: string): string {
   return `@xds/${slug}`;
+}
+
+const THEME_MAP: Record<string, XDSDefinedTheme> = {
+  '@xds/theme-default': defaultTheme,
+  '@xds/theme-neutral': neutralTheme,
+  '@xds/theme-daily': dailyTheme,
+  '@xds/theme-matcha': matchaTheme,
+};
+
+function getInstallSteps(pkgName: string): InstallStep[] {
+  if (pkgName.includes('theme-')) {
+    const shortName = pkgName.replace('@xds/theme-', '');
+    const varName = shortName + 'Theme';
+    return [
+      {label: 'Install the theme', code: `npm install ${pkgName}`},
+      {
+        label: 'Import the built theme',
+        code: `import {${varName}} from '${pkgName}/built';`,
+        language: 'typescript',
+      },
+      {
+        label: 'Wrap your app',
+        code: `<XDSTheme theme={${varName}}>{children}</XDSTheme>`,
+        language: 'tsx',
+      },
+    ];
+  }
+  return [
+    {label: 'Install the package', code: `npm install ${pkgName}`},
+    {
+      label: 'Import a component',
+      code: `import {...} from '${pkgName}/ComponentName';`,
+      language: 'typescript',
+    },
+  ];
 }
 
 export function generateStaticParams() {
@@ -42,6 +86,24 @@ export default async function PackagePage({
   const isTheme = pkg.name.includes('theme-');
   const isComponentPkg = pkg.name === '@xds/core';
   const pkgComponents = components[pkg.name] || [];
+
+  if (isTheme) {
+    const theme = THEME_MAP[pkg.name];
+    if (theme) {
+      return (
+        <XDSSection maxWidth="lg" padding={6}>
+          <ThemePackagePage
+            name={pkg.name}
+            description={pkg.description}
+            version={pkg.version}
+            readme={pkg.readme}
+            installSteps={getInstallSteps(pkg.name)}
+            theme={theme}
+          />
+        </XDSSection>
+      );
+    }
+  }
 
   return (
     <XDSSection maxWidth="lg" padding={6}>
@@ -65,8 +127,6 @@ export default async function PackagePage({
         {/* Content — adapts by package type */}
         {isComponentPkg ? (
           <ComponentPackageContent components={pkgComponents} />
-        ) : isTheme ? (
-          <ThemePackageContent />
         ) : (
           <GenericPackageContent readme={pkg.readme} />
         )}
@@ -113,17 +173,6 @@ function ComponentPackageContent({
           </XDSClickableCard>
         ))}
       </XDSGrid>
-    </XDSVStack>
-  );
-}
-
-function ThemePackageContent() {
-  return (
-    <XDSVStack gap={4}>
-      {/* TODO: theme preview, token values, setup code from pipeline */}
-      <XDSText type="body" color="secondary">
-        Theme details coming soon.
-      </XDSText>
     </XDSVStack>
   );
 }
