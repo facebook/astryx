@@ -1,12 +1,8 @@
-import * as stylex from '@stylexjs/stylex';
 import {notFound} from 'next/navigation';
+import {XDSHeading, XDSText} from '@xds/core/Text';
+import {XDSVStack} from '@xds/core/Layout';
+import {XDSSection} from '@xds/core/Section';
 import {docTopics} from '../../../generated/docsRegistry';
-
-const styles = stylex.create({
-  page: {padding: '2rem', maxWidth: 720, marginInline: 'auto'},
-  heading: {fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem'},
-  description: {opacity: 0.7, marginBottom: '2rem'},
-});
 
 export function generateStaticParams() {
   return docTopics.map(d => ({topic: d.topic}));
@@ -22,9 +18,13 @@ export default async function FoundationPage({
   if (!topic) notFound();
 
   return (
-    <div {...stylex.props(styles.page)}>
-      <h1 {...stylex.props(styles.heading)}>{topic.title}</h1>
-      <p {...stylex.props(styles.description)}>{topic.description}</p>
-    </div>
+    <XDSSection maxWidth="md" padding={6}>
+      <XDSVStack gap={4}>
+        <XDSHeading level={1}>{topic.title}</XDSHeading>
+        <XDSText type="body" color="secondary">
+          {topic.description}
+        </XDSText>
+      </XDSVStack>
+    </XDSSection>
   );
 }

@@ -1,19 +1,12 @@
-import * as stylex from '@stylexjs/stylex';
 import {notFound} from 'next/navigation';
+import {XDSHeading, XDSText} from '@xds/core/Text';
+import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSSection} from '@xds/core/Section';
+import {XDSCard} from '@xds/core/Card';
+import {XDSBadge} from '@xds/core/Badge';
+import {XDSList, XDSListItem} from '@xds/core/List';
+import {XDSDivider} from '@xds/core';
 import {components} from '../../../generated/componentRegistry';
-
-const styles = stylex.create({
-  page: {padding: '2rem', maxWidth: 720, marginInline: 'auto'},
-  heading: {fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem'},
-  displayName: {
-    fontSize: '0.875rem',
-    opacity: 0.5,
-    fontFamily: 'monospace',
-    marginBottom: '0.5rem',
-  },
-  description: {opacity: 0.7, marginBottom: '1rem', lineHeight: 1.6},
-  meta: {fontSize: '0.8125rem', opacity: 0.5, display: 'flex', gap: '1rem'},
-});
 
 const allComponents = Object.values(components).flat();
 
@@ -30,45 +23,55 @@ export default async function ComponentPage({
   const comp = allComponents.find(c => c.name === name);
   if (!comp) notFound();
 
-  // Find sub-components if this is a compound doc
   const subComponents = allComponents.filter(c => c.parentDoc === name);
+  const pkg = Object.entries(components).find(([, comps]) =>
+    comps.includes(comp),
+  )?.[0];
 
   return (
-    <div {...stylex.props(styles.page)}>
-      <p {...stylex.props(styles.displayName)}>{comp.displayName}</p>
-      <h1 {...stylex.props(styles.heading)}>{comp.name}</h1>
-      <p {...stylex.props(styles.description)}>{comp.description}</p>
-      <div {...stylex.props(styles.meta)}>
-        {comp.group && <span>Group: {comp.group}</span>}
-        <span>
-          Package:{' '}
-          {
-            Object.entries(components).find(([, comps]) =>
-              comps.includes(comp),
-            )?.[0]
-          }
-        </span>
-      </div>
-      {subComponents.length > 0 && (
-        <div style={{marginTop: '2rem'}}>
-          <h2
-            style={{
-              fontSize: '1.25rem',
-              fontWeight: 600,
-              marginBottom: '0.75rem',
-            }}>
-            Sub-components ({subComponents.length})
-          </h2>
-          <ul>
-            {subComponents.map(sub => (
-              <li key={sub.name} style={{marginBottom: '0.5rem'}}>
-                <strong>{sub.displayName}</strong> —{' '}
-                {sub.description?.slice(0, 120)}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
+    <XDSSection maxWidth="md" padding={6}>
+      <XDSVStack gap={6}>
+        {/* Header */}
+        <XDSVStack gap={2}>
+          <XDSText type="supporting" color="secondary" weight="bold">
+            {comp.displayName}
+          </XDSText>
+          <XDSHeading level={1}>{comp.name}</XDSHeading>
+          <XDSText type="body" color="secondary">
+            {comp.description}
+          </XDSText>
+          <XDSHStack gap={2}>
+            {comp.group && <XDSBadge label={comp.group} />}
+            {pkg && <XDSBadge label={pkg} variant="info" />}
+          </XDSHStack>
+        </XDSVStack>
+
+        {/* Sub-components */}
+        {subComponents.length > 0 && (
+          <>
+            <XDSDivider />
+            <XDSVStack gap={4}>
+              <XDSHeading level={2}>
+                Sub-components ({subComponents.length})
+              </XDSHeading>
+              <XDSVStack gap={3}>
+                {subComponents.map(sub => (
+                  <XDSCard key={sub.name} padding={4}>
+                    <XDSVStack gap={1}>
+                      <XDSText type="body" weight="bold">
+                        {sub.displayName}
+                      </XDSText>
+                      <XDSText type="supporting" color="secondary">
+                        {sub.description}
+                      </XDSText>
+                    </XDSVStack>
+                  </XDSCard>
+                ))}
+              </XDSVStack>
+            </XDSVStack>
+          </>
+        )}
+      </XDSVStack>
+    </XDSSection>
   );
 }

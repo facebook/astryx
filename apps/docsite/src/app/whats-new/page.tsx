@@ -1,15 +1,16 @@
-import * as stylex from '@stylexjs/stylex';
-
-const styles = stylex.create({
-  page: {padding: '2rem', maxWidth: 720, marginInline: 'auto'},
-  heading: {fontSize: '2rem', fontWeight: 700, marginBottom: '1rem'},
-});
+import {XDSHeading, XDSText} from '@xds/core/Text';
+import {XDSVStack} from '@xds/core/Layout';
+import {XDSSection} from '@xds/core/Section';
 
 export default function WhatsNew() {
   return (
-    <div {...stylex.props(styles.page)}>
-      <h1 {...stylex.props(styles.heading)}>What's New</h1>
-      <p>Changelog coming soon.</p>
-    </div>
+    <XDSSection maxWidth="md" padding={6}>
+      <XDSVStack gap={4}>
+        <XDSHeading level={1}>What's New</XDSHeading>
+        <XDSText type="body" color="secondary">
+          Changelog coming soon.
+        </XDSText>
+      </XDSVStack>
+    </XDSSection>
   );
 }

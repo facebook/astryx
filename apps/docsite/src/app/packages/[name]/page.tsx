@@ -1,13 +1,9 @@
-import * as stylex from '@stylexjs/stylex';
 import {notFound} from 'next/navigation';
+import {XDSHeading, XDSText} from '@xds/core/Text';
+import {XDSVStack} from '@xds/core/Layout';
+import {XDSSection} from '@xds/core/Section';
+import {XDSBadge} from '@xds/core/Badge';
 import {packages} from '../../../generated/packageRegistry';
-
-const styles = stylex.create({
-  page: {padding: '2rem', maxWidth: 720, marginInline: 'auto'},
-  heading: {fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem'},
-  description: {opacity: 0.7, marginBottom: '0.5rem'},
-  version: {fontSize: '0.875rem', opacity: 0.5, marginBottom: '2rem'},
-});
 
 export function generateStaticParams() {
   return packages.map(p => ({name: encodeURIComponent(p.name)}));
@@ -23,10 +19,16 @@ export default async function PackagePage({
   if (!pkg) notFound();
 
   return (
-    <div {...stylex.props(styles.page)}>
-      <h1 {...stylex.props(styles.heading)}>{pkg.name}</h1>
-      <p {...stylex.props(styles.description)}>{pkg.description}</p>
-      <p {...stylex.props(styles.version)}>v{pkg.version}</p>
-    </div>
+    <XDSSection maxWidth="md" padding={6}>
+      <XDSVStack gap={4}>
+        <XDSVStack gap={2}>
+          <XDSHeading level={1}>{pkg.name}</XDSHeading>
+          <XDSBadge label={`v${pkg.version}`} variant="info" />
+        </XDSVStack>
+        <XDSText type="body" color="secondary">
+          {pkg.description}
+        </XDSText>
+      </XDSVStack>
+    </XDSSection>
   );
 }

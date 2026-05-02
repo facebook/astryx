@@ -1,15 +1,16 @@
-import * as stylex from '@stylexjs/stylex';
-
-const styles = stylex.create({
-  page: {padding: '2rem', maxWidth: 720, marginInline: 'auto'},
-  heading: {fontSize: '2rem', fontWeight: 700, marginBottom: '1rem'},
-});
+import {XDSHeading, XDSText} from '@xds/core/Text';
+import {XDSVStack} from '@xds/core/Layout';
+import {XDSSection} from '@xds/core/Section';
 
 export default function GettingStarted() {
   return (
-    <div {...stylex.props(styles.page)}>
-      <h1 {...stylex.props(styles.heading)}>Getting Started</h1>
-      <p>Getting started guide coming soon.</p>
-    </div>
+    <XDSSection maxWidth="md" padding={6}>
+      <XDSVStack gap={4}>
+        <XDSHeading level={1}>Getting Started</XDSHeading>
+        <XDSText type="body" color="secondary">
+          Getting started guide coming soon.
+        </XDSText>
+      </XDSVStack>
+    </XDSSection>
   );
 }
