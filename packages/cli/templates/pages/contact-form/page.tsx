@@ -6,6 +6,7 @@ import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSSection} from '@xds/core/Section';
 import {XDSGrid} from '@xds/core/Grid';
+import {XDSCard} from '@xds/core/Card';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
@@ -16,7 +17,7 @@ import {XDSToken} from '@xds/core/Token';
 import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSTextArea} from '@xds/core/TextArea';
 import {XDSDivider} from '@xds/core/Divider';
-import {colorVars} from '@xds/core/theme/tokens.stylex';
+import {XDSBanner} from '@xds/core/Banner';
 
 const WHY_US_IMAGES = [
   // illustration-horizontal-3 from xds_oss asset set
@@ -75,28 +76,13 @@ const WHY_US = [
 ];
 
 const styles = stylex.create({
-  pageBg: {
-    backgroundColor: colorVars['--color-background-surface'],
+  imgFull: {
+    width: '100%',
   },
   bannerImage: {
-    width: '100%',
     height: '15vh',
     objectFit: 'cover',
-    objectPosition: 'center',
   },
-  fullWidth: {
-    width: '100%',
-  },
-  cardImage: {
-    width: '100%',
-    height: 200,
-    objectFit: 'cover',
-    borderRadius: 8,
-  },
-  errorColor: {
-    color: colorVars['--color-error'],
-  },
-
 });
 
 /**
@@ -133,17 +119,17 @@ export default function FormSimplePage() {
     );
 
   return (
-    <XDSCenter axis="horizontal" xstyle={styles.pageBg}>
-      <XDSVStack hAlign="center" xstyle={styles.fullWidth}>
+    <XDSCenter axis="horizontal">
+      <XDSVStack hAlign="center" width="100%">
         {/* Full-bleed banner */}
         <img
           // illustration-horizontal-2 from xds_oss asset set
           src="https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-2.png"
           alt="Decorative banner"
-          {...stylex.props(styles.bannerImage)}
+          {...stylex.props(styles.imgFull, styles.bannerImage)}
         />
 
-        <XDSSection maxWidth={800} padding={6} paddingBlock={10} variant="transparent">
+        <XDSSection maxWidth={800} padding={6} paddingBlock={10} variant="section">
           <XDSVStack gap={6}>
           {/* Header */}
           <XDSVStack gap={2} hAlign="center">
@@ -157,30 +143,32 @@ export default function FormSimplePage() {
 
           {/* Why work with us */}
           <XDSVStack gap={5}>
-            <XDSGrid columns={3} gap={4}>
+            <XDSGrid minChildWidth={200} gap={4}>
               {WHY_US.map(item => (
-                <XDSVStack key={item.title} gap={3}>
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    {...stylex.props(styles.cardImage)}
-                  />
-                  <XDSVStack gap={1}>
-                    <XDSText type="body" weight="bold">
-                      {item.title}
-                    </XDSText>
-                    <XDSText type="supporting" color="secondary">
-                      {item.description}
-                    </XDSText>
+                <XDSCard key={item.title}>
+                  <XDSVStack gap={3}>
+                    <img
+                      src={item.image}
+                      alt={item.title}
+                      {...stylex.props(styles.imgFull)}
+                    />
+                    <XDSVStack gap={1}>
+                      <XDSText type="body" weight="bold">
+                        {item.title}
+                      </XDSText>
+                      <XDSText type="supporting" color="secondary">
+                        {item.description}
+                      </XDSText>
+                    </XDSVStack>
                   </XDSVStack>
-                </XDSVStack>
+                </XDSCard>
               ))}
             </XDSGrid>
           </XDSVStack>
 
           {/* Your details */}
           <XDSVStack gap={5}>
-            <XDSGrid columns={2} gap={4}>
+            <XDSGrid minChildWidth={260} gap={4}>
               <XDSTextInput
                 label="Full Name"
                 placeholder="Full Name"
@@ -204,7 +192,7 @@ export default function FormSimplePage() {
                 }
               />
             </XDSGrid>
-            <XDSGrid columns={2} gap={4}>
+            <XDSGrid minChildWidth={260} gap={4}>
               <XDSTextInput
                 label="Company"
                 placeholder="Company"
@@ -247,7 +235,7 @@ export default function FormSimplePage() {
                 ))}
               </XDSHStack>
               {errors.goals && (
-                <XDSText type="supporting" xstyle={styles.errorColor}>{errors.goals}</XDSText>
+                <XDSBanner status="error" title={errors.goals} />
               )}
             </XDSVStack>
 
@@ -308,7 +296,6 @@ export default function FormSimplePage() {
               label="Submit"
               variant="primary"
               size="lg"
-              xstyle={styles.fullWidth}
               onClick={() => setSubmitted(true)}
             />
             <XDSHStack gap={1} hAlign="center">
