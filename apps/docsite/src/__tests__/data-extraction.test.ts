@@ -217,6 +217,76 @@ describe('componentRegistry', () => {
     expect(names).toContain('SideNavItem'); // from SideNav compound doc
     expect(names).toContain('TopNavItem'); // from TopNav compound doc
   });
+
+  // ── Full doc extraction ──────────────────────────────────────────
+
+  it('extracts props for standalone components', () => {
+    const core = components['@xds/core'];
+    const button = core.find(c => c.name === 'Button');
+    expect(button).toBeDefined();
+    expect(button!.props.length).toBeGreaterThan(5);
+    const labelProp = button!.props.find(p => p.name === 'label');
+    expect(labelProp).toBeDefined();
+    expect(labelProp!.type).toBe('string');
+    expect(labelProp!.required).toBe(true);
+  });
+
+  it('extracts props for sub-components in compound docs', () => {
+    const core = components['@xds/core'];
+    const dialog = core.find(c => c.name === 'Dialog');
+    expect(dialog).toBeDefined();
+    expect(dialog!.props.length).toBeGreaterThan(3);
+    const isOpenProp = dialog!.props.find(p => p.name === 'isOpen');
+    expect(isOpenProp).toBeDefined();
+    expect(isOpenProp!.required).toBe(true);
+  });
+
+  it('extracts usage with bestPractices and anatomy', () => {
+    const core = components['@xds/core'];
+    const button = core.find(c => c.name === 'Button');
+    expect(button!.usage).toBeDefined();
+    expect(button!.usage!.description.length).toBeGreaterThan(20);
+    expect(button!.usage!.bestPractices).toBeDefined();
+    expect(button!.usage!.bestPractices!.length).toBeGreaterThanOrEqual(3);
+    expect(button!.usage!.anatomy).toBeDefined();
+    expect(button!.usage!.anatomy!.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('extracts theming data', () => {
+    const core = components['@xds/core'];
+    const button = core.find(c => c.name === 'Button');
+    expect(button!.theming).toBeDefined();
+    expect(button!.theming!.targets.length).toBeGreaterThanOrEqual(1);
+    expect(button!.theming!.targets[0].className).toBe('xds-button');
+    expect(button!.theming!.vars).toBeDefined();
+    expect(button!.theming!.vars!.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('extracts hook params and returns', () => {
+    const core = components['@xds/core'];
+    const hook = core.find(c => c.name === 'useMediaQuery');
+    expect(hook).toBeDefined();
+    expect(hook!.params).toBeDefined();
+    expect(hook!.params!.length).toBeGreaterThanOrEqual(1);
+    expect(hook!.params![0].name).toBe('query');
+    expect(hook!.returns).toBeDefined();
+    expect(hook!.returns!.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('components without props have empty props array', () => {
+    const core = components['@xds/core'];
+    for (const comp of core) {
+      expect(Array.isArray(comp.props)).toBe(true);
+    }
+  });
+
+  it('most standalone components have usage data', () => {
+    const core = components['@xds/core'];
+    const standalone = core.filter(c => c.parentDoc === null);
+    const withUsage = standalone.filter(c => c.usage != null);
+    // At least 80% should have usage docs
+    expect(withUsage.length / standalone.length).toBeGreaterThan(0.8);
+  });
 });
 
 // ── Block Registry ─────────────────────────────────────────────────────
@@ -293,6 +363,21 @@ describe('blockRegistry', () => {
       b => b.componentsUsed.length > 0,
     );
     expect(blocksWithComponents.length).toBeGreaterThan(blocks.length * 0.5);
+  });
+
+  it('blocks include TSX source code', () => {
+    for (const block of blocks) {
+      expect(typeof block.source).toBe('string');
+      expect(block.source.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('showcase sources contain valid JSX', () => {
+    const showcases = blocks.filter(b => b.isShowcase);
+    for (const s of showcases) {
+      // Every showcase should have an export default function
+      expect(s.source).toMatch(/export default function/);
+    }
   });
 });
 
