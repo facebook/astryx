@@ -1,5 +1,18 @@
 # @xds/theme-neutral
 
+# 0.0.13
+
+#### Changes
+
+- Icon renames: `checkCircle`/`xCircle` → `success`/`error` (#1503)
+
+#### Patch Changes
+
+- Updated dependencies
+  - @xds/core@0.0.13
+
+---
+
 # 0.0.5
 
 #### Changes
