@@ -18,19 +18,93 @@ interface DocsShellProps {
   docTopics: DocTopic[];
 }
 
-/** Group top-level components by their group field */
-function groupComponents(
-  entries: ComponentEntry[],
-): Record<string, ComponentEntry[]> {
-  const groups: Record<string, ComponentEntry[]> = {};
+/** Names to skip — style exports, not real components */
+const SKIP_NAMES = new Set(['stack', 'stackItem']);
+
+/**
+ * Component-paired hooks — these show alongside their component in the
+ * sidebar, not in Utilities. Keyed by hook name → component name they pair with.
+ */
+const COMPONENT_PAIRED_HOOKS: Record<string, string> = {
+  useXDSCollapsible: 'Collapsible',
+  useXDSHoverCard: 'HoverCard',
+  useXDSPopover: 'Popover',
+  useXDSResizable: 'Resizable',
+  useXDSToast: 'Toast',
+  useXDSTooltip: 'Tooltip',
+};
+
+interface SidebarEntry {
+  name: string;
+  href: string;
+}
+
+interface SidebarGroup {
+  label: string;
+  entries: SidebarEntry[];
+}
+
+/**
+ * Build the sidebar structure:
+ * - Components: flat alphabetical, with paired hooks grouped next to their component
+ * - Utilities: standalone hooks (directory=hooks) + Utilities group + useXDSLayer
+ */
+function buildSidebar(entries: ComponentEntry[]): {
+  componentGroups: SidebarGroup[];
+  utilities: SidebarEntry[];
+} {
+  const components: SidebarEntry[] = [];
+  const utilities: SidebarEntry[] = [];
+  const pairedHooks = new Map<string, SidebarEntry[]>();
+
   for (const entry of entries) {
-    if (entry.hidden) continue;
-    if (entry.parentDoc) continue;
-    const group = entry.group || 'Other';
-    if (!groups[group]) groups[group] = [];
-    groups[group].push(entry);
+    if (entry.hidden || SKIP_NAMES.has(entry.name)) continue;
+
+    const isHook = entry.name.startsWith('use');
+    const isUtilityGroup = entry.group === 'Utilities';
+
+    // Component-paired hooks → collect to merge with their component
+    if (COMPONENT_PAIRED_HOOKS[entry.name]) {
+      const pairWith = COMPONENT_PAIRED_HOOKS[entry.name];
+      if (!pairedHooks.has(pairWith)) pairedHooks.set(pairWith, []);
+      pairedHooks.get(pairWith)!.push({
+        name: entry.name,
+        href: `/components/${entry.name}`,
+      });
+      continue;
+    }
+
+    // Utility group items + standalone hooks (directory=hooks) → Utilities
+    if (
+      isUtilityGroup ||
+      (isHook && !entry.parentDoc && entry.directory === 'hooks')
+    ) {
+      utilities.push({name: entry.name, href: `/components/${entry.name}`});
+      continue;
+    }
+
+    // Component-specific hooks with parentDoc (e.g. useXDSTableSelection) → skip sidebar
+    if (isHook && entry.parentDoc) continue;
+
+    // Everything else → Components list
+    components.push({name: entry.name, href: `/components/${entry.name}`});
   }
-  return groups;
+
+  // Sort and merge paired hooks right after their component
+  components.sort((a, b) => a.name.localeCompare(b.name));
+  const merged: SidebarEntry[] = [];
+  for (const comp of components) {
+    merged.push(comp);
+    const hooks = pairedHooks.get(comp.name);
+    if (hooks) {
+      merged.push(...hooks.sort((a, b) => a.name.localeCompare(b.name)));
+    }
+  }
+
+  return {
+    componentGroups: [{label: 'Components', entries: merged}],
+    utilities: utilities.sort((a, b) => a.name.localeCompare(b.name)),
+  };
 }
 
 export function DocsShell({
@@ -42,10 +116,28 @@ export function DocsShell({
   const pathname = usePathname();
 
   const coreComponents = components['@xds/core'] || [];
-  const grouped = groupComponents(coreComponents);
-  const groupNames = Object.keys(grouped).sort();
+  const {componentGroups, utilities} = buildSidebar(coreComponents);
 
   const isTheme = (p: PackageMeta) => p.name.includes('theme-');
+
+  /** Check if current path is within a collapsible section */
+  const isInComponents = pathname.startsWith('/components/');
+  const isInDocs = pathname.startsWith('/docs/') || pathname === '/changelog';
+  const isInFoundations =
+    pathname.startsWith('/docs/') && pathname !== '/docs/getting-started';
+  const isInPackages =
+    pathname.startsWith('/packages/') &&
+    !packages.some(
+      p =>
+        isTheme(p) && pathname === `/packages/${p.name.replace('@xds/', '')}`,
+    );
+  const isInThemes =
+    pathname.startsWith('/packages/') &&
+    packages.some(
+      p =>
+        isTheme(p) && pathname === `/packages/${p.name.replace('@xds/', '')}`,
+    );
+  const isInUtilities = utilities.some(u => pathname === u.href);
 
   return (
     <XDSAppShell
@@ -94,7 +186,9 @@ export function DocsShell({
 
           {/* Guide */}
           <XDSSideNavSection title="Guide" isHeaderHidden>
-            <XDSSideNavItem label="Guide" collapsible>
+            <XDSSideNavItem
+              label="Guide"
+              collapsible={{defaultIsCollapsed: !isInDocs}}>
               <XDSSideNavItem
                 label="Getting Started"
                 href="/docs/getting-started"
@@ -106,8 +200,9 @@ export function DocsShell({
                 isSelected={pathname === '/changelog'}
               />
 
-              {/* Foundations */}
-              <XDSSideNavItem label="Foundations" collapsible>
+              <XDSSideNavItem
+                label="Foundations"
+                collapsible={{defaultIsCollapsed: !isInFoundations}}>
                 {docTopics
                   .filter(d => d.topic !== 'getting-started')
                   .map(d => (
@@ -120,8 +215,9 @@ export function DocsShell({
                   ))}
               </XDSSideNavItem>
 
-              {/* Packages */}
-              <XDSSideNavItem label="Packages" collapsible>
+              <XDSSideNavItem
+                label="Packages"
+                collapsible={{defaultIsCollapsed: !isInPackages}}>
                 {packages
                   .filter(p => !isTheme(p))
                   .map(p => (
@@ -136,8 +232,9 @@ export function DocsShell({
                   ))}
               </XDSSideNavItem>
 
-              {/* Themes */}
-              <XDSSideNavItem label="Themes" collapsible>
+              <XDSSideNavItem
+                label="Themes"
+                collapsible={{defaultIsCollapsed: !isInThemes}}>
                 {packages.filter(isTheme).map(p => (
                   <XDSSideNavItem
                     key={p.name}
@@ -152,21 +249,39 @@ export function DocsShell({
             </XDSSideNavItem>
           </XDSSideNavSection>
 
-          {/* Components — single section with groups as collapsible children */}
-          <XDSSideNavSection title="Components">
-            {groupNames.map(group => (
-              <XDSSideNavItem key={group} label={group} collapsible>
-                {grouped[group].map(comp => (
+          {/* Components — collapsible, flat alphabetical with paired hooks */}
+          <XDSSideNavSection title="Components" isHeaderHidden>
+            <XDSSideNavItem
+              label="Components"
+              collapsible={{defaultIsCollapsed: !isInComponents}}>
+              {componentGroups[0].entries.map(comp => (
+                <XDSSideNavItem
+                  key={comp.name}
+                  label={comp.name}
+                  href={comp.href}
+                  isSelected={pathname === comp.href}
+                />
+              ))}
+            </XDSSideNavItem>
+          </XDSSideNavSection>
+
+          {/* Utilities — standalone hooks + utility components */}
+          {utilities.length > 0 && (
+            <XDSSideNavSection title="Utilities" isHeaderHidden>
+              <XDSSideNavItem
+                label="Utilities"
+                collapsible={{defaultIsCollapsed: !isInUtilities}}>
+                {utilities.map(comp => (
                   <XDSSideNavItem
                     key={comp.name}
                     label={comp.name}
-                    href={`/components/${comp.name}`}
-                    isSelected={pathname === `/components/${comp.name}`}
+                    href={comp.href}
+                    isSelected={pathname === comp.href}
                   />
                 ))}
               </XDSSideNavItem>
-            ))}
-          </XDSSideNavSection>
+            </XDSSideNavSection>
+          )}
         </XDSSideNav>
       }>
       {children}
