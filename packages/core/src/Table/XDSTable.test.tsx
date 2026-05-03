@@ -707,15 +707,14 @@ describe('XDSTable', () => {
 
   it('applies overflow truncation styles to body cells', () => {
     // text-overflow: ellipsis + overflow: hidden + white-space: nowrap are applied
-    // via StyleX class names. We verify a class is present on the cell; the actual
-    // CSS rendering is covered by visual/e2e tests (jsdom doesn't compute layout).
+    // via StyleX class names when textOverflow="truncate".
     const longData = [
       {
         name: 'a_very_long_string_without_spaces_that_would_overflow_a_fixed_width_column',
         value: '42',
       },
     ];
-    render(<XDSTable data={longData} />);
+    render(<XDSTable data={longData} textOverflow="truncate" />);
     const cell = screen.getAllByRole('cell')[0];
     // Cell should have at least one StyleX-generated class applied
     expect(cell.className.length).toBeGreaterThan(0);
@@ -725,29 +724,37 @@ describe('XDSTable', () => {
     );
   });
 
-  it('sets title attribute on default-rendered cells for overflow accessibility', () => {
+  it('wraps text by default (textOverflow="wrap")', () => {
     render(<XDSTable data={users} columns={columns} />);
     const cells = screen.getAllByRole('cell');
-    // Default renderer adds title for native hover tooltip on truncated text
-    expect(cells[0]).toHaveAttribute('title', 'Alice');
-    expect(cells[1]).toHaveAttribute('title', '30');
+    // In wrap mode, no title attribute is added (text is visible, not hidden)
+    expect(cells[0]).not.toHaveAttribute('title');
+    // Content is present
+    expect(cells[0]).toHaveTextContent('Alice');
   });
 
-  it('does not set title attribute on renderCell columns', () => {
+  it('wraps default-rendered cells in XDSText when textOverflow="truncate"', () => {
+    render(<XDSTable data={users} columns={columns} textOverflow="truncate" />);
+    const cells = screen.getAllByRole('cell');
+    // Default-rendered cells contain an XDSText child element (a <span>)
+    const textEl = cells[0].querySelector('span');
+    expect(textEl).toBeTruthy();
+    expect(textEl).toHaveTextContent('Alice');
+  });
+
+  it('does not wrap renderCell content in XDSText when truncating', () => {
     const cols: XDSTableColumn<User>[] = [
       {
         key: 'name',
         header: 'Name',
-        renderCell: item => <span>{item.name}</span>,
+        renderCell: item => <span data-testid="custom">{item.name}</span>,
       },
       {key: 'email', header: 'Email'},
     ];
-    render(<XDSTable data={users} columns={cols} />);
-    const cells = screen.getAllByRole('cell');
-    // renderCell column: consumer owns disclosure
-    expect(cells[0]).not.toHaveAttribute('title');
-    // default column: title present
-    expect(cells[1]).toHaveAttribute('title', users[0].email);
+    render(<XDSTable data={users} columns={cols} textOverflow="truncate" />);
+    // Custom renderCell: consumer owns the content
+    const customCells = screen.getAllByTestId('custom');
+    expect(customCells[0]).toHaveTextContent('Alice');
   });
 
   it('sets title attribute on string header cells', () => {

@@ -371,6 +371,19 @@ export interface XDSBaseTableProps<T extends Record<string, unknown>> {
   /** Additional HTML attributes for the `<table>` element */
   tableProps?: HTMLAttributes<HTMLTableElement>;
   /**
+   * How default-rendered body cell text behaves when it exceeds column width.
+   *
+   * - `'wrap'` (default) — text wraps and the row grows taller
+   * - `'truncate'` — text is clipped with an ellipsis; default-rendered cells
+   *   show a tooltip on hover when truncated
+   *
+   * Only affects cells using the default renderer (no `renderCell`).
+   * Cells with `renderCell` control their own overflow behavior.
+   *
+   * @default 'wrap'
+   */
+  textOverflow?: 'wrap' | 'truncate';
+  /**
    * Content displayed when `data` is an empty array.
    * Rendered as a full-width row spanning all columns.
    *

@@ -24,6 +24,7 @@ import {
 import type {StyleXStyles} from '../theme/types';
 import {
   overflowStyles,
+  wrapStyles,
   containerEdgeStyles,
   tableRowMarker,
 } from './table.stylex';
@@ -152,7 +153,7 @@ export function XDSTableCell({
 
   const cellStyles: StyleXStyles[] = [
     densityStyles[ctx.density],
-    overflowStyles.cell,
+    ctx.textOverflow === 'truncate' ? overflowStyles.cell : wrapStyles.cell,
     containerEdgeStyles[ctx.density],
     verticalAlignStyles[ctx.verticalAlign],
     ...buildDividerStyles(ctx, dividerRowStyles.cell, dividerColumnStyles.cell),
