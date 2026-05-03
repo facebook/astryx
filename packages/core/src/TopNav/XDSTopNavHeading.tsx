@@ -35,7 +35,7 @@ import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {xdsClassName, mergeProps} from '../utils';
 import {useXDSMenuHover} from '../hooks/useXDSMenuHover';
-import {XDSNavMenuCloseContext} from '../NavMenu/XDSNavMenuContext';
+import {XDSNavHeadingCloseContext} from '../NavMenu/XDSNavMenuContext';
 
 // =============================================================================
 // Styles
@@ -515,9 +515,10 @@ export function XDSTopNavHeading({
             {...stylex.props(styles.popoverContent)}
             {...contentProps}>
             {popoverHeadingContent}
-            <XDSNavMenuCloseContext.Provider value={{closeMenu: popover.hide}}>
+            <XDSNavHeadingCloseContext.Provider
+              value={{closeMenu: popover.hide}}>
               {menu}
-            </XDSNavMenuCloseContext.Provider>
+            </XDSNavHeadingCloseContext.Provider>
           </div>,
           {
             placement: 'below',
@@ -575,9 +576,10 @@ export function XDSTopNavHeading({
             {...stylex.props(styles.popoverContent)}
             {...contentProps}>
             {popoverHeadingContent}
-            <XDSNavMenuCloseContext.Provider value={{closeMenu: popover.hide}}>
+            <XDSNavHeadingCloseContext.Provider
+              value={{closeMenu: popover.hide}}>
               {menu}
-            </XDSNavMenuCloseContext.Provider>
+            </XDSNavHeadingCloseContext.Provider>
           </div>,
           {
             placement: 'below',

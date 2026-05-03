@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import {XDSNavHeadingMenu} from './XDSNavHeadingMenu';
 import {XDSNavHeadingMenuItem} from './XDSNavHeadingMenuItem';
 import {XDSNavMenuItem} from './XDSNavMenuItem';
-import {XDSNavMenuCloseContext} from './XDSNavMenuContext';
+import {XDSNavHeadingCloseContext} from './XDSNavMenuContext';
 
 describe('XDSNavHeadingMenu', () => {
   it('renders with role="menu"', () => {
@@ -214,9 +214,9 @@ describe('context forwarding', () => {
       </XDSNavHeadingMenu>,
       {
         wrapper: ({children}) => (
-          <XDSNavMenuCloseContext.Provider value={{closeMenu}}>
+          <XDSNavHeadingCloseContext.Provider value={{closeMenu}}>
             {children}
-          </XDSNavMenuCloseContext.Provider>
+          </XDSNavHeadingCloseContext.Provider>
         ),
       },
     );
@@ -233,9 +233,9 @@ describe('context forwarding', () => {
       </XDSNavHeadingMenu>,
       {
         wrapper: ({children}) => (
-          <XDSNavMenuCloseContext.Provider value={{closeMenu}}>
+          <XDSNavHeadingCloseContext.Provider value={{closeMenu}}>
             {children}
-          </XDSNavMenuCloseContext.Provider>
+          </XDSNavHeadingCloseContext.Provider>
         ),
       },
     );

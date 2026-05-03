@@ -13,7 +13,7 @@ import {
   radiusVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
-import {useXDSNavMenuContext} from './XDSNavMenuContext';
+import {useXDSNavHeadingMenuContext} from './XDSNavMenuContext';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 
 const styles = stylex.create({
@@ -118,7 +118,7 @@ export function XDSNavHeadingMenuItem({
   style,
   'data-testid': testId,
 }: XDSNavHeadingMenuItemProps) {
-  const ctx = useXDSNavMenuContext();
+  const ctx = useXDSNavHeadingMenuContext();
   const size = ctx?.size ?? 'md';
 
   const handleClick = useCallback(() => {

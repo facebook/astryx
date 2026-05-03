@@ -4,14 +4,14 @@ export type {XDSNavHeadingMenuProps} from './XDSNavHeadingMenu';
 export {XDSNavHeadingMenuItem} from './XDSNavHeadingMenuItem';
 export type {XDSNavHeadingMenuItemProps} from './XDSNavHeadingMenuItem';
 export {
-  XDSNavMenuContext,
-  useXDSNavMenuContext,
-  XDSNavMenuCloseContext,
-  useXDSNavMenuCloseContext,
+  XDSNavHeadingMenuContext,
+  useXDSNavHeadingMenuContext,
+  XDSNavHeadingCloseContext,
+  useXDSNavHeadingCloseContext,
 } from './XDSNavMenuContext';
 export type {
-  XDSNavMenuContextValue,
-  XDSNavMenuCloseContextValue,
+  XDSNavHeadingMenuContextValue,
+  XDSNavHeadingCloseContextValue,
   XDSNavHeadingMenuSize,
 } from './XDSNavMenuContext';
 

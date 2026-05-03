@@ -9,30 +9,29 @@ export type XDSNavHeadingMenuSize = 'sm' | 'md' | 'lg';
  * XDSNavHeadingMenu reads this to dismiss the popover on item selection
  * and on Escape.
  */
-export interface XDSNavMenuCloseContextValue {
+export interface XDSNavHeadingCloseContextValue {
   closeMenu: () => void;
 }
 
-export const XDSNavMenuCloseContext =
-  createContext<XDSNavMenuCloseContextValue | null>(null);
+export const XDSNavHeadingCloseContext =
+  createContext<XDSNavHeadingCloseContextValue | null>(null);
 
-export function useXDSNavMenuCloseContext(): XDSNavMenuCloseContextValue | null {
-  return useContext(XDSNavMenuCloseContext);
+export function useXDSNavHeadingCloseContext(): XDSNavHeadingCloseContextValue | null {
+  return useContext(XDSNavHeadingCloseContext);
 }
 
 /**
- * Size context provided by XDSNavHeadingMenu to its children.
- * Items read this for consistent padding.
+ * Size and close context provided by XDSNavHeadingMenu to its children.
+ * Items read this for consistent padding and dismiss-on-click.
  */
-export interface XDSNavMenuContextValue {
+export interface XDSNavHeadingMenuContextValue {
   size: XDSNavHeadingMenuSize;
   closeMenu: () => void;
 }
 
-export const XDSNavMenuContext = createContext<XDSNavMenuContextValue | null>(
-  null,
-);
+export const XDSNavHeadingMenuContext =
+  createContext<XDSNavHeadingMenuContextValue | null>(null);
 
-export function useXDSNavMenuContext(): XDSNavMenuContextValue | null {
-  return useContext(XDSNavMenuContext);
+export function useXDSNavHeadingMenuContext(): XDSNavHeadingMenuContextValue | null {
+  return useContext(XDSNavHeadingMenuContext);
 }

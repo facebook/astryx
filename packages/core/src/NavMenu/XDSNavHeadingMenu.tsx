@@ -7,8 +7,8 @@ import {spacingVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {useListFocus} from '../hooks/useListFocus';
 import {
-  XDSNavMenuContext,
-  useXDSNavMenuCloseContext,
+  XDSNavHeadingMenuContext,
+  useXDSNavHeadingCloseContext,
   type XDSNavHeadingMenuSize,
 } from './XDSNavMenuContext';
 
@@ -95,7 +95,7 @@ export function XDSNavHeadingMenu({
   style: styleProp,
   'data-testid': testId,
 }: XDSNavHeadingMenuProps) {
-  const closeCtx = useXDSNavMenuCloseContext();
+  const closeCtx = useXDSNavHeadingCloseContext();
   const closeMenu = closeCtx?.closeMenu;
 
   const {listRef, handleKeyDown} = useListFocus({
@@ -113,7 +113,7 @@ export function XDSNavHeadingMenu({
   const inlineStyle = minWidth != null ? {...styleProp, minWidth} : styleProp;
 
   return (
-    <XDSNavMenuContext.Provider value={ctx}>
+    <XDSNavHeadingMenuContext.Provider value={ctx}>
       <div
         ref={listRef as React.RefObject<HTMLDivElement>}
         role="menu"
@@ -127,7 +127,7 @@ export function XDSNavHeadingMenu({
         )}>
         {children}
       </div>
-    </XDSNavMenuContext.Provider>
+    </XDSNavHeadingMenuContext.Provider>
   );
 }
 
