@@ -71,7 +71,7 @@ export function ExampleBlock({entry}: ExampleBlockProps) {
 
       <LivePreview entry={entry} />
 
-      <XDSSection variant="wash" padding={0} dividers={['top']}>
+      <XDSSection variant="wash" padding={1} dividers={['top']}>
         <XDSTabList value={tab} onChange={setTab} size="sm">
           <XDSTab value="description" label="Description" />
           <XDSTab value="code" label="Code" />

@@ -50,7 +50,7 @@ export const docs = {
       type: 'ReactNode',
       description:
         'Banner slot for system-wide announcements, placed above the topNav.',
-      slotElements: [{__element: 'XDSBanner', props: {title: 'Info', status: 'info'}}],
+      slotElements: [{__element: 'XDSBanner', props: {title: 'Info', status: 'info', container: 'section'}}],
     },
     {
       name: 'height',
@@ -90,6 +90,34 @@ export const docs = {
         'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
     },
   ],
+  playground: {
+    defaults: {
+      variant: 'surface',
+      contentPadding: 4,
+      topNav: {
+        __element: 'XDSTopNav',
+        props: {label: 'Navigation'},
+        children: {__element: 'XDSText', props: {type: 'body', weight: 'bold'}, children: 'My App'},
+      },
+      sideNav: {
+        __element: 'XDSSideNav',
+        props: {},
+        children: [
+          {__element: 'XDSSideNavItem', props: {label: 'Dashboard', isSelected: true}},
+          {__element: 'XDSSideNavItem', props: {label: 'Settings'}},
+          {__element: 'XDSSideNavItem', props: {label: 'Help'}},
+        ],
+      },
+      children: {
+        __element: 'XDSVStack',
+        props: {gap: 3},
+        children: [
+          {__element: 'XDSHeading', props: {level: 2}, children: 'Dashboard'},
+          {__element: 'XDSText', props: {type: 'body', color: 'secondary'}, children: 'Welcome back. Here is an overview of your workspace.'},
+        ],
+      },
+    },
+  },
   theming: {
     targets: [
       {className: 'xds-app-shell', visualProps: ['variant']},

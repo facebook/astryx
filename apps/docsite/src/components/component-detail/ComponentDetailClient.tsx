@@ -9,6 +9,7 @@ import {XDSCard} from '@xds/core/Card';
 import {XDSDivider} from '@xds/core';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
+import {useMediaQuery} from '@xds/core/hooks';
 import {ShowcasePreview} from './ShowcasePreview';
 import {BestPractices} from './BestPractices';
 import {HookSignature} from './HookSignature';
@@ -100,6 +101,7 @@ function ComponentDetailInner({
   const isHook = comp.params != null;
   const hasShowcase = comp.name in showcaseRegistry;
   const hasPlayground = !isHook;
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   const tab = searchParams.get('tab') ?? 'overview';
   const setTab = (value: string) => {
@@ -160,7 +162,7 @@ function ComponentDetailInner({
                     zIndex: 10,
                     backgroundColor: 'var(--color-background-page)',
                     backdropFilter: 'blur(16px)',
-                    maxHeight: 400,
+                    maxHeight: isMobile ? 250 : 400,
                     overflow: 'auto',
                   }}>
                   <InteractivePreviewStage name={comp.name} state={state} />
