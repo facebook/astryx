@@ -5,10 +5,10 @@
  */
 
 import {notFound} from 'next/navigation';
-import {components} from '../../../generated/componentRegistry';
-import {blocks} from '../../../generated/blockRegistry';
-import {packages} from '../../../generated/packageRegistry';
-import {ComponentDetailClient} from '../../../components/component-detail/ComponentDetailClient';
+import {components} from '../../../../generated/componentRegistry';
+import {blocks} from '../../../../generated/blockRegistry';
+import {packages} from '../../../../generated/packageRegistry';
+import {ComponentDetailClient} from '../../../../components/component-detail/ComponentDetailClient';
 
 const allComponents = Object.values(components).flat();
 
