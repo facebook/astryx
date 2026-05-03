@@ -103,6 +103,7 @@ const styles = stylex.create({
     flexDirection: 'column',
     width: 64,
     flexShrink: 0,
+    isolation: 'isolate',
   },
   imageContainer: {
     position: 'relative',
@@ -256,20 +257,14 @@ export function XDSThumbnail({
   const showPlaceholder = !isLoading && !hasSrc;
   const isInteractive = onClick != null && !isDisabled && !isLoading;
   const accessibleName =
-    label && alt ? `${label} — ${alt}` : label ?? alt ?? 'thumbnail';
+    label && alt ? `${label} — ${alt}` : (label ?? alt ?? 'thumbnail');
 
   const imageContent = (
     <>
       {showImage && (
-        <img
-          src={src}
-          alt={alt ?? ''}
-          {...stylex.props(styles.image)}
-        />
+        <img src={src} alt={alt ?? ''} {...stylex.props(styles.image)} />
       )}
-      {showSkeleton && (
-        <XDSSkeleton radius={2} />
-      )}
+      {showSkeleton && <XDSSkeleton radius={2} />}
       {showPlaceholder && (
         <div {...stylex.props(styles.placeholder)}>
           <ImagePlaceholder />
@@ -301,11 +296,7 @@ export function XDSThumbnail({
       aria-label={accessibleName}
       {...mergeProps(
         xdsClassName('thumbnail'),
-        stylex.props(
-          styles.root,
-          isDisabled && styles.disabled,
-          xstyle,
-        ),
+        stylex.props(styles.root, isDisabled && styles.disabled, xstyle),
         className,
         style,
       )}
@@ -333,9 +324,7 @@ export function XDSThumbnail({
           </div>
         )}
         {removeButtonEl != null && imageMode != null ? (
-          <XDSMediaTheme mode={imageMode}>
-            {removeButtonEl}
-          </XDSMediaTheme>
+          <XDSMediaTheme mode={imageMode}>{removeButtonEl}</XDSMediaTheme>
         ) : (
           removeButtonEl
         )}

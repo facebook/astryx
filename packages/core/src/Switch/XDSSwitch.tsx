@@ -73,6 +73,7 @@ const styles = stylex.create({
     flexShrink: 0,
     width: SWITCH_WIDTH,
     height: SWITCH_HEIGHT,
+    isolation: 'isolate',
   },
   input: {
     position: 'absolute',

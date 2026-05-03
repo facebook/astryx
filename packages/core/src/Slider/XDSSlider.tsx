@@ -128,6 +128,7 @@ const styles = stylex.create({
     flexGrow: 1,
     touchAction: 'none',
     userSelect: 'none',
+    isolation: 'isolate',
   },
   trackContainerHorizontal: {
     height: THUMB_SIZE,

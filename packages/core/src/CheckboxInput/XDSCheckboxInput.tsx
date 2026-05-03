@@ -59,6 +59,7 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+    isolation: 'isolate',
   },
   input: {
     position: 'absolute',
