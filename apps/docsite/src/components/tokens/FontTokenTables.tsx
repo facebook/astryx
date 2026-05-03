@@ -3,7 +3,7 @@
 import * as stylex from '@stylexjs/stylex';
 import {XDSHStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
-import {XDSTable, pixel} from '@xds/core/Table';
+import {XDSTable} from '@xds/core/Table';
 import type {TokenTableProps} from './types';
 import {resolveToken, getTokensByPrefix} from './helpers';
 
@@ -39,7 +39,7 @@ export function FontFamilyTokenTable({theme}: TokenTableProps) {
     <XDSTable
       data={data as Record<string, unknown>[]}
       columns={[
-        {key: 'tokenName', header: 'Token', width: pixel(300)},
+        {key: 'tokenName', header: 'Token'},
         {
           key: 'value',
           header: 'Value',
@@ -79,7 +79,7 @@ export function FontWeightTokenTable({theme}: TokenTableProps) {
     <XDSTable
       data={data as Record<string, unknown>[]}
       columns={[
-        {key: 'tokenName', header: 'Token', width: pixel(300)},
+        {key: 'tokenName', header: 'Token'},
         {
           key: 'value',
           header: 'Value',
@@ -115,7 +115,7 @@ export function FontSizeTokenTable({theme}: TokenTableProps) {
     <XDSTable
       data={data as Record<string, unknown>[]}
       columns={[
-        {key: 'tokenName', header: 'Token', width: pixel(300)},
+        {key: 'tokenName', header: 'Token'},
         {
           key: 'value',
           header: 'Value',

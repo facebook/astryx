@@ -4,7 +4,6 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
-import {XDSCard} from '@xds/core/Card';
 
 const styles = stylex.create({
   root: {width: '100%'},
@@ -26,19 +25,12 @@ export function CodeBlockRenderer({
           {label}
         </XDSText>
       )}
-      <XDSCard variant="muted" xstyle={styles.root}>
-        <XDSCodeBlock
-          code={code}
-          language={lang}
-          hasCopyButton
-          style={
-            {
-              '--color-syntax-background': 'transparent',
-              width: '100%',
-            } as React.CSSProperties
-          }
-        />
-      </XDSCard>
+      <XDSCodeBlock
+        code={code}
+        language={lang}
+        hasCopyButton
+        xstyle={styles.root}
+      />
     </XDSVStack>
   );
 }

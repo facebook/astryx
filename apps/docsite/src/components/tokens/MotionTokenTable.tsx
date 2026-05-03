@@ -4,7 +4,7 @@ import {useState, useEffect, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
-import {XDSTable, pixel} from '@xds/core/Table';
+import {XDSTable} from '@xds/core/Table';
 import type {TokenTableProps} from './types';
 import {resolveToken, getTokensByPrefix} from './helpers';
 
@@ -173,7 +173,7 @@ export function DurationTokenTable({theme}: TokenTableProps) {
     <XDSTable
       data={data as Record<string, unknown>[]}
       columns={[
-        {key: 'tokenName', header: 'Token', width: pixel(300)},
+        {key: 'tokenName', header: 'Token'},
         {
           key: 'value',
           header: 'Value',
@@ -205,7 +205,7 @@ export function EasingTokenTable({theme}: TokenTableProps) {
     <XDSTable
       data={data as Record<string, unknown>[]}
       columns={[
-        {key: 'tokenName', header: 'Token', width: pixel(300)},
+        {key: 'tokenName', header: 'Token'},
         {
           key: 'value',
           header: 'Value',

@@ -1,6 +1,8 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
+import {XDSVStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
 import {XDSTable, proportional} from '@xds/core/Table';
 import type {XDSTextType} from '@xds/core';
 import type {XDSHeadingLevel} from '@xds/core/Text';
@@ -118,7 +120,7 @@ export function TypographyTokenTable({theme}: TokenTableProps) {
       columns={[
         {
           key: 'label',
-          header: 'Style',
+          header: 'Sample',
           width: proportional(2),
           renderCell: (item: Record<string, unknown>) => (
             <span
@@ -129,20 +131,25 @@ export function TypographyTokenTable({theme}: TokenTableProps) {
                 fontWeight: item.fontWeight as string,
                 lineHeight: (item.leading as string)?.split(' ')[0],
               }}>
-              {item.label as string}
+              {item.sampleText as string}
             </span>
           ),
         },
         {
-          key: 'fontFamily',
-          header: 'Font',
+          key: 'tokens',
+          header: 'Tokens',
           renderCell: (item: Record<string, unknown>) => (
-            <>{(item.fontFamily as string)?.split(',')[0]?.trim()}</>
+            <XDSVStack gap={1}>
+              <XDSText type="code" color="secondary">
+                {item.fontSize as string} ·{' '}
+                {(item.fontFamily as string)?.split(',')[0]?.trim()}
+              </XDSText>
+              <XDSText type="code" color="secondary">
+                {item.fontWeight as string} · {item.leading as string}
+              </XDSText>
+            </XDSVStack>
           ),
         },
-        {key: 'fontSize', header: 'Size'},
-        {key: 'fontWeight', header: 'Weight'},
-        {key: 'leading', header: 'Leading'},
       ]}
       density="spacious"
       dividers="rows"
