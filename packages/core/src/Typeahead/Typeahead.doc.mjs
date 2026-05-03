@@ -272,6 +272,7 @@ export const docs = {
           name: 'icon',
           type: 'ReactNode',
           description: 'Icon or avatar to display before the label.',
+          slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
         },
         {
           name: 'description',

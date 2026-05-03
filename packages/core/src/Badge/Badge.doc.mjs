@@ -20,6 +20,7 @@ export const docs = {
       name: 'icon',
       type: 'ReactNode',
       description: 'Optional leading icon.',
+      slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
     },
   ],
   playground: {

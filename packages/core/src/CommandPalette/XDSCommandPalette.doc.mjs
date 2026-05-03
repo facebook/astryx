@@ -46,6 +46,7 @@ export const docs = {
           description:
             'Input slot. Defaults to XDSCommandPaletteInput with standard behavior.',
           default: '<XDSCommandPaletteInput />',
+          slotElements: [{__element: 'XDSTextInput', props: {label: 'Input', placeholder: 'Type here...'}}],
         },
         {
           name: 'footer',
@@ -53,6 +54,7 @@ export const docs = {
           description:
             'Footer slot. Defaults to XDSCommandPaletteFooter showing keyboard hints.',
           default: '<XDSCommandPaletteFooter />',
+          slotElements: [{__element: 'XDSText', props: {type: 'body'}, children: 'Footer content'}],
         },
         {
           name: 'renderItem',
@@ -131,6 +133,10 @@ export const docs = {
           type: 'ReactNode',
           description:
             'Content rendered at the trailing end of the input, after the spinner. Use for clear buttons or keyboard shortcut hints.',
+          slotElements: [
+            {__element: 'XDSIcon', props: {icon: 'chevronDown', size: 'sm'}},
+            {__element: 'XDSBadge', props: {label: '3'}},
+          ],
         },
         {
           name: 'value',

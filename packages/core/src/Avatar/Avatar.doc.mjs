@@ -63,6 +63,7 @@ export const docs = {
           name: 'status',
           type: 'ReactNode',
           description: 'Corner content for status indicators.',
+          slotElements: [{__element: 'XDSStatusDot', props: {variant: 'online'}}],
         },
       ],    },
     {
@@ -85,6 +86,7 @@ export const docs = {
           name: 'icon',
           type: 'ReactNode',
           description: 'Icon centered inside the dot (hidden at tiny sizes).',
+          slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
         },
       ],
     },

@@ -154,6 +154,10 @@ export const docs = {
       type: 'ReactNode',
       description:
         'Content to display at the end of the input row. Useful for buttons, result counts, or other controls.',
+      slotElements: [
+        {__element: 'XDSIcon', props: {icon: 'chevronDown', size: 'sm'}},
+        {__element: 'XDSBadge', props: {label: '3'}},
+      ],
     },
     {
       name: 'xstyle',

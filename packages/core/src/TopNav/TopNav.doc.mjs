@@ -25,24 +25,31 @@ export const docs = {
           type: 'ReactNode',
           description:
             'Heading slot content (logo, brand) — positioned at the left edge of the nav bar.',
+          slotElements: [{__element: 'XDSText', props: {type: 'body', weight: 'bold'}, children: 'Heading'}],
         },
         {
           name: 'startContent',
           type: 'ReactNode',
           description:
             'Start content slot for navigation items or breadcrumbs — positioned after the heading, left-aligned.',
+          slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
         },
         {
           name: 'centerContent',
           type: 'ReactNode',
           description:
             'Center content slot (tabs, search bar, primary navigation) — when provided, switches the layout to a three-column CSS grid for true horizontal centering.',
+          slotElements: [{__element: 'XDSText', props: {type: 'body', weight: 'bold'}, children: 'Center'}],
         },
         {
           name: 'endContent',
           type: 'ReactNode',
           description:
             'End content slot for search, icons, or user profile — positioned at the right edge.',
+          slotElements: [
+            {__element: 'XDSIcon', props: {icon: 'chevronDown', size: 'sm'}},
+            {__element: 'XDSBadge', props: {label: '3'}},
+          ],
         },
         {
           name: 'label',
@@ -67,6 +74,7 @@ export const docs = {
           type: 'ReactNode',
           description:
             'Logo element to display before the heading text. Can be an image, XDSNavIcon, or any ReactNode.',
+          slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
         },
         {
           name: 'heading',
@@ -114,12 +122,14 @@ export const docs = {
           type: 'ReactNode',
           description:
             'Content rendered at the trailing edge of the heading row (e.g. a badge or status indicator).',
+          slotElements: [{__element: 'XDSButton', props: {label: 'Action', variant: 'ghost', size: 'sm'}}],
         },
         {
           name: 'menu',
           type: 'ReactNode',
           description:
             'Menu content shown in a popover dropdown. When provided, a chevron indicator appears automatically. Interaction boundary is determined by the presence of hrefs: no hrefs means the whole header is the trigger; with hrefs, links are independent and the chevron area is the trigger.',
+          slotElements: [{__element: 'XDSButton', props: {label: 'Action', variant: 'ghost', size: 'sm'}}],
         },
         {
           name: 'as',
@@ -178,6 +188,7 @@ export const docs = {
           type: 'ReactNode',
           description:
             'Optional icon to display before the label.',
+          slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
         },
         {
           name: 'children',
@@ -241,11 +252,13 @@ export const docs = {
           name: 'items',
           type: 'ReactNode',
           description: 'Menu items slot — typically XDSTopNavMegaMenuItem components, but accepts any ReactNode.',
+          slotElements: [{__element: 'XDSTopNavItem', props: {label: 'Item', href: '#'}}],
         },
         {
           name: 'featured',
           type: 'ReactNode',
           description: 'Featured content slot — rendered in the right panel on desktop, below items in the mobile drawer.',
+          slotElements: [{__element: 'XDSCard', props: {padding: 4}, children: 'Featured content'}],
         },
         {
           name: 'delay',
@@ -289,6 +302,7 @@ export const docs = {
           name: 'icon',
           type: 'ReactNode',
           description: 'Optional icon element displayed to the left.',
+          slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
         },
         {
           name: 'href',

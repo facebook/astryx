@@ -4,6 +4,12 @@ export const docs = {
   name: 'ToggleButton',
   group: 'Button',
   keywords: ["toggle","togglebutton","pressed","toolbar","formatting","segmented","button-group","exclusive","multi-select"],
+  playground: {
+    defaults: {
+      value: 'option-1',
+      label: 'Toggle Group',
+    },
+  },
   theming: {
     targets: [
       {className: 'xds-toggle-button-group'},
@@ -21,8 +27,12 @@ export const docs = {
         {name: 'size', type: "'sm' | 'md' | 'lg'", description: 'Button size. Defaults to group size when inside a group.', default: "'md'"},
         {name: 'isDisabled', type: 'boolean', description: 'Whether the button is disabled.', default: 'false'},
         {name: 'isLoading', type: 'boolean', description: 'Whether the button shows a loading spinner.', default: 'false'},
-        {name: 'icon', type: 'ReactNode', description: 'Icon element. When provided without children, button becomes icon-only with tooltip from label.'},
-        {name: 'pressedIcon', type: 'ReactNode', description: 'Icon shown when pressed. Falls back to icon if not provided.'},
+        {name: 'icon', type: 'ReactNode', description: 'Icon element. When provided without children, button becomes icon-only with tooltip from label.',
+          slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
+        },
+        {name: 'pressedIcon', type: 'ReactNode', description: 'Icon shown when pressed. Falls back to icon if not provided.',
+          slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
+        },
         {name: 'children', type: 'ReactNode', description: 'Visible content. If omitted with icon, button becomes icon-only.'},
         {name: 'tooltip', type: 'string', description: 'Tooltip text shown on hover.'},
         {name: 'value', type: 'string', description: 'Value identifier when used inside XDSToggleButtonGroup. Required in groups.'},
@@ -32,7 +42,7 @@ export const docs = {
       name: 'XDSToggleButtonGroup',
       description: 'Groups toggle buttons for exclusive (single) or multi-select behavior. Uses discriminated union on type for type-safe value/onChange.',
       props: [
-        {name: 'children', type: 'ReactNode', description: 'XDSToggleButton children.', required: true},
+        {name: 'children', type: 'ReactNode', description: 'XDSToggleButton children.', required: true, slotElements: [{__element: 'XDSToggleButton', props: {label: 'Option', value: 'option'}}]},
         {name: 'label', type: 'string', description: 'Accessible label for the group (aria-label).', required: true},
         {name: 'type', type: "'single' | 'multiple'", description: 'Selection mode. Single allows one active button, multiple allows many.', default: "'single'"},
         {name: 'value', type: 'string | null | string[]', description: 'Currently selected value(s). Type depends on selection mode.', required: true},

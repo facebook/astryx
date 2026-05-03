@@ -24,17 +24,23 @@ export const docs = {
           name: 'startContent',
           type: 'ReactNode',
           description: 'Content aligned to the start (left in LTR).',
+          slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
         },
         {
           name: 'centerContent',
           type: 'ReactNode',
           description:
             'Centered content. Switches layout to CSS grid (1fr auto 1fr).',
+          slotElements: [{__element: 'XDSText', props: {type: 'body', weight: 'bold'}, children: 'Center'}],
         },
         {
           name: 'endContent',
           type: 'ReactNode',
           description: 'Content aligned to the end (right in LTR).',
+          slotElements: [
+            {__element: 'XDSIcon', props: {icon: 'chevronDown', size: 'sm'}},
+            {__element: 'XDSBadge', props: {label: '3'}},
+          ],
         },
         {
           name: 'density',

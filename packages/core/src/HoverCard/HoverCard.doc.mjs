@@ -29,6 +29,7 @@ export const docs = {
           type: 'ReactNode',
           description: 'Hover card content.',
           required: true,
+          slotElements: [{__element: 'XDSText', props: {type: 'body'}, children: 'Content text'}],
         },
         {
           name: 'placement',

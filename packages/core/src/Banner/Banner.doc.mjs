@@ -46,6 +46,7 @@ export const docs = {
       name: 'icon',
       type: 'ReactNode',
       description: 'Override the default status icon.',
+      slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
     },
     {
       name: 'isDismissable',
@@ -64,6 +65,10 @@ export const docs = {
       type: 'ReactNode',
       description:
         'Action content rendered in the header area, end-aligned. Typically a button or link.',
+      slotElements: [
+        {__element: 'XDSIcon', props: {icon: 'chevronDown', size: 'sm'}},
+        {__element: 'XDSBadge', props: {label: '3'}},
+      ],
     },
     {
       name: 'container',

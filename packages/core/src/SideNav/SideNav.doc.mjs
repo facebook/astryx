@@ -22,26 +22,31 @@ export const docs = {
           name: 'header',
           type: 'ReactNode',
           description: 'Header area (typically XDSSideNavHeading). Sticky.',
+          slotElements: [{__element: 'XDSText', props: {type: 'body'}, children: 'Header'}],
         },
         {
           name: 'topContent',
           type: 'ReactNode',
           description: 'Content below the header, e.g., a create button.',
+          slotElements: [{__element: 'XDSText', props: {type: 'body'}, children: 'Top content'}],
         },
         {
           name: 'children',
           type: 'ReactNode',
           description: 'Navigation sections and items. Scrollable.',
+          slotElements: [{__element: 'XDSSideNavItem', props: {label: 'Nav Item'}}],
         },
         {
           name: 'footer',
           type: 'ReactNode',
           description: 'Footer area above the icon bar.',
+          slotElements: [{__element: 'XDSText', props: {type: 'body'}, children: 'Footer content'}],
         },
         {
           name: 'footerIcons',
           type: 'ReactNode',
           description: 'Footer icon bar.',
+          slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
         },
         {
           name: 'collapsible',
@@ -72,6 +77,7 @@ export const docs = {
           name: 'icon',
           type: 'ReactNode',
           description: 'Product/app icon.',
+          slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
         },
         {
           name: 'headingHref',
@@ -102,11 +108,13 @@ export const docs = {
           name: 'menu',
           type: 'ReactNode',
           description: 'Menu content rendered inside a popover.',
+          slotElements: [{__element: 'XDSButton', props: {label: 'Action', variant: 'ghost', size: 'sm'}}],
         },
         {
           name: 'headerEndContent',
           type: 'ReactNode',
           description: 'Content rendered at the trailing edge of the heading row, between text and chevron. Useful for badges, status indicators, or compact action buttons. Hidden when collapsed.',
+          slotElements: [{__element: 'XDSButton', props: {label: 'Action', variant: 'ghost', size: 'sm'}}],
         },
       ],
     },
@@ -163,11 +171,16 @@ export const docs = {
           name: 'endContent',
           type: 'ReactNode',
           description: 'Right-side content such as badges or counts.',
+          slotElements: [
+            {__element: 'XDSIcon', props: {icon: 'chevronDown', size: 'sm'}},
+            {__element: 'XDSBadge', props: {label: '3'}},
+          ],
         },
         {
           name: 'children',
           type: 'ReactNode',
           description: 'Sub-items for nesting.',
+          slotElements: [{__element: 'XDSSideNavItem', props: {label: 'Sub Item'}}],
         },
         {
           name: 'collapsible',
@@ -197,11 +210,16 @@ export const docs = {
           name: 'children',
           type: 'ReactNode',
           description: 'Section items.',
+          slotElements: [{__element: 'XDSSideNavItem', props: {label: 'Item'}}],
         },
         {
           name: 'endContent',
           type: 'ReactNode',
           description: 'Right-side content in the section header.',
+          slotElements: [
+            {__element: 'XDSIcon', props: {icon: 'chevronDown', size: 'sm'}},
+            {__element: 'XDSBadge', props: {label: '3'}},
+          ],
         },
         {
           name: 'isHeaderHidden',

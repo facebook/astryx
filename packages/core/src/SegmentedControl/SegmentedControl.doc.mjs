@@ -4,6 +4,11 @@ export const docs = {
   name: 'SegmentedControl',
   group: 'SegmentedControl',
   keywords: ['radio', 'tabs', 'toggle', 'toggle-group', 'pill', 'button-group', 'switch', 'segment', 'control'],
+  playground: {
+    defaults: {
+      value: 'option-1',
+    },
+  },
   theming: {
     targets: [
       {className: 'xds-segmented-control', visualProps: ['size']},
@@ -65,6 +70,7 @@ export const docs = {
           name: 'children',
           type: 'ReactNode',
           description: 'XDSSegmentedControlItem children.',
+          slotElements: [{__element: 'XDSSegmentedControlItem', props: {label: 'Option', value: 'option'}}],
           required: true,
         },
         {
@@ -103,6 +109,7 @@ export const docs = {
           name: 'icon',
           type: 'ReactNode',
           description: 'Icon element displayed before the label.',
+          slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
         },
         {
           name: 'isDisabled',

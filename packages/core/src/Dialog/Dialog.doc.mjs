@@ -106,12 +106,17 @@ export const docs = {
           type: 'ReactNode',
           description:
             'Content before the title (e.g., a back button).',
+          slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
         },
         {
           name: 'endContent',
           type: 'ReactNode',
           description:
             'Content after the title, before close button.',
+          slotElements: [
+            {__element: 'XDSIcon', props: {icon: 'chevronDown', size: 'sm'}},
+            {__element: 'XDSBadge', props: {label: '3'}},
+          ],
         },
         {
           name: 'hasDivider',

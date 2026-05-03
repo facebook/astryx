@@ -17,6 +17,7 @@ export type PropControlDescriptor =
   | {kind: 'number'}
   | {kind: 'callback'}
   | {kind: 'element'; options: ElementOption[]}
+  | {kind: 'slot-list'; options: ElementOption[]}
   | {kind: 'unknown'};
 
 const STRING_LITERAL_RE = /^['"]([^'"]*)['"]$/;
@@ -66,13 +67,15 @@ export function parsePropType(
 
   // If slotElements is declared, use it directly for the element control
   if (slotElements && slotElements.length > 0) {
-    return {
-      kind: 'element',
-      options: slotElements.map(el => ({
-        label: el.__element.replace(/^XDS/, ''),
-        componentName: el.__element,
-      })),
-    };
+    const options = slotElements.map(el => ({
+      label: el.__element.replace(/^XDS/, ''),
+      componentName: el.__element,
+    }));
+    // children with slotElements → repeatable slot list (add/remove items)
+    if (propName === 'children') {
+      return {kind: 'slot-list', options};
+    }
+    return {kind: 'element', options};
   }
 
   if (CALLBACK_RE.test(t)) return {kind: 'callback'};

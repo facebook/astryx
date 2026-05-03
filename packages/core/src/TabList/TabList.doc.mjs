@@ -4,6 +4,11 @@ export const docs = {
   name: 'TabList',
   group: 'Tabs',
   keywords: ["tabs","tabbar","tabstrip","navigation","tabpanel","tabgroup","segmented","navtabs","tab"],
+  playground: {
+    defaults: {
+      value: 'tab-1',
+    },
+  },
   theming: {
     targets: [
       {className: 'xds-tab-list', visualProps: ['size']},
@@ -49,6 +54,7 @@ export const docs = {
           name: 'children',
           type: 'ReactNode',
           description: 'XDSTab and XDSTabMenu items to render inside the nav.',
+          slotElements: [{__element: 'XDSTab', props: {label: 'Tab', value: 'tab'}}],
           required: true,
         },
         {
@@ -92,18 +98,24 @@ export const docs = {
           name: 'icon',
           type: 'ReactNode',
           description: 'Icon element shown when the tab is not selected.',
+          slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
         },
         {
           name: 'selectedIcon',
           type: 'ReactNode',
           description:
             'Icon element shown when the tab is selected; falls back to icon if not provided.',
+          slotElements: [{__element: 'XDSIcon', props: {icon: 'checkCircle', size: 'sm'}}],
         },
         {
           name: 'endContent',
           type: 'ReactNode',
           description:
             'Content rendered after the label, such as a badge count or status dot.',
+          slotElements: [
+            {__element: 'XDSIcon', props: {icon: 'chevronDown', size: 'sm'}},
+            {__element: 'XDSBadge', props: {label: '3'}},
+          ],
         },
         {
           name: 'xstyle',

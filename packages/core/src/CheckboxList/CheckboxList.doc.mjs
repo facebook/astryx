@@ -20,6 +20,7 @@ export const docs = {
           name: 'children',
           type: 'ReactNode',
           description: 'XDSCheckboxListItem elements.',
+          slotElements: [{__element: 'XDSCheckboxListItem', props: {label: 'Option', value: 'option'}}],
           required: true,
         },
         {
@@ -110,6 +111,10 @@ export const docs = {
           name: 'endContent',
           type: 'ReactNode',
           description: 'Content rendered after the label area.',
+          slotElements: [
+            {__element: 'XDSIcon', props: {icon: 'chevronDown', size: 'sm'}},
+            {__element: 'XDSBadge', props: {label: '3'}},
+          ],
         },
         {
           name: 'isDisabled',

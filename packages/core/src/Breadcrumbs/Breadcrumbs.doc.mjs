@@ -40,6 +40,7 @@ export const docs = {
           type: 'ReactNode',
           description:
             'XDSBreadcrumbItem elements to render inside the breadcrumb trail.',
+          slotElements: [{__element: 'XDSBreadcrumbItem', props: {href: '#'}, children: 'Page'}],
           required: true,
         },
         {
@@ -47,6 +48,7 @@ export const docs = {
           type: 'ReactNode',
           description: 'Separator rendered between breadcrumb items.',
           default: "'/'",
+          slotElements: [{__element: 'XDSIcon', props: {icon: 'chevronRight', size: 'sm'}}],
         },
         {
           name: 'variant',
@@ -101,6 +103,7 @@ export const docs = {
           name: 'startIcon',
           type: 'ReactNode',
           description: 'Icon rendered before the item label.',
+          slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
         },
         {
           name: 'as',

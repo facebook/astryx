@@ -18,6 +18,7 @@ export const docs = {
       type: 'ReactNode',
       description: 'Icon element rendered inside the button.',
       required: true,
+      slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
     },
     {
       name: 'variant',

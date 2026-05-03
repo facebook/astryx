@@ -11,6 +11,7 @@ export const docs = {
       description:
         'The icon element to render inside the circular background. Should be an XDSIcon or similar icon component.',
       required: true,
+      slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
     },
   ],
   theming: {

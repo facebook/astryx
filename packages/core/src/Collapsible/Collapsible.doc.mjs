@@ -20,6 +20,7 @@ export const docs = {
           type: 'ReactNode',
           description: 'Content shown in the trigger area (always visible).',
           required: true,
+          slotElements: [{__element: 'XDSText', props: {type: 'body'}, children: 'Trigger'}],
         },
         {
           name: 'children',
@@ -81,6 +82,7 @@ export const docs = {
           type: 'ReactNode',
           description: 'XDSCollapsible instances to coordinate.',
           required: true,
+          slotElements: [{__element: 'XDSCollapsible', props: {trigger: 'Section'}, children: 'Content'}],
         },
       ],
     },

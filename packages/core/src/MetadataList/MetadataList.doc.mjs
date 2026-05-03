@@ -22,6 +22,7 @@ export const docs = {
           name: 'children',
           type: 'ReactNode',
           description: 'Metadata items (XDSMetadataListItem components).',
+          slotElements: [{__element: 'XDSMetadataListItem', props: {label: 'Key'}, children: 'Value'}],
           required: true,
         },
         {
@@ -83,6 +84,7 @@ export const docs = {
           name: 'icon',
           type: 'ReactNode',
           description: 'Icon rendered before the label text.',
+          slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
         },
       ],
     },

@@ -40,6 +40,7 @@ export const docs = {
           name: 'children',
           type: 'ReactNode',
           description: 'XDSRadioListItem elements.',
+          slotElements: [{__element: 'XDSRadioListItem', props: {label: 'Option', value: 'option'}}],
           required: true,
         },
         {
@@ -134,11 +135,16 @@ export const docs = {
           name: 'startContent',
           type: 'ReactNode',
           description: 'Content to render before the radio circle.',
+          slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
         },
         {
           name: 'endContent',
           type: 'ReactNode',
           description: 'Content to render after the label.',
+          slotElements: [
+            {__element: 'XDSIcon', props: {icon: 'chevronDown', size: 'sm'}},
+            {__element: 'XDSBadge', props: {label: '3'}},
+          ],
         },
       ],
     },

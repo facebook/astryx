@@ -22,6 +22,7 @@ export const docs = {
           name: 'content',
           type: 'ReactNode',
           description: 'Tooltip content, typically short text.',
+          slotElements: [{__element: 'XDSText', props: {type: 'body'}, children: 'Content text'}],
         },
         {
           name: 'placement',

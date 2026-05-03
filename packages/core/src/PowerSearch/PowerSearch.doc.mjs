@@ -101,6 +101,10 @@ export const docs = {
       type: 'ReactNode',
       description:
         'Content to display at the end of the input row. Useful for action buttons or other controls.',
+      slotElements: [
+        {__element: 'XDSIcon', props: {icon: 'chevronDown', size: 'sm'}},
+        {__element: 'XDSBadge', props: {label: '3'}},
+      ],
     },
     {
       name: 'resultCount',

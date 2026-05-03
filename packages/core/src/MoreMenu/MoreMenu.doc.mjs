@@ -35,6 +35,7 @@ export const docs = {
       type: 'ReactNode',
       description:
         'Override the default three-dot icon. Accepts any ReactNode.',
+      slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
     },
     {
       name: 'isDisabled',

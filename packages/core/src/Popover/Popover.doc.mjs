@@ -25,6 +25,7 @@ export const docs = {
           type: 'ReactNode',
           description: 'Content to display inside the popover.',
           required: true,
+          slotElements: [{__element: 'XDSText', props: {type: 'body'}, children: 'Content text'}],
         },
         {
           name: 'placement',

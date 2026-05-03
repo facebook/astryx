@@ -88,6 +88,26 @@ function buildInitialState(
     const def = coerceDefault(row.default, control);
     if (def !== undefined) {
       state[row.name] = def;
+    } else if (control.kind === 'slot-list') {
+      // Always generate initial items for slot-lists (empty list isn't useful)
+      const slotEl = row.slotElements?.[0];
+      if (slotEl) {
+        state[row.name] = [1, 2, 3].map(n => {
+          const tweaked = {...slotEl};
+          const props = {...(tweaked.props ?? {})};
+          if (typeof props.label === 'string') {
+            props.label = `${props.label} ${n}`;
+          }
+          if (typeof props.value === 'string') {
+            props.value = `${props.value}-${n}`;
+          }
+          tweaked.props = props;
+          if (typeof tweaked.children === 'string') {
+            tweaked.children = `${tweaked.children} ${n}`;
+          }
+          return resolveValue(tweaked);
+        });
+      }
     } else if (row.required) {
       switch (control.kind) {
         case 'enum':

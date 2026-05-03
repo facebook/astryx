@@ -4,6 +4,20 @@ export const docs = {
   name: 'TreeList',
   group: 'TreeList',
   keywords: ['tree', 'hierarchy', 'nested', 'accordion', 'folder', 'expand', 'collapse', 'treeview', 'outline'],
+  playground: {
+    defaults: {
+      items: [
+        {id: '1', label: 'Documents', children: [
+          {id: '1a', label: 'Report.pdf'},
+          {id: '1b', label: 'Notes.md'},
+        ]},
+        {id: '2', label: 'Images', children: [
+          {id: '2a', label: 'Photo.jpg'},
+        ]},
+        {id: '3', label: 'README.md'},
+      ],
+    },
+  },
   theming: {
     targets: [
       {className: 'xds-tree-list', visualProps: ['density']},
@@ -33,6 +47,7 @@ export const docs = {
           type: 'ReactNode',
           description:
             'Header content, associated with the tree via aria-labelledby.',
+          slotElements: [{__element: 'XDSText', props: {type: 'body'}, children: 'Header'}],
         },
         {
           name: 'xstyle',

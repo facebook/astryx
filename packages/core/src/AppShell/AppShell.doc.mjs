@@ -30,23 +30,27 @@ export const docs = {
       name: 'topNav',
       type: 'ReactNode',
       description: 'Top navigation slot, typically XDSTopNav.',
+      slotElements: [{__element: 'XDSTopNav', props: {label: 'Navigation'}}],
     },
     {
       name: 'sideNav',
       type: 'ReactNode',
       description: 'Side navigation slot, typically XDSSideNav.',
+      slotElements: [{__element: 'XDSSideNav', props: {}}],
     },
     {
       name: 'mobileNav',
       type: 'ReactNode',
       description:
         'Mobile navigation configuration. Accepts false (disable), config object (tune auto behavior), or ReactNode (full custom drawer).',
+      slotElements: [{__element: 'XDSMobileNav', props: {}}],
     },
     {
       name: 'banner',
       type: 'ReactNode',
       description:
         'Banner slot for system-wide announcements, placed above the topNav.',
+      slotElements: [{__element: 'XDSBanner', props: {title: 'Info', status: 'info'}}],
     },
     {
       name: 'height',

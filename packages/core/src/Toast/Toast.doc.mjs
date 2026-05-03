@@ -12,6 +12,7 @@ export const docs = {
       type: 'ReactNode',
       description: 'Primary message content.',
       required: true,
+      slotElements: [{__element: 'XDSText', props: {type: 'body'}, children: 'Toast message'}],
     },
     {
       name: 'type',
@@ -34,6 +35,10 @@ export const docs = {
       name: 'endContent',
       type: 'ReactNode',
       description: 'Content rendered at the trailing end (e.g. Undo button, link).',
+      slotElements: [
+        {__element: 'XDSIcon', props: {icon: 'chevronDown', size: 'sm'}},
+        {__element: 'XDSBadge', props: {label: '3'}},
+      ],
     },
     {
       name: 'uniqueID',

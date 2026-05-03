@@ -23,26 +23,31 @@ export const docs = {
           name: 'content',
           type: 'ReactNode',
           description: 'Main content area (center).',
+          slotElements: [{__element: 'XDSText', props: {type: 'body'}, children: 'Content text'}],
         },
         {
           name: 'header',
           type: 'ReactNode',
           description: 'Header slot.',
+          slotElements: [{__element: 'XDSText', props: {type: 'body'}, children: 'Header'}],
         },
         {
           name: 'footer',
           type: 'ReactNode',
           description: 'Footer slot.',
+          slotElements: [{__element: 'XDSText', props: {type: 'body'}, children: 'Footer content'}],
         },
         {
           name: 'start',
           type: 'ReactNode',
           description: 'Start panel (left in LTR).',
+          slotElements: [{__element: 'XDSText', props: {type: 'body'}, children: 'Panel content'}],
         },
         {
           name: 'end',
           type: 'ReactNode',
           description: 'End panel (right in LTR).',
+          slotElements: [{__element: 'XDSText', props: {type: 'body'}, children: 'Panel content'}],
         },
         {
           name: 'height',

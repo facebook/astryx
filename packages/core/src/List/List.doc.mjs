@@ -18,6 +18,7 @@ export const docs = {
           name: 'children',
           type: 'ReactNode',
           description: 'List items (XDSListItem components).',
+          slotElements: [{__element: 'XDSListItem', props: {label: 'List item'}}],
         },
         {
           name: 'density',
@@ -36,6 +37,7 @@ export const docs = {
           type: 'ReactNode',
           description:
             'Header content, associated with the list via aria-labelledby.',
+          slotElements: [{__element: 'XDSText', props: {type: 'body'}, children: 'Header'}],
         },
         {
           name: 'listStyle',
@@ -74,12 +76,17 @@ export const docs = {
           type: 'ReactNode',
           description:
             'Content rendered before the label area (e.g. icon, avatar).',
+          slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
         },
         {
           name: 'endContent',
           type: 'ReactNode',
           description:
             'Content rendered after the label area (e.g. badge, chevron).',
+          slotElements: [
+            {__element: 'XDSIcon', props: {icon: 'chevronDown', size: 'sm'}},
+            {__element: 'XDSBadge', props: {label: '3'}},
+          ],
         },
         {
           name: 'onClick',
