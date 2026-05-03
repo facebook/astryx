@@ -163,10 +163,10 @@ describe('component() blocks integration', () => {
     expect(result.data.showcase.name).toMatch(/ClickableCard/);
   });
 
-  it('component with no blocks returns null showcase and empty arrays', async () => {
+  it('component with showcase returns showcase data', async () => {
     const result = await component('Theme', {...CWD, blocks: true});
-    expect(result.data.showcase).toBeNull();
-    expect(result.data.examples).toEqual([]);
-    expect(result.data.related).toEqual([]);
+    expect(result.data.showcase).not.toBeNull();
+    expect(result.data.showcase.name).toBe('ThemeShowcase');
+    expect(result.data.showcase.isShowcase).toBe(true);
   });
 });
