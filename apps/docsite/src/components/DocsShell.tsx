@@ -225,7 +225,7 @@ export function DocsShell({
               />
             }
             endContent={
-              <XDSHStack gap={2}>
+              <XDSHStack gap={0.5}>
                 <XDSButton
                   label="Search"
                   variant="ghost"
