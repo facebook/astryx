@@ -25,6 +25,7 @@ import {xdsClassName, mergeProps} from '../utils';
 import {XDSSection} from '../Section/XDSSection';
 import {useListFocus} from '../hooks/useListFocus';
 import {XDSSizeProvider} from '../SizeContext/XDSSizeContext';
+import {edgeCompSlot} from '../Layout/edgeCompensation.stylex';
 
 /**
  * Map SpacingStep values to spacingVars keys.
@@ -122,16 +123,15 @@ const blockPaddingVarForSize: Record<XDSElementSize, string> = {
 };
 
 /**
- * Dynamic edge inset style. The inset equals container-inline-padding minus
- * the toolbar's block padding, creating even spacing around edge-compensated
- * items (ghost buttons, tabs).
+ * Edge compensation inset amount per toolbar size.
+ * Equals container-inline-padding minus the toolbar's block padding,
+ * creating even spacing around edge-compensated items (ghost buttons, tabs).
  */
-const edgeInsetStyles = stylex.create({
-  inset: (blockPadding: string) => ({
-    '--edge-inset-start': `calc(var(--container-padding-inline-start, ${spacingVars['--spacing-4']}) - ${blockPadding})`,
-    '--edge-inset-end': `calc(var(--container-padding-inline-end, ${spacingVars['--spacing-4']}) - ${blockPadding})`,
-  }),
-});
+const edgeCompInsetForSize: Record<XDSElementSize, string> = {
+  sm: `calc(var(--container-padding-inline-start, ${spacingVars['--spacing-4']}) - ${spacingVars['--spacing-2']})`,
+  md: `calc(var(--container-padding-inline-start, ${spacingVars['--spacing-4']}) - ${spacingVars['--spacing-2']})`,
+  lg: `calc(var(--container-padding-inline-start, ${spacingVars['--spacing-4']}) - ${spacingVars['--spacing-2']})`,
+};
 
 export type XDSToolbarSize = XDSElementSize;
 
@@ -272,7 +272,7 @@ export function XDSToolbar({
               <div
                 {...stylex.props(
                   styles.startSlot,
-                  edgeInsetStyles.inset(blockPaddingVarForSize[size]),
+                  edgeCompSlot.inset(edgeCompInsetForSize[size]),
                   dynamicStyles.gap(gapVar),
                 )}>
                 {startContent}
@@ -284,7 +284,7 @@ export function XDSToolbar({
               <div
                 {...stylex.props(
                   styles.endSlot,
-                  edgeInsetStyles.inset(blockPaddingVarForSize[size]),
+                  edgeCompSlot.inset(edgeCompInsetForSize[size]),
                   dynamicStyles.gap(gapVar),
                 )}>
                 {endContent}
@@ -298,7 +298,7 @@ export function XDSToolbar({
                   {...stylex.props(
                     styles.startSlot,
                     !hasEndContent && styles.startOnly,
-                    edgeInsetStyles.inset(blockPaddingVarForSize[size]),
+                    edgeCompSlot.inset(edgeCompInsetForSize[size]),
                     dynamicStyles.gap(gapVar),
                   )}>
                   {startContent}
@@ -309,7 +309,7 @@ export function XDSToolbar({
                   {...stylex.props(
                     styles.endSlot,
                     !hasStartContent && styles.endOnly,
-                    edgeInsetStyles.inset(blockPaddingVarForSize[size]),
+                    edgeCompSlot.inset(edgeCompInsetForSize[size]),
                     dynamicStyles.gap(gapVar),
                   )}>
                   {endContent}

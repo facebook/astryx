@@ -34,6 +34,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import {edgeCompSlot} from '../Layout/edgeCompensation.stylex';
 
 // =============================================================================
 // Types
@@ -251,8 +252,6 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
     flexShrink: 0,
     marginInlineStart: 'auto',
-    // Edge compensation: align end content flush with container edge.
-    marginInlineEnd: `calc(-1 * ${spacingVars['--spacing-2']})`,
     marginBlock: `calc(-1 * (${spacingVars['--spacing-3']} - ${spacingVars['--spacing-2']}))`,
   },
   contentArea: {
@@ -432,7 +431,11 @@ export function XDSBanner({
           )}
         </div>
         {showEndArea && (
-          <div {...stylex.props(styles.endArea)}>
+          <div
+            {...stylex.props(
+              styles.endArea,
+              edgeCompSlot.inset(spacingVars['--spacing-2'] as string),
+            )}>
             {endContent}
             {hasChildren && (
               <XDSButton

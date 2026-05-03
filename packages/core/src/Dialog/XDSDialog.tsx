@@ -165,14 +165,6 @@ const styles = stylex.create({
     margin: 0,
     inset: 0,
   },
-  // Reset inherited edge signals so that dialogs rendered as DOM descendants
-  // of containers (e.g. TopNav endContent) don't inherit --edge-start/--edge-end.
-  // CSS custom properties inherit through the DOM tree even for top-layer elements,
-  // causing ghost buttons (like the close button) to apply unwanted edge compensation.
-  isolateEdgeSignals: {
-    '--edge-start': '0',
-    '--edge-end': '0',
-  },
   inner: {
     display: 'flex',
     flexDirection: 'column',
@@ -545,7 +537,6 @@ export function XDSDialog({
           styles.dialog,
           isOpen && styles.open,
           styles.backdrop,
-          styles.isolateEdgeSignals,
           !isFullscreen && dynamicStyles.sizing(width, maxHeight),
           hasPosition &&
             dynamicStyles.position(

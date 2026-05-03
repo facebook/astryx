@@ -32,7 +32,7 @@ import {
 import {XDSTooltip} from '../Tooltip/XDSTooltip';
 import {XDSSpinner} from '../Spinner';
 
-import {edgeCompensation} from '../Layout/edgeCompensation.stylex';
+import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {xdsClassName, mergeProps} from '../utils';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
@@ -488,11 +488,10 @@ export function XDSButton({
       }
     : undefined;
 
-  // Ghost buttons opt into edge compensation — they pull back at container
-  // edges via negative margin when placed as first/last child in a slot
-  // that sets --edge-inset-start/--edge-inset-end.
+  // Ghost buttons are edge-compensatable — containers detect this attribute
+  // via :has() and pull their own slot margins to align flush at edges.
   const isFlat = variant === 'ghost';
-  const edgeCompStyle = isFlat ? edgeCompensation.item : null;
+  const edgeCompAttr = isFlat ? {[EDGE_COMP_ATTR]: ''} : null;
 
   // Shared StyleX props for both button and link rendering
   const sharedStylexProps = stylex.props(
@@ -503,7 +502,6 @@ export function XDSButton({
     buttonDisabled && styles.disabled,
     useAriaDisabled && styles.ariaDisabled,
     isLoadingState && loadingStyles.loading,
-    edgeCompStyle,
     renderAsLink && styles.link,
     xstyle,
   );
@@ -574,6 +572,7 @@ export function XDSButton({
         {...sharedMergedProps}
         {...props}
         {...ariaLabelProp}
+        {...edgeCompAttr}
         onClick={handleClick}>
         {buttonContent}
       </LinkComponent>
@@ -587,6 +586,7 @@ export function XDSButton({
         {...sharedMergedProps}
         {...props}
         {...ariaLabelProp}
+        {...edgeCompAttr}
         aria-busy={isLoadingState || undefined}
         aria-disabled={useAriaDisabled || undefined}
         onClick={handleClick}

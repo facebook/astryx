@@ -39,7 +39,7 @@ const styles = stylex.create({
     flex: 1,
     minWidth: 0,
     // Visual centering: align title center with close button center
-    // buttonCenter = -edgeCompensation + size-element-md/2 = -8 + 16 = 8px
+    // buttonCenter = size-element-md/2 = 16px (close button midpoint relative to edge)
     // titleCenter = heading-2-size * heading-2-leading / 2 = 14px
     // adjustment = 8 - 14 = -6px
     marginBlock: `calc(${sizeVars['--size-element-md']} / 2 - ${spacingVars['--spacing-2']} - ${typeScaleVars['--text-heading-2-size']} * ${typeScaleVars['--text-heading-2-leading']} / 2)`,
