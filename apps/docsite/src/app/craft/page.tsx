@@ -31,7 +31,7 @@ const styles = stylex.create({
     textAlign: 'center' as const,
   },
   carouselTabs: {
-    paddingBottom: 4,
+    marginBottom: 4,
   },
   cardImage: {
     display: 'block',
