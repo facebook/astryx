@@ -216,6 +216,21 @@ async function generateComponentRegistry() {
       const docFiles = fs.readdirSync(dirPath).filter(f => f.endsWith('.doc.mjs'));
       if (docFiles.length === 0) continue;
 
+      // First pass: find the primary component doc name for this directory
+      // (used to parent standalone hook docs that share the directory)
+      let dirPrimaryDoc = null;
+      for (const df of docFiles) {
+        const dfPath = path.join(dirPath, df);
+        try {
+          const mod = await import(pathToFileURL(dfPath).href);
+          const d = mod.docs;
+          if (d && (d.components || d.props) && !d.params) {
+            dirPrimaryDoc = d.name || null;
+            break;
+          }
+        } catch { /* ignore */ }
+      }
+
       for (const docFileName of docFiles) {
         const docFile = path.join(dirPath, docFileName);
 
@@ -261,7 +276,7 @@ async function generateComponentRegistry() {
             });
           }
         } else if (doc.params) {
-          // HookDoc — standalone hook
+          // HookDoc — parent to the component doc in the same directory
           const name = doc.name || docFileName.replace('.doc.mjs', '');
           standaloneNames.add(name);
           components.push({
@@ -272,7 +287,7 @@ async function generateComponentRegistry() {
             description: topDescription,
             keywords,
             hidden,
-            parentDoc: null,
+            parentDoc: dirPrimaryDoc,
             props: [],
             usage,
             theming: null,

@@ -86,64 +86,6 @@ export const docs = {
         },
       ],
     },
-    {
-      name: 'useXDSHoverCard',
-      description:
-        'Hook for hover card behavior with hover/focus triggers. Builds on useXDSLayer.',
-      props: [
-        {
-          name: 'placement',
-          type: 'LayerPlacement',
-          description: 'Position relative to the anchor element.',
-          default: "'above'",
-        },
-        {
-          name: 'alignment',
-          type: 'LayerAlignment',
-          description: 'Alignment along the placement axis.',
-          default: "'center'",
-        },
-        {
-          name: 'delay',
-          type: 'number',
-          description: 'Show delay in milliseconds.',
-          default: '300',
-        },
-        {
-          name: 'hideDelay',
-          type: 'number',
-          description: 'Hide delay in milliseconds.',
-          default: '200',
-        },
-        {
-          name: 'focusTrigger',
-          type: "'auto' | 'always' | 'never'",
-          description: 'Controls when focus events trigger the layer.',
-          default: "'auto'",
-        },
-        {
-          name: 'isEnabled',
-          type: 'boolean',
-          description: 'Enables or disables all hover and focus triggers.',
-          default: 'true',
-        },
-        {
-          name: 'isDefaultOpen',
-          type: 'boolean',
-          description: 'Whether the hover card should be shown on mount. Still dismissible.',
-        },
-        {
-          name: 'onShow',
-          type: '() => void',
-          description: 'Callback fired when the hover card becomes visible.',
-        },
-        {
-          name: 'onHide',
-          type: '() => void',
-          description: 'Callback fired when the hover card is hidden.',
-        },
-      ],
-    },
   ],
   usage: {
     description: 'HoverCard shows additional information when the user hovers or focuses a trigger element. Use it for profile cards, link summaries, or inline definitions where the user needs more context without navigating away.',
@@ -250,64 +192,6 @@ export const docsZh = {
         },
       ],
     },
-    {
-      name: 'useXDSHoverCard',
-      description:
-        '具有悬停/聚焦触发行为的悬浮卡片 Hook，基于 useXDSLayer 构建。',
-      props: [
-        {
-          name: 'placement',
-          type: 'LayerPlacement',
-          description: '相对于锚点元素的位置。',
-          default: "'above'",
-        },
-        {
-          name: 'alignment',
-          type: 'LayerAlignment',
-          description: '沿放置轴的对齐方式。',
-          default: "'center'",
-        },
-        {
-          name: 'delay',
-          type: 'number',
-          description: '显示延迟（毫秒）。',
-          default: '300',
-        },
-        {
-          name: 'hideDelay',
-          type: 'number',
-          description: '隐藏延迟（毫秒）。',
-          default: '200',
-        },
-        {
-          name: 'focusTrigger',
-          type: "'auto' | 'always' | 'never'",
-          description: '控制焦点事件何时触发浮层。',
-          default: "'auto'",
-        },
-        {
-          name: 'isEnabled',
-          type: 'boolean',
-          description: '启用或禁用所有悬停和聚焦触发器。',
-          default: 'true',
-        },
-        {
-          name: 'isDefaultOpen',
-          type: 'boolean',
-          description: '是否在挂载时显示悬浮卡片。仍然可以关闭。',
-        },
-        {
-          name: 'onShow',
-          type: '() => void',
-          description: '悬浮卡片显示时触发的回调。',
-        },
-        {
-          name: 'onHide',
-          type: '() => void',
-          description: '悬浮卡片隐藏时触发的回调。',
-        },
-      ],
-    },
   ],
   usage: {
     description: 'HoverCard shows additional information when the user hovers or focuses a trigger element. Use it for profile cards, link summaries, or inline definitions where the user needs more context without navigating away.',
@@ -349,21 +233,6 @@ export const docsDense = {
         onOpenChange: 'Callback when visibility changes; true=shown, false=hidden.',
         hasHoverIndication: 'Dashed underline on trigger element.',
         isDefaultOpen: 'Show hover card on mount. Still dismissible.',
-      },
-    },
-    {
-      name: 'useXDSHoverCard',
-      description: 'Hook for hover card w/ hover/focus triggers. Builds on useXDSLayer.',
-      propDescriptions: {
-        placement: 'Position relative to anchor element.',
-        alignment: 'Alignment along placement axis.',
-        delay: 'Show delay in ms.',
-        hideDelay: 'Hide delay in ms.',
-        focusTrigger: 'Controls when focus events trigger layer.',
-        isEnabled: 'Enable/disable all hover + focus triggers.',
-        isDefaultOpen: 'Show hover card on mount. Still dismissible.',
-        onShow: 'Callback when hover card becomes visible.',
-        onHide: 'Callback when hover card hidden.',
       },
     },
   ],

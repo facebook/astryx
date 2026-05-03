@@ -79,64 +79,6 @@ export const docs = {
         },
       ],
     },
-    {
-      name: 'useXDSTooltip',
-      description:
-        'Hook for tooltip behavior with hover/focus triggers. Builds on useXDSLayer.',
-      props: [
-        {
-          name: 'placement',
-          type: 'LayerPlacement',
-          description: 'Position relative to the anchor element.',
-          default: "'above'",
-        },
-        {
-          name: 'alignment',
-          type: 'LayerAlignment',
-          description: 'Alignment along the placement axis.',
-          default: "'center'",
-        },
-        {
-          name: 'delay',
-          type: 'number',
-          description: 'Show delay in milliseconds.',
-          default: '200',
-        },
-        {
-          name: 'hideDelay',
-          type: 'number',
-          description: 'Hide delay in milliseconds.',
-          default: '0',
-        },
-        {
-          name: 'focusTrigger',
-          type: "'auto' | 'always' | 'never'",
-          description: 'Controls when focus events trigger the tooltip.',
-          default: "'auto'",
-        },
-        {
-          name: 'isEnabled',
-          type: 'boolean',
-          description: 'Enables or disables all hover and focus triggers.',
-          default: 'true',
-        },
-        {
-          name: 'isDefaultOpen',
-          type: 'boolean',
-          description: 'Whether the tooltip should be shown on mount. Still dismissible.',
-        },
-        {
-          name: 'onShow',
-          type: '() => void',
-          description: 'Callback fired when the tooltip becomes visible.',
-        },
-        {
-          name: 'onHide',
-          type: '() => void',
-          description: 'Callback fired when the tooltip is hidden.',
-        },
-      ],
-    },
   ],
   theming: {
     targets: [
@@ -234,64 +176,6 @@ export const docsZh = {
         },
       ],
     },
-    {
-      name: 'useXDSTooltip',
-      description:
-        '用于悬停/聚焦触发的工具提示行为的钩子。基于 useXDSLayer 构建。',
-      props: [
-        {
-          name: 'placement',
-          type: 'LayerPlacement',
-          description: '相对于锚点元素的位置。',
-          default: "'above'",
-        },
-        {
-          name: 'alignment',
-          type: 'LayerAlignment',
-          description: '沿放置轴的对齐方式。',
-          default: "'center'",
-        },
-        {
-          name: 'delay',
-          type: 'number',
-          description: '显示延迟（毫秒）。',
-          default: '200',
-        },
-        {
-          name: 'hideDelay',
-          type: 'number',
-          description: '隐藏延迟（毫秒）。',
-          default: '0',
-        },
-        {
-          name: 'focusTrigger',
-          type: "'auto' | 'always' | 'never'",
-          description: '控制聚焦事件何时触发工具提示。',
-          default: "'auto'",
-        },
-        {
-          name: 'isEnabled',
-          type: 'boolean',
-          description: '启用或禁用所有悬停和聚焦触发器。',
-          default: 'true',
-        },
-        {
-          name: 'isDefaultOpen',
-          type: 'boolean',
-          description: '是否在挂载时显示工具提示。仍然可以关闭。',
-        },
-        {
-          name: 'onShow',
-          type: '() => void',
-          description: '工具提示变为可见时触发的回调。',
-        },
-        {
-          name: 'onHide',
-          type: '() => void',
-          description: '工具提示隐藏时触发的回调。',
-        },
-      ],
-    },
   ],
   theming: {
     targets: [
@@ -340,21 +224,6 @@ export const docsDense = {
         onOpenChange: 'Callback when visibility changes; true=shown, false=hidden.',
         hasHoverIndication: 'Dashed underline on trigger element.',
         isDefaultOpen: 'Show tooltip on mount. Still dismissible.',
-      },
-    },
-    {
-      name: 'useXDSTooltip',
-      description: 'Hook for tooltip w/ hover/focus triggers. Builds on useXDSLayer.',
-      propDescriptions: {
-        placement: 'Position relative to anchor.',
-        alignment: 'Alignment along placement axis.',
-        delay: 'Show delay in ms.',
-        hideDelay: 'Hide delay in ms.',
-        focusTrigger: 'Controls when focus events trigger tooltip.',
-        isEnabled: 'Enables/disables all hover+focus triggers.',
-        isDefaultOpen: 'Show tooltip on mount. Still dismissible.',
-        onShow: 'Fired when tooltip becomes visible.',
-        onHide: 'Fired when tooltip hidden.',
       },
     },
   ],

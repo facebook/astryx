@@ -91,52 +91,6 @@ export const docs = {
         },
       ],
     },
-    {
-      name: 'useXDSPopover',
-      description:
-        'Hook for creating popover dialogs with focus trapping. Combines useXDSLayer with useFocusTrap.',
-      props: [
-        {
-          name: 'onShow',
-          type: '() => void',
-          description: 'Callback fired when popover is shown.',
-        },
-        {
-          name: 'onHide',
-          type: '() => void',
-          description: 'Callback fired when popover is hidden.',
-        },
-        {
-          name: 'hasLightDismiss',
-          type: 'boolean',
-          description: 'Whether clicking outside should dismiss the popover.',
-          default: 'true',
-        },
-        {
-          name: 'hasAutoFocus',
-          type: 'boolean',
-          description: 'Whether to auto-focus the first focusable element when opened.',
-          default: 'true',
-        },
-        {
-          name: 'hasCloseButton',
-          type: 'boolean',
-          description: 'Whether to include a hidden close button for accessibility.',
-          default: 'true',
-        },
-        {
-          name: 'closeButtonLabel',
-          type: 'string',
-          description: 'Label for the hidden close button.',
-          default: "'Close popover'",
-        },
-        {
-          name: 'dialogLabel',
-          type: 'string',
-          description: 'Accessible label for the dialog.',
-        },
-      ],
-    },
   ],
   theming: {
     targets: [
@@ -253,52 +207,6 @@ export const docsZh = {
         },
       ],
     },
-    {
-      name: 'useXDSPopover',
-      description:
-        '用于创建带焦点捕获的弹出框对话框的钩子。将 useXDSLayer 与 useFocusTrap 结合使用。',
-      props: [
-        {
-          name: 'onShow',
-          type: '() => void',
-          description: '弹出框显示时触发的回调。',
-        },
-        {
-          name: 'onHide',
-          type: '() => void',
-          description: '弹出框隐藏时触发的回调。',
-        },
-        {
-          name: 'hasLightDismiss',
-          type: 'boolean',
-          description: '点击外部是否应关闭弹出框。',
-          default: 'true',
-        },
-        {
-          name: 'hasAutoFocus',
-          type: 'boolean',
-          description: '打开时是否自动聚焦第一个可聚焦元素。',
-          default: 'true',
-        },
-        {
-          name: 'hasCloseButton',
-          type: 'boolean',
-          description: '是否包含用于无障碍访问的隐藏关闭按钮。',
-          default: 'true',
-        },
-        {
-          name: 'closeButtonLabel',
-          type: 'string',
-          description: '隐藏关闭按钮的标签。',
-          default: "'Close popover'",
-        },
-        {
-          name: 'dialogLabel',
-          type: 'string',
-          description: '对话框的无障碍标签。',
-        },
-      ],
-    },
   ],
   theming: {
     targets: [
@@ -368,20 +276,6 @@ export const docsDense = {
         hasCloseButton: 'Whether to include hidden close button for accessibility.',
         closeButtonLabel: 'Label for hidden close button.',
         hasAutoFocus: 'Auto-focus first element on open; false for showcases.',
-      },
-    },
-    {
-      name: 'useXDSPopover',
-      description:
-        'Hook for popover dialogs w/ focus trapping. Combines useXDSLayer w/ useFocusTrap.',
-      propDescriptions: {
-        onShow: 'Callback fired when popover shown.',
-        onHide: 'Callback fired when popover hidden.',
-        hasLightDismiss: 'Whether clicking outside dismisses popover.',
-        hasAutoFocus: 'Whether to auto-focus first focusable element when opened.',
-        hasCloseButton: 'Whether to include hidden close button for accessibility.',
-        closeButtonLabel: 'Label for hidden close button.',
-        dialogLabel: 'Accessible label for dialog.',
       },
     },
   ],
