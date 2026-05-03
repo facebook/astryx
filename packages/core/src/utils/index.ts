@@ -36,3 +36,4 @@ export {xdsClassName} from './xdsClassName';
 export {mergeProps} from './mergeProps';
 export {groupItems, getItemGroup} from './groupItems';
 export type {ItemGroup} from './groupItems';
+export {observeResize, unobserveResize} from './sharedResizeObserver';

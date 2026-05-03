@@ -2,7 +2,7 @@
 
 /**
  * @file useTruncation.ts
- * @input Uses React hooks, ResizeObserver
+ * @input Uses React hooks, sharedResizeObserver
  * @output Exports useTruncation hook for detecting text overflow
  * @position Hook; consumed by XDSText.tsx, XDSHeading.tsx
  *
@@ -11,6 +11,7 @@
  */
 
 import {useCallback, useRef, useState, type RefCallback} from 'react';
+import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
 
 export interface UseTruncationOptions {
   /**
@@ -40,7 +41,11 @@ export interface UseTruncationReturn {
 /**
  * Hook for detecting text overflow/truncation.
  *
- * Uses ResizeObserver for efficient detection when content or container changes.
+ * Uses a shared ResizeObserver singleton (via observeResize/unobserveResize)
+ * for efficient detection when content or container changes. A single
+ * ResizeObserver instance is shared across all mounted useTruncation hooks,
+ * so even hundreds of table cells only create one observer.
+ *
  * - Single-line: compares scrollWidth > offsetWidth
  * - Multi-line: uses Range.getBoundingClientRect() to measure actual content
  *   height, bypassing -webkit-line-clamp's clamped scrollHeight
@@ -63,7 +68,6 @@ export function useTruncation(
   const [isTruncated, setIsTruncated] = useState(false);
   const [fullText, setFullText] = useState('');
   const elementRef = useRef<HTMLElement | null>(null);
-  const observerRef = useRef<ResizeObserver | null>(null);
 
   const checkTruncation = useCallback(
     (element: HTMLElement) => {
@@ -102,10 +106,9 @@ export function useTruncation(
 
   const ref: RefCallback<HTMLElement> = useCallback(
     (element: HTMLElement | null) => {
-      // Cleanup previous observer
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-        observerRef.current = null;
+      // Cleanup previous observation
+      if (elementRef.current) {
+        unobserveResize(elementRef.current);
       }
 
       elementRef.current = element;
@@ -114,12 +117,11 @@ export function useTruncation(
         // Initial check
         checkTruncation(element);
 
-        // Setup ResizeObserver for dynamic updates (if available)
+        // Observe via shared singleton (if available)
         if (typeof ResizeObserver !== 'undefined') {
-          observerRef.current = new ResizeObserver(() => {
+          observeResize(element, () => {
             checkTruncation(element);
           });
-          observerRef.current.observe(element);
         }
       } else {
         setIsTruncated(false);
