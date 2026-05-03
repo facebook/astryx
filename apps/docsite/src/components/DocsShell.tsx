@@ -200,7 +200,8 @@ export function DocsShell({
           footer={
             <XDSText type="supporting" color="secondary">
               <XDSLink
-                href="https://github.com/facebookexperimental/xds/tree/main"
+                label="GitHub Pages"
+                href="https://studious-broccoli-o7e61n3.pages.github.io/"
                 isExternalLink>
                 GitHub Pages
               </XDSLink>

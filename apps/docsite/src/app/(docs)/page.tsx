@@ -14,6 +14,7 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSTheme, XDSMediaTheme} from '@xds/core/theme';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSLink} from '@xds/core/Link';
+import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import {packages} from '../../generated/packageRegistry';
 import {componentCount} from '../../generated/componentRegistry';
 import {docTopics} from '../../generated/docsRegistry';
@@ -157,12 +158,12 @@ const styles = stylex.create({
     cursor: 'pointer',
   },
   footer: {
-    paddingBlockStart: 48,
-    paddingBlockEnd: 64,
+    paddingBlockStart: spacingVars['--spacing-12'],
+    paddingBlockEnd: spacingVars['--spacing-12'],
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: 8,
+    gap: spacingVars['--spacing-2'],
   },
 });
 
