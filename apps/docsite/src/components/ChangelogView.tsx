@@ -57,7 +57,7 @@ const styles = stylex.create({
     marginInline: 'auto',
   },
   carouselTab: {
-    paddingBottom: 4,
+    marginBottom: 4,
   },
 });
 
