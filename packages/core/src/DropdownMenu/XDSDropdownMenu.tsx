@@ -226,16 +226,6 @@ export function XDSDropdownMenu({
     hasAutoFocus: false,
   });
 
-  React.useEffect(() => {
-    if (isControlled) {
-      if (controlledIsOpen && !popover.isOpen) {
-        popover.show();
-      } else if (!controlledIsOpen && popover.isOpen) {
-        popover.hide();
-      }
-    }
-  }, [controlledIsOpen, isControlled, popover]);
-
   const closeMenu = useCallback(() => {
     popover.hide();
   }, [popover]);
@@ -251,12 +241,19 @@ export function XDSDropdownMenu({
     onEscape: closeMenu,
   });
 
-  // Focus first menu item when controlled open transitions to true
+  // Sync controlled open state → popover, and focus first item on open
   React.useEffect(() => {
-    if (isControlled && controlledIsOpen && hasAutoFocus) {
-      requestAnimationFrame(() => focusFirst());
+    if (isControlled) {
+      if (controlledIsOpen && !popover.isOpen) {
+        popover.show();
+        if (hasAutoFocus) {
+          requestAnimationFrame(() => focusFirst());
+        }
+      } else if (!controlledIsOpen && popover.isOpen) {
+        popover.hide();
+      }
     }
-  }, [isControlled, controlledIsOpen, hasAutoFocus, focusFirst]);
+  }, [controlledIsOpen, isControlled, popover, hasAutoFocus, focusFirst]);
 
   // Extend useListFocus with Enter/Space activation
   const listKeyDown = useCallback(
