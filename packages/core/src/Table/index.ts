@@ -58,6 +58,7 @@ export type {
   XDSTableProps,
   XDSTableDensity,
   XDSTableDividers,
+  XDSTableTextOverflow,
 } from './XDSTable';
 export type {XDSTableRowProps} from './XDSTableRow';
 export type {XDSTableCellProps} from './XDSTableCell';

@@ -327,74 +327,67 @@ export const KitchenSink: Story = {
 // =============================================================================
 
 interface OverflowRow extends Record<string, unknown> {
-  column: string;
-  truncated: string;
-  wrapped: string;
+  scenario: string;
+  content: string;
 }
 
 const overflowData: OverflowRow[] = [
   {
-    column: 'Default (truncate)',
-    truncated:
-      'a_very_long_string_like_this_that_overflows_the_column_without_spaces',
-    wrapped:
-      'a_very_long_string_like_this_that_overflows_the_column_without_spaces',
+    scenario: 'Long unbroken string',
+    content:
+      'a_very_long_string_like_this_that_overflows_the_column_without_any_spaces_or_hyphens',
   },
   {
-    column: 'Normal prose',
-    truncated:
-      'This is a longer sentence that will also get clipped by the ellipsis when it runs out of room.',
-    wrapped:
-      'This is a longer sentence that wraps naturally onto the next line when it runs out of room.',
+    scenario: 'Normal prose',
+    content:
+      'This is a longer sentence that might wrap or truncate depending on the textOverflow setting of the table.',
+  },
+  {
+    scenario: 'Short text',
+    content: 'Fits fine.',
   },
 ];
 
 /**
- * Cells truncate overflow with an ellipsis by default.
- * The default renderer adds a native title tooltip so truncated text
- * is still accessible on hover.
- *
- * For the full XDS tooltip experience (only shows when actually truncated),
- * use renderCell with <XDSText maxLines={1}>.
- *
- * The "Wrapped" column shows how consumers can opt into wrapping
- * via renderCell with white-space: normal and overflow: visible.
+ * Text wraps by default — rows grow taller and no content is hidden.
+ * Set `textOverflow="truncate"` for dense data tables where fixed row
+ * height matters. In truncate mode, default-rendered cells show a
+ * tooltip on hover when text is actually overflowing.
  */
 export const OverflowBehavior: Story = {
   render: () => {
     const cols: XDSTableColumn<OverflowRow>[] = [
-      {key: 'column', header: 'Row', width: pixel(140)},
-      {
-        key: 'truncated',
-        header: 'Truncated (default)',
-        width: proportional(1),
-      },
-      {
-        key: 'wrapped',
-        header: 'Wrapped (xstyle override)',
-        width: proportional(1),
-        renderCell: item => (
-          <span
-            style={{
-              whiteSpace: 'normal',
-              overflow: 'visible',
-              wordBreak: 'break-word',
-              display: 'block',
-            }}>
-            {item.wrapped}
-          </span>
-        ),
-      },
+      {key: 'scenario', header: 'Scenario', width: pixel(160)},
+      {key: 'content', header: 'Content', width: proportional(1)},
     ];
 
     return (
-      <div style={{width: '640px'}}>
-        <XDSTable
-          data={overflowData}
-          columns={cols}
-          dividers="grid"
-          density="balanced"
-        />
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '32px',
+          width: '480px',
+        }}>
+        <div>
+          <h4 style={{margin: '0 0 8px'}}>Wrap (default)</h4>
+          <XDSTable
+            data={overflowData}
+            columns={cols}
+            dividers="grid"
+            density="balanced"
+          />
+        </div>
+        <div>
+          <h4 style={{margin: '0 0 8px'}}>Truncate (with tooltip on hover)</h4>
+          <XDSTable
+            data={overflowData}
+            columns={cols}
+            dividers="grid"
+            density="balanced"
+            textOverflow="truncate"
+          />
+        </div>
       </div>
     );
   },

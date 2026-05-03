@@ -46,6 +46,10 @@ export type XDSTableDensity = 'compact' | 'balanced' | 'spacious';
 
 export type XDSTableDividers = 'rows' | 'columns' | 'grid' | 'none';
 
+/** How body cell text behaves when it exceeds column width */
+
+export type XDSTableTextOverflow = 'wrap' | 'truncate';
+
 /**
  * Props for the styled XDSTable component.
  * Supports both data-driven mode and children mode with XDSTableRow/Cell.
@@ -77,6 +81,23 @@ export interface XDSTableProps<T extends Record<string, unknown>> extends Omit<
    * ```
    */
   verticalAlign?: XDSTableVerticalAlign;
+  /**
+   * How body cell text behaves when it exceeds the column width.
+   *
+   * - `'wrap'` — text wraps and the row grows taller. No content is hidden.
+   * - `'truncate'` — text is clipped with an ellipsis. Default-rendered cells
+   *   show a tooltip on hover when truncated.
+   *
+   * Header cells always truncate regardless of this setting.
+   *
+   * @default 'wrap'
+   *
+   * @example
+   * ```
+   * <XDSTable data={logs} columns={columns} textOverflow="truncate" />
+   * ```
+   */
+  textOverflow?: 'wrap' | 'truncate';
   /** Named plugins to extend table behavior */
   plugins?: Record<string, TablePlugin<T>>;
 }
@@ -159,6 +180,7 @@ function XDSTableInner<T extends Record<string, unknown>>({
   isStriped = false,
   hasHover = false,
   verticalAlign = 'middle',
+  textOverflow = 'wrap',
   plugins: userPlugins,
   columns,
   data,
@@ -173,8 +195,15 @@ function XDSTableInner<T extends Record<string, unknown>>({
   const mergedPlugins = useXDSBaseTablePlugins<T>(basePlugins, userPlugins);
 
   const contextValue = useMemo(
-    () => ({density, dividers, isStriped, hasHover, verticalAlign}),
-    [density, dividers, isStriped, hasHover, verticalAlign],
+    () => ({
+      density,
+      dividers,
+      isStriped,
+      hasHover,
+      verticalAlign,
+      textOverflow,
+    }),
+    [density, dividers, isStriped, hasHover, verticalAlign, textOverflow],
   );
 
   return (
@@ -185,6 +214,7 @@ function XDSTableInner<T extends Record<string, unknown>>({
         columns={columns}
         plugins={mergedPlugins}
         components={xdsComponents}
+        textOverflow={textOverflow}
         {...rest}
       />
     </XDSTableContext.Provider>

@@ -22,6 +22,7 @@ export interface XDSTableContextValue {
   isStriped: boolean;
   hasHover: boolean;
   verticalAlign: XDSTableVerticalAlign;
+  textOverflow: 'wrap' | 'truncate';
 }
 
 export const XDSTableContext = createContext<XDSTableContextValue | null>(null);

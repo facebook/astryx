@@ -26,16 +26,31 @@ export const tableRowMarker: ReturnType<typeof stylex.defineMarker> =
 /**
  * Overflow truncation for table cells.
  *
- * Applied at the <td>/<th> level as a CSS safety net. For data-driven
- * tables, the default renderer also adds a title attribute so truncated
- * text is accessible on hover. For the full XDS tooltip experience,
- * use renderCell with <XDSText maxLines={1}>.
+ * Applied at the <td>/<th> level when textOverflow is 'truncate'.
+ * For data-driven tables in truncate mode, the default renderer wraps
+ * content in <XDSText maxLines={1}> for smart tooltips that only appear
+ * when text is actually overflowing.
  */
 export const overflowStyles = stylex.create({
   cell: {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+    maxWidth: '0',
+  },
+});
+
+/**
+ * Wrap styles for table cells.
+ *
+ * Applied at the <td>/<th> level when textOverflow is 'wrap' (the default).
+ * Text wraps naturally and the row grows taller to fit. No content is hidden.
+ */
+export const wrapStyles = stylex.create({
+  cell: {
+    overflow: 'hidden',
+    overflowWrap: 'break-word',
+    wordBreak: 'break-word',
     maxWidth: '0',
   },
 });

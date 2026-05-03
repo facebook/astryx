@@ -38,6 +38,7 @@ import {XDSTableCell} from './XDSTableCell';
 import {XDSTableHeaderCell} from './XDSTableHeaderCell';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSEmptyState} from '../EmptyState';
+import {XDSText} from '../Text';
 
 const styles = stylex.create({
   table: {
@@ -114,6 +115,7 @@ interface TableRowProps<T extends Record<string, unknown>> {
   rowKey: string | number;
   columns: XDSTableColumn<T>[];
   plugins: TablePlugin<T>[];
+  textOverflow: 'wrap' | 'truncate';
   RowComponent: React.ComponentType<TableRowComponentProps>;
   CellComponent: React.ComponentType<TableCellComponentProps>;
 }
@@ -129,6 +131,7 @@ function TableRowInner<T extends Record<string, unknown>>({
   rowKey,
   columns,
   plugins,
+  textOverflow,
   RowComponent,
   CellComponent,
 }: TableRowProps<T>): ReactElement {
@@ -148,23 +151,35 @@ function TableRowInner<T extends Record<string, unknown>>({
       item,
     );
 
-    const content = col.renderCell
-      ? col.renderCell(item)
-      : defaultCellRenderer(item, col.key);
+    const isDefaultRenderer = !col.renderCell;
+    const rawContent = isDefaultRenderer
+      ? defaultCellRenderer(item, col.key)
+      : col.renderCell!(item);
 
-    // Default renderer: add title so truncated text is accessible on hover.
-    // For the full XDS tooltip experience, use renderCell with
-    // <XDSText maxLines={1}> — the title attr is the zero-cost safety net.
-    const titleProp =
-      !col.renderCell && typeof content === 'string' && content.length > 0
-        ? {title: content}
-        : {};
+    // In truncate mode, wrap default-rendered string content in
+    // <XDSText maxLines={1}> for smart tooltips that only appear
+    // when text is actually overflowing. In wrap mode (default),
+    // content renders as-is — the cell's CSS handles wrapping.
+    let content: ReactNode;
+    if (
+      isDefaultRenderer &&
+      textOverflow === 'truncate' &&
+      typeof rawContent === 'string' &&
+      rawContent.length > 0
+    ) {
+      content = (
+        <XDSText type="body" maxLines={1}>
+          {rawContent}
+        </XDSText>
+      );
+    } else {
+      content = rawContent;
+    }
 
     return (
       <CellComponent
         key={col.key}
         {...cellRenderProps.htmlProps}
-        {...titleProp}
         xstyle={cellRenderProps.styles}>
         {content}
       </CellComponent>
@@ -207,9 +222,9 @@ function areRowPropsEqual<T extends Record<string, unknown>>(
   if (prevProps.rowKey !== nextProps.rowKey) return false;
   if (prevProps.rowIndex !== nextProps.rowIndex) return false;
 
-  // If columns, plugins, or components change, need to re-render all rows
   if (prevProps.columns !== nextProps.columns) return false;
   if (prevProps.plugins !== nextProps.plugins) return false;
+  if (prevProps.textOverflow !== nextProps.textOverflow) return false;
   if (prevProps.RowComponent !== nextProps.RowComponent) return false;
   if (prevProps.CellComponent !== nextProps.CellComponent) return false;
 
@@ -250,6 +265,7 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
   components,
   children,
   tableProps: userTableProps,
+  textOverflow = 'wrap',
   emptyState,
   ref,
 }: XDSBaseTableProps<T> & {ref?: Ref<HTMLTableElement>}): ReactElement {
@@ -436,6 +452,7 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
                     rowKey={rowKey}
                     columns={resolvedColumns}
                     plugins={plugins}
+                    textOverflow={textOverflow}
                     RowComponent={RowComponent}
                     CellComponent={CellComponent}
                   />
