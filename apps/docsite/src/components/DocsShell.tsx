@@ -204,7 +204,7 @@ export function DocsShell({
     <>
       <XDSAppShell
         variant="surface"
-        height="fill"
+        height="auto"
         topNav={
           <XDSTopNav
             label="XDS navigation"
