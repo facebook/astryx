@@ -2,6 +2,7 @@
 
 import {usePathname} from 'next/navigation';
 import {XDSAppShell} from '@xds/core/AppShell';
+import {XDSCenter} from '@xds/core/Center';
 import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
 import {SharedTopNav} from './SharedTopNav';
 import {XDSLink} from '@xds/core/Link';
@@ -198,14 +199,15 @@ export function DocsShell({
       sideNav={
         <XDSSideNav
           footer={
-            <XDSText type="supporting" color="secondary">
+            <XDSCenter>
               <XDSLink
+                color="secondary"
                 label="GitHub Pages"
                 href="https://studious-broccoli-o7e61n3.pages.github.io/"
                 isExternalLink>
                 GitHub Pages
               </XDSLink>
-            </XDSText>
+            </XDSCenter>
           }>
           {/* Home */}
           <XDSSideNavSection title="Home" isHeaderHidden>
