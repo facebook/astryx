@@ -65,6 +65,16 @@ describe('Edge Compensation', () => {
       const tab = screen.getByRole('button', {name: 'Tab 1'});
       expect(tab).toHaveAttribute(EDGE_COMP_ATTR);
     });
+
+    it('applies edge comp attribute to TabList wrapper', () => {
+      render(
+        <XDSTabList label="Tabs">
+          <XDSTab label="Tab 1" />
+        </XDSTabList>,
+      );
+      const nav = screen.getByRole('navigation', {name: 'Tabs'});
+      expect(nav).toHaveAttribute(EDGE_COMP_ATTR);
+    });
   });
 
   describe('Toolbar container compensation', () => {

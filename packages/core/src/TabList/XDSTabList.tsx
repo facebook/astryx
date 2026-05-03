@@ -21,6 +21,7 @@ import {XDSTabListContext} from './XDSTabListContext';
 import type {XDSTabListSize} from './XDSTabListContext';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {xdsClassName, mergeProps} from '../utils';
+import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 
 export interface XDSTabListProps extends Omit<
   XDSBaseProps<HTMLElement>,
@@ -115,6 +116,7 @@ export function XDSTabList({
     <XDSTabListContext.Provider value={contextValue}>
       <nav
         aria-label="Tabs"
+        {...{[EDGE_COMP_ATTR]: ''}}
         {...restProps}
         {...mergeProps(
           xdsClassName('tab-list', {size}),
