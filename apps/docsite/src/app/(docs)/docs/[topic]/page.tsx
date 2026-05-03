@@ -7,9 +7,9 @@
 
 import {notFound} from 'next/navigation';
 import {XDSSection} from '@xds/core/Section';
-import {docTopics} from '../../../generated/docsRegistry';
-import {ReferenceDocView} from '../../../components/docs/ReferenceDocView';
-import {TokensDocView} from '../../../components/docs/TokensDocView';
+import {docTopics} from '../../../../generated/docsRegistry';
+import {ReferenceDocView} from '../../../../components/docs/ReferenceDocView';
+import {TokensDocView} from '../../../../components/docs/TokensDocView';
 
 const TOKEN_TOPICS = new Set([
   'tokens',

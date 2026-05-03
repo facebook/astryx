@@ -12,11 +12,11 @@ import {XDSGrid} from '@xds/core/Grid';
 import {XDSSection} from '@xds/core/Section';
 import {XDSButton} from '@xds/core/Button';
 import {XDSTheme, XDSMediaTheme} from '@xds/core/theme';
-import {packages} from '../generated/packageRegistry';
-import {componentCount} from '../generated/componentRegistry';
-import {docTopics} from '../generated/docsRegistry';
-import {ThemeShowcaseTile} from '../components/ThemeShowcaseTile';
-import {themeObjects} from '../generated/themeRegistry';
+import {packages} from '../../generated/packageRegistry';
+import {componentCount} from '../../generated/componentRegistry';
+import {docTopics} from '../../generated/docsRegistry';
+import {ThemeShowcaseTile} from '../../components/ThemeShowcaseTile';
+import {themeObjects} from '../../generated/themeRegistry';
 
 const TerminalIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg

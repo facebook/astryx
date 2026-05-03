@@ -1,6 +1,6 @@
-import {ChangelogView} from '../../components/ChangelogView';
-import {components} from '../../generated/componentRegistry';
-import {packages} from '../../generated/packageRegistry';
+import {ChangelogView} from '../../../components/ChangelogView';
+import {components} from '../../../generated/componentRegistry';
+import {packages} from '../../../generated/packageRegistry';
 
 export default function ChangelogPage() {
   const changelogs = packages

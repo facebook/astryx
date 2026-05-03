@@ -14,15 +14,15 @@ import {XDSBadge} from '@xds/core/Badge';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSClickableCard} from '@xds/core/ClickableCard';
 import {XDSDivider} from '@xds/core';
-import {packages} from '../../../generated/packageRegistry';
+import {packages} from '../../../../generated/packageRegistry';
 import {
   components,
   type ComponentEntry,
-} from '../../../generated/componentRegistry';
+} from '../../../../generated/componentRegistry';
 import {
   ThemePackagePage,
   type InstallStep,
-} from '../../../components/ThemePackagePage';
+} from '../../../../components/ThemePackagePage';
 import {defaultTheme} from '@xds/theme-default/built';
 import {neutralTheme} from '@xds/theme-neutral/built';
 import {dailyTheme} from '@xds/theme-daily/built';
