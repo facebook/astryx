@@ -2,6 +2,11 @@
 
 # 0.0.13
 
-#### New
+#### Changes
 
-- Initial release — daily-rotating community theme with Figtree font, Lucide icons, and complete token set with component overrides (#1201, #1802)
+- Fleshed out with complete token set and component overrides (#1802)
+
+#### Patch Changes
+
+- Updated dependencies
+  - @xds/core@0.0.13

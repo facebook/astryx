@@ -32,6 +32,11 @@
 - **Tailwind v4 theme bridge** (#1649)
 - **Theme `expandColorScale`** — Derive full color token ramp from a single accent hex (#1452)
 - **Theme derived var expansion** — CSS properties to internal vars (#1467)
+- **Table column alignment and row vertical alignment** (#1362)
+- **TabList visual polish** — ghost hover, primary colors, divider overlap; remove density prop (#1357, #1418)
+- **TreeList visual polish** (#1367)
+- **SideNav/TopNav heading icon toggle** (#1371)
+- **CodeBlock highlight ranges** — range-based highlighting support (#1470)
 - **Page and block template system** with 100+ component showcase blocks (#1393)
 
 #### Fixes
@@ -39,6 +44,13 @@
 - Truncation: use Range API for multi-line detection (#1816)
 - PowerSearch: add `xdsClassName` for theme targeting (#1813)
 - ToggleButton: fix theming + Chat barrel export (#1812)
+- Component audit: AppShell BaseProps, AspectRatio RTL, Badge header (#1748)
+- Component audit: data-autofocus on BaseTypeahead, displayName on TreeListBranches (#1692)
+- Component audit: SegmentedControl, Slider extend XDSBaseProps (#1519)
+- Component audit: PowerSearch token, RadioList exports (#1359)
+- Hardening audit: AlertDialog BaseProps, CheckboxList className, Table xdsClassName, use-client directives (#1518)
+- Remove internal-only exports from public API (#1603)
+- Add XDS prefix to StackAlignment type, fix StatusDot header (#1561)
 - SSR: replace `useLayoutEffect` with SSR-safe alternatives (#1721)
 - Focus: use `:focus-visible` instead of `:focus-within` for outlines (#1511)
 - Focus: remove `outline` from transition to prevent black flash (#1731)
@@ -50,11 +62,15 @@
 - Grid: cap column count via track-max (#1761)
 - Tokens: update palette border colors from DSP color ramp (#1760)
 - Slider: keep tooltip visible during thumb drag (#1751)
-- AppShell: targeting class names on sticky wrappers (#1764)
+- AppShell: targeting class names on sticky wrappers (#1764), detect empty slots via presence registration (#1377)
 - Icon: use secondary color for input startIcon slots (#1765), default to `inherit` (#1588)
-- SideNav: section custom styles, item collapsible+action split (#1666)
+- SideNav: section custom styles, item collapsible+action split (#1666), design tokens for drag handle transition (#1381)
 - Table: container padding to directional vars (#1621)
 - Toast viewport: reset UA popover background (#1644)
+- Selector: forward extra HTML attributes from XDSBaseProps (#1444)
+- TextArea/TimeInput: a11y and input consistency fixes (#1443)
+- Token: add `'use client'` directive, TopNav context naming conventions (#1465)
+- Chat: anchor trigger menu to cursor position (#1354)
 - Banner, Breadcrumbs, Spinner, StatusDot, TabList, Text, TextArea, TimeInput: extend XDSBaseProps (#1780, #1640, #1405)
 - CodeBlock: Safari span fallback, per-line token perf (#1487, #1369)
 - TextInput/TextArea: default value to empty string (#1439)
@@ -62,6 +78,11 @@
 - Divider: remove opaque background from label (#1426)
 - Field: move description into XDSFieldLabel (#1458)
 - Theme: sync `data-xds-theme` to `<html>` for root provider (#1587)
+- Edge compensation model redesigned for toolbars (#1539)
+
+#### Performance
+
+- CodeBlock: content-visibility chunking for range mode, eliminate stylesheet mutations (#1457)
 
 #### Upgrade
 

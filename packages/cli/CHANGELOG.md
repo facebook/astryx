@@ -13,7 +13,9 @@
 - `--skip-install` and `--force-install` flags for `xds upgrade` (#1547)
 - `npx xds docs icons` reference + updated icon prop descriptions (#1500)
 - Theme nudge in generated agent docs (#1456)
+- Theme `expandColorScale` — derive color tokens from accent hex in `xds theme build` (#1452)
 - Component groups read from doc files instead of hardcoded map (#1650)
+- Page and block template system (#1393)
 
 #### Fixes
 
@@ -21,6 +23,8 @@
 - Handle ternary/logical expressions in `icon-name-deprecations` codemod (#1513)
 - Don't inject XDS block into files without markers during upgrade (#1495)
 - `findShowcase` matches by directory name and `componentsUsed` (#1728)
+- Include `onMedia` CSS in built theme output (#1450)
+- Register codemods for v0.0.13 (moved from v0.0.14) (#1508)
 
 #### Upgrade
 
