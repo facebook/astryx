@@ -25,7 +25,6 @@ export default async function ComponentPage({
   const comp = allComponents.find(c => c.name === name);
   if (!comp) notFound();
 
-  const subComponents = allComponents.filter(c => c.parentDoc === name);
   const pkg = Object.entries(components).find(([, comps]) =>
     comps.includes(comp),
   )?.[0];
@@ -40,7 +39,6 @@ export default async function ComponentPage({
       comp={comp}
       pkg={pkg}
       pkgVersion={pkgVersion}
-      subComponents={subComponents}
       showcase={showcase}
     />
   );
