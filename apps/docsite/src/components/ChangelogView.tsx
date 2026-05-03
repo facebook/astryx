@@ -7,6 +7,7 @@ import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSSection} from '@xds/core/Section';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
+import {XDSCarousel} from '@xds/core/Carousel';
 import {GITHUB_REPO} from '../constants';
 
 function linkifyPRs(markdown: string): string {
@@ -77,9 +78,11 @@ export function ChangelogView({
         {changelogs.length > 0 ? (
           <>
             <XDSTabList value={activeTab} onChange={setActiveTab} hasDivider>
-              {changelogs.map(c => (
-                <XDSTab key={c.pkg} value={c.pkg} label={c.pkg} />
-              ))}
+              <XDSCarousel gap={0.5} hasSnap={false}>
+                {changelogs.map(c => (
+                  <XDSTab key={c.pkg} value={c.pkg} label={c.pkg} />
+                ))}
+              </XDSCarousel>
             </XDSTabList>
 
             {active != null && (
