@@ -211,7 +211,10 @@ export function XDSTopNavItem({
         aria-disabled={isDisabled || undefined}
         tabIndex={isDisabled ? -1 : undefined}
         {...mergeProps(
-          xdsClassName('top-nav-item', {mode: 'drawer'}),
+          xdsClassName('top-nav-item', {
+            mode: 'drawer',
+            selected: isSelected ? 'selected' : null,
+          }),
           stylex.props(
             navItemStyles.item,
             navItemStyles[size],
@@ -243,7 +246,9 @@ export function XDSTopNavItem({
       aria-disabled={isDisabled || undefined}
       tabIndex={isDisabled ? -1 : undefined}
       {...mergeProps(
-        xdsClassName('top-nav-item'),
+        xdsClassName('top-nav-item', {
+          selected: isSelected ? 'selected' : null,
+        }),
         stylex.props(
           styles.base,
           isSelected && styles.selected,
