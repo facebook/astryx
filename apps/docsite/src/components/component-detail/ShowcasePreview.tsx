@@ -4,6 +4,7 @@ import {useEffect, useState, type ComponentType} from 'react';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSText} from '@xds/core/Text';
 import {XDSSpinner} from '@xds/core/Spinner';
+import {useMediaQuery} from '@xds/core/hooks';
 import {showcaseRegistry} from '../../generated/showcaseRegistry';
 
 interface ShowcasePreviewProps {
@@ -13,6 +14,7 @@ interface ShowcasePreviewProps {
 export function ShowcasePreview({name}: ShowcasePreviewProps) {
   const [Component, setComponent] = useState<ComponentType | null>(null);
   const [error, setError] = useState(false);
+  const isSmall = useMediaQuery('(max-width: 768px)');
 
   useEffect(() => {
     const loader = showcaseRegistry[name];
@@ -25,9 +27,13 @@ export function ShowcasePreview({name}: ShowcasePreviewProps) {
       .catch(() => setError(true));
   }, [name]);
 
+  const placeholderStyle = isSmall
+    ? {minHeight: 160, width: '100%'}
+    : {aspectRatio: '16 / 9', width: '100%'};
+
   if (error) {
     return (
-      <XDSCenter height={360}>
+      <XDSCenter style={placeholderStyle}>
         <XDSText type="supporting" color="secondary">
           Preview not available
         </XDSText>
@@ -37,11 +43,41 @@ export function ShowcasePreview({name}: ShowcasePreviewProps) {
 
   if (!Component) {
     return (
-      <XDSCenter height={360}>
+      <XDSCenter style={placeholderStyle}>
         <XDSSpinner size="md" />
       </XDSCenter>
     );
   }
 
-  return <Component />;
+  if (isSmall) {
+    return (
+      <div
+        style={{
+          width: '100%',
+          overflow: 'auto',
+          minHeight: 160,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+        <div style={{minWidth: 'fit-content'}}>
+          <Component />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        width: '100%',
+        aspectRatio: '16 / 9',
+        overflow: 'auto',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+      <Component />
+    </div>
+  );
 }
