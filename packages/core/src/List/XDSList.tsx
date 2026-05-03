@@ -80,6 +80,10 @@ export interface XDSListProps extends XDSBaseProps<
 // =============================================================================
 
 const styles = stylex.create({
+  root: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
   list: {
     margin: 0,
     paddingInlineStart: 0,
@@ -142,31 +146,43 @@ export function XDSList({
     [density, hasDividers, listStyle],
   );
 
+  const listElement = (
+    <Tag
+      ref={ref as React.Ref<HTMLUListElement & HTMLOListElement>}
+      data-testid={testId}
+      aria-labelledby={header != null ? headerId : undefined}
+      {...(listStyle === 'none' && !isOrdered ? {role: 'list'} : {})}
+      {...mergeProps(
+        xdsClassName('list', {density, listStyle}),
+        stylex.props(
+          styles.list,
+          hasDividers && styles.withDividers,
+          listStyle !== 'none' && styles.withCounter,
+          xstyle,
+        ),
+        className,
+        style,
+      )}>
+      {children}
+    </Tag>
+  );
+
+  if (header == null) {
+    return (
+      <XDSListContext.Provider value={contextValue}>
+        {listElement}
+      </XDSListContext.Provider>
+    );
+  }
+
   return (
     <XDSListContext.Provider value={contextValue}>
-      {header != null && (
+      <div {...stylex.props(styles.root)}>
         <div id={headerId} {...stylex.props(styles.header)}>
           {header}
         </div>
-      )}
-      <Tag
-        ref={ref as React.Ref<HTMLUListElement & HTMLOListElement>}
-        data-testid={testId}
-        aria-labelledby={header != null ? headerId : undefined}
-        {...(listStyle === 'none' && !isOrdered ? {role: 'list'} : {})}
-        {...mergeProps(
-          xdsClassName('list', {density, listStyle}),
-          stylex.props(
-            styles.list,
-            hasDividers && styles.withDividers,
-            listStyle !== 'none' && styles.withCounter,
-            xstyle,
-          ),
-          className,
-          style,
-        )}>
-        {children}
-      </Tag>
+        {listElement}
+      </div>
     </XDSListContext.Provider>
   );
 }

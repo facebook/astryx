@@ -170,6 +170,29 @@ describe('XDSList', () => {
     expect(ul).not.toHaveAttribute('aria-labelledby');
   });
 
+  it('wraps header and list in a column container', () => {
+    const {container} = render(
+      <XDSList header={<span>Group</span>}>
+        <XDSListItem label="Item" />
+      </XDSList>,
+    );
+    const header = screen.getByText('Group');
+    const wrapper = header.parentElement?.parentElement;
+    const ul = container.querySelector('ul');
+    expect(wrapper).toContainElement(header.parentElement!);
+    expect(wrapper).toContainElement(ul!);
+  });
+
+  it('does not add a wrapper div when header is absent', () => {
+    const {container} = render(
+      <XDSList data-testid="my-list">
+        <XDSListItem label="Item" />
+      </XDSList>,
+    );
+    const ul = container.querySelector('ul');
+    expect(ul?.parentElement).toBe(container);
+  });
+
   // ===========================================================================
   // Density variants
   // ===========================================================================
