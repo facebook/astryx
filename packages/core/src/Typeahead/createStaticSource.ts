@@ -10,7 +10,9 @@
 
 import type {XDSSearchableItem, XDSSearchSource} from './types';
 
-export interface CreateStaticSourceOptions {
+export interface CreateStaticSourceOptions<
+  T extends XDSSearchableItem = XDSSearchableItem,
+> {
   /**
    * Extract additional search terms from an item.
    * These are checked alongside the label during search.
@@ -22,7 +24,7 @@ export interface CreateStaticSourceOptions {
    * });
    * ```
    */
-  keywords?: (item: XDSSearchableItem) => string[];
+  keywords?: (item: T) => string[];
 }
 
 /**
@@ -51,7 +53,7 @@ export interface CreateStaticSourceOptions {
  */
 export function createStaticSource<T extends XDSSearchableItem>(
   items: T[],
-  options?: CreateStaticSourceOptions,
+  options?: CreateStaticSourceOptions<T>,
 ): XDSSearchSource<T> {
   const getKeywords = options?.keywords;
 
@@ -63,9 +65,7 @@ export function createStaticSource<T extends XDSSearchableItem>(
       return items.filter(item => {
         if (item.label.toLowerCase().includes(lower)) return true;
         if (getKeywords) {
-          return getKeywords(item).some(kw =>
-            kw.toLowerCase().includes(lower),
-          );
+          return getKeywords(item).some(kw => kw.toLowerCase().includes(lower));
         }
         return false;
       });
