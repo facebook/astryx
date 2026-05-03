@@ -240,7 +240,10 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-element'],
     backgroundColor: colorVars['--color-background-surface'],
     fontFamily: typographyVars['--font-family-body'],
-    fontSize: typeScaleVars['--text-label-size'],
+    fontSize: {
+      default: typeScaleVars['--text-label-size'],
+      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-label-size']})`,
+    },
     color: colorVars['--color-text-primary'],
     outline: {
       default: 'none',

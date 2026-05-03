@@ -27,7 +27,6 @@ import {
   typeScaleVars,
   spacingVars,
   typographyVars,
-  textSizeVars,
 } from '../theme/tokens.stylex';
 import {useCommandPaletteContext} from './CommandPaletteContext';
 
@@ -74,7 +73,10 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     color: colorVars['--color-text-primary'],
     fontFamily: typographyVars['--font-family-body'],
-    fontSize: textSizeVars['--font-size-base'],
+    fontSize: {
+      default: typeScaleVars['--text-body-size'],
+      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+    },
     lineHeight: typeScaleVars['--text-body-leading'],
     padding: 0,
     '::placeholder': {
