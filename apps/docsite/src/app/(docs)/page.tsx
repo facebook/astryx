@@ -319,11 +319,15 @@ export default function HomePage() {
       <XDSDivider />
       <footer {...stylex.props(styles.footer)}>
         <XDSText type="supporting" color="secondary">
-          <XDSLink href="https://opensource.fb.com/legal/terms" isExternalLink>
+          <XDSLink
+            label="Terms of Use"
+            href="https://opensource.fb.com/legal/terms"
+            isExternalLink>
             Terms of Use
           </XDSLink>
           {' | '}
           <XDSLink
+            label="Privacy Policy"
             href="https://opensource.fb.com/legal/privacy"
             isExternalLink>
             Privacy Policy
