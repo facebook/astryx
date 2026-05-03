@@ -147,14 +147,11 @@ export const CompositionSlots: StoryObj = {
     // (Until the component natively supports slots)
     const composedShieldCheck: SVGIconDef = {
       name: 'shield-check',
-      primary: [
-        ...shieldDef.primary,
-        // Injected badge: check scaled to 42% and centered
+      primary: [...shieldDef.primary],
+      secondary: [
         {
           type: 'path' as const,
-          attrs: {
-            d: 'M9 13l2 2 4-4', // simplified check at shield center
-          },
+          attrs: {d: 'M9 13l2 2 4-4'},
           role: 'stroke' as const,
         },
       ],
@@ -162,8 +159,8 @@ export const CompositionSlots: StoryObj = {
 
     const composedShieldX: SVGIconDef = {
       name: 'shield-x',
-      primary: [
-        ...shieldDef.primary,
+      primary: [...shieldDef.primary],
+      secondary: [
         {
           type: 'path' as const,
           attrs: {d: 'M9 9l6 6M15 9l-6 6'},
