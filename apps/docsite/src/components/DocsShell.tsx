@@ -5,6 +5,7 @@ import {usePathname} from 'next/navigation';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
 import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
+import {XDSNavMenuItem} from '@xds/core/NavMenu';
 import {XDSButton} from '@xds/core/Button';
 import {XDSLink} from '@xds/core/Link';
 import {XDSHStack, XDSVStack} from '@xds/core/Layout';
@@ -22,6 +23,7 @@ interface DocsShellProps {
   packages: PackageMeta[];
   docTopics: DocTopic[];
   templates: TemplateEntry[];
+  defaultIsMobile?: boolean;
 }
 
 /** Foundations: tokens first, then alphabetical */
@@ -161,6 +163,7 @@ export function DocsShell({
   packages,
   docTopics,
   templates,
+  defaultIsMobile,
 }: DocsShellProps) {
   const pathname = usePathname();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -205,10 +208,22 @@ export function DocsShell({
       <XDSAppShell
         variant="surface"
         height="auto"
+        mobileNav={{defaultIsMobile}}
         topNav={
           <XDSTopNav
             label="XDS navigation"
-            heading={<XDSTopNavHeading logo={XDS_WORDMARK} headingHref="/" />}
+            heading={
+              <XDSTopNavHeading
+                logo={XDS_WORDMARK}
+                headingHref="/"
+                menu={
+                  <>
+                    <XDSNavMenuItem label="Craft" href="/craft" />
+                    <XDSNavMenuItem label="Docs" href="/" />
+                  </>
+                }
+              />
+            }
             endContent={
               <XDSHStack gap={2}>
                 <XDSButton

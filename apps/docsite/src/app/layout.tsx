@@ -1,4 +1,5 @@
 import type {Metadata} from 'next';
+import {headers} from 'next/headers';
 import './globals.css';
 import {Providers} from './providers';
 import {DocsShell} from '../components/DocsShell';
@@ -13,7 +14,15 @@ export const metadata: Metadata = {
     'Open-source design system for building internal tools and products.',
 };
 
-export default function RootLayout({children}: {children: React.ReactNode}) {
+export default async function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const headersList = await headers();
+  const ua = headersList.get('user-agent') ?? '';
+  const defaultIsMobile = /mobile|android|iphone|ipad/i.test(ua);
+
   return (
     <html lang="en">
       <body>
@@ -22,7 +31,8 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
             components={components}
             packages={packages}
             docTopics={docTopics}
-            templates={templates}>
+            templates={templates}
+            defaultIsMobile={defaultIsMobile}>
             {children}
           </DocsShell>
         </Providers>
