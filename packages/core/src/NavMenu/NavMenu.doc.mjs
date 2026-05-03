@@ -1,18 +1,19 @@
 /** @type {import('../docs-types').ComponentDoc} */
 
 export const docs = {
-  name: 'NavMenuItem',
+  name: 'NavHeadingMenu',
   hidden: false,
-  keywords: ['nav', 'menu', 'navigation', 'menu-item'],
+  keywords: ['nav', 'menu', 'navigation', 'heading', 'menu-item', 'popover'],
   usage: {
-    description: 'Menu item used within navigation components like SideNav and TopNav.',
+    description:
+      'Accessible menu container and items for nav heading popovers. ' +
+      'XDSNavHeadingMenu provides role="menu" with keyboard navigation; ' +
+      'XDSNavHeadingMenuItem renders individual selectable items. ' +
+      'Pass as the menu prop of XDSSideNavHeading or XDSTopNavHeading.',
   },
   props: [
-    {name: 'icon', type: 'XDSIconType', description: 'Icon displayed before the label.'},
-    {name: 'label', type: 'ReactNode', required: true, description: 'Primary label text.'},
-    {name: 'description', type: 'ReactNode', description: 'Secondary description below the label.'},
-    {name: 'href', type: 'string', description: 'URL to navigate to. Renders as an anchor.'},
-    {name: 'onClick', type: '() => void', description: 'Callback when the item is selected.'},
-    {name: 'isDisabled', type: 'boolean', default: 'false', description: 'Whether the item is disabled.'},
+    {name: 'children', type: 'ReactNode', required: true, description: 'Menu items.'},
+    {name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'", description: 'Controls min-width and item padding.'},
+    {name: 'minWidth', type: 'number | string', description: 'Minimum width override.'},
   ],
 };

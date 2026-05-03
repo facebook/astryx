@@ -35,7 +35,7 @@ import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {xdsClassName, mergeProps} from '../utils';
 import {useXDSMenuHover} from '../hooks/useXDSMenuHover';
-import {XDSNavMenuContext} from '../NavMenu/XDSNavMenuContext';
+import {XDSNavHeadingCloseContext} from '../NavMenu/XDSNavMenuContext';
 
 // =============================================================================
 // Styles
@@ -497,7 +497,10 @@ export function XDSTopNavHeading({
             <button
               type="button"
               aria-label="Open menu"
-              onClick={(e) => { e.stopPropagation(); triggerProps.onClick(); }}
+              onClick={e => {
+                e.stopPropagation();
+                triggerProps.onClick();
+              }}
               {...popover.triggerProps}
               {...stylex.props(styles.chevron, styles.interactive)}>
               {getIcon('chevronDown')}
@@ -512,9 +515,10 @@ export function XDSTopNavHeading({
             {...stylex.props(styles.popoverContent)}
             {...contentProps}>
             {popoverHeadingContent}
-            <XDSNavMenuContext.Provider value={{closeMenu: popover.hide}}>
+            <XDSNavHeadingCloseContext.Provider
+              value={{closeMenu: popover.hide}}>
               {menu}
-            </XDSNavMenuContext.Provider>
+            </XDSNavHeadingCloseContext.Provider>
           </div>,
           {
             placement: 'below',
@@ -553,7 +557,10 @@ export function XDSTopNavHeading({
               <button
                 type="button"
                 aria-label="Open menu"
-                onClick={(e) => { e.stopPropagation(); triggerProps.onClick(); }}
+                onClick={e => {
+                  e.stopPropagation();
+                  triggerProps.onClick();
+                }}
                 {...popover.triggerProps}
                 {...stylex.props(styles.chevron, styles.interactive)}>
                 {getIcon('chevronDown')}
@@ -569,9 +576,10 @@ export function XDSTopNavHeading({
             {...stylex.props(styles.popoverContent)}
             {...contentProps}>
             {popoverHeadingContent}
-            <XDSNavMenuContext.Provider value={{closeMenu: popover.hide}}>
+            <XDSNavHeadingCloseContext.Provider
+              value={{closeMenu: popover.hide}}>
               {menu}
-            </XDSNavMenuContext.Provider>
+            </XDSNavHeadingCloseContext.Provider>
           </div>,
           {
             placement: 'below',

@@ -1,27 +1,37 @@
 'use client';
 
-/**
- * @file XDSNavMenuContext.tsx
- * @output Exports context and hook for nav heading menu coordination
- * @position Internal; used by nav heading components and XDSNavMenuItem
- *
- * Provides a close callback so menu items can dismiss the popover on click.
- */
-
 import {createContext, useContext} from 'react';
 
-export interface XDSNavMenuContextValue {
-  /** Close the menu popover */
+export type XDSNavHeadingMenuSize = 'sm' | 'md' | 'lg';
+
+/**
+ * Close callback provided by the nav heading popover.
+ * XDSNavHeadingMenu reads this to dismiss the popover on item selection
+ * and on Escape.
+ */
+export interface XDSNavHeadingCloseContextValue {
   closeMenu: () => void;
 }
 
-export const XDSNavMenuContext =
-  createContext<XDSNavMenuContextValue | null>(null);
+export const XDSNavHeadingCloseContext =
+  createContext<XDSNavHeadingCloseContextValue | null>(null);
+
+export function useXDSNavHeadingCloseContext(): XDSNavHeadingCloseContextValue | null {
+  return useContext(XDSNavHeadingCloseContext);
+}
 
 /**
- * Hook for nav menu items to access menu state.
- * Returns null outside of a nav heading menu.
+ * Size and close context provided by XDSNavHeadingMenu to its children.
+ * Items read this for consistent padding and dismiss-on-click.
  */
-export function useXDSNavMenuContext(): XDSNavMenuContextValue | null {
-  return useContext(XDSNavMenuContext);
+export interface XDSNavHeadingMenuContextValue {
+  size: XDSNavHeadingMenuSize;
+  closeMenu: () => void;
+}
+
+export const XDSNavHeadingMenuContext =
+  createContext<XDSNavHeadingMenuContextValue | null>(null);
+
+export function useXDSNavHeadingMenuContext(): XDSNavHeadingMenuContextValue | null {
+  return useContext(XDSNavHeadingMenuContext);
 }

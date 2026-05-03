@@ -195,7 +195,7 @@ describe('componentRegistry', () => {
     const core = components['@xds/core'];
     const names = core.map(c => c.name);
     expect(names).toContain('ChatDictationButton');
-    expect(names).toContain('NavMenuItem');
+    expect(names).toContain('NavHeadingMenu');
     const hiddenCount = core.filter(c => c.hidden).length;
     expect(hiddenCount).toBe(0);
   });
