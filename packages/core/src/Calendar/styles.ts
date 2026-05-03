@@ -130,6 +130,7 @@ export const dayCellStyles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     height: sizeVars['--size-element-md'],
+    isolation: 'isolate',
   },
 
   // Range background - structural positioning
