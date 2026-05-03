@@ -14,6 +14,7 @@
  */
 
 import {useState, useCallback, useEffect, useRef} from 'react';
+import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
 
 export interface ScrollOverflowState {
   /** Content overflows the start (left in LTR, right in RTL) */
@@ -38,7 +39,6 @@ export interface ScrollOverflowState {
  */
 export function useScrollOverflow() {
   const elRef = useRef<HTMLElement | null>(null);
-  const observerRef = useRef<ResizeObserver | null>(null);
 
   const [state, setState] = useState<ScrollOverflowState>({
     overflowStart: false,
@@ -72,11 +72,8 @@ export function useScrollOverflow() {
 
   const scrollRef = useCallback(
     (el: HTMLElement | null) => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-        observerRef.current = null;
-      }
       if (elRef.current) {
+        unobserveResize(elRef.current);
         elRef.current.removeEventListener('scroll', measure);
       }
 
@@ -84,12 +81,7 @@ export function useScrollOverflow() {
 
       if (el) {
         el.addEventListener('scroll', measure, {passive: true});
-
-        const ro = new ResizeObserver(measure);
-        ro.observe(el);
-        observerRef.current = ro;
-
-        measure();
+        observeResize(el, measure);
       }
     },
     [measure],
@@ -97,8 +89,10 @@ export function useScrollOverflow() {
 
   useEffect(() => {
     return () => {
-      if (observerRef.current) observerRef.current.disconnect();
-      if (elRef.current) elRef.current.removeEventListener('scroll', measure);
+      if (elRef.current) {
+        unobserveResize(elRef.current);
+        elRef.current.removeEventListener('scroll', measure);
+      }
     };
   }, [measure]);
 

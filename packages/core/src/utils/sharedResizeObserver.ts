@@ -37,15 +37,18 @@ function getObserver(): ResizeObserver {
 /**
  * Observe an element's size via a shared ResizeObserver singleton.
  *
+ * Fires the callback once synchronously on registration (with a
+ * synthetic entry) so callers don't need separate initial-measurement
+ * logic. Subsequent callbacks fire on actual resizes.
+ *
  * Call `unobserveResize` when the element unmounts or observation is
  * no longer needed. The shared observer is destroyed when the last
  * element is unobserved.
  *
  * @example
  * ```
- * // In a ref callback or effect:
  * observeResize(element, (entry) => {
- *   console.log(entry.contentRect.width);
+ *   console.log(entry.contentBoxSize);
  * });
  *
  * // Cleanup:
@@ -58,6 +61,10 @@ export function observeResize(
 ): void {
   callbacks.set(element, callback);
   getObserver().observe(element);
+
+  // Fire once immediately so callers get an initial measurement
+  // without duplicating their logic outside the observer path.
+  callback({target: element} as ResizeObserverEntry);
 }
 
 /**

@@ -28,6 +28,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
 import {useXDSChatStreamScroll} from './useXDSChatStreamScroll';
 import {useXDSChatNewMessages} from './useXDSChatNewMessages';
 import {XDSChatLayoutScrollButton} from './XDSChatLayoutScrollButton';
@@ -312,11 +313,10 @@ export function XDSChatLayout({
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-    const observer = new ResizeObserver(() => {
+    observeResize(root, () => {
       setDensity(getDensity(root.clientWidth));
     });
-    observer.observe(root);
-    return () => observer.disconnect();
+    return () => unobserveResize(root);
   }, []);
 
   // --- Merge refs ---

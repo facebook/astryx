@@ -114,14 +114,15 @@ export function useTruncation(
       elementRef.current = element;
 
       if (element && maxLines > 0) {
-        // Initial check
-        checkTruncation(element);
-
-        // Observe via shared singleton (if available)
+        // Observe via shared singleton (if available).
+        // observeResize fires the callback once on registration,
+        // so no separate initial check is needed.
         if (typeof ResizeObserver !== 'undefined') {
           observeResize(element, () => {
             checkTruncation(element);
           });
+        } else {
+          checkTruncation(element);
         }
       } else {
         setIsTruncated(false);

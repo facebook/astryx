@@ -16,6 +16,7 @@
 
 import {useState, useCallback, useRef} from 'react';
 import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
+import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
 
 export interface UseOverflowOptions {
   /**
@@ -94,7 +95,7 @@ export function useOverflow(
   const [visibleCount, setVisibleCount] = useState(itemCount);
   const containerElRef = useRef<HTMLElement | null>(null);
   const measureElRef = useRef<HTMLElement | null>(null);
-  const observerRef = useRef<ResizeObserver | null>(null);
+  const observedElRef = useRef<HTMLElement | null>(null);
 
   const calculate = useCallback(() => {
     const container = containerElRef.current;
@@ -170,20 +171,19 @@ export function useOverflow(
     (el: HTMLElement | null) => {
       containerElRef.current = el;
 
-      // Clean up previous observer
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-        observerRef.current = null;
+      // Clean up previous observation
+      if (observedElRef.current) {
+        unobserveResize(observedElRef.current);
+        observedElRef.current = null;
       }
 
       if (el) {
-        const ro = new ResizeObserver(() => {
-          calculate();
-        });
         const target =
           observeParent && el.parentElement ? el.parentElement : el;
-        ro.observe(target);
-        observerRef.current = ro;
+        observeResize(target, () => {
+          calculate();
+        });
+        observedElRef.current = target;
       }
     },
     [calculate, observeParent],

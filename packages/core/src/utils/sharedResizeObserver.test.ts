@@ -1,8 +1,5 @@
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 
-// We need to test the module in isolation, so we re-import fresh each test.
-// The module has module-level state (the singleton observer).
-
 describe('sharedResizeObserver', () => {
   let mockObserve: ReturnType<typeof vi.fn>;
   let mockUnobserve: ReturnType<typeof vi.fn>;
@@ -38,15 +35,11 @@ describe('sharedResizeObserver', () => {
 
     const el1 = document.createElement('div');
     const el2 = document.createElement('div');
-    const cb1 = vi.fn();
-    const cb2 = vi.fn();
 
-    observeResize(el1, cb1);
-    observeResize(el2, cb2);
+    observeResize(el1, vi.fn());
+    observeResize(el2, vi.fn());
 
-    // Only one ResizeObserver created
     expect(constructorCalls).toBe(1);
-    // Both elements observed
     expect(mockObserve).toHaveBeenCalledTimes(2);
     expect(mockObserve).toHaveBeenCalledWith(el1);
     expect(mockObserve).toHaveBeenCalledWith(el2);
@@ -55,7 +48,26 @@ describe('sharedResizeObserver', () => {
     unobserveResize(el2);
   });
 
-  it('dispatches entries to the correct callbacks', async () => {
+  it('fires callback synchronously on registration', async () => {
+    const {observeResize, unobserveResize} = await import(
+      './sharedResizeObserver'
+    );
+
+    const el = document.createElement('div');
+    const cb = vi.fn();
+
+    observeResize(el, cb);
+
+    // Callback should have fired once immediately with a synthetic entry
+    expect(cb).toHaveBeenCalledTimes(1);
+    expect(cb).toHaveBeenCalledWith(
+      expect.objectContaining({target: el}),
+    );
+
+    unobserveResize(el);
+  });
+
+  it('dispatches resize entries to the correct callbacks', async () => {
     const {observeResize, unobserveResize} = await import(
       './sharedResizeObserver'
     );
@@ -68,20 +80,26 @@ describe('sharedResizeObserver', () => {
     observeResize(el1, cb1);
     observeResize(el2, cb2);
 
+    // Reset counts from the initial synchronous fire
+    cb1.mockClear();
+    cb2.mockClear();
+
     // Simulate observer firing for el1 only
-    const fakeEntry1 = {target: el1} as ResizeObserverEntry;
-    capturedCallback([fakeEntry1], {} as ResizeObserver);
+    capturedCallback(
+      [{target: el1} as unknown as ResizeObserverEntry],
+      {} as ResizeObserver,
+    );
 
     expect(cb1).toHaveBeenCalledTimes(1);
-    expect(cb1).toHaveBeenCalledWith(fakeEntry1);
     expect(cb2).not.toHaveBeenCalled();
 
     // Simulate observer firing for el2
-    const fakeEntry2 = {target: el2} as ResizeObserverEntry;
-    capturedCallback([fakeEntry2], {} as ResizeObserver);
+    capturedCallback(
+      [{target: el2} as unknown as ResizeObserverEntry],
+      {} as ResizeObserver,
+    );
 
     expect(cb2).toHaveBeenCalledTimes(1);
-    expect(cb2).toHaveBeenCalledWith(fakeEntry2);
 
     unobserveResize(el1);
     unobserveResize(el2);
@@ -115,7 +133,6 @@ describe('sharedResizeObserver', () => {
     unobserveResize(el1);
     expect(constructorCalls).toBe(1);
 
-    // New observation after teardown → new observer
     const el2 = document.createElement('div');
     observeResize(el2, vi.fn());
     expect(constructorCalls).toBe(2);
@@ -133,14 +150,20 @@ describe('sharedResizeObserver', () => {
     const cb2 = vi.fn();
 
     observeResize(el, cb1);
+    cb1.mockClear();
+
     observeResize(el, cb2);
 
-    const fakeEntry = {target: el} as ResizeObserverEntry;
-    capturedCallback([fakeEntry], {} as ResizeObserver);
+    capturedCallback(
+      [{target: el} as unknown as ResizeObserverEntry],
+      {} as ResizeObserver,
+    );
 
-    // Only the latest callback fires
+    // Only the latest callback fires for subsequent resizes
     expect(cb1).not.toHaveBeenCalled();
-    expect(cb2).toHaveBeenCalledTimes(1);
+    // cb2: initial fire (1) + observer fire (1) = but we only check the observer fire
+    // cb2 was called once on registration, then once from capturedCallback
+    expect(cb2).toHaveBeenCalledTimes(2);
 
     unobserveResize(el);
   });

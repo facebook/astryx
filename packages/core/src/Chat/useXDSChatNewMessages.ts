@@ -18,6 +18,7 @@
  */
 
 import {useCallback, useEffect, useRef, useState} from 'react';
+import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
 
 // =============================================================================
 // Types
@@ -73,7 +74,7 @@ export function useXDSChatNewMessages({
     const el = contentRef.current;
     if (!el) return;
 
-    const observer = new ResizeObserver(() => {
+    observeResize(el, () => {
       // Notify scroll hook of any height change
       onResizeRef.current?.();
 
@@ -91,8 +92,7 @@ export function useXDSChatNewMessages({
       }
     });
 
-    observer.observe(el);
-    return () => observer.disconnect();
+    return () => unobserveResize(el);
   }, [contentRef]);
 
   const dismiss = useCallback(() => {

@@ -50,6 +50,7 @@ import type {XDSAppShellMobileContextValue} from './XDSAppShellMobileContext';
 import type {SpacingStep} from '../utils/types';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps} from '../utils';
+import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
 
 const HasActivity = typeof React.Activity !== 'undefined';
 const ActivityWrapper = HasActivity
@@ -568,11 +569,8 @@ export function XDSAppShell({
       shellEl.style.setProperty('--appshell-header-height', `${height}px`);
     };
 
-    updateHeight();
-
-    const observer = new ResizeObserver(updateHeight);
-    observer.observe(headerEl);
-    return () => observer.disconnect();
+    observeResize(headerEl, () => updateHeight());
+    return () => unobserveResize(headerEl);
   }, [isAuto]);
 
   // =========================================================================

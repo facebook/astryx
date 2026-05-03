@@ -21,6 +21,7 @@ import type {
   ColumnWidth,
 } from '../../types';
 import {DEFAULT_MIN_COLUMN_WIDTH} from '../../columnUtils';
+import {observeResize, unobserveResize} from '../../../utils/sharedResizeObserver';
 
 // =============================================================================
 // Config Type
@@ -675,12 +676,12 @@ export function useXDSTableColumnResize<T extends Record<string, unknown>>(
   // Measure the table height via ResizeObserver and expose as
   // --table-resize-height on the <table> element. This is initialized
   // entirely by the resize plugin — the base table has no knowledge of it.
-  const observerRef = useRef<ResizeObserver | null>(null);
+  const observedTableRef = useRef<HTMLTableElement | null>(null);
 
   const measureRef = useCallback((el: HTMLDivElement | null) => {
-    if (observerRef.current) {
-      observerRef.current.disconnect();
-      observerRef.current = null;
+    if (observedTableRef.current) {
+      unobserveResize(observedTableRef.current);
+      observedTableRef.current = null;
     }
     if (!el) return;
 
@@ -688,19 +689,20 @@ export function useXDSTableColumnResize<T extends Record<string, unknown>>(
     if (table) tableRef.current = table;
 
     if (table && typeof ResizeObserver !== 'undefined') {
-      const observer = new ResizeObserver(() => {
+      observeResize(table, () => {
         const height = table.getBoundingClientRect().height;
         table.style.setProperty('--table-resize-height', `${height}px`);
       });
-      observer.observe(table);
-      observerRef.current = observer;
+      observedTableRef.current = table;
     }
   }, []);
 
   // Clean up observer on unmount
   useEffect(() => {
     return () => {
-      observerRef.current?.disconnect();
+      if (observedTableRef.current) {
+        unobserveResize(observedTableRef.current);
+      }
     };
   }, []);
 
