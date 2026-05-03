@@ -13,13 +13,15 @@ import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSSection} from '@xds/core/Section';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSCard} from '@xds/core/Card';
-import {XDSClickableCard} from '@xds/core/ClickableCard';
 import {XDSButton} from '@xds/core/Button';
 import {XDSOverlay} from '@xds/core/Overlay';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSCarousel} from '@xds/core/Carousel';
 import {XDSBadge} from '@xds/core/Badge';
 import {templates} from '../../generated/templateRegistry';
+import {ThemeShowcaseTile} from '../../components/ThemeShowcaseTile';
+import {XDSTheme} from '@xds/core/theme';
+import {themeObjects} from '../../generated/themeRegistry';
 import {TemplateThumbnail} from '../../components/TemplateThumbnail';
 import {blocks} from '../../generated/blockRegistry';
 import {packages} from '../../generated/packageRegistry';
@@ -150,34 +152,62 @@ export default function CraftPage() {
 
 function ThemeGrid() {
   return (
-    <XDSGrid columns={{minWidth: 260, repeat: 'fill'}} gap={4} rowGap={6}>
-      {themePackages.map(pkg => (
-        <XDSClickableCard
-          key={pkg.name}
-          label={pkg.displayName}
-          href={`/packages/${pkg.name.replace('@xds/', '')}`}
-          padding={5}>
-          <XDSVStack gap={2}>
-            <XDSText type="body" weight="bold">
-              {pkg.displayName}
-            </XDSText>
-            <XDSText type="supporting" color="secondary">
-              {pkg.description}
-            </XDSText>
-            <XDSBadge label={`v${pkg.version}`} variant="info" />
-          </XDSVStack>
-        </XDSClickableCard>
-      ))}
-      <XDSClickableCard label="Theme Editor" href="/craft/theme" padding={5}>
-        <XDSVStack gap={2}>
-          <XDSText type="body" weight="bold">
-            Theme Editor
-          </XDSText>
-          <XDSText type="supporting" color="secondary">
-            Customize colors, typography, radius, and more with a live preview.
-          </XDSText>
-        </XDSVStack>
-      </XDSClickableCard>
+    <XDSGrid columns={{minWidth: 300, repeat: 'fill'}} gap={4} rowGap={6}>
+      {themePackages.map(pkg => {
+        const theme = themeObjects[pkg.name];
+        const label = pkg.displayName.replace('Theme: ', '');
+        return (
+          <XDSCard key={pkg.name} padding={0}>
+            <XDSOverlay
+              showOn="hover"
+              scrim="dark"
+              content={
+                <div {...stylex.props(styles.overlayInner)}>
+                  <XDSVStack gap={2}>
+                    <XDSVStack gap={0.5}>
+                      <XDSText
+                        type="body"
+                        weight="bold"
+                        style={{color: '#fff'}}>
+                        {pkg.displayName}
+                      </XDSText>
+                      <XDSText
+                        type="supporting"
+                        style={{color: 'rgba(255,255,255,0.7)'}}>
+                        {pkg.description.slice(0, 80)}
+                        {pkg.description.length > 80 ? '\u2026' : ''}
+                      </XDSText>
+                    </XDSVStack>
+                    <XDSHStack gap={2}>
+                      <XDSButton
+                        label="View theme"
+                        variant="secondary"
+                        size="sm"
+                        href={`/packages/${pkg.name.replace('@xds/', '')}`}
+                      />
+                      <XDSButton
+                        label="Customize"
+                        variant="secondary"
+                        size="sm"
+                        href="/craft/theme"
+                      />
+                    </XDSHStack>
+                  </XDSVStack>
+                </div>
+              }>
+              <div style={{aspectRatio: '16/10'}} inert>
+                {theme ? (
+                  <XDSTheme theme={theme}>
+                    <ThemeShowcaseTile label={label} />
+                  </XDSTheme>
+                ) : (
+                  <div {...stylex.props(styles.cardImage)} />
+                )}
+              </div>
+            </XDSOverlay>
+          </XDSCard>
+        );
+      })}
     </XDSGrid>
   );
 }
