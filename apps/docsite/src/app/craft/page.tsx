@@ -30,6 +30,9 @@ const styles = stylex.create({
   heroTitle: {
     textAlign: 'center' as const,
   },
+  carouselTabs: {
+    paddingBottom: 4,
+  },
   cardImage: {
     display: 'block',
     width: '100%',
@@ -107,7 +110,11 @@ export default function CraftPage() {
         </XDSText>
 
         <XDSCarousel gap={0}>
-          <XDSTabList value={activeTab} onChange={handleTabChange} size="md">
+          <XDSTabList
+            value={activeTab}
+            onChange={handleTabChange}
+            size="md"
+            xstyle={styles.carouselTabs}>
             <XDSTab
               value="all"
               label={`All (${allItems.templates.length + allItems.showcases.length})`}

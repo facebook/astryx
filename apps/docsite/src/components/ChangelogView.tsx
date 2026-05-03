@@ -56,6 +56,9 @@ const styles = stylex.create({
     maxWidth: 960,
     marginInline: 'auto',
   },
+  carouselTab: {
+    paddingBottom: 4,
+  },
 });
 
 export function ChangelogView({
@@ -80,7 +83,12 @@ export function ChangelogView({
             <XDSTabList value={activeTab} onChange={setActiveTab} hasDivider>
               <XDSCarousel gap={0.5} hasSnap={false}>
                 {changelogs.map(c => (
-                  <XDSTab key={c.pkg} value={c.pkg} label={c.pkg} />
+                  <XDSTab
+                    key={c.pkg}
+                    value={c.pkg}
+                    label={c.pkg}
+                    xstyle={styles.carouselTab}
+                  />
                 ))}
               </XDSCarousel>
             </XDSTabList>
