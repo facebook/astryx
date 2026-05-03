@@ -22,6 +22,7 @@ import {PlaygroundPropsTable} from './PlaygroundPropsTable';
 import type {ComponentEntry} from '../../generated/componentRegistry';
 import type {BlockEntry} from '../../generated/blockRegistry';
 import {showcaseRegistry} from '../../generated/showcaseRegistry';
+import {exampleRegistry} from '../../generated/exampleRegistry';
 
 interface ComponentDetailClientProps {
   comp: ComponentEntry;
@@ -29,15 +30,13 @@ interface ComponentDetailClientProps {
   pkgVersion: string | undefined;
   subComponents: ComponentEntry[];
   showcase: BlockEntry | undefined;
-  examples: BlockEntry[];
 }
 
 function OverviewContent({
   comp,
   pkg,
   subComponents,
-  showcase,
-  examples,
+  showcase: _showcase,
   hasShowcase,
 }: ComponentDetailClientProps & {hasShowcase: boolean}) {
   const isHook = comp.params != null;
@@ -97,7 +96,7 @@ function OverviewContent({
         </>
       )}
 
-      {examples.length > 0 && (
+      {(exampleRegistry[comp.name] || []).length > 0 && (
         <>
           <XDSDivider />
           <XDSVStack gap={6}>
@@ -107,19 +106,9 @@ function OverviewContent({
             </XDSText>
           </XDSVStack>
           <XDSVStack gap={8}>
-            {examples.map(block => (
-              <ExampleBlock key={block.dirName} block={block} />
+            {(exampleRegistry[comp.name] || []).map((entry, i) => (
+              <ExampleBlock key={i} entry={entry} />
             ))}
-          </XDSVStack>
-        </>
-      )}
-
-      {showcase && (
-        <>
-          <XDSDivider />
-          <XDSVStack gap={2}>
-            <XDSHeading level={3}>Showcase source</XDSHeading>
-            <XDSCodeBlock code={showcase.source} language="tsx" hasCopyButton />
           </XDSVStack>
         </>
       )}
@@ -133,7 +122,6 @@ function ComponentDetailInner({
   pkgVersion,
   subComponents,
   showcase,
-  examples,
 }: ComponentDetailClientProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -167,8 +155,8 @@ function ComponentDetailInner({
         <XDSVStack gap={2}>
           <XDSText type="display-1">{comp.name}</XDSText>
           <XDSText type="supporting" color="secondary">
-            {pkg} · {comp.moduleName}
-            {pkgVersion ? ` v${pkgVersion}` : ''}
+            {pkg}
+            {pkgVersion ? ` v${pkgVersion}` : ''} · {comp.moduleName}
           </XDSText>
         </XDSVStack>
 
@@ -186,7 +174,6 @@ function ComponentDetailInner({
                 pkgVersion={pkgVersion}
                 subComponents={subComponents}
                 showcase={showcase}
-                examples={examples}
                 hasShowcase={hasShowcase}
               />
             )}
@@ -231,7 +218,6 @@ function ComponentDetailInner({
               pkgVersion={pkgVersion}
               subComponents={subComponents}
               showcase={showcase}
-              examples={examples}
               hasShowcase={hasShowcase}
             />
           </>

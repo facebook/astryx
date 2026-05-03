@@ -779,11 +779,15 @@ function generateExampleRegistry() {
 
     fs.copyFileSync(tsxSrc, path.join(EXAMPLES_OUT, `${basename}.tsx`));
 
+    let source = '';
+    try { source = fs.readFileSync(tsxSrc, 'utf-8'); } catch { /* ignore */ }
+
     entries.push({
       exampleFor,
       basename,
       name: nameMatch?.[1] || basename,
       description: descMatch?.[1] || '',
+      source,
     });
   }
 
@@ -797,7 +801,7 @@ function generateExampleRegistry() {
   // Generate registry: component name → array of example metadata + loaders
   const componentLines = Object.entries(grouped).map(([comp, examples]) => {
     const exampleLines = examples.map(
-      e => `    {name: ${JSON.stringify(e.name)}, description: ${JSON.stringify(e.description)}, load: () => import('./examples/${e.basename}')},`
+      e => `    {name: ${JSON.stringify(e.name)}, description: ${JSON.stringify(e.description)}, source: ${JSON.stringify(e.source)}, load: () => import('./examples/${e.basename}')},`
     ).join('\n');
     return `  '${comp}': [\n${exampleLines}\n  ],`;
   }).join('\n');
@@ -808,6 +812,7 @@ import type {ComponentType} from 'react';
 export interface ExampleEntry {
   name: string;
   description: string;
+  source: string;
   load: () => Promise<{default: ComponentType}>;
 }
 

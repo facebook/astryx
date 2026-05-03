@@ -34,7 +34,6 @@ export default async function ComponentPage({
 
   const componentBlocks = blocks.filter(b => b.exampleFor === name);
   const showcase = componentBlocks.find(b => b.isShowcase);
-  const examples = componentBlocks.filter(b => !b.isShowcase);
 
   return (
     <ComponentDetailClient
@@ -43,7 +42,6 @@ export default async function ComponentPage({
       pkgVersion={pkgVersion}
       subComponents={subComponents}
       showcase={showcase}
-      examples={examples}
     />
   );
 }
