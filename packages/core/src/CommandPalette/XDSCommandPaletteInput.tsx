@@ -174,6 +174,10 @@ export function XDSCommandPaletteInput({
   const value = controlledValue ?? ctx?.search;
   const handleValueChange = onValueChange ?? ctx?.setSearch;
 
+  // When inside an inline CommandPalette, disable auto-focus by default
+  // to avoid stealing focus from the surrounding page.
+  const effectiveAutoFocus = hasAutoFocus && !(ctx?.isInline ?? false);
+
   // Merge refs
   const setRefs = (element: HTMLInputElement | null) => {
     (inputRef as React.MutableRefObject<HTMLInputElement | null>).current =
@@ -188,12 +192,12 @@ export function XDSCommandPaletteInput({
 
   // Auto-focus on mount
   useEffect(() => {
-    if (hasAutoFocus && inputRef.current) {
+    if (effectiveAutoFocus && inputRef.current) {
       requestAnimationFrame(() => {
         inputRef.current?.focus();
       });
     }
-  }, [hasAutoFocus]);
+  }, [effectiveAutoFocus]);
 
   // Keyboard navigation — delegates to useCombobox via context
   const handleKeyDown = useCallback(

@@ -154,6 +154,29 @@ describe('XDSDropdownMenu controlled mode', () => {
   });
 });
 
+describe('XDSDropdownMenu hasAutoFocus', () => {
+  it('does not focus menu items when hasAutoFocus is false and isMenuOpen is true', () => {
+    const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus');
+    render(
+      <XDSDropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Edit'}, {label: 'Delete'}]}
+        isMenuOpen={true}
+        hasAutoFocus={false}
+        onOpenChange={() => {}}
+      />,
+    );
+
+    const menuItems = screen.getAllByRole('menuitem', {hidden: true});
+    const menuItemFocusCalls = focusSpy.mock.calls.filter((_, i) => {
+      const ctx = focusSpy.mock.contexts[i];
+      return menuItems.includes(ctx as HTMLElement);
+    });
+    expect(menuItemFocusCalls).toHaveLength(0);
+    focusSpy.mockRestore();
+  });
+});
+
 describe('XDSDropdownMenu items', () => {
   it('renders items with labels', () => {
     render(

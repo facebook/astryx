@@ -118,6 +118,13 @@ interface XDSDropdownMenuBaseProps extends XDSBaseProps {
   menuWidth?: number | string;
   onClick?: () => void;
   hasChevron?: boolean;
+  /**
+   * Whether to auto-focus the first menu item when the menu opens.
+   * Set to `false` for inline showcases or documentation previews
+   * where stealing focus is undesirable.
+   * @default true
+   */
+  hasAutoFocus?: boolean;
   'data-testid'?: string;
 }
 
@@ -166,6 +173,7 @@ export function XDSDropdownMenu({
   menuWidth,
   onClick,
   hasChevron = true,
+  hasAutoFocus = true,
   className,
   style,
   xstyle,
@@ -243,6 +251,13 @@ export function XDSDropdownMenu({
     onEscape: closeMenu,
   });
 
+  // Focus first menu item when controlled open transitions to true
+  React.useEffect(() => {
+    if (isControlled && controlledIsOpen && hasAutoFocus) {
+      requestAnimationFrame(() => focusFirst());
+    }
+  }, [isControlled, controlledIsOpen, hasAutoFocus, focusFirst]);
+
   // Extend useListFocus with Enter/Space activation
   const listKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -261,8 +276,10 @@ export function XDSDropdownMenu({
 
   const openAndFocus = useCallback(() => {
     popover.show();
-    requestAnimationFrame(() => focusFirst());
-  }, [popover, focusFirst]);
+    if (hasAutoFocus) {
+      requestAnimationFrame(() => focusFirst());
+    }
+  }, [popover, hasAutoFocus, focusFirst]);
 
   const handleButtonClick = useCallback(() => {
     onClick?.();

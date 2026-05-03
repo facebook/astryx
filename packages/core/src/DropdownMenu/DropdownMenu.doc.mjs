@@ -66,6 +66,12 @@ export const docs = {
           default: 'true',
         },
         {
+          name: 'hasAutoFocus',
+          type: 'boolean',
+          description: 'Whether to auto-focus the first menu item when the menu opens. Set to false for inline showcases or documentation previews.',
+          default: 'true',
+        },
+        {
           name: 'children',
           type: '(item: XDSDropdownMenuItemData) => ReactNode',
           description: 'Custom render function for each item in the list.',
@@ -251,6 +257,12 @@ export const docsZh = {
           default: 'true',
         },
         {
+          name: 'hasAutoFocus',
+          type: 'boolean',
+          description: '菜单打开时是否自动聚焦第一个菜单项。内联展示或文档预览设为 false。',
+          default: 'true',
+        },
+        {
           name: 'children',
           type: '(item: XDSDropdownMenuItemData) => ReactNode',
           description: '列表中每个项的自定义渲染函数。',
@@ -396,6 +408,7 @@ export const docsDense = {
         menuWidth: 'custom menu width; default matches trigger button',
         onClick: 'trigger button click callback',
         hasChevron: 'show chevron on trigger; false for icon-only triggers',
+        hasAutoFocus: 'auto-focus first item on open; false for showcases',
         children: 'custom render fn per item',
       },
     },

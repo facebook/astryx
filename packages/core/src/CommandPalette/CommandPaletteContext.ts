@@ -40,6 +40,8 @@ export interface CommandPaletteContextValue {
   isOpen: boolean;
   /** Whether an async search is in flight. */
   isBusy: boolean;
+  /** Whether the palette is rendered inline (no modal behavior). */
+  isInline: boolean;
 }
 
 export const CommandPaletteContext =
