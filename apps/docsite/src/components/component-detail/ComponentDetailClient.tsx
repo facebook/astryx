@@ -28,14 +28,12 @@ interface ComponentDetailClientProps {
   comp: ComponentEntry;
   pkg: string | undefined;
   pkgVersion: string | undefined;
-  subComponents: ComponentEntry[];
   showcase: BlockEntry | undefined;
 }
 
 function OverviewContent({
   comp,
   pkg,
-  subComponents,
   showcase: _showcase,
   hasShowcase,
 }: ComponentDetailClientProps & {hasShowcase: boolean}) {
@@ -69,33 +67,6 @@ function OverviewContent({
         <HookSignature params={comp.params} returns={comp.returns} />
       )}
 
-      {subComponents.length > 0 && (
-        <>
-          <XDSDivider />
-          <XDSVStack gap={6}>
-            <XDSVStack gap={2}>
-              <XDSHeading level={2}>Sub-components</XDSHeading>
-              <XDSText type="large" weight="normal">
-                {comp.moduleName.replace(/^XDS/, '')} is a compound component
-                with {subComponents.length} sub-component
-                {subComponents.length === 1 ? '' : 's'}.
-              </XDSText>
-            </XDSVStack>
-            {subComponents.map(sub => (
-              <XDSVStack key={sub.name} gap={3}>
-                <XDSVStack gap={1}>
-                  <XDSHeading level={3}>{sub.moduleName}</XDSHeading>
-                  <XDSText type="body" color="secondary">
-                    {sub.description}
-                  </XDSText>
-                </XDSVStack>
-                {sub.props.length > 0 && <PropsTable props={sub.props} />}
-              </XDSVStack>
-            ))}
-          </XDSVStack>
-        </>
-      )}
-
       {(exampleRegistry[comp.name] || []).length > 0 && (
         <>
           <XDSDivider />
@@ -120,7 +91,6 @@ function ComponentDetailInner({
   comp,
   pkg,
   pkgVersion,
-  subComponents,
   showcase,
 }: ComponentDetailClientProps) {
   const searchParams = useSearchParams();
@@ -176,7 +146,6 @@ function ComponentDetailInner({
                 comp={comp}
                 pkg={pkg}
                 pkgVersion={pkgVersion}
-                subComponents={subComponents}
                 showcase={showcase}
                 hasShowcase={hasShowcase}
               />
@@ -220,7 +189,6 @@ function ComponentDetailInner({
               comp={comp}
               pkg={pkg}
               pkgVersion={pkgVersion}
-              subComponents={subComponents}
               showcase={showcase}
               hasShowcase={hasShowcase}
             />
