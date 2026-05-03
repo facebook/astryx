@@ -202,7 +202,7 @@ export function DocsShell({
               <XDSLink
                 href="https://github.com/facebookexperimental/xds/tree/main"
                 isExternalLink>
-                GitHub
+                GitHub Pages
               </XDSLink>
             </XDSText>
           }>
