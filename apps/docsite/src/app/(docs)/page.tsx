@@ -12,6 +12,9 @@ import {XDSGrid} from '@xds/core/Grid';
 import {XDSSection} from '@xds/core/Section';
 import {XDSButton} from '@xds/core/Button';
 import {XDSTheme, XDSMediaTheme} from '@xds/core/theme';
+import {XDSDivider} from '@xds/core/Divider';
+import {XDSLink} from '@xds/core/Link';
+import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import {packages} from '../../generated/packageRegistry';
 import {componentCount} from '../../generated/componentRegistry';
 import {docTopics} from '../../generated/docsRegistry';
@@ -153,6 +156,17 @@ const styles = stylex.create({
     textDecoration: 'none',
     color: 'inherit',
     cursor: 'pointer',
+  },
+  footerDivider: {
+    paddingBlockStart: spacingVars['--spacing-12'],
+  },
+  footer: {
+    paddingBlockStart: spacingVars['--spacing-12'],
+    paddingBlockEnd: spacingVars['--spacing-12'],
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
   },
 });
 
@@ -305,6 +319,27 @@ export default function HomePage() {
           </XDSVStack>
         </XDSVStack>
       </XDSSection>
+
+      <XDSDivider xstyle={styles.footerDivider} />
+      <footer {...stylex.props(styles.footer)}>
+        <XDSText type="supporting" color="secondary">
+          <XDSLink
+            color="secondary"
+            label="Terms of Use"
+            href="https://opensource.fb.com/legal/terms"
+            isExternalLink>
+            Terms of Use
+          </XDSLink>
+          {' | '}
+          <XDSLink
+            color="secondary"
+            label="Privacy Policy"
+            href="https://opensource.fb.com/legal/privacy"
+            isExternalLink>
+            Privacy Policy
+          </XDSLink>
+        </XDSText>
+      </footer>
     </div>
   );
 }

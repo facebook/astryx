@@ -2,10 +2,11 @@
 
 import {usePathname} from 'next/navigation';
 import {XDSAppShell} from '@xds/core/AppShell';
+import {XDSCenter} from '@xds/core/Center';
 import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
 import {SharedTopNav} from './SharedTopNav';
 import {XDSLink} from '@xds/core/Link';
-import {XDSVStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
 import type {ComponentEntry} from '../generated/componentRegistry';
 import type {PackageMeta} from '../generated/packageRegistry';
 import type {DocTopic} from '../generated/docsRegistry';
@@ -198,20 +199,15 @@ export function DocsShell({
       sideNav={
         <XDSSideNav
           footer={
-            <XDSVStack gap={1}>
+            <XDSCenter>
               <XDSLink
-                label="Terms of Use"
-                href="https://opensource.fb.com/legal/terms"
+                color="secondary"
+                label="GitHub Pages"
+                href="https://studious-broccoli-o7e61n3.pages.github.io/"
                 isExternalLink>
-                Terms of Use
+                GitHub Pages
               </XDSLink>
-              <XDSLink
-                label="Privacy Policy"
-                href="https://opensource.fb.com/legal/privacy"
-                isExternalLink>
-                Privacy Policy
-              </XDSLink>
-            </XDSVStack>
+            </XDSCenter>
           }>
           {/* Home */}
           <XDSSideNavSection title="Home" isHeaderHidden>
