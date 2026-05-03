@@ -661,7 +661,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
             onBlurCapture={handleBlurCapture}
             data-testid={testId}
             {...mergeProps(
-              xdsClassName('tokenizer', {size}),
+              xdsClassName('tokenizer', {size, status: status?.type}),
               stylex.props(
                 inputWrapperStyles.base,
                 styles.wrapper,
@@ -762,7 +762,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
                 ref={placeholderRef}
                 onClick={handleWrapperClick}
                 {...mergeProps(
-                  xdsClassName('tokenizer', {size}),
+                  xdsClassName('tokenizer', {size, status: status?.type}),
                   stylex.props(
                     inputWrapperStyles.base,
                     styles.wrapper,
