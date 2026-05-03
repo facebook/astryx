@@ -35,7 +35,7 @@ export const docs = {
           name: 'items',
           type: 'XDSDropdownMenuOption[]',
           description:
-            'Menu items, dividers, or sections to display in the popup.',
+            'Array of menu entries. Each entry is one of: an action item `{label, onClick?, icon?, isDisabled?}`, a divider `{type: "divider"}`, or a section `{type: "section", title?, items: [...action items]}`.',
           required: true,
         },
         {
@@ -110,76 +110,6 @@ export const docs = {
         },
       ],
     },
-    {
-      name: 'XDSDropdownMenuItemData',
-      description:
-        'Data shape for a single actionable menu item passed via the `items` prop.',
-      props: [
-        {
-          name: 'label',
-          type: 'string',
-          description: 'Display label for the item.',
-          required: true,
-        },
-        {
-          name: 'onClick',
-          type: '() => void',
-          description: 'Callback fired when the item is selected.',
-        },
-        {
-          name: 'isDisabled',
-          type: 'boolean',
-          description:
-            'Whether the item is disabled; disabled items are skipped during keyboard navigation.',
-          default: 'false',
-        },
-        {
-          name: 'icon',
-          type: 'XDSIconType',
-          description: 'Icon to display before the item label. See `npx xds docs icons` for valid semantic names.',
-        },
-      ],
-    },
-    {
-      name: 'XDSDropdownMenuDivider',
-      description:
-        'A visual divider that can be placed between items in the `items` array.',
-      props: [
-        {
-          name: 'type',
-          type: "'divider'",
-          description:
-            'Discriminant value that identifies this entry as a divider.',
-          required: true,
-        },
-      ],
-    },
-    {
-      name: 'XDSDropdownMenuSection',
-      description:
-        'A labeled group of items that can be placed in the `items` array.',
-      props: [
-        {
-          name: 'type',
-          type: "'section'",
-          description:
-            'Discriminant value that identifies this entry as a section.',
-          required: true,
-        },
-        {
-          name: 'title',
-          type: 'string',
-          description:
-            'Optional header text displayed above the section items.',
-        },
-        {
-          name: 'items',
-          type: 'XDSDropdownMenuItemData[]',
-          description: 'The actionable items that belong to this section.',
-          required: true,
-        },
-      ],
-    },
   ],
   usage: {
     description: 'A dropdown menu that displays a list of actionable items in a popup triggered by a button. Use to present action options as a next step in a process, or to offer contextual actions without cluttering the interface.',
@@ -226,7 +156,7 @@ export const docsZh = {
           name: 'items',
           type: 'XDSDropdownMenuOption[]',
           description:
-            '在弹出菜单中显示的菜单项、分隔线或分组。',
+            '菜单项数组。每项为：操作项 `{label, onClick?, icon?, isDisabled?}`、分隔线 `{type: "divider"}`、或分组 `{type: "section", title?, items: [...操作项]}`。',
           required: true,
         },
         {
@@ -302,76 +232,6 @@ export const docsZh = {
         },
       ],
     },
-    {
-      name: 'XDSDropdownMenuItemData',
-      description:
-        '通过 `items` 属性传递的单个可操作菜单项的数据结构。',
-      props: [
-        {
-          name: 'label',
-          type: 'string',
-          description: '菜单项的显示标签。',
-          required: true,
-        },
-        {
-          name: 'onClick',
-          type: '() => void',
-          description: '选择该菜单项时触发的回调。',
-        },
-        {
-          name: 'isDisabled',
-          type: 'boolean',
-          description:
-            '菜单项是否禁用；禁用的项在键盘导航时会被跳过。',
-          default: 'false',
-        },
-        {
-          name: 'icon',
-          type: 'XDSIconType',
-          description: '显示在菜单项标签前的图标。',
-        },
-      ],
-    },
-    {
-      name: 'XDSDropdownMenuDivider',
-      description:
-        '可放置在 `items` 数组中菜单项之间的视觉分隔线。',
-      props: [
-        {
-          name: 'type',
-          type: "'divider'",
-          description:
-            '标识此条目为分隔线的判别值。',
-          required: true,
-        },
-      ],
-    },
-    {
-      name: 'XDSDropdownMenuSection',
-      description:
-        '可放置在 `items` 数组中的带标签分组。',
-      props: [
-        {
-          name: 'type',
-          type: "'section'",
-          description:
-            '标识此条目为分组的判别值。',
-          required: true,
-        },
-        {
-          name: 'title',
-          type: 'string',
-          description:
-            '显示在分组项上方的可选标题文本。',
-        },
-        {
-          name: 'items',
-          type: 'XDSDropdownMenuItemData[]',
-          description: '属于此分组的可操作菜单项。',
-          required: true,
-        },
-      ],
-    },
   ],
   usage: {
     description: 'A dropdown menu that displays a list of actionable items in a popup triggered by a button. Use to present action options as a next step in a process, or to offer contextual actions without cluttering the interface.',
@@ -402,7 +262,7 @@ export const docsDense = {
       description: 'trigger button + popup item list',
       propDescriptions: {
         button: 'trigger button props (XDSButton props except onClick)',
-        items: 'menu items, dividers, or sections in popup',
+        items: 'array of menu entries: action item {label, onClick?, icon?, isDisabled?}, divider {type: "divider"}, or section {type: "section", title?, items: [...]}',
         isMenuOpen: 'controlled open state',
         onOpenChange: 'callback on open state change',
         menuWidth: 'custom menu width; default matches trigger button',
@@ -421,32 +281,6 @@ export const docsDense = {
         description: 'secondary text below label',
         children: 'additional content after label+description',
         xstyle: 'StyleX styles for root container',
-      },
-    },
-    {
-      name: 'XDSDropdownMenuItemData',
-      description: 'data shape for single actionable menu item via items prop',
-      propDescriptions: {
-        label: 'display label',
-        onClick: 'callback on selection',
-        isDisabled: 'disabled; skipped in keyboard nav',
-        icon: 'icon before label',
-      },
-    },
-    {
-      name: 'XDSDropdownMenuDivider',
-      description: 'visual divider between items in items array',
-      propDescriptions: {
-        type: 'discriminant identifying entry as divider',
-      },
-    },
-    {
-      name: 'XDSDropdownMenuSection',
-      description: 'labeled group of items in items array',
-      propDescriptions: {
-        type: 'discriminant identifying entry as section',
-        title: 'optional header text above section items',
-        items: 'actionable items in this section',
       },
     },
   ],
