@@ -57,6 +57,9 @@ function SandboxHeader() {
     {label: 'Brutalist', onClick: () => setThemeName('brutalist')},
     {label: 'Matcha', onClick: () => setThemeName('matcha')},
     {label: 'Daily', onClick: () => setThemeName('daily')},
+    {label: 'Stone', onClick: () => setThemeName('stone')},
+    {label: 'Gothic', onClick: () => setThemeName('gothic')},
+    {label: 'Chocolate', onClick: () => setThemeName('chocolate')},
   ];
 
   const modeItems = [

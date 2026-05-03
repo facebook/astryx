@@ -5,5 +5,8 @@
 @import "@xds/theme-brutalist/theme.css";
 @import "@xds/theme-matcha/theme.css";
 @import "@xds/theme-daily/theme.css";
+@import "@xds/theme-stone/theme.css";
+@import "@xds/theme-gothic/theme.css";
+@import "@xds/theme-chocolate/theme.css";
 
 @stylex;
