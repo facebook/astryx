@@ -20,6 +20,7 @@ import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSCarousel} from '@xds/core/Carousel';
 import {XDSBadge} from '@xds/core/Badge';
 import {templates} from '../../generated/templateRegistry';
+import {TemplateThumbnail} from '../../components/TemplateThumbnail';
 import {blocks} from '../../generated/blockRegistry';
 import {packages} from '../../generated/packageRegistry';
 
@@ -50,8 +51,10 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column' as const,
     justifyContent: 'flex-end',
+    alignItems: 'flex-start',
     height: '100%',
-    padding: 16,
+    width: '100%',
+    padding: 8,
   },
 });
 
@@ -218,13 +221,17 @@ function TemplateCard({item}: {item: CraftItem}) {
             </XDSVStack>
           </div>
         }>
-        <div {...stylex.props(styles.cardImage)}>
-          {!item.isReady && (
-            <div {...stylex.props(styles.comingSoon)}>
-              <XDSBadge label="Coming Soon" variant="info" />
-            </div>
-          )}
-        </div>
+        {item.type === 'template' && item.isReady ? (
+          <TemplateThumbnail slug={item.slug} />
+        ) : (
+          <div {...stylex.props(styles.cardImage)}>
+            {!item.isReady && (
+              <div {...stylex.props(styles.comingSoon)}>
+                <XDSBadge label="Coming Soon" variant="info" />
+              </div>
+            )}
+          </div>
+        )}
       </XDSOverlay>
     </XDSCard>
   );

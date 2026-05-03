@@ -566,6 +566,9 @@ async function generateTemplateRegistry() {
       doc = {name: meta.name || dir.name, description: meta.description, isReady: true};
     }
 
+    // Skip scaffolds — these are starter templates, not showcases
+    if (doc.scaffold) continue;
+
     templates.push({
       slug: dir.name,
       name: doc.name || dir.name,
