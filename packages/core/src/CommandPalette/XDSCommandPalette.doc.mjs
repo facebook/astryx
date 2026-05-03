@@ -104,7 +104,7 @@ export const docs = {
         {
           name: 'isInline',
           type: 'boolean',
-          description: 'Renders command palette content inline without modal behavior. For documentation previews and showcases only.',
+          description: 'Renders command palette content inline without modal behavior. Automatically disables auto-focus on the input. For documentation previews and showcases only.',
           default: 'false',
         },
       ],
@@ -123,7 +123,7 @@ export const docs = {
         {
           name: 'hasAutoFocus',
           type: 'boolean',
-          description: 'Auto-focus the input when mounted.',
+          description: 'Auto-focus the input when mounted. Automatically disabled when inside an inline command palette.',
           default: 'true',
         },
         {
@@ -333,7 +333,7 @@ export const docsZh = {
         label: '命令面板对话框的无障碍标签。',
         width: '对话框宽度。',
         maxHeight: '对话框最大高度。',
-        isInline: '以内联方式渲染命令面板内容，不带模态行为。仅用于文档预览和展示。',
+        isInline: '以内联方式渲染命令面板内容，不带模态行为。自动禁用输入框自动聚焦。仅用于文档预览和展示。',
       },
     },
     {
@@ -341,7 +341,7 @@ export const docsZh = {
       description: '搜索输入插槽。挂载时自动聚焦。在 XDSCommandPalette 内使用时连接到上下文。',
       propDescriptions: {
         placeholder: '输入框的占位文本。',
-        hasAutoFocus: '挂载时自动聚焦输入框。',
+        hasAutoFocus: '挂载时自动聚焦输入框。内联命令面板中自动禁用。',
         endContent: '渲染在输入框末尾的内容，位于加载指示器之后。',
         value: '搜索值。在 XDSCommandPalette 内省略时从上下文读取。',
         onValueChange: '搜索值变化时调用。在 XDSCommandPalette 内省略时写入上下文。',
@@ -415,7 +415,7 @@ export const docsDense = {
         label: 'a11y label for dialog',
         width: 'dialog width',
         maxHeight: 'dialog max height',
-        isInline: 'inline rendering for docs previews, no modal behavior',
+        isInline: 'inline rendering for docs previews, no modal behavior, auto-disables input focus',
       },
     },
     {
@@ -423,7 +423,7 @@ export const docsDense = {
       description: 'search input; auto-focus on mount; wires to context inside XDSCommandPalette',
       propDescriptions: {
         placeholder: 'input placeholder text',
-        hasAutoFocus: 'auto-focus on mount',
+        hasAutoFocus: 'auto-focus on mount; auto-disabled in inline mode',
         endContent: 'trailing content after spinner',
         value: 'search value; reads context when omitted inside palette',
         onValueChange: 'called on change; writes context when omitted inside palette',

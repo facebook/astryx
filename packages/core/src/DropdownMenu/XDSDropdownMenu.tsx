@@ -118,6 +118,13 @@ interface XDSDropdownMenuBaseProps extends XDSBaseProps {
   menuWidth?: number | string;
   onClick?: () => void;
   hasChevron?: boolean;
+  /**
+   * Whether to auto-focus the first menu item when the menu opens.
+   * Set to `false` for inline showcases or documentation previews
+   * where stealing focus is undesirable.
+   * @default true
+   */
+  hasAutoFocus?: boolean;
   'data-testid'?: string;
 }
 
@@ -166,6 +173,7 @@ export function XDSDropdownMenu({
   menuWidth,
   onClick,
   hasChevron = true,
+  hasAutoFocus = true,
   className,
   style,
   xstyle,
@@ -218,16 +226,6 @@ export function XDSDropdownMenu({
     hasAutoFocus: false,
   });
 
-  React.useEffect(() => {
-    if (isControlled) {
-      if (controlledIsOpen && !popover.isOpen) {
-        popover.show();
-      } else if (!controlledIsOpen && popover.isOpen) {
-        popover.hide();
-      }
-    }
-  }, [controlledIsOpen, isControlled, popover]);
-
   const closeMenu = useCallback(() => {
     popover.hide();
   }, [popover]);
@@ -242,6 +240,20 @@ export function XDSDropdownMenu({
     wrap: false,
     onEscape: closeMenu,
   });
+
+  // Sync controlled open state → popover, and focus first item on open
+  React.useEffect(() => {
+    if (isControlled) {
+      if (controlledIsOpen && !popover.isOpen) {
+        popover.show();
+        if (hasAutoFocus) {
+          requestAnimationFrame(() => focusFirst());
+        }
+      } else if (!controlledIsOpen && popover.isOpen) {
+        popover.hide();
+      }
+    }
+  }, [controlledIsOpen, isControlled, popover, hasAutoFocus, focusFirst]);
 
   // Extend useListFocus with Enter/Space activation
   const listKeyDown = useCallback(
@@ -261,8 +273,10 @@ export function XDSDropdownMenu({
 
   const openAndFocus = useCallback(() => {
     popover.show();
-    requestAnimationFrame(() => focusFirst());
-  }, [popover, focusFirst]);
+    if (hasAutoFocus) {
+      requestAnimationFrame(() => focusFirst());
+    }
+  }, [popover, hasAutoFocus, focusFirst]);
 
   const handleButtonClick = useCallback(() => {
     onClick?.();
