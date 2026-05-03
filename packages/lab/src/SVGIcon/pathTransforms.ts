@@ -299,7 +299,7 @@ export function roundCorners(d: string, cornerRounding: number): string {
           const v2: Point = {x: firstLPt.x - mPt.x, y: firstLPt.y - mPt.y};
           const ang = angleBetween(v1, v2);
           const sharp = 1 - ang / Math.PI;
-          const r = maxR * cornerRounding * sharp * sharp;
+          const r = maxR * cornerRounding * sharp * 0.85;
 
           if (r >= 0.1) {
             const t1 = r / d1;
@@ -345,16 +345,13 @@ export function roundCorners(d: string, cornerRounding: number): string {
 
       // Proportional rounding: sharper corners round MORE, gentle corners round LESS.
       //
-      // This feels natural — a sharp 60° corner has more room to soften and
-      // benefits more from rounding. A gentle 150° corner is already soft
-      // and barely needs adjustment.
-      //
       // Sharpness = 1 - (angle / π). Range: 0 (flat/180°) to 1 (fully acute/0°).
-      // Radius scales with sharpness² for a natural curve — the squaring
-      // prevents gentle corners from rounding too aggressively while still
-      // giving sharp corners meaningful rounding.
+      // Linear scaling with sharpness — at cornerRounding=1, a 90° corner
+      // uses 50% of maxRadius. Gentler corners get proportionally less.
+      // The 0.85 multiplier prevents full radius (which would make very
+      // short segments disappear) while still being visually bold.
       const sharpness = 1 - angle / Math.PI;
-      const radius = maxRadius * cornerRounding * sharpness * sharpness;
+      const radius = maxRadius * cornerRounding * sharpness * 0.85;
 
       if (radius < 0.1) {
         // Too small to round, keep original
@@ -433,7 +430,7 @@ export function addCurvature(d: string, curvature: number): string {
       const perpY = dx / segLen;
 
       // Offset = segment length × curvature × scale factor
-      const offset = segLen * curvature * 0.15;
+      const offset = segLen * curvature * 0.25;
 
       // Control point offset perpendicular to the line
       const cp: Point = {
