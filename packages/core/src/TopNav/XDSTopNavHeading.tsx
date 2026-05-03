@@ -497,7 +497,10 @@ export function XDSTopNavHeading({
             <button
               type="button"
               aria-label="Open menu"
-              onClick={(e) => { e.stopPropagation(); triggerProps.onClick(); }}
+              onClick={e => {
+                e.stopPropagation();
+                triggerProps.onClick();
+              }}
               {...popover.triggerProps}
               {...stylex.props(styles.chevron, styles.interactive)}>
               {getIcon('chevronDown')}
@@ -512,7 +515,8 @@ export function XDSTopNavHeading({
             {...stylex.props(styles.popoverContent)}
             {...contentProps}>
             {popoverHeadingContent}
-            <XDSNavMenuContext.Provider value={{closeMenu: popover.hide}}>
+            <XDSNavMenuContext.Provider
+              value={{closeMenu: popover.hide, size: 'md'}}>
               {menu}
             </XDSNavMenuContext.Provider>
           </div>,
@@ -553,7 +557,10 @@ export function XDSTopNavHeading({
               <button
                 type="button"
                 aria-label="Open menu"
-                onClick={(e) => { e.stopPropagation(); triggerProps.onClick(); }}
+                onClick={e => {
+                  e.stopPropagation();
+                  triggerProps.onClick();
+                }}
                 {...popover.triggerProps}
                 {...stylex.props(styles.chevron, styles.interactive)}>
                 {getIcon('chevronDown')}
@@ -569,7 +576,8 @@ export function XDSTopNavHeading({
             {...stylex.props(styles.popoverContent)}
             {...contentProps}>
             {popoverHeadingContent}
-            <XDSNavMenuContext.Provider value={{closeMenu: popover.hide}}>
+            <XDSNavMenuContext.Provider
+              value={{closeMenu: popover.hide, size: 'md'}}>
               {menu}
             </XDSNavMenuContext.Provider>
           </div>,

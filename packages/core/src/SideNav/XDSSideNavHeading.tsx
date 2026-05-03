@@ -405,8 +405,7 @@ export function XDSSideNavHeading({
     const collapsedIcon = <span {...stylex.props(styles.icon)}>{icon}</span>;
 
     const collapsedSetRef = (el: HTMLElement | null) => {
-      (collapsedItemRef as React.RefObject<HTMLElement | null>).current =
-        el;
+      (collapsedItemRef as React.RefObject<HTMLElement | null>).current = el;
       if (typeof ref === 'function') {
         ref(el as HTMLDivElement | null);
       } else if (ref) {
@@ -492,9 +491,10 @@ export function XDSSideNavHeading({
                   )}
                 </span>
               </button>
-              <XDSNavMenuContext.Provider value={{closeMenu: popover.hide}}>
-              {menu}
-            </XDSNavMenuContext.Provider>
+              <XDSNavMenuContext.Provider
+                value={{closeMenu: popover.hide, size: 'md'}}>
+                {menu}
+              </XDSNavMenuContext.Provider>
             </div>,
             {placement: 'below', alignment: 'start', xstyle: styles.popover},
           )}
@@ -645,7 +645,10 @@ export function XDSSideNavHeading({
             <button
               type="button"
               aria-label="Open menu"
-              onClick={(e) => { e.stopPropagation(); triggerProps.onClick(); }}
+              onClick={e => {
+                e.stopPropagation();
+                triggerProps.onClick();
+              }}
               {...popover.triggerProps}
               {...stylex.props(styles.chevron, styles.interactive)}>
               {getIcon('chevronDown')}
@@ -701,7 +704,10 @@ export function XDSSideNavHeading({
               <button
                 type="button"
                 aria-label="Open menu"
-                onClick={(e) => { e.stopPropagation(); triggerProps.onClick(); }}
+                onClick={e => {
+                  e.stopPropagation();
+                  triggerProps.onClick();
+                }}
                 {...popover.triggerProps}
                 {...stylex.props(styles.chevron, styles.interactive)}>
                 {getIcon('chevronDown')}
