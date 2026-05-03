@@ -5,12 +5,11 @@ import {
   useMemo,
   useState,
   useCallback,
-  type ComponentType,
   isValidElement,
   Component,
   type ReactNode,
 } from 'react';
-import * as XDSCore from '@xds/core';
+import {getXDSComponent, resolveValue} from './resolveElements';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
 import {XDSCenter} from '@xds/core/Center';
@@ -26,48 +25,7 @@ import {
 import type {
   PropDoc,
   PlaygroundConfig,
-  ElementDescriptor,
 } from '../../generated/componentRegistry';
-
-function isElementDescriptor(v: unknown): v is ElementDescriptor {
-  return v != null && typeof v === 'object' && '__element' in v;
-}
-
-function resolveElementDescriptor(desc: ElementDescriptor): React.ReactNode {
-  const Comp = getXDSComponent(desc.__element.replace(/^XDS/, ''));
-  const tag = Comp ?? desc.__element;
-
-  let children: React.ReactNode = undefined;
-  if (desc.children != null) {
-    if (typeof desc.children === 'string') {
-      children = desc.children;
-    } else if (Array.isArray(desc.children)) {
-      children = desc.children.map((c, i) =>
-        typeof c === 'string'
-          ? c
-          : createElement('span', {key: i}, resolveElementDescriptor(c)),
-      );
-    } else {
-      children = resolveElementDescriptor(desc.children);
-    }
-  }
-
-  return createElement(tag, desc.props ?? {}, children);
-}
-
-function resolveValue(v: unknown): unknown {
-  if (isElementDescriptor(v)) return resolveElementDescriptor(v);
-  return v;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyXDSComponent = ComponentType<any>;
-
-function getXDSComponent(name: string): AnyXDSComponent | null {
-  const key = `XDS${name}` as keyof typeof XDSCore;
-  const value = XDSCore[key];
-  return typeof value === 'function' ? (value as AnyXDSComponent) : null;
-}
 
 export interface KnobProp {
   row: PropDoc;

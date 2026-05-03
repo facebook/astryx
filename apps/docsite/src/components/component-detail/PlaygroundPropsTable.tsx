@@ -10,10 +10,10 @@ import {XDSNumberInput} from '@xds/core/NumberInput';
 import {XDSSelector} from '@xds/core/Selector';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSBadge} from '@xds/core/Badge';
-import * as XDSCore from '@xds/core';
 import {useMediaQuery} from '@xds/core/hooks';
 import type {PropControlDescriptor} from './parsePropType';
 import type {KnobProp} from './InteractivePreview';
+import {resolveElementDescriptor} from './resolveElements';
 import type {PropDoc} from '../../generated/componentRegistry';
 
 function formatType(type: string, defaultValue?: string): React.ReactNode {
@@ -49,19 +49,21 @@ function formatType(type: string, defaultValue?: string): React.ReactNode {
 
 function resolveSlotElement(
   componentName: string,
-  slotElements?: Array<{__element: string; props?: Record<string, unknown>}>,
+  slotElements?: Array<{
+    __element: string;
+    props?: Record<string, unknown>;
+    children?: unknown;
+  }>,
 ): React.ReactNode {
-  // If we have slotElements metadata, use the matching one
   if (slotElements) {
     const match = slotElements.find(el => el.__element === componentName);
     if (match) {
-      const key = match.__element.replace(/^XDS/, '') as keyof typeof XDSCore;
-      const Comp = typeof XDSCore[key] === 'function' ? XDSCore[key] : null;
-      if (Comp)
-        return createElement(Comp as React.ComponentType, match.props ?? {});
+      return resolveElementDescriptor(
+        match as import('../../generated/componentRegistry').ElementDescriptor,
+      );
     }
   }
-  // Fallback to hardcoded defaults
+  // Fallback for common components without slotElements declared
   switch (componentName) {
     case 'XDSIcon':
       return createElement(XDSIcon, {icon: 'check', size: 'sm'});
