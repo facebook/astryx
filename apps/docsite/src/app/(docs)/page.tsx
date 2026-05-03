@@ -12,6 +12,8 @@ import {XDSGrid} from '@xds/core/Grid';
 import {XDSSection} from '@xds/core/Section';
 import {XDSButton} from '@xds/core/Button';
 import {XDSTheme, XDSMediaTheme} from '@xds/core/theme';
+import {XDSDivider} from '@xds/core/Divider';
+import {XDSLink} from '@xds/core/Link';
 import {packages} from '../../generated/packageRegistry';
 import {componentCount} from '../../generated/componentRegistry';
 import {docTopics} from '../../generated/docsRegistry';
@@ -153,6 +155,14 @@ const styles = stylex.create({
     textDecoration: 'none',
     color: 'inherit',
     cursor: 'pointer',
+  },
+  footer: {
+    paddingBlockStart: 48,
+    paddingBlockEnd: 64,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 8,
   },
 });
 
@@ -305,6 +315,21 @@ export default function HomePage() {
           </XDSVStack>
         </XDSVStack>
       </XDSSection>
+
+      <XDSDivider />
+      <footer {...stylex.props(styles.footer)}>
+        <XDSText type="supporting" color="secondary">
+          <XDSLink href="https://opensource.fb.com/legal/terms" isExternalLink>
+            Terms of Use
+          </XDSLink>
+          {' | '}
+          <XDSLink
+            href="https://opensource.fb.com/legal/privacy"
+            isExternalLink>
+            Privacy Policy
+          </XDSLink>
+        </XDSText>
+      </footer>
     </div>
   );
 }

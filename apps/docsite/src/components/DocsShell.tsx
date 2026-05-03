@@ -5,7 +5,7 @@ import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
 import {SharedTopNav} from './SharedTopNav';
 import {XDSLink} from '@xds/core/Link';
-import {XDSVStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
 import type {ComponentEntry} from '../generated/componentRegistry';
 import type {PackageMeta} from '../generated/packageRegistry';
 import type {DocTopic} from '../generated/docsRegistry';
@@ -198,20 +198,13 @@ export function DocsShell({
       sideNav={
         <XDSSideNav
           footer={
-            <XDSVStack gap={1}>
+            <XDSText type="supporting" color="secondary">
               <XDSLink
-                label="Terms of Use"
-                href="https://opensource.fb.com/legal/terms"
+                href="https://github.com/facebookexperimental/xds/tree/main"
                 isExternalLink>
-                Terms of Use
+                GitHub
               </XDSLink>
-              <XDSLink
-                label="Privacy Policy"
-                href="https://opensource.fb.com/legal/privacy"
-                isExternalLink>
-                Privacy Policy
-              </XDSLink>
-            </XDSVStack>
+            </XDSText>
           }>
           {/* Home */}
           <XDSSideNavSection title="Home" isHeaderHidden>
