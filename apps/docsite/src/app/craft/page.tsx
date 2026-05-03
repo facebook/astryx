@@ -23,6 +23,7 @@ import {ThemeShowcaseTile} from '../../components/ThemeShowcaseTile';
 import {XDSTheme} from '@xds/core/theme';
 import {themeObjects} from '../../generated/themeRegistry';
 import {TemplateThumbnail} from '../../components/TemplateThumbnail';
+import {ShowcaseThumbnail} from '../../components/ShowcaseThumbnail';
 import {blocks} from '../../generated/blockRegistry';
 import {packages} from '../../generated/packageRegistry';
 
@@ -67,6 +68,7 @@ interface CraftItem {
   name: string;
   description: string;
   slug: string;
+  category?: string;
   href: string;
   isReady: boolean;
 }
@@ -86,6 +88,7 @@ function buildItems(): {templates: CraftItem[]; showcases: CraftItem[]} {
       name: b.name,
       description: b.description,
       slug: b.dirName,
+      category: b.category,
       href: `/components/${b.componentsUsed[0] || b.category.split('/').pop()}`,
       isReady: true,
     })),
@@ -253,6 +256,8 @@ function TemplateCard({item}: {item: CraftItem}) {
         }>
         {item.type === 'template' && item.isReady ? (
           <TemplateThumbnail slug={item.slug} />
+        ) : item.type === 'showcase' && item.category ? (
+          <ShowcaseThumbnail dirName={item.slug} category={item.category} />
         ) : (
           <div {...stylex.props(styles.cardImage)}>
             {!item.isReady && (
