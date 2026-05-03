@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import {XDSNavHeadingMenu} from './XDSNavHeadingMenu';
 import {XDSNavHeadingMenuItem} from './XDSNavHeadingMenuItem';
 import {XDSNavMenuItem} from './XDSNavMenuItem';
+import {XDSNavMenuCloseContext} from './XDSNavMenuContext';
 
 describe('XDSNavHeadingMenu', () => {
   it('renders with role="menu"', () => {
@@ -200,6 +201,47 @@ describe('keyboard navigation', () => {
 
     await user.keyboard('{End}');
     expect(document.activeElement).toBe(items[2]);
+  });
+});
+
+describe('context forwarding', () => {
+  it('forwards closeMenu from parent NavMenuContext', async () => {
+    const user = userEvent.setup();
+    const closeMenu = vi.fn();
+    render(
+      <XDSNavHeadingMenu>
+        <XDSNavHeadingMenuItem label="Action" onClick={() => {}} />
+      </XDSNavHeadingMenu>,
+      {
+        wrapper: ({children}) => (
+          <XDSNavMenuCloseContext.Provider value={{closeMenu}}>
+            {children}
+          </XDSNavMenuCloseContext.Provider>
+        ),
+      },
+    );
+    await user.click(screen.getByRole('menuitem'));
+    expect(closeMenu).toHaveBeenCalledOnce();
+  });
+
+  it('calls parent closeMenu on Escape', async () => {
+    const user = userEvent.setup();
+    const closeMenu = vi.fn();
+    render(
+      <XDSNavHeadingMenu>
+        <XDSNavHeadingMenuItem label="First" />
+      </XDSNavHeadingMenu>,
+      {
+        wrapper: ({children}) => (
+          <XDSNavMenuCloseContext.Provider value={{closeMenu}}>
+            {children}
+          </XDSNavMenuCloseContext.Provider>
+        ),
+      },
+    );
+    screen.getByRole('menuitem').focus();
+    await user.keyboard('{Escape}');
+    expect(closeMenu).toHaveBeenCalledOnce();
   });
 });
 

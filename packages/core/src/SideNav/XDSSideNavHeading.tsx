@@ -40,7 +40,7 @@ import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {xdsClassName, mergeProps} from '../utils';
 import {useXDSMenuHover} from '../hooks/useXDSMenuHover';
-import {XDSNavMenuContext} from '../NavMenu/XDSNavMenuContext';
+import {XDSNavMenuCloseContext} from '../NavMenu/XDSNavMenuContext';
 
 // =============================================================================
 // Styles
@@ -491,10 +491,10 @@ export function XDSSideNavHeading({
                   )}
                 </span>
               </button>
-              <XDSNavMenuContext.Provider
-                value={{closeMenu: popover.hide, size: 'md'}}>
+              <XDSNavMenuCloseContext.Provider
+                value={{closeMenu: popover.hide}}>
                 {menu}
-              </XDSNavMenuContext.Provider>
+              </XDSNavMenuCloseContext.Provider>
             </div>,
             {placement: 'below', alignment: 'start', xstyle: styles.popover},
           )}

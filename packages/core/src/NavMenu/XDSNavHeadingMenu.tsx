@@ -8,6 +8,7 @@ import {xdsClassName, mergeProps} from '../utils';
 import {useListFocus} from '../hooks/useListFocus';
 import {
   XDSNavMenuContext,
+  useXDSNavMenuCloseContext,
   type XDSNavHeadingMenuSize,
 } from './XDSNavMenuContext';
 
@@ -94,16 +95,19 @@ export function XDSNavHeadingMenu({
   style: styleProp,
   'data-testid': testId,
 }: XDSNavHeadingMenuProps) {
+  const closeCtx = useXDSNavMenuCloseContext();
+  const closeMenu = closeCtx?.closeMenu;
+
   const {listRef, handleKeyDown} = useListFocus({
-    onEscape: undefined,
+    onEscape: closeMenu,
   });
 
   const ctx = useMemo(
     () => ({
-      closeMenu: () => {},
+      closeMenu: closeMenu ?? (() => {}),
       size,
     }),
-    [size],
+    [closeMenu, size],
   );
 
   const inlineStyle = minWidth != null ? {...styleProp, minWidth} : styleProp;
