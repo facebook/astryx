@@ -147,7 +147,7 @@ export const docs = {
         {name: 'sendIcon', type: 'ReactNode', description: 'Custom icon for the send state. Defaults to arrowUp from icon registry.'},
         {name: 'stopIcon', type: 'ReactNode', description: 'Custom icon for the stop state. Defaults to stop from icon registry.'},
         {name: 'size', type: "'sm' | 'md'", description: 'Button size.', default: "'md'"},
-        {name: 'xstyle', type: 'StyleXStyles', description: 'Additional StyleX styles.'},
+        {name: 'xstyle', type: 'StyleXStyles', description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.'},
       ],
     },
     {
