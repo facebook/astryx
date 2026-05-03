@@ -131,7 +131,7 @@ export function TypographyTokenTable({theme}: TokenTableProps) {
                 fontWeight: item.fontWeight as string,
                 lineHeight: (item.leading as string)?.split(' ')[0],
               }}>
-              {item.sampleText as string}
+              {item.label as string}
             </span>
           ),
         },
