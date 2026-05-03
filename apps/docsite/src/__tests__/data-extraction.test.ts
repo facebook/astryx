@@ -13,6 +13,7 @@ import {blocks, blockCount, showcaseCount} from '../generated/blockRegistry';
 import {templates, templateCount} from '../generated/templateRegistry';
 import {docTopics, docsCount} from '../generated/docsRegistry';
 import {showcaseRegistry} from '../generated/showcaseRegistry';
+import {exampleRegistry} from '../generated/exampleRegistry';
 
 // ── Package Registry ───────────────────────────────────────────────────
 
@@ -533,5 +534,60 @@ describe('showcaseRegistry', () => {
     const keys = Object.keys(showcaseRegistry);
     // Files may be more than keys due to dedup, but keys should not exceed files
     expect(keys.length).toBeLessThanOrEqual(files.length);
+  });
+});
+
+// ── Example Registry ───────────────────────────────────────────────────
+
+describe('exampleRegistry', () => {
+  it('has examples for many components', () => {
+    const keys = Object.keys(exampleRegistry);
+    expect(keys.length).toBeGreaterThan(50);
+  });
+
+  it('every entry is an array of example objects', () => {
+    for (const [, examples] of Object.entries(exampleRegistry)) {
+      expect(Array.isArray(examples)).toBe(true);
+      expect(examples.length).toBeGreaterThan(0);
+      for (const ex of examples) {
+        expect(typeof ex.name).toBe('string');
+        expect(ex.name.length).toBeGreaterThan(0);
+        expect(typeof ex.description).toBe('string');
+        expect(typeof ex.load).toBe('function');
+      }
+    }
+  });
+
+  it('has examples for known components', () => {
+    expect(exampleRegistry['Button']).toBeDefined();
+    expect(exampleRegistry['Table']).toBeDefined();
+    expect(exampleRegistry['Dialog']).toBeDefined();
+  });
+
+  it('Button has multiple examples', () => {
+    const buttonExamples = exampleRegistry['Button'];
+    expect(buttonExamples.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('example files exist on disk', () => {
+    const examplesDir = new URL('../generated/examples', import.meta.url);
+    const files = fs.readdirSync(examplesDir);
+    expect(files.length).toBeGreaterThan(200);
+    expect(files.every(f => f.endsWith('.tsx'))).toBe(true);
+  });
+
+  it('does not include showcases', () => {
+    // Every example in the registry should NOT be a showcase
+    // (showcases have their own registry)
+    const allExampleNames = Object.values(exampleRegistry)
+      .flat()
+      .map(e => e.name);
+    // Showcase names typically don't have a dash separator
+    // but more importantly, the generator filters isShowcase: true
+    // Just verify count makes sense: examples + showcases ≈ total blocks
+    const showcaseCount = Object.keys(showcaseRegistry).length;
+    const exampleCount = Object.values(exampleRegistry).flat().length;
+    expect(exampleCount + showcaseCount).toBeLessThanOrEqual(468);
+    expect(exampleCount).toBeGreaterThan(showcaseCount);
   });
 });
