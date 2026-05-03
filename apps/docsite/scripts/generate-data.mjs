@@ -134,6 +134,9 @@ function generatePackageRegistry() {
       const readme = hasReadme
         ? fs.readFileSync(path.join(REPO_ROOT, dir, 'README.md'), 'utf-8')
         : null;
+      const changelog = hasChangelog
+        ? fs.readFileSync(path.join(REPO_ROOT, dir, 'CHANGELOG.md'), 'utf-8')
+        : null;
       return {
         name: raw.name,
         displayName: raw.displayName || raw.name.replace('@xds/', '').replace('theme-', 'Theme: ').replace(/^\w/, c => c.toUpperCase()),
@@ -143,6 +146,7 @@ function generatePackageRegistry() {
         hasReadme,
         hasChangelog,
         readme,
+        changelog,
       };
     })
     .filter(Boolean)
@@ -159,6 +163,7 @@ export interface PackageMeta {
   hasReadme: boolean;
   hasChangelog: boolean;
   readme: string | null;
+  changelog: string | null;
 }
 
 export const packages: PackageMeta[] = ${JSON.stringify(packages, null, 2)};

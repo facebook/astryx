@@ -58,6 +58,18 @@ describe('packageRegistry', () => {
     }
   });
 
+  it('packages with CHANGELOGs have changelog content', () => {
+    for (const pkg of packages) {
+      if (pkg.hasChangelog) {
+        expect(pkg.changelog).toBeTruthy();
+        expect(typeof pkg.changelog).toBe('string');
+        expect(pkg.changelog!.length).toBeGreaterThan(50);
+      } else {
+        expect(pkg.changelog).toBeNull();
+      }
+    }
+  });
+
   it('CLI package has a substantial README', () => {
     const cli = packages.find(p => p.name === '@xds/cli');
     expect(cli?.readme).toBeTruthy();
