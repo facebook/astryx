@@ -487,15 +487,38 @@ describe('themeRegistry', () => {
     expect(registrySource).toContain('themeObjects');
   });
 
-  it('has an import and entry for every theme package', () => {
-    const themePackages = packages.filter(p =>
-      p.name.startsWith('@xds/theme-'),
+  it('has an import and entry for every installed theme package', () => {
+    const docsitePkg = JSON.parse(
+      fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf-8'),
+    );
+    const docsiteDeps = {
+      ...docsitePkg.dependencies,
+      ...docsitePkg.devDependencies,
+    };
+    const themePackages = packages.filter(
+      p => p.name.startsWith('@xds/theme-') && docsiteDeps[p.name] != null,
     );
     expect(themePackages.length).toBeGreaterThan(0);
     for (const pkg of themePackages) {
       const slug = pkg.name.replace('@xds/theme-', '');
       expect(registrySource).toContain(`from '${pkg.name}/built'`);
       expect(registrySource).toContain(`'${pkg.name}': ${slug}Theme`);
+    }
+  });
+
+  it('excludes theme packages not installed in the docsite', () => {
+    const docsitePkg = JSON.parse(
+      fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf-8'),
+    );
+    const docsiteDeps = {
+      ...docsitePkg.dependencies,
+      ...docsitePkg.devDependencies,
+    };
+    const uninstalled = packages.filter(
+      p => p.name.startsWith('@xds/theme-') && docsiteDeps[p.name] == null,
+    );
+    for (const pkg of uninstalled) {
+      expect(registrySource).not.toContain(`from '${pkg.name}/built'`);
     }
   });
 

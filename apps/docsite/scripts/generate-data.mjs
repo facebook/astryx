@@ -685,7 +685,11 @@ export const docsCount = ${docTopics.length};
 
 function generateThemeRegistry(packages) {
   console.log('Generating theme registry...');
-  const themePackages = packages.filter(p => p.name.startsWith('@xds/theme-'));
+  const docsitePkg = JSON.parse(fs.readFileSync(path.join(DOCSITE_ROOT, 'package.json'), 'utf-8'));
+  const docsiteDeps = {...docsitePkg.dependencies, ...docsitePkg.devDependencies};
+  const themePackages = packages.filter(p =>
+    p.name.startsWith('@xds/theme-') && docsiteDeps[p.name] != null
+  );
   if (!themePackages.length) {
     writeRegistry('themeRegistry.ts', `// Auto-generated — no theme packages found
 import type {XDSDefinedTheme} from '@xds/core/theme';
