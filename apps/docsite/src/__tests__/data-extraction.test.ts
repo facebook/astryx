@@ -599,7 +599,7 @@ describe('exampleRegistry', () => {
     // Just verify count makes sense: examples + showcases ≈ total blocks
     const showcaseCount = Object.keys(showcaseRegistry).length;
     const exampleCount = Object.values(exampleRegistry).flat().length;
-    expect(exampleCount + showcaseCount).toBeLessThanOrEqual(468);
+    expect(exampleCount + showcaseCount).toBeLessThanOrEqual(blockCount);
     expect(exampleCount).toBeGreaterThan(showcaseCount);
   });
 });
