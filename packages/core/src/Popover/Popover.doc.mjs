@@ -78,6 +78,12 @@ export const docs = {
           default: "'Close popover'",
         },
         {
+          name: 'hasAutoFocus',
+          type: 'boolean',
+          description: 'Whether to auto-focus the first focusable element when the popover opens. Set to false for inline showcases or documentation previews.',
+          default: 'true',
+        },
+        {
           name: 'xstyle',
           type: 'StyleXStyles',
           description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
@@ -238,6 +244,12 @@ export const docsZh = {
           description: '隐藏关闭按钮的标签。',
           default: "'Close popover'",
         },
+        {
+          name: 'hasAutoFocus',
+          type: 'boolean',
+          description: '弹出框打开时是否自动聚焦第一个可聚焦元素。内联展示或文档预览设为 false。',
+          default: 'true',
+        },
       ],
     },
     {
@@ -354,6 +366,7 @@ export const docsDense = {
         label: 'Accessible label for popover dialog.',
         hasCloseButton: 'Whether to include hidden close button for accessibility.',
         closeButtonLabel: 'Label for hidden close button.',
+        hasAutoFocus: 'Auto-focus first element on open; false for showcases.',
       },
     },
     {

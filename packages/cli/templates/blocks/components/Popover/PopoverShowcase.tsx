@@ -14,14 +14,19 @@ export default function PopoverShowcase() {
     <XDSPopover
       isOpen={isOpen}
       onOpenChange={setIsOpen}
+      hasAutoFocus={false}
       placement="below"
       label="Settings"
       width={280}
       content={
         <XDSVStack gap={3}>
-          <XDSHeading level={4} tabIndex={0}>Settings</XDSHeading>
+          <XDSHeading level={4} tabIndex={0}>
+            Settings
+          </XDSHeading>
           <XDSDivider />
-          <XDSText type="body">Notifications, dark mode, and sound preferences.</XDSText>
+          <XDSText type="body">
+            Notifications, dark mode, and sound preferences.
+          </XDSText>
         </XDSVStack>
       }>
       <XDSButton label="Settings">Settings</XDSButton>

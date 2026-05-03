@@ -10,6 +10,7 @@ export default function MoreMenuShowcase() {
     <XDSMoreMenu
       isMenuOpen={isMenuOpen}
       onOpenChange={setIsMenuOpen}
+      hasAutoFocus={false}
       items={[
         {label: 'Edit', onClick: () => {}},
         {label: 'Duplicate', onClick: () => {}},

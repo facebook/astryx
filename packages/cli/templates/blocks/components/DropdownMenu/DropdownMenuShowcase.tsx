@@ -10,6 +10,7 @@ export default function DropdownMenuShowcase() {
     <XDSDropdownMenu
       isMenuOpen={isMenuOpen}
       onOpenChange={setIsMenuOpen}
+      hasAutoFocus={false}
       button={{label: 'Actions'}}
       items={[
         {label: 'Edit', onClick: () => {}},

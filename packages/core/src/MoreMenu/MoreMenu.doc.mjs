@@ -43,6 +43,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'hasAutoFocus',
+      type: 'boolean',
+      description: 'Whether to auto-focus the first menu item when the menu opens. Set to false for inline showcases or documentation previews.',
+      default: 'true',
+    },
+    {
       name: 'children',
       type: '(item: XDSDropdownMenuItemData) => ReactNode',
       description:
@@ -113,6 +119,12 @@ export const docsZh = {
       default: 'false',
     },
     {
+      name: 'hasAutoFocus',
+      type: 'boolean',
+      description: '菜单打开时是否自动聚焦第一个菜单项。内联展示或文档预览设为 false。',
+      default: 'true',
+    },
+    {
       name: 'children',
       type: '(item: XDSDropdownMenuItemData) => ReactNode',
       description:
@@ -161,6 +173,7 @@ export const docsDense = {
     size: 'Trigger button size.',
     icon: 'Override default three-dot icon. Accepts any ReactNode.',
     isDisabled: 'Whether menu trigger disabled.',
+    hasAutoFocus: 'Auto-focus first item on open; false for showcases.',
     children: 'Custom render function for selectable items (not dividers/sections).',
     xstyle:
       'StyleX styles for layout customization (margins, positioning, sizing). Must be stylex.create() value.',

@@ -159,6 +159,13 @@ export interface XDSPopoverProps {
   closeButtonLabel?: string;
 
   /**
+   * Whether to auto-focus the first focusable element when the popover opens.
+   * Set to `false` for inline showcases or documentation previews.
+   * @default true
+   */
+  hasAutoFocus?: boolean;
+
+  /**
    * Test ID for the popover container.
    */
   'data-testid'?: string;
@@ -248,6 +255,7 @@ export function XDSPopover({
   label,
   hasCloseButton,
   closeButtonLabel,
+  hasAutoFocus,
   xstyle,
   className,
   style,
@@ -273,6 +281,7 @@ export function XDSPopover({
     hasLightDismiss: true,
     hasCloseButton,
     closeButtonLabel,
+    hasAutoFocus,
     onShow: handlePopoverShow,
     onHide: handlePopoverHide,
   });

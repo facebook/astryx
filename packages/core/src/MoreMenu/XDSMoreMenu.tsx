@@ -74,6 +74,13 @@ export interface XDSMoreMenuProps {
    */
   onOpenChange?: (isOpen: boolean) => void;
 
+  /**
+   * Whether to auto-focus the first menu item when the menu opens.
+   * Set to `false` for inline showcases or documentation previews.
+   * @default true
+   */
+  hasAutoFocus?: boolean;
+
   /** Test ID for testing frameworks. */
   'data-testid'?: string;
 }
@@ -102,6 +109,7 @@ export function XDSMoreMenu({
   isDisabled = false,
   isMenuOpen,
   onOpenChange,
+  hasAutoFocus,
   'data-testid': testId,
   ref,
 }: XDSMoreMenuProps) {
@@ -125,6 +133,7 @@ export function XDSMoreMenu({
       }}
       items={items}
       hasChevron={false}
+      hasAutoFocus={hasAutoFocus}
       data-testid={testId}
     />
   );
