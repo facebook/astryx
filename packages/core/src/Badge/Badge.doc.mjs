@@ -22,6 +22,12 @@ export const docs = {
       description: 'Optional leading icon.',
     },
   ],
+  playground: {
+    defaults: {
+      label: 'Badge',
+      variant: 'neutral',
+    },
+  },
   theming: {
     targets: [
       {className: 'xds-badge', visualProps: ['variant']},

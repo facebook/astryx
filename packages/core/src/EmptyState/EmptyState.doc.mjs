@@ -50,6 +50,13 @@ export const docs = {
         'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
     },
   ],
+  playground: {
+    defaults: {
+      title: 'No results found',
+      description: 'Try adjusting your search or filter criteria.',
+      actions: {__element: 'XDSButton', props: {label: 'Clear filters', variant: 'secondary'}},
+    },
+  },
   theming: {
     targets: [
       {className: 'xds-emptystate'},

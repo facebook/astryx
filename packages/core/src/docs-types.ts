@@ -45,6 +45,29 @@ export interface PropDoc {
   default?: string;
   /** True if the prop must be provided. Omit (don't set to false) if optional. */
   required?: boolean;
+  /** For ReactNode props: the XDS components this slot typically accepts.
+   *  Each entry is an ElementDescriptor that the playground uses to
+   *  create a default instance when the user toggles the slot on.
+   *
+   *  Single-element slots (icon, endContent) have one option with a toggle.
+   *  Multi-element slots (children on List) can have options the user picks from.
+   *
+   *  The playground uses this instead of hardcoded component→control mappings.
+   *  Omit for ReactNode props that accept plain text (label, description).
+   *
+   *  @example
+   *  ```
+   *  // Single option — renders as a toggle switch
+   *  slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}]
+   *
+   *  // Multiple options — renders as a selector
+   *  slotElements: [
+   *    {__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}},
+   *    {__element: 'XDSBadge', props: {label: 'Badge'}},
+   *  ]
+   *  ```
+   */
+  slotElements?: ElementDescriptor[];
 }
 
 /**
@@ -255,6 +278,85 @@ export interface UsageDoc {
 }
 
 /**
+ * A serializable descriptor for a React element. The playground resolves
+ * these at runtime via `createElement(XDSCore[component], props, ...children)`.
+ *
+ * Use this for any prop value that needs to be a React element —
+ * children slots, icon props, endContent, etc.
+ *
+ * @example
+ * ```
+ * // Simple element
+ * {__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}
+ *
+ * // Element with text children
+ * {__element: 'XDSText', props: {type: 'body'}, children: 'Hello world'}
+ *
+ * // Nested composition
+ * {__element: 'XDSVStack', props: {gap: 2}, children: [
+ *   {__element: 'XDSHeading', props: {level: 3}, children: 'Title'},
+ *   {__element: 'XDSText', props: {}, children: 'Body text'},
+ * ]}
+ * ```
+ */
+export interface ElementDescriptor {
+  /** Marker field — presence distinguishes this from a plain object prop value. */
+  __element: string;
+  /** Props passed to createElement. Omit or use {} for no props. */
+  props?: Record<string, unknown>;
+  /** Children — a string, another ElementDescriptor, or an array of them. */
+  children?: string | ElementDescriptor | (string | ElementDescriptor)[];
+}
+
+/**
+ * Playground configuration for the interactive component preview.
+ *
+ * `defaults` provides the initial prop state for the playground. Every key
+ * maps to a prop name, and the value is either:
+ * - A **primitive** (string, number, boolean) — used directly as the prop value
+ * - An **ElementDescriptor** — resolved to a React element via createElement
+ *
+ * Props not listed in `defaults` fall back to the standard logic:
+ * doc `default` values, then auto-generated values for required props.
+ *
+ * @example
+ * ```
+ * // Button — just override the label
+ * playground: {
+ *   defaults: {label: 'Click me', variant: 'primary'},
+ * }
+ *
+ * // Card — provide children content
+ * playground: {
+ *   defaults: {
+ *     padding: 4,
+ *     children: {
+ *       __element: 'XDSVStack', props: {gap: 2}, children: [
+ *         {__element: 'XDSHeading', props: {level: 3}, children: 'Card Title'},
+ *         {__element: 'XDSText', props: {type: 'body'}, children: 'Card content goes here.'},
+ *       ],
+ *     },
+ *   },
+ * }
+ *
+ * // Dialog — provide structured children
+ * playground: {
+ *   defaults: {
+ *     isOpen: true,
+ *     isInline: true,
+ *     onOpenChange: undefined,
+ *     children: {__element: 'XDSText', props: {type: 'body'}, children: 'Dialog content'},
+ *   },
+ * }
+ * ```
+ */
+export interface PlaygroundConfig {
+  /** Initial prop values for the playground preview.
+   *  Keys are prop names. Values are primitives or ElementDescriptors. */
+  defaults: Record<string, unknown>;
+}
+
+/**
  * Shared fields between single-component and multi-component docs.
  * Do not use this interface directly — use `ComponentDoc` (the union type).
  */
@@ -310,6 +412,10 @@ interface BaseDoc {
   /** Component usage documentation — concise summary, best practices,
    *  and optional visual anatomy. */
   usage: UsageDoc;
+
+  /** Playground configuration. Controls how the interactive preview
+   *  renders this component with sensible defaults and slot content. */
+  playground?: PlaygroundConfig;
 }
 
 /**

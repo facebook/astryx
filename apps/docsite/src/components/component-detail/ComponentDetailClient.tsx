@@ -143,7 +143,11 @@ function ComponentDetailInner({
     router.replace(`${pathname}${qs ? `?${qs}` : ''}`, {scroll: false});
   };
 
-  const {knobs, state, setProp} = useInteractiveState(comp.name, comp.props);
+  const {knobs, state, setProp} = useInteractiveState(
+    comp.name,
+    comp.props,
+    comp.playground,
+  );
 
   return (
     <XDSSection

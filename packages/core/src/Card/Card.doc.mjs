@@ -60,6 +60,19 @@ export const docs = {
       default: "'default'",
     },
   ],
+  playground: {
+    defaults: {
+      padding: 4,
+      children: {
+        __element: 'XDSVStack',
+        props: {gap: 2},
+        children: [
+          {__element: 'XDSHeading', props: {level: 3}, children: 'Card Title'},
+          {__element: 'XDSText', props: {type: 'body'}, children: 'Card content goes here. This is a standard card with a heading and body text.'},
+        ],
+      },
+    },
+  },
   theming: {
     container: true,
     targets: [

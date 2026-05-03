@@ -10,6 +10,7 @@ import {XDSNumberInput} from '@xds/core/NumberInput';
 import {XDSSelector} from '@xds/core/Selector';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSBadge} from '@xds/core/Badge';
+import * as XDSCore from '@xds/core';
 import {useMediaQuery} from '@xds/core/hooks';
 import type {PropControlDescriptor} from './parsePropType';
 import type {KnobProp} from './InteractivePreview';
@@ -46,7 +47,21 @@ function formatType(type: string, defaultValue?: string): React.ReactNode {
   return type;
 }
 
-function createDefaultElement(componentName: string): React.ReactNode {
+function resolveSlotElement(
+  componentName: string,
+  slotElements?: Array<{__element: string; props?: Record<string, unknown>}>,
+): React.ReactNode {
+  // If we have slotElements metadata, use the matching one
+  if (slotElements) {
+    const match = slotElements.find(el => el.__element === componentName);
+    if (match) {
+      const key = match.__element.replace(/^XDS/, '') as keyof typeof XDSCore;
+      const Comp = typeof XDSCore[key] === 'function' ? XDSCore[key] : null;
+      if (Comp)
+        return createElement(Comp as React.ComponentType, match.props ?? {});
+    }
+  }
+  // Fallback to hardcoded defaults
   switch (componentName) {
     case 'XDSIcon':
       return createElement(XDSIcon, {icon: 'check', size: 'sm'});
@@ -61,10 +76,12 @@ function ElementControl({
   control,
   value,
   onChange,
+  prop,
 }: {
   control: Extract<PropControlDescriptor, {kind: 'element'}>;
   value: unknown;
   onChange: (next: unknown) => void;
+  prop: PropDoc;
 }) {
   const [selected, setSelected] = useState<string>('None');
 
@@ -75,7 +92,11 @@ function ElementControl({
         label={opt.label}
         value={value != null}
         onChange={on =>
-          onChange(on ? createDefaultElement(opt.componentName) : undefined)
+          onChange(
+            on
+              ? resolveSlotElement(opt.componentName, prop.slotElements)
+              : undefined,
+          )
         }
       />
     );
@@ -93,7 +114,8 @@ function ElementControl({
           onChange(undefined);
         } else {
           const opt = control.options.find(o => o.label === next);
-          if (opt) onChange(createDefaultElement(opt.componentName));
+          if (opt)
+            onChange(resolveSlotElement(opt.componentName, prop.slotElements));
         }
       }}
     />
@@ -104,10 +126,12 @@ function InlineControl({
   control,
   value,
   onChange,
+  prop,
 }: {
   control: PropControlDescriptor;
   value: unknown;
   onChange: (next: unknown) => void;
+  prop: PropDoc;
 }) {
   switch (control.kind) {
     case 'boolean':
@@ -148,7 +172,12 @@ function InlineControl({
       );
     case 'element':
       return (
-        <ElementControl control={control} value={value} onChange={onChange} />
+        <ElementControl
+          control={control}
+          value={value}
+          onChange={onChange}
+          prop={prop}
+        />
       );
     default:
       return null;
@@ -187,6 +216,7 @@ function PropRow({
             control={knob.control}
             value={value}
             onChange={onChange}
+            prop={prop}
           />
         )}
       </XDSVStack>
@@ -216,6 +246,7 @@ function PropRow({
             control={knob.control}
             value={value}
             onChange={onChange}
+            prop={prop}
           />
         </div>
       )}

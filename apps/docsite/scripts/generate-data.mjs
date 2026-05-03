@@ -230,6 +230,7 @@ async function generateComponentRegistry() {
         const topDescription = doc.usage?.description || doc.description || '';
         const usage = doc.usage ? sanitizeForJson(doc.usage) : null;
         const theming = doc.theming ? sanitizeForJson(doc.theming) : null;
+        const playground = doc.playground ? sanitizeForJson(doc.playground) : null;
 
         if (doc.components && doc.components.length > 0) {
           for (const sub of doc.components) {
@@ -251,6 +252,7 @@ async function generateComponentRegistry() {
               returns: null,
               relatedComponents: null,
               relatedHooks: null,
+              playground,
             });
           }
         } else if (doc.params) {
@@ -273,6 +275,7 @@ async function generateComponentRegistry() {
             returns: Array.isArray(doc.returns) ? sanitizeForJson(doc.returns) : [],
             relatedComponents: doc.relatedComponents || null,
             relatedHooks: doc.relatedHooks || null,
+            playground: null,
           });
         } else {
           // Simple/standalone component
@@ -294,6 +297,7 @@ async function generateComponentRegistry() {
             returns: null,
             relatedComponents: null,
             relatedHooks: null,
+            playground,
           });
         }
       }
@@ -321,8 +325,8 @@ export interface PropDoc {
   description: string;
   default?: string;
   required?: boolean;
+  slotElements?: ElementDescriptor[];
 }
-
 export interface BestPractice {
   guidance: boolean;
   description: string;
@@ -402,6 +406,17 @@ export interface ComponentEntry {
   returns: HookReturnDoc[] | null;
   relatedComponents: string[] | null;
   relatedHooks: string[] | null;
+  playground: PlaygroundConfig | null;
+}
+
+export interface ElementDescriptor {
+  __element: string;
+  props?: Record<string, unknown>;
+  children?: string | ElementDescriptor | (string | ElementDescriptor)[];
+}
+
+export interface PlaygroundConfig {
+  defaults: Record<string, unknown>;
 }
 
 export const components: Record<string, ComponentEntry[]> = ${JSON.stringify(allComponents, null, 2)};

@@ -23,7 +23,42 @@ import {
   parsePropType,
   type PropControlDescriptor,
 } from './parsePropType';
-import type {PropDoc} from '../../generated/componentRegistry';
+import type {
+  PropDoc,
+  PlaygroundConfig,
+  ElementDescriptor,
+} from '../../generated/componentRegistry';
+
+function isElementDescriptor(v: unknown): v is ElementDescriptor {
+  return v != null && typeof v === 'object' && '__element' in v;
+}
+
+function resolveElementDescriptor(desc: ElementDescriptor): React.ReactNode {
+  const Comp = getXDSComponent(desc.__element.replace(/^XDS/, ''));
+  const tag = Comp ?? desc.__element;
+
+  let children: React.ReactNode = undefined;
+  if (desc.children != null) {
+    if (typeof desc.children === 'string') {
+      children = desc.children;
+    } else if (Array.isArray(desc.children)) {
+      children = desc.children.map((c, i) =>
+        typeof c === 'string'
+          ? c
+          : createElement('span', {key: i}, resolveElementDescriptor(c)),
+      );
+    } else {
+      children = resolveElementDescriptor(desc.children);
+    }
+  }
+
+  return createElement(tag, desc.props ?? {}, children);
+}
+
+function resolveValue(v: unknown): unknown {
+  if (isElementDescriptor(v)) return resolveElementDescriptor(v);
+  return v;
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyXDSComponent = ComponentType<any>;
@@ -72,13 +107,26 @@ function pickPrimaryProps(name: string, props: PropDoc[]): KnobProp[] {
   if (props.length === 0) return [];
   return props.map(row => ({
     row,
-    control: parsePropType(row.type, row.name),
+    control: parsePropType(row.type, row.name, row.slotElements),
   }));
 }
 
-function buildInitialState(knobs: KnobProp[]): Record<string, unknown> {
+function buildInitialState(
+  knobs: KnobProp[],
+  playground?: PlaygroundConfig | null,
+): Record<string, unknown> {
   const state: Record<string, unknown> = {};
+
+  // Apply playground defaults first (resolved from ElementDescriptor if needed)
+  if (playground?.defaults) {
+    for (const [key, value] of Object.entries(playground.defaults)) {
+      state[key] = resolveValue(value);
+    }
+  }
+
+  // Fill in remaining props from doc defaults / auto-generation
   for (const {row, control} of knobs) {
+    if (state[row.name] !== undefined) continue;
     const def = coerceDefault(row.default, control);
     if (def !== undefined) {
       state[row.name] = def;
@@ -145,9 +193,16 @@ function generateCode(name: string, state: Record<string, unknown>): string {
   return `<${componentName}\n${propLines.join('\n')}\n/>`;
 }
 
-export function useInteractiveState(name: string, props: PropDoc[]) {
+export function useInteractiveState(
+  name: string,
+  props: PropDoc[],
+  playground?: PlaygroundConfig | null,
+) {
   const knobs = useMemo(() => pickPrimaryProps(name, props), [name, props]);
-  const initialState = useMemo(() => buildInitialState(knobs), [knobs]);
+  const initialState = useMemo(
+    () => buildInitialState(knobs, playground),
+    [knobs, playground],
+  );
   const [state, setState] = useState<Record<string, unknown>>(initialState);
 
   const setProp = useCallback(

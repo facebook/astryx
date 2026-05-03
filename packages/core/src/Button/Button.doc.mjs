@@ -84,6 +84,7 @@ export const docs = {
       type: 'ReactNode',
       description:
         'Icon element rendered before the label text.',
+      slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
     },
     {
       name: 'isIconOnly',
@@ -103,6 +104,10 @@ export const docs = {
       type: 'ReactElement<XDSIconProps> | ReactElement<XDSBadgeProps>',
       description:
         'Trailing icon or badge rendered after the label. Ignored when isIconOnly is true. Color is inherited from the button variant.',
+      slotElements: [
+        {__element: 'XDSIcon', props: {icon: 'chevronDown', size: 'sm'}},
+        {__element: 'XDSBadge', props: {label: '3'}},
+      ],
     },
     {
       name: 'tooltip',
@@ -122,6 +127,12 @@ export const docs = {
         'Async click handler. Shows loading state while the returned promise is pending.',
     },
   ],
+  playground: {
+    defaults: {
+      label: 'Click me',
+      variant: 'primary',
+    },
+  },
   theming: {
     targets: [
       {className: 'xds-button', visualProps: ['size', 'variant']},

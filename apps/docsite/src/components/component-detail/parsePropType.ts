@@ -59,9 +59,21 @@ function splitUnion(input: string): string[] {
 export function parsePropType(
   typeStr: string,
   propName?: string,
+  slotElements?: Array<{__element: string; props?: Record<string, unknown>}>,
 ): PropControlDescriptor {
   const t = typeStr.trim();
   if (!t) return {kind: 'unknown'};
+
+  // If slotElements is declared, use it directly for the element control
+  if (slotElements && slotElements.length > 0) {
+    return {
+      kind: 'element',
+      options: slotElements.map(el => ({
+        label: el.__element.replace(/^XDS/, ''),
+        componentName: el.__element,
+      })),
+    };
+  }
 
   if (CALLBACK_RE.test(t)) return {kind: 'callback'};
 
