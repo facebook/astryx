@@ -1,8 +1,11 @@
+import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSIcon} from '@xds/core/Icon';
+import {XDSSwitch} from '@xds/core/Switch';
+import {XDSText} from '@xds/core/Text';
 import {
   Cog6ToothIcon,
   BellIcon,
@@ -216,4 +219,90 @@ export const WithMedia: Story = {
       />
     </XDSList>
   ),
+};
+
+function ToggleHeaderDemo() {
+  const [showArchived, setShowArchived] = useState(false);
+  return (
+    <XDSList
+      hasDividers
+      header={
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+          <XDSText variant="label" size="large">
+            Notifications
+          </XDSText>
+          <XDSSwitch
+            label="Show archived"
+            isSelected={showArchived}
+            onChange={setShowArchived}
+          />
+        </div>
+      }>
+      <XDSListItem
+        label="New deployment succeeded"
+        description="Production v2.4.1 deployed"
+        startContent={<XDSIcon icon={BellIcon} />}
+      />
+      <XDSListItem
+        label="Security alert"
+        description="Unusual login detected"
+        startContent={<XDSIcon icon={ShieldCheckIcon} />}
+      />
+      {showArchived && (
+        <XDSListItem
+          label="Archived: Build completed"
+          description="CI pipeline finished"
+          startContent={<XDSIcon icon={Cog6ToothIcon} />}
+        />
+      )}
+    </XDSList>
+  );
+}
+
+export const HeaderWithToggle: Story = {
+  render: () => <ToggleHeaderDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A list with a toggle in the header. The header and list are ' +
+          'wrapped so they stack correctly even inside flex parents.',
+      },
+    },
+  },
+};
+
+export const HeaderInFlexParent: Story = {
+  render: () => (
+    <div
+      style={{
+        display: 'flex',
+        gap: 24,
+        border: '1px dashed #888',
+        padding: 16,
+      }}>
+      <div style={{flex: 1}}>
+        <XDSText variant="label" size="large">
+          Sidebar
+        </XDSText>
+      </div>
+      <div style={{flex: 2}}>
+        <ToggleHeaderDemo />
+      </div>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Demonstrates the list with a header inside a flex parent. ' +
+          'The header should appear above the list, not beside it.',
+      },
+    },
+  },
 };
