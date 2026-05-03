@@ -157,6 +157,9 @@ const styles = stylex.create({
     color: 'inherit',
     cursor: 'pointer',
   },
+  footerDivider: {
+    paddingBlockStart: spacingVars['--spacing-12'],
+  },
   footer: {
     paddingBlockStart: spacingVars['--spacing-12'],
     paddingBlockEnd: spacingVars['--spacing-12'],
@@ -317,10 +320,11 @@ export default function HomePage() {
         </XDSVStack>
       </XDSSection>
 
-      <XDSDivider />
+      <XDSDivider xstyle={styles.footerDivider} />
       <footer {...stylex.props(styles.footer)}>
         <XDSText type="supporting" color="secondary">
           <XDSLink
+            color="secondary"
             label="Terms of Use"
             href="https://opensource.fb.com/legal/terms"
             isExternalLink>
@@ -328,6 +332,7 @@ export default function HomePage() {
           </XDSLink>
           {' | '}
           <XDSLink
+            color="secondary"
             label="Privacy Policy"
             href="https://opensource.fb.com/legal/privacy"
             isExternalLink>
