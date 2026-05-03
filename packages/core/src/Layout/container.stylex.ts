@@ -62,6 +62,27 @@ const baseStyles = stylex.create({
     paddingBlockStart: 'var(--container-padding-block-start)',
     paddingBlockEnd: 'var(--container-padding-block-end)',
   },
+  /**
+   * Container-driven table block bleed.
+   *
+   * When a `.xds-table` is the first or last direct child of a container,
+   * the container zeroes its own block padding on that edge so the table
+   * rows extend edge-to-edge vertically.
+   *
+   * This replaces the old pattern where the table self-applied negative
+   * block margins via `:first-child` / `:last-child`, which leaked when
+   * the table was inside non-container wrapper divs.
+   */
+  tableBlockBleed: {
+    paddingBlockStart: {
+      default: null,
+      ':has(> .xds-table:first-child)': '0px',
+    },
+    paddingBlockEnd: {
+      default: null,
+      ':has(> .xds-table:last-child)': '0px',
+    },
+  },
 });
 
 /**
@@ -466,6 +487,7 @@ export function container({
     const defaults = themeDefaultStyles[useThemeDefault];
     return [
       baseStyles.container,
+      baseStyles.tableBlockBleed,
       defaults.containerPaddingInlineStart,
       defaults.containerPaddingInlineEnd,
       defaults.containerPaddingBlockStart,
@@ -480,6 +502,7 @@ export function container({
 
   return [
     baseStyles.container,
+    baseStyles.tableBlockBleed,
     containerPaddingInlineStartStyles[outerX],
     containerPaddingInlineEndStyles[outerX],
     containerPaddingBlockStartStyles[outerY],

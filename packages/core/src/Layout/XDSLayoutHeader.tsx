@@ -49,6 +49,16 @@ const styles = stylex.create({
     '--container-padding-block-start': `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
     '--container-padding-block-end': `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
   },
+  tableBlockBleed: {
+    paddingBlockStart: {
+      default: null,
+      ':has(> .xds-table:first-child)': '0px',
+    },
+    paddingBlockEnd: {
+      default: null,
+      ':has(> .xds-table:last-child)': '0px',
+    },
+  },
   fullBleed: {
     paddingInlineStart: 0,
     paddingInlineEnd: 0,
@@ -171,6 +181,7 @@ export function XDSLayoutHeader({
       <div
         {...stylex.props(
           styles.inner,
+          styles.tableBlockBleed,
           isZeroPadding && styles.fullBleed,
           padding != null && paddingStyles[padding],
           padding != null && containerPaddingInlineVarStyles[padding],

@@ -45,6 +45,16 @@ const styles = stylex.create({
     '--container-padding-block-start': `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
     '--container-padding-block-end': `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
   },
+  tableBlockBleed: {
+    paddingBlockStart: {
+      default: null,
+      ':has(> .xds-table:first-child)': '0px',
+    },
+    paddingBlockEnd: {
+      default: null,
+      ':has(> .xds-table:last-child)': '0px',
+    },
+  },
   // Start panel: outer-x on left edge
   startPanel: {
     paddingInlineStart: `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
@@ -256,6 +266,7 @@ export function XDSLayoutPanel({
         xdsClassName('layout-panel'),
         stylex.props(
           styles.panel,
+          styles.tableBlockBleed,
           dynamicStyles.sizing(effectiveWidth ?? null),
           // Outer padding on container edges (unless component is full bleed)
           isStartPanel &&

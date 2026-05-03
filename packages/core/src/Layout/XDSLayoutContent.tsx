@@ -76,6 +76,16 @@ const styles = stylex.create({
     paddingBlockEnd: `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
     '--container-padding-block-end': `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
   },
+  tableBlockBleed: {
+    paddingBlockStart: {
+      default: null,
+      ':has(> .xds-table:first-child)': '0px',
+    },
+    paddingBlockEnd: {
+      default: null,
+      ':has(> .xds-table:last-child)': '0px',
+    },
+  },
   scrollable: {
     overflow: 'auto',
   },
@@ -188,6 +198,7 @@ export function XDSLayoutContent({
         xdsClassName('layout-content'),
         stylex.props(
           styles.content,
+          styles.tableBlockBleed,
           // Outer padding on container edges (unless content is full bleed)
           !hasStart && !isZeroPadding && padding == null && styles.noStart,
           !hasEnd && !isZeroPadding && padding == null && styles.noEnd,
