@@ -128,7 +128,7 @@ export const InlineWithText: Story = {
   render: () => (
     <XDSText type="body">
       Read the{' '}
-      <XDSLink label="documentation" href="/docs">
+      <XDSLink href="/docs">
         documentation
       </XDSLink>{' '}
       for more information about using XDS components.
@@ -146,40 +146,36 @@ export const AllVariants: Story = {
         maxWidth: '600px',
       }}>
       <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-        <XDSLink label="Active (default)" href="/active" isStandalone>
+        <XDSLink href="/active" isStandalone>
           Active (default)
         </XDSLink>
-        <XDSLink label="Primary" href="/primary" color="primary" isStandalone>
+        <XDSLink href="/primary" color="primary" isStandalone>
           Primary
         </XDSLink>
         <XDSLink
-          label="Secondary"
           href="/secondary"
           color="secondary"
           isStandalone>
           Secondary
         </XDSLink>
-        <XDSLink label="Inherit" href="/inherit" color="inherit" isStandalone>
+        <XDSLink href="/inherit" color="inherit" isStandalone>
           Inherit
         </XDSLink>
       </div>
       <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
         <XDSLink
-          label="With underline"
           href="/underlined"
           hasUnderline
           isStandalone>
           With underline
         </XDSLink>
         <XDSLink
-          label="External"
           href="https://example.com"
           isExternalLink
           isStandalone>
           External
         </XDSLink>
         <XDSLink
-          label="With tooltip"
           href="/tooltip"
           tooltip="Helpful info"
           isStandalone>
@@ -188,14 +184,12 @@ export const AllVariants: Story = {
       </div>
       <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
         <XDSLink
-          label="Disabled active"
           href="/disabled"
           isDisabled
           isStandalone>
           Disabled active
         </XDSLink>
         <XDSLink
-          label="Disabled secondary"
           href="/disabled"
           color="secondary"
           isDisabled
@@ -216,21 +210,18 @@ export const ExternalLinks: Story = {
         gap: '8px',
       }}>
       <XDSLink
-        label="GitHub"
         href="https://github.com"
         isExternalLink
         isStandalone>
         GitHub
       </XDSLink>
       <XDSLink
-        label="MDN Web Docs"
         href="https://developer.mozilla.org"
         isExternalLink
         isStandalone>
         MDN Web Docs
       </XDSLink>
       <XDSLink
-        label="React Documentation"
         href="https://react.dev"
         isExternalLink
         hasUnderline
@@ -245,21 +236,18 @@ export const LinksWithTooltips: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
       <XDSLink
-        label="Settings"
         href="/settings"
         tooltip="Configure your account settings"
         isStandalone>
         Settings
       </XDSLink>
       <XDSLink
-        label="Profile"
         href="/profile"
         tooltip="View and edit your profile"
         isStandalone>
         Profile
       </XDSLink>
       <XDSLink
-        label="Help"
         href="/help"
         tooltip="Get help and support"
         color="secondary"

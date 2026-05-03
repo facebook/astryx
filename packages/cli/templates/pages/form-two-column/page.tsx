@@ -239,7 +239,6 @@ export default function FormTwoColumnPage() {
                     {col.label}
                   </XDSText>
                   <XDSLink
-                    label={col.email}
                     href={`mailto:${col.email}`}
                     type="body"
                     size="sm">

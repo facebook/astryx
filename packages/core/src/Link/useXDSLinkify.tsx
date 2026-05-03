@@ -198,7 +198,6 @@ export function useXDSLinkify(
         <XDSLink
           key={`linkify-${i}`}
           href={m.href}
-          label={m.label}
           isExternalLink={m.isExternal}
         >
           {m.label}

@@ -12,14 +12,14 @@ export default function MetadataListItemShowcase() {
         <XDSBadge label="Active" variant="green" />
       </XDSMetadataListItem>
       <XDSMetadataListItem label="Owner">
-        <XDSLink label="Alice Johnson" href="#">Alice Johnson</XDSLink>
+        <XDSLink href="#">Alice Johnson</XDSLink>
       </XDSMetadataListItem>
       <XDSMetadataListItem label="Created">January 15, 2025</XDSMetadataListItem>
       <XDSMetadataListItem label="Priority">
         <XDSBadge label="High" variant="red" />
       </XDSMetadataListItem>
       <XDSMetadataListItem label="Repository">
-        <XDSLink label="github.com/org/design-system" href="#">github.com/org/design-system</XDSLink>
+        <XDSLink href="#">github.com/org/design-system</XDSLink>
       </XDSMetadataListItem>
     </XDSMetadataList>
   );

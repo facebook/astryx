@@ -121,7 +121,6 @@ export default function LoginSimple() {
                 {loginFailed && (
                   <XDSVStack hAlign="end">
                     <XDSLink
-                      label="Forgot password?"
                       href="#"
                       size="sm"
                       color="secondary"
@@ -168,7 +167,7 @@ export default function LoginSimple() {
             <XDSVStack hAlign="center">
               <XDSText type="supporting" color="secondary">
                 Don&apos;t have an account?{' '}
-                <XDSLink label="Sign up" href="#" type="supporting">
+                <XDSLink href="#" type="supporting">
                   Sign up
                 </XDSLink>
               </XDSText>
@@ -180,11 +179,11 @@ export default function LoginSimple() {
         <XDSVStack hAlign="center" xstyle={styles.termsFooter}>
           <XDSText type="supporting" color="secondary" xstyle={styles.centered}>
             By clicking continue, you agree to our{' '}
-            <XDSLink label="Terms of Service" href="#" type="supporting">
+            <XDSLink href="#" type="supporting">
               Terms of Service
             </XDSLink>{' '}
             and{' '}
-            <XDSLink label="Privacy Policy" href="#" type="supporting">
+            <XDSLink href="#" type="supporting">
               Privacy Policy
             </XDSLink>
             .

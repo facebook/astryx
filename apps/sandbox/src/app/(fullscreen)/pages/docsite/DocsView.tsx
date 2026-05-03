@@ -371,7 +371,6 @@ function ChangelogItemRow({item}: {item: ChangelogItem}) {
       </XDSText>
       {item.pr != null && (
         <XDSLink
-          label={`Pull request #${item.pr}`}
           href={`https://github.com/${GITHUB_REPO}/pull/${item.pr}`}
           target="_blank"
           rel="noopener noreferrer"
@@ -4804,7 +4803,6 @@ function LibraryOverview({
                           <>
                             {offering.description.slice(0, idx)}
                             <XDSLink
-                              label={offering.descriptionLinkText}
                               href={offering.descriptionLinkHref}
                               type="supporting"
                               color="secondary"
@@ -4852,7 +4850,6 @@ function LibraryOverview({
         <XDSText type="supporting" color="secondary">
           Prefer a human? Open an issue on{' '}
           <XDSLink
-            label="GitHub"
             href="https://github.com/facebookexperimental/xds/issues"
             color="secondary"
             type="supporting">

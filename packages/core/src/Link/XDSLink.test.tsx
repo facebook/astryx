@@ -26,7 +26,7 @@ CustomLink.displayName = 'CustomLink';
 describe('XDSLink', () => {
   it('renders children as link text', () => {
     render(
-      <XDSLink label="Click me" href="/test">
+      <XDSLink href="/test">
         Click me
       </XDSLink>,
     );
@@ -35,17 +35,26 @@ describe('XDSLink', () => {
 
   it('renders with href attribute', () => {
     render(
-      <XDSLink label="Link" href="/destination">
+      <XDSLink href="/destination">
         Link
       </XDSLink>,
     );
     expect(screen.getByRole('link')).toHaveAttribute('href', '/destination');
   });
 
-  it('renders with aria-label from label prop', () => {
+  it('does not render aria-label when label is omitted', () => {
+    render(
+      <XDSLink href="/test">
+        Visible text
+      </XDSLink>,
+    );
+    expect(screen.getByRole('link')).not.toHaveAttribute('aria-label');
+  });
+
+  it('renders aria-label when label prop is provided', () => {
     render(
       <XDSLink label="Accessible label" href="/test">
-        Visible text
+        <span aria-hidden="true">🏠</span>
       </XDSLink>,
     );
     expect(screen.getByRole('link')).toHaveAttribute(
@@ -56,21 +65,21 @@ describe('XDSLink', () => {
 
   it('renders with different color values', () => {
     const {rerender} = render(
-      <XDSLink label="Active" href="/test" color="active">
+      <XDSLink href="/test" color="active">
         Active
       </XDSLink>,
     );
     expect(screen.getByRole('link')).toBeInTheDocument();
 
     rerender(
-      <XDSLink label="Secondary" href="/test" color="secondary">
+      <XDSLink href="/test" color="secondary">
         Secondary
       </XDSLink>,
     );
     expect(screen.getByRole('link')).toBeInTheDocument();
 
     rerender(
-      <XDSLink label="Inherit" href="/test" color="inherit">
+      <XDSLink href="/test" color="inherit">
         Inherit
       </XDSLink>,
     );
@@ -79,7 +88,7 @@ describe('XDSLink', () => {
 
   it('applies hasUnderline style when true', () => {
     render(
-      <XDSLink label="Underlined" href="/test" hasUnderline>
+      <XDSLink href="/test" hasUnderline>
         Underlined Link
       </XDSLink>,
     );
@@ -88,7 +97,7 @@ describe('XDSLink', () => {
 
   it('applies isDisabled state correctly', () => {
     render(
-      <XDSLink label="Disabled Link" href="/test" isDisabled>
+      <XDSLink href="/test" isDisabled>
         Disabled Link
       </XDSLink>,
     );
@@ -99,21 +108,19 @@ describe('XDSLink', () => {
 
   it('renders external link with icon and target="_blank"', () => {
     render(
-      <XDSLink label="External" href="https://example.com" isExternalLink>
+      <XDSLink href="https://example.com" isExternalLink>
         External Link
       </XDSLink>,
     );
     const link = screen.getByRole('link');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
-    // Check for the icon (SVG element)
     expect(link.querySelector('svg')).toBeInTheDocument();
   });
 
   it('renders external link with existing rel merged', () => {
     render(
       <XDSLink
-        label="External"
         href="https://example.com"
         isExternalLink
         rel="sponsored">
@@ -126,7 +133,7 @@ describe('XDSLink', () => {
 
   it('renders with custom target without isExternalLink', () => {
     render(
-      <XDSLink label="Target" href="/test" target="_parent">
+      <XDSLink href="/test" target="_parent">
         Parent Link
       </XDSLink>,
     );
@@ -138,7 +145,7 @@ describe('XDSLink', () => {
     const user = userEvent.setup();
     const handleClick = vi.fn(e => e.preventDefault());
     render(
-      <XDSLink label="Click me" href="/test" onClick={handleClick}>
+      <XDSLink href="/test" onClick={handleClick}>
         Click me
       </XDSLink>,
     );
@@ -150,7 +157,7 @@ describe('XDSLink', () => {
   it('forwards ref correctly', () => {
     const ref = vi.fn();
     render(
-      <XDSLink label="Test" href="/test" ref={ref}>
+      <XDSLink href="/test" ref={ref}>
         Test
       </XDSLink>,
     );
@@ -159,7 +166,7 @@ describe('XDSLink', () => {
 
   it('renders standalone link', () => {
     render(
-      <XDSLink label="Standalone Link" href="/standalone" isStandalone>
+      <XDSLink href="/standalone" isStandalone>
         Standalone Link
       </XDSLink>,
     );
@@ -168,7 +175,7 @@ describe('XDSLink', () => {
 
   it('renders link with tooltip', () => {
     render(
-      <XDSLink label="Settings" href="/settings" tooltip="Configure settings">
+      <XDSLink href="/settings" tooltip="Configure settings">
         Settings
       </XDSLink>,
     );
@@ -178,11 +185,11 @@ describe('XDSLink', () => {
 
   it('renders custom component when as is provided', () => {
     render(
-      <XDSLink label="Custom" href="/custom" as={CustomLink}>
+      <XDSLink href="/custom" as={CustomLink}>
         Custom Link
       </XDSLink>,
     );
-    const link = screen.getByRole('link', {name: 'Custom'});
+    const link = screen.getByRole('link', {name: 'Custom Link'});
     expect(link).toHaveAttribute('data-custom-link');
     expect(link).toHaveAttribute('href', '/custom');
   });
@@ -190,12 +197,12 @@ describe('XDSLink', () => {
   it('renders custom component from XDSLinkProvider', () => {
     render(
       <XDSLinkProvider component={CustomLink}>
-        <XDSLink label="Provider" href="/provider">
+        <XDSLink href="/provider">
           Provider Link
         </XDSLink>
       </XDSLinkProvider>,
     );
-    const link = screen.getByRole('link', {name: 'Provider'});
+    const link = screen.getByRole('link', {name: 'Provider Link'});
     expect(link).toHaveAttribute('data-custom-link');
   });
 
@@ -210,23 +217,23 @@ describe('XDSLink', () => {
     ));
     render(
       <XDSLinkProvider component={AnotherLink}>
-        <XDSLink label="Override" href="/override" as={CustomLink}>
+        <XDSLink href="/override" as={CustomLink}>
           Override Link
         </XDSLink>
       </XDSLinkProvider>,
     );
-    const link = screen.getByRole('link', {name: 'Override'});
+    const link = screen.getByRole('link', {name: 'Override Link'});
     expect(link).toHaveAttribute('data-custom-link');
     expect(link).not.toHaveAttribute('data-another-link');
   });
 
   it('renders xds-* class names for theme targeting', () => {
     render(
-      <XDSLink label="Themed" href="/test" color="secondary">
+      <XDSLink href="/test" color="secondary">
         Themed Link
       </XDSLink>,
     );
-    const link = screen.getByRole('link', {name: 'Themed'});
+    const link = screen.getByRole('link', {name: 'Themed Link'});
     expect(link.className).toContain('xds-link');
     expect(link.className).toContain('secondary');
   });

@@ -719,7 +719,7 @@ function TableCard<T extends {id: string}>({
       <XDSVStack gap={6}>
         <XDSHStack hAlign="between" vAlign="center">
           <XDSHeading level={4}>{title}</XDSHeading>
-          <XDSLink label={linkLabel} href={linkHref}>
+          <XDSLink href={linkHref}>
             {linkLabel}
           </XDSLink>
         </XDSHStack>

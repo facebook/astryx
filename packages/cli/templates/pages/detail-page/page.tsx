@@ -272,7 +272,7 @@ function PageHeader({
         <XDSHStack gap={4} vAlign="start">
           <XDSStackItem size="fill">
             <XDSVStack gap={0}>
-              <XDSLink href="#" label="All orders" color="secondary">
+              <XDSLink href="#" color="secondary">
                 <XDSHStack gap={1} vAlign="center">
                   <XDSIcon icon={ArrowLeftIcon} size="sm" color="inherit" />
                   All orders
@@ -308,7 +308,7 @@ function PageHeader({
                     </XDSText>
                   </XDSHStack>
                   <Bullet />
-                  <XDSLink href="#" label="See all" color="secondary">
+                  <XDSLink href="#" color="secondary">
                     See all
                   </XDSLink>
                 </XDSHStack>
@@ -576,7 +576,7 @@ function RightPanel() {
             Customer is a repeat buyer — 3rd order this quarter. Prefers snow
             and oat glazes. Requested gift wrapping for the mug set. Ships to a
             residential address in CA.{' '}
-            <XDSLink href="#" label="Show more" color="secondary">
+            <XDSLink href="#" color="secondary">
               Show more
             </XDSLink>
           </XDSText>

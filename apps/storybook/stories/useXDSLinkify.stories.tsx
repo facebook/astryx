@@ -167,7 +167,6 @@ export const Interactive: Story = {
     return (
       <XDSStack gap={4}>
         <XDSTextInput
-          label="Input text"
           value={text}
           onChange={(e) => setText(e.target.value)}
         />

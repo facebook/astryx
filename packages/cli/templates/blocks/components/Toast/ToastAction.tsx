@@ -32,7 +32,7 @@ export default function ToastAction() {
         type="info"
         body="Your report is ready."
         endContent={
-          <XDSLink href="#" label="View report" hasUnderline>
+          <XDSLink href="#" hasUnderline>
             View report
           </XDSLink>
         }

@@ -600,7 +600,7 @@ export default function ExampleCardsPage() {
                     Your latest account activity.
                   </XDSText>
                 </XDSVStack>
-                <XDSLink label="View All" href="#">
+                <XDSLink href="#">
                   View All
                 </XDSLink>
               </div>
@@ -691,7 +691,7 @@ export default function ExampleCardsPage() {
                     Payment Due
                   </XDSText>
                   <XDSHeading level={3}>1 Apr</XDSHeading>
-                  <XDSLink label="Pay Early" href="#">
+                  <XDSLink href="#">
                     Pay Early
                   </XDSLink>
                 </XDSVStack>

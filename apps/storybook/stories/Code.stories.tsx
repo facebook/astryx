@@ -60,7 +60,7 @@ export const MixedInline: Story = {
     <XDSText type="body">
       The <XDSCode>XDSThemeProvider</XDSCode> component wraps your app and
       supplies design tokens. See the{' '}
-      <XDSLink label="theme docs" href="/docs/theme" isExternalLink={false}>
+      <XDSLink href="/docs/theme" isExternalLink={false}>
         theme docs
       </XDSLink>{' '}
       for setup. Set <XDSCode>colorScheme=&quot;dark&quot;</XDSCode> to enable

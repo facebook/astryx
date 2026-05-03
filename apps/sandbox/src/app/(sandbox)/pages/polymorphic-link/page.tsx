@@ -213,7 +213,7 @@ export default function PolymorphicLinkPage() {
                 <XDSText type="supporting" weight="bold">
                   XDSLink
                 </XDSText>
-                <XDSLink label="Documentation link" href="/docs">
+                <XDSLink href="/docs">
                   Go to documentation
                 </XDSLink>
               </XDSVStack>

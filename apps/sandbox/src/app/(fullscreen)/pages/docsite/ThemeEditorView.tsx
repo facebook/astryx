@@ -1365,7 +1365,7 @@ function ComponentPreview() {
                       Your latest account activity.
                     </XDSText>
                   </XDSVStack>
-                  <XDSLink label="View All" href="#">
+                  <XDSLink href="#">
                     View All
                   </XDSLink>
                 </div>
@@ -1492,7 +1492,7 @@ function ComponentPreview() {
                   Payment Due
                 </XDSText>
                 <XDSHeading level={3}>1 Apr</XDSHeading>
-                <XDSLink label="Pay Early" href="#">
+                <XDSLink href="#">
                   Pay Early
                 </XDSLink>
               </XDSVStack>

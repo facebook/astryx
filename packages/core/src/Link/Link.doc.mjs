@@ -22,8 +22,7 @@ export const docs = {
         {
           name: 'label',
           type: 'string',
-          description: 'Accessible label',
-          required: true,
+          description: 'Accessible label (aria-label). Only use when children are not self-descriptive (e.g. icon-only links). Omit for text links — the link text is the accessible name.',
         },
         {
           name: 'href',
@@ -103,9 +102,10 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Write descriptive, concise link text that clearly communicates the destination.' },
       { guidance: true, description: 'Set `isStandalone` when the link appears outside of inline text, so it receives proper base font sizing.' },
+      { guidance: true, description: 'Only set `label` when the link content is not descriptive text (e.g. an icon-only link). For text links, the visible text is already the accessible name — adding `label` overrides it for screen readers, which is harmful.' },
       { guidance: false, description: 'Use Link for actions that do not navigate — use a Button instead.' },
       { guidance: false, description: 'Use generic text like "click here" or "read more" — describe the destination.' },
-      { guidance: false, description: 'Use icon-only links without a visible text label.' },
+      { guidance: false, description: 'Set `label` on text links — `aria-label` prevents assistive technology from reading the actual link content.' },
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'The visible text of the link.'},
@@ -137,8 +137,7 @@ export const docsZh = {
         {
           name: 'label',
           type: 'string',
-          description: '无障碍标签',
-          required: true,
+          description: '无障碍标签（aria-label）。仅在子内容不是描述性文本时使用（如纯图标链接）。文本链接请省略此项。',
         },
         {
           name: 'href',
@@ -218,9 +217,10 @@ export const docsZh = {
     bestPractices: [
       { guidance: true, description: 'Write descriptive, concise link text that clearly communicates the destination.' },
       { guidance: true, description: 'Set `isStandalone` when the link appears outside of inline text, so it receives proper base font sizing.' },
+      { guidance: true, description: 'Only set `label` when the link content is not descriptive text (e.g. an icon-only link). For text links, the visible text is already the accessible name — adding `label` overrides it for screen readers, which is harmful.' },
       { guidance: false, description: 'Use Link for actions that do not navigate — use a Button instead.' },
       { guidance: false, description: 'Use generic text like "click here" or "read more" — describe the destination.' },
-      { guidance: false, description: 'Use icon-only links without a visible text label.' },
+      { guidance: false, description: 'Set `label` on text links — `aria-label` prevents assistive technology from reading the actual link content.' },
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'The visible text of the link.'},
@@ -240,9 +240,10 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Write descriptive, concise link text that clearly communicates the destination.' },
       { guidance: true, description: 'Set `isStandalone` when the link appears outside of inline text, so it receives proper base font sizing.' },
+      { guidance: true, description: 'Only set `label` when the link content is not descriptive text (e.g. an icon-only link). For text links, the visible text is already the accessible name — adding `label` overrides it for screen readers, which is harmful.' },
       { guidance: false, description: 'Use Link for actions that do not navigate — use a Button instead.' },
       { guidance: false, description: 'Use generic text like "click here" or "read more" — describe the destination.' },
-      { guidance: false, description: 'Use icon-only links without a visible text label.' },
+      { guidance: false, description: 'Set `label` on text links — `aria-label` prevents assistive technology from reading the actual link content.' },
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'The visible text of the link.'},
@@ -257,7 +258,7 @@ export const docsDense = {
         'Styled anchor link w/ variants, external link support, polymorphic rendering.',
       propDescriptions: {
         as: 'Custom component to render instead of <a>',
-        label: 'Accessible label',
+        label: 'Accessible label (aria-label). Only for non-text content like icon-only links.',
         href: 'Link destination URL',
         hasUnderline: 'Always show underline',
         isDisabled: 'Disables link',

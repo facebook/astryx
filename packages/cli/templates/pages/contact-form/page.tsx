@@ -301,7 +301,7 @@ export default function FormSimplePage() {
             <XDSHStack gap={1} hAlign="center">
               <XDSText type="supporting" color="secondary">
                 By submitting you agree to our{' '}
-                <XDSLink label="Privacy Policy" href="#" type="supporting">
+                <XDSLink href="#" type="supporting">
                   Privacy Policy
                 </XDSLink>
                 .

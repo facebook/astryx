@@ -117,7 +117,7 @@ function InfoRowItem({label, value, action}: InfoRow) {
           </XDSText>
         </XDSVStack>
         {action && (
-          <XDSLink label={action} href="#">
+          <XDSLink href="#">
             {action}
           </XDSLink>
         )}
@@ -170,7 +170,6 @@ function ExpandableRow({
             </XDSText>
           </XDSVStack>
           <XDSLink
-            label="Edit"
             href="#"
             onClick={(e: React.MouseEvent) => {
               e.preventDefault();
@@ -326,7 +325,7 @@ export default function SettingsSecurityTemplate() {
                         </XDSVStack>
                       </XDSStackItem>
                       {device.action && (
-                        <XDSLink label={device.action} href="#">
+                        <XDSLink href="#">
                           {device.action}
                         </XDSLink>
                       )}
@@ -353,7 +352,7 @@ export default function SettingsSecurityTemplate() {
                         This action cannot be undone
                       </XDSText>
                     </XDSVStack>
-                    <XDSLink label="Deactivate" href="#">
+                    <XDSLink href="#">
                       Deactivate
                     </XDSLink>
                   </XDSHStack>
@@ -668,7 +667,7 @@ export default function SettingsSecurityTemplate() {
                   <XDSText type="body" weight="semibold">
                     Blocked people
                   </XDSText>
-                  <XDSLink label="View" href="#">
+                  <XDSLink href="#">
                     View
                   </XDSLink>
                 </XDSHStack>
@@ -694,7 +693,7 @@ export default function SettingsSecurityTemplate() {
                 <XDSHeading level={3}>Reviews</XDSHeading>
                 <XDSText type="supporting" color="secondary">
                   Choose what&apos;s shared when you write a review.{' '}
-                  <XDSLink label="Learn more" href="#" type="supporting">
+                  <XDSLink href="#" type="supporting">
                     Learn more
                   </XDSLink>
                 </XDSText>
@@ -740,7 +739,7 @@ export default function SettingsSecurityTemplate() {
                 <XDSCard>
                   <XDSHStack hAlign="between" vAlign="center">
                     <XDSText type="body">Request my personal data</XDSText>
-                    <XDSLink label="Request" href="#">
+                    <XDSLink href="#">
                       Request
                     </XDSLink>
                   </XDSHStack>
@@ -756,7 +755,7 @@ export default function SettingsSecurityTemplate() {
                 <XDSCard>
                   <XDSHStack hAlign="between" vAlign="center">
                     <XDSText type="body">Delete my account</XDSText>
-                    <XDSLink label="Delete" href="#">
+                    <XDSLink href="#">
                       Delete
                     </XDSLink>
                   </XDSHStack>
@@ -777,7 +776,6 @@ export default function SettingsSecurityTemplate() {
                         We&apos;re committed to keeping your data protected.
                         See details in our{' '}
                         <XDSLink
-                          label="Privacy Policy"
                           href="#"
                           type="supporting">
                           Privacy Policy

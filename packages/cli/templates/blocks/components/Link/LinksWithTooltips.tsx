@@ -7,21 +7,18 @@ export default function LinksWithTooltips() {
   return (
     <XDSHStack gap={4} vAlign="center">
       <XDSLink
-        label="Settings"
         href="/settings"
         tooltip="Configure your account settings"
         isStandalone>
         Settings
       </XDSLink>
       <XDSLink
-        label="Profile"
         href="/profile"
         tooltip="View and edit your profile"
         isStandalone>
         Profile
       </XDSLink>
       <XDSLink
-        label="Help"
         href="/help"
         tooltip="Get help and support"
         color="secondary"

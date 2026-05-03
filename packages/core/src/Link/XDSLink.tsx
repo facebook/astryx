@@ -119,10 +119,12 @@ export interface XDSLinkProps extends XDSBaseProps<HTMLAnchorElement> {
    */
   as?: XDSLinkComponentType;
   /**
-   * Accessible label for the link (required for accessibility).
-   * Used as aria-label when content is not self-descriptive.
+   * Accessible label for the link.
+   * Used as aria-label when content is not self-descriptive
+   * (e.g. icon-only links). When children are text, this is
+   * unnecessary — the link text itself serves as the label.
    */
-  label: string;
+  label?: string;
   /**
    * Link destination URL.
    */
@@ -219,10 +221,11 @@ export interface XDSLinkProps extends XDSBaseProps<HTMLAnchorElement> {
  *
  * @example
  * ```
- * <XDSLink label="Documentation" href="/docs">Documentation</XDSLink>
- * <XDSLink label="GitHub" href="https://github.com" isExternalLink>GitHub</XDSLink>
- * <XDSLink label="Settings" href="/settings" color="secondary">Settings</XDSLink>
- * <XDSLink label="Privacy Policy" href="/privacy" hasUnderline>Privacy Policy</XDSLink>
+ * <XDSLink href="/docs">Documentation</XDSLink>
+ * <XDSLink href="https://github.com" isExternalLink>GitHub</XDSLink>
+ * <XDSLink href="/settings" color="secondary">Settings</XDSLink>
+ * <XDSLink href="/privacy" hasUnderline>Privacy Policy</XDSLink>
+ * <XDSLink label="Close dialog" href="/home"><XDSIcon icon="x" /></XDSLink>
  * ```
  */
 export function XDSLink({
@@ -266,7 +269,7 @@ export function XDSLink({
       target={computedTarget}
       rel={computedRel}
       onClick={onClick}
-      aria-label={label}
+      aria-label={label || undefined}
       aria-disabled={isDisabled || undefined}
       tabIndex={isDisabled ? -1 : undefined}
       {...mergeProps(

@@ -144,7 +144,6 @@ export default function LoginSSO() {
                     </XDSVStack>
 
                     <XDSLink
-                      label="Having trouble signing in?"
                       href="#"
                       size="sm"
                       color="secondary"
@@ -173,7 +172,7 @@ export default function LoginSSO() {
                     <XDSVStack hAlign="center">
                       <XDSText type="supporting" color="secondary">
                         Don&apos;t have an account?{' '}
-                        <XDSLink label="Request access" href="#" type="supporting">
+                        <XDSLink href="#" type="supporting">
                           Request access
                         </XDSLink>
                       </XDSText>
@@ -261,7 +260,6 @@ export default function LoginSSO() {
                         {loginFailed && (
                           <XDSVStack hAlign="end">
                             <XDSLink
-                              label="Forgot password?"
                               href="#"
                               size="sm"
                               color="secondary"

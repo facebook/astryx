@@ -64,7 +64,7 @@ const columns: XDSTableColumn<User>[] = [
     header: 'Email',
     width: proportional(2),
     renderCell: item => (
-      <XDSLink label={item.email} href={`mailto:${item.email}`}>{item.email}</XDSLink>
+      <XDSLink href={`mailto:${item.email}`}>{item.email}</XDSLink>
     ),
   },
   {

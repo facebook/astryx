@@ -544,7 +544,6 @@ export function XDSSideNavHeading({
       {superheading &&
         (hasAnyHref && superheadingHref && menu ? (
           <XDSLink
-            label={superheading}
             href={superheadingHref}
             color="secondary"
             size="xsm">
@@ -568,7 +567,6 @@ export function XDSSideNavHeading({
       {subheading &&
         (hasAnyHref && subheadingHref && menu ? (
           <XDSLink
-            label={subheading}
             href={subheadingHref}
             color="secondary"
             size="xsm">
@@ -760,7 +758,6 @@ export function XDSSideNavHeading({
           {superheading &&
             (superheadingHref ? (
               <XDSLink
-                label={superheading}
                 href={superheadingHref}
                 color="secondary"
                 size="xsm">
@@ -771,7 +768,6 @@ export function XDSSideNavHeading({
             ))}
           {headingHref ? (
             <XDSLink
-              label={heading}
               href={headingHref}
               color="primary"
               weight="semibold">
@@ -789,7 +785,6 @@ export function XDSSideNavHeading({
           {subheading &&
             (subheadingHref ? (
               <XDSLink
-                label={subheading}
                 href={subheadingHref}
                 color="secondary"
                 size="xsm">

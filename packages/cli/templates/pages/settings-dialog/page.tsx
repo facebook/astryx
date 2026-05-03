@@ -195,7 +195,6 @@ function ExpandableRow({
             </XDSText>
           </XDSVStack>
           <XDSLink
-            label="Edit"
             href="#"
             onClick={(e: React.MouseEvent) => {
               e.preventDefault();
@@ -231,7 +230,7 @@ function InfoRowItem({
           </XDSText>
         </XDSVStack>
         {action && (
-          <XDSLink label={action} href="#">
+          <XDSLink href="#">
             {action}
           </XDSLink>
         )}
@@ -589,7 +588,7 @@ export default function SettingsDialogTemplate() {
                                   </XDSVStack>
                                 </XDSStackItem>
                                 {device.action && (
-                                  <XDSLink label={device.action} href="#">
+                                  <XDSLink href="#">
                                     {device.action}
                                   </XDSLink>
                                 )}
@@ -620,7 +619,7 @@ export default function SettingsDialogTemplate() {
                                 This action cannot be undone
                               </XDSText>
                             </XDSVStack>
-                            <XDSLink label="Deactivate" href="#">
+                            <XDSLink href="#">
                               Deactivate
                             </XDSLink>
                           </XDSHStack>
@@ -753,7 +752,7 @@ export default function SettingsDialogTemplate() {
                           <XDSText type="body" weight="semibold">
                             Blocked people
                           </XDSText>
-                          <XDSLink label="View" href="#">
+                          <XDSLink href="#">
                             View
                           </XDSLink>
                         </XDSHStack>
@@ -780,7 +779,6 @@ export default function SettingsDialogTemplate() {
                         <XDSText type="supporting" color="secondary">
                           Choose what&apos;s shared when you write a review.{' '}
                           <XDSLink
-                            label="Learn more"
                             href="#"
                             type="supporting">
                             Learn more
@@ -830,7 +828,7 @@ export default function SettingsDialogTemplate() {
                             <XDSText type="body">
                               Request my personal data
                             </XDSText>
-                            <XDSLink label="Request" href="#">
+                            <XDSLink href="#">
                               Request
                             </XDSLink>
                           </XDSHStack>
@@ -846,7 +844,7 @@ export default function SettingsDialogTemplate() {
                         <XDSCard>
                           <XDSHStack hAlign="between" vAlign="center">
                             <XDSText type="body">Delete my account</XDSText>
-                            <XDSLink label="Delete" href="#">
+                            <XDSLink href="#">
                               Delete
                             </XDSLink>
                           </XDSHStack>
@@ -867,7 +865,6 @@ export default function SettingsDialogTemplate() {
                                 We&apos;re committed to keeping your data
                                 protected. See details in our{' '}
                                 <XDSLink
-                                  label="Privacy Policy"
                                   href="#"
                                   type="supporting">
                                   Privacy Policy

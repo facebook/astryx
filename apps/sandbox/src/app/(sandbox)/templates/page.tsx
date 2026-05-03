@@ -150,7 +150,6 @@ function useTableSearchParams() {
 function CopyPath({path}: {path: string}) {
   return (
     <XDSLink
-      label={`Copy path: ${path}`}
       onClick={() => navigator.clipboard.writeText(path)}
       style={{cursor: 'pointer'}}>
       Copy Path
@@ -204,7 +203,7 @@ const columns: XDSTableColumn<TemplateRow>[] = [
     filter: 'name',
     width: pixel(250),
     renderCell: (row: TemplateRow) => (
-      <XDSLink label={row.name} href={row.href} as={Link} target="_blank">
+      <XDSLink href={row.href} as={Link} target="_blank">
         {row.name}
       </XDSLink>
     ),

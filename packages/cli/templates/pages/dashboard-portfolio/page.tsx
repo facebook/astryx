@@ -748,7 +748,7 @@ export default function DashboardPortfolioTemplate() {
               <XDSVStack gap={4}>
                 <XDSHStack hAlign="between" vAlign="center">
                   <XDSHeading level={3}>Portfolio Value</XDSHeading>
-                  <XDSLink label="View details" href="#">
+                  <XDSLink href="#">
                     View details
                   </XDSLink>
                 </XDSHStack>
@@ -761,7 +761,7 @@ export default function DashboardPortfolioTemplate() {
               <XDSVStack gap={4}>
                 <XDSHStack hAlign="between" vAlign="center">
                   <XDSHeading level={3}>Top Assets</XDSHeading>
-                  <XDSLink label="View all" href="#">
+                  <XDSLink href="#">
                     View all
                   </XDSLink>
                 </XDSHStack>
