@@ -18,7 +18,7 @@ export default function ResizableShowcase() {
   });
 
   return (
-    <XDSCard variant="muted" height={280}>
+    <XDSCard variant="muted" height={280} width={600}>
       <XDSLayout
         height="fill"
         start={
