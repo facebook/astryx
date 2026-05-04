@@ -146,11 +146,15 @@ export function ComponentPreviewCard({
           <XDSVStack gap={0.5}>
             <XDSText type="body" weight="bold">
               {name}
+              {groupSize > 1 ? (
+                <XDSText type="supporting" color="secondary">
+                  {' '}
+                  +{groupSize - 1}
+                </XDSText>
+              ) : null}
             </XDSText>
             <XDSText type="supporting" color="secondary">
-              {description.slice(0, 100)}
-              {description.length > 100 ? '\u2026' : ''}
-              {groupSize > 1 ? ` +${groupSize - 1}` : ''}
+              {description}
             </XDSText>
           </XDSVStack>
         </div>
