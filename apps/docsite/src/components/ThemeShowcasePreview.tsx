@@ -319,7 +319,7 @@ function ThemeShowcaseDetails() {
             <XDSText type="label" weight="bold">
               Components
             </XDSText>
-            <XDSHStack gap={2}>
+            <XDSHStack gap={2} wrap="wrap">
               <XDSButton label="Primary" variant="primary" size="sm" href="#" />
               <XDSButton
                 label="Secondary"
@@ -329,7 +329,7 @@ function ThemeShowcaseDetails() {
               />
               <XDSButton label="Ghost" variant="ghost" size="sm" href="#" />
             </XDSHStack>
-            <XDSHStack gap={2}>
+            <XDSHStack gap={2} wrap="wrap">
               <XDSBadge label="Badge" />
               <XDSBadge label="Info" variant="info" />
               <XDSBadge label="Success" variant="success" />
