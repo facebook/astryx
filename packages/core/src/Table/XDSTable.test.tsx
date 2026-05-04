@@ -542,6 +542,14 @@ describe('XDSTable', () => {
     expect(screen.getAllByRole('row')).toHaveLength(4);
   });
 
+  it('wraps table in a scroll container', () => {
+    render(<XDSTable data={users} columns={columns} />);
+    const table = screen.getByRole('table');
+    const wrapper = table.parentElement;
+    expect(wrapper).toBeTruthy();
+    expect(wrapper!.className).toContain('xds-table-scroll-wrapper');
+  });
+
   it('renders all data values', () => {
     render(<XDSTable data={users} columns={columns} />);
     expect(screen.getByText('Alice')).toBeInTheDocument();

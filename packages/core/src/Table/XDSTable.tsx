@@ -23,7 +23,7 @@ import {XDSTableCell} from './XDSTableCell';
 import {XDSTableHeaderCell} from './XDSTableHeaderCell';
 import {XDSTableContext} from './XDSTableContext';
 import {useXDSBaseTablePlugins} from './useXDSBaseTablePlugins';
-import {xdsClassName} from '../utils';
+import {xdsClassName, mergeProps} from '../utils';
 import type {
   XDSBaseTableProps,
   XDSTableVerticalAlign,
@@ -111,13 +111,13 @@ const tableStyles = stylex.create({
     fontFamily: 'inherit',
     color: colorVars['--color-text-primary'],
   },
-  /**
-   * Container bleed: table escapes parent container padding
-   * so rows span edge-to-edge inside Cards and Layout areas.
-   *
-   * Inline bleed uses --container-padding-inline-start/end set by containers.
-   * Block bleed uses --container-padding-block-start/end for :first-child / :last-child.
-   */
+});
+
+const scrollWrapperStyles = stylex.create({
+  base: {
+    overflowX: 'auto',
+    WebkitOverflowScrolling: 'touch',
+  },
   containerBleed: {
     marginInlineStart: 'calc(-1 * var(--container-padding-inline-start, 0px))',
     marginInlineEnd: 'calc(-1 * var(--container-padding-inline-end, 0px))',
@@ -153,7 +153,7 @@ function buildTableStylePlugin<
             ? `${existingClass} ${tableClass}`
             : tableClass,
         },
-        styles: [...props.styles, tableStyles.base, tableStyles.containerBleed],
+        styles: [...props.styles, tableStyles.base],
       };
     },
   };
@@ -208,15 +208,24 @@ function XDSTableInner<T extends Record<string, unknown>>({
 
   return (
     <XDSTableContext.Provider value={contextValue}>
-      <XDSBaseTable<T>
-        ref={ref}
-        data={data}
-        columns={columns}
-        plugins={mergedPlugins}
-        components={xdsComponents}
-        textOverflow={textOverflow}
-        {...rest}
-      />
+      <div
+        {...mergeProps(
+          xdsClassName('table-scroll-wrapper'),
+          stylex.props(
+            scrollWrapperStyles.base,
+            scrollWrapperStyles.containerBleed,
+          ),
+        )}>
+        <XDSBaseTable<T>
+          ref={ref}
+          data={data}
+          columns={columns}
+          plugins={mergedPlugins}
+          components={xdsComponents}
+          textOverflow={textOverflow}
+          {...rest}
+        />
+      </div>
     </XDSTableContext.Provider>
   );
 }

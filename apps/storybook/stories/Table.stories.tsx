@@ -789,3 +789,261 @@ export const VerticalAlignment: Story = {
     </div>
   ),
 };
+
+interface Employee extends Record<string, unknown> {
+  id: string;
+  name: string;
+  department: string;
+  title: string;
+  location: string;
+  email: string;
+  status: string;
+}
+
+const mobileData: Employee[] = [
+  {
+    id: '1',
+    name: 'Alice Johnson',
+    department: 'Engineering',
+    title: 'Senior Software Engineer',
+    location: 'San Francisco',
+    email: 'alice.johnson@example.com',
+    status: 'Active',
+  },
+  {
+    id: '2',
+    name: 'Bob Martinez',
+    department: 'Product Design',
+    title: 'Lead Product Designer',
+    location: 'New York',
+    email: 'bob.martinez@example.com',
+    status: 'Active',
+  },
+  {
+    id: '3',
+    name: 'Carol Williams',
+    department: 'Data Science',
+    title: 'Staff Data Scientist',
+    location: 'Seattle',
+    email: 'carol.williams@example.com',
+    status: 'On Leave',
+  },
+];
+
+const mobileColumns: XDSTableColumn<Employee>[] = [
+  {key: 'name', header: 'Name'},
+  {key: 'department', header: 'Department'},
+  {key: 'title', header: 'Title'},
+  {key: 'location', header: 'Location'},
+  {key: 'email', header: 'Email'},
+  {key: 'status', header: 'Status'},
+];
+
+/**
+ * Demonstrates table behavior in narrow containers (mobile viewports).
+ *
+ * With many columns, the table's minimum width (driven by per-column
+ * minimums) exceeds the container width. Instead of squishing columns
+ * to illegible widths, the table scrolls horizontally.
+ *
+ * Each column — even those without an explicit `width` — gets a default
+ * minimum of 120px, so six columns require at least 720px. In a 320px
+ * container, the table becomes horizontally scrollable.
+ */
+export const ResponsiveScroll: Story = {
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: '32px'}}>
+      <div>
+        <p style={{margin: '0 0 8px', fontWeight: 600}}>
+          320px container — 6 columns, horizontal scroll
+        </p>
+        <div
+          style={{
+            width: '320px',
+            border: '1px dashed #ccc',
+            borderRadius: '8px',
+          }}>
+          <XDSTable
+            data={mobileData}
+            columns={mobileColumns}
+            idKey="id"
+            dividers="rows"
+            density="compact"
+            textOverflow="truncate"
+          />
+        </div>
+      </div>
+      <div>
+        <p style={{margin: '0 0 8px', fontWeight: 600}}>
+          480px container — same table, more visible before scroll
+        </p>
+        <div
+          style={{
+            width: '480px',
+            border: '1px dashed #ccc',
+            borderRadius: '8px',
+          }}>
+          <XDSTable
+            data={mobileData}
+            columns={mobileColumns}
+            idKey="id"
+            dividers="rows"
+            density="compact"
+            textOverflow="truncate"
+          />
+        </div>
+      </div>
+      <div>
+        <p style={{margin: '0 0 8px', fontWeight: 600}}>
+          Full width — no scroll needed
+        </p>
+        <XDSTable
+          data={mobileData}
+          columns={mobileColumns}
+          idKey="id"
+          dividers="rows"
+          density="compact"
+          textOverflow="truncate"
+        />
+      </div>
+    </div>
+  ),
+};
+
+/**
+ * Shows horizontal scroll behavior when a table with many columns
+ * is placed inside a Card in a narrow container, verifying that
+ * container bleed and scroll compose correctly.
+ */
+export const ResponsiveScrollInCard: Story = {
+  render: () => (
+    <div
+      style={{
+        width: '360px',
+        border: '1px dashed #ccc',
+        borderRadius: '8px',
+      }}>
+      <XDSCard>
+        <XDSTable
+          data={mobileData}
+          columns={mobileColumns}
+          idKey="id"
+          dividers="rows"
+          density="compact"
+          textOverflow="truncate"
+        />
+      </XDSCard>
+    </div>
+  ),
+};
+
+interface PropEntry extends Record<string, unknown> {
+  name: string;
+  type: string;
+  description: string;
+}
+
+const propData: PropEntry[] = [
+  {
+    name: 'label',
+    type: 'string',
+    description: 'The visible text label for the button.',
+  },
+  {
+    name: 'variant',
+    type: "'primary' | 'secondary' | 'ghost' | 'danger'",
+    description:
+      'Visual style variant. Primary for main actions, secondary for supporting actions, ghost for minimal emphasis, danger for destructive operations.',
+  },
+  {
+    name: 'size',
+    type: "'sm' | 'md' | 'lg'",
+    description: 'Controls button height, padding, and font size.',
+  },
+  {
+    name: 'isDisabled',
+    type: 'boolean',
+    description:
+      'Disables the button, preventing interactions and applying disabled styling.',
+  },
+  {
+    name: 'onClick',
+    type: '(event: MouseEvent) => void',
+    description: 'Callback fired when the button is clicked.',
+  },
+  {
+    name: 'startIcon',
+    type: 'ReactNode',
+    description: 'Icon rendered before the label text.',
+  },
+];
+
+/**
+ * Mirrors the docsite PropsTable pattern: two fixed pixel columns
+ * (Prop name + Type) and a flexible Description column.
+ *
+ * On mobile (320px), the fixed columns consume most of the space,
+ * leaving description unreadable. With horizontal scroll, all three
+ * columns maintain usable widths.
+ */
+export const PropsTablePattern: Story = {
+  render: () => {
+    const cols: XDSTableColumn<PropEntry>[] = [
+      {
+        key: 'name',
+        header: 'Prop',
+        width: pixel(140),
+        renderCell: (item: PropEntry) => (
+          <XDSText type="code" weight="bold">
+            {item.name}
+          </XDSText>
+        ),
+      },
+      {
+        key: 'type',
+        header: 'Type',
+        width: pixel(240),
+        renderCell: (item: PropEntry) => (
+          <XDSText type="code" color="secondary">
+            {item.type}
+          </XDSText>
+        ),
+      },
+      {key: 'description', header: 'Description'},
+    ];
+
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: '32px'}}>
+        <div>
+          <p style={{margin: '0 0 8px', fontWeight: 600}}>
+            360px — docsite props table on mobile
+          </p>
+          <div
+            style={{
+              width: '360px',
+              border: '1px dashed #ccc',
+              borderRadius: '8px',
+            }}>
+            <XDSTable
+              data={propData}
+              columns={cols}
+              density="spacious"
+              dividers="rows"
+            />
+          </div>
+        </div>
+        <div>
+          <p style={{margin: '0 0 8px', fontWeight: 600}}>
+            Full width — normal desktop experience
+          </p>
+          <XDSTable
+            data={propData}
+            columns={cols}
+            density="spacious"
+            dividers="rows"
+          />
+        </div>
+      </div>
+    );
+  },
+};

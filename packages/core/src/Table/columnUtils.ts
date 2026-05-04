@@ -72,7 +72,8 @@ export function resolveColumnWidths<T extends Record<string, unknown>>(
     } else {
       const proportion = w?.value ?? 1;
       // Only count minWidth for columns that explicitly used proportional().
-      // Columns with no width set (w === undefined) have no minimum.
+      // Columns with no width set (w === undefined) have no minimum —
+      // they flex freely and the scroll wrapper handles overflow.
       const minW = w != null ? (w.minWidth ?? DEFAULT_MIN_COLUMN_WIDTH) : 0;
       totalProportion += proportion;
       proportionalCols.push({key: col.key, proportion, minWidth: minW});
@@ -109,7 +110,8 @@ export function resolveColumnWidths<T extends Record<string, unknown>>(
         style.width = `${(proportion / totalProportion) * 100}%`;
       }
       // Only apply minWidth if the column explicitly used proportional().
-      // Columns with no width set (w === undefined) have no minimum.
+      // Columns with no width set (w === undefined) have no minimum —
+      // they flex freely and the scroll wrapper handles overflow.
       if (w != null) {
         const minW = w.minWidth ?? DEFAULT_MIN_COLUMN_WIDTH;
         style.minWidth = `${minW}px`;
