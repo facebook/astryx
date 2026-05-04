@@ -5,7 +5,7 @@ import {XDSHStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import {XDSTable, pixel} from '@xds/core/Table';
 import type {TokenTableProps} from './types';
-import {resolveTokenForMode, hasDualMode, getTokensByPrefix} from './helpers';
+import {hasDualMode, getTokensByPrefix} from './helpers';
 
 const styles = stylex.create({
   swatch: {
@@ -15,50 +15,29 @@ const styles = stylex.create({
     flexShrink: 0,
     border: '1px solid var(--color-border)',
   },
-  contextLight: {
-    width: 28,
-    height: 28,
-    borderRadius: 'var(--radius-element)',
-    backgroundColor: '#FFFFFF',
+  themeContext: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-    border: '1px solid var(--color-border)',
-  },
-  contextDark: {
-    width: 28,
-    height: 28,
-    borderRadius: 'var(--radius-element)',
-    backgroundColor: '#1C1C1E',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-    border: '1px solid var(--color-border)',
-  },
-  swatchInner: {
-    width: 20,
-    height: 20,
-    borderRadius: 'var(--radius-inner)',
   },
 });
 
-function ContextSwatch({
-  value,
-  surface,
+function ThemedSwatch({
+  tokenName,
+  mode,
 }: {
-  value: string;
-  surface: 'light' | 'dark';
+  tokenName: string;
+  mode: 'light' | 'dark';
 }) {
   return (
     <div
-      {...stylex.props(
-        surface === 'light' ? styles.contextLight : styles.contextDark,
-      )}>
+      data-theme={mode}
+      style={{colorScheme: mode}}
+      {...stylex.props(styles.themeContext)}>
       <div
-        {...stylex.props(styles.swatchInner)}
-        style={{backgroundColor: value}}
+        {...stylex.props(styles.swatch)}
+        style={{backgroundColor: `var(${tokenName})`}}
       />
     </div>
   );
@@ -76,8 +55,8 @@ export function ColorTokenTable({theme}: TokenTableProps) {
 
   const data = tokens.map(name => ({
     tokenName: name,
-    light: resolveTokenForMode(theme, name, 'light'),
-    dark: resolveTokenForMode(theme, name, 'dark'),
+    light: theme.token(name),
+    dark: theme.token(name),
   }));
 
   if (isDual) {
@@ -89,25 +68,17 @@ export function ColorTokenTable({theme}: TokenTableProps) {
           {
             key: 'light',
             header: 'Light',
+            width: pixel(60),
             renderCell: (item: Record<string, unknown>) => (
-              <XDSHStack gap={2} vAlign="center">
-                <ContextSwatch value={item.light as string} surface="light" />
-                <XDSText type="code" color="secondary">
-                  {item.light as string}
-                </XDSText>
-              </XDSHStack>
+              <ThemedSwatch tokenName={item.tokenName as string} mode="light" />
             ),
           },
           {
             key: 'dark',
             header: 'Dark',
+            width: pixel(60),
             renderCell: (item: Record<string, unknown>) => (
-              <XDSHStack gap={2} vAlign="center">
-                <ContextSwatch value={item.dark as string} surface="dark" />
-                <XDSText type="code" color="secondary">
-                  {item.dark as string}
-                </XDSText>
-              </XDSHStack>
+              <ThemedSwatch tokenName={item.tokenName as string} mode="dark" />
             ),
           },
         ]}
