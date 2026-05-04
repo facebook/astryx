@@ -1,7 +1,6 @@
 'use client';
 
 import {XDSProgressBar} from '@xds/core/ProgressBar';
-import {XDSCenter} from '@xds/core/Center';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 

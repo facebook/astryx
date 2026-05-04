@@ -2,7 +2,7 @@
 
 import {XDSSection} from '@xds/core/Section';
 import {XDSStack} from '@xds/core/Layout';
-import {XDSHeading, XDSText} from '@xds/core/Text';
+import {XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
 import {CheckIcon} from '@heroicons/react/24/solid';

@@ -8,7 +8,6 @@ import {
   XDSChatComposer,
   XDSChatTokenizedText,
 } from '@xds/core/Chat';
-import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSVStack} from '@xds/core/Stack';
 
 const TOKENS = [{value: '/review', label: '/review', variant: 'blue' as const}];

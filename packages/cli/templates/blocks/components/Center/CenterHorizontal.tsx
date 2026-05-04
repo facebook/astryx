@@ -1,6 +1,5 @@
 'use client';
 
-import {XDSCenter} from '@xds/core/Center';
 import {XDSCard} from '@xds/core/Card';
 import {XDSStack} from '@xds/core/Layout';
 import {XDSHeading} from '@xds/core/Text';

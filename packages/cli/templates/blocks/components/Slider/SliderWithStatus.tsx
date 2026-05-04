@@ -3,7 +3,6 @@
 import {useState} from 'react';
 import {XDSSlider} from '@xds/core/Slider';
 import {XDSVStack} from '@xds/core/Layout';
-import {XDSCenter} from '@xds/core/Center';
 
 export default function SliderWithStatus() {
   const [value1, setValue1] = useState(95);
