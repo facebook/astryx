@@ -6,6 +6,6 @@ export const doc = {
   description:
     'TypeScript code with specific lines highlighted to draw attention to a key section. Use highlightLines to call out new or important code in tutorials and changelogs.',
   isReady: true,
-  aspectRatio: 16 / 9,
+  aspectRatio: 4 / 3,
   componentsUsed: ['CodeBlock'],
 };
