@@ -4,6 +4,8 @@ import {
   XDSTable,
   useXDSTableSortable,
   useXDSTableSortableState,
+  proportional,
+  pixel,
 } from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 
@@ -16,18 +18,36 @@ interface Employee extends Record<string, unknown> {
 }
 
 const employees: Employee[] = [
-  {id: '1', name: 'Alice', email: 'alice@example.com', role: 'Engineer', age: 32},
+  {
+    id: '1',
+    name: 'Alice',
+    email: 'alice@example.com',
+    role: 'Engineer',
+    age: 32,
+  },
   {id: '2', name: 'Bob', email: 'bob@example.com', role: 'Designer', age: 28},
-  {id: '3', name: 'Charlie', email: 'charlie@example.com', role: 'Manager', age: 45},
-  {id: '4', name: 'Diana', email: 'diana@example.com', role: 'Engineer', age: 37},
+  {
+    id: '3',
+    name: 'Charlie',
+    email: 'charlie@example.com',
+    role: 'Manager',
+    age: 45,
+  },
+  {
+    id: '4',
+    name: 'Diana',
+    email: 'diana@example.com',
+    role: 'Engineer',
+    age: 37,
+  },
   {id: '5', name: 'Eve', email: 'eve@example.com', role: 'Admin', age: 29},
 ];
 
 const columns: XDSTableColumn<Employee>[] = [
-  {key: 'name', header: 'Name', sortable: true},
-  {key: 'email', header: 'Email', sortable: true},
-  {key: 'role', header: 'Role', sortable: true},
-  {key: 'age', header: 'Age', sortable: true},
+  {key: 'name', header: 'Name', width: proportional(1), sortable: true},
+  {key: 'email', header: 'Email', width: proportional(2), sortable: true},
+  {key: 'role', header: 'Role', width: proportional(1), sortable: true},
+  {key: 'age', header: 'Age', width: pixel(80), sortable: true},
 ];
 
 export default function TableSortableTable() {

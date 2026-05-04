@@ -5,6 +5,7 @@ import {
   XDSTable,
   useXDSTableColumnSettings,
   useXDSTableColumnSettingsState,
+  proportional,
 } from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 import {XDSMultiSelector} from '@xds/core/MultiSelector';
@@ -65,11 +66,11 @@ const users: User[] = [
 ];
 
 const allColumns: XDSTableColumn<User>[] = [
-  {key: 'name', header: 'Name'},
-  {key: 'email', header: 'Email'},
-  {key: 'role', header: 'Role'},
-  {key: 'department', header: 'Department'},
-  {key: 'status', header: 'Status'},
+  {key: 'name', header: 'Name', width: proportional(1)},
+  {key: 'email', header: 'Email', width: proportional(2)},
+  {key: 'role', header: 'Role', width: proportional(1)},
+  {key: 'department', header: 'Department', width: proportional(1)},
+  {key: 'status', header: 'Status', width: proportional(1)},
 ];
 
 const columnOptions = [

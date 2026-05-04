@@ -5,6 +5,7 @@ import {
   useXDSTableFiltering,
   useXDSTableFilterState,
   toSearchFilters,
+  proportional,
 } from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 import {usePowerSearchConfig} from '@xds/core/PowerSearch';
@@ -19,11 +20,41 @@ interface Employee extends Record<string, unknown> {
 }
 
 const employees: Employee[] = [
-  {id: '1', name: 'Alice', email: 'alice@example.com', role: 'Engineer', department: 'Platform'},
-  {id: '2', name: 'Bob', email: 'bob@example.com', role: 'Designer', department: 'Product'},
-  {id: '3', name: 'Charlie', email: 'charlie@example.com', role: 'Manager', department: 'Platform'},
-  {id: '4', name: 'Diana', email: 'diana@example.com', role: 'Engineer', department: 'Infrastructure'},
-  {id: '5', name: 'Eve', email: 'eve@example.com', role: 'Admin', department: 'Operations'},
+  {
+    id: '1',
+    name: 'Alice',
+    email: 'alice@example.com',
+    role: 'Engineer',
+    department: 'Platform',
+  },
+  {
+    id: '2',
+    name: 'Bob',
+    email: 'bob@example.com',
+    role: 'Designer',
+    department: 'Product',
+  },
+  {
+    id: '3',
+    name: 'Charlie',
+    email: 'charlie@example.com',
+    role: 'Manager',
+    department: 'Platform',
+  },
+  {
+    id: '4',
+    name: 'Diana',
+    email: 'diana@example.com',
+    role: 'Engineer',
+    department: 'Infrastructure',
+  },
+  {
+    id: '5',
+    name: 'Eve',
+    email: 'eve@example.com',
+    role: 'Admin',
+    department: 'Operations',
+  },
 ];
 
 const fieldDefs = [
@@ -43,10 +74,10 @@ const fieldDefs = [
 ] as const;
 
 const columns: XDSTableColumn<Employee>[] = [
-  {key: 'name', header: 'Name', filter: 'name'},
-  {key: 'email', header: 'Email', filter: 'email'},
-  {key: 'role', header: 'Role', filter: 'role'},
-  {key: 'department', header: 'Department'},
+  {key: 'name', header: 'Name', width: proportional(1), filter: 'name'},
+  {key: 'email', header: 'Email', width: proportional(2), filter: 'email'},
+  {key: 'role', header: 'Role', width: proportional(1), filter: 'role'},
+  {key: 'department', header: 'Department', width: proportional(1)},
 ];
 
 export default function TableFilterableTable() {

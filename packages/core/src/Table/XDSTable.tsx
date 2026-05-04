@@ -242,19 +242,21 @@ function XDSTableInner<T extends Record<string, unknown>>({
  * Combine with XDSBadge (status labels), XDSStatusDot (colored indicators),
  * XDSText (formatted values), XDSAvatar (user cells), and XDSHStack/XDSVStack
  * (multi-element cell layouts). Without renderCell, cells render as plain text.
+ * Always set explicit width on columns using proportional() or pixel() — omitting
+ * width skips the minimum width floor, which can cause columns to collapse on mobile.
  *
  * @example
  * ```
  * <XDSTable
  *   data={users}
  *   columns={[
- *     { key: 'name', header: 'Name', renderCell: (u) => (
+ *     { key: 'name', header: 'Name', width: proportional(1), renderCell: (u) => (
  *       <XDSHStack gap={2} align="center">
  *         <XDSAvatar name={u.name} size="small" />
  *         <XDSText weight="semibold">{u.name}</XDSText>
  *       </XDSHStack>
  *     )},
- *     { key: 'status', header: 'Status', renderCell: (u) => (
+ *     { key: 'status', header: 'Status', width: proportional(1), renderCell: (u) => (
  *       <XDSBadge variant={u.active ? 'success' : 'error'} label={u.active ? 'Active' : 'Inactive'} />
  *     )},
  *   ]}

@@ -5,6 +5,7 @@ import {
   XDSTable,
   useXDSTableSelection,
   useXDSTableSelectionState,
+  proportional,
 } from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 
@@ -24,9 +25,9 @@ const users: User[] = [
 ];
 
 const columns: XDSTableColumn<User>[] = [
-  {key: 'name', header: 'Name'},
-  {key: 'email', header: 'Email'},
-  {key: 'role', header: 'Role'},
+  {key: 'name', header: 'Name', width: proportional(1)},
+  {key: 'email', header: 'Email', width: proportional(2)},
+  {key: 'role', header: 'Role', width: proportional(1)},
 ];
 
 export default function TableSelectableTable() {

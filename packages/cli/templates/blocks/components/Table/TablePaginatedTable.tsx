@@ -1,7 +1,12 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSTable, useXDSTablePagination, paginateData} from '@xds/core/Table';
+import {
+  XDSTable,
+  useXDSTablePagination,
+  paginateData,
+  proportional,
+} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 import {XDSSection} from '@xds/core/Section';
 
@@ -45,9 +50,9 @@ const users: User[] = names.map((name, i) => ({
 }));
 
 const columns: XDSTableColumn<User>[] = [
-  {key: 'name', header: 'Name'},
-  {key: 'email', header: 'Email'},
-  {key: 'role', header: 'Role'},
+  {key: 'name', header: 'Name', width: proportional(1)},
+  {key: 'email', header: 'Email', width: proportional(2)},
+  {key: 'role', header: 'Role', width: proportional(1)},
 ];
 
 export default function TablePaginatedTable() {

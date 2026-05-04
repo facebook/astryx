@@ -5,6 +5,7 @@ import {
   useXDSTableFiltering,
   useXDSTableFilterState,
   toSearchFilters,
+  proportional,
 } from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 import {usePowerSearchConfig} from '@xds/core/PowerSearch';
@@ -73,10 +74,10 @@ const fieldDefs = [
 ] as const;
 
 const columns: XDSTableColumn<Employee>[] = [
-  {key: 'name', header: 'Name', filter: 'name'},
-  {key: 'email', header: 'Email', filter: 'email'},
-  {key: 'role', header: 'Role', filter: 'role'},
-  {key: 'department', header: 'Department'},
+  {key: 'name', header: 'Name', width: proportional(1), filter: 'name'},
+  {key: 'email', header: 'Email', width: proportional(2), filter: 'email'},
+  {key: 'role', header: 'Role', width: proportional(1), filter: 'role'},
+  {key: 'department', header: 'Department', width: proportional(1)},
 ];
 
 export default function TableInlineFilterTable() {

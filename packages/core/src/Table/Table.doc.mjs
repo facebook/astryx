@@ -414,8 +414,10 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Use density and divider variants to match the information density and scanning needs of your data.' },
       { guidance: true, description: 'Compose rich cell content with XDS components like XDSBadge, XDSStatusDot, and XDSAvatar via renderCell.' },
+      { guidance: true, description: 'Set explicit width on every column using proportional() or pixel(). proportional(1) gives equal flex distribution with a 120px minimum that prevents columns from collapsing on narrow viewports. Omitting width skips the minimum.' },
       { guidance: false, description: 'Use a table for data without consistent columns — use a list or card layout for heterogeneous content.' },
       { guidance: false, description: 'Enable every plugin at once — add only the features your use case requires to keep the interface focused.' },
+      { guidance: false, description: 'Omit width on text-heavy columns — without an explicit proportional() width they have no minimum and can squish to near-zero on mobile.' },
     ],
     anatomy: [
       {name: 'Column Header', required: true, description: 'Displays titles, sorting controls, and bulk selection.'},

@@ -83,9 +83,9 @@ const users: User[] = [
 ];
 
 const columns: XDSTableColumn<User>[] = [
-  {key: 'name', header: 'Name'},
+  {key: 'name', header: 'Name', width: proportional(1)},
   {key: 'email', header: 'Email', width: proportional(2)},
-  {key: 'role', header: 'Role'},
+  {key: 'role', header: 'Role', width: proportional(1)},
   {key: 'age', header: 'Age', width: pixel(80)},
 ];
 
@@ -423,9 +423,9 @@ const containerStoryStyles = stylex.create({
 });
 
 const simpleColumns: XDSTableColumn<User>[] = [
-  {key: 'name', header: 'Name'},
-  {key: 'role', header: 'Role'},
-  {key: 'email', header: 'Email'},
+  {key: 'name', header: 'Name', width: proportional(1)},
+  {key: 'role', header: 'Role', width: proportional(1)},
+  {key: 'email', header: 'Email', width: proportional(2)},
 ];
 
 /**
