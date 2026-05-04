@@ -11,7 +11,8 @@ import type {ComponentEntry} from '../generated/componentRegistry';
 import type {PackageMeta} from '../generated/packageRegistry';
 import type {DocTopic} from '../generated/docsRegistry';
 import type {TemplateEntry} from '../generated/templateRegistry';
-import {groupComponents, type ComponentItem} from '../lib/groupComponents';
+import type {ComponentItem} from '../generated/groupedComponentRegistry';
+import {groupedComponents} from '../generated/groupedComponentRegistry';
 
 interface DocsShellProps {
   children: React.ReactNode;
@@ -33,12 +34,13 @@ const foundationsSort = (a: DocTopic, b: DocTopic) => {
 
 type SidebarItem = ComponentItem;
 
-function buildComponentSidebar(entries: ComponentEntry[]): {
+function buildComponentSidebar(): {
   componentItems: SidebarItem[];
   utilities: Array<{name: string; href: string}>;
 } {
-  const {items, utilities} = groupComponents(entries);
-  return {componentItems: items, utilities};
+  const grouped = groupedComponents['@xds/core'];
+  if (!grouped) return {componentItems: [], utilities: []};
+  return {componentItems: grouped.items, utilities: grouped.utilities};
 }
 
 // ── Wordmark ───────────────────────────────────────────────────────────
@@ -72,8 +74,7 @@ export function DocsShell({
 }: DocsShellProps) {
   const pathname = usePathname();
 
-  const coreComponents = components['@xds/core'] || [];
-  const {componentItems, utilities} = buildComponentSidebar(coreComponents);
+  const {componentItems, utilities} = buildComponentSidebar();
 
   // Classify packages
   const isTheme = (p: PackageMeta) => p.name.includes('theme-');

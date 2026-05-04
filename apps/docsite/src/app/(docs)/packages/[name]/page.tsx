@@ -14,9 +14,9 @@ import {XDSGrid} from '@xds/core/Grid';
 import {XDSDivider} from '@xds/core';
 import {packages} from '../../../../generated/packageRegistry';
 import {
-  components,
-  type ComponentEntry,
-} from '../../../../generated/componentRegistry';
+  groupedComponents,
+  type ComponentItem,
+} from '../../../../generated/groupedComponentRegistry';
 import {
   ThemePackagePage,
   type InstallStep,
@@ -29,7 +29,6 @@ import type {XDSDefinedTheme} from '@xds/core/theme';
 import {PackageHeading} from './PackageHeading';
 import {PackageStubPage} from './PackageStubPage';
 import {ComponentPreviewCard} from './ComponentPreviewCard';
-import {groupComponents} from '../../../../lib/groupComponents';
 
 function slugToPackageName(slug: string): string {
   return `@xds/${slug}`;
@@ -92,7 +91,7 @@ export default async function PackagePage({
 
   const isTheme = pkg.name.includes('theme-');
   const isComponentPkg = pkg.name === '@xds/core';
-  const pkgComponents = components[pkg.name] || [];
+  const grouped = groupedComponents[pkg.name];
 
   if (isTheme) {
     const theme = THEME_MAP[pkg.name];
@@ -135,27 +134,17 @@ export default async function PackagePage({
 
         <XDSDivider />
 
-        <ComponentPackageContent components={pkgComponents} />
+        <ComponentPackageContent items={grouped?.items ?? []} />
       </XDSVStack>
     </XDSSection>
   );
 }
 
-function ComponentPackageContent({
-  components: pkgComponents,
-}: {
-  components: ComponentEntry[];
-}) {
-  const {items} = groupComponents(pkgComponents);
+function ComponentPackageContent({items}: {items: ComponentItem[]}) {
   const totalCount = items.reduce(
     (sum, item) => sum + (item.type === 'group' ? item.entries.length : 1),
     0,
   );
-
-  const descriptionMap = new Map<string, string>();
-  for (const c of pkgComponents) {
-    descriptionMap.set(c.name, c.description);
-  }
 
   if (items.length === 0) {
     return (
@@ -178,7 +167,7 @@ function ComponentPackageContent({
               key={name}
               name={name}
               href={href}
-              description={descriptionMap.get(name) ?? ''}
+              description={item.description}
               groupSize={groupSize}
             />
           );
