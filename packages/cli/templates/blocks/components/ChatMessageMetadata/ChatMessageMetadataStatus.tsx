@@ -18,7 +18,7 @@ const STATUSES = [
 
 export default function ChatMessageMetadataStatus() {
   return (
-    <XDSChatMessageList>
+    <XDSChatMessageList style={{maxWidth: 400}}>
       {STATUSES.map(({status, text}) => (
         <XDSChatMessage key={status} sender="user">
           <XDSChatMessageBubble

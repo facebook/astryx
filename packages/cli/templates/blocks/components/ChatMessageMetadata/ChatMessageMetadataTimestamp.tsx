@@ -10,7 +10,7 @@ import {XDSTimestamp} from '@xds/core/Timestamp';
 
 export default function ChatMessageMetadataTimestamp() {
   return (
-    <XDSChatMessageList>
+    <XDSChatMessageList style={{maxWidth: 500}}>
       <XDSChatMessage sender="user">
         <XDSChatMessageBubble
           metadata={

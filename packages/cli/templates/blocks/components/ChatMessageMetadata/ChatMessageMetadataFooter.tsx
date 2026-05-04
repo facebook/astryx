@@ -20,7 +20,7 @@ import {
 
 export default function ChatMessageMetadataFooter() {
   return (
-    <XDSChatMessageList>
+    <XDSChatMessageList style={{maxWidth: 500}}>
       <XDSChatMessage sender="user">
         <XDSChatMessageBubble
           metadata={
