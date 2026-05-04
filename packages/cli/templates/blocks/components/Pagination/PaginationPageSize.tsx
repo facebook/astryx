@@ -10,6 +10,7 @@ import * as stylex from '@stylexjs/stylex';
 const styles = stylex.create({
   root: {
     width: '100%',
+    maxWidth: 500,
   },
   pagination: {
     paddingTop: 8,
