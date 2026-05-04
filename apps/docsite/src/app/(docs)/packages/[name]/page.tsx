@@ -29,6 +29,7 @@ import type {XDSDefinedTheme} from '@xds/core/theme';
 import {PackageHeading} from './PackageHeading';
 import {PackageStubPage} from './PackageStubPage';
 import {ComponentPreviewCard} from './ComponentPreviewCard';
+import {groupComponents} from '../../../../lib/groupComponents';
 
 function slugToPackageName(slug: string): string {
   return `@xds/${slug}`;
@@ -145,13 +146,18 @@ function ComponentPackageContent({
 }: {
   components: ComponentEntry[];
 }) {
-  const visible = pkgComponents.filter(c => !c.hidden);
-  const cards = buildComponentCards(visible);
-  const totalCount = visible.filter(
-    c => !c.name.startsWith('use') && c.group !== 'Utilities',
-  ).length;
+  const {items} = groupComponents(pkgComponents);
+  const totalCount = items.reduce(
+    (sum, item) => sum + (item.type === 'group' ? item.entries.length : 1),
+    0,
+  );
 
-  if (cards.length === 0) {
+  const descriptionMap = new Map<string, string>();
+  for (const c of pkgComponents) {
+    descriptionMap.set(c.name, c.description);
+  }
+
+  if (items.length === 0) {
     return (
       <XDSText type="body" color="secondary">
         No components documented yet.
@@ -163,69 +169,21 @@ function ComponentPackageContent({
     <XDSVStack gap={4}>
       <XDSHeading level={2}>Components ({totalCount})</XDSHeading>
       <XDSGrid columns={{minWidth: 260}} gap={4} rowGap={6}>
-        {cards.map(c => (
-          <ComponentPreviewCard
-            key={c.name}
-            name={c.name}
-            description={c.description}
-            groupSize={c.groupSize}
-          />
-        ))}
+        {items.map(item => {
+          const name = item.type === 'group' ? item.label : item.name;
+          const href = item.type === 'group' ? item.entries[0].href : item.href;
+          const groupSize = item.type === 'group' ? item.entries.length : 1;
+          return (
+            <ComponentPreviewCard
+              key={name}
+              name={name}
+              href={href}
+              description={descriptionMap.get(name) ?? ''}
+              groupSize={groupSize}
+            />
+          );
+        })}
       </XDSGrid>
     </XDSVStack>
   );
-}
-
-interface CardEntry {
-  name: string;
-  description: string;
-  groupSize: number;
-}
-
-function buildComponentCards(entries: ComponentEntry[]): CardEntry[] {
-  const groups = new Map<string, ComponentEntry[]>();
-  const ungrouped: ComponentEntry[] = [];
-
-  for (const entry of entries) {
-    const isHook = entry.name.startsWith('use');
-    if (entry.group === 'Utilities' || isHook) continue;
-
-    if (entry.group) {
-      if (!groups.has(entry.group)) groups.set(entry.group, []);
-      groups.get(entry.group)!.push(entry);
-    } else if (!entry.parentDoc) {
-      ungrouped.push(entry);
-    }
-  }
-
-  const cards: Array<{sortKey: string; card: CardEntry}> = [];
-
-  for (const [label, members] of groups) {
-    const canonical =
-      members.find(m => m.name === label) ||
-      members.find(m => !m.parentDoc) ||
-      members[0];
-    cards.push({
-      sortKey: label,
-      card: {
-        name: canonical.name,
-        description: canonical.description,
-        groupSize: members.length,
-      },
-    });
-  }
-
-  for (const entry of ungrouped) {
-    cards.push({
-      sortKey: entry.name,
-      card: {
-        name: entry.name,
-        description: entry.description,
-        groupSize: 1,
-      },
-    });
-  }
-
-  cards.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
-  return cards.map(c => c.card);
 }

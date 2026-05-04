@@ -125,19 +125,21 @@ function ComponentThumbnail({name}: {name: string}) {
 
 interface ComponentPreviewCardProps {
   name: string;
+  href: string;
   description: string;
   groupSize: number;
 }
 
 export function ComponentPreviewCard({
   name,
+  href,
   description,
   groupSize,
 }: ComponentPreviewCardProps) {
   return (
     <XDSClickableCard
       label={name}
-      href={`/components/${name}`}
+      href={href}
       variant="transparent"
       padding={0}>
       <XDSVStack gap={2}>
