@@ -1,6 +1,7 @@
 /** @type {import('../docs-types').HookDoc} */
 export const docs = {
   name: 'useXDSToast',
+  group: 'Toast',
   keywords: ['toast', 'notification', 'snackbar', 'alert', 'message', 'feedback', 'flash'],
   params: [
     // useXDSToast takes no arguments — returns a show function

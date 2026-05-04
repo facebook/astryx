@@ -1,6 +1,7 @@
 /** @type {import('../docs-types').HookDoc} */
 export const docs = {
   name: 'useXDSCollapsible',
+  group: 'Collapsible',
   keywords: ['collapsible', 'collapse', 'expand', 'toggle', 'accordion', 'disclosure', 'fold'],
   params: [
     {
