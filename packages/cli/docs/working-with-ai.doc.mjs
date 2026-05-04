@@ -96,41 +96,129 @@ npx xds docs`,
       content: [
         {
           type: 'prose',
-          text: 'Most AI tools let you provide persistent project context — a system prompt, rules file, or context document that gets included in every conversation. Setting this up once is the highest-leverage thing you can do for XDS code quality.',
+          text: 'Every AI tool has a way to provide persistent context — instructions that get included in every conversation without you having to repeat them. Setting this up once is the highest-leverage thing you can do for XDS code quality. The setup differs by tool.',
         },
+      ],
+    },
+    {
+      title: 'Claude Code',
+      content: [
         {
           type: 'prose',
-          text: 'Generate a context document tuned for your project:',
+          text: 'Claude Code reads CLAUDE.md files from your project root automatically. This is the most straightforward setup — just add XDS context to the file and it applies to every session in that project.',
         },
         {
           type: 'code',
           lang: 'bash',
-          label: 'Generate AI context',
-          code: `# Print the XDS principles + styling guide in dense format
+          label: 'Add XDS context to CLAUDE.md',
+          code: `# Generate dense XDS context and append to CLAUDE.md
+echo "## XDS Design System" >> CLAUDE.md
+echo "" >> CLAUDE.md
+npx xds docs principles --dense >> CLAUDE.md
+echo "" >> CLAUDE.md
+npx xds docs styling --dense >> CLAUDE.md`,
+        },
+        {
+          type: 'prose',
+          text: 'Claude Code can also run CLI commands directly. Tell it to run `npx xds component <Name> --props` before writing component code, and it will look up the real API on the fly.',
+        },
+      ],
+    },
+    {
+      title: 'Cursor',
+      content: [
+        {
+          type: 'prose',
+          text: 'Cursor has three levels of rules, and where you put XDS context matters. Project rules (.cursor/rules/*.mdc files) are committed to the repo but Cursor may not always include them — it picks which rules to apply based on relevance. For XDS rules you want applied reliably, use User Rules instead.',
+        },
+        {
+          type: 'prose',
+          text: 'User Rules live at ~/.cursor/rules/ and apply across all your projects. Since XDS conventions don\'t change per-project, this is the right place for them. Create an .mdc file with alwaysApply: true so it\'s included in every conversation.',
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          label: 'Create a user rule for XDS',
+          code: `# Create the user rules directory
+mkdir -p ~/.cursor/rules
+
+# Generate the rule file
+cat > ~/.cursor/rules/xds.mdc << 'EOF'
+---
+description: XDS design system conventions
+alwaysApply: true
+---
+
+This project uses the XDS design system (@xds/core).
+
+- Import components from '@xds/core/<ComponentName>' (e.g. '@xds/core/Button')
+- All components are prefixed with XDS (XDSButton, XDSCard, XDSTextInput)
+- Boolean props use is/has prefix (isDisabled, isLoading, hasHover)
+- Form inputs are controlled (value + onChange, where onChange passes the value directly)
+- Use semantic tokens for colors (var(--color-accent)) and spacing (var(--spacing-4))
+- Use xstyle prop with stylex.create() for component style overrides
+- Use Tailwind utilities on className for layout and wrapper styling
+
+Before writing any XDS component code, look up its props:
+  npx xds component <Name> --props
+
+For styling guidance: npx xds docs styling
+For token reference: npx xds docs tokens
+EOF`,
+        },
+        {
+          type: 'prose',
+          text: 'You can also add a project-level rule in .cursor/rules/ with richer context (component list, templates), but the user rule ensures the basics are always present even if project rules aren\'t picked up.',
+        },
+      ],
+    },
+    {
+      title: 'GitHub Copilot',
+      content: [
+        {
+          type: 'prose',
+          text: 'Copilot reads instruction files from your repo. The main file is .github/copilot-instructions.md — it applies to all Copilot interactions in the project. Copilot also reads AGENTS.md and CLAUDE.md for compatibility, so if you\'ve already set up Claude Code, Copilot benefits too.',
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          label: 'Create Copilot instructions',
+          code: `mkdir -p .github
+
+# Generate instructions with XDS context
+echo "# XDS Design System" > .github/copilot-instructions.md
+echo "" >> .github/copilot-instructions.md
+npx xds docs principles --dense >> .github/copilot-instructions.md
+echo "" >> .github/copilot-instructions.md
+npx xds docs styling --dense >> .github/copilot-instructions.md`,
+        },
+        {
+          type: 'prose',
+          text: 'For file-specific rules, Copilot supports .github/instructions/*.instructions.md with glob patterns. You could create an xds-components.instructions.md that targets *.tsx files with component-specific guidance.',
+        },
+      ],
+    },
+    {
+      title: 'ChatGPT and Claude Web',
+      content: [
+        {
+          type: 'prose',
+          text: 'For web-based AI tools without project context files, paste CLI output directly into your conversation. The --dense flag keeps the token cost low.',
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          label: 'Generate context to paste',
+          code: `# Copy this output into your conversation before asking for code
 npx xds docs principles --dense
 npx xds docs styling --dense
 
-# List all available components (so the model knows what exists)
-npx xds component --dense`,
+# Or for a specific component you're working with
+npx xds component Dialog --props --dense`,
         },
         {
           type: 'prose',
-          text: 'Paste that output into your tool\'s context file. Where it goes depends on your tool:',
-        },
-        {
-          type: 'table',
-          headers: ['Tool', 'Where to put it'],
-          rows: [
-            ['Cursor', '.cursorrules or .cursor/rules in your project root'],
-            ['Claude Code', 'CLAUDE.md in your project root'],
-            ['GitHub Copilot', '.github/copilot-instructions.md'],
-            ['ChatGPT / Claude web', 'Custom instructions or project knowledge'],
-            ['Windsurf', '.windsurfrules in your project root'],
-          ],
-        },
-        {
-          type: 'prose',
-          text: 'The key insight: the --dense flag on any CLI command outputs a compressed format designed for AI context windows. It strips verbose descriptions and examples, keeping only what a model needs to generate correct code. Use it for anything going into a rules file.',
+          text: 'ChatGPT Projects and Claude Projects both support persistent files — upload the dense CLI output as a project knowledge file so it applies to every conversation in that project.',
         },
       ],
     },
@@ -280,33 +368,6 @@ npx xds docs styling --dense`,
         {
           type: 'prose',
           text: 'For agents with tool-calling capabilities, the CLI commands can be called directly as tools. An agent that runs `npx xds component <Name> --props --dense` before generating code will produce significantly better results than one working from memory alone.',
-        },
-      ],
-    },
-    {
-      title: 'Cursor / IDE Integration',
-      content: [
-        {
-          type: 'prose',
-          text: 'For IDE-integrated AI tools like Cursor, Copilot, or Cody, add XDS context to your project rules or context files.',
-        },
-        {
-          type: 'code',
-          lang: 'text',
-          label: '.cursorrules or project context file',
-          code: `This project uses the XDS design system (@xds/core).
-
-Key rules:
-- Import components from '@xds/core/<ComponentName>' (e.g. '@xds/core/Button')
-- All components are prefixed with XDS (XDSButton, XDSCard, XDSTextInput)
-- Boolean props use is/has prefix (isDisabled, isLoading, hasHover)
-- Form inputs are controlled (value + onChange, where onChange passes the value directly)
-- Use semantic tokens for colors (var(--color-accent)) and spacing (var(--spacing-4))
-- Use xstyle prop with stylex.create() for component style overrides
-- Use Tailwind utilities on className for layout and wrapper styling
-
-Run \`npx xds component <Name> --props\` to look up any component API.
-Run \`npx xds docs styling\` for the complete styling guide.`,
         },
       ],
     },
