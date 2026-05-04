@@ -114,6 +114,9 @@ export default function ExampleCardsPage() {
     'Meta',
     'WhatsApp',
     'Daily',
+    'Stone',
+    'Gothic',
+    'Chocolate',
   ];
   const modeOptions = ['Light', 'Dark'];
 

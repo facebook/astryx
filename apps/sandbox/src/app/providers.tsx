@@ -8,6 +8,9 @@ import {neutralTheme} from '@xds/theme-neutral/built';
 import {brutalistTheme} from '@xds/theme-brutalist/built';
 import {matchaTheme} from '@xds/theme-matcha/built';
 import {dailyTheme} from '@xds/theme-daily/built';
+import {stoneTheme} from '@xds/theme-stone/built';
+import {gothicTheme} from '@xds/theme-gothic/built';
+import {chocolateTheme} from '@xds/theme-chocolate/built';
 import type {XDSDefinedTheme, ThemeMode} from '@xds/core/theme';
 
 const themes: Record<string, XDSDefinedTheme> = {
@@ -16,6 +19,9 @@ const themes: Record<string, XDSDefinedTheme> = {
   brutalist: brutalistTheme,
   matcha: matchaTheme,
   daily: dailyTheme,
+  stone: stoneTheme,
+  gothic: gothicTheme,
+  chocolate: chocolateTheme,
 };
 
 type ThemeContextValue = {
