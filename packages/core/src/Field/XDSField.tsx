@@ -14,14 +14,21 @@
  * - /packages/cli/templates/blocks/components/Field/ (showcase blocks)
  */
 
-import {type HTMLAttributes, type ReactNode} from 'react';
+import {type HTMLAttributes, type ReactNode, useContext} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSFieldLabel} from './XDSFieldLabel';
 import {XDSFieldStatus} from './XDSFieldStatus';
-import {spacingVars} from '../theme/tokens.stylex';
+import {
+  spacingVars,
+  colorVars,
+  typographyVars,
+  typeScaleVars,
+  fontWeightVars,
+} from '../theme/tokens.stylex';
 import type {XDSIconType} from '../Icon';
 import {xdsClassName, mergeProps} from '../utils';
+import {XDSFormLayoutContext} from '../FormLayout/XDSFormLayoutContext';
 
 const styles = stylex.create({
   container: {
@@ -30,6 +37,17 @@ const styles = stylex.create({
   },
   containerGap: {
     gap: spacingVars['--spacing-1'],
+  },
+  horizontalLabels: {
+    display: 'contents',
+  },
+  horizontalDescription: {
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    fontWeight: fontWeightVars['--font-weight-normal'],
+    color: colorVars['--color-text-secondary'],
+    marginBottom: spacingVars['--spacing-1'],
   },
   inputStatusWrapper: {
     display: 'flex',
@@ -177,6 +195,9 @@ export function XDSField({
   ref,
   ...props
 }: XDSFieldProps) {
+  const {direction} = useContext(XDSFormLayoutContext);
+  const isHorizontalLabels = direction === 'horizontal-labels';
+
   const resolvedDescriptionID =
     descriptionID ?? (description ? `${inputID}-desc` : undefined);
   const resolvedMessageID =
@@ -188,6 +209,62 @@ export function XDSField({
     );
   }
 
+  const labelNode = (
+    <XDSFieldLabel
+      label={label}
+      inputID={inputID}
+      isLabelHidden={isLabelHidden}
+      isDisabled={isDisabled}
+      isOptional={isOptional}
+      isRequired={isRequired}
+      labelIcon={labelIcon}
+      labelTooltip={labelTooltip}
+      description={isHorizontalLabels ? undefined : description}
+      descriptionID={isHorizontalLabels ? undefined : resolvedDescriptionID}
+    />
+  );
+
+  const statusNode = status?.message ? (
+    <XDSFieldStatus
+      type={status.type}
+      message={status.message}
+      id={resolvedMessageID}
+      variant={statusVariant}
+    />
+  ) : null;
+
+  // ─── Horizontal-labels mode ───────────────────────────────────────────
+  // Use display:contents so the parent grid's `auto 1fr` columns place
+  // the label in column 1 and the input group in column 2. Description
+  // and status are grouped with the input in column 2.
+  if (isHorizontalLabels) {
+    return (
+      <div
+        ref={ref}
+        {...mergeProps(
+          xdsClassName('field', {layout: 'horizontal-labels'}),
+          stylex.props(styles.horizontalLabels, xstyle),
+          className,
+          style,
+        )}
+        {...props}>
+        {labelNode}
+        <div {...stylex.props(styles.inputStatusWrapper)}>
+          {description && (
+            <span
+              id={resolvedDescriptionID}
+              {...stylex.props(styles.horizontalDescription)}>
+              {description}
+            </span>
+          )}
+          {children}
+          {statusNode}
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Default mode (vertical / horizontal) ─────────────────────────────
   return (
     <div
       ref={ref}
@@ -202,41 +279,16 @@ export function XDSField({
         style,
       )}
       {...props}>
-      <XDSFieldLabel
-        label={label}
-        inputID={inputID}
-        isLabelHidden={isLabelHidden}
-        isDisabled={isDisabled}
-        isOptional={isOptional}
-        isRequired={isRequired}
-        labelIcon={labelIcon}
-        labelTooltip={labelTooltip}
-        description={description}
-        descriptionID={resolvedDescriptionID}
-      />
+      {labelNode}
       {statusVariant === 'attached' ? (
         <div {...stylex.props(styles.inputStatusWrapper)}>
           {children}
-          {status?.message && (
-            <XDSFieldStatus
-              type={status.type}
-              message={status.message}
-              id={resolvedMessageID}
-              variant="attached"
-            />
-          )}
+          {statusNode}
         </div>
       ) : (
         <>
           {children}
-          {status?.message && (
-            <XDSFieldStatus
-              type={status.type}
-              message={status.message}
-              id={resolvedMessageID}
-              variant="detached"
-            />
-          )}
+          {statusNode}
         </>
       )}
     </div>
