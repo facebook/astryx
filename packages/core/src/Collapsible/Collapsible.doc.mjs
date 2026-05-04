@@ -4,6 +4,12 @@ export const docs = {
   name: 'Collapsible',
   group: 'Collapsible',
   keywords: ["accordion","collapse","expandable","disclosure","toggle","panel","foldable","expander","expand"],
+  playground: {
+    defaults: {
+      trigger: 'Click to expand',
+      children: {__element: 'XDSText', props: {type: 'body'}, children: 'This content is revealed when the collapsible is expanded. It can contain any components.'},
+    },
+  },
   theming: {
     targets: [
       {className: 'xds-collapsible'},

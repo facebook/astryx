@@ -4,6 +4,15 @@ export const docs = {
   name: 'SideNav',
   group: 'SideNav',
   keywords: ["sidenav","sidebar","navigation","drawer","menu","nav","aside","sidemenu","navmenu","sider","treeview"],
+  playground: {
+    defaults: {
+      children: [
+        {__element: 'XDSSideNavItem', props: {label: 'Dashboard', isSelected: true}},
+        {__element: 'XDSSideNavItem', props: {label: 'Projects'}},
+        {__element: 'XDSSideNavItem', props: {label: 'Settings'}},
+      ],
+    },
+  },
   theming: {
     targets: [
       {className: 'xds-side-nav', visualProps: ['mode']},

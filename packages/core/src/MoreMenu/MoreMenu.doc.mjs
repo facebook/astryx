@@ -62,6 +62,15 @@ export const docs = {
         'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
     },
   ],
+  playground: {
+    defaults: {
+      items: [
+        {label: 'Edit', value: 'edit'},
+        {label: 'Duplicate', value: 'duplicate'},
+        {label: 'Delete', value: 'delete'},
+      ],
+    },
+  },
   theming: {
     targets: [
       {className: 'xds-more-menu'},

@@ -33,6 +33,12 @@ export const docs = {
         'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
     },
   ],
+  playground: {
+    defaults: {
+      ratio: 16 / 9,
+      children: {__element: 'XDSCenter', props: {height: '100%'}, children: {__element: 'XDSText', props: {color: 'secondary'}, children: '16:9'}},
+    },
+  },
   theming: {
     targets: [
       {className: 'xds-aspect-ratio'},

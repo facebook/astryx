@@ -3,6 +3,12 @@
 export const docs = {
   name: 'Link',
   keywords: ["link","anchor","href","hyperlink","navigation","url","external","textlink"],
+  playground: {
+    defaults: {
+      href: '#',
+      children: 'Learn more',
+    },
+  },
   theming: {
     targets: [
       {className: 'xds-link', visualProps: ['color']},

@@ -4,6 +4,12 @@ export const docs = {
   name: 'Field',
   group: 'Field',
   keywords: ["field","formfield","formgroup","formcontrol","label","input","required","optional","helpertext","hint"],
+  playground: {
+    defaults: {
+      label: 'Email address',
+      children: {__element: 'XDSTextInput', props: {label: 'Email', placeholder: 'you@example.com'}},
+    },
+  },
   theming: {
     targets: [
       {className: 'xds-field'},

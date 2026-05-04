@@ -4,6 +4,20 @@ export const docs = {
   name: 'Dialog',
   group: 'Dialog',
   keywords: ["dialog","modal","popup","overlay","lightbox","alert","confirm","prompt","backdrop","focus trap","imperative"],
+  playground: {
+    defaults: {
+      isOpen: true,
+      isInline: true,
+      onOpenChange: undefined,
+      width: 400,
+      children: {
+        __element: 'XDSVStack', props: {gap: 2}, children: [
+          {__element: 'XDSHeading', props: {level: 3}, children: 'Dialog Title'},
+          {__element: 'XDSText', props: {type: 'body'}, children: 'Are you sure you want to proceed? This action can be undone later from settings.'},
+        ],
+      },
+    },
+  },
   theming: {
     container: true,
     targets: [

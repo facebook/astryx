@@ -3,6 +3,12 @@
 export const docs = {
   name: 'Text',
   keywords: ["text","typography","label","paragraph","heading","caption","font","body","subtitle"],
+  playground: {
+    defaults: {
+      children: 'The quick brown fox jumps over the lazy dog.',
+      type: 'body',
+    },
+  },
   theming: {
     targets: [
       {className: 'xds-heading', visualProps: ['level', 'color']},

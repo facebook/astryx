@@ -42,6 +42,13 @@ export const docs = {
       ],
     },
   ],
+  playground: {
+    defaults: {
+      code: "import {XDSButton} from '@xds/core/Button';\n\nexport function App() {\n  return <XDSButton label=\"Hello\" variant=\"primary\" />;\n}",
+      language: 'tsx',
+      hasCopyButton: true,
+    },
+  },
   theming: {
     targets: [
       {className: 'xds-code'},

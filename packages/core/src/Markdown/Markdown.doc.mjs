@@ -96,6 +96,11 @@ export const docs = {
       description: 'Test selector for automated testing frameworks.',
     },
   ],
+  playground: {
+    defaults: {
+      children: '## Getting Started\n\nInstall the package:\n\n```bash\nnpm install @xds/core\n```\n\nThen import and use any component:\n\n```tsx\nimport {XDSButton} from \'@xds/core/Button\';\n```\n\n**Bold**, *italic*, and `inline code` all work.',
+    },
+  },
   theming: {
     targets: [
       {className: 'xds-markdown', visualProps: ['density']},

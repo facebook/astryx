@@ -1,6 +1,7 @@
 /** @type {import('../docs-types').HookDoc} */
 export const docs = {
   name: 'useXDSHoverCard',
+  group: 'HoverCard',
   keywords: ['hovercard', 'hover', 'preview', 'card', 'tooltip', 'popup', 'floating', 'anchor'],
   params: [
     {

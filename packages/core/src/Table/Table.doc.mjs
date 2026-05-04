@@ -4,6 +4,20 @@ export const docs = {
   name: 'Table',
   group: 'Table',
   keywords: ["table","datatable","datagrid","spreadsheet","sorting","virtualized","columns","rows","selection","pinning"],
+  playground: {
+    defaults: {
+      data: [
+        {name: 'Alice Chen', role: 'Engineer', status: 'Active'},
+        {name: 'Bob Smith', role: 'Designer', status: 'Active'},
+        {name: 'Carol Wu', role: 'PM', status: 'Away'},
+      ],
+      columns: [
+        {key: 'name', header: 'Name'},
+        {key: 'role', header: 'Role'},
+        {key: 'status', header: 'Status'},
+      ],
+    },
+  },
   theming: {
     targets: [
       {className: 'xds-base-table'},
