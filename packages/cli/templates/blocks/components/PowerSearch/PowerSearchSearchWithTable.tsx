@@ -87,7 +87,7 @@ export default function PowerSearchSearchWithTable() {
   const filteredBooks = applyFilters(filters, books);
 
   return (
-    <XDSVStack gap={4}>
+    <XDSVStack gap={4} width="100%" style={{maxWidth: 500}}>
       <XDSPowerSearch
         config={config}
         filters={filters}

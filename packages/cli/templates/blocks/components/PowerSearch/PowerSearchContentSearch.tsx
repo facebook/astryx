@@ -62,6 +62,7 @@ export default function PowerSearchContentSearch() {
 
   return (
     <XDSPowerSearch
+      style={{width: 300}}
       config={config}
       filters={filters}
       onChange={newFilters => setFilters([...newFilters])}

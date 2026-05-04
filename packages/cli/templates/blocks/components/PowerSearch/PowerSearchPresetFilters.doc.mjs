@@ -6,6 +6,6 @@ export const doc = {
   description:
     'Power search initialized with pre-set filter tokens for status and priority.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['PowerSearch'],
 };

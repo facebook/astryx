@@ -6,6 +6,6 @@ export const doc = {
   description:
     'Power search with contentSearchFieldKey so free-text input maps to a title field automatically.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['PowerSearch'],
 };
