@@ -65,17 +65,12 @@ This means:
 Themes reference fonts by name but don't bundle the font files. If the fonts
 aren't loaded, the theme silently falls back to system fonts.
 
-The docsite loads fonts in two places in `src/app/layout.tsx`:
-
-- **Google Fonts** — a single `<link>` tag loads all Google-hosted typefaces
-  (Figtree, Fraunces, DM Sans, etc.). Add any new families to this URL.
-- **Geist** — loaded via the `geist` npm package and `next/font`. The CSS
-  variable classes are applied to `<html>` so the `@font-face` declarations
-  are available globally.
+The docsite loads all custom typefaces from Google Fonts via a single `<link>`
+tag in `src/app/layout.tsx`. When adding a new theme, check which fonts it
+declares and add any missing families to that URL.
 
 Each theme's own README documents exactly which fonts it needs and how to load
-them. Check the theme's `## Fonts` section for the specific Google Fonts URL or
-npm package instructions.
+them. Check the theme's `## Fonts` section for the specific Google Fonts URL.
 
 ## Adding a New Package
 

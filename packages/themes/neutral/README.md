@@ -1,6 +1,6 @@
 # @xds/theme-neutral
 
-Muted, minimal aesthetic. Uses [Lucide](https://lucide.dev) icons.
+Muted, minimal aesthetic with system fonts. Uses [Lucide](https://lucide.dev) icons.
 
 ## Install
 
@@ -41,38 +41,7 @@ Add the theme CSS to your stylesheet:
 
 This is required for component-level theme overrides (colors, radii, typography) to take effect.
 
-## Fonts
-
-This theme uses custom typefaces:
-
-| Role    | Font       |
-| ------- | ---------- |
-| Body    | Geist      |
-| Heading | Geist      |
-| Code    | Geist Mono |
-
-This theme uses [Geist](https://vercel.com/font) fonts. Geist is not on Google Fonts — install the `geist` npm package:
-
-```bash
-npm install geist
-```
-
-**Next.js** (recommended):
-
-```tsx
-import {GeistSans} from 'geist/font/sans';
-import {GeistMono} from 'geist/font/mono';
-
-export default function Layout({children}) {
-  return (
-    <html className={`${GeistSans.variable} ${GeistMono.variable}`}>
-      <body>{children}</body>
-    </html>
-  );
-}
-```
-
-**Other frameworks:** Use `@fontsource/geist-sans` and `@fontsource/geist-mono`, or self-host the font files from the `geist` package.
+This theme uses system fonts — no external font loading is required.
 
 ## Related Packages
 

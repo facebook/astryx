@@ -3,7 +3,7 @@
  *
  * A grayscale theme with neutral colors and modern aesthetics.
  * Uses oklch color space for perceptually uniform colors.
- * Uses Geist font family for a clean, modern look.
+ * Uses system font stack for a clean, native look.
  *
  * Only overrides tokens that differ from the defaults.
  * Spacing, size, textSize, lineHeight, fontWeight, and transition
@@ -38,21 +38,17 @@ export const neutralTheme = defineTheme({
   name: 'neutral',
 
   // Typography: same scale as default (base=14, ratio=1.2).
-  // Geist fonts for body/heading, Geist Mono for code.
+  // System font stack for body/heading, monospace for code.
   // Neutral uses bold weights on h3/h4 for stronger subsection hierarchy.
   typography: {
     scale: {base: 14, ratio: 1.2},
-    body: {
-      family: 'Geist',
-      fallbacks:
-        '"Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-    },
     heading: {
       weights: {3: 'bold', 4: 'bold'},
     },
     code: {
-      family: 'Geist Mono',
-      fallbacks: '"SF Mono", Monaco, Consolas, monospace',
+      family: 'ui-monospace',
+      fallbacks:
+        '"SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
     },
   },
 

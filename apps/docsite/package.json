@@ -18,7 +18,6 @@
     "@stylexjs/stylex": "^0.18.3",
     "@xds/cli": "*",
     "@xds/core": "*",
-    "geist": "^1.7.0",
     "@xds/theme-chocolate": "*",
     "@xds/theme-daily": "*",
     "@xds/theme-default": "*",
