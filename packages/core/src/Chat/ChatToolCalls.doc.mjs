@@ -60,6 +60,12 @@ export const docs = {
       type: '(isExpanded: boolean) => void',
       description: 'Callback fired when the expanded state changes.',
     },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+    },
   ],
 };
 

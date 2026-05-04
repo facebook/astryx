@@ -171,6 +171,12 @@ export const docs = {
           description:
             'Custom handle content. Overrides the default pill + divider.',
         },
+        {
+          name: 'xstyle',
+          type: 'StyleXStyles',
+          description:
+            'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value — not an inline style object like style={{}}.',
+        },
       ],
     },
   ],

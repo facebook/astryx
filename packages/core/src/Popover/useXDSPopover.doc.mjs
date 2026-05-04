@@ -43,6 +43,11 @@ export const docs = {
       type: '() => void',
       description: 'Callback fired when the popover is hidden.',
     },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description: 'StyleX styles for the popover surface (margins, sizing). Must be a stylex.create() value — not an inline style object. Note: for styles that interact with :popover-open, pass xstyle via the render() call props instead.',
+    },
   ],
   returns: [
     {
