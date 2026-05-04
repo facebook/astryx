@@ -6,6 +6,6 @@ export const doc = {
   description:
     'Range slider for selecting a value range like price bounds.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Slider'],
 };

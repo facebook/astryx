@@ -3,5 +3,5 @@
 import {XDSSlider} from '@xds/core/Slider';
 
 export default function SliderShowcase() {
-  return <XDSSlider label="Volume" value={50} />;
+  return <XDSSlider label="Volume" value={50} style={{width: 300}} />;
 }

@@ -10,7 +10,7 @@ export default function SliderWithStatus() {
   const [value2, setValue2] = useState(50);
   const [value3, setValue3] = useState(75);
   return (
-    <XDSCenter width={400}>
+    <div style={{width: 300}}>
       <XDSVStack gap={6}>
         <XDSSlider
           label="CPU Usage"
@@ -31,6 +31,6 @@ export default function SliderWithStatus() {
           status={{type: 'success', message: 'Disk usage is healthy'}}
         />
       </XDSVStack>
-    </XDSCenter>
+    </div>
   );
 }

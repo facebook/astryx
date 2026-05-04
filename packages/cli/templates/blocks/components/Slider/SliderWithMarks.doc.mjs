@@ -6,6 +6,6 @@ export const doc = {
   description:
     'Slider with labeled tick marks at fixed intervals.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Slider'],
 };

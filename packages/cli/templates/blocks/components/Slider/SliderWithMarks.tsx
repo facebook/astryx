@@ -7,6 +7,7 @@ export default function SliderWithMarks() {
   const [value, setValue] = useState(50);
   return (
     <XDSSlider
+      style={{width: 300}}
       label="Volume"
       value={value}
       onChange={setValue}

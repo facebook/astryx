@@ -6,6 +6,6 @@ export const doc = {
   description:
     'Slider with custom formatting showing temperature in Fahrenheit.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Slider'],
 };

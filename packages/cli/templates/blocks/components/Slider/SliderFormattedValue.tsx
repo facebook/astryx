@@ -7,6 +7,7 @@ export default function SliderFormattedValue() {
   const [value, setValue] = useState(72);
   return (
     <XDSSlider
+      style={{width: 300}}
       label="Temperature"
       value={value}
       onChange={setValue}
