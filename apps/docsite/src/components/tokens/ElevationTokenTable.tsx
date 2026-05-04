@@ -3,7 +3,7 @@
 import * as stylex from '@stylexjs/stylex';
 import {XDSTable, pixel} from '@xds/core/Table';
 import type {TokenTableProps} from './types';
-import {getTokensByPrefix} from './helpers';
+import {resolveToken, getTokensByPrefix} from './helpers';
 
 const styles = stylex.create({
   shadowBox: {
@@ -20,6 +20,7 @@ export function ElevationTokenTable({theme}: TokenTableProps) {
 
   const data = tokens.map(name => ({
     tokenName: name,
+    value: resolveToken(theme, name),
   }));
 
   return (
@@ -34,7 +35,7 @@ export function ElevationTokenTable({theme}: TokenTableProps) {
           renderCell: (item: Record<string, unknown>) => (
             <div
               {...stylex.props(styles.shadowBox)}
-              style={{boxShadow: `var(${item.tokenName as string})`}}
+              style={{boxShadow: item.value as string}}
             />
           ),
         },

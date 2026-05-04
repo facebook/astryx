@@ -121,7 +121,7 @@ export function TypographyTokenTable({theme}: TokenTableProps) {
         {
           key: 'label',
           header: 'Sample',
-          width: pixel(160),
+          width: pixel(200),
           renderCell: (item: Record<string, unknown>) => (
             <span
               {...stylex.props(styles.sample)}

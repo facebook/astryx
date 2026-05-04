@@ -4,10 +4,30 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSHStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import {XDSTable, pixel} from '@xds/core/Table';
+import {useMediaQuery} from '@xds/core/hooks';
 import type {TokenTableProps} from './types';
-import {hasDualMode, getTokensByPrefix} from './helpers';
+import {
+  useResolveTokenForMode,
+  hasDualMode,
+  getTokensByPrefix,
+} from './helpers';
 
 const styles = stylex.create({
+  surface: {
+    width: 28,
+    height: 28,
+    borderRadius: 'var(--radius-element)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    border: '1px solid var(--color-border)',
+  },
+  swatchInner: {
+    width: 20,
+    height: 20,
+    borderRadius: 'var(--radius-inner)',
+  },
   swatch: {
     width: 28,
     height: 28,
@@ -15,26 +35,22 @@ const styles = stylex.create({
     flexShrink: 0,
     border: '1px solid var(--color-border)',
   },
-  themeContext: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
 });
 
-function ThemedSwatch({
-  tokenName,
-  mode,
+function ContextSwatch({
+  value,
+  surface,
 }: {
-  tokenName: string;
-  mode: 'light' | 'dark';
+  value: string;
+  surface: 'light' | 'dark';
 }) {
   return (
-    <div style={{colorScheme: mode}} {...stylex.props(styles.themeContext)}>
+    <div
+      style={{backgroundColor: surface === 'light' ? '#FFFFFF' : '#1C1C1E'}}
+      {...stylex.props(styles.surface)}>
       <div
-        {...stylex.props(styles.swatch)}
-        style={{backgroundColor: `var(${tokenName})`}}
+        {...stylex.props(styles.swatchInner)}
+        style={{backgroundColor: value}}
       />
     </div>
   );
@@ -49,11 +65,13 @@ function Swatch({value}: {value: string}) {
 export function ColorTokenTable({theme}: TokenTableProps) {
   const tokens = getTokensByPrefix(theme, '--color-');
   const isDual = hasDualMode(theme);
+  const resolveForMode = useResolveTokenForMode();
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   const data = tokens.map(name => ({
     tokenName: name,
-    light: theme.token(name),
-    dark: theme.token(name),
+    light: resolveForMode(name, 'light'),
+    dark: resolveForMode(name, 'dark'),
   }));
 
   if (isDual) {
@@ -63,20 +81,25 @@ export function ColorTokenTable({theme}: TokenTableProps) {
         columns={[
           {key: 'tokenName', header: 'Token', width: pixel(260)},
           {
-            key: 'light',
-            header: 'Light',
-            width: pixel(60),
-            renderCell: (item: Record<string, unknown>) => (
-              <ThemedSwatch tokenName={item.tokenName as string} mode="light" />
-            ),
-          },
-          {
-            key: 'dark',
-            header: 'Dark',
-            width: pixel(60),
-            renderCell: (item: Record<string, unknown>) => (
-              <ThemedSwatch tokenName={item.tokenName as string} mode="dark" />
-            ),
+            key: 'value',
+            header: 'Value',
+            renderCell: (item: Record<string, unknown>) => {
+              const light = item.light as string;
+              const dark = item.dark as string;
+              const isSame = light === dark;
+
+              return (
+                <XDSHStack gap={2} vAlign="center">
+                  <ContextSwatch value={light} surface="light" />
+                  <ContextSwatch value={dark} surface="dark" />
+                  {!isMobile && (
+                    <XDSText type="code" color="secondary">
+                      {isSame ? light : `${light} / ${dark}`}
+                    </XDSText>
+                  )}
+                </XDSHStack>
+              );
+            },
           },
         ]}
         density="spacious"
@@ -97,9 +120,11 @@ export function ColorTokenTable({theme}: TokenTableProps) {
           renderCell: (item: Record<string, unknown>) => (
             <XDSHStack gap={2} vAlign="center">
               <Swatch value={item.light as string} />
-              <XDSText type="code" color="secondary">
-                {item.light as string}
-              </XDSText>
+              {!isMobile && (
+                <XDSText type="code" color="secondary">
+                  {item.light as string}
+                </XDSText>
+              )}
             </XDSHStack>
           ),
         },
