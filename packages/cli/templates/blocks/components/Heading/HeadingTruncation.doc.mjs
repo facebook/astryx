@@ -6,6 +6,6 @@ export const doc = {
   description:
     'Single-line and multi-line heading truncation with ellipsis for constrained layouts',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Heading'],
 };
