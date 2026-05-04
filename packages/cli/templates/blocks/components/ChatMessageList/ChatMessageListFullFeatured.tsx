@@ -17,7 +17,7 @@ import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
   container: {
-    maxWidth: 600,
+    maxWidth: 500,
     justifyContent: 'center',
   },
 });
@@ -54,7 +54,21 @@ export default function ChatMessageListFullFeatured() {
               {`Sure! Here's the key pattern from **useReducer.ts**:`}
             </XDSMarkdown>
           </XDSChatMessageBubble>
-          <XDSChatMessageBubble variant="ghost" group="middle">
+          <XDSChatMessageBubble group="last">
+            <XDSMarkdown density="compact">
+              {`The reducer is **pure and easy to test** — pass in state and action, assert on the output.`}
+            </XDSMarkdown>
+          </XDSChatMessageBubble>
+          <XDSChatMessageBubble
+            variant="ghost"
+            group="middle"
+            metadata={
+              <XDSChatMessageMetadata
+                timestamp={
+                  <XDSTimestamp value="2026-03-15T14:30:30" format="time" />
+                }
+              />
+            }>
             <XDSCodeBlock
               code={`const [state, dispatch] = useReducer(
   (state, action) => ({
@@ -65,19 +79,6 @@ export default function ChatMessageListFullFeatured() {
 );`}
               language="tsx"
             />
-          </XDSChatMessageBubble>
-          <XDSChatMessageBubble
-            group="last"
-            metadata={
-              <XDSChatMessageMetadata
-                timestamp={
-                  <XDSTimestamp value="2026-03-15T14:30:30" format="time" />
-                }
-              />
-            }>
-            <XDSMarkdown density="compact">
-              {`The reducer is **pure and easy to test** — pass in state and action, assert on the output.`}
-            </XDSMarkdown>
           </XDSChatMessageBubble>
         </XDSChatMessage>
 

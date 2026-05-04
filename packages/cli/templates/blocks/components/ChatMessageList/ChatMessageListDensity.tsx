@@ -8,6 +8,8 @@ import {
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import {XDSAvatar} from '@xds/core/Avatar';
+import {XDSDivider} from '@xds/core/Divider';
+import {Fragment} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
@@ -27,31 +29,36 @@ const AVATAR_SIZE = {
 
 export default function ChatMessageListDensity() {
   return (
-    <XDSVStack gap={4}>
-      {DENSITIES.map(density => (
-        <XDSVStack key={density} gap={2}>
-          <XDSText type="supporting" color="secondary">
-            {density.charAt(0).toUpperCase() + density.slice(1)}
-          </XDSText>
-          <XDSVStack xstyle={styles.section}>
-            <XDSChatMessageList density={density}>
-              <XDSChatMessage sender="user">
-                <XDSChatMessageBubble>
-                  How does density work?
-                </XDSChatMessageBubble>
-              </XDSChatMessage>
-              <XDSChatMessage
-                sender="assistant"
-                avatar={<XDSAvatar name="Agent" size={AVATAR_SIZE[density]} />}>
-                <XDSChatMessageBubble>
-                  Density controls spacing at every level — gap between
-                  messages, padding inside bubbles, and gap between child
-                  elements.
-                </XDSChatMessageBubble>
-              </XDSChatMessage>
-            </XDSChatMessageList>
+    <XDSVStack gap={4} style={{maxWidth: 500}}>
+      {DENSITIES.map((density, index) => (
+        <Fragment key={density}>
+          {index > 0 && <XDSDivider />}
+          <XDSVStack gap={2}>
+            <XDSText type="supporting" color="secondary">
+              {density.charAt(0).toUpperCase() + density.slice(1)}
+            </XDSText>
+            <XDSVStack xstyle={styles.section}>
+              <XDSChatMessageList density={density}>
+                <XDSChatMessage sender="user">
+                  <XDSChatMessageBubble>
+                    How does density work?
+                  </XDSChatMessageBubble>
+                </XDSChatMessage>
+                <XDSChatMessage
+                  sender="assistant"
+                  avatar={
+                    <XDSAvatar name="Agent" size={AVATAR_SIZE[density]} />
+                  }>
+                  <XDSChatMessageBubble>
+                    Density controls spacing at every level — gap between
+                    messages, padding inside bubbles, and gap between child
+                    elements.
+                  </XDSChatMessageBubble>
+                </XDSChatMessage>
+              </XDSChatMessageList>
+            </XDSVStack>
           </XDSVStack>
-        </XDSVStack>
+        </Fragment>
       ))}
     </XDSVStack>
   );
