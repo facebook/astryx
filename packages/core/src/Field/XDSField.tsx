@@ -19,17 +19,11 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSFieldLabel} from './XDSFieldLabel';
 import {XDSFieldStatus} from './XDSFieldStatus';
-import {
-  spacingVars,
-  colorVars,
-  typographyVars,
-  typeScaleVars,
-  fontWeightVars,
-  borderVars,
-} from '../theme/tokens.stylex';
+import {spacingVars, borderVars} from '../theme/tokens.stylex';
 import type {XDSIconType} from '../Icon';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSFormLayoutContext} from '../FormLayout/XDSFormLayoutContext';
+import {XDSText} from '../Text';
 
 const styles = stylex.create({
   container: {
@@ -47,14 +41,6 @@ const styles = stylex.create({
     // top border + top padding. Works for both single-line inputs and
     // textareas (labels stay top-aligned, not vertically centered).
     paddingTop: `calc(${borderVars['--border-width']} + ${spacingVars['--spacing-1']})`,
-  },
-  horizontalDescription: {
-    fontFamily: typographyVars['--font-family-body'],
-    fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: typeScaleVars['--text-supporting-leading'],
-    fontWeight: fontWeightVars['--font-weight-normal'],
-    color: colorVars['--color-text-secondary'],
-    marginBottom: spacingVars['--spacing-1'],
   },
   inputStatusWrapper: {
     display: 'flex',
@@ -259,11 +245,12 @@ export function XDSField({
         <div {...stylex.props(styles.horizontalLabelAlign)}>{labelNode}</div>
         <div {...stylex.props(styles.inputStatusWrapper)}>
           {description && (
-            <span
-              id={resolvedDescriptionID}
-              {...stylex.props(styles.horizontalDescription)}>
+            <XDSText
+              type="supporting"
+              display="block"
+              id={resolvedDescriptionID}>
               {description}
-            </span>
+            </XDSText>
           )}
           {children}
           {statusNode}
