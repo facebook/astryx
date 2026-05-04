@@ -8,7 +8,7 @@ import {XDSText} from '@xds/core/Text';
 
 export default function DividerVariants() {
   return (
-    <XDSSection variant="wash">
+    <XDSSection width="100%">
       <XDSCard>
         <XDSVStack gap={3}>
           <XDSVStack gap={1}>
