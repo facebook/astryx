@@ -140,7 +140,7 @@ export function ComponentPreviewCard({
       padding={0}>
       <XDSVStack gap={2}>
         <ComponentThumbnail name={name} />
-        <XDSVStack gap={0.5} paddingX={1}>
+        <XDSVStack gap={0.5}>
           <XDSText type="body" weight="bold">
             {name}
           </XDSText>
