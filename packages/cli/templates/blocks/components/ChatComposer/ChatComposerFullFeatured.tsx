@@ -1,7 +1,11 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSChatComposer, XDSChatComposerDrawer} from '@xds/core/Chat';
+import {
+  XDSChatComposer,
+  XDSChatComposerDrawer,
+  XDSChatComposerInput,
+} from '@xds/core/Chat';
 import {XDSToken} from '@xds/core/Token';
 import {XDSButton} from '@xds/core/Button';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
@@ -21,7 +25,10 @@ export default function ChatComposerFullFeatured() {
   const [isStreaming, setIsStreaming] = useState(false);
 
   return (
-    <XDSStack direction="vertical" gap={4} style={{width: '100%', maxWidth: 450}}>
+    <XDSStack
+      direction="vertical"
+      gap={4}
+      style={{width: '100%', maxWidth: 450}}>
       <XDSText type="supporting" color="secondary">
         All slots populated
       </XDSText>
@@ -34,6 +41,7 @@ export default function ChatComposerFullFeatured() {
         isStreaming={isStreaming}
         onStop={() => setIsStreaming(false)}
         placeholder="Ask me anything..."
+        input={<XDSChatComposerInput style={{minHeight: 44}} />}
         drawer={
           <XDSChatComposerDrawer count={5}>
             <XDSToken label="design-spec.pdf" onRemove={() => {}} />
@@ -62,7 +70,7 @@ export default function ChatComposerFullFeatured() {
           </>
         }
         headerContext={
-          <XDSProgressBar label="Context window" value={3} isLabelHidden />
+          <XDSProgressBar label="Context window" value={50} isLabelHidden />
         }
         footerActions={
           <>
