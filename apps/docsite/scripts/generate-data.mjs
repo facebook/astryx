@@ -120,6 +120,8 @@ function generatePackageRegistry() {
   console.log('Generating package registry...');
 
   const packageDirs = discoverPackageDirs();
+  const docsitePkg = JSON.parse(fs.readFileSync(path.join(DOCSITE_ROOT, 'package.json'), 'utf-8'));
+  const docsiteDeps = {...docsitePkg.dependencies, ...docsitePkg.devDependencies};
 
   const packages = packageDirs
     .map(dir => {
@@ -128,6 +130,9 @@ function generatePackageRegistry() {
 
       // Skip private packages
       if (raw.private === true) return null;
+
+      // Skip packages not installed in the docsite
+      if (docsiteDeps[raw.name] == null) return null;
 
       const hasReadme = fs.existsSync(path.join(REPO_ROOT, dir, 'README.md'));
       const hasChangelog = fs.existsSync(path.join(REPO_ROOT, dir, 'CHANGELOG.md'));
@@ -685,11 +690,7 @@ export const docsCount = ${docTopics.length};
 
 function generateThemeRegistry(packages) {
   console.log('Generating theme registry...');
-  const docsitePkg = JSON.parse(fs.readFileSync(path.join(DOCSITE_ROOT, 'package.json'), 'utf-8'));
-  const docsiteDeps = {...docsitePkg.dependencies, ...docsitePkg.devDependencies};
-  const themePackages = packages.filter(p =>
-    p.name.startsWith('@xds/theme-') && docsiteDeps[p.name] != null
-  );
+  const themePackages = packages.filter(p => p.name.startsWith('@xds/theme-'));
   if (!themePackages.length) {
     writeRegistry('themeRegistry.ts', `// Auto-generated — no theme packages found
 import type {XDSDefinedTheme} from '@xds/core/theme';

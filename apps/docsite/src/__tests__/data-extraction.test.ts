@@ -18,7 +18,7 @@ import {exampleRegistry} from '../generated/exampleRegistry';
 // ── Package Registry ───────────────────────────────────────────────────
 
 describe('packageRegistry', () => {
-  it('discovers all published packages (private packages excluded)', () => {
+  it('discovers installed packages (private and uninstalled excluded)', () => {
     const names = packages.map(p => p.name);
     expect(names).toContain('@xds/core');
     expect(names).toContain('@xds/cli');
@@ -28,6 +28,19 @@ describe('packageRegistry', () => {
     expect(names).not.toContain('@xds/build');
     expect(names).not.toContain('@xds/theme-brutalist');
     expect(packages.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it('only includes packages listed in docsite dependencies', () => {
+    const docsitePkg = JSON.parse(
+      fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf-8'),
+    );
+    const docsiteDeps = {
+      ...docsitePkg.dependencies,
+      ...docsitePkg.devDependencies,
+    };
+    for (const pkg of packages) {
+      expect(docsiteDeps[pkg.name]).toBeDefined();
+    }
   });
 
   it('each package has required fields', () => {
@@ -487,38 +500,15 @@ describe('themeRegistry', () => {
     expect(registrySource).toContain('themeObjects');
   });
 
-  it('has an import and entry for every installed theme package', () => {
-    const docsitePkg = JSON.parse(
-      fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf-8'),
-    );
-    const docsiteDeps = {
-      ...docsitePkg.dependencies,
-      ...docsitePkg.devDependencies,
-    };
-    const themePackages = packages.filter(
-      p => p.name.startsWith('@xds/theme-') && docsiteDeps[p.name] != null,
+  it('has an import and entry for every theme package', () => {
+    const themePackages = packages.filter(p =>
+      p.name.startsWith('@xds/theme-'),
     );
     expect(themePackages.length).toBeGreaterThan(0);
     for (const pkg of themePackages) {
       const slug = pkg.name.replace('@xds/theme-', '');
       expect(registrySource).toContain(`from '${pkg.name}/built'`);
       expect(registrySource).toContain(`'${pkg.name}': ${slug}Theme`);
-    }
-  });
-
-  it('excludes theme packages not installed in the docsite', () => {
-    const docsitePkg = JSON.parse(
-      fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf-8'),
-    );
-    const docsiteDeps = {
-      ...docsitePkg.dependencies,
-      ...docsitePkg.devDependencies,
-    };
-    const uninstalled = packages.filter(
-      p => p.name.startsWith('@xds/theme-') && docsiteDeps[p.name] == null,
-    );
-    for (const pkg of uninstalled) {
-      expect(registrySource).not.toContain(`from '${pkg.name}/built'`);
     }
   });
 
