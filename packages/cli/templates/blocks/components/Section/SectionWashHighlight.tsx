@@ -39,7 +39,7 @@ export default function SectionDefaultWithWash() {
           </XDSStack>
         </XDSStack>
       </XDSSection>
-      <XDSSection variant="wash" padding={6}>
+      <XDSSection variant="muted" padding={6}>
         <XDSStack direction="vertical" gap={2} hAlign="center">
           <XDSStack direction="horizontal" gap={2} vAlign="center">
             <XDSText type="display-3">$49</XDSText>

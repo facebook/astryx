@@ -203,7 +203,7 @@ export const docs = {
     {
       name: 'XDSSection',
       description:
-        'Section with background variants (section, transparent, wash), built on XDSLayoutContainer.',
+        'Section with background variants (section, transparent, muted), built on XDSLayoutContainer.',
       props: [],
     },
     {
@@ -426,7 +426,7 @@ export const docsZh = {
     {
       name: 'XDSSection',
       description:
-        '基于 XDSLayoutContainer 构建的带有背景变体（section、transparent、wash）的区块。',
+        '基于 XDSLayoutContainer 构建的带有背景变体（section、transparent、muted）的区块。',
       props: [],
     },
     {
@@ -542,7 +542,7 @@ export const docsDense = {
     {
       name: 'XDSSection',
       description:
-        'Section w/ background variants (section, transparent, wash), built on XDSLayoutContainer.',
+        'Section w/ background variants (section, transparent, muted), built on XDSLayoutContainer.',
     },
     {
       name: 'XDSHStack',

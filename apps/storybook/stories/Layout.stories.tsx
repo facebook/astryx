@@ -676,7 +676,7 @@ export const SectionVariants: Story = {
           />
         </XDSSection>
 
-        <XDSSection variant="wash" width={300} height={250}>
+        <XDSSection variant="muted" width={300} height={250}>
           <XDSLayout
             header={
               <XDSLayoutHeader hasDivider>

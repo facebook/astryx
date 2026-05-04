@@ -61,7 +61,7 @@ const meta: Meta<typeof XDSSection> = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['section', 'transparent', 'wash'],
+      options: ['section', 'transparent', 'muted'],
       description: 'Visual variant of the section',
     },
     width: {
@@ -103,8 +103,8 @@ export const Variants: Story = {
         </XDSSection>
       </div>
       <div>
-        <h4 {...stylex.props(styles.heading)}>wash</h4>
-        <XDSSection variant="wash" width={200}>
+        <h4 {...stylex.props(styles.heading)}>muted</h4>
+        <XDSSection variant="muted" width={200}>
           <p {...stylex.props(styles.text)}>Wash background</p>
         </XDSSection>
       </div>
@@ -120,7 +120,7 @@ export const Variants: Story = {
 
 export const WithSimpleContent: Story = {
   render: () => (
-    <XDSSection variant="wash" width={320}>
+    <XDSSection variant="muted" width={320}>
       <XDSVStack gap={2}>
         <h3 {...stylex.props(styles.text)}>Section Title</h3>
         <p {...stylex.props(styles.text, styles.textSecondary)}>
@@ -134,7 +134,7 @@ export const WithSimpleContent: Story = {
 
 export const WithInnerLayout: Story = {
   render: () => (
-    <XDSSection variant="wash" width={350} height={250}>
+    <XDSSection variant="muted" width={350} height={250}>
       <XDSLayout
         header={
           <XDSLayoutHeader hasDivider>
@@ -203,7 +203,7 @@ export const FullBleed: Story = {
     <div {...stylex.props(styles.storyWrapper)}>
       <div>
         <h4 {...stylex.props(styles.heading)}>Default (with padding)</h4>
-        <XDSSection variant="wash" width={250}>
+        <XDSSection variant="muted" width={250}>
           <div style={{backgroundColor: 'rgba(0,100,200,0.2)', padding: 8}}>
             <p {...stylex.props(styles.text)}>Content with section padding</p>
           </div>
@@ -211,7 +211,7 @@ export const FullBleed: Story = {
       </div>
       <div>
         <h4 {...stylex.props(styles.heading)}>Full Bleed (no padding)</h4>
-        <XDSSection variant="wash" width={250} padding={0}>
+        <XDSSection variant="muted" width={250} padding={0}>
           <div style={{backgroundColor: 'rgba(0,100,200,0.2)', padding: 8}}>
             <p {...stylex.props(styles.text)}>Content touches section edges</p>
           </div>
@@ -229,7 +229,7 @@ export const NestedPaddingInheritance: Story = {
           padding=6 → nested (inherits 6)
         </h4>
         <XDSSection variant="section" width={350} padding={6}>
-          <XDSSection variant="wash">
+          <XDSSection variant="muted">
             <p {...stylex.props(styles.text)}>
               Inner section inherits padding=6 from parent. Edge compensation
               and content inset should both use 24px.
@@ -240,7 +240,7 @@ export const NestedPaddingInheritance: Story = {
       <div>
         <h4 {...stylex.props(styles.heading)}>padding=6 → nested padding=2</h4>
         <XDSSection variant="section" width={350} padding={6}>
-          <XDSSection variant="wash" padding={2}>
+          <XDSSection variant="muted" padding={2}>
             <p {...stylex.props(styles.text)}>
               Inner section explicitly sets padding=2, overriding the parent's
               padding=6. Content inset is 8px.
@@ -253,7 +253,7 @@ export const NestedPaddingInheritance: Story = {
           padding=2 → nested (inherits 2)
         </h4>
         <XDSSection variant="section" width={350} padding={2}>
-          <XDSSection variant="wash">
+          <XDSSection variant="muted">
             <p {...stylex.props(styles.text)}>
               Inner section inherits padding=2 from parent. Both edge
               compensation and content inset use 8px.

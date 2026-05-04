@@ -80,7 +80,7 @@ export const Default: Story = {
     children: null,
   },
   render: args => (
-    <XDSSection variant="wash" width="100%">
+    <XDSSection variant="muted" width="100%">
       <XDSCenter {...args}>
         <Box>Centered Content</Box>
       </XDSCenter>
@@ -95,7 +95,7 @@ export const HorizontalOnly: Story = {
     children: null,
   },
   render: args => (
-    <XDSSection variant="wash" width="100%">
+    <XDSSection variant="muted" width="100%">
       <XDSCenter {...args}>
         <Box>Horizontal Center</Box>
       </XDSCenter>
@@ -111,7 +111,7 @@ export const VerticalOnly: Story = {
     children: null,
   },
   render: args => (
-    <XDSSection variant="wash" width="100%">
+    <XDSSection variant="muted" width="100%">
       <XDSCenter {...args}>
         <Box>Vertical Center</Box>
       </XDSCenter>
@@ -127,7 +127,7 @@ export const FullSize: Story = {
     children: null,
   },
   render: args => (
-    <XDSSection variant="wash">
+    <XDSSection variant="muted">
       <XDSCenter {...args}>
         <Box>Full Width, Fixed Height</Box>
       </XDSCenter>
@@ -141,7 +141,7 @@ export const Inline: Story = {
     children: null,
   },
   render: args => (
-    <XDSSection variant="wash">
+    <XDSSection variant="muted">
       <XDSCard>
         <XDSText type="body">
           Text with inline centered icon:{' '}
@@ -163,7 +163,7 @@ export const WithIcon: Story = {
     children: null,
   },
   render: args => (
-    <XDSSection variant="wash">
+    <XDSSection variant="muted">
       <XDSCenter {...args}>
         <div {...stylex.props(styles.iconWrapper)}>
           <XDSIcon icon={CheckCircleIcon} size="lg" />
@@ -179,7 +179,7 @@ export const InsideACard: Story = {
     children: null,
   },
   render: args => (
-    <XDSSection variant="wash">
+    <XDSSection variant="muted">
       <XDSCard>
         <XDSCenter {...args}>
           <Box>Centered in Card</Box>
@@ -194,7 +194,7 @@ export const AllAxisModes: Story = {
     children: null,
   },
   render: () => (
-    <XDSSection variant="wash">
+    <XDSSection variant="muted">
       <div {...stylex.props(styles.storyWrapper)}>
         <XDSCard>
           <XDSText type="supporting" display="block">

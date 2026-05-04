@@ -4,7 +4,7 @@ export const doc = {
   exampleFor: 'Section',
   name: 'Section — Variants',
   description:
-    'All three background variants stacked — section (default surface), wash (muted), and transparent. A quick visual reference for choosing the right variant.',
+    'All three background variants stacked — section (default surface), muted, and transparent. A quick visual reference for choosing the right variant.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 16 / 9,

@@ -360,7 +360,7 @@ export default function CodeBlockPerfPage() {
           </XDSText>
         </XDSVStack>
 
-        <XDSSection variant="wash" padding={3} dividers={['bottom']}>
+        <XDSSection variant="muted" padding={3} dividers={['bottom']}>
           <XDSHStack gap={4} vAlign="center" wrap="wrap">
             <XDSSegmentedControl
               label="Line count"

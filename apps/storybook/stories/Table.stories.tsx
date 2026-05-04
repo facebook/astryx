@@ -562,7 +562,7 @@ export const InCardWithSection: Story = {
           The table below is in a wash section for visual separation.
         </p>
       </XDSVStack>
-      <XDSSection variant="wash">
+      <XDSSection variant="muted">
         <XDSTable
           data={users.slice(0, 3)}
           columns={simpleColumns}

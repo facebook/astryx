@@ -30,7 +30,7 @@ export default function MediaThemeShowcase() {
           </XDSStack>
         </XDSMediaTheme>
       </XDSSection>
-      <XDSSection variant="wash" padding={4} style={{flex: 1}}>
+      <XDSSection variant="muted" padding={4} style={{flex: 1}}>
         <XDSMediaTheme mode="light">
           <XDSStack direction="vertical" gap={2}>
             <XDSText type="body" weight="bold">

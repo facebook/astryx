@@ -155,11 +155,11 @@ describe('XDSToolbar', () => {
   });
 
   it('passes variant to XDSSection', () => {
-    const {container} = render(<XDSToolbar label="Actions" variant="wash" />);
+    const {container} = render(<XDSToolbar label="Actions" variant="muted" />);
     // XDSSection renders with xds-section class containing the variant
     const sectionInner = container.querySelector('.xds-section');
     expect(sectionInner).toBeInTheDocument();
-    expect(sectionInner?.className).toContain('wash');
+    expect(sectionInner?.className).toContain('muted');
   });
 
   it('defaults to transparent variant', () => {

@@ -244,7 +244,7 @@ export const NestedSections: Story = {
 export const SingleSection: Story = {
   render: () => (
     <XDSCard width={350}>
-      <XDSSection variant="wash">
+      <XDSSection variant="muted">
         <XDSVStack gap={2}>
           <XDSHeading level={3}>Only Section (Full Bleed All Sides)</XDSHeading>
           <p {...stylex.props(styles.text, styles.textSecondary)}>
@@ -274,7 +274,7 @@ export const MixedContent: Story = {
       <div>
         <h4 {...stylex.props(styles.heading)}>With Section</h4>
         <XDSCard width={250}>
-          <XDSSection variant="wash">
+          <XDSSection variant="muted">
             <XDSVStack gap={2}>
               <XDSHeading level={3}>Card Title</XDSHeading>
               <p {...stylex.props(styles.text, styles.textSecondary)}>

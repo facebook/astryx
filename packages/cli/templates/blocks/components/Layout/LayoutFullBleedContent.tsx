@@ -23,7 +23,7 @@ export default function LayoutFullBleedContent() {
         }
         content={
           <XDSLayoutContent padding={0}>
-            <XDSSection variant="wash">
+            <XDSSection variant="muted">
               <XDSText type="body">
                 XDSSection automatically escapes the parent container padding to
                 fill edge-to-edge. Useful for wash backgrounds, tables, or
