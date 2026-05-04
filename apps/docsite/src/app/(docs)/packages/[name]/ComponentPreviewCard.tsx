@@ -11,7 +11,6 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import {XDSText} from '@xds/core/Text';
 import {XDSVStack} from '@xds/core/Layout';
-import {XDSBadge} from '@xds/core/Badge';
 import {XDSClickableCard} from '@xds/core/ClickableCard';
 import {XDSSkeleton} from '@xds/core/Skeleton';
 import {showcaseRegistry} from '../../../../generated/showcaseRegistry';
@@ -49,6 +48,9 @@ const styles = stylex.create({
     justifyContent: 'center',
     backgroundColor: 'var(--color-background-muted)',
     borderRadius: 'var(--radius-container)',
+  },
+  textContent: {
+    padding: '0 var(--spacing-2) var(--spacing-1)',
   },
 });
 
@@ -124,13 +126,13 @@ function ComponentThumbnail({name}: {name: string}) {
 interface ComponentPreviewCardProps {
   name: string;
   description: string;
-  group: string | null;
+  groupSize: number;
 }
 
 export function ComponentPreviewCard({
   name,
   description,
-  group,
+  groupSize,
 }: ComponentPreviewCardProps) {
   return (
     <XDSClickableCard
@@ -140,16 +142,18 @@ export function ComponentPreviewCard({
       padding={0}>
       <XDSVStack gap={2}>
         <ComponentThumbnail name={name} />
-        <XDSVStack gap={0.5}>
-          <XDSText type="body" weight="bold">
-            {name}
-          </XDSText>
-          {group && <XDSBadge label={group} />}
-          <XDSText type="supporting" color="secondary">
-            {description.slice(0, 100)}
-            {description.length > 100 ? '\u2026' : ''}
-          </XDSText>
-        </XDSVStack>
+        <div {...stylex.props(styles.textContent)}>
+          <XDSVStack gap={0.5}>
+            <XDSText type="body" weight="bold">
+              {name}
+            </XDSText>
+            <XDSText type="supporting" color="secondary">
+              {description.slice(0, 100)}
+              {description.length > 100 ? '\u2026' : ''}
+              {groupSize > 1 ? ` +${groupSize - 1}` : ''}
+            </XDSText>
+          </XDSVStack>
+        </div>
       </XDSVStack>
     </XDSClickableCard>
   );

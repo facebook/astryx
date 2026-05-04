@@ -145,9 +145,10 @@ function ComponentPackageContent({
 }: {
   components: ComponentEntry[];
 }) {
-  const topLevel = pkgComponents.filter(c => !c.parentDoc);
+  const visible = pkgComponents.filter(c => !c.hidden);
+  const cards = buildComponentCards(visible);
 
-  if (topLevel.length === 0) {
+  if (cards.length === 0) {
     return (
       <XDSText type="body" color="secondary">
         No components documented yet.
@@ -157,17 +158,71 @@ function ComponentPackageContent({
 
   return (
     <XDSVStack gap={4}>
-      <XDSHeading level={2}>Components ({topLevel.length})</XDSHeading>
+      <XDSHeading level={2}>Components ({cards.length})</XDSHeading>
       <XDSGrid columns={{minWidth: 260}} gap={4} rowGap={6}>
-        {topLevel.map(c => (
+        {cards.map(c => (
           <ComponentPreviewCard
             key={c.name}
             name={c.name}
             description={c.description}
-            group={c.group}
+            groupSize={c.groupSize}
           />
         ))}
       </XDSGrid>
     </XDSVStack>
   );
+}
+
+interface CardEntry {
+  name: string;
+  description: string;
+  groupSize: number;
+}
+
+function buildComponentCards(entries: ComponentEntry[]): CardEntry[] {
+  const groups = new Map<string, ComponentEntry[]>();
+  const ungrouped: ComponentEntry[] = [];
+
+  for (const entry of entries) {
+    const isHook = entry.name.startsWith('use');
+    if (entry.group === 'Utilities' || isHook) continue;
+
+    if (entry.group) {
+      if (!groups.has(entry.group)) groups.set(entry.group, []);
+      groups.get(entry.group)!.push(entry);
+    } else if (!entry.parentDoc) {
+      ungrouped.push(entry);
+    }
+  }
+
+  const cards: Array<{sortKey: string; card: CardEntry}> = [];
+
+  for (const [label, members] of groups) {
+    const canonical =
+      members.find(m => m.name === label) ||
+      members.find(m => !m.parentDoc) ||
+      members[0];
+    cards.push({
+      sortKey: label,
+      card: {
+        name: canonical.name,
+        description: canonical.description,
+        groupSize: members.length,
+      },
+    });
+  }
+
+  for (const entry of ungrouped) {
+    cards.push({
+      sortKey: entry.name,
+      card: {
+        name: entry.name,
+        description: entry.description,
+        groupSize: 1,
+      },
+    });
+  }
+
+  cards.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+  return cards.map(c => c.card);
 }
