@@ -79,10 +79,6 @@ const styles = stylex.create({
   imgFull: {
     width: '100%',
   },
-  bannerImage: {
-    height: '15vh',
-    objectFit: 'cover',
-  },
 });
 
 /**
@@ -121,14 +117,6 @@ export default function FormSimplePage() {
   return (
     <XDSCenter axis="horizontal">
       <XDSVStack hAlign="center" width="100%">
-        {/* Full-bleed banner */}
-        <img
-          // illustration-horizontal-2 from xds_oss asset set
-          src="https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-2.png"
-          alt="Decorative banner"
-          {...stylex.props(styles.imgFull, styles.bannerImage)}
-        />
-
         <XDSSection maxWidth={800} padding={6} paddingBlock={10} variant="section">
           <XDSVStack gap={6}>
           {/* Header */}
