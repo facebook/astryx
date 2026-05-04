@@ -147,6 +147,9 @@ function ComponentPackageContent({
 }) {
   const visible = pkgComponents.filter(c => !c.hidden);
   const cards = buildComponentCards(visible);
+  const totalCount = visible.filter(
+    c => !c.name.startsWith('use') && c.group !== 'Utilities',
+  ).length;
 
   if (cards.length === 0) {
     return (
@@ -158,7 +161,7 @@ function ComponentPackageContent({
 
   return (
     <XDSVStack gap={4}>
-      <XDSHeading level={2}>Components ({cards.length})</XDSHeading>
+      <XDSHeading level={2}>Components ({totalCount})</XDSHeading>
       <XDSGrid columns={{minWidth: 260}} gap={4} rowGap={6}>
         {cards.map(c => (
           <ComponentPreviewCard
