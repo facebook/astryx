@@ -6,6 +6,6 @@ export const doc = {
   description:
     'A default section stacked with a full-width wash section. Shows how wash draws attention to a specific region like an upgrade prompt or banner.',
   isReady: true,
-  aspectRatio: 16 / 9,
+  aspectRatio: 4 / 3,
   componentsUsed: ['Section', 'Layout', 'Text', 'Button', 'Icon'],
 };

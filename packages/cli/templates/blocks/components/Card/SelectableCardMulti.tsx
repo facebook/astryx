@@ -2,7 +2,7 @@
 
 import {useState} from 'react';
 import {XDSSelectableCard} from '@xds/core/SelectableCard';
-import {XDSStack} from '@xds/core/Layout';
+import {XDSGrid} from '@xds/core/Grid';
 import {XDSText} from '@xds/core/Text';
 
 const tags = [
@@ -18,7 +18,7 @@ export default function SelectableCardMulti() {
   const [selected, setSelected] = useState(new Set(['react', 'typescript']));
 
   return (
-    <XDSStack direction="horizontal" gap={2} wrap="wrap">
+    <XDSGrid columns={3} gap={2} width={400}>
       {tags.map(tag => (
         <XDSSelectableCard
           key={tag.id}
@@ -35,13 +35,12 @@ export default function SelectableCardMulti() {
               }
               return next;
             });
-          }}
-          width={130}>
+          }}>
           <XDSText type="body" weight="bold">
             {tag.name}
           </XDSText>
         </XDSSelectableCard>
       ))}
-    </XDSStack>
+    </XDSGrid>
   );
 }

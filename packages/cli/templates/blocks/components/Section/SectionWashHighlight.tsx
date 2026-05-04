@@ -16,8 +16,8 @@ const FEATURES = [
 
 export default function SectionDefaultWithWash() {
   return (
-    <XDSStack direction="vertical" gap={0}>
-      <XDSSection variant="section" padding={5}>
+    <XDSStack direction="vertical" gap={2}>
+      <XDSSection variant="section" padding={4}>
         <XDSStack direction="vertical" gap={3} hAlign="center">
           <XDSStack direction="vertical" gap={1} hAlign="center">
             <XDSText type="display-3">Pro Plan</XDSText>
@@ -39,12 +39,12 @@ export default function SectionDefaultWithWash() {
           </XDSStack>
         </XDSStack>
       </XDSSection>
-      <XDSSection variant="wash" padding={5}>
+      <XDSSection variant="wash" padding={6}>
         <XDSStack direction="vertical" gap={2} hAlign="center">
-          <XDSStack direction="horizontal" gap={1} vAlign="end">
-            <XDSHeading level={3}>$49</XDSHeading>
+          <XDSStack direction="horizontal" gap={2} vAlign="center">
+            <XDSText type="display-3">$49</XDSText>
             <XDSText type="supporting" color="secondary">
-              /month
+              / month
             </XDSText>
           </XDSStack>
           <XDSButton label="Upgrade" variant="primary" />
