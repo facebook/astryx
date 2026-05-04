@@ -200,7 +200,23 @@ export default function HomePage() {
                 xstyle={styles.heroDescription}>
                 An open design system for building internal tools with
                 AI-powered development. Ship faster with {coreCount} accessible,
-                themeable components.
+                themeable components. Made with{' '}
+                <XDSLink
+                  color="secondary"
+                  label="React"
+                  href="https://react.dev"
+                  isExternalLink>
+                  React
+                </XDSLink>
+                {' and '}
+                <XDSLink
+                  color="secondary"
+                  label="StyleX"
+                  href="https://stylexjs.com"
+                  isExternalLink>
+                  StyleX
+                </XDSLink>
+                .
               </XDSText>
               <XDSHStack gap={3} xstyle={styles.heroButtons}>
                 <XDSButton
