@@ -388,6 +388,13 @@ export interface XDSBaseTableProps<T extends Record<string, unknown>> {
   /** Additional HTML attributes for the `<table>` element */
   tableProps?: HTMLAttributes<HTMLTableElement>;
   /**
+   * Optional wrapper rendered around the `<table>` element, inside the
+   * plugin `transformTableContext` layer. Used by `XDSTable` to add a
+   * horizontal scroll container so plugin chrome (pagination, toolbars)
+   * stays outside the scrollable area.
+   */
+  scrollWrapper?: ComponentType<{children: ReactNode}>;
+  /**
    * How default-rendered body cell text behaves when it exceeds column width.
    *
    * - `'wrap'` (default) — text wraps and the row grows taller

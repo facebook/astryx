@@ -134,6 +134,21 @@ const scrollWrapperStyles = stylex.create({
   },
 });
 
+function TableScrollWrapper({children}: {children: React.ReactNode}) {
+  return (
+    <div
+      {...mergeProps(
+        xdsClassName('table-scroll-wrapper'),
+        stylex.props(
+          scrollWrapperStyles.base,
+          scrollWrapperStyles.containerBleed,
+        ),
+      )}>
+      {children}
+    </div>
+  );
+}
+
 // =============================================================================
 // Table-level styling plugin (only transforms the <table> element)
 // =============================================================================
@@ -208,24 +223,16 @@ function XDSTableInner<T extends Record<string, unknown>>({
 
   return (
     <XDSTableContext.Provider value={contextValue}>
-      <div
-        {...mergeProps(
-          xdsClassName('table-scroll-wrapper'),
-          stylex.props(
-            scrollWrapperStyles.base,
-            scrollWrapperStyles.containerBleed,
-          ),
-        )}>
-        <XDSBaseTable<T>
-          ref={ref}
-          data={data}
-          columns={columns}
-          plugins={mergedPlugins}
-          components={xdsComponents}
-          textOverflow={textOverflow}
-          {...rest}
-        />
-      </div>
+      <XDSBaseTable<T>
+        ref={ref}
+        data={data}
+        columns={columns}
+        plugins={mergedPlugins}
+        components={xdsComponents}
+        textOverflow={textOverflow}
+        scrollWrapper={TableScrollWrapper}
+        {...rest}
+      />
     </XDSTableContext.Provider>
   );
 }

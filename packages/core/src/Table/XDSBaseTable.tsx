@@ -266,6 +266,7 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
   children,
   tableProps: userTableProps,
   textOverflow = 'wrap',
+  scrollWrapper: ScrollWrapper,
   emptyState,
   ref,
 }: XDSBaseTableProps<T> & {ref?: Ref<HTMLTableElement>}): ReactElement {
@@ -469,6 +470,14 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
       </tbody>
     </table>
   );
+
+  // Wrap the <table> in a scroll container so it scrolls horizontally
+  // when columns exceed the container width. This wrapper sits between
+  // the <table> and transformTableContext, so plugin chrome (pagination,
+  // toolbars) renders outside the scroll area.
+  if (ScrollWrapper) {
+    tableElement = <ScrollWrapper>{tableElement}</ScrollWrapper>;
+  }
 
   // Apply transformTableContext from each plugin.
   // Iterates in reverse so the first plugin in the array wraps outermost,
