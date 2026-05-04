@@ -55,10 +55,13 @@ This means:
 1. Create the theme package under `packages/themes/<name>/`
 2. Add `"@xds/theme-<name>": "*"` to `apps/docsite/package.json` dependencies
 3. Add `@import "@xds/theme-<name>/theme.css"` to `src/app/globals.css`
-4. Run `yarn generate` — the theme appears in `themeRegistry.ts`, `packageRegistry.ts`, the sidebar, craft page, and package detail page automatically
+4. Add the theme's Google Fonts to the `<link>` tag in `src/app/layout.tsx`
+5. Run `yarn generate` — the theme appears in `themeRegistry.ts`, `packageRegistry.ts`, the sidebar, craft page, and package detail page automatically
 
-That's it. The pipeline discovers the theme from the dependency list and wires up
-the import, the built theme object, and the package metadata.
+Step 4 is easy to miss. Each theme declares font families in its source (e.g.
+`family: 'Fraunces'`). If those fonts aren't loaded, the theme silently falls
+back to system fonts. The docsite loads all theme fonts from Google Fonts via a
+single `<link>` in `layout.tsx` — add any new families there.
 
 > Only add **public** (non-private) theme packages to the docsite.
 
