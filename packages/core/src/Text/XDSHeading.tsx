@@ -25,6 +25,8 @@ import type {
 import {
   colorStyles,
   sizeByLevelStyles,
+  sizeByTypeStyles,
+  defaultWeightByTypeStyles,
   displayStyles,
   truncationStyles,
   wordBreakStyles,
@@ -47,6 +49,12 @@ const LazyXDSTooltip = lazy(() =>
  */
 export type XDSHeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
 
+/**
+ * Display type variants for headings. Applies display-scale sizing
+ * (larger, lighter) while preserving the semantic heading element.
+ */
+export type XDSHeadingType = 'display-1' | 'display-2' | 'display-3';
+
 export interface XDSHeadingProps extends Omit<
   XDSBaseProps<HTMLHeadingElement>,
   'children'
@@ -54,10 +62,26 @@ export interface XDSHeadingProps extends Omit<
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLHeadingElement>;
   /**
-   * Visual heading level (1-6). Determines styling from theme.
-   * Required to ensure intentional visual hierarchy.
+   * Heading level (1-6). Determines the semantic HTML element (h1–h6).
+   * Also determines visual styling unless `type` is set.
    */
   level: XDSHeadingLevel;
+
+  /**
+   * Display type variant. When set, overrides the visual styling from `level`
+   * with display-scale sizing (larger, lighter weight, tighter line-height).
+   * The `level` still determines the HTML element for accessibility.
+   *
+   * Use for hero banners, marketing headlines, and data callouts that need
+   * heading semantics.
+   *
+   * @example
+   * ```
+   * <XDSHeading level={1} type="display-1">Hero Title</XDSHeading>
+   * <XDSHeading level={2} type="display-2">$1.2M Revenue</XDSHeading>
+   * ```
+   */
+  type?: XDSHeadingType;
 
   /**
    * Accessibility level override. When set, the `aria-level` will differ
@@ -151,12 +175,15 @@ const levelToTag = {
  * <XDSHeading level={1}>Page Title</XDSHeading>
  * <XDSHeading level={2}>Section</XDSHeading>
  * <XDSHeading level={2} accessibilityLevel={3}>Sidebar Section</XDSHeading>
+ * <XDSHeading level={1} type="display-1">Hero Title</XDSHeading>
+ * <XDSHeading level={2} type="display-2">$1.2M Revenue</XDSHeading>
  * <XDSHeading level={2} maxLines={1}>Very Long Section Title...</XDSHeading>
  * <XDSHeading level={3} color="secondary">Muted Heading</XDSHeading>
  * ```
  */
 export function XDSHeading({
   level,
+  type,
   accessibilityLevel,
   color = 'primary',
   display = 'block',
@@ -227,10 +254,11 @@ export function XDSHeading({
       <Component
         ref={mergedRef}
         {...mergeProps(
-          xdsClassName('heading', {level, color}),
+          xdsClassName('heading', {level, color, ...(type && {type})}),
           stylex.props(
             colorStyles[color],
-            sizeByLevelStyles[level],
+            type ? sizeByTypeStyles[type] : sizeByLevelStyles[level],
+            type && defaultWeightByTypeStyles[type],
             // Display: use truncation styles when maxLines > 0
             maxLines === 1
               ? truncationStyles.singleLine

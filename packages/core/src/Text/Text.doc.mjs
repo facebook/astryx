@@ -130,8 +130,14 @@ export const docs = {
           name: 'level',
           type: '1 | 2 | 3 | 4 | 5 | 6',
           description:
-            'Visual heading level. Determines both the HTML element (h1–h6) and the styling from the theme.',
+            'Heading level. Determines the semantic HTML element (h1–h6) and the visual styling from the theme (unless `type` is set).',
           required: true,
+        },
+        {
+          name: 'type',
+          type: "'display-1' | 'display-2' | 'display-3'",
+          description:
+            'Display type variant. Overrides the visual styling from `level` with display-scale sizing (larger, lighter weight, tighter line-height). The `level` still determines the HTML element for accessibility. Use for hero banners, marketing headlines, and data callouts.',
         },
         {
           name: 'children',
@@ -344,8 +350,14 @@ export const docsZh = {
           name: 'level',
           type: '1 | 2 | 3 | 4 | 5 | 6',
           description:
-            '视觉标题级别。同时决定 HTML 元素（h1–h6）和来自主题的样式。',
+            '标题级别。决定语义 HTML 元素（h1–h6）和来自主题的样式（除非设置了 `type`）。',
           required: true,
+        },
+        {
+          name: 'type',
+          type: "'display-1' | 'display-2' | 'display-3'",
+          description:
+            '展示类型变体。用展示级别的大小（更大、更轻的字重、更紧的行高）覆盖来自 `level` 的视觉样式。`level` 仍然决定用于无障碍的 HTML 元素。用于英雄横幅、营销标题和数据提示。',
         },
         {
           name: 'children',
@@ -476,7 +488,8 @@ export const docsDense = {
       name: 'XDSHeading',
       description: 'Semantic h1\u20136 w/ themed styling, themed sizing via type scale tokens, line-clamp truncation.',
       propDescriptions: {
-        level: 'Visual heading level; determines HTML element + styling from theme.',
+        level: 'Heading level; determines HTML element + styling from theme (unless type is set).',
+        type: "Display variant (display-1/2/3); overrides visual styling from level with display-scale sizing.",
         children: 'Heading content.',
         accessibilityLevel: 'aria-level override when different from level for document outline.',
         

@@ -15,6 +15,7 @@ export {
   XDSHeading,
   type XDSHeadingProps,
   type XDSHeadingLevel,
+  type XDSHeadingType,
 } from './XDSHeading';
 
 // Re-export shared types from theme for convenience

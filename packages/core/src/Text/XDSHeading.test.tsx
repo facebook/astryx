@@ -155,6 +155,36 @@ describe('XDSHeading', () => {
       expect(element).toHaveAttribute('aria-level', '3');
       expect(element.tagName).toBe('H2');
     });
+
+    it('accepts type prop for display variants', () => {
+      render(
+        <XDSHeading level={1} type="display-1">
+          Hero Title
+        </XDSHeading>,
+      );
+      const element = screen.getByText('Hero Title');
+      expect(element.tagName).toBe('H1');
+    });
+
+    it('renders correct heading element with display type', () => {
+      render(
+        <XDSHeading level={2} type="display-2">
+          Revenue
+        </XDSHeading>,
+      );
+      const element = screen.getByText('Revenue');
+      expect(element.tagName).toBe('H2');
+    });
+
+    it('includes display type in class names', () => {
+      render(
+        <XDSHeading level={1} type="display-1">
+          Display Heading
+        </XDSHeading>,
+      );
+      const element = screen.getByText('Display Heading');
+      expect(element.className).toContain('display-1');
+    });
   });
 
   it('renders xds-* class names for theme targeting', () => {
