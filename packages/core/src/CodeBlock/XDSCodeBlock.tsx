@@ -204,7 +204,9 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-inner'],
     backgroundColor: {
       default: 'transparent',
-      ':hover': colorVars['--color-overlay-hover'],
+      '@media (hover: hover)': {
+        ':hover': colorVars['--color-overlay-hover'],
+      },
     },
     color: 'var(--color-syntax-comment)',
     cursor: 'pointer',
