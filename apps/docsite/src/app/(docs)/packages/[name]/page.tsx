@@ -10,9 +10,7 @@ import {notFound} from 'next/navigation';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSSection} from '@xds/core/Section';
-import {XDSBadge} from '@xds/core/Badge';
 import {XDSGrid} from '@xds/core/Grid';
-import {XDSClickableCard} from '@xds/core/ClickableCard';
 import {XDSDivider} from '@xds/core';
 import {packages} from '../../../../generated/packageRegistry';
 import {
@@ -30,6 +28,7 @@ import {matchaTheme} from '@xds/theme-matcha/built';
 import type {XDSDefinedTheme} from '@xds/core/theme';
 import {PackageHeading} from './PackageHeading';
 import {PackageStubPage} from './PackageStubPage';
+import {ComponentPreviewCard} from './ComponentPreviewCard';
 
 function slugToPackageName(slug: string): string {
   return `@xds/${slug}`;
@@ -159,25 +158,14 @@ function ComponentPackageContent({
   return (
     <XDSVStack gap={4}>
       <XDSHeading level={2}>Components ({topLevel.length})</XDSHeading>
-      <XDSGrid columns={{minWidth: 200}} gap={4}>
+      <XDSGrid columns={{minWidth: 260}} gap={4} rowGap={6}>
         {topLevel.map(c => (
-          <XDSClickableCard
+          <ComponentPreviewCard
             key={c.name}
-            label={c.name}
-            href={`/components/${c.name}`}
-            variant="transparent"
-            padding={4}>
-            <XDSVStack gap={1}>
-              <XDSText type="body" weight="bold">
-                {c.name}
-              </XDSText>
-              {c.group && <XDSBadge label={c.group} />}
-              <XDSText type="supporting" color="secondary">
-                {c.description.slice(0, 100)}
-                {c.description.length > 100 ? '…' : ''}
-              </XDSText>
-            </XDSVStack>
-          </XDSClickableCard>
+            name={c.name}
+            description={c.description}
+            group={c.group}
+          />
         ))}
       </XDSGrid>
     </XDSVStack>
