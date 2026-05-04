@@ -3,13 +3,12 @@
 import {useState} from 'react';
 import {XDSMultiSelector} from '@xds/core/MultiSelector';
 import {XDSVStack} from '@xds/core/Layout';
-import {XDSCenter} from '@xds/core/Center';
 
 export default function MultiSelectorForm() {
   const [columns, setColumns] = useState<string[]>(['name', 'email']);
   const [filters, setFilters] = useState<string[]>([]);
   return (
-    <XDSCenter width={300}>
+    <div style={{width: 300}}>
       <XDSVStack gap={4}>
         <XDSMultiSelector
           label="Visible columns"
@@ -38,6 +37,6 @@ export default function MultiSelectorForm() {
           placeholder="All statuses"
         />
       </XDSVStack>
-    </XDSCenter>
+    </div>
   );
 }

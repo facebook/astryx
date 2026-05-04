@@ -2,12 +2,11 @@
 
 import {useState} from 'react';
 import {XDSMultiSelector} from '@xds/core/MultiSelector';
-import {XDSCenter} from '@xds/core/Center';
 
 export default function MultiSelectorSectionedMultiSelector() {
   const [value, setValue] = useState<string[]>([]);
   return (
-    <XDSCenter width={300}>
+    <div style={{width: 300}}>
       <XDSMultiSelector
         label="Permissions"
         options={[
@@ -33,6 +32,6 @@ export default function MultiSelectorSectionedMultiSelector() {
         onChange={setValue}
         placeholder="Select permissions..."
       />
-    </XDSCenter>
+    </div>
   );
 }
