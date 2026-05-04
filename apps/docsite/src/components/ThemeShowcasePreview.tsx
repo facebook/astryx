@@ -10,7 +10,7 @@ import {XDSCenter} from '@xds/core/Center';
 import {XDSSection} from '@xds/core/Section';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSBadge} from '@xds/core/Badge';
-import {XDSTable} from '@xds/core/Table';
+import {XDSTable, proportional} from '@xds/core/Table';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
 import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
@@ -209,7 +209,7 @@ export function ThemeShowcasePreview({
             </XDSVStack>
           </XDSCenter>
 
-          <XDSGrid columns={3} gap={4}>
+          <XDSGrid columns={{minWidth: 240}} gap={4}>
             {PRODUCTS.map((p, i) => (
               <XDSCard key={p.name} padding={0}>
                 <XDSVStack gap={0}>
@@ -244,10 +244,14 @@ export function ThemeShowcasePreview({
           <XDSTable
             data={TABLE_DATA}
             columns={[
-              {key: 'name', header: 'Name'},
-              {key: 'description', header: 'Description'},
-              {key: 'price', header: 'Price'},
-              {key: 'stock', header: 'Stock'},
+              {key: 'name', header: 'Name', width: proportional(1)},
+              {
+                key: 'description',
+                header: 'Description',
+                width: proportional(2),
+              },
+              {key: 'price', header: 'Price', width: proportional(1)},
+              {key: 'stock', header: 'Stock', width: proportional(1)},
             ]}
             density="spacious"
             dividers="rows"
@@ -266,7 +270,7 @@ function ThemeShowcaseDetails() {
 
   return (
     <XDSVStack gap={4}>
-      <XDSGrid columns={2} gap={4}>
+      <XDSGrid columns={{minWidth: 280}} gap={4}>
         <XDSCard padding={6} xstyle={styles.fontCard}>
           <XDSVStack gap={4}>
             <XDSText type="label" weight="bold">
@@ -310,7 +314,7 @@ function ThemeShowcaseDetails() {
       </XDSGrid>
 
       <XDSCard padding={6} xstyle={styles.componentCard}>
-        <XDSGrid columns={2} gap={8}>
+        <XDSGrid columns={{minWidth: 280}} gap={8}>
           <XDSVStack gap={4}>
             <XDSText type="label" weight="bold">
               Components
@@ -332,7 +336,7 @@ function ThemeShowcaseDetails() {
               <XDSBadge label="Warning" variant="warning" />
               <XDSBadge label="Error" variant="error" />
             </XDSHStack>
-            <XDSGrid columns={2} gap={4}>
+            <XDSGrid columns={{minWidth: 180}} gap={4}>
               <XDSVStack gap={2}>
                 <XDSText type="supporting" weight="bold">
                   Label
