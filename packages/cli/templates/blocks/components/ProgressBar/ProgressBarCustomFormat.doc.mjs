@@ -6,6 +6,6 @@ export const doc = {
   description:
     'Progress bar with a custom value label showing disk usage in GB.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['ProgressBar', 'Center', 'VStack', 'Text'],
 };

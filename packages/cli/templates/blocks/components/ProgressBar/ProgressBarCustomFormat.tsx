@@ -7,7 +7,7 @@ import {XDSText} from '@xds/core/Text';
 
 export default function ProgressBarCustomFormat() {
   return (
-    <XDSCenter width={300}>
+    <div style={{width: 300}}>
       <XDSVStack gap={1}>
         <XDSProgressBar
           value={3.2}
@@ -22,6 +22,6 @@ export default function ProgressBarCustomFormat() {
           1.8 GB remaining
         </XDSText>
       </XDSVStack>
-    </XDSCenter>
+    </div>
   );
 }
