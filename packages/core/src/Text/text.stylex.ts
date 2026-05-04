@@ -89,6 +89,9 @@ export const defaultWeightByTypeStyles = stylex.create({
   'display-3': {
     fontWeight: typeScaleVars['--text-display-3-weight'],
   },
+  inherit: {
+    fontWeight: 'inherit',
+  },
 });
 
 // =============================================================================
@@ -132,6 +135,10 @@ export const sizeByTypeStyles = stylex.create({
   'display-3': {
     fontSize: typeScaleVars['--text-display-3-size'],
     lineHeight: typeScaleVars['--text-display-3-leading'],
+  },
+  inherit: {
+    fontSize: 'inherit',
+    lineHeight: 'inherit',
   },
 });
 

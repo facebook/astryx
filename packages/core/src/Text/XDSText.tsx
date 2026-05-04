@@ -157,6 +157,7 @@ const defaultColorByType: Record<string, XDSTextColor> = {
   'display-1': 'primary',
   'display-2': 'primary',
   'display-3': 'primary',
+  inherit: 'inherit',
 };
 
 /**

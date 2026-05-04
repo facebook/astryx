@@ -119,7 +119,8 @@ export type XDSBuiltinTextType =
   | 'code'
   | 'display-1'
   | 'display-2'
-  | 'display-3';
+  | 'display-3'
+  | 'inherit';
 
 /**
  * Semantic text types for XDSText.

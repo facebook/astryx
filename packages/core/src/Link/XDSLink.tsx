@@ -239,7 +239,7 @@ export function XDSLink({
   onClick,
   tooltip,
   isStandalone = false,
-  type,
+  type = 'body',
   size,
   weight,
   color = 'active',
@@ -253,10 +253,6 @@ export function XDSLink({
   ref,
   ...props
 }: XDSLinkProps) {
-  // When type isn't explicitly set, default to 'body' only for standalone links.
-  // Inline links skip XDSText to inherit parent typography.
-  const hasExplicitType = type != null;
-  const resolvedType = type ?? 'body';
   const LinkComponent = useXDSLinkComponent(as);
   // Determine target and rel based on isExternalLink
   const computedTarget = isExternalLink ? '_blank' : target;
@@ -290,19 +286,15 @@ export function XDSLink({
         style,
       )}
       {...props}>
-      {hasExplicitType || isStandalone || size || weight || maxLines > 0 ? (
-        <XDSText
-          type={resolvedType}
-          size={size}
-          weight={weight}
-          color={color}
-          display={display}
-          maxLines={maxLines}>
-          {children}
-        </XDSText>
-      ) : (
-        children
-      )}
+      <XDSText
+        type={type}
+        size={size}
+        weight={weight}
+        color={color}
+        display={display}
+        maxLines={maxLines}>
+        {children}
+      </XDSText>
       {isExternalLink && (
         <XDSIcon icon="externalLink" size="xsm" color="inherit" />
       )}

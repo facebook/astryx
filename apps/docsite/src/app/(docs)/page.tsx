@@ -201,11 +201,17 @@ export default function HomePage() {
                 An open design system for building internal tools with
                 AI-powered development. Ship faster with {coreCount} accessible,
                 themeable components. Made with{' '}
-                <XDSLink color="secondary" href="https://react.dev">
+                <XDSLink
+                  type="inherit"
+                  color="secondary"
+                  href="https://react.dev">
                   React
                 </XDSLink>
                 {' and '}
-                <XDSLink color="secondary" href="https://stylexjs.com">
+                <XDSLink
+                  type="inherit"
+                  color="secondary"
+                  href="https://stylexjs.com">
                   StyleX
                 </XDSLink>
                 .
