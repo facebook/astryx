@@ -46,6 +46,7 @@ const styles = stylex.create({
   },
   fontCard: {
     borderColor: 'transparent',
+    minWidth: 0,
   },
   fontSample: {
     height: '100%',
@@ -55,6 +56,8 @@ const styles = stylex.create({
   },
   componentCard: {
     borderColor: 'transparent',
+    overflow: 'hidden',
+    minWidth: 0,
   },
 });
 
@@ -314,7 +317,7 @@ function ThemeShowcaseDetails() {
       </XDSGrid>
 
       <XDSCard padding={6} xstyle={styles.componentCard}>
-        <XDSGrid columns={{minWidth: 280}} gap={8}>
+        <XDSGrid columns={{minWidth: 240}} gap={8}>
           <XDSVStack gap={4}>
             <XDSText type="label" weight="bold">
               Components
