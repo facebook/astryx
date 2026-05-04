@@ -16,7 +16,7 @@ import {XDSList, XDSListItem} from '@xds/core/List';
 
 export default function LayoutSidebarLayout() {
   return (
-    <XDSCard>
+    <XDSCard width="100%" style={{maxWidth: 500}}>
       <XDSLayout
         header={
           <XDSLayoutHeader hasDivider>
@@ -24,7 +24,7 @@ export default function LayoutSidebarLayout() {
           </XDSLayoutHeader>
         }
         start={
-          <XDSLayoutPanel hasDivider role="navigation" width={140}>
+          <XDSLayoutPanel hasDivider role="navigation" width={150}>
             <XDSList>
               <XDSListItem label="General" isSelected />
               <XDSListItem label="Account" />

@@ -15,8 +15,9 @@ import {XDSButton} from '@xds/core/Button';
 
 export default function LayoutHeaderShowcase() {
   return (
-    <XDSCenter width={600}>
+    <XDSCenter width={400}>
       <XDSLayout
+        style={{width: '100%'}}
         height="fill"
         header={
           <XDSLayoutHeader hasDivider>

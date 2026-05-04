@@ -14,7 +14,7 @@ import {XDSHeading, XDSText} from '@xds/core/Text';
 
 export default function LayoutFullBleedContent() {
   return (
-    <XDSCard>
+    <XDSCard width="100%" style={{maxWidth: 400}}>
       <XDSLayout
         header={
           <XDSLayoutHeader hasDivider>
@@ -25,8 +25,8 @@ export default function LayoutFullBleedContent() {
           <XDSLayoutContent padding={0}>
             <XDSSection variant="wash">
               <XDSText type="body">
-                XDSSection automatically escapes the parent container padding
-                to fill edge-to-edge. Useful for wash backgrounds, tables, or
+                XDSSection automatically escapes the parent container padding to
+                fill edge-to-edge. Useful for wash backgrounds, tables, or
                 images that need to span the full width.
               </XDSText>
             </XDSSection>

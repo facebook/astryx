@@ -13,8 +13,9 @@ import {XDSList, XDSListItem} from '@xds/core/List';
 
 export default function LayoutPanelShowcase() {
   return (
-    <XDSCenter width={600}>
+    <XDSCenter width={400}>
       <XDSLayout
+        style={{width: '100%'}}
         height="fill"
         header={
           <XDSLayoutHeader hasDivider>

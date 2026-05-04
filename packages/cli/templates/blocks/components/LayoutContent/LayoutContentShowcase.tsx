@@ -14,8 +14,9 @@ import {XDSText, XDSHeading} from '@xds/core/Text';
 
 export default function LayoutContentShowcase() {
   return (
-    <XDSCenter width={600}>
+    <XDSCenter width={500}>
       <XDSLayout
+        style={{width: '100%'}}
         height="fill"
         header={
           <XDSLayoutHeader hasDivider>

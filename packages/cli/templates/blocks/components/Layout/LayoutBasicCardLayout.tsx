@@ -14,7 +14,7 @@ import {XDSHeading, XDSText} from '@xds/core/Text';
 
 export default function LayoutBasicCardLayout() {
   return (
-    <XDSCard height={300}>
+    <XDSCard height={300} width="100%" style={{maxWidth: 400}}>
       <XDSLayout
         header={
           <XDSLayoutHeader hasDivider>
@@ -31,8 +31,8 @@ export default function LayoutBasicCardLayout() {
               </XDSText>
               <XDSText type="body">
                 When content exceeds the available height, the content area
-                scrolls independently while the header and footer stay fixed
-                in place.
+                scrolls independently while the header and footer stay fixed in
+                place.
               </XDSText>
               <XDSText type="body">
                 This pattern works well for modal dialogs, detail panels, and

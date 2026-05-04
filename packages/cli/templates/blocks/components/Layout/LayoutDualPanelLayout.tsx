@@ -13,7 +13,7 @@ import {XDSList, XDSListItem} from '@xds/core/List';
 
 export default function LayoutDualPanelLayout() {
   return (
-    <XDSCard>
+    <XDSCard width="100%" style={{maxWidth: 500}}>
       <XDSLayout
         header={
           <XDSLayoutHeader hasDivider>
@@ -21,7 +21,7 @@ export default function LayoutDualPanelLayout() {
           </XDSLayoutHeader>
         }
         start={
-          <XDSLayoutPanel hasDivider>
+          <XDSLayoutPanel width={120} hasDivider>
             <XDSVStack gap={1}>
               <XDSText type="label" color="secondary">
                 Folders
@@ -49,7 +49,7 @@ export default function LayoutDualPanelLayout() {
           </XDSLayoutContent>
         }
         end={
-          <XDSLayoutPanel hasDivider>
+          <XDSLayoutPanel width={120} hasDivider>
             <XDSVStack gap={2}>
               <XDSText type="label" color="secondary">
                 Details
