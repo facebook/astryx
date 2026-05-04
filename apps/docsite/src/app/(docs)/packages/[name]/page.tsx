@@ -159,12 +159,13 @@ function ComponentPackageContent({
   return (
     <XDSVStack gap={4}>
       <XDSHeading level={2}>Components ({topLevel.length})</XDSHeading>
-      <XDSGrid columns={3} gap={4} minChildWidth={200}>
+      <XDSGrid columns={{minWidth: 200}} gap={4}>
         {topLevel.map(c => (
           <XDSClickableCard
             key={c.name}
             label={c.name}
             href={`/components/${c.name}`}
+            variant="transparent"
             padding={4}>
             <XDSVStack gap={1}>
               <XDSText type="body" weight="bold">
