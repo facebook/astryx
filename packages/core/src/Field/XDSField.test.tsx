@@ -295,7 +295,7 @@ describe('XDSField', () => {
       );
       const field = screen.getByTestId('field');
       // With display:contents, the field's children participate in the parent grid.
-      // The field should contain: label element + input wrapper div
+      // The field should contain: label alignment wrapper + input wrapper div
       const label = screen.getByText('Name');
       expect(label.tagName).toBe('LABEL');
       expect(field.contains(label)).toBe(true);
@@ -346,6 +346,22 @@ describe('XDSField', () => {
       const field = container.firstChild as HTMLElement;
       expect(field.className).not.toContain('horizontalLabels');
       expect(field.className).toContain('container');
+    });
+
+    it('wraps label in alignment div with top padding', () => {
+      render(
+        <XDSField label="Name" inputID="name-input" data-testid="field">
+          <input id="name-input" />
+        </XDSField>,
+        {wrapper: horizontalLabelsWrapper},
+      );
+      const field = screen.getByTestId('field');
+      // First child should be the label alignment wrapper
+      const labelWrapper = field.children[0] as HTMLElement;
+      expect(labelWrapper.tagName).toBe('DIV');
+      expect(labelWrapper.className).toContain('horizontalLabelAlign');
+      // Label should be inside
+      expect(labelWrapper.querySelector('label')).not.toBeNull();
     });
   });
 });

@@ -25,6 +25,7 @@ import {
   typographyVars,
   typeScaleVars,
   fontWeightVars,
+  borderVars,
 } from '../theme/tokens.stylex';
 import type {XDSIconType} from '../Icon';
 import {xdsClassName, mergeProps} from '../utils';
@@ -40,6 +41,12 @@ const styles = stylex.create({
   },
   horizontalLabels: {
     display: 'contents',
+  },
+  horizontalLabelAlign: {
+    // Align label text with input text by matching the input wrapper's
+    // top border + top padding. Works for both single-line inputs and
+    // textareas (labels stay top-aligned, not vertically centered).
+    paddingTop: `calc(${borderVars['--border-width']} + ${spacingVars['--spacing-1']})`,
   },
   horizontalDescription: {
     fontFamily: typographyVars['--font-family-body'],
@@ -237,6 +244,7 @@ export function XDSField({
   // Use display:contents so the parent grid's `auto 1fr` columns place
   // the label in column 1 and the input group in column 2. Description
   // and status are grouped with the input in column 2.
+  // The label wrapper gets top padding to align label text with input text.
   if (isHorizontalLabels) {
     return (
       <div
@@ -248,7 +256,7 @@ export function XDSField({
           style,
         )}
         {...props}>
-        {labelNode}
+        <div {...stylex.props(styles.horizontalLabelAlign)}>{labelNode}</div>
         <div {...stylex.props(styles.inputStatusWrapper)}>
           {description && (
             <span

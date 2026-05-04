@@ -234,10 +234,13 @@ describe('XDSFormLayout', () => {
     // Field should have display:contents class
     expect(field.className).toContain('horizontalLabels');
 
-    // Field's direct children should be: label element + input wrapper div
+    // Field's direct children should be: label alignment div + input wrapper div
     const fieldChildren = Array.from(field.children);
     expect(fieldChildren.length).toBe(2);
-    expect(fieldChildren[0].tagName).toBe('LABEL');
+    // First child is the label alignment wrapper containing the <label>
+    expect(fieldChildren[0].tagName).toBe('DIV');
+    expect(fieldChildren[0].querySelector('label')).not.toBeNull();
+    // Second child is the input wrapper div
     expect(fieldChildren[1].tagName).toBe('DIV');
     // The input should be inside the wrapper div (column 2)
     expect(
