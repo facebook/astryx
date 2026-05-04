@@ -158,7 +158,10 @@ function formatValue(value: unknown): string {
 
 function generateCode(name: string, state: Record<string, unknown>): string {
   const componentName = `XDS${name}`;
-  const entries = Object.entries(state).filter(([, v]) => v !== undefined);
+  // Filter out docs-only props that shouldn't appear in user code
+  const entries = Object.entries(state).filter(
+    ([k, v]) => v !== undefined && k !== 'isInline',
+  );
 
   if (entries.length === 0) return `<${componentName} />`;
 

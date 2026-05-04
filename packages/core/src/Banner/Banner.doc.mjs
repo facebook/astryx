@@ -91,6 +91,13 @@ export const docs = {
     },
   ],
 
+  playground: {
+    defaults: {
+      title: 'System maintenance scheduled',
+      description: 'The platform will be briefly unavailable on Sunday from 2–4 AM PST.',
+      status: 'info',
+    },
+  },
   theming: {
     targets: [
       {className: 'xds-banner', visualProps: ['container', 'status']},

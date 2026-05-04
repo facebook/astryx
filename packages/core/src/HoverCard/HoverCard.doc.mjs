@@ -2,7 +2,14 @@
 
 export const docs = {
   name: 'HoverCard',
+  group: 'HoverCard',
   keywords: ["hovercard","hover card","popover","tooltip","preview card","flyout","overlay","hover popup"],
+  playground: {
+    defaults: {
+      content: {__element: 'XDSText', props: {type: 'body'}, children: 'Additional details shown on hover.'},
+      children: {__element: 'XDSLink', props: {href: '#'}, children: 'Hover for details'},
+    },
+  },
   theming: {
     targets: [
       {className: 'xds-hovercard'},

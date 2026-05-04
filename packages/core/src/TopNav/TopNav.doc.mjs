@@ -4,6 +4,12 @@ export const docs = {
   name: 'TopNav',
   group: 'TopNav',
   keywords: ["topnav","navbar","appbar","header","toolbar","navigation","menubar","topbar"],
+  playground: {
+    defaults: {
+      label: 'Navigation',
+      heading: {__element: 'XDSTopNavHeading', props: {heading: 'My App'}},
+    },
+  },
   theming: {
     targets: [
       {className: 'xds-top-nav', states: ['mode']},

@@ -2,6 +2,13 @@
 
 export const docs = {
   name: 'Tooltip',
+  group: 'Tooltip',
+  playground: {
+    defaults: {
+      content: 'Helpful tooltip text',
+      children: {__element: 'XDSButton', props: {label: 'Hover me', variant: 'secondary'}},
+    },
+  },
   keywords: ["tooltip","hint","infotip","title","hover","flyout","balloon","helpertext"],
   components: [
     {

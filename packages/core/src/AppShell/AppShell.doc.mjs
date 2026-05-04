@@ -96,8 +96,7 @@ export const docs = {
       contentPadding: 4,
       topNav: {
         __element: 'XDSTopNav',
-        props: {label: 'Navigation'},
-        children: {__element: 'XDSText', props: {type: 'body', weight: 'bold'}, children: 'My App'},
+        props: {label: 'Navigation', heading: {__element: 'XDSTopNavHeading', props: {heading: 'My App'}}},
       },
       sideNav: {
         __element: 'XDSSideNav',

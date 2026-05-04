@@ -2,6 +2,7 @@
 
 export const docs = {
   name: 'Popover',
+  group: 'Popover',
   keywords: ["popover","popup","dropdown","tooltip","overlay","flyout","callout","popper","anchor","floating","bubble"],
   components: [
     {
@@ -92,6 +93,12 @@ export const docs = {
       ],
     },
   ],
+  playground: {
+    defaults: {
+      content: {__element: 'XDSText', props: {type: 'body'}, children: 'Popover content goes here.'},
+      children: {__element: 'XDSButton', props: {label: 'Open popover', variant: 'secondary'}},
+    },
+  },
   theming: {
     targets: [
       {className: 'xds-popover'},

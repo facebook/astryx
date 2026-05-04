@@ -29,6 +29,16 @@ export function resolveElementDescriptor(
   const Comp = getXDSComponent(desc.__element.replace(/^XDS/, ''));
   const tag = Comp ?? desc.__element;
 
+  // Resolve any nested ElementDescriptors inside props
+  const resolvedProps: Record<string, unknown> = {};
+  if (desc.props) {
+    for (const [key, val] of Object.entries(desc.props)) {
+      resolvedProps[key] = isElementDescriptor(val)
+        ? resolveElementDescriptor(val)
+        : val;
+    }
+  }
+
   let children: React.ReactNode = undefined;
   if (desc.children != null) {
     if (typeof desc.children === 'string') {
@@ -44,7 +54,7 @@ export function resolveElementDescriptor(
     }
   }
 
-  return createElement(tag, desc.props ?? {}, children);
+  return createElement(tag, resolvedProps, children);
 }
 
 export function resolveValue(v: unknown): unknown {

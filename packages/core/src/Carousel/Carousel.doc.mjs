@@ -33,6 +33,15 @@ export const docs = {
     {name: 'style', type: 'CSSProperties', description: 'Inline styles for the root element. Prefer xstyle.'},
     {name: 'data-testid', type: 'string', description: 'Test selector for automated testing frameworks.'},
   ],
+  playground: {
+    defaults: {
+      children: [
+        {__element: 'XDSCard', props: {padding: 4}, children: 'Slide 1'},
+        {__element: 'XDSCard', props: {padding: 4}, children: 'Slide 2'},
+        {__element: 'XDSCard', props: {padding: 4}, children: 'Slide 3'},
+      ],
+    },
+  },
   theming: {
     targets: [
       {className: 'xds-carousel'},

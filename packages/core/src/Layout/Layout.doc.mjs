@@ -4,6 +4,13 @@ export const docs = {
   name: 'Layout',
   group: 'Layout',
   keywords: ["layout","container","content","flex","box","wrapper","scaffold","page","shell"],
+  playground: {
+    defaults: {
+      header: {__element: 'XDSLayoutHeader', props: {}, children: {__element: 'XDSHeading', props: {level: 3}, children: 'Page Title'}},
+      content: {__element: 'XDSLayoutContent', props: {}, children: {__element: 'XDSText', props: {type: 'body', color: 'secondary'}, children: 'Main content area. This is the scrollable center section of the layout.'}},
+      footer: {__element: 'XDSLayoutFooter', props: {}, children: {__element: 'XDSText', props: {type: 'supporting', color: 'secondary'}, children: 'Footer — status bar or actions'}},
+    },
+  },
   theming: {
     targets: [
       {className: 'xds-layout', visualProps: ['height']},
@@ -23,31 +30,31 @@ export const docs = {
           name: 'content',
           type: 'ReactNode',
           description: 'Main content area (center).',
-          slotElements: [{__element: 'XDSText', props: {type: 'body'}, children: 'Content text'}],
+          slotElements: [{__element: 'XDSLayoutContent', props: {}, children: 'Content'}],
         },
         {
           name: 'header',
           type: 'ReactNode',
           description: 'Header slot.',
-          slotElements: [{__element: 'XDSText', props: {type: 'body'}, children: 'Header'}],
+          slotElements: [{__element: 'XDSLayoutHeader', props: {}, children: 'Header'}],
         },
         {
           name: 'footer',
           type: 'ReactNode',
           description: 'Footer slot.',
-          slotElements: [{__element: 'XDSText', props: {type: 'body'}, children: 'Footer content'}],
+          slotElements: [{__element: 'XDSLayoutFooter', props: {}, children: 'Footer'}],
         },
         {
           name: 'start',
           type: 'ReactNode',
           description: 'Start panel (left in LTR).',
-          slotElements: [{__element: 'XDSText', props: {type: 'body'}, children: 'Panel content'}],
+          slotElements: [{__element: 'XDSLayoutPanel', props: {}, children: 'Panel'}],
         },
         {
           name: 'end',
           type: 'ReactNode',
           description: 'End panel (right in LTR).',
-          slotElements: [{__element: 'XDSText', props: {type: 'body'}, children: 'Panel content'}],
+          slotElements: [{__element: 'XDSLayoutPanel', props: {}, children: 'Panel'}],
         },
         {
           name: 'height',

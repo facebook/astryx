@@ -23,6 +23,16 @@ export const docs = {
       {guidance: false, description: 'Use AlertDialog for non-destructive actions — use a standard Dialog instead.'},
     ],
   },
+  playground: {
+    defaults: {
+      isOpen: true,
+      isInline: true,
+      onOpenChange: undefined,
+      title: 'Delete item?',
+      description: 'This action cannot be undone. The item and all its data will be permanently removed.',
+      actionLabel: 'Delete',
+    },
+  },
   components: [
     {
       name: 'XDSAlertDialog',
