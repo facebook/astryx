@@ -12,13 +12,15 @@ const cards = [
   {title: 'Theming', description: 'Customize the look and feel.'},
   {title: 'Accessibility', description: 'Build inclusive experiences.'},
   {title: 'Patterns', description: 'Common UI composition patterns.'},
-  {title: 'Migration Guide', description: 'Upgrading from previous versions.'},
-  {title: 'API Reference', description: 'Detailed prop and hook docs.'},
 ];
 
 export default function GridGalleryExample() {
   return (
-    <XDSGrid columns={{minWidth: 280}} gap={5}>
+    <XDSGrid
+      columns={{minWidth: 180}}
+      gap={5}
+      width="100%"
+      style={{maxWidth: 400}}>
       {cards.map(card => (
         <XDSCard key={card.title}>
           <XDSVStack gap={1}>
