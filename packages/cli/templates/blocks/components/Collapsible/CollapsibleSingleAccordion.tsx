@@ -8,7 +8,7 @@ import {XDSVStack} from '@xds/core/Layout';
 export default function CollapsibleSingleAccordion() {
   return (
     <XDSCollapsibleGroup type="single" defaultValue="general">
-      <XDSVStack gap={2}>
+      <XDSVStack gap={2} style={{width: '100%', maxWidth: 400}}>
         <XDSSection>
           <XDSCollapsible trigger="General Settings" value="general">
             <XDSText type="body">

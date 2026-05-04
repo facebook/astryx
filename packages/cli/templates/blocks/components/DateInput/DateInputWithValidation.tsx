@@ -19,7 +19,7 @@ export default function DateInputWithValidation() {
   );
 
   return (
-    <XDSStack direction="vertical" gap={4}>
+    <XDSStack direction="vertical" gap={4} width="100%" style={{maxWidth: 400}}>
       <XDSDateInput
         label="Event date"
         value={errorVal}

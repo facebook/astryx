@@ -5,6 +5,6 @@ export const doc = {
   name: 'Grid — Responsive Auto-Fit',
   description: 'Responsive grid where cards stretch to fill remaining space',
   isReady: true,
-  aspectRatio: 3 / 4,
-  componentsUsed: ['Grid', 'Card', 'VStack', 'Text'],
+  aspectRatio: 4 / 3,
+  componentsUsed: ['Grid', 'Card', 'Layout', 'Resizable', 'VStack', 'Text'],
 };

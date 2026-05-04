@@ -2,29 +2,16 @@
 
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 
-const code = `import {useState, useEffect} from 'react';
-
-interface User {
+const code = `interface User {
   id: string;
   name: string;
-  email: string;
-}
-
-async function fetchUser(id: string): Promise<User> {
-  const response = await fetch(\`/api/users/\${id}\`);
-  if (!response.ok) {
-    throw new Error(\`HTTP \${response.status}\`);
-  }
-  return response.json();
 }
 
 export function useUser(id: string) {
-  const [user, setUser] = useState<User | null>(null);
-
+  const [user, setUser] = useState<User>();
   useEffect(() => {
     fetchUser(id).then(setUser);
   }, [id]);
-
   return user;
 }`;
 
@@ -35,7 +22,7 @@ export default function CodeBlockHighlightedLines() {
       language="typescript"
       title="useUser.ts"
       hasLineNumbers
-      highlightLines={[9, 10, 11, 12, 13]}
+      highlightLines={[8, 9, 10]}
     />
   );
 }

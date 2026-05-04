@@ -13,7 +13,7 @@ const metrics = [
 
 export default function GridDashboardLayout() {
   return (
-    <XDSGrid columns={4} gap={4}>
+    <XDSGrid columns={4} gap={4} width="100%" style={{maxWidth: 500}}>
       <XDSGridSpan columns={2} rows={2}>
         <XDSCard>
           <XDSText type="label" display="block">

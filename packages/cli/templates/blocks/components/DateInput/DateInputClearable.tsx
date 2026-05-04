@@ -14,7 +14,7 @@ export default function DateInputClearable() {
   );
 
   return (
-    <XDSStack direction="vertical" gap={4}>
+    <XDSStack direction="vertical" gap={4} width="100%" style={{maxWidth: 400}}>
       <XDSText type="supporting" color="secondary">
         {value ? `Selected: ${value}` : 'No date selected'}
       </XDSText>

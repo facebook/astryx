@@ -1,21 +1,13 @@
 'use client';
 
+import {XDSCard} from '@xds/core/Card';
 import {XDSGrid} from '@xds/core/Grid';
 
 export default function GridShowcase() {
   return (
-    <XDSGrid columns={3} gap={4}>
-      {Array.from({length: 6}, (_, i) => (
-        <div
-          key={i}
-          style={{
-            padding: 16,
-            backgroundColor: 'var(--color-background-body)',
-            borderRadius: 'var(--radius-element, 8px)',
-            textAlign: 'center',
-          }}>
-          Item {i + 1}
-        </div>
+    <XDSGrid columns={3} gap={2} width={400}>
+      {Array.from({length: 12}, (_, i) => (
+        <XDSCard key={i}>Item {i + 1}</XDSCard>
       ))}
     </XDSGrid>
   );

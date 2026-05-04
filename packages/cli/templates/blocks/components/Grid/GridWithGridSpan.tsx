@@ -7,15 +7,16 @@ import {XDSText} from '@xds/core/Text';
 
 export default function GridWithGridSpan() {
   return (
-    <XDSGrid columns={4} gap={4}>
-      <XDSGridSpan columns={2}>
+    <XDSGrid columns={3} gap={4} width="100%" style={{maxWidth: 500}}>
+      <XDSGridSpan rows={2}>
         <XDSCard variant="cyan">
           <XDSVStack gap={1}>
             <XDSText type="label" display="block">
               Featured Release
             </XDSText>
             <XDSText type="supporting" display="block">
-              XDS 4.0 is now available with new layout primitives
+              XDS 4.0 is now available with new layout primitives, refreshed
+              tokens, and improved theming support across the system.
             </XDSText>
           </XDSVStack>
         </XDSCard>
@@ -44,18 +45,38 @@ export default function GridWithGridSpan() {
           120 defined
         </XDSText>
       </XDSCard>
-      <XDSGridSpan columns={3}>
-        <XDSCard variant="cyan">
-          <XDSVStack gap={1}>
-            <XDSText type="label" display="block">
-              Migration Guide
-            </XDSText>
-            <XDSText type="supporting" display="block">
-              Step-by-step instructions for upgrading from v3 to v4
-            </XDSText>
-          </XDSVStack>
-        </XDSCard>
-      </XDSGridSpan>
+      <XDSCard>
+        <XDSText type="label" display="block">
+          Themes
+        </XDSText>
+        <XDSText type="supporting" display="block">
+          6 published
+        </XDSText>
+      </XDSCard>
+      <XDSCard>
+        <XDSText type="label" display="block">
+          Icons
+        </XDSText>
+        <XDSText type="supporting" display="block">
+          312 available
+        </XDSText>
+      </XDSCard>
+      <XDSCard>
+        <XDSText type="label" display="block">
+          Patterns
+        </XDSText>
+        <XDSText type="supporting" display="block">
+          18 documented
+        </XDSText>
+      </XDSCard>
+      <XDSCard>
+        <XDSText type="label" display="block">
+          Contributors
+        </XDSText>
+        <XDSText type="supporting" display="block">
+          42 active
+        </XDSText>
+      </XDSCard>
       <XDSGridSpan columns="full">
         <XDSCard variant="cyan">
           <XDSVStack gap={1}>

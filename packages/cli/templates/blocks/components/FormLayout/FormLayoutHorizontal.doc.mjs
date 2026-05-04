@@ -5,6 +5,6 @@ export const doc = {
   name: 'FormLayout — Horizontal',
   description: 'Two fields side by side for naturally paired inputs like first and last name',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['FormLayout', 'TextInput'],
 };
