@@ -5,7 +5,7 @@ export const docs = {
   title: 'Getting Started',
   category: 'guide',
   description:
-    'Go from zero to a working XDS app in five steps.',
+    'Add XDS to your project and start building.',
 
   sections: [
     {
@@ -19,50 +19,58 @@ export const docs = {
           type: 'code',
           lang: 'text',
           label: 'Paste this into your AI',
-          code: 'Install @xds/core and @xds/cli in this project. Run `npx xds init` to set up the design system, theme, and agent docs. Read the generated files to learn the conventions.',
+          code: 'Install @xds/core, @xds/theme-default, and @xds/cli in this project. Run `npx xds init` to set up agent docs. Read the generated files to learn the conventions.',
         },
       ],
     },
     {
-      title: 'Install the CLI',
-  category: 'guide',
+      title: 'Install',
       content: [
         {
           type: 'prose',
-          text: 'Use the XDS CLI to scaffold a new app. It wires up Next.js, the design system, and a working theme out of the box.',
+          text: 'Add the core package, a theme, and the CLI to your existing project.',
         },
         {
           type: 'code',
           lang: 'bash',
           label: 'Terminal',
-          code: `npx @xds/cli init my-app
-cd my-app`,
+          code: `npm install @xds/core @xds/theme-default @xds/cli`,
+        },
+        {
+          type: 'prose',
+          text: 'Then run the init wizard to set up AI agent docs, pick a starter template, and learn about theming.',
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          label: 'Terminal',
+          code: `npx xds init`,
         },
       ],
     },
     {
-      title: 'Pick a theme',
-  category: 'guide',
+      title: 'Add the theme CSS',
       content: [
         {
           type: 'prose',
-          text: 'Choose between the default theme and the neutral theme. Themes live as separate packages so you can swap them without touching component code.',
+          text: 'Import the reset stylesheet and a theme in your global CSS file. Themes provide all design tokens (colors, spacing, radius, typography) as CSS custom properties.',
         },
         {
           type: 'code',
-          lang: 'tsx',
-          label: 'app/layout.tsx',
-          code: `import '@xds/theme-default/styles.css';
-
-export default function RootLayout({children}) {
-  return <html><body>{children}</body></html>;
-}`,
+          lang: 'css',
+          label: 'globals.css',
+          code: `@import '@xds/core/reset.css';
+@import '@xds/core/xds.css';
+@import '@xds/theme-default/theme.css';`,
+        },
+        {
+          type: 'prose',
+          text: 'Available themes: @xds/theme-default (blue accent), @xds/theme-neutral (grayscale), @xds/theme-brutalist (zero radius, monospace). See `npx xds docs theme` for the full theming guide.',
         },
       ],
     },
     {
       title: 'Add your first component',
-  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -73,13 +81,13 @@ export default function RootLayout({children}) {
           lang: 'tsx',
           label: 'app/page.tsx',
           code: `import {XDSButton} from '@xds/core/Button';
-import {XDSStack} from '@xds/core/Layout';
+import {XDSVStack} from '@xds/core/Layout';
 
 export default function Page() {
   return (
-    <XDSStack direction="vertical" gap={2}>
-      <XDSButton label="Hello XDS" onPress={() => alert('Hi!')} />
-    </XDSStack>
+    <XDSVStack gap={2}>
+      <XDSButton label="Hello XDS" onClick={() => alert('Hi!')} />
+    </XDSVStack>
   );
 }`,
         },
@@ -87,7 +95,6 @@ export default function Page() {
     },
     {
       title: 'Customize with xstyle',
-  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -108,18 +115,50 @@ const overrides = stylex.create({
       ],
     },
     {
-      title: 'Run the dev server',
-  category: 'guide',
+      title: 'Example Apps',
       content: [
         {
           type: 'prose',
-          text: 'Start the dev server and open the preview URL. Changes to components hot-reload automatically.',
+          text: 'For a full working project, clone one of the example apps from the XDS repo. These are complete setups with routing, theming, and components wired together.',
+        },
+        {
+          type: 'table',
+          headers: ['Example', 'Stack', 'Path'],
+          rows: [
+            ['Next.js', 'Next.js + XDS theme CSS', 'apps/example-nextjs'],
+            ['Next.js + StyleX', 'Next.js + StyleX for custom styles', 'apps/example-nextjs-stylex'],
+            ['Next.js + Tailwind', 'Next.js + Tailwind bridge', 'apps/example-nextjs-tailwind'],
+            ['Next.js Source', 'Next.js importing XDS from source', 'apps/example-nextjs-source'],
+            ['Vite', 'Vite + XDS', 'apps/example-vite'],
+          ],
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          label: 'Clone and run an example',
+          code: `git clone https://github.com/facebookexperimental/xds.git
+cd xds/apps/example-nextjs
+yarn install
+yarn dev`,
+        },
+      ],
+    },
+    {
+      title: 'Explore the CLI',
+      content: [
+        {
+          type: 'prose',
+          text: 'The CLI is your reference for components, tokens, templates, and docs. Use it to discover what\u2019s available.',
         },
         {
           type: 'code',
           lang: 'bash',
           label: 'Terminal',
-          code: `yarn dev`,
+          code: `npx xds component              # list all components
+npx xds component Button       # props, usage, theming for Button
+npx xds docs                   # list all doc topics
+npx xds template --list        # available page templates
+npx xds docs tokens            # spacing, color, radius reference`,
         },
       ],
     },
