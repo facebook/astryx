@@ -26,24 +26,29 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Install the CLI and run init. It generates an AGENTS.md (or CLAUDE.md, .cursorrules) with a compressed component index, behavioral rules, and CLI reference \u2014 all pulled from your installed version.',
+          text: 'Tell your AI to install the CLI and set itself up:',
+        },
+        {
+          type: 'code',
+          lang: 'text',
+          label: 'Paste this into your AI',
+          code: 'Install @xds/cli and run `npx xds agent-docs` to set up your XDS context. Read the generated file.',
+        },
+        {
+          type: 'prose',
+          text: 'That\'s it. The agent-docs command generates everything your AI needs \u2014 component index, behavioral rules, CLI reference \u2014 pulled from your installed version. After a version bump, run it again to update in place.',
+        },
+        {
+          type: 'prose',
+          text: 'If you prefer to target a specific file format:',
         },
         {
           type: 'code',
           lang: 'bash',
-          label: 'Set up agent context',
-          code: `# Interactive setup \u2014 picks your AI tool
-npx xds init
-
-# Or target a specific tool directly
-npx xds agent-docs --agent claude    # CLAUDE.md
+          label: 'Manual options',
+          code: `npx xds agent-docs --agent claude    # CLAUDE.md
 npx xds agent-docs --agent cursor    # .cursorrules
-npx xds agent-docs --agent codex     # AGENTS.md (Copilot, Codex, etc.)
-npx xds agent-docs --agent all       # all detected files`,
-        },
-        {
-          type: 'prose',
-          text: 'After a version bump, run `npx xds agent-docs` again to update the generated block in place.',
+npx xds agent-docs --agent codex     # AGENTS.md (Copilot, Codex, etc.)`,
         },
       ],
     },
