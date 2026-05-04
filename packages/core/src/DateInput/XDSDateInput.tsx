@@ -347,7 +347,6 @@ export function XDSDateInput({
 
   const popover = useXDSPopover({
     dialogLabel: 'Choose date',
-    closeButtonLabel: 'Close calendar',
     onHide: () => inputRef.current?.focus(),
   });
 

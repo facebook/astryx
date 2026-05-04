@@ -332,7 +332,6 @@ export function XDSTopNavHeading({
 
   const popover = useXDSPopover({
     dialogLabel: 'Navigation menu',
-    hasCloseButton: false,
   });
 
   const {triggerProps, contentProps, menuRef, setTriggerEl} = useXDSMenuHover({
@@ -371,10 +370,7 @@ export function XDSTopNavHeading({
     <span {...stylex.props(styles.textContainer)}>
       {superheading &&
         (hasAnyHref && superheadingHref && menu ? (
-          <XDSLink
-            href={superheadingHref}
-            color="secondary"
-            size="xsm">
+          <XDSLink href={superheadingHref} color="secondary" size="xsm">
             {superheading}
           </XDSLink>
         ) : (
@@ -394,10 +390,7 @@ export function XDSTopNavHeading({
       </span>
       {subheading &&
         (hasAnyHref && subheadingHref && menu ? (
-          <XDSLink
-            href={subheadingHref}
-            color="secondary"
-            size="xsm">
+          <XDSLink href={subheadingHref} color="secondary" size="xsm">
             {subheading}
           </XDSLink>
         ) : (
@@ -613,20 +606,14 @@ export function XDSTopNavHeading({
         <span {...stylex.props(styles.textContainer)}>
           {superheading &&
             (superheadingHref ? (
-              <XDSLink
-                href={superheadingHref}
-                color="secondary"
-                size="xsm">
+              <XDSLink href={superheadingHref} color="secondary" size="xsm">
                 {superheading}
               </XDSLink>
             ) : (
               <span {...stylex.props(styles.superheading)}>{superheading}</span>
             ))}
           {headingHref ? (
-            <XDSLink
-              href={headingHref}
-              color="primary"
-              weight="semibold">
+            <XDSLink href={headingHref} color="primary" weight="semibold">
               {heading}
             </XDSLink>
           ) : (
@@ -634,10 +621,7 @@ export function XDSTopNavHeading({
           )}
           {subheading &&
             (subheadingHref ? (
-              <XDSLink
-                href={subheadingHref}
-                color="secondary"
-                size="xsm">
+              <XDSLink href={subheadingHref} color="secondary" size="xsm">
                 {subheading}
               </XDSLink>
             ) : (

@@ -23,13 +23,7 @@ import {
 } from '../Layer/useXDSLayer';
 import {useFocusTrap} from '../hooks/useFocusTrap';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {
-  colorVars,
-  spacingVars,
-  radiusVars,
-  shadowVars,
-} from '../theme/tokens.stylex';
-import {XDSButton} from '../Button';
+import {colorVars, radiusVars, shadowVars} from '../theme/tokens.stylex';
 
 const styles = stylex.create({
   // Default popover surface — background, radius, shadow.
@@ -43,39 +37,6 @@ const styles = stylex.create({
   // Focus trap container
   contentWrapper: {
     position: 'relative',
-  },
-  // Hidden close button wrapper - sr-only until focused, then positioned below popover
-  closeButtonWrapper: {
-    position: 'absolute',
-    bottom: 0,
-    left: '50%',
-    transform: 'translate(-50%, 100%)',
-    zIndex: 1,
-    // sr-only by default
-    width: {
-      default: 1,
-      ':focus-within': 'auto',
-    },
-    height: {
-      default: 1,
-      ':focus-within': 'auto',
-    },
-    overflow: {
-      default: 'hidden',
-      ':focus-within': 'visible',
-    },
-    clipPath: {
-      default: 'inset(50%)',
-      ':focus-within': 'none',
-    },
-    pointerEvents: {
-      default: 'none',
-      ':focus-within': 'auto',
-    },
-    paddingBlockStart: {
-      default: 0,
-      ':focus-within': spacingVars['--spacing-1'],
-    },
   },
 });
 
@@ -117,19 +78,6 @@ export interface UseXDSPopoverOptions {
    * @default true
    */
   hasAutoFocus?: boolean;
-
-  /**
-   * Whether to include a hidden close button for accessibility.
-   * The button appears when keyboard users tab past the last element.
-   * @default true
-   */
-  hasCloseButton?: boolean;
-
-  /**
-   * Label for the hidden close button.
-   * @default "Close popover"
-   */
-  closeButtonLabel?: string;
 
   /**
    * Accessible label for the dialog.
@@ -202,7 +150,7 @@ export interface UseXDSPopoverReturn {
 
   /**
    * Render function for popover content.
-   * Automatically wraps content in a focus trap container with a hidden close button.
+   * Wraps content in a focus trap container with surface styles.
    *
    * @example
    * ```
@@ -232,11 +180,7 @@ export interface UseXDSPopoverReturn {
  * - `useFocusTrap` for trapping focus within the popover content
  * - Auto-focus first element on open
  * - Escape key to close
- * - Hidden close button that reveals on focus for accessibility
- *
- * The render function automatically wraps your content in a focus trap container
- * and appends a hidden close button. The button appears at the end of the popover,
- * is visually hidden until focused, then shows a tooltip-like message (default: "Close popover").
+ * - Light dismiss (click outside) to close
  *
  * @example
  * ```
@@ -244,7 +188,6 @@ export interface UseXDSPopoverReturn {
  *   const inputRef = useRef<HTMLInputElement>(null);
  *   const popover = useXDSPopover({
  *     onHide: () => inputRef.current?.focus(),
- *     closeButtonLabel: 'Close calendar',
  *   });
  *   return (
  *     <>
@@ -274,8 +217,6 @@ export function useXDSPopover(
     hasLightDismiss = true,
     hasAutoFocus = true,
     hasSurface = true,
-    hasCloseButton = true,
-    closeButtonLabel = 'Close popover',
     dialogLabel,
   } = options;
 
@@ -347,7 +288,7 @@ export function useXDSPopover(
     'aria-controls': layer.id,
   };
 
-  // Wrapped render function that includes surface styles and optional hidden close button
+  // Wrapped render function that includes surface styles
   const render = useCallback(
     (children: ReactNode, props?: ContextRenderProps) => {
       return layer.render(
@@ -362,28 +303,11 @@ export function useXDSPopover(
             xstyle,
           )}>
           {children}
-          {hasCloseButton && (
-            <div {...stylex.props(styles.closeButtonWrapper)}>
-              <XDSButton
-                variant="secondary"
-                label={closeButtonLabel}
-                onClick={layer.hide}
-              />
-            </div>
-          )}
         </div>,
         {...props, xstyle: props?.xstyle},
       );
     },
-    [
-      layer,
-      hasCloseButton,
-      hasSurface,
-      closeButtonLabel,
-      contentRef,
-      dialogLabel,
-      xstyle,
-    ],
+    [layer, hasSurface, contentRef, dialogLabel, xstyle],
   );
 
   return {

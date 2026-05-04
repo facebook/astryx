@@ -699,7 +699,6 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
   const popover = useXDSPopover({
     hasLightDismiss: true,
     onHide: handleLayerHide,
-    hasCloseButton: false,
     hasAutoFocus: false,
     dialogLabel: `${label} options`,
   });

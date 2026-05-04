@@ -339,7 +339,6 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
     onShow: handleLayerShow,
     onHide: handleLayerHide,
     hasLightDismiss: true,
-    hasCloseButton: false,
     hasAutoFocus: false,
   });
 

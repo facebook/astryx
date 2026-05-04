@@ -521,7 +521,6 @@ export function XDSPowerSearch({
   const popover = useXDSPopover({
     onHide: handleLayerHide,
     hasLightDismiss: true,
-    hasCloseButton: false,
     hasAutoFocus: false,
   });
 

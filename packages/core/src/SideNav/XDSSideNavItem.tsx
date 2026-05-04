@@ -362,7 +362,6 @@ export function XDSSideNavItem({
   const popover = useXDSPopover({
     hasLightDismiss: true,
     hasAutoFocus: true,
-    hasCloseButton: false,
     dialogLabel: `${label} submenu`,
   });
 

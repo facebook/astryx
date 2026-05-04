@@ -281,7 +281,6 @@ export function useTriggerMenu(
       }));
     }, [removeAnchorSpan]),
     hasLightDismiss: true,
-    hasCloseButton: false,
     hasAutoFocus: false,
   });
 

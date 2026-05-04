@@ -555,7 +555,6 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
   const popover = useXDSPopover({
     onHide: handleLayerHide,
     hasLightDismiss: true,
-    hasCloseButton: false,
     hasAutoFocus: false,
   });
 

@@ -259,7 +259,6 @@ export function XDSTabMenu({
 
   const popover = useXDSPopover({
     hasLightDismiss: true,
-    hasCloseButton: false,
     hasAutoFocus: false,
   });
 

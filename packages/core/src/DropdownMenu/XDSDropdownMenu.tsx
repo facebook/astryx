@@ -222,7 +222,6 @@ export function XDSDropdownMenu({
     onHide: handleLayerHide,
     onShow: handleLayerShow,
     hasLightDismiss: true,
-    hasCloseButton: false,
     hasAutoFocus: false,
   });
 
