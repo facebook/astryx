@@ -10,7 +10,7 @@ import {XDSText} from '@xds/core/Text';
 
 export default function ChatMessageBubbleVariants() {
   return (
-    <XDSStack direction="vertical" gap={4}>
+    <XDSStack direction="vertical" gap={4} style={{maxWidth: 500}}>
       <XDSStack direction="vertical" gap={1}>
         <XDSText type="supporting" color="secondary">
           Filled — sender-colored background (default)

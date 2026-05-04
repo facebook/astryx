@@ -7,50 +7,41 @@ import {
   XDSChatMessageMetadata,
 } from '@xds/core/Chat';
 import {XDSTimestamp} from '@xds/core/Timestamp';
-import * as stylex from '@stylexjs/stylex';
-
-const styles = stylex.create({
-  root: {
-    maxWidth: 600,
-  },
-});
 
 export default function ChatMessageBubbleShowcase() {
   return (
-    <div {...stylex.props(styles.root)}>
-      <XDSChatMessageList>
-        <XDSChatMessage sender="user">
-          <XDSChatMessageBubble group="first">
-            I just pushed the latest changes to the feature branch.
-          </XDSChatMessageBubble>
-          <XDSChatMessageBubble
-            group="last"
-            metadata={
-              <XDSChatMessageMetadata
-                timestamp={
-                  <XDSTimestamp value="2026-04-10T09:15:00" format="time" />
-                }
-                status="read"
-              />
-            }>
-            Can you review when you get a chance?
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
+    <XDSChatMessageList style={{maxWidth: 600}}>
+      <XDSChatMessage sender="user">
+        <XDSChatMessageBubble group="first">
+          I just pushed the latest changes to the feature branch.
+        </XDSChatMessageBubble>
+        <XDSChatMessageBubble
+          group="last"
+          metadata={
+            <XDSChatMessageMetadata
+              timestamp={
+                <XDSTimestamp value="2026-04-10T09:15:00" format="time" />
+              }
+              status="read"
+            />
+          }>
+          Can you review when you get a chance?
+        </XDSChatMessageBubble>
+      </XDSChatMessage>
 
-        <XDSChatMessage sender="assistant">
-          <XDSChatMessageBubble
-            variant="ghost"
-            metadata={
-              <XDSChatMessageMetadata
-                timestamp={
-                  <XDSTimestamp value="2026-04-10T09:16:00" format="time" />
-                }
-              />
-            }>
-            The changes look great — clean code, good test coverage. Ship it!
-          </XDSChatMessageBubble>
-        </XDSChatMessage>
-      </XDSChatMessageList>
-    </div>
+      <XDSChatMessage sender="assistant">
+        <XDSChatMessageBubble
+          variant="ghost"
+          metadata={
+            <XDSChatMessageMetadata
+              timestamp={
+                <XDSTimestamp value="2026-04-10T09:16:00" format="time" />
+              }
+            />
+          }>
+          The changes look great. Ship it!
+        </XDSChatMessageBubble>
+      </XDSChatMessage>
+    </XDSChatMessageList>
   );
 }

@@ -16,7 +16,7 @@ const DENSITIES = [
 
 export default function ChatMessageBubbleDensity() {
   return (
-    <XDSVStack gap={5}>
+    <XDSVStack gap={5} style={{width: '100%', maxWidth: 400}}>
       {DENSITIES.map(({density, label}) => (
         <XDSVStack key={density} gap={1}>
           <XDSText type="supporting" color="secondary">
@@ -29,9 +29,7 @@ export default function ChatMessageBubbleDensity() {
               </XDSChatMessageBubble>
             </XDSChatMessage>
             <XDSChatMessage sender="user">
-              <XDSChatMessageBubble>
-                Ship it to staging.
-              </XDSChatMessageBubble>
+              <XDSChatMessageBubble>Ship it to staging.</XDSChatMessageBubble>
             </XDSChatMessage>
           </XDSChatMessageList>
         </XDSVStack>
