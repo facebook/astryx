@@ -95,17 +95,17 @@ npx xds agent-docs --agent-docs-path ~/.cursor/rules/xds.mdc`,
       content: [
         {
           type: 'prose',
-          text: 'Paste this prompt into your AI to verify it has XDS context loaded and can self-correct:',
+          text: 'Paste this prompt into your AI. It touches 10+ XDS conventions that models get wrong 100% of the time without context \u2014 import paths, component names, prop patterns, styling, and API shapes. If your AI gets most of it right, the agent docs are working.',
         },
         {
           type: 'code',
           lang: 'text',
           label: 'Diagnostic prompt',
-          code: `Run \`npx xds component Button --props\` and compare the output to your knowledge of XDS. Are you aware of the XDS design system conventions? If not, run \`npx xds agent-docs\` to install context, then read the generated file.`,
+          code: 'Using XDS, show a Selector with three options, a disabled Button with a label, and a Dialog the user can\'t dismiss. Include all imports.',
         },
         {
           type: 'prose',
-          text: 'A properly configured AI will already know the conventions and confirm them against the CLI output. An unconfigured one will discover the gap and fix itself by running the install command.',
+          text: 'Check the output for: subpath imports (@xds/core/Button not @xds/core), XDS prefix on components, label prop on Button, isDisabled not disabled, options array on Selector, purpose="required" on Dialog, and xstyle/stylex for any custom styling. If the AI falls back to generic React patterns, the context file isn\'t being loaded.',
         },
       ],
     },
