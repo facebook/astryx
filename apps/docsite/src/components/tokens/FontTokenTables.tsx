@@ -3,7 +3,7 @@
 import * as stylex from '@stylexjs/stylex';
 import {XDSHStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
-import {XDSTable, pixel} from '@xds/core/Table';
+import {XDSTable, pixel, proportional} from '@xds/core/Table';
 import type {TokenTableProps} from './types';
 import {resolveToken, getTokensByPrefix} from './helpers';
 
@@ -39,10 +39,11 @@ export function FontFamilyTokenTable({theme}: TokenTableProps) {
     <XDSTable
       data={data as Record<string, unknown>[]}
       columns={[
-        {key: 'tokenName', header: 'Token', width: pixel(240)},
+        {key: 'tokenName', header: 'Token', width: pixel(200)},
         {
           key: 'value',
           header: 'Value',
+          width: proportional(1, {minWidth: 300}),
           renderCell: (item: Record<string, unknown>) => (
             <XDSHStack gap={3} vAlign="center">
               <XDSText type="code" color="secondary">
@@ -79,10 +80,11 @@ export function FontWeightTokenTable({theme}: TokenTableProps) {
     <XDSTable
       data={data as Record<string, unknown>[]}
       columns={[
-        {key: 'tokenName', header: 'Token', width: pixel(240)},
+        {key: 'tokenName', header: 'Token', width: pixel(200)},
         {
           key: 'value',
           header: 'Value',
+          width: proportional(1, {minWidth: 300}),
           renderCell: (item: Record<string, unknown>) => (
             <XDSHStack gap={3} vAlign="center">
               <XDSText type="code" color="secondary">
@@ -115,10 +117,11 @@ export function FontSizeTokenTable({theme}: TokenTableProps) {
     <XDSTable
       data={data as Record<string, unknown>[]}
       columns={[
-        {key: 'tokenName', header: 'Token', width: pixel(240)},
+        {key: 'tokenName', header: 'Token', width: pixel(200)},
         {
           key: 'value',
           header: 'Value',
+          width: proportional(1, {minWidth: 300}),
           renderCell: (item: Record<string, unknown>) => (
             <XDSHStack gap={3} vAlign="center">
               <XDSText type="code" color="secondary">

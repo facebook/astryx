@@ -6,6 +6,7 @@ import {useXDSTheme} from '@xds/core/theme';
 import {
   ColorTokenTable,
   SpacingTokenTable,
+  SizeTokenTable,
   RadiusTokenTable,
   BorderTokenTable,
   ElevationTokenTable,
@@ -35,7 +36,7 @@ const TOPIC_SECTION_OVERRIDES: Record<
   tokens: {
     'Color Tokens': ColorTokenTable,
     'Spacing Tokens': SpacingTokenTable,
-    'Size Tokens': SpacingTokenTable,
+    'Size Tokens': SizeTokenTable,
     'Border Tokens': BorderTokenTable,
     'Radius Tokens': RadiusTokenTable,
     'Shadow Tokens': ElevationTokenTable,

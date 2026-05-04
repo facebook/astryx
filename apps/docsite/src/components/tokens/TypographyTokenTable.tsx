@@ -138,6 +138,7 @@ export function TypographyTokenTable({theme}: TokenTableProps) {
         {
           key: 'tokens',
           header: 'Tokens',
+          width: proportional(1, {minWidth: 280}),
           renderCell: (item: Record<string, unknown>) => (
             <XDSVStack gap={1}>
               <XDSText type="code" color="secondary">

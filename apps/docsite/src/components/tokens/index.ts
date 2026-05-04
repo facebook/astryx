@@ -1,5 +1,6 @@
 export {ColorTokenTable} from './ColorTokenTable';
 export {SpacingTokenTable} from './SpacingTokenTable';
+export {SizeTokenTable} from './SizeTokenTable';
 export {
   ShapeTokenTable,
   RadiusTokenTable,
