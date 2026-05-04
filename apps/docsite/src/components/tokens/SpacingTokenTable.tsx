@@ -3,7 +3,7 @@
 import * as stylex from '@stylexjs/stylex';
 import {XDSHStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
-import {XDSTable} from '@xds/core/Table';
+import {XDSTable, pixel} from '@xds/core/Table';
 import type {TokenTableProps} from './types';
 import {resolveToken, getTokensByPrefix} from './helpers';
 
@@ -30,7 +30,7 @@ export function SpacingTokenTable({theme}: TokenTableProps) {
     <XDSTable
       data={data as Record<string, unknown>[]}
       columns={[
-        {key: 'tokenName', header: 'Token'},
+        {key: 'tokenName', header: 'Token', width: pixel(200)},
         {
           key: 'value',
           header: 'Value',
