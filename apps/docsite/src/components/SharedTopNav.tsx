@@ -46,6 +46,7 @@ export function SharedTopNav() {
               <XDSNavHeadingMenu size="lg">
                 <XDSNavHeadingMenuItem label="Craft" href="/craft" />
                 <XDSNavHeadingMenuItem label="Docs" href="/" />
+                <XDSNavHeadingMenuItem label="Playground" href="/playground" />
               </XDSNavHeadingMenu>
             }
           />
