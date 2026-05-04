@@ -83,10 +83,11 @@ function TokenSection({
   Table: TableComponent;
   theme: TokenTableProps['theme'];
 }) {
+  const prose = section.content.filter(block => block.type !== 'table');
   return (
     <XDSVStack gap={4}>
       <XDSText type="display-3">{section.title}</XDSText>
-      {section.content.map((block, i) => (
+      {prose.map((block, i) => (
         <ContentBlockRenderer key={i} block={block} />
       ))}
       <Table theme={theme} />

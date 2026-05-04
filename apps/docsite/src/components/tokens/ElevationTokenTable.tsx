@@ -1,16 +1,14 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSHStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
 import {XDSTable, pixel} from '@xds/core/Table';
 import type {TokenTableProps} from './types';
-import {resolveToken, getTokensByPrefix} from './helpers';
+import {getTokensByPrefix} from './helpers';
 
 const styles = stylex.create({
   shadowBox: {
-    width: 32,
-    height: 24,
+    width: 48,
+    height: 32,
     borderRadius: 'var(--radius-element)',
     backgroundColor: 'var(--color-background-surface)',
     flexShrink: 0,
@@ -22,7 +20,6 @@ export function ElevationTokenTable({theme}: TokenTableProps) {
 
   const data = tokens.map(name => ({
     tokenName: name,
-    value: resolveToken(theme, name),
   }));
 
   return (
@@ -31,18 +28,14 @@ export function ElevationTokenTable({theme}: TokenTableProps) {
       columns={[
         {key: 'tokenName', header: 'Token', width: pixel(220)},
         {
-          key: 'value',
-          header: 'Value',
+          key: 'preview',
+          header: 'Preview',
+          width: pixel(80),
           renderCell: (item: Record<string, unknown>) => (
-            <XDSHStack gap={2} vAlign="center">
-              <div
-                {...stylex.props(styles.shadowBox)}
-                style={{boxShadow: item.value as string}}
-              />
-              <XDSText type="code" color="secondary">
-                {item.value as string}
-              </XDSText>
-            </XDSHStack>
+            <div
+              {...stylex.props(styles.shadowBox)}
+              style={{boxShadow: `var(${item.tokenName as string})`}}
+            />
           ),
         },
       ]}

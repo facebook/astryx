@@ -3,7 +3,7 @@
 import * as stylex from '@stylexjs/stylex';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
-import {XDSTable, proportional} from '@xds/core/Table';
+import {XDSTable, proportional, pixel} from '@xds/core/Table';
 import type {XDSTextType} from '@xds/core';
 import type {XDSHeadingLevel} from '@xds/core/Text';
 import type {TokenTableProps} from './types';
@@ -121,7 +121,7 @@ export function TypographyTokenTable({theme}: TokenTableProps) {
         {
           key: 'label',
           header: 'Sample',
-          width: proportional(2),
+          width: pixel(160),
           renderCell: (item: Record<string, unknown>) => (
             <span
               {...stylex.props(styles.sample)}

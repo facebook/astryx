@@ -31,10 +31,7 @@ function ThemedSwatch({
   mode: 'light' | 'dark';
 }) {
   return (
-    <div
-      data-theme={mode}
-      style={{colorScheme: mode}}
-      {...stylex.props(styles.themeContext)}>
+    <div style={{colorScheme: mode}} {...stylex.props(styles.themeContext)}>
       <div
         {...stylex.props(styles.swatch)}
         style={{backgroundColor: `var(${tokenName})`}}
