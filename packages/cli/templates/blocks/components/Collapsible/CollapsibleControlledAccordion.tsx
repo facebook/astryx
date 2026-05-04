@@ -10,7 +10,7 @@ export default function CollapsibleControlledAccordion() {
   const [open, setOpen] = useState<string | string[]>('profile');
   return (
     <XDSCollapsibleGroup type="single" value={open} onChange={setOpen}>
-      <XDSVStack gap={2}>
+      <XDSVStack gap={2} style={{width: '100%', maxWidth: 400}}>
         <XDSCard>
           <XDSCollapsible trigger="Profile Information" value="profile">
             <XDSText type="body">

@@ -8,7 +8,7 @@ import {XDSVStack} from '@xds/core/Layout';
 export default function CollapsibleMultipleAccordion() {
   return (
     <XDSCollapsibleGroup type="multiple" defaultValue={['features', 'pricing']}>
-      <XDSVStack gap={2}>
+      <XDSVStack gap={2} style={{width: '100%', maxWidth: 400}}>
         <XDSCard>
           <XDSCollapsible trigger="Features" value="features">
             <XDSText type="body">

@@ -9,7 +9,7 @@ export default function CollapsibleShowcase() {
   return (
     <XDSCard width={400}>
       <XDSCollapsibleGroup type="single" defaultValue="notifications">
-        <XDSVStack gap={2}>
+        <XDSVStack gap={6}>
           <XDSCollapsible trigger="General settings" value="general">
             <XDSText type="body" color="secondary">
               Configure your display name, language, and time zone preferences.
