@@ -5,6 +5,6 @@ export const doc = {
   name: 'NumberInput — Range Constrained',
   description: 'Number input with min/max boundaries and a helper description',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['NumberInput', 'Center'],
 };

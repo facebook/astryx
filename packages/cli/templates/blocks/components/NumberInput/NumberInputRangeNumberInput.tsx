@@ -2,12 +2,11 @@
 
 import {useState} from 'react';
 import {XDSNumberInput} from '@xds/core/NumberInput';
-import {XDSCenter} from '@xds/core/Center';
 
 export default function NumberInputRangeNumberInput() {
   const [value, setValue] = useState<number | null>(3);
   return (
-    <XDSCenter width={300}>
+    <div style={{width: 300}}>
       <XDSNumberInput
         label="Team Size"
         placeholder="1–50"
@@ -17,6 +16,6 @@ export default function NumberInputRangeNumberInput() {
         value={value}
         onChange={setValue}
       />
-    </XDSCenter>
+    </div>
   );
 }

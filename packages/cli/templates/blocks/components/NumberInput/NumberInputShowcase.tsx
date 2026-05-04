@@ -2,7 +2,7 @@ import {XDSNumberInput} from '@xds/core/NumberInput';
 
 export default function NumberInputShowcase() {
   return (
-    <div style={{maxWidth: 300}}>
+    <div style={{width: 300}}>
       <XDSNumberInput
         label="Quantity"
         placeholder="Enter quantity"

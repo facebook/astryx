@@ -5,6 +5,6 @@ export const doc = {
   name: 'NumberInput — Clearable',
   description: 'Number input with a clear button, unit suffix, and min/max constraint',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['NumberInput', 'Center'],
 };

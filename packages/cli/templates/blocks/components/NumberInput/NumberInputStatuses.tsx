@@ -3,14 +3,13 @@
 import {useState} from 'react';
 import {XDSNumberInput} from '@xds/core/NumberInput';
 import {XDSVStack} from '@xds/core/Stack';
-import {XDSCenter} from '@xds/core/Center';
 
 export default function NumberInputStatuses() {
   const [error, setError] = useState<number | null>(-5);
   const [warning, setWarning] = useState<number | null>(150);
   const [success, setSuccess] = useState<number | null>(25);
   return (
-    <XDSCenter width={300}>
+    <div style={{width: 300}}>
       <XDSVStack gap={4}>
         <XDSNumberInput
           label="Budget"
@@ -32,6 +31,6 @@ export default function NumberInputStatuses() {
           status={{type: 'success', message: 'On track'}}
         />
       </XDSVStack>
-    </XDSCenter>
+    </div>
   );
 }
