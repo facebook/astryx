@@ -3,15 +3,14 @@
 import {useState} from 'react';
 import {XDSSelector} from '@xds/core/Selector';
 import {XDSVStack} from '@xds/core/Layout';
-import {XDSCenter} from '@xds/core/Center';
 
 export default function SelectorWithStatus() {
   const [value1, setValue1] = useState<string | undefined>();
   const [value2, setValue2] = useState<string | undefined>('viewer');
   const [value3, setValue3] = useState<string | undefined>('admin');
   return (
-    <XDSCenter width={250}>
-      <XDSVStack gap={4}>
+    <div style={{width: 300}}>
+      <XDSVStack gap={6}>
         <XDSSelector
           label="Role"
           options={[
@@ -47,6 +46,6 @@ export default function SelectorWithStatus() {
           status={{type: 'success'}}
         />
       </XDSVStack>
-    </XDSCenter>
+    </div>
   );
 }

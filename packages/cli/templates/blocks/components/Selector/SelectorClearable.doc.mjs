@@ -6,6 +6,6 @@ export const doc = {
   description:
     'Selector with a clear button to reset the selected value.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Selector', 'Center'],
 };

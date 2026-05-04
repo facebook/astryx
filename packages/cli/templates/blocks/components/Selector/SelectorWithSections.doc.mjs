@@ -6,6 +6,6 @@ export const doc = {
   description:
     'Selector with options grouped into labeled sections.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Selector', 'Center'],
 };
