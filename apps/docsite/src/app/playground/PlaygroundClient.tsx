@@ -13,6 +13,8 @@ import {XDSHStack} from "@xds/core/Layout";
 import {XDSText} from "@xds/core/Text";
 import {XDSStatusDot} from "@xds/core/StatusDot";
 import {XDSDivider} from "@xds/core/Divider";
+import githubLight from "./themes/github-light.json";
+import githubDark from "./themes/github-dark.json";
 
 import type * as MonacoTypes from "monaco-editor";
 
@@ -30,6 +32,9 @@ type MonacoInstance = typeof MonacoTypes & {
       JsxEmit: Record<string, number>;
       ModuleResolutionKind: Record<string, number>;
     };
+  };
+  editor: typeof MonacoTypes.editor & {
+    defineTheme: (name: string, data: Record<string, unknown>) => void;
   };
 };
 
@@ -103,8 +108,8 @@ const THEME_OPTIONS = [
 ];
 
 /**
- * Configure Monaco's TypeScript service so it understands JSX,
- * React hooks, and @xds/core imports without red squiggles.
+ * Configure Monaco's TypeScript service with real XDS type definitions.
+ * Loads .d.ts files from a pre-built JSON bundle (generated at build time).
  */
 function configureMonaco(monaco: MonacoInstance) {
   const ts = monaco.languages.typescript.typescriptDefaults;
@@ -125,80 +130,85 @@ function configureMonaco(monaco: MonacoInstance) {
     noSyntaxValidation: false,
   });
 
-  // React type stubs
-  ts.addExtraLib(
-    `declare module 'react' {
-      export function useState<T>(init: T | (() => T)): [T, (v: T | ((prev: T) => T)) => void];
-      export function useEffect(fn: () => void | (() => void), deps?: unknown[]): void;
-      export function useCallback<T extends Function>(fn: T, deps: unknown[]): T;
-      export function useMemo<T>(fn: () => T, deps: unknown[]): T;
-      export function useRef<T>(init: T): { current: T };
-      export function useReducer<S, A>(reducer: (state: S, action: A) => S, init: S): [S, (action: A) => void];
-      export function useContext<T>(ctx: any): T;
-      export const Fragment: any;
-      export function createElement(type: any, props?: any, ...children: any[]): any;
-      export type ReactNode = any;
-      export type ReactElement = any;
-    }`,
-    "file:///node_modules/@types/react/index.d.ts",
-  );
-
-  // Make React hooks available as globals (playground code doesn't import react)
+  // Global declarations for React hooks (available without import in playground)
   ts.addExtraLib(
     `declare function useState<T>(init: T | (() => T)): [T, (v: T | ((prev: T) => T)) => void];
-    declare function useEffect(fn: () => void | (() => void), deps?: unknown[]): void;
-    declare function useCallback<T extends Function>(fn: T, deps: unknown[]): T;
-    declare function useMemo<T>(fn: () => T, deps: unknown[]): T;
-    declare function useRef<T>(init: T): { current: T };`,
+    declare function useEffect(fn: () => void | (() => void), deps?: readonly unknown[]): void;
+    declare function useCallback<T extends Function>(fn: T, deps: readonly unknown[]): T;
+    declare function useMemo<T>(fn: () => T, deps: readonly unknown[]): T;
+    declare function useRef<T>(init: T): { current: T };
+    declare function useReducer<S, A>(reducer: (state: S, action: A) => S, init: S): [S, (action: A) => void];
+    declare function useContext<T>(ctx: unknown): T;`,
     "file:///globals.d.ts",
   );
 
-  // @xds/core stub — enough to suppress "cannot find module"
+  // Heroicons wildcard stub
   ts.addExtraLib(
-    `declare module '@xds/core' {
-      export const XDSButton: any;
-      export const XDSCard: any;
-      export const XDSText: any;
-      export const XDSHeading: any;
-      export const XDSVStack: any;
-      export const XDSHStack: any;
-      export const XDSBadge: any;
-      export const XDSIcon: any;
-      export const XDSLink: any;
-      export const XDSSwitch: any;
-      export const XDSSelector: any;
-      export const XDSTextInput: any;
-      export const XDSList: any;
-      export const XDSListItem: any;
-      export const XDSDivider: any;
-      export const XDSSection: any;
-      export const XDSCenter: any;
-      export const XDSEmptyState: any;
-      export const XDSBanner: any;
-      export const XDSAvatar: any;
-      export const XDSTooltip: any;
-      export const XDSTabList: any;
-      export const XDSTab: any;
-      export const XDSCollapsible: any;
-      export const XDSCodeBlock: any;
-      export const XDSMarkdown: any;
-      export const XDSSlider: any;
-      export const XDSRadioList: any;
-      export const XDSCheckboxInput: any;
-      [key: string]: any;
-    }
-    declare module '@xds/core/*' { const m: any; export = m; }
-    declare module '@stylexjs/stylex' {
-      const stylex: {
-        create: <T extends Record<string, any>>(styles: T) => T;
-        props: (...args: any[]) => { className?: string; style?: any };
-      };
-      export default stylex;
-      export = stylex;
-    }
-    declare module '@heroicons/react/*' { const m: any; export = m; }`,
-    "file:///node_modules/@xds/core/index.d.ts",
+    `declare module '@heroicons/react/16/solid' { const icons: Record<string, React.ComponentType<{width?: number; height?: number; className?: string}>>; export = icons; }
+    declare module '@heroicons/react/20/solid' { const icons: Record<string, React.ComponentType<{width?: number; height?: number; className?: string}>>; export = icons; }
+    declare module '@heroicons/react/24/outline' { const icons: Record<string, React.ComponentType<{width?: number; height?: number; className?: string}>>; export = icons; }
+    declare module '@heroicons/react/24/solid' { const icons: Record<string, React.ComponentType<{width?: number; height?: number; className?: string}>>; export = icons; }`,
+    "file:///node_modules/@heroicons/react/index.d.ts",
   );
+
+  // Load real type definitions from the pre-built JSON bundle
+  fetch("/playground-types.json")
+    .then((r) => r.json())
+    .then((packages: Record<string, Record<string, string>>) => {
+      // React types
+      const reactFiles = packages["react"] ?? {};
+      for (const [fileName, content] of Object.entries(reactFiles)) {
+        ts.addExtraLib(content, `file:///node_modules/@types/react/${fileName}`);
+      }
+
+      // StyleX types
+      const stylexFiles = packages["@stylexjs/stylex"] ?? {};
+      for (const [fileName, content] of Object.entries(stylexFiles)) {
+        ts.addExtraLib(
+          content,
+          `file:///node_modules/@stylexjs/stylex/${fileName}`,
+        );
+      }
+
+      // XDS core types — register each .d.ts under its dist path AND subpath
+      const xdsFiles = packages["@xds/core"] ?? {};
+      const submoduleReexports: string[] = [];
+
+      for (const [relPath, content] of Object.entries(xdsFiles)) {
+        ts.addExtraLib(
+          content,
+          `file:///node_modules/@xds/core/dist/${relPath}`,
+        );
+
+        // Also register as @xds/core/<SubModule>/index.d.ts
+        if (relPath.endsWith("/index.d.ts")) {
+          const moduleName = relPath.replace("/index.d.ts", "");
+          ts.addExtraLib(
+            content,
+            `file:///node_modules/@xds/core/${moduleName}/index.d.ts`,
+          );
+          submoduleReexports.push(moduleName);
+        }
+      }
+
+      // Build @xds/core barrel from submodule re-exports
+      const barrelContent = submoduleReexports
+        .map((m) => `export * from '@xds/core/${m}';`)
+        .join("\n");
+      ts.addExtraLib(
+        `declare module '@xds/core' {\n${barrelContent}\n}`,
+        "file:///node_modules/@xds/core/index.d.ts",
+      );
+
+      // Types loaded — enable semantic validation
+      ts.setDiagnosticsOptions({
+        noSemanticValidation: false,
+        noSyntaxValidation: false,
+      });
+    })
+    .catch(() => {
+      // Types unavailable — keep semantic validation disabled
+    });
 }
 
 const s = stylex.create({
@@ -272,6 +282,17 @@ export function PlaygroundClient() {
   const pendingRef = useRef<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [editorTheme, setEditorTheme] = useState("github-dark");
+
+  // Sync editor theme with system preference
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const update = () => setEditorTheme(mq.matches ? "github-dark" : "github-light");
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
   const send = useCallback((c: string) => {
     const win = iframeRef.current?.contentWindow;
     if (!win) return;
@@ -331,6 +352,15 @@ export function PlaygroundClient() {
     });
   }, []);
 
+  const handleMonacoBeforeMount = useCallback(
+    (monaco: MonacoInstance) => {
+      // Register themes before editor renders so initial theme applies
+      monaco.editor.defineTheme("github-light", githubLight);
+      monaco.editor.defineTheme("github-dark", githubDark);
+    },
+    [],
+  );
+
   const handleMonacoMount = useCallback(
     (_editor: unknown, monaco: MonacoInstance) => {
       configureMonaco(monaco);
@@ -350,6 +380,7 @@ export function PlaygroundClient() {
       tabSize: 2,
       wordWrap: "on" as const,
       padding: {top: 12},
+      accessibilitySupport: "off" as const,
     }),
     [isMobile],
   );
@@ -396,8 +427,9 @@ export function PlaygroundClient() {
             defaultLanguage="typescript"
             defaultValue={code}
             path="playground.tsx"
-            theme="vs-dark"
+            theme={editorTheme}
             onChange={(v) => setCode(v ?? "")}
+            beforeMount={handleMonacoBeforeMount}
             onMount={handleMonacoMount}
             options={editorOptions}
           />
