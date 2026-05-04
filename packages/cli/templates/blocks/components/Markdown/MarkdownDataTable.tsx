@@ -1,5 +1,6 @@
 'use client';
 
+import {XDSCenter} from '@xds/core/Center';
 import {XDSMarkdown} from '@xds/core/Markdown';
 
 const content = [
@@ -14,5 +15,9 @@ const content = [
 ].join('\n');
 
 export default function MarkdownDataTable() {
-  return <XDSMarkdown>{content}</XDSMarkdown>;
+  return (
+    <XDSCenter width="100%" style={{maxWidth: 450}}>
+      <XDSMarkdown>{content}</XDSMarkdown>
+    </XDSCenter>
+  );
 }

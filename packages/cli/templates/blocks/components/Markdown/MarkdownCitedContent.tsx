@@ -1,5 +1,6 @@
 'use client';
 
+import {XDSCenter} from '@xds/core/Center';
 import {XDSMarkdown} from '@xds/core/Markdown';
 
 const sources = {
@@ -33,11 +34,6 @@ const content = [
   'Tokyo is the capital of Japan with a population of over 14 million[abc1].',
   "It's the most populous metropolitan area in the world[def2][ghi3].",
   '',
-  '### Economy',
-  '',
-  "Tokyo's GDP exceeds $1.9 trillion, making it the largest city economy globally[jkl4].",
-  'The metropolitan area is expected to remain the most populous urban agglomeration through 2035[mno5].',
-  '',
   '### Key Facts',
   '',
   '- Population: 13.96 million (city proper)[abc1]',
@@ -47,8 +43,10 @@ const content = [
 
 export default function MarkdownCitedContent() {
   return (
-    <XDSMarkdown sources={sources} density="compact" headingLevelStart={3}>
-      {content}
-    </XDSMarkdown>
+    <XDSCenter width="100%" style={{maxWidth: 450}}>
+      <XDSMarkdown sources={sources} density="compact" headingLevelStart={3}>
+        {content}
+      </XDSMarkdown>
+    </XDSCenter>
   );
 }

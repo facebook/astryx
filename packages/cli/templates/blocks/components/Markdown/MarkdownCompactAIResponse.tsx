@@ -1,45 +1,32 @@
 'use client';
 
+import {XDSCenter} from '@xds/core/Center';
 import {XDSMarkdown} from '@xds/core/Markdown';
 
 const content = [
-  '## Setting Up a Design System',
+  '## Design Tokens',
   '',
-  "A design system is more than a component library — it's a **shared language** between design and engineering.",
-  '',
-  '### 1. Start with Tokens',
-  '',
-  'Design tokens are the atomic values that define your visual language:',
+  'Tokens are the **shared language** between design and code.',
   '',
   '```typescript',
   'const tokens = {',
-  '  color: {',
-  "    primary: '#0066FF',",
-  "    secondary: '#6B7280',",
-  '  },',
-  '  spacing: {',
-  "    sm: '8px',",
-  "    md: '16px',",
-  "    lg: '24px',",
-  '  },',
+  "  primary: '#0066FF',",
+  "  spacing: '8px',",
   '};',
   '```',
   '',
-  '### 2. Component Architecture',
+  '- **Composable** — small pieces',
+  '- **Accessible** — built-in a11y',
   '',
-  'Good components follow these principles:',
-  '',
-  '- **Composable** — small pieces that combine into complex UIs',
-  '- **Accessible** — keyboard navigation and screen reader support built-in',
-  '- **Themeable** — visual customization without forking',
-  '',
-  '> The best design systems are *opinionated enough* to ensure consistency, but *flexible enough* to handle edge cases gracefully.',
+  '> Opinionated enough for consistency, *flexible* enough for edge cases.',
 ].join('\n');
 
 export default function MarkdownCompactAIResponse() {
   return (
-    <XDSMarkdown density="compact" headingLevelStart={3}>
-      {content}
-    </XDSMarkdown>
+    <XDSCenter style={{maxWidth: 450}}>
+      <XDSMarkdown density="compact" headingLevelStart={3}>
+        {content}
+      </XDSMarkdown>
+    </XDSCenter>
   );
 }
