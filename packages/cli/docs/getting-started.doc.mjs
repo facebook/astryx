@@ -9,6 +9,21 @@ export const docs = {
 
   sections: [
     {
+      title: 'Quick Start with AI',
+      content: [
+        {
+          type: 'prose',
+          text: 'Paste this into your AI coding tool and let it handle the setup:',
+        },
+        {
+          type: 'code',
+          lang: 'text',
+          label: 'Paste this into your AI',
+          code: 'Install @xds/core and @xds/cli in this project. Run `npx xds init` to set up the design system, theme, and agent docs. Read the generated files to learn the conventions.',
+        },
+      ],
+    },
+    {
       title: 'Install the CLI',
   category: 'guide',
       content: [
