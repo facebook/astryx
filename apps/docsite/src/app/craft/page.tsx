@@ -131,7 +131,7 @@ export default function CraftPage() {
               value="templates"
               label={`Templates (${allItems.templates.length})`}
             />
-            <XDSTab value="theme" label="Theme" />
+            <XDSTab value="theme" label={`Theme (${themePackages.length})`} />
             <XDSTab
               value="showcases"
               label={`Components (${allItems.showcases.length})`}
