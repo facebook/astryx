@@ -22,6 +22,7 @@
 
 import {useCallback, useEffect, useRef} from 'react';
 import {useListFocus} from './useListFocus';
+import {useMediaQuery} from './useMediaQuery';
 
 interface UseXDSMenuHoverOptions {
   show: (options?: {skipAutoFocus?: boolean}) => void;
@@ -59,6 +60,8 @@ export function useXDSMenuHover(
     showDelay = 150,
     hideDelay = 200,
   } = options;
+
+  const hasHover = useMediaQuery('(hover: hover)');
 
   const showTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -116,6 +119,7 @@ export function useXDSMenuHover(
 
   // Hover: mouseenter activates hover mode and opens
   const handleMouseEnter = useCallback(() => {
+    if (!hasHover) return;
     if (skipNextEnterRef.current) {
       skipNextEnterRef.current = false;
       return;
@@ -125,7 +129,7 @@ export function useXDSMenuHover(
     showTimerRef.current = setTimeout(() => {
       show({skipAutoFocus: true});
     }, showDelay);
-  }, [clearTimeouts, show, showDelay]);
+  }, [hasHover, clearTimeouts, show, showDelay]);
 
   // Hover: mouseleave only closes if in hover mode
   const handleMouseLeave = useCallback(() => {
@@ -152,7 +156,11 @@ export function useXDSMenuHover(
   if (!isEnabled) {
     return {
       triggerProps: {onClick: noop, onMouseEnter: noop, onMouseLeave: noop},
-      contentProps: {onMouseEnter: noop, onMouseLeave: noop, onKeyDown: noopKeyDown},
+      contentProps: {
+        onMouseEnter: noop,
+        onMouseLeave: noop,
+        onKeyDown: noopKeyDown,
+      },
       menuRef,
       focusFirst,
       setTriggerEl: noopRef,
