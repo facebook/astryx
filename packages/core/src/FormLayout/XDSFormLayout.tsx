@@ -41,8 +41,9 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-4'],
   },
   horizontal: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    display: 'grid',
+    gridAutoFlow: 'column',
+    gridAutoColumns: '1fr',
   },
   horizontalLabels: {
     display: 'grid',
@@ -74,8 +75,8 @@ export interface XDSFormLayoutProps extends XDSBaseProps<HTMLDivElement> {
    * Direction of field arrangement.
    *
    * - `'vertical'` — Fields stack top-to-bottom (default). Most common.
-   * - `'horizontal'` — Fields arrange left-to-right, wrapping when needed.
-   *   Each child gets equal flex-grow.
+   * - `'horizontal'` — Fields arrange left-to-right in equal-width columns
+   *   using CSS Grid. Each child occupies one equal column.
    * - `'horizontal-labels'` — CSS Grid with labels to the left of inputs.
    *   Collapses to vertical when the container is narrow (≤480px).
    *

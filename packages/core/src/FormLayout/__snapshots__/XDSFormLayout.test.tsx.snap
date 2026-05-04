@@ -2,7 +2,7 @@
 
 exports[`XDSFormLayout > matches snapshot for horizontal direction 1`] = `
 <div
-  class="xds-form-layout horizontal XDSFormLayout__styles.base x78zum5 x18g69wz XDSFormLayout__styles.horizontal x1q0g3np x1a02dak"
+  class="xds-form-layout horizontal XDSFormLayout__styles.base xdt5ytf x18g69wz XDSFormLayout__styles.horizontal xrvj5dj x1mt1orb xu6a5m6"
   data-testid="layout"
 >
   <input
