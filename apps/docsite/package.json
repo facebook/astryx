@@ -18,10 +18,13 @@
     "@stylexjs/stylex": "^0.18.3",
     "@xds/cli": "*",
     "@xds/core": "*",
+    "@xds/theme-chocolate": "*",
     "@xds/theme-daily": "*",
     "@xds/theme-default": "*",
+    "@xds/theme-gothic": "*",
     "@xds/theme-matcha": "*",
     "@xds/theme-neutral": "*",
+    "@xds/theme-stone": "*",
     "next": "^15.5.15",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"

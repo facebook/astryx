@@ -23,24 +23,13 @@ import {
   ThemePackagePage,
   type InstallStep,
 } from '../../../../components/ThemePackagePage';
-import {defaultTheme} from '@xds/theme-default/built';
-import {neutralTheme} from '@xds/theme-neutral/built';
-import {dailyTheme} from '@xds/theme-daily/built';
-import {matchaTheme} from '@xds/theme-matcha/built';
-import type {XDSDefinedTheme} from '@xds/core/theme';
+import {themeObjects} from '../../../../generated/themeRegistry';
 import {PackageHeading} from './PackageHeading';
 import {PackageStubPage} from './PackageStubPage';
 
 function slugToPackageName(slug: string): string {
   return `@xds/${slug}`;
 }
-
-const THEME_MAP: Record<string, XDSDefinedTheme> = {
-  '@xds/theme-default': defaultTheme,
-  '@xds/theme-neutral': neutralTheme,
-  '@xds/theme-daily': dailyTheme,
-  '@xds/theme-matcha': matchaTheme,
-};
 
 function getInstallSteps(pkgName: string): InstallStep[] {
   if (pkgName.includes('theme-')) {
@@ -95,7 +84,7 @@ export default async function PackagePage({
   const pkgComponents = components[pkg.name] || [];
 
   if (isTheme) {
-    const theme = THEME_MAP[pkg.name];
+    const theme = themeObjects[pkg.name];
     if (theme) {
       return (
         <XDSSection maxWidth="lg" padding={6}>
