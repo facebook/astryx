@@ -95,17 +95,19 @@ npx xds agent-docs --agent-docs-path ~/.cursor/rules/xds.mdc`,
       content: [
         {
           type: 'prose',
-          text: 'Paste this prompt into your AI. It touches 10+ XDS conventions that models get wrong 100% of the time without context \u2014 import paths, component names, prop patterns, styling, and API shapes. If your AI gets most of it right, the agent docs are working.',
+          text: 'Paste this into your AI before writing any XDS code. These three questions have a 0% pass rate without docs \u2014 models confidently guess wrong on all of them. If your AI can\'t answer them, it\'ll know to install the agent docs first.',
         },
         {
           type: 'code',
           lang: 'text',
-          label: 'Diagnostic prompt',
-          code: 'Using XDS, show a Selector with three options, a disabled Button with a label, and a Dialog the user can\'t dismiss. Include all imports.',
-        },
-        {
-          type: 'prose',
-          text: 'Check the output for: subpath imports (@xds/core/Button not @xds/core), XDS prefix on components, label prop on Button, isDisabled not disabled, options array on Selector, purpose="required" on Dialog, and xstyle/stylex for any custom styling. If the AI falls back to generic React patterns, the context file isn\'t being loaded.',
+          label: 'Paste this into your AI',
+          code: `Before writing any XDS code, check your knowledge:
+
+1. What is the correct import path for XDSButton?
+2. How do you make an XDSDialog non-dismissible?
+3. What prop does XDSSelector use for its items?
+
+If you don't know all three, run \`npx xds init --features agents\` to generate agent docs, then read the generated file.`,
         },
       ],
     },
