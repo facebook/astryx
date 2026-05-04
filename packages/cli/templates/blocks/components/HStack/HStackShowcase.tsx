@@ -6,9 +6,11 @@ import {XDSText} from '@xds/core/Text';
 
 export default function HStackShowcase() {
   return (
-    <XDSVStack gap={6}>
+    <XDSVStack gap={6} width="100%" style={{maxWidth: 400}}>
       <XDSVStack gap={2}>
-        <XDSText type="supporting" color="secondary">gap=2, start-aligned</XDSText>
+        <XDSText type="supporting" color="secondary">
+          HAlign: start
+        </XDSText>
         <XDSHStack gap={2}>
           <XDSBadge label="React" />
           <XDSBadge label="TypeScript" />
@@ -16,7 +18,9 @@ export default function HStackShowcase() {
         </XDSHStack>
       </XDSVStack>
       <XDSVStack gap={2}>
-        <XDSText type="supporting" color="secondary">gap=4, center-aligned</XDSText>
+        <XDSText type="supporting" color="secondary">
+          HAlign: center
+        </XDSText>
         <XDSHStack gap={4} hAlign="center">
           <XDSBadge label="Design" />
           <XDSBadge label="Engineering" />
@@ -24,7 +28,9 @@ export default function HStackShowcase() {
         </XDSHStack>
       </XDSVStack>
       <XDSVStack gap={2}>
-        <XDSText type="supporting" color="secondary">gap=2, space-between</XDSText>
+        <XDSText type="supporting" color="secondary">
+          HAlign: between
+        </XDSText>
         <XDSHStack gap={2} hAlign="between">
           <XDSBadge label="Start" />
           <XDSBadge label="Middle" />
