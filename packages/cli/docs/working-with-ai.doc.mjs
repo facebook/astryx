@@ -90,22 +90,17 @@ npx xds agent-docs --agent-docs-path ~/.cursor/rules/xds.mdc`,
       content: [
         {
           type: 'prose',
-          text: 'After setting up agent docs, ask your AI to build a simple page. A properly configured AI should:',
+          text: 'Paste this prompt into your AI to verify it has XDS context loaded and can self-correct:',
         },
         {
-          type: 'list',
-          style: 'do',
-          items: [
-            'Import from subpaths like \'@xds/core/Button\', not \'@xds/core\'',
-            'Use XDS components for layout (XDSStack, XDSCard) instead of raw <div> elements',
-            'Use is/has prefixed booleans (isDisabled, isLoading) not bare names',
-            'Reference design tokens (var(--spacing-4), var(--color-accent)) not hardcoded values',
-            'Run `npx xds component <Name>` to look up props before writing code',
-          ],
+          type: 'code',
+          lang: 'text',
+          label: 'Diagnostic prompt',
+          code: `Run \`npx xds component Button --props\` and compare the output to your knowledge of XDS. Are you aware of the XDS design system conventions? If not, run \`npx xds agent-docs\` to install context, then read the generated file.`,
         },
         {
           type: 'prose',
-          text: 'If your AI is still making these mistakes, the context file likely isn\'t being loaded. Check that the file is in the right location for your tool and that it contains the <!-- XDS:START --> marker block.',
+          text: 'A properly configured AI will already know the conventions and confirm them against the CLI output. An unconfigured one will discover the gap and fix itself by running the install command.',
         },
       ],
     },
