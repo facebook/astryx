@@ -6,6 +6,6 @@ export const doc = {
   description:
     'Date input in all three status states: error, warning, and success. Use to surface validation issues, caution the user, or confirm a valid selection.',
   isReady: true,
-  aspectRatio: 16 / 9,
+  aspectRatio: 4 / 3,
   componentsUsed: ['DateInput', 'Layout', 'Text'],
 };

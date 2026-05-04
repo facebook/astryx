@@ -12,7 +12,7 @@ export default function DateInputWithDescription() {
   const [value, setValue] = useState<DateString | undefined>(undefined);
 
   return (
-    <XDSStack direction="vertical" gap={4}>
+    <XDSStack direction="vertical" gap={4} width="100%" style={{maxWidth: 400}}>
       <XDSText type="supporting" color="secondary">
         Helper text explains what the field expects
       </XDSText>
