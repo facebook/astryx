@@ -30,6 +30,7 @@ export * from './CodeBlock';
 export * from './CommandPalette';
 export * from './Chat';
 export * from './Markdown';
+export * from './Citation';
 export * from './CheckboxInput';
 export * from './CheckboxList';
 export * from './Collapsible';

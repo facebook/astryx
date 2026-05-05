@@ -7,7 +7,7 @@
  */
 
 export {XDSMarkdown} from './XDSMarkdown';
-export type {XDSMarkdownProps, XDSMarkdownSource, MarkdownInlinePlugin} from './XDSMarkdown';
+export type {XDSMarkdownProps, XDSMarkdownSource, XDSMarkdownComponents, MarkdownInlinePlugin} from './XDSMarkdown';
 
 export {
   parseMarkdown,

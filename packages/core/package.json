@@ -157,6 +157,12 @@
       "import": "./dist/CheckboxList/index.mjs",
       "require": "./dist/CheckboxList/index.js"
     },
+    "./Citation": {
+      "source": "./src/Citation/index.ts",
+      "types": "./dist/Citation/index.d.ts",
+      "import": "./dist/Citation/index.mjs",
+      "require": "./dist/Citation/index.js"
+    },
     "./ClickableCard": {
       "source": "./src/ClickableCard/index.ts",
       "types": "./dist/ClickableCard/index.d.ts",
