@@ -6,6 +6,6 @@ export const doc = {
   description:
     'Settings panel with spread-spaced switches in a card.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Switch', 'Card', 'VStack', 'Center'],
 };

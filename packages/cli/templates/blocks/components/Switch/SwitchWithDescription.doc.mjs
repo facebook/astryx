@@ -5,6 +5,6 @@ export const doc = {
   name: 'Switch — With Description',
   description: 'Toggle with a label and supporting description text.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Switch', 'Center'],
 };

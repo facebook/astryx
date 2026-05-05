@@ -12,7 +12,7 @@ export default function SwitchWithStatus() {
 
   return (
     <XDSCenter width={400}>
-      <XDSVStack gap={6}>
+      <XDSVStack gap={6} width="100%" style={{maxWidth: 400}}>
         <XDSSwitch
           label="Accept terms and conditions"
           value={terms}

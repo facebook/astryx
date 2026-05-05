@@ -7,13 +7,11 @@ import {XDSCenter} from '@xds/core/Center';
 export default function SwitchWithDescription() {
   const [value, setValue] = useState(false);
   return (
-    <XDSCenter>
-      <XDSSwitch
-        label="Dark mode"
-        description="Switch to a darker color scheme for reduced eye strain."
-        value={value}
-        onChange={setValue}
-      />
-    </XDSCenter>
+    <XDSSwitch
+      label="Dark mode"
+      description="Switch to a darker color scheme."
+      value={value}
+      onChange={setValue}
+    />
   );
 }

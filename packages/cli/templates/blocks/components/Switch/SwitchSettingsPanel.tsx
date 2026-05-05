@@ -12,32 +12,30 @@ export default function SwitchSettingsPanel() {
   const [autoSave, setAutoSave] = useState(false);
 
   return (
-    <XDSCenter width={350}>
-      <XDSCard>
-        <XDSVStack gap={4}>
-          <XDSSwitch
-            label="Enable notifications"
-            value={notifications}
-            onChange={setNotifications}
-            labelPosition="start"
-            labelSpacing="spread"
-          />
-          <XDSSwitch
-            label="Dark mode"
-            value={darkMode}
-            onChange={setDarkMode}
-            labelPosition="start"
-            labelSpacing="spread"
-          />
-          <XDSSwitch
-            label="Auto-save"
-            value={autoSave}
-            onChange={setAutoSave}
-            labelPosition="start"
-            labelSpacing="spread"
-          />
-        </XDSVStack>
-      </XDSCard>
-    </XDSCenter>
+    <XDSCard width="100%" style={{maxWidth: 300}}>
+      <XDSVStack gap={4}>
+        <XDSSwitch
+          label="Enable notifications"
+          value={notifications}
+          onChange={setNotifications}
+          labelPosition="start"
+          labelSpacing="spread"
+        />
+        <XDSSwitch
+          label="Dark mode"
+          value={darkMode}
+          onChange={setDarkMode}
+          labelPosition="start"
+          labelSpacing="spread"
+        />
+        <XDSSwitch
+          label="Auto-save"
+          value={autoSave}
+          onChange={setAutoSave}
+          labelPosition="start"
+          labelSpacing="spread"
+        />
+      </XDSVStack>
+    </XDSCard>
   );
 }
