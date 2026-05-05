@@ -6,8 +6,8 @@ import {XDSText} from '@xds/core/Text';
 
 export default function TokenRemovable() {
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSStack direction="vertical" gap={1}>
+    <XDSStack direction="vertical" gap={10}>
+      <XDSStack direction="vertical" gap={2}>
         <XDSText type="supporting" color="secondary">
           Active filters
         </XDSText>
@@ -17,7 +17,7 @@ export default function TokenRemovable() {
           <XDSToken label="Team: Design" color="purple" onRemove={() => {}} />
         </XDSStack>
       </XDSStack>
-      <XDSStack direction="vertical" gap={1}>
+      <XDSStack direction="vertical" gap={2}>
         <XDSText type="supporting" color="secondary">
           Selected recipients
         </XDSText>

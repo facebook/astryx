@@ -20,22 +20,26 @@ const COLORS = [
 
 export default function TokenColors() {
   return (
-    <XDSStack direction="vertical" gap={4}>
-      <XDSStack direction="vertical" gap={1}>
+    <XDSStack
+      direction="vertical"
+      gap={10}
+      width="100%"
+      style={{maxWidth: 400}}>
+      <XDSStack direction="vertical" gap={2}>
         <XDSText type="supporting" color="secondary">
           Default
         </XDSText>
-        <XDSStack direction="horizontal" gap={2} wrap="wrap">
+        <XDSStack direction="horizontal" gap={1} wrap="wrap">
           {COLORS.map(({color, label}) => (
             <XDSToken key={color} label={label} color={color} />
           ))}
         </XDSStack>
       </XDSStack>
-      <XDSStack direction="vertical" gap={1}>
+      <XDSStack direction="vertical" gap={2}>
         <XDSText type="supporting" color="secondary">
           Disabled
         </XDSText>
-        <XDSStack direction="horizontal" gap={2} wrap="wrap">
+        <XDSStack direction="horizontal" gap={1} wrap="wrap">
           {COLORS.map(({color, label}) => (
             <XDSToken key={color} label={label} color={color} isDisabled />
           ))}
