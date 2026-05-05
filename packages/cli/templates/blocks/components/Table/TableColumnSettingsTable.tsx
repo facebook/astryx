@@ -9,7 +9,7 @@ import {
 } from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 import {XDSMultiSelector} from '@xds/core/MultiSelector';
-import {XDSLayout, XDSLayoutHeader, XDSLayoutContent} from '@xds/core/Layout';
+import {XDSVStack} from '@xds/core/Layout';
 import {XDSToolbar} from '@xds/core/Toolbar';
 import {XDSText} from '@xds/core/Text';
 
@@ -101,31 +101,27 @@ export default function TableColumnSettingsTable() {
   }));
 
   return (
-    <XDSLayout>
-      <XDSLayoutHeader>
-        <XDSToolbar
-          label="Table actions"
-          startContent={<XDSText type="label">Team</XDSText>}
-          endContent={
-            <XDSMultiSelector
-              label="Columns"
-              isLabelHidden
-              options={selectorOptions}
-              value={[...state.activeColumnKeys]}
-              onChange={state.setActiveColumnKeys}
-            />
-          }
-        />
-      </XDSLayoutHeader>
-      <XDSLayoutContent>
-        <XDSTable
-          data={users}
-          columns={allColumns}
-          idKey="id"
-          hasHover
-          plugins={{columnSettings: plugin}}
-        />
-      </XDSLayoutContent>
-    </XDSLayout>
+    <XDSVStack gap={3} width="100%">
+      <XDSToolbar
+        label="Table actions"
+        startContent={<XDSText type="label">Team</XDSText>}
+        endContent={
+          <XDSMultiSelector
+            label="Columns"
+            isLabelHidden
+            options={selectorOptions}
+            value={[...state.activeColumnKeys]}
+            onChange={state.setActiveColumnKeys}
+          />
+        }
+      />
+      <XDSTable
+        data={users}
+        columns={allColumns}
+        idKey="id"
+        hasHover
+        plugins={{columnSettings: plugin}}
+      />
+    </XDSVStack>
   );
 }

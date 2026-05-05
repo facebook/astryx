@@ -45,7 +45,7 @@ const columns: XDSTableColumn<User>[] = [
 
 export default function TableShowcase() {
   return (
-    <XDSCard>
+    <XDSCard width={600}>
       <XDSTable data={users} columns={columns} idKey="id" hasHover />
     </XDSCard>
   );

@@ -6,6 +6,6 @@ export const doc = {
   description:
     'Table with alternating row colors and hover highlighting for easy scanning.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Table'],
 };

@@ -6,6 +6,6 @@ export const doc = {
   description:
     'Paginated data table navigating through a larger dataset page by page.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Table', 'Section'],
 };

@@ -6,6 +6,6 @@ export const doc = {
   description:
     'Table with rich cell content using XDSLink for emails and XDSBadge for role labels.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Table', 'Badge', 'Link'],
 };

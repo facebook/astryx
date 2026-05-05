@@ -6,6 +6,6 @@ export const doc = {
   description:
     'Table with a column visibility picker in the toolbar. Toggle columns on and off.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Table', 'MultiSelector', 'Toolbar', 'Text', 'Layout'],
 };

@@ -6,6 +6,6 @@ export const doc = {
   description:
     'Table with popover filter controls triggered by icons in column headers.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Table', 'PowerSearch'],
 };

@@ -6,6 +6,6 @@ export const doc = {
   description:
     'Table with row selection checkboxes and a select-all header checkbox.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Table'],
 };

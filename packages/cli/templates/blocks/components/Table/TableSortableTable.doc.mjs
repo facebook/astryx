@@ -6,6 +6,6 @@ export const doc = {
   description:
     'Table with sortable columns, click headers to sort ascending or descending.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Table'],
 };

@@ -6,6 +6,6 @@ export const doc = {
   description:
     'Table with inline filter controls rendered directly below each column header.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Table', 'PowerSearch'],
 };

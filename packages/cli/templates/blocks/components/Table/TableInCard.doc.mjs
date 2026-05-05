@@ -6,6 +6,6 @@ export const doc = {
   description:
     'Table composed inside a card with a heading, demonstrating container bleed alignment.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['Table', 'Card', 'Layout', 'Text'],
 };
