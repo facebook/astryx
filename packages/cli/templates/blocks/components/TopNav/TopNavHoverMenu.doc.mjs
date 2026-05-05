@@ -6,6 +6,6 @@ export const doc = {
   description:
     'Navigation bar with a hover-triggered dropdown menu showing product items with icons and descriptions.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['TopNav', 'TopNavMenu', 'NavIcon', 'Button'],
 };

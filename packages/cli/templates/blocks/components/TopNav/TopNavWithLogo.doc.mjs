@@ -6,6 +6,6 @@ export const doc = {
   description:
     'Navigation bar with a branded logo icon, heading link, nav items, and a profile action.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['TopNav', 'NavIcon', 'Button'],
 };

@@ -6,6 +6,6 @@ export const doc = {
   description:
     'Full-featured navigation bar with icon-labeled nav items, search, notifications, and a primary CTA.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['TopNav', 'NavIcon', 'Button'],
 };

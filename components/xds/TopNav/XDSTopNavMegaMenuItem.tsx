@@ -1,0 +1,261 @@
+'use client';
+
+/**
+ * @file XDSTopNavMegaMenuItem.tsx
+ * @input Uses React, StyleX, theme tokens, navItemStyles, XDSTopNavRenderContext
+ * @output Exports XDSTopNavMegaMenuItem component and props
+ * @position Individual item inside an XDSTopNavMegaMenu — renders itself in both
+ *   desktop (popover) and mobile drawer modes.
+ *
+ * SYNC: When modified, update these files to stay in sync:
+ * - /packages/core/src/TopNav/TopNav.doc.mjs
+ * - /packages/core/src/TopNav/index.ts
+ * - /packages/cli/templates/blocks/components/TopNav/ (showcase blocks)
+ */
+
+import {type ReactNode} from 'react';
+import * as stylex from '@stylexjs/stylex';
+import {
+  colorVars,
+  spacingVars,
+  radiusVars,
+  durationVars,
+  easeVars,
+  typeScaleVars,
+  fontWeightVars,
+} from '@xds/core/theme';
+import {navItemStyles} from '@xds/core/NavItem';
+import {useXDSLinkComponent} from '@xds/core/Link';
+import type {XDSLinkComponentType} from '@xds/core/Link';
+import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
+import {xdsClassName, mergeProps} from '@xds/core/utils';
+import {useXDSAppShellMobile} from '@xds/core/AppShell';
+
+// =============================================================================
+// Styles
+// =============================================================================
+
+const styles = stylex.create({
+  // Desktop popover item
+  desktop: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: spacingVars['--spacing-3'],
+    paddingBlock: spacingVars['--spacing-3'],
+    paddingInline: spacingVars['--spacing-3'],
+    borderRadius: radiusVars['--radius-element'],
+    textDecoration: 'none',
+    cursor: 'pointer',
+    transitionProperty: 'background-color',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+    backgroundColor: {
+      default: 'transparent',
+      ':hover': {
+        '@media (hover: hover)': colorVars['--color-overlay-hover'],
+      },
+      ':active': colorVars['--color-overlay-pressed'],
+    },
+    border: 'none',
+    outline: {
+      default: null,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: {
+      default: '0',
+      ':focus-visible': '2px',
+    },
+    color: 'inherit',
+    fontFamily: 'inherit',
+    textAlign: 'start',
+    boxSizing: 'border-box',
+    width: '100%',
+  },
+  desktopIcon: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 40,
+    height: 40,
+    borderRadius: radiusVars['--radius-element'],
+    backgroundColor: colorVars['--color-neutral'],
+    flexShrink: 0,
+    color: colorVars['--color-icon-secondary'],
+  },
+  desktopContent: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-1'],
+    minWidth: 0,
+  },
+  desktopTitle: {
+    fontSize: typeScaleVars['--text-label-size'],
+    lineHeight: typeScaleVars['--text-label-leading'],
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+    color: colorVars['--color-text-primary'],
+  },
+  desktopDescription: {
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    fontWeight: fontWeightVars['--font-weight-normal'],
+    color: colorVars['--color-text-secondary'],
+  },
+  // Drawer item overrides (base from navItemStyles.item)
+  drawerItem: {
+    paddingInlineStart: spacingVars['--spacing-6'],
+    alignItems: 'flex-start',
+    textDecoration: 'none',
+  },
+  drawerItemIcon: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 32,
+    height: 32,
+    borderRadius: radiusVars['--radius-element'],
+    backgroundColor: colorVars['--color-neutral'],
+    flexShrink: 0,
+    color: colorVars['--color-icon-secondary'],
+    marginBlockStart: spacingVars['--spacing-0-5'],
+  },
+  drawerItemContent: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-0-5'],
+    minWidth: 0,
+  },
+  drawerItemDescription: {
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    color: colorVars['--color-text-secondary'],
+    fontWeight: fontWeightVars['--font-weight-normal'],
+  },
+});
+
+// =============================================================================
+// Types
+// =============================================================================
+
+export interface XDSTopNavMegaMenuItemProps {
+  /** Display title for the menu item. */
+  title: string;
+  /** Optional description text displayed below the title. */
+  description?: string;
+  /** Optional icon element displayed to the left. */
+  icon?: ReactNode;
+  /** URL to navigate to when clicked. */
+  href?: string;
+  /** Callback when item is clicked. */
+  onClick?: () => void;
+  /**
+   * Custom component to render instead of `<a>` for link items.
+   * Overrides the provider-level default set by XDSLinkProvider.
+   */
+  as?: XDSLinkComponentType;
+  /**
+   * tabIndex — set by parent when inside a closed popover.
+   * @internal
+   */
+  tabIndex?: number;
+}
+
+// =============================================================================
+// Component
+// =============================================================================
+
+/**
+ * An individual item inside an XDSTopNavMegaMenu.
+ *
+ * Renders itself in both desktop (popover grid) and mobile drawer modes
+ * using XDSTopNavRenderContext to switch appearance.
+ *
+ * @example
+ * ```
+ * <XDSTopNavMegaMenu
+ *   label="Products"
+ *   items={
+ *     <>
+ *       <XDSTopNavMegaMenuItem
+ *         title="Analytics"
+ *         description="Track and analyze user behavior"
+ *         icon={<ChartIcon />}
+ *         href="/analytics"
+ *       />
+ *       <XDSTopNavMegaMenuItem title="Reports" href="/reports" />
+ *     </>
+ *   }
+ * />
+ * ```
+ */
+export function XDSTopNavMegaMenuItem({
+  title,
+  description,
+  icon,
+  href,
+  onClick,
+  as,
+  tabIndex,
+}: XDSTopNavMegaMenuItemProps) {
+  const renderMode = useXDSTopNavRenderMode();
+  const LinkComponent = useXDSLinkComponent(as);
+  const {closeMobileNav} = useXDSAppShellMobile();
+
+  // =========================================================================
+  // Drawer mode — matches SideNavItem / TopNavMenu drawer appearance
+  // =========================================================================
+  if (renderMode === 'drawer') {
+    const Element = href ? LinkComponent : 'button';
+    const elementProps = Element === 'button' ? {type: 'button' as const} : {};
+    const handleDrawerClick = () => {
+      onClick?.();
+      closeMobileNav();
+    };
+    return (
+      <Element
+        href={href}
+        onClick={handleDrawerClick}
+        {...elementProps}
+        {...mergeProps(
+          xdsClassName('top-nav-mega-menu-item', {mode: 'drawer'}),
+          stylex.props(navItemStyles.item, styles.drawerItem),
+        )}>
+        {icon && <div {...stylex.props(styles.drawerItemIcon)}>{icon}</div>}
+        <div {...stylex.props(styles.drawerItemContent)}>
+          {title}
+          {description && (
+            <span {...stylex.props(styles.drawerItemDescription)}>
+              {description}
+            </span>
+          )}
+        </div>
+      </Element>
+    );
+  }
+
+  // =========================================================================
+  // Default mode — desktop popover item with large icon + description
+  // =========================================================================
+  const Element = href ? LinkComponent : 'div';
+  return (
+    <Element
+      href={href}
+      onClick={onClick}
+      tabIndex={tabIndex}
+      {...mergeProps(
+        xdsClassName('top-nav-mega-menu-item'),
+        stylex.props(styles.desktop),
+      )}>
+      {icon && <div {...stylex.props(styles.desktopIcon)}>{icon}</div>}
+      <div {...stylex.props(styles.desktopContent)}>
+        <span {...stylex.props(styles.desktopTitle)}>{title}</span>
+        {description && (
+          <span {...stylex.props(styles.desktopDescription)}>
+            {description}
+          </span>
+        )}
+      </div>
+    </Element>
+  );
+}
+
+XDSTopNavMegaMenuItem.displayName = 'XDSTopNavMegaMenuItem';

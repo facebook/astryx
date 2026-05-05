@@ -6,6 +6,6 @@ export const doc = {
   description:
     'Marketing-style navigation with a full-width mega menu featuring product items and a promotional featured card.',
   isReady: true,
-  aspectRatio: 4 / 3,
+  aspectRatio: 16 / 9,
   componentsUsed: ['TopNav', 'TopNavMegaMenu', 'NavIcon', 'Button'],
 };
