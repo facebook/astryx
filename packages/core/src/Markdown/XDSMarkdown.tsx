@@ -30,6 +30,8 @@ import {XDSList} from '../List/XDSList';
 import {XDSListItem} from '../List/XDSListItem';
 import {xdsClassName, mergeProps} from '../utils';
 import {useXDSStreamingText} from '../hooks/useXDSStreamingText';
+import {XDSCitation} from '../Citation/XDSCitation';
+import type {XDSCitationSource} from '../Citation/XDSCitation';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {
@@ -74,13 +76,25 @@ export interface MarkdownInlinePlugin {
  * When `sources` is provided, bracket content matching a source key is rendered
  * as a compact superscript citation pill instead of plain text.
  */
-export interface XDSMarkdownSource {
-  /** Human-readable title for the source. */
-  title?: string;
-  /** URL to navigate to when the citation is clicked. */
-  url?: string;
-  /** Optional favicon or icon URL to display in the citation pill. */
-  icon?: string;
+export type XDSMarkdownSource = XDSCitationSource;
+
+export interface XDSMarkdownComponents {
+  code?: React.ComponentType<{code: string; language?: string}>;
+  inlineCode?: React.ComponentType<{children: string}>;
+  citation?: React.ComponentType<{
+    source: XDSCitationSource;
+    number: number;
+    variant: 'label' | 'number';
+  }>;
+  link?: React.ComponentType<{href: string; children: React.ReactNode}>;
+  heading?: React.ComponentType<{
+    level: 1 | 2 | 3 | 4 | 5 | 6;
+    children: React.ReactNode;
+  }>;
+  paragraph?: React.ComponentType<{children: React.ReactNode}>;
+  image?: React.ComponentType<{src: string; alt: string}>;
+  blockquote?: React.ComponentType<{children: React.ReactNode}>;
+  hr?: React.ComponentType<object>;
 }
 
 export interface XDSMarkdownProps {
@@ -131,6 +145,7 @@ export interface XDSMarkdownProps {
    * @default 'start'
    */
   contentAlign?: 'start' | 'center';
+  components?: Partial<XDSMarkdownComponents>;
   /**
    * Plugins that transform text patterns into custom React elements.
    * Applied to text nodes after parsing — code blocks and inline code
@@ -377,92 +392,6 @@ const styles = stylex.create({
       default: 'none',
       ':hover': {'@media (hover: hover)': 'underline'},
     },
-  },
-  // Citation chip — inline capsule matching XDSTextCitation treatment
-  citation: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-1'],
-    verticalAlign: 'baseline',
-    height: spacingVars['--spacing-5'],
-    fontSize: typeScaleVars['--text-supporting-size'],
-    fontWeight: typeScaleVars['--text-supporting-weight'],
-    lineHeight: typeScaleVars['--text-supporting-leading'],
-    color: colorVars['--color-text-secondary'],
-    borderRadius: radiusVars['--radius-element'],
-    borderWidth: borderVars['--border-width'],
-    borderStyle: 'solid',
-    borderColor: colorVars['--color-border'],
-    paddingInline: spacingVars['--spacing-2'],
-    marginInlineStart: spacingVars['--spacing-0-5'],
-    textDecoration: 'none',
-    cursor: 'pointer',
-    transitionProperty: 'background-color, border-color, color',
-    transitionDuration: durationVars['--duration-fast-max'],
-    transitionTimingFunction: easeVars['--ease-standard'],
-    maxWidth: '15em',
-    overflow: 'hidden',
-  },
-  citationWithIcon: {
-    paddingInlineStart: spacingVars['--spacing-0-5'],
-  },
-  citationLabel: {
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-    minWidth: 0,
-  },
-  // Number mode — compact superscript badge
-  citationNumber: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    verticalAlign: 'super',
-    fontSize: typeScaleVars['--text-supporting-size'],
-    fontWeight: fontWeightVars['--font-weight-semibold'],
-    lineHeight: typeScaleVars['--text-supporting-leading'],
-    color: colorVars['--color-text-accent'],
-    backgroundColor: colorVars['--color-accent-muted'],
-    borderRadius: radiusVars['--radius-full'],
-    minWidth: spacingVars['--spacing-5'],
-    height: spacingVars['--spacing-5'],
-    paddingInline: spacingVars['--spacing-1'],
-    textDecoration: 'none',
-    cursor: 'pointer',
-    transitionProperty: 'background-color',
-    transitionDuration: durationVars['--duration-fast-max'],
-    transitionTimingFunction: easeVars['--ease-standard'],
-  },
-  citationNumberHover: {
-    backgroundColor: {
-      ':hover': {'@media (hover: hover)': colorVars['--color-overlay-hover']},
-    },
-  },
-  citationHover: {
-    backgroundColor: {
-      ':hover': {'@media (hover: hover)': colorVars['--color-overlay-hover']},
-    },
-    color: {
-      ':hover': {'@media (hover: hover)': colorVars['--color-text-primary']},
-    },
-  },
-  citationIconWrap: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: spacingVars['--spacing-4'],
-    height: spacingVars['--spacing-4'],
-    borderRadius: radiusVars['--radius-full'],
-    backgroundColor: colorVars['--color-background-surface'],
-    borderWidth: borderVars['--border-width'],
-    borderStyle: 'solid',
-    borderColor: colorVars['--color-border'],
-    overflow: 'hidden',
-    flexShrink: 0,
-  },
-  citationIcon: {
-    width: spacingVars['--spacing-3'],
-    height: spacingVars['--spacing-3'],
   },
 });
 
@@ -759,6 +688,7 @@ function renderInline(
   citationCtx: CitationContext | null,
   linkComponent: XDSLinkComponentType = 'a',
   inlinePlugins?: MarkdownInlinePlugin[],
+  components?: Partial<XDSMarkdownComponents>,
 ): React.ReactNode {
   switch (node.type) {
     case 'text': {
@@ -813,6 +743,7 @@ function renderInline(
               citationCtx,
               linkComponent,
               inlinePlugins,
+              components,
             ),
           )}
         </strong>
@@ -829,6 +760,7 @@ function renderInline(
               citationCtx,
               linkComponent,
               inlinePlugins,
+              components,
             ),
           )}
         </em>
@@ -845,6 +777,7 @@ function renderInline(
               citationCtx,
               linkComponent,
               inlinePlugins,
+              components,
             ),
           )}
         </del>
@@ -853,16 +786,22 @@ function renderInline(
       // Track code content length for cursor but don't split inside code
       const startOffset = cursor.offset;
       cursor.offset += node.content.length;
+      const InlineCodeComp = components?.inlineCode;
+      const codeEl = InlineCodeComp ? (
+        <InlineCodeComp key={index}>{node.content}</InlineCodeComp>
+      ) : (
+        <XDSCode key={index}>{node.content}</XDSCode>
+      );
       if (cursor.active && startOffset >= cursor.boundary) {
         return (
           <span
             key={`fade-code-${index}-${startOffset}`}
             {...stylex.props(streamingStyles.fadeIn)}>
-            <XDSCode>{node.content}</XDSCode>
+            {codeEl}
           </span>
         );
       }
-      return <XDSCode key={index}>{node.content}</XDSCode>;
+      return codeEl;
     }
     case 'link': {
       const safeHref = sanitizeUrl(node.href);
@@ -879,9 +818,29 @@ function renderInline(
                 citationCtx,
                 linkComponent,
                 inlinePlugins,
+                components,
               ),
             )}
           </span>
+        );
+      }
+      const LinkComp = components?.link;
+      if (LinkComp) {
+        return (
+          <LinkComp key={index} href={safeHref}>
+            {node.children.map((c, i) =>
+              renderInline(
+                c,
+                i,
+                onLinkClick,
+                cursor,
+                citationCtx,
+                linkComponent,
+                inlinePlugins,
+                components,
+              ),
+            )}
+          </LinkComp>
         );
       }
       const isExternal = safeHref.startsWith('http');
@@ -915,6 +874,7 @@ function renderInline(
               citationCtx,
               linkComponent,
               inlinePlugins,
+              components,
             ),
           )}
         </LinkTag>
@@ -923,6 +883,9 @@ function renderInline(
     case 'image': {
       const safeSrc = sanitizeUrl(node.src);
       if (safeSrc == null) return <span key={index}>[{node.alt}]</span>;
+      const ImageComp = components?.image;
+      if (ImageComp)
+        return <ImageComp key={index} src={safeSrc} alt={node.alt} />;
       return (
         <img
           key={index}
@@ -942,58 +905,26 @@ function renderInline(
         return <span key={index}>[{node.sourceId}]</span>;
       }
       const num = getCitationNumber(citationCtx, node.sourceId);
-      const source = citationCtx.sources[node.sourceId];
-      const title = source?.title ?? node.sourceId;
-      const href = source?.url;
-      const icon = source?.icon;
-      const Tag = href ? 'a' : 'span';
-      const linkProps = href
-        ? {
-            href,
-            target: '_blank' as const,
-            rel: 'noopener noreferrer' as const,
-            title,
-          }
-        : {title};
-
+      const source = citationCtx.sources[node.sourceId] ?? {
+        title: node.sourceId,
+      };
       const isNew = cursor.active && cursor.offset >= cursor.boundary;
-      const isNumberMode = citationCtx.style === 'number';
-
-      const chip = isNumberMode ? (
-        <Tag
+      const citVariant = citationCtx.style === 'number' ? 'number' : 'label';
+      const CitationComp = components?.citation;
+      const chip = CitationComp ? (
+        <CitationComp
           key={index}
-          role="doc-noteref"
-          aria-label={`Citation ${num}: ${title}`}
-          {...linkProps}
-          {...stylex.props(
-            styles.citationNumber,
-            href != null && styles.citationNumberHover,
-          )}>
-          {num}
-        </Tag>
+          source={source}
+          number={num}
+          variant={citVariant}
+        />
       ) : (
-        <Tag
+        <XDSCitation
           key={index}
-          role="doc-noteref"
-          aria-label={`Citation ${num}: ${title}`}
-          {...linkProps}
-          {...stylex.props(
-            styles.citation,
-            icon != null && styles.citationWithIcon,
-            href != null && styles.citationHover,
-          )}>
-          {icon && (
-            <span {...stylex.props(styles.citationIconWrap)}>
-              <img
-                src={icon}
-                alt=""
-                aria-hidden="true"
-                {...stylex.props(styles.citationIcon)}
-              />
-            </span>
-          )}
-          <span {...stylex.props(styles.citationLabel)}>{title}</span>
-        </Tag>
+          source={source}
+          number={num}
+          variant={citVariant}
+        />
       );
 
       return isNew ? (
@@ -1067,6 +998,7 @@ function renderBlock(
   contentAlign: 'start' | 'center',
   linkComponent: XDSLinkComponentType = 'a',
   inlinePlugins?: MarkdownInlinePlugin[],
+  components?: Partial<XDSMarkdownComponents>,
 ): React.ReactNode {
   const spacing = getElementSpacing(node, density);
   const isFirst = index === 0;
@@ -1081,6 +1013,25 @@ function renderBlock(
         | 4
         | 5
         | 6;
+      const headingChildren = node.children.map((c, i) =>
+        renderInline(
+          c,
+          i,
+          onLinkClick,
+          cursor,
+          citationCtx,
+          linkComponent,
+          inlinePlugins,
+          components,
+        ),
+      );
+      const HeadingComp = components?.heading;
+      if (HeadingComp)
+        return (
+          <HeadingComp key={index} level={level}>
+            {headingChildren}
+          </HeadingComp>
+        );
       const Tag = `h${level}` as const;
       return (
         <Tag
@@ -1098,21 +1049,26 @@ function renderBlock(
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
           )}>
-          {node.children.map((c, i) =>
-            renderInline(
-              c,
-              i,
-              onLinkClick,
-              cursor,
-              citationCtx,
-              linkComponent,
-              inlinePlugins,
-            ),
-          )}
+          {headingChildren}
         </Tag>
       );
     }
-    case 'paragraph':
+    case 'paragraph': {
+      const paraChildren = node.children.map((c, i) =>
+        renderInline(
+          c,
+          i,
+          onLinkClick,
+          cursor,
+          citationCtx,
+          linkComponent,
+          inlinePlugins,
+          components,
+        ),
+      );
+      const ParagraphComp = components?.paragraph;
+      if (ParagraphComp)
+        return <ParagraphComp key={index}>{paraChildren}</ParagraphComp>;
       return (
         <p
           key={index}
@@ -1127,22 +1083,22 @@ function renderBlock(
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
           )}>
-          {node.children.map((c, i) =>
-            renderInline(
-              c,
-              i,
-              onLinkClick,
-              cursor,
-              citationCtx,
-              linkComponent,
-              inlinePlugins,
-            ),
-          )}
+          {paraChildren}
         </p>
       );
+    }
     case 'codeblock': {
       // Track codeblock content in cursor for accurate character counting
       cursor.offset += node.content.length;
+      const CodeBlockComp = components?.code;
+      if (CodeBlockComp)
+        return (
+          <CodeBlockComp
+            key={index}
+            code={node.content}
+            language={node.language}
+          />
+        );
       return (
         <div
           key={index}
@@ -1168,7 +1124,28 @@ function renderBlock(
         </div>
       );
     }
-    case 'blockquote':
+    case 'blockquote': {
+      const BlockquoteComp = components?.blockquote;
+      if (BlockquoteComp) {
+        const bqC = node.children.map((c, i) =>
+          renderBlock(
+            c,
+            i,
+            node.children.length,
+            density,
+            headingLevelStart,
+            onLinkClick,
+            cursor,
+            citationCtx,
+            contentWidthValue,
+            contentAlign,
+            linkComponent,
+            inlinePlugins,
+            components,
+          ),
+        );
+        return <BlockquoteComp key={index}>{bqC}</BlockquoteComp>;
+      }
       return (
         <blockquote
           key={index}
@@ -1198,10 +1175,12 @@ function renderBlock(
               contentAlign,
               linkComponent,
               inlinePlugins,
+              components,
             ),
           )}
         </blockquote>
       );
+    }
     case 'list': {
       // Detect task lists: all items have a checked state
       const isTaskList =
@@ -1249,6 +1228,7 @@ function renderBlock(
                         citationCtx,
                         linkComponent,
                         inlinePlugins,
+                        components,
                       ),
                     )}
                   </>
@@ -1268,6 +1248,7 @@ function renderBlock(
                         contentAlign,
                         linkComponent,
                         inlinePlugins,
+                        components,
                       ),
                     )}
                   </>
@@ -1338,6 +1319,7 @@ function renderBlock(
                       citationCtx,
                       linkComponent,
                       inlinePlugins,
+                      components,
                     ),
                   )}
                 </>
@@ -1357,6 +1339,7 @@ function renderBlock(
                       contentAlign,
                       linkComponent,
                       inlinePlugins,
+                      components,
                     ),
                   )}
                 </>
@@ -1423,6 +1406,7 @@ function renderBlock(
                         citationCtx,
                         linkComponent,
                         inlinePlugins,
+                        components,
                       ),
                     )}
                   </th>
@@ -1449,6 +1433,7 @@ function renderBlock(
                         citationCtx,
                         linkComponent,
                         inlinePlugins,
+                        components,
                       ),
                     )}
                   </td>
@@ -1466,7 +1451,9 @@ function renderBlock(
         </div>
       );
     }
-    case 'hr':
+    case 'hr': {
+      const HrComp = components?.hr;
+      if (HrComp) return <HrComp key={index} />;
       return (
         <hr
           key={index}
@@ -1478,6 +1465,7 @@ function renderBlock(
           )}
         />
       );
+    }
     case 'image': {
       const safeSrc = sanitizeUrl(node.src);
       if (safeSrc == null) {
@@ -1534,6 +1522,7 @@ export function XDSMarkdown({
   citationStyle = 'label',
   contentWidth = 680,
   contentAlign = 'start',
+  components,
   inlinePlugins,
   xstyle,
   className,
@@ -1616,6 +1605,7 @@ export function XDSMarkdown({
           contentAlign,
           LinkComponent,
           inlinePlugins,
+          components,
         ),
       )}
     </div>
