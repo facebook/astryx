@@ -15,7 +15,7 @@ import {
 
 const styles = stylex.create({
   container: {
-    width: 600,
+    width: '100%',
   },
 });
 

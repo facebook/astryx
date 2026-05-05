@@ -11,7 +11,7 @@ import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
   card: {
-    width: 600,
+    width: 500,
     height: '100%',
     marginTop: 260,
   },

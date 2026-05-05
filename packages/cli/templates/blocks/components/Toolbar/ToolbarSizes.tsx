@@ -11,7 +11,7 @@ import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({
   container: {
-    width: 600,
+    width: 500,
   },
 });
 
@@ -29,7 +29,6 @@ export default function ToolbarSizes() {
           <XDSToolbar
             label={`${label} toolbar`}
             size={size}
-            dividers={['bottom']}
             startContent={<XDSHeading level={4}>{label}</XDSHeading>}
             endContent={
               <>

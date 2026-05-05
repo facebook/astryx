@@ -7,6 +7,7 @@ import {XDSIcon} from '@xds/core/Icon';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSTable} from '@xds/core/Table';
 import {useXDSTableSelection, useXDSTableSelectionState} from '@xds/core/Table';
+import {XDSStack} from '@xds/core/Layout';
 import {TrashIcon, ArchiveBoxIcon} from '@heroicons/react/24/outline';
 
 const DATA = [
@@ -32,12 +33,13 @@ export default function ToolbarBulkActions() {
   const selectionPlugin = useXDSTableSelection(selectionConfig);
 
   return (
-    <>
+    <XDSStack direction="vertical">
       {selectedKeys.size > 0 && (
         <XDSToolbar
           label="Bulk actions"
           size="sm"
           variant="wash"
+          dividers={['bottom']}
           startContent={
             <>
               <XDSBadge label={`${selectedKeys.size} selected`} />
@@ -74,6 +76,6 @@ export default function ToolbarBulkActions() {
         data={DATA}
         plugins={{selection: selectionPlugin}}
       />
-    </>
+    </XDSStack>
   );
 }
