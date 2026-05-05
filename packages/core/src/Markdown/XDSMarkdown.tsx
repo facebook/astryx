@@ -375,7 +375,7 @@ const styles = stylex.create({
     color: colorVars['--color-text-accent'],
     textDecoration: {
       default: 'none',
-      ':hover': 'underline',
+      ':hover': {'@media (hover: hover)': 'underline'},
     },
   },
   // Citation chip — inline capsule matching XDSTextCitation treatment
@@ -435,15 +435,15 @@ const styles = stylex.create({
   },
   citationNumberHover: {
     backgroundColor: {
-      ':hover': colorVars['--color-overlay-hover'],
+      ':hover': {'@media (hover: hover)': colorVars['--color-overlay-hover']},
     },
   },
   citationHover: {
     backgroundColor: {
-      ':hover': colorVars['--color-overlay-hover'],
+      ':hover': {'@media (hover: hover)': colorVars['--color-overlay-hover']},
     },
     color: {
-      ':hover': colorVars['--color-text-primary'],
+      ':hover': {'@media (hover: hover)': colorVars['--color-text-primary']},
     },
   },
   citationIconWrap: {
@@ -724,8 +724,7 @@ function wrapTextWithFade(
   return (
     <Fragment key={`fade-${key}-split`}>
       {content.slice(0, splitAt)}
-      <span
-        {...stylex.props(streamingStyles.fadeIn)}>
+      <span {...stylex.props(streamingStyles.fadeIn)}>
         {content.slice(splitAt)}
       </span>
     </Fragment>
@@ -773,7 +772,9 @@ function renderInline(
           for (let i = 0; i < segments.length; i++) {
             const seg = segments[i];
             if (seg.type === 'text') {
-              result.push(wrapTextWithFade(seg.content, cursor, `${index}-seg-${i}`));
+              result.push(
+                wrapTextWithFade(seg.content, cursor, `${index}-seg-${i}`),
+              );
             } else {
               // Plugin segment — advance cursor by matchLength, apply fade if new
               const startOffset = cursor.offset;
@@ -788,7 +789,9 @@ function renderInline(
                 );
               } else {
                 result.push(
-                  <Fragment key={`plugin-${index}-${i}`}>{seg.element}</Fragment>,
+                  <Fragment key={`plugin-${index}-${i}`}>
+                    {seg.element}
+                  </Fragment>,
                 );
               }
             }
@@ -802,7 +805,15 @@ function renderInline(
       return (
         <strong key={index} {...stylex.props(styles.bold)}>
           {node.children.map((c, i) =>
-            renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins),
+            renderInline(
+              c,
+              i,
+              onLinkClick,
+              cursor,
+              citationCtx,
+              linkComponent,
+              inlinePlugins,
+            ),
           )}
         </strong>
       );
@@ -810,7 +821,15 @@ function renderInline(
       return (
         <em key={index}>
           {node.children.map((c, i) =>
-            renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins),
+            renderInline(
+              c,
+              i,
+              onLinkClick,
+              cursor,
+              citationCtx,
+              linkComponent,
+              inlinePlugins,
+            ),
           )}
         </em>
       );
@@ -818,7 +837,15 @@ function renderInline(
       return (
         <del key={index} {...stylex.props(styles.strikethrough)}>
           {node.children.map((c, i) =>
-            renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins),
+            renderInline(
+              c,
+              i,
+              onLinkClick,
+              cursor,
+              citationCtx,
+              linkComponent,
+              inlinePlugins,
+            ),
           )}
         </del>
       );
@@ -844,7 +871,15 @@ function renderInline(
         return (
           <span key={index}>
             {node.children.map((c, i) =>
-              renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins),
+              renderInline(
+                c,
+                i,
+                onLinkClick,
+                cursor,
+                citationCtx,
+                linkComponent,
+                inlinePlugins,
+              ),
             )}
           </span>
         );
@@ -872,7 +907,15 @@ function renderInline(
             : {})}
           {...stylex.props(styles.link)}>
           {node.children.map((c, i) =>
-            renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins),
+            renderInline(
+              c,
+              i,
+              onLinkClick,
+              cursor,
+              citationCtx,
+              linkComponent,
+              inlinePlugins,
+            ),
           )}
         </LinkTag>
       );
@@ -1056,7 +1099,15 @@ function renderBlock(
             isLast && styles.noMarginBlockEnd,
           )}>
           {node.children.map((c, i) =>
-            renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins),
+            renderInline(
+              c,
+              i,
+              onLinkClick,
+              cursor,
+              citationCtx,
+              linkComponent,
+              inlinePlugins,
+            ),
           )}
         </Tag>
       );
@@ -1077,7 +1128,15 @@ function renderBlock(
             isLast && styles.noMarginBlockEnd,
           )}>
           {node.children.map((c, i) =>
-            renderInline(c, i, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins),
+            renderInline(
+              c,
+              i,
+              onLinkClick,
+              cursor,
+              citationCtx,
+              linkComponent,
+              inlinePlugins,
+            ),
           )}
         </p>
       );
@@ -1182,7 +1241,15 @@ function renderBlock(
                 const label = isInline ? (
                   <>
                     {firstChild.children.map((c, j) =>
-                      renderInline(c, j, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins),
+                      renderInline(
+                        c,
+                        j,
+                        onLinkClick,
+                        cursor,
+                        citationCtx,
+                        linkComponent,
+                        inlinePlugins,
+                      ),
                     )}
                   </>
                 ) : (
@@ -1263,7 +1330,15 @@ function renderBlock(
               const label = isInline ? (
                 <>
                   {firstChild.children.map((c, j) =>
-                    renderInline(c, j, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins),
+                    renderInline(
+                      c,
+                      j,
+                      onLinkClick,
+                      cursor,
+                      citationCtx,
+                      linkComponent,
+                      inlinePlugins,
+                    ),
                   )}
                 </>
               ) : (
@@ -1340,7 +1415,15 @@ function renderBlock(
                       alignStyle(node.alignments[i]),
                     )}>
                     {h.children.map((c, j) =>
-                      renderInline(c, j, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins),
+                      renderInline(
+                        c,
+                        j,
+                        onLinkClick,
+                        cursor,
+                        citationCtx,
+                        linkComponent,
+                        inlinePlugins,
+                      ),
                     )}
                   </th>
                 ))}
@@ -1358,7 +1441,15 @@ function renderBlock(
                       alignStyle(node.alignments[j]),
                     )}>
                     {cell.children.map((c, k) =>
-                      renderInline(c, k, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins),
+                      renderInline(
+                        c,
+                        k,
+                        onLinkClick,
+                        cursor,
+                        citationCtx,
+                        linkComponent,
+                        inlinePlugins,
+                      ),
                     )}
                   </td>
                 ));
