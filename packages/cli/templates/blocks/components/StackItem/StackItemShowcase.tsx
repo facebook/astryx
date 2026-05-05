@@ -6,25 +6,25 @@ import {XDSText} from '@xds/core/Text';
 
 export default function StackItemShowcase() {
   return (
-    <XDSHStack gap={3} vAlign="center">
+    <XDSHStack gap={3} vAlign="center" width="100%" style={{maxWidth: 500}}>
       <XDSStackItem size="static">
-        <XDSCard variant="muted" padding={3}>
+        <XDSCard padding={3}>
           <XDSText type="supporting" color="secondary">
-            Static
+            Static Width
           </XDSText>
         </XDSCard>
       </XDSStackItem>
       <XDSStackItem size="fill">
-        <XDSCard variant="muted" padding={3}>
+        <XDSCard padding={3}>
           <XDSText type="supporting" color="secondary">
             Fills remaining space
           </XDSText>
         </XDSCard>
       </XDSStackItem>
       <XDSStackItem size="static">
-        <XDSCard variant="muted" padding={3}>
+        <XDSCard padding={3}>
           <XDSText type="supporting" color="secondary">
-            Static
+            Static Width
           </XDSText>
         </XDSCard>
       </XDSStackItem>

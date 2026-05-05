@@ -5,7 +5,7 @@ export const doc = {
   name: 'StatusDot — Variants',
   description: 'All five semantic color variants displayed in a row.',
   isReady: true,
-  aspectRatio: 1,
-  scale: 2,
+  aspectRatio: 16 / 9,
+  scale: 1,
   componentsUsed: ['StatusDot', 'HStack'],
 };

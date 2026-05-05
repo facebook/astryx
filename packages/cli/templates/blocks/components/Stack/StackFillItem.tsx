@@ -13,7 +13,7 @@ const USERS = [
 
 export default function StackFillItem() {
   return (
-    <XDSStack direction="vertical" gap={3}>
+    <XDSStack direction="vertical" gap={3} width="100%" style={{maxWidth: 300}}>
       {USERS.map(user => (
         <XDSStack
           key={user.name}

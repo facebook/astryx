@@ -5,7 +5,7 @@ export const doc = {
   name: 'StatusDot — Pulsing',
   description: 'Animated pulsing dots for live, processing, and error states.',
   isReady: true,
-  aspectRatio: 1,
-  scale: 2,
+  aspectRatio: 16 / 9,
+  scale: 1,
   componentsUsed: ['StatusDot', 'HStack'],
 };

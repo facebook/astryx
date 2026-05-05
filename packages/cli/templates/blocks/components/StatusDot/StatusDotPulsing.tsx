@@ -9,6 +9,8 @@ export default function StatusDotPulsing() {
       <XDSStatusDot variant="positive" label="Live" isPulsing />
       <XDSStatusDot variant="warning" label="Processing" isPulsing />
       <XDSStatusDot variant="negative" label="Error" isPulsing />
+      <XDSStatusDot variant="info" label="Processing" isPulsing />
+      <XDSStatusDot variant="neutral" label="Error" isPulsing />
     </XDSHStack>
   );
 }
