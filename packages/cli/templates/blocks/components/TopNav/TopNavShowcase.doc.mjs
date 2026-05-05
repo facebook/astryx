@@ -6,4 +6,5 @@ export const doc = {
   isReady: true,
   aspectRatio: 3,
   isShowcase: true,
+  componentsUsed: ['Button', 'Icon', 'TopNav'],
 };

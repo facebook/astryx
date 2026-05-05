@@ -6,4 +6,5 @@ export const doc = {
   isReady: true,
   aspectRatio: 4 / 3,
   isShowcase: true,
+  componentsUsed: ['Chat', 'Layout'],
 };

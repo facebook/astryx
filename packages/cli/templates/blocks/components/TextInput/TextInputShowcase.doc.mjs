@@ -6,4 +6,5 @@ export const doc = {
   isReady: true,
   aspectRatio: 16 / 9,
   isShowcase: true,
+  componentsUsed: ['TextInput'],
 };
