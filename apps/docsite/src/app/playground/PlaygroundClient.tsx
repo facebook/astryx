@@ -13,6 +13,8 @@ import {XDSHStack} from "@xds/core/Layout";
 import {XDSText} from "@xds/core/Text";
 import {XDSStatusDot} from "@xds/core/StatusDot";
 import {XDSDivider} from "@xds/core/Divider";
+import {useXDSResizable, XDSResizeHandle} from "@xds/core/Resizable";
+import {useXDSResizable, XDSResizeHandle} from "@xds/core/Resizable";
 import githubLight from "./themes/github-light.json";
 import githubDark from "./themes/github-dark.json";
 
@@ -236,9 +238,9 @@ const s = stylex.create({
     },
   },
   editorPane: {
-    flex: 1,
     display: "flex",
     flexDirection: "column",
+    flexShrink: 0,
     minWidth: 0,
     minHeight: {
       default: 0,
@@ -281,6 +283,13 @@ export function PlaygroundClient() {
   const readyRef = useRef(false);
   const pendingRef = useRef<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const editorPanel = useXDSResizable({
+    defaultSize: "50%",
+    minSizePx: 250,
+    snaps: [400, 500, 600, 700],
+    autoSaveId: "xds-playground-editor-width",
+  });
 
   const [editorTheme, setEditorTheme] = useState("github-dark");
 
@@ -422,7 +431,7 @@ export function PlaygroundClient() {
       </div>
       <XDSDivider />
       <div {...stylex.props(s.main)}>
-        <div {...stylex.props(s.editorPane)}>
+        <div {...stylex.props(s.editorPane)} style={{width: editorPanel.size}}>
           <MonacoEditor
             defaultLanguage="typescript"
             defaultValue={code}
@@ -434,7 +443,10 @@ export function PlaygroundClient() {
             options={editorOptions}
           />
         </div>
-        <XDSDivider orientation="vertical" />
+        <XDSResizeHandle
+          label="Resize editor panel"
+          resizable={editorPanel.props}
+        />
         <div {...stylex.props(s.previewPane)}>
           <div {...stylex.props(s.previewBar)}>
             <XDSText color="secondary" type="supporting">Preview</XDSText>
