@@ -43,8 +43,7 @@ class PreviewErrorBoundary extends Component<
   componentDidUpdate(prevProps: {resetKeys: unknown[]}) {
     if (
       this.state.error &&
-      JSON.stringify(prevProps.resetKeys) !==
-        JSON.stringify(this.props.resetKeys)
+      prevProps.resetKeys.some((k, i) => !Object.is(k, this.props.resetKeys[i]))
     ) {
       this.setState({error: null});
     }
@@ -195,7 +194,7 @@ export function useInteractiveState(
   const reset = useCallback(() => setState(initialState), [initialState]);
 
   const isDirty = useMemo(
-    () => JSON.stringify(state) !== JSON.stringify(initialState),
+    () => Object.keys(state).some(k => !Object.is(state[k], initialState[k])),
     [state, initialState],
   );
 
@@ -275,7 +274,7 @@ export function InteractivePreviewStage({
             width: '100%',
             padding: 'var(--spacing-4)',
           }}>
-          <PreviewErrorBoundary resetKeys={[Component, JSON.stringify(state)]}>
+          <PreviewErrorBoundary resetKeys={[Component, state]}>
             {createElement(Component, state)}
           </PreviewErrorBoundary>
         </XDSCenter>
