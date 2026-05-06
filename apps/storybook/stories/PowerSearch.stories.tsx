@@ -1,10 +1,7 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSPowerSearch} from '@xds/core/PowerSearch';
-import type {
-  PowerSearchConfig,
-  PowerSearchFilter,
-} from '@xds/core/PowerSearch';
+import type {PowerSearchConfig, PowerSearchFilter} from '@xds/core/PowerSearch';
 import type {XDSSearchSource, XDSSearchableItem} from '@xds/core/Typeahead';
 import {XDSButton} from '@xds/core/Button';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
@@ -319,7 +316,11 @@ export const Default: Story = {
 export const WithPresetFilters: Story = {
   render: args => {
     const [filters, setFilters] = useState<PowerSearchFilter[]>([
-      {field: 'status', operator: 'is', value: {type: 'enum', value: 'open'}},
+      {
+        field: 'status',
+        operator: 'any_of',
+        value: {type: 'enum_list', value: ['open', 'in_progress']},
+      },
       {
         field: 'priority',
         operator: 'is',
@@ -556,7 +557,11 @@ export const WithEmptyFilter: Story = {
 export const ReadOnly: Story = {
   render: args => {
     const filters: PowerSearchFilter[] = [
-      {field: 'status', operator: 'is', value: {type: 'enum', value: 'open'}},
+      {
+        field: 'status',
+        operator: 'any_of',
+        value: {type: 'enum_list', value: ['open', 'in_progress']},
+      },
       {
         field: 'priority',
         operator: 'is',
@@ -582,7 +587,11 @@ export const ReadOnly: Story = {
 export const Disabled: Story = {
   render: args => {
     const filters: PowerSearchFilter[] = [
-      {field: 'status', operator: 'is', value: {type: 'enum', value: 'open'}},
+      {
+        field: 'status',
+        operator: 'any_of',
+        value: {type: 'enum_list', value: ['open', 'in_progress']},
+      },
     ];
     return (
       <XDSPowerSearch
@@ -1001,7 +1010,11 @@ export const WithStartIcon: Story = {
 export const WithResultCount: Story = {
   render: args => {
     const [filters, setFilters] = useState<PowerSearchFilter[]>([
-      {field: 'status', operator: 'is', value: {type: 'enum', value: 'open'}},
+      {
+        field: 'status',
+        operator: 'any_of',
+        value: {type: 'enum_list', value: ['open', 'in_progress']},
+      },
     ]);
     return (
       <XDSPowerSearch
