@@ -285,8 +285,9 @@ export function PlaygroundClient() {
 
   const editorPanel = useXDSResizable({
     defaultSize: "50%",
-    minSizePx: 250,
-    snaps: [400, 500, 600, 700],
+    minSizePx: 200,
+    collapsible: true,
+    snaps: [400, 600],
     autoSaveId: "xds-playground-editor-width",
   });
 
@@ -449,6 +450,7 @@ export function PlaygroundClient() {
           label="Resize editor panel"
           direction={isMobile ? "vertical" : "horizontal"}
           hasDivider
+          pillPlacement={isMobile ? "end" : "auto"}
           resizable={editorPanel.props}
         />
         <div {...stylex.props(s.previewPane)}>
