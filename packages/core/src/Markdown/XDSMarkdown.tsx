@@ -95,6 +95,24 @@ export interface XDSMarkdownComponents {
   image?: React.ComponentType<{src: string; alt: string}>;
   blockquote?: React.ComponentType<{children: React.ReactNode}>;
   hr?: React.ComponentType<object>;
+  table?: React.ComponentType<{children: React.ReactNode}>;
+  thead?: React.ComponentType<{children: React.ReactNode}>;
+  tbody?: React.ComponentType<{children: React.ReactNode}>;
+  tr?: React.ComponentType<{children: React.ReactNode}>;
+  th?: React.ComponentType<{
+    align?: 'left' | 'center' | 'right';
+    children: React.ReactNode;
+  }>;
+  td?: React.ComponentType<{
+    align?: 'left' | 'center' | 'right';
+    children: React.ReactNode;
+  }>;
+  ol?: React.ComponentType<{start?: number; children: React.ReactNode}>;
+  ul?: React.ComponentType<{children: React.ReactNode}>;
+  li?: React.ComponentType<{children: React.ReactNode}>;
+  strong?: React.ComponentType<{children: React.ReactNode}>;
+  em?: React.ComponentType<{children: React.ReactNode}>;
+  del?: React.ComponentType<{children: React.ReactNode}>;
 }
 
 export interface XDSMarkdownProps {
@@ -731,57 +749,66 @@ function renderInline(
       }
       return wrapTextWithFade(node.content, cursor, index);
     }
-    case 'bold':
+    case 'bold': {
+      const boldChildren = node.children.map((c, i) =>
+        renderInline(
+          c,
+          i,
+          onLinkClick,
+          cursor,
+          citationCtx,
+          linkComponent,
+          inlinePlugins,
+          components,
+        ),
+      );
+      const StrongComp = components?.strong;
+      if (StrongComp)
+        return <StrongComp key={index}>{boldChildren}</StrongComp>;
       return (
         <strong key={index} {...stylex.props(styles.bold)}>
-          {node.children.map((c, i) =>
-            renderInline(
-              c,
-              i,
-              onLinkClick,
-              cursor,
-              citationCtx,
-              linkComponent,
-              inlinePlugins,
-              components,
-            ),
-          )}
+          {boldChildren}
         </strong>
       );
-    case 'italic':
-      return (
-        <em key={index}>
-          {node.children.map((c, i) =>
-            renderInline(
-              c,
-              i,
-              onLinkClick,
-              cursor,
-              citationCtx,
-              linkComponent,
-              inlinePlugins,
-              components,
-            ),
-          )}
-        </em>
+    }
+    case 'italic': {
+      const italicChildren = node.children.map((c, i) =>
+        renderInline(
+          c,
+          i,
+          onLinkClick,
+          cursor,
+          citationCtx,
+          linkComponent,
+          inlinePlugins,
+          components,
+        ),
       );
-    case 'strikethrough':
+      const EmComp = components?.em;
+      if (EmComp) return <EmComp key={index}>{italicChildren}</EmComp>;
+      return <em key={index}>{italicChildren}</em>;
+    }
+    case 'strikethrough': {
+      const delChildren = node.children.map((c, i) =>
+        renderInline(
+          c,
+          i,
+          onLinkClick,
+          cursor,
+          citationCtx,
+          linkComponent,
+          inlinePlugins,
+          components,
+        ),
+      );
+      const DelComp = components?.del;
+      if (DelComp) return <DelComp key={index}>{delChildren}</DelComp>;
       return (
         <del key={index} {...stylex.props(styles.strikethrough)}>
-          {node.children.map((c, i) =>
-            renderInline(
-              c,
-              i,
-              onLinkClick,
-              cursor,
-              citationCtx,
-              linkComponent,
-              inlinePlugins,
-              components,
-            ),
-          )}
+          {delChildren}
         </del>
       );
+    }
     case 'code': {
       // Track code content length for cursor but don't split inside code
       const startOffset = cursor.offset;
@@ -1279,6 +1306,79 @@ function renderBlock(
         );
       }
 
+      const OlComp = components?.ol;
+      const UlComp = components?.ul;
+      const LiComp = components?.li;
+
+      if (OlComp || UlComp || LiComp) {
+        const items = node.items.map((item, i) => {
+          const firstChild = item.children[0];
+          const isInline =
+            item.children.length === 1 && firstChild?.type === 'paragraph';
+
+          const itemContent = isInline ? (
+            <>
+              {firstChild.children.map((c, j) =>
+                renderInline(
+                  c,
+                  j,
+                  onLinkClick,
+                  cursor,
+                  citationCtx,
+                  linkComponent,
+                  inlinePlugins,
+                  components,
+                ),
+              )}
+            </>
+          ) : (
+            <>
+              {item.children.map((c, j) =>
+                renderBlock(
+                  c,
+                  j,
+                  item.children.length,
+                  density,
+                  headingLevelStart,
+                  onLinkClick,
+                  cursor,
+                  citationCtx,
+                  contentWidthValue,
+                  contentAlign,
+                  linkComponent,
+                  inlinePlugins,
+                  components,
+                ),
+              )}
+            </>
+          );
+
+          return LiComp ? (
+            <LiComp key={i}>{itemContent}</LiComp>
+          ) : (
+            <li key={i}>{itemContent}</li>
+          );
+        });
+
+        if (node.ordered && OlComp) {
+          return (
+            <OlComp key={index} start={node.start}>
+              {items}
+            </OlComp>
+          );
+        }
+        if (!node.ordered && UlComp) {
+          return <UlComp key={index}>{items}</UlComp>;
+        }
+        // Only LiComp provided — wrap in native list element
+        const ListTag = node.ordered ? 'ol' : 'ul';
+        return (
+          <ListTag key={index} start={node.ordered ? node.start : undefined}>
+            {items}
+          </ListTag>
+        );
+      }
+
       return (
         <div
           key={index}
@@ -1368,6 +1468,132 @@ function renderBlock(
           : a === 'right'
             ? styles.alignRight
             : styles.alignLeft;
+      const alignProp = (
+        a: (typeof node.alignments)[number],
+      ): 'left' | 'center' | 'right' | undefined =>
+        a === 'center' ? 'center' : a === 'right' ? 'right' : undefined;
+
+      const TableComp = components?.table;
+      const TheadComp = components?.thead;
+      const TbodyComp = components?.tbody;
+      const TrComp = components?.tr;
+      const ThComp = components?.th;
+      const TdComp = components?.td;
+
+      if (TableComp || ThComp || TdComp || TrComp || TheadComp || TbodyComp) {
+        const headerCells = node.headers.map((h, i) => {
+          const cellContent = h.children.map((c, j) =>
+            renderInline(
+              c,
+              j,
+              onLinkClick,
+              cursor,
+              citationCtx,
+              linkComponent,
+              inlinePlugins,
+              components,
+            ),
+          );
+          return ThComp ? (
+            <ThComp key={i} align={alignProp(node.alignments[i])}>
+              {cellContent}
+            </ThComp>
+          ) : (
+            <th
+              key={i}
+              {...stylex.props(styles.th, alignStyle(node.alignments[i]))}>
+              {cellContent}
+            </th>
+          );
+        });
+
+        const headerRow = TrComp ? (
+          <TrComp>{headerCells}</TrComp>
+        ) : (
+          <tr>{headerCells}</tr>
+        );
+
+        const head = TheadComp ? (
+          <TheadComp>{headerRow}</TheadComp>
+        ) : (
+          <thead>{headerRow}</thead>
+        );
+
+        const bodyRows = node.rows.map((row, i) => {
+          const cells = row.map((cell, j) => {
+            const cellContent = cell.children.map((c, k) =>
+              renderInline(
+                c,
+                k,
+                onLinkClick,
+                cursor,
+                citationCtx,
+                linkComponent,
+                inlinePlugins,
+                components,
+              ),
+            );
+            return TdComp ? (
+              <TdComp key={j} align={alignProp(node.alignments[j])}>
+                {cellContent}
+              </TdComp>
+            ) : (
+              <td
+                key={j}
+                {...stylex.props(styles.td, alignStyle(node.alignments[j]))}>
+                {cellContent}
+              </td>
+            );
+          });
+          return TrComp ? (
+            <TrComp key={i}>{cells}</TrComp>
+          ) : (
+            <tr key={i}>{cells}</tr>
+          );
+        });
+
+        const body = TbodyComp ? (
+          <TbodyComp>{bodyRows}</TbodyComp>
+        ) : (
+          <tbody>{bodyRows}</tbody>
+        );
+
+        if (TableComp) {
+          return (
+            <TableComp key={index}>
+              {head}
+              {body}
+            </TableComp>
+          );
+        }
+
+        return (
+          <div
+            key={index}
+            {...stylex.props(
+              styles.tableWrapper,
+              spacing,
+              isFirst && styles.noMarginBlockStart,
+              isLast && styles.noMarginBlockEnd,
+            )}>
+            <table
+              {...stylex.props(
+                styles.table,
+                styles.blockIndent,
+                contentWidthValue != null
+                  ? dynamicStyles.blockWidth(contentWidthValue)
+                  : null,
+                BLOCK_ALIGN_MARGIN[contentAlign] != null
+                  ? dynamicStyles.blockAlign(BLOCK_ALIGN_MARGIN[contentAlign]!)
+                  : null,
+              )}>
+              {head}
+              {body}
+            </table>
+          </div>
+        );
+      }
+
       return (
         <div
           key={index}
