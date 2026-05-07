@@ -1,0 +1,13 @@
+/* Generated StyleX theme atoms with @scope wrappers */
+
+@scope ([data-xds-theme="brutalist"]) {
+  .xds-br-brutalist-btn { border-radius: 9999px; }
+  .xds-tt-brutalist-btn { text-transform: uppercase; }
+  .xds-ls-brutalist-btn { letter-spacing: 0.1em; }
+  .xds-fw-brutalist-btn { font-weight: 800; }
+}
+
+@scope ([data-xds-theme="neutral"]) {
+  .xds-br-neutral-btn { border-radius: 8px; }
+  .xds-fw-neutral-btn { font-weight: 600; }
+}
