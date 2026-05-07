@@ -1059,3 +1059,98 @@ export const PropsTablePattern: Story = {
     );
   },
 };
+
+// =============================================================================
+// Block Bleed Leak Demonstration
+// =============================================================================
+
+/**
+ * ## Bug: Block bleed leaks through wrapper divs
+ *
+ * The table's block bleed uses `:first-child` / `:last-child` with
+ * `--container-padding-block-start/end` CSS custom properties. These vars
+ * cascade from the Card to all descendants via CSS inheritance. When the
+ * table is `:first-child` of a non-container wrapper (like VStack or a plain
+ * div), it incorrectly applies negative block margins using the Card's values.
+ *
+ * **Expected:** Table should only apply block bleed when it is a direct child
+ * of the actual container that sets the padding vars.
+ *
+ * **Actual:** Table bleeds through any intermediate wrapper that inherits the
+ * vars, causing unexpected negative margins that pull the table outside its
+ * parent boundaries.
+ */
+export const BlockBleedLeak: Story = {
+  decorators: [
+    Story => (
+      <div {...stylex.props(containerStoryStyles.pageWrapper)}>
+        <Story />
+      </div>
+    ),
+  ],
+  render: () => (
+    <div {...stylex.props(containerStoryStyles.storyWrapper)}>
+      {/* ✅ Correct: table is direct child of Card */}
+      <div>
+        <h4 {...stylex.props(containerStoryStyles.heading)}>
+          ✅ Direct child — bleed is correct
+        </h4>
+        <XDSCard width={400}>
+          <XDSTable data={users.slice(0, 3)} columns={simpleColumns} />
+        </XDSCard>
+      </div>
+
+      {/* ❌ Bug: table inside a wrapper div inherits Card's block vars */}
+      <div>
+        <h4 {...stylex.props(containerStoryStyles.heading)}>
+          ❌ Wrapped in plain div — leaks block bleed
+        </h4>
+        <XDSCard width={400}>
+          <div>
+            <XDSTable data={users.slice(0, 3)} columns={simpleColumns} />
+          </div>
+        </XDSCard>
+      </div>
+
+      {/* ❌ Bug: table inside VStack with heading above */}
+      <div>
+        <h4 {...stylex.props(containerStoryStyles.heading)}>
+          ❌ VStack with heading — table is not first-child
+        </h4>
+        <XDSCard width={400}>
+          <XDSVStack gap={3}>
+            <XDSHeading level={3}>Team Members</XDSHeading>
+            <XDSTable data={users.slice(0, 3)} columns={simpleColumns} />
+          </XDSVStack>
+        </XDSCard>
+      </div>
+
+      {/* ❌ Bug: table is last-child of VStack, leaks bottom bleed */}
+      <div>
+        <h4 {...stylex.props(containerStoryStyles.heading)}>
+          ❌ VStack — table is last-child, leaks bottom
+        </h4>
+        <XDSCard width={400}>
+          <XDSVStack gap={3}>
+            <XDSText type="supporting" color="secondary">
+              Showing 3 of 5 users
+            </XDSText>
+            <XDSTable data={users.slice(0, 3)} columns={simpleColumns} />
+          </XDSVStack>
+        </XDSCard>
+      </div>
+
+      {/* ❌ Bug: both edges leak with larger padding */}
+      <div>
+        <h4 {...stylex.props(containerStoryStyles.heading)}>
+          ❌ Larger padding (6) — leak is more visible
+        </h4>
+        <XDSCard width={400} padding={6}>
+          <div>
+            <XDSTable data={users.slice(0, 3)} columns={simpleColumns} />
+          </div>
+        </XDSCard>
+      </div>
+    </div>
+  ),
+};
