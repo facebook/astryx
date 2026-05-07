@@ -298,7 +298,10 @@ export function XDSProgressBar({
         aria-valuemax={isIndeterminate ? undefined : max}
         aria-labelledby={labelId}
         aria-valuetext={isIndeterminate ? undefined : valueText}
-        {...stylex.props(styles.track)}>
+        {...mergeProps(
+          xdsClassName('progressbar-track'),
+          stylex.props(styles.track),
+        )}>
         {isIndeterminate ? (
           <div
             {...mergeProps(
