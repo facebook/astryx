@@ -38,20 +38,16 @@ export type {
   XDSStyleOverrides,
 } from './defineTheme';
 
-export type {
-  SyntaxTokenName,
-  DomainTokenName,
-  DataTokenName,
-} from './domainTokens';
+export type {SyntaxTokenName, DomainTokenName} from './domainTokens';
 
-export {
-  syntaxTokenDefaults,
-  domainTokenDefaults,
-  dataTokenDefaults,
-} from './domainTokens';
+export {syntaxTokenDefaults, domainTokenDefaults} from './domainTokens';
 
 // Syntax theme API
-export {defineSyntaxTheme} from './syntax';
+export {
+  defineSyntaxTheme,
+  syntaxThemeStyle,
+  syntaxThemeToCSS,
+} from './syntax';
 export type {
   SyntaxTheme,
   SyntaxThemeInput,
@@ -65,6 +61,25 @@ export type {
 export {XDSSyntaxTheme, useXDSSyntaxTheme} from './syntax';
 export type {UseXDSSyntaxThemeReturn} from './syntax';
 
+// Syntax theme presets
+export {
+  oneDarkPro,
+  dracula,
+  monokai,
+  nord,
+  tokyoNight,
+  catppuccinMocha,
+  githubDark,
+  githubLight,
+  solarizedLight,
+  oneLight,
+  catppuccinLatte,
+  tokyoNightLight,
+  darkSyntaxPresets,
+  lightSyntaxPresets,
+  allSyntaxPresets,
+} from './syntax';
+
 export {expandTypeScale, generateTypeScaleComponents} from './expandTypeScale';
 export type {XDSTypeScaleConfig, TypeScaleTokens} from './expandTypeScale';
 
@@ -73,9 +88,6 @@ export type {
   XDSRadiusScaleConfig,
   RadiusScaleTokens,
 } from './expandRadiusScale';
-
-export {expandColorScale} from './expandColorScale';
-export type {XDSColorScaleConfig, ColorScaleTokens} from './expandColorScale';
 
 export {expandMotionScale} from './expandMotionScale';
 export type {
@@ -130,15 +142,20 @@ export type {
   TypeScaleVarName,
 } from './tokens.stylex';
 
-export {useXDSTheme, XDSThemeContext} from './useXDSTheme';
-export type {UseXDSThemeReturn, XDSThemeContextValue} from './useXDSTheme';
+export {useXDSTheme} from './useXDSTheme';
+export type {UseXDSThemeReturn} from './useXDSTheme';
+
+export {
+  defaultOnDarkTokens,
+  defaultOnLightTokens,
+  resolveOnMedia,
+} from './onMediaTokens';
+export type {OnMediaOverrides, ResolvedOnMedia} from './onMediaTokens';
 
 export type {
   ThemeMode,
   HeadingLevel,
   XDSTextType,
-  XDSBuiltinTextType,
-  XDSCustomTextTypes,
   XDSTextSize,
   XDSTextWeight,
   XDSTextColor,
