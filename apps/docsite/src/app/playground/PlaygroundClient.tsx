@@ -14,7 +14,6 @@ import {XDSText} from "@xds/core/Text";
 import {XDSStatusDot} from "@xds/core/StatusDot";
 import {XDSDivider} from "@xds/core/Divider";
 import {useXDSResizable, XDSResizeHandle} from "@xds/core/Resizable";
-import {useXDSResizable, XDSResizeHandle} from "@xds/core/Resizable";
 import githubLight from "./themes/github-light.json";
 import githubDark from "./themes/github-dark.json";
 
