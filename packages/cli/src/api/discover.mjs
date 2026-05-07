@@ -33,6 +33,8 @@ export async function discover(query, options = {}) {
     name: pkg.name,
     category: pkg.category,
     components: pkg.components,
+    ...(pkg.themes?.length > 0 ? {themes: pkg.themes} : {}),
+    ...(pkg.themesReadme ? {themesReadme: pkg.themesReadme} : {}),
     version: pkg.version,
     description: pkg.description,
     displayName: pkg.displayName,

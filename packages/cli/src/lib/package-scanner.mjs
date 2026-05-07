@@ -14,11 +14,20 @@ export function scanDirectory(scanDir) {
     if (!fs.existsSync(pkgPath)) continue;
     let pkg;
     try { pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8')); } catch { continue; }
-    if (!pkg.xds || !pkg.xds.docs) continue;
+    if (!pkg.xds || (!pkg.xds.docs && !pkg.xds.themes)) continue;
     const pkgDir = path.join(scanDir, entry.name);
-    const docsDir = path.resolve(pkgDir, pkg.xds.docs);
-    const components = discoverDocComponents(docsDir);
-    if (components.length === 0) continue;
+    const docsDir = pkg.xds.docs ? path.resolve(pkgDir, pkg.xds.docs) : null;
+    const components = docsDir ? discoverDocComponents(docsDir) : [];
+
+    let themes = [];
+    let themesReadme = null;
+    if (pkg.xds.themes) {
+      const themesDir = path.resolve(pkgDir, pkg.xds.themes);
+      themes = discoverThemes(themesDir);
+      themesReadme = readThemesReadme(themesDir);
+    }
+
+    if (components.length === 0 && themes.length === 0) continue;
     packages.push({
       name: pkg.name || entry.name,
       version: pkg.version,
@@ -29,6 +38,8 @@ export function scanDirectory(scanDir) {
       category: pkg.xds.category || pkg.name || entry.name,
       docsDir,
       components,
+      themes,
+      themesReadme,
     });
   }
   return packages;
@@ -89,4 +100,82 @@ function findDocFile(docsDir, name) {
     return null;
   }
   return walk(docsDir);
+}
+
+const THEME_FILE_RE = /^(.+)Theme\.(ts|js|mjs)$/;
+
+export function isThemeDir(dir) {
+  try {
+    const entries = fs.readdirSync(dir);
+    return entries.some(e => THEME_FILE_RE.test(e));
+  } catch { return false; }
+}
+
+export function findThemeSource(dir) {
+  try {
+    const entries = fs.readdirSync(dir);
+    const match = entries.find(e => THEME_FILE_RE.test(e));
+    return match ? path.join(dir, match) : null;
+  } catch { return null; }
+}
+
+export function extractThemeName(dir) {
+  try {
+    const entries = fs.readdirSync(dir);
+    const match = entries.find(e => THEME_FILE_RE.test(e));
+    if (!match) return null;
+    const m = match.match(THEME_FILE_RE);
+    return m ? m[1] : null;
+  } catch { return null; }
+}
+
+export function findBuiltTheme(dir) {
+  let builtPath = null;
+  let cssPath = null;
+  try {
+    const entries = fs.readdirSync(dir);
+    const jsFile = entries.find(e => /Theme\.js$/.test(e) || /Theme\.mjs$/.test(e));
+    const cssFile = entries.find(e => /Theme\.css$/.test(e) || e.endsWith('.css'));
+    if (jsFile) builtPath = path.join(dir, jsFile);
+    if (cssFile) cssPath = path.join(dir, cssFile);
+  } catch { /* ignore */ }
+  return {builtPath, cssPath};
+}
+
+export function discoverThemes(themesDir) {
+  if (!fs.existsSync(themesDir)) return [];
+
+  // If the directory itself contains a theme file, treat as single theme
+  if (isThemeDir(themesDir)) {
+    const name = extractThemeName(themesDir);
+    const source = findThemeSource(themesDir);
+    const {builtPath, cssPath} = findBuiltTheme(themesDir);
+    if (name) {
+      return [{name, dir: themesDir, source, builtPath, cssPath}];
+    }
+  }
+
+  // Otherwise scan subdirectories
+  const themes = [];
+  let entries;
+  try { entries = fs.readdirSync(themesDir, {withFileTypes: true}); } catch { return []; }
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const subDir = path.join(themesDir, entry.name);
+    if (!isThemeDir(subDir)) continue;
+    const name = extractThemeName(subDir);
+    const source = findThemeSource(subDir);
+    const {builtPath, cssPath} = findBuiltTheme(subDir);
+    if (name) {
+      themes.push({name, dir: subDir, source, builtPath, cssPath});
+    }
+  }
+  return themes.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export function readThemesReadme(themesDir) {
+  const readmePath = path.join(themesDir, 'README.md');
+  try {
+    return fs.readFileSync(readmePath, 'utf-8');
+  } catch { return null; }
 }

@@ -13,6 +13,14 @@
 
 import type {ComponentDoc} from '../../../core/src/docs-types';
 
+export interface DiscoverThemeEntry {
+  name: string;
+  dir: string;
+  source: string | null;
+  builtPath: string | null;
+  cssPath: string | null;
+}
+
 /** xds --json discover */
 export interface DiscoverListResponse {
   type: 'discover.list';
@@ -23,6 +31,8 @@ export interface DiscoverListEntry {
   name: string;
   category: string;
   components: string[];
+  themes?: DiscoverThemeEntry[];
+  themesReadme?: string | null;
   version?: string;
   description?: string;
   displayName?: string;
