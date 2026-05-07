@@ -430,7 +430,10 @@ export function PlaygroundClient() {
       </div>
       <XDSDivider />
       <div {...stylex.props(s.main)}>
-        <div {...stylex.props(s.editorPane)} style={{width: editorPanel.size}}>
+        <div
+          {...stylex.props(s.editorPane)}
+          style={isMobile ? {height: editorPanel.size} : {width: editorPanel.size}}
+        >
           <MonacoEditor
             defaultLanguage="typescript"
             defaultValue={code}
@@ -444,6 +447,8 @@ export function PlaygroundClient() {
         </div>
         <XDSResizeHandle
           label="Resize editor panel"
+          direction={isMobile ? "vertical" : "horizontal"}
+          hasDivider
           resizable={editorPanel.props}
         />
         <div {...stylex.props(s.previewPane)}>
