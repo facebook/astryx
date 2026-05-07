@@ -129,8 +129,15 @@ function DemoButton({
   const themes = getThemeStyles("button");
 
   // The key line: base < theme < override
+  // Cast $$css object — runtime compatible with styleq, type system doesn't know that
   return (
-    <button {...stylex.props(baseStyles.root, themes?.root, xstyle)}>
+    <button
+      {...stylex.props(
+        baseStyles.root,
+        themes?.root as unknown as stylex.StyleXStyles,
+        xstyle
+      )}
+    >
       {label}
     </button>
   );
