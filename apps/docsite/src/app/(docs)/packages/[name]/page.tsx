@@ -102,12 +102,14 @@ export default async function PackagePage({
 
   if (!isComponentPkg) {
     return (
-      <PackageStubPage
-        name={pkg.name}
-        version={pkg.version}
-        readme={pkg.readme}
-        installSteps={getInstallSteps(pkg.name)}
-      />
+      <XDSSection maxWidth="lg" padding={6}>
+        <PackageStubPage
+          name={pkg.name}
+          version={pkg.version}
+          readme={pkg.readme}
+          installSteps={getInstallSteps(pkg.name)}
+        />
+      </XDSSection>
     );
   }
 
