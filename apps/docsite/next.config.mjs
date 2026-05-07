@@ -1,11 +1,13 @@
+import {withXDS} from '@xds/build/next';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  webpack: (config) => {
-    // Force ESM resolution for @xds/core — the CJS dist has a bug where
-    // "use client" appears after Object.defineProperty(exports, "__esModule").
-    config.resolve.conditionNames = ['import', 'module', 'require', 'default'];
-    return config;
-  },
+  transpilePackages: [
+    '@xds/theme-chocolate',
+    '@xds/theme-gothic',
+    '@xds/theme-matcha',
+    '@xds/theme-stone',
+  ],
 };
 
-export default nextConfig;
+export default withXDS(nextConfig);

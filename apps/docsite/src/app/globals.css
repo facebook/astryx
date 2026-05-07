@@ -1,5 +1,5 @@
+@import "./layers.css";
 @import "@xds/core/reset.css";
-@import "@xds/core/xds.css";
 @import "@xds/theme-default/theme.css";
 @import "@xds/theme-neutral/theme.css";
 @import "@xds/theme-chocolate/theme.css";
@@ -8,8 +8,6 @@
 @import "@xds/theme-matcha/theme.css";
 @import "@xds/theme-stone/theme.css";
 
-/* StyleX app styles injected here. useCSSLayers.before declares
-   reset, xds-base, xds-theme so product styles always win. */
 @stylex;
 
 /* Translucent top nav — frosted glass effect */

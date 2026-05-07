@@ -1,22 +1,9 @@
-/* global module, require */
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const babelConfig = require('./babel.config');
+/* global module, __dirname */
+const path = require('path');
+const {postcss} = require('@xds/build');
 
-module.exports = {
-  plugins: {
-    '@stylexjs/postcss-plugin': {
-      include: ['src/**/*.{js,jsx,ts,tsx}'],
-      babelConfig: {
-        babelrc: false,
-        parserOpts: {
-          plugins: ['typescript', 'jsx'],
-        },
-        plugins: babelConfig.plugins,
-      },
-      useCSSLayers: {
-        before: ['reset', 'xds-base', 'xds-theme'],
-      },
-    },
-    autoprefixer: {},
-  },
-};
+const rootDir = path.resolve(__dirname, '../..');
+
+module.exports = postcss(rootDir, {
+  appDir: path.relative(rootDir, path.resolve(__dirname, 'src')),
+});
