@@ -133,7 +133,7 @@ export default function ProductGalleryTemplate() {
         <XDSSection variant="transparent" maxWidth={1200} padding={6}>
           <XDSVStack gap={6}>
             {/* Header — XDSGrid handles responsive stacking */}
-            <XDSGrid minChildWidth={280} gap={4} align="start">
+            <XDSGrid columns={{minWidth: 280}} gap={4} align="start">
               <XDSHeading level={1}>
                 Make every day a little more delightful, one small detail at a
                 time.
@@ -154,7 +154,7 @@ export default function ProductGalleryTemplate() {
             </XDSGrid>
 
             {/* Product Grid — 3 cols desktop, wraps to 2→1 on smaller screens */}
-            <XDSGrid minChildWidth={300} gap={6}>
+            <XDSGrid columns={{minWidth: 300}} gap={6}>
               {PRODUCTS.map(product => (
                 <ProductCard key={product.id} product={product} />
               ))}

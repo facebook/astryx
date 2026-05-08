@@ -445,7 +445,7 @@ function DefaultMegaMenu({
             {/* Menu items section */}
             {items != null && (
               <div {...stylex.props(styles.menuWrapper)}>
-                <XDSGrid columns={2} minChildWidth={200} gap={2}>
+                <XDSGrid columns={2} gap={2}>
                   {items}
                 </XDSGrid>
               </div>

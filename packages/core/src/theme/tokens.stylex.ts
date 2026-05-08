@@ -136,9 +136,6 @@ export const colorDefaults = {
   // Syntax highlighting
 } as const;
 
-/** @deprecated Use colorDefaults */
-export const colorRaw = colorDefaults;
-
 export const colorVars = stylex.defineVars(colorDefaults);
 
 // =============================================================================
@@ -163,9 +160,6 @@ export const spacingDefaults = {
   '--spacing-12': '48px',
 } as const;
 
-/** @deprecated Use spacingDefaults */
-export const spacingRaw = spacingDefaults;
-
 export const spacingVars = stylex.defineVars(spacingDefaults);
 
 // =============================================================================
@@ -177,9 +171,6 @@ export const sizeDefaults = {
   '--size-element-md': '32px',
   '--size-element-lg': '36px',
 } as const;
-
-/** @deprecated Use sizeDefaults */
-export const sizeRaw = sizeDefaults;
 
 export const sizeVars = stylex.defineVars(sizeDefaults);
 
@@ -208,9 +199,6 @@ export const radiusDefaults = {
   '--radius-full': '9999px',
 } as const;
 
-/** @deprecated Use radiusDefaults */
-export const radiusRaw = radiusDefaults;
-
 export const radiusVars = stylex.defineVars(radiusDefaults);
 
 // =============================================================================
@@ -234,9 +222,6 @@ export const shadowDefaults = {
   '--shadow-inset-warning': 'inset 0px 0px 0px 2px rgba(226, 164, 0, 0.3)',
   '--shadow-inset-error': 'inset 0px 0px 0px 2px rgba(227, 25, 59, 0.3)',
 } as const;
-
-/** @deprecated Use shadowDefaults */
-export const shadowRaw = shadowDefaults;
 
 export const shadowVars = stylex.defineVars(shadowDefaults);
 
@@ -304,9 +289,6 @@ export const typographyDefaults = {
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
 } as const;
 
-/** @deprecated Use typographyDefaults */
-export const typographyRaw = typographyDefaults;
-
 export const typographyVars = stylex.defineVars(typographyDefaults);
 
 // =============================================================================
@@ -329,9 +311,6 @@ export const textSizeDefaults = {
   '--font-size-5xl': '2.625rem', // step +6: 42px (14 × 1.2⁶ ≈ 41.80 → 42)
 } as const;
 
-/** @deprecated Use textSizeDefaults */
-export const textSizeRaw = textSizeDefaults;
-
 export const textSizeVars = stylex.defineVars(textSizeDefaults);
 
 // =============================================================================
@@ -344,9 +323,6 @@ export const fontWeightDefaults = {
   '--font-weight-semibold': '600', // emphasized body, titles
   '--font-weight-bold': '700', // strong emphasis, headings
 } as const;
-
-/** @deprecated Use fontWeightDefaults */
-export const fontWeightRaw = fontWeightDefaults;
 
 export const fontWeightVars = stylex.defineVars(fontWeightDefaults);
 

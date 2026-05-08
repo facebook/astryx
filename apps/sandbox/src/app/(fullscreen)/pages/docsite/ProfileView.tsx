@@ -1431,7 +1431,7 @@ export function ProfileView({
                         }}
                       />
                     </XDSHStack>
-                    <XDSGrid minChildWidth={180} gap={3}>
+                    <XDSGrid columns={{minWidth: 180}} gap={3}>
                       {PROFILE_COLLECTIONS.map((col, i) => (
                         <div
                           key={col.name}

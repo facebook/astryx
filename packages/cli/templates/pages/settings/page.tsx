@@ -112,7 +112,7 @@ export default function SettingsTemplate() {
         </XDSSection>
       }>
       <XDSVStack gap={4}>
-        <XDSGrid minChildWidth={320} gap={10}>
+        <XDSGrid columns={{minWidth: 320}} gap={10}>
           <XDSVStack gap={1}>
             <XDSHeading level={3}>Basic information</XDSHeading>
             <XDSText type="supporting" color="secondary">
@@ -148,7 +148,7 @@ export default function SettingsTemplate() {
 
         <XDSDivider />
 
-        <XDSGrid minChildWidth={320} gap={10}>
+        <XDSGrid columns={{minWidth: 320}} gap={10}>
           <XDSVStack gap={1}>
             <XDSHeading level={3}>Change password</XDSHeading>
             <XDSText type="supporting" color="secondary">
@@ -182,7 +182,7 @@ export default function SettingsTemplate() {
 
         <XDSDivider />
 
-        <XDSGrid minChildWidth={320} gap={10}>
+        <XDSGrid columns={{minWidth: 320}} gap={10}>
           <XDSVStack gap={1}>
             <XDSHeading level={3}>Advanced settings</XDSHeading>
             <XDSText type="supporting" color="secondary">

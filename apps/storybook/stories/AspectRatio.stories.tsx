@@ -198,7 +198,7 @@ export const ResponsiveGrid: Story = {
       <XDSText type="supporting" xstyle={styles.sectionLabel}>
         Responsive grid of aspect ratio boxes
       </XDSText>
-      <XDSGrid minChildWidth={200} gap={4}>
+      <XDSGrid columns={{minWidth: 200}} gap={4}>
         {[
           {ratio: 16 / 9, label: '16:9'},
           {ratio: 4 / 3, label: '4:3'},

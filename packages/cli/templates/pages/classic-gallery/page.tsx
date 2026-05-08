@@ -151,7 +151,7 @@ export default function ClassicGalleryTemplate() {
           </XDSCenter>
 
           {/* Gallery Grid */}
-          <XDSGrid minChildWidth={400} gap={4}>
+          <XDSGrid columns={{minWidth: 400}} gap={4}>
             {filteredImages.map((image, i) => (
               <XDSAspectRatio
                 key={i}

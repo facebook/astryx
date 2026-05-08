@@ -379,7 +379,7 @@ export default function ProductDetailTemplate() {
       variant="surface">
       <XDSCenter axis="horizontal">
         <XDSVStack gap={0} xstyle={pageStyles.pageWrapper}>
-          <XDSGrid minChildWidth={400} gap={5}>
+          <XDSGrid columns={{minWidth: 400}} gap={5}>
             <ImageGallery
               selected={selectedThumb}
               onSelect={setSelectedThumb}

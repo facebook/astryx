@@ -161,9 +161,9 @@ export const ResponsiveAutoFit: Story = {
     <XDSVStack gap={6}>
       <div {...stylex.props(styles.container)}>
         <XDSText type="supporting" xstyle={styles.sectionLabel}>
-          minChildWidth=200 with 2 items — cards stretch to fill (auto-fit)
+          columns={{minWidth: 200}} with 2 items — cards stretch to fill (auto-fit)
         </XDSText>
-        <XDSGrid minChildWidth={200} gap={4}>
+        <XDSGrid columns={{minWidth: 200}} gap={4}>
           <GridItem>Item 1</GridItem>
           <GridItem>Item 2</GridItem>
         </XDSGrid>
@@ -172,7 +172,7 @@ export const ResponsiveAutoFit: Story = {
         <XDSText type="supporting" xstyle={styles.sectionLabel}>
           Same grid with 6 items — looks fine because items fill the tracks
         </XDSText>
-        <XDSGrid minChildWidth={200} gap={4}>
+        <XDSGrid columns={{minWidth: 200}} gap={4}>
           <GridItem>Item 1</GridItem>
           <GridItem>Item 2</GridItem>
           <GridItem>Item 3</GridItem>

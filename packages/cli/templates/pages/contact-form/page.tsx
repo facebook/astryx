@@ -131,7 +131,7 @@ export default function FormSimplePage() {
 
           {/* Why work with us */}
           <XDSVStack gap={5}>
-            <XDSGrid minChildWidth={200} gap={4}>
+            <XDSGrid columns={{minWidth: 200}} gap={4}>
               {WHY_US.map(item => (
                 <XDSCard key={item.title}>
                   <XDSVStack gap={3}>
@@ -156,7 +156,7 @@ export default function FormSimplePage() {
 
           {/* Your details */}
           <XDSVStack gap={5}>
-            <XDSGrid minChildWidth={260} gap={4}>
+            <XDSGrid columns={{minWidth: 260}} gap={4}>
               <XDSTextInput
                 label="Full Name"
                 placeholder="Full Name"
@@ -180,7 +180,7 @@ export default function FormSimplePage() {
                 }
               />
             </XDSGrid>
-            <XDSGrid minChildWidth={260} gap={4}>
+            <XDSGrid columns={{minWidth: 260}} gap={4}>
               <XDSTextInput
                 label="Company"
                 placeholder="Company"
