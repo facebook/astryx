@@ -9,7 +9,6 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Table/Table.doc.mjs
  * - /packages/core/src/Table/index.ts
- * - /packages/cli/templates/blocks/components/Table/ (showcase blocks)
  */
 
 import {type ReactNode} from 'react';
@@ -22,12 +21,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
-import {
-  overflowStyles,
-  wrapStyles,
-  containerEdgeStyles,
-  tableRowMarker,
-} from './table.stylex';
+import {overflowStyles, containerEdgeStyles} from './table.stylex';
 import {
   useTableContext,
   buildDividerStyles,
@@ -78,10 +72,7 @@ const dividerRowStyles = stylex.create({
       default: borderVars['--border-width'],
       // Skip border on cells in the last body row to avoid a
       // redundant line at the bottom of the table.
-      // Scoped to tableRowMarker so only the parent <tr> is checked —
-      // without the scope, <tbody> (also a :last-child) would match
-      // and suppress borders on every row.
-      [stylex.when.ancestor(':last-child', tableRowMarker)]: '0',
+      [stylex.when.ancestor(':last-child')]: '0',
     },
     borderBottomStyle: 'solid',
     borderBottomColor: colorVars['--color-border'],
@@ -96,18 +87,6 @@ const dividerColumnStyles = stylex.create({
     },
     borderRightStyle: 'solid',
     borderRightColor: colorVars['--color-border'],
-  },
-});
-
-const verticalAlignStyles = stylex.create({
-  middle: {
-    verticalAlign: 'middle',
-  },
-  top: {
-    verticalAlign: 'top',
-  },
-  bottom: {
-    verticalAlign: 'bottom',
   },
 });
 
@@ -129,8 +108,6 @@ export function XDSTableCell({
   children,
   xstyle,
   ref,
-  className: incomingClassName,
-  style: incomingStyle,
   ...props
 }: XDSTableCellProps) {
   const ctx = useTableContext();
@@ -140,12 +117,7 @@ export function XDSTableCell({
       <td
         ref={ref}
         {...props}
-        {...mergeProps(
-          xdsClassName('table-cell'),
-          stylex.props(xstyle),
-          incomingClassName,
-          incomingStyle as React.CSSProperties,
-        )}>
+        {...mergeProps(xdsClassName('table-cell'), stylex.props(xstyle))}>
         {children}
       </td>
     );
@@ -153,9 +125,8 @@ export function XDSTableCell({
 
   const cellStyles: StyleXStyles[] = [
     densityStyles[ctx.density],
-    ctx.textOverflow === 'truncate' ? overflowStyles.cell : wrapStyles.cell,
+    overflowStyles.cell,
     containerEdgeStyles[ctx.density],
-    verticalAlignStyles[ctx.verticalAlign],
     ...buildDividerStyles(ctx, dividerRowStyles.cell, dividerColumnStyles.cell),
   ];
 
@@ -166,8 +137,6 @@ export function XDSTableCell({
       {...mergeProps(
         xdsClassName('table-cell'),
         stylex.props(...mergeXStyle(cellStyles, xstyle)),
-        incomingClassName,
-        incomingStyle as React.CSSProperties,
       )}>
       {children}
     </td>

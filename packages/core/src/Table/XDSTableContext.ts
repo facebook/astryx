@@ -13,16 +13,14 @@
  * - /packages/core/src/Table/index.ts (exports if types change)
  */
 
+
 import {createContext} from 'react';
-import type {XDSTableVerticalAlign} from './types';
 
 export interface XDSTableContextValue {
   density: 'compact' | 'balanced' | 'spacious';
   dividers: 'rows' | 'columns' | 'grid' | 'none';
   isStriped: boolean;
   hasHover: boolean;
-  verticalAlign: XDSTableVerticalAlign;
-  textOverflow: 'wrap' | 'truncate';
 }
 
 export const XDSTableContext = createContext<XDSTableContextValue | null>(null);

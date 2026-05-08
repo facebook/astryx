@@ -11,7 +11,6 @@
  * - /packages/core/src/Table/XDSTable.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Table/index.ts (exports if types change)
  * - /apps/storybook/stories/Table.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Table/ (showcase blocks)
  */
 
 import {useMemo, type ReactElement, type Ref} from 'react';
@@ -23,10 +22,8 @@ import {XDSTableCell} from './XDSTableCell';
 import {XDSTableHeaderCell} from './XDSTableHeaderCell';
 import {XDSTableContext} from './XDSTableContext';
 import {useXDSBaseTablePlugins} from './useXDSBaseTablePlugins';
-import {xdsClassName, mergeProps} from '../utils';
 import type {
   XDSBaseTableProps,
-  XDSTableVerticalAlign,
   TablePlugin,
   TableRenderProps,
   TableRowComponentProps,
@@ -45,10 +42,6 @@ export type XDSTableDensity = 'compact' | 'balanced' | 'spacious';
 /** Divider style between cells */
 
 export type XDSTableDividers = 'rows' | 'columns' | 'grid' | 'none';
-
-/** How body cell text behaves when it exceeds column width */
-
-export type XDSTableTextOverflow = 'wrap' | 'truncate';
 
 /**
  * Props for the styled XDSTable component.
@@ -69,35 +62,6 @@ export interface XDSTableProps<T extends Record<string, unknown>> extends Omit<
   isStriped?: boolean;
   /** Hover highlight on rows. @default false */
   hasHover?: boolean;
-  /**
-   * Vertical alignment for body row cells.
-   * Controls `vertical-align` on `<td>` elements.
-   *
-   * @default 'middle'
-   *
-   * @example
-   * ```
-   * <XDSTable data={items} columns={columns} verticalAlign="top" />
-   * ```
-   */
-  verticalAlign?: XDSTableVerticalAlign;
-  /**
-   * How body cell text behaves when it exceeds the column width.
-   *
-   * - `'wrap'` — text wraps and the row grows taller. No content is hidden.
-   * - `'truncate'` — text is clipped with an ellipsis. Default-rendered cells
-   *   show a tooltip on hover when truncated.
-   *
-   * Header cells always truncate regardless of this setting.
-   *
-   * @default 'wrap'
-   *
-   * @example
-   * ```
-   * <XDSTable data={logs} columns={columns} textOverflow="truncate" />
-   * ```
-   */
-  textOverflow?: 'wrap' | 'truncate';
   /** Named plugins to extend table behavior */
   plugins?: Record<string, TablePlugin<T>>;
 }
@@ -111,18 +75,18 @@ const tableStyles = stylex.create({
     fontFamily: 'inherit',
     color: colorVars['--color-text-primary'],
   },
-});
-
-const scrollWrapperStyles = stylex.create({
-  base: {
-    overflowX: 'auto',
-    WebkitOverflowScrolling: 'touch',
-  },
+  /**
+   * Container bleed: table escapes parent container padding
+   * so rows span edge-to-edge inside Cards and Layout areas.
+   *
+   * Inline bleed uses --container-padding-inline set by containers.
+   * Block bleed uses --container-padding-block-start/end for :first-child / :last-child
+   * margins, Block bleed uses --container-padding-block-start / --container-padding-block-end for :first-child / :last-child.
+   */
   containerBleed: {
-    marginInlineStart: 'calc(-1 * var(--container-padding-inline-start, 0px))',
-    marginInlineEnd: 'calc(-1 * var(--container-padding-inline-end, 0px))',
-    width:
-      'calc(100% + var(--container-padding-inline-start, 0px) + var(--container-padding-inline-end, 0px))',
+    marginInlineStart: 'calc(-1 * var(--container-padding-inline, 0px))',
+    marginInlineEnd: 'calc(-1 * var(--container-padding-inline, 0px))',
+    width: 'calc(100% + 2 * var(--container-padding-inline, 0px))',
     marginTop: {
       default: null,
       ':first-child': 'calc(-1 * var(--container-padding-block-start, 0px))',
@@ -134,21 +98,6 @@ const scrollWrapperStyles = stylex.create({
   },
 });
 
-function TableScrollWrapper({children}: {children: React.ReactNode}) {
-  return (
-    <div
-      {...mergeProps(
-        xdsClassName('table-scroll-wrapper'),
-        stylex.props(
-          scrollWrapperStyles.base,
-          scrollWrapperStyles.containerBleed,
-        ),
-      )}>
-      {children}
-    </div>
-  );
-}
-
 // =============================================================================
 // Table-level styling plugin (only transforms the <table> element)
 // =============================================================================
@@ -158,17 +107,9 @@ function buildTableStylePlugin<
 >(): TablePlugin<T> {
   return {
     transformTable(props: TableRenderProps): TableRenderProps {
-      const existingClass = props.htmlProps.className ?? '';
-      const tableClass = xdsClassName('table');
       return {
         ...props,
-        htmlProps: {
-          ...props.htmlProps,
-          className: existingClass
-            ? `${existingClass} ${tableClass}`
-            : tableClass,
-        },
-        styles: [...props.styles, tableStyles.base],
+        styles: [...props.styles, tableStyles.base, tableStyles.containerBleed],
       };
     },
   };
@@ -194,8 +135,6 @@ function XDSTableInner<T extends Record<string, unknown>>({
   dividers = 'rows',
   isStriped = false,
   hasHover = false,
-  verticalAlign = 'middle',
-  textOverflow = 'wrap',
   plugins: userPlugins,
   columns,
   data,
@@ -210,15 +149,8 @@ function XDSTableInner<T extends Record<string, unknown>>({
   const mergedPlugins = useXDSBaseTablePlugins<T>(basePlugins, userPlugins);
 
   const contextValue = useMemo(
-    () => ({
-      density,
-      dividers,
-      isStriped,
-      hasHover,
-      verticalAlign,
-      textOverflow,
-    }),
-    [density, dividers, isStriped, hasHover, verticalAlign, textOverflow],
+    () => ({density, dividers, isStriped, hasHover}),
+    [density, dividers, isStriped, hasHover],
   );
 
   return (
@@ -229,8 +161,6 @@ function XDSTableInner<T extends Record<string, unknown>>({
         columns={columns}
         plugins={mergedPlugins}
         components={xdsComponents}
-        textOverflow={textOverflow}
-        scrollWrapper={TableScrollWrapper}
         {...rest}
       />
     </XDSTableContext.Provider>
@@ -249,21 +179,19 @@ function XDSTableInner<T extends Record<string, unknown>>({
  * Combine with XDSBadge (status labels), XDSStatusDot (colored indicators),
  * XDSText (formatted values), XDSAvatar (user cells), and XDSHStack/XDSVStack
  * (multi-element cell layouts). Without renderCell, cells render as plain text.
- * Always set explicit width on columns using proportional() or pixel() — omitting
- * width skips the minimum width floor, which can cause columns to collapse on mobile.
  *
  * @example
  * ```
  * <XDSTable
  *   data={users}
  *   columns={[
- *     { key: 'name', header: 'Name', width: proportional(1), renderCell: (u) => (
+ *     { key: 'name', header: 'Name', renderCell: (u) => (
  *       <XDSHStack gap={2} align="center">
  *         <XDSAvatar name={u.name} size="small" />
  *         <XDSText weight="semibold">{u.name}</XDSText>
  *       </XDSHStack>
  *     )},
- *     { key: 'status', header: 'Status', width: proportional(1), renderCell: (u) => (
+ *     { key: 'status', header: 'Status', renderCell: (u) => (
  *       <XDSBadge variant={u.active ? 'success' : 'error'} label={u.active ? 'Active' : 'Inactive'} />
  *     )},
  *   ]}
