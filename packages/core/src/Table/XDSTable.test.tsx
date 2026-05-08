@@ -732,8 +732,17 @@ describe('XDSTable', () => {
     );
   });
 
-  it('wraps text by default (textOverflow="wrap")', () => {
+  it('truncates text by default (textOverflow="truncate")', () => {
     render(<XDSTable data={users} columns={columns} />);
+    const cells = screen.getAllByRole('cell');
+    // Default-rendered cells contain an XDSText child element (a <span>)
+    const textEl = cells[0].querySelector('span');
+    expect(textEl).toBeTruthy();
+    expect(textEl).toHaveTextContent('Alice');
+  });
+
+  it('wraps text when textOverflow="wrap"', () => {
+    render(<XDSTable data={users} columns={columns} textOverflow="wrap" />);
     const cells = screen.getAllByRole('cell');
     // In wrap mode, no title attribute is added (text is visible, not hidden)
     expect(cells[0]).not.toHaveAttribute('title');

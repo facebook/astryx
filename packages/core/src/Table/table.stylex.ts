@@ -43,7 +43,7 @@ export const overflowStyles = stylex.create({
 /**
  * Wrap styles for table cells.
  *
- * Applied at the <td>/<th> level when textOverflow is 'wrap' (the default).
+ * Applied at the <td>/<th> level when textOverflow is 'wrap'.
  * Text wraps naturally and the row grows taller to fit. No content is hidden.
  */
 export const wrapStyles = stylex.create({
