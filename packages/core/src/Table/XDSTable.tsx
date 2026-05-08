@@ -90,11 +90,11 @@ export interface XDSTableProps<T extends Record<string, unknown>> extends Omit<
    *
    * Header cells always truncate regardless of this setting.
    *
-   * @default 'wrap'
+   * @default 'truncate'
    *
    * @example
    * ```
-   * <XDSTable data={logs} columns={columns} textOverflow="truncate" />
+   * <XDSTable data={logs} columns={columns} textOverflow="wrap" />
    * ```
    */
   textOverflow?: 'wrap' | 'truncate';
@@ -195,7 +195,7 @@ function XDSTableInner<T extends Record<string, unknown>>({
   isStriped = false,
   hasHover = false,
   verticalAlign = 'middle',
-  textOverflow = 'wrap',
+  textOverflow = 'truncate',
   plugins: userPlugins,
   columns,
   data,
