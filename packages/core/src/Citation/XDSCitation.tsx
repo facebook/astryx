@@ -1,7 +1,16 @@
 'use client';
 
+/**
+ * @file XDSCitation.tsx
+ * @input Uses React, StyleX, theme tokens
+ * @output Exports XDSCitation component for inline citation references
+ * @position Core implementation; consumed by index.ts
+ *
+ * SYNC: When modified, update these files to stay in sync:
+ * - /packages/core/src/Citation/index.ts (exports if types change)
+ */
+
 import type React from 'react';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -14,6 +23,7 @@ import {
   easeVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 export interface XDSCitationSource {
   title?: string;
@@ -21,14 +31,11 @@ export interface XDSCitationSource {
   icon?: string;
 }
 
-export interface XDSCitationProps {
+export interface XDSCitationProps extends XDSBaseProps<HTMLElement> {
   ref?: React.Ref<HTMLElement>;
   source: XDSCitationSource;
   number: number;
   variant?: 'label' | 'number';
-  xstyle?: StyleXStyles;
-  className?: string;
-  'data-testid'?: string;
 }
 
 const styles = stylex.create({
@@ -66,8 +73,16 @@ const styles = stylex.create({
     minWidth: 0,
   },
   labelHover: {
-    backgroundColor: {':hover': colorVars['--color-overlay-hover']},
-    color: {':hover': colorVars['--color-text-primary']},
+    backgroundColor: {
+      ':hover': {
+        '@media (hover: hover)': colorVars['--color-overlay-hover'],
+      },
+    },
+    color: {
+      ':hover': {
+        '@media (hover: hover)': colorVars['--color-text-primary'],
+      },
+    },
   },
   number: {
     display: 'inline-flex',
@@ -90,7 +105,11 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   numberHover: {
-    backgroundColor: {':hover': colorVars['--color-overlay-hover']},
+    backgroundColor: {
+      ':hover': {
+        '@media (hover: hover)': colorVars['--color-overlay-hover'],
+      },
+    },
   },
   iconWrap: {
     display: 'inline-flex',
@@ -119,7 +138,9 @@ export function XDSCitation({
   variant = 'label',
   xstyle,
   className,
+  style,
   'data-testid': testId,
+  ...rest
 }: XDSCitationProps): React.ReactElement {
   const title = source.title ?? String(number);
   const href = source.url;
@@ -141,10 +162,12 @@ export function XDSCitation({
         aria-label={`Citation ${number}: ${title}`}
         data-testid={testId}
         {...linkProps}
+        {...rest}
         {...mergeProps(
           xdsClassName('citation', {variant}),
           stylex.props(styles.number, href != null && styles.numberHover, xstyle),
           className,
+          style,
         )}>
         {number}
       </Tag>
@@ -158,6 +181,7 @@ export function XDSCitation({
       aria-label={`Citation ${number}: ${title}`}
       data-testid={testId}
       {...linkProps}
+      {...rest}
       {...mergeProps(
         xdsClassName('citation', {variant}),
         stylex.props(
@@ -167,6 +191,7 @@ export function XDSCitation({
           xstyle,
         ),
         className,
+        style,
       )}>
       {icon && (
         <span {...stylex.props(styles.iconWrap)}>
