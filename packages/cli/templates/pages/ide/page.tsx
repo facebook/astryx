@@ -14,7 +14,7 @@ import {
 import {XDSResizeHandle, useXDSResizable} from '@xds/core/Resizable';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
-import {XDSSyntaxTheme, defineSyntaxTheme} from '@xds/core';
+import {XDSSyntaxTheme, defineSyntaxTheme} from '@xds/core/theme/syntax';
 import {colorVars, spacingVars} from '@xds/core/theme/tokens.stylex';
 import {XDSStack} from '@xds/core/Layout';
 import {XDSOverflowList} from '@xds/core/OverflowList';
