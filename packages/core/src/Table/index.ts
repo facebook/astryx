@@ -9,11 +9,13 @@
  * SYNC: When modified, update this header and /packages/core/src/Table/Table.doc.mjs
  */
 
-export {XDSBaseTable} from './XDSBaseTable';
 export {XDSTable} from './XDSTable';
 export {XDSTableRow} from './XDSTableRow';
 export {XDSTableCell} from './XDSTableCell';
 export {XDSTableHeaderCell} from './XDSTableHeaderCell';
+export {XDSTableHeader} from './XDSTableHeader';
+export {XDSTableBody} from './XDSTableBody';
+export {XDSTableFooter} from './XDSTableFooter';
 export {XDSTableContext} from './XDSTableContext';
 export {useXDSTableSelection} from './plugins/selection';
 export {useXDSTableSelectionState} from './plugins/selection';
@@ -63,6 +65,9 @@ export type {
 export type {XDSTableRowProps} from './XDSTableRow';
 export type {XDSTableCellProps} from './XDSTableCell';
 export type {XDSTableHeaderCellProps} from './XDSTableHeaderCell';
+export type {XDSTableHeaderProps} from './XDSTableHeader';
+export type {XDSTableBodyProps} from './XDSTableBody';
+export type {XDSTableFooterProps} from './XDSTableFooter';
 export type {XDSTableContextValue} from './XDSTableContext';
 export type {UseXDSTableSelectionConfig} from './plugins/selection';
 export type {

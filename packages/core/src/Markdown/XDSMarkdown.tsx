@@ -28,6 +28,12 @@ import {XDSCheckboxList} from '../CheckboxList/XDSCheckboxList';
 import {XDSCheckboxListItem} from '../CheckboxList/XDSCheckboxListItem';
 import {XDSList} from '../List/XDSList';
 import {XDSListItem} from '../List/XDSListItem';
+import {XDSTable} from '../Table/XDSTable';
+import {XDSTableRow} from '../Table/XDSTableRow';
+import {XDSTableCell} from '../Table/XDSTableCell';
+import {XDSTableHeaderCell} from '../Table/XDSTableHeaderCell';
+import {XDSTableHeader} from '../Table/XDSTableHeader';
+import {XDSTableBody} from '../Table/XDSTableBody';
 import {xdsClassName, mergeProps} from '../utils';
 import {useXDSStreamingText} from '../hooks/useXDSStreamingText';
 import {XDSCitation} from '../Citation/XDSCitation';
@@ -345,28 +351,6 @@ const styles = stylex.create({
   blockIndent: {
     marginInline: `calc(-1 * ${spacingVars['--spacing-2']})`,
   },
-  table: {
-    borderCollapse: 'collapse',
-    width: 'fit-content',
-    maxWidth: '100%',
-  },
-  th: {
-    fontWeight: fontWeightVars['--font-weight-semibold'],
-    textAlign: 'left',
-    padding: spacingVars['--spacing-2'],
-    borderBottomWidth: borderVars['--border-width'],
-    borderBottomStyle: 'solid',
-    borderBottomColor: colorVars['--color-border-emphasized'],
-  },
-  td: {
-    padding: spacingVars['--spacing-2'],
-    borderBottomWidth: borderVars['--border-width'],
-    borderBottomStyle: 'solid',
-    borderBottomColor: colorVars['--color-border'],
-  },
-  alignLeft: {textAlign: 'left'},
-  alignCenter: {textAlign: 'center'},
-  alignRight: {textAlign: 'right'},
   // HR
   hr: {
     borderWidth: 0,
@@ -1362,92 +1346,30 @@ function renderBlock(
       );
     }
     case 'table': {
-      const alignStyle = (a: (typeof node.alignments)[number]) =>
-        a === 'center'
-          ? styles.alignCenter
-          : a === 'right'
-            ? styles.alignRight
-            : styles.alignLeft;
       return (
-        <div
-          key={index}
-          {...stylex.props(
-            styles.tableWrapper,
-            spacing,
-            isFirst && styles.noMarginBlockStart,
-            isLast && styles.noMarginBlockEnd,
-          )}>
-          <table
-            {...stylex.props(
-              styles.table,
-              styles.blockIndent,
-              contentWidthValue != null
-                ? dynamicStyles.blockWidth(contentWidthValue)
-                : null,
-              BLOCK_ALIGN_MARGIN[contentAlign] != null
-                ? dynamicStyles.blockAlign(BLOCK_ALIGN_MARGIN[contentAlign]!)
-                : null,
-            )}>
-            <thead>
-              <tr>
+        <div key={index} {...stylex.props(styles.tableWrapper, spacing, styles.blockIndent, contentWidthValue != null ? dynamicStyles.blockWidth(contentWidthValue) : null, BLOCK_ALIGN_MARGIN[contentAlign] != null ? dynamicStyles.blockAlign(BLOCK_ALIGN_MARGIN[contentAlign]!) : null, isFirst && styles.noMarginBlockStart, isLast && styles.noMarginBlockEnd)}>
+          <XDSTable density="compact" dividers="rows">
+            <XDSTableHeader>
+              <XDSTableRow>
                 {node.headers.map((h, i) => (
-                  <th
-                    key={i}
-                    {...stylex.props(
-                      styles.th,
-                      alignStyle(node.alignments[i]),
-                    )}>
-                    {h.children.map((c, j) =>
-                      renderInline(
-                        c,
-                        j,
-                        onLinkClick,
-                        cursor,
-                        citationCtx,
-                        linkComponent,
-                        inlinePlugins,
-                        components,
-                      ),
-                    )}
-                  </th>
+                  <XDSTableHeaderCell key={i} style={node.alignments[i] === 'center' ? {textAlign: 'center'} : node.alignments[i] === 'right' ? {textAlign: 'right'} : undefined}>
+                    {h.children.map((c, j) => renderInline(c, j, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins, components))}
+                  </XDSTableHeaderCell>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
+              </XDSTableRow>
+            </XDSTableHeader>
+            <XDSTableBody>
               {node.rows.map((row, i) => {
-                const rowIsNew =
-                  cursor.active && cursor.offset >= cursor.boundary;
+                const rowIsNew = cursor.active && cursor.offset >= cursor.boundary;
                 const cells = row.map((cell, j) => (
-                  <td
-                    key={j}
-                    {...stylex.props(
-                      styles.td,
-                      alignStyle(node.alignments[j]),
-                    )}>
-                    {cell.children.map((c, k) =>
-                      renderInline(
-                        c,
-                        k,
-                        onLinkClick,
-                        cursor,
-                        citationCtx,
-                        linkComponent,
-                        inlinePlugins,
-                        components,
-                      ),
-                    )}
-                  </td>
+                  <XDSTableCell key={j} style={node.alignments[j] === 'center' ? {textAlign: 'center'} : node.alignments[j] === 'right' ? {textAlign: 'right'} : undefined}>
+                    {cell.children.map((c, k) => renderInline(c, k, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins, components))}
+                  </XDSTableCell>
                 ));
-                return (
-                  <tr
-                    key={rowIsNew ? `fade-row-${i}` : i}
-                    {...(rowIsNew ? stylex.props(streamingStyles.fadeIn) : {})}>
-                    {cells}
-                  </tr>
-                );
+                return (<XDSTableRow key={rowIsNew ? `fade-row-${i}` : i} {...(rowIsNew ? stylex.props(streamingStyles.fadeIn) : {})}>{cells}</XDSTableRow>);
               })}
-            </tbody>
-          </table>
+            </XDSTableBody>
+          </XDSTable>
         </div>
       );
     }

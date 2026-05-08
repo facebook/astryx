@@ -12,7 +12,7 @@
  * - /packages/cli/templates/blocks/components/Table/ (showcase blocks)
  */
 
-import {memo, useRef, type ReactElement, type ReactNode, type Ref} from 'react';
+import {memo, useRef, Children, isValidElement, type ReactElement, type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import type {
@@ -251,6 +251,20 @@ const MemoizedTableRow = memo(TableRowInner, areRowPropsEqual) as <
 ) => ReactElement;
 
 // =============================================================================
+// Structural children detection
+// =============================================================================
+
+function hasStructuralChildren(children: ReactNode): boolean {
+  let found = false;
+  Children.forEach(children, child => {
+    if (isValidElement(child) && typeof child.type === 'function' && '__xdsTableSlot' in child.type) {
+      found = true;
+    }
+  });
+  return found;
+}
+
+// =============================================================================
 // XDSBaseTable Component
 // =============================================================================
 
@@ -421,53 +435,29 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
         stylex.props(...tableRenderProps.styles),
       )}
       style={tableStyle}>
-      {/* thead */}
-      {hasColumns && (
-        <thead>
-          <RowComponent
-            {...headerRowRenderProps.htmlProps}
-            xstyle={headerRowRenderProps.styles}>
-            {headerRowRenderProps.children}
-          </RowComponent>
-        </thead>
-      )}
-
-      {/* tbody — data-driven or children mode */}
-      <tbody>
-        {children
-          ? children
-          : hasData
-            ? data.map((item, rowIndex) => {
-                const rowKey =
-                  idKey == null
-                    ? rowIndex
-                    : typeof idKey === 'function'
-                      ? idKey(item)
-                      : String(item[idKey]);
-
-                return (
-                  <MemoizedTableRow<T>
-                    key={rowKey}
-                    item={item}
-                    rowIndex={rowIndex}
-                    rowKey={rowKey}
-                    columns={resolvedColumns}
-                    plugins={plugins}
-                    textOverflow={textOverflow}
-                    RowComponent={RowComponent}
-                    CellComponent={CellComponent}
-                  />
-                );
-              })
-            : data != null &&
-              emptyState !== false && (
-                <tr>
-                  <td colSpan={resolvedColumns.length}>
-                    {emptyState ?? <XDSEmptyState title="No data" isCompact />}
-                  </td>
-                </tr>
-              )}
-      </tbody>
+      {children
+        ? hasStructuralChildren(children) ? children : (<><tbody>{children}</tbody></>)
+        : (
+          <>
+            {hasColumns && (
+              <thead>
+                <RowComponent {...headerRowRenderProps.htmlProps} xstyle={headerRowRenderProps.styles}>
+                  {headerRowRenderProps.children}
+                </RowComponent>
+              </thead>
+            )}
+            <tbody>
+              {hasData
+                ? data.map((item, rowIndex) => {
+                    const rowKey = idKey == null ? rowIndex : typeof idKey === 'function' ? idKey(item) : String(item[idKey]);
+                    return (<MemoizedTableRow<T> key={rowKey} item={item} rowIndex={rowIndex} rowKey={rowKey} columns={resolvedColumns} plugins={plugins} textOverflow={textOverflow} RowComponent={RowComponent} CellComponent={CellComponent} />);
+                  })
+                : data != null && emptyState !== false && (
+                    <tr><td colSpan={resolvedColumns.length}>{emptyState ?? <XDSEmptyState title="No data" isCompact />}</td></tr>
+                  )}
+            </tbody>
+          </>
+        )}
     </table>
   );
 
