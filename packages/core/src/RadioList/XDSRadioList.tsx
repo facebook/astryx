@@ -16,11 +16,11 @@
 
 import {createContext, useId, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {XDSField} from '../Field/XDSField';
 import type {XDSInputStatus} from '../Field/types';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 /**
  * Size of the radio controls, matching CheckboxInput sizes.
@@ -54,7 +54,7 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSRadioListProps {
+export interface XDSRadioListProps extends Omit<XDSBaseProps<HTMLElement>, 'onChange'> {
   /**
    * Label text for the radio group (always rendered for accessibility).
    */
@@ -112,27 +112,6 @@ export interface XDSRadioListProps {
    * Tooltip text to display in an info icon at the end of the label.
    */
   labelTooltip?: string;
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
   /**
    * Test ID for the outer container.
    */
