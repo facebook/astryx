@@ -8,7 +8,7 @@
  * - /packages/core/src/PowerSearch/index.ts
  */
 
-import type {ReactNode} from 'react';
+import type {ComponentType, ReactNode} from 'react';
 import type {XDSSearchSource, XDSSearchableItem} from '../Typeahead/types';
 
 // =============================================================================
@@ -361,3 +361,48 @@ export interface PowerSearchAuxData {
 }
 
 export type PowerSearchItem = XDSSearchableItem<PowerSearchAuxData>;
+
+// =============================================================================
+// Components Map — per-type overrides for token and editor rendering
+// =============================================================================
+
+/**
+ * Props for a custom Token component.
+ * Renders the full token pill for a filter of a given type.
+ */
+export interface PowerSearchTokenProps {
+  readonly config: PowerSearchConfig;
+  readonly filter: PowerSearchFilter;
+  readonly field: PowerSearchField;
+  readonly operator: PowerSearchOperator;
+  readonly maxLength: number;
+  readonly onClick?: () => void;
+  readonly onRemove?: () => void;
+  readonly isDisabled?: boolean;
+}
+
+/**
+ * Props for a custom Editor component.
+ * Renders the full editor popover content for a filter of a given type.
+ */
+export interface PowerSearchEditorProps {
+  readonly config: PowerSearchConfig;
+  readonly filter: PartialFilter;
+  readonly mode: 'create' | 'edit';
+  readonly onSave: (filter: PowerSearchFilter | null) => void;
+  readonly onCancel: () => void;
+  readonly saveButtonLabel?: string;
+  readonly isReadOnly?: boolean;
+  readonly timezoneID?: string;
+}
+
+export interface PowerSearchComponentOverride {
+  /** Replaces the full token pill for filters of this type. */
+  readonly Token?: ComponentType<PowerSearchTokenProps>;
+  /** Replaces the full editor popover content for filters of this type. */
+  readonly Editor?: ComponentType<PowerSearchEditorProps>;
+}
+
+export type XDSPowerSearchComponents = Partial<
+  Record<OperatorValue['type'], PowerSearchComponentOverride>
+>;
