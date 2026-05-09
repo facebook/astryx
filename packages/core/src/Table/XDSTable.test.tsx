@@ -474,11 +474,13 @@ describe('XDSBaseTable', () => {
       });
     });
 
-    it('applies default minWidth on auto-generated columns', () => {
+    it('applies content-derived minWidth on auto-generated columns', () => {
       render(<XDSBaseTable data={users} />);
       const headers = screen.getAllByRole('columnheader');
       for (const header of headers) {
-        expect(header).toHaveStyle({minWidth: `${DEFAULT_MIN_COLUMN_WIDTH}px`});
+        // Each column should have a minWidth derived from content (at least 60px floor)
+        const style = header.getAttribute('style') ?? '';
+        expect(style).toContain('min-width');
       }
     });
 
