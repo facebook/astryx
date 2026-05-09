@@ -12,8 +12,8 @@
     "@stylexjs/stylex": "^0.18.3",
     "@xds/core": "*",
     "@xds/theme-default": "*",
-    "react": "^19.2.5",
-    "react-dom": "^19.2.5",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
     "unplugin": "^2.3.11"
   },
   "devDependencies": {

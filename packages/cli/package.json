@@ -54,6 +54,6 @@
   "dependencies": {
     "@clack/prompts": "^1.3.0",
     "commander": "^12.1.0",
-    "jiti": "^2.6.1"
+    "jiti": "^2.7.0"
   }
 }
