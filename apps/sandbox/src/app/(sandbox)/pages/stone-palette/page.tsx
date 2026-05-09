@@ -215,41 +215,17 @@ const CORE = [
 
 type Mode = 'light' | 'dark';
 
-interface Surfaces {
-  body: string;
-  surface: string;
-  card: string;
-  border: string;
-  borderEmphasized: string;
-  textPrimary: string;
-  textSecondary: string;
-  accent: string;
-  onAccent: string;
-}
-
-const SURFACES: Record<Mode, Surfaces> = {
-  light: {
-    body: '#f3f3f5',
-    surface: '#FFFFFF',
-    card: '#FFFFFF',
-    border: '#dddcdf',
-    borderEmphasized: '#83838a',
-    textPrimary: '#28282a',
-    textSecondary: '#83838a',
-    accent: '#28282a',
-    onAccent: '#FFFFFF',
-  },
-  dark: {
-    body: '#171719',
-    surface: '#1f1f21',
-    card: '#242325',
-    border: '#3a3a3c',
-    borderEmphasized: '#5e5e61',
-    textPrimary: '#f3f3f5',
-    textSecondary: '#9d9da3',
-    accent: '#f3f3f5',
-    onAccent: '#28282a',
-  },
+// Surface colors read from CSS variables — no hardcoded hex values to drift.
+const VAR_SURFACES = {
+  body: 'var(--color-background-body)',
+  surface: 'var(--color-background-surface)',
+  card: 'var(--color-background-card)',
+  border: 'var(--color-border)',
+  borderEmphasized: 'var(--color-border-emphasized)',
+  textPrimary: 'var(--color-text-primary)',
+  textSecondary: 'var(--color-text-secondary)',
+  accent: 'var(--color-accent)',
+  onAccent: 'var(--color-on-accent)',
 };
 
 interface BadgePair {
@@ -660,15 +636,15 @@ function ButtonSection() {
   );
 }
 
-function SurfacesSection({mode, surfaces}: {mode: Mode; surfaces: Surfaces}) {
+function SurfacesSection({mode}: {mode: Mode}) {
   const ring =
     mode === 'light' ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)';
   const cells = [
-    {label: 'border', hex: surfaces.border},
-    {label: 'border-emp', hex: surfaces.borderEmphasized},
-    {label: 'surface', hex: surfaces.surface},
-    {label: 'body', hex: surfaces.body},
-    {label: 'card', hex: surfaces.card},
+    {label: 'border', hex: VAR_SURFACES.border},
+    {label: 'border-emp', hex: VAR_SURFACES.borderEmphasized},
+    {label: 'surface', hex: VAR_SURFACES.surface},
+    {label: 'body', hex: VAR_SURFACES.body},
+    {label: 'card', hex: VAR_SURFACES.card},
   ];
   return (
     <div style={S.section}>
@@ -793,11 +769,10 @@ function InputSection() {
 }
 
 function ModeColumn({mode}: {mode: Mode}) {
-  const surfaces = SURFACES[mode];
   return (
     <XDSTheme theme={stoneTheme} mode={mode}>
       <XDSLayerProvider>
-        <div style={S.modeCol(surfaces.body, surfaces.textPrimary)}>
+        <div style={S.modeCol(VAR_SURFACES.body, VAR_SURFACES.textPrimary)}>
           <p style={S.modeLabel}>{mode === 'light' ? 'Light Mode' : 'Dark Mode'}</p>
           <CoreSection mode={mode} />
           <TextRampSection />
@@ -806,7 +781,7 @@ function ModeColumn({mode}: {mode: Mode}) {
           <BannerSection />
           <InputSection />
           <ButtonSection />
-          <SurfacesSection mode={mode} surfaces={surfaces} />
+          <SurfacesSection mode={mode} />
         </div>
       </XDSLayerProvider>
     </XDSTheme>
