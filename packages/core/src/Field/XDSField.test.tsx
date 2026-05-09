@@ -10,6 +10,7 @@
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {XDSField} from './XDSField';
+import {XDSFormLayoutContext} from '../FormLayout/XDSFormLayoutContext';
 
 describe('XDSField', () => {
   it('renders with label', () => {
@@ -259,5 +260,108 @@ describe('XDSField', () => {
       'XDSField: isOptional and isRequired are mutually exclusive. isOptional takes precedence.',
     );
     warnSpy.mockRestore();
+  });
+
+  // ─── Horizontal-labels context ────────────────────────────────────────
+
+  describe('horizontal-labels layout', () => {
+    const horizontalLabelsWrapper = ({
+      children,
+    }: {
+      children: React.ReactNode;
+    }) => (
+      <XDSFormLayoutContext.Provider value={{direction: 'horizontal-labels'}}>
+        {children}
+      </XDSFormLayoutContext.Provider>
+    );
+
+    it('applies display:contents when in horizontal-labels context', () => {
+      const {container} = render(
+        <XDSField label="Name" inputID="name-input">
+          <input id="name-input" />
+        </XDSField>,
+        {wrapper: horizontalLabelsWrapper},
+      );
+      const field = container.firstChild as HTMLElement;
+      expect(field.className).toContain('horizontalLabels');
+    });
+
+    it('renders label and input as direct grid children via display:contents', () => {
+      render(
+        <XDSField label="Name" inputID="name-input" data-testid="field">
+          <input id="name-input" data-testid="name" />
+        </XDSField>,
+        {wrapper: horizontalLabelsWrapper},
+      );
+      const field = screen.getByTestId('field');
+      // With display:contents, the field's children participate in the parent grid.
+      // The field should contain: label alignment wrapper + input wrapper div
+      const label = screen.getByText('Name');
+      expect(label.tagName).toBe('LABEL');
+      expect(field.contains(label)).toBe(true);
+      expect(field.contains(screen.getByTestId('name'))).toBe(true);
+    });
+
+    it('groups description with input in column 2', () => {
+      render(
+        <XDSField
+          label="Email"
+          inputID="email-input"
+          description="We won't share it"
+          descriptionID="email-desc"
+          data-testid="field">
+          <input id="email-input" data-testid="email" />
+        </XDSField>,
+        {wrapper: horizontalLabelsWrapper},
+      );
+      const descEl = screen.getByText("We won't share it");
+      const inputEl = screen.getByTestId('email');
+      // Both description and input should be inside the same wrapper div (column 2)
+      expect(descEl.parentElement).toBe(inputEl.parentElement);
+    });
+
+    it('groups status message with input in column 2', () => {
+      render(
+        <XDSField
+          label="Email"
+          inputID="email-input"
+          status={{type: 'error', message: 'Required'}}
+          data-testid="field">
+          <input id="email-input" data-testid="email" />
+        </XDSField>,
+        {wrapper: horizontalLabelsWrapper},
+      );
+      const statusEl = screen.getByRole('alert');
+      const inputEl = screen.getByTestId('email');
+      // Both status and input should be inside the same wrapper div (column 2)
+      expect(statusEl.parentElement).toBe(inputEl.parentElement);
+    });
+
+    it('does not apply display:contents in vertical context', () => {
+      const {container} = render(
+        <XDSField label="Name" inputID="name-input">
+          <input id="name-input" />
+        </XDSField>,
+      );
+      const field = container.firstChild as HTMLElement;
+      expect(field.className).not.toContain('horizontalLabels');
+      expect(field.className).toContain('container');
+    });
+
+    it('wraps label in alignment div with top padding', () => {
+      render(
+        <XDSField label="Name" inputID="name-input" data-testid="field">
+          <input id="name-input" />
+        </XDSField>,
+        {wrapper: horizontalLabelsWrapper},
+      );
+      const field = screen.getByTestId('field');
+      // First child should be the label alignment wrapper
+      const labelWrapper = field.children[0] as HTMLElement;
+      expect(labelWrapper.tagName).toBe('DIV');
+      expect(labelWrapper.className).toContain('horizontalLabelAlign');
+      // Label should be inside
+      expect(labelWrapper.querySelector('label')).not.toBeNull();
+    });
   });
 });

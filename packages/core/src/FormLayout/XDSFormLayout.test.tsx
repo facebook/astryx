@@ -13,6 +13,7 @@ import {useContext} from 'react';
 import {XDSFormLayout} from './XDSFormLayout';
 import {XDSFormLayoutContext} from './XDSFormLayoutContext';
 import type {XDSFormLayoutDirection} from './XDSFormLayoutContext';
+import {XDSField} from '../Field';
 
 // Helper component to read context
 function DirectionReader() {
@@ -181,5 +182,69 @@ describe('XDSFormLayout', () => {
       </XDSFormLayout>,
     );
     expect(container.firstChild).toMatchSnapshot();
+  });
+
+  // ─── Horizontal-labels with real Field children ─────────────────────────
+
+  it('horizontal-labels renders XDSField children with display:contents', () => {
+    render(
+      <XDSFormLayout direction="horizontal-labels" data-testid="layout">
+        <XDSField label="Name" inputID="name">
+          <input id="name" data-testid="name-input" />
+        </XDSField>
+        <XDSField label="Email" inputID="email">
+          <input id="email" data-testid="email-input" />
+        </XDSField>
+      </XDSFormLayout>,
+    );
+
+    const layout = screen.getByTestId('layout');
+
+    // Labels should be accessible
+    expect(screen.getByLabelText('Name')).toBeInTheDocument();
+    expect(screen.getByLabelText('Email')).toBeInTheDocument();
+
+    // The label and input wrapper should be direct grid-participating children
+    // (via display:contents on the Field wrapper)
+    const nameLabel = screen.getByText('Name');
+    const emailLabel = screen.getByText('Email');
+    expect(nameLabel.tagName).toBe('LABEL');
+    expect(emailLabel.tagName).toBe('LABEL');
+
+    // Both fields should be inside the layout
+    expect(layout.contains(nameLabel)).toBe(true);
+    expect(layout.contains(screen.getByTestId('name-input'))).toBe(true);
+    expect(layout.contains(emailLabel)).toBe(true);
+    expect(layout.contains(screen.getByTestId('email-input'))).toBe(true);
+  });
+
+  it('horizontal-labels with XDSField: label and input wrapper are siblings under display:contents', () => {
+    render(
+      <XDSFormLayout direction="horizontal-labels" data-testid="layout">
+        <XDSField
+          label="Username"
+          inputID="username"
+          data-testid="username-field">
+          <input id="username" data-testid="username-input" />
+        </XDSField>
+      </XDSFormLayout>,
+    );
+
+    const field = screen.getByTestId('username-field');
+    // Field should have display:contents class
+    expect(field.className).toContain('horizontalLabels');
+
+    // Field's direct children should be: label alignment div + input wrapper div
+    const fieldChildren = Array.from(field.children);
+    expect(fieldChildren.length).toBe(2);
+    // First child is the label alignment wrapper containing the <label>
+    expect(fieldChildren[0].tagName).toBe('DIV');
+    expect(fieldChildren[0].querySelector('label')).not.toBeNull();
+    // Second child is the input wrapper div
+    expect(fieldChildren[1].tagName).toBe('DIV');
+    // The input should be inside the wrapper div (column 2)
+    expect(
+      fieldChildren[1].contains(screen.getByTestId('username-input')),
+    ).toBe(true);
   });
 });
