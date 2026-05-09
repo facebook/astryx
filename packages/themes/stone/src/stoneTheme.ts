@@ -216,8 +216,8 @@ export const stoneTheme = defineTheme({
         },
       },
       'variant:destructive': {
-        backgroundColor: 'var(--color-error)',
-        color: 'var(--color-on-error)',
+        backgroundColor: 'light-dark(#f9dcd7, #dcc0bc)',
+        color: 'light-dark(#58413e, #4c3633)',
       },
     },
 
