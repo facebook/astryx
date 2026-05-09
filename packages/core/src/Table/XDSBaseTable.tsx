@@ -12,7 +12,7 @@
  * - /packages/cli/templates/blocks/components/Table/ (showcase blocks)
  */
 
-import {memo, useRef, Children, isValidElement, type ReactElement, type ReactNode, type Ref} from 'react';
+import {memo, useRef, type ReactElement, type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import type {
@@ -251,20 +251,6 @@ const MemoizedTableRow = memo(TableRowInner, areRowPropsEqual) as <
 ) => ReactElement;
 
 // =============================================================================
-// Structural children detection
-// =============================================================================
-
-function hasStructuralChildren(children: ReactNode): boolean {
-  let found = false;
-  Children.forEach(children, child => {
-    if (isValidElement(child) && typeof child.type === 'function' && '__xdsTableSlot' in child.type) {
-      found = true;
-    }
-  });
-  return found;
-}
-
-// =============================================================================
 // XDSBaseTable Component
 // =============================================================================
 
@@ -436,7 +422,7 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
       )}
       style={tableStyle}>
       {children
-        ? hasStructuralChildren(children) ? children : (<><tbody>{children}</tbody></>)
+        ? children
         : (
           <>
             {hasColumns && (
