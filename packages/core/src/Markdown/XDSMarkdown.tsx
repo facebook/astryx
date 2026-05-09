@@ -1346,6 +1346,20 @@ function renderBlock(
       );
     }
     case 'table': {
+      // Derive per-column min-widths from content (header + body).
+      // We have direct access to the AST so we can measure here.
+      const colMinWidths = node.headers.map((h, colIdx) => {
+        let maxWordLen = countInlineTextLength(h.children);
+        for (const row of node.rows) {
+          if (row[colIdx]) {
+            const len = countInlineTextLength(row[colIdx].children);
+            if (len > maxWordLen) maxWordLen = len;
+          }
+        }
+        // ≤6 chars: 60px, 7–15: 80px, >15: 120px
+        return maxWordLen <= 6 ? 60 : maxWordLen <= 15 ? 80 : 120;
+      });
+
       return (
         <div
           key={index}
@@ -1360,13 +1374,14 @@ function renderBlock(
                 {node.headers.map((h, i) => (
                   <XDSTableHeaderCell
                     key={i}
-                    style={
-                      node.alignments[i] === 'center'
+                    style={{
+                      minWidth: colMinWidths[i],
+                      ...(node.alignments[i] === 'center'
                         ? {textAlign: 'center'}
                         : node.alignments[i] === 'right'
                           ? {textAlign: 'right'}
-                          : undefined
-                    }>
+                          : undefined),
+                    }}>
                     {h.children.map((c, j) =>
                       renderInline(c, j, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins, components),
                     )}
