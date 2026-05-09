@@ -4,6 +4,9 @@ import {
   XDSTable,
   XDSTableRow,
   XDSTableCell,
+  XDSTableHeaderCell,
+  XDSTableHeader,
+  XDSTableBody,
   proportional,
   pixel,
 } from '@xds/core/Table';
@@ -252,26 +255,35 @@ export const CustomCellRenderer: Story = {
 export const ChildrenMode: Story = {
   render: () => (
     <XDSTable density="balanced" dividers="rows" isStriped hasHover>
-      <XDSTableRow>
-        <XDSTableCell>Alice</XDSTableCell>
-        <XDSTableCell>alice@example.com</XDSTableCell>
-        <XDSTableCell>Engineer</XDSTableCell>
-      </XDSTableRow>
-      <XDSTableRow>
-        <XDSTableCell>Bob</XDSTableCell>
-        <XDSTableCell>bob@example.com</XDSTableCell>
-        <XDSTableCell>Designer</XDSTableCell>
-      </XDSTableRow>
-      <XDSTableRow>
-        <XDSTableCell>Charlie</XDSTableCell>
-        <XDSTableCell>charlie@example.com</XDSTableCell>
-        <XDSTableCell>PM</XDSTableCell>
-      </XDSTableRow>
-      <XDSTableRow>
-        <XDSTableCell>Diana</XDSTableCell>
-        <XDSTableCell>diana@example.com</XDSTableCell>
-        <XDSTableCell>Engineer</XDSTableCell>
-      </XDSTableRow>
+      <XDSTableHeader>
+        <XDSTableRow>
+          <XDSTableHeaderCell>Name</XDSTableHeaderCell>
+          <XDSTableHeaderCell>Email</XDSTableHeaderCell>
+          <XDSTableHeaderCell>Role</XDSTableHeaderCell>
+        </XDSTableRow>
+      </XDSTableHeader>
+      <XDSTableBody>
+        <XDSTableRow>
+          <XDSTableCell>Alice</XDSTableCell>
+          <XDSTableCell>alice@example.com</XDSTableCell>
+          <XDSTableCell>Engineer</XDSTableCell>
+        </XDSTableRow>
+        <XDSTableRow>
+          <XDSTableCell>Bob</XDSTableCell>
+          <XDSTableCell>bob@example.com</XDSTableCell>
+          <XDSTableCell>Designer</XDSTableCell>
+        </XDSTableRow>
+        <XDSTableRow>
+          <XDSTableCell>Charlie</XDSTableCell>
+          <XDSTableCell>charlie@example.com</XDSTableCell>
+          <XDSTableCell>PM</XDSTableCell>
+        </XDSTableRow>
+        <XDSTableRow>
+          <XDSTableCell>Diana</XDSTableCell>
+          <XDSTableCell>diana@example.com</XDSTableCell>
+          <XDSTableCell>Engineer</XDSTableCell>
+        </XDSTableRow>
+      </XDSTableBody>
     </XDSTable>
   ),
 };
