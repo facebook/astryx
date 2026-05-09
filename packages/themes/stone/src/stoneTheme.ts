@@ -9,24 +9,24 @@
 import {defineTheme, defineSyntaxTheme} from '@xds/core/theme';
 import {stoneIconRegistry} from './icons';
 
-/** Stone syntax palette — warm, muted tones to match the earthy aesthetic. */
+/** Stone syntax palette — derived from categorical hues at T40 (light) / T70 (dark). */
 const stoneSyntax = defineSyntaxTheme({
   name: 'xds-stone',
   tokens: {
-    keyword: ['#7c5e3a', '#c4a882'],
-    string: ['#2e6b4a', '#7bc49e'],
-    comment: ['#84848B', '#84848B'],
-    number: ['#a16830', '#d4a06a'],
-    function: ['#3a5e8c', '#7ba8d4'],
-    type: ['#6b4a8c', '#b08ed4'],
-    variable: ['#28282A', '#D8D8DB'],
-    operator: ['#84848B', '#a1a1a6'],
-    constant: ['#a16830', '#d4a06a'],
-    tag: ['#b5463a', '#e08a82'],
-    attribute: ['#8c6b30', '#d4b870'],
-    property: ['#3a7c6b', '#70c4b0'],
-    punctuation: ['#84848B', '#5a5a60'],
-    background: ['#f3f3f5', '#1a1a1c'],
+    keyword: ['#645a72', '#b2a7c1'],    // Purple H=307 C=15
+    string: ['#50634f', '#9bb19a'],      // Green H=142 C=15
+    comment: ['#5e5e63', '#ababb0'],     // Gray H=291 C=3
+    number: ['#6f5b48', '#bea792'],      // Orange H=70 C=15
+    function: ['#4d6076', '#99adc6'],    // Blue H=265 C=15
+    type: ['#645a72', '#b2a7c1'],        // Purple H=307 C=15
+    variable: ['#5e5e63', '#ababb0'],    // Gray H=291 C=3
+    operator: ['#5e5e63', '#ababb0'],    // Gray H=291 C=3
+    constant: ['#6f5b48', '#bea792'],    // Orange H=70 C=15
+    tag: ['#775751', '#c7a39d'],         // Red H=33 C=15
+    attribute: ['#675d46', '#b6aa90'],   // Yellow H=90 C=15
+    property: ['#496455', '#94b2a0'],    // Teal H=158 C=15
+    punctuation: ['#5e5e63', '#ababb0'], // Gray H=291 C=3
+    background: ['#f3f3f5', '#171719'],
   },
 });
 
@@ -62,55 +62,56 @@ export const stoneTheme = defineTheme({
     // Core: #28282A, #84848B, #D8D8DB, #f3f3f5, #FFFFFF
     // =========================================================================
 
-    // Core semantic
-    '--color-accent': ['#28282A', '#f3f3f5'],
-    '--color-accent-muted': ['#28282A14', '#f3f3f520'],
-    '--color-neutral': ['#28282A0F', '#f3f3f51A'],
-    '--color-background-surface': ['#FFFFFF', '#1a1a1c'],
-    '--color-background-body': ['#f3f3f5', '#111113'],
-    '--color-overlay': ['#28282A80', '#28282ACC'],
-    '--color-overlay-hover': ['#28282A0D', '#f3f3f50D'],
-    '--color-overlay-pressed': ['#28282A1A', '#f3f3f51A'],
-    '--color-background-muted': ['#f3f3f5', '#28282A'],
+    // Core semantic — all neutrals H=291
+    // Stone 900 T=16 C=1.4, Stone 500 T=55 C=4, Stone 300 T=86 C=1.6, Stone 100 T=96 C=1
+    '--color-accent': ['#28282a', '#f3f3f5'],
+    '--color-accent-muted': ['#28282a14', '#f3f3f520'],
+    '--color-neutral': ['#28282a0F', '#f3f3f51A'],
+    '--color-background-surface': ['#FFFFFF', '#1f1f21'],  // T12
+    '--color-background-body': ['#f3f3f5', '#171719'],     // T8
+    '--color-overlay': ['#28282a80', '#28282aCC'],
+    '--color-overlay-hover': ['#28282a0D', '#f3f3f50D'],
+    '--color-overlay-pressed': ['#28282a1A', '#f3f3f51A'],
+    '--color-background-muted': ['#f3f3f5', '#28282a'],
 
-    // Text
-    '--color-text-primary': ['#28282A', '#f3f3f5'],
-    '--color-text-secondary': ['#84848B', '#a1a1a6'],
-    '--color-text-disabled': ['#D8D8DB', '#5a5a60'],
-    '--color-text-accent': ['#28282A', '#f3f3f5'],
+    // Text — H=291
+    '--color-text-primary': ['#28282a', '#f3f3f5'],        // T16 / T96
+    '--color-text-secondary': ['#83838a', '#9d9da3'],      // T55 C=4 / T65 C=3
+    '--color-text-disabled': ['#d7d7da', '#5e5e61'],       // T86 C=1.6 / T40 C=2
+    '--color-text-accent': ['#28282a', '#f3f3f5'],
     '--color-on-dark': '#FFFFFF',
-    '--color-on-light': '#28282A',
-    '--color-on-accent': ['#FFFFFF', '#28282A'],
-    '--color-on-success': ['#374c36', '#b4cdb2'],
-    '--color-on-error': ['#58413e', '#dcc0bc'],
-    '--color-on-warning': ['#524622', '#d7c59c'],
+    '--color-on-light': '#28282a',
+    '--color-on-accent': ['#FFFFFF', '#28282a'],
+    '--color-on-success': ['#374c36', '#b4cdb2'],          // Green T30 / T80
+    '--color-on-error': ['#58413e', '#dcc0bc'],             // Red T30 / T80
+    '--color-on-warning': ['#524622', '#d7c59c'],           // Yellow T30 / T80
 
-    // Icon
-    '--color-icon-accent': ['#28282A', '#f3f3f5'],
-    '--color-icon-primary': ['#28282A', '#f3f3f5'],
-    '--color-icon-secondary': ['#84848B', '#a1a1a6'],
-    '--color-icon-disabled': ['#D8D8DB', '#5a5a60'],
+    // Icon — H=291
+    '--color-icon-accent': ['#28282a', '#f3f3f5'],
+    '--color-icon-primary': ['#28282a', '#f3f3f5'],
+    '--color-icon-secondary': ['#83838a', '#9d9da3'],      // T55 C=4 / T65 C=3
+    '--color-icon-disabled': ['#d7d7da', '#5e5e61'],       // T86 C=1.6 / T40 C=2
 
-    // Surface variants
-    '--color-background-card': ['#FFFFFF', '#1e1e20'],
-    '--color-background-popover': ['#FFFFFF', '#28282A'],
-    '--color-background-inverted': ['#28282A', '#f3f3f5'],
+    // Surface variants — H=291
+    '--color-background-card': ['#FFFFFF', '#242325'],      // T14
+    '--color-background-popover': ['#FFFFFF', '#28282a'],   // T16
+    '--color-background-inverted': ['#28282a', '#f3f3f5'],
 
-    // Status / Sentiment — T50 light (full chroma) / T80 dark for icons and borders
-    '--color-success': ['#84848B', '#5a5a60'],
-    '--color-success-muted': ['#d0e9ce', '#b4cdb2'],
-    '--color-error': ['#84848B', '#5a5a60'],
-    '--color-error-muted': ['#f9dcd7', '#dcc0bc'],
-    '--color-warning': ['#84848B', '#5a5a60'],
-    '--color-warning-muted': ['#f4e1b7', '#d7c59c'],
+    // Status / Sentiment — T50 from palette for icons/borders (visible color)
+    '--color-success': ['#667d65', '#99b298'],              // Green T50 / T70
+    '--color-success-muted': ['#d0e9ce', '#b4cdb2'],       // Green T90 / T80
+    '--color-error': ['#8a716d', '#c0a5a1'],                // Red T50 / T70
+    '--color-error-muted': ['#f9dcd7', '#dcc0bc'],          // Red T90 / T80
+    '--color-warning': ['#857650', '#bbaa81'],              // Yellow T50 / T70
+    '--color-warning-muted': ['#f4e1b7', '#d7c59c'],       // Yellow T90 / T80
 
-    // Border
-    '--color-border': ['#dddcdf', '#f3f3f51A'],
-    '--color-border-emphasized': ['#84848B', '#5a5a60'],
+    // Border — H=291
+    '--color-border': ['#dddcdf', '#f3f3f51A'],             // T88 C=1.5
+    '--color-border-emphasized': ['#83838a', '#5e5e61'],    // T55 C=4 / T40 C=2
 
-    // Effects
-    '--color-skeleton': ['#D8D8DB', '#5a5a60'],
-    '--color-shadow': ['#28282A1A', '#0000004D'],
+    // Effects — H=291
+    '--color-skeleton': ['#d7d7da', '#5e5e61'],             // T86 C=1.6 / T40 C=2
+    '--color-shadow': ['#28282a1A', '#0000004D'],
     '--color-tint-hover': ['black', 'white'],
 
     // Categorical — Blue (indigo blue)
@@ -195,9 +196,9 @@ export const stoneTheme = defineTheme({
       '0 4px 6px #28282A1A, 0 12px 24px #28282A26',
     '--shadow-inset-hover': 'inset 0px 0px 0px 2px #28282A30',
     '--shadow-inset-selected': 'inset 0px 0px 0px 2px #28282A50',
-    '--shadow-inset-success': 'inset 0px 0px 0px 2px light-dark(#374c3650, #a7d1a650)',
-    '--shadow-inset-warning': 'inset 0px 0px 0px 2px light-dark(#52462250, #dec47f50)',
-    '--shadow-inset-error': 'inset 0px 0px 0px 2px light-dark(#58413e50, #e9bcb550)',
+    '--shadow-inset-success': 'inset 0px 0px 0px 2px light-dark(#667d6550, #99b29850)',
+    '--shadow-inset-warning': 'inset 0px 0px 0px 2px light-dark(#85765050, #bbaa8150)',
+    '--shadow-inset-error': 'inset 0px 0px 0px 2px light-dark(#8a716d50, #c0a5a150)',
   },
 
   components: {
@@ -215,8 +216,8 @@ export const stoneTheme = defineTheme({
         },
       },
       'variant:destructive': {
-        backgroundColor: 'light-dark(#f9dcd7, #e2beb9)',
-        color: 'light-dark(#58413e, #503430)',
+        backgroundColor: 'light-dark(#8a716d, #c0a5a1)',
+        color: 'light-dark(#FFFFFF, #35211e)',
       },
     },
 
