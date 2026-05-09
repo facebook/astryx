@@ -2,7 +2,7 @@
  * Stone Theme
  *
  * A warm, earthy neutral theme inspired by natural stone and sandstone.
- * Core palette: #28282A, #84848B, #D8D8DB, #F5F5F3, #FFFFFF
+ * Core palette: #28282A, #84848B, #D8D8DB, #f3f3f5, #FFFFFF
  * Uses Montserrat for headings and Figtree for body text.
  */
 
@@ -26,7 +26,7 @@ const stoneSyntax = defineSyntaxTheme({
     attribute: ['#8c6b30', '#d4b870'],
     property: ['#3a7c6b', '#70c4b0'],
     punctuation: ['#84848B', '#5a5a60'],
-    background: ['#F5F5F3', '#1a1a1c'],
+    background: ['#f3f3f5', '#1a1a1c'],
   },
 });
 
@@ -59,53 +59,53 @@ export const stoneTheme = defineTheme({
   tokens: {
     // =========================================================================
     // Colors — warm stone palette
-    // Core: #28282A, #84848B, #D8D8DB, #F5F5F3, #FFFFFF
+    // Core: #28282A, #84848B, #D8D8DB, #f3f3f5, #FFFFFF
     // =========================================================================
 
     // Core semantic
-    '--color-accent': ['#28282A', '#F5F5F3'],
-    '--color-accent-muted': ['#28282A14', '#F5F5F320'],
-    '--color-neutral': ['#28282A0F', '#F5F5F31A'],
+    '--color-accent': ['#28282A', '#f3f3f5'],
+    '--color-accent-muted': ['#28282A14', '#f3f3f520'],
+    '--color-neutral': ['#28282A0F', '#f3f3f51A'],
     '--color-background-surface': ['#FFFFFF', '#1a1a1c'],
-    '--color-background-body': ['#F5F5F3', '#111113'],
+    '--color-background-body': ['#f3f3f5', '#111113'],
     '--color-overlay': ['#28282A80', '#28282ACC'],
-    '--color-overlay-hover': ['#28282A0D', '#F5F5F30D'],
-    '--color-overlay-pressed': ['#28282A1A', '#F5F5F31A'],
-    '--color-background-muted': ['#F5F5F3', '#28282A'],
+    '--color-overlay-hover': ['#28282A0D', '#f3f3f50D'],
+    '--color-overlay-pressed': ['#28282A1A', '#f3f3f51A'],
+    '--color-background-muted': ['#f3f3f5', '#28282A'],
 
     // Text
-    '--color-text-primary': ['#28282A', '#F5F5F3'],
+    '--color-text-primary': ['#28282A', '#f3f3f5'],
     '--color-text-secondary': ['#84848B', '#a1a1a6'],
     '--color-text-disabled': ['#D8D8DB', '#5a5a60'],
-    '--color-text-accent': ['#28282A', '#F5F5F3'],
+    '--color-text-accent': ['#28282A', '#f3f3f5'],
     '--color-on-dark': '#FFFFFF',
     '--color-on-light': '#28282A',
     '--color-on-accent': ['#FFFFFF', '#28282A'],
-    '--color-on-success': ['#374c36', '#a7d1a6'],
-    '--color-on-error': ['#58413e', '#e9bcb5'],
-    '--color-on-warning': ['#524622', '#dec47f'],
+    '--color-on-success': ['#374c36', '#b4cdb2'],
+    '--color-on-error': ['#58413e', '#dcc0bc'],
+    '--color-on-warning': ['#524622', '#d7c59c'],
 
     // Icon
-    '--color-icon-accent': ['#28282A', '#F5F5F3'],
-    '--color-icon-primary': ['#28282A', '#F5F5F3'],
+    '--color-icon-accent': ['#28282A', '#f3f3f5'],
+    '--color-icon-primary': ['#28282A', '#f3f3f5'],
     '--color-icon-secondary': ['#84848B', '#a1a1a6'],
     '--color-icon-disabled': ['#D8D8DB', '#5a5a60'],
 
     // Surface variants
     '--color-background-card': ['#FFFFFF', '#1e1e20'],
     '--color-background-popover': ['#FFFFFF', '#28282A'],
-    '--color-background-inverted': ['#28282A', '#F5F5F3'],
+    '--color-background-inverted': ['#28282A', '#f3f3f5'],
 
-    // Status / Sentiment — uses default border for input borders
+    // Status / Sentiment — T50 light (full chroma) / T80 dark for icons and borders
     '--color-success': ['#84848B', '#5a5a60'],
-    '--color-success-muted': ['#d0e9ce', '#a7d1a6'],
+    '--color-success-muted': ['#d0e9ce', '#b4cdb2'],
     '--color-error': ['#84848B', '#5a5a60'],
-    '--color-error-muted': ['#f9dcd7', '#e9bcb5'],
+    '--color-error-muted': ['#f9dcd7', '#dcc0bc'],
     '--color-warning': ['#84848B', '#5a5a60'],
-    '--color-warning-muted': ['#f4e1b7', '#dec47f'],
+    '--color-warning-muted': ['#f4e1b7', '#d7c59c'],
 
     // Border
-    '--color-border': ['#DCDCDB', '#F5F5F31A'],
+    '--color-border': ['#dddcdf', '#f3f3f51A'],
     '--color-border-emphasized': ['#84848B', '#5a5a60'],
 
     // Effects
@@ -114,74 +114,65 @@ export const stoneTheme = defineTheme({
     '--color-tint-hover': ['black', 'white'],
 
     // Categorical — Blue (indigo blue)
-    // H=265 | Light: C=10 BG=T90/T30/T85 | Dark: C=16 BG=T80/T20/T75
-    '--color-background-blue': ['#d7e4f5', '#b3c8e4'],
-    '--color-border-blue': ['#c9d6e7', '#a5bbd6'],
-    '--color-icon-blue': ['#3c4856', '#1c3247'],
-    '--color-text-blue': ['#3c4856', '#1c3247'],
+    // Categorical — Blue H=265 C=10
+    '--color-background-blue': ['#d7e4f5', '#a0acbd'],
+    '--color-border-blue': ['#c9d6e7', '#939faf'],
+    '--color-icon-blue': ['#3c4856', '#1b2734'],
+    '--color-text-blue': ['#3c4856', '#1b2734'],
 
-    // Categorical — Cyan (aqua cyan)
-    // H=190 | Light: C=10 BG=T90/T30/T85 | Dark: C=16 BG=T80/T20/T75
-    '--color-background-cyan': ['#cce8e5', '#a2cfcb'],
-    '--color-border-cyan': ['#bedad7', '#94c1bd'],
-    '--color-icon-cyan': ['#334b49', '#083734'],
-    '--color-text-cyan': ['#334b49', '#083734'],
+    // Categorical — Cyan H=190 C=10
+    '--color-background-cyan': ['#cce8e5', '#95b1ae'],
+    '--color-border-cyan': ['#bedad7', '#88a3a0'],
+    '--color-icon-cyan': ['#334b49', '#122a28'],
+    '--color-text-cyan': ['#334b49', '#122a28'],
 
-    // Categorical — Gray (warm stone)
-    // H=91 | Light: C=6 BG=T90/T30/T85 | Dark: C=10 BG=T80/T20/T75
-    '--color-background-gray': ['#e7e2d7', '#cec6b4'],
-    '--color-border-gray': ['#d9d4c9', '#c0b8a6'],
-    '--color-icon-gray': ['#4a463d', '#353022'],
-    '--color-text-gray': ['#4a463d', '#353022'],
+    // Categorical — Gray H=291 C=3 (stone neutral)
+    '--color-background-gray': ['#e2e2e8', '#ababb0'],
+    '--color-border-gray': ['#d4d4da', '#9d9da3'],
+    '--color-icon-gray': ['#46464b', '#25252a'],
+    '--color-text-gray': ['#46464b', '#25252a'],
 
-    // Categorical — Green (sage green)
-    // H=142 | Light: C=17 BG=T90/T30/T85 | Dark: C=28 BG=T80/T20/T75
-    '--color-background-green': ['#d0e9ce', '#a7d1a6'],
-    '--color-border-green': ['#c2dbc0', '#9ac398'],
-    '--color-icon-green': ['#374c36', '#123816'],
-    '--color-text-green': ['#374c36', '#123816'],
+    // Categorical — Green H=142 C=17
+    '--color-background-green': ['#d0e9ce', '#99b298'],
+    '--color-border-green': ['#c2dbc0', '#8ca48b'],
+    '--color-icon-green': ['#374c36', '#162a16'],
+    '--color-text-green': ['#374c36', '#162a16'],
 
-    // Categorical — Orange (warm amber)
-    // H=70 | Light: C=22 BG=T90/T30/T85 | Dark: C=36 BG=T80/T20/T75
-    '--color-background-orange': ['#ffdcbb', '#f1bd88'],
-    '--color-border-orange': ['#f1ceae', '#e2af7b'],
-    '--color-icon-orange': ['#5b4227', '#4b2800'],
-    '--color-text-orange': ['#5b4227', '#4b2800'],
+    // Categorical — Orange H=70 C=22
+    '--color-background-orange': ['#ffdcbb', '#c6a586'],
+    '--color-border-orange': ['#f1ceae', '#b89879'],
+    '--color-icon-orange': ['#5b4227', '#372104'],
+    '--color-text-orange': ['#5b4227', '#372104'],
 
-    // Categorical — Pink (dusty rose)
-    // H=340 | Light: C=9 BG=T90/T30/T85 | Dark: C=15 BG=T80/T20/T75
-    '--color-background-pink': ['#f0dde8', '#ddbed0'],
-    '--color-border-pink': ['#e2cfda', '#cfb0c2'],
-    '--color-icon-pink': ['#52424c', '#412938'],
-    '--color-text-pink': ['#52424c', '#412938'],
+    // Categorical — Pink H=340 C=9
+    '--color-background-pink': ['#f0dde8', '#b8a6b1'],
+    '--color-border-pink': ['#e2cfda', '#ab99a3'],
+    '--color-icon-pink': ['#52424c', '#30222a'],
+    '--color-text-pink': ['#52424c', '#30222a'],
 
-    // Categorical — Purple (dusty lavender)
-    // H=307 | Light: C=11 BG=T90/T30/T85 | Dark: C=18 BG=T80/T20/T75
-    '--color-background-purple': ['#e8dff3', '#cec1e1'],
-    '--color-border-purple': ['#d9d1e5', '#c1b3d3'],
-    '--color-icon-purple': ['#4b4454', '#362c45'],
-    '--color-text-purple': ['#4b4454', '#362c45'],
+    // Categorical — Purple H=307 C=11
+    '--color-background-purple': ['#e8dff3', '#b0a8bb'],
+    '--color-border-purple': ['#d9d1e5', '#a39aad'],
+    '--color-icon-purple': ['#4b4454', '#292332'],
+    '--color-text-purple': ['#4b4454', '#292332'],
 
-    // Categorical — Red (terracotta)
-    // H=33 | Light: C=11 BG=T90/T30/T85 | Dark: C=18 BG=T80/T20/T75
-    '--color-background-red': ['#f9dcd7', '#e9bcb5'],
-    '--color-border-red': ['#ebcec9', '#dbaea7'],
-    '--color-icon-red': ['#58413e', '#492723'],
-    '--color-text-red': ['#58413e', '#492723'],
+    // Categorical — Red H=33 C=11
+    '--color-background-red': ['#f9dcd7', '#c0a5a1'],
+    '--color-border-red': ['#ebcec9', '#b39893'],
+    '--color-icon-red': ['#58413e', '#35211e'],
+    '--color-text-red': ['#58413e', '#35211e'],
 
-    // Categorical — Teal (sage-teal)
-    // H=158 | Light: C=9 BG=T90/T30/T85 | Dark: C=15 BG=T80/T20/T75
-    '--color-background-teal': ['#d4e7dc', '#afcebb'],
-    '--color-border-teal': ['#c6d9ce', '#a1c0ae'],
-    '--color-icon-teal': ['#3b4a41', '#1c3628'],
-    '--color-text-teal': ['#3b4a41', '#1c3628'],
+    // Categorical — Teal H=158 C=9
+    '--color-background-teal': ['#d4e7dc', '#9dafa5'],
+    '--color-border-teal': ['#c6d9ce', '#90a297'],
+    '--color-icon-teal': ['#3b4a41', '#1a2921'],
+    '--color-text-teal': ['#3b4a41', '#1a2921'],
 
-    // Categorical — Yellow (warm gold)
-    // H=90 | Light: C=23 BG=T90/T30/T85 | Dark: C=38 BG=T80/T20/T75
-    '--color-background-yellow': ['#f4e1b7', '#dec47f'],
-    '--color-border-yellow': ['#e5d3a9', '#d0b672'],
-    '--color-icon-yellow': ['#524622', '#3d2f00'],
-    '--color-text-yellow': ['#524622', '#3d2f00'],
+    // Categorical — Yellow H=90 C=23
+    '--color-background-yellow': ['#f4e1b7', '#bbaa81'],
+    '--color-border-yellow': ['#e5d3a9', '#ad9c75'],
+    '--color-icon-yellow': ['#524622', '#2f2500'],
+    '--color-text-yellow': ['#524622', '#2f2500'],
 
     // =========================================================================
     // Radius — clean and subtle
@@ -223,54 +214,59 @@ export const stoneTheme = defineTheme({
           backgroundColor: 'var(--color-neutral)',
         },
       },
+      'variant:destructive': {
+        backgroundColor: 'light-dark(#f9dcd7, #e2beb9)',
+        color: 'light-dark(#58413e, #503430)',
+      },
     },
 
     badge: {
       'variant:info': {
-        backgroundColor: 'var(--color-background-blue)',
-        color: 'var(--color-text-blue)',
+        backgroundColor: 'light-dark(#d7e4f5, #bbc8d9)',
+        color: 'light-dark(#3c4856, #313c4a)',
       },
       'variant:neutral': {
-        backgroundColor: 'var(--color-neutral)',
-        color: 'var(--color-text-primary)',
+        backgroundColor: 'light-dark(#e2e2e8, #c6c6cc)',
+        color: 'light-dark(#46464b, #3b3b3f)',
       },
       'variant:success': {
-        backgroundColor: 'var(--color-background-green)',
-        color: 'var(--color-text-green)',
+        backgroundColor: 'light-dark(#d0e9ce, #b4cdb2)',
+        color: 'light-dark(#374c36, #2b402b)',
       },
       'variant:warning': {
-        backgroundColor: 'var(--color-background-yellow)',
-        color: 'var(--color-text-yellow)',
+        backgroundColor: 'light-dark(#f4e1b7, #d7c59c)',
+        color: 'light-dark(#524622, #463a18)',
       },
       'variant:error': {
-        backgroundColor: 'var(--color-background-red)',
-        color: 'var(--color-text-red)',
+        backgroundColor: 'light-dark(#f9dcd7, #dcc0bc)',
+        color: 'light-dark(#58413e, #4c3633)',
       },
     },
 
     banner: {
       'status:info': {
-        backgroundColor: 'var(--color-background-blue)',
-        '--color-text-primary': 'var(--color-text-blue)',
-        '--color-text-secondary': 'var(--color-text-blue)',
+        backgroundColor: 'light-dark(#d7e4f5, #bbc8d9)',
+        '--color-text-primary': 'light-dark(#3c4856, #313c4a)',
+        '--color-text-secondary': 'light-dark(#3c4856, #313c4a)',
+        '--color-accent': 'light-dark(#3c4856, #313c4a)',
       },
       'status:success': {
-        backgroundColor: 'var(--color-background-green)',
-        '--color-text-primary': 'var(--color-text-green)',
-        '--color-text-secondary': 'var(--color-text-green)',
-        '--color-success': 'var(--color-text-green)',
+        backgroundColor: 'light-dark(#d0e9ce, #b4cdb2)',
+        '--color-text-primary': 'light-dark(#374c36, #2b402b)',
+        '--color-text-secondary': 'light-dark(#374c36, #2b402b)',
+        '--color-success': 'light-dark(#374c36, #2b402b)',
       },
       'status:warning': {
-        backgroundColor: 'var(--color-background-yellow)',
-        '--color-text-primary': 'var(--color-text-yellow)',
-        '--color-text-secondary': 'var(--color-text-yellow)',
-        '--color-warning': 'var(--color-text-yellow)',
+        backgroundColor: 'light-dark(#f4e1b7, #d7c59c)',
+        '--color-text-primary': 'light-dark(#524622, #463a18)',
+        '--color-text-secondary': 'light-dark(#524622, #463a18)',
+        '--color-warning': 'light-dark(#524622, #463a18)',
       },
       'status:error': {
-        backgroundColor: 'var(--color-background-red)',
-        '--color-text-primary': 'var(--color-text-red)',
-        '--color-text-secondary': 'var(--color-text-red)',
-        '--color-error': 'var(--color-text-red)',
+        backgroundColor: 'light-dark(#f9dcd7, #dcc0bc)',
+        '--color-text-primary': 'light-dark(#58413e, #4c3633)',
+        '--color-text-secondary': 'light-dark(#58413e, #4c3633)',
+        '--color-error': 'light-dark(#58413e, #4c3633)',
       },
     },
 

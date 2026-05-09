@@ -177,7 +177,7 @@ function hctToHex({hue, chroma, tone}: HCT): string {
   return best;
 }
 
-const TONE_STEPS = [0, 5, 10, 15, 20, 25, 30, 40, 50, 60, 70, 75, 80, 90, 95, 100];
+const TONE_STEPS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100];
 
 function tonalPalette(
   hue: number,
@@ -190,7 +190,7 @@ function tonalPalette(
 }
 
 const TONAL_COLORS = [
-  {name: 'Stone Neutral', sourceHex: '#84848B'},
+  {name: 'Stone Neutral', sourceHex: '#D8D8DB'},
   {name: 'Blue', sourceHex: '#d7e4f5'},
   {name: 'Cyan', sourceHex: '#cce8e5'},
   {name: 'Green', sourceHex: '#d0e9ce', semantic: 'Success'},
@@ -208,7 +208,7 @@ const CORE = [
   {hex: '#28282A', name: 'Stone 900'},
   {hex: '#84848B', name: 'Stone 500'},
   {hex: '#D8D8DB', name: 'Stone 300'},
-  {hex: '#F5F5F3', name: 'Stone 100'},
+  {hex: '#f3f3f5', name: 'Stone 100'},
   {hex: '#FFFFFF', name: 'White'},
 ];
 
@@ -228,10 +228,10 @@ interface Surfaces {
 
 const SURFACES: Record<Mode, Surfaces> = {
   light: {
-    body: '#F5F5F3',
+    body: '#f3f3f5',
     surface: '#FFFFFF',
     card: '#FFFFFF',
-    border: '#DCDCDB',
+    border: '#dddcdf',
     borderEmphasized: '#84848B',
     textPrimary: '#28282A',
     textSecondary: '#84848B',
@@ -244,9 +244,9 @@ const SURFACES: Record<Mode, Surfaces> = {
     card: '#1e1e20',
     border: '#3a3a3c',
     borderEmphasized: '#5a5a60',
-    textPrimary: '#F5F5F3',
+    textPrimary: '#f3f3f5',
     textSecondary: '#a1a1a6',
-    accent: '#F5F5F3',
+    accent: '#f3f3f5',
     onAccent: '#28282A',
   },
 };
@@ -312,7 +312,7 @@ const MONO = "'JetBrains Mono', 'SF Mono', Menlo, monospace";
 const S = {
   page: {
     minHeight: '100vh',
-    background: '#F5F5F3',
+    background: '#f3f3f5',
     color: '#28282A',
     fontFamily: FONT,
     padding: '40px 32px',
@@ -343,7 +343,7 @@ const S = {
     ({
       background: bg,
       color: fg,
-      border: '1px solid #DCDCDB',
+      border: '1px solid #dddcdf',
       borderRadius: 16,
       padding: 24,
       display: 'flex',
@@ -606,11 +606,26 @@ function ButtonSection() {
   return (
     <div style={S.section}>
       <h3 style={S.sectionTitle}>Buttons</h3>
-      <XDSHStack gap={3} vAlign="center">
-        <XDSButton label="Primary" variant="primary" />
-        <XDSButton label="Secondary" variant="secondary" />
-        <XDSButton label="Ghost" variant="ghost" />
-      </XDSHStack>
+      <XDSVStack gap={4}>
+        <div>
+          <div style={{fontSize: 10, fontFamily: MONO, opacity: 0.6, marginBottom: 6}}>Default</div>
+          <XDSHStack gap={3} vAlign="center">
+            <XDSButton label="Primary" variant="primary" />
+            <XDSButton label="Secondary" variant="secondary" />
+            <XDSButton label="Ghost" variant="ghost" />
+            <XDSButton label="Destructive" variant="destructive" />
+          </XDSHStack>
+        </div>
+        <div>
+          <div style={{fontSize: 10, fontFamily: MONO, opacity: 0.6, marginBottom: 6}}>Disabled</div>
+          <XDSHStack gap={3} vAlign="center">
+            <XDSButton label="Primary" variant="primary" isDisabled />
+            <XDSButton label="Secondary" variant="secondary" isDisabled />
+            <XDSButton label="Ghost" variant="ghost" isDisabled />
+            <XDSButton label="Destructive" variant="destructive" isDisabled />
+          </XDSHStack>
+        </div>
+      </XDSVStack>
     </div>
   );
 }
