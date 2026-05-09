@@ -395,7 +395,7 @@ export interface XDSBaseTableProps<T extends Record<string, unknown>> {
    * Only affects cells using the default renderer (no `renderCell`).
    * Cells with `renderCell` control their own overflow behavior.
    *
-   * @default 'truncate'
+   * @default 'wrap'
    */
   textOverflow?: 'wrap' | 'truncate';
   /**

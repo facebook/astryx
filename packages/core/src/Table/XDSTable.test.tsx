@@ -106,14 +106,23 @@ describe('columnUtils', () => {
       expect(generateColumns([])).toEqual([]);
     });
 
-    it('assigns proportional(1) width with default minWidth to each column', () => {
+    it('assigns content-proportional widths based on data analysis', () => {
+      const cols = generateColumns(users);
+      // All columns should have proportional type
+      for (const col of cols) {
+        expect(col.width?.type).toBe('proportional');
+      }
+      // Columns with longer content should get higher proportion
+      const emailCol = cols.find(c => c.key === 'email')!;
+      const ageCol = cols.find(c => c.key === 'age')!;
+      expect(emailCol.width!.value).toBeGreaterThan(ageCol.width!.value);
+    });
+
+    it('derives min-width from header or longest word', () => {
       const cols = generateColumns(users);
       for (const col of cols) {
-        expect(col.width).toEqual({
-          type: 'proportional',
-          value: 1,
-          minWidth: DEFAULT_MIN_COLUMN_WIDTH,
-        });
+        // Min-width should be at least the floor
+        expect((col.width as ProportionalWidth).minWidth).toBeGreaterThanOrEqual(60);
       }
     });
   });
@@ -550,6 +559,27 @@ describe('XDSTable', () => {
     expect(wrapper!.className).toContain('xds-table-scroll-wrapper');
   });
 
+  it('uses table-layout: auto in children mode', () => {
+    const {container} = render(
+      <XDSTable dividers="rows">
+        <tbody>
+          <tr><td>Content</td></tr>
+        </tbody>
+      </XDSTable>,
+    );
+    const table = container.querySelector('table');
+    expect(table).toHaveStyle({tableLayout: 'auto'});
+  });
+
+  it('uses table-layout: fixed in data-driven mode', () => {
+    const {container} = render(
+      <XDSTable data={users} columns={columns} />,
+    );
+    const table = container.querySelector('table');
+    expect(table).toHaveStyle({tableLayout: 'fixed'});
+  });
+
+
   it('renders all data values', () => {
     render(<XDSTable data={users} columns={columns} />);
     expect(screen.getByText('Alice')).toBeInTheDocument();
@@ -732,13 +762,12 @@ describe('XDSTable', () => {
     );
   });
 
-  it('truncates text by default (textOverflow="truncate")', () => {
+  it('wraps text by default (textOverflow="wrap")', () => {
     render(<XDSTable data={users} columns={columns} />);
     const cells = screen.getAllByRole('cell');
-    // Default-rendered cells contain an XDSText child element (a <span>)
-    const textEl = cells[0].querySelector('span');
-    expect(textEl).toBeTruthy();
-    expect(textEl).toHaveTextContent('Alice');
+    // In wrap mode, no XDSText wrapper — content renders directly
+    expect(cells[0]).toHaveTextContent('Alice');
+    expect(cells[0]).not.toHaveAttribute('title');
   });
 
   it('wraps text when textOverflow="wrap"', () => {
