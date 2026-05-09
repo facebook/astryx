@@ -579,7 +579,7 @@ function TextRampSection() {
     h3: (base * ratio ** 2).toFixed(1),
     h4: (base * ratio ** 1).toFixed(1),
     body: base.toFixed(1),
-    supporting: (base / ratio).toFixed(1),
+    supporting: '12.0',
   };
   return (
     <div style={S.section}>

@@ -114,6 +114,9 @@ export const stoneTheme = defineTheme({
     '--color-shadow': ['#28282a1A', '#0000004D'],
     '--color-tint-hover': ['black', 'white'],
 
+    // Typography override
+    '--text-supporting-size': '12px',
+
     // Categorical — Blue (indigo blue)
     // Categorical — Blue H=265 C=10
     '--color-background-blue': ['#d7e4f5', '#a0acbd'],
