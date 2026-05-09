@@ -1390,11 +1390,11 @@ function renderBlock(
                 {node.headers.map((h, i) => (
                   <XDSTableHeaderCell
                     key={i}
-                    {...stylex.props(
+                    xstyle={[
                       dynamicStyles.cellMinWidth(`${colMinWidths[i]}px`),
                       node.alignments[i] === 'center' && cellAlignStyles.center,
                       node.alignments[i] === 'right' && cellAlignStyles.right,
-                    )}>
+                    ]}>
                     {h.children.map((c, j) =>
                       renderInline(c, j, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins, components),
                     )}
@@ -1409,10 +1409,10 @@ function renderBlock(
                 const cells = row.map((cell, j) => (
                   <XDSTableCell
                     key={j}
-                    {...stylex.props(
+                    xstyle={[
                       node.alignments[j] === 'center' && cellAlignStyles.center,
                       node.alignments[j] === 'right' && cellAlignStyles.right,
-                    )}>
+                    ]}>
                     {cell.children.map((c, k) =>
                       renderInline(c, k, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins, components),
                     )}
