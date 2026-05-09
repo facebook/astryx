@@ -52,9 +52,6 @@ export type {
   BodyRowRenderProps,
   BodyCellRenderProps,
   XDSBaseTableProps,
-  TableRowComponentProps,
-  TableCellComponentProps,
-  TableHeaderCellComponentProps,
 } from './types';
 export type {
   XDSTableProps,

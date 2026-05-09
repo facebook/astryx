@@ -18,9 +18,6 @@ import {useMemo, type ReactElement, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {XDSBaseTable} from './XDSBaseTable';
-import {XDSTableRow} from './XDSTableRow';
-import {XDSTableCell} from './XDSTableCell';
-import {XDSTableHeaderCell} from './XDSTableHeaderCell';
 import {XDSTableContext} from './XDSTableContext';
 import {useXDSBaseTablePlugins} from './useXDSBaseTablePlugins';
 import {xdsClassName, mergeProps} from '../utils';
@@ -29,9 +26,7 @@ import type {
   XDSTableVerticalAlign,
   TablePlugin,
   TableRenderProps,
-  TableRowComponentProps,
-  TableCellComponentProps,
-  TableHeaderCellComponentProps,
+
 } from './types';
 
 // =============================================================================
@@ -174,16 +169,7 @@ function buildTableStylePlugin<
   };
 }
 
-// Stable component references for the components prop.
-// XDSTable* components accept XDSBaseProps (narrower than the internal
-// Table*ComponentProps interfaces), but they spread ...props on their HTML
-// elements, so extra attributes from the plugin pipeline pass through safely.
-const xdsComponents = {
-  Row: XDSTableRow as unknown as React.ComponentType<TableRowComponentProps>,
-  Cell: XDSTableCell as unknown as React.ComponentType<TableCellComponentProps>,
-  HeaderCell:
-    XDSTableHeaderCell as unknown as React.ComponentType<TableHeaderCellComponentProps>,
-};
+
 
 // =============================================================================
 // XDSTable Component
@@ -228,7 +214,6 @@ function XDSTableInner<T extends Record<string, unknown>>({
         data={data}
         columns={columns}
         plugins={mergedPlugins}
-        components={xdsComponents}
         textOverflow={textOverflow}
         scrollWrapper={TableScrollWrapper}
         {...rest}

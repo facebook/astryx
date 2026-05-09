@@ -264,7 +264,6 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
   columns: columnsProp,
   idKey,
   plugins: pluginsProp,
-  components,
   children,
   tableProps: userTableProps,
   textOverflow = 'wrap',
@@ -275,12 +274,9 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
   // Use stable empty array when no plugins provided
   const plugins = pluginsProp ?? (EMPTY_PLUGINS as TablePlugin<T>[]);
 
-  const RowComponent = (components?.Row ??
-    XDSTableRow) as React.ComponentType<TableRowComponentProps>;
-  const CellComponent = (components?.Cell ??
-    XDSTableCell) as React.ComponentType<TableCellComponentProps>;
-  const HeaderCellComponent = (components?.HeaderCell ??
-    XDSTableHeaderCell) as React.ComponentType<TableHeaderCellComponentProps>;
+  const RowComponent = XDSTableRow as React.ComponentType<TableRowComponentProps>;
+  const CellComponent = XDSTableCell as React.ComponentType<TableCellComponentProps>;
+  const HeaderCellComponent = XDSTableHeaderCell as React.ComponentType<TableHeaderCellComponentProps>;
 
   // Resolve columns: explicit > auto-generated from data.
   const baseColumns: XDSTableColumn<T>[] =

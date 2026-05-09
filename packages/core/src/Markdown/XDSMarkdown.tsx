@@ -1348,7 +1348,7 @@ function renderBlock(
     case 'table': {
       return (
         <div key={index} {...stylex.props(styles.tableWrapper, spacing, styles.blockIndent, contentWidthValue != null ? dynamicStyles.blockWidth(contentWidthValue) : null, BLOCK_ALIGN_MARGIN[contentAlign] != null ? dynamicStyles.blockAlign(BLOCK_ALIGN_MARGIN[contentAlign]!) : null, isFirst && styles.noMarginBlockStart, isLast && styles.noMarginBlockEnd)}>
-          <XDSTable density="compact" dividers="rows">
+          <XDSTable dividers="rows">
             <XDSTableHeader>
               <XDSTableRow>
                 {node.headers.map((h, i) => (
