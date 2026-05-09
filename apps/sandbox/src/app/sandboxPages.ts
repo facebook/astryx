@@ -105,6 +105,25 @@ export const categories: SandboxCategory[] = [
     ],
   },
   {
+    label: 'Themes',
+    slug: 'themes',
+    description: 'Theme palette previews and design token references.',
+    pages: [
+      {
+        name: 'Stone Palette',
+        href: '/pages/stone-palette/',
+        description:
+          'Stone theme tonal palettes, badges, banners, inputs, and buttons in light and dark mode',
+      },
+      {
+        name: 'Color Studio',
+        href: '/pages/color-studio/',
+        description:
+          'Generate and explore color palettes from an accent color or image',
+      },
+    ],
+  },
+  {
     label: 'Tools',
     slug: 'tools',
     description: 'Interactive tools for building and exploring XDS components.',
@@ -137,12 +156,6 @@ export const categories: SandboxCategory[] = [
         href: '/pages/dictation-lab/',
         description:
           'Test voice dictation, tune sound effects, and explore animation',
-      },
-      {
-        name: 'Color Studio',
-        href: '/pages/color-studio/',
-        description:
-          'Generate and explore color palettes from an accent color or image',
       },
     ],
   },
