@@ -1380,7 +1380,14 @@ function renderBlock(
         <div
           key={index}
           {...stylex.props(
+            styles.tableWrapper,
             spacing,
+            contentWidthValue != null
+              ? dynamicStyles.blockWidth(contentWidthValue)
+              : null,
+            BLOCK_ALIGN_MARGIN[contentAlign] != null
+              ? dynamicStyles.blockAlign(BLOCK_ALIGN_MARGIN[contentAlign]!)
+              : null,
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
           )}>
