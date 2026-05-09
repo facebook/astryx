@@ -81,9 +81,9 @@ export const stoneTheme = defineTheme({
     '--color-on-dark': '#FFFFFF',
     '--color-on-light': '#28282A',
     '--color-on-accent': ['#FFFFFF', '#28282A'],
-    '--color-on-success': ['#FFFFFF', '#28282A'],
-    '--color-on-error': ['#FFFFFF', '#28282A'],
-    '--color-on-warning': ['#28282A', '#28282A'],
+    '--color-on-success': ['#374c36', '#a7d1a6'],
+    '--color-on-error': ['#58413e', '#e9bcb5'],
+    '--color-on-warning': ['#524622', '#dec47f'],
 
     // Icon
     '--color-icon-accent': ['#28282A', '#F5F5F3'],
@@ -96,16 +96,16 @@ export const stoneTheme = defineTheme({
     '--color-background-popover': ['#FFFFFF', '#28282A'],
     '--color-background-inverted': ['#28282A', '#F5F5F3'],
 
-    // Status / Sentiment
-    '--color-success': ['#109936', '#34c265'],
-    '--color-success-muted': ['#10993620', '#34c26520'],
-    '--color-error': ['#FD0000', '#ff5c5c'],
-    '--color-error-muted': ['#FD000020', '#ff5c5c20'],
-    '--color-warning': ['#FFB600', '#ffc940'],
-    '--color-warning-muted': ['#FFB60020', '#ffc94020'],
+    // Status / Sentiment — uses default border for input borders
+    '--color-success': ['#84848B', '#5a5a60'],
+    '--color-success-muted': ['#d0e9ce', '#a7d1a6'],
+    '--color-error': ['#84848B', '#5a5a60'],
+    '--color-error-muted': ['#f9dcd7', '#e9bcb5'],
+    '--color-warning': ['#84848B', '#5a5a60'],
+    '--color-warning-muted': ['#f4e1b7', '#dec47f'],
 
     // Border
-    '--color-border': ['#D8D8DB', '#F5F5F31A'],
+    '--color-border': ['#DCDCDB', '#F5F5F31A'],
     '--color-border-emphasized': ['#84848B', '#5a5a60'],
 
     // Effects
@@ -113,65 +113,75 @@ export const stoneTheme = defineTheme({
     '--color-shadow': ['#28282A1A', '#0000004D'],
     '--color-tint-hover': ['black', 'white'],
 
-    // Categorical — Blue
-    '--color-background-blue': ['#3a5e8c33', '#3a5e8c33'],
-    '--color-border-blue': ['#3a5e8c', '#7ba8d4'],
-    '--color-icon-blue': ['#3a5e8c', '#7ba8d4'],
-    '--color-text-blue': ['#2e4a6e', '#8dbce0'],
+    // Categorical — Blue (indigo blue)
+    // H=265 | Light: C=10 BG=T90/T30/T85 | Dark: C=16 BG=T80/T20/T75
+    '--color-background-blue': ['#d7e4f5', '#b3c8e4'],
+    '--color-border-blue': ['#c9d6e7', '#a5bbd6'],
+    '--color-icon-blue': ['#3c4856', '#1c3247'],
+    '--color-text-blue': ['#3c4856', '#1c3247'],
 
-    // Categorical — Cyan
-    '--color-background-cyan': ['#3a7c7c33', '#3a7c7c33'],
-    '--color-border-cyan': ['#3a7c7c', '#70c4c4'],
-    '--color-icon-cyan': ['#3a7c7c', '#70c4c4'],
-    '--color-text-cyan': ['#2e6060', '#82d4d4'],
+    // Categorical — Cyan (aqua cyan)
+    // H=190 | Light: C=10 BG=T90/T30/T85 | Dark: C=16 BG=T80/T20/T75
+    '--color-background-cyan': ['#cce8e5', '#a2cfcb'],
+    '--color-border-cyan': ['#bedad7', '#94c1bd'],
+    '--color-icon-cyan': ['#334b49', '#083734'],
+    '--color-text-cyan': ['#334b49', '#083734'],
 
-    // Categorical — Gray
-    '--color-background-gray': ['#84848B33', '#5a5a6033'],
-    '--color-border-gray': ['#84848B', '#84848B'],
-    '--color-icon-gray': ['#84848B', '#a1a1a6'],
-    '--color-text-gray': ['#28282A', '#F5F5F3'],
+    // Categorical — Gray (warm stone)
+    // H=91 | Light: C=6 BG=T90/T30/T85 | Dark: C=10 BG=T80/T20/T75
+    '--color-background-gray': ['#e7e2d7', '#cec6b4'],
+    '--color-border-gray': ['#d9d4c9', '#c0b8a6'],
+    '--color-icon-gray': ['#4a463d', '#353022'],
+    '--color-text-gray': ['#4a463d', '#353022'],
 
-    // Categorical — Green
-    '--color-background-green': ['#10993633', '#34c26533'],
-    '--color-border-green': ['#109936', '#34c265'],
-    '--color-icon-green': ['#109936', '#34c265'],
-    '--color-text-green': ['#0d7a2b', '#3fd672'],
+    // Categorical — Green (sage green)
+    // H=142 | Light: C=17 BG=T90/T30/T85 | Dark: C=28 BG=T80/T20/T75
+    '--color-background-green': ['#d0e9ce', '#a7d1a6'],
+    '--color-border-green': ['#c2dbc0', '#9ac398'],
+    '--color-icon-green': ['#374c36', '#123816'],
+    '--color-text-green': ['#374c36', '#123816'],
 
-    // Categorical — Orange
-    '--color-background-orange': ['#c4762033', '#d4903a33'],
-    '--color-border-orange': ['#c47620', '#d4903a'],
-    '--color-icon-orange': ['#c47620', '#d4903a'],
-    '--color-text-orange': ['#a06018', '#e0a04a'],
+    // Categorical — Orange (warm amber)
+    // H=70 | Light: C=22 BG=T90/T30/T85 | Dark: C=36 BG=T80/T20/T75
+    '--color-background-orange': ['#ffdcbb', '#f1bd88'],
+    '--color-border-orange': ['#f1ceae', '#e2af7b'],
+    '--color-icon-orange': ['#5b4227', '#4b2800'],
+    '--color-text-orange': ['#5b4227', '#4b2800'],
 
-    // Categorical — Pink
-    '--color-background-pink': ['#c44a7033', '#e07a9a33'],
-    '--color-border-pink': ['#c44a70', '#e07a9a'],
-    '--color-icon-pink': ['#c44a70', '#e07a9a'],
-    '--color-text-pink': ['#a03a5a', '#f08aaa'],
+    // Categorical — Pink (dusty rose)
+    // H=340 | Light: C=9 BG=T90/T30/T85 | Dark: C=15 BG=T80/T20/T75
+    '--color-background-pink': ['#f0dde8', '#ddbed0'],
+    '--color-border-pink': ['#e2cfda', '#cfb0c2'],
+    '--color-icon-pink': ['#52424c', '#412938'],
+    '--color-text-pink': ['#52424c', '#412938'],
 
-    // Categorical — Purple
-    '--color-background-purple': ['#6b4a8c33', '#b08ed433'],
-    '--color-border-purple': ['#6b4a8c', '#b08ed4'],
-    '--color-icon-purple': ['#6b4a8c', '#b08ed4'],
-    '--color-text-purple': ['#553a70', '#c0a0e0'],
+    // Categorical — Purple (dusty lavender)
+    // H=307 | Light: C=11 BG=T90/T30/T85 | Dark: C=18 BG=T80/T20/T75
+    '--color-background-purple': ['#e8dff3', '#cec1e1'],
+    '--color-border-purple': ['#d9d1e5', '#c1b3d3'],
+    '--color-icon-purple': ['#4b4454', '#362c45'],
+    '--color-text-purple': ['#4b4454', '#362c45'],
 
-    // Categorical — Red
-    '--color-background-red': ['#FD000033', '#ff5c5c33'],
-    '--color-border-red': ['#FD0000', '#ff5c5c'],
-    '--color-icon-red': ['#FD0000', '#ff5c5c'],
-    '--color-text-red': ['#cc0000', '#ff7a7a'],
+    // Categorical — Red (terracotta)
+    // H=33 | Light: C=11 BG=T90/T30/T85 | Dark: C=18 BG=T80/T20/T75
+    '--color-background-red': ['#f9dcd7', '#e9bcb5'],
+    '--color-border-red': ['#ebcec9', '#dbaea7'],
+    '--color-icon-red': ['#58413e', '#492723'],
+    '--color-text-red': ['#58413e', '#492723'],
 
-    // Categorical — Teal
-    '--color-background-teal': ['#2e6b5a33', '#5ab89833'],
-    '--color-border-teal': ['#2e6b5a', '#5ab898'],
-    '--color-icon-teal': ['#2e6b5a', '#5ab898'],
-    '--color-text-teal': ['#245546', '#6ccaaa'],
+    // Categorical — Teal (sage-teal)
+    // H=158 | Light: C=9 BG=T90/T30/T85 | Dark: C=15 BG=T80/T20/T75
+    '--color-background-teal': ['#d4e7dc', '#afcebb'],
+    '--color-border-teal': ['#c6d9ce', '#a1c0ae'],
+    '--color-icon-teal': ['#3b4a41', '#1c3628'],
+    '--color-text-teal': ['#3b4a41', '#1c3628'],
 
-    // Categorical — Yellow
-    '--color-background-yellow': ['#FFB60033', '#ffc94033'],
-    '--color-border-yellow': ['#FFB600', '#ffc940'],
-    '--color-icon-yellow': ['#FFB600', '#ffc940'],
-    '--color-text-yellow': ['#cc9200', '#ffd960'],
+    // Categorical — Yellow (warm gold)
+    // H=90 | Light: C=23 BG=T90/T30/T85 | Dark: C=38 BG=T80/T20/T75
+    '--color-background-yellow': ['#f4e1b7', '#dec47f'],
+    '--color-border-yellow': ['#e5d3a9', '#d0b672'],
+    '--color-icon-yellow': ['#524622', '#3d2f00'],
+    '--color-text-yellow': ['#524622', '#3d2f00'],
 
     // =========================================================================
     // Radius — clean and subtle
@@ -194,9 +204,9 @@ export const stoneTheme = defineTheme({
       '0 4px 6px #28282A1A, 0 12px 24px #28282A26',
     '--shadow-inset-hover': 'inset 0px 0px 0px 2px #28282A30',
     '--shadow-inset-selected': 'inset 0px 0px 0px 2px #28282A50',
-    '--shadow-inset-success': 'inset 0px 0px 0px 2px #10993650',
-    '--shadow-inset-warning': 'inset 0px 0px 0px 2px #FFB60050',
-    '--shadow-inset-error': 'inset 0px 0px 0px 2px #FD000050',
+    '--shadow-inset-success': 'inset 0px 0px 0px 2px light-dark(#374c3650, #a7d1a650)',
+    '--shadow-inset-warning': 'inset 0px 0px 0px 2px light-dark(#52462250, #dec47f50)',
+    '--shadow-inset-error': 'inset 0px 0px 0px 2px light-dark(#58413e50, #e9bcb550)',
   },
 
   components: {
@@ -205,11 +215,65 @@ export const stoneTheme = defineTheme({
         borderRadius: 'var(--radius-full)',
       },
       'variant:secondary': {
-        borderWidth: '1px',
+        backgroundColor: 'transparent',
+        borderWidth: '1.5px',
         borderStyle: 'solid',
-        borderColor: 'var(--color-border)',
+        borderColor: 'var(--color-border-emphasized)',
+        ':hover': {
+          backgroundColor: 'var(--color-neutral)',
+        },
       },
     },
+
+    badge: {
+      'variant:info': {
+        backgroundColor: 'var(--color-background-blue)',
+        color: 'var(--color-text-blue)',
+      },
+      'variant:neutral': {
+        backgroundColor: 'var(--color-neutral)',
+        color: 'var(--color-text-primary)',
+      },
+      'variant:success': {
+        backgroundColor: 'var(--color-background-green)',
+        color: 'var(--color-text-green)',
+      },
+      'variant:warning': {
+        backgroundColor: 'var(--color-background-yellow)',
+        color: 'var(--color-text-yellow)',
+      },
+      'variant:error': {
+        backgroundColor: 'var(--color-background-red)',
+        color: 'var(--color-text-red)',
+      },
+    },
+
+    banner: {
+      'status:info': {
+        backgroundColor: 'var(--color-background-blue)',
+        '--color-text-primary': 'var(--color-text-blue)',
+        '--color-text-secondary': 'var(--color-text-blue)',
+      },
+      'status:success': {
+        backgroundColor: 'var(--color-background-green)',
+        '--color-text-primary': 'var(--color-text-green)',
+        '--color-text-secondary': 'var(--color-text-green)',
+        '--color-success': 'var(--color-text-green)',
+      },
+      'status:warning': {
+        backgroundColor: 'var(--color-background-yellow)',
+        '--color-text-primary': 'var(--color-text-yellow)',
+        '--color-text-secondary': 'var(--color-text-yellow)',
+        '--color-warning': 'var(--color-text-yellow)',
+      },
+      'status:error': {
+        backgroundColor: 'var(--color-background-red)',
+        '--color-text-primary': 'var(--color-text-red)',
+        '--color-text-secondary': 'var(--color-text-red)',
+        '--color-error': 'var(--color-text-red)',
+      },
+    },
+
 
     card: {
       base: {
