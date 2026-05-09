@@ -181,20 +181,24 @@ export function defaultCellRenderer<T extends Record<string, unknown>>(
 
 /**
  * Estimate the display width of a value in characters.
- * Used for content-aware column proportioning.
+ * Only measures string and number values — objects, arrays, and other
+ * complex types return 0 (fall back to equal proportioning for that cell).
  */
 function estimateContentLength(value: unknown): number {
   if (value == null) return 0;
-  const str = String(value);
-  return str.length;
+  if (typeof value === 'string') return value.length;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value).length;
+  return 0;
 }
 
 /**
- * Find the longest single word in a string (for min-width estimation).
+ * Find the longest single word in a value (for min-width estimation).
  * A "word" is a contiguous non-whitespace sequence.
+ * Only measures string and number values — complex types return 0.
  */
 function longestWord(value: unknown): number {
   if (value == null) return 0;
+  if (typeof value !== 'string' && typeof value !== 'number' && typeof value !== 'boolean') return 0;
   const str = String(value);
   let max = 0;
   let current = 0;
@@ -211,9 +215,6 @@ function longestWord(value: unknown): number {
 
 /** Minimum floor for any column (px). Prevents collapse on narrow viewports. */
 const MIN_COLUMN_FLOOR = 60;
-
-/** Maximum proportion cap — no single column gets more than this share. */
-const MAX_PROPORTION_CAP = 4;
 
 /** Scale factor: approximate px per character for min-width calculation. */
 const PX_PER_CHAR = 8;
@@ -252,12 +253,14 @@ export function generateColumns<T extends Record<string, unknown>>(
     return {key, headerLen, maxContentLen, maxWordLen};
   });
 
-  // Derive proportional weights (capped so one column doesn't dominate)
-  const weights = measurements.map(m => Math.min(m.maxContentLen, MAX_PROPORTION_CAP * 10));
-  const minWeight = Math.max(...weights.map(w => Math.max(w, 1)));
+  return measurements.map(m => {
+    // Bucket content length into proportional tiers:
+    // 1 = short (≤6 chars: IDs, ages, booleans, status)
+    // 2 = medium (7–15 chars: names, dates, short strings)
+    // 3 = long (>15 chars: emails, URLs, descriptions)
+    const proportion =
+      m.maxContentLen <= 6 ? 1 : m.maxContentLen <= 15 ? 2 : 3;
 
-  return measurements.map((m, i) => {
-    const proportion = Math.max(weights[i] / minWeight, 0.25);
     // Min-width: enough to fit header or longest word without wrapping
     const minWidth = Math.max(
       Math.max(m.headerLen, m.maxWordLen) * PX_PER_CHAR,

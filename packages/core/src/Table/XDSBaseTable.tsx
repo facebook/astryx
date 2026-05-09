@@ -311,7 +311,7 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
   // --- Plugin pipeline: table ---
   const tableRenderProps = applyPlugins(plugins, p => p.transformTable, {
     htmlProps: {...userTableProps},
-    styles: [styles.table, ...(children ? [styles.tableAutoLayout] : [])],
+    styles: children ? [styles.table, styles.tableAutoLayout] : [styles.table],
   } as TableRenderProps);
 
   // --- Plugin pipeline: header cells ---
