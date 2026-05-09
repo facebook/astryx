@@ -1346,27 +1346,85 @@ function renderBlock(
       );
     }
     case 'table': {
+      // Derive column min-widths from max content length (header + body).
+      // Clamp between 60px and 240px, scale ~8px per character.
+      const colWidths = node.headers.map((h, colIdx) => {
+        let maxLen = countInlineTextLength(h.children);
+        for (const row of node.rows) {
+          if (row[colIdx]) {
+            const cellLen = countInlineTextLength(row[colIdx].children);
+            if (cellLen > maxLen) maxLen = cellLen;
+          }
+        }
+        return Math.min(Math.max(maxLen * 8, 60), 240);
+      });
+
       return (
-        <div key={index} {...stylex.props(styles.tableWrapper, spacing, styles.blockIndent, contentWidthValue != null ? dynamicStyles.blockWidth(contentWidthValue) : null, BLOCK_ALIGN_MARGIN[contentAlign] != null ? dynamicStyles.blockAlign(BLOCK_ALIGN_MARGIN[contentAlign]!) : null, isFirst && styles.noMarginBlockStart, isLast && styles.noMarginBlockEnd)}>
-          <XDSTable dividers="rows">
+        <div
+          key={index}
+          {...stylex.props(
+            styles.tableWrapper,
+            spacing,
+            styles.blockIndent,
+            contentWidthValue != null
+              ? dynamicStyles.blockWidth(contentWidthValue)
+              : null,
+            BLOCK_ALIGN_MARGIN[contentAlign] != null
+              ? dynamicStyles.blockAlign(BLOCK_ALIGN_MARGIN[contentAlign]!)
+              : null,
+            isFirst && styles.noMarginBlockStart,
+            isLast && styles.noMarginBlockEnd,
+          )}>
+          <XDSTable
+            dividers="rows"
+            textOverflow="wrap"
+            tableProps={{style: {tableLayout: 'auto'}}}>
             <XDSTableHeader>
               <XDSTableRow>
                 {node.headers.map((h, i) => (
-                  <XDSTableHeaderCell key={i} style={node.alignments[i] === 'center' ? {textAlign: 'center'} : node.alignments[i] === 'right' ? {textAlign: 'right'} : undefined}>
-                    {h.children.map((c, j) => renderInline(c, j, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins, components))}
+                  <XDSTableHeaderCell
+                    key={i}
+                    style={{
+                      minWidth: colWidths[i],
+                      ...(node.alignments[i] === 'center'
+                        ? {textAlign: 'center'}
+                        : node.alignments[i] === 'right'
+                          ? {textAlign: 'right'}
+                          : undefined),
+                    }}>
+                    {h.children.map((c, j) =>
+                      renderInline(c, j, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins, components),
+                    )}
                   </XDSTableHeaderCell>
                 ))}
               </XDSTableRow>
             </XDSTableHeader>
             <XDSTableBody>
               {node.rows.map((row, i) => {
-                const rowIsNew = cursor.active && cursor.offset >= cursor.boundary;
+                const rowIsNew =
+                  cursor.active && cursor.offset >= cursor.boundary;
                 const cells = row.map((cell, j) => (
-                  <XDSTableCell key={j} style={node.alignments[j] === 'center' ? {textAlign: 'center'} : node.alignments[j] === 'right' ? {textAlign: 'right'} : undefined}>
-                    {cell.children.map((c, k) => renderInline(c, k, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins, components))}
+                  <XDSTableCell
+                    key={j}
+                    style={
+                      node.alignments[j] === 'center'
+                        ? {textAlign: 'center'}
+                        : node.alignments[j] === 'right'
+                          ? {textAlign: 'right'}
+                          : undefined
+                    }>
+                    {cell.children.map((c, k) =>
+                      renderInline(c, k, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins, components),
+                    )}
                   </XDSTableCell>
                 ));
-                return (<XDSTableRow key={rowIsNew ? `fade-row-${i}` : i} {...(rowIsNew ? stylex.props(streamingStyles.fadeIn) : {})}>{cells}</XDSTableRow>);
+                return (
+                  <XDSTableRow
+                    key={rowIsNew ? `fade-row-${i}` : i}
+                    {...(rowIsNew ? stylex.props(streamingStyles.fadeIn) : {})}>
+                    {cells}
+                  </XDSTableRow>
+                );
               })}
             </XDSTableBody>
           </XDSTable>
