@@ -144,6 +144,12 @@ export const categories: SandboxCategory[] = [
         description:
           'Generate and explore color palettes from an accent color or image',
       },
+      {
+        name: 'StyleX Theme Prototype',
+        href: '/pages/stylex-theme-test/',
+        description:
+          'CSS variable binding approach: theme vars + styleq dedup for override precedence',
+      },
     ],
   },
 ];
