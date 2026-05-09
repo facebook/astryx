@@ -8,12 +8,9 @@
 import {useState, useMemo} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {
-  XDSCommonCommandPaletteProvider,
   XDSCommandPalette,
   XDSCommandPaletteInput,
   XDSCommandPaletteFooter,
-  useXDSCommonCommandPalette,
-  type XDSCommonCommandPaletteAction,
 } from '@xds/core/CommandPalette';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
@@ -28,11 +25,6 @@ const meta: Meta<typeof XDSCommandPalette> = {
 
 export default meta;
 type Story = StoryObj<typeof XDSCommandPalette>;
-
-function CommonProviderOpenButton() {
-  const {open} = useXDSCommonCommandPalette();
-  return <XDSButton label="Open Common Provider Search" onClick={open} />;
-}
 
 // ─── Default ─────────────────────────────────────────────────────────────────
 
@@ -278,41 +270,6 @@ export const AsyncSearch: Story = {
           emptySearchText="No files found"
         />
       </>
-    );
-  },
-};
-
-/** App-level provider using XDSSearchSource for server-side filtering. */
-export const CommonProviderAsyncSearch: Story = {
-  render: function Render() {
-    const source = useMemo<XDSSearchSource<XDSCommonCommandPaletteAction>>(
-      () => ({
-        async search(query: string) {
-          await new Promise(r => setTimeout(r, 350));
-          const all = [
-            {id: 'gaps', label: 'Open Gaps', group: 'Navigation'},
-            {id: 'graphs', label: 'View GraphQL Fields', group: 'Tools'},
-            {id: 'settings', label: 'Agent Settings', group: 'Navigation'},
-            {id: 'runs', label: 'Recent Runs', group: 'Reports'},
-          ];
-          return all.filter(item =>
-            item.label.toLowerCase().includes(query.toLowerCase()),
-          );
-        },
-        bootstrap() {
-          return [];
-        },
-      }),
-      [],
-    );
-
-    return (
-      <XDSCommonCommandPaletteProvider
-        searchSource={source}
-        emptyBootstrapText="Type to search remote commands"
-        emptySearchText="No remote commands found">
-        <CommonProviderOpenButton />
-      </XDSCommonCommandPaletteProvider>
     );
   },
 };
