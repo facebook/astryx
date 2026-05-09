@@ -34,7 +34,7 @@ export const stoneTheme = defineTheme({
   name: 'stone',
 
   typography: {
-    scale: {base: 14, ratio: 1.2},
+    scale: {base: 14, ratio: 1.25},
     body: {
       family: 'Figtree',
       fallbacks:
