@@ -199,9 +199,9 @@ export const stoneTheme = defineTheme({
       '0 4px 6px #28282A1A, 0 12px 24px #28282A26',
     '--shadow-inset-hover': 'inset 0px 0px 0px 2px #28282A30',
     '--shadow-inset-selected': 'inset 0px 0px 0px 2px #28282A50',
-    '--shadow-inset-success': 'inset 0px 0px 0px 2px light-dark(#667d6550, #99b29850)',
-    '--shadow-inset-warning': 'inset 0px 0px 0px 2px light-dark(#85765050, #bbaa8150)',
-    '--shadow-inset-error': 'inset 0px 0px 0px 2px light-dark(#8a716d50, #c0a5a150)',
+    '--shadow-inset-success': 'inset 0px 0px 0px 2px #83838a30',
+    '--shadow-inset-warning': 'inset 0px 0px 0px 2px #83838a30',
+    '--shadow-inset-error': 'inset 0px 0px 0px 2px #83838a30',
   },
 
   components: {
