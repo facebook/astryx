@@ -5,4 +5,5 @@ import * as stylex from '@stylexjs/stylex';
  * Used by both XDSTab and XDSTabMenu to scope hover background styles
  * and ensure they don't leak from parent containers.
  */
-export const tabScope = stylex.defineMarker();
+export const tabScope: ReturnType<typeof stylex.defineMarker> =
+  stylex.defineMarker();

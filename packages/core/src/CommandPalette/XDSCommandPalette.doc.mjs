@@ -46,7 +46,12 @@ export const docs = {
           description:
             'Input slot. Defaults to XDSCommandPaletteInput with standard behavior.',
           default: '<XDSCommandPaletteInput />',
-          slotElements: [{__element: 'XDSTextInput', props: {label: 'Input', placeholder: 'Type here...'}}],
+          slotElements: [
+            {
+              __element: 'XDSTextInput',
+              props: {label: 'Input', placeholder: 'Type here...'},
+            },
+          ],
         },
         {
           name: 'footer',
@@ -54,7 +59,13 @@ export const docs = {
           description:
             'Footer slot. Defaults to XDSCommandPaletteFooter showing keyboard hints.',
           default: '<XDSCommandPaletteFooter />',
-          slotElements: [{__element: 'XDSText', props: {type: 'body'}, children: 'Footer content'}],
+          slotElements: [
+            {
+              __element: 'XDSText',
+              props: {type: 'body'},
+              children: 'Footer content',
+            },
+          ],
         },
         {
           name: 'renderItem',
@@ -106,10 +117,95 @@ export const docs = {
         {
           name: 'isInline',
           type: 'boolean',
-          description: 'Renders command palette content inline without modal behavior. Automatically disables auto-focus on the input. For documentation previews and showcases only.',
+          description:
+            'Renders command palette content inline without modal behavior. Automatically disables auto-focus on the input. For documentation previews and showcases only.',
           default: 'false',
         },
       ],
+    },
+    {
+      name: 'XDSCommonCommandPaletteProvider',
+      description:
+        'Application-level provider. Accepts static actions or an XDSSearchSource for async/server-side command search, exposes open/close controls, and renders XDSCommandPalette.',
+      props: [
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description: 'Application content.',
+          required: true,
+        },
+        {
+          name: 'actions',
+          type: 'readonly XDSCommonCommandPaletteAction[]',
+          description:
+            'Static action array for local client-side command search.',
+        },
+        {
+          name: 'searchSource',
+          type: 'XDSSearchSource<XDSCommonCommandPaletteAction>',
+          description:
+            'Search source for sync or async command loading. The typed query is passed to search(query).',
+        },
+        {
+          name: 'isOpen',
+          type: 'boolean',
+          description: 'Controlled open state.',
+        },
+        {
+          name: 'defaultIsOpen',
+          type: 'boolean',
+          description: 'Initial uncontrolled open state.',
+          default: 'false',
+        },
+        {
+          name: 'onOpenChange',
+          type: '(isOpen: boolean) => void',
+          description: 'Called when the palette visibility changes.',
+        },
+        {
+          name: 'shortcut',
+          type: 'string | null',
+          description:
+            'Keyboard shortcut used to toggle the palette. Pass null to disable.',
+          default: "'mod+k'",
+        },
+        {
+          name: 'placeholder',
+          type: 'string',
+          description: 'Placeholder text for the default search input.',
+          default: "'Search commands...'",
+        },
+        {
+          name: 'renderItem',
+          type: '(item: T, isSelected: boolean) => ReactNode',
+          description:
+            'Per-action render function passed through to XDSCommandPalette.',
+        },
+        {
+          name: 'footer',
+          type: 'ReactNode',
+          description: 'Footer slot passed through to XDSCommandPalette.',
+        },
+      ],
+    },
+    {
+      name: 'useCommandSource',
+      description:
+        'Hook that returns an XDSSearchSource from static actions or an existing sync/async source. Existing sources pass search(query) through unchanged.',
+      props: [
+        {
+          name: 'input',
+          type: 'actions | searchSource | { actions?, searchSource? }',
+          description:
+            'Static actions, an XDSSearchSource, or a config object. searchSource takes precedence when provided.',
+        },
+      ],
+    },
+    {
+      name: 'useXDSCommonCommandPalette',
+      description:
+        'Hook for opening, closing, toggling, and reading the open state of the nearest XDSCommonCommandPaletteProvider.',
+      props: [],
     },
     {
       name: 'XDSCommandPaletteInput',
@@ -125,7 +221,8 @@ export const docs = {
         {
           name: 'hasAutoFocus',
           type: 'boolean',
-          description: 'Auto-focus the input when mounted. Automatically disabled when inside an inline command palette.',
+          description:
+            'Auto-focus the input when mounted. Automatically disabled when inside an inline command palette.',
           default: 'true',
         },
         {
@@ -235,7 +332,8 @@ export const docs = {
     },
     {
       name: 'XDSCommandPaletteGroup',
-      description: 'Visual grouping with a heading label. Place inside XDSCommandPaletteList.',
+      description:
+        'Visual grouping with a heading label. Place inside XDSCommandPaletteList.',
       props: [
         {
           name: 'heading',
@@ -300,12 +398,29 @@ export const docs = {
     ],
   },
   usage: {
-    description: 'CommandPalette is a searchable dialog for quick access to commands, navigation, and actions. Use it as a keyboard-driven launcher powered by XDSSearchSource for filtering and selection.',
+    description:
+      'CommandPalette is a searchable dialog for quick access to commands, navigation, and actions. Use it as a keyboard-driven launcher powered by XDSSearchSource for filtering and selection.',
     bestPractices: [
-      { guidance: true, description: 'Provide a searchSource with bootstrap results so users see useful options before typing.' },
-      { guidance: true, description: 'Use auxiliaryData.group on items to automatically organize results into labeled sections.' },
-      { guidance: false, description: 'Use CommandPalette for simple dropdowns or menus — use XDSMenu or XDSSelector for inline selections.' },
-      { guidance: false, description: 'Add too many groups or items — curate results to keep the palette fast and scannable.' },
+      {
+        guidance: true,
+        description:
+          'Provide a searchSource with bootstrap results so users see useful options before typing.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use auxiliaryData.group on items to automatically organize results into labeled sections.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use CommandPalette for simple dropdowns or menus — use XDSMenu or XDSSelector for inline selections.',
+      },
+      {
+        guidance: false,
+        description:
+          'Add too many groups or items — curate results to keep the palette fast and scannable.',
+      },
     ],
   },
 };
@@ -313,12 +428,29 @@ export const docs = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsZh = {
   usage: {
-    description: 'CommandPalette is a searchable dialog for quick access to commands, navigation, and actions. Use it as a keyboard-driven launcher powered by XDSSearchSource for filtering and selection.',
+    description:
+      'CommandPalette is a searchable dialog for quick access to commands, navigation, and actions. Use it as a keyboard-driven launcher powered by XDSSearchSource for filtering and selection.',
     bestPractices: [
-      { guidance: true, description: 'Provide a searchSource with bootstrap results so users see useful options before typing.' },
-      { guidance: true, description: 'Use auxiliaryData.group on items to automatically organize results into labeled sections.' },
-      { guidance: false, description: 'Use CommandPalette for simple dropdowns or menus — use XDSMenu or XDSSelector for inline selections.' },
-      { guidance: false, description: 'Add too many groups or items — curate results to keep the palette fast and scannable.' },
+      {
+        guidance: true,
+        description:
+          'Provide a searchSource with bootstrap results so users see useful options before typing.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use auxiliaryData.group on items to automatically organize results into labeled sections.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use CommandPalette for simple dropdowns or menus — use XDSMenu or XDSSelector for inline selections.',
+      },
+      {
+        guidance: false,
+        description:
+          'Add too many groups or items — curate results to keep the palette fast and scannable.',
+      },
     ],
   },
   components: [
@@ -339,25 +471,65 @@ export const docsZh = {
         label: '命令面板对话框的无障碍标签。',
         width: '对话框宽度。',
         maxHeight: '对话框最大高度。',
-        isInline: '以内联方式渲染命令面板内容，不带模态行为。自动禁用输入框自动聚焦。仅用于文档预览和展示。',
+        isInline:
+          '以内联方式渲染命令面板内容，不带模态行为。自动禁用输入框自动聚焦。仅用于文档预览和展示。',
       },
     },
     {
+      name: 'XDSCommonCommandPaletteProvider',
+      description:
+        '应用级提供器。接受静态 actions 或 XDSSearchSource 进行异步/服务端命令搜索。',
+      propDescriptions: {
+        children: '应用内容。',
+        actions: '用于本地客户端搜索的静态动作数组。',
+        searchSource:
+          '同步或异步命令加载的搜索源。输入查询会传给 search(query)。',
+        isOpen: '受控打开状态。',
+        defaultIsOpen: '非受控初始打开状态。',
+        onOpenChange: '面板可见性变化时调用。',
+        shortcut: '切换面板的键盘快捷键。传 null 禁用。',
+        placeholder: '默认搜索输入框的占位文本。',
+        renderItem: '传递给 XDSCommandPalette 的动作渲染函数。',
+        footer: '传递给 XDSCommandPalette 的页脚插槽。',
+      },
+    },
+    {
+      name: 'useCommandSource',
+      description:
+        '从静态 actions 或现有同步/异步源返回 XDSSearchSource。现有源会原样传递 search(query)。',
+      propDescriptions: {
+        input:
+          '静态 actions、XDSSearchSource 或配置对象。提供 searchSource 时优先使用。',
+      },
+    },
+    {
+      name: 'useXDSCommonCommandPalette',
+      description:
+        '打开、关闭、切换并读取最近 XDSCommonCommandPaletteProvider 打开状态的 hook。',
+      propDescriptions: {},
+    },
+    {
       name: 'XDSCommandPaletteInput',
-      description: '搜索输入插槽。挂载时自动聚焦。在 XDSCommandPalette 内使用时连接到上下文。',
+      description:
+        '搜索输入插槽。挂载时自动聚焦。在 XDSCommandPalette 内使用时连接到上下文。',
       propDescriptions: {
         placeholder: '输入框的占位文本。',
         hasAutoFocus: '挂载时自动聚焦输入框。内联命令面板中自动禁用。',
         endContent: '渲染在输入框末尾的内容，位于加载指示器之后。',
         value: '搜索值。在 XDSCommandPalette 内省略时从上下文读取。',
-        onValueChange: '搜索值变化时调用。在 XDSCommandPalette 内省略时写入上下文。',
+        onValueChange:
+          '搜索值变化时调用。在 XDSCommandPalette 内省略时写入上下文。',
         xstyle: 'StyleX 布局自定义样式。必须是 stylex.create() 的值。',
       },
     },
     {
       name: 'XDSCommandPaletteList',
       description: '可滚动的结果容器。作为 listbox 渲染以符合 ARIA 规范。',
-      propDescriptions: {children: '条目、分组和空状态。', label: 'listbox 的无障碍标签。', xstyle: 'StyleX 布局自定义样式。必须是 stylex.create() 的值。'},
+      propDescriptions: {
+        children: '条目、分组和空状态。',
+        label: 'listbox 的无障碍标签。',
+        xstyle: 'StyleX 布局自定义样式。必须是 stylex.create() 的值。',
+      },
     },
     {
       name: 'XDSCommandPaletteItem',
@@ -366,7 +538,8 @@ export const docsZh = {
         value: '用于标识和选择的唯一值。',
         children: '条目内容——渲染图标、描述、键盘快捷键等。',
         onSelect: '通过点击或 Enter 选择此条目时调用。',
-        isHighlighted: '此条目是否具有键盘焦点。在 XDSCommandPalette 内从上下文派生。',
+        isHighlighted:
+          '此条目是否具有键盘焦点。在 XDSCommandPalette 内从上下文派生。',
         isSelected: '此条目在选择器模式下是否被选中。',
         isDisabled: '条目是否为非交互状态。',
         xstyle: 'StyleX 布局自定义样式。必须是 stylex.create() 的值。',
@@ -375,16 +548,25 @@ export const docsZh = {
     {
       name: 'XDSCommandPaletteGroup',
       description: '带标题标签的视觉分组。放置在 XDSCommandPaletteList 内。',
-      propDescriptions: {heading: '分组标题文本。', children: 'XDSCommandPaletteItem 子元素。', xstyle: 'StyleX 布局自定义样式。必须是 stylex.create() 的值。'},
+      propDescriptions: {
+        heading: '分组标题文本。',
+        children: 'XDSCommandPaletteItem 子元素。',
+        xstyle: 'StyleX 布局自定义样式。必须是 stylex.create() 的值。',
+      },
     },
     {
       name: 'XDSCommandPaletteFooter',
-      description: '显示键盘导航提示的页脚。未提供子元素时渲染默认方向键/Enter/Escape 提示。',
-      propDescriptions: {children: '自定义页脚内容。省略时通过 XDSKbd 渲染默认键盘提示。', xstyle: 'StyleX 布局自定义样式。必须是 stylex.create() 的值。'},
+      description:
+        '显示键盘导航提示的页脚。未提供子元素时渲染默认方向键/Enter/Escape 提示。',
+      propDescriptions: {
+        children: '自定义页脚内容。省略时通过 XDSKbd 渲染默认键盘提示。',
+        xstyle: 'StyleX 布局自定义样式。必须是 stylex.create() 的值。',
+      },
     },
     {
       name: 'XDSCommandPaletteEmpty',
-      description: '结果区域的空状态展示。由 XDSCommandPalette 在无结果和无查询状态下自动渲染。',
+      description:
+        '结果区域的空状态展示。由 XDSCommandPalette 在无结果和无查询状态下自动渲染。',
       propDescriptions: {children: '要显示的消息或内容。'},
     },
   ],
@@ -395,18 +577,36 @@ export const docsDense = {
   description:
     'searchSource-driven command palette dialog; filtering, keyboard nav, grouping, selection; same XDSSearchSource interface as XDSTypeahead',
   usage: {
-    description: 'CommandPalette is a searchable dialog for quick access to commands, navigation, and actions. Use it as a keyboard-driven launcher powered by XDSSearchSource for filtering and selection.',
+    description:
+      'CommandPalette is a searchable dialog for quick access to commands, navigation, and actions. Use it as a keyboard-driven launcher powered by XDSSearchSource for filtering and selection.',
     bestPractices: [
-      { guidance: true, description: 'Provide a searchSource with bootstrap results so users see useful options before typing.' },
-      { guidance: true, description: 'Use auxiliaryData.group on items to automatically organize results into labeled sections.' },
-      { guidance: false, description: 'Use CommandPalette for simple dropdowns or menus — use XDSMenu or XDSSelector for inline selections.' },
-      { guidance: false, description: 'Add too many groups or items — curate results to keep the palette fast and scannable.' },
+      {
+        guidance: true,
+        description:
+          'Provide a searchSource with bootstrap results so users see useful options before typing.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use auxiliaryData.group on items to automatically organize results into labeled sections.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use CommandPalette for simple dropdowns or menus — use XDSMenu or XDSSelector for inline selections.',
+      },
+      {
+        guidance: false,
+        description:
+          'Add too many groups or items — curate results to keep the palette fast and scannable.',
+      },
     ],
   },
   components: [
     {
       name: 'XDSCommandPalette',
-      description: 'root; manages open state, search, keyboard nav, composition slots',
+      description:
+        'root; manages open state, search, keyboard nav, composition slots',
       propDescriptions: {
         isOpen: 'dialog visible',
         onOpenChange: 'called on visibility change',
@@ -421,18 +621,51 @@ export const docsDense = {
         label: 'a11y label for dialog',
         width: 'dialog width',
         maxHeight: 'dialog max height',
-        isInline: 'inline rendering for docs previews, no modal behavior, auto-disables input focus',
+        isInline:
+          'inline rendering for docs previews, no modal behavior, auto-disables input focus',
       },
     },
     {
+      name: 'XDSCommonCommandPaletteProvider',
+      description:
+        'app provider; static actions or XDSSearchSource for async/server search',
+      propDescriptions: {
+        children: 'app content',
+        actions: 'static local actions',
+        searchSource: 'sync/async source; receives typed query',
+        isOpen: 'controlled open state',
+        defaultIsOpen: 'initial uncontrolled open state',
+        onOpenChange: 'called on visibility change',
+        shortcut: 'kbd shortcut; null disables',
+        placeholder: 'default input placeholder',
+        renderItem: 'action render fn passed to palette',
+        footer: 'footer slot passed to palette',
+      },
+    },
+    {
+      name: 'useCommandSource',
+      description:
+        'returns XDSSearchSource from actions or existing source; passes search(query) through',
+      propDescriptions: {
+        input: 'actions, source, or config; source wins',
+      },
+    },
+    {
+      name: 'useXDSCommonCommandPalette',
+      description: 'open/close/toggle/read open state from provider',
+      propDescriptions: {},
+    },
+    {
       name: 'XDSCommandPaletteInput',
-      description: 'search input; auto-focus on mount; wires to context inside XDSCommandPalette',
+      description:
+        'search input; auto-focus on mount; wires to context inside XDSCommandPalette',
       propDescriptions: {
         placeholder: 'input placeholder text',
         hasAutoFocus: 'auto-focus on mount; auto-disabled in inline mode',
         endContent: 'trailing content after spinner',
         value: 'search value; reads context when omitted inside palette',
-        onValueChange: 'called on change; writes context when omitted inside palette',
+        onValueChange:
+          'called on change; writes context when omitted inside palette',
         xstyle: 'StyleX layout styles; must be stylex.create() value',
       },
     },
@@ -447,7 +680,8 @@ export const docsDense = {
     },
     {
       name: 'XDSCommandPaletteItem',
-      description: 'selectable item; arbitrary children; registers w/ context for kbd nav',
+      description:
+        'selectable item; arbitrary children; registers w/ context for kbd nav',
       propDescriptions: {
         value: 'unique id for selection',
         children: 'item content — icons, descriptions, shortcuts',
@@ -469,7 +703,8 @@ export const docsDense = {
     },
     {
       name: 'XDSCommandPaletteFooter',
-      description: 'footer w/ kbd hints; default=arrow/Enter/Escape hints via XDSKbd',
+      description:
+        'footer w/ kbd hints; default=arrow/Enter/Escape hints via XDSKbd',
       propDescriptions: {
         children: 'custom content; default renders kbd hints',
         xstyle: 'StyleX layout styles; must be stylex.create() value',
@@ -477,7 +712,8 @@ export const docsDense = {
     },
     {
       name: 'XDSCommandPaletteEmpty',
-      description: 'empty state; auto-rendered by palette for no-results+no-query states',
+      description:
+        'empty state; auto-rendered by palette for no-results+no-query states',
       propDescriptions: {
         children: 'message or content to display',
       },
