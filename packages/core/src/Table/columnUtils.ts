@@ -180,17 +180,97 @@ export function defaultCellRenderer<T extends Record<string, unknown>>(
 }
 
 /**
+ * Estimate the display width of a value in characters.
+ * Only measures string and number values — objects, arrays, and other
+ * complex types return 0 (fall back to equal proportioning for that cell).
+ */
+function estimateContentLength(value: unknown): number {
+  if (value == null) return 0;
+  if (typeof value === 'string') return value.length;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value).length;
+  return 0;
+}
+
+/**
+ * Find the longest single word in a value (for min-width estimation).
+ * A "word" is a contiguous non-whitespace sequence.
+ * Only measures string and number values — complex types return 0.
+ */
+function longestWord(value: unknown): number {
+  if (value == null) return 0;
+  if (typeof value !== 'string' && typeof value !== 'number' && typeof value !== 'boolean') return 0;
+  const str = String(value);
+  let max = 0;
+  let current = 0;
+  for (let i = 0; i <= str.length; i++) {
+    if (i === str.length || str[i] === ' ' || str[i] === '\t' || str[i] === '\n') {
+      if (current > max) max = current;
+      current = 0;
+    } else {
+      current++;
+    }
+  }
+  return max;
+}
+
+/** Minimum floor for any column (px). Prevents collapse on narrow viewports. */
+const MIN_COLUMN_FLOOR = 60;
+
+/** Scale factor: approximate px per character for min-width calculation. */
+const PX_PER_CHAR = 8;
+
+/**
  * Auto-generate column definitions from the keys of the first data item.
- * Each column gets `proportional(1)` width and a capitalized header.
+ * Derives content-proportional widths by analyzing the header and first
+ * few rows of data. Min-width is based on the longer of: header text
+ * or the longest single word in values.
  */
 export function generateColumns<T extends Record<string, unknown>>(
   data: T[],
 ): XDSTableColumn<T>[] {
   if (data.length === 0) return [];
   const firstItem = data[0];
-  return Object.keys(firstItem).map(key => ({
-    key,
-    header: capitalize(key),
-    width: proportional(1),
-  }));
+  const keys = Object.keys(firstItem);
+
+  // Sample first few rows for content analysis
+  const sampleRows = data.slice(0, Math.min(5, data.length));
+
+  // Measure each column
+  const measurements = keys.map(key => {
+    const headerLen = capitalize(key).length;
+
+    let maxContentLen = headerLen;
+    let maxWordLen = headerLen; // header is a single "word" for min-width purposes
+
+    for (const row of sampleRows) {
+      const contentLen = estimateContentLength(row[key]);
+      if (contentLen > maxContentLen) maxContentLen = contentLen;
+
+      const wordLen = longestWord(row[key]);
+      if (wordLen > maxWordLen) maxWordLen = wordLen;
+    }
+
+    return {key, headerLen, maxContentLen, maxWordLen};
+  });
+
+  return measurements.map(m => {
+    // Bucket content length into proportional tiers:
+    // 1 = short (≤6 chars: IDs, ages, booleans, status)
+    // 2 = medium (7–15 chars: names, dates, short strings)
+    // 3 = long (>15 chars: emails, URLs, descriptions)
+    const proportion =
+      m.maxContentLen <= 6 ? 1 : m.maxContentLen <= 15 ? 2 : 3;
+
+    // Min-width: enough to fit header or longest word without wrapping
+    const minWidth = Math.max(
+      Math.max(m.headerLen, m.maxWordLen) * PX_PER_CHAR,
+      MIN_COLUMN_FLOOR,
+    );
+
+    return {
+      key: m.key,
+      header: capitalize(m.key),
+      width: proportional(proportion, {minWidth}),
+    };
+  });
 }

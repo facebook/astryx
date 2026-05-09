@@ -49,6 +49,9 @@ const styles = stylex.create({
     borderSpacing: '0',
     tableLayout: 'fixed',
   },
+  tableAutoLayout: {
+    tableLayout: 'auto',
+  },
   /**
    * Inline flex row that keeps the header label and any "after" slot content
    * (sort icons, filter buttons, etc.) on the same line with a small gap.
@@ -308,7 +311,7 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
   // --- Plugin pipeline: table ---
   const tableRenderProps = applyPlugins(plugins, p => p.transformTable, {
     htmlProps: {...userTableProps},
-    styles: [styles.table],
+    styles: children ? [styles.table, styles.tableAutoLayout] : [styles.table],
   } as TableRenderProps);
 
   // --- Plugin pipeline: header cells ---

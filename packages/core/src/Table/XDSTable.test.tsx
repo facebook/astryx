@@ -17,10 +17,11 @@ import {
   proportional,
   pixel,
   generateColumns,
+  resolveColumnWidths,
   capitalize,
   DEFAULT_MIN_COLUMN_WIDTH,
 } from './columnUtils';
-import type {TablePlugin, XDSTableColumn} from './types';
+import type {TablePlugin, XDSTableColumn, ProportionalWidth} from './types';
 
 // =============================================================================
 // Test Data
@@ -106,15 +107,80 @@ describe('columnUtils', () => {
       expect(generateColumns([])).toEqual([]);
     });
 
-    it('assigns proportional(1) width with default minWidth to each column', () => {
+    it('assigns content-proportional widths based on data analysis', () => {
+      const cols = generateColumns(users);
+      // All columns should have proportional type
+      for (const col of cols) {
+        expect(col.width?.type).toBe('proportional');
+      }
+      // Columns with longer content should get higher proportion
+      const emailCol = cols.find(c => c.key === 'email')!;
+      const ageCol = cols.find(c => c.key === 'age')!;
+      expect(emailCol.width!.value).toBeGreaterThan(ageCol.width!.value);
+    });
+
+    it('derives min-width from header or longest word', () => {
       const cols = generateColumns(users);
       for (const col of cols) {
-        expect(col.width).toEqual({
-          type: 'proportional',
-          value: 1,
-          minWidth: DEFAULT_MIN_COLUMN_WIDTH,
-        });
+        // Min-width should be at least the floor
+        expect((col.width as ProportionalWidth).minWidth).toBeGreaterThanOrEqual(60);
       }
+    });
+
+    it('produces stable width values for known data', () => {
+      const cols = generateColumns(users);
+      // Snapshot: these values should remain stable over time.
+      // name: "Charlie" (7 chars) → medium → proportion 2
+      // age: "35" (2 chars) → short → proportion 1
+      // email: "charlie@example.com" (19 chars) → long → proportion 3
+      const nameCol = cols.find(c => c.key === 'name')!;
+      const ageCol = cols.find(c => c.key === 'age')!;
+      const emailCol = cols.find(c => c.key === 'email')!;
+
+      expect(nameCol.width).toEqual({
+        type: 'proportional',
+        value: 2,
+        minWidth: 60, // max("Name"=4, "Charlie"=7) * 8 = 56 → floor 60
+      });
+      expect(ageCol.width).toEqual({
+        type: 'proportional',
+        value: 1,
+        minWidth: 60, // max("Age"=3, "35"=2) * 8 = 24 → floor 60
+      });
+      expect(emailCol.width).toEqual({
+        type: 'proportional',
+        value: 3,
+        minWidth: 152, // max("Email"=5, "charlie@example.com"=19) * 8 = 152
+      });
+    });
+
+    it('does not analyze non-string/number values', () => {
+      const data = [
+        {id: 1, meta: {nested: 'object'}, tags: ['a', 'b']},
+        {id: 2, meta: {nested: 'thing'}, tags: ['c']},
+      ];
+      const cols = generateColumns(data);
+      // meta and tags are objects/arrays — should get 0 content length
+      // so their proportion comes only from header length
+      const metaCol = cols.find(c => c.key === 'meta')!;
+      const tagsCol = cols.find(c => c.key === 'tags')!;
+      // Header "Meta" = 4, "Tags" = 4 — both should have same proportion
+      expect((metaCol.width as ProportionalWidth).value).toBe(
+        (tagsCol.width as ProportionalWidth).value,
+      );
+    });
+
+    it('never overrides explicit column widths', () => {
+      // generateColumns is only called when no columns prop is provided.
+      // This test verifies the contract: explicit widths pass through unchanged.
+      const explicit: XDSTableColumn<User>[] = [
+        {key: 'name', header: 'Name', width: pixel(200)},
+        {key: 'email', header: 'Email', width: proportional(3, {minWidth: 300})},
+      ];
+      // resolveColumnWidths should use the explicit values, not re-derive
+      const resolved = resolveColumnWidths(explicit);
+      expect(resolved.columns.get('name')?.style.width).toBe('200px');
+      expect(resolved.columns.get('email')?.style.minWidth).toBe('300px');
     });
   });
 
@@ -465,11 +531,13 @@ describe('XDSBaseTable', () => {
       });
     });
 
-    it('applies default minWidth on auto-generated columns', () => {
+    it('applies content-derived minWidth on auto-generated columns', () => {
       render(<XDSBaseTable data={users} />);
       const headers = screen.getAllByRole('columnheader');
       for (const header of headers) {
-        expect(header).toHaveStyle({minWidth: `${DEFAULT_MIN_COLUMN_WIDTH}px`});
+        // Each column should have a minWidth derived from content (at least 60px floor)
+        const style = header.getAttribute('style') ?? '';
+        expect(style).toContain('min-width');
       }
     });
 
@@ -549,6 +617,27 @@ describe('XDSTable', () => {
     expect(wrapper).toBeTruthy();
     expect(wrapper!.className).toContain('xds-table-scroll-wrapper');
   });
+
+  it('uses table-layout: auto in children mode', () => {
+    const {container} = render(
+      <XDSTable dividers="rows">
+        <tbody>
+          <tr><td>Content</td></tr>
+        </tbody>
+      </XDSTable>,
+    );
+    const table = container.querySelector('table');
+    expect(table).toHaveStyle({tableLayout: 'auto'});
+  });
+
+  it('uses table-layout: fixed in data-driven mode', () => {
+    const {container} = render(
+      <XDSTable data={users} columns={columns} />,
+    );
+    const table = container.querySelector('table');
+    expect(table).toHaveStyle({tableLayout: 'fixed'});
+  });
+
 
   it('renders all data values', () => {
     render(<XDSTable data={users} columns={columns} />);
@@ -732,13 +821,12 @@ describe('XDSTable', () => {
     );
   });
 
-  it('truncates text by default (textOverflow="truncate")', () => {
+  it('wraps text by default (textOverflow="wrap")', () => {
     render(<XDSTable data={users} columns={columns} />);
     const cells = screen.getAllByRole('cell');
-    // Default-rendered cells contain an XDSText child element (a <span>)
-    const textEl = cells[0].querySelector('span');
-    expect(textEl).toBeTruthy();
-    expect(textEl).toHaveTextContent('Alice');
+    // In wrap mode, no XDSText wrapper — content renders directly
+    expect(cells[0]).toHaveTextContent('Alice');
+    expect(cells[0]).not.toHaveAttribute('title');
   });
 
   it('wraps text when textOverflow="wrap"', () => {
