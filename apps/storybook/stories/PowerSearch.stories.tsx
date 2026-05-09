@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import React, {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSPowerSearch} from '@xds/core/PowerSearch';
 import type {
@@ -1119,4 +1119,103 @@ export const OverflowLayer: Story = {
     placeholder: 'Add more filters...',
   },
   name: 'Overflow Layer',
+};
+
+// =============================================================================
+// Custom Components Map
+// =============================================================================
+
+import type {
+  XDSPowerSearchComponents,
+  PowerSearchTokenProps,
+  PowerSearchEditorProps,
+} from '@xds/core/PowerSearch';
+import {XDSPowerSearchToken, XDSPowerSearchFilterEditor} from '@xds/core/PowerSearch';
+import {XDSToken} from '@xds/core/Token';
+import {XDSHStack} from '@xds/core/Stack';
+
+function StatusToken({filter, field, operator, maxLength, onClick, onRemove, isDisabled}: PowerSearchTokenProps) {
+  const value = filter.value.type === 'enum' ? filter.value.value : '?';
+  const colors: Record<string, string> = {
+    open: '#22c55e',
+    in_progress: '#3b82f6',
+    review: '#a855f7',
+    closed: '#6b7280',
+    blocked: '#ef4444',
+  };
+  return (
+    <XDSToken
+      label={`${field.label}: ${operator.label}`}
+      endContent={
+        <span style={{fontWeight: 600, color: colors[value] ?? 'inherit'}}>
+          {value}
+        </span>
+      }
+      onClick={onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick(); } : undefined}
+      onRemove={onRemove}
+      isDisabled={isDisabled}
+    />
+  );
+}
+
+function CustomIntegerEditor({config, filter, mode, onSave, onCancel, saveButtonLabel, isReadOnly}: PowerSearchEditorProps) {
+  const current = filter.value?.type === 'integer' ? filter.value.value : 50;
+  return (
+    <div style={{padding: 16}}>
+      <p style={{margin: '0 0 12px', fontSize: 13}}>Custom range editor for integer fields:</p>
+      <XDSHStack gap={2} vAlign="center">
+        <input
+          type="range"
+          min={0}
+          max={1000}
+          value={current}
+          onChange={e => {
+            onSave({
+              field: filter.field,
+              operator: filter.operator!,
+              value: {type: 'integer', value: Number(e.target.value)},
+            });
+          }}
+          style={{flex: 1}}
+          disabled={isReadOnly}
+        />
+        <span style={{fontSize: 12, whiteSpace: 'nowrap'}}>{current}</span>
+      </XDSHStack>
+      <div style={{marginTop: 12, display: 'flex', gap: 8, justifyContent: 'flex-end'}}>
+        <button onClick={onCancel}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+const customComponents: XDSPowerSearchComponents = {
+  enum: {Token: StatusToken},
+  integer: {Editor: CustomIntegerEditor},
+};
+
+export const WithCustomComponents: Story = {
+  render: args => {
+    const [filters, setFilters] = useState<PowerSearchFilter[]>([
+      {field: 'status', operator: 'is', value: {type: 'enum', value: 'open'}},
+      {field: 'line_count', operator: 'gt', value: {type: 'integer', value: 200}},
+    ]);
+    return (
+      <div>
+        <XDSPowerSearch
+          {...args}
+          config={fullConfig}
+          filters={filters}
+          onChange={newFilters => setFilters([...newFilters])}
+          components={customComponents}
+        />
+        <p style={{marginTop: 16, fontSize: 13, color: '#666'}}>
+          <strong>Custom overrides:</strong> Status tokens show colored text (custom Token).
+          Integer fields use a range slider editor (custom Editor).
+        </p>
+      </div>
+    );
+  },
+  args: {placeholder: 'Search with custom components...'},
+  decorators: [Story => (<div style={{width: 700}}><Story /></div>)],
+  name: 'Custom Components Map',
 };

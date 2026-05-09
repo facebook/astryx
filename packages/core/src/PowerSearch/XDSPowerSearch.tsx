@@ -48,6 +48,8 @@ import {PowerSearchEditPopover} from './PowerSearchEditPopover';
 import type {
   PowerSearchConfig,
   PowerSearchFilter,
+  PowerSearchField,
+  PowerSearchOperator,
   PartialFilter,
   PowerSearchItem,
   PowerSearchAuxData,
@@ -56,6 +58,7 @@ import type {
   FilterValue,
   OperatorValue,
   EnumItem,
+  XDSPowerSearchComponents,
 } from './types';
 
 // =============================================================================
@@ -390,6 +393,11 @@ export interface XDSPowerSearchProps {
   className?: string;
   /** Inline styles. */
   style?: React.CSSProperties;
+  /**
+   * Per-type component overrides for token and editor rendering.
+   * Keys are operator value types (e.g. 'string', 'enum', 'date_absolute').
+   */
+  components?: XDSPowerSearchComponents;
 }
 
 // =============================================================================
@@ -504,6 +512,7 @@ export function XDSPowerSearch({
   xstyle,
   className,
   style,
+  components: componentOverrides,
 }: XDSPowerSearchProps) {
   const config = useInternalConfig(configProp);
   const searchSource = usePowerSearchSource(config);
@@ -700,6 +709,7 @@ export function XDSPowerSearch({
   }, [setPopoverState]);
 
   // Custom token renderer
+  // Custom token renderer
   const renderToken = useCallback(
     (item: PowerSearchItem, onRemove: () => void) => {
       const auxData = item.auxiliaryData as PowerSearchAuxData | undefined;
@@ -711,19 +721,41 @@ export function XDSPowerSearch({
         ? config.getOperator(auxData.fieldKey, auxData.operatorKey)
         : undefined;
 
+      const canInteract = !isReadOnly && !isDisabled && !filter?.isReadOnly;
+      const handleClick = canInteract
+        ? () => handleTokenClick(filterIndex)
+        : undefined;
+      const handleRemove = canInteract ? onRemove : undefined;
+
+      // Check for full Token override
+      const TokenOverride = operator
+        ? componentOverrides?.[operator.value.type]?.Token
+        : undefined;
+
+      if (TokenOverride && filter && field && operator) {
+        return (
+          <TokenOverride
+            config={configProp}
+            filter={filter}
+            field={field}
+            operator={operator}
+            maxLength={maxTokenLength}
+            onClick={handleClick}
+            onRemove={handleRemove}
+            isDisabled={isDisabled}
+          />
+        );
+      }
+
+      // Default token rendering
       const fieldLabel = field?.label ?? '';
       const operatorLabel = operator?.label ?? '';
-
-      // Build the token label: "Field operator" (space-separated, like reference)
-      const tokenLabel = `${fieldLabel} ${operatorLabel}`.trim();
-
-      // Adjust maxTokenLength by subtracting label length (min 10, like reference)
+      const tokenLabel = `${fieldLabel}: ${operatorLabel}`.trim();
       const adjustedMaxLength = Math.max(
         maxTokenLength - fieldLabel.length - operatorLabel.length,
         10,
       );
 
-      // Render value as rich content with bold styling
       const valueContent =
         operator && filter ? (
           <PowerSearchTokenValue
@@ -738,23 +770,19 @@ export function XDSPowerSearch({
           label={tokenLabel}
           endContent={valueContent}
           onClick={
-            !isReadOnly && !isDisabled && !filter?.isReadOnly
+            handleClick
               ? (e: React.MouseEvent) => {
                   e.stopPropagation();
-                  handleTokenClick(filterIndex);
+                  handleClick();
                 }
               : undefined
           }
-          onRemove={
-            !isReadOnly && !isDisabled && !filter?.isReadOnly
-              ? onRemove
-              : undefined
-          }
+          onRemove={handleRemove}
           isDisabled={isDisabled}
         />
       );
     },
-    [filters, config, maxTokenLength, isReadOnly, isDisabled, handleTokenClick],
+    [filters, config, configProp, maxTokenLength, isReadOnly, isDisabled, handleTokenClick, componentOverrides],
   );
 
   // Custom typeahead item renderer — adds field icon and description
@@ -791,6 +819,60 @@ export function XDSPowerSearch({
   // The partial filter for the popover
   const popoverPartialFilter =
     popoverState.type !== 'idle' ? popoverState.partialFilter : null;
+
+  // Resolve custom Editor override for the current popover filter
+  const EditorOverride = useMemo(() => {
+    if (!popoverPartialFilter?.field || !popoverPartialFilter?.operator)
+      return undefined;
+    const op = config.getOperator(
+      popoverPartialFilter.field,
+      popoverPartialFilter.operator,
+    );
+    return op ? componentOverrides?.[op.value.type]?.Editor : undefined;
+  }, [popoverPartialFilter, config, componentOverrides]);
+
+  // Render popover content — either custom Editor or default
+  const popoverContent = useMemo(() => {
+    if (!popoverPartialFilter) return null;
+
+    const mode = popoverState.type === 'editing' ? 'edit' : 'create';
+
+    if (EditorOverride) {
+      return (
+        <EditorOverride
+          config={configProp}
+          filter={popoverPartialFilter}
+          mode={mode}
+          onSave={handlePopoverSave}
+          onCancel={handlePopoverCancel}
+          saveButtonLabel={popoverSaveButtonLabel}
+          isReadOnly={isReadOnly}
+        />
+      );
+    }
+
+    return (
+      <PowerSearchEditPopover
+        config={config}
+        filter={popoverPartialFilter}
+        mode={mode}
+        onSave={handlePopoverSave}
+        onCancel={handlePopoverCancel}
+        saveButtonLabel={popoverSaveButtonLabel}
+        isReadOnly={isReadOnly}
+      />
+    );
+  }, [
+    popoverPartialFilter,
+    popoverState.type,
+    EditorOverride,
+    configProp,
+    config,
+    handlePopoverSave,
+    handlePopoverCancel,
+    popoverSaveButtonLabel,
+    isReadOnly,
+  ]);
 
   // Build combined endContent from resultCount + endContent props
   const combinedEndContent = useMemo(() => {
@@ -851,24 +933,11 @@ export function XDSPowerSearch({
           data-testid={testId}
         />
       </div>
-      {popover.render(
-        popoverPartialFilter ? (
-          <PowerSearchEditPopover
-            config={config}
-            filter={popoverPartialFilter}
-            mode={popoverState.type === 'editing' ? 'edit' : 'create'}
-            onSave={handlePopoverSave}
-            onCancel={handlePopoverCancel}
-            saveButtonLabel={popoverSaveButtonLabel}
-            isReadOnly={isReadOnly}
-          />
-        ) : null,
-        {
-          placement: 'below',
-          alignment: 'start',
-          xstyle: [popoverLayerStyles.layer, layerAnimations.below],
-        },
-      )}
+      {popover.render(popoverContent, {
+        placement: 'below',
+        alignment: 'start',
+        xstyle: [popoverLayerStyles.layer, layerAnimations.below],
+      })}
     </>
   );
 }

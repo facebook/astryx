@@ -12,6 +12,9 @@
 export {XDSPowerSearch} from './XDSPowerSearch';
 export type {XDSPowerSearchProps} from './XDSPowerSearch';
 
+export {XDSPowerSearchToken} from './XDSPowerSearchToken';
+export {XDSPowerSearchFilterEditor} from './XDSPowerSearchFilterEditor';
+
 export {
   createPowerSearchConfig,
   usePowerSearchConfig,
@@ -72,4 +75,10 @@ export type {
   OperatorTokenizationConfig,
   PowerSearchChangeType,
   XDSPowerSearchHandle,
+
+  // Component override types
+  PowerSearchTokenProps,
+  PowerSearchEditorProps,
+  PowerSearchComponentOverride,
+  XDSPowerSearchComponents,
 } from './types';
