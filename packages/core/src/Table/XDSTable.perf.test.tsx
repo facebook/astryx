@@ -39,6 +39,8 @@ const testColumns: XDSTableColumn<TestRow>[] = [
   {key: 'value', header: 'Value'},
 ];
 
+const ciBudgetMultiplier = process.env.CI === 'true' ? 1.5 : 1;
+
 // =============================================================================
 // Test: Table doesn't re-render when unrelated state changes
 // =============================================================================
@@ -451,8 +453,9 @@ describe('XDSTable render performance', () => {
       const renderTime = endTime - startTime;
       console.log(`500 rows initial render: ${renderTime.toFixed(2)}ms`);
 
-      // Should render within 500ms
-      expect(renderTime).toBeLessThan(500);
+      // CI runners vary more than local machines, so keep the local budget
+      // strict while allowing headroom for shared-runner noise.
+      expect(renderTime).toBeLessThan(500 * ciBudgetMultiplier);
     });
 
     it('should measure update performance', async () => {

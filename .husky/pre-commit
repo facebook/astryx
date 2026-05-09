@@ -1,1 +1,2 @@
 npx lint-staged
+yarn check:repo

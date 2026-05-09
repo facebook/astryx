@@ -50,9 +50,9 @@ jobs:
         if: steps.scope.outputs.docsite_only != 'true'
         run: rm -rf .eslintcache node_modules/.cache
 
-      - name: Check SYNC comments
+      - name: Check repository guardrails
         if: steps.scope.outputs.docsite_only != 'true'
-        run: node scripts/check-sync.js
+        run: yarn check:repo
 
       - name: Run ESLint
         if: steps.scope.outputs.docsite_only != 'true'
