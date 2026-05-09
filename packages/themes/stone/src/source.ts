@@ -1,2 +1,2 @@
-export {stoneTheme} from './stoneTheme';
+export {stoneTheme, stonePalettes} from './stoneTheme';
 export {stoneIconRegistry} from './icons';
