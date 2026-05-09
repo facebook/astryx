@@ -21,7 +21,7 @@ import {
   XDSVStack,
   XDSHStack,
 } from '@xds/core/Layout';
-import {XDSHeading} from '@xds/core/Text';
+import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {
   colorDefaults,
