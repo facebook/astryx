@@ -312,9 +312,9 @@ const MONO = "'JetBrains Mono', 'SF Mono', Menlo, monospace";
 const S = {
   page: {
     minHeight: '100vh',
-    background: '#f3f3f5',
-    color: '#28282A',
-    fontFamily: FONT,
+    background: 'var(--color-background-body)',
+    color: 'var(--color-text-primary)',
+    fontFamily: 'var(--font-family-body)',
     padding: '40px 32px',
   } as React.CSSProperties,
   inner: {
@@ -327,10 +327,11 @@ const S = {
     letterSpacing: '-0.02em',
     margin: 0,
     marginBottom: 8,
+    fontFamily: 'var(--font-family-heading)',
   } as React.CSSProperties,
   subtitle: {
     fontSize: 14,
-    color: '#84848B',
+    color: 'var(--color-text-secondary)',
     margin: 0,
     marginBottom: 32,
   } as React.CSSProperties,
@@ -343,7 +344,7 @@ const S = {
     ({
       background: bg,
       color: fg,
-      border: '1px solid #dddcdf',
+      border: '1px solid var(--color-border)',
       borderRadius: 16,
       padding: 24,
       display: 'flex',
@@ -669,13 +670,14 @@ function TonalSection() {
           letterSpacing: '-0.01em',
           margin: 0,
           marginBottom: 6,
+          fontFamily: 'var(--font-family-heading)',
         }}>
         Tonal Palettes
       </h2>
       <p
         style={{
           fontSize: 12,
-          color: '#84848B',
+          color: 'var(--color-text-secondary)',
           margin: 0,
           marginBottom: 20,
         }}>
@@ -720,7 +722,7 @@ function TonalSection() {
       <p
         style={{
           fontSize: 10,
-          color: '#84848B',
+          color: 'var(--color-text-secondary)',
           margin: 0,
           marginTop: 10,
           fontFamily: MONO,
@@ -783,19 +785,23 @@ function ModeColumn({mode}: {mode: Mode}) {
 
 export default function StonePalettePage() {
   return (
-    <div style={S.page}>
-      <div style={S.inner}>
-        <h1 style={S.title}>Stone Theme Palette</h1>
-        <p style={S.subtitle}>
-          A snapshot of the warm, earthy Stone theme — every token rendered
-          alongside its dark-mode counterpart.
-        </p>
-        <TonalSection />
-        <div style={S.twoCol}>
-          <ModeColumn mode="light" />
-          <ModeColumn mode="dark" />
+    <XDSTheme theme={stoneTheme} mode="light">
+      <XDSLayerProvider>
+        <div style={S.page}>
+          <div style={S.inner}>
+            <h1 style={S.title}>Stone Theme Palette</h1>
+            <p style={S.subtitle}>
+              A snapshot of the warm, earthy Stone theme — every token rendered
+              alongside its dark-mode counterpart.
+            </p>
+            <TonalSection />
+            <div style={S.twoCol}>
+              <ModeColumn mode="light" />
+              <ModeColumn mode="dark" />
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </XDSLayerProvider>
+    </XDSTheme>
   );
 }
