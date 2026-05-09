@@ -98,11 +98,11 @@ export const stoneTheme = defineTheme({
     '--color-background-inverted': ['#28282a', '#f3f3f5'],
 
     // Status / Sentiment — T50 from palette for icons/borders (visible color)
-    '--color-success': ['#667d65', '#99b298'],              // Green T50 / T70
+    '--color-success': ['#83838a', '#5e5e61'],              // default border
     '--color-success-muted': ['#d0e9ce', '#b4cdb2'],       // Green T90 / T80
-    '--color-error': ['#8a716d', '#c0a5a1'],                // Red T50 / T70
+    '--color-error': ['#83838a', '#5e5e61'],                // default border
     '--color-error-muted': ['#f9dcd7', '#dcc0bc'],          // Red T90 / T80
-    '--color-warning': ['#857650', '#bbaa81'],              // Yellow T50 / T70
+    '--color-warning': ['#83838a', '#5e5e61'],              // default border
     '--color-warning-muted': ['#f4e1b7', '#d7c59c'],       // Yellow T90 / T80
 
     // Border — H=291
