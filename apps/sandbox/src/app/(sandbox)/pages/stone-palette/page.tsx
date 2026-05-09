@@ -571,18 +571,28 @@ function CoreSection({mode}: {mode: Mode}) {
 }
 
 function TextRampSection() {
+  const base = 14;
+  const ratio = 1.25;
+  const sizes = {
+    h1: (base * ratio ** 4).toFixed(1),
+    h2: (base * ratio ** 3).toFixed(1),
+    h3: (base * ratio ** 2).toFixed(1),
+    h4: (base * ratio ** 1).toFixed(1),
+    body: base.toFixed(1),
+    supporting: (base / ratio).toFixed(1),
+  };
   return (
     <div style={S.section}>
-      <h3 style={S.sectionTitle}>Text Hierarchy</h3>
+      <h3 style={S.sectionTitle}>Text Hierarchy (1.25 scale, 14px base)</h3>
       <XDSVStack gap={2}>
-        <XDSHeading level={1}>Heading 1 — Montserrat</XDSHeading>
-        <XDSHeading level={2}>Heading 2 — Montserrat</XDSHeading>
-        <XDSHeading level={3}>Heading 3 — Montserrat</XDSHeading>
-        <XDSHeading level={4}>Heading 4 — Montserrat</XDSHeading>
-        <XDSText type="body">Body text — primary color on body surface</XDSText>
-        <XDSText type="body" color="secondary">Body text — secondary color for supporting content</XDSText>
-        <XDSText type="supporting">Supporting text — smaller, secondary</XDSText>
-        <XDSText type="body" color="disabled">Disabled text — lowest emphasis</XDSText>
+        <XDSHStack gap={2} vAlign="baseline"><XDSHeading level={1}>Heading 1</XDSHeading><XDSText type="supporting" color="secondary">{sizes.h1}px</XDSText></XDSHStack>
+        <XDSHStack gap={2} vAlign="baseline"><XDSHeading level={2}>Heading 2</XDSHeading><XDSText type="supporting" color="secondary">{sizes.h2}px</XDSText></XDSHStack>
+        <XDSHStack gap={2} vAlign="baseline"><XDSHeading level={3}>Heading 3</XDSHeading><XDSText type="supporting" color="secondary">{sizes.h3}px</XDSText></XDSHStack>
+        <XDSHStack gap={2} vAlign="baseline"><XDSHeading level={4}>Heading 4</XDSHeading><XDSText type="supporting" color="secondary">{sizes.h4}px</XDSText></XDSHStack>
+        <XDSHStack gap={2} vAlign="baseline"><XDSText type="body">Body — primary</XDSText><XDSText type="supporting" color="secondary">{sizes.body}px</XDSText></XDSHStack>
+        <XDSHStack gap={2} vAlign="baseline"><XDSText type="body" color="secondary">Body — secondary</XDSText><XDSText type="supporting" color="secondary">{sizes.body}px</XDSText></XDSHStack>
+        <XDSHStack gap={2} vAlign="baseline"><XDSText type="supporting">Supporting</XDSText><XDSText type="supporting" color="secondary">{sizes.supporting}px</XDSText></XDSHStack>
+        <XDSHStack gap={2} vAlign="baseline"><XDSText type="body" color="disabled">Disabled</XDSText><XDSText type="supporting" color="secondary">{sizes.body}px</XDSText></XDSHStack>
       </XDSVStack>
     </div>
   );
