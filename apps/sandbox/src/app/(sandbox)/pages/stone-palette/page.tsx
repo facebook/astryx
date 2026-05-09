@@ -10,6 +10,7 @@ import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSButton} from '@xds/core/Button';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSTheme} from '@xds/core/theme';
 import {XDSLayerProvider} from '@xds/core/Layer';
 import {stoneTheme} from '@xds/theme-stone/built';
@@ -569,6 +570,24 @@ function CoreSection({mode}: {mode: Mode}) {
   );
 }
 
+function TextRampSection() {
+  return (
+    <div style={S.section}>
+      <h3 style={S.sectionTitle}>Text Hierarchy</h3>
+      <XDSVStack gap={2}>
+        <XDSHeading level={1}>Heading 1 — Montserrat</XDSHeading>
+        <XDSHeading level={2}>Heading 2 — Montserrat</XDSHeading>
+        <XDSHeading level={3}>Heading 3 — Montserrat</XDSHeading>
+        <XDSHeading level={4}>Heading 4 — Montserrat</XDSHeading>
+        <XDSText type="body">Body text — primary color on body surface</XDSText>
+        <XDSText type="body" color="secondary">Body text — secondary color for supporting content</XDSText>
+        <XDSText type="supporting">Supporting text — smaller, secondary</XDSText>
+        <XDSText type="body" color="disabled">Disabled text — lowest emphasis</XDSText>
+      </XDSVStack>
+    </div>
+  );
+}
+
 function SemanticBadgeSection() {
   return (
     <div style={S.section}>
@@ -771,6 +790,7 @@ function ModeColumn({mode}: {mode: Mode}) {
         <div style={S.modeCol(surfaces.body, surfaces.textPrimary)}>
           <p style={S.modeLabel}>{mode === 'light' ? 'Light Mode' : 'Dark Mode'}</p>
           <CoreSection mode={mode} />
+          <TextRampSection />
           <SemanticBadgeSection />
           <CategoricalBadgeSection />
           <BannerSection />
