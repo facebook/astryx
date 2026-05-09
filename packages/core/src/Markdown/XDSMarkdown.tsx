@@ -1346,19 +1346,6 @@ function renderBlock(
       );
     }
     case 'table': {
-      // Derive column min-widths from max content length (header + body).
-      // Clamp between 60px and 240px, scale ~8px per character.
-      const colWidths = node.headers.map((h, colIdx) => {
-        let maxLen = countInlineTextLength(h.children);
-        for (const row of node.rows) {
-          if (row[colIdx]) {
-            const cellLen = countInlineTextLength(row[colIdx].children);
-            if (cellLen > maxLen) maxLen = cellLen;
-          }
-        }
-        return Math.min(Math.max(maxLen * 8, 60), 240);
-      });
-
       return (
         <div
           key={index}
@@ -1375,23 +1362,19 @@ function renderBlock(
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
           )}>
-          <XDSTable
-            dividers="rows"
-            textOverflow="wrap"
-            tableProps={{style: {tableLayout: 'auto'}}}>
+          <XDSTable dividers="rows" textOverflow="wrap">
             <XDSTableHeader>
               <XDSTableRow>
                 {node.headers.map((h, i) => (
                   <XDSTableHeaderCell
                     key={i}
-                    style={{
-                      minWidth: colWidths[i],
-                      ...(node.alignments[i] === 'center'
+                    style={
+                      node.alignments[i] === 'center'
                         ? {textAlign: 'center'}
                         : node.alignments[i] === 'right'
                           ? {textAlign: 'right'}
-                          : undefined),
-                    }}>
+                          : undefined
+                    }>
                     {h.children.map((c, j) =>
                       renderInline(c, j, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins, components),
                     )}
