@@ -202,6 +202,14 @@ const dynamicStyles = stylex.create({
   blockAlign: (marginInline: string) => ({
     marginInline,
   }),
+  cellMinWidth: (minWidth: string) => ({
+    minWidth,
+  }),
+});
+
+const cellAlignStyles = stylex.create({
+  center: {textAlign: 'center'},
+  right: {textAlign: 'right'},
 });
 
 const styles = stylex.create({
@@ -969,6 +977,26 @@ function getElementSpacing(
 // Block renderer
 // ---------------------------------------------------------------------------
 
+/**
+ * Compute per-column min-widths from table AST content.
+ * Buckets: ≤6 chars → 60px, 7–15 → 80px, >15 → 120px.
+ */
+function computeTableColumnMinWidths(node: {
+  headers: {children: InlineNode[]}[];
+  rows: {children: InlineNode[]}[][];
+}): number[] {
+  return node.headers.map((h, colIdx) => {
+    let maxLen = countInlineTextLength(h.children);
+    for (const row of node.rows) {
+      if (row[colIdx]) {
+        const len = countInlineTextLength(row[colIdx].children);
+        if (len > maxLen) maxLen = len;
+      }
+    }
+    return maxLen <= 6 ? 60 : maxLen <= 15 ? 80 : 120;
+  });
+}
+
 function renderBlock(
   node: BlockNode,
   index: number,
@@ -1346,19 +1374,7 @@ function renderBlock(
       );
     }
     case 'table': {
-      // Derive per-column min-widths from content (header + body).
-      // We have direct access to the AST so we can measure here.
-      const colMinWidths = node.headers.map((h, colIdx) => {
-        let maxWordLen = countInlineTextLength(h.children);
-        for (const row of node.rows) {
-          if (row[colIdx]) {
-            const len = countInlineTextLength(row[colIdx].children);
-            if (len > maxWordLen) maxWordLen = len;
-          }
-        }
-        // ≤6 chars: 60px, 7–15: 80px, >15: 120px
-        return maxWordLen <= 6 ? 60 : maxWordLen <= 15 ? 80 : 120;
-      });
+      const colMinWidths = computeTableColumnMinWidths(node);
 
       return (
         <div
@@ -1374,14 +1390,11 @@ function renderBlock(
                 {node.headers.map((h, i) => (
                   <XDSTableHeaderCell
                     key={i}
-                    style={{
-                      minWidth: colMinWidths[i],
-                      ...(node.alignments[i] === 'center'
-                        ? {textAlign: 'center'}
-                        : node.alignments[i] === 'right'
-                          ? {textAlign: 'right'}
-                          : undefined),
-                    }}>
+                    {...stylex.props(
+                      dynamicStyles.cellMinWidth(`${colMinWidths[i]}px`),
+                      node.alignments[i] === 'center' && cellAlignStyles.center,
+                      node.alignments[i] === 'right' && cellAlignStyles.right,
+                    )}>
                     {h.children.map((c, j) =>
                       renderInline(c, j, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins, components),
                     )}
@@ -1396,13 +1409,10 @@ function renderBlock(
                 const cells = row.map((cell, j) => (
                   <XDSTableCell
                     key={j}
-                    style={
-                      node.alignments[j] === 'center'
-                        ? {textAlign: 'center'}
-                        : node.alignments[j] === 'right'
-                          ? {textAlign: 'right'}
-                          : undefined
-                    }>
+                    {...stylex.props(
+                      node.alignments[j] === 'center' && cellAlignStyles.center,
+                      node.alignments[j] === 'right' && cellAlignStyles.right,
+                    )}>
                     {cell.children.map((c, k) =>
                       renderInline(c, k, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins, components),
                     )}
