@@ -10,4 +10,3 @@ export function XDSTableFooter({children, xstyle}: XDSTableFooterProps) {
   return (<tfoot {...mergeProps(xdsClassName('table-footer'), stylex.props(xstyle))}>{children}</tfoot>);
 }
 XDSTableFooter.displayName = 'XDSTableFooter';
-XDSTableFooter.__xdsTableSlot = 'footer' as const;

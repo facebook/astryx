@@ -10,4 +10,3 @@ export function XDSTableBody({children, xstyle}: XDSTableBodyProps) {
   return (<tbody {...mergeProps(xdsClassName('table-body'), stylex.props(xstyle))}>{children}</tbody>);
 }
 XDSTableBody.displayName = 'XDSTableBody';
-XDSTableBody.__xdsTableSlot = 'body' as const;
