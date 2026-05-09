@@ -36,6 +36,8 @@ import {
 import {XDSTableRow} from './XDSTableRow';
 import {XDSTableCell} from './XDSTableCell';
 import {XDSTableHeaderCell} from './XDSTableHeaderCell';
+import {XDSTableHeader} from './XDSTableHeader';
+import {XDSTableBody} from './XDSTableBody';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSEmptyState} from '../EmptyState';
 import {XDSText} from '../Text';
@@ -426,13 +428,13 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
         : (
           <>
             {hasColumns && (
-              <thead>
+              <XDSTableHeader>
                 <RowComponent {...headerRowRenderProps.htmlProps} xstyle={headerRowRenderProps.styles}>
                   {headerRowRenderProps.children}
                 </RowComponent>
-              </thead>
+              </XDSTableHeader>
             )}
-            <tbody>
+            <XDSTableBody>
               {hasData
                 ? data.map((item, rowIndex) => {
                     const rowKey = idKey == null ? rowIndex : typeof idKey === 'function' ? idKey(item) : String(item[idKey]);
@@ -441,7 +443,7 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
                 : data != null && emptyState !== false && (
                     <tr><td colSpan={resolvedColumns.length}>{emptyState ?? <XDSEmptyState title="No data" isCompact />}</td></tr>
                   )}
-            </tbody>
+            </XDSTableBody>
           </>
         )}
     </table>
