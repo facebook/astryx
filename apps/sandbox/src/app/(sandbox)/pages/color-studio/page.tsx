@@ -16,7 +16,10 @@ import {XDSProgressBar} from '@xds/core/ProgressBar';
 import {XDSIconButton} from '@xds/core/IconButton';
 import {XDSSelector} from '@xds/core/Selector';
 import {XDSSlider} from '@xds/core/Slider';
-import {XDSSegmentedControl, XDSSegmentedControlItem} from '@xds/core/SegmentedControl';
+import {
+  XDSSegmentedControl,
+  XDSSegmentedControlItem,
+} from '@xds/core/SegmentedControl';
 
 import {
   hexToHct,
@@ -81,18 +84,24 @@ const S = {
     overflow: 'auto',
     padding: 16,
   } as React.CSSProperties,
-  main: {flex: 1, overflowY: 'auto' as const, height: '100vh', padding: 24} as React.CSSProperties,
-  swatch: (bg: string) => ({
-    width: 28,
-    height: 28,
-    borderRadius: 4,
-    background: bg,
-    border: '1px solid rgba(0,0,0,0.08)',
-    flexShrink: 0,
-    position: 'relative' as const,
-    overflow: 'hidden',
-    cursor: 'pointer',
-  }) as React.CSSProperties,
+  main: {
+    flex: 1,
+    overflowY: 'auto' as const,
+    height: '100vh',
+    padding: 24,
+  } as React.CSSProperties,
+  swatch: (bg: string) =>
+    ({
+      width: 28,
+      height: 28,
+      borderRadius: 4,
+      background: bg,
+      border: '1px solid rgba(0,0,0,0.08)',
+      flexShrink: 0,
+      position: 'relative' as const,
+      overflow: 'hidden',
+      cursor: 'pointer',
+    }) as React.CSSProperties,
   colorInput: {
     position: 'absolute' as const,
     inset: -8,
@@ -166,11 +175,12 @@ const S = {
     overflow: 'hidden',
     border: '1px solid rgba(0,0,0,0.08)',
   } as React.CSSProperties,
-  tonalCell: (bg: string) => ({
-    flex: 1,
-    height: 28,
-    background: bg,
-  }) as React.CSSProperties,
+  tonalCell: (bg: string) =>
+    ({
+      flex: 1,
+      height: 28,
+      background: bg,
+    }) as React.CSSProperties,
   tonalHct: {
     width: 55,
     flexShrink: 0,
@@ -193,15 +203,11 @@ interface PresetPalette {
 const PRESETS: PresetPalette[] = [
   {
     label: 'Default',
-    colors: [
-      {name: 'Accent', hex: '#0064E0', role: 'accent'},
-    ],
+    colors: [{name: 'Accent', hex: '#0064E0', role: 'accent'}],
   },
   {
     label: 'Brutalist',
-    colors: [
-      {name: 'Hot Pink', hex: '#FF1493', role: 'accent'},
-    ],
+    colors: [{name: 'Hot Pink', hex: '#FF1493', role: 'accent'}],
   },
   {
     label: 'Chocolate',
@@ -265,8 +271,18 @@ const PRESETS: PresetPalette[] = [
 // =============================================================================
 
 const CARD_VARIANTS = [
-  'default', 'muted', 'blue', 'cyan', 'gray', 'green',
-  'orange', 'pink', 'purple', 'red', 'teal', 'yellow',
+  'default',
+  'muted',
+  'blue',
+  'cyan',
+  'gray',
+  'green',
+  'orange',
+  'pink',
+  'purple',
+  'red',
+  'teal',
+  'yellow',
 ] as const;
 
 function BadgeSection() {
@@ -303,10 +319,26 @@ function BannerSection() {
     <div style={S.compSection}>
       <h3 style={S.compTitle}>Banners</h3>
       <XDSVStack gap={2}>
-        <XDSBanner status="info" title="Info banner" description="Uses accent color." />
-        <XDSBanner status="success" title="Success banner" description="Description text." />
-        <XDSBanner status="warning" title="Warning banner" description="Description text." />
-        <XDSBanner status="error" title="Error banner" description="Description text." />
+        <XDSBanner
+          status="info"
+          title="Info banner"
+          description="Uses accent color."
+        />
+        <XDSBanner
+          status="success"
+          title="Success banner"
+          description="Description text."
+        />
+        <XDSBanner
+          status="warning"
+          title="Warning banner"
+          description="Description text."
+        />
+        <XDSBanner
+          status="error"
+          title="Error banner"
+          description="Description text."
+        />
       </XDSVStack>
     </div>
   );
@@ -317,10 +349,30 @@ function InputSection() {
     <div style={S.compSection}>
       <h3 style={S.compTitle}>Inputs</h3>
       <XDSVStack gap={3}>
-        <XDSTextInput label="Default" placeholder="Placeholder text" value="" onChange={() => {}} />
-        <XDSTextInput label="Success" value="Valid" onChange={() => {}} status={{type: 'success', message: 'Looks good!'}} />
-        <XDSTextInput label="Error" value="Invalid" onChange={() => {}} status={{type: 'error', message: 'Required.'}} />
-        <XDSTextInput label="Disabled" value="Cannot edit" onChange={() => {}} isDisabled />
+        <XDSTextInput
+          label="Default"
+          placeholder="Placeholder text"
+          value=""
+          onChange={() => {}}
+        />
+        <XDSTextInput
+          label="Success"
+          value="Valid"
+          onChange={() => {}}
+          status={{type: 'success', message: 'Looks good!'}}
+        />
+        <XDSTextInput
+          label="Error"
+          value="Invalid"
+          onChange={() => {}}
+          status={{type: 'error', message: 'Required.'}}
+        />
+        <XDSTextInput
+          label="Disabled"
+          value="Cannot edit"
+          onChange={() => {}}
+          isDisabled
+        />
       </XDSVStack>
     </div>
   );
@@ -347,7 +399,12 @@ function SwitchSection() {
       <XDSVStack gap={3}>
         <XDSSwitch label="Off" value={false} onChange={() => {}} />
         <XDSSwitch label="On" value={true} onChange={() => {}} />
-        <XDSSwitch label="Disabled" value={false} onChange={() => {}} isDisabled />
+        <XDSSwitch
+          label="Disabled"
+          value={false}
+          onChange={() => {}}
+          isDisabled
+        />
       </XDSVStack>
     </div>
   );
@@ -359,8 +416,18 @@ function ProgressSection() {
       <h3 style={S.compTitle}>Progress</h3>
       <XDSVStack gap={3}>
         <XDSProgressBar value={75} label="Progress" hasValueLabel />
-        <XDSProgressBar value={40} label="Upload" variant="success" hasValueLabel />
-        <XDSProgressBar value={90} label="Storage" variant="warning" hasValueLabel />
+        <XDSProgressBar
+          value={40}
+          label="Upload"
+          variant="positive"
+          hasValueLabel
+        />
+        <XDSProgressBar
+          value={90}
+          label="Storage"
+          variant="warning"
+          hasValueLabel
+        />
         <XDSProgressBar isIndeterminate label="Loading..." />
       </XDSVStack>
     </div>
@@ -371,10 +438,17 @@ function CardVariantsSection() {
   return (
     <div style={S.compSection}>
       <h3 style={S.compTitle}>Card Variants</h3>
-      <div style={{display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8}}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: 8,
+        }}>
         {CARD_VARIANTS.map(v => (
-          <XDSCard key={v} variant={v} padding="sm">
-            <XDSText type="supporting" weight="bold">{v}</XDSText>
+          <XDSCard key={v} variant={v} padding={2}>
+            <XDSText type="supporting" weight="bold">
+              {v}
+            </XDSText>
           </XDSCard>
         ))}
       </div>
@@ -391,7 +465,9 @@ function TextHierarchy() {
         <XDSHeading level={2}>Heading 2</XDSHeading>
         <XDSHeading level={3}>Heading 3</XDSHeading>
         <XDSText type="body">Body — primary</XDSText>
-        <XDSText type="body" color="secondary">Body — secondary</XDSText>
+        <XDSText type="body" color="secondary">
+          Body — secondary
+        </XDSText>
         <XDSText type="supporting">Supporting text</XDSText>
       </XDSVStack>
     </div>
@@ -413,18 +489,43 @@ function SpinnerSection() {
 
 const BACKGROUND_SURFACES = [
   {name: 'Body', token: '--color-background-body', light: 'N99', dark: 'N5'},
-  {name: 'Surface', token: '--color-background-surface', light: 'N100', dark: 'N10'},
+  {
+    name: 'Surface',
+    token: '--color-background-surface',
+    light: 'N100',
+    dark: 'N10',
+  },
   {name: 'Card', token: '--color-background-card', light: 'N100', dark: 'N15'},
-  {name: 'Popover', token: '--color-background-popover', light: 'N100', dark: 'N20'},
-  {name: 'Muted', token: '--color-background-muted', light: 'N10 @5%', dark: 'N10 @50%'},
-  {name: 'Inverted', token: '--color-background-inverted', light: 'N10', dark: 'N99'},
+  {
+    name: 'Popover',
+    token: '--color-background-popover',
+    light: 'N100',
+    dark: 'N20',
+  },
+  {
+    name: 'Muted',
+    token: '--color-background-muted',
+    light: 'N10 @5%',
+    dark: 'N10 @50%',
+  },
+  {
+    name: 'Inverted',
+    token: '--color-background-inverted',
+    light: 'N10',
+    dark: 'N99',
+  },
 ] as const;
 
 function BackgroundsSection({mode}: {mode: 'light' | 'dark'}) {
   return (
     <div style={S.compSection}>
       <h3 style={S.compTitle}>Backgrounds</h3>
-      <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6}}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 6,
+        }}>
         {BACKGROUND_SURFACES.map(bg => (
           <div
             key={bg.name}
@@ -434,19 +535,25 @@ function BackgroundsSection({mode}: {mode: 'light' | 'dark'}) {
               borderRadius: 6,
               padding: '12px 8px',
               textAlign: 'center' as const,
-            }}
-          >
-            <span style={{
-              fontSize: 10,
-              fontWeight: 600,
-              color: bg.name === 'Inverted' ? 'var(--color-text-primary)' : undefined,
-              mixBlendMode: bg.name === 'Inverted' ? 'difference' as const : undefined,
-              display: 'flex',
-              flexDirection: 'column' as const,
-              gap: 2,
             }}>
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                color:
+                  bg.name === 'Inverted'
+                    ? 'var(--color-text-primary)'
+                    : undefined,
+                mixBlendMode:
+                  bg.name === 'Inverted' ? ('difference' as const) : undefined,
+                display: 'flex',
+                flexDirection: 'column' as const,
+                gap: 2,
+              }}>
               <span>{bg.name}</span>
-              <span style={{fontSize: 8, fontWeight: 400, opacity: 0.6}}>{mode === 'light' ? bg.light : bg.dark}</span>
+              <span style={{fontSize: 8, fontWeight: 400, opacity: 0.6}}>
+                {mode === 'light' ? bg.light : bg.dark}
+              </span>
             </span>
           </div>
         ))}
@@ -459,12 +566,20 @@ function BackgroundsSection({mode}: {mode: 'light' | 'dark'}) {
 // Preview Column
 // =============================================================================
 
-function PreviewColumn({mode, theme}: {mode: 'light' | 'dark'; theme: ReturnType<typeof defineTheme>}) {
+function PreviewColumn({
+  mode,
+  theme,
+}: {
+  mode: 'light' | 'dark';
+  theme: ReturnType<typeof defineTheme>;
+}) {
   return (
     <XDSTheme theme={theme} mode={mode}>
       <XDSLayerProvider>
         <div style={S.previewCol}>
-          <p style={S.previewLabel}>{mode === 'light' ? 'Light Mode' : 'Dark Mode'}</p>
+          <p style={S.previewLabel}>
+            {mode === 'light' ? 'Light Mode' : 'Dark Mode'}
+          </p>
           <BackgroundsSection mode={mode} />
           <TextHierarchy />
           <BadgeSection />
@@ -511,7 +626,10 @@ function PaletteEntry({
     () =>
       ROLE_OPTIONS.map(o => ({
         ...o,
-        disabled: o.value !== '' && o.value !== color.role && usedRoles.has(o.value as ThemeRole),
+        disabled:
+          o.value !== '' &&
+          o.value !== color.role &&
+          usedRoles.has(o.value as ThemeRole),
       })),
     [color.role, usedRoles],
   );
@@ -543,7 +661,9 @@ function PaletteEntry({
         isLabelHidden
         options={roleOptions}
         value={color.role ?? ''}
-        onChange={v => onChange(color.id, {role: (v || undefined) as ThemeRole | undefined})}
+        onChange={v =>
+          onChange(color.id, {role: (v || undefined) as ThemeRole | undefined})
+        }
         size="sm"
       />
       {canRemove && (
@@ -589,10 +709,14 @@ const CHANNEL_GROUPS: {label: string; channels: ColorChannel[]}[] = [
   {
     label: 'Categorical',
     channels: [
-      makeChannel('Red', 'red'), makeChannel('Orange', 'orange'),
-      makeChannel('Yellow', 'yellow'), makeChannel('Green', 'green'),
-      makeChannel('Teal', 'teal'), makeChannel('Cyan', 'cyan'),
-      makeChannel('Blue', 'blue'), makeChannel('Purple', 'purple'),
+      makeChannel('Red', 'red'),
+      makeChannel('Orange', 'orange'),
+      makeChannel('Yellow', 'yellow'),
+      makeChannel('Green', 'green'),
+      makeChannel('Teal', 'teal'),
+      makeChannel('Cyan', 'cyan'),
+      makeChannel('Blue', 'blue'),
+      makeChannel('Purple', 'purple'),
       makeChannel('Pink', 'pink'),
     ],
   },
@@ -615,7 +739,6 @@ function TonalRamps({
   themeName: string;
   grayTone: 'warm' | 'neutral' | 'cool';
 }) {
-
   const roleMap = useMemo(() => {
     const map = new Map<ThemeRole, PaletteColor>();
     for (const pc of palette) {
@@ -628,19 +751,36 @@ function TonalRamps({
 
   return (
     <div style={{marginBottom: 24}}>
-      <h2 style={{fontSize: 16, fontWeight: 700, color: '#1a1a1a', margin: 0, marginBottom: 4}}>
-        Tonal Palettes <span style={{fontWeight: 400, color: '#888'}}> — {themeName}</span>
+      <h2
+        style={{
+          fontSize: 16,
+          fontWeight: 700,
+          color: '#1a1a1a',
+          margin: 0,
+          marginBottom: 4,
+        }}>
+        Tonal Palettes{' '}
+        <span style={{fontWeight: 400, color: '#888'}}> — {themeName}</span>
       </h2>
       <p style={{fontSize: 11, color: '#888', margin: 0, marginBottom: 12}}>
-        OKLCH tonal ramps — {TONE_STEPS.length} steps per channel, perceptually equalized.
-        {vibrancy !== 1.0 && ` Vibrancy: ${vibrancy.toFixed(1)}x.`}
-        {' '}Channels with palette overrides are highlighted.
+        OKLCH tonal ramps — {TONE_STEPS.length} steps per channel, perceptually
+        equalized.
+        {vibrancy !== 1.0 && ` Vibrancy: ${vibrancy.toFixed(1)}x.`} Channels
+        with palette overrides are highlighted.
       </p>
       <div style={{...S.tonalRow, marginBottom: 6}}>
         <span style={S.tonalLabel} />
         <div style={S.tonalStrip}>
           {TONE_STEPS.map(t => (
-            <div key={t} style={{flex: 1, textAlign: 'center' as const, fontSize: 8, fontFamily: MONO, color: '#aaa'}}>
+            <div
+              key={t}
+              style={{
+                flex: 1,
+                textAlign: 'center' as const,
+                fontSize: 8,
+                fontFamily: MONO,
+                color: '#aaa',
+              }}>
               {t}
             </div>
           ))}
@@ -649,7 +789,15 @@ function TonalRamps({
       </div>
       {CHANNEL_GROUPS.map(group => (
         <div key={group.label} style={{marginBottom: 14}}>
-          <div style={{fontSize: 9, fontWeight: 600, color: '#aaa', textTransform: 'uppercase' as const, letterSpacing: '0.8px', marginBottom: 4}}>
+          <div
+            style={{
+              fontSize: 9,
+              fontWeight: 600,
+              color: '#aaa',
+              textTransform: 'uppercase' as const,
+              letterSpacing: '0.8px',
+              marginBottom: 4,
+            }}>
             {group.label}
           </div>
           {group.channels.map(ch => {
@@ -658,57 +806,107 @@ function TonalRamps({
             if (ch.role === 'gray') {
               const grayHue = assigned
                 ? hexToOklch(assigned.hex).H
-                : grayTone === 'warm' ? 60 : grayTone === 'cool' ? 260 : 0;
-              const grayC = assigned ? Math.min(hexToOklch(assigned.hex).C, 0.02) : (grayTone === 'neutral' ? 0.003 : 0.012);
+                : grayTone === 'warm'
+                  ? 60
+                  : grayTone === 'cool'
+                    ? 260
+                    : 0;
+              const grayC = assigned
+                ? Math.min(hexToOklch(assigned.hex).C, 0.02)
+                : grayTone === 'neutral'
+                  ? 0.003
+                  : 0.012;
               const tones = oklchTonalPalette(grayHue, grayC, vibrancy);
               return (
                 <div key={ch.role} style={S.tonalRow}>
-                  <span style={{...S.tonalLabel, color: assigned ? '#4f46e5' : '#888', fontWeight: assigned ? 600 : 400}}
-                    title={assigned ? `${ch.name} ← ${assigned.name}` : `${ch.name} (default)`}>
+                  <span
+                    style={{
+                      ...S.tonalLabel,
+                      color: assigned ? '#4f46e5' : '#888',
+                      fontWeight: assigned ? 600 : 400,
+                    }}
+                    title={
+                      assigned
+                        ? `${ch.name} ← ${assigned.name}`
+                        : `${ch.name} (default)`
+                    }>
                     {ch.name}
                   </span>
                   <div style={S.tonalStrip}>
                     {TONE_STEPS.map(t => (
-                      <div key={t} style={S.tonalCell(tones[t])} title={`${ch.name} T${t}: ${tones[t]}`} />
+                      <div
+                        key={t}
+                        style={S.tonalCell(tones[t])}
+                        title={`${ch.name} T${t}: ${tones[t]}`}
+                      />
                     ))}
                   </div>
-                  <span style={S.tonalHct}>H:{grayHue.toFixed(0)} C:{(grayC * vibrancy).toFixed(2)}</span>
+                  <span style={S.tonalHct}>
+                    H:{grayHue.toFixed(0)} C:{(grayC * vibrancy).toFixed(2)}
+                  </span>
                 </div>
               );
             }
             if (group.label === 'Categorical') {
-              const catChroma = assigned ? Math.max(hexToOklch(assigned.hex).C, ch.oklchChroma) : ch.oklchChroma;
+              const catChroma = assigned
+                ? Math.max(hexToOklch(assigned.hex).C, ch.oklchChroma)
+                : ch.oklchChroma;
               const tones = oklchTonalPalette(hue, catChroma, vibrancy);
               return (
                 <div key={ch.role} style={S.tonalRow}>
-                  <span style={{...S.tonalLabel, color: assigned ? '#4f46e5' : '#888', fontWeight: assigned ? 600 : 400}}
-                    title={assigned ? `${ch.name} ← ${assigned.name}` : `${ch.name} (default)`}>
+                  <span
+                    style={{
+                      ...S.tonalLabel,
+                      color: assigned ? '#4f46e5' : '#888',
+                      fontWeight: assigned ? 600 : 400,
+                    }}
+                    title={
+                      assigned
+                        ? `${ch.name} ← ${assigned.name}`
+                        : `${ch.name} (default)`
+                    }>
                     {ch.name}
                   </span>
                   <div style={S.tonalStrip}>
                     {TONE_STEPS.map(t => (
-                      <div key={t} style={S.tonalCell(tones[t])} title={`${ch.name} T${t}: ${tones[t]}`} />
+                      <div
+                        key={t}
+                        style={S.tonalCell(tones[t])}
+                        title={`${ch.name} T${t}: ${tones[t]}`}
+                      />
                     ))}
                   </div>
                   <span style={S.tonalHct}>H:{hue.toFixed(0)}</span>
                 </div>
               );
             }
-            const coreOklch = assigned ? hexToOklch(assigned.hex) : {L: 0.5, C: ch.oklchChroma, H: ch.oklchHue};
+            const coreOklch = assigned
+              ? hexToOklch(assigned.hex)
+              : {L: 0.5, C: ch.oklchChroma, H: ch.oklchHue};
             const coreChroma = Math.max(coreOklch.C, 0.09);
             const tones = oklchTonalPalette(hue, coreChroma, vibrancy);
             return (
               <div key={ch.role} style={S.tonalRow}>
-                <span style={{
-                  ...S.tonalLabel,
-                  color: assigned ? '#4f46e5' : '#888',
-                  fontWeight: assigned ? 600 : 400,
-                }} title={assigned ? `${ch.name} ← ${assigned.name} (${assigned.hex})` : `${ch.name} (default)`}>
+                <span
+                  style={{
+                    ...S.tonalLabel,
+                    color: assigned ? '#4f46e5' : '#888',
+                    fontWeight: assigned ? 600 : 400,
+                  }}
+                  title={
+                    assigned
+                      ? `${ch.name} ← ${assigned.name} (${assigned.hex})`
+                      : `${ch.name} (default)`
+                  }>
                   {ch.name}
                 </span>
                 <div style={S.tonalStrip}>
                   {TONE_STEPS.map(t => (
-                    <div key={t} style={S.tonalCell(tones[t])} title={`${ch.name} T${t}: ${tones[t]}`} />
+                    <div
+                      key={t}
+                      style={S.tonalCell(tones[t])}
+                      title={`${ch.name} T${t}: ${tones[t]}`}
+                    />
                   ))}
                 </div>
                 <span style={S.tonalHct}>
@@ -720,11 +918,21 @@ function TonalRamps({
         </div>
       ))}
       {(() => {
-        const assignedStatus = STATUS_CHANNELS.filter(ch => roleMap.has(ch.role));
+        const assignedStatus = STATUS_CHANNELS.filter(ch =>
+          roleMap.has(ch.role),
+        );
         if (!assignedStatus.length) return null;
         return (
           <div style={{marginBottom: 14}}>
-            <div style={{fontSize: 9, fontWeight: 600, color: '#aaa', textTransform: 'uppercase' as const, letterSpacing: '0.8px', marginBottom: 4}}>
+            <div
+              style={{
+                fontSize: 9,
+                fontWeight: 600,
+                color: '#aaa',
+                textTransform: 'uppercase' as const,
+                letterSpacing: '0.8px',
+                marginBottom: 4,
+              }}>
               Status
             </div>
             {assignedStatus.map(ch => {
@@ -734,13 +942,18 @@ function TonalRamps({
               const tones = oklchTonalPalette(oklch.H, chroma);
               return (
                 <div key={ch.role} style={S.tonalRow}>
-                  <span style={{...S.tonalLabel, color: '#4f46e5', fontWeight: 600}}
+                  <span
+                    style={{...S.tonalLabel, color: '#4f46e5', fontWeight: 600}}
                     title={`${ch.name} ← ${assigned.name} (${assigned.hex})`}>
                     {ch.name}
                   </span>
                   <div style={S.tonalStrip}>
                     {TONE_STEPS.map(t => (
-                      <div key={t} style={S.tonalCell(tones[t])} title={`${ch.name} T${t}: ${tones[t]}`} />
+                      <div
+                        key={t}
+                        style={S.tonalCell(tones[t])}
+                        title={`${ch.name} T${t}: ${tones[t]}`}
+                      />
                     ))}
                   </div>
                   <span style={S.tonalHct}>
@@ -754,7 +967,16 @@ function TonalRamps({
       })()}
       {unassigned.length > 0 && (
         <>
-          <div style={{fontSize: 9, fontWeight: 600, color: '#888', textTransform: 'uppercase' as const, letterSpacing: '0.8px', marginTop: 12, marginBottom: 6}}>
+          <div
+            style={{
+              fontSize: 9,
+              fontWeight: 600,
+              color: '#888',
+              textTransform: 'uppercase' as const,
+              letterSpacing: '0.8px',
+              marginTop: 12,
+              marginBottom: 6,
+            }}>
             Unassigned
           </div>
           {unassigned.map(pc => {
@@ -766,7 +988,11 @@ function TonalRamps({
                 <span style={S.tonalLabel}>{pc.name}</span>
                 <div style={S.tonalStrip}>
                   {TONE_STEPS.map(t => (
-                    <div key={t} style={S.tonalCell(tones[t])} title={`${pc.name} T${t}: ${tones[t]}`} />
+                    <div
+                      key={t}
+                      style={S.tonalCell(tones[t])}
+                      title={`${pc.name} T${t}: ${tones[t]}`}
+                    />
                   ))}
                 </div>
                 <span style={S.tonalHct}>
@@ -785,14 +1011,22 @@ function TonalRamps({
 // Contrast Matrix
 // =============================================================================
 
-
 // =============================================================================
 // Export Panel
 // =============================================================================
 
-function ExportPanel({palette, options}: {palette: PaletteColor[]; options: ThemeOptions}) {
+function ExportPanel({
+  palette,
+  options,
+}: {
+  palette: PaletteColor[];
+  options: ThemeOptions;
+}) {
   const [copied, setCopied] = useState(false);
-  const code = useMemo(() => generateExportCode(palette, options), [palette, options]);
+  const code = useMemo(
+    () => generateExportCode(palette, options),
+    [palette, options],
+  );
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(code).then(() => {
@@ -839,12 +1073,20 @@ export default function ColorStudioPage() {
   const [themeName, setThemeName] = useState('Custom');
   const [exactAccent, setExactAccent] = useState(true);
   const [vibrancy, setVibrancy] = useState(1.0);
-  const [grayTone, setGrayTone] = useState<'warm' | 'neutral' | 'cool'>('neutral');
+  const [grayTone, setGrayTone] = useState<'warm' | 'neutral' | 'cool'>(
+    'neutral',
+  );
   const [imgSrc, setImgSrc] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const themeOptions: ThemeOptions = useMemo(
-    () => ({warmth: grayTone as 'warm' | 'cool' | 'neutral', surfaceStyle: 'tinted' as const, exactAccent, vibrancy, radiusMultiplier: 1}),
+    () => ({
+      warmth: grayTone as 'warm' | 'cool' | 'neutral',
+      surfaceStyle: 'tinted' as const,
+      exactAccent,
+      vibrancy,
+      radiusMultiplier: 1,
+    }),
     [grayTone, exactAccent, vibrancy],
   );
 
@@ -855,9 +1097,12 @@ export default function ColorStudioPage() {
 
   const theme = useMemo(() => {
     const {accentHex, tokens} = buildThemeTokens(palette, themeOptions);
-    const bodyColor = grayTone === 'warm' ? '#F5F0E8'
-      : grayTone === 'cool' ? '#EEF2F7'
-      : undefined;
+    const bodyColor =
+      grayTone === 'warm'
+        ? '#F5F0E8'
+        : grayTone === 'cool'
+          ? '#EEF2F7'
+          : undefined;
 
     return defineTheme({
       name: 'studio-preview',
@@ -871,26 +1116,29 @@ export default function ColorStudioPage() {
     });
   }, [palette, themeOptions, grayTone]);
 
-  const updateColor = useCallback((id: string, changes: Partial<PaletteColor>) => {
-    setPalette(prev => prev.map(c => (c.id === id ? {...c, ...changes} : c)));
-  }, []);
+  const updateColor = useCallback(
+    (id: string, changes: Partial<PaletteColor>) => {
+      setPalette(prev => prev.map(c => (c.id === id ? {...c, ...changes} : c)));
+    },
+    [],
+  );
 
   const removeColor = useCallback((id: string) => {
-    setPalette(prev => (prev.length > 1 ? prev.filter(c => c.id !== id) : prev));
+    setPalette(prev =>
+      prev.length > 1 ? prev.filter(c => c.id !== id) : prev,
+    );
   }, []);
 
   const addColor = useCallback(() => {
     const h = Math.random() * 360;
     const c = 30 + Math.random() * 50;
     const hex = hctToHex({hue: h, chroma: c, tone: 50});
-    setPalette(prev => [...prev, makePaletteColor('Color ' + (_nextId), hex)]);
+    setPalette(prev => [...prev, makePaletteColor('Color ' + _nextId, hex)]);
   }, []);
 
   const loadPreset = useCallback((preset: PresetPalette) => {
     setThemeName(preset.label);
-    setPalette(
-      preset.colors.map(c => makePaletteColor(c.name, c.hex, c.role)),
-    );
+    setPalette(preset.colors.map(c => makePaletteColor(c.name, c.hex, c.role)));
   }, []);
 
   const handleImage = useCallback((file: File) => {
@@ -932,7 +1180,9 @@ export default function ColorStudioPage() {
             <XDSVStack gap={5}>
               {/* --- Presets --- */}
               <XDSVStack gap={3}>
-                <XDSText type="label" weight="semibold">Presets</XDSText>
+                <XDSText type="label" weight="semibold">
+                  Presets
+                </XDSText>
                 <XDSHStack gap={1} wrap="wrap">
                   {PRESETS.map(p => (
                     <XDSButton
@@ -946,12 +1196,19 @@ export default function ColorStudioPage() {
                 </XDSHStack>
               </XDSVStack>
 
-
               {/* --- Palette --- */}
               <XDSVStack gap={3}>
-                <XDSHStack hAlign="space-between" vAlign="center">
-                  <XDSText type="label" weight="semibold">Palette</XDSText>
-                  <XDSIconButton label="Add color" variant="ghost" size="sm" onClick={addColor} icon={<span style={{fontSize: 16, lineHeight: 1}}>+</span>} />
+                <XDSHStack hAlign="between" vAlign="center">
+                  <XDSText type="label" weight="semibold">
+                    Palette
+                  </XDSText>
+                  <XDSIconButton
+                    label="Add color"
+                    variant="ghost"
+                    size="sm"
+                    onClick={addColor}
+                    icon={<span style={{fontSize: 16, lineHeight: 1}}>+</span>}
+                  />
                 </XDSHStack>
                 <XDSVStack gap={2}>
                   {palette.map(c => (
@@ -967,10 +1224,11 @@ export default function ColorStudioPage() {
                 </XDSVStack>
               </XDSVStack>
 
-
               {/* --- Options --- */}
               <XDSVStack gap={4}>
-                <XDSText type="label" weight="semibold">Options</XDSText>
+                <XDSText type="label" weight="semibold">
+                  Options
+                </XDSText>
 
                 <XDSSlider
                   label="Vibrancy"
@@ -978,53 +1236,70 @@ export default function ColorStudioPage() {
                   max={200}
                   step={10}
                   value={vibrancy * 100}
-                  onChange={v => setVibrancy(v / 100)}
+                  onChange={(v: number) => setVibrancy(v / 100)}
                   formatValue={v => `${Math.round(v)}%`}
                 />
 
-                <XDSHStack vAlign="center" style={{justifyContent: 'space-between'}}>
-                  <XDSText type="supporting" color="secondary">Gray Tone</XDSText>
+                <XDSHStack
+                  vAlign="center"
+                  style={{justifyContent: 'space-between'}}>
+                  <XDSText type="supporting" color="secondary">
+                    Gray Tone
+                  </XDSText>
                   <XDSSegmentedControl
                     label="Gray tone"
                     value={grayTone}
-                    onChange={v => setGrayTone(v as 'warm' | 'neutral' | 'cool')}
-                    size="sm"
-                  >
+                    onChange={v =>
+                      setGrayTone(v as 'warm' | 'neutral' | 'cool')
+                    }
+                    size="sm">
                     <XDSSegmentedControlItem value="warm" label="Warm" />
                     <XDSSegmentedControlItem value="neutral" label="Neutral" />
                     <XDSSegmentedControlItem value="cool" label="Cool" />
                   </XDSSegmentedControl>
                 </XDSHStack>
 
-                <XDSHStack vAlign="center" style={{justifyContent: 'space-between'}}>
-                  <XDSText type="supporting" color="secondary">Accent Match</XDSText>
+                <XDSHStack
+                  vAlign="center"
+                  style={{justifyContent: 'space-between'}}>
+                  <XDSText type="supporting" color="secondary">
+                    Accent Match
+                  </XDSText>
                   <XDSSegmentedControl
                     label="Accent match"
                     value={exactAccent ? 'exact' : 'derived'}
                     onChange={v => setExactAccent(v === 'exact')}
-                    size="sm"
-                  >
+                    size="sm">
                     <XDSSegmentedControlItem value="derived" label="Tonal" />
                     <XDSSegmentedControlItem value="exact" label="Exact" />
                   </XDSSegmentedControl>
                 </XDSHStack>
               </XDSVStack>
 
-
               {/* --- Image Extraction --- */}
               <XDSVStack gap={3}>
-                <XDSText type="label" weight="semibold">Extract from Image</XDSText>
-                <div style={S.dropZone} onClick={() => fileRef.current?.click()}>
+                <XDSText type="label" weight="semibold">
+                  Extract from Image
+                </XDSText>
+                <div
+                  style={S.dropZone}
+                  onClick={() => fileRef.current?.click()}>
                   <input
                     ref={fileRef}
                     type="file"
                     accept="image/*"
                     style={S.dropInput}
-                    onChange={e => e.target.files?.[0] && handleImage(e.target.files[0])}
+                    onChange={e =>
+                      e.target.files?.[0] && handleImage(e.target.files[0])
+                    }
                   />
-                  <XDSText type="supporting" color="secondary">Drop image or click</XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    Drop image or click
+                  </XDSText>
                 </div>
-                {imgSrc && <img src={imgSrc} alt="preview" style={S.imgThumb} />}
+                {imgSrc && (
+                  <img src={imgSrc} alt="preview" style={S.imgThumb} />
+                )}
               </XDSVStack>
             </XDSVStack>
           </div>
@@ -1033,8 +1308,12 @@ export default function ColorStudioPage() {
 
       {/* ═══ Main Preview ═══ */}
       <main style={S.main}>
-        <TonalRamps palette={palette} vibrancy={vibrancy} themeName={themeName} grayTone={grayTone} />
-
+        <TonalRamps
+          palette={palette}
+          vibrancy={vibrancy}
+          themeName={themeName}
+          grayTone={grayTone}
+        />
 
         <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20}}>
           <PreviewColumn mode="light" theme={theme} />
