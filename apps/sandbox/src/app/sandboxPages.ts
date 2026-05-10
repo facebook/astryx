@@ -116,6 +116,12 @@ export const categories: SandboxCategory[] = [
           'Stone theme tonal palettes, badges, banners, inputs, and buttons in light and dark mode',
       },
       {
+        name: 'Y2K Palette',
+        href: '/pages/y2k-palette/',
+        description:
+          'Y2K theme — badges, banners, inputs, and buttons in light and dark mode',
+      },
+      {
         name: 'Color Studio',
         href: '/pages/color-studio/',
         description:

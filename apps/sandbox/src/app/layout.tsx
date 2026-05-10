@@ -13,7 +13,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
       <head>
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Pacifico&display=swap"
         />
         {/* Prevent PreviewShell toolbar flash when loaded inside an iframe.
             Runs before paint so the toolbar is never visible in embed contexts. */}

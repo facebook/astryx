@@ -61,6 +61,7 @@ function SandboxHeader() {
     {label: 'Stone', onClick: () => setThemeName('stone')},
     {label: 'Gothic', onClick: () => setThemeName('gothic')},
     {label: 'Chocolate', onClick: () => setThemeName('chocolate')},
+    {label: 'Y2K', onClick: () => setThemeName('y2k')},
   ];
 
   const modeItems = [
