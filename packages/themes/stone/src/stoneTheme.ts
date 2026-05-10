@@ -130,11 +130,11 @@ export const stoneTheme = defineTheme({
     '--color-icon-cyan': ['#334b49', '#122a28'],
     '--color-text-cyan': ['#334b49', '#122a28'],
 
-    // Categorical — Gray H=291 C=1 (near-neutral)
-    '--color-background-gray': ['#e2e2e4', '#ababad'],
-    '--color-border-gray': ['#d4d4d6', '#9e9e9f'],
-    '--color-icon-gray': ['#474748', '#262627'],
-    '--color-text-gray': ['#474748', '#262627'],
+    // Categorical — Gray (pure neutral, C=0)
+    '--color-background-gray': ['#e2e2e2', '#ababab'],
+    '--color-border-gray': ['#d4d4d4', '#9e9e9e'],
+    '--color-icon-gray': ['#474747', '#262626'],
+    '--color-text-gray': ['#474747', '#262626'],
 
     // Categorical — Green H=142 C=17
     '--color-background-green': ['#d0e9ce', '#99b298'],
@@ -230,8 +230,8 @@ export const stoneTheme = defineTheme({
         color: 'light-dark(#3c4856, #313c4a)',
       },
       'variant:neutral': {
-        backgroundColor: 'light-dark(#e2e2e4, #c6c6c8)',
-        color: 'light-dark(#474748, #3b3b3d)',
+        backgroundColor: 'light-dark(#e2e2e2, #c6c6c6)',
+        color: 'light-dark(#474747, #3b3b3b)',
       },
       'variant:success': {
         backgroundColor: 'light-dark(#d0e9ce, #b4cdb2)',
