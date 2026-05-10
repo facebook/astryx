@@ -1,6 +1,6 @@
 /**
  * @file expandColorScale.ts
- * @input Color scale configuration { accent, body?, neutralStyle?, contrast?, darkMode?, chromaBoost?, equalize? }
+ * @input Color scale configuration { accent, body?, neutralStyle?, contrast? }
  * @output Token overrides for derivable color tokens
  * @position Theme utility; consumed by defineTheme.ts
  *
@@ -13,13 +13,7 @@
  * - /packages/core/src/theme/defineTheme.ts
  */
 
-import {
-  hexToHct,
-  hctToHex,
-  tonalPalette,
-  hexWithAlpha,
-  maxChromaAtTone,
-} from './hct';
+import {hexToHct, tonalPalette, hexWithAlpha} from './hct';
 
 // =============================================================================
 // Types
@@ -39,9 +33,6 @@ import {
  *   body: '#FFF6ED',
  *   neutralStyle: 'warm',
  *   contrast: 'high',
- *   darkMode: 'preserve',
- *   chromaBoost: { belowTone: 50, factor: 1.5, cap: 2.0 },
- *   equalize: true,
  * }
  * ```
  */
@@ -79,42 +70,6 @@ export interface XDSColorScaleConfig {
    * @default 'standard'
    */
   contrast?: 'standard' | 'high';
-
-  /**
-   * How colors adapt between light and dark mode. Applies to all generated
-   * palette colors (accent, categorical, neutral surfaces).
-   *
-   * - 'adaptive' (default): remap tones for each mode (e.g. T90 bg in light → T30 in dark)
-   * - 'preserve': use identical hex values in both modes (brand-locked colors)
-   * - 'invert': swap the light/dark assignments
-   * @default 'adaptive'
-   */
-  darkMode?: 'adaptive' | 'preserve' | 'invert';
-
-  /**
-   * Boost chroma at dark tones to keep them vibrant. Without this, dark
-   * tones can appear washed out due to gamut compression.
-   *
-   * @param belowTone - Tones below this value get boosted. @default 50
-   * @param factor - Divisor for the boost curve — higher values produce a gentler boost. @default 1.5
-   * @param cap - Maximum chroma multiplier cap (e.g. 2.0 = at most 2× the base chroma). @default 2.0
-   */
-  chromaBoost?: {
-    /** Tones below this value get boosted. @default 50 */
-    belowTone?: number;
-    /** Divisor for the boost curve — higher = gentler ramp. @default 1.5 */
-    factor?: number;
-    /** Maximum chroma multiplier. 2.0 means chroma can at most double. @default 2.0 */
-    cap?: number;
-  };
-
-  /**
-   * Perceptual equalization. When true, categorical background colors
-   * are adjusted so all hues appear equally saturated at the same tone.
-   * Prevents some hues (e.g. yellow) from looking more vivid than others.
-   * @default false
-   */
-  equalize?: boolean;
 }
 
 export type ColorScaleTokens = Record<string, string>;
@@ -153,30 +108,6 @@ const CATEGORICAL_HUES = [
 ];
 
 // =============================================================================
-// Perceptual equalization
-// =============================================================================
-
-/**
- * Compute a chroma value for each hue that produces the same perceived
- * colorfulness at a given tone. Uses the max in-gamut chroma as an
- * upper bound and normalizes to the smallest achievable colorfulness.
- */
-function equalizeChromasAtTone(
-  hues: {hue: number; chroma: number}[],
-  tone: number,
-): number[] {
-  const maxChromas = hues.map(h =>
-    h.chroma === 0 ? 0 : maxChromaAtTone(h.hue, tone),
-  );
-  const achievable = hues.map((h, i) => Math.min(h.chroma, maxChromas[i]));
-  const minNonZero = achievable
-    .filter(c => c > 0)
-    .reduce((a, b) => Math.min(a, b), Infinity);
-  if (!isFinite(minNonZero)) return achievable;
-  return achievable.map(c => (c === 0 ? 0 : minNonZero));
-}
-
-// =============================================================================
 // Computation
 // =============================================================================
 
@@ -201,15 +132,7 @@ function ld(light: string, dark: string): string {
 export function expandColorScale(
   config: XDSColorScaleConfig,
 ): ColorScaleTokens {
-  const {
-    accent,
-    body,
-    neutralStyle = 'cool',
-    contrast = 'standard',
-    darkMode = 'adaptive',
-    chromaBoost,
-    equalize = false,
-  } = config;
+  const {accent, body, neutralStyle = 'cool', contrast = 'standard'} = config;
 
   const seed = hexToHct(accent);
   const seedHue = seed.hue;
@@ -232,9 +155,9 @@ export function expandColorScale(
     neutralVariantChroma = NEUTRAL_VARIANT_CHROMA[neutralStyle] ?? 8;
   }
 
-  const P = tonalPalette(seedHue, primaryChroma, chromaBoost);
-  const N = tonalPalette(neutralHue, neutralChroma, chromaBoost);
-  const NV = tonalPalette(neutralHue, neutralVariantChroma, chromaBoost);
+  const P = tonalPalette(seedHue, primaryChroma);
+  const N = tonalPalette(neutralHue, neutralChroma);
+  const NV = tonalPalette(neutralHue, neutralVariantChroma);
 
   const isHigh = contrast === 'high';
 
@@ -242,18 +165,6 @@ export function expandColorScale(
   const textPrimaryDarkTone = isHigh ? 99 : 90;
   const textSecondaryLightTone = isHigh ? 20 : 30;
   const textSecondaryDarkTone = isHigh ? 80 : 70;
-
-  // Light-dark helper that respects darkMode strategy
-  const catLd = (lightHex: string, darkHex: string): string => {
-    switch (darkMode) {
-      case 'preserve':
-        return ld(lightHex, lightHex);
-      case 'invert':
-        return ld(darkHex, lightHex);
-      default:
-        return ld(lightHex, darkHex);
-    }
-  };
 
   const tokens: ColorScaleTokens = {
     // Core semantic
@@ -313,30 +224,26 @@ export function expandColorScale(
     '--color-tint-hover': ld('black', 'white'),
   };
 
-  // Generate categorical colors with optional equalization
+  // Generate categorical colors
   const catHues = CATEGORICAL_HUES.filter(h => h.name !== 'gray');
-  let chromas = catHues.map(h => h.chroma);
-
-  if (equalize) {
-    chromas = equalizeChromasAtTone(catHues, 90);
-  }
+  const chromas = catHues.map(h => h.chroma);
 
   for (let i = 0; i < catHues.length; i++) {
     const {name, hue} = catHues[i];
     const c = chromas[i];
-    const palette = tonalPalette(hue, c, chromaBoost);
+    const palette = tonalPalette(hue, c);
 
-    tokens[`--color-background-${name}`] = catLd(palette[90], palette[30]);
-    tokens[`--color-border-${name}`] = catLd(palette[80], palette[40]);
-    tokens[`--color-icon-${name}`] = catLd(palette[30], palette[80]);
-    tokens[`--color-text-${name}`] = catLd(palette[30], palette[80]);
+    tokens[`--color-background-${name}`] = ld(palette[90], palette[30]);
+    tokens[`--color-border-${name}`] = ld(palette[80], palette[40]);
+    tokens[`--color-icon-${name}`] = ld(palette[30], palette[80]);
+    tokens[`--color-text-${name}`] = ld(palette[30], palette[80]);
   }
 
   // Gray uses neutral palette
-  tokens['--color-background-gray'] = catLd(N[90], N[30]);
-  tokens['--color-border-gray'] = catLd(N[80], N[40]);
-  tokens['--color-icon-gray'] = catLd(N[30], N[80]);
-  tokens['--color-text-gray'] = catLd(N[30], N[80]);
+  tokens['--color-background-gray'] = ld(N[90], N[30]);
+  tokens['--color-border-gray'] = ld(N[80], N[40]);
+  tokens['--color-icon-gray'] = ld(N[30], N[80]);
+  tokens['--color-text-gray'] = ld(N[30], N[80]);
 
   return tokens;
 }
