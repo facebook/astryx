@@ -28,6 +28,7 @@ const categoryIcons: Record<
   'components-patterns': BoxIcon,
   templates: AppWindowIcon,
   blocks: BlocksIcon,
+  themes: PaletteIcon,
   tools: WrenchIcon,
 };
 
