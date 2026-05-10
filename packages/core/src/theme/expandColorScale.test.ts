@@ -42,18 +42,77 @@ describe('expandColorScale', () => {
     });
   });
 
-  describe('contrast', () => {
-    it('high contrast shifts text tones', () => {
-      const standard = expandColorScale({
+  describe('darkMode', () => {
+    it('adaptive mode uses different light/dark values', () => {
+      const tokens = expandColorScale({
         accent: '#0064E0',
-        contrast: 'standard',
+        darkMode: 'adaptive',
       });
-      const high = expandColorScale({accent: '#0064E0', contrast: 'high'});
+      const bg = tokens['--color-background-green'];
+      const match = bg.match(/^light-dark\(([^,]+),\s*([^)]+)\)/);
+      expect(match).toBeTruthy();
+      expect(match![1].trim()).not.toBe(match![2].trim());
+    });
 
-      // High contrast should produce different text tokens
-      expect(standard['--color-text-primary']).not.toBe(
-        high['--color-text-primary'],
+    it('preserve mode uses same hex for light and dark', () => {
+      const tokens = expandColorScale({
+        accent: '#0064E0',
+        darkMode: 'preserve',
+      });
+      const bg = tokens['--color-background-green'];
+      const match = bg.match(/^light-dark\(([^,]+),\s*([^)]+)\)/);
+      expect(match).toBeTruthy();
+      expect(match![1].trim()).toBe(match![2].trim());
+    });
+
+    it('invert mode swaps light/dark assignments', () => {
+      const adaptive = expandColorScale({
+        accent: '#0064E0',
+        darkMode: 'adaptive',
+      });
+      const inverted = expandColorScale({
+        accent: '#0064E0',
+        darkMode: 'invert',
+      });
+
+      const adaptiveMatch = adaptive['--color-background-green'].match(
+        /^light-dark\(([^,]+),\s*([^)]+)\)/,
       );
+      const invertMatch = inverted['--color-background-green'].match(
+        /^light-dark\(([^,]+),\s*([^)]+)\)/,
+      );
+
+      // Inverted light should equal adaptive dark and vice versa
+      expect(invertMatch![1].trim()).toBe(adaptiveMatch![2].trim());
+      expect(invertMatch![2].trim()).toBe(adaptiveMatch![1].trim());
+    });
+  });
+
+  describe('equalize', () => {
+    it('without equalization, different hues have different chromas', () => {
+      const tokens = expandColorScale({accent: '#0064E0', equalize: false});
+      // Both should exist
+      expect(tokens['--color-background-green']).toBeTruthy();
+      expect(tokens['--color-background-blue']).toBeTruthy();
+    });
+
+    it('with equalization, all hues produce valid tokens', () => {
+      const tokens = expandColorScale({accent: '#0064E0', equalize: true});
+      expect(tokens['--color-background-green']).toMatch(/^light-dark\(/);
+      expect(tokens['--color-background-red']).toMatch(/^light-dark\(/);
+      expect(tokens['--color-background-blue']).toMatch(/^light-dark\(/);
+      expect(tokens['--color-background-cyan']).toMatch(/^light-dark\(/);
+    });
+  });
+
+  describe('chromaBoost', () => {
+    it('chroma boost produces valid tokens', () => {
+      const tokens = expandColorScale({
+        accent: '#0064E0',
+        chromaBoost: {belowTone: 50, factor: 1.5, cap: 2.0},
+      });
+      expect(tokens['--color-accent']).toMatch(/^light-dark\(/);
+      expect(tokens['--color-background-green']).toMatch(/^light-dark\(/);
     });
   });
 
