@@ -2,7 +2,7 @@
  * Y2K Theme
  *
  * A bubbly, playful pop theme inspired by early 2000s aesthetics.
- * Hot pink body, lime green accents, Poppins typography.
+ * Hot pink body, lime green accents, Poppins + Crimson Text typography.
  * Core neutral: H=340 C=3 (warm rose-tinted neutral)
  */
 
@@ -25,7 +25,7 @@ const y2kSyntax = defineSyntaxTheme({
     attribute: ['#6c5c3e', '#bca987'],
     property: ['#3c6755', '#87b5a1'],
     punctuation: ['#5e5e5e', '#ababab'],
-    background: ['#ffd7e9', '#150f13'],
+    background: ['#FFF6ED', '#150f13'],
   },
 });
 
@@ -40,16 +40,17 @@ export const y2kTheme = defineTheme({
         '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
     },
     heading: {
-      family: 'Pacifico',
+      family: 'Poppins',
       fallbacks:
-        '"Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-      weights: {3: 'normal', 4: 'normal'},
+        '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
     },
     code: {
       family: 'JetBrains Mono',
       fallbacks: '"SF Mono", Monaco, Consolas, monospace',
     },
   },
+
+  radius: {base: 4, multiplier: 0},
 
   motion: {fast: 100, medium: 250, slow: 600, ratio: 0.8},
 
@@ -63,11 +64,11 @@ export const y2kTheme = defineTheme({
     // =========================================================================
 
     // Core semantic — neutral H=340 C=3
-    '--color-accent': ['#3a4d13', '#d7eaa8'],
+    '--color-accent': ['#7B9900', '#d7eaa8'],
     '--color-accent-muted': ['#3a4d1314', '#d7eaa820'],
     '--color-neutral': ['#29242710', '#f5eff31A'],
-    '--color-background-surface': ['#FFFFFF', '#1f1a1d'],
-    '--color-background-body': ['#ffd7e9', '#150f13'],
+    '--color-background-surface': ['#FFF6ED', '#1f1a1d'],
+    '--color-background-body': ['#FFF6ED', '#150f13'],
     '--color-overlay': ['#29242780', '#292427CC'],
     '--color-overlay-hover': ['#2924270D', '#f5eff30D'],
     '--color-overlay-pressed': ['#2924271A', '#f5eff31A'],
@@ -92,8 +93,8 @@ export const y2kTheme = defineTheme({
     '--color-icon-disabled': ['#d9d3d6', '#565154'],
 
     // Surface variants — neutral H=340
-    '--color-background-card': ['#FFFFFF', '#242022'],
-    '--color-background-popover': ['#FFFFFF', '#292427'],
+    '--color-background-card': ['#FFF6ED', '#242022'],
+    '--color-background-popover': ['#FFF6ED', '#292427'],
     '--color-background-inverted': ['#292427', '#f5eff3'],
 
     // Status / Sentiment — T30 for borders/icons
@@ -177,14 +178,14 @@ export const y2kTheme = defineTheme({
     '--color-text-gray': ['#474747', '#262626'],
 
     // =========================================================================
-    // Radius — bubbly and round
+    // Radius — sharp / brutalist (multiplier: 0 via radius config + explicit)
     // =========================================================================
-    '--radius-none': '0.125rem',
-    '--radius-inner': '0.375rem',
-    '--radius-element': '0.75rem',
-    '--radius-container': '1.25rem',
-    '--radius-page': '2rem',
-    '--radius-full': '9999px',
+    '--radius-none': '0px',
+    '--radius-inner': '0px',
+    '--radius-element': '0px',
+    '--radius-container': '0px',
+    '--radius-page': '0px',
+    '--radius-full': '0px',
 
     // =========================================================================
     // Shadows — soft and playful
@@ -205,16 +206,20 @@ export const y2kTheme = defineTheme({
   components: {
     button: {
       base: {
-        borderRadius: 'var(--radius-full)',
+        borderRadius: '0px',
+      },
+      'variant:primary': {
+        backgroundColor: '#2F292E',
+        color: '#FFFFFF',
       },
       'variant:secondary': {
-        backgroundColor: 'transparent',
+        backgroundColor: 'var(--color-background-green)',
         borderWidth: '2px',
         borderStyle: 'solid',
-        borderColor: 'var(--color-accent)',
-        color: 'var(--color-accent)',
+        borderColor: '#2F292E',
+        color: '#2F292E',
         ':hover': {
-          backgroundColor: 'var(--color-neutral)',
+          backgroundColor: 'var(--color-border-green)',
         },
       },
       'variant:destructive': {
@@ -224,6 +229,9 @@ export const y2kTheme = defineTheme({
     },
 
     badge: {
+      base: {
+        borderRadius: '0px',
+      },
       'variant:info': {
         backgroundColor: 'var(--color-background-blue)',
         color: 'var(--color-text-blue)',
@@ -247,6 +255,9 @@ export const y2kTheme = defineTheme({
     },
 
     banner: {
+      base: {
+        borderRadius: '0px',
+      },
       'status:info': {
         backgroundColor: 'var(--color-background-blue)',
         '--color-text-primary': 'var(--color-text-blue)',
@@ -273,8 +284,15 @@ export const y2kTheme = defineTheme({
       },
     },
 
+    field: {
+      base: {
+        borderRadius: '0px',
+      },
+    },
+
     card: {
       base: {
+        borderRadius: '0px',
         padding: 'var(--spacing-3)',
       },
     },
