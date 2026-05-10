@@ -149,26 +149,176 @@ export function hctToHex(hct: HCT): string {
   return best;
 }
 
+// === OKLCH ===
+// Perceptually uniform color space where equal chroma looks equally
+// saturated across all hues at the same lightness.
+
+function linearRgbToOklab(r: number, g: number, b: number): [number, number, number] {
+  const l_ = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b;
+  const m_ = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b;
+  const s_ = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b;
+  const l = Math.cbrt(l_);
+  const m = Math.cbrt(m_);
+  const s = Math.cbrt(s_);
+  return [
+    0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+    1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+    0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s,
+  ];
+}
+
+function oklabToLinearRgb(L: number, a: number, b: number): [number, number, number] {
+  const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+  const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+  const s_ = L - 0.0894841775 * a - 1.291485548 * b;
+  const l = l_ * l_ * l_;
+  const m = m_ * m_ * m_;
+  const s = s_ * s_ * s_;
+  return [
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+  ];
+}
+
+export interface OKLCH {
+  L: number;   // 0–1
+  C: number;   // 0–~0.4
+  H: number;   // 0–360 degrees
+}
+
+export function hexToOklch(hex: string): OKLCH {
+  const [r, g, b] = hexToRgb(hex);
+  const [labL, labA, labB] = linearRgbToOklab(
+    srgbToLinear(r),
+    srgbToLinear(g),
+    srgbToLinear(b),
+  );
+  let H = (Math.atan2(labB, labA) * 180) / Math.PI;
+  if (H < 0) H += 360;
+  return {
+    L: labL,
+    C: Math.sqrt(labA * labA + labB * labB),
+    H,
+  };
+}
+
+export function oklchToHex(oklch: OKLCH): string {
+  const {L, C, H} = oklch;
+  if (L <= 0) return '#000000';
+  if (L >= 1) return '#ffffff';
+  const hRad = (H * Math.PI) / 180;
+  const a = C * Math.cos(hRad);
+  const b = C * Math.sin(hRad);
+  const [lr, lg, lb] = oklabToLinearRgb(L, a, b);
+  const r = linearToSrgb(Math.max(0, lr));
+  const g = linearToSrgb(Math.max(0, lg));
+  const bv = linearToSrgb(Math.max(0, lb));
+  return rgbToHex(r, g, bv);
+}
+
+function oklchInGamut(L: number, C: number, H: number): boolean {
+  const hRad = (H * Math.PI) / 180;
+  const a = C * Math.cos(hRad);
+  const b = C * Math.sin(hRad);
+  const [lr, lg, lb] = oklabToLinearRgb(L, a, b);
+  return lr >= -0.001 && lr <= 1.001 &&
+         lg >= -0.001 && lg <= 1.001 &&
+         lb >= -0.001 && lb <= 1.001;
+}
+
+export function oklchClampedHex(L: number, C: number, H: number): string {
+  if (oklchInGamut(L, C, H)) return oklchToHex({L, C, H});
+  let lo = 0, hi = C;
+  for (let i = 0; i < 16; i++) {
+    const mid = (lo + hi) / 2;
+    if (oklchInGamut(L, mid, H)) lo = mid;
+    else hi = mid;
+  }
+  return oklchToHex({L, C: lo, H});
+}
+
 // === Tonal Palette ===
 export const TONE_STEPS = [
   0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 99, 100,
 ];
+
+// CIELab L* (0–100) to OKLAB L (0–1).
+// L* → relative luminance Y, then OKLAB L ≈ Y^(1/3).
+export function toneToOklabL(tone: number): number {
+  if (tone <= 0) return 0;
+  if (tone >= 100) return 1;
+  const Y = tone > 8
+    ? Math.pow((tone + 16) / 116, 3)
+    : tone / 903.3;
+  return Math.cbrt(Y);
+}
+
 export function tonalPalette(
   hue: number,
   chroma: number,
-  chromaBoost?: {belowTone?: number; factor?: number; cap?: number},
+  vibrancy: number = 1.0,
 ): Record<number, string> {
   const result: Record<number, string> = {};
-  const belowTone = chromaBoost?.belowTone ?? 50;
-  const factor = chromaBoost?.factor ?? 1.5;
-  const cap = chromaBoost?.cap ?? 2.0;
   for (const t of TONE_STEPS) {
-    let c = chroma;
-    if (chromaBoost && t < belowTone) {
-      const boost = 1 + (belowTone - t) / (belowTone * factor);
-      c = Math.min(chroma * boost, chroma * cap);
+    result[t] = hctToHex({hue, chroma: chroma * vibrancy, tone: t});
+  }
+  return result;
+}
+
+export function maxOklchChroma(hue: number, L: number): number {
+  let lo = 0, hi = 0.4;
+  for (let i = 0; i < 20; i++) {
+    const mid = (lo + hi) / 2;
+    if (oklchInGamut(L, mid, hue)) lo = mid;
+    else hi = mid;
+  }
+  return lo;
+}
+
+// Per-step chroma limits: for a set of hues, the max chroma they can ALL
+// achieve in sRGB at each tone step. Cached per unique hue set.
+const _eqCache = new Map<string, Record<number, number>>();
+export function equalizedChromaSteps(hues: number[]): Record<number, number> {
+  const key = hues.map(h => h.toFixed(1)).join(',');
+  const cached = _eqCache.get(key);
+  if (cached) return cached;
+  const result: Record<number, number> = {};
+  for (const t of TONE_STEPS) {
+    const L = toneToOklabL(t);
+    if (L <= 0.001 || L >= 0.999) {
+      result[t] = 0;
+    } else {
+      result[t] = Math.min(...hues.map(h => maxOklchChroma(h, L)));
     }
-    result[t] = hctToHex({hue, chroma: c, tone: t});
+  }
+  _eqCache.set(key, result);
+  return result;
+}
+
+export function oklchTonalPalette(
+  hue: number,
+  chroma: number,
+  vibrancy: number = 1.0,
+): Record<number, string> {
+  const result: Record<number, string> = {};
+  const c = chroma * vibrancy;
+  for (const t of TONE_STEPS) {
+    const L = toneToOklabL(t);
+    result[t] = oklchClampedHex(L, c, hue);
+  }
+  return result;
+}
+
+export function oklchMaxVibrantPalette(
+  hue: number,
+  vibrancy: number = 1.0,
+): Record<number, string> {
+  const result: Record<number, string> = {};
+  for (const t of TONE_STEPS) {
+    const L = toneToOklabL(t);
+    const max = maxOklchChroma(hue, L);
+    result[t] = oklchClampedHex(L, max * vibrancy, hue);
   }
   return result;
 }
@@ -698,6 +848,214 @@ export function extractColorsFromImage(
   }
   unique.sort((a, b) => hexToHct(b).chroma - hexToHct(a).chroma);
   return unique.slice(0, count);
+}
+
+// === Palette Types ===
+
+export type ThemeRole =
+  | 'accent'
+  | 'success' | 'error' | 'warning'
+  | 'blue' | 'cyan' | 'gray' | 'green' | 'orange'
+  | 'pink' | 'purple' | 'red' | 'teal' | 'yellow';
+
+export interface PaletteColor {
+  id: string;
+  name: string;
+  hex: string;
+  role?: ThemeRole;
+}
+
+export const THEME_ROLES: {value: ThemeRole; label: string; group: string}[] = [
+  // Core
+  {value: 'accent', label: 'Accent', group: 'Core'},
+  {value: 'gray', label: 'Gray', group: 'Core'},
+  // Status / Semantic
+  {value: 'success', label: 'Success', group: 'Status'},
+  {value: 'warning', label: 'Warning', group: 'Status'},
+  {value: 'error', label: 'Error', group: 'Status'},
+  // Categorical — ordered by hue wheel
+  {value: 'red', label: 'Red', group: 'Categorical'},
+  {value: 'orange', label: 'Orange', group: 'Categorical'},
+  {value: 'yellow', label: 'Yellow', group: 'Categorical'},
+  {value: 'green', label: 'Green', group: 'Categorical'},
+  {value: 'teal', label: 'Teal', group: 'Categorical'},
+  {value: 'cyan', label: 'Cyan', group: 'Categorical'},
+  {value: 'blue', label: 'Blue', group: 'Categorical'},
+  {value: 'purple', label: 'Purple', group: 'Categorical'},
+  {value: 'pink', label: 'Pink', group: 'Categorical'},
+];
+
+const CATEGORICAL_ROLES: ThemeRole[] = [
+  'blue', 'cyan', 'gray', 'green', 'orange',
+  'pink', 'purple', 'red', 'teal', 'yellow',
+];
+const STATUS_ROLES: ThemeRole[] = ['success', 'error', 'warning'];
+
+// Per-hue OKLCH chroma defaults. Green/teal/cyan are pulled back since
+// they appear hotter at light tones in sRGB.
+const BASE = 0.13;
+export const DEFAULT_OKLCH_CHROMA: Record<string, number> = {
+  red: BASE,
+  orange: BASE,
+  yellow: BASE * 0.95,
+  green: BASE * 0.7,
+  teal: BASE * 0.65,
+  cyan: BASE * 0.7,
+  blue: BASE,
+  purple: BASE,
+  pink: BASE,
+  gray: 0.01,
+  success: BASE * 0.7,
+  warning: BASE * 0.95,
+  error: BASE,
+  accent: 0.15,
+};
+
+// OKLCH hue defaults for each role
+export const DEFAULT_OKLCH_HUE: Record<string, number> = {
+  red: 25, orange: 55, yellow: 90, green: 145,
+  teal: 175, cyan: 200, blue: 260, purple: 300,
+  pink: 350, gray: 264, success: 145, warning: 85,
+  error: 25, accent: 264,
+};
+
+export interface ThemeOptions {
+  warmth: 'warm' | 'cool' | 'neutral';
+  surfaceStyle: 'tinted' | 'neutral';
+  exactAccent: boolean;
+  vibrancy: number;
+  radiusMultiplier: number;
+}
+
+function hexWithAlpha(hex: string, a: number): string {
+  return (
+    hex.substring(0, 7) +
+    Math.round(a * 255)
+      .toString(16)
+      .padStart(2, '0')
+  );
+}
+
+export function buildThemeTokens(
+  palette: PaletteColor[],
+  options: ThemeOptions,
+): {accentHex: string; tokens: Record<string, string | [string, string]>} {
+  const accentColor = palette.find(c => c.role === 'accent') ?? palette[0];
+  const accentHex = accentColor?.hex ?? '#0064E0';
+  const tokens: Record<string, string | [string, string]> = {};
+
+  if (options.surfaceStyle === 'neutral') {
+    tokens['--color-background-surface'] = '#FFFFFF';
+    tokens['--color-background-card'] = '#FFFFFF';
+  }
+
+  if (options.exactAccent) {
+    const aOklch = hexToOklch(accentHex);
+    const accentDark = oklchClampedHex(
+      Math.min(aOklch.L + 0.2, 0.82),
+      aOklch.C * 0.9,
+      aOklch.H,
+    );
+    tokens['--color-accent'] = [accentHex, accentDark];
+    tokens['--color-accent-muted'] = [hexWithAlpha(accentHex, 0.2), hexWithAlpha(accentDark, 0.25)];
+  }
+
+  const v = options.vibrancy;
+
+  for (const pc of palette) {
+    if (!pc.role || pc.role === 'accent') continue;
+    const oklch = hexToOklch(pc.hex);
+    const defaultC = DEFAULT_OKLCH_CHROMA[pc.role] ?? 0.13;
+    const chrm = pc.role === 'gray'
+      ? Math.min(oklch.C, 0.02) * v
+      : Math.max(oklch.C, defaultC) * v;
+
+    // Generate the OKLCH tonal palette — same function the ramps use.
+    // Token values are pulled from specific tone stops so components
+    // render the exact colors shown in the ramp.
+    const pal = oklchTonalPalette(oklch.H, chrm);
+
+    if (CATEGORICAL_ROLES.includes(pc.role)) {
+      const name = pc.role;
+      // bg: T90 light / T30 dark, border: T80/T40, icon+text: T30/T80
+      tokens[`--color-background-${name}`] = [pal[90], pal[30]];
+      tokens[`--color-border-${name}`] = [pal[80], pal[40]];
+      tokens[`--color-icon-${name}`] = [pal[30], pal[80]];
+      tokens[`--color-text-${name}`] = [pal[30], pal[80]];
+    }
+
+    if (STATUS_ROLES.includes(pc.role)) {
+      const name = pc.role;
+      tokens[`--color-${name}`] = [pal[40], pal[60]];
+      tokens[`--color-${name}-muted`] = [
+        hexWithAlpha(pal[40], 0.2),
+        hexWithAlpha(pal[60], 0.25),
+      ];
+      tokens[`--color-on-${name}`] = [pal[99], pal[10]];
+    }
+  }
+
+  return {accentHex, tokens};
+}
+
+export function generateExportCode(
+  palette: PaletteColor[],
+  options: ThemeOptions,
+): string {
+  const {accentHex, tokens} = buildThemeTokens(palette, options);
+  const lines: string[] = [];
+  lines.push(`defineTheme({`);
+  lines.push(`  name: 'my-theme',`);
+  lines.push(`  color: {`);
+  lines.push(`    accent: '${accentHex}',`);
+  lines.push(`    neutralStyle: '${options.warmth}',`);
+  lines.push(`  },`);
+  lines.push(`  radius: { base: 4, multiplier: ${options.radiusMultiplier} },`);
+
+  const tokenKeys = Object.keys(tokens);
+  if (tokenKeys.length > 0) {
+    lines.push(`  tokens: {`);
+    for (const key of tokenKeys) {
+      const val = tokens[key];
+      if (Array.isArray(val)) {
+        lines.push(`    '${key}': ['${val[0]}', '${val[1]}'],`);
+      } else {
+        lines.push(`    '${key}': '${val}',`);
+      }
+    }
+    lines.push(`  },`);
+  }
+  lines.push(`})`);
+  return lines.join('\n');
+}
+
+export interface ContrastPair {
+  name1: string;
+  name2: string;
+  hex1: string;
+  hex2: string;
+  ratio: number;
+  grade: ReturnType<typeof wcagGrade>;
+}
+
+export function buildContrastMatrix(
+  colors: {name: string; hex: string}[],
+): ContrastPair[] {
+  const results: ContrastPair[] = [];
+  for (let i = 0; i < colors.length; i++) {
+    for (let j = i + 1; j < colors.length; j++) {
+      const ratio = contrastRatio(colors[i].hex, colors[j].hex);
+      results.push({
+        name1: colors[i].name,
+        name2: colors[j].name,
+        hex1: colors[i].hex,
+        hex2: colors[j].hex,
+        ratio,
+        grade: wcagGrade(ratio),
+      });
+    }
+  }
+  return results;
 }
 
 // === Parse color string ===
