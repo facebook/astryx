@@ -8,7 +8,7 @@ import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSTheme} from '@xds/core/theme';
 import {XDSLayerProvider} from '@xds/core/Layer';
-import {y2kTheme} from '@xds/theme-y2k/built';
+import {y2kTheme} from '@xds/theme-y2k';
 
 type Mode = 'light' | 'dark';
 
