@@ -1,71 +1,102 @@
 'use client';
 
-import {useState, useCallback, useEffect, useMemo, useRef} from 'react';
+import {useState, useCallback, useMemo, useRef} from 'react';
+import {XDSBanner} from '@xds/core/Banner';
+import {XDSTextInput} from '@xds/core/TextInput';
+import {XDSBadge} from '@xds/core/Badge';
+import {XDSButton} from '@xds/core/Button';
+import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSText, XDSHeading} from '@xds/core/Text';
+import {XDSTheme, defineTheme} from '@xds/core/theme';
+import {XDSLayerProvider} from '@xds/core/Layer';
+import {XDSSpinner} from '@xds/core/Spinner';
+import {XDSSwitch} from '@xds/core/Switch';
+import {XDSCard} from '@xds/core/Card';
+import {XDSProgressBar} from '@xds/core/ProgressBar';
+import {XDSIconButton} from '@xds/core/IconButton';
+import {XDSSelector} from '@xds/core/Selector';
+import {XDSSlider} from '@xds/core/Slider';
+import {
+  XDSSegmentedControl,
+  XDSSegmentedControlItem,
+} from '@xds/core/SegmentedControl';
+
 import {
   hexToHct,
+  hexToOklch,
+  oklchClampedHex,
   hctToHex,
   tonalPalette,
+  oklchTonalPalette,
   TONE_STEPS,
-  generateHarmony,
-  deriveSemanticRoles,
-  generateCategorical,
-  generateExpressive,
-  contrastRatio,
-  wcagGrade,
+  DEFAULT_OKLCH_CHROMA,
+  DEFAULT_OKLCH_HUE,
   extractColorsFromImage,
   parseColorInput,
-  type HarmonyType,
+  buildThemeTokens,
+  generateExportCode,
+  THEME_ROLES,
+  type PaletteColor,
+  type ThemeRole,
+  type ThemeOptions,
 } from './colorUtils';
 
 // =============================================================================
 // Styles
 // =============================================================================
 
+const MONO = "'JetBrains Mono', 'SF Mono', Menlo, monospace";
+
 const S = {
   page: {
     display: 'flex',
-    minHeight: '100vh',
-    background: '#0e0e10',
-    color: '#fafafa',
-    fontFamily:
-      "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    height: '100vh',
+    overflow: 'hidden',
+    backgroundColor: 'var(--color-background-surface, #fff)',
   } as React.CSSProperties,
   sidebar: {
     width: 320,
     flexShrink: 0,
-    borderRight: '1px solid rgba(255,255,255,0.08)',
-    background: '#18181b',
-    padding: 20,
-    overflowY: 'auto',
+    height: '100vh',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    overflow: 'hidden',
   } as React.CSSProperties,
-  main: {flex: 1, overflowY: 'auto', padding: 24} as React.CSSProperties,
-  section: {marginBottom: 24} as React.CSSProperties,
-  sectionTitle: {
-    fontSize: 11,
-    fontWeight: 600,
-    textTransform: 'uppercase' as const,
-    letterSpacing: '0.8px',
-    color: '#71717a',
-    marginBottom: 12,
-    paddingBottom: 8,
-    borderBottom: '1px solid rgba(255,255,255,0.06)',
+  sidebarPanel: {
+    flex: 1,
+    backgroundColor: 'var(--color-background-card, #fff)',
+    borderRadius: 16,
+    border: '1px solid var(--color-border, #e0e0e0)',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    margin: 8,
   } as React.CSSProperties,
-  sourcePicker: {
+  sidebarHeader: {
+    padding: '14px 16px',
+    borderBottom: '1px solid var(--color-border)',
     display: 'flex',
     alignItems: 'center',
-    gap: 12,
-    background: '#1f1f23',
-    borderRadius: 10,
-    padding: 12,
-    border: '1px solid rgba(255,255,255,0.08)',
+    justifyContent: 'space-between',
+  } as React.CSSProperties,
+  sidebarScroll: {
+    flex: 1,
+    overflow: 'auto',
+    padding: 16,
+  } as React.CSSProperties,
+  main: {
+    flex: 1,
+    overflowY: 'auto' as const,
+    height: '100vh',
+    padding: 24,
   } as React.CSSProperties,
   swatch: (bg: string) =>
     ({
-      width: 56,
-      height: 56,
-      borderRadius: 8,
+      width: 28,
+      height: 28,
+      borderRadius: 4,
       background: bg,
-      border: '2px solid rgba(255,255,255,0.12)',
+      border: '1px solid rgba(0,0,0,0.08)',
       flexShrink: 0,
       position: 'relative' as const,
       overflow: 'hidden',
@@ -78,61 +109,15 @@ const S = {
     height: 'calc(100% + 16px)',
     border: 'none',
     cursor: 'pointer',
-    background: 'none',
+    opacity: 0,
   } as React.CSSProperties,
-  hexInput: {
-    background: 'transparent',
-    border: 'none',
-    color: '#fafafa',
-    fontFamily: "'JetBrains Mono', 'SF Mono', monospace",
-    fontSize: 16,
-    fontWeight: 500,
-    width: '100%',
-    outline: 'none',
-    padding: 0,
-  } as React.CSSProperties,
-  hctLabel: {
-    fontSize: 11,
-    color: '#71717a',
-    fontFamily: "'JetBrains Mono', monospace",
-  } as React.CSSProperties,
-  shuffleBtn: {
-    width: '100%',
-    padding: '10px',
-    marginTop: 10,
-    borderRadius: 8,
-    background: '#1f1f23',
-    border: '1px solid rgba(255,255,255,0.08)',
-    color: '#a1a1aa',
-    fontSize: 12,
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-    textAlign: 'center' as const,
-  } as React.CSSProperties,
-  pills: {
-    display: 'flex',
-    flexWrap: 'wrap' as const,
-    gap: 6,
-  } as React.CSSProperties,
-  pill: (active: boolean) =>
-    ({
-      padding: '5px 12px',
-      borderRadius: 999,
-      background: active ? 'rgba(99,102,241,0.15)' : '#1f1f23',
-      border: `1px solid ${active ? 'rgba(99,102,241,0.5)' : 'rgba(255,255,255,0.08)'}`,
-      color: active ? '#a5b4fc' : '#a1a1aa',
-      fontSize: 11,
-      cursor: 'pointer',
-      fontFamily: 'inherit',
-    }) as React.CSSProperties,
   dropZone: {
-    border: '2px dashed rgba(255,255,255,0.12)',
-    borderRadius: 10,
-    padding: '24px 16px',
+    border: '2px dashed #d0d0d0',
+    borderRadius: 8,
+    padding: '12px 8px',
     textAlign: 'center' as const,
     cursor: 'pointer',
     position: 'relative' as const,
-    minHeight: 100,
   } as React.CSSProperties,
   dropInput: {
     position: 'absolute' as const,
@@ -142,548 +127,1018 @@ const S = {
   } as React.CSSProperties,
   imgThumb: {
     width: '100%',
-    height: 80,
-    objectFit: 'cover' as const,
-    borderRadius: 8,
-    marginTop: 10,
+    borderRadius: 6,
+    marginTop: 8,
   } as React.CSSProperties,
-  extractedRow: {
+  previewCol: {
+    background: 'var(--color-background-body)',
+    color: 'var(--color-text-primary)',
+    border: '1px solid var(--color-border)',
+    padding: 20,
     display: 'flex',
-    gap: 4,
-    marginTop: 10,
-    flexWrap: 'wrap' as const,
+    flexDirection: 'column' as const,
+    gap: 24,
   } as React.CSSProperties,
-  extractedDot: (bg: string, sel: boolean) =>
-    ({
-      width: 28,
-      height: 28,
-      borderRadius: '50%',
-      background: bg,
-      border: sel ? '2px solid #fff' : '2px solid transparent',
-      cursor: 'pointer',
-      boxShadow: sel ? '0 0 0 2px #6366f1' : 'none',
-      transition: 'all 0.15s',
-    }) as React.CSSProperties,
-  tabs: {
+  previewLabel: {
+    fontSize: 10,
+    fontWeight: 600,
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.1em',
+    opacity: 0.6,
+  } as React.CSSProperties,
+  compSection: {} as React.CSSProperties,
+  compTitle: {
+    fontSize: 13,
+    fontWeight: 600,
+    margin: 0,
+    marginBottom: 10,
+  } as React.CSSProperties,
+  tonalRow: {
     display: 'flex',
-    gap: 2,
-    background: '#18181b',
-    borderRadius: 10,
-    padding: 4,
-    marginBottom: 24,
-    width: 'fit-content',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 3,
   } as React.CSSProperties,
-  tab: (active: boolean) =>
-    ({
-      padding: '8px 18px',
-      borderRadius: 8,
-      background: active ? '#27272a' : 'transparent',
-      border: 'none',
-      color: active ? '#fafafa' : '#71717a',
-      fontSize: 13,
-      fontWeight: active ? 500 : 400,
-      cursor: 'pointer',
-      fontFamily: 'inherit',
-    }) as React.CSSProperties,
-  tonaLabel: {
+  tonalLabel: {
     width: 70,
-    fontSize: 11,
-    color: '#71717a',
-    fontFamily: "'JetBrains Mono', monospace",
     flexShrink: 0,
-    textTransform: 'capitalize' as const,
+    fontSize: 9,
+    fontFamily: MONO,
+    color: '#888',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
   } as React.CSSProperties,
   tonalStrip: {
     display: 'flex',
     flex: 1,
-    borderRadius: 8,
     overflow: 'hidden',
-    border: '1px solid rgba(255,255,255,0.06)',
+    border: '1px solid rgba(0,0,0,0.08)',
   } as React.CSSProperties,
   tonalCell: (bg: string) =>
     ({
       flex: 1,
-      height: 44,
+      height: 28,
       background: bg,
-      cursor: 'pointer',
-      display: 'flex',
-      alignItems: 'flex-end',
-      justifyContent: 'center',
-      paddingBottom: 3,
-      transition: 'transform 0.15s',
-      position: 'relative' as const,
     }) as React.CSSProperties,
-  tonalNum: {
+  tonalHct: {
+    width: 55,
+    flexShrink: 0,
     fontSize: 8,
-    fontFamily: "'JetBrains Mono', monospace",
-    color: 'rgba(255,255,255,0.5)',
-    textShadow: '0 1px 2px rgba(0,0,0,0.5)',
-    pointerEvents: 'none' as const,
-  } as React.CSSProperties,
-  roleGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-    gap: 8,
-  } as React.CSSProperties,
-  roleCard: {
-    background: '#18181b',
-    border: '1px solid rgba(255,255,255,0.06)',
-    borderRadius: 10,
-    overflow: 'hidden',
-    cursor: 'pointer',
-    transition: 'all 0.15s',
-  } as React.CSSProperties,
-  roleSwatchWrap: {
-    height: 48,
-    display: 'flex',
-    position: 'relative' as const,
-  } as React.CSSProperties,
-  roleSwatchHalf: (bg: string) =>
-    ({flex: 1, background: bg}) as React.CSSProperties,
-  roleBody: {padding: '8px 10px'} as React.CSSProperties,
-  roleName: {
-    fontSize: 11,
-    fontFamily: "'JetBrains Mono', monospace",
-    color: '#a1a1aa',
-  } as React.CSSProperties,
-  roleValue: {
-    fontSize: 10,
-    fontFamily: "'JetBrains Mono', monospace",
+    fontFamily: MONO,
     color: '#52525b',
+    textAlign: 'right' as const,
   } as React.CSSProperties,
-  wcagBadge: (grade: string) =>
-    ({
-      fontSize: 9,
-      fontFamily: "'JetBrains Mono', monospace",
-      padding: '1px 5px',
-      borderRadius: 3,
-      position: 'absolute' as const,
-      top: 4,
-      right: 4,
-      background:
-        grade === 'AAA'
-          ? '#059669'
-          : grade === 'AA'
-            ? '#2563eb'
-            : grade === 'AA18'
-              ? '#d97706'
-              : '#dc2626',
-      color: '#fff',
-    }) as React.CSSProperties,
-  catRow: {
-    display: 'flex',
-    gap: 6,
-    flexWrap: 'wrap' as const,
-  } as React.CSSProperties,
-  catSwatch: (bg: string) =>
-    ({
-      width: 48,
-      height: 48,
-      borderRadius: 10,
-      background: bg,
-      display: 'flex',
-      alignItems: 'flex-end',
-      justifyContent: 'center',
-      paddingBottom: 4,
-      cursor: 'pointer',
-      border: '1px solid rgba(255,255,255,0.06)',
-    }) as React.CSSProperties,
-  catLabel: {
-    fontSize: 8,
-    color: 'rgba(255,255,255,0.6)',
-    textShadow: '0 1px 2px rgba(0,0,0,0.5)',
-  } as React.CSSProperties,
-  previewFrame: {
-    background: '#18181b',
-    border: '1px solid rgba(255,255,255,0.06)',
-    borderRadius: 16,
-    overflow: 'hidden',
-  } as React.CSSProperties,
-  previewToolbar: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    padding: '10px 16px',
-    borderBottom: '1px solid rgba(255,255,255,0.06)',
-  } as React.CSSProperties,
-  previewBody: (bg: string, fg: string) =>
-    ({padding: 24, background: bg, color: fg}) as React.CSSProperties,
-  previewGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 16,
-  } as React.CSSProperties,
-  mockCard: (bg: string, border: string) =>
-    ({
-      borderRadius: 12,
-      padding: 16,
-      border: `1px solid ${border}`,
-      background: bg,
-    }) as React.CSSProperties,
-  mockBtn: (bg: string, fg: string) =>
-    ({
-      display: 'inline-flex',
-      alignItems: 'center',
-      padding: '8px 18px',
-      borderRadius: 8,
-      fontSize: 13,
-      fontWeight: 500,
-      border: 'none',
-      background: bg,
-      color: fg,
-      fontFamily: 'inherit',
-      cursor: 'default',
-    }) as React.CSSProperties,
-  mockBtnOutline: (border: string, fg: string) =>
-    ({
-      display: 'inline-flex',
-      alignItems: 'center',
-      padding: '7px 17px',
-      borderRadius: 8,
-      fontSize: 13,
-      fontWeight: 500,
-      border: `1px solid ${border}`,
-      background: 'transparent',
-      color: fg,
-      fontFamily: 'inherit',
-      cursor: 'default',
-    }) as React.CSSProperties,
-  mockInput: (bg: string, border: string, fg: string) =>
-    ({
-      width: '100%',
-      padding: '10px 12px',
-      borderRadius: 8,
-      fontSize: 13,
-      fontFamily: 'inherit',
-      border: `1px solid ${border}`,
-      background: bg,
-      color: fg,
-      outline: 'none',
-      cursor: 'default',
-    }) as React.CSSProperties,
-  mockChip: (bg: string, fg: string) =>
-    ({
-      display: 'inline-flex',
-      padding: '3px 10px',
-      borderRadius: 999,
-      fontSize: 11,
-      background: bg,
-      color: fg,
-      border: 'none',
-    }) as React.CSSProperties,
-  mockDot: (bg: string) =>
-    ({
-      width: 8,
-      height: 8,
-      borderRadius: '50%',
-      background: bg,
-      flexShrink: 0,
-    }) as React.CSSProperties,
-  mockSwitch: (on: boolean, onColor: string, offColor: string) =>
-    ({
-      width: 36,
-      height: 20,
-      borderRadius: 10,
-      background: on ? onColor : offColor,
-      position: 'relative' as const,
-      cursor: 'default',
-      flexShrink: 0,
-    }) as React.CSSProperties,
-  mockSwitchDot: (on: boolean) =>
-    ({
-      width: 16,
-      height: 16,
-      borderRadius: '50%',
-      background: '#fff',
-      position: 'absolute' as const,
-      top: 2,
-      ...(on ? {right: 2} : {left: 2}),
-    }) as React.CSSProperties,
-  exportPanel: {
-    background: '#18181b',
-    border: '1px solid rgba(255,255,255,0.06)',
-    borderRadius: 16,
-    overflow: 'hidden',
-  } as React.CSSProperties,
-  exportBar: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    padding: '12px 16px',
-    borderBottom: '1px solid rgba(255,255,255,0.06)',
-  } as React.CSSProperties,
-  exportTab: (active: boolean) =>
-    ({
-      padding: '5px 14px',
-      borderRadius: 999,
-      background: active ? '#6366f1' : 'transparent',
-      border: `1px solid ${active ? '#6366f1' : 'rgba(255,255,255,0.08)'}`,
-      color: active ? '#fff' : '#a1a1aa',
-      fontSize: 11,
-      cursor: 'pointer',
-      fontFamily: 'inherit',
-    }) as React.CSSProperties,
-  exportCopy: {
-    marginLeft: 'auto',
-    padding: '6px 16px',
-    borderRadius: 8,
-    background: '#27272a',
-    border: 'none',
-    color: '#fafafa',
-    fontSize: 12,
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-  } as React.CSSProperties,
-  exportCode: {
-    padding: '16px 20px',
-    fontFamily: "'JetBrains Mono', monospace",
-    fontSize: 12,
-    lineHeight: '1.7',
-    color: '#a1a1aa',
-    maxHeight: 400,
-    overflow: 'auto',
-    whiteSpace: 'pre' as const,
-    background: '#0e0e10',
-  } as React.CSSProperties,
-  contrastGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-    gap: 8,
-  } as React.CSSProperties,
-  contrastCard: (pass: boolean) =>
-    ({
-      display: 'flex',
-      alignItems: 'center',
-      gap: 10,
-      padding: '10px 12px',
-      background: '#18181b',
-      border: `1px solid ${pass ? 'rgba(255,255,255,0.06)' : 'rgba(220,38,38,0.3)'}`,
-      borderRadius: 8,
-    }) as React.CSSProperties,
-  contrastSwatch: (fg: string, bg: string) =>
-    ({
-      width: 36,
-      height: 36,
-      borderRadius: 6,
-      background: bg,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontSize: 14,
-      fontWeight: 700,
-      color: fg,
-      flexShrink: 0,
-      border: '1px solid rgba(255,255,255,0.06)',
-    }) as React.CSSProperties,
-  toast: {
-    position: 'fixed' as const,
-    bottom: 24,
-    left: '50%',
-    transform: 'translateX(-50%)',
-    background: '#27272a',
-    border: '1px solid rgba(255,255,255,0.12)',
-    borderRadius: 10,
-    padding: '10px 24px',
-    fontSize: 13,
-    boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
-    zIndex: 100,
-    transition: 'opacity 0.2s',
-    pointerEvents: 'none' as const,
-  } as React.CSSProperties,
-} as const;
-
-// =============================================================================
-// Info Popover
-// =============================================================================
-
-const LAYER_INFO: Record<string, {title: string; description: string}> = {
-  palettes: {
-    title: 'Tonal Palettes',
-    description:
-      'A tonal palette is a single hue stretched across a full lightness range — from black (tone 0) to white (tone 100) in perceptually even steps. Unlike HSL, tone is perceptually uniform: tone 40 blue and tone 40 red look equally dark to human eyes. This uses the HCT color space (the same one behind Material Design 3). Each harmony color gets its own tonal strip. The UI Semantics layer then picks specific tones — e.g. "accent in light mode = tone 40, dark mode = tone 80."',
-  },
-  categorical: {
-    title: 'Categorical Colors',
-    description:
-      "10 colors optimized for mutual distinctness — maximally spread across the hue wheel so they're easy to tell apart. Use these for data visualization series, icon sets, tag categories, or anywhere you need multiple colors that are clearly distinguishable from each other.",
-  },
-  expressive: {
-    title: 'Expressive Colors',
-    description:
-      'Illustration and brand colors that share hue angles with the tonal palette but push wider in chroma and range. Use these when you need more visual energy than the UI palette allows — hero sections, marketing graphics, illustrations, or decorative elements.',
-  },
-  roles: {
-    title: 'Semantic Roles',
-    description:
-      'Colors assigned to specific UI functions: Interactive (accent, hover, focus), Surface (backgrounds at different elevations), Content (text and icon hierarchy), Feedback (error, success, warning), and Border. Each role is automatically derived from the tonal palette with proper contrast for light, dark, and high-contrast modes. Click any role to copy its value.',
-  },
-  accessibility: {
-    title: 'Accessibility',
-    description:
-      "WCAG 2.1 contrast ratios for key foreground/background pairs. AAA (≥ 7:1) is the gold standard. AA (≥ 4.5:1) is the minimum for normal text. AA18 (≥ 3:1) passes for large text (18px+) and UI components. FAIL means the pair doesn't meet any threshold — you'll need to adjust tones.",
-  },
 };
 
-function InfoButton({layerKey}: {layerKey: string}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const info = LAYER_INFO[layerKey];
+// =============================================================================
+// Multi-color presets
+// =============================================================================
 
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node))
-        setOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
+interface PresetPalette {
+  label: string;
+  colors: {name: string; hex: string; role?: ThemeRole}[];
+}
 
-  if (!info) return null;
+const PRESETS: PresetPalette[] = [
+  {
+    label: 'Default',
+    colors: [{name: 'Accent', hex: '#0064E0', role: 'accent'}],
+  },
+  {
+    label: 'Brutalist',
+    colors: [{name: 'Hot Pink', hex: '#FF1493', role: 'accent'}],
+  },
+  {
+    label: 'Chocolate',
+    colors: [
+      {name: 'Brown', hex: '#8C5927', role: 'accent'},
+      {name: 'Caramel', hex: '#B88859', role: 'orange'},
+      {name: 'Cream', hex: '#EDE4D4', role: 'gray'},
+    ],
+  },
+  {
+    label: 'Daily',
+    colors: [
+      {name: 'Charcoal', hex: '#292724', role: 'accent'},
+      {name: 'Warm Gray', hex: '#85817A', role: 'gray'},
+    ],
+  },
+  {
+    label: 'Gothic',
+    colors: [
+      {name: 'Dark Blue', hex: '#24292D', role: 'accent'},
+      {name: 'Slate', hex: '#495056', role: 'gray'},
+      {name: 'Ice', hex: '#E8F1F6', role: 'cyan'},
+    ],
+  },
+  {
+    label: 'Matcha',
+    colors: [
+      {name: 'Earth Green', hex: '#3E481D', role: 'accent'},
+      {name: 'Moss', hex: '#707E46', role: 'green'},
+      {name: 'Sage', hex: '#C0CBA9', role: 'teal'},
+    ],
+  },
+  {
+    label: 'Neutral',
+    colors: [
+      {name: 'Black', hex: '#1A1A1A', role: 'accent'},
+      {name: 'Gray', hex: '#888888', role: 'gray'},
+    ],
+  },
+  {
+    label: 'Stone',
+    colors: [
+      {name: 'Charcoal', hex: '#28282A', role: 'accent'},
+      {name: 'Warm Gray', hex: '#84848B', role: 'gray'},
+    ],
+  },
+  {
+    label: 'Y2K',
+    colors: [
+      {name: 'Olive', hex: '#7B9900', role: 'accent'},
+      {name: 'Orange', hex: '#E8791D', role: 'orange'},
+      {name: 'Teal', hex: '#2A9D8F', role: 'teal'},
+      {name: 'Pink', hex: '#FF69B4', role: 'pink'},
+      {name: 'Purple', hex: '#9B59B6', role: 'purple'},
+    ],
+  },
+];
+
+// =============================================================================
+// Component Sections (unchanged)
+// =============================================================================
+
+const CARD_VARIANTS = [
+  'default',
+  'muted',
+  'blue',
+  'cyan',
+  'gray',
+  'green',
+  'orange',
+  'pink',
+  'purple',
+  'red',
+  'teal',
+  'yellow',
+] as const;
+
+function BadgeSection() {
+  return (
+    <div style={S.compSection}>
+      <h3 style={S.compTitle}>Semantic Badges</h3>
+      <XDSHStack gap={2} wrap="wrap">
+        <XDSBadge variant="success" label="Success" />
+        <XDSBadge variant="error" label="Error" />
+        <XDSBadge variant="warning" label="Warning" />
+        <XDSBadge variant="info" label="Info" />
+        <XDSBadge variant="neutral" label="Neutral" />
+      </XDSHStack>
+      <div style={{marginTop: 10}}>
+        <h3 style={S.compTitle}>Categorical Badges</h3>
+        <XDSHStack gap={2} wrap="wrap">
+          <XDSBadge variant="blue" label="Blue" />
+          <XDSBadge variant="cyan" label="Cyan" />
+          <XDSBadge variant="green" label="Green" />
+          <XDSBadge variant="orange" label="Orange" />
+          <XDSBadge variant="pink" label="Pink" />
+          <XDSBadge variant="purple" label="Purple" />
+          <XDSBadge variant="red" label="Red" />
+          <XDSBadge variant="teal" label="Teal" />
+          <XDSBadge variant="yellow" label="Yellow" />
+        </XDSHStack>
+      </div>
+    </div>
+  );
+}
+
+function BannerSection() {
+  return (
+    <div style={S.compSection}>
+      <h3 style={S.compTitle}>Banners</h3>
+      <XDSVStack gap={2}>
+        <XDSBanner
+          status="info"
+          title="Info banner"
+          description="Uses accent color."
+        />
+        <XDSBanner
+          status="success"
+          title="Success banner"
+          description="Description text."
+        />
+        <XDSBanner
+          status="warning"
+          title="Warning banner"
+          description="Description text."
+        />
+        <XDSBanner
+          status="error"
+          title="Error banner"
+          description="Description text."
+        />
+      </XDSVStack>
+    </div>
+  );
+}
+
+function InputSection() {
+  return (
+    <div style={S.compSection}>
+      <h3 style={S.compTitle}>Inputs</h3>
+      <XDSVStack gap={3}>
+        <XDSTextInput
+          label="Default"
+          placeholder="Placeholder text"
+          value=""
+          onChange={() => {}}
+        />
+        <XDSTextInput
+          label="Success"
+          value="Valid"
+          onChange={() => {}}
+          status={{type: 'success', message: 'Looks good!'}}
+        />
+        <XDSTextInput
+          label="Error"
+          value="Invalid"
+          onChange={() => {}}
+          status={{type: 'error', message: 'Required.'}}
+        />
+        <XDSTextInput
+          label="Disabled"
+          value="Cannot edit"
+          onChange={() => {}}
+          isDisabled
+        />
+      </XDSVStack>
+    </div>
+  );
+}
+
+function ButtonSection() {
+  return (
+    <div style={S.compSection}>
+      <h3 style={S.compTitle}>Buttons</h3>
+      <XDSHStack gap={3} vAlign="center">
+        <XDSButton label="Primary" variant="primary" />
+        <XDSButton label="Secondary" variant="secondary" />
+        <XDSButton label="Ghost" variant="ghost" />
+        <XDSButton label="Destructive" variant="destructive" />
+      </XDSHStack>
+    </div>
+  );
+}
+
+function SwitchSection() {
+  return (
+    <div style={S.compSection}>
+      <h3 style={S.compTitle}>Switch</h3>
+      <XDSVStack gap={3}>
+        <XDSSwitch label="Off" value={false} onChange={() => {}} />
+        <XDSSwitch label="On" value={true} onChange={() => {}} />
+        <XDSSwitch
+          label="Disabled"
+          value={false}
+          onChange={() => {}}
+          isDisabled
+        />
+      </XDSVStack>
+    </div>
+  );
+}
+
+function ProgressSection() {
+  return (
+    <div style={S.compSection}>
+      <h3 style={S.compTitle}>Progress</h3>
+      <XDSVStack gap={3}>
+        <XDSProgressBar value={75} label="Progress" hasValueLabel />
+        <XDSProgressBar
+          value={40}
+          label="Upload"
+          variant="positive"
+          hasValueLabel
+        />
+        <XDSProgressBar
+          value={90}
+          label="Storage"
+          variant="warning"
+          hasValueLabel
+        />
+        <XDSProgressBar isIndeterminate label="Loading..." />
+      </XDSVStack>
+    </div>
+  );
+}
+
+function CardVariantsSection() {
+  return (
+    <div style={S.compSection}>
+      <h3 style={S.compTitle}>Card Variants</h3>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: 8,
+        }}>
+        {CARD_VARIANTS.map(v => (
+          <XDSCard key={v} variant={v} padding={2}>
+            <XDSText type="supporting" weight="bold">
+              {v}
+            </XDSText>
+          </XDSCard>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TextHierarchy() {
+  return (
+    <div style={S.compSection}>
+      <h3 style={S.compTitle}>Text Hierarchy</h3>
+      <XDSVStack gap={1}>
+        <XDSHeading level={1}>Heading 1</XDSHeading>
+        <XDSHeading level={2}>Heading 2</XDSHeading>
+        <XDSHeading level={3}>Heading 3</XDSHeading>
+        <XDSText type="body">Body — primary</XDSText>
+        <XDSText type="body" color="secondary">
+          Body — secondary
+        </XDSText>
+        <XDSText type="supporting">Supporting text</XDSText>
+      </XDSVStack>
+    </div>
+  );
+}
+
+function SpinnerSection() {
+  return (
+    <div style={S.compSection}>
+      <h3 style={S.compTitle}>Spinners</h3>
+      <XDSHStack gap={4} vAlign="center">
+        <XDSSpinner size="sm" />
+        <XDSSpinner size="md" />
+        <XDSSpinner size="lg" />
+      </XDSHStack>
+    </div>
+  );
+}
+
+const BACKGROUND_SURFACES = [
+  {name: 'Body', token: '--color-background-body', light: 'N99', dark: 'N5'},
+  {
+    name: 'Surface',
+    token: '--color-background-surface',
+    light: 'N100',
+    dark: 'N10',
+  },
+  {name: 'Card', token: '--color-background-card', light: 'N100', dark: 'N15'},
+  {
+    name: 'Popover',
+    token: '--color-background-popover',
+    light: 'N100',
+    dark: 'N20',
+  },
+  {
+    name: 'Muted',
+    token: '--color-background-muted',
+    light: 'N10 @5%',
+    dark: 'N10 @50%',
+  },
+  {
+    name: 'Inverted',
+    token: '--color-background-inverted',
+    light: 'N10',
+    dark: 'N99',
+  },
+] as const;
+
+function BackgroundsSection({mode}: {mode: 'light' | 'dark'}) {
+  return (
+    <div style={S.compSection}>
+      <h3 style={S.compTitle}>Backgrounds</h3>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 6,
+        }}>
+        {BACKGROUND_SURFACES.map(bg => (
+          <div
+            key={bg.name}
+            style={{
+              background: `var(${bg.token})`,
+              border: '1px solid var(--color-border)',
+              borderRadius: 6,
+              padding: '12px 8px',
+              textAlign: 'center' as const,
+            }}>
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                color:
+                  bg.name === 'Inverted'
+                    ? 'var(--color-text-primary)'
+                    : undefined,
+                mixBlendMode:
+                  bg.name === 'Inverted' ? ('difference' as const) : undefined,
+                display: 'flex',
+                flexDirection: 'column' as const,
+                gap: 2,
+              }}>
+              <span>{bg.name}</span>
+              <span style={{fontSize: 8, fontWeight: 400, opacity: 0.6}}>
+                {mode === 'light' ? bg.light : bg.dark}
+              </span>
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// Preview Column
+// =============================================================================
+
+function PreviewColumn({
+  mode,
+  theme,
+}: {
+  mode: 'light' | 'dark';
+  theme: ReturnType<typeof defineTheme>;
+}) {
+  return (
+    <XDSTheme theme={theme} mode={mode}>
+      <XDSLayerProvider>
+        <div style={S.previewCol}>
+          <p style={S.previewLabel}>
+            {mode === 'light' ? 'Light Mode' : 'Dark Mode'}
+          </p>
+          <BackgroundsSection mode={mode} />
+          <TextHierarchy />
+          <BadgeSection />
+          <BannerSection />
+          <InputSection />
+          <ButtonSection />
+          <SwitchSection />
+          <SpinnerSection />
+          <ProgressSection />
+          <CardVariantsSection />
+        </div>
+      </XDSLayerProvider>
+    </XDSTheme>
+  );
+}
+
+// =============================================================================
+// Palette Color Entry
+// =============================================================================
+
+const ROLE_OPTIONS = [
+  {value: '', label: 'None'},
+  ...THEME_ROLES.map(r => ({
+    value: r.value,
+    label: `${r.label}`,
+    disabled: false,
+  })),
+];
+
+function PaletteEntry({
+  color,
+  canRemove,
+  usedRoles,
+  onChange,
+  onRemove,
+}: {
+  color: PaletteColor;
+  canRemove: boolean;
+  usedRoles: Set<ThemeRole>;
+  onChange: (id: string, changes: Partial<PaletteColor>) => void;
+  onRemove: (id: string) => void;
+}) {
+  const roleOptions = useMemo(
+    () =>
+      ROLE_OPTIONS.map(o => ({
+        ...o,
+        disabled:
+          o.value !== '' &&
+          o.value !== color.role &&
+          usedRoles.has(o.value as ThemeRole),
+      })),
+    [color.role, usedRoles],
+  );
 
   return (
-    <div ref={ref} style={{position: 'relative', display: 'inline-flex'}}>
-      <button
-        onClick={() => setOpen(!open)}
+    <XDSHStack gap={2} vAlign="center" style={{padding: '6px 0'}}>
+      <div style={S.swatch(color.hex)}>
+        <input
+          type="color"
+          value={color.hex}
+          onChange={e => onChange(color.id, {hex: e.target.value})}
+          style={S.colorInput}
+        />
+      </div>
+      <div style={{flex: 1, minWidth: 0}}>
+        <XDSTextInput
+          label="Hex"
+          isLabelHidden
+          value={color.hex}
+          onChange={v => {
+            const parsed = parseColorInput(v.trim());
+            if (parsed) onChange(color.id, {hex: parsed});
+          }}
+          size="sm"
+        />
+      </div>
+      <XDSSelector
+        label="Role"
+        isLabelHidden
+        options={roleOptions}
+        value={color.role ?? ''}
+        onChange={v =>
+          onChange(color.id, {role: (v || undefined) as ThemeRole | undefined})
+        }
+        size="sm"
+      />
+      {canRemove && (
+        <XDSIconButton
+          label="Remove"
+          variant="ghost"
+          size="sm"
+          onClick={() => onRemove(color.id)}
+          icon={<span style={{fontSize: 14, lineHeight: 1}}>✕</span>}
+        />
+      )}
+    </XDSHStack>
+  );
+}
+
+// =============================================================================
+// Tonal Ramps — full color system
+// =============================================================================
+
+interface ColorChannel {
+  name: string;
+  role: ThemeRole;
+  oklchHue: number;
+  oklchChroma: number;
+}
+
+// Channel definitions derive hue/chroma from the shared defaults
+// so ramps and token generation stay in sync.
+function makeChannel(name: string, role: ThemeRole): ColorChannel {
+  return {
+    name,
+    role,
+    oklchHue: DEFAULT_OKLCH_HUE[role] ?? 0,
+    oklchChroma: DEFAULT_OKLCH_CHROMA[role] ?? 0.13,
+  };
+}
+
+const CHANNEL_GROUPS: {label: string; channels: ColorChannel[]}[] = [
+  {
+    label: 'Core',
+    channels: [makeChannel('Accent', 'accent'), makeChannel('Gray', 'gray')],
+  },
+  {
+    label: 'Categorical',
+    channels: [
+      makeChannel('Red', 'red'),
+      makeChannel('Orange', 'orange'),
+      makeChannel('Yellow', 'yellow'),
+      makeChannel('Green', 'green'),
+      makeChannel('Teal', 'teal'),
+      makeChannel('Cyan', 'cyan'),
+      makeChannel('Blue', 'blue'),
+      makeChannel('Purple', 'purple'),
+      makeChannel('Pink', 'pink'),
+    ],
+  },
+];
+
+const STATUS_CHANNELS: ColorChannel[] = [
+  makeChannel('Success', 'success'),
+  makeChannel('Warning', 'warning'),
+  makeChannel('Error', 'error'),
+];
+
+function TonalRamps({
+  palette,
+  vibrancy,
+  themeName,
+  grayTone,
+}: {
+  palette: PaletteColor[];
+  vibrancy: number;
+  themeName: string;
+  grayTone: 'warm' | 'neutral' | 'cool';
+}) {
+  const roleMap = useMemo(() => {
+    const map = new Map<ThemeRole, PaletteColor>();
+    for (const pc of palette) {
+      if (pc.role) map.set(pc.role, pc);
+    }
+    return map;
+  }, [palette]);
+
+  const unassigned = palette.filter(pc => !pc.role);
+
+  return (
+    <div style={{marginBottom: 24}}>
+      <h2
         style={{
-          width: 18,
-          height: 18,
-          borderRadius: '50%',
-          background: open ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.06)',
-          border: `1px solid ${open ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.1)'}`,
-          color: open ? '#a5b4fc' : '#71717a',
-          fontSize: 11,
-          fontWeight: 600,
-          fontFamily: 'inherit',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'all 0.15s',
-          lineHeight: 1,
-          padding: 0,
-        }}
-        title={info.title}>
-        ?
-      </button>
-      {open && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 28,
-            left: 0,
-            zIndex: 50,
-            width: 340,
-            padding: 16,
-            background: '#1f1f23',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: 12,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-          }}>
+          fontSize: 16,
+          fontWeight: 700,
+          color: '#1a1a1a',
+          margin: 0,
+          marginBottom: 4,
+        }}>
+        Tonal Palettes{' '}
+        <span style={{fontWeight: 400, color: '#888'}}> — {themeName}</span>
+      </h2>
+      <p style={{fontSize: 11, color: '#888', margin: 0, marginBottom: 12}}>
+        OKLCH tonal ramps — {TONE_STEPS.length} steps per channel, perceptually
+        equalized.
+        {vibrancy !== 1.0 && ` Vibrancy: ${vibrancy.toFixed(1)}x.`} Channels
+        with palette overrides are highlighted.
+      </p>
+      <div style={{...S.tonalRow, marginBottom: 6}}>
+        <span style={S.tonalLabel} />
+        <div style={S.tonalStrip}>
+          {TONE_STEPS.map(t => (
+            <div
+              key={t}
+              style={{
+                flex: 1,
+                textAlign: 'center' as const,
+                fontSize: 8,
+                fontFamily: MONO,
+                color: '#aaa',
+              }}>
+              {t}
+            </div>
+          ))}
+        </div>
+        <span style={S.tonalHct} />
+      </div>
+      {CHANNEL_GROUPS.map(group => (
+        <div key={group.label} style={{marginBottom: 14}}>
           <div
             style={{
-              fontSize: 13,
+              fontSize: 9,
               fontWeight: 600,
-              marginBottom: 8,
-              color: '#fafafa',
+              color: '#aaa',
+              textTransform: 'uppercase' as const,
+              letterSpacing: '0.8px',
+              marginBottom: 4,
             }}>
-            {info.title}
+            {group.label}
           </div>
-          <div style={{fontSize: 12, lineHeight: 1.6, color: '#a1a1aa'}}>
-            {info.description}
-          </div>
+          {group.channels.map(ch => {
+            const assigned = roleMap.get(ch.role);
+            const hue = assigned ? hexToOklch(assigned.hex).H : ch.oklchHue;
+            if (ch.role === 'gray') {
+              const grayHue = assigned
+                ? hexToOklch(assigned.hex).H
+                : grayTone === 'warm'
+                  ? 60
+                  : grayTone === 'cool'
+                    ? 260
+                    : 0;
+              const grayC = assigned
+                ? Math.min(hexToOklch(assigned.hex).C, 0.02)
+                : grayTone === 'neutral'
+                  ? 0.003
+                  : 0.012;
+              const tones = oklchTonalPalette(grayHue, grayC, vibrancy);
+              return (
+                <div key={ch.role} style={S.tonalRow}>
+                  <span
+                    style={{
+                      ...S.tonalLabel,
+                      color: assigned ? '#4f46e5' : '#888',
+                      fontWeight: assigned ? 600 : 400,
+                    }}
+                    title={
+                      assigned
+                        ? `${ch.name} ← ${assigned.name}`
+                        : `${ch.name} (default)`
+                    }>
+                    {ch.name}
+                  </span>
+                  <div style={S.tonalStrip}>
+                    {TONE_STEPS.map(t => (
+                      <div
+                        key={t}
+                        style={S.tonalCell(tones[t])}
+                        title={`${ch.name} T${t}: ${tones[t]}`}
+                      />
+                    ))}
+                  </div>
+                  <span style={S.tonalHct}>
+                    H:{grayHue.toFixed(0)} C:{(grayC * vibrancy).toFixed(2)}
+                  </span>
+                </div>
+              );
+            }
+            if (group.label === 'Categorical') {
+              const catChroma = assigned
+                ? Math.max(hexToOklch(assigned.hex).C, ch.oklchChroma)
+                : ch.oklchChroma;
+              const tones = oklchTonalPalette(hue, catChroma, vibrancy);
+              return (
+                <div key={ch.role} style={S.tonalRow}>
+                  <span
+                    style={{
+                      ...S.tonalLabel,
+                      color: assigned ? '#4f46e5' : '#888',
+                      fontWeight: assigned ? 600 : 400,
+                    }}
+                    title={
+                      assigned
+                        ? `${ch.name} ← ${assigned.name}`
+                        : `${ch.name} (default)`
+                    }>
+                    {ch.name}
+                  </span>
+                  <div style={S.tonalStrip}>
+                    {TONE_STEPS.map(t => (
+                      <div
+                        key={t}
+                        style={S.tonalCell(tones[t])}
+                        title={`${ch.name} T${t}: ${tones[t]}`}
+                      />
+                    ))}
+                  </div>
+                  <span style={S.tonalHct}>H:{hue.toFixed(0)}</span>
+                </div>
+              );
+            }
+            const coreOklch = assigned
+              ? hexToOklch(assigned.hex)
+              : {L: 0.5, C: ch.oklchChroma, H: ch.oklchHue};
+            const coreChroma = Math.max(coreOklch.C, 0.09);
+            const tones = oklchTonalPalette(hue, coreChroma, vibrancy);
+            return (
+              <div key={ch.role} style={S.tonalRow}>
+                <span
+                  style={{
+                    ...S.tonalLabel,
+                    color: assigned ? '#4f46e5' : '#888',
+                    fontWeight: assigned ? 600 : 400,
+                  }}
+                  title={
+                    assigned
+                      ? `${ch.name} ← ${assigned.name} (${assigned.hex})`
+                      : `${ch.name} (default)`
+                  }>
+                  {ch.name}
+                </span>
+                <div style={S.tonalStrip}>
+                  {TONE_STEPS.map(t => (
+                    <div
+                      key={t}
+                      style={S.tonalCell(tones[t])}
+                      title={`${ch.name} T${t}: ${tones[t]}`}
+                    />
+                  ))}
+                </div>
+                <span style={S.tonalHct}>
+                  H:{hue.toFixed(0)} C:{(coreChroma * vibrancy).toFixed(2)}
+                </span>
+              </div>
+            );
+          })}
         </div>
+      ))}
+      {(() => {
+        const assignedStatus = STATUS_CHANNELS.filter(ch =>
+          roleMap.has(ch.role),
+        );
+        if (!assignedStatus.length) return null;
+        return (
+          <div style={{marginBottom: 14}}>
+            <div
+              style={{
+                fontSize: 9,
+                fontWeight: 600,
+                color: '#aaa',
+                textTransform: 'uppercase' as const,
+                letterSpacing: '0.8px',
+                marginBottom: 4,
+              }}>
+              Status
+            </div>
+            {assignedStatus.map(ch => {
+              const assigned = roleMap.get(ch.role)!;
+              const oklch = hexToOklch(assigned.hex);
+              const chroma = Math.max(oklch.C, ch.oklchChroma) * vibrancy;
+              const tones = oklchTonalPalette(oklch.H, chroma);
+              return (
+                <div key={ch.role} style={S.tonalRow}>
+                  <span
+                    style={{...S.tonalLabel, color: '#4f46e5', fontWeight: 600}}
+                    title={`${ch.name} ← ${assigned.name} (${assigned.hex})`}>
+                    {ch.name}
+                  </span>
+                  <div style={S.tonalStrip}>
+                    {TONE_STEPS.map(t => (
+                      <div
+                        key={t}
+                        style={S.tonalCell(tones[t])}
+                        title={`${ch.name} T${t}: ${tones[t]}`}
+                      />
+                    ))}
+                  </div>
+                  <span style={S.tonalHct}>
+                    H:{oklch.H.toFixed(0)} C:{chroma.toFixed(2)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
+      {unassigned.length > 0 && (
+        <>
+          <div
+            style={{
+              fontSize: 9,
+              fontWeight: 600,
+              color: '#888',
+              textTransform: 'uppercase' as const,
+              letterSpacing: '0.8px',
+              marginTop: 12,
+              marginBottom: 6,
+            }}>
+            Unassigned
+          </div>
+          {unassigned.map(pc => {
+            const oklch = hexToOklch(pc.hex);
+            const chroma = Math.max(oklch.C, 0.05) * vibrancy;
+            const tones = oklchTonalPalette(oklch.H, chroma);
+            return (
+              <div key={pc.id} style={S.tonalRow}>
+                <span style={S.tonalLabel}>{pc.name}</span>
+                <div style={S.tonalStrip}>
+                  {TONE_STEPS.map(t => (
+                    <div
+                      key={t}
+                      style={S.tonalCell(tones[t])}
+                      title={`${pc.name} T${t}: ${tones[t]}`}
+                    />
+                  ))}
+                </div>
+                <span style={S.tonalHct}>
+                  H:{oklch.H.toFixed(0)} C:{chroma.toFixed(2)}
+                </span>
+              </div>
+            );
+          })}
+        </>
       )}
     </div>
   );
 }
 
 // =============================================================================
+// Contrast Matrix
+// =============================================================================
+
+// =============================================================================
+// Export Panel
+// =============================================================================
+
+function ExportPanel({
+  palette,
+  options,
+}: {
+  palette: PaletteColor[];
+  options: ThemeOptions;
+}) {
+  const [copied, setCopied] = useState(false);
+  const code = useMemo(
+    () => generateExportCode(palette, options),
+    [palette, options],
+  );
+
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(code).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [code]);
+
+  return (
+    <XDSButton
+      label={copied ? 'Copied!' : 'Export'}
+      variant="ghost"
+      size="sm"
+      onClick={handleCopy}
+    />
+  );
+}
+
+// =============================================================================
+// ID Generator
+// =============================================================================
+
+let _nextId = 1;
+function nextId(): string {
+  return String(_nextId++);
+}
+
+function makePaletteColor(
+  name: string,
+  hex: string,
+  role?: ThemeRole,
+): PaletteColor {
+  return {id: nextId(), name, hex, role};
+}
+
+// =============================================================================
 // Page Component
 // =============================================================================
 
-type Tab = 'palettes' | 'roles' | 'preview' | 'accessibility' | 'export';
-type ExportFmt = 'css' | 'json' | 'tailwind' | 'xds';
-
 export default function ColorStudioPage() {
-  const [seedHex, setSeedHex] = useState('#0064E0');
-  const [harmony, setHarmony] = useState<HarmonyType>('complementary');
-  const [warmth, setWarmth] = useState<'warm' | 'cool' | 'neutral'>('cool');
-  const [surfaceStyle, setSurfaceStyle] = useState<'tinted' | 'neutral'>(
-    'tinted',
+  const [palette, setPalette] = useState<PaletteColor[]>([
+    makePaletteColor('Blue', '#0064E0', 'accent'),
+  ]);
+  const [themeName, setThemeName] = useState('Custom');
+  const [exactAccent, setExactAccent] = useState(true);
+  const [vibrancy, setVibrancy] = useState(1.0);
+  const [grayTone, setGrayTone] = useState<'warm' | 'neutral' | 'cool'>(
+    'neutral',
   );
-  const [exactAccent, setExactAccent] = useState(false);
-  const [tab, setTab] = useState<Tab>('palettes');
-  const [previewMode, setPreviewMode] = useState<'light' | 'dark'>('light');
-  const [exportFmt, setExportFmt] = useState<ExportFmt>('css');
-  const [toast, setToast] = useState('');
   const [imgSrc, setImgSrc] = useState<string | null>(null);
-  const [extracted, setExtracted] = useState<string[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const seed = useMemo(() => hexToHct(seedHex), [seedHex]);
-  const harmonies = useMemo(
-    () => generateHarmony(seed, harmony),
-    [seed, harmony],
-  );
-  const palettes = useMemo(
-    () => harmonies.map(h => ({...h, tones: tonalPalette(h.hue, h.chroma)})),
-    [harmonies],
-  );
-  const neutralPalette = useMemo(
+  const themeOptions: ThemeOptions = useMemo(
     () => ({
-      label: 'Neutral',
-      tones: tonalPalette(
-        seed.hue,
-        surfaceStyle === 'neutral'
-          ? 0
-          : warmth === 'warm'
-            ? 7
-            : warmth === 'cool'
-              ? 5
-              : 3,
-      ),
+      warmth: grayTone as 'warm' | 'cool' | 'neutral',
+      surfaceStyle: 'tinted' as const,
+      exactAccent,
+      vibrancy,
+      radiusMultiplier: 1,
     }),
-    [seed.hue, warmth, surfaceStyle],
-  );
-  const roles = useMemo(
-    () => deriveSemanticRoles(seedHex, warmth, surfaceStyle, exactAccent),
-    [seedHex, warmth, surfaceStyle, exactAccent],
-  );
-  const categorical = useMemo(
-    () => generateCategorical(seed.hue, seed.chroma),
-    [seed],
-  );
-  const expressive = useMemo(
-    () => generateExpressive(seed.hue, seed.chroma),
-    [seed],
+    [grayTone, exactAccent, vibrancy],
   );
 
-  const copy = useCallback((text: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      setToast('Copied!');
-      setTimeout(() => setToast(''), 1200);
+  const usedRoles = useMemo(
+    () => new Set(palette.filter(c => c.role).map(c => c.role!)),
+    [palette],
+  );
+
+  const theme = useMemo(() => {
+    const {accentHex, tokens} = buildThemeTokens(palette, themeOptions);
+    const bodyColor =
+      grayTone === 'warm'
+        ? '#F5F0E8'
+        : grayTone === 'cool'
+          ? '#EEF2F7'
+          : undefined;
+
+    return defineTheme({
+      name: 'studio-preview',
+      color: {
+        accent: accentHex,
+        neutralStyle: grayTone,
+        ...(bodyColor ? {bodyColor} : {}),
+      },
+      radius: {base: 4, multiplier: 1},
+      tokens,
     });
-  }, []);
+  }, [palette, themeOptions, grayTone]);
 
-  const setSource = useCallback((hex: string) => {
-    setSeedHex(hex);
-  }, []);
-
-  const handleHexInput = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const v = e.target.value.trim();
-      const parsed = parseColorInput(v);
-      if (parsed) setSeedHex(parsed);
+  const updateColor = useCallback(
+    (id: string, changes: Partial<PaletteColor>) => {
+      setPalette(prev => prev.map(c => (c.id === id ? {...c, ...changes} : c)));
     },
     [],
   );
 
-  const handleShuffle = useCallback(() => {
+  const removeColor = useCallback((id: string) => {
+    setPalette(prev =>
+      prev.length > 1 ? prev.filter(c => c.id !== id) : prev,
+    );
+  }, []);
+
+  const addColor = useCallback(() => {
     const h = Math.random() * 360;
     const c = 30 + Math.random() * 50;
     const hex = hctToHex({hue: h, chroma: c, tone: 50});
-    setSeedHex(hex);
+    setPalette(prev => [...prev, makePaletteColor('Color ' + _nextId, hex)]);
+  }, []);
+
+  const loadPreset = useCallback((preset: PresetPalette) => {
+    setThemeName(preset.label);
+    setPalette(preset.colors.map(c => makePaletteColor(c.name, c.hex, c.role)));
   }, []);
 
   const handleImage = useCallback((file: File) => {
@@ -694,836 +1149,177 @@ export default function ColorStudioPage() {
       const img = new Image();
       img.onload = () => {
         const colors = extractColorsFromImage(img);
-        setExtracted(colors);
-        if (colors.length) setSeedHex(colors[0]);
+        if (colors.length) {
+          setPalette(
+            colors.map((hex, i) =>
+              makePaletteColor(
+                `Extract ${i + 1}`,
+                hex,
+                i === 0 ? 'accent' : undefined,
+              ),
+            ),
+          );
+        }
       };
       img.src = src;
     };
     reader.readAsDataURL(file);
   }, []);
 
-  // Role lookup helper for preview
-  const r = useCallback(
-    (name: string) => {
-      const role = roles.find(ro => ro.name === name);
-      if (!role) return '#888888';
-      return (previewMode === 'light' ? role.light : role.dark) || '#888888';
-    },
-    [roles, previewMode],
-  );
-
-  // Contrast pairs for accessibility tab
-  const contrastPairs = useMemo(() => {
-    const pairs = [
-      ['text-primary', 'surface', 'Text on Surface'],
-      ['text-secondary', 'surface', 'Secondary on Surface'],
-      ['text-accent', 'surface', 'Accent text on Surface'],
-      ['on-accent', 'accent', 'Text on Accent'],
-      ['on-error', 'error', 'Text on Error'],
-      ['on-success', 'success', 'Text on Success'],
-      ['on-warning', 'warning', 'Text on Warning'],
-      ['text-primary', 'card', 'Text on Card'],
-      ['icon-secondary', 'surface', 'Icon on Surface'],
-      ['text-disabled', 'surface', 'Disabled on Surface'],
-    ];
-    return pairs
-      .map(([fg, bg, label]) => {
-        const fgRole = roles.find(ro => ro.name === fg);
-        const bgRole = roles.find(ro => ro.name === bg);
-        if (!fgRole || !bgRole) return null;
-        const fgHex =
-          (previewMode === 'light' ? fgRole.light : fgRole.dark) || '#000000';
-        const bgHex =
-          (previewMode === 'light' ? bgRole.light : bgRole.dark) || '#ffffff';
-        // Strip alpha for contrast calc
-        const fgClean = fgHex.substring(0, 7);
-        const bgClean = bgHex.substring(0, 7);
-        const ratio = contrastRatio(fgClean, bgClean);
-        const grade = wcagGrade(ratio);
-        return {label, fg: fgClean, bg: bgClean, ratio, grade};
-      })
-      .filter(Boolean) as Array<{
-      label: string;
-      fg: string;
-      bg: string;
-      ratio: number;
-      grade: string;
-    }>;
-  }, [roles, previewMode]);
-
-  // Export code
-  const exportCode = useMemo(() => {
-    const m = previewMode;
-    if (exportFmt === 'css') {
-      let code = '/* Color Studio — Generated Palette */\n\n:root {\n';
-      for (const role of roles) {
-        code += `  --color-${role.name}: ${role.light};\n`;
-      }
-      code += '}\n\n@media (prefers-color-scheme: dark) {\n  :root {\n';
-      for (const role of roles) {
-        code += `    --color-${role.name}: ${role.dark};\n`;
-      }
-      code += '  }\n}\n\n@media (prefers-contrast: more) {\n  :root {\n';
-      for (const role of roles) {
-        code += `    --color-${role.name}: ${role.highContrast};\n`;
-      }
-      code += '  }\n}\n';
-      return code;
-    }
-    if (exportFmt === 'json') {
-      const obj: Record<string, Record<string, string>> = {
-        light: {},
-        dark: {},
-        highContrast: {},
-      };
-      for (const role of roles) {
-        obj.light[role.name] = role.light;
-        obj.dark[role.name] = role.dark;
-        obj.highContrast[role.name] = role.highContrast;
-      }
-      return JSON.stringify(obj, null, 2);
-    }
-    if (exportFmt === 'tailwind') {
-      let code =
-        '// tailwind.config.js\nmodule.exports = {\n  theme: {\n    extend: {\n      colors: {\n';
-      for (const role of roles) {
-        code += `        '${role.name}': '${role[m]}',\n`;
-      }
-      code += '      },\n    },\n  },\n};\n';
-      return code;
-    }
-    // XDS defineTheme
-    let code = `import { defineTheme } from '@xds/core/theme';\n\nexport const customTheme = defineTheme({\n  name: 'custom',\n  color: {\n    accent: '${seedHex}',\n    neutralStyle: '${warmth}',\n  },\n  tokens: {\n`;
-    for (const role of roles) {
-      code += `    '--color-${role.name}': 'light-dark(${role.light}, ${role.dark})',\n`;
-    }
-    code += '  },\n});\n';
-    return code;
-  }, [roles, exportFmt, seedHex, warmth, previewMode]);
-
   return (
     <div style={S.page}>
       {/* ═══ Sidebar ═══ */}
       <aside style={S.sidebar}>
-        <div style={S.section}>
-          <div style={S.sectionTitle}>Source Color</div>
-          <div style={S.sourcePicker}>
-            <div style={S.swatch(seedHex)}>
-              <input
-                type="color"
-                value={seedHex}
-                onChange={e => setSource(e.target.value)}
-                style={S.colorInput}
-              />
-            </div>
-            <div style={{flex: 1}}>
-              <input
-                type="text"
-                value={seedHex.toUpperCase()}
-                onChange={handleHexInput}
-                spellCheck={false}
-                style={S.hexInput}
-              />
-              <div style={S.hctLabel}>
-                H:{seed.hue.toFixed(0)}° C:{seed.chroma.toFixed(0)} T:
-                {seed.tone.toFixed(0)}
-              </div>
-            </div>
+        <div style={S.sidebarPanel}>
+          <div style={S.sidebarHeader}>
+            <XDSHeading level={4}>Color Studio</XDSHeading>
+            <ExportPanel palette={palette} options={themeOptions} />
           </div>
-          <button onClick={handleShuffle} style={S.shuffleBtn}>
-            ↻ Randomize
-          </button>
-        </div>
 
-        <div style={S.section}>
-          <div style={S.sectionTitle}>Extract from Image</div>
-          <div style={S.dropZone} onClick={() => fileRef.current?.click()}>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              style={S.dropInput}
-              onChange={e =>
-                e.target.files?.[0] && handleImage(e.target.files[0])
-              }
-            />
-            <div style={{fontSize: 20}}>🖼</div>
-            <div style={{fontSize: 12, color: '#a1a1aa'}}>
-              Drop image or click
-            </div>
-          </div>
-          {imgSrc && <img src={imgSrc} alt="preview" style={S.imgThumb} />}
-          {extracted.length > 0 && (
-            <div style={S.extractedRow}>
-              {extracted.map((c, i) => (
-                <div
-                  key={i}
-                  style={S.extractedDot(c, c === seedHex)}
-                  onClick={() => setSource(c)}
-                  title={c}
+          <div style={S.sidebarScroll}>
+            <XDSVStack gap={5}>
+              {/* --- Presets --- */}
+              <XDSVStack gap={3}>
+                <XDSText type="label" weight="semibold">
+                  Presets
+                </XDSText>
+                <XDSHStack gap={1} wrap="wrap">
+                  {PRESETS.map(p => (
+                    <XDSButton
+                      key={p.label}
+                      label={p.label}
+                      variant={themeName === p.label ? 'primary' : 'secondary'}
+                      size="sm"
+                      onClick={() => loadPreset(p)}
+                    />
+                  ))}
+                </XDSHStack>
+              </XDSVStack>
+
+              {/* --- Palette --- */}
+              <XDSVStack gap={3}>
+                <XDSHStack hAlign="between" vAlign="center">
+                  <XDSText type="label" weight="semibold">
+                    Palette
+                  </XDSText>
+                  <XDSIconButton
+                    label="Add color"
+                    variant="ghost"
+                    size="sm"
+                    onClick={addColor}
+                    icon={<span style={{fontSize: 16, lineHeight: 1}}>+</span>}
+                  />
+                </XDSHStack>
+                <XDSVStack gap={2}>
+                  {palette.map(c => (
+                    <PaletteEntry
+                      key={c.id}
+                      color={c}
+                      canRemove={palette.length > 1}
+                      usedRoles={usedRoles}
+                      onChange={updateColor}
+                      onRemove={removeColor}
+                    />
+                  ))}
+                </XDSVStack>
+              </XDSVStack>
+
+              {/* --- Options --- */}
+              <XDSVStack gap={4}>
+                <XDSText type="label" weight="semibold">
+                  Options
+                </XDSText>
+
+                <XDSSlider
+                  label="Vibrancy"
+                  min={50}
+                  max={200}
+                  step={10}
+                  value={vibrancy * 100}
+                  onChange={(v: number) => setVibrancy(v / 100)}
+                  formatValue={v => `${Math.round(v)}%`}
                 />
-              ))}
-            </div>
-          )}
-        </div>
 
-        <div style={S.section}>
-          <div style={S.sectionTitle}>Harmony</div>
-          <div style={S.pills}>
-            {(
-              [
-                'complementary',
-                'analogous',
-                'triadic',
-                'split-complementary',
-                'tetradic',
-                'monochromatic',
-              ] as HarmonyType[]
-            ).map(h => (
-              <button
-                key={h}
-                style={S.pill(harmony === h)}
-                onClick={() => setHarmony(h)}>
-                {h.replace('-', ' ').replace(/\b\w/g, c => c.toUpperCase())}
-              </button>
-            ))}
-          </div>
-        </div>
+                <XDSHStack
+                  vAlign="center"
+                  style={{justifyContent: 'space-between'}}>
+                  <XDSText type="supporting" color="secondary">
+                    Gray Tone
+                  </XDSText>
+                  <XDSSegmentedControl
+                    label="Gray tone"
+                    value={grayTone}
+                    onChange={v =>
+                      setGrayTone(v as 'warm' | 'neutral' | 'cool')
+                    }
+                    size="sm">
+                    <XDSSegmentedControlItem value="warm" label="Warm" />
+                    <XDSSegmentedControlItem value="neutral" label="Neutral" />
+                    <XDSSegmentedControlItem value="cool" label="Cool" />
+                  </XDSSegmentedControl>
+                </XDSHStack>
 
-        <div style={S.section}>
-          <div style={S.sectionTitle}>Neutral Warmth</div>
-          <div style={S.pills}>
-            {(['warm', 'cool', 'neutral'] as const).map(w => (
-              <button
-                key={w}
-                style={S.pill(warmth === w)}
-                onClick={() => setWarmth(w)}>
-                {w.charAt(0).toUpperCase() + w.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
+                <XDSHStack
+                  vAlign="center"
+                  style={{justifyContent: 'space-between'}}>
+                  <XDSText type="supporting" color="secondary">
+                    Accent Match
+                  </XDSText>
+                  <XDSSegmentedControl
+                    label="Accent match"
+                    value={exactAccent ? 'exact' : 'derived'}
+                    onChange={v => setExactAccent(v === 'exact')}
+                    size="sm">
+                    <XDSSegmentedControlItem value="derived" label="Tonal" />
+                    <XDSSegmentedControlItem value="exact" label="Exact" />
+                  </XDSSegmentedControl>
+                </XDSHStack>
+              </XDSVStack>
 
-        <div style={S.section}>
-          <div style={S.sectionTitle}>Surfaces</div>
-          <div style={S.pills}>
-            <button
-              style={S.pill(surfaceStyle === 'tinted')}
-              onClick={() => setSurfaceStyle('tinted')}>
-              Tinted
-            </button>
-            <button
-              style={S.pill(surfaceStyle === 'neutral')}
-              onClick={() => setSurfaceStyle('neutral')}>
-              Pure White
-            </button>
-          </div>
-        </div>
-
-        <div style={S.section}>
-          <div style={S.sectionTitle}>Accent</div>
-          <div style={S.pills}>
-            <button
-              style={S.pill(!exactAccent)}
-              onClick={() => setExactAccent(false)}>
-              Derived
-            </button>
-            <button
-              style={S.pill(exactAccent)}
-              onClick={() => setExactAccent(true)}>
-              Use Exact Color
-            </button>
-          </div>
-          <div style={{fontSize: 11, color: '#52525b', marginTop: 6}}>
-            {exactAccent
-              ? 'Primary button uses your exact chosen color'
-              : 'Accent derived from HCT tone 40 for optimal contrast'}
+              {/* --- Image Extraction --- */}
+              <XDSVStack gap={3}>
+                <XDSText type="label" weight="semibold">
+                  Extract from Image
+                </XDSText>
+                <div
+                  style={S.dropZone}
+                  onClick={() => fileRef.current?.click()}>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*"
+                    style={S.dropInput}
+                    onChange={e =>
+                      e.target.files?.[0] && handleImage(e.target.files[0])
+                    }
+                  />
+                  <XDSText type="supporting" color="secondary">
+                    Drop image or click
+                  </XDSText>
+                </div>
+                {imgSrc && (
+                  <img src={imgSrc} alt="preview" style={S.imgThumb} />
+                )}
+              </XDSVStack>
+            </XDSVStack>
           </div>
         </div>
       </aside>
 
-      {/* ═══ Main ═══ */}
+      {/* ═══ Main Preview ═══ */}
       <main style={S.main}>
-        <div style={S.tabs}>
-          {(
-            [
-              ['palettes', 'Palettes'],
-              ['roles', 'Roles'],
-              ['preview', 'Preview'],
-              ['accessibility', 'Accessibility'],
-              ['export', 'Export'],
-            ] as [Tab, string][]
-          ).map(([t, label]) => (
-            <button key={t} style={S.tab(tab === t)} onClick={() => setTab(t)}>
-              {label}
-            </button>
-          ))}
+        <TonalRamps
+          palette={palette}
+          vibrancy={vibrancy}
+          themeName={themeName}
+          grayTone={grayTone}
+        />
+
+        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20}}>
+          <PreviewColumn mode="light" theme={theme} />
+          <PreviewColumn mode="dark" theme={theme} />
         </div>
-
-        {/* ─── Palettes Tab ─── */}
-        {tab === 'palettes' && (
-          <div>
-            <div style={{...S.section, marginBottom: 32}}>
-              <div
-                style={{
-                  ...S.sectionTitle,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}>
-                Tonal Palettes <InfoButton layerKey="palettes" />
-              </div>
-              {[...palettes, neutralPalette].map((p, pi) => (
-                <div
-                  key={pi}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    marginBottom: 6,
-                  }}>
-                  <span style={S.tonaLabel}>{p.label}</span>
-                  <div style={S.tonalStrip}>
-                    {TONE_STEPS.filter(t => t !== 99).map(t => (
-                      <div
-                        key={t}
-                        style={S.tonalCell(p.tones[t])}
-                        onClick={() => copy(p.tones[t])}
-                        title={`${p.tones[t]} (tone ${t})`}>
-                        <span style={S.tonalNum}>{t}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div style={S.section}>
-              <div
-                style={{
-                  ...S.sectionTitle,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}>
-                Categorical — 10 Distinguishable Colors{' '}
-                <InfoButton layerKey="categorical" />
-              </div>
-              {categorical.map((c, i) => {
-                const catHct = hexToHct(c.hex);
-                const tones = tonalPalette(catHct.hue, catHct.chroma);
-                return (
-                  <div
-                    key={i}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      marginBottom: 6,
-                    }}>
-                    <span style={S.tonaLabel}>{c.label}</span>
-                    <div style={S.tonalStrip}>
-                      {TONE_STEPS.filter(t => t !== 99).map(t => (
-                        <div
-                          key={t}
-                          style={S.tonalCell(tones[t])}
-                          onClick={() => copy(tones[t])}
-                          title={`${c.label} ${tones[t]} (tone ${t})`}>
-                          <span style={S.tonalNum}>{t}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div style={S.section}>
-              <div style={S.sectionTitle}>
-                Expressive — Illustration & Brand
-              </div>
-              <div style={S.catRow}>
-                {expressive.map((c, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      ...S.catSwatch(c.hex),
-                      width: 64,
-                      height: 64,
-                      borderRadius: 12,
-                    }}
-                    onClick={() => copy(c.hex)}
-                    title={c.hex}>
-                    <span style={S.catLabel}>{c.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ─── Roles Tab ─── */}
-        {tab === 'roles' && (
-          <div>
-            {['Interactive', 'Surface', 'Content', 'Feedback', 'Border'].map(
-              group => {
-                const groupRoles = roles.filter(ro => ro.group === group);
-                return (
-                  <div key={group} style={S.section}>
-                    <div style={S.sectionTitle}>
-                      {group}{' '}
-                      <span style={{float: 'right', fontWeight: 400}}>
-                        {groupRoles.length}
-                      </span>
-                    </div>
-                    <div style={S.roleGrid}>
-                      {groupRoles.map(role => {
-                        // Compute contrast if paired
-                        let grade = '';
-                        if (role.pairedWith) {
-                          const bg = roles.find(
-                            ro => ro.name === role.pairedWith,
-                          );
-                          if (bg) {
-                            const fgHex = (
-                              (previewMode === 'light'
-                                ? role.light
-                                : role.dark) || '#000000'
-                            ).substring(0, 7);
-                            const bgHex = (
-                              (previewMode === 'light' ? bg.light : bg.dark) ||
-                              '#ffffff'
-                            ).substring(0, 7);
-                            const ratio = contrastRatio(fgHex, bgHex);
-                            grade = wcagGrade(ratio);
-                          }
-                        }
-                        return (
-                          <div
-                            key={role.name}
-                            style={S.roleCard}
-                            onClick={() =>
-                              copy(`--color-${role.name}: ${role.light}`)
-                            }>
-                            <div style={S.roleSwatchWrap}>
-                              <div
-                                style={S.roleSwatchHalf(
-                                  role.light || '#888888',
-                                )}
-                              />
-                              <div
-                                style={S.roleSwatchHalf(role.dark || '#888888')}
-                              />
-                              {grade && (
-                                <span style={S.wcagBadge(grade)}>{grade}</span>
-                              )}
-                            </div>
-                            <div style={S.roleBody}>
-                              <div style={S.roleName}>{role.name}</div>
-                              <div style={S.roleValue}>
-                                L: {role.light.substring(0, 7)} D:{' '}
-                                {role.dark.substring(0, 7)}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              },
-            )}
-          </div>
-        )}
-
-        {/* ─── Preview Tab ─── */}
-        {tab === 'preview' && (
-          <div style={S.previewFrame}>
-            <div style={S.previewToolbar}>
-              <div
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: '50%',
-                  background: '#ff5f57',
-                }}
-              />
-              <div
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: '50%',
-                  background: '#febc2e',
-                }}
-              />
-              <div
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: '50%',
-                  background: '#28c840',
-                }}
-              />
-              <div style={{flex: 1}} />
-              <button
-                style={S.pill(previewMode === 'light')}
-                onClick={() => setPreviewMode('light')}>
-                Light
-              </button>
-              <button
-                style={S.pill(previewMode === 'dark')}
-                onClick={() => setPreviewMode('dark')}>
-                Dark
-              </button>
-            </div>
-            <div style={S.previewBody(r('body'), r('text-primary'))}>
-              {/* Nav mock */}
-              <div
-                style={{
-                  display: 'flex',
-                  gap: 2,
-                  padding: 4,
-                  borderRadius: 8,
-                  background: r('surface'),
-                  border: `1px solid ${r('border')}`,
-                  marginBottom: 16,
-                }}>
-                <div
-                  style={{
-                    padding: '6px 14px',
-                    borderRadius: 6,
-                    background: r('accent'),
-                    color: r('on-accent'),
-                    fontSize: 12,
-                    fontWeight: 500,
-                  }}>
-                  Dashboard
-                </div>
-                <div
-                  style={{
-                    padding: '6px 14px',
-                    fontSize: 12,
-                    color: r('text-secondary'),
-                  }}>
-                  Settings
-                </div>
-                <div
-                  style={{
-                    padding: '6px 14px',
-                    fontSize: 12,
-                    color: r('text-secondary'),
-                  }}>
-                  Reports
-                </div>
-              </div>
-
-              <div style={S.previewGrid}>
-                {/* Buttons & Inputs */}
-                <div style={S.mockCard(r('card'), r('border'))}>
-                  <div
-                    style={{
-                      fontSize: 16,
-                      fontWeight: 600,
-                      color: r('text-primary'),
-                      marginBottom: 12,
-                    }}>
-                    Components
-                  </div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      gap: 8,
-                      marginBottom: 12,
-                      flexWrap: 'wrap',
-                    }}>
-                    <div style={S.mockBtn(r('accent'), r('on-accent'))}>
-                      Primary
-                    </div>
-                    <div
-                      style={S.mockBtnOutline(r('accent'), r('text-accent'))}>
-                      Outline
-                    </div>
-                    <div style={S.mockBtn(r('muted'), r('text-primary'))}>
-                      Neutral
-                    </div>
-                  </div>
-                  <input
-                    readOnly
-                    value="Text input"
-                    style={S.mockInput(
-                      r('surface'),
-                      r('border-emphasized'),
-                      r('text-primary'),
-                    )}
-                  />
-                  <div
-                    style={{
-                      display: 'flex',
-                      gap: 6,
-                      marginTop: 10,
-                      flexWrap: 'wrap',
-                    }}>
-                    <span
-                      style={S.mockChip(r('accent-muted'), r('text-accent'))}>
-                      Tag One
-                    </span>
-                    <span style={S.mockChip(r('muted'), r('text-secondary'))}>
-                      Tag Two
-                    </span>
-                  </div>
-                </div>
-
-                {/* Status */}
-                <div style={S.mockCard(r('card'), r('border'))}>
-                  <div
-                    style={{
-                      fontSize: 16,
-                      fontWeight: 600,
-                      color: r('text-primary'),
-                      marginBottom: 12,
-                    }}>
-                    Status
-                  </div>
-                  {[
-                    {
-                      dot: r('success'),
-                      text: 'Deployed',
-                      badge: '3',
-                      badgeBg: r('success'),
-                      badgeFg: r('on-success'),
-                    },
-                    {
-                      dot: r('warning'),
-                      text: 'Building',
-                      badge: '',
-                      badgeBg: '',
-                      badgeFg: '',
-                    },
-                    {
-                      dot: r('error'),
-                      text: '2 tests failing',
-                      badge: '2',
-                      badgeBg: r('error'),
-                      badgeFg: r('on-error'),
-                    },
-                  ].map((s, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        marginBottom: 8,
-                      }}>
-                      <div style={S.mockDot(s.dot)} />
-                      <span
-                        style={{
-                          fontSize: 12,
-                          color: r('text-secondary'),
-                          flex: 1,
-                        }}>
-                        {s.text}
-                      </span>
-                      {s.badge && (
-                        <span
-                          style={{
-                            minWidth: 20,
-                            height: 20,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            borderRadius: 999,
-                            fontSize: 10,
-                            fontWeight: 600,
-                            background: s.badgeBg,
-                            color: s.badgeFg,
-                            padding: '0 6px',
-                          }}>
-                          {s.badge}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                  <div
-                    style={{
-                      display: 'flex',
-                      gap: 12,
-                      marginTop: 14,
-                      alignItems: 'center',
-                    }}>
-                    <div style={S.mockBtn(r('error'), r('on-error'))}>
-                      Delete
-                    </div>
-                    <div
-                      style={S.mockSwitch(
-                        true,
-                        r('success'),
-                        r('border-emphasized'),
-                      )}>
-                      <div style={S.mockSwitchDot(true)} />
-                    </div>
-                    <div
-                      style={S.mockSwitch(
-                        false,
-                        r('success'),
-                        r('border-emphasized'),
-                      )}>
-                      <div style={S.mockSwitchDot(false)} />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Typography */}
-                <div style={S.mockCard(r('card'), r('border'))}>
-                  <div
-                    style={{
-                      fontSize: 20,
-                      fontWeight: 700,
-                      color: r('text-primary'),
-                      marginBottom: 4,
-                    }}>
-                    Heading
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 14,
-                      color: r('text-secondary'),
-                      marginBottom: 8,
-                    }}>
-                    Secondary body text with detail about the feature.
-                  </div>
-                  <div style={{fontSize: 12, color: r('text-disabled')}}>
-                    Disabled or placeholder text
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 13,
-                      color: r('text-accent'),
-                      marginTop: 8,
-                      cursor: 'default',
-                    }}>
-                    Link text →
-                  </div>
-                </div>
-
-                {/* Spectrum */}
-                <div style={S.mockCard(r('card'), r('border'))}>
-                  <div
-                    style={{
-                      fontSize: 16,
-                      fontWeight: 600,
-                      color: r('text-primary'),
-                      marginBottom: 12,
-                    }}>
-                    Categorical
-                  </div>
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(5, 1fr)',
-                      gap: 6,
-                    }}>
-                    {categorical.slice(0, 10).map((c, i) => (
-                      <div
-                        key={i}
-                        style={{
-                          background: c.hex + '33',
-                          borderRadius: 8,
-                          padding: 6,
-                          textAlign: 'center',
-                        }}>
-                        <div
-                          style={{
-                            width: 16,
-                            height: 16,
-                            borderRadius: '50%',
-                            background: c.hex,
-                            margin: '0 auto 2px',
-                          }}
-                        />
-                        <div style={{fontSize: 8, color: r('text-secondary')}}>
-                          {c.label}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ─── Accessibility Tab ─── */}
-        {tab === 'accessibility' && (
-          <div>
-            <div style={{...S.pills, marginBottom: 16}}>
-              <button
-                style={S.pill(previewMode === 'light')}
-                onClick={() => setPreviewMode('light')}>
-                Light
-              </button>
-              <button
-                style={S.pill(previewMode === 'dark')}
-                onClick={() => setPreviewMode('dark')}>
-                Dark
-              </button>
-            </div>
-            <div style={S.contrastGrid}>
-              {contrastPairs.map((pair, i) => (
-                <div key={i} style={S.contrastCard(pair.grade !== 'FAIL')}>
-                  <div style={S.contrastSwatch(pair.fg, pair.bg)}>Aa</div>
-                  <div style={{flex: 1, minWidth: 0}}>
-                    <div style={{fontSize: 12, fontWeight: 500}}>
-                      {pair.label}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 11,
-                        color: '#71717a',
-                        fontFamily: "'JetBrains Mono', monospace",
-                      }}>
-                      {pair.ratio.toFixed(1)}:1
-                    </div>
-                  </div>
-                  <span style={S.wcagBadge(pair.grade) as React.CSSProperties}>
-                    {pair.grade}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ─── Export Tab ─── */}
-        {tab === 'export' && (
-          <div style={S.exportPanel}>
-            <div style={S.exportBar}>
-              {(
-                [
-                  ['css', 'CSS Variables'],
-                  ['json', 'JSON'],
-                  ['tailwind', 'Tailwind'],
-                  ['xds', 'XDS Theme'],
-                ] as [ExportFmt, string][]
-              ).map(([f, label]) => (
-                <button
-                  key={f}
-                  style={S.exportTab(exportFmt === f)}
-                  onClick={() => setExportFmt(f)}>
-                  {label}
-                </button>
-              ))}
-              <button style={S.exportCopy} onClick={() => copy(exportCode)}>
-                📋 Copy
-              </button>
-            </div>
-            <pre style={S.exportCode}>{exportCode}</pre>
-          </div>
-        )}
       </main>
-
-      {/* Toast */}
-      <div style={{...S.toast, opacity: toast ? 1 : 0}}>{toast}</div>
     </div>
   );
 }
