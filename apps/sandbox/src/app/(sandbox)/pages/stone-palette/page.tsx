@@ -191,7 +191,7 @@ function tonalPalette(
 }
 
 const TONAL_COLORS = [
-  {name: 'Stone Neutral', sourceHex: '#D8D8DB'},
+  {name: 'Stone Neutral', sourceHex: '#e2e2e2'},
   {name: 'Blue', sourceHex: '#d7e4f5'},
   {name: 'Cyan', sourceHex: '#cce8e5'},
   {name: 'Green', sourceHex: '#d0e9ce', semantic: 'Success'},
