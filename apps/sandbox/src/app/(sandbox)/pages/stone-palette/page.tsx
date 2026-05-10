@@ -32,13 +32,13 @@ function luminance(hex: string): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-function contrastRatio(fg: string, bg: string): number {
+function _contrastRatio(fg: string, bg: string): number {
   const l1 = luminance(fg);
   const l2 = luminance(bg);
   return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
 }
 
-function passesAA(ratio: number): boolean {
+function _passesAA(ratio: number): boolean {
   return ratio >= 4.5;
 }
 
@@ -215,6 +215,8 @@ const CORE = [
 
 type Mode = 'light' | 'dark';
 
+type Surfaces = typeof VAR_SURFACES;
+
 // Surface colors read from CSS variables — no hardcoded hex values to drift.
 const VAR_SURFACES = {
   body: 'var(--color-background-body)',
@@ -234,7 +236,7 @@ interface BadgePair {
   fg: string;
 }
 
-const SEMANTIC: Record<Mode, BadgePair[]> = {
+const _SEMANTIC: Record<Mode, BadgePair[]> = {
   light: [
     {label: 'Success', bg: '#d0e9ce', fg: '#374c36'},
     {label: 'Error', bg: '#f9dcd7', fg: '#58413e'},
@@ -251,7 +253,7 @@ const SEMANTIC: Record<Mode, BadgePair[]> = {
   ],
 };
 
-const CATEGORICAL: Record<Mode, BadgePair[]> = {
+const _CATEGORICAL: Record<Mode, BadgePair[]> = {
   light: [
     {label: 'Blue', bg: '#d7e4f5', fg: '#3c4856'},
     {label: 'Cyan', bg: '#cce8e5', fg: '#334b49'},
@@ -282,7 +284,7 @@ const CATEGORICAL: Record<Mode, BadgePair[]> = {
 // Styles
 // =============================================================================
 
-const FONT =
+const _FONT =
   "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
 const MONO = "'JetBrains Mono', 'SF Mono', Menlo, monospace";
 
@@ -527,7 +529,7 @@ const S = {
 // Component
 // =============================================================================
 
-function CoreSection({mode}: {mode: Mode}) {
+function CoreSection({mode: _mode}: {mode: Mode}) {
   return (
     <div style={S.section}>
       <h3 style={S.sectionTitle}>Core Palette</h3>
