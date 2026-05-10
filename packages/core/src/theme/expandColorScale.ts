@@ -121,8 +121,8 @@ export function expandColorScale(
     ),
     '--color-on-accent': ld(P[100], P[20]),
     '--color-neutral': ld(hexWithAlpha(N[10], 0.1), hexWithAlpha(N[90], 0.2)),
-    '--color-background-surface': ld(N[100], N[10]),
-    '--color-background-body': ld(N[99], N[5]),
+    '--color-background-surface': ld(N[99], N[10]),
+    '--color-background-body': ld(N[95], N[5]),
     '--color-overlay': ld(hexWithAlpha(N[10], 0.4), hexWithAlpha(N[10], 0.6)),
     '--color-overlay-hover': ld(
       hexWithAlpha(N[10], 0.05),
@@ -156,8 +156,8 @@ export function expandColorScale(
     '--color-icon-disabled': ld(NV[60], NV[40]),
 
     // Surface variants
-    '--color-background-card': ld(N[100], N[15]),
-    '--color-background-popover': ld(N[100], N[20]),
+    '--color-background-card': ld(N[99], N[10]),
+    '--color-background-popover': ld(N[99], N[20]),
     '--color-background-inverted': ld(N[10], N[99]),
 
     // Border
