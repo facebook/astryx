@@ -243,18 +243,62 @@ function hctComponentToHex(
 const PALETTE_TONES = [0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 99, 100];
 
 /**
+ * Options for chroma boosting in tonal palettes.
+ * Increases chroma at dark tones to keep them vibrant.
+ */
+export interface ChromaBoostOptions {
+  /** Tones below this value get boosted. @default 50 */
+  belowTone?: number;
+  /** Divisor for the boost curve — higher = gentler. @default 1.5 */
+  factor?: number;
+  /** Maximum chroma multiplier cap. @default 2.0 */
+  cap?: number;
+}
+
+/**
  * Generate a tonal palette: hex colors at standard tones
  * for a given hue and chroma.
+ *
+ * When `chromaBoost` is provided, dark tones get progressively
+ * higher chroma to stay vibrant instead of looking murky.
  */
 export function tonalPalette(
   hue: number,
   chroma: number,
+  chromaBoost?: ChromaBoostOptions,
 ): Record<number, string> {
   const result: Record<number, string> = {};
+  const belowTone = chromaBoost?.belowTone ?? 50;
+  const factor = chromaBoost?.factor ?? 1.5;
+  const cap = chromaBoost?.cap ?? 2.0;
+
   for (const tone of PALETTE_TONES) {
-    result[tone] = hctToHex({hue, chroma, tone});
+    let c = chroma;
+    if (chromaBoost && tone < belowTone) {
+      const boost = 1 + (belowTone - tone) / (belowTone * factor);
+      c = Math.min(chroma * boost, chroma * cap);
+    }
+    result[tone] = hctToHex({hue, chroma: c, tone});
   }
   return result;
+}
+
+/**
+ * Compute the maximum in-gamut chroma for a hue at a given tone.
+ * Used by perceptual equalization to normalize saturation across hues.
+ */
+export function maxChromaAtTone(hue: number, tone: number): number {
+  let lo = 0;
+  let hi = 150;
+  for (let i = 0; i < 16; i++) {
+    const mid = (lo + hi) / 2;
+    if (hctComponentToHex(hue, mid, tone) !== null) {
+      lo = mid;
+    } else {
+      hi = mid;
+    }
+  }
+  return lo;
 }
 
 // =============================================================================

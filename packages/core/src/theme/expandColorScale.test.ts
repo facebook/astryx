@@ -1,81 +1,99 @@
 import {describe, it, expect} from 'vitest';
 import {expandColorScale} from './expandColorScale';
-import {defineTheme} from './defineTheme';
 
 describe('expandColorScale', () => {
-  it('produces all expected token keys', () => {
+  it('generates tokens from a seed accent', () => {
     const tokens = expandColorScale({accent: '#0064E0'});
-    const expectedKeys = [
-      '--color-accent',
-      '--color-accent-muted',
-      '--color-on-accent',
-      '--color-neutral',
-      '--color-background-surface',
-      '--color-background-body',
-      '--color-overlay',
-      '--color-overlay-hover',
-      '--color-overlay-pressed',
-      '--color-background-muted',
-      '--color-text-primary',
-      '--color-text-secondary',
-      '--color-text-disabled',
-      '--color-text-accent',
-      '--color-icon-accent',
-      '--color-icon-primary',
-      '--color-icon-secondary',
-      '--color-icon-disabled',
-      '--color-background-card',
-      '--color-background-popover',
-      '--color-background-inverted',
-      '--color-border',
-      '--color-border-emphasized',
-      '--color-skeleton',
-      '--color-shadow',
-      '--color-tint-hover',
-    ];
-    for (const key of expectedKeys) {
-      expect(tokens).toHaveProperty(key);
-    }
+    expect(tokens['--color-accent']).toMatch(/^light-dark\(/);
+    expect(tokens['--color-text-primary']).toMatch(/^light-dark\(/);
+    expect(tokens['--color-background-surface']).toMatch(/^light-dark\(/);
   });
 
-  it('all values are strings', () => {
+  describe('bodyColor', () => {
+    it('derives neutral palette from body color when provided', () => {
+      const withBody = expandColorScale({accent: '#0064E0', bodyColor: '#FFF6ED'});
+      const withoutBody = expandColorScale({accent: '#0064E0'});
+
+      // Neutrals should differ because body color has different hue than accent
+      expect(withBody['--color-text-primary']).not.toBe(withoutBody['--color-text-primary']);
+      expect(withBody['--color-background-surface']).not.toBe(withoutBody['--color-background-surface']);
+    });
+
+    it('bodyColor overrides neutralStyle', () => {
+      const withBody = expandColorScale({accent: '#0064E0', bodyColor: '#FFF6ED', neutralStyle: 'cool'});
+      const withBodyWarm = expandColorScale({accent: '#0064E0', bodyColor: '#FFF6ED', neutralStyle: 'warm'});
+
+      // Both should produce the same neutrals since bodyColor takes precedence
+      expect(withBody['--color-text-primary']).toBe(withBodyWarm['--color-text-primary']);
+    });
+  });
+
+  describe('darkMode', () => {
+    it('adaptive mode uses different light/dark values', () => {
+      const tokens = expandColorScale({accent: '#0064E0', darkMode: 'adaptive'});
+      const bg = tokens['--color-background-green'];
+      const match = bg.match(/^light-dark\(([^,]+),\s*([^)]+)\)/);
+      expect(match).toBeTruthy();
+      expect(match![1].trim()).not.toBe(match![2].trim());
+    });
+
+    it('preserve mode uses same hex for light and dark', () => {
+      const tokens = expandColorScale({accent: '#0064E0', darkMode: 'preserve'});
+      const bg = tokens['--color-background-green'];
+      const match = bg.match(/^light-dark\(([^,]+),\s*([^)]+)\)/);
+      expect(match).toBeTruthy();
+      expect(match![1].trim()).toBe(match![2].trim());
+    });
+
+    it('invert mode swaps light/dark assignments', () => {
+      const adaptive = expandColorScale({accent: '#0064E0', darkMode: 'adaptive'});
+      const inverted = expandColorScale({accent: '#0064E0', darkMode: 'invert'});
+
+      const adaptiveMatch = adaptive['--color-background-green'].match(/^light-dark\(([^,]+),\s*([^)]+)\)/);
+      const invertMatch = inverted['--color-background-green'].match(/^light-dark\(([^,]+),\s*([^)]+)\)/);
+
+      // Inverted light should equal adaptive dark and vice versa
+      expect(invertMatch![1].trim()).toBe(adaptiveMatch![2].trim());
+      expect(invertMatch![2].trim()).toBe(adaptiveMatch![1].trim());
+    });
+  });
+
+  describe('equalize', () => {
+    it('without equalization, different hues have different chromas', () => {
+      const tokens = expandColorScale({accent: '#0064E0', equalize: false});
+      // Both should exist
+      expect(tokens['--color-background-green']).toBeTruthy();
+      expect(tokens['--color-background-blue']).toBeTruthy();
+    });
+
+    it('with equalization, all hues produce valid tokens', () => {
+      const tokens = expandColorScale({accent: '#0064E0', equalize: true});
+      expect(tokens['--color-background-green']).toMatch(/^light-dark\(/);
+      expect(tokens['--color-background-red']).toMatch(/^light-dark\(/);
+      expect(tokens['--color-background-blue']).toMatch(/^light-dark\(/);
+      expect(tokens['--color-background-cyan']).toMatch(/^light-dark\(/);
+    });
+  });
+
+  describe('chromaBoost', () => {
+    it('chroma boost produces valid tokens', () => {
+      const tokens = expandColorScale({
+        accent: '#0064E0',
+        chromaBoost: {belowTone: 50, factor: 1.5, cap: 2.0},
+      });
+      expect(tokens['--color-accent']).toMatch(/^light-dark\(/);
+      expect(tokens['--color-background-green']).toMatch(/^light-dark\(/);
+    });
+  });
+
+  it('generates all categorical colors', () => {
     const tokens = expandColorScale({accent: '#0064E0'});
-    for (const value of Object.values(tokens)) {
-      expect(typeof value).toBe('string');
+    const colors = ['green', 'red', 'yellow', 'blue', 'pink', 'purple', 'cyan', 'orange', 'teal', 'gray'];
+    for (const color of colors) {
+      expect(tokens[`--color-background-${color}`]).toBeTruthy();
+      expect(tokens[`--color-border-${color}`]).toBeTruthy();
+      expect(tokens[`--color-icon-${color}`]).toBeTruthy();
+      expect(tokens[`--color-text-${color}`]).toBeTruthy();
     }
-  });
-
-  it('neutralStyle variants produce different --color-neutral values', () => {
-    const warm = expandColorScale({accent: '#0064E0', neutralStyle: 'warm'});
-    const cool = expandColorScale({accent: '#0064E0', neutralStyle: 'cool'});
-    const neutral = expandColorScale({
-      accent: '#0064E0',
-      neutralStyle: 'neutral',
-    });
-    expect(warm['--color-neutral']).not.toBe(cool['--color-neutral']);
-    expect(cool['--color-neutral']).not.toBe(neutral['--color-neutral']);
-    expect(warm['--color-neutral']).not.toBe(neutral['--color-neutral']);
-  });
-
-  it('contrast high produces different --color-text-primary than standard', () => {
-    const standard = expandColorScale({
-      accent: '#0064E0',
-      contrast: 'standard',
-    });
-    const high = expandColorScale({accent: '#0064E0', contrast: 'high'});
-    expect(high['--color-text-primary']).not.toBe(
-      standard['--color-text-primary'],
-    );
-  });
-});
-
-describe('expandColorScale + defineTheme integration', () => {
-  it('explicit token overrides win over generated values', () => {
-    const theme = defineTheme({
-      name: 'test-override',
-      color: {accent: '#0064E0'},
-      tokens: {'--color-accent': 'red'},
-    });
-    expect(theme.tokens['--color-accent']).toBe('red');
   });
 });

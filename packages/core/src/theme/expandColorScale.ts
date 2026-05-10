@@ -1,6 +1,6 @@
 /**
  * @file expandColorScale.ts
- * @input Color scale configuration { accent, neutralStyle?, contrast? }
+ * @input Color scale configuration { accent, bodyColor?, neutralStyle?, contrast?, darkMode?, chromaBoost?, equalize? }
  * @output Token overrides for derivable color tokens
  * @position Theme utility; consumed by defineTheme.ts
  *
@@ -13,7 +13,8 @@
  * - /packages/core/src/theme/defineTheme.ts
  */
 
-import {hexToHct, tonalPalette, hexWithAlpha} from './hct';
+import {hexToHct, hctToHex, tonalPalette, hexWithAlpha, maxChromaAtTone} from './hct';
+import type {ChromaBoostOptions} from './hct';
 
 // =============================================================================
 // Types
@@ -27,8 +28,16 @@ import {hexToHct, tonalPalette, hexWithAlpha} from './hct';
  * // Minimal — just a seed color
  * { accent: '#0064E0' }
  *
- * // With customization
- * { accent: '#B7410E', neutralStyle: 'warm', contrast: 'high' }
+ * // With all options
+ * {
+ *   accent: '#B7410E',
+ *   bodyColor: '#FFF6ED',
+ *   neutralStyle: 'warm',
+ *   contrast: 'high',
+ *   darkMode: 'preserve',
+ *   chromaBoost: { belowTone: 50, factor: 1.5, cap: 2.0 },
+ *   equalize: true,
+ * }
  * ```
  */
 export interface XDSColorScaleConfig {
@@ -36,8 +45,15 @@ export interface XDSColorScaleConfig {
   accent: string;
 
   /**
+   * Body background color as hex. When provided, the neutral palette
+   * derives its hue and chroma from this color instead of the accent.
+   * Useful for cream, warm, or tinted body backgrounds.
+   */
+  bodyColor?: string;
+
+  /**
    * Neutral tone warmth. Controls how much of the seed's hue bleeds
-   * into neutral/background colors.
+   * into neutral/background colors. Ignored when `bodyColor` is set.
    * @default 'cool'
    */
   neutralStyle?: 'warm' | 'cool' | 'neutral';
@@ -47,6 +63,28 @@ export interface XDSColorScaleConfig {
    * @default 'standard'
    */
   contrast?: 'standard' | 'high';
+
+  /**
+   * Dark mode strategy for categorical/status colors.
+   * - 'adaptive' (default): shift tones for dark backgrounds (T90→T30 bg, T30→T80 text)
+   * - 'preserve': use identical hex values in both light and dark
+   * - 'invert': swap light/dark assignments
+   * @default 'adaptive'
+   */
+  darkMode?: 'adaptive' | 'preserve' | 'invert';
+
+  /**
+   * Chroma boost for dark tones. When provided, tonal palette
+   * generation increases chroma at dark tones to keep them vibrant.
+   */
+  chromaBoost?: ChromaBoostOptions;
+
+  /**
+   * Perceptual equalization. When true, categorical background colors
+   * are adjusted so all hues appear equally saturated at the same tone.
+   * @default false
+   */
+  equalize?: boolean;
 }
 
 export type ColorScaleTokens = Record<string, string>;
@@ -66,6 +104,45 @@ const NEUTRAL_VARIANT_CHROMA: Record<string, number> = {
   cool: 8,
   neutral: 6,
 };
+
+// =============================================================================
+// Categorical hue definitions
+// =============================================================================
+
+const CATEGORICAL_HUES = [
+  {name: 'green', hue: 142, chroma: 35},
+  {name: 'red', hue: 25, chroma: 30},
+  {name: 'yellow', hue: 85, chroma: 40},
+  {name: 'blue', hue: 250, chroma: 28},
+  {name: 'pink', hue: 350, chroma: 30},
+  {name: 'purple', hue: 300, chroma: 25},
+  {name: 'cyan', hue: 185, chroma: 22},
+  {name: 'orange', hue: 60, chroma: 35},
+  {name: 'teal', hue: 165, chroma: 20},
+  {name: 'gray', hue: 0, chroma: 0},
+];
+
+// =============================================================================
+// Perceptual equalization
+// =============================================================================
+
+/**
+ * Compute a chroma value for each hue that produces the same perceived
+ * colorfulness at a given tone. Uses the max in-gamut chroma as an
+ * upper bound and normalizes to the smallest achievable colorfulness.
+ */
+function equalizeChromasAtTone(
+  hues: {hue: number; chroma: number}[],
+  tone: number,
+): number[] {
+  const maxChromas = hues.map(h =>
+    h.chroma === 0 ? 0 : maxChromaAtTone(h.hue, tone),
+  );
+  const achievable = hues.map((h, i) => Math.min(h.chroma, maxChromas[i]));
+  const minNonZero = achievable.filter(c => c > 0).reduce((a, b) => Math.min(a, b), Infinity);
+  if (!isFinite(minNonZero)) return achievable;
+  return achievable.map(c => (c === 0 ? 0 : minNonZero));
+}
 
 // =============================================================================
 // Computation
@@ -92,18 +169,40 @@ function ld(light: string, dark: string): string {
 export function expandColorScale(
   config: XDSColorScaleConfig,
 ): ColorScaleTokens {
-  const {accent, neutralStyle = 'cool', contrast = 'standard'} = config;
+  const {
+    accent,
+    bodyColor,
+    neutralStyle = 'cool',
+    contrast = 'standard',
+    darkMode = 'adaptive',
+    chromaBoost,
+    equalize = false,
+  } = config;
 
   const seed = hexToHct(accent);
   const seedHue = seed.hue;
 
   const primaryChroma = Math.max(seed.chroma, 48);
-  const neutralChroma = NEUTRAL_CHROMA[neutralStyle] ?? 5;
-  const neutralVariantChroma = NEUTRAL_VARIANT_CHROMA[neutralStyle] ?? 8;
 
-  const P = tonalPalette(seedHue, primaryChroma);
-  const N = tonalPalette(seedHue, neutralChroma);
-  const NV = tonalPalette(seedHue, neutralVariantChroma);
+  // Neutral palette: derive from bodyColor if provided, otherwise from accent
+  let neutralHue: number;
+  let neutralChroma: number;
+  let neutralVariantChroma: number;
+
+  if (bodyColor) {
+    const body = hexToHct(bodyColor);
+    neutralHue = body.hue;
+    neutralChroma = Math.max(body.chroma, 3);
+    neutralVariantChroma = Math.min(neutralChroma * 1.5, 12);
+  } else {
+    neutralHue = seedHue;
+    neutralChroma = NEUTRAL_CHROMA[neutralStyle] ?? 5;
+    neutralVariantChroma = NEUTRAL_VARIANT_CHROMA[neutralStyle] ?? 8;
+  }
+
+  const P = tonalPalette(seedHue, primaryChroma, chromaBoost);
+  const N = tonalPalette(neutralHue, neutralChroma, chromaBoost);
+  const NV = tonalPalette(neutralHue, neutralVariantChroma, chromaBoost);
 
   const isHigh = contrast === 'high';
 
@@ -112,7 +211,19 @@ export function expandColorScale(
   const textSecondaryLightTone = isHigh ? 20 : 30;
   const textSecondaryDarkTone = isHigh ? 80 : 70;
 
-  return {
+  // Light-dark helper that respects darkMode strategy
+  const catLd = (lightHex: string, darkHex: string): string => {
+    switch (darkMode) {
+      case 'preserve':
+        return ld(lightHex, lightHex);
+      case 'invert':
+        return ld(darkHex, lightHex);
+      default:
+        return ld(lightHex, darkHex);
+    }
+  };
+
+  const tokens: ColorScaleTokens = {
     // Core semantic
     '--color-accent': ld(P[40], P[80]),
     '--color-accent-muted': ld(
@@ -169,4 +280,31 @@ export function expandColorScale(
     '--color-shadow': ld(hexWithAlpha(N[0], 0.1), hexWithAlpha(N[0], 0.3)),
     '--color-tint-hover': ld('black', 'white'),
   };
+
+  // Generate categorical colors with optional equalization
+  const catHues = CATEGORICAL_HUES.filter(h => h.name !== 'gray');
+  let chromas = catHues.map(h => h.chroma);
+
+  if (equalize) {
+    chromas = equalizeChromasAtTone(catHues, 90);
+  }
+
+  for (let i = 0; i < catHues.length; i++) {
+    const {name, hue} = catHues[i];
+    const c = chromas[i];
+    const palette = tonalPalette(hue, c, chromaBoost);
+
+    tokens[`--color-background-${name}`] = catLd(palette[90], palette[30]);
+    tokens[`--color-border-${name}`] = catLd(palette[80], palette[40]);
+    tokens[`--color-icon-${name}`] = catLd(palette[30], palette[80]);
+    tokens[`--color-text-${name}`] = catLd(palette[30], palette[80]);
+  }
+
+  // Gray uses neutral palette
+  tokens['--color-background-gray'] = catLd(N[90], N[30]);
+  tokens['--color-border-gray'] = catLd(N[80], N[40]);
+  tokens['--color-icon-gray'] = catLd(N[30], N[80]);
+  tokens['--color-text-gray'] = catLd(N[30], N[80]);
+
+  return tokens;
 }

@@ -64,6 +64,10 @@ import {
   expandRadiusScale,
   type XDSRadiusScaleConfig,
 } from './expandRadiusScale';
+import {
+  expandSpacingScale,
+  type XDSSpacingScaleConfig,
+} from './expandSpacingScale';
 import {expandColorScale, type XDSColorScaleConfig} from './expandColorScale';
 
 import type {DomainTokenName} from './domainTokens';
@@ -238,6 +242,21 @@ export interface XDSDefineThemeInput {
    * ```
    */
   radius?: XDSRadiusScaleConfig;
+  /**
+   * Spacing scale configuration. Generates spacing token overrides
+   * from a base unit: --spacing-N = base * N.
+   *
+   * When omitted, themes use the hardcoded defaults (base=4).
+   * Explicit `tokens` overrides take precedence over spacing-generated values.
+   *
+   * @example
+   * ```tsx
+   * spacing: { base: 4 }     // default
+   * spacing: { base: 6 }     // comfortable / spacious
+   * spacing: { base: 3 }     // compact
+   * ```
+   */
+  spacing?: XDSSpacingScaleConfig;
   /**
    * Color scale configuration. Generates color token overrides from a
    * single accent color using the HCT perceptual color model.
@@ -547,6 +566,14 @@ export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
   if (input.radius) {
     const radiusTokens = expandRadiusScale(input.radius);
     for (const [key, value] of Object.entries(radiusTokens)) {
+      tokens[key] = value;
+    }
+  }
+
+  // 1b2. Apply spacing-generated tokens
+  if (input.spacing) {
+    const spacingTokens = expandSpacingScale(input.spacing);
+    for (const [key, value] of Object.entries(spacingTokens)) {
       tokens[key] = value;
     }
   }

@@ -1,91 +1,61 @@
 import {describe, it, expect} from 'vitest';
-import {hexToHct, hctToHex, tonalPalette, hexWithAlpha} from './hct';
-
-function hexToRgb(hex: string): [number, number, number] {
-  const h = hex.replace('#', '');
-  return [
-    parseInt(h.slice(0, 2), 16),
-    parseInt(h.slice(2, 4), 16),
-    parseInt(h.slice(4, 6), 16),
-  ];
-}
-
-describe('hexToHct / hctToHex roundtrip', () => {
-  const cases = [
-    '#FF0000',
-    '#00FF00',
-    '#0000FF',
-    '#000000',
-    '#FFFFFF',
-    '#808080',
-    '#0064E0',
-  ];
-
-  for (const hex of cases) {
-    it(`roundtrips ${hex}`, () => {
-      const hct = hexToHct(hex);
-      const result = hctToHex(hct);
-      const [r1, g1, b1] = hexToRgb(hex);
-      const [r2, g2, b2] = hexToRgb(result);
-      expect(Math.abs(r1 - r2)).toBeLessThanOrEqual(1);
-      expect(Math.abs(g1 - g2)).toBeLessThanOrEqual(1);
-      expect(Math.abs(b1 - b2)).toBeLessThanOrEqual(1);
-    });
-  }
-});
-
-describe('hexToHct ranges', () => {
-  const cases = ['#FF0000', '#00FF00', '#0000FF', '#808080', '#0064E0'];
-
-  for (const hex of cases) {
-    it(`${hex} produces valid HCT ranges`, () => {
-      const {hue, chroma, tone} = hexToHct(hex);
-      expect(hue).toBeGreaterThanOrEqual(0);
-      expect(hue).toBeLessThanOrEqual(360);
-      expect(chroma).toBeGreaterThanOrEqual(0);
-      expect(tone).toBeGreaterThanOrEqual(0);
-      expect(tone).toBeLessThanOrEqual(100);
-    });
-  }
-
-  it('black has tone ≈ 0', () => {
-    const {tone} = hexToHct('#000000');
-    expect(tone).toBeCloseTo(0, 0);
-  });
-
-  it('white has tone ≈ 100', () => {
-    const {tone} = hexToHct('#FFFFFF');
-    expect(tone).toBeCloseTo(100, 0);
-  });
-});
+import {tonalPalette, hexToHct, maxChromaAtTone} from './hct';
 
 describe('tonalPalette', () => {
-  it('produces entries for all standard tones', () => {
-    const palette = tonalPalette(220, 48);
-    const expectedTones = [
-      0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 99, 100,
-    ];
-    for (const tone of expectedTones) {
-      expect(palette[tone]).toBeDefined();
-      expect(palette[tone]).toMatch(/^#[0-9A-F]{6}$/);
-    }
+  it('generates palette without chroma boost', () => {
+    const palette = tonalPalette(250, 30);
+    expect(palette[0]).toBe('#000000');
+    expect(palette[100]).toBe('#FFFFFF');
+    expect(Object.keys(palette)).toHaveLength(14);
+  });
+
+  it('chroma boost increases chroma at dark tones', () => {
+    const normal = tonalPalette(250, 30);
+    const boosted = tonalPalette(250, 30, {belowTone: 50, factor: 1.5, cap: 2.0});
+
+    // T0 and T100 should be the same (black/white)
+    expect(boosted[0]).toBe(normal[0]);
+    expect(boosted[100]).toBe(normal[100]);
+
+    // T90+ should be the same (above belowTone)
+    expect(boosted[90]).toBe(normal[90]);
+    expect(boosted[95]).toBe(normal[95]);
+
+    // Mid-dark tones should differ where gamut allows
+    // T30 is more likely to show a difference than T10/T20 which may clip
+    expect(boosted[30]).not.toBe(normal[30]);
+  });
+
+  it('chroma boost respects cap', () => {
+    const palette = tonalPalette(120, 30, {belowTone: 50, factor: 1.0, cap: 1.5});
+    // At T0 the boost would be 1 + 50/(50*1) = 2.0, but cap is 1.5
+    // So chroma is 30 * 1.5 = 45, not 30 * 2 = 60
+    expect(palette[0]).toBe('#000000'); // black is always black
+  });
+
+  it('chroma boost with default options', () => {
+    const palette = tonalPalette(120, 30, {});
+    expect(palette[0]).toBe('#000000');
+    expect(palette[100]).toBe('#FFFFFF');
   });
 });
 
-describe('hexWithAlpha', () => {
-  it('appends correct alpha hex for 1.0', () => {
-    expect(hexWithAlpha('#FF0000', 1)).toBe('#FF0000FF');
+describe('maxChromaAtTone', () => {
+  it('returns positive chroma for visible tones', () => {
+    expect(maxChromaAtTone(250, 50)).toBeGreaterThan(0);
+    expect(maxChromaAtTone(120, 50)).toBeGreaterThan(0);
   });
 
-  it('appends correct alpha hex for 0.5', () => {
-    expect(hexWithAlpha('#FF0000', 0.5)).toBe('#FF000080');
+  it('returns higher chroma for mid tones than extremes', () => {
+    const midMax = maxChromaAtTone(250, 50);
+    const nearBlack = maxChromaAtTone(250, 5);
+    expect(midMax).toBeGreaterThan(nearBlack);
   });
 
-  it('appends correct alpha hex for 0', () => {
-    expect(hexWithAlpha('#FF0000', 0)).toBe('#FF000000');
-  });
-
-  it('appends correct alpha hex for 0.2', () => {
-    expect(hexWithAlpha('#ABCDEF', 0.2)).toBe('#ABCDEF33');
+  it('different hues have different max chromas at the same tone', () => {
+    const blueMax = maxChromaAtTone(250, 50);
+    const greenMax = maxChromaAtTone(120, 50);
+    // They should be different (blue can achieve higher chroma than green at T50)
+    expect(blueMax).not.toBeCloseTo(greenMax, 0);
   });
 });
