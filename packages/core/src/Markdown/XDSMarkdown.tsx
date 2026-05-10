@@ -355,6 +355,10 @@ const styles = stylex.create({
   tableWrapper: {
     overflowX: 'auto',
     maxWidth: '100%',
+    '--container-padding-inline-start': '0px',
+    '--container-padding-inline-end': '0px',
+    '--container-padding-block-start': '0px',
+    '--container-padding-block-end': '0px',
   },
   blockIndent: {
     marginInline: `calc(-1 * ${spacingVars['--spacing-2']})`,
