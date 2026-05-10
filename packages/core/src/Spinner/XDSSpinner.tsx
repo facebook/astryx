@@ -161,17 +161,29 @@ export function XDSSpinner({
     const pixelRatio = window.devicePixelRatio || 1;
 
     // Resolve colors from CSS custom properties
+    // Try hashed StyleX name first, then unhashed theme name as fallback.
+    // Values may be wrapped in light-dark() which canvas can't parse,
+    // so extract the first (light) color from the function.
     const computedStyle = getComputedStyle(canvas);
+    const isDark = computedStyle.colorScheme === 'dark' ||
+      document.documentElement.getAttribute('data-theme') === 'dark';
+    const parseLightDark = (v: string): string => {
+      const m = v.match(/^light-dark\(\s*([^,]+?)\s*,\s*([^)]+?)\s*\)/);
+      return m ? (isDark ? m[2].trim() : m[1].trim()) : v;
+    };
+    const resolve = (hashedName: string, fallbackName: string, defaultColor: string) => {
+      const hashed = computedStyle.getPropertyValue(hashedName).trim();
+      if (hashed) return parseLightDark(hashed);
+      const unhashed = computedStyle.getPropertyValue(fallbackName).trim();
+      if (unhashed) return parseLightDark(unhashed);
+      return defaultColor;
+    };
     const activeColor =
       shade === 'onMedia'
-        ? computedStyle.getPropertyValue(colorVars['--color-on-dark']) ||
-          '#FFFFFF'
+        ? resolve(colorVars['--color-on-dark'], '--color-on-dark', '#FFFFFF')
         : shade === 'subtle'
-          ? computedStyle.getPropertyValue(
-              colorVars['--color-text-secondary'],
-            ) || '#65676B'
-          : computedStyle.getPropertyValue(colorVars['--color-accent']) ||
-            '#0064E0';
+          ? resolve(colorVars['--color-text-secondary'], '--color-text-secondary', '#65676B')
+          : resolve(colorVars['--color-accent'], '--color-accent', '#0064E0');
     const backgroundColor =
       shade === 'onMedia' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.08)';
 

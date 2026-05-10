@@ -121,6 +121,12 @@ export const categories: SandboxCategory[] = [
         description:
           'Y2K pop theme — sharp corners, cream body, neon lime accent, Crimson Text display type',
       },
+      {
+        name: 'Color Studio',
+        href: '/pages/color-studio/',
+        description:
+          'Generate and explore color palettes from an accent color or image',
+      },
     ],
   },
   {
@@ -156,12 +162,6 @@ export const categories: SandboxCategory[] = [
         href: '/pages/dictation-lab/',
         description:
           'Test voice dictation, tune sound effects, and explore animation',
-      },
-      {
-        name: 'Color Studio',
-        href: '/pages/color-studio/',
-        description:
-          'Generate and explore color palettes from an accent color or image',
       },
     ],
   },

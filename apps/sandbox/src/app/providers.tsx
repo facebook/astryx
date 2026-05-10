@@ -11,6 +11,7 @@ import {dailyTheme} from '@xds/theme-daily/built';
 import {stoneTheme} from '@xds/theme-stone/built';
 import {gothicTheme} from '@xds/theme-gothic/built';
 import {chocolateTheme} from '@xds/theme-chocolate/built';
+import {y2kTheme} from '@xds/theme-y2k';
 import type {XDSDefinedTheme, ThemeMode} from '@xds/core/theme';
 
 const themes: Record<string, XDSDefinedTheme> = {
@@ -22,6 +23,7 @@ const themes: Record<string, XDSDefinedTheme> = {
   stone: stoneTheme,
   gothic: gothicTheme,
   chocolate: chocolateTheme,
+  y2k: y2kTheme,
 };
 
 type ThemeContextValue = {
