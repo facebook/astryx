@@ -10,7 +10,7 @@
  */
 
 // Container utility
-export {container} from './container.stylex';
+export {container, BLEED_ATTR} from './container.stylex';
 export type {
   ContainerComponent,
   ContainerOptions,

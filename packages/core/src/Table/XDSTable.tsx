@@ -17,6 +17,7 @@
 import {useMemo, type ReactElement, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
+import {BLEED_ATTR} from '../Layout/container.stylex';
 import {XDSBaseTable} from './XDSBaseTable';
 import {XDSTableContext} from './XDSTableContext';
 import {useXDSBaseTablePlugins} from './useXDSBaseTablePlugins';
@@ -118,20 +119,13 @@ const scrollWrapperStyles = stylex.create({
     marginInlineEnd: 'calc(-1 * var(--container-padding-inline-end, 0px))',
     width:
       'calc(100% + var(--container-padding-inline-start, 0px) + var(--container-padding-inline-end, 0px))',
-    marginTop: {
-      default: null,
-      ':first-child': 'calc(-1 * var(--container-padding-block-start, 0px))',
-    },
-    marginBottom: {
-      default: null,
-      ':last-child': 'calc(-1 * var(--container-padding-block-end, 0px))',
-    },
   },
 });
 
 function TableScrollWrapper({children}: {children: React.ReactNode}) {
   return (
     <div
+      {...{[BLEED_ATTR]: ''}}
       {...mergeProps(
         xdsClassName('table-scroll-wrapper'),
         stylex.props(

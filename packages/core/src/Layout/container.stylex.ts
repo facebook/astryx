@@ -35,6 +35,19 @@ import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 
 /**
+ * Data attribute for full-bleed components.
+ *
+ * Components that want to escape their container's block padding
+ * (Table, Section, Divider) apply this attribute. Containers detect it
+ * via `:has(> [data-xds-bleed]:first-child)` and zero their own block
+ * padding on that edge.
+ *
+ * Same pattern as `EDGE_COMP_ATTR` — components declare eligibility,
+ * containers own the adjustment.
+ */
+export const BLEED_ATTR = 'data-xds-bleed';
+
+/**
  * Spacing token keys for padding props.
  */
 export type SpacingToken =
@@ -59,8 +72,14 @@ const baseStyles = stylex.create({
     boxSizing: 'border-box',
     paddingInlineStart: 'var(--container-padding-inline-start)',
     paddingInlineEnd: 'var(--container-padding-inline-end)',
-    paddingBlockStart: 'var(--container-padding-block-start)',
-    paddingBlockEnd: 'var(--container-padding-block-end)',
+    paddingBlockStart: {
+      default: 'var(--container-padding-block-start)',
+      [`:has(> [${BLEED_ATTR}]:first-child)`]: '0px',
+    },
+    paddingBlockEnd: {
+      default: 'var(--container-padding-block-end)',
+      [`:has(> [${BLEED_ATTR}]:last-child)`]: '0px',
+    },
   },
 });
 
