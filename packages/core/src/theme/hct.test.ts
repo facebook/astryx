@@ -6,12 +6,16 @@ describe('tonalPalette', () => {
     const palette = tonalPalette(250, 30);
     expect(palette[0]).toBe('#000000');
     expect(palette[100]).toBe('#FFFFFF');
-    expect(Object.keys(palette)).toHaveLength(14);
+    expect(Object.keys(palette)).toHaveLength(15);
   });
 
   it('chroma boost increases chroma at dark tones', () => {
     const normal = tonalPalette(250, 30);
-    const boosted = tonalPalette(250, 30, {belowTone: 50, factor: 1.5, cap: 2.0});
+    const boosted = tonalPalette(250, 30, {
+      belowTone: 50,
+      factor: 1.5,
+      cap: 2.0,
+    });
 
     // T0 and T100 should be the same (black/white)
     expect(boosted[0]).toBe(normal[0]);
@@ -27,7 +31,11 @@ describe('tonalPalette', () => {
   });
 
   it('chroma boost respects cap', () => {
-    const palette = tonalPalette(120, 30, {belowTone: 50, factor: 1.0, cap: 1.5});
+    const palette = tonalPalette(120, 30, {
+      belowTone: 50,
+      factor: 1.0,
+      cap: 1.5,
+    });
     // At T0 the boost would be 1 + 50/(50*1) = 2.0, but cap is 1.5
     // So chroma is 30 * 1.5 = 45, not 30 * 2 = 60
     expect(palette[0]).toBe('#000000'); // black is always black
