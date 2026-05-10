@@ -1,6 +1,6 @@
 /**
  * @file expandColorScale.ts
- * @input Color scale configuration { accent, bodyColor?, neutralStyle?, contrast?, darkMode?, chromaBoost?, equalize? }
+ * @input Color scale configuration { accent, body?, neutralStyle?, contrast?, darkMode?, chromaBoost?, equalize? }
  * @output Token overrides for derivable color tokens
  * @position Theme utility; consumed by defineTheme.ts
  *
@@ -13,8 +13,13 @@
  * - /packages/core/src/theme/defineTheme.ts
  */
 
-import {hexToHct, hctToHex, tonalPalette, hexWithAlpha, maxChromaAtTone} from './hct';
-import type {ChromaBoostOptions} from './hct';
+import {
+  hexToHct,
+  hctToHex,
+  tonalPalette,
+  hexWithAlpha,
+  maxChromaAtTone,
+} from './hct';
 
 // =============================================================================
 // Types
@@ -31,7 +36,7 @@ import type {ChromaBoostOptions} from './hct';
  * // With all options
  * {
  *   accent: '#B7410E',
- *   bodyColor: '#FFF6ED',
+ *   body: '#FFF6ED',
  *   neutralStyle: 'warm',
  *   contrast: 'high',
  *   darkMode: 'preserve',
@@ -45,43 +50,68 @@ export interface XDSColorScaleConfig {
   accent: string;
 
   /**
-   * Body background color as hex. When provided, the neutral palette
-   * derives its hue and chroma from this color instead of the accent.
-   * Useful for cream, warm, or tinted body backgrounds.
+   * Body background color as hex (#RRGGBB). When provided, the neutral
+   * palette (backgrounds, borders, text) derives its hue and chroma from
+   * this color instead of the accent. Use this for cream, warm, or tinted
+   * body backgrounds.
+   *
+   * When set, `neutralStyle` is ignored — the body color fully determines
+   * neutral palette warmth. When omitted, `neutralStyle` controls warmth.
    */
-  bodyColor?: string;
+  body?: string;
 
   /**
-   * Neutral tone warmth. Controls how much of the seed's hue bleeds
-   * into neutral/background colors. Ignored when `bodyColor` is set.
+   * Neutral palette warmth. Controls how much of the accent hue bleeds
+   * into background, border, and text-secondary colors.
+   *
+   * - 'warm': strong hue tinting (chroma 7–10)
+   * - 'cool': subtle hue tinting (chroma 5–8)
+   * - 'neutral': near-gray (chroma 3–6)
+   *
+   * Ignored when `body` is set (body color determines warmth directly).
    * @default 'cool'
    */
   neutralStyle?: 'warm' | 'cool' | 'neutral';
 
   /**
    * Contrast level. Affects tone assignments for text and UI elements.
+   * Higher contrast increases the tone difference between text and background.
    * @default 'standard'
    */
   contrast?: 'standard' | 'high';
 
   /**
-   * Dark mode strategy for categorical/status colors.
-   * - 'adaptive' (default): shift tones for dark backgrounds (T90→T30 bg, T30→T80 text)
-   * - 'preserve': use identical hex values in both light and dark
-   * - 'invert': swap light/dark assignments
+   * How colors adapt between light and dark mode. Applies to all generated
+   * palette colors (accent, categorical, neutral surfaces).
+   *
+   * - 'adaptive' (default): remap tones for each mode (e.g. T90 bg in light → T30 in dark)
+   * - 'preserve': use identical hex values in both modes (brand-locked colors)
+   * - 'invert': swap the light/dark assignments
    * @default 'adaptive'
    */
   darkMode?: 'adaptive' | 'preserve' | 'invert';
 
   /**
-   * Chroma boost for dark tones. When provided, tonal palette
-   * generation increases chroma at dark tones to keep them vibrant.
+   * Boost chroma at dark tones to keep them vibrant. Without this, dark
+   * tones can appear washed out due to gamut compression.
+   *
+   * @param belowTone - Tones below this value get boosted. @default 50
+   * @param factor - Divisor for the boost curve — higher values produce a gentler boost. @default 1.5
+   * @param cap - Maximum chroma multiplier cap (e.g. 2.0 = at most 2× the base chroma). @default 2.0
    */
-  chromaBoost?: ChromaBoostOptions;
+  chromaBoost?: {
+    /** Tones below this value get boosted. @default 50 */
+    belowTone?: number;
+    /** Divisor for the boost curve — higher = gentler ramp. @default 1.5 */
+    factor?: number;
+    /** Maximum chroma multiplier. 2.0 means chroma can at most double. @default 2.0 */
+    cap?: number;
+  };
 
   /**
    * Perceptual equalization. When true, categorical background colors
    * are adjusted so all hues appear equally saturated at the same tone.
+   * Prevents some hues (e.g. yellow) from looking more vivid than others.
    * @default false
    */
   equalize?: boolean;
@@ -139,7 +169,9 @@ function equalizeChromasAtTone(
     h.chroma === 0 ? 0 : maxChromaAtTone(h.hue, tone),
   );
   const achievable = hues.map((h, i) => Math.min(h.chroma, maxChromas[i]));
-  const minNonZero = achievable.filter(c => c > 0).reduce((a, b) => Math.min(a, b), Infinity);
+  const minNonZero = achievable
+    .filter(c => c > 0)
+    .reduce((a, b) => Math.min(a, b), Infinity);
   if (!isFinite(minNonZero)) return achievable;
   return achievable.map(c => (c === 0 ? 0 : minNonZero));
 }
@@ -171,7 +203,7 @@ export function expandColorScale(
 ): ColorScaleTokens {
   const {
     accent,
-    bodyColor,
+    body,
     neutralStyle = 'cool',
     contrast = 'standard',
     darkMode = 'adaptive',
@@ -184,15 +216,15 @@ export function expandColorScale(
 
   const primaryChroma = Math.max(seed.chroma, 48);
 
-  // Neutral palette: derive from bodyColor if provided, otherwise from accent
+  // Neutral palette: derive from body color if provided, otherwise from accent
   let neutralHue: number;
   let neutralChroma: number;
   let neutralVariantChroma: number;
 
-  if (bodyColor) {
-    const body = hexToHct(bodyColor);
-    neutralHue = body.hue;
-    neutralChroma = Math.max(body.chroma, 3);
+  if (body) {
+    const bodyHct = hexToHct(body);
+    neutralHue = bodyHct.hue;
+    neutralChroma = Math.max(bodyHct.chroma, 3);
     neutralVariantChroma = Math.min(neutralChroma * 1.5, 12);
   } else {
     neutralHue = seedHue;

@@ -9,28 +9,45 @@ describe('expandColorScale', () => {
     expect(tokens['--color-background-surface']).toMatch(/^light-dark\(/);
   });
 
-  describe('bodyColor', () => {
+  describe('body', () => {
     it('derives neutral palette from body color when provided', () => {
-      const withBody = expandColorScale({accent: '#0064E0', bodyColor: '#FFF6ED'});
+      const withBody = expandColorScale({accent: '#0064E0', body: '#FFF6ED'});
       const withoutBody = expandColorScale({accent: '#0064E0'});
 
       // Neutrals should differ because body color has different hue than accent
-      expect(withBody['--color-text-primary']).not.toBe(withoutBody['--color-text-primary']);
-      expect(withBody['--color-background-surface']).not.toBe(withoutBody['--color-background-surface']);
+      expect(withBody['--color-text-primary']).not.toBe(
+        withoutBody['--color-text-primary'],
+      );
+      expect(withBody['--color-background-surface']).not.toBe(
+        withoutBody['--color-background-surface'],
+      );
     });
 
-    it('bodyColor overrides neutralStyle', () => {
-      const withBody = expandColorScale({accent: '#0064E0', bodyColor: '#FFF6ED', neutralStyle: 'cool'});
-      const withBodyWarm = expandColorScale({accent: '#0064E0', bodyColor: '#FFF6ED', neutralStyle: 'warm'});
+    it('body overrides neutralStyle', () => {
+      const withBody = expandColorScale({
+        accent: '#0064E0',
+        body: '#FFF6ED',
+        neutralStyle: 'cool',
+      });
+      const withBodyWarm = expandColorScale({
+        accent: '#0064E0',
+        body: '#FFF6ED',
+        neutralStyle: 'warm',
+      });
 
-      // Both should produce the same neutrals since bodyColor takes precedence
-      expect(withBody['--color-text-primary']).toBe(withBodyWarm['--color-text-primary']);
+      // Both should produce the same neutrals since body takes precedence
+      expect(withBody['--color-text-primary']).toBe(
+        withBodyWarm['--color-text-primary'],
+      );
     });
   });
 
   describe('darkMode', () => {
     it('adaptive mode uses different light/dark values', () => {
-      const tokens = expandColorScale({accent: '#0064E0', darkMode: 'adaptive'});
+      const tokens = expandColorScale({
+        accent: '#0064E0',
+        darkMode: 'adaptive',
+      });
       const bg = tokens['--color-background-green'];
       const match = bg.match(/^light-dark\(([^,]+),\s*([^)]+)\)/);
       expect(match).toBeTruthy();
@@ -38,7 +55,10 @@ describe('expandColorScale', () => {
     });
 
     it('preserve mode uses same hex for light and dark', () => {
-      const tokens = expandColorScale({accent: '#0064E0', darkMode: 'preserve'});
+      const tokens = expandColorScale({
+        accent: '#0064E0',
+        darkMode: 'preserve',
+      });
       const bg = tokens['--color-background-green'];
       const match = bg.match(/^light-dark\(([^,]+),\s*([^)]+)\)/);
       expect(match).toBeTruthy();
@@ -46,11 +66,21 @@ describe('expandColorScale', () => {
     });
 
     it('invert mode swaps light/dark assignments', () => {
-      const adaptive = expandColorScale({accent: '#0064E0', darkMode: 'adaptive'});
-      const inverted = expandColorScale({accent: '#0064E0', darkMode: 'invert'});
+      const adaptive = expandColorScale({
+        accent: '#0064E0',
+        darkMode: 'adaptive',
+      });
+      const inverted = expandColorScale({
+        accent: '#0064E0',
+        darkMode: 'invert',
+      });
 
-      const adaptiveMatch = adaptive['--color-background-green'].match(/^light-dark\(([^,]+),\s*([^)]+)\)/);
-      const invertMatch = inverted['--color-background-green'].match(/^light-dark\(([^,]+),\s*([^)]+)\)/);
+      const adaptiveMatch = adaptive['--color-background-green'].match(
+        /^light-dark\(([^,]+),\s*([^)]+)\)/,
+      );
+      const invertMatch = inverted['--color-background-green'].match(
+        /^light-dark\(([^,]+),\s*([^)]+)\)/,
+      );
 
       // Inverted light should equal adaptive dark and vice versa
       expect(invertMatch![1].trim()).toBe(adaptiveMatch![2].trim());
@@ -88,7 +118,18 @@ describe('expandColorScale', () => {
 
   it('generates all categorical colors', () => {
     const tokens = expandColorScale({accent: '#0064E0'});
-    const colors = ['green', 'red', 'yellow', 'blue', 'pink', 'purple', 'cyan', 'orange', 'teal', 'gray'];
+    const colors = [
+      'green',
+      'red',
+      'yellow',
+      'blue',
+      'pink',
+      'purple',
+      'cyan',
+      'orange',
+      'teal',
+      'gray',
+    ];
     for (const color of colors) {
       expect(tokens[`--color-background-${color}`]).toBeTruthy();
       expect(tokens[`--color-border-${color}`]).toBeTruthy();
