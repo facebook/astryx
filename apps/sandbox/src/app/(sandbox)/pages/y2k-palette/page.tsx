@@ -597,9 +597,9 @@ function ProgressBarSection() {
       <h3 style={S.sectionTitle}>Progress</h3>
       <XDSVStack gap={3}>
         <XDSProgressBar value={75} label="Progress" hasValueLabel />
-        <XDSProgressBar value={40} label="Upload" variant="success" hasValueLabel />
+        <XDSProgressBar value={40} label="Upload" variant="positive" hasValueLabel />
         <XDSProgressBar value={90} label="Storage" variant="warning" hasValueLabel />
-        <XDSProgressBar value={20} label="Errors" variant="error" hasValueLabel />
+        <XDSProgressBar value={20} label="Errors" variant="negative" hasValueLabel />
         <XDSProgressBar isIndeterminate label="Loading..." />
       </XDSVStack>
     </div>
