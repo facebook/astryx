@@ -480,7 +480,7 @@ function SemanticBadgeSection() {
   return (
     <div style={S.section}>
       <h3 style={S.sectionTitle}>Semantic Badges</h3>
-      <XDSHStack gap={2} wrap>
+      <XDSHStack gap={2} wrap="wrap">
         <XDSBadge variant="success" label="Success" />
         <XDSBadge variant="error" label="Error" />
         <XDSBadge variant="warning" label="Warning" />
@@ -495,7 +495,7 @@ function CategoricalBadgeSection() {
   return (
     <div style={S.section}>
       <h3 style={S.sectionTitle}>Categorical Badges</h3>
-      <XDSHStack gap={2} wrap>
+      <XDSHStack gap={2} wrap="wrap">
         <XDSBadge variant="blue" label="Blue" />
         <XDSBadge variant="cyan" label="Cyan" />
         <XDSBadge variant="green" label="Green" />
