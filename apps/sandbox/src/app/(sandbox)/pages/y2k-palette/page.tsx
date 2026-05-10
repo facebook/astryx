@@ -614,7 +614,7 @@ function ColorVariantsSection() {
       <h3 style={S.sectionTitle}>Color Variants</h3>
       <div style={{display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10}}>
         {CARD_VARIANTS.map(v => (
-          <XDSCard key={v} variant={v} padding="sm">
+          <XDSCard key={v} variant={v} padding={2}>
             <XDSText type="supporting" weight="bold">{v}</XDSText>
           </XDSCard>
         ))}
