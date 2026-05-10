@@ -156,9 +156,20 @@ export const TONE_STEPS = [
 export function tonalPalette(
   hue: number,
   chroma: number,
+  chromaBoost?: {belowTone?: number; factor?: number; cap?: number},
 ): Record<number, string> {
   const result: Record<number, string> = {};
-  for (const t of TONE_STEPS) result[t] = hctToHex({hue, chroma, tone: t});
+  const belowTone = chromaBoost?.belowTone ?? 50;
+  const factor = chromaBoost?.factor ?? 1.5;
+  const cap = chromaBoost?.cap ?? 2.0;
+  for (const t of TONE_STEPS) {
+    let c = chroma;
+    if (chromaBoost && t < belowTone) {
+      const boost = 1 + (belowTone - t) / (belowTone * factor);
+      c = Math.min(chroma * boost, chroma * cap);
+    }
+    result[t] = hctToHex({hue, chroma: c, tone: t});
+  }
   return result;
 }
 

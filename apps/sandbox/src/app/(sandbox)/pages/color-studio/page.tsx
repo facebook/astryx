@@ -613,6 +613,7 @@ export default function ColorStudioPage() {
     'tinted',
   );
   const [exactAccent, setExactAccent] = useState(false);
+  const [chromaBoost, setChromaBoost] = useState(false);
   const [tab, setTab] = useState<Tab>('palettes');
   const [previewMode, setPreviewMode] = useState<'light' | 'dark'>('light');
   const [exportFmt, setExportFmt] = useState<ExportFmt>('css');
@@ -626,9 +627,10 @@ export default function ColorStudioPage() {
     () => generateHarmony(seed, harmony),
     [seed, harmony],
   );
+  const boostOpts = chromaBoost ? {belowTone: 50, factor: 1.5, cap: 2.0} : undefined;
   const palettes = useMemo(
-    () => harmonies.map(h => ({...h, tones: tonalPalette(h.hue, h.chroma)})),
-    [harmonies],
+    () => harmonies.map(h => ({...h, tones: tonalPalette(h.hue, h.chroma, boostOpts)})),
+    [harmonies, chromaBoost],
   );
   const neutralPalette = useMemo(
     () => ({
@@ -642,9 +644,10 @@ export default function ColorStudioPage() {
             : warmth === 'cool'
               ? 5
               : 3,
+        boostOpts,
       ),
     }),
-    [seed.hue, warmth, surfaceStyle],
+    [seed.hue, warmth, surfaceStyle, chromaBoost],
   );
   const roles = useMemo(
     () => deriveSemanticRoles(seedHex, warmth, surfaceStyle, exactAccent),
@@ -936,8 +939,29 @@ export default function ColorStudioPage() {
           </div>
           <div style={{fontSize: 11, color: '#52525b', marginTop: 6}}>
             {exactAccent
-              ? 'Primary button uses your exact chosen color'
+              ? 'Uses your exact chosen color for accent'
               : 'Accent derived from HCT tone 40 for optimal contrast'}
+          </div>
+        </div>
+
+        <div style={S.section}>
+          <div style={S.sectionTitle}>Chroma Boost</div>
+          <div style={S.pills}>
+            <button
+              style={S.pill(!chromaBoost)}
+              onClick={() => setChromaBoost(false)}>
+              Standard
+            </button>
+            <button
+              style={S.pill(chromaBoost)}
+              onClick={() => setChromaBoost(true)}>
+              Vibrant Darks
+            </button>
+          </div>
+          <div style={{fontSize: 11, color: '#52525b', marginTop: 6}}>
+            {chromaBoost
+              ? 'Dark tones get boosted chroma to stay vivid'
+              : 'Standard chroma — dark tones may appear desaturated'}
           </div>
         </div>
       </aside>
