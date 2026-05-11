@@ -4,11 +4,8 @@
 // Y2K Theme Palette Preview
 // =============================================================================
 
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSVStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
-import {XDSSpinner} from '@xds/core/Spinner';
-import {XDSCard} from '@xds/core/Card';
-import {XDSProgressBar} from '@xds/core/ProgressBar';
 import {y2kTheme} from '@xds/theme-y2k/built';
 import {ThemePalettePreview} from '@/components/ThemePalettePreview';
 import type {TonalColor, CoreSwatch} from '@/components/ThemePalettePreview';
@@ -49,21 +46,6 @@ const Y2K_COLORS = [
   {hex: '#78E0B0', name: 'Teal'},
   {hex: '#ede0d4', name: 'Gray'},
 ];
-
-const CARD_VARIANTS = [
-  'default',
-  'muted',
-  'blue',
-  'cyan',
-  'gray',
-  'green',
-  'orange',
-  'pink',
-  'purple',
-  'red',
-  'teal',
-  'yellow',
-] as const;
 
 const sectionTitle: React.CSSProperties = {
   fontSize: 13,
@@ -175,79 +157,11 @@ function ColorCardsSection() {
   );
 }
 
-function SpinnerSection() {
-  return (
-    <div>
-      <h3 style={sectionTitle}>Spinners</h3>
-      <XDSHStack gap={4} vAlign="center">
-        <XDSSpinner size="sm" />
-        <XDSSpinner size="md" />
-        <XDSSpinner size="lg" />
-      </XDSHStack>
-    </div>
-  );
-}
-
-function ProgressBarSection() {
-  return (
-    <div>
-      <h3 style={sectionTitle}>Progress</h3>
-      <XDSVStack gap={3}>
-        <XDSProgressBar value={75} label="Progress" hasValueLabel />
-        <XDSProgressBar
-          value={40}
-          label="Upload"
-          variant="positive"
-          hasValueLabel
-        />
-        <XDSProgressBar
-          value={90}
-          label="Storage"
-          variant="warning"
-          hasValueLabel
-        />
-        <XDSProgressBar
-          value={20}
-          label="Errors"
-          variant="negative"
-          hasValueLabel
-        />
-        <XDSProgressBar isIndeterminate label="Loading..." />
-      </XDSVStack>
-    </div>
-  );
-}
-
-function ColorVariantsSection() {
-  return (
-    <div>
-      <h3 style={sectionTitle}>Color Variants</h3>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 10,
-        }}>
-        {CARD_VARIANTS.map(v => (
-          <XDSCard key={v} variant={v} padding={2}>
-            <XDSText type="supporting" weight="bold">
-              {v}
-            </XDSText>
-          </XDSCard>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function Y2kExtras() {
   return (
     <>
       <ColorCardsSection />
       <DisplayTextSection />
-      <SpinnerSection />
-      <ProgressBarSection />
-      <ColorVariantsSection />
     </>
   );
 }
