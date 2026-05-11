@@ -1,7 +1,7 @@
 /**
  * @file icons.tsx
  * @input Uses lucide-react icon components, XDSIconRegistry type
- * @output Exports gothicIconRegistry for the neutral theme
+ * @output Exports inkIconRegistry for the ink theme
  * @position Icon configuration for the neutral theme; consumed by index.ts
  *
  * Maps semantic icon names to Lucide icon components.
@@ -46,7 +46,7 @@ const iconProps = {
   'aria-hidden': true as const,
 };
 
-export const gothicIconRegistry: XDSIconRegistry = {
+export const inkIconRegistry: XDSIconRegistry = {
   close: <X {...iconProps} />,
   chevronDown: <ChevronDown {...iconProps} />,
   chevronLeft: <ChevronLeft {...iconProps} />,

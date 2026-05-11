@@ -9,7 +9,7 @@ import {brutalistTheme} from '@xds/theme-brutalist/built';
 import {matchaTheme} from '@xds/theme-matcha/built';
 import {dailyTheme} from '@xds/theme-daily/built';
 import {stoneTheme} from '@xds/theme-stone/built';
-import {gothicTheme} from '@xds/theme-gothic/built';
+import {inkTheme} from '@xds/theme-ink/built';
 import {chocolateTheme} from '@xds/theme-chocolate/built';
 import {y2kTheme} from '@xds/theme-y2k/built';
 import type {XDSDefinedTheme, ThemeMode} from '@xds/core/theme';
@@ -21,7 +21,7 @@ const themes: Record<string, XDSDefinedTheme> = {
   matcha: matchaTheme,
   daily: dailyTheme,
   stone: stoneTheme,
-  gothic: gothicTheme,
+  ink: inkTheme,
   chocolate: chocolateTheme,
   y2k: y2kTheme,
 };

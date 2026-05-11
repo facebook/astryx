@@ -860,7 +860,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
             {label: 'Matcha', onClick: () => setThemeName('matcha')},
             {label: 'Daily', onClick: () => setThemeName('daily')},
             {label: 'Stone', onClick: () => setThemeName('stone')},
-            {label: 'Gothic', onClick: () => setThemeName('gothic')},
+            {label: 'Ink', onClick: () => setThemeName('ink')},
             {label: 'Chocolate', onClick: () => setThemeName('chocolate')},
           ]}
         />

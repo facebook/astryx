@@ -122,10 +122,10 @@ export const categories: SandboxCategory[] = [
           'Y2K pop theme — sharp corners, cream body, neon lime accent, Crimson Text display type',
       },
       {
-        name: 'Gothic Palette',
-        href: '/pages/gothic-palette/',
+        name: 'Ink Palette',
+        href: '/pages/ink-palette/',
         description:
-          'Gothic dark-only theme — atmospheric blue-gray, distressed display heading, pastel categorical accents',
+          'Ink dark-only theme — atmospheric blue-gray, distressed display heading, dusty pastel categorical accents',
       },
       {
         name: 'Color Studio',
