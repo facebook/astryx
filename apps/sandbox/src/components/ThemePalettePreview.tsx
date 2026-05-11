@@ -190,6 +190,8 @@ export interface ThemePalettePreviewProps {
   coreSwatches: CoreSwatch[];
   /** Additional sections to render at the end of each mode column */
   extraSections?: React.ReactNode;
+  /** Hide the title, subtitle, and tonal section (useful when embedded in another layout) */
+  componentPreviewOnly?: boolean;
 }
 
 type Mode = 'light' | 'dark';
@@ -887,7 +889,27 @@ export function ThemePalettePreview({
   tonalColors,
   coreSwatches,
   extraSections,
+  componentPreviewOnly = false,
 }: ThemePalettePreviewProps) {
+  if (componentPreviewOnly) {
+    return (
+      <div style={S.twoCol}>
+        <ModeColumn
+          theme={theme}
+          mode="light"
+          coreSwatches={coreSwatches}
+          extraSections={extraSections}
+        />
+        <ModeColumn
+          theme={theme}
+          mode="dark"
+          coreSwatches={coreSwatches}
+          extraSections={extraSections}
+        />
+      </div>
+    );
+  }
+
   return (
     <XDSTheme theme={theme} mode="light">
       <XDSLayerProvider>
