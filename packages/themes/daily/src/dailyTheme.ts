@@ -245,10 +245,7 @@ export const dailyTheme = defineTheme({
         color: '#FFFFFF',
       },
       'variant:secondary': {
-        backgroundColor: 'transparent',
-        borderWidth: '1px',
-        borderStyle: 'solid',
-        borderColor: '#292724',
+        backgroundColor: '#E6E3DE',
         color: '#292724',
       },
     },
