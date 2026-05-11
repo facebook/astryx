@@ -1,6 +1,6 @@
 'use client';
 
-import {useState, useCallback, useMemo, useRef} from 'react';
+import {useState, useCallback, useMemo} from 'react';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSButton} from '@xds/core/Button';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
@@ -8,6 +8,7 @@ import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSIconButton} from '@xds/core/IconButton';
 import {XDSSelector} from '@xds/core/Selector';
 import {XDSSlider} from '@xds/core/Slider';
+import {XDSNumberInput} from '@xds/core/NumberInput';
 import {
   XDSSegmentedControl,
   XDSSegmentedControlItem,
@@ -24,7 +25,6 @@ import {
   toneToOklabL,
   DEFAULT_OKLCH_CHROMA,
   DEFAULT_OKLCH_HUE,
-  extractColorsFromImage,
   parseColorInput,
   generateExportCode,
   THEME_ROLES,
@@ -102,25 +102,6 @@ const S = {
     border: 'none',
     cursor: 'pointer',
     opacity: 0,
-  } as React.CSSProperties,
-  dropZone: {
-    border: '2px dashed #d0d0d0',
-    borderRadius: 8,
-    padding: '12px 8px',
-    textAlign: 'center' as const,
-    cursor: 'pointer',
-    position: 'relative' as const,
-  } as React.CSSProperties,
-  dropInput: {
-    position: 'absolute' as const,
-    inset: 0,
-    opacity: 0,
-    cursor: 'pointer',
-  } as React.CSSProperties,
-  imgThumb: {
-    width: '100%',
-    borderRadius: 6,
-    marginTop: 8,
   } as React.CSSProperties,
   tonalRow: {
     display: 'flex',
@@ -203,63 +184,48 @@ function PaletteEntry({
     [color.role, usedRoles],
   );
 
-  const oklch = useMemo(() => hexToOklch(color.hex), [color.hex]);
-  const effectiveChroma = color.chroma ?? oklch.C;
-
   return (
-    <XDSVStack gap={1} style={{padding: '6px 0'}}>
-      <XDSHStack gap={2} vAlign="center">
-        <div style={S.swatch(color.hex)}>
-          <input
-            type="color"
-            value={color.hex}
-            onChange={e => onChange(color.id, {hex: e.target.value, chroma: undefined})}
-            style={S.colorInput}
-          />
-        </div>
-        <div style={{flex: 1, minWidth: 0}}>
-          <XDSTextInput
-            label="Hex"
-            isLabelHidden
-            value={color.hex}
-            onChange={v => {
-              const parsed = parseColorInput(v.trim());
-              if (parsed) onChange(color.id, {hex: parsed, chroma: undefined});
-            }}
-            size="sm"
-          />
-        </div>
-        <XDSSelector
-          label="Role"
+    <XDSHStack gap={2} vAlign="center" style={{padding: '6px 0'}}>
+      <div style={S.swatch(color.hex)}>
+        <input
+          type="color"
+          value={color.hex}
+          onChange={e => onChange(color.id, {hex: e.target.value})}
+          style={S.colorInput}
+        />
+      </div>
+      <div style={{flex: 1, minWidth: 0}}>
+        <XDSTextInput
+          label="Hex"
           isLabelHidden
-          options={roleOptions}
-          value={color.role ?? ''}
-          onChange={v =>
-            onChange(color.id, {role: (v || undefined) as ThemeRole | undefined})
-          }
+          value={color.hex}
+          onChange={v => {
+            const parsed = parseColorInput(v.trim());
+            if (parsed) onChange(color.id, {hex: parsed});
+          }}
           size="sm"
         />
-        {canRemove && (
-          <XDSIconButton
-            label="Remove"
-            variant="ghost"
-            size="sm"
-            onClick={() => onRemove(color.id)}
-            icon={<span style={{fontSize: 14, lineHeight: 1}}>✕</span>}
-          />
-        )}
-      </XDSHStack>
-      <XDSSlider
-        label="Chroma"
+      </div>
+      <XDSSelector
+        label="Role"
         isLabelHidden
-        min={0}
-        max={40}
-        step={1}
-        value={Math.round(effectiveChroma * 100)}
-        onChange={v => onChange(color.id, {chroma: v / 100})}
-        formatValue={v => `C:${(v / 100).toFixed(2)}`}
+        options={roleOptions}
+        value={color.role ?? ''}
+        onChange={v =>
+          onChange(color.id, {role: (v || undefined) as ThemeRole | undefined})
+        }
+        size="sm"
       />
-    </XDSVStack>
+      {canRemove && (
+        <XDSIconButton
+          label="Remove"
+          variant="ghost"
+          size="sm"
+          onClick={() => onRemove(color.id)}
+          icon={<span style={{fontSize: 14, lineHeight: 1}}>✕</span>}
+        />
+      )}
+    </XDSHStack>
   );
 }
 
@@ -369,20 +335,13 @@ function TonalRamps({
           hue = assigned
             ? hexToOklch(assigned.hex).H
             : grayTone === 'warm' ? 60 : grayTone === 'cool' ? 260 : 0;
-          chroma = (assigned?.chroma ?? (assigned
+          chroma = (assigned
             ? Math.min(hexToOklch(assigned.hex).C, 0.02)
-            : grayTone === 'neutral' ? 0.003 : 0.012)) * vibrancy;
-        } else if (assigned?.chroma != null) {
-          hue = hexToOklch(assigned.hex).H;
-          chroma = assigned.chroma * vibrancy;
-        } else if (ch.role === 'accent') {
-          const oklch = assigned ? hexToOklch(assigned.hex) : {C: ch.oklchChroma, H: ch.oklchHue};
-          hue = oklch.H;
-          chroma = Math.max(oklch.C, 0.09) * vibrancy;
+            : grayTone === 'neutral' ? 0.003 : 0.012) * vibrancy;
         } else {
           const oklch = assigned ? hexToOklch(assigned.hex) : {C: ch.oklchChroma, H: ch.oklchHue};
           hue = oklch.H;
-          chroma = Math.max(oklch.C, ch.oklchChroma) * vibrancy;
+          chroma = oklch.C * vibrancy;
         }
 
         return (
@@ -403,7 +362,7 @@ function TonalRamps({
       })}
       {customChannels.map(cc => {
         const oklch = hexToOklch(cc.hex);
-        const chroma = Math.max(oklch.C, 0.09) * vibrancy;
+        const chroma = oklch.C * vibrancy;
         return (
           <div key={cc.id} style={S.tonalRow}>
             <span style={{...S.tonalLabel, color: '#4f46e5', fontWeight: 600}}>{cc.name}</span>
@@ -490,8 +449,6 @@ export default function ColorStudioPage() {
   const [grayTone, setGrayTone] = useState<'warm' | 'neutral' | 'cool'>(
     'neutral',
   );
-  const [imgSrc, setImgSrc] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const usedRoles = useMemo(
     () => new Set(palette.filter(c => c.role).map(c => c.role!)),
@@ -529,30 +486,6 @@ export default function ColorStudioPage() {
     setPalette(prev => [...prev, makePaletteColor('Color ' + _nextId, hex)]);
   }, []);
 
-  const handleImage = useCallback((file: File) => {
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const src = ev.target?.result as string;
-      setImgSrc(src);
-      const img = new Image();
-      img.onload = () => {
-        const colors = extractColorsFromImage(img);
-        if (colors.length) {
-          setPalette(
-            colors.map((hex, i) =>
-              makePaletteColor(
-                `Extract ${i + 1}`,
-                hex,
-                i === 0 ? 'accent' : undefined,
-              ),
-            ),
-          );
-        }
-      };
-      img.src = src;
-    };
-    reader.readAsDataURL(file);
-  }, []);
 
   return (
     <div style={S.page}>
@@ -565,72 +498,37 @@ export default function ColorStudioPage() {
           </div>
 
           <div style={S.sidebarScroll}>
-            <XDSVStack gap={3}>
-              {/* Colors — palette + custom, unified list */}
-              {palette.map(c => (
-                <PaletteEntry
-                  key={c.id}
-                  color={c}
-                  canRemove={palette.length > 1}
-                  usedRoles={usedRoles}
-                  onChange={updateColor}
-                  onRemove={removeColor}
-                />
-              ))}
-              {customChannels.map(cc => (
-                <XDSHStack key={cc.id} gap={2} vAlign="center">
-                  <div style={S.swatch(cc.hex)}>
-                    <input
-                      type="color"
-                      value={cc.hex}
-                      onChange={e => setCustomChannels(prev => prev.map(c => c.id === cc.id ? {...c, hex: e.target.value} : c))}
-                      style={S.colorInput}
-                    />
-                  </div>
-                  <div style={{flex: 1, minWidth: 0}}>
-                    <XDSTextInput
-                      label="Name"
-                      isLabelHidden
-                      value={cc.name}
-                      onChange={v => setCustomChannels(prev => prev.map(c => c.id === cc.id ? {...c, name: v} : c))}
-                      size="sm"
-                    />
-                  </div>
-                  <XDSIconButton
-                    label="Remove"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setCustomChannels(prev => prev.filter(c => c.id !== cc.id))}
-                    icon={<span style={{fontSize: 14, lineHeight: 1}}>✕</span>}
-                  />
-                </XDSHStack>
-              ))}
-
-              {/* Add buttons */}
-              <XDSHStack gap={2}>
-                <XDSButton label="+ Color" variant="ghost" size="sm" onClick={addColor} />
-                <XDSButton
-                  label="+ Custom"
-                  variant="ghost"
+            <XDSVStack gap={5}>
+              {/* Controls */}
+              <XDSHStack vAlign="center" style={{justifyContent: 'space-between'}}>
+                <XDSText type="supporting" color="secondary">Steps</XDSText>
+                <XDSNumberInput
+                  label="Steps"
+                  isLabelHidden
+                  value={stepCount}
+                  onChange={v => setStepCount(Math.max(2, Math.min(41, v)))}
+                  min={2}
+                  max={41}
+                  step={1}
                   size="sm"
-                  onClick={() => {
-                    const h = Math.random() * 360;
-                    const hex = oklchClampedHex(0.5, 0.12, h);
-                    setCustomChannels(prev => [...prev, {id: nextId(), name: `Custom ${prev.length + 1}`, hex}]);
-                  }}
                 />
               </XDSHStack>
 
-              {/* Controls — inline, compact */}
-              <XDSSlider
-                label="Vibrancy"
-                min={50}
-                max={200}
-                step={10}
-                value={vibrancy * 100}
-                onChange={(v: number) => setVibrancy(v / 100)}
-                formatValue={v => `${Math.round(v)}%`}
-              />
+              <XDSHStack vAlign="center" gap={3} style={{justifyContent: 'space-between'}}>
+                <XDSText type="supporting" color="secondary" style={{flexShrink: 0}}>Vibrancy</XDSText>
+                <div style={{flex: 1}}>
+                  <XDSSlider
+                    label="Vibrancy"
+                    isLabelHidden
+                    min={50}
+                    max={200}
+                    step={10}
+                    value={vibrancy * 100}
+                    onChange={(v: number) => setVibrancy(v / 100)}
+                    formatValue={v => `${Math.round(v)}%`}
+                  />
+                </div>
+              </XDSHStack>
 
               <XDSHStack vAlign="center" style={{justifyContent: 'space-between'}}>
                 <XDSText type="supporting" color="secondary">Gray</XDSText>
@@ -645,28 +543,79 @@ export default function ColorStudioPage() {
                 </XDSSegmentedControl>
               </XDSHStack>
 
-              <XDSSlider
-                label="Steps"
-                min={5}
-                max={41}
-                step={1}
-                value={stepCount}
-                onChange={v => setStepCount(v)}
-                formatValue={v => `${v}`}
-              />
+              {/* Color Set — colors with role assignments */}
+              <XDSVStack gap={2}>
+                <XDSHStack vAlign="center" style={{justifyContent: 'space-between'}}>
+                  <XDSText type="label" weight="semibold">Brand Colors</XDSText>
+                  <XDSIconButton
+                    label="Add color"
+                    variant="ghost"
+                    size="sm"
+                    onClick={addColor}
+                    icon={<span style={{fontSize: 16, lineHeight: 1}}>+</span>}
+                  />
+                </XDSHStack>
+                {palette.map(c => (
+                  <PaletteEntry
+                    key={c.id}
+                    color={c}
+                    canRemove={palette.length > 1}
+                    usedRoles={usedRoles}
+                    onChange={updateColor}
+                    onRemove={removeColor}
+                  />
+                ))}
+              </XDSVStack>
 
-              {/* Image extraction */}
-              <div style={S.dropZone} onClick={() => fileRef.current?.click()}>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*"
-                  style={S.dropInput}
-                  onChange={e => e.target.files?.[0] && handleImage(e.target.files[0])}
-                />
-                <XDSText type="supporting" color="secondary">Drop image or click</XDSText>
-              </div>
-              {imgSrc && <img src={imgSrc} alt="preview" style={S.imgThumb} />}
+              {/* Custom Colors — extra ramps without roles */}
+              <XDSVStack gap={2}>
+                <XDSHStack vAlign="center" style={{justifyContent: 'space-between'}}>
+                  <XDSText type="label" weight="semibold">Color Sets</XDSText>
+                  <XDSIconButton
+                    label="Add custom color"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const h = Math.random() * 360;
+                      const hex = oklchClampedHex(0.5, 0.12, h);
+                      setCustomChannels(prev => [...prev, {id: nextId(), name: `Custom ${prev.length + 1}`, hex}]);
+                    }}
+                    icon={<span style={{fontSize: 16, lineHeight: 1}}>+</span>}
+                  />
+                </XDSHStack>
+                {customChannels.length === 0 && (
+                  <XDSText type="supporting" color="secondary">Add colors to generate extra ramps</XDSText>
+                )}
+                {customChannels.map(cc => (
+                  <XDSHStack key={cc.id} gap={2} vAlign="center" style={{padding: '4px 0'}}>
+                    <div style={S.swatch(cc.hex)}>
+                      <input
+                        type="color"
+                        value={cc.hex}
+                        onChange={e => setCustomChannels(prev => prev.map(c => c.id === cc.id ? {...c, hex: e.target.value} : c))}
+                        style={S.colorInput}
+                      />
+                    </div>
+                    <div style={{flex: 1, minWidth: 0}}>
+                      <XDSTextInput
+                        label="Name"
+                        isLabelHidden
+                        value={cc.name}
+                        onChange={v => setCustomChannels(prev => prev.map(c => c.id === cc.id ? {...c, name: v} : c))}
+                        size="sm"
+                      />
+                    </div>
+                    <XDSIconButton
+                      label="Remove"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCustomChannels(prev => prev.filter(c => c.id !== cc.id))}
+                      icon={<span style={{fontSize: 14, lineHeight: 1}}>✕</span>}
+                    />
+                  </XDSHStack>
+                ))}
+              </XDSVStack>
+
             </XDSVStack>
           </div>
         </div>
