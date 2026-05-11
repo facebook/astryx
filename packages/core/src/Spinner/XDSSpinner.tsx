@@ -17,7 +17,6 @@
 import {useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, durationVars, spacingVars} from '../theme/tokens.stylex';
-import {useXDSTheme} from '../theme/useXDSTheme';
 import {XDSBaseProps} from '../XDSBaseProps';
 import {XDSText} from '../Text/XDSText';
 import {xdsClassName, mergeProps} from '../utils';
@@ -150,7 +149,6 @@ export function XDSSpinner({
   ...restProps
 }: XDSSpinnerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const {tokens: themeTokens} = useXDSTheme();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -162,13 +160,18 @@ export function XDSSpinner({
     const {border, diameter} = SIZES[size];
     const pixelRatio = window.devicePixelRatio || 1;
 
-    // Resolve colors from theme tokens (useXDSTheme handles light/dark resolution)
+    // Resolve colors from CSS custom properties
+    const computedStyle = getComputedStyle(canvas);
     const activeColor =
       shade === 'onMedia'
-        ? themeTokens['--color-on-dark'] || '#FFFFFF'
+        ? computedStyle.getPropertyValue(colorVars['--color-on-dark']) ||
+          '#FFFFFF'
         : shade === 'subtle'
-          ? themeTokens['--color-text-secondary'] || '#65676B'
-          : themeTokens['--color-accent'] || '#0064E0';
+          ? computedStyle.getPropertyValue(
+              colorVars['--color-text-secondary'],
+            ) || '#65676B'
+          : computedStyle.getPropertyValue(colorVars['--color-accent']) ||
+            '#0064E0';
     const backgroundColor =
       shade === 'onMedia' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.08)';
 
@@ -204,7 +207,7 @@ export function XDSSpinner({
     );
     context.strokeStyle = activeColor;
     context.stroke();
-  }, [shade, size, themeTokens]);
+  }, [shade, size]);
 
   const {border, diameter} = SIZES[size];
   const frameSize = diameter + border * 2;
