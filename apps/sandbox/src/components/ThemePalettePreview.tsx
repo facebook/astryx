@@ -194,6 +194,12 @@ export interface ThemePalettePreviewProps {
   leadingExtras?: React.ReactNode;
   /** Hide the title, subtitle, and tonal section (useful when embedded in another layout) */
   componentPreviewOnly?: boolean;
+  /**
+   * Render only one mode column instead of side-by-side light + dark.
+   * Useful for single-mode themes (e.g. dark-only) where both columns
+   * would render identically.
+   */
+  singleMode?: Mode;
 }
 
 type Mode = 'light' | 'dark';
@@ -851,20 +857,37 @@ function ModeColumn({
   coreSwatches,
   extraSections,
   leadingExtras,
+  bare = false,
 }: {
   theme: XDSDefinedTheme;
   mode: Mode;
   coreSwatches?: CoreSwatch[];
   extraSections?: React.ReactNode;
   leadingExtras?: React.ReactNode;
+  /**
+   * When true, render the column as a transparent layout container
+   * (no background, border, or padding) — the outer page provides the
+   * surface. Used by single-mode previews to avoid a redundant frame.
+   */
+  bare?: boolean;
 }) {
+  const columnStyle: React.CSSProperties = bare
+    ? {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 28,
+      }
+    : S.modeCol(VAR_SURFACES.body, VAR_SURFACES.textPrimary);
+
   return (
     <XDSTheme theme={theme} mode={mode}>
       <XDSLayerProvider>
-        <div style={S.modeCol(VAR_SURFACES.body, VAR_SURFACES.textPrimary)}>
-          <p style={S.modeLabel}>
-            {mode === 'light' ? 'Light Mode' : 'Dark Mode'}
-          </p>
+        <div style={columnStyle}>
+          {!bare && (
+            <p style={S.modeLabel}>
+              {mode === 'light' ? 'Light Mode' : 'Dark Mode'}
+            </p>
+          )}
           {coreSwatches && coreSwatches.length > 0 && <CoreSection swatches={coreSwatches} />}
           {leadingExtras}
           <TextRampSection />
@@ -898,10 +921,27 @@ export function ThemePalettePreview({
   extraSections,
   leadingExtras,
   componentPreviewOnly = false,
+  singleMode,
 }: ThemePalettePreviewProps) {
-  if (componentPreviewOnly) {
+  const columnsStyle: React.CSSProperties = singleMode
+    ? {display: 'block'}
+    : S.twoCol;
+
+  const renderColumns = () => {
+    if (singleMode) {
+      return (
+        <ModeColumn
+          theme={theme}
+          mode={singleMode}
+          coreSwatches={coreSwatches}
+          extraSections={extraSections}
+          leadingExtras={leadingExtras}
+          bare
+        />
+      );
+    }
     return (
-      <div style={S.twoCol}>
+      <>
         <ModeColumn
           theme={theme}
           mode="light"
@@ -916,34 +956,27 @@ export function ThemePalettePreview({
           extraSections={extraSections}
           leadingExtras={leadingExtras}
         />
-      </div>
+      </>
     );
+  };
+
+  if (componentPreviewOnly) {
+    return <div style={columnsStyle}>{renderColumns()}</div>;
   }
 
+  // Page chrome (title/subtitle/tonal) uses the singleMode when set so the
+  // outer surface matches the rendered theme; otherwise default to light.
+  const chromeMode: Mode = singleMode ?? 'light';
+
   return (
-    <XDSTheme theme={theme} mode="light">
+    <XDSTheme theme={theme} mode={chromeMode}>
       <XDSLayerProvider>
         <div style={{...S.page, margin: -0, position: 'relative', zIndex: 1}}>
           <div style={S.inner}>
             <h1 style={S.title}>{title}</h1>
             <p style={S.subtitle}>{subtitle}</p>
             <TonalSection colors={tonalColors} />
-            <div style={S.twoCol}>
-              <ModeColumn
-                theme={theme}
-                mode="light"
-                coreSwatches={coreSwatches}
-                extraSections={extraSections}
-                leadingExtras={leadingExtras}
-              />
-              <ModeColumn
-                theme={theme}
-                mode="dark"
-                coreSwatches={coreSwatches}
-                extraSections={extraSections}
-                leadingExtras={leadingExtras}
-              />
-            </div>
+            <div style={columnsStyle}>{renderColumns()}</div>
           </div>
         </div>
       </XDSLayerProvider>

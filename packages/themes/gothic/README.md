@@ -1,6 +1,8 @@
 # @xds/theme-gothic
 
-Dark gothic theme with deep blue-gray tones and blackletter headings. Uses Manufacturing Consent for headings, Fustat for body text, and [Lucide](https://lucide.dev) icons.
+**Dark-only** atmospheric gothic theme for XDS — deep blue-gray surfaces, distressed display heading, and pastel categorical accents that glow against the dark page like illuminated panels. Uses Manufacturing Consent for headings, Fustat for body text, and [Lucide](https://lucide.dev) icons.
+
+> Gothic is a single-mode theme — it always renders dark, regardless of the user's system color preference. For best browser-chrome integration (scrollbars, native form controls), pass `mode="dark"` to your `XDSTheme` provider.
 
 ## Install
 
@@ -17,7 +19,11 @@ import {XDSTheme} from '@xds/core/theme';
 import {gothicTheme} from '@xds/theme-gothic/built';
 
 function App() {
-  return <XDSTheme theme={gothicTheme}>{/* your app */}</XDSTheme>;
+  return (
+    <XDSTheme theme={gothicTheme} mode="dark">
+      {/* your app */}
+    </XDSTheme>
+  );
 }
 ```
 
@@ -39,15 +45,31 @@ Add the theme CSS to your stylesheet:
 @import '@xds/theme-gothic/theme.css';
 ```
 
+## Aesthetic
+
+Gothic is dark-only by design — every token is a single value, and the
+output CSS contains no `light-dark()`, so the theme renders identically
+whether the user prefers light or dark.
+
+| Aspect       | Choice                                                 |
+| ------------ | ------------------------------------------------------ |
+| Mode         | Dark only — no light variant                           |
+| Neutral      | Cool blue-gray (#101314 → #E8F1F6)                     |
+| Status       | Forest moss, blood crimson, candlelight amber          |
+| Categorical  | Pastel-on-dark — light backgrounds, dark text          |
+| Radius       | Subtle rounding (2–24px)                               |
+| Motion       | Slower / theatrical (150ms → 800ms, 0.75 ratio)        |
+| Type scale   | 14px base, 1.2 ratio                                   |
+
 ## Fonts
 
 This theme uses custom typefaces:
 
-| Role    | Font                  |
-| ------- | --------------------- |
-| Body    | Fustat                |
-| Heading | Manufacturing Consent |
-| Code    | JetBrains Mono        |
+| Role    | Font                  | Vibe                       |
+| ------- | --------------------- | -------------------------- |
+| Body    | Fustat                | Clean modern sans          |
+| Heading | Manufacturing Consent | Distressed display         |
+| Code    | JetBrains Mono        | Crisp, monospaced          |
 
 **These fonts must be loaded separately.** The theme references them by name but does not bundle the font files.
 
@@ -61,4 +83,22 @@ Add this to your HTML `<head>`:
   href="https://fonts.googleapis.com/css2?family=Fustat:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Manufacturing+Consent&display=swap" />
 ```
 
-Without this, the theme falls back to system fonts.
+Without this, the theme falls back to system fonts (heading falls through Manufacturing Consent → UnifrakturMaguntia → Old English Text MT → serif).
+
+## Tonal palettes
+
+The theme exports raw tonal palettes for custom components or data
+visualization. Each palette has 21 tone steps (0–100 in 5s):
+
+```tsx
+import {gothicPalettes} from '@xds/theme-gothic';
+
+// e.g. cathedral plum at tone 50
+const plum = gothicPalettes.purple[50]; // '#a363bd'
+
+// or use the metadata for derived tools
+const {hue, chroma} = gothicPalettes.neutral; // {hue: 210, chroma: 4}
+```
+
+Available palettes: `neutral`, `blue`, `cyan`, `green`, `orange`, `pink`,
+`purple`, `red`, `teal`, `yellow`.

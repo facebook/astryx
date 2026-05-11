@@ -1,2 +1,2 @@
-export {gothicTheme} from './gothicTheme';
+export {gothicTheme, gothicPalettes} from './gothicTheme';
 export {gothicIconRegistry} from './icons';
