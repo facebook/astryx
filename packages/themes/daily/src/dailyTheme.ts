@@ -3,7 +3,7 @@
  *
  * A warm, productivity-focused theme with earthy cream tones.
  * Core palette: #292724, #85817A, #E6E3DE, #F8F4ED, #FFFFFF
- * Uses PT Serif for headings and Figtree for body text.
+ * Uses PT Serif italic for display text and Figtree for headings/body.
  */
 
 import {defineTheme, defineSyntaxTheme} from '@xds/core/theme';
@@ -41,9 +41,9 @@ export const dailyTheme = defineTheme({
         '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
     },
     heading: {
-      family: 'PT Serif',
+      family: 'Figtree',
       fallbacks:
-        'Georgia, "Times New Roman", Times, serif',
+        '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
       weights: {3: 'bold', 4: 'bold'},
     },
     code: {
@@ -250,6 +250,22 @@ export const dailyTheme = defineTheme({
         borderStyle: 'solid',
         borderColor: '#292724',
         color: '#292724',
+      },
+    },
+
+    // Display text uses PT Serif italic — the signature editorial display face
+    text: {
+      'type:display-1': {
+        fontFamily: '"PT Serif", Georgia, "Times New Roman", Times, serif',
+        fontStyle: 'italic',
+      },
+      'type:display-2': {
+        fontFamily: '"PT Serif", Georgia, "Times New Roman", Times, serif',
+        fontStyle: 'italic',
+      },
+      'type:display-3': {
+        fontFamily: '"PT Serif", Georgia, "Times New Roman", Times, serif',
+        fontStyle: 'italic',
       },
     },
 
