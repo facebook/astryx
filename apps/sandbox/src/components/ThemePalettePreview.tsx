@@ -1,10 +1,5 @@
 'use client';
 
-// =============================================================================
-// Stone Theme Palette Preview
-// Uses real XDS components to render the theme as it would appear in production.
-// =============================================================================
-
 import {XDSBanner} from '@xds/core/Banner';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSBadge} from '@xds/core/Badge';
@@ -12,10 +7,10 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSTheme} from '@xds/core/theme';
+import type {XDSDefinedTheme} from '@xds/core/theme';
 import {XDSLayerProvider} from '@xds/core/Layer';
-import {stoneTheme} from '@xds/theme-stone/built';
 
-// === WCAG contrast helpers ===
+// === HCT color space helpers for tonal palettes ===
 
 function hexToRgb(hex: string): [number, number, number] {
   const h = hex.replace('#', '').slice(0, 6);
@@ -24,33 +19,12 @@ function hexToRgb(hex: string): [number, number, number] {
   return [(n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff];
 }
 
-function luminance(hex: string): number {
-  const [r, g, b] = hexToRgb(hex).map(c => {
-    const s = c / 255;
-    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-function _contrastRatio(fg: string, bg: string): number {
-  const l1 = luminance(fg);
-  const l2 = luminance(bg);
-  return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
-}
-
-function _passesAA(ratio: number): boolean {
-  return ratio >= 4.5;
-}
-
-// === HCT color space helpers for tonal palettes ===
-
 function srgbToLinear(c: number): number {
   const s = c / 255;
   return s <= 0.04045 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
 }
 function linearToSrgb(c: number): number {
-  const s =
-    c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+  const s = c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
   return Math.round(Math.min(255, Math.max(0, s * 255)));
 }
 function linearRgbToXyz(
@@ -84,29 +58,17 @@ function labFInv(t: number): number {
   const d = 6 / 29;
   return t > d ? t * t * t : 3 * d * d * (t - 4 / 29);
 }
-function xyzToLab(
-  x: number,
-  y: number,
-  z: number,
-): [number, number, number] {
+function xyzToLab(x: number, y: number, z: number): [number, number, number] {
   const fx = labF(x / D65[0]),
     fy = labF(y / D65[1]),
     fz = labF(z / D65[2]);
   return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
 }
-function labToXyz(
-  L: number,
-  a: number,
-  b: number,
-): [number, number, number] {
+function labToXyz(L: number, a: number, b: number): [number, number, number] {
   const fy = (L + 16) / 116,
     fx = a / 500 + fy,
     fz = fy - b / 200;
-  return [
-    labFInv(fx) * D65[0],
-    labFInv(fy) * D65[1],
-    labFInv(fz) * D65[2],
-  ];
+  return [labFInv(fx) * D65[0], labFInv(fy) * D65[1], labFInv(fz) * D65[2]];
 }
 
 interface HCT {
@@ -138,10 +100,7 @@ function hctToHex({hue, chroma, tone}: HCT): string {
   if (chroma < 0.5) {
     const y = labFInv((tone + 16) / 116);
     const g = linearToSrgb(y);
-    return (
-      '#' +
-      [g, g, g].map(c => c.toString(16).padStart(2, '0')).join('')
-    );
+    return '#' + [g, g, g].map(c => c.toString(16).padStart(2, '0')).join('');
   }
   let lo = 0,
     hi = chroma,
@@ -168,8 +127,7 @@ function hctToHex({hue, chroma, tone}: HCT): string {
       bv <= 255;
     if (ok) {
       best =
-        '#' +
-        [r, g, bv].map(c => c.toString(16).padStart(2, '0')).join('');
+        '#' + [r, g, bv].map(c => c.toString(16).padStart(2, '0')).join('');
       lo = mid;
     } else {
       hi = mid;
@@ -178,46 +136,58 @@ function hctToHex({hue, chroma, tone}: HCT): string {
   return best;
 }
 
-const TONE_STEPS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100];
+const TONE_STEPS = [
+  0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95,
+  100,
+];
 
-function tonalPalette(
-  hue: number,
-  chroma: number,
-): Record<number, string> {
+function tonalPalette(hue: number, chroma: number): Record<number, string> {
   const result: Record<number, string> = {};
-  for (const t of TONE_STEPS)
-    result[t] = hctToHex({hue, chroma, tone: t});
+  const maxChroma = chroma * 1.8;
+  for (const t of TONE_STEPS) {
+    const boost = t < 50 ? 1 + (50 - t) / 40 : 1;
+    result[t] = hctToHex({
+      hue,
+      chroma: Math.min(chroma * boost, maxChroma),
+      tone: t,
+    });
+  }
   return result;
 }
 
-const TONAL_COLORS = [
-  {name: 'Stone Neutral', sourceHex: '#e2e2e2'},
-  {name: 'Blue', sourceHex: '#d7e4f5'},
-  {name: 'Cyan', sourceHex: '#cce8e5'},
-  {name: 'Green', sourceHex: '#d0e9ce', semantic: 'Success'},
-  {name: 'Teal', sourceHex: '#d4e7dc'},
-  {name: 'Yellow', sourceHex: '#f4e1b7', semantic: 'Warning'},
-  {name: 'Orange', sourceHex: '#ffdcbb'},
-  {name: 'Red', sourceHex: '#f9dcd7', semantic: 'Error'},
-  {name: 'Pink', sourceHex: '#f0dde8'},
-  {name: 'Purple', sourceHex: '#e8dff3'},
-];
+// =============================================================================
+// Types & data
+// =============================================================================
 
-// === Hardcoded Stone palette (mirror of packages/themes/stone/src/stoneTheme.ts) ===
+export interface TonalColor {
+  name: string;
+  sourceHex: string;
+  semantic?: string;
+  note?: string;
+}
 
-const CORE = [
-  {hex: '#28282A', name: 'Stone 900'},
-  {hex: '#84848B', name: 'Stone 500'},
-  {hex: '#D8D8DB', name: 'Stone 300'},
-  {hex: '#f3f3f5', name: 'Stone 100'},
-  {hex: '#FFFFFF', name: 'White'},
-];
+export interface CoreSwatch {
+  hex: string;
+  name: string;
+}
+
+export interface ThemePalettePreviewProps {
+  /** The XDS theme object */
+  theme: XDSDefinedTheme;
+  /** Theme display name for the page title */
+  title: string;
+  /** Description subtitle */
+  subtitle: string;
+  /** Tonal color data for ramp display */
+  tonalColors: TonalColor[];
+  /** Core palette swatches */
+  coreSwatches: CoreSwatch[];
+  /** Additional sections to render at the end of each mode column */
+  extraSections?: React.ReactNode;
+}
 
 type Mode = 'light' | 'dark';
 
-type Surfaces = typeof VAR_SURFACES;
-
-// Surface colors read from CSS variables — no hardcoded hex values to drift.
 const VAR_SURFACES = {
   body: 'var(--color-background-body)',
   surface: 'var(--color-background-surface)',
@@ -230,62 +200,10 @@ const VAR_SURFACES = {
   onAccent: 'var(--color-on-accent)',
 };
 
-interface BadgePair {
-  label: string;
-  bg: string;
-  fg: string;
-}
-
-const _SEMANTIC: Record<Mode, BadgePair[]> = {
-  light: [
-    {label: 'Success', bg: '#d0e9ce', fg: '#374c36'},
-    {label: 'Error', bg: '#f9dcd7', fg: '#58413e'},
-    {label: 'Warning', bg: '#f4e1b7', fg: '#524622'},
-    {label: 'Info', bg: '#d7e4f5', fg: '#3c4856'},
-    {label: 'Neutral', bg: '#e3e2e0', fg: '#474745'},
-  ],
-  dark: [
-    {label: 'Success', bg: '#2a4f2b', fg: '#a7d1a6'},
-    {label: 'Error', bg: '#613d38', fg: '#e9bcb5'},
-    {label: 'Warning', bg: '#554502', fg: '#dec47f'},
-    {label: 'Info', bg: '#33485f', fg: '#b3c8e4'},
-    {label: 'Neutral', bg: '#484744', fg: '#c8c6c3'},
-  ],
-};
-
-const _CATEGORICAL: Record<Mode, BadgePair[]> = {
-  light: [
-    {label: 'Blue', bg: '#d7e4f5', fg: '#3c4856'},
-    {label: 'Cyan', bg: '#cce8e5', fg: '#334b49'},
-    {label: 'Gray', bg: '#e3e2e0', fg: '#474745'},
-    {label: 'Green', bg: '#d0e9ce', fg: '#374c36'},
-    {label: 'Orange', bg: '#ffdcbb', fg: '#5b4227'},
-    {label: 'Pink', bg: '#f0dde8', fg: '#52424c'},
-    {label: 'Purple', bg: '#e8dff3', fg: '#4b4454'},
-    {label: 'Red', bg: '#f9dcd7', fg: '#58413e'},
-    {label: 'Teal', bg: '#d4e7dc', fg: '#3b4a41'},
-    {label: 'Yellow', bg: '#f4e1b7', fg: '#524622'},
-  ],
-  dark: [
-    {label: 'Blue', bg: '#33485f', fg: '#b3c8e4'},
-    {label: 'Cyan', bg: '#234e4b', fg: '#a2cfcb'},
-    {label: 'Gray', bg: '#484744', fg: '#c8c6c3'},
-    {label: 'Green', bg: '#2a4f2b', fg: '#a7d1a6'},
-    {label: 'Orange', bg: '#643e0f', fg: '#f1bd88'},
-    {label: 'Pink', bg: '#593f4f', fg: '#ddbed0'},
-    {label: 'Purple', bg: '#4d425d', fg: '#cec1e1'},
-    {label: 'Red', bg: '#613d38', fg: '#e9bcb5'},
-    {label: 'Teal', bg: '#324c3e', fg: '#afcebb'},
-    {label: 'Yellow', bg: '#554502', fg: '#dec47f'},
-  ],
-};
-
 // =============================================================================
 // Styles
 // =============================================================================
 
-const _FONT =
-  "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
 const MONO = "'JetBrains Mono', 'SF Mono', Menlo, monospace";
 
 const S = {
@@ -365,84 +283,6 @@ const S = {
     lineHeight: 1.4,
     opacity: 0.7,
   } as React.CSSProperties,
-  badgeGrid: {
-    display: 'flex',
-    flexWrap: 'wrap' as const,
-    gap: 12,
-  } as React.CSSProperties,
-  badgeCell: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    alignItems: 'flex-start',
-    gap: 4,
-    minWidth: 110,
-  } as React.CSSProperties,
-  badge: (bg: string, fg: string) =>
-    ({
-      display: 'inline-flex',
-      alignItems: 'center',
-      padding: '4px 12px',
-      borderRadius: 9999,
-      background: bg,
-      color: fg,
-      fontSize: 12,
-      fontWeight: 500,
-      lineHeight: 1.5,
-    }) as React.CSSProperties,
-  contrastNote: (pass: boolean) =>
-    ({
-      fontFamily: MONO,
-      fontSize: 10,
-      opacity: 0.85,
-      color: pass ? undefined : '#b5463a',
-    }) as React.CSSProperties,
-  buttonRow: {
-    display: 'flex',
-    gap: 10,
-    flexWrap: 'wrap' as const,
-  } as React.CSSProperties,
-  primaryBtn: (s: Surfaces) =>
-    ({
-      display: 'inline-flex',
-      alignItems: 'center',
-      padding: '8px 20px',
-      borderRadius: 9999,
-      background: s.accent,
-      color: s.onAccent,
-      border: 'none',
-      fontSize: 13,
-      fontWeight: 500,
-      fontFamily: 'inherit',
-      cursor: 'default',
-    }) as React.CSSProperties,
-  secondaryBtn: (s: Surfaces) =>
-    ({
-      display: 'inline-flex',
-      alignItems: 'center',
-      padding: '6.5px 18.5px',
-      borderRadius: 9999,
-      background: 'transparent',
-      color: s.textPrimary,
-      border: `1.5px solid ${s.borderEmphasized}`,
-      fontSize: 13,
-      fontWeight: 500,
-      fontFamily: 'inherit',
-      cursor: 'default',
-    }) as React.CSSProperties,
-  ghostBtn: (s: Surfaces) =>
-    ({
-      display: 'inline-flex',
-      alignItems: 'center',
-      padding: '8px 20px',
-      borderRadius: 9999,
-      background: 'transparent',
-      color: s.textPrimary,
-      border: 'none',
-      fontSize: 13,
-      fontWeight: 500,
-      fontFamily: 'inherit',
-      cursor: 'default',
-    }) as React.CSSProperties,
   surfacesGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(5, 1fr)',
@@ -526,15 +366,15 @@ const S = {
 };
 
 // =============================================================================
-// Component
+// Section components
 // =============================================================================
 
-function CoreSection({mode: _mode}: {mode: Mode}) {
+function CoreSection({swatches}: {swatches: CoreSwatch[]}) {
   return (
     <div style={S.section}>
       <h3 style={S.sectionTitle}>Core Palette</h3>
       <div style={S.coreRow}>
-        {CORE.map(c => (
+        {swatches.map(c => (
           <div key={c.hex}>
             <div style={S.coreSwatch(c.hex)} />
             <div style={S.coreMeta}>
@@ -563,14 +403,58 @@ function TextRampSection() {
     <div style={S.section}>
       <h3 style={S.sectionTitle}>Text Hierarchy (1.25 scale, 14px base)</h3>
       <XDSVStack gap={2}>
-        <XDSHStack gap={2} vAlign="end"><XDSHeading level={1}>Heading 1</XDSHeading><XDSText type="supporting" color="secondary">{sizes.h1}px</XDSText></XDSHStack>
-        <XDSHStack gap={2} vAlign="end"><XDSHeading level={2}>Heading 2</XDSHeading><XDSText type="supporting" color="secondary">{sizes.h2}px</XDSText></XDSHStack>
-        <XDSHStack gap={2} vAlign="end"><XDSHeading level={3}>Heading 3</XDSHeading><XDSText type="supporting" color="secondary">{sizes.h3}px</XDSText></XDSHStack>
-        <XDSHStack gap={2} vAlign="end"><XDSHeading level={4}>Heading 4</XDSHeading><XDSText type="supporting" color="secondary">{sizes.h4}px</XDSText></XDSHStack>
-        <XDSHStack gap={2} vAlign="end"><XDSText type="body">Body — primary</XDSText><XDSText type="supporting" color="secondary">{sizes.body}px</XDSText></XDSHStack>
-        <XDSHStack gap={2} vAlign="end"><XDSText type="body" color="secondary">Body — secondary</XDSText><XDSText type="supporting" color="secondary">{sizes.body}px</XDSText></XDSHStack>
-        <XDSHStack gap={2} vAlign="end"><XDSText type="supporting">Supporting</XDSText><XDSText type="supporting" color="secondary">{sizes.supporting}px</XDSText></XDSHStack>
-        <XDSHStack gap={2} vAlign="end"><XDSText type="body" color="disabled">Disabled</XDSText><XDSText type="supporting" color="secondary">{sizes.body}px</XDSText></XDSHStack>
+        <XDSHStack gap={2} vAlign="end">
+          <XDSHeading level={1}>Heading 1</XDSHeading>
+          <XDSText type="supporting" color="secondary">
+            {sizes.h1}px
+          </XDSText>
+        </XDSHStack>
+        <XDSHStack gap={2} vAlign="end">
+          <XDSHeading level={2}>Heading 2</XDSHeading>
+          <XDSText type="supporting" color="secondary">
+            {sizes.h2}px
+          </XDSText>
+        </XDSHStack>
+        <XDSHStack gap={2} vAlign="end">
+          <XDSHeading level={3}>Heading 3</XDSHeading>
+          <XDSText type="supporting" color="secondary">
+            {sizes.h3}px
+          </XDSText>
+        </XDSHStack>
+        <XDSHStack gap={2} vAlign="end">
+          <XDSHeading level={4}>Heading 4</XDSHeading>
+          <XDSText type="supporting" color="secondary">
+            {sizes.h4}px
+          </XDSText>
+        </XDSHStack>
+        <XDSHStack gap={2} vAlign="end">
+          <XDSText type="body">Body — primary</XDSText>
+          <XDSText type="supporting" color="secondary">
+            {sizes.body}px
+          </XDSText>
+        </XDSHStack>
+        <XDSHStack gap={2} vAlign="end">
+          <XDSText type="body" color="secondary">
+            Body — secondary
+          </XDSText>
+          <XDSText type="supporting" color="secondary">
+            {sizes.body}px
+          </XDSText>
+        </XDSHStack>
+        <XDSHStack gap={2} vAlign="end">
+          <XDSText type="supporting">Supporting</XDSText>
+          <XDSText type="supporting" color="secondary">
+            {sizes.supporting}px
+          </XDSText>
+        </XDSHStack>
+        <XDSHStack gap={2} vAlign="end">
+          <XDSText type="body" color="disabled">
+            Disabled
+          </XDSText>
+          <XDSText type="supporting" color="secondary">
+            {sizes.body}px
+          </XDSText>
+        </XDSHStack>
       </XDSVStack>
     </div>
   );
@@ -616,7 +500,15 @@ function ButtonSection() {
       <h3 style={S.sectionTitle}>Buttons</h3>
       <XDSVStack gap={4}>
         <div>
-          <div style={{fontSize: 10, fontFamily: MONO, opacity: 0.6, marginBottom: 6}}>Default</div>
+          <div
+            style={{
+              fontSize: 10,
+              fontFamily: MONO,
+              opacity: 0.6,
+              marginBottom: 6,
+            }}>
+            Default
+          </div>
           <XDSHStack gap={3} vAlign="center">
             <XDSButton label="Primary" variant="primary" />
             <XDSButton label="Secondary" variant="secondary" />
@@ -625,7 +517,15 @@ function ButtonSection() {
           </XDSHStack>
         </div>
         <div>
-          <div style={{fontSize: 10, fontFamily: MONO, opacity: 0.6, marginBottom: 6}}>Disabled</div>
+          <div
+            style={{
+              fontSize: 10,
+              fontFamily: MONO,
+              opacity: 0.6,
+              marginBottom: 6,
+            }}>
+            Disabled
+          </div>
           <XDSHStack gap={3} vAlign="center">
             <XDSButton label="Primary" variant="primary" isDisabled />
             <XDSButton label="Secondary" variant="secondary" isDisabled />
@@ -639,8 +539,7 @@ function ButtonSection() {
 }
 
 function SurfacesSection({mode}: {mode: Mode}) {
-  const ring =
-    mode === 'light' ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)';
+  const ring = mode === 'light' ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)';
   const cells = [
     {label: 'border', hex: VAR_SURFACES.border},
     {label: 'border-emp', hex: VAR_SURFACES.borderEmphasized},
@@ -666,8 +565,78 @@ function SurfacesSection({mode}: {mode: Mode}) {
   );
 }
 
-function TonalSection() {
-  const usedTones = [15, 25, 75, 80];
+function BannerSection() {
+  return (
+    <div style={S.section}>
+      <h3 style={S.sectionTitle}>Banners</h3>
+      <XDSVStack gap={2}>
+        <XDSBanner
+          status="info"
+          title="Info banner title"
+          description="Description text for the info state."
+        />
+        <XDSBanner
+          status="success"
+          title="Success banner title"
+          description="Description text for the success state."
+        />
+        <XDSBanner
+          status="warning"
+          title="Warning banner title"
+          description="Description text for the warning state."
+        />
+        <XDSBanner
+          status="error"
+          title="Error banner title"
+          description="Description text for the error state."
+        />
+      </XDSVStack>
+    </div>
+  );
+}
+
+function InputSection() {
+  return (
+    <div style={S.section}>
+      <h3 style={S.sectionTitle}>Inputs</h3>
+      <XDSVStack gap={3}>
+        <XDSTextInput
+          label="Default"
+          placeholder="Placeholder text"
+          value=""
+          onChange={() => {}}
+        />
+        <XDSTextInput
+          label="Success"
+          value="Valid input"
+          onChange={() => {}}
+          status={{type: 'success', message: 'Looks good!'}}
+        />
+        <XDSTextInput
+          label="Error"
+          value="Invalid input"
+          onChange={() => {}}
+          status={{type: 'error', message: 'This field is required.'}}
+        />
+        <XDSTextInput
+          label="Warning"
+          value="Risky value"
+          onChange={() => {}}
+          status={{type: 'warning', message: 'This value may cause issues.'}}
+        />
+        <XDSTextInput
+          label="Disabled"
+          value="Cannot edit"
+          onChange={() => {}}
+          isDisabled
+        />
+      </XDSVStack>
+    </div>
+  );
+}
+
+function TonalSection({colors}: {colors: TonalColor[]}) {
+  const usedTones = [15, 25, 80, 90];
   return (
     <div style={{marginBottom: 40}}>
       <h2
@@ -688,10 +657,10 @@ function TonalSection() {
           margin: 0,
           marginBottom: 20,
         }}>
-        Full HCT tonal ramps — 16 perceptually uniform steps from black (T0) to
-        white (T100). Badge tokens use T75/T25 (light) and T15/T80 (dark).
+        Full HCT tonal ramps — 21 perceptually uniform steps from black (T0) to
+        white (T100). Badge tokens use T90/T30 (light) and T70/T15 (dark).
       </p>
-      {TONAL_COLORS.map(({name, sourceHex, semantic}) => {
+      {colors.map(({name, sourceHex, semantic, note}) => {
         const hct = hexToHct(sourceHex);
         const tones = tonalPalette(hct.hue, hct.chroma);
         return (
@@ -701,6 +670,11 @@ function TonalSection() {
               {semantic && (
                 <span style={{display: 'block', fontSize: 8, opacity: 0.5}}>
                   = {semantic}
+                </span>
+              )}
+              {note && (
+                <span style={{display: 'block', fontSize: 8, opacity: 0.5}}>
+                  {note}
                 </span>
               )}
             </span>
@@ -714,9 +688,7 @@ function TonalSection() {
                   }}
                   title={`${name} T${t}: ${tones[t]}`}>
                   <span style={S.tonalNum(t)}>{t}</span>
-                  {usedTones.includes(t) && (
-                    <div style={S.markerDot(t)} />
-                  )}
+                  {usedTones.includes(t) && <div style={S.markerDot(t)} />}
                 </div>
               ))}
             </div>
@@ -734,49 +706,32 @@ function TonalSection() {
           marginTop: 10,
           fontFamily: MONO,
         }}>
-        ● = token in use (T15 dark bg · T25 light text · T75 light bg · T80
-        dark text)
+        ● = token in use (T15 dark bg · T25 light text · T80 dark text · T90
+        light bg)
       </p>
     </div>
   );
 }
 
-function BannerSection() {
+function ModeColumn({
+  theme,
+  mode,
+  coreSwatches,
+  extraSections,
+}: {
+  theme: XDSDefinedTheme;
+  mode: Mode;
+  coreSwatches: CoreSwatch[];
+  extraSections?: React.ReactNode;
+}) {
   return (
-    <div style={S.section}>
-      <h3 style={S.sectionTitle}>Banners</h3>
-      <XDSVStack gap={2}>
-        <XDSBanner status="info" title="Info banner title" description="Description text for the info state." />
-        <XDSBanner status="success" title="Success banner title" description="Description text for the success state." />
-        <XDSBanner status="warning" title="Warning banner title" description="Description text for the warning state." />
-        <XDSBanner status="error" title="Error banner title" description="Description text for the error state." />
-      </XDSVStack>
-    </div>
-  );
-}
-
-function InputSection() {
-  return (
-    <div style={S.section}>
-      <h3 style={S.sectionTitle}>Inputs</h3>
-      <XDSVStack gap={3}>
-        <XDSTextInput label="Default" placeholder="Placeholder text" value="" onChange={() => {}} />
-        <XDSTextInput label="Success" value="Valid input" onChange={() => {}} status={{type: 'success', message: 'Looks good!'}} />
-        <XDSTextInput label="Error" value="Invalid input" onChange={() => {}} status={{type: 'error', message: 'This field is required.'}} />
-        <XDSTextInput label="Warning" value="Risky value" onChange={() => {}} status={{type: 'warning', message: 'This value may cause issues.'}} />
-        <XDSTextInput label="Disabled" value="Cannot edit" onChange={() => {}} isDisabled />
-      </XDSVStack>
-    </div>
-  );
-}
-
-function ModeColumn({mode}: {mode: Mode}) {
-  return (
-    <XDSTheme theme={stoneTheme} mode={mode}>
+    <XDSTheme theme={theme} mode={mode}>
       <XDSLayerProvider>
         <div style={S.modeCol(VAR_SURFACES.body, VAR_SURFACES.textPrimary)}>
-          <p style={S.modeLabel}>{mode === 'light' ? 'Light Mode' : 'Dark Mode'}</p>
-          <CoreSection mode={mode} />
+          <p style={S.modeLabel}>
+            {mode === 'light' ? 'Light Mode' : 'Dark Mode'}
+          </p>
+          <CoreSection swatches={coreSwatches} />
           <TextRampSection />
           <SemanticBadgeSection />
           <CategoricalBadgeSection />
@@ -784,27 +739,46 @@ function ModeColumn({mode}: {mode: Mode}) {
           <InputSection />
           <ButtonSection />
           <SurfacesSection mode={mode} />
+          {extraSections}
         </div>
       </XDSLayerProvider>
     </XDSTheme>
   );
 }
 
-export default function StonePalettePage() {
+// =============================================================================
+// Public component
+// =============================================================================
+
+export function ThemePalettePreview({
+  theme,
+  title,
+  subtitle,
+  tonalColors,
+  coreSwatches,
+  extraSections,
+}: ThemePalettePreviewProps) {
   return (
-    <XDSTheme theme={stoneTheme} mode="light">
+    <XDSTheme theme={theme} mode="light">
       <XDSLayerProvider>
-        <div style={S.page}>
+        <div style={{...S.page, margin: -0, position: 'relative', zIndex: 1}}>
           <div style={S.inner}>
-            <h1 style={S.title}>Stone Theme Palette</h1>
-            <p style={S.subtitle}>
-              A snapshot of the warm, earthy Stone theme — every token rendered
-              alongside its dark-mode counterpart.
-            </p>
-            <TonalSection />
+            <h1 style={S.title}>{title}</h1>
+            <p style={S.subtitle}>{subtitle}</p>
+            <TonalSection colors={tonalColors} />
             <div style={S.twoCol}>
-              <ModeColumn mode="light" />
-              <ModeColumn mode="dark" />
+              <ModeColumn
+                theme={theme}
+                mode="light"
+                coreSwatches={coreSwatches}
+                extraSections={extraSections}
+              />
+              <ModeColumn
+                theme={theme}
+                mode="dark"
+                coreSwatches={coreSwatches}
+                extraSections={extraSections}
+              />
             </div>
           </div>
         </div>
