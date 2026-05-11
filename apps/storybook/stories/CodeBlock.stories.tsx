@@ -29,9 +29,14 @@ const meta: Meta<typeof XDSCodeBlock> = {
       options: ['sm', 'md'],
       description: 'Text size',
     },
+    width: {
+      control: 'select',
+      options: ['fit-content', '100%'],
+      description: 'Width of the code block',
+    },
     container: {
       control: 'select',
-      options: ['card', 'fill', 'section'],
+      options: ['card', 'section'],
       description: 'Container presentation style',
     },
     hasLineNumbers: {control: 'boolean'},
@@ -284,12 +289,12 @@ It preserves whitespace and line breaks.
   },
 };
 
-export const ContainerFill: Story = {
+export const FullWidth: Story = {
   args: {
     code: tsExample,
     language: 'typescript',
     title: 'useUser.ts',
-    container: 'fill',
+    width: '100%',
   },
 };
 
@@ -298,6 +303,7 @@ export const ContainerSection: Story = {
     code: tsExample,
     language: 'typescript',
     title: 'useUser.ts',
+    width: '100%',
     container: 'section',
   },
 };
