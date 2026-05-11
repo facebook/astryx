@@ -1,6 +1,12 @@
 'use client';
 
 import {XDSBanner} from '@xds/core/Banner';
+import {XDSSpinner} from '@xds/core/Spinner';
+import {XDSProgressBar} from '@xds/core/ProgressBar';
+import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
+import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
+import {XDSSwitch} from '@xds/core/Switch';
+import {XDSCard} from '@xds/core/Card';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSButton} from '@xds/core/Button';
@@ -538,6 +544,126 @@ function ButtonSection() {
   );
 }
 
+function SpinnerSection() {
+  return (
+    <div>
+      <h3 style={S.sectionTitle}>Spinners</h3>
+      <XDSHStack gap={4} vAlign="center">
+        <XDSSpinner size="sm" />
+        <XDSSpinner size="md" />
+        <XDSSpinner size="lg" />
+      </XDSHStack>
+    </div>
+  );
+}
+
+function ProgressBarSection() {
+  return (
+    <div>
+      <h3 style={S.sectionTitle}>Progress</h3>
+      <XDSVStack gap={3}>
+        <XDSProgressBar value={75} label="Progress" hasValueLabel />
+        <XDSProgressBar
+          value={40}
+          label="Upload"
+          variant="positive"
+          hasValueLabel
+        />
+        <XDSProgressBar
+          value={90}
+          label="Storage"
+          variant="warning"
+          hasValueLabel
+        />
+        <XDSProgressBar isIndeterminate label="Loading..." />
+      </XDSVStack>
+    </div>
+  );
+}
+
+function CheckboxRadioSwitchSection() {
+  return (
+    <div>
+      <h3 style={S.sectionTitle}>Controls</h3>
+      <XDSVStack gap={4}>
+        <XDSVStack gap={2}>
+          <XDSCheckboxInput
+            label="Enable notifications"
+            value={true}
+            onChange={() => {}}
+          />
+          <XDSCheckboxInput
+            label="Auto-save drafts"
+            value={false}
+            onChange={() => {}}
+          />
+          <XDSCheckboxInput
+            label="Show previews"
+            value={true}
+            onChange={() => {}}
+            isDisabled
+          />
+        </XDSVStack>
+        <XDSRadioList
+          label="Display mode"
+          value="comfortable"
+          onChange={() => {}}>
+          <XDSRadioListItem value="compact" label="Compact" />
+          <XDSRadioListItem value="comfortable" label="Comfortable" />
+          <XDSRadioListItem value="spacious" label="Spacious" />
+        </XDSRadioList>
+        <XDSVStack gap={2}>
+          <XDSSwitch label="Dark mode" value={true} onChange={() => {}} />
+          <XDSSwitch label="Reduce motion" value={false} onChange={() => {}} />
+          <XDSSwitch
+            label="High contrast"
+            value={false}
+            onChange={() => {}}
+            isDisabled
+          />
+        </XDSVStack>
+      </XDSVStack>
+    </div>
+  );
+}
+
+const CARD_VARIANTS = [
+  'default',
+  'muted',
+  'blue',
+  'cyan',
+  'gray',
+  'green',
+  'orange',
+  'pink',
+  'purple',
+  'red',
+  'teal',
+  'yellow',
+] as const;
+
+function CardVariantsSection() {
+  return (
+    <div>
+      <h3 style={S.sectionTitle}>Card Variants</h3>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: 10,
+        }}>
+        {CARD_VARIANTS.map(v => (
+          <XDSCard key={v} variant={v} padding={2}>
+            <XDSText type="supporting" weight="bold">
+              {v}
+            </XDSText>
+          </XDSCard>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function SurfacesSection({mode}: {mode: Mode}) {
   const ring = mode === 'light' ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)';
   const cells = [
@@ -738,6 +864,10 @@ function ModeColumn({
           <BannerSection />
           <InputSection />
           <ButtonSection />
+          <SpinnerSection />
+          <ProgressBarSection />
+          <CheckboxRadioSwitchSection />
+          <CardVariantsSection />
           <SurfacesSection mode={mode} />
           {extraSections}
         </div>
