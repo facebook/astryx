@@ -374,6 +374,7 @@ export function XDSTopNavHeading({
         (hasAnyHref && superheadingHref && menu ? (
           <XDSLink
             href={superheadingHref}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
             color="secondary"
             size="xsm">
             {superheading}
@@ -385,6 +386,7 @@ export function XDSTopNavHeading({
         {hasAnyHref && headingHref && menu ? (
           <LinkComponent
             href={headingHref}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
             {...stylex.props(styles.heading, styles.headingLink)}>
             {heading}
           </LinkComponent>
@@ -397,6 +399,7 @@ export function XDSTopNavHeading({
         (hasAnyHref && subheadingHref && menu ? (
           <XDSLink
             href={subheadingHref}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
             color="secondary"
             size="xsm">
             {subheading}
@@ -545,7 +548,10 @@ export function XDSTopNavHeading({
           )}>
           {logo &&
             (headingHref ? (
-              <LinkComponent href={headingHref} {...stylex.props(styles.logo)}>
+              <LinkComponent
+                href={headingHref}
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                {...stylex.props(styles.logo)}>
                 {logo}
               </LinkComponent>
             ) : (
@@ -614,20 +620,14 @@ export function XDSTopNavHeading({
         <span {...stylex.props(styles.textContainer)}>
           {superheading &&
             (superheadingHref ? (
-              <XDSLink
-                href={superheadingHref}
-                color="secondary"
-                size="xsm">
+              <XDSLink href={superheadingHref} color="secondary" size="xsm">
                 {superheading}
               </XDSLink>
             ) : (
               <span {...stylex.props(styles.superheading)}>{superheading}</span>
             ))}
           {headingHref ? (
-            <XDSLink
-              href={headingHref}
-              color="primary"
-              weight="semibold">
+            <XDSLink href={headingHref} color="primary" weight="semibold">
               {heading}
             </XDSLink>
           ) : (
@@ -635,10 +635,7 @@ export function XDSTopNavHeading({
           )}
           {subheading &&
             (subheadingHref ? (
-              <XDSLink
-                href={subheadingHref}
-                color="secondary"
-                size="xsm">
+              <XDSLink href={subheadingHref} color="secondary" size="xsm">
                 {subheading}
               </XDSLink>
             ) : (
