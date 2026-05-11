@@ -6,7 +6,6 @@ import {XDSVStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSGrid} from '@xds/core/Grid';
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSSection} from '@xds/core/Section';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import * as stylex from '@stylexjs/stylex';
@@ -21,6 +20,8 @@ const styles = stylex.create({
     paddingBlock: 'var(--spacing-8)',
   },
   imageWrapper: {
+    position: 'relative',
+    aspectRatio: '3/2',
     borderRadius: 'var(--radius-container)',
     overflow: 'clip',
   },
@@ -28,6 +29,8 @@ const styles = stylex.create({
     textAlign: 'center',
   },
   imgFill: {
+    position: 'absolute',
+    inset: 0,
     width: '100%',
     height: '100%',
     objectFit: 'cover',
@@ -153,16 +156,13 @@ export default function ClassicGalleryTemplate() {
           {/* Gallery Grid */}
           <XDSGrid columns={{minWidth: 400}} gap={4}>
             {filteredImages.map((image, i) => (
-              <XDSAspectRatio
-                key={i}
-                ratio={3 / 2}
-                xstyle={styles.imageWrapper}>
+              <div key={i} {...stylex.props(styles.imageWrapper)}>
                 <img
                   src={image.src}
                   alt={image.alt}
                   {...stylex.props(styles.imgFill)}
                 />
-              </XDSAspectRatio>
+              </div>
             ))}
           </XDSGrid>
         </XDSVStack>

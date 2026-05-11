@@ -5,7 +5,6 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSLayout, XDSLayoutHeader, XDSLayoutContent} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSCard} from '@xds/core/Card';
-import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSDivider} from '@xds/core/Divider';
@@ -310,7 +309,15 @@ const ITEMS: LibraryItem[] = [
 ];
 
 const styles = stylex.create({
+  thumbnailWrapper: {
+    position: 'relative',
+    aspectRatio: '16/9',
+    overflow: 'clip',
+    flexShrink: 0,
+  },
   thumbnailImage: {
+    position: 'absolute',
+    inset: 0,
     width: '100%',
     height: '100%',
     objectFit: 'cover',
@@ -365,13 +372,13 @@ function LibraryNav() {
 function LibraryCard({item}: {item: LibraryItem}) {
   return (
     <XDSCard padding={0}>
-      <XDSAspectRatio ratio={16 / 9}>
+      <div {...stylex.props(styles.thumbnailWrapper)}>
         <img
           src={item.imageUrl}
           alt={item.name}
           {...stylex.props(styles.thumbnailImage)}
         />
-      </XDSAspectRatio>
+      </div>
       <XDSSection variant="transparent" padding={4}>
         <XDSVStack gap={1}>
           <XDSHeading level={3}>{item.name}</XDSHeading>
