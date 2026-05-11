@@ -307,6 +307,48 @@ export const gothicTheme = defineTheme({
         padding: 'var(--spacing-3)',
         borderRadius: 'var(--radius-container)',
       },
+      // Categorical variants — flip --color-text-primary so child
+      // XDSText labels stay readable against the dusty pastel bg.
+      'variant:blue': {
+        '--color-text-primary': 'var(--color-text-blue)',
+        '--color-text-secondary': 'var(--color-text-blue)',
+      },
+      'variant:cyan': {
+        '--color-text-primary': 'var(--color-text-cyan)',
+        '--color-text-secondary': 'var(--color-text-cyan)',
+      },
+      'variant:gray': {
+        '--color-text-primary': 'var(--color-text-gray)',
+        '--color-text-secondary': 'var(--color-text-gray)',
+      },
+      'variant:green': {
+        '--color-text-primary': 'var(--color-text-green)',
+        '--color-text-secondary': 'var(--color-text-green)',
+      },
+      'variant:orange': {
+        '--color-text-primary': 'var(--color-text-orange)',
+        '--color-text-secondary': 'var(--color-text-orange)',
+      },
+      'variant:pink': {
+        '--color-text-primary': 'var(--color-text-pink)',
+        '--color-text-secondary': 'var(--color-text-pink)',
+      },
+      'variant:purple': {
+        '--color-text-primary': 'var(--color-text-purple)',
+        '--color-text-secondary': 'var(--color-text-purple)',
+      },
+      'variant:red': {
+        '--color-text-primary': 'var(--color-text-red)',
+        '--color-text-secondary': 'var(--color-text-red)',
+      },
+      'variant:teal': {
+        '--color-text-primary': 'var(--color-text-teal)',
+        '--color-text-secondary': 'var(--color-text-teal)',
+      },
+      'variant:yellow': {
+        '--color-text-primary': 'var(--color-text-yellow)',
+        '--color-text-secondary': 'var(--color-text-yellow)',
+      },
     },
 
     section: {
