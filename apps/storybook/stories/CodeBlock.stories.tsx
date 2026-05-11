@@ -29,6 +29,11 @@ const meta: Meta<typeof XDSCodeBlock> = {
       options: ['sm', 'md'],
       description: 'Text size',
     },
+    container: {
+      control: 'select',
+      options: ['card', 'fill', 'section'],
+      description: 'Container presentation style',
+    },
     hasLineNumbers: {control: 'boolean'},
     hasCopyButton: {control: 'boolean'},
     isWrapped: {control: 'boolean'},
@@ -276,5 +281,23 @@ It preserves whitespace and line breaks.
     language: 'plaintext',
     title: 'notes.txt',
     hasLineNumbers: true,
+  },
+};
+
+export const ContainerFill: Story = {
+  args: {
+    code: tsExample,
+    language: 'typescript',
+    title: 'useUser.ts',
+    container: 'fill',
+  },
+};
+
+export const ContainerSection: Story = {
+  args: {
+    code: tsExample,
+    language: 'typescript',
+    title: 'useUser.ts',
+    container: 'section',
   },
 };

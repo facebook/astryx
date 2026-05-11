@@ -46,6 +46,40 @@ import {applyHighlightRangesChunked} from './highlightRanges';
 // Styles
 // ---------------------------------------------------------------------------
 
+/**
+ * Container presentation type.
+ * - `card`: fit-content width, border-radius, and border — standalone card look (default).
+ * - `fill`: full-width (100%), border-radius, and border — fills parent container.
+ * - `section`: full-width (100%), no border-radius, no border — for embedding inside cards or panels.
+ */
+export type XDSCodeBlockContainer = 'card' | 'fill' | 'section';
+
+const containerStyles = stylex.create({
+  card: {
+    width: 'fit-content',
+    minWidth: 'min(100%, 400px)',
+    maxWidth: '100%',
+    borderRadius: radiusVars['--radius-element'],
+    borderWidth: borderVars['--border-width'],
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-border'],
+  },
+  fill: {
+    width: '100%',
+    borderRadius: radiusVars['--radius-element'],
+    borderWidth: borderVars['--border-width'],
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-border'],
+  },
+  section: {
+    width: '100%',
+    borderRadius: 0,
+    borderWidth: 0,
+    borderStyle: 'none',
+    borderColor: 'transparent',
+  },
+});
+
 const styles = stylex.create({
   root: {
     position: 'relative',
@@ -53,14 +87,7 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     margin: 0,
-    width: 'fit-content',
-    minWidth: 'min(100%, 400px)',
-    maxWidth: '100%',
-    borderRadius: radiusVars['--radius-element'],
     backgroundColor: 'var(--color-syntax-background)',
-    borderWidth: borderVars['--border-width'],
-    borderStyle: 'solid',
-    borderColor: colorVars['--color-border'],
     overflow: 'hidden',
   },
   header: {
@@ -322,6 +349,14 @@ export interface XDSCodeBlockProps extends XDSBaseProps<HTMLPreElement> {
   isCollapsible?: boolean;
   collapsibleThreshold?: number;
   size?: 'sm' | 'md';
+  /**
+   * Container presentation style.
+   * - `card` (default): fit-content width with border-radius and border — standalone card look.
+   * - `fill`: stretches to 100% parent width with border-radius and border.
+   * - `section`: stretches to 100% parent width, no border-radius or border — for embedding inside cards or panels.
+   * @default 'card'
+   */
+  container?: XDSCodeBlockContainer;
   tokenizer?: (
     code: string,
     language: string,
@@ -542,6 +577,7 @@ export function XDSCodeBlock({
   isCollapsible = false,
   collapsibleThreshold = 10,
   size = 'md',
+  container = 'card',
   tokenizer: customTokenizer,
   highlightMode = 'auto',
   xstyle,
@@ -720,8 +756,8 @@ export function XDSCodeBlock({
     <pre
       ref={ref}
       {...mergeProps(
-        xdsClassName('codeblock', {size, language}),
-        stylex.props(styles.root, xstyle),
+        xdsClassName('codeblock', {size, language, container}),
+        stylex.props(styles.root, containerStyles[container], xstyle),
         className,
         style,
       )}
