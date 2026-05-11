@@ -121,62 +121,62 @@ export const stoneTheme = defineTheme({
     // Categorical — Blue H=265 C=10
     '--color-background-blue': ['#d7e4f5', '#a0acbd'],
     '--color-border-blue': ['#c9d6e7', '#939faf'],
-    '--color-icon-blue': ['#3c4856', '#1b2734'],
-    '--color-text-blue': ['#3c4856', '#1b2734'],
+    '--color-icon-blue': ['#3c4856', '#3c4856'],
+    '--color-text-blue': ['#3c4856', '#3c4856'],
 
     // Categorical — Cyan H=190 C=10
     '--color-background-cyan': ['#cce8e5', '#95b1ae'],
     '--color-border-cyan': ['#bedad7', '#88a3a0'],
-    '--color-icon-cyan': ['#334b49', '#122a28'],
-    '--color-text-cyan': ['#334b49', '#122a28'],
+    '--color-icon-cyan': ['#334b49', '#334b49'],
+    '--color-text-cyan': ['#334b49', '#334b49'],
 
     // Categorical — Gray (pure neutral, C=0)
     '--color-background-gray': ['#e2e2e2', '#ababab'],
     '--color-border-gray': ['#d4d4d4', '#9e9e9e'],
-    '--color-icon-gray': ['#474747', '#262626'],
-    '--color-text-gray': ['#474747', '#262626'],
+    '--color-icon-gray': ['#474747', '#474747'],
+    '--color-text-gray': ['#474747', '#474747'],
 
     // Categorical — Green H=142 C=17
     '--color-background-green': ['#d0e9ce', '#99b298'],
     '--color-border-green': ['#c2dbc0', '#8ca48b'],
-    '--color-icon-green': ['#374c36', '#162a16'],
-    '--color-text-green': ['#374c36', '#162a16'],
+    '--color-icon-green': ['#374c36', '#374c36'],
+    '--color-text-green': ['#374c36', '#374c36'],
 
     // Categorical — Orange H=70 C=22
     '--color-background-orange': ['#ffdcbb', '#c6a586'],
     '--color-border-orange': ['#f1ceae', '#b89879'],
-    '--color-icon-orange': ['#5b4227', '#372104'],
-    '--color-text-orange': ['#5b4227', '#372104'],
+    '--color-icon-orange': ['#5b4227', '#5b4227'],
+    '--color-text-orange': ['#5b4227', '#5b4227'],
 
     // Categorical — Pink H=340 C=9
     '--color-background-pink': ['#f0dde8', '#b8a6b1'],
     '--color-border-pink': ['#e2cfda', '#ab99a3'],
-    '--color-icon-pink': ['#52424c', '#30222a'],
-    '--color-text-pink': ['#52424c', '#30222a'],
+    '--color-icon-pink': ['#52424c', '#52424c'],
+    '--color-text-pink': ['#52424c', '#52424c'],
 
     // Categorical — Purple H=307 C=11
     '--color-background-purple': ['#e8dff3', '#b0a8bb'],
     '--color-border-purple': ['#d9d1e5', '#a39aad'],
-    '--color-icon-purple': ['#4b4454', '#292332'],
-    '--color-text-purple': ['#4b4454', '#292332'],
+    '--color-icon-purple': ['#4b4454', '#4b4454'],
+    '--color-text-purple': ['#4b4454', '#4b4454'],
 
     // Categorical — Red H=33 C=11
     '--color-background-red': ['#f9dcd7', '#c0a5a1'],
     '--color-border-red': ['#ebcec9', '#b39893'],
-    '--color-icon-red': ['#58413e', '#35211e'],
-    '--color-text-red': ['#58413e', '#35211e'],
+    '--color-icon-red': ['#58413e', '#58413e'],
+    '--color-text-red': ['#58413e', '#58413e'],
 
     // Categorical — Teal H=158 C=9
     '--color-background-teal': ['#d4e7dc', '#9dafa5'],
     '--color-border-teal': ['#c6d9ce', '#90a297'],
-    '--color-icon-teal': ['#3b4a41', '#1a2921'],
-    '--color-text-teal': ['#3b4a41', '#1a2921'],
+    '--color-icon-teal': ['#3b4a41', '#3b4a41'],
+    '--color-text-teal': ['#3b4a41', '#3b4a41'],
 
     // Categorical — Yellow H=90 C=23
     '--color-background-yellow': ['#f4e1b7', '#bbaa81'],
     '--color-border-yellow': ['#e5d3a9', '#ad9c75'],
-    '--color-icon-yellow': ['#524622', '#2f2500'],
-    '--color-text-yellow': ['#524622', '#2f2500'],
+    '--color-icon-yellow': ['#524622', '#524622'],
+    '--color-text-yellow': ['#524622', '#524622'],
 
     // =========================================================================
     // Radius — clean and subtle
@@ -274,6 +274,30 @@ export const stoneTheme = defineTheme({
       },
     },
 
+
+    progressbar: {
+      'variant:positive': {
+        '--color-success': 'var(--color-success-muted)',
+      },
+      'variant:warning': {
+        '--color-warning': 'var(--color-warning-muted)',
+      },
+      'variant:negative': {
+        '--color-error': 'var(--color-error-muted)',
+      },
+    },
+
+    'text-input': {
+      'status:success': {
+        borderColor: 'var(--color-success-muted)',
+      },
+      'status:warning': {
+        borderColor: 'var(--color-warning-muted)',
+      },
+      'status:error': {
+        borderColor: 'var(--color-error-muted)',
+      },
+    },
 
     card: {
       base: {

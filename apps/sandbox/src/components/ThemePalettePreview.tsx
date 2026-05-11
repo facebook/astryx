@@ -1,6 +1,7 @@
 'use client';
 
 import {XDSBanner} from '@xds/core/Banner';
+import {XDSPopover} from '@xds/core/Popover';
 import {XDSSpinner} from '@xds/core/Spinner';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
 import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
@@ -654,12 +655,34 @@ function CardVariantsSection() {
         }}>
         {CARD_VARIANTS.map(v => (
           <XDSCard key={v} variant={v} padding={2}>
-            <XDSText type="supporting" weight="bold">
+            <XDSText type="supporting" weight="bold" style={{color: `var(--color-text-${v}, var(--color-text-primary))`}}>
               {v}
             </XDSText>
           </XDSCard>
         ))}
       </div>
+    </div>
+  );
+}
+
+
+function PopoverSection() {
+  return (
+    <div>
+      <h3 style={S.sectionTitle}>Popover</h3>
+      <XDSPopover
+        placement="below"
+        label="Options"
+        width={240}
+        content={
+          <XDSVStack gap={2}>
+            <XDSText type="body" weight="semibold">Settings</XDSText>
+            <XDSText type="supporting" color="secondary">Manage your preferences and account settings here.</XDSText>
+            <XDSButton label="Save changes" size="sm">Save changes</XDSButton>
+          </XDSVStack>
+        }>
+        <XDSButton label="Open popover" variant="secondary">Open Popover</XDSButton>
+      </XDSPopover>
     </div>
   );
 }
@@ -857,7 +880,6 @@ function ModeColumn({
           <p style={S.modeLabel}>
             {mode === 'light' ? 'Light Mode' : 'Dark Mode'}
           </p>
-          <CoreSection swatches={coreSwatches} />
           <TextRampSection />
           <SemanticBadgeSection />
           <CategoricalBadgeSection />
@@ -868,6 +890,7 @@ function ModeColumn({
           <ProgressBarSection />
           <CheckboxRadioSwitchSection />
           <CardVariantsSection />
+          <PopoverSection />
           <SurfacesSection mode={mode} />
           {extraSections}
         </div>
