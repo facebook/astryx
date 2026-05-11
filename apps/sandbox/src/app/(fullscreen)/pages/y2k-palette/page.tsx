@@ -5,12 +5,10 @@
 // =============================================================================
 
 import {XDSVStack} from '@xds/core/Layout';
-import {XDSText} from '@xds/core/Text';
 import {y2kTheme} from '@xds/theme-y2k/built';
 import {ThemePalettePreview} from '@/components/ThemePalettePreview';
-import type {TonalColor, CoreSwatch} from '@/components/ThemePalettePreview';
+import type {TonalColor} from '@/components/ThemePalettePreview';
 
-const MONO = "'JetBrains Mono', 'SF Mono', Menlo, monospace";
 const CRIMSON = "'Crimson Text', Georgia, 'Times New Roman', serif";
 
 const TONAL_COLORS: TonalColor[] = [
@@ -26,27 +24,6 @@ const TONAL_COLORS: TonalColor[] = [
   {name: 'Teal', sourceHex: '#78E0B0'},
 ];
 
-const CORE: CoreSwatch[] = [
-  {hex: '#2d241b', name: 'Y2K 900'},
-  {hex: '#675d52', name: 'Y2K 500'},
-  {hex: '#d1c5b8', name: 'Y2K 300'},
-  {hex: '#FFF6ED', name: 'Body Cream'},
-  {hex: '#FFFFFF', name: 'White'},
-];
-
-const Y2K_COLORS = [
-  {hex: '#C5E17A', name: 'Green'},
-  {hex: '#FF9E9A', name: 'Red'},
-  {hex: '#FFCC55', name: 'Yellow'},
-  {hex: '#8ECFFF', name: 'Blue'},
-  {hex: '#FFA0C8', name: 'Pink'},
-  {hex: '#C0AAFF', name: 'Purple'},
-  {hex: '#70E8D0', name: 'Cyan'},
-  {hex: '#FFAA66', name: 'Orange'},
-  {hex: '#78E0B0', name: 'Teal'},
-  {hex: '#ede0d4', name: 'Gray'},
-];
-
 const sectionTitle: React.CSSProperties = {
   fontSize: 13,
   fontWeight: 600,
@@ -59,110 +36,11 @@ function DisplayTextSection() {
     <div>
       <h3 style={sectionTitle}>Display Text (Crimson Text)</h3>
       <XDSVStack gap={2}>
-        <span
-          style={{
-            fontFamily: CRIMSON,
-            fontSize: 83,
-            fontWeight: 400,
-            lineHeight: 1.15,
-          }}>
-          Display 1
-        </span>
-        <span
-          style={{
-            fontFamily: CRIMSON,
-            fontSize: 67,
-            fontWeight: 400,
-            lineHeight: 1.15,
-          }}>
-          Display 2
-        </span>
-        <span
-          style={{
-            fontFamily: CRIMSON,
-            fontSize: 53,
-            fontWeight: 400,
-            lineHeight: 1.2,
-          }}>
-          Display 3
-        </span>
+        <span style={{fontFamily: CRIMSON, fontSize: 83, fontWeight: 400, lineHeight: 1.15}}>Display 1</span>
+        <span style={{fontFamily: CRIMSON, fontSize: 67, fontWeight: 400, lineHeight: 1.15}}>Display 2</span>
+        <span style={{fontFamily: CRIMSON, fontSize: 53, fontWeight: 400, lineHeight: 1.2}}>Display 3</span>
       </XDSVStack>
-      <div
-        style={{
-          marginTop: 20,
-          padding: 24,
-          background: 'var(--color-background-card)',
-          borderRadius: 16,
-          border: '1px solid var(--color-border)',
-        }}>
-        <p
-          style={{
-            fontFamily: CRIMSON,
-            fontSize: 67,
-            fontWeight: 700,
-            lineHeight: 1.15,
-            margin: 0,
-          }}>
-          Little <em style={{fontWeight: 400}}>joys,</em>
-          <br />
-          <em style={{fontWeight: 400}}>everywhere</em> you go
-        </p>
-        <XDSText
-          type="body"
-          color="secondary"
-          as="p"
-          style={{marginTop: 12, maxWidth: 340}}>
-          The smallest details are the ones that matter most. Turn an ordinary
-          day into something worth remembering.
-        </XDSText>
-      </div>
     </div>
-  );
-}
-
-function ColorCardsSection() {
-  return (
-    <div>
-      <h3 style={sectionTitle}>Colors</h3>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(5, 1fr)',
-          gap: 10,
-        }}>
-        {Y2K_COLORS.map(c => (
-          <div key={c.hex}>
-            <div
-              style={{
-                background: c.hex,
-                height: 72,
-                border: '1px solid rgba(0,0,0,0.08)',
-              }}
-            />
-            <div
-              style={{
-                fontFamily: MONO,
-                fontSize: 10,
-                lineHeight: 1.4,
-                opacity: 0.7,
-                marginTop: 6,
-              }}>
-              <div>{c.name}</div>
-              <div>{c.hex}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function Y2kExtras() {
-  return (
-    <>
-      <ColorCardsSection />
-      <DisplayTextSection />
-    </>
   );
 }
 
@@ -173,8 +51,7 @@ export default function Y2kPalettePage() {
       title="Y2K Theme Palette"
       subtitle="A bubbly, playful pop theme — hot pink body, lime green accents, Crimson Text headings + Poppins body."
       tonalColors={TONAL_COLORS}
-      coreSwatches={CORE}
-      extraSections={<Y2kExtras />}
+      leadingExtras={<DisplayTextSection />}
     />
   );
 }
