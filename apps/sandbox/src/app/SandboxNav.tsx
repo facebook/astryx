@@ -59,7 +59,7 @@ function SandboxHeader() {
     {label: 'Matcha', onClick: () => setThemeName('matcha')},
     {label: 'Daily', onClick: () => setThemeName('daily')},
     {label: 'Stone', onClick: () => setThemeName('stone')},
-    {label: 'Ink', onClick: () => setThemeName('ink')},
+    {label: 'Gothic', onClick: () => setThemeName('gothic')},
     {label: 'Chocolate', onClick: () => setThemeName('chocolate')},
   ];
 

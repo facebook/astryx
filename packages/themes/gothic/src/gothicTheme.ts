@@ -1,28 +1,28 @@
 /**
- * Ink Theme — dark only
+ * Gothic Theme — dark only
  *
  * A dark-only theme with deep blue-gray tones and a distressed display
  * heading. Inspired by ink, manuscript, and noir typography.
  *
  * Core palette: #E8F1F6, #96A0AB, #495056, #24292D, #101314
- * Categorical colors follow a dusty pastel-on-dark pattern — light
- * backgrounds with dark text — same in any system color preference.
+ * Categorical colors follow a pastel-on-dark pattern (light backgrounds
+ * with dark text) — same in any system color preference.
  *
- * Uses Manufacturing Consent for display and Fustat for body / headings.
+ * Uses Manufacturing Consent for headings and Fustat for body text.
  */
 
 import {defineTheme, defineSyntaxTheme} from '@xds/core/theme';
-import {inkIconRegistry} from './icons';
+import {gothicIconRegistry} from './icons';
 
 /**
- * Ink syntax palette — atmospheric tones drawn from the ink categorical
- * palette: cathedral plums, dusty rose tags, aged gold numbers, forest
- * moss strings, midnight indigo functions.
+ * Gothic syntax palette — atmospheric tones drawn from the gothic
+ * categorical palette: deep purples (cathedral), blood crimson (tags),
+ * aged gold (numbers), forest moss (strings), midnight indigo (functions).
  *
  * Single values (no tuples) since this is a dark-only theme.
  */
-const inkSyntax = defineSyntaxTheme({
-  name: 'xds-ink',
+const gothicSyntax = defineSyntaxTheme({
+  name: 'xds-gothic',
   tokens: {
     keyword: '#c39adb',     // Cathedral plum
     string: '#a3c987',      // Forest moss
@@ -41,8 +41,8 @@ const inkSyntax = defineSyntaxTheme({
   },
 });
 
-export const inkTheme = defineTheme({
-  name: 'ink',
+export const gothicTheme = defineTheme({
+  name: 'gothic',
 
   typography: {
     scale: {base: 14, ratio: 1.2},
@@ -65,14 +65,14 @@ export const inkTheme = defineTheme({
     },
   },
 
-  // Slower, theatrical motion — ink doesn't rush.
+  // Slower, theatrical motion — gothic doesn't rush.
   motion: {fast: 150, medium: 350, slow: 800, ratio: 0.75},
 
-  syntax: inkSyntax,
+  syntax: gothicSyntax,
 
   tokens: {
     // =========================================================================
-    // Colors — ink dark palette (single values, dark-only)
+    // Colors — gothic dark palette (single values, dark-only)
     // Core: #E8F1F6, #96A0AB, #495056, #24292D, #101314
     // =========================================================================
 
@@ -196,7 +196,7 @@ export const inkTheme = defineTheme({
     '--color-text-yellow': '#6c5010',
 
     // =========================================================================
-    // Radius — subtle rounding
+    // Radius — subtle rounding (original gothic)
     // =========================================================================
     '--radius-none': '0.125rem',
     '--radius-inner': '0.25rem',
@@ -321,7 +321,7 @@ export const inkTheme = defineTheme({
       },
     },
 
-    // Display sizes use Manufacturing Consent — the signature ink
+    // Display sizes use Manufacturing Consent — the signature gothic
     // display font, reserved for hero/marketing-scale text only.
     text: {
       'type:display-1': {
@@ -339,18 +339,18 @@ export const inkTheme = defineTheme({
     },
   },
 
-  icons: inkIconRegistry,
+  icons: gothicIconRegistry,
 });
 
 /**
  * Raw tonal palettes — every color at every tone step (0–100 in 5s).
  * Use these for custom components or data visualization.
  *
- * Categorical hues (blue, green, etc.) follow ink gem-tone hues.
- * Neutral mirrors the cool blue-gray palette (H≈210).
+ * Categorical hues (blue, green, etc.) follow gothic gem-tone hues.
+ * Neutral mirrors the original gothic blue-gray palette (H≈210).
  */
-export const inkPalettes = {
-  // Neutral — H=210 C=4 (cool blue-gray)
+export const gothicPalettes = {
+  // Neutral — H=210 C=4 (cool blue-gray, original gothic)
   neutral: {
     hue: 210, chroma: 4,
     0: '#000000', 5: '#0a0d0f', 10: '#101314', 15: '#181c1f', 20: '#24292D',
@@ -413,8 +413,8 @@ export const inkPalettes = {
     75: '#cd9be0', 80: '#d2a3df', 85: '#dab3e6', 90: '#e6daee', 95: '#f0e6f4',
     100: '#ffffff',
   },
-  // Red — H=15 C=12 (dusty rose) — ink uses a desaturated rose family
-  // rather than vibrant crimson; #c6a6a2 sits near T80.
+  // Red — H=15 C=12 (dusty rose) — gothic uses a desaturated rose
+  // family rather than vibrant crimson; #c6a6a2 sits near T80.
   red: {
     hue: 15, chroma: 12,
     0: '#000000', 5: '#1c0d09', 10: '#26140f', 15: '#301b16', 20: '#3a231d',

@@ -25,7 +25,7 @@ describe('packageRegistry', () => {
     expect(names).toContain('@xds/theme-default');
     expect(names).toContain('@xds/theme-neutral');
     expect(names).toContain('@xds/theme-chocolate');
-    expect(names).toContain('@xds/theme-ink');
+    expect(names).toContain('@xds/theme-gothic');
     expect(names).toContain('@xds/theme-stone');
     expect(names).not.toContain('@xds/theme-brutalist');
     expect(names).not.toContain('@xds/lab');

@@ -1,16 +1,16 @@
 {
-  "name": "@xds/theme-ink",
+  "name": "@xds/theme-gothic",
   "version": "0.0.13",
-  "displayName": "Ink Theme",
+  "displayName": "Gothic Theme",
   "private": false,
-  "description": "Dark-only ink theme for XDS \u2014 deep blue-gray palette, dusty pastel categorical accents, Manufacturing Consent display + Fustat body, and Lucide icons",
+  "description": "Dark gothic theme for XDS \u2014 deep blue-gray palette with Manufacturing Consent headings, Fustat body, and Lucide icons",
   "author": "Meta Open Source",
   "license": "MIT",
   "homepage": "https://github.com/facebookexperimental/xds#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/facebookexperimental/xds.git",
-    "directory": "packages/themes/ink"
+    "directory": "packages/themes/gothic"
   },
   "bugs": {
     "url": "https://github.com/facebookexperimental/xds/issues"
@@ -32,9 +32,9 @@
       "require": "./dist/source.js"
     },
     "./built": {
-      "types": "./dist/ink.d.ts",
-      "import": "./dist/ink.js",
-      "require": "./dist/ink.js"
+      "types": "./dist/gothic.d.ts",
+      "import": "./dist/gothic.js",
+      "require": "./dist/gothic.js"
     },
     "./theme.css": {
       "types": "./theme.css.d.ts",
@@ -46,7 +46,7 @@
     "src"
   ],
   "scripts": {
-    "build": "xds theme build src/inkTheme.ts -o dist/theme.css && tsup && tsc --project tsconfig.build.json"
+    "build": "xds theme build src/gothicTheme.ts -o dist/theme.css && tsup && tsc --project tsconfig.build.json"
   },
   "dependencies": {
     "lucide-react": "^1.14.0"
