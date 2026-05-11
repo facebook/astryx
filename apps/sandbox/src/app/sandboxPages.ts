@@ -110,6 +110,12 @@ export const categories: SandboxCategory[] = [
     description: 'Theme palette previews and design token references.',
     pages: [
       {
+        name: 'Daily Palette',
+        href: '/pages/daily-palette/',
+        description:
+          'Daily theme — warm earthy cream tones, PT Serif headings, Figtree body, pill-shaped buttons',
+      },
+      {
         name: 'Stone Palette',
         href: '/pages/stone-palette/',
         description:
