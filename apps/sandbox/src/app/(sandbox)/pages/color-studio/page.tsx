@@ -665,7 +665,10 @@ export default function ColorStudioPage() {
                       key={t}
                       onClick={() => setToneSteps(prev => prev.filter(s => s !== t))}
                       style={{
-                        padding: '2px 6px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 3,
+                        padding: '2px 4px 2px 6px',
                         fontSize: 10,
                         fontFamily: MONO,
                         borderRadius: 4,
@@ -673,9 +676,10 @@ export default function ColorStudioPage() {
                         cursor: 'pointer',
                         color: 'var(--color-text-secondary)',
                       }}
-                      title="Click to remove"
+                      title={`Remove step ${t}`}
                     >
                       {t}
+                      <span style={{fontSize: 8, opacity: 0.4}}>✕</span>
                     </span>
                   ))}
                 </XDSHStack>
