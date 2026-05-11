@@ -60,6 +60,9 @@ const styles = stylex.create({
   container: {
     position: 'relative',
     width: '100%',
+    overflow: 'clip',
+    minHeight: 0,
+    flexShrink: 0,
   },
   child: {
     position: 'absolute',
