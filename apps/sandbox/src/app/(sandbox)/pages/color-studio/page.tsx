@@ -203,48 +203,63 @@ function PaletteEntry({
     [color.role, usedRoles],
   );
 
+  const oklch = useMemo(() => hexToOklch(color.hex), [color.hex]);
+  const effectiveChroma = color.chroma ?? oklch.C;
+
   return (
-    <XDSHStack gap={2} vAlign="center" style={{padding: '6px 0'}}>
-      <div style={S.swatch(color.hex)}>
-        <input
-          type="color"
-          value={color.hex}
-          onChange={e => onChange(color.id, {hex: e.target.value})}
-          style={S.colorInput}
-        />
-      </div>
-      <div style={{flex: 1, minWidth: 0}}>
-        <XDSTextInput
-          label="Hex"
+    <XDSVStack gap={1} style={{padding: '6px 0'}}>
+      <XDSHStack gap={2} vAlign="center">
+        <div style={S.swatch(color.hex)}>
+          <input
+            type="color"
+            value={color.hex}
+            onChange={e => onChange(color.id, {hex: e.target.value, chroma: undefined})}
+            style={S.colorInput}
+          />
+        </div>
+        <div style={{flex: 1, minWidth: 0}}>
+          <XDSTextInput
+            label="Hex"
+            isLabelHidden
+            value={color.hex}
+            onChange={v => {
+              const parsed = parseColorInput(v.trim());
+              if (parsed) onChange(color.id, {hex: parsed, chroma: undefined});
+            }}
+            size="sm"
+          />
+        </div>
+        <XDSSelector
+          label="Role"
           isLabelHidden
-          value={color.hex}
-          onChange={v => {
-            const parsed = parseColorInput(v.trim());
-            if (parsed) onChange(color.id, {hex: parsed});
-          }}
+          options={roleOptions}
+          value={color.role ?? ''}
+          onChange={v =>
+            onChange(color.id, {role: (v || undefined) as ThemeRole | undefined})
+          }
           size="sm"
         />
-      </div>
-      <XDSSelector
-        label="Role"
+        {canRemove && (
+          <XDSIconButton
+            label="Remove"
+            variant="ghost"
+            size="sm"
+            onClick={() => onRemove(color.id)}
+            icon={<span style={{fontSize: 14, lineHeight: 1}}>✕</span>}
+          />
+        )}
+      </XDSHStack>
+      <XDSSlider
+        label="Chroma"
         isLabelHidden
-        options={roleOptions}
-        value={color.role ?? ''}
-        onChange={v =>
-          onChange(color.id, {role: (v || undefined) as ThemeRole | undefined})
-        }
-        size="sm"
+        min={0}
+        max={40}
+        step={1}
+        value={Math.round(effectiveChroma * 100)}
+        onChange={v => onChange(color.id, {chroma: v / 100})}
+        formatValue={v => `C:${(v / 100).toFixed(2)}`}
       />
-      {canRemove && (
-        <XDSIconButton
-          label="Remove"
-          variant="ghost"
-          size="sm"
-          onClick={() => onRemove(color.id)}
-          icon={<span style={{fontSize: 14, lineHeight: 1}}>✕</span>}
-        />
-      )}
-    </XDSHStack>
+    </XDSVStack>
   );
 }
 
@@ -354,9 +369,12 @@ function TonalRamps({
           hue = assigned
             ? hexToOklch(assigned.hex).H
             : grayTone === 'warm' ? 60 : grayTone === 'cool' ? 260 : 0;
-          chroma = (assigned
+          chroma = (assigned?.chroma ?? (assigned
             ? Math.min(hexToOklch(assigned.hex).C, 0.02)
-            : grayTone === 'neutral' ? 0.003 : 0.012) * vibrancy;
+            : grayTone === 'neutral' ? 0.003 : 0.012)) * vibrancy;
+        } else if (assigned?.chroma != null) {
+          hue = hexToOklch(assigned.hex).H;
+          chroma = assigned.chroma * vibrancy;
         } else if (ch.role === 'accent') {
           const oklch = assigned ? hexToOklch(assigned.hex) : {C: ch.oklchChroma, H: ch.oklchHue};
           hue = oklch.H;

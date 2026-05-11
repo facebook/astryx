@@ -863,6 +863,7 @@ export interface PaletteColor {
   name: string;
   hex: string;
   role?: ThemeRole;
+  chroma?: number;
 }
 
 export const THEME_ROLES: {value: ThemeRole; label: string; group: string}[] = [
