@@ -79,7 +79,7 @@ const WHY_US = [
 const styles = stylex.create({
   page: {
     minHeight: '100dvh',
-    backgroundColor: colorVars['--color-background-body'],
+    backgroundColor: colorVars['--color-background-surface'],
   },
   imgFull: {
     width: '100%',

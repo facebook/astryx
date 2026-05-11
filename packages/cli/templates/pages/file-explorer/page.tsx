@@ -262,7 +262,7 @@ const FILESYSTEM: FileSystemItem[] = [
 const styles = stylex.create({
   page: {
     minHeight: '100dvh',
-    backgroundColor: colorVars['--color-background-body'],
+    backgroundColor: colorVars['--color-background-surface'],
   },
   fillHeight: {height: '100%'},
   scrollable: {overflowY: 'auto'},
