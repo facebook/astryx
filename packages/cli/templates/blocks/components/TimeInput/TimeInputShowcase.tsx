@@ -1,7 +1,16 @@
 'use client';
 
-import {XDSTimeInput} from '@xds/core/TimeInput';
+import {useState} from 'react';
+import {XDSTimeInput, type ISOTimeString} from '@xds/core/TimeInput';
 
 export default function TimeInputShowcase() {
-  return <XDSTimeInput label="Time" placeholder="Select a time" />;
+  const [time, setTime] = useState<ISOTimeString | undefined>(undefined);
+  return (
+    <XDSTimeInput
+      label="Time"
+      placeholder="Select a time"
+      value={time}
+      onChange={setTime}
+    />
+  );
 }

@@ -17,3 +17,4 @@ export type {
   XDSTimeInputStatus,
   XDSTimeInputStatusType,
 } from './XDSTimeInput';
+export type {ISOTimeString} from '../utils';
