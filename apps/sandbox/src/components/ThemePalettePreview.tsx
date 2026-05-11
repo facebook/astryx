@@ -200,6 +200,7 @@ const VAR_SURFACES = {
   body: 'var(--color-background-body)',
   surface: 'var(--color-background-surface)',
   card: 'var(--color-background-card)',
+  popover: 'var(--color-background-popover)',
   border: 'var(--color-border)',
   borderEmphasized: 'var(--color-border-emphasized)',
   textPrimary: 'var(--color-text-primary)',
@@ -674,6 +675,7 @@ function SurfacesSection({mode}: {mode: Mode}) {
     {label: 'surface', hex: VAR_SURFACES.surface},
     {label: 'body', hex: VAR_SURFACES.body},
     {label: 'card', hex: VAR_SURFACES.card},
+    {label: 'popover', hex: VAR_SURFACES.popover},
   ];
   return (
     <div style={S.section}>
