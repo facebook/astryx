@@ -31,6 +31,7 @@ import {
   DocumentIcon,
 } from '@heroicons/react/24/outline';
 import {FolderIcon} from '@heroicons/react/24/solid';
+import {colorVars} from '@xds/core/theme/tokens.stylex';
 
 interface FileSystemItem {
   id: string;
@@ -259,6 +260,10 @@ const FILESYSTEM: FileSystemItem[] = [
 ];
 
 const styles = stylex.create({
+  page: {
+    minHeight: '100dvh',
+    backgroundColor: colorVars['--color-background-body'],
+  },
   fillHeight: {height: '100%'},
   scrollable: {overflowY: 'auto'},
   fixedColumn: {flexShrink: 0, alignSelf: 'stretch'},
@@ -335,6 +340,7 @@ export default function FileExplorerPage() {
 
   return (
     <XDSLayout
+      xstyle={styles.page}
       height="fill"
       header={
         <XDSToolbar

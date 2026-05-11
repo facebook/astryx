@@ -18,6 +18,7 @@ import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSTextArea} from '@xds/core/TextArea';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSBanner} from '@xds/core/Banner';
+import {colorVars} from '@xds/core/theme/tokens.stylex';
 
 const WHY_US_IMAGES = [
   // illustration-horizontal-3 from xds_oss asset set
@@ -76,6 +77,10 @@ const WHY_US = [
 ];
 
 const styles = stylex.create({
+  page: {
+    minHeight: '100dvh',
+    backgroundColor: colorVars['--color-background-body'],
+  },
   imgFull: {
     width: '100%',
   },
@@ -115,7 +120,7 @@ export default function FormSimplePage() {
     );
 
   return (
-    <XDSCenter axis="horizontal">
+    <XDSCenter axis="horizontal" xstyle={styles.page}>
       <XDSVStack hAlign="center" width="100%">
         <XDSSection maxWidth={800} padding={6} paddingBlock={10} variant="section">
           <XDSVStack gap={6}>
