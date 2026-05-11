@@ -186,10 +186,12 @@ export interface ThemePalettePreviewProps {
   subtitle: string;
   /** Tonal color data for ramp display */
   tonalColors: TonalColor[];
-  /** Core palette swatches */
-  coreSwatches: CoreSwatch[];
+  /** Core palette swatches. When omitted, the Core Palette section is hidden. */
+  coreSwatches?: CoreSwatch[];
   /** Additional sections to render at the end of each mode column */
   extraSections?: React.ReactNode;
+  /** Additional sections to render before the headers (TextRampSection) in each mode column */
+  leadingExtras?: React.ReactNode;
   /** Hide the title, subtitle, and tonal section (useful when embedded in another layout) */
   componentPreviewOnly?: boolean;
 }
@@ -200,6 +202,7 @@ const VAR_SURFACES = {
   body: 'var(--color-background-body)',
   surface: 'var(--color-background-surface)',
   card: 'var(--color-background-card)',
+  popover: 'var(--color-background-popover)',
   border: 'var(--color-border)',
   borderEmphasized: 'var(--color-border-emphasized)',
   textPrimary: 'var(--color-text-primary)',
@@ -674,6 +677,7 @@ function SurfacesSection({mode}: {mode: Mode}) {
     {label: 'surface', hex: VAR_SURFACES.surface},
     {label: 'body', hex: VAR_SURFACES.body},
     {label: 'card', hex: VAR_SURFACES.card},
+    {label: 'popover', hex: VAR_SURFACES.popover},
   ];
   return (
     <div style={S.section}>
@@ -846,11 +850,13 @@ function ModeColumn({
   mode,
   coreSwatches,
   extraSections,
+  leadingExtras,
 }: {
   theme: XDSDefinedTheme;
   mode: Mode;
-  coreSwatches: CoreSwatch[];
+  coreSwatches?: CoreSwatch[];
   extraSections?: React.ReactNode;
+  leadingExtras?: React.ReactNode;
 }) {
   return (
     <XDSTheme theme={theme} mode={mode}>
@@ -859,7 +865,8 @@ function ModeColumn({
           <p style={S.modeLabel}>
             {mode === 'light' ? 'Light Mode' : 'Dark Mode'}
           </p>
-          <CoreSection swatches={coreSwatches} />
+          {coreSwatches && coreSwatches.length > 0 && <CoreSection swatches={coreSwatches} />}
+          {leadingExtras}
           <TextRampSection />
           <SemanticBadgeSection />
           <CategoricalBadgeSection />
@@ -889,6 +896,7 @@ export function ThemePalettePreview({
   tonalColors,
   coreSwatches,
   extraSections,
+  leadingExtras,
   componentPreviewOnly = false,
 }: ThemePalettePreviewProps) {
   if (componentPreviewOnly) {
@@ -899,12 +907,14 @@ export function ThemePalettePreview({
           mode="light"
           coreSwatches={coreSwatches}
           extraSections={extraSections}
+          leadingExtras={leadingExtras}
         />
         <ModeColumn
           theme={theme}
           mode="dark"
           coreSwatches={coreSwatches}
           extraSections={extraSections}
+          leadingExtras={leadingExtras}
         />
       </div>
     );
@@ -924,12 +934,14 @@ export function ThemePalettePreview({
                 mode="light"
                 coreSwatches={coreSwatches}
                 extraSections={extraSections}
+                leadingExtras={leadingExtras}
               />
               <ModeColumn
                 theme={theme}
                 mode="dark"
                 coreSwatches={coreSwatches}
                 extraSections={extraSections}
+                leadingExtras={leadingExtras}
               />
             </div>
           </div>
