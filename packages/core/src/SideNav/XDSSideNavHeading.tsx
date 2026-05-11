@@ -379,6 +379,7 @@ export function XDSSideNavHeading({
     hide: popover.hide,
     isOpen: popover.isOpen,
     isEnabled: !!menu,
+    showDelay: 0,
   });
 
   const setRef = useCallback(

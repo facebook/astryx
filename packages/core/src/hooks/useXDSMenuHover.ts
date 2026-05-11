@@ -126,9 +126,13 @@ export function useXDSMenuHover(
     }
     hoverModeRef.current = true;
     clearTimeouts();
-    showTimerRef.current = setTimeout(() => {
+    if (showDelay > 0) {
+      showTimerRef.current = setTimeout(() => {
+        show({skipAutoFocus: true});
+      }, showDelay);
+    } else {
       show({skipAutoFocus: true});
-    }, showDelay);
+    }
   }, [hasHover, clearTimeouts, show, showDelay]);
 
   // Hover: mouseleave only closes if in hover mode
