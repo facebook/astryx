@@ -25,7 +25,7 @@ import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSButton} from '@xds/core/Button';
-import {XDSTabList, XDSTab} from '@xds/core/TabList';
+import {XDSTabList, XDSTab, XDSTabMenu} from '@xds/core/TabList';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSLink} from '@xds/core/Link';
 import {XDSList, XDSListItem} from '@xds/core/List';
@@ -34,6 +34,7 @@ import {XDSProgressBar} from '@xds/core/ProgressBar';
 import {XDSCollapsible} from '@xds/core/Collapsible';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSThumbnail} from '@xds/core/Thumbnail';
+import {XDSOverflowList} from '@xds/core/OverflowList';
 import {
   HomeIcon,
   ClipboardDocumentListIcon,
@@ -279,39 +280,50 @@ function PageHeader({
                 </XDSHStack>
               </XDSLink>
               <XDSVStack gap={0}>
-                <XDSHeading level={1}>#1001</XDSHeading>
-                <XDSHStack gap={1} vAlign="center">
-                  <XDSText type="body" maxLines={1}>
-                    {PRODUCTS.length} ordered items
-                  </XDSText>
-                  <Bullet />
+                <XDSHeading level={1} maxLines={1}>#1001</XDSHeading>
+                <XDSOverflowList
+                  gap={1}
+                  minVisibleItems={2}
+                  overflowRenderer={overflowItems => (
+                    <XDSBadge variant="neutral" label={`+${overflowItems.length} more`} />
+                  )}>
                   <XDSHStack gap={1} vAlign="center">
+                    <XDSText type="body" maxLines={1}>
+                      {PRODUCTS.length} ordered items
+                    </XDSText>
+                  </XDSHStack>
+                  <XDSHStack gap={1} vAlign="center">
+                    <Bullet />
                     <XDSAvatar name="Jane Doe" size="xsmall" />
                     <XDSText type="body" maxLines={1}>
                       Jane Doe
                     </XDSText>
                   </XDSHStack>
-                  <Bullet />
-                  <XDSBadge variant="warning" label="Unfulfilled" />
-                  <Bullet />
                   <XDSHStack gap={1} vAlign="center">
+                    <Bullet />
+                    <XDSBadge variant="warning" label="Unfulfilled" />
+                  </XDSHStack>
+                  <XDSHStack gap={1} vAlign="center">
+                    <Bullet />
                     <XDSIcon icon={CalendarIcon} size="sm" color="secondary" />
                     <XDSText type="body" maxLines={1}>
                       02/23/2026
                     </XDSText>
                   </XDSHStack>
-                  <Bullet />
                   <XDSHStack gap={1} vAlign="center">
+                    <Bullet />
                     <XDSIcon icon={FlagIcon} size="sm" color="secondary" />
                     <XDSText type="body" maxLines={1}>
                       Needs attention
                     </XDSText>
                   </XDSHStack>
-                  <Bullet />
-                  <XDSLink href="#" color="secondary">
-                    See all
-                  </XDSLink>
-                </XDSHStack>
+                  <XDSHStack gap={1} vAlign="center">
+                    <Bullet />
+                    <XDSLink href="#" color="secondary">
+                      See all
+                    </XDSLink>
+                  </XDSHStack>
+                </XDSOverflowList>
               </XDSVStack>
             </XDSVStack>
           </XDSStackItem>
@@ -327,8 +339,13 @@ function PageHeader({
               <XDSTab value="details" label="Details" />
               <XDSTab value="invoices" label="Invoices" />
               <XDSTab value="timeline" label="Timeline" />
-              <XDSTab value="customer" label="Customer" />
-              <XDSTab value="analysis" label="Analysis" />
+              <XDSTabMenu
+                label="More"
+                options={[
+                  {value: 'customer', label: 'Customer'},
+                  {value: 'analysis', label: 'Analysis'},
+                ]}
+              />
             </XDSTabList>
           </XDSStackItem>
           <XDSButton
@@ -386,7 +403,7 @@ function ItemsCard() {
                 />
               }
               endContent={
-                <XDSText type="body" color="secondary">
+                <XDSText type="body" color="secondary" maxLines={1}>
                   {fmt(product.price)} {'×'} {product.qty}
                   {'      '}
                   {fmt(product.price * product.qty)}
@@ -623,11 +640,14 @@ function RightPanel() {
 export default function DetailPage2Template() {
   const [activeTab, setActiveTab] = useState('details');
   const isNarrow = useMediaQuery('(max-width: 1024px)');
-  const [isPanelOpen, setIsPanelOpen] = useState(true);
+  const [isPanelOpen, setIsPanelOpen] = useState<boolean | null>(null);
 
   useEffect(() => {
     setIsPanelOpen(!isNarrow);
   }, [isNarrow]);
+
+  // Default to panel hidden during SSR to avoid flash on narrow screens
+  const showPanel = isPanelOpen === null ? false : isPanelOpen;
 
   return (
     <XDSAppShell
@@ -642,7 +662,7 @@ export default function DetailPage2Template() {
           <PageHeader
             activeTab={activeTab}
             onTabChange={setActiveTab}
-            isPanelOpen={isPanelOpen}
+            isPanelOpen={showPanel}
             onTogglePanel={() => setIsPanelOpen(prev => !prev)}
           />
         }
@@ -655,7 +675,7 @@ export default function DetailPage2Template() {
             </XDSVStack>
           </XDSLayoutContent>
         }
-        end={isPanelOpen ? <RightPanel /> : undefined}
+        end={showPanel ? <RightPanel /> : undefined}
       />
     </XDSAppShell>
   );
