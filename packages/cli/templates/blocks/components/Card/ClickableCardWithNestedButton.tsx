@@ -7,7 +7,7 @@ import {XDSButton} from '@xds/core/Button';
 
 export default function ClickableCardWithNestedButton() {
   return (
-    <XDSClickableCard label="Product" href="/product/123" width={320}>
+    <XDSClickableCard label="Product" href="#" width={320}>
       <XDSStack direction="vertical" gap={3}>
         <XDSStack direction="vertical" gap={1}>
           <XDSHeading level={4}>Wireless Headphones</XDSHeading>

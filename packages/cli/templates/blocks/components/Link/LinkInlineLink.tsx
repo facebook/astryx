@@ -7,7 +7,7 @@ export default function LinkInlineLink() {
   return (
     <XDSText type="body">
       Read the{' '}
-      <XDSLink href="/docs">
+      <XDSLink href="#">
         documentation
       </XDSLink>{' '}
       for more information about using XDS components.

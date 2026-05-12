@@ -6,7 +6,7 @@ import {XDSText, XDSHeading} from '@xds/core/Text';
 
 export default function ClickableCardShowcase() {
   return (
-    <XDSClickableCard label="Settings" href="/settings" width={320}>
+    <XDSClickableCard label="Settings" href="#" width={320}>
       <XDSStack direction="vertical" gap={2}>
         <XDSHeading level={4}>Settings</XDSHeading>
         <XDSText type="body" color="secondary">
