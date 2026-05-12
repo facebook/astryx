@@ -258,22 +258,18 @@ export const dailyTheme = defineTheme({
     // Banner text uses semantic colors for each status
     banner: {
       'status:info': {
-        backgroundColor: 'light-dark(#cbd2ff, #002e69)',
         '--color-text-primary': 'light-dark(#1779FA, #79b8ff)',
         '--color-text-secondary': 'light-dark(#1779FA, #79b8ff)',
       },
       'status:success': {
-        backgroundColor: 'light-dark(#b8deb7, #00390f)',
         '--color-text-primary': 'light-dark(#009936, #34c265)',
         '--color-text-secondary': 'light-dark(#009936, #34c265)',
       },
       'status:error': {
-        backgroundColor: 'light-dark(#ffc8b9, #630f00)',
         '--color-text-primary': 'light-dark(#FD0000, #ff5c5c)',
         '--color-text-secondary': 'light-dark(#FD0000, #ff5c5c)',
       },
       'status:warning': {
-        backgroundColor: 'light-dark(#e8d2a5, #3d2f00)',
         '--color-text-primary': 'light-dark(#9a7800, #ffd94d)',
         '--color-text-secondary': 'light-dark(#9a7800, #ffd94d)',
       },
