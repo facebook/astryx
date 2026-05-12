@@ -101,8 +101,8 @@ export const dailyTheme = defineTheme({
     '--color-success-muted': ['#00993620', '#34c26520'],
     '--color-error': ['#FD0000', '#ff5c5c'],
     '--color-error-muted': ['#FD000020', '#ff5c5c20'],
-    '--color-warning': ['#FFB600', '#ffc940'],
-    '--color-warning-muted': ['#FFB60020', '#ffc94020'],
+    '--color-warning': ['#F8C722', '#ffd94d'],
+    '--color-warning-muted': ['#F8C72220', '#ffd94d20'],
 
     // Border
     '--color-border': ['#E6E3DE', '#F8F4ED1A'],
@@ -114,16 +114,16 @@ export const dailyTheme = defineTheme({
     '--color-tint-hover': ['black', 'white'],
 
     // Categorical — Blue
-    '--color-background-blue': ['#dfe0ff', '#13234f'],
-    '--color-border-blue': ['#2E3968', '#dfe0ff'],
-    '--color-icon-blue': ['#2E3968', '#dfe0ff'],
-    '--color-text-blue': ['#2d3867', '#bdc2fc'],
+    '--color-background-blue': ['#BBDBFE', '#002840'],
+    '--color-border-blue': ['#192973', '#BBDBFE'],
+    '--color-icon-blue': ['#192973', '#BBDBFE'],
+    '--color-text-blue': ['#192973', '#aacaec'],
 
     // Categorical — Cyan
-    '--color-background-cyan': ['#9af0fd', '#002b30'],
-    '--color-border-cyan': ['#3a95a1', '#9af0fd'],
-    '--color-icon-cyan': ['#3a95a1', '#9af0fd'],
-    '--color-text-cyan': ['#00424a', '#7dd4e0'],
+    '--color-background-cyan': ['#ACE3F0', '#002a32'],
+    '--color-border-cyan': ['#003C4F', '#ACE3F0'],
+    '--color-icon-cyan': ['#003C4F', '#ACE3F0'],
+    '--color-text-cyan': ['#003C4F', '#99cfdc'],
 
     // Categorical — Gray
     '--color-background-gray': ['#85817A33', '#5c595533'],
@@ -132,46 +132,46 @@ export const dailyTheme = defineTheme({
     '--color-text-gray': ['#292724', '#F8F4ED'],
 
     // Categorical — Green
-    '--color-background-green': ['#cdedaa', '#182b00'],
-    '--color-border-green': ['#4a672d', '#cdedaa'],
-    '--color-icon-green': ['#4a672d', '#cdedaa'],
-    '--color-text-green': ['#26430a', '#b2d08f'],
+    '--color-background-green': ['#C0E3C0', '#0e2c12'],
+    '--color-border-green': ['#006410', '#C0E3C0'],
+    '--color-icon-green': ['#006410', '#C0E3C0'],
+    '--color-text-green': ['#006410', '#adcfad'],
 
     // Categorical — Orange
-    '--color-background-orange': ['#ffdcc5', '#3d1e00'],
-    '--color-border-orange': ['#bf661d', '#ffdcc5'],
-    '--color-icon-orange': ['#bf661d', '#ffdcc5'],
-    '--color-text-orange': ['#612d00', '#ffb785'],
+    '--color-background-orange': ['#F8CEB2', '#3a1f07'],
+    '--color-border-orange': ['#590801', '#F8CEB2'],
+    '--color-icon-orange': ['#590801', '#F8CEB2'],
+    '--color-text-orange': ['#590801', '#e8bea3'],
 
     // Categorical — Pink
-    '--color-background-pink': ['#ffd7ef', '#4e003a'],
-    '--color-border-pink': ['#bc4997', '#ffd7ef'],
-    '--color-icon-pink': ['#bc4997', '#ffd7ef'],
-    '--color-text-pink': ['#740058', '#ffade0'],
+    '--color-background-pink': ['#F9C8DA', '#3e1929'],
+    '--color-border-pink': ['#8E2149', '#F9C8DA'],
+    '--color-icon-pink': ['#8E2149', '#F9C8DA'],
+    '--color-text-pink': ['#8E2149', '#eab9cb'],
 
     // Categorical — Purple
-    '--color-background-purple': ['#f2daff', '#3b0067'],
-    '--color-border-purple': ['#8B49BC', '#f2daff'],
-    '--color-icon-purple': ['#8B49BC', '#f2daff'],
-    '--color-text-purple': ['#571788', '#e3b5ff'],
+    '--color-background-purple': ['#EACBF2', '#341d3b'],
+    '--color-border-purple': ['#6A218E', '#EACBF2'],
+    '--color-icon-purple': ['#6A218E', '#EACBF2'],
+    '--color-text-purple': ['#6A218E', '#dbbce3'],
 
     // Categorical — Red
-    '--color-background-red': ['#ffdbcd', '#461700'],
-    '--color-border-red': ['#BE491D', '#ffdbcd'],
-    '--color-icon-red': ['#BE491D', '#ffdbcd'],
-    '--color-text-red': ['#6f2000', '#ffb599'],
+    '--color-background-red': ['#FDC9C7', '#3f1a1b'],
+    '--color-border-red': ['#A1211D', '#FDC9C7'],
+    '--color-icon-red': ['#A1211D', '#FDC9C7'],
+    '--color-text-red': ['#A1211D', '#edbab8'],
 
     // Categorical — Teal
-    '--color-background-teal': ['#a8f2d2', '#002c1e'],
-    '--color-border-teal': ['#367d62', '#a8f2d2'],
-    '--color-icon-teal': ['#367d62', '#a8f2d2'],
-    '--color-text-teal': ['#004530', '#8dd5b6'],
+    '--color-background-teal': ['#ADE6D9', '#002c25'],
+    '--color-border-teal': ['#0D4C3E', '#ADE6D9'],
+    '--color-icon-teal': ['#0D4C3E', '#ADE6D9'],
+    '--color-text-teal': ['#0D4C3E', '#99d2c5'],
 
     // Categorical — Yellow
-    '--color-background-yellow': ['#ffe174', '#2d2500'],
-    '--color-border-yellow': ['#fddf72', '#ffe174'],
-    '--color-icon-yellow': ['#fddf72', '#ffe174'],
-    '--color-text-yellow': ['#463b00', '#e1c559'],
+    '--color-background-yellow': ['#FDE29A', '#2e2500'],
+    '--color-border-yellow': ['#634F19', '#FDE29A'],
+    '--color-icon-yellow': ['#634F19', '#FDE29A'],
+    '--color-text-yellow': ['#634F19', '#dec47e'],
 
     // =========================================================================
     // Spacing
@@ -247,6 +247,21 @@ export const dailyTheme = defineTheme({
       'variant:secondary': {
         backgroundColor: '#E6E3DE',
         color: '#292724',
+      },
+    },
+
+    // Info badge uses blue instead of the theme accent
+    badge: {
+      'variant:info': {
+        backgroundColor: '#1779FA',
+        color: '#FFFFFF',
+      },
+    },
+
+    // Info banner uses blue tint instead of accent-muted
+    banner: {
+      'status:info': {
+        backgroundColor: '#1779FA20',
       },
     },
 

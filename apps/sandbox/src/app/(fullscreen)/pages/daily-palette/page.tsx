@@ -8,17 +8,18 @@ import type {TonalColor} from '@/components/ThemePalettePreview';
 
 const TONAL_COLORS: TonalColor[] = [
   {name: 'Daily Neutral', sourceHex: '#E6E3DE', note: 'warm cream-gray'},
-  {name: 'Blue', sourceHex: '#2E3968', note: 'deep navy'},
-  {name: 'Cyan', sourceHex: '#3a95a1', note: 'ocean teal'},
-  {name: 'Green', sourceHex: '#4a672d', note: 'olive'},
-  {name: 'Teal', sourceHex: '#367d62', note: 'forest'},
-  {name: 'Yellow', sourceHex: '#fddf72', note: 'warm gold'},
-  {name: 'Orange', sourceHex: '#bf661d', note: 'warm amber'},
-  {name: 'Red', sourceHex: '#BE491D', note: 'terracotta'},
-  {name: 'Pink', sourceHex: '#bc4997', note: 'magenta rose'},
-  {name: 'Purple', sourceHex: '#8B49BC', note: 'violet'},
+  {name: 'Blue', sourceHex: '#5a7a99', note: 'T90: #BBDBFE · T25: #192973'},
+  {name: 'Cyan', sourceHex: '#497f8b', note: 'T90: #ACE3F0 · T25: #003C4F'},
+  {name: 'Green', sourceHex: '#5f7f60', note: 'T90: #C0E3C0 · T25: #006410'},
+  {name: 'Teal', sourceHex: '#4b8176', note: 'T90: #ADE6D9 · T25: #0D4C3E'},
+  {name: 'Yellow', sourceHex: '#8a7533', note: 'T90: #FDE29A · T25: #634F19'},
+  {name: 'Orange', sourceHex: '#947056', note: 'T90: #F8CEB2 · T25: #590801'},
+  {name: 'Red', sourceHex: '#996b6a', note: 'T90: #FDC9C7 · T25: #A1211D'},
+  {name: 'Pink', sourceHex: '#966b7b', note: 'T90: #F9C8DA · T25: #8E2149'},
+  {name: 'Purple', sourceHex: '#896d91', note: 'T90: #EACBF2 · T25: #6A218E'},
+  {name: 'Info', sourceHex: '#1779FA', semantic: 'Info'},
   {name: 'Error', sourceHex: '#FD0000', semantic: 'Error'},
-  {name: 'Warning', sourceHex: '#FFB600', semantic: 'Warning'},
+  {name: 'Warning', sourceHex: '#F8C722', semantic: 'Warning'},
   {name: 'Success', sourceHex: '#009936', semantic: 'Success'},
 ];
 
