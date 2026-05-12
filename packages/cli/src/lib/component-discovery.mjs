@@ -103,10 +103,16 @@ export function discoverComponents(coreDir) {
       if (!fs.existsSync(compDoc)) {
         compDoc = path.join(dirPath, `XDS${componentName}.doc.mjs`);
       }
-      if (fs.existsSync(compDoc)) {
+      const hasComponentDoc = fs.existsSync(compDoc);
+      if (hasComponentDoc) {
         const compMeta = readDocMeta(compDoc);
         if (compMeta.group) compGroup = compMeta.group;
       }
+
+      // Skip components without any .doc.mjs file (directory-level or
+      // component-level). They can't be documented, so surfacing them in
+      // the component list leads to broken docs-site links.
+      if (!fs.existsSync(docFile) && !hasComponentDoc) continue;
 
       if (!componentGroups.has(componentName)) {
         componentGroups.set(componentName, compGroup);

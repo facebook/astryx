@@ -43,6 +43,10 @@ describe('discoverComponents', () => {
     const avatarDir = path.join(srcDir, 'Avatar');
     fs.mkdirSync(avatarDir, {recursive: true});
     fs.writeFileSync(path.join(avatarDir, 'XDSAvatar.tsx'), '');
+    fs.writeFileSync(
+      path.join(avatarDir, 'Avatar.doc.mjs'),
+      "export const docs = {name: 'Avatar'};",
+    );
 
     const result = discoverComponents(tmpDir);
 
@@ -59,11 +63,19 @@ describe('discoverComponents', () => {
     const zebraDir = path.join(srcDir, 'Zebra');
     fs.mkdirSync(zebraDir, {recursive: true});
     fs.writeFileSync(path.join(zebraDir, 'XDSZebra.tsx'), '');
+    fs.writeFileSync(
+      path.join(zebraDir, 'Zebra.doc.mjs'),
+      "export const docs = {name: 'Zebra'};",
+    );
 
     // Alpha (ungrouped)
     const alphaDir = path.join(srcDir, 'Alpha');
     fs.mkdirSync(alphaDir, {recursive: true});
     fs.writeFileSync(path.join(alphaDir, 'XDSAlpha.tsx'), '');
+    fs.writeFileSync(
+      path.join(alphaDir, 'Alpha.doc.mjs'),
+      "export const docs = {name: 'Alpha'};",
+    );
 
     // Middle in group 'Inputs'
     const middleDir = path.join(srcDir, 'Middle');
@@ -83,19 +95,23 @@ describe('discoverComponents', () => {
     fs.mkdirSync(buttonDir, {recursive: true});
     fs.writeFileSync(path.join(buttonDir, 'XDSButton.tsx'), '');
     fs.writeFileSync(path.join(buttonDir, 'XDSButton.test.tsx'), '');
+    fs.writeFileSync(
+      path.join(buttonDir, 'Button.doc.mjs'),
+      "export const docs = {name: 'Button'};",
+    );
 
     const result = discoverComponents(tmpDir);
     expect(result).toEqual({Button: ['Button']});
   });
 
-  it('ungrouped components without .doc.mjs appear as standalone entries', () => {
+  it('skips components without a .doc.mjs file', () => {
     const srcDir = path.join(tmpDir, 'src');
     const customDir = path.join(srcDir, 'CustomWidget');
     fs.mkdirSync(customDir, {recursive: true});
     fs.writeFileSync(path.join(customDir, 'XDSCustomWidget.tsx'), '');
 
     const result = discoverComponents(tmpDir);
-    expect(result).toEqual({CustomWidget: ['CustomWidget']});
+    expect(result).toEqual({});
   });
 
   it('skips hooks/utils directories', () => {
