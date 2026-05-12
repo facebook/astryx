@@ -635,12 +635,12 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // Iframe src includes current theme/mode so the embedded page renders correctly
-  // on initial load. We key the iframe on pathname so it only reloads on navigation.
+  // on initial load. Only recomputes when pathname changes — theme/mode changes
+  // are synced to the iframe via postMessage to avoid triggering a reload.
   const iframeSrc = useMemo(
     () =>
       `${basePath}${pathname}?embed=1&theme=${themeName}&mode=${mode}`,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [pathname],
+    [pathname], // intentionally excludes themeName/mode — live updates use postMessage
   );
 
   // Broadcast theme/mode changes to the embedded iframe via postMessage
