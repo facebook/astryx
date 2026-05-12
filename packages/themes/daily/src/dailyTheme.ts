@@ -71,7 +71,7 @@ export const dailyTheme = defineTheme({
     '--color-overlay': ['#29272480', '#292724CC'],
     '--color-overlay-hover': ['#2927240D', '#F8F4ED0D'],
     '--color-overlay-pressed': ['#2927241A', '#F8F4ED1A'],
-    '--color-background-muted': ['#F8F4ED', '#292724'],
+    '--color-background-muted': ['#E6E3DE', '#292724'],
 
     // Text
     '--color-text-primary': ['#292724', '#F8F4ED'],
