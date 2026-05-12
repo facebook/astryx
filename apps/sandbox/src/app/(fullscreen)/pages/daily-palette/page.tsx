@@ -1,5 +1,7 @@
 'use client';
 
+import {XDSVStack} from '@xds/core/Layout';
+import {XDSText} from '@xds/core/Text';
 import {dailyTheme} from '@xds/theme-daily/built';
 import {ThemePalettePreview} from '@/components/ThemePalettePreview';
 import type {TonalColor} from '@/components/ThemePalettePreview';
@@ -25,14 +27,35 @@ const CORE = [
   {hex: '#FFFFFF', name: 'White'},
 ];
 
+const sectionTitle: React.CSSProperties = {
+  fontSize: 13,
+  fontWeight: 600,
+  margin: 0,
+  marginBottom: 12,
+};
+
+function DisplayTextSection() {
+  return (
+    <div>
+      <h3 style={sectionTitle}>Display Text (PT Serif Italic)</h3>
+      <XDSVStack gap={2}>
+        <XDSText type="display-1">Display 1</XDSText>
+        <XDSText type="display-2">Display 2</XDSText>
+        <XDSText type="display-3">Display 3</XDSText>
+      </XDSVStack>
+    </div>
+  );
+}
+
 export default function DailyPalettePage() {
   return (
     <ThemePalettePreview
       theme={dailyTheme}
       title="Daily Theme Palette"
-      subtitle="A warm, productivity-focused theme with earthy cream tones. PT Serif headings, Figtree body, pill-shaped buttons."
+      subtitle="A warm, productivity-focused theme with earthy cream tones. PT Serif italic for display, Figtree for headings and body, pill-shaped buttons."
       tonalColors={TONAL_COLORS}
       coreSwatches={CORE}
+      leadingExtras={<DisplayTextSection />}
     />
   );
 }
