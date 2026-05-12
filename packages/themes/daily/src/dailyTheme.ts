@@ -76,7 +76,7 @@ export const dailyTheme = defineTheme({
     // Text
     '--color-text-primary': ['#292724', '#F8F4ED'],
     '--color-text-secondary': ['#85817A', '#a19d96'],
-    '--color-text-disabled': ['#E6E3DE', '#5c5955'],
+    '--color-text-disabled': ['#c9c6c1', '#5c5955'],
     '--color-text-accent': ['#292724', '#F8F4ED'],
     '--color-on-dark': '#FFFFFF',
     '--color-on-light': '#292724',
@@ -89,7 +89,7 @@ export const dailyTheme = defineTheme({
     '--color-icon-accent': ['#292724', '#F8F4ED'],
     '--color-icon-primary': ['#292724', '#F8F4ED'],
     '--color-icon-secondary': ['#85817A', '#a19d96'],
-    '--color-icon-disabled': ['#E6E3DE', '#5c5955'],
+    '--color-icon-disabled': ['#c9c6c1', '#5c5955'],
 
     // Surface variants
     '--color-background-card': ['#FFFFFF', '#1e1d1b'],
