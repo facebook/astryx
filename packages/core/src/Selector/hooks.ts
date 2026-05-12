@@ -131,6 +131,7 @@ interface UseComboboxOptions {
   value?: string;
   isDisabled?: boolean;
   isOpen: boolean;
+  hasSearch?: boolean;
   onOpen: () => void;
   onClose: () => void;
   onSelect?: (value: string) => void;
@@ -155,6 +156,7 @@ export function useCombobox({
   value,
   isDisabled = false,
   isOpen,
+  hasSearch = false,
   onOpen,
   onClose,
   onSelect,
@@ -201,10 +203,12 @@ export function useCombobox({
       closeAndReset();
     } else {
       onOpen();
-      const selectedIndex = findSelectedIndex();
-      setHighlightedIndex(selectedIndex >= 0 ? selectedIndex : 0);
+      if (!hasSearch) {
+        const selectedIndex = findSelectedIndex();
+        setHighlightedIndex(selectedIndex >= 0 ? selectedIndex : 0);
+      }
     }
-  }, [isDisabled, isOpen, onOpen, closeAndReset, findSelectedIndex]);
+  }, [isDisabled, isOpen, onOpen, closeAndReset, findSelectedIndex, hasSearch]);
 
   const onItemMouseEnter = useCallback(
     (item: XDSSelectorOptionData, index: number) => {
@@ -251,6 +255,9 @@ export function useCombobox({
 
         case 'Enter':
         case ' ':
+          if (e.key === ' ' && hasSearch) {
+            break;
+          }
           e.preventDefault();
           if (isOpen && highlightedIndex >= 0) {
             const item = selectableItems[highlightedIndex];
@@ -259,14 +266,22 @@ export function useCombobox({
             }
           } else if (!isOpen) {
             onOpen();
-            const selectedIndex = findSelectedIndex();
-            setHighlightedIndex(selectedIndex >= 0 ? selectedIndex : 0);
+            if (!hasSearch) {
+              const selectedIndex = findSelectedIndex();
+              setHighlightedIndex(selectedIndex >= 0 ? selectedIndex : 0);
+            }
           }
           break;
 
         case 'Escape':
           if (isOpen) {
             e.preventDefault();
+            closeAndReset();
+          }
+          break;
+
+        case 'Tab':
+          if (isOpen) {
             closeAndReset();
           }
           break;
@@ -286,7 +301,7 @@ export function useCombobox({
           break;
 
         default:
-          if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+          if (!hasSearch && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
             const newTypeahead = typeahead + e.key.toLowerCase();
             setTypeahead(newTypeahead);
 
@@ -323,6 +338,7 @@ export function useCombobox({
       findSelectedIndex,
       getEnabledIndices,
       typeahead,
+      hasSearch,
     ],
   );
 

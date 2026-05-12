@@ -7,10 +7,37 @@
  * SYNC: When XDSSelector.tsx API changes, update these tests.
  */
 
-import {describe, it, expect, vi} from 'vitest';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {XDSSelector} from './XDSSelector';
+
+// Mock showPopover and hidePopover methods since they're not implemented in jsdom
+beforeEach(() => {
+  HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
+    this.setAttribute('popover-open', '');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'open'});
+    this.dispatchEvent(event);
+  });
+  HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
+    this.removeAttribute('popover-open');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'closed'});
+    this.dispatchEvent(event);
+  });
+  const originalMatches = HTMLElement.prototype.matches;
+  HTMLElement.prototype.matches = function (selector: string) {
+    if (selector === ':popover-open') {
+      return this.hasAttribute('popover-open');
+    }
+    return originalMatches.call(this, selector);
+  };
+});
+
+// Helper: jsdom popover content is in the DOM but may not be
+// "visible" in the accessibility tree. Use hidden: true to find it.
+const h = {hidden: true} as const;
 
 const OPTIONS = ['Apple', 'Banana', 'Cherry'];
 
@@ -154,6 +181,108 @@ describe('XDSSelector', () => {
         />,
       );
       expect(screen.getByRole('combobox')).toHaveTextContent('Yellow Banana');
+    });
+  });
+
+  describe('hasSearch', () => {
+    it('renders search input when hasSearch is true', async () => {
+      const user = userEvent.setup();
+      render(
+        <XDSSelector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('combobox'));
+      expect(screen.getByRole('searchbox', h)).toBeInTheDocument();
+    });
+
+    it('does not render search input when hasSearch is false', async () => {
+      const user = userEvent.setup();
+      render(
+        <XDSSelector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+        />,
+      );
+      await user.click(screen.getByRole('combobox'));
+      expect(screen.queryByRole('searchbox', h)).not.toBeInTheDocument();
+    });
+
+    it('filters options by search query', async () => {
+      const user = userEvent.setup();
+      render(
+        <XDSSelector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('combobox'));
+      await user.type(screen.getByRole('searchbox', h), 'ban');
+      const options = screen.getAllByRole('option', h);
+      expect(options).toHaveLength(1);
+      expect(options[0]).toHaveTextContent('Banana');
+    });
+
+    it('shows empty state when no options match', async () => {
+      const user = userEvent.setup();
+      render(
+        <XDSSelector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('combobox'));
+      await user.type(screen.getByRole('searchbox', h), 'xyz');
+      expect(screen.queryAllByRole('option', h)).toHaveLength(0);
+      expect(screen.getByText('No results found')).toBeInTheDocument();
+    });
+
+    it('calls onChange when selecting a filtered option', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <XDSSelector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={onChange}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('combobox'));
+      await user.type(screen.getByRole('searchbox', h), 'ban');
+      await user.click(screen.getByRole('option', {name: /Banana/, ...h}));
+      expect(onChange).toHaveBeenCalledWith('Banana');
+    });
+
+    it('uses custom search placeholder', async () => {
+      const user = userEvent.setup();
+      render(
+        <XDSSelector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+          searchPlaceholder="Find a fruit..."
+        />,
+      );
+      await user.click(screen.getByRole('combobox'));
+      expect(
+        screen.getByPlaceholderText('Find a fruit...'),
+      ).toBeInTheDocument();
     });
   });
 });

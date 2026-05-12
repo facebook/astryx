@@ -19,6 +19,7 @@ import React, {
   useMemo,
   useOptimistic,
   useRef,
+  useState,
   useTransition,
   type ReactNode,
 } from 'react';
@@ -203,6 +204,47 @@ const styles = stylex.create({
   // Popover container (for anchor positioning)
   popover: {
     minWidth: 'anchor-size(width)',
+  },
+  popoverWithSearch: {
+    minWidth: 'anchor-size(width)',
+    marginBlockStart: spacingVars['--spacing-1'],
+  },
+
+  // Search input
+  searchWrapper: {
+    paddingInline: spacingVars['--spacing-2'],
+    paddingBlock: spacingVars['--spacing-1'],
+  },
+  searchInput: {
+    boxSizing: 'border-box',
+    width: '100%',
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-2'],
+    borderWidth: borderVars['--border-width'],
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-border-emphasized'],
+    borderRadius: radiusVars['--radius-element'],
+    backgroundColor: colorVars['--color-background-surface'],
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: {
+      default: typeScaleVars['--text-label-size'],
+      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-label-size']})`,
+    },
+    color: colorVars['--color-text-primary'],
+    outline: {
+      default: 'none',
+      ':focus': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: '0',
+  },
+
+  // Empty state
+  emptyState: {
+    padding: spacingVars['--spacing-3'],
+    textAlign: 'center',
+    color: colorVars['--color-text-secondary'],
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-label-size'],
   },
 
   // Section divider with label
@@ -400,6 +442,18 @@ interface XDSSelectorPropsBase<
   children?: (option: XDSSelectorOptionData) => ReactNode;
 
   /**
+   * Whether to show a search input for filtering options.
+   * @default false
+   */
+  hasSearch?: boolean;
+
+  /**
+   * Placeholder text for the search input.
+   * @default 'Search...'
+   */
+  searchPlaceholder?: string;
+
+  /**
    * Whether the dropdown starts open on mount.
    * Useful for showcases and previews.
    * @default false
@@ -490,6 +544,8 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
     status,
     labelTooltip,
     children,
+    hasSearch = false,
+    searchPlaceholder = 'Search...',
     isDefaultOpen = false,
     'data-testid': testId,
     xstyle,
@@ -507,7 +563,11 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
   const listboxId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
+  const searchId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(normalizedValue);
@@ -528,6 +588,15 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
     [options],
   );
 
+  // Filter items by search query
+  const filteredItems = useMemo(() => {
+    if (!searchQuery) return selectableItems;
+    const query = searchQuery.toLowerCase();
+    return selectableItems.filter(item =>
+      (item.label ?? item.value).toLowerCase().includes(query),
+    );
+  }, [selectableItems, searchQuery]);
+
   // Find selected item and its index for positioning
   const selectedItemIndex = useMemo(() => {
     return selectableItems.findIndex(item => item.value === optimisticValue);
@@ -544,6 +613,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
 
   // Layer for dropdown positioning
   const handleLayerHide = useCallback(() => {
+    setSearchQuery('');
     triggerRef.current?.focus();
   }, []);
 
@@ -562,13 +632,18 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
   }, []);
 
   // Calculate offset to position selected item over trigger
-  const {offset: selectedItemOffset, isPositioned} = useSelectedItemOffset({
-    isOpen: popover.isOpen,
-    selectedItemIndex,
-    listboxId,
-    listboxRef,
-    triggerRef,
-  });
+  const {offset: rawOffset, isPositioned: rawIsPositioned} =
+    useSelectedItemOffset({
+      isOpen: popover.isOpen,
+      selectedItemIndex,
+      listboxId,
+      listboxRef,
+      triggerRef,
+    });
+
+  // Disable macOS overlay positioning when search is active
+  const selectedItemOffset = hasSearch ? 0 : rawOffset;
+  const isPositioned = hasSearch ? true : rawIsPositioned;
 
   // Selector behavior (keyboard nav, typeahead, selection)
   const {
@@ -580,11 +655,19 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
     onItemSelect,
     onItemMouseEnter,
   } = useCombobox({
-    selectableItems,
+    selectableItems: filteredItems,
     value: normalizedValue,
     isDisabled,
     isOpen: popover.isOpen,
-    onOpen: popover.show,
+    hasSearch,
+    onOpen: useCallback(() => {
+      popover.show();
+      if (hasSearch) {
+        requestAnimationFrame(() => {
+          searchRef.current?.focus();
+        });
+      }
+    }, [popover, hasSearch]),
     onClose: popover.hide,
     onSelect: useCallback(
       (newValue: string) => {
@@ -617,6 +700,44 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
     },
     [onChange, changeAction, startTransition, setOptimisticValue],
   );
+
+  // Render search input
+  const renderSearch = useCallback(() => {
+    if (!hasSearch) return null;
+    return (
+      <div {...stylex.props(styles.searchWrapper)}>
+        <input
+          ref={searchRef}
+          id={searchId}
+          role="searchbox"
+          aria-controls={listboxId}
+          aria-label="Search options"
+          type="text"
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          onKeyDown={e => {
+            if (
+              e.key === 'ArrowDown' ||
+              e.key === 'ArrowUp' ||
+              e.key === 'Escape' ||
+              e.key === 'Tab'
+            ) {
+              onKeyDown(e);
+            }
+          }}
+          placeholder={searchPlaceholder}
+          {...stylex.props(styles.searchInput)}
+        />
+      </div>
+    );
+  }, [
+    hasSearch,
+    searchId,
+    listboxId,
+    searchQuery,
+    searchPlaceholder,
+    onKeyDown,
+  ]);
 
   // Render an individual item
   const renderItem = useCallback(
@@ -660,6 +781,18 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
 
   // Render all options (handling sections/dividers)
   const renderOptions = useCallback(() => {
+    // When search is active, render filtered items flat (no sections/dividers)
+    if (hasSearch && searchQuery) {
+      if (filteredItems.length === 0) {
+        return [
+          <div key="empty" {...stylex.props(styles.emptyState)}>
+            No results found
+          </div>,
+        ];
+      }
+      return filteredItems.map((item, index) => renderItem(item, index));
+    }
+
     let flatIndex = 0;
     const elements: ReactNode[] = [];
 
@@ -676,7 +809,6 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
           sectionItems.push(renderItem(normalizeOption(opt), flatIndex));
           flatIndex++;
         }
-        // Render divider with label before the group
         if (option.title) {
           elements.push(
             <XDSDivider
@@ -698,7 +830,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
     }
 
     return elements;
-  }, [options, renderItem, listboxId]);
+  }, [options, renderItem, listboxId, hasSearch, searchQuery, filteredItems]);
 
   return (
     <XDSField
@@ -796,22 +928,37 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
       </div>
 
       {popover.render(
-        <div
-          ref={listboxRef}
-          id={listboxId}
-          role="listbox"
-          aria-labelledby={triggerId}
-          {...stylex.props(
-            styles.dropdown,
-            !isPositioned && styles.dropdownHidden,
-            styles.dropdownOffset(-selectedItemOffset),
-          )}>
-          {renderOptions()}
-        </div>,
+        hasSearch ? (
+          <div {...stylex.props(styles.dropdown)}>
+            {renderSearch()}
+            <div
+              ref={listboxRef}
+              id={listboxId}
+              role="listbox"
+              aria-labelledby={triggerId}>
+              {renderOptions()}
+            </div>
+          </div>
+        ) : (
+          <div
+            ref={listboxRef}
+            id={listboxId}
+            role="listbox"
+            aria-labelledby={triggerId}
+            {...stylex.props(
+              styles.dropdown,
+              !isPositioned && styles.dropdownHidden,
+              styles.dropdownOffset(-selectedItemOffset),
+            )}>
+            {renderOptions()}
+          </div>
+        ),
         {
           placement: 'below',
           alignment: 'start',
-          xstyle: [styles.popover, layerAnimations.below],
+          xstyle: hasSearch
+            ? styles.popoverWithSearch
+            : [styles.popover, layerAnimations.below],
         },
       )}
     </XDSField>

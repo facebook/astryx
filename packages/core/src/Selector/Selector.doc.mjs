@@ -46,6 +46,18 @@ export const docs = {
           default: 'false',
         },
         {
+          name: 'hasSearch',
+          type: 'boolean',
+          description: 'Whether to show a search input for filtering options.',
+          default: 'false',
+        },
+        {
+          name: 'searchPlaceholder',
+          type: 'string',
+          description: 'Placeholder text for the search input.',
+          default: "'Search...'",
+        },
+        {
           name: 'placeholder',
           type: 'string',
           description: 'Placeholder text shown when no value is selected.',
@@ -192,6 +204,18 @@ export const docsZh = {
           default: 'false',
         },
         {
+          name: 'hasSearch',
+          type: 'boolean',
+          description: '是否显示用于过滤选项的搜索输入。',
+          default: 'false',
+        },
+        {
+          name: 'searchPlaceholder',
+          type: 'string',
+          description: '搜索输入的占位文本。',
+          default: "'Search...'",
+        },
+        {
           name: 'placeholder',
           type: 'string',
           description: '未选择值时显示的占位文本。',
@@ -328,6 +352,8 @@ export const docsDense = {
         value: 'Currently selected value.',
         onChange: 'Callback fired when selection changes.',
         hasClear: 'Shows clear button when value selected. onChange also accepts null on clear.',
+        hasSearch: 'Shows search input for filtering options.',
+        searchPlaceholder: 'Placeholder text for search input.',
         placeholder: 'Placeholder text when no value selected.',
         size: 'Size variant for selector.',
         isDisabled: 'Disables selector.',
