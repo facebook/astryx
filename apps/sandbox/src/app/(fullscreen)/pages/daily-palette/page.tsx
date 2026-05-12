@@ -12,11 +12,14 @@ const TONAL_COLORS: TonalColor[] = [
   {name: 'Cyan', sourceHex: '#3a95a1', note: 'ocean teal'},
   {name: 'Green', sourceHex: '#4a672d', note: 'olive'},
   {name: 'Teal', sourceHex: '#367d62', note: 'forest'},
-  {name: 'Yellow', sourceHex: '#fddf72', semantic: 'Warning'},
+  {name: 'Yellow', sourceHex: '#fddf72', note: 'warm gold'},
   {name: 'Orange', sourceHex: '#bf661d', note: 'warm amber'},
-  {name: 'Red', sourceHex: '#BE491D', semantic: 'Error'},
+  {name: 'Red', sourceHex: '#BE491D', note: 'terracotta'},
   {name: 'Pink', sourceHex: '#bc4997', note: 'magenta rose'},
   {name: 'Purple', sourceHex: '#8B49BC', note: 'violet'},
+  {name: 'Error', sourceHex: '#FD0000', semantic: 'Error'},
+  {name: 'Warning', sourceHex: '#FFB600', semantic: 'Warning'},
+  {name: 'Success', sourceHex: '#009936', semantic: 'Success'},
 ];
 
 const CORE = [
