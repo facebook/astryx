@@ -116,6 +116,12 @@ export const categories: SandboxCategory[] = [
     description: 'Theme palette previews and design token references.',
     pages: [
       {
+        name: 'Neutral Palette',
+        href: '/pages/neutral-palette/',
+        description:
+          'Neutral theme — pure grayscale spine, OKLCH categorical palette, vivid T60 semantic badges, soft T90 categorical pastels, Figtree typography',
+      },
+      {
         name: 'Stone Palette',
         href: '/pages/stone-palette/',
         description:
