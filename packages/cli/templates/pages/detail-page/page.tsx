@@ -1,6 +1,6 @@
 'use client';
 
-import {useState, useEffect} from 'react';
+import {useState} from 'react';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {useMediaQuery} from '@xds/core/hooks';
 import {XDSNavIcon} from '@xds/core/NavIcon';
@@ -641,10 +641,6 @@ export default function DetailPage2Template() {
   const [activeTab, setActiveTab] = useState('details');
   const isNarrow = useMediaQuery('(max-width: 1024px)');
   const [isPanelOpen, setIsPanelOpen] = useState(!isNarrow);
-
-  useEffect(() => {
-    setIsPanelOpen(!isNarrow);
-  }, [isNarrow]);
 
   return (
     <XDSAppShell
