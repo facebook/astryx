@@ -255,10 +255,19 @@ export const dailyTheme = defineTheme({
       },
     },
 
-    // Info banner uses blue tint instead of accent-muted
+    // Banner backgrounds use solid tonal colors (T90 light / T15 dark)
     banner: {
       'status:info': {
-        backgroundColor: '#1779FA20',
+        backgroundColor: 'light-dark(#dde1ff, #002455)',
+      },
+      'status:error': {
+        backgroundColor: 'light-dark(#ffdbd1, #4c1000)',
+      },
+      'status:warning': {
+        backgroundColor: 'light-dark(#ffdf99, #302400)',
+      },
+      'status:success': {
+        backgroundColor: 'light-dark(#84fc90, #002d07)',
       },
     },
 
