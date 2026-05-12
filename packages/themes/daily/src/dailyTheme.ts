@@ -222,12 +222,9 @@ export const dailyTheme = defineTheme({
     // =========================================================================
     // Shadows
     // =========================================================================
-    '--shadow-low':
-      '0 2px 4px #2927240D, 0 4px 8px #2927241A',
-    '--shadow-med':
-      '0 2px 4px #2927240D, 0 4px 12px #2927241A',
-    '--shadow-high':
-      '0 4px 6px #2927241A, 0 12px 24px #29272426',
+    '--shadow-low': '0 2px 4px #2927240D, 0 4px 8px #2927241A',
+    '--shadow-med': '0 2px 4px #2927240D, 0 4px 12px #2927241A',
+    '--shadow-high': '0 4px 6px #2927241A, 0 12px 24px #29272426',
     '--shadow-inset-hover': 'inset 0px 0px 0px 2px #29272430',
     '--shadow-inset-selected': 'inset 0px 0px 0px 2px #29272450',
     '--shadow-inset-success': 'inset 0px 0px 0px 2px #00993650',
@@ -262,6 +259,14 @@ export const dailyTheme = defineTheme({
     banner: {
       'status:info': {
         backgroundColor: '#1779FA20',
+      },
+    },
+
+    // Info banner icon uses blue — override --color-accent so the
+    // child XDSIcon (which reads var(--color-accent)) picks it up
+    'banner-icon': {
+      'status:info': {
+        '--color-accent': '#1779FA',
       },
     },
 
