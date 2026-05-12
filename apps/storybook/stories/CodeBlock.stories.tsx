@@ -30,9 +30,8 @@ const meta: Meta<typeof XDSCodeBlock> = {
       description: 'Text size',
     },
     width: {
-      control: 'select',
-      options: ['fit-content', '100%'],
-      description: 'Width of the code block',
+      control: 'text',
+      description: 'Width of the code block (any CSS width value)',
     },
     container: {
       control: 'select',

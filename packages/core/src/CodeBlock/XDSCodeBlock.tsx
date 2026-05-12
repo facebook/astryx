@@ -46,13 +46,6 @@ import {applyHighlightRangesChunked} from './highlightRanges';
 // Styles
 // ---------------------------------------------------------------------------
 
-/**
- * Container presentation type.
- * - `card` (default): border-radius and border — standalone card look.
- * - `section`: no border-radius, no border — for embedding inside cards or panels.
- */
-export type XDSCodeBlockContainer = 'card' | 'section';
-
 const containerStyles = stylex.create({
   card: {
     borderRadius: radiusVars['--radius-element'],
@@ -68,15 +61,12 @@ const containerStyles = stylex.create({
   },
 });
 
-const widthStyles = stylex.create({
-  fitContent: {
-    width: 'fit-content',
-    minWidth: 'min(100%, 400px)',
-    maxWidth: '100%',
-  },
-  full: {
-    width: '100%',
-  },
+const dynamicStyles = stylex.create({
+  width: (value: string) => ({
+    width: value,
+    minWidth: value === 'fit-content' ? 'min(100%, 400px)' : null,
+    maxWidth: value === 'fit-content' ? '100%' : null,
+  }),
 });
 
 const styles = stylex.create({
@@ -349,19 +339,20 @@ export interface XDSCodeBlockProps extends XDSBaseProps<HTMLPreElement> {
   collapsibleThreshold?: number;
   size?: 'sm' | 'md';
   /**
-   * Width of the code block.
+   * Width of the code block. Accepts any CSS width value.
    * - `'fit-content'` (default): shrinks to the width of the longest line (with a min-width floor).
    * - `'100%'`: stretches to fill the parent container width.
+   * - Any valid CSS width string (e.g. `'600px'`, `'50vw'`).
    * @default 'fit-content'
    */
-  width?: 'fit-content' | '100%';
+  width?: string;
   /**
    * Container presentation style.
-   * - `card` (default): border-radius and border — standalone card look.
-   * - `section`: no border-radius, no border — for embedding inside cards or panels.
+   * - `'card'` (default): border-radius and border — standalone card look.
+   * - `'section'`: no border-radius, no border — for embedding inside cards or panels.
    * @default 'card'
    */
-  container?: XDSCodeBlockContainer;
+  container?: 'card' | 'section';
   tokenizer?: (
     code: string,
     language: string,
@@ -765,7 +756,7 @@ export function XDSCodeBlock({
         xdsClassName('codeblock', {size, language, container}),
         stylex.props(
           styles.root,
-          widthStyles[widthProp === '100%' ? 'full' : 'fitContent'],
+          dynamicStyles.width(widthProp),
           containerStyles[container],
           xstyle,
         ),

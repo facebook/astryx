@@ -1,7 +1,7 @@
 'use client';
 
 export {XDSCodeBlock} from './XDSCodeBlock';
-export type {XDSCodeBlockProps, XDSCodeBlockContainer} from './XDSCodeBlock';
+export type {XDSCodeBlockProps} from './XDSCodeBlock';
 
 export {XDSCode} from './XDSCode';
 export type {XDSCodeProps} from './XDSCode';
