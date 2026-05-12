@@ -114,16 +114,16 @@ export const dailyTheme = defineTheme({
     '--color-tint-hover': ['black', 'white'],
 
     // Categorical — Blue
-    '--color-background-blue': ['#3a5e8c33', '#3a5e8c33'],
-    '--color-border-blue': ['#3a5e8c', '#7ba8d4'],
-    '--color-icon-blue': ['#3a5e8c', '#7ba8d4'],
-    '--color-text-blue': ['#2e4a6e', '#8dbce0'],
+    '--color-background-blue': ['#d9dbe4', '#1e1f27'],
+    '--color-border-blue': ['#2E3968', '#45569c'],
+    '--color-icon-blue': ['#2E3968', '#45569c'],
+    '--color-text-blue': ['#1e2544', '#4a5ba6'],
 
     // Categorical — Cyan
-    '--color-background-cyan': ['#3a7c7c33', '#3a7c7c33'],
-    '--color-border-cyan': ['#3a7c7c', '#70c4c4'],
-    '--color-icon-cyan': ['#3a7c7c', '#70c4c4'],
-    '--color-text-cyan': ['#2e6060', '#82d4d4'],
+    '--color-background-cyan': ['#dcecee', '#203233'],
+    '--color-border-cyan': ['#3a95a1', '#57e0f2'],
+    '--color-icon-cyan': ['#3a95a1', '#57e0f2'],
+    '--color-text-cyan': ['#266169', '#5deeff'],
 
     // Categorical — Gray
     '--color-background-gray': ['#85817A33', '#5c595533'],
@@ -132,46 +132,46 @@ export const dailyTheme = defineTheme({
     '--color-text-gray': ['#292724', '#F8F4ED'],
 
     // Categorical — Green
-    '--color-background-green': ['#00993633', '#34c26533'],
-    '--color-border-green': ['#009936', '#34c265'],
-    '--color-icon-green': ['#009936', '#34c265'],
-    '--color-text-green': ['#007a2b', '#3fd672'],
+    '--color-background-green': ['#dee4d9', '#24291b'],
+    '--color-border-green': ['#4a672d', '#6f9a44'],
+    '--color-icon-green': ['#4a672d', '#6f9a44'],
+    '--color-text-green': ['#30431d', '#76a548'],
 
     // Categorical — Orange
-    '--color-background-orange': ['#c4762033', '#d4903a33'],
-    '--color-border-orange': ['#c47620', '#d4903a'],
-    '--color-icon-orange': ['#c47620', '#d4903a'],
-    '--color-text-orange': ['#a06018', '#e0a04a'],
+    '--color-background-orange': ['#f3e3d6', '#3b2818'],
+    '--color-border-orange': ['#bf661d', '#ff992c'],
+    '--color-icon-orange': ['#bf661d', '#ff992c'],
+    '--color-text-orange': ['#7c4213', '#ffa32e'],
 
     // Categorical — Pink
-    '--color-background-pink': ['#c44a7033', '#e07a9a33'],
-    '--color-border-pink': ['#c44a70', '#e07a9a'],
-    '--color-icon-pink': ['#c44a70', '#e07a9a'],
-    '--color-text-pink': ['#a03a5a', '#f08aaa'],
+    '--color-background-pink': ['#f3deec', '#3a2331'],
+    '--color-border-pink': ['#bc4997', '#ff6ee2'],
+    '--color-icon-pink': ['#bc4997', '#ff6ee2'],
+    '--color-text-pink': ['#7a2f62', '#ff75f2'],
 
     // Categorical — Purple
-    '--color-background-purple': ['#6b4a8c33', '#b08ed433'],
-    '--color-border-purple': ['#6b4a8c', '#b08ed4'],
-    '--color-icon-purple': ['#6b4a8c', '#b08ed4'],
-    '--color-text-purple': ['#553a70', '#c0a0e0'],
+    '--color-background-purple': ['#eadef3', '#312338'],
+    '--color-border-purple': ['#8B49BC', '#d06eff'],
+    '--color-icon-purple': ['#8B49BC', '#d06eff'],
+    '--color-text-purple': ['#5a2f7a', '#de75ff'],
 
     // Categorical — Red
-    '--color-background-red': ['#FD000033', '#ff5c5c33'],
-    '--color-border-red': ['#FD0000', '#ff5c5c'],
-    '--color-icon-red': ['#FD0000', '#ff5c5c'],
-    '--color-text-red': ['#cc0000', '#ff7a7a'],
+    '--color-background-red': ['#f3ded6', '#3b2318'],
+    '--color-border-red': ['#BE491D', '#ff6e2c'],
+    '--color-icon-red': ['#BE491D', '#ff6e2c'],
+    '--color-text-red': ['#7c2f13', '#ff752e'],
 
     // Categorical — Teal
-    '--color-background-teal': ['#2e6b5a33', '#5ab89833'],
-    '--color-border-teal': ['#2e6b5a', '#5ab898'],
-    '--color-icon-teal': ['#2e6b5a', '#5ab898'],
-    '--color-text-teal': ['#245546', '#6ccaaa'],
+    '--color-background-teal': ['#dbe8e3', '#202d26'],
+    '--color-border-teal': ['#367d62', '#51bc93'],
+    '--color-icon-teal': ['#367d62', '#51bc93'],
+    '--color-text-teal': ['#235140', '#56c89d'],
 
     // Categorical — Yellow
-    '--color-background-yellow': ['#FFB60033', '#ffc94033'],
-    '--color-border-yellow': ['#FFB600', '#ffc940'],
-    '--color-icon-yellow': ['#FFB600', '#ffc940'],
-    '--color-text-yellow': ['#cc9200', '#ffd960'],
+    '--color-background-yellow': ['#fff9e6', '#474129'],
+    '--color-border-yellow': ['#fddf72', '#fce86a'],
+    '--color-icon-yellow': ['#fddf72', '#fce86a'],
+    '--color-text-yellow': ['#8a6d10', '#ffe94d'],
 
     // =========================================================================
     // Spacing

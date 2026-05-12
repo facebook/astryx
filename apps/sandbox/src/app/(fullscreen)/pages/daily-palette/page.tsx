@@ -8,15 +8,15 @@ import type {TonalColor} from '@/components/ThemePalettePreview';
 
 const TONAL_COLORS: TonalColor[] = [
   {name: 'Daily Neutral', sourceHex: '#E6E3DE', note: 'warm cream-gray'},
-  {name: 'Blue', sourceHex: '#3a5e8c', note: 'muted navy'},
-  {name: 'Cyan', sourceHex: '#3a7c7c', note: 'deep teal'},
-  {name: 'Green', sourceHex: '#009936', semantic: 'Success'},
-  {name: 'Teal', sourceHex: '#2e6b5a', note: 'earthy teal'},
-  {name: 'Yellow', sourceHex: '#FFB600', semantic: 'Warning'},
-  {name: 'Orange', sourceHex: '#c47620', note: 'warm amber'},
-  {name: 'Red', sourceHex: '#FD0000', semantic: 'Error'},
-  {name: 'Pink', sourceHex: '#c44a70', note: 'dusty rose'},
-  {name: 'Purple', sourceHex: '#6b4a8c', note: 'muted plum'},
+  {name: 'Blue', sourceHex: '#2E3968', note: 'deep navy'},
+  {name: 'Cyan', sourceHex: '#3a95a1', note: 'ocean teal'},
+  {name: 'Green', sourceHex: '#4a672d', note: 'olive'},
+  {name: 'Teal', sourceHex: '#367d62', note: 'forest'},
+  {name: 'Yellow', sourceHex: '#fddf72', semantic: 'Warning'},
+  {name: 'Orange', sourceHex: '#bf661d', note: 'warm amber'},
+  {name: 'Red', sourceHex: '#BE491D', semantic: 'Error'},
+  {name: 'Pink', sourceHex: '#bc4997', note: 'magenta rose'},
+  {name: 'Purple', sourceHex: '#8B49BC', note: 'violet'},
 ];
 
 const CORE = [
