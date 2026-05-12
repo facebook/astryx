@@ -1,5 +1,5 @@
 /**
- * Daily Theme
+ * Astryx Theme
  *
  * A warm, productivity-focused theme with earthy cream tones.
  * Core palette: #292724, #85817A, #E6E3DE, #F8F4ED, #FFFFFF
@@ -9,7 +9,7 @@
 import {defineTheme, defineSyntaxTheme} from '@xds/core/theme';
 import {dailyIconRegistry} from './icons';
 
-/** Daily syntax palette — warm, muted tones to match the earthy aesthetic. */
+/** Astryx syntax palette — warm, muted tones to match the earthy aesthetic. */
 const dailySyntax = defineSyntaxTheme({
   name: 'xds-daily',
   tokens: {
@@ -58,7 +58,7 @@ export const dailyTheme = defineTheme({
 
   tokens: {
     // =========================================================================
-    // Colors — warm daily palette
+    // Colors — warm astryx palette
     // Core: #292724, #85817A, #E6E3DE, #F8F4ED, #FFFFFF
     // =========================================================================
 
@@ -114,13 +114,13 @@ export const dailyTheme = defineTheme({
     '--color-tint-hover': ['black', 'white'],
 
     // Categorical — Blue
-    '--color-background-blue': ['#BBDBFE', '#002840'],
+    '--color-background-blue': ['#cee5ff', '#002840'],
     '--color-border-blue': ['#192973', '#BBDBFE'],
     '--color-icon-blue': ['#192973', '#BBDBFE'],
     '--color-text-blue': ['#192973', '#aacaec'],
 
     // Categorical — Cyan
-    '--color-background-cyan': ['#ACE3F0', '#002a32'],
+    '--color-background-cyan': ['#b4ecf9', '#002a32'],
     '--color-border-cyan': ['#003C4F', '#ACE3F0'],
     '--color-icon-cyan': ['#003C4F', '#ACE3F0'],
     '--color-text-cyan': ['#003C4F', '#99cfdc'],
@@ -132,43 +132,43 @@ export const dailyTheme = defineTheme({
     '--color-text-gray': ['#292724', '#F8F4ED'],
 
     // Categorical — Green
-    '--color-background-green': ['#C0E3C0', '#0e2c12'],
+    '--color-background-green': ['#c8ecc8', '#002d08'],
     '--color-border-green': ['#006410', '#C0E3C0'],
     '--color-icon-green': ['#006410', '#C0E3C0'],
     '--color-text-green': ['#006410', '#adcfad'],
 
     // Categorical — Orange
-    '--color-background-orange': ['#F8CEB2', '#3a1f07'],
+    '--color-background-orange': ['#ffdcc5', '#3d1e00'],
     '--color-border-orange': ['#590801', '#F8CEB2'],
     '--color-icon-orange': ['#590801', '#F8CEB2'],
     '--color-text-orange': ['#590801', '#e8bea3'],
 
     // Categorical — Pink
-    '--color-background-pink': ['#F9C8DA', '#3e1929'],
+    '--color-background-pink': ['#ffd8e6', '#4f032c'],
     '--color-border-pink': ['#8E2149', '#F9C8DA'],
     '--color-icon-pink': ['#8E2149', '#F9C8DA'],
     '--color-text-pink': ['#8E2149', '#eab9cb'],
 
     // Categorical — Purple
-    '--color-background-purple': ['#EACBF2', '#341d3b'],
+    '--color-background-purple': ['#f7d8ff', '#3d114d'],
     '--color-border-purple': ['#6A218E', '#EACBF2'],
     '--color-icon-purple': ['#6A218E', '#EACBF2'],
     '--color-text-purple': ['#6A218E', '#dbbce3'],
 
     // Categorical — Red
-    '--color-background-red': ['#FDC9C7', '#3f1a1b'],
+    '--color-background-red': ['#ffdad8', '#500713'],
     '--color-border-red': ['#A1211D', '#FDC9C7'],
     '--color-icon-red': ['#A1211D', '#FDC9C7'],
     '--color-text-red': ['#A1211D', '#edbab8'],
 
     // Categorical — Teal
-    '--color-background-teal': ['#ADE6D9', '#002c25'],
+    '--color-background-teal': ['#b5eee1', '#002c25'],
     '--color-border-teal': ['#0D4C3E', '#ADE6D9'],
     '--color-icon-teal': ['#0D4C3E', '#ADE6D9'],
     '--color-text-teal': ['#0D4C3E', '#99d2c5'],
 
     // Categorical — Yellow
-    '--color-background-yellow': ['#FDE29A', '#2e2500'],
+    '--color-background-yellow': ['#fbe098', '#2e2500'],
     '--color-border-yellow': ['#634F19', '#FDE29A'],
     '--color-icon-yellow': ['#634F19', '#FDE29A'],
     '--color-text-yellow': ['#634F19', '#dec47e'],

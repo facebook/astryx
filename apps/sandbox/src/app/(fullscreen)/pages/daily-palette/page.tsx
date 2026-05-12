@@ -7,7 +7,7 @@ import {ThemePalettePreview} from '@/components/ThemePalettePreview';
 import type {TonalColor} from '@/components/ThemePalettePreview';
 
 const TONAL_COLORS: TonalColor[] = [
-  {name: 'Daily Neutral', sourceHex: '#E6E3DE', note: 'warm cream-gray'},
+  {name: 'Neutral', sourceHex: '#E6E3DE'},
   {name: 'Blue', sourceHex: '#BBDBFE'},
   {name: 'Cyan', sourceHex: '#ACE3F0'},
   {name: 'Green', sourceHex: '#C0E3C0'},
@@ -24,10 +24,10 @@ const TONAL_COLORS: TonalColor[] = [
 ];
 
 const CORE = [
-  {hex: '#292724', name: 'Daily 900'},
-  {hex: '#85817A', name: 'Daily 500'},
-  {hex: '#E6E3DE', name: 'Daily 300'},
-  {hex: '#F8F4ED', name: 'Daily 100'},
+  {hex: '#292724', name: 'Astryx 900'},
+  {hex: '#85817A', name: 'Astryx 500'},
+  {hex: '#E6E3DE', name: 'Astryx 300'},
+  {hex: '#F8F4ED', name: 'Astryx 100'},
   {hex: '#FFFFFF', name: 'White'},
 ];
 
@@ -55,7 +55,7 @@ export default function DailyPalettePage() {
   return (
     <ThemePalettePreview
       theme={dailyTheme}
-      title="Daily Theme Palette"
+      title="Astryx Theme Palette"
       subtitle="A warm, productivity-focused theme with earthy cream tones. PT Serif italic for display, Figtree for headings and body, pill-shaped buttons."
       tonalColors={TONAL_COLORS}
       coreSwatches={CORE}
