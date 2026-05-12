@@ -80,6 +80,12 @@ export const categories: SandboxCategory[] = [
         description: 'Flexible link component with router integration',
       },
       {
+        name: 'Motion Examples',
+        href: '/pages/motion-examples/',
+        description:
+          'Duration and easing tokens applied to common animation patterns',
+      },
+      {
         name: 'App Shell',
         href: '/pages/shell-lab/',
         description: 'Experiment with app shell layouts and navigation',
