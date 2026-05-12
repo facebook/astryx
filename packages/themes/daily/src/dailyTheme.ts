@@ -114,16 +114,16 @@ export const dailyTheme = defineTheme({
     '--color-tint-hover': ['black', 'white'],
 
     // Categorical — Blue
-    '--color-background-blue': ['#dfe0ff', '#2d3867'],
+    '--color-background-blue': ['#dfe0ff', '#13234f'],
     '--color-border-blue': ['#2E3968', '#dfe0ff'],
     '--color-icon-blue': ['#2E3968', '#dfe0ff'],
-    '--color-text-blue': ['#2d3867', '#dfe0ff'],
+    '--color-text-blue': ['#2d3867', '#bdc2fc'],
 
     // Categorical — Cyan
-    '--color-background-cyan': ['#9af0fd', '#00424a'],
+    '--color-background-cyan': ['#9af0fd', '#002b30'],
     '--color-border-cyan': ['#3a95a1', '#9af0fd'],
     '--color-icon-cyan': ['#3a95a1', '#9af0fd'],
-    '--color-text-cyan': ['#00424a', '#9af0fd'],
+    '--color-text-cyan': ['#00424a', '#7dd4e0'],
 
     // Categorical — Gray
     '--color-background-gray': ['#85817A33', '#5c595533'],
@@ -132,46 +132,46 @@ export const dailyTheme = defineTheme({
     '--color-text-gray': ['#292724', '#F8F4ED'],
 
     // Categorical — Green
-    '--color-background-green': ['#cdedaa', '#26430a'],
+    '--color-background-green': ['#cdedaa', '#182b00'],
     '--color-border-green': ['#4a672d', '#cdedaa'],
     '--color-icon-green': ['#4a672d', '#cdedaa'],
-    '--color-text-green': ['#26430a', '#cdedaa'],
+    '--color-text-green': ['#26430a', '#b2d08f'],
 
     // Categorical — Orange
-    '--color-background-orange': ['#ffdcc5', '#612d00'],
+    '--color-background-orange': ['#ffdcc5', '#3d1e00'],
     '--color-border-orange': ['#bf661d', '#ffdcc5'],
     '--color-icon-orange': ['#bf661d', '#ffdcc5'],
-    '--color-text-orange': ['#612d00', '#ffdcc5'],
+    '--color-text-orange': ['#612d00', '#ffb785'],
 
     // Categorical — Pink
-    '--color-background-pink': ['#ffd7ef', '#740058'],
+    '--color-background-pink': ['#ffd7ef', '#4e003a'],
     '--color-border-pink': ['#bc4997', '#ffd7ef'],
     '--color-icon-pink': ['#bc4997', '#ffd7ef'],
-    '--color-text-pink': ['#740058', '#ffd7ef'],
+    '--color-text-pink': ['#740058', '#ffade0'],
 
     // Categorical — Purple
-    '--color-background-purple': ['#f2daff', '#571788'],
+    '--color-background-purple': ['#f2daff', '#3b0067'],
     '--color-border-purple': ['#8B49BC', '#f2daff'],
     '--color-icon-purple': ['#8B49BC', '#f2daff'],
-    '--color-text-purple': ['#571788', '#f2daff'],
+    '--color-text-purple': ['#571788', '#e3b5ff'],
 
     // Categorical — Red
-    '--color-background-red': ['#ffdbcd', '#6f2000'],
+    '--color-background-red': ['#ffdbcd', '#461700'],
     '--color-border-red': ['#BE491D', '#ffdbcd'],
     '--color-icon-red': ['#BE491D', '#ffdbcd'],
-    '--color-text-red': ['#6f2000', '#ffdbcd'],
+    '--color-text-red': ['#6f2000', '#ffb599'],
 
     // Categorical — Teal
-    '--color-background-teal': ['#a8f2d2', '#004530'],
+    '--color-background-teal': ['#a8f2d2', '#002c1e'],
     '--color-border-teal': ['#367d62', '#a8f2d2'],
     '--color-icon-teal': ['#367d62', '#a8f2d2'],
-    '--color-text-teal': ['#004530', '#a8f2d2'],
+    '--color-text-teal': ['#004530', '#8dd5b6'],
 
     // Categorical — Yellow
-    '--color-background-yellow': ['#ffe174', '#463b00'],
+    '--color-background-yellow': ['#ffe174', '#2d2500'],
     '--color-border-yellow': ['#fddf72', '#ffe174'],
     '--color-icon-yellow': ['#fddf72', '#ffe174'],
-    '--color-text-yellow': ['#463b00', '#ffe174'],
+    '--color-text-yellow': ['#463b00', '#e1c559'],
 
     // =========================================================================
     // Spacing
