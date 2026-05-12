@@ -640,14 +640,11 @@ function RightPanel() {
 export default function DetailPage2Template() {
   const [activeTab, setActiveTab] = useState('details');
   const isNarrow = useMediaQuery('(max-width: 1024px)');
-  const [isPanelOpen, setIsPanelOpen] = useState<boolean | null>(null);
+  const [isPanelOpen, setIsPanelOpen] = useState(!isNarrow);
 
   useEffect(() => {
     setIsPanelOpen(!isNarrow);
   }, [isNarrow]);
-
-  // Default to panel hidden during SSR to avoid flash on narrow screens
-  const showPanel = isPanelOpen === null ? false : isPanelOpen;
 
   return (
     <XDSAppShell
@@ -662,7 +659,7 @@ export default function DetailPage2Template() {
           <PageHeader
             activeTab={activeTab}
             onTabChange={setActiveTab}
-            isPanelOpen={showPanel}
+            isPanelOpen={isPanelOpen}
             onTogglePanel={() => setIsPanelOpen(prev => !prev)}
           />
         }
@@ -675,7 +672,7 @@ export default function DetailPage2Template() {
             </XDSVStack>
           </XDSLayoutContent>
         }
-        end={showPanel ? <RightPanel /> : undefined}
+        end={isPanelOpen ? <RightPanel /> : undefined}
       />
     </XDSAppShell>
   );
