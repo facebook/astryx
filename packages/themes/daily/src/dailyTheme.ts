@@ -64,7 +64,7 @@ export const dailyTheme = defineTheme({
 
     // Core semantic
     '--color-accent': ['#292724', '#F8F4ED'],
-    '--color-accent-muted': ['#2927244D', '#F8F4ED4D'],
+    '--color-accent-muted': ['#29272440', '#F8F4ED40'],
     '--color-neutral': ['#2927240F', '#F8F4ED1A'],
     '--color-background-surface': ['#FFFFFF', '#1a1917'],
     '--color-background-body': ['#F8F4ED', '#121110'],
@@ -98,11 +98,11 @@ export const dailyTheme = defineTheme({
 
     // Status / Sentiment
     '--color-success': ['#009936', '#34c265'],
-    '--color-success-muted': ['#0099364D', '#34c2654D'],
+    '--color-success-muted': ['#00993640', '#34c26540'],
     '--color-error': ['#FD0000', '#ff5c5c'],
-    '--color-error-muted': ['#FD00004D', '#ff5c5c4D'],
+    '--color-error-muted': ['#FD000040', '#ff5c5c40'],
     '--color-warning': ['#FFB600', '#ffc940'],
-    '--color-warning-muted': ['#FFB6004D', '#ffc9404D'],
+    '--color-warning-muted': ['#FFB60040', '#ffc94040'],
 
     // Border
     '--color-border': ['#E6E3DE', '#F8F4ED1A'],
