@@ -255,10 +255,24 @@ export const dailyTheme = defineTheme({
       },
     },
 
-    // Info banner uses blue tint instead of accent-muted
+    // Banner text uses semantic colors for each status
     banner: {
       'status:info': {
         backgroundColor: '#1779FA20',
+        '--color-text-primary': 'light-dark(#1779FA, #79b8ff)',
+        '--color-text-secondary': 'light-dark(#1779FA, #79b8ff)',
+      },
+      'status:success': {
+        '--color-text-primary': 'light-dark(#009936, #34c265)',
+        '--color-text-secondary': 'light-dark(#009936, #34c265)',
+      },
+      'status:error': {
+        '--color-text-primary': 'light-dark(#FD0000, #ff5c5c)',
+        '--color-text-secondary': 'light-dark(#FD0000, #ff5c5c)',
+      },
+      'status:warning': {
+        '--color-text-primary': 'light-dark(#9a7800, #ffd94d)',
+        '--color-text-secondary': 'light-dark(#9a7800, #ffd94d)',
       },
     },
 
