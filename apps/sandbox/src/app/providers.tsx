@@ -42,9 +42,53 @@ const ThemeContext = createContext<ThemeContextValue>({
 
 export const useThemeControls = () => useContext(ThemeContext);
 
+/**
+ * Reads theme/mode from URL search params when rendered inside an embed iframe.
+ * Uses window.location directly to avoid requiring a Suspense boundary for
+ * useSearchParams in the root Providers component.
+ */
+function getEmbedThemeParams(): {
+  initialTheme: string;
+  initialMode: ThemeMode;
+  isEmbed: boolean;
+} {
+  if (typeof window === 'undefined') {
+    return {initialTheme: 'default', initialMode: 'light', isEmbed: false};
+  }
+  const params = new URLSearchParams(window.location.search);
+  const isEmbed = params.get('embed') === '1';
+  const paramTheme = params.get('theme');
+  const paramMode = params.get('mode');
+
+  return {
+    initialTheme:
+      isEmbed && paramTheme && paramTheme in themes ? paramTheme : 'default',
+    initialMode:
+      isEmbed && (paramMode === 'light' || paramMode === 'dark')
+        ? (paramMode as ThemeMode)
+        : 'light',
+    isEmbed,
+  };
+}
+
 export function Providers({children}: {children: React.ReactNode}) {
-  const [themeName, setThemeName] = useState('default');
-  const [mode, setMode] = useState<ThemeMode>('light');
+  const {initialTheme, initialMode, isEmbed} = getEmbedThemeParams();
+  const [themeName, setThemeName] = useState(initialTheme);
+  const [mode, setMode] = useState<ThemeMode>(initialMode);
+
+  // When embedded, sync theme/mode from parent shell via postMessage
+  useEffect(() => {
+    if (!isEmbed) return;
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type === 'xds-theme-sync') {
+        const {theme: newTheme, mode: newMode} = event.data;
+        if (newTheme && newTheme in themes) setThemeName(newTheme);
+        if (newMode === 'light' || newMode === 'dark') setMode(newMode);
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [isEmbed]);
 
   // Sync color-scheme to document root
   useEffect(() => {
