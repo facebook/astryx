@@ -376,7 +376,7 @@ function ItemsCard() {
           </XDSStackItem>
           <XDSHStack gap={2}>
             <XDSButton label="Fulfill item" variant="ghost" />
-            <XDSButton label="Create shipping label" variant="secondary" />
+            <XDSButton label="Create label" variant="secondary" />
           </XDSHStack>
         </XDSHStack>
 
