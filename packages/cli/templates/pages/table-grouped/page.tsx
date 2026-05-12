@@ -606,32 +606,28 @@ const columns: XDSTableColumn<TaskRow>[] = [
   {
     key: 'title',
     header: 'Issue',
-    width: proportional(5),
+    width: proportional(1),
   },
   {
     key: 'project',
     header: 'Project',
-    width: proportional(2),
   },
   {
     key: 'created',
     header: 'Created',
-    width: pixel(90),
   },
   {
     key: 'updated',
     header: 'Updated',
-    width: pixel(90),
   },
   {
     key: 'assignee',
     header: 'Assignee',
-    width: pixel(80),
   },
   {
     key: 'actions',
     header: '',
-    width: pixel(56),
+    width: pixel(48),
   },
 ];
 
@@ -1061,6 +1057,7 @@ export default function DataTableTemplate() {
                 columns={columns}
                 density="balanced"
                 dividers="rows"
+                textOverflow="truncate"
                 hasHover>
                 {GROUP_ORDER.map(status => {
                   const tasks = grouped.get(status)!;
