@@ -30,6 +30,10 @@ const meta: Meta<typeof XDSButton> = {
       control: 'boolean',
       description: 'Disabled state',
     },
+    isFullWidth: {
+      control: 'boolean',
+      description: 'Stretches to fill container width',
+    },
     endContent: {
       control: false,
       description: 'Content rendered after the label (e.g. icon, badge)',
@@ -346,6 +350,25 @@ export const Truncation: Story = {
           icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
           isIconOnly
         />
+      </div>
+    </div>
+  ),
+};
+
+/**
+ * Demonstrates `isFullWidth` prop which stretches the button to fill its container.
+ * Commonly used in mobile layouts, card footers, dialog actions, and stacked button groups.
+ */
+export const FullWidth: Story = {
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '400px'}}>
+      <XDSButton label="Full Width Primary" variant="primary" isFullWidth />
+      <XDSButton label="Full Width Secondary" variant="secondary" isFullWidth />
+      <XDSButton label="Full Width Ghost" variant="ghost" isFullWidth />
+      <XDSButton label="Full Width Destructive" variant="destructive" isFullWidth />
+      <div style={{display: 'flex', gap: '8px'}}>
+        <XDSButton label="Cancel" variant="secondary" isFullWidth />
+        <XDSButton label="Confirm" variant="primary" isFullWidth />
       </div>
     </div>
   ),

@@ -13,7 +13,7 @@
  * - /apps/storybook/stories/Button.stories.tsx (storybook stories)
  * - /packages/cli/templates/blocks/components/Button/ (showcase blocks)
  *
- * Last synced props: label, variant, size, isDisabled, isLoading, clickAction, icon, isIconOnly, children, tooltip, endContent, href, as, target, rel
+ * Last synced props: label, variant, size, isDisabled, isLoading, isFullWidth, clickAction, icon, isIconOnly, children, tooltip, endContent, href, as, target, rel
  */
 
 import {useRef, useTransition, type ReactNode} from 'react';
@@ -97,6 +97,9 @@ const styles = stylex.create({
     aspectRatio: 'var(--button-icon-only-aspect)',
     paddingInline: 0,
     paddingBlock: 0,
+  },
+  fullWidth: {
+    width: '100%',
   },
   endContentWrapper: {
     display: 'inline-flex',
@@ -335,6 +338,12 @@ export interface XDSButtonProps extends XDSBaseProps<HTMLButtonElement> {
    */
   isIconOnly?: boolean;
   /**
+   * When true, the button stretches to fill the width of its container.
+   * Useful for mobile layouts, card footers, and stacked button groups.
+   * @default false
+   */
+  isFullWidth?: boolean;
+  /**
    * Optional visible content. When provided, rendered instead of `label` as the
    * visible text (label still serves as the accessible name via aria-label).
    */
@@ -413,6 +422,7 @@ const loadingStyles = stylex.create({
  * <XDSButton label="Edit" icon={<PencilIcon />} endContent={<XDSBadge label="New" />} />
  * <XDSButton label="Visit site" href="https://example.com" variant="primary" />
  * <XDSButton label="Open in new tab" href="https://example.com" target="_blank" rel="noopener noreferrer" />
+ * <XDSButton label="Submit" variant="primary" isFullWidth />
  * ```
  */
 export function XDSButton({
@@ -425,6 +435,7 @@ export function XDSButton({
   clickAction,
   icon,
   isIconOnly = false,
+  isFullWidth = false,
   children,
   endContent,
   tooltip,
@@ -499,6 +510,7 @@ export function XDSButton({
     sizeStyles[size],
     variants[variant],
     isIconOnly && styles.iconOnly,
+    isFullWidth && styles.fullWidth,
     buttonDisabled && styles.disabled,
     useAriaDisabled && styles.ariaDisabled,
     isLoadingState && loadingStyles.loading,

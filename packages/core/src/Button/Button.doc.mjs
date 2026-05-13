@@ -80,6 +80,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'isFullWidth',
+      type: 'boolean',
+      description: 'When true, the button stretches to fill the width of its container. Useful for mobile layouts, card footers, and stacked button groups.',
+      default: 'false',
+    },
+    {
       name: 'icon',
       type: 'ReactNode',
       description:
@@ -192,6 +198,12 @@ export const docsZh = {
       description: '禁用按钮。存在工具提示时，使用 aria-disabled 代替原生 disabled 以保持可聚焦。',
       default: 'false',
     },
+    {
+      name: 'isFullWidth',
+      type: 'boolean',
+      description: '为 true 时，按钮拉伸以填满容器宽度。适用于移动端布局、卡片底部和堆叠按钮组。',
+      default: 'false',
+    },
     {name: 'icon', type: 'ReactNode', description: '图标元素。仅提供 icon 而不提供 children 时，按钮渲染为正方形的纯图标按钮。'},
     {name: 'children', type: 'ReactNode', description: '按钮内容。与 icon 同时提供时，文本渲染在图标旁边。'},
     {
@@ -264,5 +276,6 @@ export const docsDense = {
     onClick: 'standard click handler; fires before clickAction',
     clickAction: 'async click handler; shows loading while promise pending',
     isDisabled: 'disables button; uses aria-disabled when tooltip present',
+    isFullWidth: 'stretches button to fill container width; for mobile layouts and stacked groups',
   },
 };

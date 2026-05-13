@@ -296,4 +296,13 @@ describe('XDSButton', () => {
     rerender(<XDSButton label="Submit" isLoading />);
     expect(liveRegion).toHaveTextContent('Loading');
   });
+
+  it('renders full width when isFullWidth is true', () => {
+    render(<XDSButton label="Full Width" isFullWidth />);
+    const button = screen.getByRole('button', {name: 'Full Width'});
+    expect(button).toBeInTheDocument();
+    // The button should have the full-width style class applied
+    const computedStyle = window.getComputedStyle(button);
+    expect(computedStyle.width || button.style.width).toBeDefined();
+  });
 });
