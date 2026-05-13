@@ -1010,7 +1010,7 @@ function ActivityHeatmap() {
         xKey="day"
         yKey="hour"
         valueKey="orders"
-        colorRange={[...colors.sequential.teal(5)].reverse()}
+        colorRange={[...colors.sequential.shamrock(5)].reverse()}
       />
     </XDSChart>
   );
