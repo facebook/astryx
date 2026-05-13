@@ -41,9 +41,6 @@ export const inputWrapperStyles = stylex.create({
     borderStyle: 'solid',
     borderColor: {
       default: colorVars['--color-border-emphasized'],
-      ':hover': {
-        '@media (hover: hover)': colorVars['--color-border-emphasized'],
-      },
       ':focus-within': colorVars['--color-accent'],
     },
     '--_field-radius': radiusVars['--radius-element'],
@@ -57,7 +54,7 @@ export const inputWrapperStyles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
     boxShadow: {
       default: 'none',
-      ':hover': {
+      ':hover:not(:focus-within)': {
         '@media (hover: hover)': shadowVars['--shadow-inset-hover'],
       },
       ':focus-within': shadowVars['--shadow-inset-selected'],
@@ -95,7 +92,7 @@ export const inputStatusHoverShadowStyles = stylex.create({
   warning: {
     boxShadow: {
       default: 'none',
-      ':hover': {
+      ':hover:not(:focus-within)': {
         '@media (hover: hover)': shadowVars['--shadow-inset-warning'],
       },
     },
@@ -103,7 +100,7 @@ export const inputStatusHoverShadowStyles = stylex.create({
   error: {
     boxShadow: {
       default: 'none',
-      ':hover': {
+      ':hover:not(:focus-within)': {
         '@media (hover: hover)': shadowVars['--shadow-inset-error'],
       },
     },
@@ -111,7 +108,7 @@ export const inputStatusHoverShadowStyles = stylex.create({
   success: {
     boxShadow: {
       default: 'none',
-      ':hover': {
+      ':hover:not(:focus-within)': {
         '@media (hover: hover)': shadowVars['--shadow-inset-success'],
       },
     },

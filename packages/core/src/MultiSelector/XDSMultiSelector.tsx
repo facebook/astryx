@@ -83,9 +83,6 @@ const styles = stylex.create({
     borderStyle: 'solid',
     borderColor: {
       default: colorVars['--color-border-emphasized'],
-      ':hover': {
-        '@media (hover: hover)': colorVars['--color-border-emphasized'],
-      },
       ':focus-within': colorVars['--color-accent'],
     },
     borderRadius: radiusVars['--radius-element'],
@@ -100,7 +97,7 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
     boxShadow: {
       default: 'none',
-      ':hover': {
+      ':hover:not(:focus-within)': {
         '@media (hover: hover)': shadowVars['--shadow-inset-hover'],
       },
       ':focus-within': shadowVars['--shadow-inset-selected'],
