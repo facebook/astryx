@@ -67,6 +67,28 @@ const meta = { args: { variant: 'wash' } };`;
     expect(output).toBe('');
   });
 
+  test('converts wash in argTypes variant options array', () => {
+    const input = `import {XDSSection} from '@xds/core/Section';
+const meta = { argTypes: { variant: { control: 'select', options: ['section', 'transparent', 'wash'] } } };`;
+    const output = applyTransform({default: transform, parser: 'tsx'}, opts, {source: input});
+    expect(output).toContain("'muted'");
+    expect(output).not.toContain("'wash'");
+  });
+
+  test('converts JSX text "wash" to "muted" in files importing target components', () => {
+    const input = `import {XDSSection} from '@xds/core/Section';
+const App = () => <h4>wash</h4>;`;
+    const output = applyTransform({default: transform, parser: 'tsx'}, opts, {source: input});
+    expect(output).toContain('muted');
+    expect(output).not.toContain('wash');
+  });
+
+  test('does not convert JSX text "wash" without relevant import', () => {
+    const input = `const App = () => <h4>wash</h4>;`;
+    const output = applyTransform({default: transform, parser: 'tsx'}, opts, {source: input});
+    expect(output).toBe('');
+  });
+
   test('handles multiple components in same file', () => {
     const input = `<div>
   <XDSSection variant="wash">section</XDSSection>

@@ -70,6 +70,7 @@ export default function transformer(file, api) {
 
   // 2. Object properties in files that import XDSSection or XDSToolbar.
   //    Handles Storybook args like: { variant: 'wash' } → { variant: 'muted' }
+  //    Also handles options arrays inside variant argTypes config objects.
   const importsTarget =
     root.find(j.ImportSpecifier, {imported: {name: 'XDSSection'}}).length > 0 ||
     root.find(j.ImportSpecifier, {imported: {name: 'XDSToolbar'}}).length > 0;
@@ -78,12 +79,46 @@ export default function transformer(file, api) {
     const PropertyType = j.ObjectProperty ?? j.Property;
     root.find(PropertyType, {key: {name: 'variant'}}).forEach((path) => {
       const value = path.node.value;
+
+      // variant: 'wash' → variant: 'muted'
       if (
         (value.type === 'StringLiteral' || value.type === 'Literal') &&
         value.value === 'wash'
       ) {
         value.value = 'muted';
         if (value.raw) value.raw = undefined;
+        hasChanges = true;
+      }
+
+      // variant: { options: ['...', 'wash', '...'] } → replace 'wash' with 'muted'
+      if (value.type === 'ObjectExpression') {
+        const optionsProp = value.properties.find(
+          (p) => p.key && p.key.name === 'options',
+        );
+        if (optionsProp && optionsProp.value.type === 'ArrayExpression') {
+          optionsProp.value.elements.forEach((el) => {
+            if (
+              el &&
+              (el.type === 'StringLiteral' || el.type === 'Literal') &&
+              el.value === 'wash'
+            ) {
+              el.value = 'muted';
+              if (el.raw) el.raw = undefined;
+              hasChanges = true;
+            }
+          });
+        }
+      }
+    });
+  }
+
+  // 3. JSX text children: replace "wash" text content adjacent to target components.
+  //    Covers labels like <h4>wash</h4> that describe the variant in Storybook stories.
+  if (importsTarget) {
+    root.find(j.JSXText).forEach((path) => {
+      if (path.node.value.trim() === 'wash') {
+        path.node.value = path.node.value.replace('wash', 'muted');
+        if (path.node.raw) path.node.raw = path.node.raw.replace('wash', 'muted');
         hasChanges = true;
       }
     });
