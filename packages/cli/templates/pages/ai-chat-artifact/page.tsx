@@ -320,7 +320,7 @@ export default function AIChatArtifactTemplate() {
                 <XDSText type="supporting" color="secondary">
                   v2
                 </XDSText>
-                <XDSIcon icon={ChevronDownIcon} size="xs" color="secondary" />
+                <XDSIcon icon={ChevronDownIcon} size="xsm" color="secondary" />
               </div>
               <XDSButton
                 label="Copy"
