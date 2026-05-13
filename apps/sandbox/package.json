@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "build:deps": "yarn workspace @xds/theme-default build && yarn workspace @xds/theme-neutral build && yarn workspace @xds/theme-brutalist build && yarn workspace @xds/theme-matcha build && yarn workspace @xds/theme-daily build && yarn workspace @xds/theme-stone build && yarn workspace @xds/theme-gothic build && yarn workspace @xds/theme-chocolate build && yarn workspace @xds/theme-y2k build",
+    "build:deps": "yarn workspace @xds/theme-default build && yarn workspace @xds/theme-neutral build && yarn workspace @xds/theme-brutalist build && yarn workspace @xds/theme-matcha build && yarn workspace @xds/theme-daily build && yarn workspace @xds/theme-stone build && yarn workspace @xds/theme-gothic build && yarn workspace @xds/theme-chocolate build && yarn workspace @xds/theme-y2k build && yarn workspace @xds/theme-butter build",
     "generate:versions": "node scripts/generate-versions.js",
     "generate:changelog": "node scripts/generate-changelog.js",
     "generate:cli": "node scripts/generate-cli-registry.mjs",
@@ -32,7 +32,8 @@
     "@xds/theme-stone": "*",
     "@xds/theme-gothic": "*",
     "@xds/theme-chocolate": "*",
-    "@xds/theme-y2k": "*"
+    "@xds/theme-y2k": "*",
+    "@xds/theme-butter": "*"
   },
   "devDependencies": {
     "@babel/preset-react": "^7.25.0",

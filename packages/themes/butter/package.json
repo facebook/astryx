@@ -1,0 +1,62 @@
+{
+  "name": "@xds/theme-butter",
+  "version": "0.0.13",
+  "displayName": "Butter Theme",
+  "private": false,
+  "description": "Warm, golden butter theme for XDS — creamy yellow palette with soft, inviting tones",
+  "author": "Meta Open Source",
+  "license": "MIT",
+  "homepage": "https://github.com/facebookexperimental/xds#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/facebookexperimental/xds.git",
+    "directory": "packages/themes/butter"
+  },
+  "bugs": {
+    "url": "https://github.com/facebookexperimental/xds/issues"
+  },
+  "keywords": [
+    "xds",
+    "theme",
+    "design-system",
+    "lucide",
+    "design-tokens"
+  ],
+  "sideEffects": false,
+  "main": "./dist/source.js",
+  "types": "./dist/source.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/source.d.ts",
+      "import": "./dist/source.mjs",
+      "require": "./dist/source.js"
+    },
+    "./built": {
+      "types": "./dist/butter.d.ts",
+      "import": "./dist/butter.js",
+      "require": "./dist/butter.js"
+    },
+    "./theme.css": {
+      "types": "./theme.css.d.ts",
+      "default": "./dist/theme.css"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "xds theme build src/butterTheme.ts -o dist/theme.css && tsup && tsc --project tsconfig.build.json"
+  },
+  "dependencies": {
+    "lucide-react": "^1.14.0"
+  },
+  "peerDependencies": {
+    "@xds/core": "0.0.13",
+    "react": ">=19"
+  },
+  "devDependencies": {
+    "@xds/cli": "0.0.13"
+  },
+  "module": "./dist/source.mjs"
+}
