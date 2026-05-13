@@ -16,7 +16,7 @@ const butterSyntax = defineSyntaxTheme({
   name: 'xds-butter',
   tokens: {
     keyword: ['#56307f', '#d4b6ff'], // Purple (H=303)
-    string: ['#424d04', '#bfcf8c'], // Green (H=119)
+    string: ['#275322', '#a6d69f'], // Green (H=142)
     comment: ['#605f52', '#adac9e'], // Neutral (H=102)
     number: ['#693900', '#ffb565'], // Orange (H=66)
     function: ['#303d8b', '#b2c4ff'], // Blue (H=272)
@@ -24,8 +24,8 @@ const butterSyntax = defineSyntaxTheme({
     variable: ['#605f52', '#adac9e'], // Neutral
     operator: ['#605f52', '#adac9e'], // Neutral
     constant: ['#693900', '#ffb565'], // Orange (H=66)
-    tag: ['#7e2018', '#ffafa2'], // Red (H=29)
-    attribute: ['#574500', '#e1c561'], // Yellow (H=94)
+    tag: ['#7d2208', '#ffb09b'], // Red (H=35)
+    attribute: ['#514800', '#d6ca65'], // Yellow (H=102)
     property: ['#045439', '#93d8b6'], // Teal (H=163)
     punctuation: ['#605f52', '#adac9e'], // Neutral
     background: ['#fffdee', '#131107'],
@@ -101,15 +101,15 @@ export const butterTheme = defineTheme({
     '--color-background-inverted': ['#1d1c11', '#f3f2e2'],
 
     // Status — OKLCH-derived from brand colors
-    // Success = Green (H=119.3, C=0.091)
-    '--color-success': ['#596524', '#8a9957'],
-    '--color-success-muted': ['#59652433', '#8a995740'],
-    // Error = Red (H=29.2, C=0.13)
+    // Error = Red (source: #FF5947, H=29.2)
     '--color-error': ['#9a3b30', '#d46f61'],
     '--color-error-muted': ['#9a3b3033', '#d46f6140'],
-    // Warning = Yellow (H=93.5, C=0.1235)
+    // Warning = Yellow (source: #F8C726, H=93.5)
     '--color-warning': ['#725c00', '#aa8e22'],
     '--color-warning-muted': ['#725c0033', '#aa8e2240'],
+    // Success = Green (source: #AAC515, H=119.3)
+    '--color-success': ['#596524', '#8a9957'],
+    '--color-success-muted': ['#59652433', '#8a995740'],
 
     // Border — warm neutral
     '--color-border': ['#e5e3d4', '#f3f2e21A'],
@@ -123,65 +123,65 @@ export const butterTheme = defineTheme({
     // Typography override
     '--text-supporting-size': '12px',
 
-    // Categorical — Blue (source: #5681FF, H=271.7, C=0.13)
+    // Categorical — Blue (source: #5681FF, H=271.7)
     '--color-background-blue': ['#d8e2ff', '#303d8b'],
     '--color-border-blue': ['#b2c4ff', '#4556a7'],
     '--color-icon-blue': ['#303d8b', '#b2c4ff'],
     '--color-text-blue': ['#303d8b', '#b2c4ff'],
 
-    // Categorical — Cyan (source: #60CFD3, H=206.8, C=0.091)
+    // Categorical — Cyan (source: #60CFD3, H=206.8)
     '--color-background-cyan': ['#9bf3ff', '#00515b'],
     '--color-border-cyan': ['#7ad8e4', '#006c77'],
     '--color-icon-cyan': ['#00515b', '#7ad8e4'],
     '--color-text-cyan': ['#00515b', '#7ad8e4'],
 
-    // Categorical — Gray (source: #225BFF tinted, H=269.0, C=0.01)
-    '--color-background-gray': ['#e0e2e9', '#44474c'],
-    '--color-border-gray': ['#c4c6cd', '#5c5e64'],
-    '--color-icon-gray': ['#44474c', '#c4c6cd'],
-    '--color-text-gray': ['#44474c', '#c4c6cd'],
+    // Categorical — Gray (source: #868B99, H=281.1)
+    '--color-background-gray': ['#e1e2e9', '#46464c'],
+    '--color-border-gray': ['#c5c6cd', '#5d5e64'],
+    '--color-icon-gray': ['#46464c', '#c5c6cd'],
+    '--color-text-gray': ['#46464c', '#c5c6cd'],
 
-    // Categorical — Green (source: #AAC515, H=119.3, C=0.091)
-    '--color-background-green': ['#dbeca7', '#424d04'],
-    '--color-border-green': ['#bfcf8c', '#596524'],
-    '--color-icon-green': ['#424d04', '#bfcf8c'],
-    '--color-text-green': ['#424d04', '#bfcf8c'],
+    // Categorical — Green (source: #5DCE5F, H=141.5)
+    '--color-background-green': ['#c1f2ba', '#275322'],
+    '--color-border-green': ['#a6d69f', '#3f6b39'],
+    '--color-icon-green': ['#275322', '#a6d69f'],
+    '--color-text-green': ['#275322', '#a6d69f'],
 
-    // Categorical — Orange (source: #FFA347, H=66.0, C=0.13)
+    // Categorical — Orange (source: #FFA347, H=66.0)
     '--color-background-orange': ['#ffdbb8', '#693900'],
     '--color-border-orange': ['#ffb565', '#894e00'],
     '--color-icon-orange': ['#693900', '#ffb565'],
     '--color-text-orange': ['#693900', '#ffb565'],
 
-    // Categorical — Pink (source: #F680E8, H=327.5, C=0.13)
+    // Categorical — Pink (source: #F680E8, H=327.5)
     '--color-background-pink': ['#ffd1fe', '#69266a'],
     '--color-border-pink': ['#f4a8f2', '#843f83'],
     '--color-icon-pink': ['#69266a', '#f4a8f2'],
     '--color-text-pink': ['#69266a', '#f4a8f2'],
 
-    // Categorical — Purple (source: #B780F6, H=303.0, C=0.13)
+    // Categorical — Purple (source: #B780F6, H=303.0)
     '--color-background-purple': ['#e9dbff', '#56307f'],
     '--color-border-purple': ['#d4b6ff', '#6e489a'],
     '--color-icon-purple': ['#56307f', '#d4b6ff'],
     '--color-text-purple': ['#56307f', '#d4b6ff'],
 
-    // Categorical — Red (source: #FF5947, H=29.2, C=0.13)
-    '--color-background-red': ['#ffd8d1', '#7e2018'],
-    '--color-border-red': ['#ffafa2', '#9a3b30'],
-    '--color-icon-red': ['#7e2018', '#ffafa2'],
-    '--color-text-red': ['#7e2018', '#ffafa2'],
+    // Categorical — Red (source: #FF7553, H=35.4)
+    '--color-background-red': ['#ffd8ce', '#7d2208'],
+    '--color-border-red': ['#ffb09b', '#9a3d25'],
+    '--color-icon-red': ['#7d2208', '#ffb09b'],
+    '--color-text-red': ['#7d2208', '#ffb09b'],
 
-    // Categorical — Teal (source: #6CD9A8, H=162.6, C=0.0845)
+    // Categorical — Teal (source: #6CD9A8, H=162.6)
     '--color-background-teal': ['#aff5d2', '#045439'],
     '--color-border-teal': ['#93d8b6', '#286d50'],
     '--color-icon-teal': ['#045439', '#93d8b6'],
     '--color-text-teal': ['#045439', '#93d8b6'],
 
-    // Categorical — Yellow (source: #F8C726, H=93.5, C=0.1235)
-    '--color-background-yellow': ['#fee17e', '#574500'],
-    '--color-border-yellow': ['#e1c561', '#725c00'],
-    '--color-icon-yellow': ['#574500', '#e1c561'],
-    '--color-text-yellow': ['#574500', '#e1c561'],
+    // Categorical — Yellow (source: #fdee8c, H=102.3)
+    '--color-background-yellow': ['#f2e681', '#514800'],
+    '--color-border-yellow': ['#d6ca65', '#6b6000'],
+    '--color-icon-yellow': ['#514800', '#d6ca65'],
+    '--color-text-yellow': ['#514800', '#d6ca65'],
 
     // =========================================================================
     // Radius — soft and rounded
@@ -221,8 +221,8 @@ export const butterTheme = defineTheme({
         },
       },
       'variant:destructive': {
-        backgroundColor: 'light-dark(#ffd8d1, #ffafa2)',
-        color: 'light-dark(#7e2018, #450000)',
+        backgroundColor: 'light-dark(#ffd8ce, #ffb09b)',
+        color: 'light-dark(#7d2208, #450000)',
       },
     },
 
@@ -233,8 +233,8 @@ export const butterTheme = defineTheme({
         color: 'light-dark(#283b96, #afc5ff)',
       },
       'variant:neutral': {
-        backgroundColor: 'light-dark(#e0e2e9, #44474c)',
-        color: 'light-dark(#44474c, #c4c6cd)',
+        backgroundColor: 'light-dark(#e1e2e9, #46464c)',
+        color: 'light-dark(#46464c, #c5c6cd)',
       },
       'variant:success': {
         backgroundColor: 'light-dark(#dbeca7, #424d04)',
@@ -372,21 +372,21 @@ export const butterPalettes = {
     100: '#ffffff',
   },
   green: {
-    hue: 119,
+    hue: 142,
     chroma: 0.091,
     0: '#000000',
-    5: '#0e1400',
-    10: '#182000',
-    20: '#2c3600',
-    30: '#424d04',
-    40: '#596524',
-    50: '#717f3e',
-    60: '#8a9957',
-    70: '#a4b471',
-    80: '#bfcf8c',
-    90: '#dbeca7',
-    95: '#e9fab5',
-    99: '#faffea',
+    5: '#001900',
+    10: '#002500',
+    20: '#0f3b09',
+    30: '#275322',
+    40: '#3f6b39',
+    50: '#588552',
+    60: '#719f6a',
+    70: '#8bba84',
+    80: '#a6d69f',
+    90: '#c1f2ba',
+    95: '#d2ffcc',
+    99: '#f6fff4',
     100: '#ffffff',
   },
   teal: {
@@ -408,37 +408,19 @@ export const butterPalettes = {
     100: '#ffffff',
   },
   yellow: {
-    hue: 94,
+    hue: 102,
     chroma: 0.1235,
     0: '#000000',
-    5: '#230800',
-    10: '#291800',
-    20: '#3e2e00',
-    30: '#574500',
-    40: '#725c00',
-    50: '#8f7400',
-    60: '#aa8e22',
-    70: '#c5a944',
-    80: '#e1c561',
-    90: '#fee17e',
-    95: '#fff1bf',
-    99: '#fffcf1',
-    100: '#ffffff',
-  },
-  butter: {
-    hue: 102,
-    chroma: 0.13,
-    0: '#000000',
-    5: '#1e0d00',
+    5: '#1d0e00',
     10: '#241b00',
     20: '#393100',
     30: '#514800',
     40: '#6b6000',
     50: '#867900',
-    60: '#a1931b',
-    70: '#bbae3f',
-    80: '#d7ca5d',
-    90: '#f3e67a',
+    60: '#a09328',
+    70: '#bbae48',
+    80: '#d6ca65',
+    90: '#f2e681',
     95: '#fff497',
     99: '#fffde8',
     100: '#ffffff',
@@ -457,25 +439,25 @@ export const butterPalettes = {
     70: '#e29948',
     80: '#ffb565',
     90: '#ffdbb8',
-    95: '#ffede1',
+    95: '#ffeddc',
     99: '#fffbf7',
     100: '#ffffff',
   },
   red: {
-    hue: 29,
+    hue: 35,
     chroma: 0.13,
     0: '#000000',
     5: '#360000',
-    10: '#450000',
-    20: '#620000',
-    30: '#7e2018',
-    40: '#9a3b30',
-    50: '#b75548',
-    60: '#d46f61',
-    70: '#f28a7b',
-    80: '#ffafa2',
-    90: '#ffd8d1',
-    95: '#ffece8',
+    10: '#460000',
+    20: '#620100',
+    30: '#7d2208',
+    40: '#9a3d25',
+    50: '#b6573e',
+    60: '#d37158',
+    70: '#f18c71',
+    80: '#ffb09b',
+    90: '#ffd8ce',
+    95: '#ffece7',
     99: '#fffbfa',
     100: '#ffffff',
   },

@@ -4,17 +4,20 @@ import {butterTheme} from '@xds/theme-butter/built';
 import {ThemePalettePreview} from '@/components/ThemePalettePreview';
 
 const TONAL_COLORS = [
-  {name: 'Butter Neutral', sourceHex: '#e5e3d4'},
-  {name: 'Blue', sourceHex: '#5681FF'},
-  {name: 'Cyan', sourceHex: '#60CFD3'},
-  {name: 'Green', sourceHex: '#AAC515', semantic: 'Success'},
-  {name: 'Teal', sourceHex: '#6CD9A8'},
-  {name: 'Yellow', sourceHex: '#F8C726', semantic: 'Warning'},
-  {name: 'Butter', sourceHex: '#FDEE8C'},
+  {name: 'Accent', sourceHex: '#225BFF'},
+  {name: 'Gray', sourceHex: '#868B99'},
+  {name: 'Red', sourceHex: '#FF7553'},
   {name: 'Orange', sourceHex: '#FFA347'},
-  {name: 'Red', sourceHex: '#FF5947', semantic: 'Error'},
-  {name: 'Pink', sourceHex: '#F680E8'},
+  {name: 'Yellow', sourceHex: '#fdee8c'},
+  {name: 'Green', sourceHex: '#5DCE5F'},
+  {name: 'Cyan', sourceHex: '#60CFD3'},
+  {name: 'Teal', sourceHex: '#6CD9A8'},
+  {name: 'Blue', sourceHex: '#5681FF'},
   {name: 'Purple', sourceHex: '#B780F6'},
+  {name: 'Pink', sourceHex: '#F680E8'},
+  {name: 'Error', sourceHex: '#FF5947', semantic: 'Error'},
+  {name: 'Warning', sourceHex: '#F8C726', semantic: 'Warning'},
+  {name: 'Success', sourceHex: '#AAC515', semantic: 'Success'},
 ];
 
 const CORE = [
