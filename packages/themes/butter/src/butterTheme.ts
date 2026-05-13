@@ -2,8 +2,9 @@
  * Butter Theme
  *
  * A warm, golden theme inspired by fresh butter and sunlight.
- * Core palette: #4A3800, #8B7230, #C4A84D, #FDEE8C, #FFFDF5
- * Uses Nunito for headings and Inter for body text.
+ * Source color: #FDEE8C (OKLCH H=102, C=0.13, L=0.94)
+ * Core palette derived from OKLCH tonal ramps.
+ * Uses Inter for body and Nunito for headings.
  */
 
 import {defineTheme, defineSyntaxTheme} from '@xds/core/theme';
@@ -13,20 +14,20 @@ import {butterIconRegistry} from './icons';
 const butterSyntax = defineSyntaxTheme({
   name: 'xds-butter',
   tokens: {
-    keyword: ['#7c5e00', '#e4c364'],       // Deep gold / light gold
-    string: ['#2d6930', '#7bc47e'],        // Forest green / light green
-    comment: ['#8b7a5e', '#b3a688'],       // Warm gray
-    number: ['#9c4a00', '#e89850'],        // Burnt orange
-    function: ['#2e5a8c', '#6da5d9'],      // Steel blue
-    type: ['#7c5e00', '#e4c364'],          // Deep gold
-    variable: ['#5c5040', '#a89880'],      // Warm neutral
-    operator: ['#5c5040', '#a89880'],      // Warm neutral
-    constant: ['#9c4a00', '#e89850'],      // Burnt orange
-    tag: ['#8c2e2e', '#d97070'],           // Warm red
-    attribute: ['#6b6b00', '#b8b84e'],     // Olive
-    property: ['#2d6930', '#7bc47e'],      // Green
-    punctuation: ['#5c5040', '#a89880'],   // Warm neutral
-    background: ['#FFFDF5', '#1a1500'],
+    keyword: ['#533181', '#d0b8ff'],       // Purple
+    string: ['#225326', '#a2d7a2'],        // Green
+    comment: ['#605f52', '#adac9e'],       // Neutral
+    number: ['#723200', '#ffb37e'],        // Orange
+    function: ['#17438b', '#a6c8ff'],      // Blue
+    type: ['#533181', '#d0b8ff'],          // Purple
+    variable: ['#605f52', '#adac9e'],      // Neutral
+    operator: ['#605f52', '#adac9e'],      // Neutral
+    constant: ['#723200', '#ffb37e'],      // Orange
+    tag: ['#7e1f20', '#ffaea7'],           // Red
+    attribute: ['#5a4300', '#e6c361'],     // Yellow
+    property: ['#005444', '#89d9c3'],      // Teal
+    punctuation: ['#605f52', '#adac9e'],   // Neutral
+    background: ['#fffdee', '#131107'],
   },
 });
 
@@ -58,125 +59,126 @@ export const butterTheme = defineTheme({
 
   tokens: {
     // =========================================================================
-    // Colors — warm butter palette
-    // Core: #4A3800, #8B7230, #C4A84D, #FDEE8C, #FFFDF5
-    // Butter color: #FDEE8C
+    // Colors — OKLCH-derived from source #FDEE8C (H=102.3)
+    // Neutrals use same hue at C=0.02 for warm tint
     // =========================================================================
 
-    // Core semantic — warm golden hues
-    '--color-accent': ['#4A3800', '#FDEE8C'],
-    '--color-accent-muted': ['#4A380014', '#FDEE8C20'],
-    '--color-neutral': ['#4A38000F', '#FDEE8C1A'],
-    '--color-background-surface': ['#FFFFFF', '#211c00'],
-    '--color-background-body': ['#FFFDF5', '#1a1500'],
-    '--color-overlay': ['#4A380080', '#1a1500CC'],
-    '--color-overlay-hover': ['#4A38000D', '#FDEE8C0D'],
-    '--color-overlay-pressed': ['#4A38001A', '#FDEE8C1A'],
-    '--color-background-muted': ['#FFF8E0', '#2a2200'],
+    // Accent — exact source color
+    '--color-accent': ['#FDEE8C', '#d3c768'],
+    '--color-accent-muted': ['#FDEE8C33', '#d3c76840'],
+    '--color-neutral': ['#1d1c110F', '#f3f2e21A'],
+    '--color-background-surface': ['#FFFFFF', '#1d1c11'],
+    '--color-background-body': ['#fffdee', '#131107'],
+    '--color-overlay': ['#1d1c1180', '#131107cc'],
+    '--color-overlay-hover': ['#1d1c110D', '#f3f2e20D'],
+    '--color-overlay-pressed': ['#1d1c111A', '#f3f2e21A'],
+    '--color-background-muted': ['#f3f2e2', '#323125'],
 
-    // Text
-    '--color-text-primary': ['#2E2200', '#FFF9E6'],
-    '--color-text-secondary': ['#8B7230', '#C4A84D'],
-    '--color-text-disabled': ['#C4A84D80', '#8B723080'],
-    '--color-text-accent': ['#4A3800', '#FDEE8C'],
-    '--color-on-dark': '#FFFDF5',
-    '--color-on-light': '#2E2200',
-    '--color-on-accent': ['#FFFDF5', '#2E2200'],
-    '--color-on-success': ['#1a4d1a', '#a8e6a8'],
-    '--color-on-error': ['#6b1a1a', '#f5a8a8'],
-    '--color-on-warning': ['#6b4d00', '#ffe066'],
+    // Text — warm neutral H=102 C=0.02
+    '--color-text-primary': ['#1d1c11', '#f3f2e2'],
+    '--color-text-secondary': ['#605f52', '#adac9e'],
+    '--color-text-disabled': ['#adac9e', '#605f52'],
+    '--color-text-accent': ['#1d1c11', '#f3f2e2'],
+    '--color-on-dark': '#ffffff',
+    '--color-on-light': '#1d1c11',
+    '--color-on-accent': ['#1d1c11', '#1d1c11'],
+    '--color-on-success': ['#f6fff5', '#002500'],
+    '--color-on-error': ['#fffbfa', '#450000'],
+    '--color-on-warning': ['#fffcf4', '#2e1500'],
 
     // Icon
-    '--color-icon-accent': ['#4A3800', '#FDEE8C'],
-    '--color-icon-primary': ['#2E2200', '#FFF9E6'],
-    '--color-icon-secondary': ['#8B7230', '#C4A84D'],
-    '--color-icon-disabled': ['#C4A84D80', '#8B723080'],
+    '--color-icon-accent': ['#1d1c11', '#f3f2e2'],
+    '--color-icon-primary': ['#1d1c11', '#f3f2e2'],
+    '--color-icon-secondary': ['#605f52', '#adac9e'],
+    '--color-icon-disabled': ['#adac9e', '#605f52'],
 
-    // Surface variants
-    '--color-background-card': ['#FFFFFF', '#262000'],
-    '--color-background-popover': ['#FFFFFF', '#2E2600'],
-    '--color-background-inverted': ['#2E2200', '#FFF9E6'],
+    // Surface variants — warm neutral
+    '--color-background-card': ['#FFFFFF', '#323125'],
+    '--color-background-popover': ['#FFFFFF', '#323125'],
+    '--color-background-inverted': ['#1d1c11', '#f3f2e2'],
 
-    // Status / Sentiment
-    // Red = Error
-    '--color-success': ['#1a6b1a', '#66d966'],
-    '--color-success-muted': ['#d4f5d4', '#1a4d1a'],
-    '--color-error': ['#8c1a1a', '#f58a8a'],
-    '--color-error-muted': ['#fde0e0', '#4d1a1a'],
-    '--color-warning': ['#8c6b00', '#ffd633'],
-    '--color-warning-muted': ['#fff3cc', '#4d3d00'],
+    // Status — OKLCH-derived
+    // Success (H=145, C=0.091): green
+    '--color-success': ['#3b6c3d', '#6da06e'],
+    '--color-success-muted': ['#3b6c3d33', '#6da06e40'],
+    // Error (H=25, C=0.13): red
+    '--color-error': ['#9a3a37', '#d46e68'],
+    '--color-error-muted': ['#9a3a3733', '#d46e6840'],
+    // Warning (H=85, C=0.1235): yellow
+    '--color-warning': ['#795800', '#b38a22'],
+    '--color-warning-muted': ['#79580033', '#b38a2240'],
 
-    // Border
-    '--color-border': ['#E8DFC0', '#FDEE8C1A'],
-    '--color-border-emphasized': ['#8B7230', '#C4A84D'],
+    // Border — warm neutral
+    '--color-border': ['#e5e3d4', '#f3f2e21A'],
+    '--color-border-emphasized': ['#79786a', '#939184'],
 
     // Effects
-    '--color-skeleton': ['#E8DFC0', '#3d3200'],
-    '--color-shadow': ['#4A38001A', '#0000004D'],
+    '--color-skeleton': ['#e5e3d4', '#49473b'],
+    '--color-shadow': ['#1d1c111A', '#0000004D'],
     '--color-tint-hover': ['black', 'white'],
 
     // Typography override
     '--text-supporting-size': '12px',
 
-    // Categorical — Blue
-    '--color-background-blue': ['#dbe8f5', '#2a4060'],
-    '--color-border-blue': ['#b8d1ea', '#3d5a7a'],
-    '--color-icon-blue': ['#2e5a8c', '#6da5d9'],
-    '--color-text-blue': ['#2e5a8c', '#6da5d9'],
+    // Categorical — Blue (H=260, C=0.13)
+    '--color-background-blue': ['#d2e4ff', '#17438b'],
+    '--color-border-blue': ['#a6c8ff', '#2f5ca7'],
+    '--color-icon-blue': ['#17438b', '#a6c8ff'],
+    '--color-text-blue': ['#17438b', '#a6c8ff'],
 
-    // Categorical — Cyan
-    '--color-background-cyan': ['#d4f0ee', '#1a4d4a'],
-    '--color-border-cyan': ['#a8e0dc', '#2d6662'],
-    '--color-icon-cyan': ['#1a6b66', '#5cc4be'],
-    '--color-text-cyan': ['#1a6b66', '#5cc4be'],
+    // Categorical — Cyan (H=200, C=0.091)
+    '--color-background-cyan': ['#96f5fa', '#005256'],
+    '--color-border-cyan': ['#79d9de', '#006d71'],
+    '--color-icon-cyan': ['#005256', '#79d9de'],
+    '--color-text-cyan': ['#005256', '#79d9de'],
 
-    // Categorical — Gray
-    '--color-background-gray': ['#eae5dc', '#3d372e'],
-    '--color-border-gray': ['#d4cec4', '#574f44'],
-    '--color-icon-gray': ['#5c5040', '#a89880'],
-    '--color-text-gray': ['#5c5040', '#a89880'],
+    // Categorical — Gray (H=264, C=0.01)
+    '--color-background-gray': ['#dfe3e9', '#44474c'],
+    '--color-border-gray': ['#c3c7cd', '#5b5e64'],
+    '--color-icon-gray': ['#44474c', '#c3c7cd'],
+    '--color-text-gray': ['#44474c', '#c3c7cd'],
 
-    // Categorical — Green
-    '--color-background-green': ['#d4f0d4', '#1a4d1a'],
-    '--color-border-green': ['#a8e0a8', '#2d662d'],
-    '--color-icon-green': ['#2d6930', '#7bc47e'],
-    '--color-text-green': ['#2d6930', '#7bc47e'],
+    // Categorical — Green (H=145, C=0.091)
+    '--color-background-green': ['#bdf3be', '#225326'],
+    '--color-border-green': ['#a2d7a2', '#3b6c3d'],
+    '--color-icon-green': ['#225326', '#a2d7a2'],
+    '--color-text-green': ['#225326', '#a2d7a2'],
 
-    // Categorical — Orange
-    '--color-background-orange': ['#ffe8cc', '#4d2e00'],
-    '--color-border-orange': ['#ffd199', '#664400'],
-    '--color-icon-orange': ['#9c4a00', '#e89850'],
-    '--color-text-orange': ['#9c4a00', '#e89850'],
+    // Categorical — Orange (H=55, C=0.13)
+    '--color-background-orange': ['#ffdac2', '#723200'],
+    '--color-border-orange': ['#ffb37e', '#934600'],
+    '--color-icon-orange': ['#723200', '#ffb37e'],
+    '--color-text-orange': ['#723200', '#ffb37e'],
 
-    // Categorical — Pink
-    '--color-background-pink': ['#f5ddf0', '#4d1a44'],
-    '--color-border-pink': ['#eabbe0', '#662d5a'],
-    '--color-icon-pink': ['#8c2e7a', '#d970c4'],
-    '--color-text-pink': ['#8c2e7a', '#d970c4'],
+    // Categorical — Pink (H=350, C=0.13)
+    '--color-background-pink': ['#ffd5e7', '#762050'],
+    '--color-border-pink': ['#ffa7d1', '#923a69'],
+    '--color-icon-pink': ['#762050', '#ffa7d1'],
+    '--color-text-pink': ['#762050', '#ffa7d1'],
 
-    // Categorical — Purple
-    '--color-background-purple': ['#e8ddf5', '#3a1a60'],
-    '--color-border-purple': ['#d1bbea', '#523d7a'],
-    '--color-icon-purple': ['#5e2e8c', '#a870d9'],
-    '--color-text-purple': ['#5e2e8c', '#a870d9'],
+    // Categorical — Purple (H=300, C=0.13)
+    '--color-background-purple': ['#e7dcff', '#533181'],
+    '--color-border-purple': ['#d0b8ff', '#6b4a9c'],
+    '--color-icon-purple': ['#533181', '#d0b8ff'],
+    '--color-text-purple': ['#533181', '#d0b8ff'],
 
-    // Categorical — Red
-    '--color-background-red': ['#fde0e0', '#4d1a1a'],
-    '--color-border-red': ['#f5bbbb', '#662d2d'],
-    '--color-icon-red': ['#8c2e2e', '#d97070'],
-    '--color-text-red': ['#8c2e2e', '#d97070'],
+    // Categorical — Red (H=25, C=0.13)
+    '--color-background-red': ['#ffd8d4', '#7e1f20'],
+    '--color-border-red': ['#ffaea7', '#9a3a37'],
+    '--color-icon-red': ['#7e1f20', '#ffaea7'],
+    '--color-text-red': ['#7e1f20', '#ffaea7'],
 
-    // Categorical — Teal
-    '--color-background-teal': ['#d4ede4', '#1a4d3a'],
-    '--color-border-teal': ['#a8dcc8', '#2d664d'],
-    '--color-icon-teal': ['#1a6b4d', '#5cc4a0'],
-    '--color-text-teal': ['#1a6b4d', '#5cc4a0'],
+    // Categorical — Teal (H=175, C=0.0845)
+    '--color-background-teal': ['#a5f6df', '#005444'],
+    '--color-border-teal': ['#89d9c3', '#156e5c'],
+    '--color-icon-teal': ['#005444', '#89d9c3'],
+    '--color-text-teal': ['#005444', '#89d9c3'],
 
-    // Categorical — Yellow
-    '--color-background-yellow': ['#FFF3CC', '#4d3d00'],
-    '--color-border-yellow': ['#FFE799', '#665200'],
-    '--color-icon-yellow': ['#6b5500', '#d4aa00'],
-    '--color-text-yellow': ['#6b5500', '#d4aa00'],
+    // Categorical — Yellow (H=90, C=0.1235)
+    '--color-background-yellow': ['#ffe088', '#5a4300'],
+    '--color-border-yellow': ['#e6c361', '#755b00'],
+    '--color-icon-yellow': ['#5a4300', '#e6c361'],
+    '--color-text-yellow': ['#5a4300', '#e6c361'],
 
     // =========================================================================
     // Radius — soft and rounded
@@ -189,19 +191,19 @@ export const butterTheme = defineTheme({
     '--radius-full': '9999px',
 
     // =========================================================================
-    // Shadows — warm golden tint
+    // Shadows — warm neutral tint
     // =========================================================================
     '--shadow-low':
-      '0 2px 4px #4A38000D, 0 4px 8px #4A380012',
+      '0 2px 4px #1d1c110D, 0 4px 8px #1d1c111A',
     '--shadow-med':
-      '0 2px 4px #4A38000D, 0 4px 12px #4A38001A',
+      '0 2px 4px #1d1c110D, 0 4px 12px #1d1c111A',
     '--shadow-high':
-      '0 4px 6px #4A38001A, 0 12px 24px #4A380026',
-    '--shadow-inset-hover': 'inset 0px 0px 0px 2px #C4A84D40',
-    '--shadow-inset-selected': 'inset 0px 0px 0px 2px #C4A84D70',
-    '--shadow-inset-success': 'inset 0px 0px 0px 2px #1a6b1a40',
-    '--shadow-inset-warning': 'inset 0px 0px 0px 2px #8c6b0040',
-    '--shadow-inset-error': 'inset 0px 0px 0px 2px #8c1a1a40',
+      '0 4px 6px #1d1c111A, 0 12px 24px #1d1c1126',
+    '--shadow-inset-hover': 'inset 0px 0px 0px 2px #79786a30',
+    '--shadow-inset-selected': 'inset 0px 0px 0px 2px #79786a50',
+    '--shadow-inset-success': 'inset 0px 0px 0px 2px #3b6c3d30',
+    '--shadow-inset-warning': 'inset 0px 0px 0px 2px #79580030',
+    '--shadow-inset-error': 'inset 0px 0px 0px 2px #9a3a3730',
   },
 
   components: {
@@ -219,58 +221,58 @@ export const butterTheme = defineTheme({
         },
       },
       'variant:destructive': {
-        backgroundColor: 'light-dark(#fde0e0, #f58a8a)',
-        color: 'light-dark(#8c1a1a, #4d1a1a)',
+        backgroundColor: 'light-dark(#ffd8d4, #ffaea7)',
+        color: 'light-dark(#7e1f20, #450000)',
       },
     },
 
     badge: {
       'variant:info': {
-        backgroundColor: 'light-dark(#dbe8f5, #2a4060)',
-        color: 'light-dark(#2e5a8c, #6da5d9)',
+        backgroundColor: 'light-dark(#d2e4ff, #17438b)',
+        color: 'light-dark(#17438b, #a6c8ff)',
       },
       'variant:neutral': {
-        backgroundColor: 'light-dark(#eae5dc, #3d372e)',
-        color: 'light-dark(#5c5040, #a89880)',
+        backgroundColor: 'light-dark(#dfe3e9, #44474c)',
+        color: 'light-dark(#44474c, #c3c7cd)',
       },
       'variant:success': {
-        backgroundColor: 'light-dark(#d4f0d4, #1a4d1a)',
-        color: 'light-dark(#1a6b1a, #66d966)',
+        backgroundColor: 'light-dark(#bdf3be, #225326)',
+        color: 'light-dark(#225326, #a2d7a2)',
       },
       'variant:warning': {
-        backgroundColor: 'light-dark(#fff3cc, #4d3d00)',
-        color: 'light-dark(#8c6b00, #ffd633)',
+        backgroundColor: 'light-dark(#ffe088, #5a4300)',
+        color: 'light-dark(#5a4300, #e6c361)',
       },
       'variant:error': {
-        backgroundColor: 'light-dark(#fde0e0, #4d1a1a)',
-        color: 'light-dark(#8c1a1a, #f58a8a)',
+        backgroundColor: 'light-dark(#ffd8d4, #7e1f20)',
+        color: 'light-dark(#7e1f20, #ffaea7)',
       },
     },
 
     banner: {
       'status:info': {
-        backgroundColor: 'light-dark(#dbe8f5, #2a4060)',
-        '--color-text-primary': 'light-dark(#2e5a8c, #6da5d9)',
-        '--color-text-secondary': 'light-dark(#2e5a8c, #6da5d9)',
-        '--color-accent': 'light-dark(#2e5a8c, #6da5d9)',
+        backgroundColor: 'light-dark(#d2e4ff, #17438b)',
+        '--color-text-primary': 'light-dark(#17438b, #a6c8ff)',
+        '--color-text-secondary': 'light-dark(#17438b, #a6c8ff)',
+        '--color-accent': 'light-dark(#17438b, #a6c8ff)',
       },
       'status:success': {
-        backgroundColor: 'light-dark(#d4f0d4, #1a4d1a)',
-        '--color-text-primary': 'light-dark(#1a6b1a, #66d966)',
-        '--color-text-secondary': 'light-dark(#1a6b1a, #66d966)',
-        '--color-success': 'light-dark(#1a6b1a, #66d966)',
+        backgroundColor: 'light-dark(#bdf3be, #225326)',
+        '--color-text-primary': 'light-dark(#225326, #a2d7a2)',
+        '--color-text-secondary': 'light-dark(#225326, #a2d7a2)',
+        '--color-success': 'light-dark(#225326, #a2d7a2)',
       },
       'status:warning': {
-        backgroundColor: 'light-dark(#fff3cc, #4d3d00)',
-        '--color-text-primary': 'light-dark(#8c6b00, #ffd633)',
-        '--color-text-secondary': 'light-dark(#8c6b00, #ffd633)',
-        '--color-warning': 'light-dark(#8c6b00, #ffd633)',
+        backgroundColor: 'light-dark(#ffe088, #5a4300)',
+        '--color-text-primary': 'light-dark(#5a4300, #e6c361)',
+        '--color-text-secondary': 'light-dark(#5a4300, #e6c361)',
+        '--color-warning': 'light-dark(#5a4300, #e6c361)',
       },
       'status:error': {
-        backgroundColor: 'light-dark(#fde0e0, #4d1a1a)',
-        '--color-text-primary': 'light-dark(#8c1a1a, #f58a8a)',
-        '--color-text-secondary': 'light-dark(#8c1a1a, #f58a8a)',
-        '--color-error': 'light-dark(#8c1a1a, #f58a8a)',
+        backgroundColor: 'light-dark(#ffd8d4, #7e1f20)',
+        '--color-text-primary': 'light-dark(#7e1f20, #ffaea7)',
+        '--color-text-secondary': 'light-dark(#7e1f20, #ffaea7)',
+        '--color-error': 'light-dark(#7e1f20, #ffaea7)',
       },
     },
 
@@ -291,88 +293,48 @@ export const butterTheme = defineTheme({
 });
 
 /**
- * Raw tonal palettes — every color at every tone step (0–100 in 5s).
- * Same hue and chroma used to derive all theme tokens.
- * Use these for custom components or data visualization.
+ * Raw tonal palettes — OKLCH-derived, every tone step.
+ * Source: #FDEE8C (H=102.3, C=0.131)
  */
 export const butterPalettes = {
   neutral: {
-    hue: 45, chroma: 12,
-    0: '#000000', 5: '#1a1200', 10: '#221a00', 15: '#2e2200', 20: '#3a2e0a',
-    25: '#463a16', 30: '#524622', 35: '#5e522e', 40: '#6b5e3a', 45: '#786b46',
-    50: '#857852', 55: '#92855e', 60: '#a0926b', 65: '#aea078', 70: '#bcae86',
-    75: '#cabc94', 80: '#d8caa2', 85: '#e6d8b0', 90: '#f4e6be', 95: '#fff4cc',
-    100: '#ffffff',
+    hue: 102, chroma: 0.02,
+    0: '#000000', 5: '#131107', 10: '#1d1c11', 20: '#323125', 30: '#49473b', 40: '#605f52', 50: '#79786a', 60: '#939184', 70: '#adac9e', 80: '#c9c7b9', 90: '#e5e3d4', 95: '#f3f2e2', 99: '#fffdee', 100: '#ffffff',
   },
   blue: {
-    hue: 220, chroma: 25,
-    0: '#000000', 5: '#0a1520', 10: '#152030', 15: '#1e2e44', 20: '#2a4060',
-    25: '#334d70', 30: '#3d5a7a', 35: '#486888', 40: '#547698', 45: '#6084a8',
-    50: '#6d93b8', 55: '#7aa2c8', 60: '#88b0d2', 65: '#96bedd', 70: '#a4cce8',
-    75: '#b2daf2', 80: '#c0e4fa', 85: '#d0ecff', 90: '#dbe8f5', 95: '#eef6ff',
-    100: '#ffffff',
+    hue: 260, chroma: 0.13,
+    0: '#000000', 5: '#000048', 10: '#000f56', 20: '#002a70', 30: '#17438b', 40: '#2f5ca7', 50: '#4776c3', 60: '#6090e0', 70: '#7aabfd', 80: '#a6c8ff', 90: '#d2e4ff', 95: '#e9f1ff', 99: '#fafcff', 100: '#ffffff',
   },
   cyan: {
-    hue: 178, chroma: 20,
-    0: '#000000', 5: '#001a18', 10: '#002622', 15: '#003330', 20: '#1a4d4a',
-    25: '#2d6662', 30: '#3d7a76', 35: '#4d8e8a', 40: '#5da29e', 45: '#6db6b2',
-    50: '#7dcac6', 55: '#8ddeda', 60: '#9df0ec', 65: '#a8f5f2', 70: '#b4faf7',
-    75: '#c0fffc', 80: '#ccffff', 85: '#d4f0ee', 90: '#e0f8f6', 95: '#f0fcfb',
-    100: '#ffffff',
+    hue: 200, chroma: 0.091,
+    0: '#000000', 5: '#00181b', 10: '#002326', 20: '#00393d', 30: '#005256', 40: '#006d71', 50: '#1a878c', 60: '#3ea1a7', 70: '#5cbdc2', 80: '#79d9de', 90: '#96f5fa', 95: '#c6fdff', 99: '#f3ffff', 100: '#ffffff',
   },
   green: {
-    hue: 130, chroma: 30,
-    0: '#000000', 5: '#001a00', 10: '#0a260a', 15: '#143314', 20: '#1a4d1a',
-    25: '#226622', 30: '#2d6930', 35: '#388038', 40: '#449944', 45: '#50b050',
-    50: '#5cc65c', 55: '#66d966', 70: '#7bc47e', 75: '#8ed98e', 80: '#a8e6a8',
-    85: '#b8f0b8', 90: '#d4f0d4', 95: '#e8fae8', 100: '#ffffff',
+    hue: 145, chroma: 0.091,
+    0: '#000000', 5: '#001900', 10: '#002500', 20: '#063c0e', 30: '#225326', 40: '#3b6c3d', 50: '#538555', 60: '#6da06e', 70: '#87bb88', 80: '#a2d7a2', 90: '#bdf3be', 95: '#d1ffd1', 99: '#f6fff5', 100: '#ffffff',
   },
   teal: {
-    hue: 158, chroma: 18,
-    0: '#000000', 5: '#001510', 10: '#002018', 15: '#003322', 20: '#1a4d3a',
-    25: '#2d664d', 30: '#3d7a60', 35: '#4d8e73', 40: '#5da286', 45: '#6db699',
-    50: '#7dcaac', 55: '#8ddebf', 60: '#9df0d0', 65: '#a8f5dc', 70: '#b4fae6',
-    75: '#c0ffee', 80: '#ccfff4', 85: '#d4ede4', 90: '#e0f5ec', 95: '#f0faf6',
-    100: '#ffffff',
+    hue: 175, chroma: 0.0845,
+    0: '#000000', 5: '#00190f', 10: '#00241a', 20: '#003b2e', 30: '#005444', 40: '#156e5c', 50: '#368774', 60: '#53a28e', 70: '#6ebda8', 80: '#89d9c3', 90: '#a5f6df', 95: '#c4ffee', 99: '#f3fffc', 100: '#ffffff',
   },
   yellow: {
-    hue: 50, chroma: 40,
-    0: '#000000', 5: '#1a1200', 10: '#261a00', 15: '#332200', 20: '#4d3d00',
-    25: '#665200', 30: '#6b5500', 35: '#806600', 40: '#997a00', 45: '#b38e00',
-    50: '#cca300', 55: '#d4aa00', 60: '#e6b800', 65: '#f0c800', 70: '#ffd633',
-    75: '#ffe066', 80: '#ffe999', 85: '#FFE799', 90: '#FFF3CC', 95: '#FFF9E6',
-    100: '#ffffff',
+    hue: 90, chroma: 0.1235,
+    0: '#000000', 5: '#250600', 10: '#2b1700', 20: '#402d00', 30: '#5a4300', 40: '#755b00', 50: '#937300', 60: '#ae8c22', 70: '#c9a743', 80: '#e6c361', 90: '#ffe088', 95: '#fff0c6', 99: '#fffcf3', 100: '#ffffff',
   },
   orange: {
-    hue: 30, chroma: 35,
-    0: '#000000', 5: '#200a00', 10: '#301500', 15: '#401e00', 20: '#4d2e00',
-    25: '#664400', 30: '#7a5500', 35: '#8e6600', 40: '#9c4a00', 45: '#b36600',
-    50: '#cc7a00', 55: '#e08e1a', 60: '#e89850', 65: '#f0a860', 70: '#f5b878',
-    75: '#fac890', 80: '#ffd8a8', 85: '#ffd199', 90: '#ffe8cc', 95: '#fff4e6',
-    100: '#ffffff',
+    hue: 55, chroma: 0.13,
+    0: '#000000', 5: '#350000', 10: '#3e0000', 20: '#541e00', 30: '#723200', 40: '#934600', 50: '#b05f1a', 60: '#cc7939', 70: '#ea9455', 80: '#ffb37e', 90: '#ffdac2', 95: '#ffede1', 99: '#fffbf9', 100: '#ffffff',
   },
   red: {
-    hue: 0, chroma: 30,
-    0: '#000000', 5: '#1a0000', 10: '#2e0a0a', 15: '#401515', 20: '#4d1a1a',
-    25: '#662d2d', 30: '#7a3535', 35: '#8c2e2e', 40: '#a03838', 45: '#b34444',
-    50: '#cc5555', 55: '#d96666', 60: '#e07777', 65: '#e88888', 70: '#f09a9a',
-    75: '#f5abab', 80: '#f5bbbb', 85: '#f8cccc', 90: '#fde0e0', 95: '#fff0f0',
-    100: '#ffffff',
+    hue: 25, chroma: 0.13,
+    0: '#000000', 5: '#360000', 10: '#450000', 20: '#620008', 30: '#7e1f20', 40: '#9a3a37', 50: '#b7544f', 60: '#d46e68', 70: '#f28981', 80: '#ffaea7', 90: '#ffd8d4', 95: '#ffebe9', 99: '#fffbfa', 100: '#ffffff',
   },
   pink: {
-    hue: 310, chroma: 20,
-    0: '#000000', 5: '#1a0015', 10: '#2e0a26', 15: '#401533', 20: '#4d1a44',
-    25: '#662d5a', 30: '#7a3570', 35: '#8c2e7a', 40: '#a03888', 45: '#b34498',
-    50: '#cc55aa', 55: '#d966bb', 60: '#e077c4', 65: '#e888d0', 70: '#f09adc',
-    75: '#f5abe6', 80: '#f5bbee', 85: '#eabbe0', 90: '#f5ddf0', 95: '#faf0f7',
-    100: '#ffffff',
+    hue: 350, chroma: 0.13,
+    0: '#000000', 5: '#320018', 10: '#400024', 20: '#5b0039', 30: '#762050', 40: '#923a69', 50: '#ae5382', 60: '#cb6d9c', 70: '#e887b7', 80: '#ffa7d1', 90: '#ffd5e7', 95: '#ffeaf3', 99: '#fffbfd', 100: '#ffffff',
   },
   purple: {
-    hue: 270, chroma: 25,
-    0: '#000000', 5: '#100020', 10: '#1a0a30', 15: '#261544', 20: '#3a1a60',
-    25: '#4d2d7a', 30: '#5a358c', 35: '#5e2e8c', 40: '#7040a0', 45: '#8050b3',
-    50: '#9060cc', 55: '#a070d9', 60: '#a870d9', 65: '#b888e0', 70: '#c8a0e8',
-    75: '#d8b0f0', 80: '#e0c0f5', 85: '#d1bbea', 90: '#e8ddf5', 95: '#f5f0fa',
-    100: '#ffffff',
+    hue: 300, chroma: 0.13,
+    0: '#000000', 5: '#1d003f', 10: '#27004d', 20: '#3c1767', 30: '#533181', 40: '#6b4a9c', 50: '#8363b8', 60: '#9d7dd4', 70: '#b897f1', 80: '#d0b8ff', 90: '#e7dcff', 95: '#f3edff', 99: '#fdfbff', 100: '#ffffff',
   },
 } as const;
