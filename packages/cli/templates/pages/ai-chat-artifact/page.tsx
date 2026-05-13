@@ -356,16 +356,17 @@ export default function AIChatArtifactTemplate() {
                   <XDSMarkdown>{ARTIFACT_CONTENT}</XDSMarkdown>
                 </XDSVStack>
               ) : (
-                <XDSText
-                  type="body"
-                  as="pre"
+                <pre
                   style={{
                     whiteSpace: 'pre-wrap',
                     fontFamily: 'monospace',
                     fontSize: '13px',
+                    margin: 0,
                   }}>
-                  {`# ${ARTIFACT_TITLE}\n${ARTIFACT_CONTENT}`}
-                </XDSText>
+                  <XDSText type="code">
+                    {`# ${ARTIFACT_TITLE}\n${ARTIFACT_CONTENT}`}
+                  </XDSText>
+                </pre>
               )}
             </div>
           </div>
