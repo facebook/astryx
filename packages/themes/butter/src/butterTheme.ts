@@ -43,9 +43,10 @@ export const butterTheme = defineTheme({
         '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
     },
     heading: {
-      family: 'Sarina',
+      family: 'Outfit',
       fallbacks:
-        '"Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+        '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+      weights: {3: 'bold', 4: 'bold'},
     },
     code: {
       family: 'JetBrains Mono',

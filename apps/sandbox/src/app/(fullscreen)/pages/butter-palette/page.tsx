@@ -1,7 +1,10 @@
 'use client';
 
+import {XDSVStack} from '@xds/core/Layout';
 import {butterTheme} from '@xds/theme-butter/built';
 import {ThemePalettePreview} from '@/components/ThemePalettePreview';
+
+const SARINA = "'Sarina', cursive";
 
 const TONAL_COLORS = [
   {name: 'Accent', sourceHex: '#225BFF'},
@@ -28,6 +31,50 @@ const CORE = [
   {hex: '#FFFFFF', name: 'White'},
 ];
 
+const sectionTitle: React.CSSProperties = {
+  fontSize: 13,
+  fontWeight: 600,
+  margin: 0,
+  marginBottom: 12,
+};
+
+function DisplayTextSection() {
+  return (
+    <div>
+      <h3 style={sectionTitle}>Display Text (Sarina)</h3>
+      <XDSVStack gap={2}>
+        <span
+          style={{
+            fontFamily: SARINA,
+            fontSize: 83,
+            fontWeight: 400,
+            lineHeight: 1.15,
+          }}>
+          Display 1
+        </span>
+        <span
+          style={{
+            fontFamily: SARINA,
+            fontSize: 67,
+            fontWeight: 400,
+            lineHeight: 1.15,
+          }}>
+          Display 2
+        </span>
+        <span
+          style={{
+            fontFamily: SARINA,
+            fontSize: 53,
+            fontWeight: 400,
+            lineHeight: 1.2,
+          }}>
+          Display 3
+        </span>
+      </XDSVStack>
+    </div>
+  );
+}
+
 export default function ButterPalettePage() {
   return (
     <ThemePalettePreview
@@ -36,6 +83,7 @@ export default function ButterPalettePage() {
       subtitle="A warm, golden theme inspired by fresh butter and sunlight. OKLCH-derived tonal ramps from source #FDEE8C. Accent: #225BFF."
       tonalColors={TONAL_COLORS}
       coreSwatches={CORE}
+      leadingExtras={<DisplayTextSection />}
     />
   );
 }
