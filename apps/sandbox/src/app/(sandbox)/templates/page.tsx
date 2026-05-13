@@ -20,6 +20,8 @@ import {usePowerSearchConfig} from '@xds/core/PowerSearch';
 import type {PowerSearchFilter} from '@xds/core/PowerSearch';
 import {XDSLink} from '@xds/core/Link';
 import {XDSBadge} from '@xds/core/Badge';
+import {XDSButton} from '@xds/core/Button';
+import {CopyIcon} from '../../icons';
 import {templates} from '../../../generated/templateRegistry';
 import {blocks} from '../../../generated/blockRegistry';
 
@@ -147,13 +149,17 @@ function useTableSearchParams() {
   return {sort, onSortChange, filters, onFilterChange};
 }
 
-function CopyPath({path}: {path: string}) {
+function CopyPath({path, label}: {path: string; label: string}) {
   return (
-    <XDSLink
-      onClick={() => navigator.clipboard.writeText(path)}
-      style={{cursor: 'pointer'}}>
-      Copy Path
-    </XDSLink>
+    <XDSButton
+      label={label}
+      icon={<CopyIcon />}
+      variant="ghost"
+      size="sm"
+      isIconOnly
+      tooltip={label}
+      clickAction={() => navigator.clipboard.writeText(path)}
+    />
   );
 }
 
@@ -234,14 +240,18 @@ const columns: XDSTableColumn<TemplateRow>[] = [
   {
     key: 'codePath',
     header: 'Code',
-    width: pixel(50),
-    renderCell: (row: TemplateRow) => <CopyPath path={row.codePath} />,
+    width: pixel(60),
+    renderCell: (row: TemplateRow) => (
+      <CopyPath path={row.codePath} label="Copy code path" />
+    ),
   },
   {
     key: 'docPath',
     header: 'Doc',
-    width: pixel(50),
-    renderCell: (row: TemplateRow) => <CopyPath path={row.docPath} />,
+    width: pixel(60),
+    renderCell: (row: TemplateRow) => (
+      <CopyPath path={row.docPath} label="Copy doc path" />
+    ),
   },
 ];
 
