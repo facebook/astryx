@@ -76,7 +76,7 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-4'],
     paddingBlock: spacingVars['--spacing-3'],
     borderBottom: '1px solid',
-    borderBottomColor: colorVars['--color-border-default'],
+    borderBottomColor: colorVars['--color-border'],
   },
   artifactContent: {
     flex: 1,
@@ -100,7 +100,7 @@ const styles = stylex.create({
   tabRow: {
     paddingInline: spacingVars['--spacing-4'],
     borderBottom: '1px solid',
-    borderBottomColor: colorVars['--color-border-default'],
+    borderBottomColor: colorVars['--color-border'],
   },
 });
 
