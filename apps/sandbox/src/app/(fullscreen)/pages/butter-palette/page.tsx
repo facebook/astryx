@@ -21,11 +21,11 @@ const TONAL_COLORS = [
 ];
 
 const CORE = [
-  {hex: '#1d1c11', name: 'Butter 900'},
-  {hex: '#605f52', name: 'Butter 500'},
-  {hex: '#c9c7b9', name: 'Butter 300'},
-  {hex: '#FDEE8C', name: 'Butter 100'},
-  {hex: '#fffdee', name: 'Cream'},
+  {hex: '#225BFF', name: 'Butter 900'},
+  {hex: '#5681FF', name: 'Butter 700'},
+  {hex: '#FDEE8C', name: 'Butter 300'},
+  {hex: '#FDFBE4', name: 'Butter 100'},
+  {hex: '#FFFFFF', name: 'White'},
 ];
 
 export default function ButterPalettePage() {

@@ -28,7 +28,7 @@ const butterSyntax = defineSyntaxTheme({
     attribute: ['#514800', '#d6ca65'], // Yellow (H=102)
     property: ['#045439', '#93d8b6'], // Teal (H=163)
     punctuation: ['#605f52', '#adac9e'], // Neutral
-    background: ['#fffdee', '#131107'],
+    background: ['#FDFBE4', '#131107'],
   },
 });
 
@@ -38,15 +38,14 @@ export const butterTheme = defineTheme({
   typography: {
     scale: {base: 14, ratio: 1.25},
     body: {
-      family: 'Inter',
+      family: 'Outfit',
       fallbacks:
         '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
     },
     heading: {
-      family: 'Nunito',
+      family: 'Sarina',
       fallbacks:
-        '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-      weights: {3: 'bold', 4: 'bold'},
+        '"Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
     },
     code: {
       family: 'JetBrains Mono',
@@ -71,7 +70,7 @@ export const butterTheme = defineTheme({
     '--color-accent-muted': ['#225BFF33', '#8ca9ff40'],
     '--color-neutral': ['#1d1c110F', '#f3f2e21A'],
     '--color-background-surface': ['#FFFFFF', '#1d1c11'],
-    '--color-background-body': ['#fffdee', '#131107'],
+    '--color-background-body': ['#FDFBE4', '#131107'],
     '--color-overlay': ['#1d1c1180', '#131107cc'],
     '--color-overlay-hover': ['#1d1c110D', '#f3f2e20D'],
     '--color-overlay-pressed': ['#1d1c111A', '#f3f2e21A'],
@@ -227,26 +226,30 @@ export const butterTheme = defineTheme({
     },
 
     badge: {
-      // Info uses accent (blue)
+      // Info = #225BFF (accent blue)
       'variant:info': {
-        backgroundColor: 'light-dark(#d7e2ff, #283b96)',
-        color: 'light-dark(#283b96, #afc5ff)',
+        backgroundColor: 'light-dark(#225BFF, #225BFF)',
+        color: 'light-dark(#ffffff, #ffffff)',
       },
+      // Neutral = #FDEE8C (butter), text = #225BFF
       'variant:neutral': {
-        backgroundColor: 'light-dark(#e1e2e9, #46464c)',
-        color: 'light-dark(#46464c, #c5c6cd)',
+        backgroundColor: 'light-dark(#FDEE8C, #FDEE8C)',
+        color: 'light-dark(#225BFF, #225BFF)',
       },
+      // Success = #AAC515
       'variant:success': {
-        backgroundColor: 'light-dark(#dbeca7, #424d04)',
-        color: 'light-dark(#424d04, #bfcf8c)',
+        backgroundColor: 'light-dark(#AAC515, #AAC515)',
+        color: 'light-dark(#ffffff, #ffffff)',
       },
+      // Warning = #F8C726
       'variant:warning': {
-        backgroundColor: 'light-dark(#fee17e, #574500)',
-        color: 'light-dark(#574500, #e1c561)',
+        backgroundColor: 'light-dark(#F8C726, #F8C726)',
+        color: 'light-dark(#1d1c11, #1d1c11)',
       },
+      // Error = #FF5947
       'variant:error': {
-        backgroundColor: 'light-dark(#ffd8d1, #7e2018)',
-        color: 'light-dark(#7e2018, #ffafa2)',
+        backgroundColor: 'light-dark(#FF5947, #FF5947)',
+        color: 'light-dark(#ffffff, #ffffff)',
       },
     },
 
