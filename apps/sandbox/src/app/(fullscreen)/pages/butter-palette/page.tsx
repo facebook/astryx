@@ -5,15 +5,16 @@ import {ThemePalettePreview} from '@/components/ThemePalettePreview';
 
 const TONAL_COLORS = [
   {name: 'Butter Neutral', sourceHex: '#e5e3d4'},
-  {name: 'Blue', sourceHex: '#d2e4ff'},
-  {name: 'Cyan', sourceHex: '#96f5fa'},
-  {name: 'Green', sourceHex: '#bdf3be', semantic: 'Success'},
-  {name: 'Teal', sourceHex: '#a5f6df'},
-  {name: 'Yellow', sourceHex: '#ffe088', semantic: 'Warning'},
-  {name: 'Orange', sourceHex: '#ffdac2'},
-  {name: 'Red', sourceHex: '#ffd8d4', semantic: 'Error'},
-  {name: 'Pink', sourceHex: '#ffd5e7'},
-  {name: 'Purple', sourceHex: '#e7dcff'},
+  {name: 'Blue', sourceHex: '#5681FF'},
+  {name: 'Cyan', sourceHex: '#60CFD3'},
+  {name: 'Green', sourceHex: '#AAC515', semantic: 'Success'},
+  {name: 'Teal', sourceHex: '#6CD9A8'},
+  {name: 'Yellow', sourceHex: '#F8C726', semantic: 'Warning'},
+  {name: 'Butter', sourceHex: '#FDEE8C'},
+  {name: 'Orange', sourceHex: '#FFA347'},
+  {name: 'Red', sourceHex: '#FF5947', semantic: 'Error'},
+  {name: 'Pink', sourceHex: '#F680E8'},
+  {name: 'Purple', sourceHex: '#B780F6'},
 ];
 
 const CORE = [
@@ -29,7 +30,7 @@ export default function ButterPalettePage() {
     <ThemePalettePreview
       theme={butterTheme}
       title="Butter Theme Palette"
-      subtitle="A warm, golden theme inspired by fresh butter and sunlight. OKLCH-derived tonal ramps from source #FDEE8C."
+      subtitle="A warm, golden theme inspired by fresh butter and sunlight. OKLCH-derived tonal ramps from source #FDEE8C. Accent: #225BFF."
       tonalColors={TONAL_COLORS}
       coreSwatches={CORE}
     />
