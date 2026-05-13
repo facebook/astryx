@@ -44,6 +44,7 @@ export const inputWrapperStyles = stylex.create({
       ':hover': {
         '@media (hover: hover)': colorVars['--color-border-emphasized'],
       },
+      ':focus-within': colorVars['--color-accent'],
     },
     '--_field-radius': radiusVars['--radius-element'],
     borderRadius: 'var(--_field-radius)',
@@ -59,12 +60,9 @@ export const inputWrapperStyles = stylex.create({
       ':hover': {
         '@media (hover: hover)': shadowVars['--shadow-inset-hover'],
       },
+      ':focus-within': shadowVars['--shadow-inset-selected'],
     },
-    outline: {
-      default: 'none',
-      ':focus-within': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: '0',
+    outline: 'none',
   },
   disabled: {
     cursor: 'not-allowed',
@@ -121,53 +119,53 @@ export const inputStatusHoverShadowStyles = stylex.create({
 });
 
 /**
- * Status focus outline styles using :focus-within.
+ * Status focus border styles using :focus-within.
  * Used by input wrappers that contain a child input/textarea element.
  * Keyed by XDSInputStatusType.
  */
 export const inputStatusFocusWithinStyles = stylex.create({
   warning: {
-    outline: {
-      default: 'none',
-      ':focus-within': `${borderVars['--border-width']} solid ${colorVars['--color-warning']}`,
+    borderColor: {
+      default: colorVars['--color-warning'],
+      ':focus-within': colorVars['--color-warning'],
     },
   },
   error: {
-    outline: {
-      default: 'none',
-      ':focus-within': `${borderVars['--border-width']} solid ${colorVars['--color-error']}`,
+    borderColor: {
+      default: colorVars['--color-error'],
+      ':focus-within': colorVars['--color-error'],
     },
   },
   success: {
-    outline: {
-      default: 'none',
-      ':focus-within': `${borderVars['--border-width']} solid ${colorVars['--color-success']}`,
+    borderColor: {
+      default: colorVars['--color-success'],
+      ':focus-within': colorVars['--color-success'],
     },
   },
 });
 
 /**
- * Status focus outline styles using :focus.
+ * Status focus border styles using :focus.
  * Used by components where the wrapper itself receives focus (e.g. Selector button).
  * Keyed by XDSInputStatusType.
  */
 export const inputStatusFocusStyles = stylex.create({
   warning: {
-    outline: {
-      default: 'none',
-      ':focus': `${borderVars['--border-width']} solid ${colorVars['--color-warning']}`,
+    borderColor: {
+      default: colorVars['--color-warning'],
+      ':focus': colorVars['--color-warning'],
     },
   },
   error: {
-    outline: {
-      default: 'none',
-      ':focus': `${borderVars['--border-width']} solid ${colorVars['--color-error']}`,
+    borderColor: {
+      default: colorVars['--color-error'],
+      ':focus': colorVars['--color-error'],
     },
   },
   success: {
-    outline: {
-      default: 'none',
-      ':focus': `${borderVars['--border-width']} solid ${colorVars['--color-success']}`,
+    borderColor: {
+      default: colorVars['--color-success'],
+      ':focus': colorVars['--color-success'],
     },
   },
 });

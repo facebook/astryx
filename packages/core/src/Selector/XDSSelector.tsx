@@ -79,6 +79,7 @@ const styles = stylex.create({
       ':hover': {
         '@media (hover: hover)': colorVars['--color-border-emphasized'],
       },
+      ':focus-within': colorVars['--color-accent'],
     },
     borderRadius: radiusVars['--radius-element'],
     backgroundColor: colorVars['--color-background-surface'],
@@ -98,12 +99,9 @@ const styles = stylex.create({
       ':hover': {
         '@media (hover: hover)': shadowVars['--shadow-inset-hover'],
       },
+      ':focus-within': shadowVars['--shadow-inset-selected'],
     },
-    outline: {
-      default: 'none',
-      ':focus-within': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: '0',
+    outline: 'none',
   },
   // Trigger button — the actual combobox button, visually integrated with the container
   trigger: {
