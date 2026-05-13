@@ -294,7 +294,7 @@ export default function AIChatArtifactTemplate() {
         {/* Resize Handle */}
         <XDSResizeHandle
           direction="horizontal"
-          resizable={chatResize}
+          resizable={chatResize.props}
           hasDivider
           label="Resize chat panel"
         />
