@@ -461,6 +461,7 @@ const columns: XDSTableColumn<OrderRow>[] = [
           src={PRODUCTS[item.imageIndex].image}
           alt={item.product}
           label={item.product}
+          style={{width: 36, height: 36, flexShrink: 0}}
         />
         <XDSVStack gap={0}>
           <XDSText type="body">{item.product}</XDSText>
