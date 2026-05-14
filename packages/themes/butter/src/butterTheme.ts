@@ -229,21 +229,20 @@ export const butterTheme = defineTheme({
         paddingBlock: 'var(--spacing-3)',
         paddingInline: 'var(--spacing-4)',
       },
-      // Secondary: blue outline + label. Dark-mode blue matches the
-      // primary's dark-mode background so the two read as siblings.
+      // Secondary: blue outline + label in light, butter yellow in dark.
       'variant:secondary': {
         backgroundColor: 'transparent',
         borderWidth: '1.5px',
         borderStyle: 'solid',
-        borderColor: 'light-dark(#225BFF, #8ca9ff)',
-        color: 'light-dark(#225BFF, #8ca9ff)',
+        borderColor: 'light-dark(#225BFF, #FDEE8C)',
+        color: 'light-dark(#225BFF, #FDEE8C)',
         ':hover': {
-          backgroundColor: 'light-dark(#225BFF14, #8ca9ff14)',
+          backgroundColor: 'light-dark(#225BFF14, #FDEE8C14)',
         },
       },
-      // Ghost: same blue as secondary text, no background.
+      // Ghost: same accent color as secondary, no background.
       'variant:ghost': {
-        color: 'light-dark(#225BFF, #8ca9ff)',
+        color: 'light-dark(#225BFF, #FDEE8C)',
       },
       'variant:destructive': {
         backgroundColor: 'light-dark(#ffdad3, #f4b8ae)',
