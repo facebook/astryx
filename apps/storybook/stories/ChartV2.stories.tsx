@@ -188,3 +188,34 @@ export const StackedAreas: StoryObj = {
     />
   ),
 };
+
+const profitLossData = [
+  {month: 'Jan', profit: 20, trend: 15},
+  {month: 'Feb', profit: -10, trend: 5},
+  {month: 'Mar', profit: 35, trend: 20},
+  {month: 'Apr', profit: -25, trend: -5},
+  {month: 'May', profit: 15, trend: 10},
+  {month: 'Jun', profit: -5, trend: 8},
+];
+
+/** Mixed marks with negative values */
+export const NegativeValues: StoryObj = {
+  render: () => (
+    <XDSChart
+      data={profitLossData}
+      xKey="month"
+      series={[
+        bar('profit', {color: '#3b82f6'}),
+        line('trend', {color: '#f59e0b', dots: true, strokeWidth: 2}),
+      ]}
+      grid={<XDSChartGrid horizontal />}
+      axes={
+        <>
+          <XDSChartAxis position="bottom" />
+          <XDSChartAxis position="left" />
+        </>
+      }
+      height={300}
+    />
+  ),
+};
