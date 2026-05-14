@@ -41,7 +41,7 @@ const neutralSyntax = defineSyntaxTheme({
     string: ['#005600', '#a6d2a2'],     // green (sat T30 / pastel T80)
     comment: ['#737373', '#a3a3a3'],    // neutral
     number: ['#6e3500', '#ffb37f'],     // orange
-    function: ['#004881', '#9acbff'],   // blue
+    function: ['#00458c', '#a0caff'],   // blue T30/T80 H=255
     type: ['#700084', '#efa8ff'],       // purple
     variable: ['#171717', '#e5e5e5'],   // near-black / near-white
     operator: ['#737373', '#a3a3a3'],   // neutral
@@ -95,62 +95,103 @@ export const neutralTheme = defineTheme({
     // 500:#737373 600:#525252 700:#404040 800:#262626 900:#171717 950:#0a0a0a
     // =========================================================================
 
-    // Core semantic
-    '--color-accent': ['#262626', '#ebebeb'],
-    '--color-accent-muted': ['#f5f5f5', '#404040'],
-    '--color-neutral': ['#0000000F', '#FFFFFF1A'],
-    '--color-background-surface': ['#ffffff', '#141414'],
-    '--color-background-body': ['#f5f5f5', '#404040'],
-    '--color-overlay': ['#00000080', '#000000CC'],
-    '--color-overlay-hover': ['#0000000D', '#FFFFFF0D'],
+    // =========================================================================
+    // Backgrounds — Figma-style flat with a single lifted surface.
+    //
+    // Dark mode collapses card / popover / muted to body T10. Cards and
+    // popovers lift purely via shadow + inset highlight (see --shadow-*
+    // below) — they don't need a distinct tone.
+    //
+    // Surface is the exception: it's tonally LIGHTER than body (T15) so
+    // interactive components that sit on top of body have a clear,
+    // differentiated foreground. Real consumers of --color-background-surface
+    // are: switches, radios, checkboxes, multi-selectors, dialogs, app
+    // shells, sections — all things that need to lift above the canvas.
+    //
+    //   surface  T15 #262626  — interactive surfaces lifted above body
+    //   body     T10 #1b1b1b  — main canvas
+    //   card     T10 #1b1b1b  — same as body, lifts via --shadow-low
+    //   popover  T10 #1b1b1b  — same as body, lifts via --shadow-med
+    //   muted    T10 #1b1b1b  — same as body
+    //
+    // Light mode keeps the standard ladder (white surfaces float on tinted
+    // body; shadows do most of the lifting):
+    //   surface  T100 #ffffff
+    //   body     T95  #f1f1f1
+    //   card     T100 #ffffff
+    //   popover  T100 #ffffff
+    //   muted    T95  #f1f1f1
+    //
+    // All values use the OKLCH Neutral tonal palette (chroma=0).
+    // =========================================================================
+    '--color-background-surface': ['#ffffff', '#262626'],
+    '--color-background-body':    ['#f1f1f1', '#1b1b1b'],
+    '--color-background-card':    ['#ffffff', '#1b1b1b'],
+    '--color-background-popover': ['#ffffff', '#1b1b1b'],
+    '--color-background-muted':   ['#f1f1f1', '#1b1b1b'],
+
+    // Accent + neutral surface tints (sit alongside backgrounds)
+    '--color-accent':       ['#262626', '#ebebeb'],
+    '--color-accent-muted': ['#f1f1f1', '#262626'],
+    '--color-neutral':      ['#0000000F', '#FFFFFF1A'],
+
+    // Overlays (modal scrims, hover/pressed tints)
+    '--color-overlay':         ['#00000080', '#000000CC'],
+    '--color-overlay-hover':   ['#0000000D', '#FFFFFF0D'],
     '--color-overlay-pressed': ['#0000001A', '#FFFFFF1A'],
-    '--color-background-muted': ['#f5f5f5', '#404040'],
 
     // Text
-    '--color-text-primary': ['#171717', '#fafafa'],
+    '--color-text-primary':   ['#171717', '#fafafa'],
     '--color-text-secondary': ['#737373', '#a3a3a3'],
-    '--color-text-disabled': ['#a3a3a3', '#525252'],
-    '--color-text-accent': ['#262626', '#ebebeb'],
-    '--color-on-dark': '#ffffff',
-    '--color-on-light': '#171717',
+    '--color-text-disabled':  ['#a3a3a3', '#525252'],
+    '--color-text-accent':    ['#262626', '#ebebeb'],
+    '--color-on-dark':    '#ffffff',
+    '--color-on-light':   '#171717',
     // Contrast: neutral accent is near-black (L) / near-white (D)
-    '--color-on-accent': ['#ffffff', '#171717'],
+    '--color-on-accent':  ['#ffffff', '#171717'],
     '--color-on-success': ['#ffffff', '#171717'],
-    '--color-on-error': ['#ffffff', '#171717'],
+    '--color-on-error':   ['#ffffff', '#171717'],
     '--color-on-warning': '#171717',
 
     // Icon
-    '--color-icon-accent': ['#262626', '#ebebeb'],
-    '--color-icon-primary': ['#171717', '#fafafa'],
+    '--color-icon-accent':    ['#262626', '#ebebeb'],
+    '--color-icon-primary':   ['#171717', '#fafafa'],
     '--color-icon-secondary': ['#737373', '#a3a3a3'],
-    '--color-icon-disabled': ['#a3a3a3', '#525252'],
+    '--color-icon-disabled':  ['#a3a3a3', '#525252'],
 
-    // Surface variants
-    '--color-background-card': ['#ffffff', '#262626'],
-    '--color-background-popover': ['#ffffff', '#404040'],
-
-    // Status / Sentiment
-    //   --color-X         = saturated stop (T40 light / T60 dark) for borders/icons
-    //   --color-X-muted   = SOFTER pastel T90 / C=0.04-0.07 — used by large persistent
-    //                       surfaces (banners, inputs, destructive button bg) where
-    //                       higher saturation would feel overwhelming. The
-    //                       --color-background-X tokens used by cards/badges sit
-    //                       at the brighter T85 / C=0.08 stop instead.
-    // Status saturated colors stay adaptive — light mode uses T40 saturated
-    // (visible on white input bg), dark mode uses T30 darker (works against
-    // the locked light pastel bg used by banners/inputs).
-    '--color-success': ['#007004', '#005600'],
-    '--color-error': ['#a50c25', '#89001a'],
-    '--color-warning': ['#745b00', '#584400'],
-    // Muted bgs differ by mode:
-    //   • Light: T90 stops — visible color presence so banners/inputs read
-    //     as clear status surfaces, not delicate washes.
-    //   • Dark : T85 stops — same hex as the dark-mode badge variant slot,
-    //     so banners/badges/inputs share one darker pastel family against
-    //     the dark page.
-    '--color-success-muted': ['#c3e2bd', '#b4e0af'],
-    '--color-error-muted': ['#fdc9c6', '#ffc3c0'],
-    '--color-warning-muted': ['#f1d589', '#f6d476'],
+    // Status / Sentiment — dark mode follows the issue #2150 rubric:
+    //
+    //   Light mode: pastel T90 banner bg + dark T30/T40 text/icon. Locked
+    //               light values for cards/banners/inputs/destructive btn.
+    //   Dark mode : tinted-dark T20 bg + light pastel T80 text. INVERTED
+    //               from light. Avoids the §5 "pastel-in-both-modes"
+    //               anti-pattern (locked pastels glow against a dark body).
+    //
+    //   --color-X         = "saturated text/icon stop":
+    //                         light = T40 dark colored (sits on light pastel)
+    //                         dark  = T80 light pastel  (sits on dark tinted bg)
+    //                       Used by destructive button text, input border/icon
+    //                       (in light), banner-status-* text overrides.
+    //   --color-X-muted   = "muted bg stop":
+    //                         light = T90 light pastel
+    //                         dark  = hue-tinted alpha overlay (T70 stop @ 24%)
+    //                       Used by banner bg, status-input message bg,
+    //                       destructive button bg. Dark mode uses an alpha
+    //                       overlay rather than a solid T20 tinted bg so
+    //                       the surface composes onto whatever sits behind
+    //                       it (body, card, popover) rather than reading
+    //                       as a hard colored panel.
+    //
+    //   24% alpha = '3D' suffix. Hue values match --color-icon-{X} dark
+    //   slots (palette T70). Composited onto body #1b1b1b, the effective
+    //   bg luminance hits ~1.65-1.70:1 vs body — visible colored surface
+    //   without the heaviness of a solid T20 panel.
+    '--color-success': ['#007004', '#a2eaa2'],
+    '--color-error': ['#a50c25', '#ffc3c0'],
+    '--color-warning': ['#745b00', '#f9d05a'],
+    '--color-success-muted': ['#c5e5c0', '#87cd873D'],
+    '--color-error-muted': ['#facecb', '#ff97943D'],
+    '--color-warning-muted': ['#ffde9b', '#dcb4393D'],
 
     // Border
     '--color-border': ['#ebebeb', '#FFFFFF1A'],
@@ -162,71 +203,86 @@ export const neutralTheme = defineTheme({
     '--color-tint-hover': ['black', 'white'],
 
     // =========================================================================
-    // Categorical — OKLCH-from-scratch tonal palettes
-    // bg=T90/T20  border=T80/T30  icon=T30/T80  text=T30/T80
+    // Categorical — light mode uses pastel surfaces + dark colored text;
+    //               dark mode INVERTS to a hue-tinted alpha overlay surface +
+    //               light pastel text (per #2150 rubric §3 — pick the tone
+    //               that satisfies required contrast against every surface
+    //               the token touches).
+    //
+    // Per-token tone choice (CIELab L*):
+    //   bg     light=T87-T90 pastel       dark=T70 hue @ 24% alpha overlay
+    //                                       (composites onto body to ~1.65:1
+    //                                        vs body — colored surface that
+    //                                        feels lighter than a solid T20
+    //                                        panel; same hue as --color-icon-X
+    //                                        dark slot, just at lower opacity)
+    //   border light=T80 pastel           dark=T60 mid-bright (>=5.8:1 vs body)
+    //   icon   light=T30 dark colored     dark=T70 light pastel
+    //   text   light=T30 dark colored     dark=T80 light pastel (>=7:1 on bg)
+    //
+    // Light pastels still use the per-hue chroma table (red/blue C=0.05,
+    // orange/green/purple/pink C=0.06, teal/cyan C=0.07, yellow H=85 C=0.10)
+    // for equal PERCEIVED saturation. Dark stops (T60/T70/T80) come from
+    // the dark-mode tonal palette (chroma×0.85, +5 tone lift tapering 80-95).
     // =========================================================================
 
-    // Red  H=22  (lowered from H=25 to feel less coral)
-    '--color-background-red': ['#fdc9c6', '#ffc3c0'],
-    '--color-border-red': ['#ffaeaa', '#89001a'],
-    '--color-icon-red': '#89001a',
-    '--color-text-red': '#89001a',
+    // Red  H=22 — light C=0.05 pastel; dark from H=22 C=0.198 source
+    '--color-background-red': ['#facecb', '#ff97943D'],
+    '--color-border-red': ['#e6bab8', '#ff6165'],
+    '--color-icon-red': ['#89001a', '#ff9794'],
+    '--color-text-red': ['#89001a', '#ffc3c0'],
 
-    // Orange  H=55  (lowered from H=65 for more orange, less yellow character)
-    '--color-background-orange': ['#f8ceb2', '#ffcaa5'],
-    '--color-border-orange': ['#ffb37f', '#6e3500'],
-    '--color-icon-orange': '#6e3500',
-    '--color-text-orange': '#6e3500',
+    // Orange  H=55 — light C=0.06 pastel; dark from H=55 C=0.132 source
+    '--color-background-orange': ['#fad0b5', '#f9a1613D'],
+    '--color-border-orange': ['#e6bda2', '#dc8645'],
+    '--color-icon-orange': ['#6e3500', '#f9a161'],
+    '--color-text-orange': ['#6e3500', '#ffc7a1'],
 
-    // Yellow  H=90
-    '--color-background-yellow': ['#f1d589', '#f6d476'],
-    '--color-border-yellow': ['#eec12f', '#584400'],
-    '--color-icon-yellow': '#584400',
-    '--color-text-yellow': '#584400',
+    // Yellow  H=85 light C=0.10 pastel; dark from H=90 C=0.142 source
+    // (warning yellow keeps H=90 dark family for filled badge + tonal palette
+    // consistency; light butter-yellow at H=85 was tuned via picker for
+    // light-mode banner bg only).
+    '--color-background-yellow': ['#ffde9b', '#dcb4393D'],
+    '--color-border-yellow': ['#e4c279', '#c09805'],
+    '--color-icon-yellow': ['#584400', '#dcb439'],
+    '--color-text-yellow': ['#584400', '#f9d05a'],
 
-    // Green  H=141  (decoupled palette: clearly-green saturated stops +
-    // chroma-balanced pastel stops)
-    //   • Saturated (text, icon, border-dark, success badge T50, destructive
-    //     btn): HCT(141, C=55) source — T30 #005600 / T50 #328738 / T40 #007004
-    //   • Pastel (bg, banner, input msg, badge bg): HCT(141, C=30) source —
-    //     T80 #a6d2a2 / T85 #b4e0af / T90 #c2eebd. T90 lands at OKLCH C=0.08
-    //     between the cool family (C=0.06) and warning yellow (C=0.10), so
-    //     the success banner reads as visibly green like warning reads as
-    //     yellow, without being zingy at the larger C=55-source pastel stops.
-    '--color-background-green': ['#c3e2bd', '#b4e0af'],
-    '--color-border-green': ['#a6d2a2', '#005600'],
-    '--color-icon-green': '#005600',
-    '--color-text-green': '#005600',
+    // Green  H=144 — light C=0.06 pastel; dark from H=144 C=0.121 source
+    '--color-background-green': ['#c5e5c0', '#87cd873D'],
+    '--color-border-green': ['#b2d1ac', '#6cb16d'],
+    '--color-icon-green': ['#0c5700', '#87cd87'],
+    '--color-text-green': ['#0c5700', '#a2eaa2'],
 
-    // Teal  H=180
-    '--color-background-teal': ['#ade5d9', '#9ce9d9'],
-    '--color-border-teal': ['#83dac9', '#005348'],
-    '--color-icon-teal': '#005348',
-    '--color-text-teal': '#005348',
+    // Teal  H=180 — light C=0.07 pastel; dark from H=180 C=0.074 source
+    '--color-background-teal': ['#a7eadc', '#82c9bb3D'],
+    '--color-border-teal': ['#94d6c8', '#67ada0'],
+    '--color-icon-teal': ['#005348', '#82c9bb'],
+    '--color-text-teal': ['#005348', '#9de5d6'],
 
-    // Cyan  H=215
-    '--color-background-cyan': ['#abe2f0', '#99e6f9'],
-    '--color-border-cyan': ['#82d5e9', '#00505f'],
-    '--color-icon-cyan': '#00505f',
-    '--color-text-cyan': '#00505f',
+    // Cyan  H=215 — light C=0.07 pastel; dark from H=215 C=0.073 source
+    '--color-background-cyan': ['#a4e7f7', '#81c5d63D'],
+    '--color-border-cyan': ['#91d3e3', '#66aabb'],
+    '--color-icon-cyan': ['#00505f', '#81c5d6'],
+    '--color-text-cyan': ['#00505f', '#9ce1f3'],
 
-    // Blue  H=250
-    '--color-background-blue': ['#badbfe', '#b0dcff'],
-    '--color-border-blue': ['#9acbff', '#004881'],
-    '--color-icon-blue': '#004881',
-    '--color-text-blue': '#004881',
+    // Blue  H=254 — light C=0.05 pastel; dark from H=255 C=0.160 source
+    //   T50 #0074e2 reserved for filled Info badge / progressbar / inset hover.
+    '--color-background-blue': ['#c4ddfb', '#88bcff3D'],
+    '--color-border-blue': ['#b1c9e7', '#539fff'],
+    '--color-icon-blue': ['#00458c', '#88bcff'],
+    '--color-text-blue': ['#00458c', '#b9d7ff'],
 
-    // Purple  H=320  (high enough to keep dark tones purple, not blue)
-    '--color-background-purple': ['#eacbf1', '#f0c7f9'],
-    '--color-border-purple': ['#efa8ff', '#700084'],
-    '--color-icon-purple': '#700084',
-    '--color-text-purple': '#700084',
+    // Purple  H=320 — light C=0.06 pastel; dark from H=320 C=0.197 source
+    '--color-background-purple': ['#eccef3', '#ea8fff3D'],
+    '--color-border-purple': ['#d8bbdf', '#d26ee9'],
+    '--color-icon-purple': ['#700084', '#ea8fff'],
+    '--color-text-purple': ['#700084', '#f3bfff'],
 
-    // Pink  H=355
-    '--color-background-pink': ['#f9c8d9', '#ffc2da'],
-    '--color-border-pink': ['#ffa9ca', '#83004b'],
-    '--color-icon-pink': '#83004b',
-    '--color-text-pink': '#83004b',
+    // Pink  H=355 — light C=0.06 pastel; dark from H=355 C=0.169 source
+    '--color-background-pink': ['#fccadc', '#ff90bd3D'],
+    '--color-border-pink': ['#e7b7c8', '#ec6ba3'],
+    '--color-icon-pink': ['#83004b', '#ff90bd'],
+    '--color-text-pink': ['#83004b', '#ffc0d7'],
 
     // Gray (categorical neutral, chroma 0)
     // Light=#e5e5e5 (Neutral 200) so it's visibly distinct from the lighter
@@ -248,18 +304,39 @@ export const neutralTheme = defineTheme({
 
     // =========================================================================
     // Shadows
+    //
+    // Light mode: matches origin/main exactly (5%/10% low+med, 10%/15% high).
+    // Subtle drops; light surfaces don't need rim highlights.
+    //
+    // Dark mode: deepened drops + an all-around 1px white inset that wraps
+    // every edge ("Figma-style bezel"). The inset mimics ambient light
+    // catching the surface's rim on every side, giving cards/popovers/modals
+    // a substantial "lit from above" feel that drop shadows alone can't
+    // achieve against a dark canvas.
+    //   low  :  drops 25%/40% + 8%  white all-around inset
+    //   med  :  drops 35%/50% + 12% white all-around inset
+    //   high :  drops 50%/70% + 15% white all-around inset
+    //
+    // The inset layer uses light-dark(transparent, ...) so light mode is
+    // unaffected — main's exact light values are preserved.
     // =========================================================================
     '--shadow-low':
-      '0 2px 4px light-dark(#0000000D, #00000026), 0 4px 8px light-dark(#0000001A, #00000033)',
+      '0 2px 4px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 25%)), ' +
+      '0 4px 8px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 40%)), ' +
+      'inset 0 0 0 1px light-dark(transparent, oklch(1 0 0 / 8%))',
     '--shadow-med':
-      '0 2px 4px light-dark(#0000000D, #00000026), 0 4px 12px light-dark(#0000001A, #00000033)',
+      '0 2px 4px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 35%)), ' +
+      '0 4px 12px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 50%)), ' +
+      'inset 0 0 0 1px light-dark(transparent, oklch(1 0 0 / 12%))',
     '--shadow-high':
-      '0 4px 6px light-dark(#0000001A, #00000040), 0 12px 24px light-dark(#00000026, #00000059)',
-    '--shadow-inset-hover': 'inset 0px 0px 0px 2px #1679fa4D',
-    '--shadow-inset-selected': 'inset 0px 0px 0px 2px #1679fa80',
-    '--shadow-inset-success': 'inset 0px 0px 0px 2px #3287384D',
-    '--shadow-inset-warning': 'inset 0px 0px 0px 2px #f8c7234D',
-    '--shadow-inset-error': 'inset 0px 0px 0px 2px #eb183a4D',
+      '0 4px 6px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 50%)), ' +
+      '0 12px 24px light-dark(oklch(0 0 0 / 15%), oklch(0 0 0 / 70%)), ' +
+      'inset 0 0 0 1px light-dark(transparent, oklch(1 0 0 / 15%))',
+    '--shadow-inset-hover': 'inset 0px 0px 0px 2px #0074e24D',
+    '--shadow-inset-selected': 'inset 0px 0px 0px 2px #0074e280',
+    '--shadow-inset-success': 'inset 0px 0px 0px 2px #1981004D',
+    '--shadow-inset-warning': 'inset 0px 0px 0px 2px #ffce2f4D',
+    '--shadow-inset-error': 'inset 0px 0px 0px 2px #e33f4a4D',
   },
 
   components: {
@@ -277,19 +354,29 @@ export const neutralTheme = defineTheme({
     // =========================================================================
     // Badge —
     //   Semantic (info/success/warning/error): filled saturated T50 + contrasting
-    //     text (white, or dark on yellow). Bold "status pill" look for important
-    //     state signaling.
-    //   Categorical (blue/green/red/orange/etc.): soft pastel T90 + dark T30
-    //     colored text. Lower-key labels for charts, categories, and tags.
+    //     text (white, or dark on yellow). The filled-button rule from #2150
+    //     §3 — text contrast locks the bg tone, so this stays at T50 in
+    //     BOTH modes, unlike pastel surfaces which invert by mode.
+    //   Categorical (blue/green/red/orange/etc.): pastel-tinted hue surface +
+    //     colored text — light mode = soft T87-T90 + dark T30 text; dark mode
+    //     = T20 tinted + T80 light pastel text (sources: --color-background-X
+    //     and --color-text-X tokens).
     //   Neutral: light gray bg + dark text (or inverted in dark mode).
     // =========================================================================
     badge: {
-      // Semantic — filled saturated at OKLCH T60 (warning at T85 for yellow's
-      // higher natural L). Success/Error/Info pass AA-large (3.5–4.0); Warning
-      // and Neutral pass AAA. Vibrant "Material You / Linear / Vercel" style.
+      // Semantic — filled saturated bg + contrasting text.
+      //   Light: vivid T45-T55 from the OKLCH palette + white text
+      //          (~4.5-5:1 — Material/Linear/Vercel pop).
+      //   Dark : T60 stop from the dark-mode tonal palette (chroma×0.85,
+      //          +5 tone-lift taper from issue #2150 §4) + DARK text.
+      //          T60+white fails AA-large (~2.7:1); T60+dark hits 6.6-7:1
+      //          and tames the §4 vibration. Same dark-text-on-bright-bg
+      //          treatment that warning yellow uses in both modes.
       'variant:info': {
-        backgroundColor: '#1679fa',   // OKLCH L=0.60 H=258
-        color: '#ffffff',
+        // Light: T50 #0074e2 (palette saturated stop)
+        // Dark : T60 stop from dark-mode tonal palette of source #0074e2
+        backgroundColor: 'light-dark(#0074e2, #6d9cfe)',
+        color: 'light-dark(#ffffff, #171717)',
       },
       'variant:neutral': {
         // Light: solid Neutral 200 chip (#e5e5e5) against the white body.
@@ -300,63 +387,68 @@ export const neutralTheme = defineTheme({
         color: 'light-dark(#171717, #fafafa)',
       },
       'variant:success': {
-        backgroundColor: '#328738',   // medium-green T50 (white text passes 4.5x AA-large)
-        color: '#ffffff',
+        // Light: T45 #198100 (palette saturated stop)
+        // Dark : T60 stop from dark-mode tonal palette of source #198100
+        backgroundColor: 'light-dark(#198100, #64af4c)',
+        color: 'light-dark(#ffffff, #171717)',
       },
       'variant:warning': {
-        backgroundColor: '#f8c723',   // OKLCH L=0.85 H=90
+        // Yellow stays at the same hex in both modes — chroma reduction
+        // is barely visible at T85, and dark text on yellow doesn't
+        // suffer from the §4 vibration concern.
+        backgroundColor: '#ffce2f',
         color: '#171717',
       },
       'variant:error': {
-        // Light: pink/coral H=22 (matches the rest of the rainbow palette
-        //        which is hue-tuned to start at H=22 for the red family)
-        // Dark : Tailwind red-600 (H=27) — pure alarm red reads better
-        //        against the dark page than coral
-        backgroundColor: 'light-dark(#eb183a, #dc2626)',
-        color: '#ffffff',
+        // Light: T55 #e33f4a (palette saturated stop)
+        // Dark : T60 stop from dark-mode tonal palette of Tailwind red-600
+        //        source #dc2626 (kept on H=27 alarm-red rather than coral)
+        backgroundColor: 'light-dark(#e33f4a, #ff705d)',
+        color: 'light-dark(#ffffff, #171717)',
       },
 
-      // Categorical — pastel bg + T30 dark colored text.
-      //   Light: "Set A" lighter pastel (OKLCH L=0.92 C=0.045) — same soft
-      //          family as banners/inputs/categorical bgs in light mode.
-      //   Dark : T85 (one step up from T90, OKLCH L=0.88 C=0.06) — slightly
-      //          more saturated so badges read as colored chips against the
-      //          dark page.
+      // Categorical — bg + text reference the per-hue tokens, so behavior
+      // tracks the categorical palette automatically:
+      //   Light: pastel T87-T90 bg + dark T30 colored text (low-key chip)
+      //   Dark : tinted T20 bg + light T80 colored text (per #2150 §5,
+      //          inverted from light to avoid the "pastel-in-both-modes"
+      //          anti-pattern that makes locked light pastels glow on a
+      //          dark body)
       'variant:red': {
-        backgroundColor: 'light-dark(#fdc9c6, #ffc3c0)',
-        color: '#89001a',
+        backgroundColor: 'var(--color-background-red)',
+        color: 'var(--color-text-red)',
       },
       'variant:orange': {
-        backgroundColor: 'light-dark(#f8ceb2, #ffcaa5)',
-        color: '#6e3500',
+        backgroundColor: 'var(--color-background-orange)',
+        color: 'var(--color-text-orange)',
       },
       'variant:yellow': {
-        backgroundColor: 'light-dark(#f1d589, #f6d476)',
-        color: '#584400',
+        backgroundColor: 'var(--color-background-yellow)',
+        color: 'var(--color-text-yellow)',
       },
       'variant:green': {
-        backgroundColor: 'light-dark(#c3e2bd, #b4e0af)',
-        color: '#005600',
+        backgroundColor: 'var(--color-background-green)',
+        color: 'var(--color-text-green)',
       },
       'variant:teal': {
-        backgroundColor: 'light-dark(#ade5d9, #9ce9d9)',
-        color: '#005348',
+        backgroundColor: 'var(--color-background-teal)',
+        color: 'var(--color-text-teal)',
       },
       'variant:cyan': {
-        backgroundColor: 'light-dark(#abe2f0, #99e6f9)',
-        color: '#00505f',
+        backgroundColor: 'var(--color-background-cyan)',
+        color: 'var(--color-text-cyan)',
       },
       'variant:blue': {
-        backgroundColor: 'light-dark(#badbfe, #b0dcff)',
-        color: '#004881',
+        backgroundColor: 'var(--color-background-blue)',
+        color: 'var(--color-text-blue)',
       },
       'variant:purple': {
-        backgroundColor: 'light-dark(#eacbf1, #f0c7f9)',
-        color: '#700084',
+        backgroundColor: 'var(--color-background-purple)',
+        color: 'var(--color-text-purple)',
       },
       'variant:pink': {
-        backgroundColor: 'light-dark(#f9c8d9, #ffc2da)',
-        color: '#83004b',
+        backgroundColor: 'var(--color-background-pink)',
+        color: 'var(--color-text-pink)',
       },
       'variant:gray': {
         backgroundColor: 'light-dark(#e5e5e5, var(--color-neutral))',
@@ -365,106 +457,90 @@ export const neutralTheme = defineTheme({
     },
 
     // =========================================================================
-    // Banner — pastel tints (palette T90) with dark colored text (palette T30).
+    // Banner — sits on a hue-tinted surface with colored text/icon:
+    //   Light: pastel T90 bg (pulled from --color-{X}-muted / --color-background-blue)
+    //          + dark T30 colored text (--color-text-{hue}).
+    //   Dark : tinted T20 bg (same tokens, dark slot) + light T80 colored text.
+    //          Per #2150 §5 — large hue-tinted surfaces in dark mode invert
+    //          to a deep tinted bg + light text rather than locking the
+    //          light-mode pastel.
+    //
     // The inner-header *-muted token is forced transparent so the outer
-    // pastel background shows through cleanly.
-    // =========================================================================
+    // tinted background shows through cleanly.
+    //
+    // Status overrides reference --color-text-{hue} so text/icon colors
+    // stay in sync with the palette anchors automatically.
     banner: {
       'status:info': {
-        // Use the same blue pastel token as the rest of the family. Light
-        // mode = Set A (#d6e7f8, OKLCH C=0.029), dark mode = T90 (#badbfe).
         backgroundColor: 'var(--color-background-blue)',
         '--color-accent-muted': 'transparent',
-        '--color-text-primary': '#004881',             // blue T30
-        '--color-text-secondary': '#004881',
-        '--color-accent': '#004881',
+        '--color-text-primary': 'var(--color-text-blue)',
+        '--color-text-secondary': 'var(--color-text-blue)',
+        '--color-accent': 'var(--color-text-blue)',
       },
-      // The bg matches --color-success-muted/warning-muted/error-muted, which are
-      // already pastel T90 — so we only need to override the colored text/icon.
+      // success/warning/error banner bgs come from --color-{X}-muted, which
+      // already carries the correct light/dark tinted values. We only need
+      // to redirect the text/icon to the palette colored stop.
       'status:success': {
-        '--color-text-primary': '#005600',
-        '--color-text-secondary': '#005600',
-        '--color-success': '#005600',
+        '--color-text-primary': 'var(--color-text-green)',
+        '--color-text-secondary': 'var(--color-text-green)',
+        '--color-success': 'var(--color-text-green)',
       },
       'status:warning': {
-        '--color-text-primary': '#584400',
-        '--color-text-secondary': '#584400',
-        '--color-warning': '#584400',
+        '--color-text-primary': 'var(--color-text-yellow)',
+        '--color-text-secondary': 'var(--color-text-yellow)',
+        '--color-warning': 'var(--color-text-yellow)',
       },
       'status:error': {
-        '--color-text-primary': '#89001a',
-        '--color-text-secondary': '#89001a',
-        '--color-error': '#89001a',
+        '--color-text-primary': 'var(--color-text-red)',
+        '--color-text-secondary': 'var(--color-text-red)',
+        '--color-error': 'var(--color-text-red)',
       },
     },
 
     // =========================================================================
-    // ProgressBar — fill color tracks the semantic badge palette (T60 vivid).
-    // Achieved by overriding the underlying status token within the variant's
-    // CSS scope so the fill's `background-color: var(--color-X)` resolves to
-    // the brighter badge value (the global token stays at T50 for utility
-    // uses like input borders / destructive button text that need AA on pastel).
+    // TextInput — no per-status overrides needed. The global tokens
+    // --color-{success,error,warning} carry the correct values in both
+    // modes (light=T40 dark colored, dark=T80 light pastel) for both
+    // surfaces the input border/icon touches: the input surface
+    // (white/T15-dark) and the status message bubble (light pastel T90 /
+    // dark T20). Verified all six combinations clear AA non-text 3:1.
     // =========================================================================
-    // =========================================================================
-    // TextInput — DARK MODE ONLY: redirect the saturated semantic token to its
-    // muted (pastel) equivalent inside the input's scope, so the border + icon
-    // match the status message background. The message text (uses
-    // --color-text-X, locked separately) stays dark for readability.
-    //
-    // Light mode is left alone — the saturated T40 border/icon (e.g. #a50c25)
-    // looks great against the white input bg and shouldn't be softened.
-    //
-    // Implementation: light-dark() with the light slot re-stating the original
-    // global token value, so the override is a no-op in light mode.
-    // =========================================================================
-    'text-input': {
-      'status:success': {
-        '--color-success':
-          'light-dark(#007004, var(--color-success-muted))',
-      },
-      'status:error': {
-        '--color-error':
-          'light-dark(#a50c25, var(--color-error-muted))',
-      },
-      'status:warning': {
-        '--color-warning':
-          'light-dark(#745b00, var(--color-warning-muted))',
-      },
-    },
 
     // =========================================================================
-    // Switch — off-state track in dark mode reads as the gray category bg
-    // (--color-background-gray = #1c1c1c), which is darker than the page bg
-    // (#404040), making the switch lose definition. Override the token only
-    // inside the switch scope so the off-state track sits on a slightly
-    // lighter neutral wash that's clearly visible against the dark page.
-    // Light mode keeps the existing solid #e5e5e5 (it's already visible on
-    // the white page).
+    // Switch — off-state track uses the same lifted-neutral surface as the
+    // ProgressBar track (--color-border-emphasized). Aligns the two
+    // "channel-on-body" components so their off-states share one visual
+    // language: light T85 #d4d4d4 sits one step darker than the body T95
+    // bg, dark T35 #525252 sits one step lighter than the body T10. Each
+    // is a defined channel, not a wash that blends in.
     // =========================================================================
     switch: {
       base: {
-        '--color-background-gray': 'light-dark(#e5e5e5, var(--color-neutral))',
+        '--color-background-gray': 'var(--color-border-emphasized)',
       },
     },
 
     progressbar: {
       base: {
-        // Track uses --color-background-muted; override it to --color-border
-        // so the track sits one step darker than the body bg (in light mode)
-        // or a subtle lighter overlay (in dark mode), making it visible.
-        '--color-background-muted': 'var(--color-border)',
+        // Track uses --color-background-muted; override it to
+        // --color-border-emphasized (Neutral T85 #d4d4d4 in light mode) so
+        // the track is clearly darker than the body bg (Neutral T95 #f1f1f1)
+        // and reads as a defined channel rather than blending in. Dark
+        // mode inherits T35 #525252 — same one-step-lighter behavior.
+        '--color-background-muted': 'var(--color-border-emphasized)',
       },
       'variant:accent': {
-        '--color-accent': '#1679fa',
+        '--color-accent': '#0074e2',
       },
       'variant:positive': {
-        '--color-success': '#328738',
+        '--color-success': '#198100',
       },
       'variant:warning': {
-        '--color-warning': '#f8c723',
+        '--color-warning': '#ffce2f',
       },
       'variant:negative': {
-        '--color-error': '#eb183a',
+        '--color-error': '#e33f4a',
       },
     },
 
