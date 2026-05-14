@@ -14,17 +14,32 @@ import {chocolateTheme} from '@xds/theme-chocolate/built';
 import {y2kTheme} from '@xds/theme-y2k/built';
 import type {XDSDefinedTheme, ThemeMode} from '@xds/core/theme';
 
-const themes: Record<string, XDSDefinedTheme> = {
-  default: defaultTheme,
-  neutral: neutralTheme,
-  brutalist: brutalistTheme,
-  matcha: matchaTheme,
-  daily: dailyTheme,
-  stone: stoneTheme,
-  gothic: gothicTheme,
-  chocolate: chocolateTheme,
-  y2k: y2kTheme,
-};
+/**
+ * Ordered list of available themes — single source of truth.
+ *
+ * Adding a new theme: add an entry here and the Theme dropdown in
+ * SandboxNav, the embed sync, the localStorage hydration, and any other
+ * theme-aware UI all pick it up automatically.
+ */
+export const SANDBOX_THEMES: ReadonlyArray<{
+  id: string;
+  label: string;
+  theme: XDSDefinedTheme;
+}> = [
+  {id: 'default', label: 'Default', theme: defaultTheme},
+  {id: 'neutral', label: 'Neutral', theme: neutralTheme},
+  {id: 'brutalist', label: 'Brutalist', theme: brutalistTheme},
+  {id: 'matcha', label: 'Matcha', theme: matchaTheme},
+  {id: 'daily', label: 'Daily', theme: dailyTheme},
+  {id: 'stone', label: 'Stone', theme: stoneTheme},
+  {id: 'gothic', label: 'Gothic', theme: gothicTheme},
+  {id: 'chocolate', label: 'Chocolate', theme: chocolateTheme},
+  {id: 'y2k', label: 'Y2K', theme: y2kTheme},
+];
+
+const themes: Record<string, XDSDefinedTheme> = Object.fromEntries(
+  SANDBOX_THEMES.map(t => [t.id, t.theme]),
+);
 
 type ThemeContextValue = {
   themeName: string;
