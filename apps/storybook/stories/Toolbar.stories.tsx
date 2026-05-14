@@ -36,7 +36,7 @@ const meta: Meta<typeof XDSToolbar> = {
     label: {control: 'text'},
     size: {control: 'radio', options: ['sm', 'md', 'lg']},
     orientation: {control: 'radio', options: ['horizontal', 'vertical']},
-    variant: {control: 'select', options: ['transparent', 'section', 'wash']},
+    variant: {control: 'select', options: ['transparent', 'section', 'muted']},
     gap: {control: 'number'},
   },
 };
@@ -145,7 +145,7 @@ export const Compact: Story = {
 export const WashVariant: Story = {
   args: {
     label: 'Highlighted toolbar',
-    variant: 'wash',
+    variant: 'muted',
     startContent: <XDSText type="body">3 items selected</XDSText>,
     endContent: (
       <>
@@ -279,7 +279,7 @@ export const BulkActions: Story = {
     <XDSToolbar
       label="Bulk actions"
       size="sm"
-      variant="wash"
+      variant="muted"
       startContent={
         <>
           <XDSBadge label="5 selected" />
@@ -333,7 +333,7 @@ export const StackedToolbars: Story = {
       <XDSToolbar
         label="Filters"
         size="sm"
-        variant="wash"
+        variant="muted"
         startContent={
           <>
             <XDSTextInput

@@ -7,7 +7,7 @@ export const docs = {
   props: [
     {
       name: 'variant',
-      type: "'section' | 'transparent' | 'wash'",
+      type: "'section' | 'transparent' | 'muted'",
       description: 'Background variant applied to the section container.',
       default: "'section'",
     },
@@ -66,9 +66,9 @@ export const docs = {
   },
   usage: {
     description:
-      'Section is a container that is used to create visual separation. Use the default variant for standard content (white), wash to emphasize or group related content (gray), and transparent for no background while still using Section\'s padding and dividers.',
+      'Section is a container that is used to create visual separation. Use the default variant for standard content (white), muted to emphasize or group related content (gray), and transparent for no background while still using Section\'s padding and dividers.',
     bestPractices: [
-      { guidance: true, description: 'Start with the default variant. Use wash only to call attention to a specific region.' },
+      { guidance: true, description: 'Start with the default variant. Use muted only to call attention to a specific region.' },
       { guidance: true, description: 'Add dividers between same-background sections that need separation.' },
     ],
   },
@@ -80,7 +80,7 @@ export const docsZh = {
   props: [
     {
       name: 'variant',
-      type: "'section' | 'transparent' | 'wash'",
+      type: "'section' | 'transparent' | 'muted'",
       description: '应用于区域容器的背景变体。',
       default: "'section'",
     },
@@ -139,9 +139,9 @@ export const docsZh = {
   },
   usage: {
     description:
-      'Section is a container that is used to create visual separation. Use the default variant for standard content (white), wash to emphasize or group related content (gray), and transparent for no background while still using Section\'s padding and dividers.',
+      'Section is a container that is used to create visual separation. Use the default variant for standard content (white), muted to emphasize or group related content (gray), and transparent for no background while still using Section\'s padding and dividers.',
     bestPractices: [
-      { guidance: true, description: 'Start with the default variant. Use wash only to call attention to a specific region.' },
+      { guidance: true, description: 'Start with the default variant. Use muted only to call attention to a specific region.' },
       { guidance: true, description: 'Add dividers between same-background sections that need separation.' },
     ],
   },
@@ -153,9 +153,9 @@ export const docsDense = {
     'Container w/ background variants for creating visually distinct regions; auto-escapes parent container padding for edge-to-edge fills.',
   usage: {
     description:
-      'Section is a container that is used to create visual separation. Use the default variant for standard content (white), wash to emphasize or group related content (gray), and transparent for no background while still using Section\'s padding and dividers.',
+      'Section is a container that is used to create visual separation. Use the default variant for standard content (white), muted to emphasize or group related content (gray), and transparent for no background while still using Section\'s padding and dividers.',
     bestPractices: [
-      { guidance: true, description: 'Start with the default variant. Use wash only to call attention to a specific region.' },
+      { guidance: true, description: 'Start with the default variant. Use muted only to call attention to a specific region.' },
       { guidance: true, description: 'Add dividers between same-background sections that need separation.' },
     ],
   },

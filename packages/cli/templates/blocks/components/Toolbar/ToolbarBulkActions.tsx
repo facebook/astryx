@@ -38,7 +38,7 @@ export default function ToolbarBulkActions() {
         <XDSToolbar
           label="Bulk actions"
           size="sm"
-          variant="wash"
+          variant="muted"
           dividers={['bottom']}
           startContent={
             <>

@@ -35,11 +35,13 @@ describe('XDSSection', () => {
     expect(inner.className).toContain('transparent');
   });
 
-  it('renders with variant="wash"', () => {
-    const {container} = render(<XDSSection variant="wash">Content</XDSSection>);
+  it('renders with variant="muted"', () => {
+    const {container} = render(
+      <XDSSection variant="muted">Content</XDSSection>,
+    );
     const inner = container.firstElementChild!.firstElementChild!;
     expect(inner.className).toContain('xds-section');
-    expect(inner.className).toContain('wash');
+    expect(inner.className).toContain('muted');
   });
 
   it('renders with dividers', () => {
@@ -105,10 +107,12 @@ describe('XDSSection', () => {
   });
 
   it('renders variant in xds class names', () => {
-    const {container} = render(<XDSSection variant="wash">Content</XDSSection>);
+    const {container} = render(
+      <XDSSection variant="muted">Content</XDSSection>,
+    );
     const inner = container.firstElementChild!.firstElementChild!;
     expect(inner.className).toContain('xds-section');
-    expect(inner.className).toContain('wash');
+    expect(inner.className).toContain('muted');
   });
 
   it('accepts xstyle prop without error', () => {

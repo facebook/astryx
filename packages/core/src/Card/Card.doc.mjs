@@ -56,7 +56,7 @@ export const docs = {
       name: 'variant',
       type: "'default' | 'muted' | 'blue' | 'cyan' | 'gray' | 'green' | 'orange' | 'pink' | 'purple' | 'red' | 'teal' | 'yellow'",
       description:
-        'Background color variant. `default` uses the standard card background. `muted` uses the wash background for de-emphasised cards. The non-semantic variants use the corresponding `--color-<name>-background` token.',
+        'Background color variant. `default` uses the standard card background. `muted` uses the muted background for de-emphasised cards. The non-semantic variants use the corresponding `--color-<name>-background` token.',
       default: "'default'",
     },
   ],

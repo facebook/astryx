@@ -1,15 +1,15 @@
 /**
- * Daily Theme
+ * Astryx Theme
  *
  * A warm, productivity-focused theme with earthy cream tones.
  * Core palette: #292724, #85817A, #E6E3DE, #F8F4ED, #FFFFFF
- * Uses PT Serif for headings and Figtree for body text.
+ * Uses PT Serif italic for display text and Figtree for headings/body.
  */
 
 import {defineTheme, defineSyntaxTheme} from '@xds/core/theme';
 import {dailyIconRegistry} from './icons';
 
-/** Daily syntax palette — warm, muted tones to match the earthy aesthetic. */
+/** Astryx syntax palette — warm, muted tones to match the earthy aesthetic. */
 const dailySyntax = defineSyntaxTheme({
   name: 'xds-daily',
   tokens: {
@@ -41,9 +41,9 @@ export const dailyTheme = defineTheme({
         '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
     },
     heading: {
-      family: 'PT Serif',
+      family: 'Figtree',
       fallbacks:
-        'Georgia, "Times New Roman", Times, serif',
+        '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
       weights: {3: 'bold', 4: 'bold'},
     },
     code: {
@@ -58,25 +58,25 @@ export const dailyTheme = defineTheme({
 
   tokens: {
     // =========================================================================
-    // Colors — warm daily palette
+    // Colors — warm astryx palette
     // Core: #292724, #85817A, #E6E3DE, #F8F4ED, #FFFFFF
     // =========================================================================
 
     // Core semantic
     '--color-accent': ['#292724', '#F8F4ED'],
-    '--color-accent-muted': ['#29272414', '#F8F4ED20'],
+    '--color-accent-muted': ['#1779FA40', '#1779FA40'],
     '--color-neutral': ['#2927240F', '#F8F4ED1A'],
     '--color-background-surface': ['#FFFFFF', '#1a1917'],
     '--color-background-body': ['#F8F4ED', '#121110'],
     '--color-overlay': ['#29272480', '#292724CC'],
     '--color-overlay-hover': ['#2927240D', '#F8F4ED0D'],
     '--color-overlay-pressed': ['#2927241A', '#F8F4ED1A'],
-    '--color-background-muted': ['#F8F4ED', '#292724'],
+    '--color-background-muted': ['#E6E3DE', '#292724'],
 
     // Text
     '--color-text-primary': ['#292724', '#F8F4ED'],
     '--color-text-secondary': ['#85817A', '#a19d96'],
-    '--color-text-disabled': ['#E6E3DE', '#5c5955'],
+    '--color-text-disabled': ['#c9c6c1', '#5c5955'],
     '--color-text-accent': ['#292724', '#F8F4ED'],
     '--color-on-dark': '#FFFFFF',
     '--color-on-light': '#292724',
@@ -89,7 +89,7 @@ export const dailyTheme = defineTheme({
     '--color-icon-accent': ['#292724', '#F8F4ED'],
     '--color-icon-primary': ['#292724', '#F8F4ED'],
     '--color-icon-secondary': ['#85817A', '#a19d96'],
-    '--color-icon-disabled': ['#E6E3DE', '#5c5955'],
+    '--color-icon-disabled': ['#c9c6c1', '#5c5955'],
 
     // Surface variants
     '--color-background-card': ['#FFFFFF', '#1e1d1b'],
@@ -98,11 +98,11 @@ export const dailyTheme = defineTheme({
 
     // Status / Sentiment
     '--color-success': ['#009936', '#34c265'],
-    '--color-success-muted': ['#00993620', '#34c26520'],
+    '--color-success-muted': ['#00993640', '#34c26540'],
     '--color-error': ['#FD0000', '#ff5c5c'],
-    '--color-error-muted': ['#FD000020', '#ff5c5c20'],
-    '--color-warning': ['#FFB600', '#ffc940'],
-    '--color-warning-muted': ['#FFB60020', '#ffc94020'],
+    '--color-error-muted': ['#FD000040', '#ff5c5c40'],
+    '--color-warning': ['#F8C722', '#ffd94d'],
+    '--color-warning-muted': ['#F8C72240', '#ffd94d40'],
 
     // Border
     '--color-border': ['#E6E3DE', '#F8F4ED1A'],
@@ -114,16 +114,16 @@ export const dailyTheme = defineTheme({
     '--color-tint-hover': ['black', 'white'],
 
     // Categorical — Blue
-    '--color-background-blue': ['#3a5e8c33', '#3a5e8c33'],
-    '--color-border-blue': ['#3a5e8c', '#7ba8d4'],
-    '--color-icon-blue': ['#3a5e8c', '#7ba8d4'],
-    '--color-text-blue': ['#2e4a6e', '#8dbce0'],
+    '--color-background-blue': ['#cee5ff', '#002840'],
+    '--color-border-blue': ['#192973', '#BBDBFE'],
+    '--color-icon-blue': ['#192973', '#BBDBFE'],
+    '--color-text-blue': ['#192973', '#aacaec'],
 
     // Categorical — Cyan
-    '--color-background-cyan': ['#3a7c7c33', '#3a7c7c33'],
-    '--color-border-cyan': ['#3a7c7c', '#70c4c4'],
-    '--color-icon-cyan': ['#3a7c7c', '#70c4c4'],
-    '--color-text-cyan': ['#2e6060', '#82d4d4'],
+    '--color-background-cyan': ['#b4ecf9', '#002a32'],
+    '--color-border-cyan': ['#003C4F', '#ACE3F0'],
+    '--color-icon-cyan': ['#003C4F', '#ACE3F0'],
+    '--color-text-cyan': ['#003C4F', '#99cfdc'],
 
     // Categorical — Gray
     '--color-background-gray': ['#85817A33', '#5c595533'],
@@ -132,46 +132,46 @@ export const dailyTheme = defineTheme({
     '--color-text-gray': ['#292724', '#F8F4ED'],
 
     // Categorical — Green
-    '--color-background-green': ['#00993633', '#34c26533'],
-    '--color-border-green': ['#009936', '#34c265'],
-    '--color-icon-green': ['#009936', '#34c265'],
-    '--color-text-green': ['#007a2b', '#3fd672'],
+    '--color-background-green': ['#c8ecc8', '#002d08'],
+    '--color-border-green': ['#006410', '#C0E3C0'],
+    '--color-icon-green': ['#006410', '#C0E3C0'],
+    '--color-text-green': ['#006410', '#adcfad'],
 
     // Categorical — Orange
-    '--color-background-orange': ['#c4762033', '#d4903a33'],
-    '--color-border-orange': ['#c47620', '#d4903a'],
-    '--color-icon-orange': ['#c47620', '#d4903a'],
-    '--color-text-orange': ['#a06018', '#e0a04a'],
+    '--color-background-orange': ['#ffdcc5', '#3d1e00'],
+    '--color-border-orange': ['#590801', '#F8CEB2'],
+    '--color-icon-orange': ['#590801', '#F8CEB2'],
+    '--color-text-orange': ['#590801', '#e8bea3'],
 
     // Categorical — Pink
-    '--color-background-pink': ['#c44a7033', '#e07a9a33'],
-    '--color-border-pink': ['#c44a70', '#e07a9a'],
-    '--color-icon-pink': ['#c44a70', '#e07a9a'],
-    '--color-text-pink': ['#a03a5a', '#f08aaa'],
+    '--color-background-pink': ['#ffd8e6', '#4f032c'],
+    '--color-border-pink': ['#8E2149', '#F9C8DA'],
+    '--color-icon-pink': ['#8E2149', '#F9C8DA'],
+    '--color-text-pink': ['#8E2149', '#eab9cb'],
 
     // Categorical — Purple
-    '--color-background-purple': ['#6b4a8c33', '#b08ed433'],
-    '--color-border-purple': ['#6b4a8c', '#b08ed4'],
-    '--color-icon-purple': ['#6b4a8c', '#b08ed4'],
-    '--color-text-purple': ['#553a70', '#c0a0e0'],
+    '--color-background-purple': ['#f7d8ff', '#3d114d'],
+    '--color-border-purple': ['#6A218E', '#EACBF2'],
+    '--color-icon-purple': ['#6A218E', '#EACBF2'],
+    '--color-text-purple': ['#6A218E', '#dbbce3'],
 
     // Categorical — Red
-    '--color-background-red': ['#FD000033', '#ff5c5c33'],
-    '--color-border-red': ['#FD0000', '#ff5c5c'],
-    '--color-icon-red': ['#FD0000', '#ff5c5c'],
-    '--color-text-red': ['#cc0000', '#ff7a7a'],
+    '--color-background-red': ['#ffdad8', '#500713'],
+    '--color-border-red': ['#A1211D', '#FDC9C7'],
+    '--color-icon-red': ['#A1211D', '#FDC9C7'],
+    '--color-text-red': ['#A1211D', '#edbab8'],
 
     // Categorical — Teal
-    '--color-background-teal': ['#2e6b5a33', '#5ab89833'],
-    '--color-border-teal': ['#2e6b5a', '#5ab898'],
-    '--color-icon-teal': ['#2e6b5a', '#5ab898'],
-    '--color-text-teal': ['#245546', '#6ccaaa'],
+    '--color-background-teal': ['#b5eee1', '#002c25'],
+    '--color-border-teal': ['#0D4C3E', '#ADE6D9'],
+    '--color-icon-teal': ['#0D4C3E', '#ADE6D9'],
+    '--color-text-teal': ['#0D4C3E', '#99d2c5'],
 
     // Categorical — Yellow
-    '--color-background-yellow': ['#FFB60033', '#ffc94033'],
-    '--color-border-yellow': ['#FFB600', '#ffc940'],
-    '--color-icon-yellow': ['#FFB600', '#ffc940'],
-    '--color-text-yellow': ['#cc9200', '#ffd960'],
+    '--color-background-yellow': ['#fbe098', '#2e2500'],
+    '--color-border-yellow': ['#634F19', '#FDE29A'],
+    '--color-icon-yellow': ['#634F19', '#FDE29A'],
+    '--color-text-yellow': ['#634F19', '#dec47e'],
 
     // =========================================================================
     // Spacing
@@ -222,12 +222,9 @@ export const dailyTheme = defineTheme({
     // =========================================================================
     // Shadows
     // =========================================================================
-    '--shadow-low':
-      '0 2px 4px #2927240D, 0 4px 8px #2927241A',
-    '--shadow-med':
-      '0 2px 4px #2927240D, 0 4px 12px #2927241A',
-    '--shadow-high':
-      '0 4px 6px #2927241A, 0 12px 24px #29272426',
+    '--shadow-low': '0 2px 4px #2927240D, 0 4px 8px #2927241A',
+    '--shadow-med': '0 2px 4px #2927240D, 0 4px 12px #2927241A',
+    '--shadow-high': '0 4px 6px #2927241A, 0 12px 24px #29272426',
     '--shadow-inset-hover': 'inset 0px 0px 0px 2px #29272430',
     '--shadow-inset-selected': 'inset 0px 0px 0px 2px #29272450',
     '--shadow-inset-success': 'inset 0px 0px 0px 2px #00993650',
@@ -245,11 +242,60 @@ export const dailyTheme = defineTheme({
         color: '#FFFFFF',
       },
       'variant:secondary': {
-        backgroundColor: 'transparent',
-        borderWidth: '1px',
-        borderStyle: 'solid',
-        borderColor: '#292724',
+        backgroundColor: '#E6E3DE',
         color: '#292724',
+      },
+    },
+
+    // Info badge uses blue instead of the theme accent
+    badge: {
+      'variant:info': {
+        backgroundColor: '#1779FA',
+        color: '#FFFFFF',
+      },
+    },
+
+    // Banner text uses semantic colors for each status
+    banner: {
+      'status:info': {
+        '--color-text-primary': 'light-dark(#1779FA, #79b8ff)',
+        '--color-text-secondary': 'light-dark(#1779FA, #79b8ff)',
+      },
+      'status:success': {
+        '--color-text-primary': 'light-dark(#009936, #34c265)',
+        '--color-text-secondary': 'light-dark(#009936, #34c265)',
+      },
+      'status:error': {
+        '--color-text-primary': 'light-dark(#FD0000, #ff5c5c)',
+        '--color-text-secondary': 'light-dark(#FD0000, #ff5c5c)',
+      },
+      'status:warning': {
+        '--color-text-primary': 'light-dark(#9a7800, #ffd94d)',
+        '--color-text-secondary': 'light-dark(#9a7800, #ffd94d)',
+      },
+    },
+
+    // Info banner icon uses blue — override --color-accent so the
+    // child XDSIcon (which reads var(--color-accent)) picks it up
+    'banner-icon': {
+      'status:info': {
+        '--color-accent': '#1779FA',
+      },
+    },
+
+    // Display text uses PT Serif italic — the signature editorial display face
+    text: {
+      'type:display-1': {
+        fontFamily: '"PT Serif", Georgia, "Times New Roman", Times, serif',
+        fontStyle: 'italic',
+      },
+      'type:display-2': {
+        fontFamily: '"PT Serif", Georgia, "Times New Roman", Times, serif',
+        fontStyle: 'italic',
+      },
+      'type:display-3': {
+        fontFamily: '"PT Serif", Georgia, "Times New Roman", Times, serif',
+        fontStyle: 'italic',
       },
     },
 

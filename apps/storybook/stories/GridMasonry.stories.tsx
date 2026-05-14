@@ -151,7 +151,7 @@ function GalleryCard({
  */
 export const MasonryGallery: Story = {
   render: () => (
-    <XDSSection variant="wash" padding={6}>
+    <XDSSection variant="muted" padding={6}>
       <XDSVStack gap={5}>
         <XDSVStack gap={2}>
           <XDSHeading level={2}>Mixed Gallery</XDSHeading>
@@ -199,7 +199,7 @@ export const MasonryGallery: Story = {
 export const DenseMasonry: Story = {
   render: () => {
     return (
-      <XDSSection variant="wash" padding={6}>
+      <XDSSection variant="muted" padding={6}>
         <XDSVStack gap={5}>
           <XDSVStack gap={2}>
             <XDSHeading level={2}>Dense Masonry</XDSHeading>
@@ -261,7 +261,7 @@ export const DenseMasonry: Story = {
 export const FeaturedMasonry: Story = {
   render: () => {
     return (
-      <XDSSection variant="wash" padding={6}>
+      <XDSSection variant="muted" padding={6}>
         <XDSVStack gap={5}>
           <XDSVStack gap={2}>
             <XDSHeading level={2}>Featured Masonry</XDSHeading>

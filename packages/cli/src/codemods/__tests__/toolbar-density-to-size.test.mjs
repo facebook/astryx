@@ -28,7 +28,7 @@ describe('toolbar-density-to-size', () => {
   });
 
   test('leaves XDSToolbar without density unchanged', () => {
-    const input = `<XDSToolbar label="Actions" variant="wash" />`;
+    const input = `<XDSToolbar label="Actions" variant="muted" />`;
     const output = applyTransform({default: transform, parser: 'tsx'}, opts, {source: input});
     // Transform returns undefined (no changes), applyTransform returns ''
     expect(output).toBe('');

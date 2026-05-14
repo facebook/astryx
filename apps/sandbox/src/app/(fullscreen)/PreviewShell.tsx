@@ -632,6 +632,26 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
   const {themeName, setThemeName, mode, setMode} = useThemeControls();
   const [toolbarHidden, setToolbarHidden] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // Iframe src includes current theme/mode so the embedded page renders correctly
+  // on initial load. Only recomputes when pathname changes — theme/mode changes
+  // are synced to the iframe via postMessage to avoid triggering a reload.
+  const iframeSrc = useMemo(
+    () =>
+      `${basePath}${pathname}?embed=1&theme=${themeName}&mode=${mode}`,
+    [pathname], // intentionally excludes themeName/mode — live updates use postMessage
+  );
+
+  // Broadcast theme/mode changes to the embedded iframe via postMessage
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe?.contentWindow) return;
+    iframe.contentWindow.postMessage(
+      {type: 'xds-theme-sync', theme: themeName, mode},
+      '*',
+    );
+  }, [themeName, mode]);
 
   const navTree = useMemo(() => buildNavTree(pathname), [pathname]);
 
@@ -921,7 +941,8 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
                 overflow: 'hidden',
               }}>
               <iframe
-                src={`${basePath}${pathname}?embed=1`}
+                ref={iframeRef}
+                src={iframeSrc}
                 title={`${pageName} — ${viewport}`}
                 style={{
                   width: '100%',
@@ -941,7 +962,8 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
                 backgroundColor: '#f0f0f0',
               }}>
               <iframe
-                src={`${basePath}${pathname}?embed=1`}
+                ref={iframeRef}
+                src={iframeSrc}
                 title={`${pageName} — ${viewport}`}
                 style={{
                   width: viewportWidths[viewport],

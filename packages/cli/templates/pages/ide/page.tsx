@@ -4,7 +4,7 @@ import {useState, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSTopNav, XDSTopNavItem} from '@xds/core/TopNav';
-import {XDSSideNav, XDSSideNavItem} from '@xds/core/SideNav';
+import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
 
 import {
   XDSLayout,
@@ -14,7 +14,6 @@ import {
 import {XDSResizeHandle, useXDSResizable} from '@xds/core/Resizable';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
-import {XDSSyntaxTheme, defineSyntaxTheme} from '@xds/core/theme/syntax';
 import {colorVars, spacingVars} from '@xds/core/theme/tokens.stylex';
 import {XDSStack} from '@xds/core/Layout';
 import {XDSOverflowList} from '@xds/core/OverflowList';
@@ -51,26 +50,6 @@ import {
   PuzzlePieceIcon as PuzzlePieceSolid,
 } from '@heroicons/react/24/solid';
 
-const tokyoNight = defineSyntaxTheme({
-  name: 'tokyo-night',
-  tokens: {
-    keyword: '#9d7cd8',
-    string: '#9ece6a',
-    comment: '#565f89',
-    number: '#ff9e64',
-    function: '#7aa2f7',
-    type: '#2ac3de',
-    variable: '#c0caf5',
-    operator: '#89ddff',
-    constant: '#ff9e64',
-    tag: '#f7768e',
-    attribute: '#bb9af7',
-    property: '#73daca',
-    punctuation: '#9abdf5',
-    background: '#1a1b26',
-  },
-});
-
 
 const styles = stylex.create({
   contentFill: {
@@ -80,6 +59,7 @@ const styles = stylex.create({
     flex: 1,
     minHeight: 0,
     overflow: 'hidden',
+    display: 'grid',
   },
   tabListPadding: {
     paddingTop: spacingVars['--spacing-2'],
@@ -100,11 +80,23 @@ const styles = stylex.create({
     overflow: 'auto',
   },
   fileExplorer: {
-    padding: 8,
+    padding: 16,
   },
   terminalArea: {
     height: '100%',
     overflow: 'hidden',
+  },
+  hideOnMobile: {
+    display: {
+      default: 'contents',
+      '@media (max-width: 768px)': 'none',
+    },
+  },
+  hideSideNav: {
+    display: {
+      default: 'flex',
+      '@media (max-width: 768px)': 'none',
+    },
   },
 });
 
@@ -235,7 +227,7 @@ export default function ResizableWorkspacePage() {
   const bottomPanel = useXDSResizable({
     defaultSize: 300,
     minSizePx: 80,
-    maxSizePx: 400,
+    maxSizePx: Infinity,
     collapsible: true,
     collapsedSize: 40,
   });
@@ -276,47 +268,50 @@ export default function ResizableWorkspacePage() {
       sideNav={
         <XDSSideNav
           collapsible={{defaultIsCollapsed: true}}
-          resizable>
-          <XDSSideNavItem
-            label="Home"
-            icon={HomeIcon}
-            selectedIcon={HomeIconSolid}
-            isSelected={activeNavItem === 'Home'}
-            onClick={() => setActiveNavItem('Home')}
-          />
-          <XDSSideNavItem
-            label="Explorer"
-            icon={FolderOpenIcon}
-            selectedIcon={FolderOpenSolid}
-            isSelected={activeNavItem === 'Explorer'}
-            onClick={() => setActiveNavItem('Explorer')}
-          />
-          <XDSSideNavItem
-            label="Search"
-            icon={MagnifyingGlassIcon}
-            selectedIcon={MagnifyingGlassSolid}
-            isSelected={activeNavItem === 'Search'}
-            onClick={() => setActiveNavItem('Search')}
-          />
-          <XDSSideNavItem
-            label="Source Control"
-            icon={CodeBracketIcon}
-            isSelected={activeNavItem === 'Source Control'}
-            onClick={() => setActiveNavItem('Source Control')}
-          />
-          <XDSSideNavItem
-            label="Extensions"
-            icon={PuzzlePieceIcon}
-            selectedIcon={PuzzlePieceSolid}
-            isSelected={activeNavItem === 'Extensions'}
-            onClick={() => setActiveNavItem('Extensions')}
-          />
+          resizable
+          xstyle={styles.hideSideNav}>
+          <XDSSideNavSection title="Navigation" isHeaderHidden>
+            <XDSSideNavItem
+              label="Home"
+              icon={HomeIcon}
+              selectedIcon={HomeIconSolid}
+              isSelected={activeNavItem === 'Home'}
+              onClick={() => setActiveNavItem('Home')}
+            />
+            <XDSSideNavItem
+              label="Explorer"
+              icon={FolderOpenIcon}
+              selectedIcon={FolderOpenSolid}
+              isSelected={activeNavItem === 'Explorer'}
+              onClick={() => setActiveNavItem('Explorer')}
+            />
+            <XDSSideNavItem
+              label="Search"
+              icon={MagnifyingGlassIcon}
+              selectedIcon={MagnifyingGlassSolid}
+              isSelected={activeNavItem === 'Search'}
+              onClick={() => setActiveNavItem('Search')}
+            />
+            <XDSSideNavItem
+              label="Source Control"
+              icon={CodeBracketIcon}
+              isSelected={activeNavItem === 'Source Control'}
+              onClick={() => setActiveNavItem('Source Control')}
+            />
+            <XDSSideNavItem
+              label="Extensions"
+              icon={PuzzlePieceIcon}
+              selectedIcon={PuzzlePieceSolid}
+              isSelected={activeNavItem === 'Extensions'}
+              onClick={() => setActiveNavItem('Extensions')}
+            />
+          </XDSSideNavSection>
         </XDSSideNav>
       }>
       <XDSLayout
         height="fill"
         start={
-          <>
+          <div {...stylex.props(styles.hideOnMobile)}>
             {!startPanel.isCollapsed && (
               <XDSLayoutPanel width={startPanel.size} hasDivider={false} padding={0}>
                 <XDSStack direction="vertical" xstyle={styles.fileExplorer} gap={2}>
@@ -342,7 +337,7 @@ export default function ResizableWorkspacePage() {
               resizable={startPanel.props}
               label="Resize file explorer"
             />
-          </>
+          </div>
         }
         content={
           <XDSLayoutContent padding={0}>
@@ -359,7 +354,7 @@ export default function ResizableWorkspacePage() {
                         highlightLines={[21]}
                         hasCopyButton={false}
                         size="sm"
-                        style={{width: '100%', height: '100%'}}
+                        style={{width: '100%', height: '100%', borderWidth: 0, borderRadius: 0}}
                       />
                     </div>
                     <XDSResizeHandle
@@ -377,7 +372,7 @@ export default function ResizableWorkspacePage() {
                             value={activeTermTab}
                             onChange={(val) => setActiveTermTab(val)}
                             size="sm"
-                            hasDivider
+                            hasDivider={false}
                             xstyle={styles.tabListPadding}>
                             <XDSTab label="Terminal" value="terminal" icon={<XDSIcon icon={CommandLineIcon} size="sm" />} />
                             <XDSTab label="Problems" value="problems" icon={<XDSIcon icon={ExclamationTriangleIcon} size="sm" />} />
@@ -385,15 +380,13 @@ export default function ResizableWorkspacePage() {
                             <XDSTab label="Debug" value="debug" icon={<XDSIcon icon={BugAntIcon} size="sm" />} />
                           </XDSTabList>
                           <div {...stylex.props(styles.terminalWrapper)}>
-                            <XDSSyntaxTheme theme={tokyoNight}>
-                              <XDSCodeBlock
-                                code={TERMINAL_OUTPUT}
-                                language="bash"
-                                hasCopyButton={false}
-                                size="sm"
-                                style={{width: '100%', height: '100%', borderRadius: 0}}
-                              />
-                            </XDSSyntaxTheme>
+                            <XDSCodeBlock
+                              code={TERMINAL_OUTPUT}
+                              language="bash"
+                              hasCopyButton={false}
+                              size="sm"
+                              style={{width: '100%', height: '100%', borderWidth: 0, borderRadius: 0}}
+                            />
                           </div>
                         </XDSStack>
                       </div>
@@ -402,7 +395,7 @@ export default function ResizableWorkspacePage() {
                 </XDSLayoutContent>
               }
               end={
-                <>
+                <div {...stylex.props(styles.hideOnMobile)}>
                   <XDSResizeHandle
                     direction="horizontal"
                     hasDivider
@@ -467,7 +460,7 @@ export default function ResizableWorkspacePage() {
                       </XDSStack>
                     </XDSLayoutPanel>
                   )}
-                </>
+                </div>
               }
             />
           </XDSLayoutContent>

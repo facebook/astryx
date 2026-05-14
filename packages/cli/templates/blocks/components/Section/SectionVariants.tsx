@@ -17,7 +17,7 @@ export default function SectionVariants() {
           </XDSText>
         </XDSStack>
       </XDSSection>
-      <XDSSection variant="wash" padding={5}>
+      <XDSSection variant="muted" padding={5}>
         <XDSStack direction="vertical" gap={1}>
           <XDSText type="body" weight="bold">
             Wash

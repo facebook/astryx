@@ -5040,7 +5040,7 @@ function ComponentDetailPage({
                     </XDSText>
                   )}
                 </XDSCenter>
-                <XDSSection variant="wash" padding={3} dividers={['top']}>
+                <XDSSection variant="muted" padding={3} dividers={['top']}>
                   <XDSStack direction="vertical" gap={3}>
                     <XDSTabList
                       value={activeTab}

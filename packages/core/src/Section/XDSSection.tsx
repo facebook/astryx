@@ -47,7 +47,7 @@ import {xdsClassName, mergeProps} from '../utils';
 export interface XDSSectionVariantMap {
   section: true;
   transparent: true;
-  wash: true;
+  muted: true;
 }
 
 /**
@@ -63,7 +63,7 @@ const variantStyles = stylex.create({
   transparent: {
     backgroundColor: 'transparent',
   },
-  wash: {
+  muted: {
     backgroundColor: colorVars['--color-background-muted'],
   },
 });
@@ -141,7 +141,7 @@ export interface XDSSectionProps extends XDSBaseProps<HTMLElement> {
    * Visual variant of the section.
    * - 'section': Surface background color
    * - 'transparent': Fully transparent background
-   * - 'wash': Wash background color
+   * - 'muted': Muted background color
    * @default 'section'
    */
   variant?: XDSSectionVariant;
@@ -212,9 +212,9 @@ export interface XDSSectionProps extends XDSBaseProps<HTMLElement> {
  *
  * @example
  * ```
- * <XDSSection variant="wash" width={300} height={250}>
+ * <XDSSection variant="muted" width={300} height={250}>
  *   <XDSLayout
- *     content={<XDSLayoutContent>Content in wash section</XDSLayoutContent>}
+ *     content={<XDSLayoutContent>Content in muted section</XDSLayoutContent>}
  *   />
  * </XDSSection>
  * ```

@@ -294,7 +294,7 @@ export const GridSpanWithRows: Story = {
 
 export const GalleryExample: Story = {
   render: () => (
-    <XDSSection variant="wash">
+    <XDSSection variant="muted">
       <XDSText type="supporting" xstyle={styles.sectionLabel}>
         Gallery/Card Grid — Responsive with min 280px cards (auto-fill)
       </XDSText>
@@ -350,7 +350,7 @@ export const DifferentGaps: Story = {
 
 export const DashboardLayout: Story = {
   render: () => (
-    <XDSSection variant="wash">
+    <XDSSection variant="muted">
       <XDSText type="supporting" xstyle={styles.sectionLabel}>
         Dashboard-style layout with different sized widgets
       </XDSText>

@@ -50,7 +50,7 @@ type Story = StoryObj<typeof XDSDivider>;
 export const Default: Story = {
   args: {},
   render: args => (
-    <XDSSection variant="wash">
+    <XDSSection variant="muted">
       <XDSCard>
         <XDSVStack gap={3}>
           <XDSText type="body">Content above</XDSText>
@@ -67,7 +67,7 @@ export const WithLabel: Story = {
     label: 'or',
   },
   render: args => (
-    <XDSSection variant="wash">
+    <XDSSection variant="muted">
       <XDSCard>
         <XDSVStack gap={3}>
           <XDSText type="body">Content above</XDSText>
@@ -81,7 +81,7 @@ export const WithLabel: Story = {
 
 export const Variants: Story = {
   render: () => (
-    <XDSSection variant="wash">
+    <XDSSection variant="muted">
       <div {...stylex.props(styles.storyWrapper)}>
         <XDSCard>
           <XDSVStack gap={3}>
@@ -102,7 +102,7 @@ export const Variants: Story = {
 
 export const FullBleed: Story = {
   render: () => (
-    <XDSSection variant="wash">
+    <XDSSection variant="muted">
       <div {...stylex.props(styles.storyWrapper)}>
         <XDSCard>
           <XDSVStack gap={3}>
@@ -134,7 +134,7 @@ export const Vertical: Story = {
     orientation: 'vertical',
   },
   render: args => (
-    <XDSSection variant="wash">
+    <XDSSection variant="muted">
       <XDSCard height={200}>
         <XDSHStack gap={4} xstyle={styles.fullHeight}>
           <XDSText type="body">Left content</XDSText>
@@ -152,7 +152,7 @@ export const VerticalWithLabel: Story = {
     label: 'OR',
   },
   render: args => (
-    <XDSSection variant="wash">
+    <XDSSection variant="muted">
       <XDSCard height={200}>
         <XDSHStack gap={4} xstyle={styles.fullHeight}>
           <XDSText type="body">Option A</XDSText>
@@ -166,7 +166,7 @@ export const VerticalWithLabel: Story = {
 
 export const InCard: Story = {
   render: () => (
-    <XDSSection variant="wash">
+    <XDSSection variant="muted">
       <XDSCard>
         <XDSVStack gap={3}>
           <XDSText type="label">Card Title</XDSText>
@@ -187,7 +187,7 @@ export const InCard: Story = {
 
 export const FullBleedVertical: Story = {
   render: () => (
-    <XDSSection variant="wash">
+    <XDSSection variant="muted">
       <XDSCard height={200}>
         <XDSHStack gap={4} xstyle={styles.fullHeight}>
           <XDSText type="body">Left content</XDSText>

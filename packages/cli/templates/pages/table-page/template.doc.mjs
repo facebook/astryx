@@ -4,5 +4,5 @@ export const doc = {
   name: 'Table Page',
   description:
     'Data table page with power search filtering and action toolbar.',
-  isReady: false,
+  isReady: true,
 };
