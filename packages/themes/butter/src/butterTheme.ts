@@ -132,72 +132,69 @@ export const butterTheme = defineTheme({
     '--size-element-lg': '48px',
 
     // =========================================================================
-    // Categorical — every value drawn from butterPalettes.{color}:
-    //   bg     T90 light  /  T15 dark
-    //   border T80 light  /  T25 dark
-    //   icon   T25 light  /  T80 dark
-    //   text   T25 light  /  T80 dark
+    // Categorical — same values in light and dark mode (curated dark mode
+    // keeps the same pastel backgrounds + dark text as light mode).
     // =========================================================================
 
     // Blue
-    '--color-background-blue': ['#dbe1ff', '#002558'],
-    '--color-border-blue': ['#bdc5eb', '#203a6c'],
-    '--color-icon-blue': ['#203a6c', '#bdc5eb'],
-    '--color-text-blue': ['#203a6c', '#bdc5eb'],
+    '--color-background-blue': ['#dbe1ff', '#dbe1ff'],
+    '--color-border-blue': ['#bdc5eb', '#bdc5eb'],
+    '--color-icon-blue': ['#203a6c', '#203a6c'],
+    '--color-text-blue': ['#203a6c', '#203a6c'],
 
     // Cyan
-    '--color-background-cyan': ['#a9eff0', '#003034'],
-    '--color-border-cyan': ['#8dd2d3', '#004649'],
-    '--color-icon-cyan': ['#004649', '#8dd2d3'],
-    '--color-text-cyan': ['#004649', '#8dd2d3'],
+    '--color-background-cyan': ['#a9eff0', '#a9eff0'],
+    '--color-border-cyan': ['#8dd2d3', '#8dd2d3'],
+    '--color-icon-cyan': ['#004649', '#004649'],
+    '--color-text-cyan': ['#004649', '#004649'],
 
     // Gray (uses the neutral palette)
-    '--color-background-gray': ['#dde2f2', '#1b263a'],
-    '--color-border-gray': ['#c1c6d5', '#333b4f'],
-    '--color-icon-gray': ['#333b4f', '#c1c6d5'],
-    '--color-text-gray': ['#333b4f', '#c1c6d5'],
+    '--color-background-gray': ['#dde2f2', '#dde2f2'],
+    '--color-border-gray': ['#c1c6d5', '#c1c6d5'],
+    '--color-icon-gray': ['#333b4f', '#333b4f'],
+    '--color-text-gray': ['#333b4f', '#333b4f'],
 
     // Green
-    '--color-background-green': ['#c1efb8', '#003100'],
-    '--color-border-green': ['#a5d29d', '#004800'],
-    '--color-icon-green': ['#004800', '#a5d29d'],
-    '--color-text-green': ['#004800', '#a5d29d'],
+    '--color-background-green': ['#c1efb8', '#c1efb8'],
+    '--color-border-green': ['#a5d29d', '#a5d29d'],
+    '--color-icon-green': ['#004800', '#004800'],
+    '--color-text-green': ['#004800', '#004800'],
 
     // Orange
-    '--color-background-orange': ['#ffdcb6', '#461b00'],
-    '--color-border-orange': ['#f2bd81', '#622e00'],
-    '--color-icon-orange': ['#622e00', '#f2bd81'],
-    '--color-text-orange': ['#622e00', '#f2bd81'],
+    '--color-background-orange': ['#ffdcb6', '#ffdcb6'],
+    '--color-border-orange': ['#f2bd81', '#f2bd81'],
+    '--color-icon-orange': ['#622e00', '#622e00'],
+    '--color-text-orange': ['#622e00', '#622e00'],
 
     // Pink
-    '--color-background-pink': ['#ffd5fb', '#560054'],
-    '--color-border-pink': ['#f0b3e8', '#6c0a68'],
-    '--color-icon-pink': ['#6c0a68', '#f0b3e8'],
-    '--color-text-pink': ['#6c0a68', '#f0b3e8'],
+    '--color-background-pink': ['#ffd5fb', '#ffd5fb'],
+    '--color-border-pink': ['#f0b3e8', '#f0b3e8'],
+    '--color-icon-pink': ['#6c0a68', '#6c0a68'],
+    '--color-text-pink': ['#6c0a68', '#6c0a68'],
 
     // Purple
-    '--color-background-purple': ['#f2daff', '#390268'],
-    '--color-border-purple': ['#ddb9f6', '#52237b'],
-    '--color-icon-purple': ['#52237b', '#ddb9f6'],
-    '--color-text-purple': ['#52237b', '#ddb9f6'],
+    '--color-background-purple': ['#f2daff', '#f2daff'],
+    '--color-border-purple': ['#ddb9f6', '#ddb9f6'],
+    '--color-icon-purple': ['#52237b', '#52237b'],
+    '--color-text-purple': ['#52237b', '#52237b'],
 
     // Red
-    '--color-background-red': ['#ffdad3', '#550000'],
-    '--color-border-red': ['#f4b8ae', '#6d211c'],
-    '--color-icon-red': ['#6d211c', '#f4b8ae'],
-    '--color-text-red': ['#6d211c', '#f4b8ae'],
+    '--color-background-red': ['#ffdad3', '#ffdad3'],
+    '--color-border-red': ['#f4b8ae', '#f4b8ae'],
+    '--color-icon-red': ['#6d211c', '#6d211c'],
+    '--color-text-red': ['#6d211c', '#6d211c'],
 
     // Teal
-    '--color-background-teal': ['#b0f0d7', '#003216'],
-    '--color-border-teal': ['#94d3bb', '#00482d'],
-    '--color-icon-teal': ['#00482d', '#94d3bb'],
-    '--color-text-teal': ['#00482d', '#94d3bb'],
+    '--color-background-teal': ['#b0f0d7', '#b0f0d7'],
+    '--color-border-teal': ['#94d3bb', '#94d3bb'],
+    '--color-icon-teal': ['#00482d', '#00482d'],
+    '--color-text-teal': ['#00482d', '#00482d'],
 
     // Yellow
-    '--color-background-yellow': ['#feee7b', '#2e2700'],
-    '--color-border-yellow': ['#d6c957', '#413e00'],
-    '--color-icon-yellow': ['#413e00', '#d6c957'],
-    '--color-text-yellow': ['#413e00', '#d6c957'],
+    '--color-background-yellow': ['#feee7b', '#feee7b'],
+    '--color-border-yellow': ['#d6c957', '#d6c957'],
+    '--color-icon-yellow': ['#413e00', '#413e00'],
+    '--color-text-yellow': ['#413e00', '#413e00'],
 
     // =========================================================================
     // Radius
