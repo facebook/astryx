@@ -288,28 +288,30 @@ export const butterTheme = defineTheme({
     },
 
     // Banner backgrounds match the semantic badge fills.
-    // Banner status colors — vivid backgrounds per status, matching badges.
+    // Banner status colors — override the muted tokens locally so the
+    // header (which reads --color-*-muted via StyleX) renders vivid fills
+    // matching the badge palette. Scoped to the banner root, doesn't leak.
     banner: {
       'status:info': {
-        backgroundColor: '#4883fd',
+        '--color-accent-muted': '#4883fd',
         '--color-text-primary': '#ffffff',
         '--color-text-secondary': '#ffffff',
         '--color-accent': '#ffffff',
       },
       'status:success': {
-        backgroundColor: '#91D143',
+        '--color-success-muted': '#91D143',
         '--color-text-primary': '#1d1c11',
         '--color-text-secondary': '#1d1c11',
         '--color-success': '#1d1c11',
       },
       'status:warning': {
-        backgroundColor: '#ffc502',
+        '--color-warning-muted': '#ffc502',
         '--color-text-primary': '#1d1c11',
         '--color-text-secondary': '#1d1c11',
         '--color-warning': '#1d1c11',
       },
       'status:error': {
-        backgroundColor: '#fc473b',
+        '--color-error-muted': '#fc473b',
         '--color-text-primary': '#ffffff',
         '--color-text-secondary': '#ffffff',
         '--color-error': '#ffffff',
