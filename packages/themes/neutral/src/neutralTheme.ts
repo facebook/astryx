@@ -191,7 +191,7 @@ export const neutralTheme = defineTheme({
     '--color-warning': ['#745b00', '#fdcf4f'],
     '--color-success-muted': ['#c5e5c0', '#84c9803D'],
     '--color-error-muted': ['#facecb', '#ff9e973D'],
-    '--color-warning-muted': ['#ffde9b', '#deb4333D'],
+    '--color-warning-muted': ['#f8da9d', '#deb4333D'],
 
     // Border
     '--color-border': ['#ebebeb', '#FFFFFF1A'],
@@ -246,9 +246,15 @@ export const neutralTheme = defineTheme({
     '--color-text-orange': ['#6e3500', '#ffc9a2'],
 
     // Yellow  H=90 — source #f8c723
-    // (Light-mode butter-yellow pastel keeps H=85 C=0.10 picker decision;
-    // dark-mode comes from the canonical H=90 ramp for tonal-palette consistency.)
-    '--color-background-yellow': ['#ffde9b', '#deb4333D'],
+    // Light-mode butter-yellow pastel at H=85 C=0.085 L=0.90 — yellow
+    // sits at the green-cyan luminance peak so it feels louder than the
+    // other status hues at the same canonical L. Picker decision: pull
+    // L down one step (0.91→0.90) and C down to its identity floor
+    // (0.10→0.085, just above the bronze threshold) so it sits closer
+    // to red/blue's perceived brightness without losing yellow identity.
+    // Dark-mode comes from the canonical H=90 ramp for tonal-palette
+    // consistency.
+    '--color-background-yellow': ['#f8da9d', '#deb4333D'],
     '--color-border-yellow': ['#e4c279', '#c0990e'],
     '--color-icon-yellow': ['#584400', '#deb433'],
     '--color-text-yellow': ['#584400', '#fdcf4f'],
@@ -260,13 +266,20 @@ export const neutralTheme = defineTheme({
     '--color-text-green': ['#0c5700', '#9fe59b'],
 
     // Teal  H=180 — source #0c7365
-    '--color-background-teal': ['#a7eadc', '#7ec6b83D'],
+    // Light pastel uses L=0.87 C=0.065 (a step darker + less chroma than
+    // the L=0.888 C=0.07 used by other hues) to compensate for the
+    // green-cyan luminance overshoot — at the same OKLCH L, teal/cyan read
+    // ~5% brighter than red/blue because the eye's luminance response
+    // peaks in this band. Dropping L+C brings perceived brightness in
+    // line with the rest of the palette without losing hue identity.
+    '--color-background-teal': ['#a5e3d6', '#7ec6b83D'],
     '--color-border-teal': ['#94d6c8', '#63ab9d'],
     '--color-icon-teal': ['#005348', '#7ec6b8'],
     '--color-text-teal': ['#005348', '#99e2d3'],
 
     // Cyan  H=215 — source #0c6f82
-    '--color-background-cyan': ['#a4e7f7', '#83c2d43D'],
+    // Same L=0.87 C=0.065 pastel as teal (luminance overshoot compensation).
+    '--color-background-cyan': ['#a3e0ef', '#83c2d43D'],
     '--color-border-cyan': ['#91d3e3', '#67a7b8'],
     '--color-icon-cyan': ['#00505f', '#83c2d4'],
     '--color-text-cyan': ['#00505f', '#9edef0'],
@@ -541,16 +554,23 @@ export const neutralTheme = defineTheme({
         // mode inherits T35 #525252 — same one-step-lighter behavior.
         '--color-background-muted': 'var(--color-border-emphasized)',
       },
+      // Vivid stops match the filled semantic badge colors (info/success/
+      // warning/error variants in the badge override above). Same hex
+      // values; documented per role with palette provenance.
       'variant:accent': {
+        // Blue T50 saturated stop (= variant:info badge bg)
         '--color-accent': '#0074e2',
       },
       'variant:positive': {
+        // Green T45 saturated stop (= variant:success badge bg)
         '--color-success': '#198100',
       },
       'variant:warning': {
+        // Yellow T85 saturated stop (= variant:warning badge bg)
         '--color-warning': '#ffce2f',
       },
       'variant:negative': {
+        // Red T55 saturated stop (= variant:error badge bg)
         '--color-error': '#e33f4a',
       },
     },
