@@ -288,10 +288,8 @@ export const butterTheme = defineTheme({
     },
 
     // Banner backgrounds match the semantic badge fills.
-    // The visible header is targeted via the `banner-header` slot
-    // (which lives inside the .xds-banner root); painting bg there
-    // avoids touching the shared --color-*-muted tokens.
-    'banner-header': {
+    // Banner status colors — vivid backgrounds per status, matching badges.
+    banner: {
       'status:info': {
         backgroundColor: '#4883fd',
         '--color-text-primary': '#ffffff',
