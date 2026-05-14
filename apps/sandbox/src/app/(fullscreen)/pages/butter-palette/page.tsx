@@ -43,11 +43,11 @@ const TONAL_COLORS = [
 ];
 
 const CORE = [
-  {hex: 'light-dark(#225BFF, #FDEE8C)', name: ''},
-  {hex: 'light-dark(#5681FF, #FDFBE4)', name: ''},
-  {hex: 'light-dark(#FDEE8C, #5681FF)', name: ''},
-  {hex: 'light-dark(#FDFBE4, #225BFF)', name: ''},
-  {hex: 'light-dark(#FFFFFF, #261A13)', name: ''},
+  {hex: '#225BFF', name: '#225BFF', dark: {hex: '#FDEE8C', name: '#FDEE8C'}},
+  {hex: '#5681FF', name: '#5681FF', dark: {hex: '#EDD64B', name: '#EDD64B'}},
+  {hex: '#FDEE8C', name: '#FDEE8C', dark: {hex: '#725538', name: '#725538'}},
+  {hex: '#FDFBE4', name: '#FDFBE4', dark: {hex: '#36261C', name: '#36261C'}},
+  {hex: '#FFFFFF', name: '#FFFFFF', dark: {hex: '#261A13', name: '#261A13'}},
 ];
 
 const sectionTitle: React.CSSProperties = {

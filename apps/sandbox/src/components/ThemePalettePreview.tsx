@@ -258,6 +258,8 @@ export interface TonalColor {
 export interface CoreSwatch {
   hex: string;
   name: string;
+  /** Optional dark-mode override. When present, replaces hex and name in the dark column. */
+  dark?: { hex: string; name: string };
 }
 
 export interface ThemePalettePreviewProps {
@@ -477,20 +479,24 @@ const S = {
 // Section components
 // =============================================================================
 
-function CoreSection({swatches}: {swatches: CoreSwatch[]}) {
+function CoreSection({swatches, mode}: {swatches: CoreSwatch[]; mode?: Mode}) {
+  const isDark = mode === 'dark';
   return (
     <div style={S.section}>
       <h3 style={S.sectionTitle}>Core Palette</h3>
       <div style={S.coreRow}>
-        {swatches.map(c => (
-          <div key={c.hex}>
-            <div style={S.coreSwatch(c.hex)} />
-            <div style={S.coreMeta}>
-              {c.name && <div>{c.name}</div>}
-              <div>{c.hex}</div>
+        {swatches.map(c => {
+          const hex = (isDark && c.dark?.hex) || c.hex;
+          const name = (isDark && c.dark?.name) || c.name;
+          return (
+            <div key={hex}>
+              <div style={S.coreSwatch(hex)} />
+              <div style={S.coreMeta}>
+                {name && <div>{name}</div>}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -1115,7 +1121,7 @@ function ModeColumn({
             </p>
           )}
           {coreSwatches && coreSwatches.length > 0 && (
-            <CoreSection swatches={coreSwatches} />
+            <CoreSection swatches={coreSwatches} mode={mode} />
           )}
           {leadingExtras}
           <TextRampSection />
