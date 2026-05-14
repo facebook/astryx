@@ -161,6 +161,68 @@ function tonalPalette(hue: number, chroma: number): Record<number, string> {
   return result;
 }
 
+/**
+ * Dark-mode tonal palette per the audit rubric in issue #2150 §4:
+ *   "Dark palette: chroma reduced ~15% across the ramp"
+ *
+ * Two transforms vs the canonical light ramp:
+ *
+ *   1. Tone lift: every stop shifts up by +5 tone units so mid-tones land
+ *      brighter against the dark canvas. The lift tapers off between T80
+ *      and T95 and is zero at T95+ so the top of the ramp doesn't collapse
+ *      into pure white.
+ *
+ *   2. Chroma reduction: chroma multiplied by 0.85 across the whole ramp
+ *      so saturated stops don't vibrate against the dark body — full
+ *      saturation reads as neon at low surrounding luminance.
+ *
+ * Same low-tone chroma boost as the light ramp (low tones get extra
+ * chroma so dark colored text stays visibly hued), gamut-clamped per-tone
+ * via the binary search inside `hctToHex`.
+ */
+const DARK_TONE_LIFT = 5;
+const DARK_LIFT_TAPER_START = 80;
+const DARK_LIFT_TAPER_END = 95;
+const DARK_CHROMA_FACTOR = 0.85;
+function darkTonalPalette(
+  hue: number,
+  chroma: number,
+): Record<number, string> {
+  const adjustedChroma = chroma * DARK_CHROMA_FACTOR;
+  const maxChroma = adjustedChroma * 1.8;
+  const result: Record<number, string> = {};
+  for (const t of TONE_STEPS) {
+    let lift = DARK_TONE_LIFT;
+    if (t >= DARK_LIFT_TAPER_END) {
+      lift = 0;
+    } else if (t > DARK_LIFT_TAPER_START) {
+      const ratio =
+        (DARK_LIFT_TAPER_END - t) /
+        (DARK_LIFT_TAPER_END - DARK_LIFT_TAPER_START);
+      lift = DARK_TONE_LIFT * ratio;
+    }
+    const liftedTone = Math.min(100, t + lift);
+    const boost = liftedTone < 50 ? 1 + (50 - liftedTone) / 40 : 1;
+    result[t] = hctToHex({
+      hue,
+      chroma: Math.min(adjustedChroma * boost, maxChroma),
+      tone: liftedTone,
+    });
+  }
+  return result;
+}
+
+/** Pick the per-mode ramp generator. Light keeps the canonical ramp. */
+function tonalPaletteForMode(
+  hue: number,
+  chroma: number,
+  mode: Mode,
+): Record<number, string> {
+  return mode === 'dark'
+    ? darkTonalPalette(hue, chroma)
+    : tonalPalette(hue, chroma);
+}
+
 // =============================================================================
 // Types & data
 // =============================================================================
@@ -867,8 +929,15 @@ function InputSection() {
   );
 }
 
-function TonalSection({colors}: {colors: TonalColor[]}) {
+function TonalSection({
+  colors,
+  mode = 'light',
+}: {
+  colors: TonalColor[];
+  mode?: Mode;
+}) {
   const usedTones = [15, 25, 80, 90];
+  const isDark = mode === 'dark';
   return (
     <div style={{marginBottom: 40}}>
       <h2
@@ -890,11 +959,20 @@ function TonalSection({colors}: {colors: TonalColor[]}) {
           marginBottom: 20,
         }}>
         Full HCT tonal ramps — 21 perceptually uniform steps from black (T0) to
-        white (T100). Badge tokens use T90/T30 (light) and T70/T15 (dark).
+        white (T100).
+        {isDark && (
+          <>
+            {' '}Dark mode applies the audit&apos;s &sect;4 transform
+            (<strong>+5 brightness</strong> with taper above T80,{' '}
+            <strong>×0.85 chroma</strong>) so saturated stops don&apos;t
+            vibrate against the dark canvas.
+          </>
+        )}{' '}
+        Badge tokens use T90/T30 (light) and T70/T15 (dark).
       </p>
       {colors.map(({name, sourceHex, semantic, note}) => {
         const hct = hexToHct(sourceHex);
-        const tones = tonalPalette(hct.hue, hct.chroma);
+        const tones = tonalPaletteForMode(hct.hue, hct.chroma, mode);
         return (
           <div key={name} style={S.tonalRow}>
             <span style={S.tonalLabel}>
@@ -1059,9 +1137,14 @@ export function ThemePalettePreview({
     return <div style={columnsStyle}>{renderColumns()}</div>;
   }
 
-  // Page chrome (title/subtitle/tonal) uses the singleMode when set so the
-  // outer surface matches the rendered theme; otherwise default to light.
+  // Page chrome (title/subtitle) uses the singleMode when set so the outer
+  // surface matches the rendered theme; otherwise default to light.
   const chromeMode: Mode = singleMode ?? 'light';
+
+  // Render the Tonal Palettes section once per mode (light + dark) so
+  // designers see how the same HCT ramps feel against each theme surface.
+  // For singleMode themes (e.g. gothic, y2k), only the relevant mode renders.
+  const tonalModes: Mode[] = singleMode ? [singleMode] : ['light', 'dark'];
 
   return (
     <XDSTheme theme={theme} mode={chromeMode}>
@@ -1070,7 +1153,28 @@ export function ThemePalettePreview({
           <div style={S.inner}>
             <h1 style={S.title}>{title}</h1>
             <p style={S.subtitle}>{subtitle}</p>
-            <TonalSection colors={tonalColors} />
+            {tonalModes.map(m => (
+              <XDSTheme key={m} theme={theme} mode={m}>
+                <XDSLayerProvider>
+                  <div
+                    style={{
+                      background: 'var(--color-background-body)',
+                      color: 'var(--color-text-primary)',
+                      borderRadius: 16,
+                      padding: 24,
+                      marginBottom: 16,
+                      border: '1px solid var(--color-border)',
+                    }}>
+                    {tonalModes.length > 1 && (
+                      <p style={{...S.modeLabel, marginBottom: 16}}>
+                        {m === 'light' ? 'Light Mode' : 'Dark Mode'}
+                      </p>
+                    )}
+                    <TonalSection colors={tonalColors} mode={m} />
+                  </div>
+                </XDSLayerProvider>
+              </XDSTheme>
+            ))}
             <div style={columnsStyle}>{renderColumns()}</div>
           </div>
         </div>
