@@ -71,8 +71,8 @@ export const butterTheme = defineTheme({
     // =========================================================================
     // Core semantic — accent is the exact brand #225BFF
     // =========================================================================
-    '--color-accent': ['#225BFF', '#8ca9ff'],
-    '--color-accent-muted': ['#225BFF33', '#8ca9ff40'],
+    '--color-accent': ['#225BFF', '#FDEE8C'],
+    '--color-accent-muted': ['#225BFF33', '#FDEE8C40'],
     '--color-neutral': ['#1d1c110F', '#f3f2e21A'],
     '--color-background-surface': ['#FFFFFF', '#2E2117'],
     '--color-background-body': ['#FDFBE4', '#261A13'],
@@ -85,7 +85,7 @@ export const butterTheme = defineTheme({
     '--color-text-primary': ['#1d1c11', '#f3f2e2'],
     '--color-text-secondary': ['#605f52', '#adac9e'],
     '--color-text-disabled': ['#adac9e', '#605f52'],
-    '--color-text-accent': ['#225BFF', '#8ca9ff'],
+    '--color-text-accent': ['#225BFF', '#FDEE8C'],
     '--color-on-dark': '#ffffff',
     '--color-on-light': '#1d1c11',
     '--color-on-accent': ['#ffffff', '#1d1c11'],
@@ -95,7 +95,7 @@ export const butterTheme = defineTheme({
     '--color-on-warning': ['#ffeec3', '#3b2200'],
 
     // Icon
-    '--color-icon-accent': ['#225BFF', '#8ca9ff'],
+    '--color-icon-accent': ['#225BFF', '#FDEE8C'],
     '--color-icon-primary': ['#1d1c11', '#f3f2e2'],
     '--color-icon-secondary': ['#605f52', '#adac9e'],
     '--color-icon-disabled': ['#adac9e', '#605f52'],
