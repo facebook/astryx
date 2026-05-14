@@ -34,6 +34,7 @@ export const SimpleBar: StoryObj = {
     <XDSChart
       data={monthlyData}
       xKey="month"
+      title="Monthly Revenue"
       series={[bar('revenue', {color: '#3b82f6'})]}
       grid={<XDSChartGrid horizontal />}
       axes={
@@ -53,6 +54,8 @@ export const StackedBars: StoryObj = {
     <XDSChart
       data={monthlyData}
       xKey="month"
+      title="Revenue & Costs"
+      subtitle="Stacked by category"
       series={[
         bar('revenue', {color: '#3b82f6', stack: 'totals'}),
         bar('costs', {color: '#ef4444', stack: 'totals'}),
@@ -131,6 +134,8 @@ export const MixedMarks: StoryObj = {
     <XDSChart
       data={monthlyData}
       xKey="month"
+      title="Revenue vs Trend"
+      subtitle="Bar chart with trendline overlay"
       series={[
         bar('revenue', {color: '#3b82f6'}),
         line('trend', {color: '#f59e0b'}),
@@ -153,6 +158,7 @@ export const AreaGradient: StoryObj = {
     <XDSChart
       data={monthlyData}
       xKey="month"
+      title="Revenue Over Time"
       series={[
         area('revenue', {color: '#3b82f6', gradient: true}),
         line('revenue', {color: '#3b82f6'}),

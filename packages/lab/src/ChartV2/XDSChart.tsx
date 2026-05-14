@@ -13,6 +13,7 @@
 
 import {
   type ReactNode,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -24,6 +25,9 @@ import type {ChartV2Context, ChartMargin, ChartPointerEvent} from './types';
 import {computeLayout} from './layout';
 import {ChartV2Provider} from './ChartV2Context';
 import {ChartProvider} from '../Chart/ChartContext';
+import * as stylex from '@stylexjs/stylex';
+import {XDSText} from '@xds/core';
+import {XDSVStack} from '@xds/core';
 
 export interface XDSChartProps {
   data: Record<string, unknown>[];
@@ -36,9 +40,19 @@ export interface XDSChartProps {
   legend?: boolean | ReactNode;
   interactions?: ReactNode;
   children?: ReactNode;
+  /** Chart title displayed above the visualization */
+  title?: string;
+  /** Subtitle displayed below the title */
+  subtitle?: string;
 }
 
 const DEFAULT_MARGIN: ChartMargin = {top: 16, right: 16, bottom: 32, left: 48};
+
+const styles = stylex.create({
+  title: {
+    marginBottom: 16,
+  },
+});
 
 export function XDSChart({
   data,
@@ -51,7 +65,11 @@ export function XDSChart({
   legend,
   interactions,
   children,
+  title,
+  subtitle,
 }: XDSChartProps) {
+  const chartId = useId();
+  const descId = `${chartId}-desc`;
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -207,9 +225,30 @@ export function XDSChart({
 
   return (
     <div ref={containerRef} style={{width: '100%'}}>
+      {(title || subtitle) && (
+        <div {...stylex.props(styles.title)}>
+          {title && (
+            <XDSText type="body" weight="semibold" display="block">
+              {title}
+            </XDSText>
+          )}
+          {subtitle && (
+            <XDSText type="supporting" display="block">
+              {subtitle}
+            </XDSText>
+          )}
+        </div>
+      )}
       <ChartV2Provider value={ctx}>
         <ChartProvider value={v1Ctx}>
-          <svg ref={svgRef} width={containerWidth} height={height}>
+          <svg
+            ref={svgRef}
+            width={containerWidth}
+            height={height}
+            aria-label={title ?? undefined}
+            aria-describedby={subtitle ? descId : undefined}>
+            {title && <title>{title}</title>}
+            {subtitle && <desc id={descId}>{subtitle}</desc>}
             <g transform={`translate(${margin.left},${margin.top})`}>
               {/* 1. Grid */}
               {grid}
