@@ -29,7 +29,7 @@ import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
 
 import {
-  ArrowLeftIcon,
+  ChevronLeftIcon,
   DocumentTextIcon,
   ClipboardDocumentIcon,
   ShareIcon,
@@ -135,20 +135,22 @@ export default function AIChatArtifactTemplate() {
         <XDSTopNav
           label="Navigation"
           heading={
-            <XDSTopNavHeading
-              logo={<XDSNavIcon icon={<XDSIcon icon={CubeIcon} size="sm" />} />}
-              heading="My App"
-              headingHref="/"
-            />
-          }
-          startContent={
-            <XDSButton
-              label="Back"
-              variant="ghost"
-              size="sm"
-              icon={<XDSIcon icon={ArrowLeftIcon} size="sm" />}
-              isIconOnly
-            />
+            <XDSHStack gap={1} vAlign="center">
+              <XDSButton
+                label="Back"
+                variant="ghost"
+                size="sm"
+                icon={<XDSIcon icon={ChevronLeftIcon} size="sm" />}
+                isIconOnly
+              />
+              <XDSTopNavHeading
+                logo={
+                  <XDSNavIcon icon={<XDSIcon icon={CubeIcon} size="sm" />} />
+                }
+                heading="My App"
+                headingHref="/"
+              />
+            </XDSHStack>
           }
         />
       }>
