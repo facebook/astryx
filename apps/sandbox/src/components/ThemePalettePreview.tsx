@@ -232,6 +232,18 @@ export interface TonalColor {
   sourceHex: string;
   semantic?: string;
   note?: string;
+  /**
+   * Optional pre-computed tonal ramp keyed by tone (0-100).
+   * When provided, the preview renders these exact values instead of
+   * deriving them from `sourceHex` via the built-in HCT algorithm —
+   * use this to keep the displayed strip in sync with the theme's
+   * own hand-tuned palette (so card/badge variants visually match).
+   *
+   * Numeric keys are interpreted as tone steps; non-numeric keys
+   * (e.g. `hue`, `chroma`) are ignored. This shape matches theme
+   * palette exports like `butterPalettes.blue`.
+   */
+  tones?: Readonly<Record<string | number, string | number>>;
 }
 
 export interface CoreSwatch {
@@ -465,7 +477,7 @@ function CoreSection({swatches}: {swatches: CoreSwatch[]}) {
           <div key={c.hex}>
             <div style={S.coreSwatch(c.hex)} />
             <div style={S.coreMeta}>
-              <div>{c.name}</div>
+              {c.name && <div>{c.name}</div>}
               <div>{c.hex}</div>
             </div>
           </div>
@@ -984,9 +996,20 @@ function TonalSection({
         )}{' '}
         Badge tokens use T90/T30 (light) and T70/T15 (dark).
       </p>
-      {colors.map(({name, sourceHex, semantic, note}) => {
+      {colors.map(({name, sourceHex, semantic, note, tones: overrideTones}) => {
         const hct = hexToHct(sourceHex);
-        const tones = tonalPaletteForMode(hct.hue, hct.chroma, mode);
+        const computedTones = tonalPaletteForMode(hct.hue, hct.chroma, mode);
+        // Theme override wins when it has a hex for this step; otherwise
+        // fall back to the algorithm so the strip is always a full 21-step
+        // ramp (no missing cells when the theme defines a subset).
+        const resolveTone = (t: number): string => {
+          if (overrideTones) {
+            const v = overrideTones[t];
+            if (typeof v === 'string') return v;
+          }
+          return computedTones[t];
+        };
+        const steps = TONE_STEPS;
         return (
           <div key={name} style={S.tonalRow}>
             <span style={S.tonalLabel}>
@@ -1003,18 +1026,21 @@ function TonalSection({
               )}
             </span>
             <div style={S.tonalStrip}>
-              {TONE_STEPS.map(t => (
-                <div
-                  key={t}
-                  style={{
-                    ...S.tonalCell(tones[t]),
-                    position: 'relative' as const,
-                  }}
-                  title={`${name} T${t}: ${tones[t]}`}>
-                  <span style={S.tonalNum(t)}>{t}</span>
-                  {usedTones.includes(t) && <div style={S.markerDot(t)} />}
-                </div>
-              ))}
+              {steps.map(t => {
+                const hex = resolveTone(t);
+                return (
+                  <div
+                    key={t}
+                    style={{
+                      ...S.tonalCell(hex),
+                      position: 'relative' as const,
+                    }}
+                    title={`${name} T${t}: ${hex}`}>
+                    <span style={S.tonalNum(t)}>{t}</span>
+                    {usedTones.includes(t) && <div style={S.markerDot(t)} />}
+                  </div>
+                );
+              })}
             </div>
             <span style={S.tonalHct}>
               H:{hct.hue.toFixed(0)} C:{hct.chroma.toFixed(0)}
@@ -1076,7 +1102,9 @@ function ModeColumn({
               {mode === 'light' ? 'Light Mode' : 'Dark Mode'}
             </p>
           )}
-          {coreSwatches && coreSwatches.length > 0 && <CoreSection swatches={coreSwatches} />}
+          {coreSwatches && coreSwatches.length > 0 && (
+            <CoreSection swatches={coreSwatches} />
+          )}
           {leadingExtras}
           <TextRampSection />
           <SemanticBadgeSection />

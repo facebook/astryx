@@ -2,33 +2,52 @@
 
 import {XDSVStack} from '@xds/core/Layout';
 import {butterTheme} from '@xds/theme-butter/built';
+import {butterPalettes} from '@xds/theme-butter';
 import {ThemePalettePreview} from '@/components/ThemePalettePreview';
 
 const SARINA = "'Sarina', cursive";
 
+// 14 brand palettes shown in the design spec. Tonal ramps come straight
+// from the theme's pre-computed palette so the displayed strip exactly
+// matches the card / badge / banner tokens.
 const TONAL_COLORS = [
-  {name: 'Accent', sourceHex: '#225BFF'},
-  {name: 'Gray', sourceHex: '#868B99'},
-  {name: 'Red', sourceHex: '#FF7553'},
-  {name: 'Orange', sourceHex: '#FFA347'},
-  {name: 'Yellow', sourceHex: '#fdee8c'},
-  {name: 'Green', sourceHex: '#5DCE5F'},
-  {name: 'Cyan', sourceHex: '#60CFD3'},
-  {name: 'Teal', sourceHex: '#6CD9A8'},
-  {name: 'Blue', sourceHex: '#5681FF'},
-  {name: 'Purple', sourceHex: '#B780F6'},
-  {name: 'Pink', sourceHex: '#F680E8'},
-  {name: 'Error', sourceHex: '#FF5947', semantic: 'Error'},
-  {name: 'Warning', sourceHex: '#F8C726', semantic: 'Warning'},
-  {name: 'Success', sourceHex: '#AAC515', semantic: 'Success'},
+  {name: 'Accent', sourceHex: '#225BFF', tones: butterPalettes.accent},
+  {name: 'Gray', sourceHex: '#868B99', tones: butterPalettes.neutral},
+  {name: 'Red', sourceHex: '#FF7553', tones: butterPalettes.red},
+  {name: 'Orange', sourceHex: '#FFA347', tones: butterPalettes.orange},
+  {name: 'Yellow', sourceHex: '#fdee8c', tones: butterPalettes.yellow},
+  {name: 'Green', sourceHex: '#5DCE5F', tones: butterPalettes.green},
+  {name: 'Cyan', sourceHex: '#60CFD3', tones: butterPalettes.cyan},
+  {name: 'Teal', sourceHex: '#6CD9A8', tones: butterPalettes.teal},
+  {name: 'Blue', sourceHex: '#5681FF', tones: butterPalettes.blue},
+  {name: 'Purple', sourceHex: '#B780F6', tones: butterPalettes.purple},
+  {name: 'Pink', sourceHex: '#F680E8', tones: butterPalettes.pink},
+  {
+    name: 'Error',
+    sourceHex: '#FF5947',
+    tones: butterPalettes.error,
+    semantic: 'Error',
+  },
+  {
+    name: 'Warning',
+    sourceHex: '#F8C726',
+    tones: butterPalettes.warning,
+    semantic: 'Warning',
+  },
+  {
+    name: 'Success',
+    sourceHex: '#91D143',
+    tones: butterPalettes.success,
+    semantic: 'Success',
+  },
 ];
 
 const CORE = [
-  {hex: '#225BFF', name: 'Butter 900'},
-  {hex: '#5681FF', name: 'Butter 700'},
-  {hex: '#FDEE8C', name: 'Butter 300'},
-  {hex: '#FDFBE4', name: 'Butter 100'},
-  {hex: '#FFFFFF', name: 'White'},
+  {hex: '#225BFF', name: ''},
+  {hex: '#5681FF', name: ''},
+  {hex: '#FDEE8C', name: ''},
+  {hex: '#FDFBE4', name: ''},
+  {hex: '#FFFFFF', name: ''},
 ];
 
 const sectionTitle: React.CSSProperties = {
@@ -39,6 +58,8 @@ const sectionTitle: React.CSSProperties = {
 };
 
 function DisplayTextSection() {
+  // Brand-blue display in both modes.
+  const displayColor = '#225BFF';
   return (
     <div>
       <h3 style={sectionTitle}>Display Text (Sarina)</h3>
@@ -49,6 +70,7 @@ function DisplayTextSection() {
             fontSize: 83,
             fontWeight: 400,
             lineHeight: 1.15,
+            color: displayColor,
           }}>
           Display 1
         </span>
@@ -58,6 +80,7 @@ function DisplayTextSection() {
             fontSize: 67,
             fontWeight: 400,
             lineHeight: 1.15,
+            color: displayColor,
           }}>
           Display 2
         </span>
@@ -67,6 +90,7 @@ function DisplayTextSection() {
             fontSize: 53,
             fontWeight: 400,
             lineHeight: 1.2,
+            color: displayColor,
           }}>
           Display 3
         </span>
@@ -80,7 +104,7 @@ export default function ButterPalettePage() {
     <ThemePalettePreview
       theme={butterTheme}
       title="Butter Theme Palette"
-      subtitle="A warm, golden theme inspired by fresh butter and sunlight. OKLCH-derived tonal ramps from source #FDEE8C. Accent: #225BFF."
+      subtitle="Golden buttery theme with blue accents. Sarina for Display, Outfit for headings and body."
       tonalColors={TONAL_COLORS}
       coreSwatches={CORE}
       leadingExtras={<DisplayTextSection />}

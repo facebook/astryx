@@ -149,7 +149,7 @@ export const categories: SandboxCategory[] = [
         name: 'Butter Palette',
         href: '/pages/butter-palette/',
         description:
-          'Butter theme — warm golden tones from #FDEE8C, OKLCH-derived ramps, Inter body, Nunito headings',
+          'Butter theme — golden buttery palette with blue accents, Sarina display, Outfit body & headings',
       },
       {
         name: 'Color Studio',

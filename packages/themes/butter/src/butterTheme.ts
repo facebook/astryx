@@ -1,33 +1,42 @@
 /**
  * Butter Theme
  *
- * A warm, golden theme inspired by fresh butter and sunlight.
- * Source color: #FDEE8C (OKLCH H=102, C=0.13, L=0.94)
- * Accent: #225BFF (blue)
- * All tonal ramps derived from brand source colors via OKLCH.
- * Uses Inter for body and Nunito for headings.
+ * Warm, golden buttery theme with blue accents.
+ * Sarina for display, Outfit for headings and body.
+ *
+ * Source palette (per design):
+ *   Accent  #225BFF   Gray    #868B99   Red     #FF7553
+ *   Orange  #FFA347   Yellow  #fdee8c   Green   #5DCE5F
+ *   Cyan    #60CFD3   Teal    #6CD9A8   Blue    #5681FF
+ *   Purple  #B780F6   Pink    #F680E8   Error   #FF5947
+ *   Warning #F8C726   Success #91D143
+ *
+ * All tonal ramps derived in CIELab (matches the algorithm used by
+ * ThemePalettePreview so card / badge / banner / strip render the
+ * same values). Regen via scripts/butter-palette-gen.mjs if sources
+ * change.
  */
 
 import {defineTheme, defineSyntaxTheme} from '@xds/core/theme';
 import {butterIconRegistry} from './icons';
 
-/** Butter syntax palette — derived from brand categorical hues. */
+/** Butter syntax palette — T25 / T80 of each color's ramp. */
 const butterSyntax = defineSyntaxTheme({
   name: 'xds-butter',
   tokens: {
-    keyword: ['#56307f', '#d4b6ff'], // Purple (H=303)
-    string: ['#275322', '#a6d69f'], // Green (H=142)
-    comment: ['#605f52', '#adac9e'], // Neutral (H=102)
-    number: ['#693900', '#ffb565'], // Orange (H=66)
-    function: ['#303d8b', '#b2c4ff'], // Blue (H=272)
-    type: ['#56307f', '#d4b6ff'], // Purple (H=303)
-    variable: ['#605f52', '#adac9e'], // Neutral
-    operator: ['#605f52', '#adac9e'], // Neutral
-    constant: ['#693900', '#ffb565'], // Orange (H=66)
-    tag: ['#7d2208', '#ffb09b'], // Red (H=35)
-    attribute: ['#514800', '#d6ca65'], // Yellow (H=102)
-    property: ['#045439', '#93d8b6'], // Teal (H=163)
-    punctuation: ['#605f52', '#adac9e'], // Neutral
+    keyword: ['#52237b', '#ddb9f6'], // Purple
+    string: ['#004800', '#a5d29d'], // Green
+    comment: ['#605f52', '#adac9e'],
+    number: ['#622e00', '#f2bd81'], // Orange
+    function: ['#203a6c', '#bdc5eb'], // Blue
+    type: ['#52237b', '#ddb9f6'], // Purple
+    variable: ['#605f52', '#adac9e'],
+    operator: ['#605f52', '#adac9e'],
+    constant: ['#622e00', '#f2bd81'],
+    tag: ['#6d211c', '#f4b8ae'], // Red
+    attribute: ['#413e00', '#d6c957'], // Yellow
+    property: ['#00482d', '#94d3bb'], // Teal
+    punctuation: ['#605f52', '#adac9e'],
     background: ['#FDFBE4', '#131107'],
   },
 });
@@ -60,13 +69,8 @@ export const butterTheme = defineTheme({
 
   tokens: {
     // =========================================================================
-    // Colors — OKLCH-derived
-    // Source: #FDEE8C (H=102.3, C=0.131)
-    // Accent: #225BFF (H=269, C=0.283)
-    // Neutrals: warm tint from butter hue (H=102, C=0.02)
+    // Core semantic — accent is the exact brand #225BFF
     // =========================================================================
-
-    // Accent — exact blue (#225BFF)
     '--color-accent': ['#225BFF', '#8ca9ff'],
     '--color-accent-muted': ['#225BFF33', '#8ca9ff40'],
     '--color-neutral': ['#1d1c110F', '#f3f2e21A'],
@@ -77,7 +81,7 @@ export const butterTheme = defineTheme({
     '--color-overlay-pressed': ['#1d1c111A', '#f3f2e21A'],
     '--color-background-muted': ['#f3f2e2', '#323125'],
 
-    // Text — warm neutral H=102 C=0.02
+    // Text — warm neutral
     '--color-text-primary': ['#1d1c11', '#f3f2e2'],
     '--color-text-secondary': ['#605f52', '#adac9e'],
     '--color-text-disabled': ['#adac9e', '#605f52'],
@@ -85,9 +89,10 @@ export const butterTheme = defineTheme({
     '--color-on-dark': '#ffffff',
     '--color-on-light': '#1d1c11',
     '--color-on-accent': ['#ffffff', '#1d1c11'],
-    '--color-on-success': ['#faffea', '#182000'],
-    '--color-on-error': ['#fffbfa', '#450000'],
-    '--color-on-warning': ['#fffcf1', '#291800'],
+    // T95 of each ramp for use on the vivid semantic surfaces.
+    '--color-on-success': ['#ccff88', '#0b2e00'],
+    '--color-on-error': ['#ffe3de', '#600000'],
+    '--color-on-warning': ['#ffeec3', '#3b2200'],
 
     // Icon
     '--color-icon-accent': ['#225BFF', '#8ca9ff'],
@@ -95,23 +100,20 @@ export const butterTheme = defineTheme({
     '--color-icon-secondary': ['#605f52', '#adac9e'],
     '--color-icon-disabled': ['#adac9e', '#605f52'],
 
-    // Surface variants — warm neutral
+    // Surface variants
     '--color-background-card': ['#FFFFFF', '#323125'],
     '--color-background-popover': ['#FFFFFF', '#323125'],
     '--color-background-inverted': ['#1d1c11', '#f3f2e2'],
 
-    // Status — OKLCH-derived from brand colors
-    // Error = Red (source: #FF5947, H=29.2)
-    '--color-error': ['#9a3b30', '#d46f61'],
-    '--color-error-muted': ['#9a3b3033', '#d46f6140'],
-    // Warning = Yellow (source: #F8C726, H=93.5)
-    '--color-warning': ['#725c00', '#aa8e22'],
-    '--color-warning-muted': ['#725c0033', '#aa8e2240'],
-    // Success = Green (source: #AAC515, H=119.3)
-    '--color-success': ['#596524', '#8a9957'],
-    '--color-success-muted': ['#59652433', '#8a995740'],
+    // Status semantics — T25 light / T80 dark from each status palette.
+    '--color-error': ['#771210', '#ffb4a6'],
+    '--color-error-muted': ['#77121033', '#ffb4a640'],
+    '--color-warning': ['#543700', '#f7be00'],
+    '--color-warning-muted': ['#54370033', '#f7be0040'],
+    '--color-success': ['#004700', '#99d94b'],
+    '--color-success-muted': ['#00470033', '#99d94b40'],
 
-    // Border — warm neutral
+    // Border
     '--color-border': ['#e5e3d4', '#f3f2e21A'],
     '--color-border-emphasized': ['#79786a', '#939184'],
 
@@ -123,73 +125,89 @@ export const butterTheme = defineTheme({
     // Typography override
     '--text-supporting-size': '12px',
 
-    // Categorical — Blue (source: #5681FF, H=271.7)
-    '--color-background-blue': ['#d8e2ff', '#303d8b'],
-    '--color-border-blue': ['#b2c4ff', '#4556a7'],
-    '--color-icon-blue': ['#303d8b', '#b2c4ff'],
-    '--color-text-blue': ['#303d8b', '#b2c4ff'],
-
-    // Categorical — Cyan (source: #60CFD3, H=206.8)
-    '--color-background-cyan': ['#9bf3ff', '#00515b'],
-    '--color-border-cyan': ['#7ad8e4', '#006c77'],
-    '--color-icon-cyan': ['#00515b', '#7ad8e4'],
-    '--color-text-cyan': ['#00515b', '#7ad8e4'],
-
-    // Categorical — Gray (source: #868B99, H=281.1)
-    '--color-background-gray': ['#e1e2e9', '#46464c'],
-    '--color-border-gray': ['#c5c6cd', '#5d5e64'],
-    '--color-icon-gray': ['#46464c', '#c5c6cd'],
-    '--color-text-gray': ['#46464c', '#c5c6cd'],
-
-    // Categorical — Green (source: #5DCE5F, H=141.5)
-    '--color-background-green': ['#c1f2ba', '#275322'],
-    '--color-border-green': ['#a6d69f', '#3f6b39'],
-    '--color-icon-green': ['#275322', '#a6d69f'],
-    '--color-text-green': ['#275322', '#a6d69f'],
-
-    // Categorical — Orange (source: #FFA347, H=66.0)
-    '--color-background-orange': ['#ffdbb8', '#693900'],
-    '--color-border-orange': ['#ffb565', '#894e00'],
-    '--color-icon-orange': ['#693900', '#ffb565'],
-    '--color-text-orange': ['#693900', '#ffb565'],
-
-    // Categorical — Pink (source: #F680E8, H=327.5)
-    '--color-background-pink': ['#ffd1fe', '#69266a'],
-    '--color-border-pink': ['#f4a8f2', '#843f83'],
-    '--color-icon-pink': ['#69266a', '#f4a8f2'],
-    '--color-text-pink': ['#69266a', '#f4a8f2'],
-
-    // Categorical — Purple (source: #B780F6, H=303.0)
-    '--color-background-purple': ['#e9dbff', '#56307f'],
-    '--color-border-purple': ['#d4b6ff', '#6e489a'],
-    '--color-icon-purple': ['#56307f', '#d4b6ff'],
-    '--color-text-purple': ['#56307f', '#d4b6ff'],
-
-    // Categorical — Red (source: #FF7553, H=35.4)
-    '--color-background-red': ['#ffd8ce', '#7d2208'],
-    '--color-border-red': ['#ffb09b', '#9a3d25'],
-    '--color-icon-red': ['#7d2208', '#ffb09b'],
-    '--color-text-red': ['#7d2208', '#ffb09b'],
-
-    // Categorical — Teal (source: #6CD9A8, H=162.6)
-    '--color-background-teal': ['#aff5d2', '#045439'],
-    '--color-border-teal': ['#93d8b6', '#286d50'],
-    '--color-icon-teal': ['#045439', '#93d8b6'],
-    '--color-text-teal': ['#045439', '#93d8b6'],
-
-    // Categorical — Yellow (source: #fdee8c, H=102.3)
-    '--color-background-yellow': ['#f2e681', '#514800'],
-    '--color-border-yellow': ['#d6ca65', '#6b6000'],
-    '--color-icon-yellow': ['#514800', '#d6ca65'],
-    '--color-text-yellow': ['#514800', '#d6ca65'],
+    // Element sizes — slightly taller defaults so the new input padding
+    // (--spacing-2 block) has room to breathe.
+    '--size-element-sm': '32px',
+    '--size-element-md': '40px',
+    '--size-element-lg': '48px',
 
     // =========================================================================
-    // Radius — soft and rounded
+    // Categorical — every value drawn from butterPalettes.{color}:
+    //   bg     T90 light  /  T15 dark
+    //   border T80 light  /  T25 dark
+    //   icon   T25 light  /  T80 dark
+    //   text   T25 light  /  T80 dark
+    // =========================================================================
+
+    // Blue
+    '--color-background-blue': ['#dbe1ff', '#002558'],
+    '--color-border-blue': ['#bdc5eb', '#203a6c'],
+    '--color-icon-blue': ['#203a6c', '#bdc5eb'],
+    '--color-text-blue': ['#203a6c', '#bdc5eb'],
+
+    // Cyan
+    '--color-background-cyan': ['#a9eff0', '#003034'],
+    '--color-border-cyan': ['#8dd2d3', '#004649'],
+    '--color-icon-cyan': ['#004649', '#8dd2d3'],
+    '--color-text-cyan': ['#004649', '#8dd2d3'],
+
+    // Gray (uses the neutral palette)
+    '--color-background-gray': ['#dde2f2', '#1b263a'],
+    '--color-border-gray': ['#c1c6d5', '#333b4f'],
+    '--color-icon-gray': ['#333b4f', '#c1c6d5'],
+    '--color-text-gray': ['#333b4f', '#c1c6d5'],
+
+    // Green
+    '--color-background-green': ['#c1efb8', '#003100'],
+    '--color-border-green': ['#a5d29d', '#004800'],
+    '--color-icon-green': ['#004800', '#a5d29d'],
+    '--color-text-green': ['#004800', '#a5d29d'],
+
+    // Orange
+    '--color-background-orange': ['#ffdcb6', '#461b00'],
+    '--color-border-orange': ['#f2bd81', '#622e00'],
+    '--color-icon-orange': ['#622e00', '#f2bd81'],
+    '--color-text-orange': ['#622e00', '#f2bd81'],
+
+    // Pink
+    '--color-background-pink': ['#ffd5fb', '#560054'],
+    '--color-border-pink': ['#f0b3e8', '#6c0a68'],
+    '--color-icon-pink': ['#6c0a68', '#f0b3e8'],
+    '--color-text-pink': ['#6c0a68', '#f0b3e8'],
+
+    // Purple
+    '--color-background-purple': ['#f2daff', '#390268'],
+    '--color-border-purple': ['#ddb9f6', '#52237b'],
+    '--color-icon-purple': ['#52237b', '#ddb9f6'],
+    '--color-text-purple': ['#52237b', '#ddb9f6'],
+
+    // Red
+    '--color-background-red': ['#ffdad3', '#550000'],
+    '--color-border-red': ['#f4b8ae', '#6d211c'],
+    '--color-icon-red': ['#6d211c', '#f4b8ae'],
+    '--color-text-red': ['#6d211c', '#f4b8ae'],
+
+    // Teal
+    '--color-background-teal': ['#b0f0d7', '#003216'],
+    '--color-border-teal': ['#94d3bb', '#00482d'],
+    '--color-icon-teal': ['#00482d', '#94d3bb'],
+    '--color-text-teal': ['#00482d', '#94d3bb'],
+
+    // Yellow
+    '--color-background-yellow': ['#feee7b', '#2e2700'],
+    '--color-border-yellow': ['#d6c957', '#413e00'],
+    '--color-icon-yellow': ['#413e00', '#d6c957'],
+    '--color-text-yellow': ['#413e00', '#d6c957'],
+
+    // =========================================================================
+    // Radius
+    //   --radius-element drives buttons, badges, inputs — 8px per design
+    //   --radius-container drives cards, banners, popovers — 12px per design
     // =========================================================================
     '--radius-none': '0.125rem',
     '--radius-inner': '0.375rem',
-    '--radius-element': '0.625rem',
-    '--radius-container': '1rem',
+    '--radius-element': '0.5rem', // 8px
+    '--radius-container': '0.75rem', // 12px
     '--radius-page': '1.5rem',
     '--radius-full': '9999px',
 
@@ -201,97 +219,248 @@ export const butterTheme = defineTheme({
     '--shadow-high': '0 4px 6px #1d1c111A, 0 12px 24px #1d1c1126',
     '--shadow-inset-hover': 'inset 0px 0px 0px 2px #79786a30',
     '--shadow-inset-selected': 'inset 0px 0px 0px 2px #79786a50',
-    '--shadow-inset-success': 'inset 0px 0px 0px 2px #59652430',
-    '--shadow-inset-warning': 'inset 0px 0px 0px 2px #725c0030',
-    '--shadow-inset-error': 'inset 0px 0px 0px 2px #9a3b3030',
+    '--shadow-inset-success': 'inset 0px 0px 0px 2px #00470030',
+    '--shadow-inset-warning': 'inset 0px 0px 0px 2px #54370030',
+    '--shadow-inset-error': 'inset 0px 0px 0px 2px #77121030',
   },
 
   components: {
     button: {
+      // 8px radius, generous padding around the label.
       base: {
-        borderRadius: 'var(--radius-full)',
+        borderRadius: 'var(--radius-element)',
+        paddingBlock: 'var(--spacing-3)',
+        paddingInline: 'var(--spacing-4)',
       },
+      // Secondary: blue outline + label. Dark-mode blue matches the
+      // primary's dark-mode background so the two read as siblings.
       'variant:secondary': {
         backgroundColor: 'transparent',
         borderWidth: '1.5px',
         borderStyle: 'solid',
-        borderColor: 'var(--color-border-emphasized)',
+        borderColor: 'light-dark(#225BFF, #8ca9ff)',
+        color: 'light-dark(#225BFF, #8ca9ff)',
         ':hover': {
-          backgroundColor: 'var(--color-neutral)',
+          backgroundColor: 'light-dark(#225BFF14, #8ca9ff14)',
         },
       },
+      // Ghost: same blue as secondary text, no background.
+      'variant:ghost': {
+        color: 'light-dark(#225BFF, #8ca9ff)',
+      },
       'variant:destructive': {
-        backgroundColor: 'light-dark(#ffd8ce, #ffb09b)',
-        color: 'light-dark(#7d2208, #450000)',
+        backgroundColor: 'light-dark(#ffdad3, #f4b8ae)',
+        color: 'light-dark(#550000, #6d211c)',
       },
     },
 
     badge: {
-      // Info = #225BFF (accent blue)
+      // Match astryx/daily badge sizing: 30px tall with 12px horizontal pad.
+      // Use explicit values because butter inherits the standard spacing
+      // scale (where --spacing-3 = 12px), unlike astryx which redefines it.
+      base: {
+        height: '30px',
+        paddingBlock: '0',
+        paddingInline: 'var(--spacing-3)',
+      },
+      // Vivid semantic badges — pinned to the brand colors from the spec.
+      // Info uses the Blue palette source (NOT the brand accent #225BFF).
       'variant:info': {
-        backgroundColor: 'light-dark(#225BFF, #225BFF)',
-        color: 'light-dark(#ffffff, #ffffff)',
+        backgroundColor: '#4883fd',
+        color: '#ffffff',
       },
-      // Neutral = #FDEE8C (butter), text = #225BFF
       'variant:neutral': {
-        backgroundColor: 'light-dark(#FDEE8C, #FDEE8C)',
-        color: 'light-dark(#225BFF, #225BFF)',
+        backgroundColor: '#ffee7b',
+        color: '#225BFF',
       },
-      // Success = #AAC515
       'variant:success': {
-        backgroundColor: 'light-dark(#AAC515, #AAC515)',
-        color: 'light-dark(#ffffff, #ffffff)',
+        backgroundColor: '#91D143',
+        color: '#1d1c11',
       },
-      // Warning = #F8C726
       'variant:warning': {
-        backgroundColor: 'light-dark(#F8C726, #F8C726)',
-        color: 'light-dark(#1d1c11, #1d1c11)',
+        backgroundColor: '#ffc502',
+        color: '#1d1c11',
       },
-      // Error = #FF5947
       'variant:error': {
-        backgroundColor: 'light-dark(#FF5947, #FF5947)',
-        color: 'light-dark(#ffffff, #ffffff)',
+        backgroundColor: '#fc473b',
+        color: '#ffffff',
       },
     },
 
-    banner: {
-      // Info uses accent (blue)
+    // Banner backgrounds match the semantic badge fills.
+    // The visible header is targeted via the `banner-header` slot
+    // (which lives inside the .xds-banner root); painting bg there
+    // avoids touching the shared --color-*-muted tokens.
+    'banner-header': {
       'status:info': {
-        backgroundColor: 'light-dark(#d7e2ff, #283b96)',
-        '--color-text-primary': 'light-dark(#283b96, #afc5ff)',
-        '--color-text-secondary': 'light-dark(#283b96, #afc5ff)',
-        '--color-accent': 'light-dark(#283b96, #afc5ff)',
+        backgroundColor: '#4883fd',
+        '--color-text-primary': '#ffffff',
+        '--color-text-secondary': '#ffffff',
+        '--color-accent': '#ffffff',
       },
       'status:success': {
-        backgroundColor: 'light-dark(#dbeca7, #424d04)',
-        '--color-text-primary': 'light-dark(#424d04, #bfcf8c)',
-        '--color-text-secondary': 'light-dark(#424d04, #bfcf8c)',
-        '--color-success': 'light-dark(#424d04, #bfcf8c)',
+        backgroundColor: '#91D143',
+        '--color-text-primary': '#1d1c11',
+        '--color-text-secondary': '#1d1c11',
+        '--color-success': '#1d1c11',
       },
       'status:warning': {
-        backgroundColor: 'light-dark(#fee17e, #574500)',
-        '--color-text-primary': 'light-dark(#574500, #e1c561)',
-        '--color-text-secondary': 'light-dark(#574500, #e1c561)',
-        '--color-warning': 'light-dark(#574500, #e1c561)',
+        backgroundColor: '#ffc502',
+        '--color-text-primary': '#1d1c11',
+        '--color-text-secondary': '#1d1c11',
+        '--color-warning': '#1d1c11',
       },
       'status:error': {
-        backgroundColor: 'light-dark(#ffd8d1, #7e2018)',
-        '--color-text-primary': 'light-dark(#7e2018, #ffafa2)',
-        '--color-text-secondary': 'light-dark(#7e2018, #ffafa2)',
-        '--color-error': 'light-dark(#7e2018, #ffafa2)',
+        backgroundColor: '#fc473b',
+        '--color-text-primary': '#ffffff',
+        '--color-text-secondary': '#ffffff',
+        '--color-error': '#ffffff',
       },
     },
 
     card: {
       base: {
-        padding: 'var(--spacing-3)',
+        borderRadius: 'var(--radius-container)',
+        padding: 'var(--spacing-4)',
       },
     },
 
     section: {
       base: {
-        padding: 'var(--spacing-3)',
+        padding: 'var(--spacing-4)',
       },
+    },
+
+    // Progress bar — white track, vivid semantic fills that match the
+    // banner colors (Success / Warning / Error).
+    'progressbar-track': {
+      base: {
+        backgroundColor: '#ffffff',
+      },
+    },
+    'progressbar-fill': {
+      'variant:positive': {
+        backgroundColor: '#91D143',
+      },
+      'variant:warning': {
+        backgroundColor: '#ffc502',
+      },
+      'variant:negative': {
+        backgroundColor: '#fc473b',
+      },
+    },
+
+    // Field status bubble — match the corresponding banner colors so the
+    // helper text below an input reads as the same "this is a warning /
+    // error / success" surface as the standalone banner.
+    'field-status': {
+      'type:success': {
+        backgroundColor: '#91D143',
+        color: '#1d1c11',
+      },
+      'type:warning': {
+        backgroundColor: '#ffc502',
+        color: '#1d1c11',
+      },
+      'type:error': {
+        backgroundColor: '#fc473b',
+        color: '#ffffff',
+      },
+    },
+
+    // Inputs — softer border than default, more vertical breathing room.
+    // Status modifiers also remap the semantic tokens locally so the
+    // status icon + border read as the same vivid hue as the banner
+    // (icons inherit from --color-{success,warning,error}).
+    'text-input': {
+      base: {
+        paddingBlock: 'var(--spacing-2)',
+        paddingInline: 'var(--spacing-3)',
+        borderColor: 'var(--color-border)',
+      },
+      'status:success': {'--color-success': '#91D143'},
+      'status:warning': {'--color-warning': '#ffc502'},
+      'status:error': {'--color-error': '#fc473b'},
+    },
+    textarea: {
+      base: {
+        paddingBlock: 'var(--spacing-2)',
+        paddingInline: 'var(--spacing-3)',
+        borderColor: 'var(--color-border)',
+      },
+      'status:success': {'--color-success': '#91D143'},
+      'status:warning': {'--color-warning': '#ffc502'},
+      'status:error': {'--color-error': '#fc473b'},
+    },
+    'number-input': {
+      base: {
+        paddingBlock: 'var(--spacing-2)',
+        paddingInline: 'var(--spacing-3)',
+        borderColor: 'var(--color-border)',
+      },
+      'status:success': {'--color-success': '#91D143'},
+      'status:warning': {'--color-warning': '#ffc502'},
+      'status:error': {'--color-error': '#fc473b'},
+    },
+    'date-input': {
+      base: {
+        paddingBlock: 'var(--spacing-2)',
+        paddingInline: 'var(--spacing-3)',
+        borderColor: 'var(--color-border)',
+      },
+      'status:success': {'--color-success': '#91D143'},
+      'status:warning': {'--color-warning': '#ffc502'},
+      'status:error': {'--color-error': '#fc473b'},
+    },
+    'time-input': {
+      base: {
+        paddingBlock: 'var(--spacing-2)',
+        paddingInline: 'var(--spacing-3)',
+        borderColor: 'var(--color-border)',
+      },
+      'status:success': {'--color-success': '#91D143'},
+      'status:warning': {'--color-warning': '#ffc502'},
+      'status:error': {'--color-error': '#fc473b'},
+    },
+    selector: {
+      base: {
+        paddingBlock: 'var(--spacing-2)',
+        paddingInline: 'var(--spacing-3)',
+        borderColor: 'var(--color-border)',
+      },
+      'status:success': {'--color-success': '#91D143'},
+      'status:warning': {'--color-warning': '#ffc502'},
+      'status:error': {'--color-error': '#fc473b'},
+    },
+    'multi-selector': {
+      base: {
+        paddingBlock: 'var(--spacing-2)',
+        paddingInline: 'var(--spacing-3)',
+        borderColor: 'var(--color-border)',
+      },
+      'status:success': {'--color-success': '#91D143'},
+      'status:warning': {'--color-warning': '#ffc502'},
+      'status:error': {'--color-error': '#fc473b'},
+    },
+    typeahead: {
+      base: {
+        paddingBlock: 'var(--spacing-2)',
+        paddingInline: 'var(--spacing-3)',
+        borderColor: 'var(--color-border)',
+      },
+      'status:success': {'--color-success': '#91D143'},
+      'status:warning': {'--color-warning': '#ffc502'},
+      'status:error': {'--color-error': '#fc473b'},
+    },
+    tokenizer: {
+      base: {
+        paddingBlock: 'var(--spacing-2)',
+        paddingInline: 'var(--spacing-3)',
+        borderColor: 'var(--color-border)',
+      },
+      'status:success': {'--color-success': '#91D143'},
+      'status:warning': {'--color-warning': '#ffc502'},
+      'status:error': {'--color-error': '#fc473b'},
     },
   },
 
@@ -299,206 +468,344 @@ export const butterTheme = defineTheme({
 });
 
 /**
- * Raw tonal palettes — OKLCH-derived from brand source colors.
- * Each palette uses the brand hue with role-appropriate chroma.
+ * Raw tonal palettes — generated from design-spec source hexes via the
+ * same CIELab algorithm `ThemePalettePreview` uses for the displayed
+ * strip, so the rendered ramp and the consumed token values are 1:1.
+ *
+ * Source colors:
+ *   accent  #225BFF   neutral #868B99
+ *   red     #ffc3b8   orange  #ffc98d   yellow  #feee7b
+ *   green   #bdebb4   cyan    #abf1f1   teal    #aeefd6
+ *   blue    #cdd5fc   purple  #e6c2ff   pink    #fec0f5
+ *   error   #fc473b   warning #ffc502   success #91D143
+ *
+ * Categorical sources are the pastel pill hexes from the design spec so
+ * each ramp's T85 lands directly on the card / badge background color.
+ * Semantic sources are vivid so the ramp anchors near the badge fill.
+ *
+ * Regenerate with: node packages/themes/butter/scripts/generate-palettes.mjs
  */
 export const butterPalettes = {
-  neutral: {
-    hue: 102,
-    chroma: 0.02,
-    0: '#000000',
-    5: '#131107',
-    10: '#1d1c11',
-    20: '#323125',
-    30: '#49473b',
-    40: '#605f52',
-    50: '#79786a',
-    60: '#939184',
-    70: '#adac9e',
-    80: '#c9c7b9',
-    90: '#e5e3d4',
-    95: '#f3f2e2',
-    99: '#fffdee',
-    100: '#ffffff',
-  },
-  accent: {
-    hue: 269,
-    chroma: 0.15,
-    0: '#000000',
-    5: '#080051',
-    10: '#090060',
-    20: '#15217a',
-    30: '#283b96',
-    40: '#3d55b2',
-    50: '#536fcf',
-    60: '#6c8aec',
-    70: '#89a6ff',
-    80: '#afc5ff',
-    90: '#d7e2ff',
-    95: '#ebf1ff',
-    99: '#fbfcff',
-    100: '#ffffff',
-  },
   blue: {
-    hue: 272,
-    chroma: 0.13,
     0: '#000000',
-    5: '#080048',
-    10: '#0d0856',
-    20: '#1c2470',
-    30: '#303d8b',
-    40: '#4556a7',
-    50: '#5c70c3',
-    60: '#758ae0',
-    70: '#8ea5fd',
-    80: '#b2c4ff',
-    90: '#d8e2ff',
-    95: '#ebf0ff',
-    99: '#fbfcff',
+    5: '#001041',
+    10: '#001b4c',
+    15: '#002558',
+    20: '#062f63',
+    25: '#203a6c',
+    30: '#324575',
+    35: '#41517d',
+    40: '#505d86',
+    45: '#5f698f',
+    50: '#6d7698',
+    55: '#7a82a6',
+    60: '#878fb3',
+    65: '#949cc1',
+    70: '#a2aacf',
+    75: '#afb7dd',
+    80: '#bdc5eb',
+    85: '#cbd3f9',
+    90: '#dbe1ff',
+    95: '#edf0ff',
     100: '#ffffff',
   },
   cyan: {
-    hue: 207,
-    chroma: 0.091,
     0: '#000000',
-    5: '#00171e',
-    10: '#002229',
-    20: '#003940',
-    30: '#00515b',
-    40: '#006c77',
-    50: '#1c8692',
-    60: '#3fa0ad',
-    70: '#5dbcc8',
-    80: '#7ad8e4',
-    90: '#9bf3ff',
-    95: '#d0faff',
-    99: '#f5feff',
+    5: '#001d1e',
+    10: '#00262a',
+    15: '#003034',
+    20: '#003a3e',
+    25: '#004649',
+    30: '#005255',
+    35: '#005e61',
+    40: '#006a6d',
+    45: '#1f7678',
+    50: '#3c8183',
+    55: '#4a8e90',
+    60: '#579c9d',
+    65: '#65a9aa',
+    70: '#72b7b8',
+    75: '#80c4c5',
+    80: '#8dd2d3',
+    85: '#9be0e1',
+    90: '#a9eff0',
+    95: '#b7fdfe',
     100: '#ffffff',
   },
   green: {
-    hue: 142,
-    chroma: 0.091,
     0: '#000000',
-    5: '#001900',
-    10: '#002500',
-    20: '#0f3b09',
-    30: '#275322',
-    40: '#3f6b39',
-    50: '#588552',
-    60: '#719f6a',
-    70: '#8bba84',
-    80: '#a6d69f',
-    90: '#c1f2ba',
-    95: '#d2ffcc',
-    99: '#f6fff4',
-    100: '#ffffff',
-  },
-  teal: {
-    hue: 163,
-    chroma: 0.0845,
-    0: '#000000',
-    5: '#001a06',
-    10: '#002511',
-    20: '#003c24',
-    30: '#045439',
-    40: '#286d50',
-    50: '#438768',
-    60: '#5da181',
-    70: '#78bc9c',
-    80: '#93d8b6',
-    90: '#aff5d2',
-    95: '#c9ffe4',
-    99: '#f4fff9',
-    100: '#ffffff',
-  },
-  yellow: {
-    hue: 102,
-    chroma: 0.1235,
-    0: '#000000',
-    5: '#1d0e00',
-    10: '#241b00',
-    20: '#393100',
-    30: '#514800',
-    40: '#6b6000',
-    50: '#867900',
-    60: '#a09328',
-    70: '#bbae48',
-    80: '#d6ca65',
-    90: '#f2e681',
-    95: '#fff497',
-    99: '#fffde8',
+    5: '#001f00',
+    10: '#002800',
+    15: '#003100',
+    20: '#003c00',
+    25: '#004800',
+    30: '#01530d',
+    35: '#1f5f1f',
+    40: '#346a30',
+    45: '#467640',
+    50: '#578151',
+    55: '#648e5d',
+    60: '#709c6a',
+    65: '#7da976',
+    70: '#8ab783',
+    75: '#98c490',
+    80: '#a5d29d',
+    85: '#b3e0ab',
+    90: '#c1efb8',
+    95: '#cffdc6',
     100: '#ffffff',
   },
   orange: {
-    hue: 66,
-    chroma: 0.13,
     0: '#000000',
-    5: '#310000',
-    10: '#370b00',
-    20: '#4d2400',
-    30: '#693900',
-    40: '#894e00',
-    50: '#a96400',
-    60: '#c67e29',
-    70: '#e29948',
-    80: '#ffb565',
-    90: '#ffdbb8',
-    95: '#ffeddc',
-    99: '#fffbf7',
-    100: '#ffffff',
-  },
-  red: {
-    hue: 35,
-    chroma: 0.13,
-    0: '#000000',
-    5: '#360000',
-    10: '#460000',
-    20: '#620100',
-    30: '#7d2208',
-    40: '#9a3d25',
-    50: '#b6573e',
-    60: '#d37158',
-    70: '#f18c71',
-    80: '#ffb09b',
-    90: '#ffd8ce',
-    95: '#ffece7',
-    99: '#fffbfa',
+    5: '#2d0600',
+    10: '#381200',
+    15: '#461b00',
+    20: '#542400',
+    25: '#622e00',
+    30: '#6d3a00',
+    35: '#794700',
+    40: '#845406',
+    45: '#906121',
+    50: '#9b6e36',
+    55: '#a97b42',
+    60: '#b7874e',
+    65: '#c6945b',
+    70: '#d4a267',
+    75: '#e3af74',
+    80: '#f2bd81',
+    85: '#ffcb8e',
+    90: '#ffdcb6',
+    95: '#ffedda',
     100: '#ffffff',
   },
   pink: {
-    hue: 328,
-    chroma: 0.13,
     0: '#000000',
-    5: '#2a002c',
-    10: '#370039',
-    20: '#500a51',
-    30: '#69266a',
-    40: '#843f83',
-    50: '#9f599e',
-    60: '#ba72b9',
-    70: '#d78dd5',
-    80: '#f4a8f2',
-    90: '#ffd1fe',
-    95: '#ffe8fe',
-    99: '#fffaff',
+    5: '#3c003d',
+    10: '#490048',
+    15: '#560054',
+    20: '#62005f',
+    25: '#6c0a68',
+    30: '#762371',
+    35: '#80357a',
+    40: '#894583',
+    45: '#93558c',
+    50: '#9c6496',
+    55: '#aa71a3',
+    60: '#b77eb0',
+    65: '#c58bbe',
+    70: '#d398cc',
+    75: '#e2a6da',
+    80: '#f0b3e8',
+    85: '#ffc1f6',
+    90: '#ffd5fb',
+    95: '#ffeafd',
     100: '#ffffff',
   },
   purple: {
-    hue: 303,
-    chroma: 0.13,
     0: '#000000',
-    5: '#1e003e',
-    10: '#29004b',
-    20: '#3f1665',
-    30: '#56307f',
-    40: '#6e489a',
-    50: '#8762b5',
-    60: '#a17cd2',
-    70: '#bc96ef',
-    80: '#d4b6ff',
-    90: '#e9dbff',
-    95: '#f4edff',
-    99: '#fdfbff',
+    5: '#1e004f',
+    10: '#2b005c',
+    15: '#390268',
+    20: '#461373',
+    25: '#52237b',
+    30: '#5d3283',
+    35: '#69408b',
+    40: '#744e92',
+    45: '#7f5c9a',
+    50: '#8b6aa2',
+    55: '#9877b0',
+    60: '#a584bd',
+    65: '#b391cb',
+    70: '#c19ed9',
+    75: '#cfabe8',
+    80: '#ddb9f6',
+    85: '#eac8ff',
+    90: '#f2daff',
+    95: '#f9ecff',
+    100: '#ffffff',
+  },
+  red: {
+    0: '#000000',
+    5: '#3e0000',
+    10: '#490000',
+    15: '#550000',
+    20: '#62100f',
+    25: '#6d211c',
+    30: '#773029',
+    35: '#823f36',
+    40: '#8c4d44',
+    45: '#955b52',
+    50: '#9f6961',
+    55: '#ad766d',
+    60: '#bb837a',
+    65: '#c99087',
+    70: '#d79d94',
+    75: '#e6aba1',
+    80: '#f4b8ae',
+    85: '#ffc7bd',
+    90: '#ffdad3',
+    95: '#ffece8',
+    100: '#ffffff',
+  },
+  teal: {
+    0: '#000000',
+    5: '#001f00',
+    10: '#00280b',
+    15: '#003216',
+    20: '#003d22',
+    25: '#00482d',
+    30: '#005439',
+    35: '#005f45',
+    40: '#136b52',
+    45: '#30775f',
+    50: '#46826d',
+    55: '#528f79',
+    60: '#5f9d86',
+    65: '#6caa93',
+    70: '#7ab8a0',
+    75: '#87c5ae',
+    80: '#94d3bb',
+    85: '#a2e1c9',
+    90: '#b0f0d7',
+    95: '#befee5',
+    100: '#ffffff',
+  },
+  yellow: {
+    0: '#000000',
+    5: '#1e1200',
+    10: '#271c00',
+    15: '#2e2700',
+    20: '#373200',
+    25: '#413e00',
+    30: '#4c4a00',
+    35: '#575600',
+    40: '#646200',
+    45: '#726e00',
+    50: '#817a00',
+    55: '#8e860e',
+    60: '#9c9320',
+    65: '#aba02f',
+    70: '#b9ae3d',
+    75: '#c7bb4a',
+    80: '#d6c957',
+    85: '#e5d765',
+    90: '#f4e572',
+    95: '#fff294',
+    100: '#ffffff',
+  },
+  neutral: {
+    0: '#000000',
+    5: '#051124',
+    10: '#101c2f',
+    15: '#1b263a',
+    20: '#273045',
+    25: '#333b4f',
+    30: '#3f4759',
+    35: '#4b5264',
+    40: '#585e6f',
+    45: '#656a79',
+    50: '#727784',
+    55: '#7f8491',
+    60: '#8c909f',
+    65: '#999eac',
+    70: '#a6abba',
+    75: '#b4b9c7',
+    80: '#c1c6d5',
+    85: '#cfd4e3',
+    90: '#dde2f2',
+    95: '#ebf0ff',
+    100: '#ffffff',
+  },
+  accent: {
+    0: '#000000',
+    5: '#00085e',
+    10: '#00136c',
+    15: '#001c7e',
+    20: '#002592',
+    25: '#002fa7',
+    30: '#0039be',
+    35: '#0043d7',
+    40: '#004df0',
+    45: '#0759ff',
+    50: '#4a67ff',
+    55: '#6875ff',
+    60: '#8083ff',
+    65: '#9492ff',
+    70: '#a6a1ff',
+    75: '#b6b0ff',
+    80: '#c6bfff',
+    85: '#d5cfff',
+    90: '#e3dfff',
+    95: '#f1efff',
+    100: '#ffffff',
+  },
+  error: {
+    0: '#000000',
+    5: '#470000',
+    10: '#530000',
+    15: '#600000',
+    20: '#6d0000',
+    25: '#771210',
+    30: '#82261e',
+    35: '#8c372c',
+    40: '#96463b',
+    45: '#a0564a',
+    50: '#a96559',
+    55: '#b77265',
+    60: '#c57e72',
+    65: '#d48b7e',
+    70: '#e2998b',
+    75: '#f1a698',
+    80: '#ffb4a6',
+    85: '#ffc7bc',
+    90: '#ffdad2',
+    95: '#ffece8',
+    100: '#ffffff',
+  },
+  warning: {
+    0: '#000000',
+    5: '#270c00',
+    10: '#301800',
+    15: '#3b2200',
+    20: '#472c00',
+    25: '#543700',
+    30: '#614200',
+    35: '#6f4d00',
+    40: '#7d5800',
+    45: '#8b6400',
+    50: '#9a7000',
+    55: '#a97d00',
+    60: '#b88900',
+    65: '#c89600',
+    70: '#d8a300',
+    75: '#e7b100',
+    80: '#f7be00',
+    85: '#ffcd51',
+    90: '#ffde9c',
+    95: '#ffeed0',
+    100: '#ffffff',
+  },
+  success: {
+    0: '#000000',
+    5: '#001a00',
+    10: '#092300',
+    15: '#0b2e00',
+    20: '#043b00',
+    25: '#004700',
+    30: '#005400',
+    35: '#036100',
+    40: '#136e00',
+    45: '#277b00',
+    50: '#448700',
+    55: '#529400',
+    60: '#60a105',
+    65: '#6eaf1d',
+    70: '#7cbd2e',
+    75: '#8bcb3c',
+    80: '#99d94b',
+    85: '#a7e758',
+    90: '#b5f566',
+    95: '#ccff88',
     100: '#ffffff',
   },
 } as const;

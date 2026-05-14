@@ -407,10 +407,13 @@ export function XDSBanner({
       {...rest}>
       {/* Header: colored status background */}
       <div
-        {...stylex.props(
-          styles.header,
-          isSingleLine && styles.headerCentered,
-          statusStyles[status],
+        {...mergeProps(
+          xdsClassName('banner-header', {status}),
+          stylex.props(
+            styles.header,
+            isSingleLine && styles.headerCentered,
+            statusStyles[status],
+          ),
         )}>
         <div
           {...mergeProps(
