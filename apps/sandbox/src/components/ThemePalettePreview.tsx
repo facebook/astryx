@@ -703,6 +703,100 @@ function SurfacesSection({mode}: {mode: Mode}) {
   );
 }
 
+/**
+ * Three shadow levels (low / med / high) rendered as cards over body so
+ * the cast shadows have a surface to read against. Each sample is annotated
+ * with the components that consume that level — keeps the elevation
+ * vocabulary visible alongside the visual treatment.
+ *
+ * Dark mode swaps the elevated card to `--color-background-surface` (T15)
+ * so the inset rim used by the figma-style shadow tokens has a slightly
+ * lighter base to catch; light mode keeps a white card.
+ */
+function ElevationsSection({mode}: {mode: Mode}) {
+  const levels = [
+    {
+      label: 'Low — popovers / dropdowns / composer',
+      shadow: 'var(--shadow-low)',
+      consumers:
+        'XDSPopover, TopNav mega menu, XDSSegmentedControl item, XDSChatComposer (resting)',
+    },
+    {
+      label: 'Medium — hover / floating',
+      shadow: 'var(--shadow-med)',
+      consumers:
+        'XDSHoverCard, XDSToast, XDSCarousel scroll button, Chat scroll button, XDSThumbnail (hover), XDSChatComposer (hover/focus)',
+    },
+    {
+      label: 'High — modal / dialog',
+      shadow: 'var(--shadow-high)',
+      consumers: 'XDSDialog',
+    },
+  ];
+
+  const elevatedBg =
+    mode === 'light' ? '#ffffff' : 'var(--color-background-surface)';
+  const cardStyle = (shadow: string): React.CSSProperties => ({
+    backgroundColor: elevatedBg,
+    color: 'var(--color-text-primary)',
+    padding: 16,
+    borderRadius: 12,
+    boxShadow: shadow,
+    fontFamily: 'var(--font-family-body)',
+    fontSize: 13,
+    flex: 1,
+    minWidth: 220,
+    minHeight: 88,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  });
+
+  return (
+    <div style={S.section}>
+      <h3 style={S.sectionTitle}>Elevations</h3>
+      <p
+        style={{
+          fontSize: 12,
+          color: 'var(--color-text-secondary)',
+          margin: 0,
+          marginBottom: 12,
+        }}>
+        Three shadow levels mapped to the components that use them. In dark
+        mode each shadow combines a deepened drop with an all-around 1px
+        white inset (Figma-style bezel) so surfaces lift visibly against
+        the canvas.
+      </p>
+      <div
+        style={{
+          background: 'var(--color-background-body)',
+          padding: 32,
+          borderRadius: 12,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 24,
+        }}>
+        {levels.map(l => (
+          <div
+            key={l.label}
+            style={{display: 'flex', flexDirection: 'column', gap: 8}}>
+            <div style={cardStyle(l.shadow)}>{l.label}</div>
+            <div
+              style={{
+                fontSize: 10,
+                fontFamily: MONO,
+                color: 'var(--color-text-secondary)',
+                paddingLeft: 4,
+              }}>
+              Consumed by: {l.consumers}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function BannerSection() {
   return (
     <div style={S.section}>
@@ -901,6 +995,7 @@ function ModeColumn({
           <CheckboxRadioSwitchSection />
           <CardVariantsSection />
           <SurfacesSection mode={mode} />
+          <ElevationsSection mode={mode} />
           {extraSections}
         </div>
       </XDSLayerProvider>
