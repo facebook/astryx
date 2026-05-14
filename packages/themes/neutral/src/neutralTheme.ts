@@ -186,12 +186,12 @@ export const neutralTheme = defineTheme({
     //   slots (palette T70). Composited onto body #1b1b1b, the effective
     //   bg luminance hits ~1.65-1.70:1 vs body — visible colored surface
     //   without the heaviness of a solid T20 panel.
-    '--color-success': ['#007004', '#a2eaa2'],
-    '--color-error': ['#a50c25', '#ffc3c0'],
-    '--color-warning': ['#745b00', '#f9d05a'],
-    '--color-success-muted': ['#c5e5c0', '#87cd873D'],
-    '--color-error-muted': ['#facecb', '#ff97943D'],
-    '--color-warning-muted': ['#ffde9b', '#dcb4393D'],
+    '--color-success': ['#007004', '#9fe59b'],
+    '--color-error': ['#a50c25', '#ffc6c1'],
+    '--color-warning': ['#745b00', '#fdcf4f'],
+    '--color-success-muted': ['#c5e5c0', '#84c9803D'],
+    '--color-error-muted': ['#facecb', '#ff9e973D'],
+    '--color-warning-muted': ['#ffde9b', '#deb4333D'],
 
     // Border
     '--color-border': ['#ebebeb', '#FFFFFF1A'],
@@ -226,68 +226,79 @@ export const neutralTheme = defineTheme({
     // the dark-mode tonal palette (chroma×0.85, +5 tone lift tapering 80-95).
     // =========================================================================
 
-    // Red  H=22 — light C=0.05 pastel; dark from H=22 C=0.198 source
-    '--color-background-red': ['#facecb', '#ff97943D'],
-    '--color-border-red': ['#e6bab8', '#ff6165'],
-    '--color-icon-red': ['#89001a', '#ff9794'],
-    '--color-text-red': ['#89001a', '#ffc3c0'],
+    // Each row's dark slots are HCT-derived from the source hex listed in
+    // apps/sandbox/src/app/(fullscreen)/pages/neutral-palette/page.tsx via
+    // the canonical dark-ramp transform (chroma×0.85, +5 tone-lift taper)
+    // — same algorithm the Tonal Palettes preview renders. Border=T60,
+    // icon=T70, text=T80. Background uses the T70 hue at 24% alpha so the
+    // overlay surface composites onto body to ~1.65:1 luminance.
 
-    // Orange  H=55 — light C=0.06 pastel; dark from H=55 C=0.132 source
-    '--color-background-orange': ['#fad0b5', '#f9a1613D'],
-    '--color-border-orange': ['#e6bda2', '#dc8645'],
-    '--color-icon-orange': ['#6e3500', '#f9a161'],
-    '--color-text-orange': ['#6e3500', '#ffc7a1'],
+    // Red  H=22 — source #eb183a
+    '--color-background-red': ['#facecb', '#ff9e973D'],
+    '--color-border-red': ['#e6bab8', '#ff6f6c'],
+    '--color-icon-red': ['#89001a', '#ff9e97'],
+    '--color-text-red': ['#89001a', '#ffc6c1'],
 
-    // Yellow  H=85 light C=0.10 pastel; dark from H=90 C=0.142 source
-    // (warning yellow keeps H=90 dark family for filled badge + tonal palette
-    // consistency; light butter-yellow at H=85 was tuned via picker for
-    // light-mode banner bg only).
-    '--color-background-yellow': ['#ffde9b', '#dcb4393D'],
-    '--color-border-yellow': ['#e4c279', '#c09805'],
-    '--color-icon-yellow': ['#584400', '#dcb439'],
-    '--color-text-yellow': ['#584400', '#f9d05a'],
+    // Orange  H=55 — source #d57113
+    '--color-background-orange': ['#fad0b5', '#ffa2583D'],
+    '--color-border-orange': ['#e6bda2', '#e2883e'],
+    '--color-icon-orange': ['#6e3500', '#ffa258'],
+    '--color-text-orange': ['#6e3500', '#ffc9a2'],
 
-    // Green  H=144 — light C=0.06 pastel; dark from H=144 C=0.121 source
-    '--color-background-green': ['#c5e5c0', '#87cd873D'],
-    '--color-border-green': ['#b2d1ac', '#6cb16d'],
-    '--color-icon-green': ['#0c5700', '#87cd87'],
-    '--color-text-green': ['#0c5700', '#a2eaa2'],
+    // Yellow  H=90 — source #f8c723
+    // (Light-mode butter-yellow pastel keeps H=85 C=0.10 picker decision;
+    // dark-mode comes from the canonical H=90 ramp for tonal-palette consistency.)
+    '--color-background-yellow': ['#ffde9b', '#deb4333D'],
+    '--color-border-yellow': ['#e4c279', '#c0990e'],
+    '--color-icon-yellow': ['#584400', '#deb433'],
+    '--color-text-yellow': ['#584400', '#fdcf4f'],
 
-    // Teal  H=180 — light C=0.07 pastel; dark from H=180 C=0.074 source
-    '--color-background-teal': ['#a7eadc', '#82c9bb3D'],
-    '--color-border-teal': ['#94d6c8', '#67ada0'],
-    '--color-icon-teal': ['#005348', '#82c9bb'],
-    '--color-text-teal': ['#005348', '#9de5d6'],
+    // Green  H=144 — source #358a3a
+    '--color-background-green': ['#c5e5c0', '#84c9803D'],
+    '--color-border-green': ['#b2d1ac', '#69ad67'],
+    '--color-icon-green': ['#0c5700', '#84c980'],
+    '--color-text-green': ['#0c5700', '#9fe59b'],
 
-    // Cyan  H=215 — light C=0.07 pastel; dark from H=215 C=0.073 source
-    '--color-background-cyan': ['#a4e7f7', '#81c5d63D'],
-    '--color-border-cyan': ['#91d3e3', '#66aabb'],
-    '--color-icon-cyan': ['#00505f', '#81c5d6'],
-    '--color-text-cyan': ['#00505f', '#9ce1f3'],
+    // Teal  H=180 — source #0c7365
+    '--color-background-teal': ['#a7eadc', '#7ec6b83D'],
+    '--color-border-teal': ['#94d6c8', '#63ab9d'],
+    '--color-icon-teal': ['#005348', '#7ec6b8'],
+    '--color-text-teal': ['#005348', '#99e2d3'],
 
-    // Blue  H=254 — light C=0.05 pastel; dark from H=255 C=0.160 source
+    // Cyan  H=215 — source #0c6f82
+    '--color-background-cyan': ['#a4e7f7', '#83c2d43D'],
+    '--color-border-cyan': ['#91d3e3', '#67a7b8'],
+    '--color-icon-cyan': ['#00505f', '#83c2d4'],
+    '--color-text-cyan': ['#00505f', '#9edef0'],
+
+    // Blue  H=255 — source #0074e2
     //   T50 #0074e2 reserved for filled Info badge / progressbar / inset hover.
-    '--color-background-blue': ['#c4ddfb', '#88bcff3D'],
-    '--color-border-blue': ['#b1c9e7', '#539fff'],
-    '--color-icon-blue': ['#00458c', '#88bcff'],
-    '--color-text-blue': ['#00458c', '#b9d7ff'],
+    '--color-background-blue': ['#c4ddfb', '#9eb7ff3D'],
+    '--color-border-blue': ['#b1c9e7', '#6d9cfe'],
+    '--color-icon-blue': ['#00458c', '#9eb7ff'],
+    '--color-text-blue': ['#00458c', '#c7d3ff'],
 
-    // Purple  H=320 — light C=0.06 pastel; dark from H=320 C=0.197 source
-    '--color-background-purple': ['#eccef3', '#ea8fff3D'],
-    '--color-border-purple': ['#d8bbdf', '#d26ee9'],
-    '--color-icon-purple': ['#700084', '#ea8fff'],
-    '--color-text-purple': ['#700084', '#f3bfff'],
+    // Purple  H=320 — source #980fb2
+    '--color-background-purple': ['#eccef3', '#f297ff3D'],
+    '--color-border-purple': ['#d8bbdf', '#dd74f0'],
+    '--color-icon-purple': ['#700084', '#f297ff'],
+    '--color-text-purple': ['#700084', '#fac1ff'],
 
-    // Pink  H=355 — light C=0.06 pastel; dark from H=355 C=0.169 source
-    '--color-background-pink': ['#fccadc', '#ff90bd3D'],
-    '--color-border-pink': ['#e7b7c8', '#ec6ba3'],
-    '--color-icon-pink': ['#83004b', '#ff90bd'],
-    '--color-text-pink': ['#83004b', '#ffc0d7'],
+    // Pink  H=355 — source #b10e69
+    '--color-background-pink': ['#fccadc', '#ff99c33D'],
+    '--color-border-pink': ['#e7b7c8', '#f273aa'],
+    '--color-icon-pink': ['#83004b', '#ff99c3'],
+    '--color-text-pink': ['#83004b', '#ffc3da'],
 
     // Gray (categorical neutral, chroma 0)
-    // Light=#e5e5e5 (Neutral 200) so it's visibly distinct from the lighter
-    // --color-background-body / --color-background-muted (both #f5f5f5).
-    '--color-background-gray': ['#e5e5e5', '#1c1c1c'],
+    //   Light: #e5e5e5 (Neutral 200) so it's visibly distinct from the
+    //          lighter body / muted surface (both #f5f5f5).
+    //   Dark : var(--color-neutral) — semi-transparent white wash
+    //          (#FFFFFF1A, 10%). Matches the same treatment the gray
+    //          badge uses; clearly distinct from the body T10 #1b1b1b
+    //          while staying chroma-0 neutral. Solid T15 #1c1c1c was
+    //          indistinguishable from --color-background-muted.
+    '--color-background-gray': ['#e5e5e5', 'var(--color-neutral)'],
     '--color-border-gray': ['#d4d4d4', '#262626'],
     '--color-icon-gray': ['#525252', '#a3a3a3'],
     '--color-text-gray': ['#262626', '#e5e5e5'],
@@ -379,12 +390,12 @@ export const neutralTheme = defineTheme({
         color: 'light-dark(#ffffff, #171717)',
       },
       'variant:neutral': {
-        // Light: solid Neutral 200 chip (#e5e5e5) against the white body.
-        // Dark : semi-transparent white wash (var(--color-neutral) ≈
-        //        #FFFFFF1A) — distinct from the body #404040 which would
-        //        otherwise make the chip invisible.
-        backgroundColor: 'light-dark(#e5e5e5, var(--color-neutral))',
-        color: 'light-dark(#171717, #fafafa)',
+        // Mirrors the gray categorical badge — same neutral chip treatment
+        // (Neutral 200 light / semi-transparent white wash dark) sourced
+        // from the gray hue tokens, so a single change at the token layer
+        // updates both variants.
+        backgroundColor: 'var(--color-background-gray)',
+        color: 'var(--color-text-gray)',
       },
       'variant:success': {
         // Light: T45 #198100 (palette saturated stop)
@@ -451,8 +462,8 @@ export const neutralTheme = defineTheme({
         color: 'var(--color-text-pink)',
       },
       'variant:gray': {
-        backgroundColor: 'light-dark(#e5e5e5, var(--color-neutral))',
-        color: 'light-dark(#171717, #fafafa)',
+        backgroundColor: 'var(--color-background-gray)',
+        color: 'var(--color-text-gray)',
       },
     },
 
