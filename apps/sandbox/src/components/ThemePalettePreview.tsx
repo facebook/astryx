@@ -244,6 +244,15 @@ export interface TonalColor {
    * palette exports like `butterPalettes.blue`.
    */
   tones?: Readonly<Record<string | number, string | number>>;
+  /**
+   * Optional dark-mode overrides. When present, these values replace
+   * `sourceHex` and `tones` in the dark mode column — allowing fully
+   * curated per-mode tonal ramps without duplicating the full array.
+   */
+  dark?: {
+    sourceHex?: string;
+    tones?: Readonly<Record<string | number, string | number>>;
+  };
 }
 
 export interface CoreSwatch {
@@ -996,15 +1005,18 @@ function TonalSection({
         )}{' '}
         Badge tokens use T90/T30 (light) and T70/T15 (dark).
       </p>
-      {colors.map(({name, sourceHex, semantic, note, tones: overrideTones}) => {
-        const hct = hexToHct(sourceHex);
+      {colors.map(({name, sourceHex, semantic, note, tones: overrideTones, dark}) => {
+        // In dark mode, use per-mode overrides if provided.
+        const effectiveSourceHex = (isDark && dark?.sourceHex) || sourceHex;
+        const effectiveTones = (isDark && dark?.tones) || overrideTones;
+        const hct = hexToHct(effectiveSourceHex);
         const computedTones = tonalPaletteForMode(hct.hue, hct.chroma, mode);
         // Theme override wins when it has a hex for this step; otherwise
         // fall back to the algorithm so the strip is always a full 21-step
         // ramp (no missing cells when the theme defines a subset).
         const resolveTone = (t: number): string => {
-          if (overrideTones) {
-            const v = overrideTones[t];
+          if (effectiveTones) {
+            const v = effectiveTones[t];
             if (typeof v === 'string') return v;
           }
           return computedTones[t];

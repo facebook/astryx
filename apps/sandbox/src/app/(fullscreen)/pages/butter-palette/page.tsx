@@ -11,7 +11,7 @@ const SARINA = "'Sarina', cursive";
 // from the theme's pre-computed palette so the displayed strip exactly
 // matches the card / badge / banner tokens.
 const TONAL_COLORS = [
-  {name: 'Accent', sourceHex: '#225BFF', tones: butterPalettes.accent},
+  {name: 'Accent', sourceHex: '#225BFF', tones: butterPalettes.accent, dark: {sourceHex: '#FDEE8C', tones: butterPalettes.yellow}},
   {name: 'Gray', sourceHex: '#868B99', tones: butterPalettes.neutral},
   {name: 'Red', sourceHex: '#FF7553', tones: butterPalettes.red},
   {name: 'Orange', sourceHex: '#FFA347', tones: butterPalettes.orange},
@@ -43,11 +43,11 @@ const TONAL_COLORS = [
 ];
 
 const CORE = [
-  {hex: '#225BFF', name: ''},
-  {hex: '#5681FF', name: ''},
-  {hex: '#FDEE8C', name: ''},
-  {hex: '#FDFBE4', name: ''},
-  {hex: '#FFFFFF', name: ''},
+  {hex: 'light-dark(#225BFF, #FDEE8C)', name: ''},
+  {hex: 'light-dark(#5681FF, #FDFBE4)', name: ''},
+  {hex: 'light-dark(#FDEE8C, #5681FF)', name: ''},
+  {hex: 'light-dark(#FDFBE4, #225BFF)', name: ''},
+  {hex: 'light-dark(#FFFFFF, #261A13)', name: ''},
 ];
 
 const sectionTitle: React.CSSProperties = {
