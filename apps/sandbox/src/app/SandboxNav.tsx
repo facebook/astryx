@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSText} from '@xds/core/Text';
-import {useThemeControls} from './providers';
+import {useThemeControls, SANDBOX_THEMES} from './providers';
 import type {ThemeMode} from '@xds/core/theme';
 import {categories} from './sandboxPages';
 import {
@@ -52,16 +52,10 @@ const styles = stylex.create({
 function SandboxHeader() {
   const {setThemeName, mode, setMode} = useThemeControls();
 
-  const themeItems = [
-    {label: 'Default', onClick: () => setThemeName('default')},
-    {label: 'Neutral', onClick: () => setThemeName('neutral')},
-    {label: 'Brutalist', onClick: () => setThemeName('brutalist')},
-    {label: 'Matcha', onClick: () => setThemeName('matcha')},
-    {label: 'Daily', onClick: () => setThemeName('daily')},
-    {label: 'Stone', onClick: () => setThemeName('stone')},
-    {label: 'Gothic', onClick: () => setThemeName('gothic')},
-    {label: 'Chocolate', onClick: () => setThemeName('chocolate')},
-  ];
+  const themeItems = SANDBOX_THEMES.map(({id, label}) => ({
+    label,
+    onClick: () => setThemeName(id),
+  }));
 
   const modeItems = [
     {label: 'Light', onClick: () => setMode('light' as ThemeMode)},
