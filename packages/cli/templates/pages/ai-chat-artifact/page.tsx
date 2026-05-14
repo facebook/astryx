@@ -2,21 +2,11 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {
-  colorVars,
-  radiusVars,
-  spacingVars,
-} from '@xds/core/theme/tokens.stylex';
+import {spacingVars, colorVars} from '@xds/core/theme/tokens.stylex';
 
 import {XDSAppShell} from '@xds/core/AppShell';
-import {
-  XDSSideNav,
-  XDSSideNavHeading,
-  XDSSideNavItem,
-  XDSSideNavSection,
-} from '@xds/core/SideNav';
+import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
 import {XDSNavIcon} from '@xds/core/NavIcon';
-import {XDSBadge} from '@xds/core/Badge';
 import {XDSHStack, XDSVStack} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {
@@ -35,44 +25,27 @@ import {XDSTimestamp} from '@xds/core/Timestamp';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
+import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
 
 import {
-  ChatBubbleOvalLeftIcon,
+  ChevronLeftIcon,
   DocumentTextIcon,
-  CubeIcon,
   ClipboardDocumentIcon,
   ShareIcon,
-  ChevronDownIcon,
+  AtSymbolIcon,
+  PaperClipIcon,
+  CubeIcon,
 } from '@heroicons/react/24/outline';
-import {
-  ChatBubbleOvalLeftIcon as ChatBubbleOvalLeftIconSolid,
-  DocumentTextIcon as DocumentTextIconSolid,
-} from '@heroicons/react/24/solid';
 
 // ============= STYLES =============
 
 const styles = stylex.create({
-  root: {
-    height: '100%',
-    display: 'flex',
-  },
-  chatPanel: {
-    display: 'flex',
-    flexDirection: 'column',
-    height: '100%',
-  },
   artifactPanel: {
     flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    height: '100%',
     overflow: 'hidden',
   },
   artifactHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingInline: spacingVars['--spacing-4'],
     paddingBlock: spacingVars['--spacing-3'],
     borderBottom: '1px solid',
@@ -87,16 +60,6 @@ const styles = stylex.create({
     maxWidth: 720,
     marginInline: 'auto',
   },
-  versionPill: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-3'],
-    paddingBlock: spacingVars['--spacing-1'],
-    borderRadius: radiusVars['--radius-full'],
-    backgroundColor: colorVars['--color-background-muted'],
-    cursor: 'pointer',
-  },
   tabRow: {
     paddingInline: spacingVars['--spacing-4'],
     borderBottom: '1px solid',
@@ -104,47 +67,13 @@ const styles = stylex.create({
   },
 });
 
-// ============= SIDENAV =============
-
-function ArtifactSideNav() {
-  const [active, setActive] = useState('chat');
-  return (
-    <XDSSideNav
-      header={
-        <XDSSideNavHeading
-          icon={<XDSNavIcon icon={<XDSIcon icon={CubeIcon} size="sm" />} />}
-          heading="Artifact Studio"
-          headingHref="/"
-        />
-      }>
-      <XDSSideNavSection title="Workspace">
-        <XDSSideNavItem
-          label="Chat"
-          icon={ChatBubbleOvalLeftIcon}
-          selectedIcon={ChatBubbleOvalLeftIconSolid}
-          isSelected={active === 'chat'}
-          onClick={() => setActive('chat')}
-        />
-        <XDSSideNavItem
-          label="Documents"
-          icon={DocumentTextIcon}
-          selectedIcon={DocumentTextIconSolid}
-          isSelected={active === 'documents'}
-          onClick={() => setActive('documents')}
-          endContent={<XDSBadge label="4" />}
-        />
-      </XDSSideNavSection>
-    </XDSSideNav>
-  );
-}
-
 // ============= ARTIFACT CONTENT =============
 
 const ARTIFACT_TITLE = 'Getting Started with Design Systems';
 
 const ARTIFACT_CONTENT = `## Introduction
 
-A design system is a collection of reusable components, guided by clear standards, that can be assembled together to build any number of applications. It serves as the single source of truth for an organization's UI patterns and ensures consistency across products.
+A design system is a collection of reusable components, guided by clear standards, that can be assembled together to build any number of applications. It serves as the single source of truth for an organization\u2019s UI patterns and ensures consistency across products.
 
 ## Core Principles
 
@@ -158,7 +87,7 @@ Components should be designed as building blocks. A good design system provides 
 
 ### 3. Accessibility
 
-Accessibility isn't an afterthought \u2014 it's a foundational requirement. Every component must support keyboard navigation, screen readers, and sufficient color contrast ratios.
+Accessibility isn\u2019t an afterthought \u2014 it\u2019s a foundational requirement. Every component must support keyboard navigation, screen readers, and sufficient color contrast ratios.
 
 ## Component Architecture
 
@@ -191,6 +120,7 @@ Design tokens are the atomic values that define visual properties:
 
 export default function AIChatArtifactTemplate() {
   const [artifactTab, setArtifactTab] = useState('document');
+  const [composerMode, setComposerMode] = useState('ask');
   const chatResize = useXDSResizable({
     defaultSize: 380,
     minSizePx: 280,
@@ -199,19 +129,82 @@ export default function AIChatArtifactTemplate() {
   });
 
   return (
-    <XDSAppShell sideNav={<ArtifactSideNav />} variant="elevated">
-      <div {...stylex.props(styles.root)}>
+    <XDSAppShell
+      variant="elevated"
+      topNav={
+        <XDSTopNav
+          label="Navigation"
+          heading={
+            <XDSHStack gap={1} vAlign="center">
+              <XDSButton
+                label="Back"
+                variant="ghost"
+                size="sm"
+                icon={<XDSIcon icon={ChevronLeftIcon} size="sm" />}
+                isIconOnly
+              />
+              <XDSTopNavHeading
+                logo={
+                  <XDSNavIcon icon={<XDSIcon icon={CubeIcon} size="sm" />} />
+                }
+                heading="My App"
+                headingHref="/"
+              />
+            </XDSHStack>
+          }
+        />
+      }>
+      <XDSHStack height="100%">
         {/* Chat Panel */}
-        <div
-          {...stylex.props(styles.chatPanel)}
-          style={{width: chatResize.size}}>
+        <XDSVStack height="100%" style={{width: chatResize.size}}>
           <XDSChatLayout
             style={{height: '100%'}}
             composer={
               <XDSChatComposer
                 onSubmit={() => {}}
-                placeholder="Ask to create or edit..."
+                placeholder={
+                  composerMode === 'ask'
+                    ? 'Ask anything...'
+                    : 'Describe your edit...'
+                }
                 input={<XDSChatComposerInput />}
+                headerActions={
+                  <>
+                    <XDSButton
+                      label="Mention"
+                      variant="ghost"
+                      size="sm"
+                      icon={<XDSIcon icon={AtSymbolIcon} size="sm" />}
+                      isIconOnly
+                    />
+                    <XDSButton
+                      label="Attach"
+                      variant="ghost"
+                      size="sm"
+                      icon={<XDSIcon icon={PaperClipIcon} size="sm" />}
+                      isIconOnly
+                    />
+                  </>
+                }
+                footerActions={
+                  <XDSDropdownMenu
+                    button={{
+                      label: composerMode === 'ask' ? 'Ask' : 'Edit',
+                      variant: 'ghost',
+                      size: 'sm',
+                    }}
+                    items={[
+                      {
+                        label: 'Ask',
+                        onClick: () => setComposerMode('ask'),
+                      },
+                      {
+                        label: 'Edit',
+                        onClick: () => setComposerMode('edit'),
+                      },
+                    ]}
+                  />
+                }
               />
             }>
             <XDSChatMessageList>
@@ -289,7 +282,7 @@ export default function AIChatArtifactTemplate() {
               </XDSChatMessage>
             </XDSChatMessageList>
           </XDSChatLayout>
-        </div>
+        </XDSVStack>
 
         {/* Resize Handle */}
         <XDSResizeHandle
@@ -300,9 +293,13 @@ export default function AIChatArtifactTemplate() {
         />
 
         {/* Artifact Panel */}
-        <div {...stylex.props(styles.artifactPanel)}>
+        <XDSVStack height="100%" xstyle={styles.artifactPanel}>
           {/* Artifact Header */}
-          <div {...stylex.props(styles.artifactHeader)}>
+          <XDSHStack
+            gap={3}
+            vAlign="center"
+            hAlign="between"
+            xstyle={styles.artifactHeader}>
             <XDSHStack gap={3} vAlign="center">
               <XDSIcon icon={DocumentTextIcon} size="sm" color="secondary" />
               <XDSVStack gap={0}>
@@ -310,18 +307,20 @@ export default function AIChatArtifactTemplate() {
                   {ARTIFACT_TITLE}
                 </XDSText>
                 <XDSText type="supporting" color="secondary">
-                  Document · Updated just now
+                  Document \u00b7 Updated just now
                 </XDSText>
               </XDSVStack>
             </XDSHStack>
 
             <XDSHStack gap={2} vAlign="center">
-              <div {...stylex.props(styles.versionPill)}>
-                <XDSText type="supporting" color="secondary">
-                  v2
-                </XDSText>
-                <XDSIcon icon={ChevronDownIcon} size="xsm" color="secondary" />
-              </div>
+              <XDSDropdownMenu
+                button={{
+                  label: 'v2',
+                  variant: 'ghost',
+                  size: 'sm',
+                }}
+                items={[{label: 'v2 (current)'}, {label: 'v1'}]}
+              />
               <XDSButton
                 label="Copy"
                 variant="ghost"
@@ -337,7 +336,7 @@ export default function AIChatArtifactTemplate() {
                 isIconOnly
               />
             </XDSHStack>
-          </div>
+          </XDSHStack>
 
           {/* Artifact Tabs */}
           <XDSHStack vAlign="center" xstyle={styles.tabRow}>
@@ -349,29 +348,21 @@ export default function AIChatArtifactTemplate() {
 
           {/* Artifact Body */}
           <div {...stylex.props(styles.artifactContent)}>
-            <div {...stylex.props(styles.articleBody)}>
+            <XDSVStack gap={2} xstyle={styles.articleBody}>
               {artifactTab === 'document' ? (
-                <XDSVStack gap={2}>
+                <>
                   <XDSHeading level={1}>{ARTIFACT_TITLE}</XDSHeading>
                   <XDSMarkdown>{ARTIFACT_CONTENT}</XDSMarkdown>
-                </XDSVStack>
+                </>
               ) : (
-                <pre
-                  style={{
-                    whiteSpace: 'pre-wrap',
-                    fontFamily: 'monospace',
-                    fontSize: '13px',
-                    margin: 0,
-                  }}>
-                  <XDSText type="code">
-                    {`# ${ARTIFACT_TITLE}\n${ARTIFACT_CONTENT}`}
-                  </XDSText>
-                </pre>
+                <XDSText type="code">
+                  {`# ${ARTIFACT_TITLE}\n${ARTIFACT_CONTENT}`}
+                </XDSText>
               )}
-            </div>
+            </XDSVStack>
           </div>
-        </div>
-      </div>
+        </XDSVStack>
+      </XDSHStack>
     </XDSAppShell>
   );
 }
