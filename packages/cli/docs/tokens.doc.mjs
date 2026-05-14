@@ -625,7 +625,7 @@ export const docs = {
             ],
             [
               "--shadow-inset-hover",
-              "inset 0px 0px 0px 2px rgba(1, 113, 227, 0.3)"
+              "inset 0px 0px 0px 2px light-dark(rgba(5, 54, 89, 0.15), rgba(223, 226, 229, 0.2))"
             ],
             [
               "--shadow-inset-selected",
