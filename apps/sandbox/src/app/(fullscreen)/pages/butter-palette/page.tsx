@@ -58,8 +58,8 @@ const sectionTitle: React.CSSProperties = {
 };
 
 function DisplayTextSection() {
-  // Brand-blue display in both modes.
-  const displayColor = '#225BFF';
+  // Brand-blue in light mode, butter yellow in dark mode.
+  const displayColor = 'light-dark(#225BFF, #FDEE8C)';
   return (
     <div>
       <h3 style={sectionTitle}>Display Text (Sarina)</h3>

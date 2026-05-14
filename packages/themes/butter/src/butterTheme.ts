@@ -74,12 +74,12 @@ export const butterTheme = defineTheme({
     '--color-accent': ['#225BFF', '#8ca9ff'],
     '--color-accent-muted': ['#225BFF33', '#8ca9ff40'],
     '--color-neutral': ['#1d1c110F', '#f3f2e21A'],
-    '--color-background-surface': ['#FFFFFF', '#1d1c11'],
-    '--color-background-body': ['#FDFBE4', '#131107'],
-    '--color-overlay': ['#1d1c1180', '#131107cc'],
+    '--color-background-surface': ['#FFFFFF', '#2E2117'],
+    '--color-background-body': ['#FDFBE4', '#261A13'],
+    '--color-overlay': ['#1d1c1180', '#261A13cc'],
     '--color-overlay-hover': ['#1d1c110D', '#f3f2e20D'],
     '--color-overlay-pressed': ['#1d1c111A', '#f3f2e21A'],
-    '--color-background-muted': ['#f3f2e2', '#323125'],
+    '--color-background-muted': ['#f3f2e2', '#3A2A1F'],
 
     // Text — warm neutral
     '--color-text-primary': ['#1d1c11', '#f3f2e2'],
@@ -101,9 +101,9 @@ export const butterTheme = defineTheme({
     '--color-icon-disabled': ['#adac9e', '#605f52'],
 
     // Surface variants
-    '--color-background-card': ['#FFFFFF', '#323125'],
-    '--color-background-popover': ['#FFFFFF', '#323125'],
-    '--color-background-inverted': ['#1d1c11', '#f3f2e2'],
+    '--color-background-card': ['#FFFFFF', '#3A2A1F'],
+    '--color-background-popover': ['#FFFFFF', '#3A2A1F'],
+    '--color-background-inverted': ['#1d1c11', '#FDFBE4'],
 
     // Status semantics — T25 light / T80 dark from each status palette.
     '--color-error': ['#771210', '#ffb4a6'],
