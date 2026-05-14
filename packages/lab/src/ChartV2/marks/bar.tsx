@@ -1,5 +1,5 @@
 /**
- * @file marks/bar.ts
+ * @file marks/bar.tsx
  * @output Bar series — self-contained resolve + render
  * @position Standalone mark; chart root calls resolve() then render()
  */
@@ -7,7 +7,9 @@
 import type {SeriesDef, SeriesContext, ResolvedPoint} from '../types';
 import type {ScaleBand} from 'd3-scale';
 
-export type ColorAccessor = string | ((datum: Record<string, unknown>, index: number) => string);
+export type ColorAccessor =
+  | string
+  | ((datum: Record<string, unknown>, index: number) => string);
 
 export interface BarOptions {
   color?: ColorAccessor;
@@ -17,16 +19,61 @@ export interface BarOptions {
   group?: string;
 }
 
+/**
+ * Build an SVG path for a rectangle with only the top corners rounded.
+ * When `r` is 0, produces a simple rect path with no curves.
+ */
+function roundedTopRect(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+): string {
+  // Clamp radius to half the smaller dimension
+  const cr = Math.min(r, w / 2, h / 2);
+  if (cr <= 0) {
+    return `M${x},${y + h}V${y}H${x + w}V${y + h}Z`;
+  }
+  return (
+    `M${x},${y + h}` +
+    `V${y + cr}Q${x},${y} ${x + cr},${y}` +
+    `H${x + w - cr}Q${x + w},${y} ${x + w},${y + cr}` +
+    `V${y + h}Z`
+  );
+}
+
+/**
+ * Build an SVG path for a rectangle with only the bottom corners rounded.
+ */
+function roundedBottomRect(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+): string {
+  const cr = Math.min(r, w / 2, h / 2);
+  if (cr <= 0) {
+    return `M${x},${y}V${y + h}H${x + w}V${y}Z`;
+  }
+  return (
+    `M${x},${y}` +
+    `V${y + h - cr}Q${x},${y + h} ${x + cr},${y + h}` +
+    `H${x + w - cr}Q${x + w},${y + h} ${x + w},${y + h - cr}` +
+    `V${y}Z`
+  );
+}
+
 export function bar(dataKey: string, options: BarOptions = {}): SeriesDef {
   const color = options.color ?? 'var(--color-chart-1)';
   const opacity = options.opacity ?? 1;
   const radius = options.radius ?? 4;
 
-  // Shared between resolve and render via closure
   let barWidth = 0;
   let barOffset = 0;
 
-  return {
+  const seriesDef: SeriesDef = {
     type: 'bar',
     key: dataKey,
     dataKeys: [dataKey],
@@ -42,8 +89,16 @@ export function bar(dataKey: string, options: BarOptions = {}): SeriesDef {
 
       const bandScale = xScale as ScaleBand<string>;
       const bw = bandScale.bandwidth();
-      barWidth = groupInfo ? bw / groupInfo.count : bw;
-      barOffset = groupInfo ? groupInfo.index * barWidth : 0;
+
+      if (groupInfo) {
+        const gutter = bw * 0.05;
+        const totalGutters = gutter * (groupInfo.count - 1);
+        barWidth = (bw - totalGutters) / groupInfo.count;
+        barOffset = groupInfo.index * (barWidth + gutter);
+      } else {
+        barWidth = bw;
+        barOffset = 0;
+      }
 
       const points: ResolvedPoint[] = [];
       for (let i = 0; i < data.length; i++) {
@@ -68,29 +123,30 @@ export function bar(dataKey: string, options: BarOptions = {}): SeriesDef {
 
     render(resolved, ctx) {
       const {data} = ctx;
+      const isTop = seriesDef._isTopOfStack !== false;
+      const r = isTop ? radius : 0;
+
       return (
         <g opacity={opacity}>
           {resolved.map((p, i) => {
             const d = data[p.dataIndex];
-            const fill = typeof color === 'function' ? color(d, p.dataIndex) : color;
-            const barY = Math.min(p.py, p.py0);
-            const barHeight = Math.abs(p.py0 - p.py);
+            const fill =
+              typeof color === 'function' ? color(d, p.dataIndex) : color;
+            const x = p.px - barWidth / 2;
+            const y = Math.min(p.py, p.py0);
+            const h = Math.max(0, Math.abs(p.py0 - p.py));
+            const growsUp = p.py <= p.py0;
 
-            return (
-              <rect
-                key={i}
-                x={p.px - barWidth / 2}
-                y={barY}
-                width={barWidth}
-                height={Math.max(0, barHeight)}
-                fill={fill}
-                rx={radius}
-                ry={radius}
-              />
-            );
+            const d_attr = growsUp
+              ? roundedTopRect(x, y, barWidth, h, r)
+              : roundedBottomRect(x, y, barWidth, h, r);
+
+            return <path key={i} d={d_attr} fill={fill} />;
           })}
         </g>
       );
     },
   };
+
+  return seriesDef;
 }
