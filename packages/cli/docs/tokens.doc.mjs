@@ -1,7 +1,7 @@
 // AUTO-GENERATED — do not edit manually.
 // Source: packages/core/src/theme/tokens.stylex.ts
 // Run: node scripts/generate-token-docs.mjs
-// Total: 182 tokens across 12 categories.
+// Total: 183 tokens across 12 categories.
 
 /** @type {import('../../core/src/docs-types').ReferenceDoc} */
 
@@ -203,6 +203,11 @@ export const docs = {
             ],
             [
               "--color-skeleton",
+              "#CCD3DB",
+              "#5A5E66"
+            ],
+            [
+              "--color-track",
               "#CCD3DB",
               "#5A5E66"
             ],

@@ -16,7 +16,7 @@
 
 import {useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, durationVars, spacingVars} from '../theme/tokens.stylex';
+import {durationVars, spacingVars} from '../theme/tokens.stylex';
 import {useXDSTheme} from '../theme/useXDSTheme';
 import {XDSBaseProps} from '../XDSBaseProps';
 import {XDSText} from '../Text/XDSText';
@@ -162,21 +162,23 @@ export function XDSSpinner({
     const {border, diameter} = SIZES[size];
     const pixelRatio = window.devicePixelRatio || 1;
 
-    // Resolve colors from theme tokens (useXDSTheme handles light/dark resolution)
+    // Resolve colors from theme tokens (useXDSTheme handles light/dark resolution).
+    // - default → accent ring on a track tuned to body luminance
+    // - subtle  → secondary text color, less prominent
+    // - onMedia → on-dark color, with a translucent track for photos/video
     const activeColor =
       shade === 'onMedia'
-        ? themeTokens['--color-on-dark'] || '#FFFFFF'
+        ? themeTokens['--color-on-dark']
         : shade === 'subtle'
-          ? themeTokens['--color-text-secondary'] || '#65676B'
-          : themeTokens['--color-accent'] || '#0064E0';
-    // 'onMedia' keeps a translucent white so the ring reads on photos/video.
-    // Other shades pull from --color-skeleton so the track inherits the
-    // theme's low-contrast surface (and stays visible in dark mode where
-    // 8% black would disappear).
+          ? themeTokens['--color-text-secondary']
+          : themeTokens['--color-accent'];
+    // Track derives from --color-on-dark for onMedia (with a 30% alpha so the
+    // ring reads against arbitrary backgrounds) and from --color-track for the
+    // body-luminance shades. Both branches are fully theme-driven.
     const backgroundColor =
       shade === 'onMedia'
-        ? 'rgba(255, 255, 255, 0.3)'
-        : themeTokens['--color-skeleton'] || 'rgba(0, 0, 0, 0.08)';
+        ? `${themeTokens['--color-on-dark']}4D`
+        : themeTokens['--color-track'];
 
     const radius = (diameter / 2) * pixelRatio;
     const lineWidth = border * pixelRatio;

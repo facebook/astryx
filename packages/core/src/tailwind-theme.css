@@ -85,6 +85,7 @@
   --color-on-dark: var(--color-on-dark);
   --color-on-light: var(--color-on-light);
   --color-skeleton: var(--color-skeleton);
+  --color-track: var(--color-track);
   --color-shadow: var(--color-shadow);
 
   /* --- Hue palette ---
