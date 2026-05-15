@@ -28,7 +28,7 @@ export interface Camera {
   /** Rotation above the horizontal plane in degrees (default: 20) */
   elevation: number;
   /** Distance from origin — affects perspective strength (default: 5) */
-  distance: number;
+  distance?: number;
 }
 
 /** 3D context provided by XDS3DChart to children */
@@ -53,6 +53,8 @@ export interface ThreeDContext {
   yDomain: [number, number];
   /** Domain for z axis [min, max] */
   zDomain: [number, number];
+  /** Normalize a value within a domain to [0, 1] */
+  normalize: (value: number, domain: [number, number]) => number;
   /** Camera settings */
   camera: Camera;
 }

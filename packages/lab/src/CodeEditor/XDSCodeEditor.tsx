@@ -13,7 +13,7 @@
 'use client';
 
 import {useEffect, useLayoutEffect, useRef, useCallback, useState} from 'react';
-import type {XDSBaseProps} from '@xds/core/XDSBaseProps';
+import type {XDSBaseProps} from '@xds/core';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
