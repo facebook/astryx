@@ -44,12 +44,21 @@ export type ModeOverride =
       rampSourceHex: string;
       /** Tone step the user picked (0-100, in 5-step increments) */
       tone: ToneStep;
-      /** Resolved hex at that ramp+tone+mode (cached for export) */
+      /**
+       * Optional alpha channel (0-1, default 1). Preserved when the
+       * source token had transparency so a snapped overlay/shadow
+       * keeps its low-opacity treatment. The resolved `hex` field is
+       * the 8-digit form (`#rrggbbaa`) when alpha < 1.
+       */
+      alpha: number;
+      /** Resolved hex at that ramp+tone+mode (8-digit when alpha < 1). */
       hex: string;
     }
   | {
       kind: 'custom';
-      /** Free-form hex value as the user entered it (lowercase, with leading #) */
+      /** Optional alpha channel (0-1, default 1). */
+      alpha: number;
+      /** Free-form hex value (8-digit when alpha < 1). */
       hex: string;
     };
 
@@ -109,41 +118,72 @@ export function overridesReducer(
 // Resolve a (rampSeed, tone, mode) → hex
 // =============================================================================
 
-/** Compute the hex for a given ramp+tone+mode using the same generator
- *  the visible Tonal Palettes section uses. */
+/**
+ * Compute the hex for a given ramp+tone+mode. When the seed carries a
+ * canonical hand-tuned ramp (`seed.tones`), that's the source of
+ * truth — falls back to generating via HCT only when no canonical
+ * ramp is supplied. Always returns a 6-digit hex; alpha is the
+ * caller's concern (apply via `composeAlphaHex`).
+ */
 export function resolveOverrideHex(
-  rampSourceHex: string,
+  seed: RampSeed,
   tone: ToneStep,
   mode: Mode,
 ): string {
-  const {hue, chroma} = hexToHct(rampSourceHex);
+  if (seed.tones) {
+    const v = seed.tones[tone];
+    if (typeof v === 'string') return v;
+  }
+  const {hue, chroma} = hexToHct(seed.sourceHex);
   return tonalPaletteForMode(hue, chroma, mode)[tone];
 }
 
-/** Build a palette-style ModeOverride from a ramp seed + tone + mode. */
+/**
+ * Build a palette-style ModeOverride from a ramp seed + tone + mode.
+ * Optional `alpha` (0-1) is preserved on the override so a snapped
+ * overlay/shadow token retains its transparency end-to-end (the
+ * resolved hex becomes 8-digit when alpha < 1).
+ */
 export function buildModeOverride(
   seed: RampSeed,
   tone: ToneStep,
   mode: Mode,
+  alpha?: number,
 ): ModeOverride {
+  const baseHex = resolveOverrideHex(seed, tone, mode);
   return {
     kind: 'palette',
     rampName: seed.name,
     rampSourceHex: seed.sourceHex,
     tone,
-    hex: resolveOverrideHex(seed.sourceHex, tone, mode),
+    alpha: clampAlpha(alpha),
+    hex: composeAlphaHex(baseHex, alpha),
   };
 }
 
-/** Build a custom (free-form hex) ModeOverride. Hex is normalised to
- *  lowercase, with a leading `#`, alpha dropped (the rest of the
- *  pipeline assumes 6-digit hex values). */
-export function buildCustomOverride(hex: string): ModeOverride {
-  return {kind: 'custom', hex: normalizeHex(hex)};
+/**
+ * Build a custom (free-form hex) ModeOverride. The input may carry
+ * either a 6-digit hex (no alpha) or an 8-digit hex / `'#hex N%'`
+ * shape (with alpha) — alpha round-trips through to the resolved
+ * `hex` field (8-digit when alpha < 1) and is also surfaced as a
+ * separate `alpha` value for UI display.
+ */
+export function buildCustomOverride(input: string): ModeOverride {
+  const {hex, alpha} = parseHexWithAlpha(input);
+  const cleaned = normalizeHex(hex);
+  return {
+    kind: 'custom',
+    alpha: clampAlpha(alpha),
+    hex: composeAlphaHex(cleaned, alpha),
+  };
 }
 
-/** Validate + normalise a free-form hex string. Returns null when the
- *  input doesn't parse as a 3/4/6/8-digit hex. */
+/**
+ * Validate + normalise a free-form hex to 6-digit `#rrggbb`. Returns
+ * `#000000` for unparseable input. Alpha (4th channel of 8-digit hex
+ * or `#abcd`) is dropped — combine with `composeAlphaHex` to put it
+ * back on for emit / preview.
+ */
 export function normalizeHex(input: string): string {
   const trimmed = input.trim().toLowerCase();
   const m = trimmed.match(/^#?([0-9a-f]{3,8})$/);
@@ -161,7 +201,101 @@ export function normalizeHex(input: string): string {
 }
 
 export function isValidHex(input: string): boolean {
-  return /^#?[0-9a-fA-F]{3,8}$/.test(input.trim());
+  // Accept either a bare hex or the `'#hex N%'` shape used by the
+  // alpha-aware Custom-tab input.
+  if (/^#?[0-9a-fA-F]{3,8}$/.test(input.trim())) return true;
+  return /^#?[0-9a-fA-F]{3,8}\s+\d{1,3}%?$/.test(input.trim());
+}
+
+// =============================================================================
+// Alpha helpers — `'#28282a 10%'` ⇄ `{hex: '#28282a', alpha: 0.1}` ⇄ `'#28282a1A'`
+// =============================================================================
+
+/**
+ * Clamp an alpha (0-1) into [0, 1]. Treats undefined / NaN / out-of-range
+ * input as 1 (fully opaque) — the safe default that matches "no alpha
+ * specified" in CSS color literals.
+ */
+export function clampAlpha(alpha: number | undefined): number {
+  if (alpha == null || !Number.isFinite(alpha)) return 1;
+  if (alpha < 0) return 0;
+  if (alpha > 1) return 1;
+  return alpha;
+}
+
+/**
+ * Convert a 0-1 alpha to a 2-digit lowercase hex pair (e.g. 0.1 → '1a',
+ * 0.5 → '80', 1 → 'ff'). Used to build 8-digit hex emit values.
+ */
+export function alphaToHex(alpha: number): string {
+  const v = Math.round(clampAlpha(alpha) * 255);
+  return v.toString(16).padStart(2, '0');
+}
+
+/**
+ * Compose a base 6-digit hex with an alpha into the canonical 8-digit
+ * emit form (`#rrggbbaa`). When alpha is 1 (or omitted), returns the
+ * 6-digit hex unchanged so we don't gratuitously upgrade the form.
+ */
+export function composeAlphaHex(hex: string, alpha?: number): string {
+  const a = clampAlpha(alpha);
+  const base = normalizeHex(hex);
+  if (a === 1) return base;
+  return base + alphaToHex(a);
+}
+
+/**
+ * Format a base hex + alpha as `'#rrggbb 10%'` for display in inputs
+ * and trigger labels. When alpha is 1, returns the base hex with no
+ * suffix so on-ramp opaque tokens read cleanly.
+ */
+export function formatHexWithAlpha(hex: string, alpha?: number): string {
+  const a = clampAlpha(alpha);
+  const base = normalizeHex(hex);
+  if (a === 1) return base;
+  return base + ' ' + Math.round(a * 100) + '%';
+}
+
+/**
+ * Inverse of `formatHexWithAlpha`. Accepts:
+ *   - `'#28282a 10%'` — the canonical pretty form
+ *   - `'#28282a1a'`   — 8-digit hex (alpha embedded as last 2 chars)
+ *   - `'#28282a'`     — bare hex, alpha defaults to 1
+ *   - `'28282a 10'`   — leading `#` and trailing `%` are tolerated
+ *
+ * Returns `{hex: '#rrggbb', alpha: 0-1}`. Unparseable input returns
+ * `{hex: '#000000', alpha: 1}`.
+ */
+export function parseHexWithAlpha(input: string): {hex: string; alpha: number} {
+  const trimmed = input.trim().toLowerCase();
+  // Pretty form: hex + percent (handles `#28282a 10%`, `28282a 10`, etc.)
+  const pretty = trimmed.match(/^#?([0-9a-f]{3,8})\s+(\d{1,3})%?$/);
+  if (pretty) {
+    const baseBody = pretty[1];
+    const pct = Math.min(100, Math.max(0, Number(pretty[2])));
+    return {
+      hex: normalizeHex(baseBody),
+      alpha: pct / 100,
+    };
+  }
+  // Bare hex form (3/4/6/8 digit)
+  const bare = trimmed.match(/^#?([0-9a-f]{3,8})$/);
+  if (bare) {
+    const body = bare[1];
+    if (body.length === 8) {
+      // Last 2 hex chars carry alpha
+      const a = parseInt(body.slice(6, 8), 16) / 255;
+      return {hex: normalizeHex(body.slice(0, 6)), alpha: a};
+    }
+    if (body.length === 4) {
+      // 4-digit shorthand: last digit doubled = alpha pair
+      const aChar = body[3];
+      const a = parseInt(aChar + aChar, 16) / 255;
+      return {hex: normalizeHex(body.slice(0, 3)), alpha: a};
+    }
+    return {hex: normalizeHex(body), alpha: 1};
+  }
+  return {hex: '#000000', alpha: 1};
 }
 
 // =============================================================================
@@ -242,12 +376,16 @@ export function serializeAsTokensBlock(
   return `tokens: {\n${lines.join('\n')}\n  }`;
 }
 
-/** Human-readable description of a ModeOverride for export comments and
- *  inline subtitles. Palette overrides read as `Blue T35`; custom
- *  overrides read as `Custom`. */
+/**
+ * Human-readable description of a ModeOverride for export comments and
+ * inline subtitles. Palette overrides read as `Blue T35`; custom
+ * overrides read as `Custom`. When the override carries non-1 alpha,
+ * appends ` · 10%` so transparency is visible in the source comments
+ * and trigger labels.
+ */
 export function describeOverride(ov: ModeOverride): string {
-  if (ov.kind === 'palette') return `${ov.rampName} T${ov.tone}`;
-  return 'Custom';
+  const base = ov.kind === 'palette' ? `${ov.rampName} T${ov.tone}` : 'Custom';
+  return ov.alpha < 1 ? `${base} · ${Math.round(ov.alpha * 100)}%` : base;
 }
 
 function formatHex(hex: string | null): string {

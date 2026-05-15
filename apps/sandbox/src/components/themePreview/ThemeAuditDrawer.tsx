@@ -53,11 +53,14 @@ import {
 import {
   buildCustomOverride,
   buildModeOverride,
+  composeAlphaHex,
   countOverrides,
   describeOverride,
+  formatHexWithAlpha,
   isValidHex,
   normalizeHex,
   overridesReducer,
+  parseHexWithAlpha,
   resolveOverrideHex,
   serializeAsTokensBlock,
   type ModeOverride,
@@ -571,14 +574,14 @@ export function ThemeAuditDrawer({
                     rampSeeds={audit.rampSeeds}
                     mode={mode}
                     override={overrides[tokenName]?.[mode]}
-                    onPickPalette={(rampName, tone) => {
+                    onPickPalette={(rampName, tone, alpha) => {
                       const seed = audit.rampSeeds.find(s => s.name === rampName);
                       if (!seed) return;
                       dispatchOverrides({
                         type: 'set',
                         token: tokenName,
                         mode,
-                        override: buildModeOverride(seed, tone, mode),
+                        override: buildModeOverride(seed, tone, mode, alpha),
                       });
                     }}
                     onPickCustom={hex =>
@@ -586,6 +589,8 @@ export function ThemeAuditDrawer({
                         type: 'set',
                         token: tokenName,
                         mode,
+                        // buildCustomOverride parses alpha out of the hex
+                        // input itself (#aabbccdd / '#aabbcc 10%' both work).
                         override: buildCustomOverride(hex),
                       })
                     }
@@ -641,7 +646,17 @@ interface ColorRowProps {
   rampSeeds: RampSeed[];
   mode: Mode;
   override: ModeOverride | undefined;
-  onPickPalette: (rampName: string, tone: ToneStep) => void;
+  /**
+   * Commit a palette pick. `alpha` is the original token's alpha
+   * (0-1, default 1) — passed through so a snap on a 10%-alpha overlay
+   * commits the ramp swatch with the alpha layered back on.
+   */
+  onPickPalette: (rampName: string, tone: ToneStep, alpha?: number) => void;
+  /**
+   * Commit a custom hex pick. The hex string may include alpha
+   * (8-digit `#aabbccdd` or `'#aabbcc 10%'`); `buildCustomOverride`
+   * parses it and embeds the alpha on the override.
+   */
   onPickCustom: (hex: string) => void;
   onReset: () => void;
 }
@@ -659,33 +674,59 @@ function ColorRow({
 }: ColorRowProps) {
   const sourceHex = mode === 'light' ? snap.light : snap.dark;
   const match = mode === 'light' ? snap.lightMatch : snap.darkMatch;
-  const activeHex = override?.hex ?? sourceHex ?? '';
+  // Per-mode alpha — preserved end-to-end so a snap on a 10%-alpha
+  // overlay token commits the ramp swatch with `1A` (10%) appended.
+  const sourceAlpha = mode === 'light' ? snap.alphaLight : snap.alphaDark;
+  const activeAlpha = override?.alpha ?? sourceAlpha;
+  // Active hex — base 6-digit (no alpha). `activeHexWithAlpha` is the
+  // 8-digit form used for the visible swatch + the popover preview so
+  // transparency is honored everywhere it matters visually.
+  const activeHexBase = override?.hex
+    ? normalizeHex(override.hex)
+    : sourceHex ?? '';
+  const activeHexWithAlpha = activeHexBase
+    ? composeAlphaHex(activeHexBase, activeAlpha)
+    : '';
 
   // Resolve the XDS-default value for this token in the active mode.
   // Always rendered as the leftmost square so the row geometry is
-  // consistent across the table, even when default === current.
+  // consistent across the table, even when default === current. The
+  // default's own alpha is layered back on so the comparison swatch
+  // reads accurately for transparent tokens (overlay, shadow, etc.).
   const defaultParsed = diff?.defaultValue
     ? parseTokenColor(diff.defaultValue)
     : null;
-  const defaultHex =
+  const defaultHexBase =
     mode === 'light' ? defaultParsed?.light ?? null : defaultParsed?.dark ?? null;
+  const defaultAlpha =
+    mode === 'light'
+      ? defaultParsed?.alphaLight ?? 1
+      : defaultParsed?.alphaDark ?? 1;
+  const defaultHexWithAlpha = defaultHexBase
+    ? composeAlphaHex(defaultHexBase, defaultAlpha)
+    : null;
 
   // Single-source label rendered inside the trigger button:
   //   - On-ramp (auto-detected exact/snapped, or edited via palette) → "Blue T35"
   //   - Off-ramp (auto-detected near/off, or edited via custom hex)  → "#28282a"
+  // Alpha < 1 appends ` · 10%` so transparency is visible at a scan.
   // All editing happens in the popover — the trigger is read-only.
   const inputDisplay = (() => {
+    let label: string;
     if (override?.kind === 'palette') {
-      return `${override.rampName} T${override.tone}`;
-    }
-    if (
+      label = `${override.rampName} T${override.tone}`;
+    } else if (
       !override &&
       match &&
       (match.verdict === 'exact' || match.verdict === 'snapped')
     ) {
-      return `${match.rampName} T${match.tone}`;
+      label = `${match.rampName} T${match.tone}`;
+    } else {
+      label = activeHexBase;
     }
-    return activeHex;
+    return activeAlpha < 1
+      ? `${label} · ${Math.round(activeAlpha * 100)}%`
+      : label;
   })();
   // Edited rows wear the accent color on the input so pending changes
   // are immediately scannable; unedited rows use the default border.
@@ -706,15 +747,15 @@ function ColorRow({
       </div>
       <div style={S.editorCell}>
         <div
-          style={S.originalSwatch(defaultHex ?? 'transparent')}
+          style={S.originalSwatch(defaultHexWithAlpha ?? 'transparent')}
           title={
-            defaultHex
-              ? `Original (XDS default): ${defaultHex}`
+            defaultHexWithAlpha
+              ? `Original (XDS default): ${formatHexWithAlpha(defaultHexBase ?? '#000000', defaultAlpha)}`
               : 'No XDS default — token added by theme'
           }
           aria-label={
-            defaultHex
-              ? `Original default value: ${defaultHex}`
+            defaultHexWithAlpha
+              ? `Original default value: ${defaultHexWithAlpha}`
               : 'No default value'
           }
         />
@@ -735,7 +776,8 @@ function ColorRow({
             <EditorPopoverContent
               mode={mode}
               tokenName={tokenName}
-              currentHex={activeHex || '#000000'}
+              currentHex={activeHexBase || '#000000'}
+              currentAlpha={activeAlpha}
               override={override}
               // Smart default: open Palette tab when the current value
               // sits cleanly on a ramp (exact / snapped / edited via
@@ -759,8 +801,8 @@ function ColorRow({
                     ? {rampName: match.rampName, tone: match.tone as ToneStep}
                     : null
               }
-              onPickPalette={(rampName, tone) => {
-                onPickPalette(rampName, tone);
+              onPickPalette={(rampName, tone, alpha) => {
+                onPickPalette(rampName, tone, alpha);
                 setPopoverOpen(false);
               }}
               onPickCustom={hex => {
@@ -773,11 +815,11 @@ function ColorRow({
             type="button"
             style={inputEdited ? S.triggerButtonEdited : S.triggerButton}
             disabled={snap.indirect}
-            aria-label={`Edit ${getTokenLabel(tokenName)} (${mode}) — current value: ${activeHex}`}>
+            aria-label={`Edit ${getTokenLabel(tokenName)} (${mode}) — current value: ${activeHexWithAlpha}`}>
             <span
               style={{
                 ...S.swatchInline,
-                background: activeHex || '#000000',
+                background: activeHexWithAlpha || '#000000',
               }}
               aria-hidden="true"
             />
@@ -801,29 +843,22 @@ function ColorRow({
           // rows are already on-ramp and `edited` rows show `reset`
           // instead.
           //
-          // Suppress on alpha tokens (overlays, shadows, muted surfaces):
-          // snap targets are 6-digit ramp hexes, so committing them
-          // would silently drop the transparency. Show a small "alpha"
-          // hint instead so the user knows why the affordance is
-          // missing — they can still edit via the popover Custom tab,
-          // where typed hexes preserve alpha.
-          snap.hasAlpha ? (
-            <span
-              title="Snap suppressed: this token carries alpha that the 6-digit ramp swatch would drop. Use the Custom tab in the popover to edit while keeping transparency."
-              style={{cursor: 'help'}}>
-              <XDSText type="supporting" color="secondary">
-                alpha
-              </XDSText>
-            </span>
-          ) : (
-            <XDSButton
-              label="snap"
-              variant="ghost"
-              size="sm"
-              tooltip={`Snap to ${match.rampName} T${match.tone} (ΔE ${match.deltaE.toFixed(1)})`}
-              onClick={() => onPickPalette(match.rampName, match.tone as ToneStep)}
-            />
-          )
+          // Original alpha is preserved through the snap — committing
+          // a snap on a 10%-alpha overlay token writes the ramp
+          // swatch with `1A` (10%) appended, not the bare 6-digit hex.
+          <XDSButton
+            label="snap"
+            variant="ghost"
+            size="sm"
+            tooltip={
+              activeAlpha < 1
+                ? `Snap to ${match.rampName} T${match.tone} · ${Math.round(activeAlpha * 100)}% (ΔE ${match.deltaE.toFixed(1)})`
+                : `Snap to ${match.rampName} T${match.tone} (ΔE ${match.deltaE.toFixed(1)})`
+            }
+            onClick={() =>
+              onPickPalette(match.rampName, match.tone as ToneStep, activeAlpha)
+            }
+          />
         ) : null}
       </div>
     </div>
@@ -837,12 +872,17 @@ function ColorRow({
 interface EditorPopoverContentProps {
   mode: Mode;
   tokenName: string;
+  /** Base 6-digit hex, no alpha. Alpha is supplied separately via
+   *  `currentAlpha` so we can mix and match. */
   currentHex: string;
+  /** Original alpha (0-1, default 1). Pre-fills the alpha control on
+   *  open so transparency round-trips through the popover. */
+  currentAlpha: number;
   override: ModeOverride | undefined;
   initialTab: 'custom' | 'palette';
   rampSeeds: RampSeed[];
   paletteHint: {rampName: string; tone: ToneStep} | null;
-  onPickPalette: (rampName: string, tone: ToneStep) => void;
+  onPickPalette: (rampName: string, tone: ToneStep, alpha?: number) => void;
   onPickCustom: (hex: string) => void;
 }
 
@@ -859,6 +899,7 @@ function EditorPopoverContent({
   mode,
   tokenName,
   currentHex,
+  currentAlpha,
   override,
   initialTab,
   rampSeeds,
@@ -883,20 +924,30 @@ function EditorPopoverContent({
     : paletteHint?.tone ?? 50) as ToneStep;
   const [paletteRamp, setPaletteRamp] = useState<string>(initialPaletteRamp);
   const [paletteTone, setPaletteTone] = useState<ToneStep>(initialPaletteTone);
-  const [customDraft, setCustomDraft] = useState<string>(currentHex);
+  // Custom tab draft starts in pretty form (`'#hex N%'`) so the input
+  // shows the alpha suffix on open — keeps the round-trip consistent
+  // with what the row's trigger label displays.
+  const [customDraft, setCustomDraft] = useState<string>(
+    formatHexWithAlpha(currentHex, currentAlpha),
+  );
 
-  // Resolved hex for the swatch, computed from whichever tab is active.
-  // Palette tab → resolve the selected ramp+tone via the same ramp
-  // generator the visible Tonal section uses. Custom tab → echo the
-  // user's typed draft (or fall back to the row's current hex while
-  // they're not actively editing).
+  // Resolved hex for the swatch — computed from whichever tab is
+  // active and always carries the active alpha so the preview swatch
+  // shows transparency accurately. Palette tab → ramp+tone resolved via
+  // the canonical generator. Custom tab → user's typed draft.
   const seedForRamp = rampSeeds.find(s => s.name === paletteRamp);
   const previewHex =
     tab === 'palette' && seedForRamp
-      ? resolveOverrideHex(seedForRamp.sourceHex, paletteTone, mode)
+      ? composeAlphaHex(
+          resolveOverrideHex(seedForRamp, paletteTone, mode),
+          currentAlpha,
+        )
       : isValidHex(customDraft)
-        ? normalizeHex(customDraft)
-        : currentHex;
+        ? composeAlphaHex(
+            parseHexWithAlpha(customDraft).hex,
+            parseHexWithAlpha(customDraft).alpha,
+          )
+        : composeAlphaHex(currentHex, currentAlpha);
 
   return (
     <XDSVStack gap={3} style={{padding: 4, minWidth: 0}}>
@@ -925,7 +976,7 @@ function EditorPopoverContent({
       />
       {tab === 'custom' ? (
         <CustomTab
-          currentHex={currentHex}
+          currentHex={composeAlphaHex(currentHex, currentAlpha)}
           draft={customDraft}
           setDraft={setCustomDraft}
           mode={mode}
@@ -941,7 +992,10 @@ function EditorPopoverContent({
           setRampName={setPaletteRamp}
           tone={paletteTone}
           setTone={setPaletteTone}
-          onPick={onPickPalette}
+          // Palette picks pass through the original alpha so a snap on
+          // a 10%-alpha overlay commits the swatch with the alpha
+          // layered back on.
+          onPick={(rampName, tone) => onPickPalette(rampName, tone, currentAlpha)}
         />
       )}
     </XDSVStack>
@@ -980,10 +1034,15 @@ function CustomTab({
       el.click();
     }
   };
-  // Currently-resolved swatch color — used to paint the start-icon
-  // chip live as the user types, so the chip always matches the input
-  // value visually.
-  const swatchColor = isValidHex(draft) ? normalizeHex(draft) : currentHex;
+  // Currently-resolved swatch chip color — alpha-baked so the chip
+  // matches the typed value's transparency (matches Figma / Linear
+  // hybrid hex+picker fields). The OS color picker only handles
+  // 6-digit hex, so dragging the picker preserves the input's alpha
+  // while updating the base color.
+  const draftParsed = isValidHex(draft)
+    ? parseHexWithAlpha(draft)
+    : parseHexWithAlpha(currentHex);
+  const swatchColor = composeAlphaHex(draftParsed.hex, draftParsed.alpha);
 
   return (
     <XDSHStack gap={2} vAlign="center">
@@ -998,10 +1057,16 @@ function CustomTab({
           value={draft}
           onChange={(next: string) => setDraft(next)}
           onEnter={() => {
-            if (isValidHex(draft)) onPick(normalizeHex(draft));
-            else setDraft(currentHex);
+            if (isValidHex(draft)) {
+              // Pass the raw input string — buildCustomOverride will
+              // parse alpha out of either the `'#hex N%'` or 8-digit
+              // hex form and embed it on the override.
+              onPick(draft.trim());
+            } else {
+              setDraft(formatHexWithAlpha(currentHex, 1));
+            }
           }}
-          placeholder="#000000"
+          placeholder="#000000 100%"
           startIcon={
             // Clickable swatch chip inside the input. `aria-haspopup`
             // signals the OS color picker affordance to assistive tech.
@@ -1032,15 +1097,18 @@ function CustomTab({
         />
         {/* Hidden color input — receives the programmatic showPicker()
             call so the OS color wheel pops up where the user clicked
-            the swatch chip. Takes no layout space. */}
+            the swatch chip. The OS picker only emits 6-digit hex; we
+            preserve the input's alpha by re-rendering the draft in
+            pretty form (`'#newhex N%'`) and routing that through onPick. */}
         <input
           ref={colorInputRef}
           type="color"
-          value={normalizeHex(draft)}
+          value={normalizeHex(draftParsed.hex)}
           onChange={e => {
-            const next = normalizeHex(e.target.value);
-            setDraft(next);
-            onPick(next);
+            const nextBase = normalizeHex(e.target.value);
+            const nextDraft = formatHexWithAlpha(nextBase, draftParsed.alpha);
+            setDraft(nextDraft);
+            onPick(nextDraft);
           }}
           aria-hidden="true"
           tabIndex={-1}

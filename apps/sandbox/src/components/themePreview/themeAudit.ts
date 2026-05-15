@@ -229,68 +229,96 @@ export interface TokenColor {
   /** True when value is a `var(--…)` reference we can't statically resolve */
   indirect: boolean;
   /**
-   * True when EITHER side of the token's raw value carries non-fully-opaque
-   * alpha — `#aabbccdd` (8-digit hex), `#abcd` (4-digit hex), or `rgba(…)`
-   * with alpha < 1. The audit drawer suppresses the snap button on these
-   * tokens because the snap targets are 6-digit ramp hexes — committing
-   * them would silently drop the transparency. The user can still edit
-   * alpha tokens via the Custom tab in the popover (where they retain
-   * the alpha when typing).
+   * Per-mode alpha (0-1). Defaults to 1 (fully opaque) when the value
+   * has no alpha component. Used by the audit drawer + snap action to
+   * preserve transparency end-to-end — a snap on a 10%-alpha overlay
+   * commits the ramp swatch with `1A` (10%) appended.
+   */
+  alphaLight: number;
+  alphaDark: number;
+  /**
+   * Convenience: `alphaLight < 1 || alphaDark < 1`. Saves the row UI
+   * from re-checking each side when it just needs to know "should I
+   * format this with a percent suffix?".
    */
   hasAlpha: boolean;
 }
 
 export function parseTokenColor(value: string | undefined): TokenColor {
-  if (!value) return {light: null, dark: null, indirect: false, hasAlpha: false};
+  if (!value) {
+    return {
+      light: null,
+      dark: null,
+      indirect: false,
+      alphaLight: 1,
+      alphaDark: 1,
+      hasAlpha: false,
+    };
+  }
   const trimmed = value.trim();
 
   if (trimmed.startsWith('var(')) {
-    return {light: null, dark: null, indirect: true, hasAlpha: false};
+    return {
+      light: null,
+      dark: null,
+      indirect: true,
+      alphaLight: 1,
+      alphaDark: 1,
+      hasAlpha: false,
+    };
   }
 
   const ld = trimmed.match(LIGHT_DARK_RE);
   if (ld) {
+    const alphaLight = extractAlpha(ld[1]);
+    const alphaDark = extractAlpha(ld[2]);
     return {
       light: normalizeColorString(ld[1]),
       dark: normalizeColorString(ld[2]),
       indirect: false,
-      hasAlpha: containsAlpha(ld[1]) || containsAlpha(ld[2]),
+      alphaLight,
+      alphaDark,
+      hasAlpha: alphaLight < 1 || alphaDark < 1,
     };
   }
 
   const single = normalizeColorString(trimmed);
+  const alpha = extractAlpha(trimmed);
   return {
     light: single,
     dark: single,
     indirect: false,
-    hasAlpha: containsAlpha(trimmed),
+    alphaLight: alpha,
+    alphaDark: alpha,
+    hasAlpha: alpha < 1,
   };
 }
 
 /**
- * Detect whether a CSS color expression carries non-fully-opaque alpha:
+ * Extract the alpha channel from a CSS color expression as a 0-1 value.
+ * Returns 1 (fully opaque) when the value has no alpha component or
+ * when we can't parse it. Recognizes:
  *   - 8-digit hex `#aabbccdd` (last two hex digits are the alpha channel)
- *   - 4-digit hex `#abcd` (last digit is the alpha channel)
- *   - `rgba(...)` form with a 4th value
- *
- * Returns false for plain `#rrggbb` / `#rgb` / `rgb(...)` / `transparent` /
- * `black` / `white` / anything we don't parse.
+ *   - 4-digit hex `#abcd` (last digit is the alpha channel, doubled)
+ *   - `rgba(r,g,b,a)` form
  */
-function containsAlpha(input: string): boolean {
+function extractAlpha(input: string): number {
   const v = input.trim();
-  if (/^#[0-9a-fA-F]{8}$/.test(v)) return true;
-  if (/^#[0-9a-fA-F]{4}$/.test(v)) return true;
-  if (/^rgba\(/i.test(v)) {
-    // rgba(r,g,b,a) — only return true when alpha is parseable AND < 1
-    const m = v.match(/^rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*([\d.]+)\s*\)/i);
-    if (m) {
-      const a = Number(m[1]);
-      return Number.isFinite(a) && a < 1;
-    }
-    // Couldn't parse the alpha but the function name said rgba — assume yes.
-    return true;
+  const hex8 = v.match(/^#([0-9a-fA-F]{6})([0-9a-fA-F]{2})$/);
+  if (hex8) return parseInt(hex8[2], 16) / 255;
+  const hex4 = v.match(/^#([0-9a-fA-F]{3})([0-9a-fA-F])$/);
+  if (hex4) {
+    const aChar = hex4[2];
+    return parseInt(aChar + aChar, 16) / 255;
   }
-  return false;
+  const rgba = v.match(
+    /^rgba\(\s*\d+(?:\.\d+)?\s*,\s*\d+(?:\.\d+)?\s*,\s*\d+(?:\.\d+)?\s*,\s*([\d.]+)\s*\)$/i,
+  );
+  if (rgba) {
+    const a = Number(rgba[1]);
+    if (Number.isFinite(a)) return Math.max(0, Math.min(1, a));
+  }
+  return 1;
 }
 
 /**
@@ -340,18 +368,17 @@ export interface SnapAuditEntry {
   /** Per-mode resolved hex (null when unresolvable — indirect/color-mix/etc.) */
   light: string | null;
   dark: string | null;
-  /** Per-mode closest ramp match */
+  /** Per-mode alpha (0-1, 1 = fully opaque). Preserved through snap +
+   *  custom edits so transparency survives end-to-end. */
+  alphaLight: number;
+  alphaDark: number;
+  /** Per-mode closest ramp match — base color only, alpha is layered
+   *  on at commit time. */
   lightMatch: SnapMatch | null;
   darkMatch: SnapMatch | null;
   /** True for `var(--…)` references that we couldn't resolve */
   indirect: boolean;
-  /**
-   * True when the raw token value carries non-fully-opaque alpha. The
-   * audit drawer suppresses the snap button on these rows because snap
-   * targets are 6-digit ramp hexes — committing them would silently
-   * drop the transparency. The user can still edit alpha tokens via
-   * the Custom tab in the popover, where typed hexes preserve alpha.
-   */
+  /** Convenience: `alphaLight < 1 || alphaDark < 1`. */
   hasAlpha: boolean;
 }
 
@@ -381,11 +408,23 @@ export function auditSnapToRamps(
   for (const [name, value] of Object.entries(theme.tokens)) {
     const category = categorizeToken(name);
     if (!eligibleCategories.includes(category)) continue;
-    const {light, dark, indirect, hasAlpha} = parseTokenColor(value);
+    const {light, dark, indirect, alphaLight, alphaDark, hasAlpha} =
+      parseTokenColor(value);
     if (!light && !dark && !indirect) continue;
     const lightMatch = light ? findClosestRampStep(light, rampSeeds, 'light') : null;
     const darkMatch = dark ? findClosestRampStep(dark, rampSeeds, 'dark') : null;
-    out.push({name, category, light, dark, lightMatch, darkMatch, indirect, hasAlpha});
+    out.push({
+      name,
+      category,
+      light,
+      dark,
+      alphaLight,
+      alphaDark,
+      lightMatch,
+      darkMatch,
+      indirect,
+      hasAlpha,
+    });
   }
   // Sort: worst (off-ramp) first so the noisy rows surface to the top.
   // Within the same verdict, alphabetical for stable ordering.
