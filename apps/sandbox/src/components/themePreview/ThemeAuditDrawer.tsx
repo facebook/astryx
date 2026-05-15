@@ -924,30 +924,47 @@ function EditorPopoverContent({
     : paletteHint?.tone ?? 50) as ToneStep;
   const [paletteRamp, setPaletteRamp] = useState<string>(initialPaletteRamp);
   const [paletteTone, setPaletteTone] = useState<ToneStep>(initialPaletteTone);
+  // Editable alpha lives at the popover level so both tabs can mutate
+  // it independently of the underlying base hex / ramp+tone selection.
+  // Initialised to the row's current alpha so the percent input opens
+  // pre-filled with the existing transparency. Stored as a 0-100
+  // integer (matches the input's units) and converted to 0-1 only
+  // when emitted to onPick callbacks / preview composition.
+  const [palettePct, setPalettePct] = useState<number>(
+    Math.round(currentAlpha * 100),
+  );
   // Custom tab draft starts in pretty form (`'#hex N%'`) so the input
   // shows the alpha suffix on open — keeps the round-trip consistent
   // with what the row's trigger label displays.
   const [customDraft, setCustomDraft] = useState<string>(
     formatHexWithAlpha(currentHex, currentAlpha),
   );
+  const [customPct, setCustomPct] = useState<number>(
+    Math.round(currentAlpha * 100),
+  );
 
   // Resolved hex for the swatch — computed from whichever tab is
   // active and always carries the active alpha so the preview swatch
   // shows transparency accurately. Palette tab → ramp+tone resolved via
-  // the canonical generator. Custom tab → user's typed draft.
+  // the canonical generator + palettePct. Custom tab → user's typed
+  // draft + customPct (the input may also embed alpha via the `'#hex N%'`
+  // syntax; we honour that when present, otherwise apply customPct).
   const seedForRamp = rampSeeds.find(s => s.name === paletteRamp);
-  const previewHex =
-    tab === 'palette' && seedForRamp
-      ? composeAlphaHex(
-          resolveOverrideHex(seedForRamp, paletteTone, mode),
-          currentAlpha,
-        )
-      : isValidHex(customDraft)
-        ? composeAlphaHex(
-            parseHexWithAlpha(customDraft).hex,
-            parseHexWithAlpha(customDraft).alpha,
-          )
-        : composeAlphaHex(currentHex, currentAlpha);
+  const previewHex = (() => {
+    if (tab === 'palette' && seedForRamp) {
+      const baseHex = resolveOverrideHex(seedForRamp, paletteTone, mode);
+      return composeAlphaHex(baseHex, palettePct / 100);
+    }
+    if (isValidHex(customDraft)) {
+      const parsed = parseHexWithAlpha(customDraft);
+      // The input's embedded alpha (if any) wins over the stepper —
+      // typing `'#hex 25%'` is a more direct gesture than spinning the
+      // separate Opacity input. They're kept in sync via setCustomPct
+      // when the input string includes a percent.
+      return composeAlphaHex(parsed.hex, parsed.alpha);
+    }
+    return composeAlphaHex(currentHex, customPct / 100);
+  })();
 
   return (
     <XDSVStack gap={3} style={{padding: 4, minWidth: 0}}>
@@ -978,7 +995,18 @@ function EditorPopoverContent({
         <CustomTab
           currentHex={composeAlphaHex(currentHex, currentAlpha)}
           draft={customDraft}
-          setDraft={setCustomDraft}
+          setDraft={(next: string) => {
+            setCustomDraft(next);
+            // Keep the Opacity stepper in sync when the user types a
+            // value that embeds alpha — otherwise the two affordances
+            // could fall out of agreement and confuse the preview.
+            if (isValidHex(next)) {
+              const parsed = parseHexWithAlpha(next);
+              setCustomPct(Math.round(parsed.alpha * 100));
+            }
+          }}
+          alphaPct={customPct}
+          setAlphaPct={setCustomPct}
           mode={mode}
           tokenName={tokenName}
           onPick={onPickCustom}
@@ -992,10 +1020,15 @@ function EditorPopoverContent({
           setRampName={setPaletteRamp}
           tone={paletteTone}
           setTone={setPaletteTone}
-          // Palette picks pass through the original alpha so a snap on
-          // a 10%-alpha overlay commits the swatch with the alpha
-          // layered back on.
-          onPick={(rampName, tone) => onPickPalette(rampName, tone, currentAlpha)}
+          alphaPct={palettePct}
+          setAlphaPct={setPalettePct}
+          onPick={(rampName, tone, alphaOverride) =>
+            onPickPalette(
+              rampName,
+              tone,
+              alphaOverride ?? palettePct / 100,
+            )
+          }
         />
       )}
     </XDSVStack>
@@ -1006,6 +1039,8 @@ function CustomTab({
   currentHex,
   draft,
   setDraft,
+  alphaPct,
+  setAlphaPct,
   mode,
   tokenName,
   onPick,
@@ -1015,6 +1050,10 @@ function CustomTab({
    *  preview swatch can react to typing without committing. */
   draft: string;
   setDraft: (value: string) => void;
+  /** Controlled alpha percentage (0-100). Round-trips with the alpha
+   *  embedded in `draft` (typing `'#hex 25%'` updates this too). */
+  alphaPct: number;
+  setAlphaPct: (next: number) => void;
   mode: Mode;
   tokenName: string;
   onPick: (hex: string) => void;
@@ -1045,85 +1084,203 @@ function CustomTab({
   const swatchColor = composeAlphaHex(draftParsed.hex, draftParsed.alpha);
 
   return (
-    <XDSHStack gap={2} vAlign="center">
-      <XDSText type="supporting" color="secondary" style={{minWidth: 32}}>
-        Hex
-      </XDSText>
-      <div style={{flex: 1, position: 'relative'}}>
-        <XDSTextInput
-          label={`Hex value for ${tokenName} (${mode})`}
-          isLabelHidden
-          size="sm"
-          value={draft}
-          onChange={(next: string) => setDraft(next)}
-          onEnter={() => {
-            if (isValidHex(draft)) {
-              // Pass the raw input string — buildCustomOverride will
-              // parse alpha out of either the `'#hex N%'` or 8-digit
-              // hex form and embed it on the override.
-              onPick(draft.trim());
-            } else {
-              setDraft(formatHexWithAlpha(currentHex, 1));
+    <XDSVStack gap={2}>
+      <XDSHStack gap={2} vAlign="center">
+        <XDSText type="supporting" color="secondary" style={{minWidth: 48}}>
+          Hex
+        </XDSText>
+        <div style={{flex: 1, position: 'relative'}}>
+          <XDSTextInput
+            label={`Hex value for ${tokenName} (${mode})`}
+            isLabelHidden
+            size="sm"
+            value={draft}
+            onChange={(next: string) => setDraft(next)}
+            onEnter={() => {
+              if (isValidHex(draft)) {
+                // Compose the typed hex with the current alpha percent
+                // so a value of `'#abcdef'` (no inline alpha) still
+                // commits with the popover's Opacity stepper applied.
+                const parsed = parseHexWithAlpha(draft);
+                const next = formatHexWithAlpha(parsed.hex, alphaPct / 100);
+                onPick(next);
+              } else {
+                setDraft(formatHexWithAlpha(currentHex, alphaPct / 100));
+              }
+            }}
+            placeholder="#000000 100%"
+            startIcon={
+              // Clickable swatch chip inside the input. `aria-haspopup`
+              // signals the OS color picker affordance to assistive tech.
+              <button
+                type="button"
+                onClick={e => {
+                  // The wrapper steals click → focus the input. We
+                  // stop propagation so clicking the swatch doesn't
+                  // also yank focus into the text field.
+                  e.stopPropagation();
+                  openNativePicker();
+                }}
+                aria-label={`Open color picker for ${tokenName} (${mode})`}
+                aria-haspopup="dialog"
+                style={{
+                  appearance: 'none',
+                  width: 18,
+                  height: 18,
+                  padding: 0,
+                  borderRadius: 4,
+                  border: '1px solid var(--color-border-emphasized)',
+                  background: swatchColor,
+                  cursor: 'pointer',
+                  display: 'inline-block',
+                }}
+              />
             }
-          }}
-          placeholder="#000000 100%"
-          startIcon={
-            // Clickable swatch chip inside the input. `aria-haspopup`
-            // signals the OS color picker affordance to assistive tech.
-            <button
-              type="button"
-              onClick={e => {
-                // The wrapper steals click → focus the input. We
-                // stop propagation so clicking the swatch doesn't
-                // also yank focus into the text field.
-                e.stopPropagation();
-                openNativePicker();
-              }}
-              aria-label={`Open color picker for ${tokenName} (${mode})`}
-              aria-haspopup="dialog"
-              style={{
-                appearance: 'none',
-                width: 18,
-                height: 18,
-                padding: 0,
-                borderRadius: 4,
-                border: '1px solid var(--color-border-emphasized)',
-                background: swatchColor,
-                cursor: 'pointer',
-                display: 'inline-block',
-              }}
-            />
-          }
-        />
-        {/* Hidden color input — receives the programmatic showPicker()
-            call so the OS color wheel pops up where the user clicked
-            the swatch chip. The OS picker only emits 6-digit hex; we
-            preserve the input's alpha by re-rendering the draft in
-            pretty form (`'#newhex N%'`) and routing that through onPick. */}
-        <input
-          ref={colorInputRef}
-          type="color"
-          value={normalizeHex(draftParsed.hex)}
-          onChange={e => {
-            const nextBase = normalizeHex(e.target.value);
-            const nextDraft = formatHexWithAlpha(nextBase, draftParsed.alpha);
+          />
+          {/* Hidden color input — receives the programmatic showPicker()
+              call so the OS color wheel pops up where the user clicked
+              the swatch chip. The OS picker only emits 6-digit hex; we
+              preserve the input's alpha by re-rendering the draft in
+              pretty form (`'#newhex N%'`) and routing that through onPick. */}
+          <input
+            ref={colorInputRef}
+            type="color"
+            value={normalizeHex(draftParsed.hex)}
+            onChange={e => {
+              const nextBase = normalizeHex(e.target.value);
+              const nextDraft = formatHexWithAlpha(nextBase, alphaPct / 100);
+              setDraft(nextDraft);
+              onPick(nextDraft);
+            }}
+            aria-hidden="true"
+            tabIndex={-1}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: 0,
+              height: 0,
+              opacity: 0,
+              border: 'none',
+              padding: 0,
+              margin: 0,
+              pointerEvents: 'none',
+            }}
+          />
+        </div>
+      </XDSHStack>
+      <AlphaInput
+        alphaPct={alphaPct}
+        setAlphaPct={(nextPct: number) => {
+          setAlphaPct(nextPct);
+          // Re-emit the draft so the input's pretty form stays in
+          // sync with the stepper, AND commit the change live so the
+          // preview surface updates without a separate Enter press.
+          if (isValidHex(draft)) {
+            const parsed = parseHexWithAlpha(draft);
+            const nextDraft = formatHexWithAlpha(parsed.hex, nextPct / 100);
             setDraft(nextDraft);
             onPick(nextDraft);
+          }
+        }}
+        labelFor={`Opacity for ${tokenName} (${mode})`}
+      />
+    </XDSVStack>
+  );
+}
+
+/**
+ * Numeric Opacity stepper input shared by both popover tabs. Renders
+ * as `[Opacity %]  [_ 50 _]` — XDSTextInput in number mode with native
+ * step controls + a trailing "%" affordance. Range clamped 0-100;
+ * non-numeric input snaps back to the current value.
+ */
+function AlphaInput({
+  alphaPct,
+  setAlphaPct,
+  labelFor,
+}: {
+  alphaPct: number;
+  setAlphaPct: (next: number) => void;
+  labelFor: string;
+}) {
+  const [draft, setDraft] = useState<string>(String(alphaPct));
+  // Keep the local draft in sync when the parent's alpha changes
+  // (e.g. user typed `'#hex 30%'` in the Hex input above).
+  useEffect(() => {
+    setDraft(String(alphaPct));
+  }, [alphaPct]);
+
+  const commit = (raw: string) => {
+    const n = Number(raw.replace(/%$/, '').trim());
+    if (!Number.isFinite(n)) {
+      setDraft(String(alphaPct));
+      return;
+    }
+    const clamped = Math.max(0, Math.min(100, Math.round(n)));
+    setDraft(String(clamped));
+    if (clamped !== alphaPct) setAlphaPct(clamped);
+  };
+
+  return (
+    <XDSHStack gap={2} vAlign="center">
+      <XDSText type="supporting" color="secondary" style={{minWidth: 48}}>
+        Opacity
+      </XDSText>
+      {/* Stretch to fill the column so the input lines up with the
+          Ramp/Tone selects above (which use flex: 1, maxWidth: none). */}
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 4,
+          position: 'relative',
+        }}>
+        <input
+          type="number"
+          min={0}
+          max={100}
+          step={1}
+          value={draft}
+          aria-label={labelFor}
+          onChange={e => setDraft(e.target.value)}
+          onBlur={e => commit(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              commit((e.target as HTMLInputElement).value);
+            }
           }}
-          aria-hidden="true"
-          tabIndex={-1}
           style={{
-            position: 'absolute',
-            inset: 0,
-            width: 0,
-            height: 0,
-            opacity: 0,
-            border: 'none',
-            padding: 0,
-            margin: 0,
-            pointerEvents: 'none',
+            flex: 1,
+            width: '100%',
+            border: '1px solid var(--color-border)',
+            borderRadius: 4,
+            padding: '4px 22px 4px 6px',
+            fontFamily: MONO,
+            fontSize: 11,
+            background: 'var(--color-background-body)',
+            color: 'var(--color-text-primary)',
+            outline: 'none',
           }}
         />
+        {/* Trailing `%` glyph rendered as an absolutely-positioned
+            suffix inside the input's right padding so it doesn't add
+            its own column width — keeps the input edge aligned with
+            the Ramp/Tone selects above. */}
+        <span
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            right: 8,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            fontFamily: 'var(--font-family-body)',
+            fontSize: 11,
+            color: 'var(--color-text-secondary)',
+            pointerEvents: 'none',
+          }}>
+          %
+        </span>
       </div>
     </XDSHStack>
   );
@@ -1137,6 +1294,8 @@ function PaletteTab({
   setRampName,
   tone,
   setTone,
+  alphaPct,
+  setAlphaPct,
   onPick,
 }: {
   rampSeeds: RampSeed[];
@@ -1148,7 +1307,16 @@ function PaletteTab({
   setRampName: (value: string) => void;
   tone: ToneStep;
   setTone: (value: ToneStep) => void;
-  onPick: (rampName: string, tone: ToneStep) => void;
+  /** Controlled alpha percentage (0-100). Editing it commits the
+   *  current ramp+tone with the new alpha so the preview updates live. */
+  alphaPct: number;
+  setAlphaPct: (next: number) => void;
+  /** Third arg (`alphaOverride` 0-1) lets the Opacity stepper pass the
+   *  *new* alpha alongside the unchanged ramp+tone, side-stepping the
+   *  React state-flush race: by the time `onPick` runs from the
+   *  Opacity handler, the parent's `palettePct` closure is still the
+   *  OLD value. The optional override wins when supplied. */
+  onPick: (rampName: string, tone: ToneStep, alphaOverride?: number) => void;
 }) {
   // Native <select>s here rather than XDSDropdownMenu — the menu
   // component is heavier than needed for a 10-item ramp / 21-step tone
@@ -1194,6 +1362,17 @@ function PaletteTab({
           ))}
         </select>
       </XDSHStack>
+      <AlphaInput
+        alphaPct={alphaPct}
+        setAlphaPct={(nextPct: number) => {
+          setAlphaPct(nextPct);
+          // Pass the new alpha through onPick's third arg so the parent
+          // commits the override with the just-set value, not the stale
+          // closure-captured `palettePct`.
+          onPick(rampName, tone, nextPct / 100);
+        }}
+        labelFor={`Opacity for ${tokenName} (${mode})`}
+      />
     </XDSVStack>
   );
 }
