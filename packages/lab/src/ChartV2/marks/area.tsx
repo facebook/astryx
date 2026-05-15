@@ -30,6 +30,7 @@ export interface AreaOptions {
   stack?: string;
   gradient?: boolean;
   stroke?: boolean;
+  label?: string;
 }
 
 export function area(dataKey: string, options: AreaOptions = {}): SeriesDef {
@@ -43,6 +44,8 @@ export function area(dataKey: string, options: AreaOptions = {}): SeriesDef {
     type: 'area',
     key: dataKey,
     dataKeys: [dataKey],
+    color,
+    label: options.label ?? dataKey,
     layout: {stack: options.stack, includeZero: true},
 
     resolve(ctx, stackOffsets) {

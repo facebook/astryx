@@ -25,9 +25,10 @@ import type {ChartV2Context, ChartMargin, ChartPointerEvent} from './types';
 import {computeLayout} from './layout';
 import {ChartV2Provider} from './ChartV2Context';
 import {ChartProvider} from '../Chart/ChartContext';
-import * as stylex from '@stylexjs/stylex';
 import {XDSText} from '@xds/core';
-import {XDSVStack} from '@xds/core';
+import {XDSVStack, XDSHStack} from '@xds/core';
+import * as stylex from '@stylexjs/stylex';
+import {ChartLegend, type LegendConfig, type LegendItem, type LegendPosition, type LegendAlignment} from './legend';
 
 export interface XDSChartProps {
   data: Record<string, unknown>[];
@@ -37,7 +38,8 @@ export interface XDSChartProps {
   margin?: Partial<ChartMargin>;
   grid?: ReactNode;
   axes?: ReactNode;
-  legend?: boolean | ReactNode;
+  /** Legend configuration. Pass `true` for defaults, or a config object. */
+  legend?: boolean | LegendConfig;
   interactions?: ReactNode;
   children?: ReactNode;
   /** Chart title displayed above the visualization */
@@ -218,10 +220,33 @@ export function XDSChart({
     [innerWidth, innerHeight, margin, xKey, data, layout, svgRef],
   );
 
+  // ─── Legend ────────────────────────────────────────────────────────────
+  const legendConfig = useMemo((): LegendConfig | null => {
+    if (!legend) return null;
+    if (legend === true) return {position: 'bottom', alignment: 'start'};
+    return {position: 'bottom', alignment: 'start', ...legend};
+  }, [legend]);
+
+  const legendItems = useMemo((): LegendItem[] => {
+    if (!legendConfig) return [];
+    if (legendConfig.items) return legendConfig.items;
+    // Auto-derive from series — skip utility marks (referenceLine, errorBar, band)
+    const skipTypes = new Set(['referenceLine', 'errorBar', 'band']);
+    return series
+      .filter(s => !skipTypes.has(s.type) && s.color)
+      .map(s => ({label: s.label ?? s.key, color: s.color!, type: s.type}));
+  }, [legendConfig, series]);
+
   // ─── Render ───────────────────────────────────────────────────────────
   if (containerWidth === 0) {
     return <div ref={containerRef} style={{width: '100%', height}} />;
   }
+
+  const legendElement = legendItems.length > 0 ? (
+    <ChartLegend items={legendItems} position={legendConfig!.position!} alignment={legendConfig!.alignment!} />
+  ) : null;
+
+  const isLegendHorizontal = legendConfig?.position === 'start' || legendConfig?.position === 'end';
 
   return (
     <div ref={containerRef} style={{width: '100%'}}>
@@ -241,49 +266,70 @@ export function XDSChart({
       )}
       <ChartV2Provider value={ctx}>
         <ChartProvider value={v1Ctx}>
-          <svg
-            ref={svgRef}
-            width={containerWidth}
-            height={height}
-            aria-label={title ?? undefined}
-            aria-describedby={subtitle ? descId : undefined}>
-            {title && <title>{title}</title>}
-            {subtitle && <desc id={descId}>{subtitle}</desc>}
-            <g transform={`translate(${margin.left},${margin.top})`}>
-              {/* 1. Grid */}
-              {grid}
-
-              {/* 2. Marks — each series renders itself */}
-              {series.map(s => {
-                const resolved = layout.resolved.get(s.key);
-                if (!resolved) {
-                  return null;
-                }
-                return <g key={s.key}>{s.render(resolved, seriesCtx)}</g>;
-              })}
-
-              {/* 3. Axes */}
-              {axes}
-
-              {/* 4. Event capture + interactions */}
-              <rect
-                x={0}
-                y={0}
-                width={innerWidth}
-                height={innerHeight}
-                fill="transparent"
-                onPointerMove={handlePointerMove}
-                onPointerLeave={handlePointerLeave}
-              />
-              {interactions}
-
-              {/* 5. Escape hatch */}
-              {children}
-            </g>
-          </svg>
-          {legend === true ? null : legend}
+          {legendConfig == null ? (
+            renderSvg()
+          ) : isLegendHorizontal ? (
+            <XDSHStack gap={4}>
+              {legendConfig.position === 'start' && legendElement}
+              <div style={{flex: 1, minWidth: 0, overflow: 'hidden'}}>
+                {renderSvg()}
+              </div>
+              {legendConfig.position === 'end' && legendElement}
+            </XDSHStack>
+          ) : (
+            <XDSVStack gap={4}>
+              {legendConfig.position === 'top' && legendElement}
+              {renderSvg()}
+              {legendConfig.position === 'bottom' && legendElement}
+            </XDSVStack>
+          )}
         </ChartProvider>
       </ChartV2Provider>
     </div>
   );
+
+  function renderSvg() {
+    return (
+      <svg
+        ref={svgRef}
+        width="100%"
+        height={height}
+        aria-label={title ?? undefined}
+        aria-describedby={subtitle ? descId : undefined}>
+        {title && <title>{title}</title>}
+        {subtitle && <desc id={descId}>{subtitle}</desc>}
+        <g transform={`translate(${margin.left},${margin.top})`}>
+          {/* 1. Grid */}
+          {grid}
+
+          {/* 2. Marks — each series renders itself */}
+          {series.map(s => {
+            const resolved = layout.resolved.get(s.key);
+            if (!resolved) {
+              return null;
+            }
+            return <g key={s.key}>{s.render(resolved, seriesCtx)}</g>;
+          })}
+
+          {/* 3. Axes */}
+          {axes}
+
+          {/* 4. Event capture + interactions */}
+          <rect
+            x={0}
+            y={0}
+            width={innerWidth}
+            height={innerHeight}
+            fill="transparent"
+            onPointerMove={handlePointerMove}
+            onPointerLeave={handlePointerLeave}
+          />
+          {interactions}
+
+          {/* 5. Escape hatch */}
+          {children}
+        </g>
+      </svg>
+    );
+  }
 }
