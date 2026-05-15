@@ -15,7 +15,7 @@ const TONAL_COLORS = [
   {name: 'Gray', sourceHex: '#868B99', tones: butterPalettes.neutral},
   {name: 'Red', sourceHex: '#FF7553', tones: butterPalettes.red},
   {name: 'Orange', sourceHex: '#FFA347', tones: butterPalettes.orange},
-  {name: 'Yellow', sourceHex: '#EDD64B', tones: butterPalettes.yellow},
+  {name: 'Yellow', sourceHex: '#EDD64B', tones: butterPalettes.yellow, dark: {sourceHex: '#EDD64B', tones: {0:'#000000',5:'#161100',10:'#211b00',15:'#2c2600',20:'#383100',25:'#443c00',30:'#504700',35:'#5d5300',40:'#6a5f00',45:'#786b00',50:'#867800',55:'#948500',60:'#a29200',65:'#b19f00',70:'#bfac1a',75:'#ceba2c',80:'#ddc73c',85:'#ecd54a',90:'#fbe358',95:'#fff1bd',100:'#ffffff'}}},
   {name: 'Green', sourceHex: '#5DCE5F', tones: butterPalettes.green},
   {name: 'Cyan', sourceHex: '#60CFD3', tones: butterPalettes.cyan},
   {name: 'Teal', sourceHex: '#6CD9A8', tones: butterPalettes.teal},
