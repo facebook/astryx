@@ -1,5 +1,7 @@
 'use client';
 
+import {useMemo, useReducer} from 'react';
+
 import {XDSBanner} from '@xds/core/Banner';
 import {XDSSpinner} from '@xds/core/Spinner';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
@@ -15,6 +17,23 @@ import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSTheme} from '@xds/core/theme';
 import type {XDSDefinedTheme} from '@xds/core/theme';
 import {XDSLayerProvider} from '@xds/core/Layer';
+import {defaultTheme} from '@xds/theme-default/built';
+
+import {
+  ThemeAuditDrawer,
+  useThemeAudit,
+} from './themePreview/ThemeAuditDrawer';
+import {
+  buildTonalUsageMap,
+  tonalUsageKey,
+  type TonalUsageMap,
+} from './themePreview/themeAudit';
+import {
+  buildOverrideCSSVars,
+  overridesReducer,
+  type OverridesMap,
+  type SerializeContext,
+} from './themePreview/themeOverrides';
 
 // === HCT color space helpers for tonal palettes ===
 
@@ -467,11 +486,26 @@ const S = {
       top: 2,
       left: '50%',
       transform: 'translateX(-50%)',
-      width: 6,
-      height: 6,
-      borderRadius: '50%',
-      border: `1.5px solid ${tone >= 50 ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.7)'}`,
-      background: tone >= 50 ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.25)',
+      minWidth: 8,
+      height: 8,
+      paddingInline: 2,
+      borderRadius: 999,
+      border: `1.5px solid ${tone >= 50 ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.85)'}`,
+      background: tone >= 50 ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      lineHeight: 1,
+    }) as React.CSSProperties,
+  // Pill shows the token count when more than one token snaps to the same
+  // tone step. Stays inside the marker dot so the strip layout is unchanged.
+  markerCount: (tone: number) =>
+    ({
+      fontSize: 7.5,
+      fontWeight: 700,
+      fontFamily: MONO,
+      color: tone >= 50 ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.95)',
+      pointerEvents: 'none' as const,
     }) as React.CSSProperties,
 };
 
@@ -973,11 +1007,13 @@ function InputSection() {
 function TonalSection({
   colors,
   mode = 'light',
+  usage,
 }: {
   colors: TonalColor[];
   mode?: Mode;
+  /** Audit-derived map of which tone steps are consumed by which tokens. */
+  usage?: TonalUsageMap;
 }) {
-  const usedTones = [15, 25, 80, 90];
   const isDark = mode === 'dark';
   return (
     <div style={{marginBottom: 40}}>
@@ -1009,7 +1045,9 @@ function TonalSection({
             vibrate against the dark canvas.
           </>
         )}{' '}
-        Badge tokens use T90/T30 (light) and T70/T15 (dark).
+        {usage
+          ? 'Markers ● show tone steps consumed by theme tokens (open the audit drawer for the full report).'
+          : 'Badge tokens use T90/T30 (light) and T70/T15 (dark).'}
       </p>
       {colors.map(({name, sourceHex, semantic, note, tones: overrideTones, dark}) => {
         // In dark mode, use per-mode overrides if provided.
@@ -1046,6 +1084,16 @@ function TonalSection({
             <div style={S.tonalStrip}>
               {steps.map(t => {
                 const hex = resolveTone(t);
+                const usages = usage?.[tonalUsageKey(name, mode, t)] ?? [];
+                // Title summarises which tokens snap to this step (max 4
+                // listed to keep the native tooltip readable on dense ramps).
+                const titleLines = [
+                  `${name} T${t}: ${hex}`,
+                  ...usages
+                    .slice(0, 4)
+                    .map(u => `· ${u.name} (\u0394E ${u.deltaE.toFixed(1)})`),
+                  usages.length > 4 ? `· +${usages.length - 4} more` : '',
+                ].filter(Boolean);
                 return (
                   <div
                     key={t}
@@ -1053,9 +1101,15 @@ function TonalSection({
                       ...S.tonalCell(hex),
                       position: 'relative' as const,
                     }}
-                    title={`${name} T${t}: ${hex}`}>
+                    title={titleLines.join('\n')}>
                     <span style={S.tonalNum(t)}>{t}</span>
-                    {usedTones.includes(t) && <div style={S.markerDot(t)} />}
+                    {usages.length > 0 && (
+                      <div style={S.markerDot(t)}>
+                        {usages.length > 1 && (
+                          <span style={S.markerCount(t)}>{usages.length}</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -1074,8 +1128,9 @@ function TonalSection({
           marginTop: 10,
           fontFamily: MONO,
         }}>
-        ● = token in use (T15 dark bg · T25 light text · T80 dark text · T90
-        light bg)
+        {usage
+          ? '● = tone step consumed by a theme token. Number = count when multiple tokens share the same step. Hover any cell for details.'
+          : '● = token in use (T15 dark bg · T25 light text · T80 dark text · T90 light bg)'}
       </p>
     </div>
   );
@@ -1088,6 +1143,7 @@ function ModeColumn({
   extraSections,
   leadingExtras,
   shadowDescription,
+  overrideVars,
   bare = false,
 }: {
   theme: XDSDefinedTheme;
@@ -1096,6 +1152,16 @@ function ModeColumn({
   extraSections?: React.ReactNode;
   leadingExtras?: React.ReactNode;
   shadowDescription?: string;
+  /**
+   * Pending-overrides CSS custom properties spread onto the column's
+   * outermost styled wrapper *inside* the XDSTheme scope. Required:
+   * XDSTheme re-injects the canonical token values on its own scope
+   * element, so any `--color-*` overrides applied above XDSTheme would
+   * be stomped by the inner theme rules. Putting the overrides
+   * inside the theme wrapper (as inline style on a child element)
+   * wins via specificity.
+   */
+  overrideVars?: React.CSSProperties;
   /**
    * When true, render the column as a transparent layout container
    * (no background, border, or padding) — the outer page provides the
@@ -1114,7 +1180,7 @@ function ModeColumn({
   return (
     <XDSTheme theme={theme} mode={mode}>
       <XDSLayerProvider>
-        <div style={columnStyle}>
+        <div style={{...columnStyle, ...overrideVars}}>
           {!bare && (
             <p style={S.modeLabel}>
               {mode === 'light' ? 'Light Mode' : 'Dark Mode'}
@@ -1163,6 +1229,43 @@ export function ThemePalettePreview({
     ? {display: 'block'}
     : S.twoCol;
 
+  // Run audit once per (theme, tonalColors). The drawer reads diff + snap
+  // tables; the Tonal section reads `usage` to draw token-driven markers.
+  const audit = useThemeAudit(theme, tonalColors);
+
+  // Pending-overrides state lives at the page level (not in the drawer)
+  // so we can also feed it into a CSS-variable injection at the page
+  // root — that way every component on the page (mode columns + tonal
+  // strip) re-renders live as you reassign tokens in the drawer.
+  const [overrides, dispatchOverrides] = useReducer(
+    overridesReducer,
+    {} as OverridesMap,
+  );
+
+  // Map of `--token: light-dark(#L, #D)` for every pending override.
+  // Spread directly onto the page root so the values cascade into every
+  // descendant via CSS custom property inheritance.
+  const serializeCtx: SerializeContext = useMemo(() => {
+    const map: SerializeContext['currentTokenValues'] = {};
+    for (const e of audit.snap) {
+      map[e.name] = {light: e.light, dark: e.dark};
+    }
+    return {currentTokenValues: map};
+  }, [audit.snap]);
+  const overrideVars = useMemo(
+    () => buildOverrideCSSVars(overrides, serializeCtx),
+    [overrides, serializeCtx],
+  );
+
+  // Tonal markers respect pending overrides — every reassignment shows
+  // up as a new marker on the chosen ramp+tone the moment the user
+  // changes a dropdown. Auto-detected matches still drive markers for
+  // tokens that haven't been edited yet.
+  const effectiveUsage = useMemo(
+    () => buildTonalUsageMap(audit.snap, overrides),
+    [audit.snap, overrides],
+  );
+
   const renderColumns = () => {
     if (singleMode) {
       return (
@@ -1173,6 +1276,7 @@ export function ThemePalettePreview({
           extraSections={extraSections}
           leadingExtras={leadingExtras}
           shadowDescription={shadowDescription}
+          overrideVars={overrideVars}
           bare
         />
       );
@@ -1186,6 +1290,7 @@ export function ThemePalettePreview({
           extraSections={extraSections}
           leadingExtras={leadingExtras}
           shadowDescription={shadowDescription}
+          overrideVars={overrideVars}
         />
         <ModeColumn
           theme={theme}
@@ -1194,12 +1299,15 @@ export function ThemePalettePreview({
           extraSections={extraSections}
           leadingExtras={leadingExtras}
           shadowDescription={shadowDescription}
+          overrideVars={overrideVars}
         />
       </>
     );
   };
 
   if (componentPreviewOnly) {
+    // Embedded usage (e.g. inside docsite layouts) skips the audit drawer too —
+    // hosts that need it can mount <ThemeAuditDrawer> separately.
     return <div style={columnsStyle}>{renderColumns()}</div>;
   }
 
@@ -1213,17 +1321,34 @@ export function ThemePalettePreview({
   const tonalModes: Mode[] = singleMode ? [singleMode] : ['light', 'dark'];
 
   return (
-    <XDSTheme theme={theme} mode={chromeMode}>
-      <XDSLayerProvider>
-        <div style={{...S.page, margin: -0, position: 'relative', zIndex: 1}}>
+    <>
+      {/* Preview surface — themed by the theme being audited. Override
+          CSS vars live here so they cascade into every preview component
+          (page background, tonal block, mode columns) but NOT into the
+          audit drawer rendered in its own theme below. */}
+      <XDSTheme theme={theme} mode={chromeMode}>
+        <XDSLayerProvider>
+          <div
+            style={{
+              ...S.page,
+              ...overrideVars,
+              margin: -0,
+              position: 'relative',
+              zIndex: 1,
+            }}>
           <div style={S.inner}>
             <h1 style={S.title}>{title}</h1>
             <p style={S.subtitle}>{subtitle}</p>
             {tonalModes.map(m => (
               <XDSTheme key={m} theme={theme} mode={m}>
                 <XDSLayerProvider>
+                  {/* Spread overrideVars *inside* the inner XDSTheme so
+                      pending overrides win over the theme's own
+                      `:scope { --color-*: … }` rules. Same trick the
+                      ModeColumn uses. */}
                   <div
                     style={{
+                      ...overrideVars,
                       background: 'var(--color-background-body)',
                       color: 'var(--color-text-primary)',
                       borderRadius: 16,
@@ -1236,15 +1361,37 @@ export function ThemePalettePreview({
                         {m === 'light' ? 'Light Mode' : 'Dark Mode'}
                       </p>
                     )}
-                    <TonalSection colors={tonalColors} mode={m} />
+                    <TonalSection
+                      colors={tonalColors}
+                      mode={m}
+                      usage={effectiveUsage}
+                    />
                   </div>
                 </XDSLayerProvider>
               </XDSTheme>
             ))}
             <div style={columnsStyle}>{renderColumns()}</div>
           </div>
-        </div>
-      </XDSLayerProvider>
-    </XDSTheme>
+          </div>
+        </XDSLayerProvider>
+      </XDSTheme>
+
+      {/* Audit drawer + draft indicator — mounted *outside* the audited
+          theme so the drawer's own chrome (buttons, borders, text) stays
+          stable regardless of which theme is being previewed. Uses the
+          neutral default theme so it always looks the same across all 5
+          palette pages. Position-fixed elements inside the drawer
+          attach to the viewport, not this wrapper. */}
+      <XDSTheme theme={defaultTheme} mode="light">
+        <XDSLayerProvider>
+          <ThemeAuditDrawer
+            audit={audit}
+            themeName={theme.name}
+            overrides={overrides}
+            dispatchOverrides={dispatchOverrides}
+          />
+        </XDSLayerProvider>
+      </XDSTheme>
+    </>
   );
 }

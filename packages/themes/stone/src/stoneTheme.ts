@@ -29,23 +29,30 @@ const INPUT_STATUS_VARS = {
   },
 } as const;
 
-/** Stone syntax palette — derived from categorical hues at T40 (light) / T70 (dark). */
+/**
+ * Stone syntax palette — light values snap to T40 / T45 stops on the
+ * stone categorical ramps (per audit drawer); dark values stay at T70.
+ *
+ * `string` and `property` both land on Teal T40 — intentional; the audit
+ * unified them since green and teal are visually adjacent at T40 and
+ * the stone neutral palette doesn't carry a distinct green stop.
+ */
 const stoneSyntax = defineSyntaxTheme({
   name: 'xds-stone',
   tokens: {
-    keyword: ['#645a72', '#b2a7c1'],    // Purple H=307 C=15
-    string: ['#50634f', '#9bb19a'],      // Green H=142 C=15
-    comment: ['#5e5e63', '#ababb0'],     // Gray H=291 C=3
-    number: ['#6f5b48', '#bea792'],      // Orange H=70 C=15
-    function: ['#4d6076', '#99adc6'],    // Blue H=265 C=15
-    type: ['#645a72', '#b2a7c1'],        // Purple H=307 C=15
-    variable: ['#5e5e63', '#ababb0'],    // Gray H=291 C=3
-    operator: ['#5e5e63', '#ababb0'],    // Gray H=291 C=3
-    constant: ['#6f5b48', '#bea792'],    // Orange H=70 C=15
-    tag: ['#775751', '#c7a39d'],         // Red H=33 C=15
-    attribute: ['#675d46', '#b6aa90'],   // Yellow H=90 C=15
-    property: ['#496455', '#94b2a0'],    // Teal H=158 C=15
-    punctuation: ['#5e5e63', '#ababb0'], // Gray H=291 C=3
+    keyword: ['#645a72', '#b2a7c1'],     // Purple T40 / T70
+    string: ['#4e6357', '#9bb19a'],      // Teal T40 / Green T70
+    comment: ['#5e5e5e', '#ababb0'],     // Stone Neutral T40 / T70
+    number: ['#755752', '#bea792'],      // Red T40 / Orange T70
+    function: ['#506072', '#99adc6'],    // Blue T40 / T70
+    type: ['#645a72', '#b2a7c1'],        // Purple T40 / T70
+    variable: ['#5e5e5e', '#ababb0'],    // Stone Neutral T40 / T70
+    operator: ['#5e5e5e', '#ababb0'],    // Stone Neutral T40 / T70
+    constant: ['#755752', '#bea792'],    // Red T40 / Orange T70
+    tag: ['#775751', '#c7a39d'],         // Red T40 / T70
+    attribute: ['#79693f', '#b6aa90'],   // Yellow T45 / T70
+    property: ['#4e6357', '#94b2a0'],    // Teal T40 / T70
+    punctuation: ['#5e5e5e', '#ababb0'], // Stone Neutral T40 / T70
     background: ['#f3f3f5', '#171719'],
   },
 });
