@@ -327,11 +327,11 @@ export const butterTheme = defineTheme({
       },
     },
 
-    // Progress bar — white track, vivid semantic fills that match the
-    // banner colors (Success / Warning / Error).
+    // Progress bar — white track in light, warm brown in dark. Vivid
+    // semantic fills match the banner colors (Success / Warning / Error).
     'progressbar-track': {
       base: {
-        backgroundColor: '#ffffff',
+        backgroundColor: 'light-dark(#ffffff, #725538)',
       },
     },
     'progressbar-fill': {
@@ -373,7 +373,6 @@ export const butterTheme = defineTheme({
         paddingBlock: 'var(--spacing-2)',
         paddingInline: 'var(--spacing-3)',
         borderColor: 'var(--color-border)',
-        backgroundColor: '#ffffff',
       },
       'status:success': {'--color-success': '#91D143'},
       'status:warning': {'--color-warning': '#ffc502'},
@@ -384,7 +383,6 @@ export const butterTheme = defineTheme({
         paddingBlock: 'var(--spacing-2)',
         paddingInline: 'var(--spacing-3)',
         borderColor: 'var(--color-border)',
-        backgroundColor: '#ffffff',
       },
       'status:success': {'--color-success': '#91D143'},
       'status:warning': {'--color-warning': '#ffc502'},
@@ -395,7 +393,6 @@ export const butterTheme = defineTheme({
         paddingBlock: 'var(--spacing-2)',
         paddingInline: 'var(--spacing-3)',
         borderColor: 'var(--color-border)',
-        backgroundColor: '#ffffff',
       },
       'status:success': {'--color-success': '#91D143'},
       'status:warning': {'--color-warning': '#ffc502'},
@@ -406,7 +403,6 @@ export const butterTheme = defineTheme({
         paddingBlock: 'var(--spacing-2)',
         paddingInline: 'var(--spacing-3)',
         borderColor: 'var(--color-border)',
-        backgroundColor: '#ffffff',
       },
       'status:success': {'--color-success': '#91D143'},
       'status:warning': {'--color-warning': '#ffc502'},
@@ -417,7 +413,6 @@ export const butterTheme = defineTheme({
         paddingBlock: 'var(--spacing-2)',
         paddingInline: 'var(--spacing-3)',
         borderColor: 'var(--color-border)',
-        backgroundColor: '#ffffff',
       },
       'status:success': {'--color-success': '#91D143'},
       'status:warning': {'--color-warning': '#ffc502'},
