@@ -30,6 +30,7 @@ describe('expandColorScale', () => {
       '--color-border',
       '--color-border-emphasized',
       '--color-skeleton',
+      '--color-track',
       '--color-shadow',
       '--color-tint-hover',
     ];

@@ -166,6 +166,9 @@ export function expandColorScale(
 
     // Effects
     '--color-skeleton': ld(NV[70], NV[30]),
+    // Channel-on-body surface (ProgressBar/Slider tracks, Switch off-state).
+    // Defaults to the same NV[70]/NV[30] ramp stop as --color-skeleton.
+    '--color-track': ld(NV[70], NV[30]),
     '--color-shadow': ld(hexWithAlpha(N[0], 0.1), hexWithAlpha(N[0], 0.3)),
     '--color-tint-hover': ld('black', 'white'),
   };

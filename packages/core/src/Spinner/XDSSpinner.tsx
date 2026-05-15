@@ -169,8 +169,14 @@ export function XDSSpinner({
         : shade === 'subtle'
           ? themeTokens['--color-text-secondary'] || '#65676B'
           : themeTokens['--color-accent'] || '#0064E0';
+    // 'onMedia' keeps a translucent white so the ring reads on photos/video.
+    // Other shades pull from --color-skeleton so the track inherits the
+    // theme's low-contrast surface (and stays visible in dark mode where
+    // 8% black would disappear).
     const backgroundColor =
-      shade === 'onMedia' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.08)';
+      shade === 'onMedia'
+        ? 'rgba(255, 255, 255, 0.3)'
+        : themeTokens['--color-skeleton'] || 'rgba(0, 0, 0, 0.08)';
 
     const radius = (diameter / 2) * pixelRatio;
     const lineWidth = border * pixelRatio;

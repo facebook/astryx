@@ -69,6 +69,11 @@ export const colorDefaults = {
 
   // Effects
   '--color-skeleton': 'light-dark(#CCD3DB, #5A5E66)',
+  // "Channel on body" — slim affordances that need to read against body
+  // luminance (ProgressBar tracks, Slider rails, Switch off-state). Default
+  // is the same low-contrast surface as --color-skeleton; themes can
+  // override per their neutral ramp if 1-D channels need more weight.
+  '--color-track': 'light-dark(#CCD3DB, #5A5E66)',
   '--color-shadow': 'light-dark(rgba(5, 54, 89, 0.1), rgba(0, 0, 0, 0.3))',
   // Hover tint: black in light mode, white in dark mode - used with color-mix for hover states
   '--color-tint-hover': 'light-dark(black, white)',
