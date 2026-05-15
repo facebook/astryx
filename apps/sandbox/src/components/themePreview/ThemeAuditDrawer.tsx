@@ -28,8 +28,6 @@ import type {XDSDefinedTheme} from '@xds/core/theme';
 // consistent with the rest of XDS instead of a hand-rolled clone of
 // each one.
 import {XDSPopover} from '@xds/core/Popover';
-import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
-import {XDSLayout, XDSLayoutContent, XDSLayoutFooter} from '@xds/core/Layout';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSButton} from '@xds/core/Button';
 import {XDSTextInput} from '@xds/core/TextInput';
@@ -435,7 +433,8 @@ export function ThemeAuditDrawer({
   );
   const overrides = overridesProp ?? internalOverrides;
   const dispatchOverrides = dispatchProp ?? dispatchInternal;
-  const [exportOpen, setExportOpen] = useState(false);
+  // Brief "Copied" confirmation in the footer after a successful copy.
+  const [justCopied, setJustCopied] = useState(false);
 
   const overrideCount = countOverrides(overrides);
 
@@ -448,6 +447,45 @@ export function ThemeAuditDrawer({
     }
     return {currentTokenValues: map};
   }, [audit.snap]);
+
+  // LLM-friendly snippet — bare `tokens: { ... }` block prefixed with an
+  // instruction prompt naming the target file path and the apply rule.
+  // Pasting into Cursor / Claude / any other coding agent gives the model
+  // enough context to apply the edits without further instruction.
+  const promptSnippet = useMemo(() => {
+    if (overrideCount === 0) return '';
+    const inner = serializeAsTokensBlock(overrides, serializeCtx);
+    const filePath = `packages/themes/${themeName}/src/${themeName}Theme.ts`;
+    return [
+      `Apply the following ${overrideCount} token override${overrideCount === 1 ? '' : 's'} to ${filePath}.`,
+      '',
+      'Rules:',
+      `- Locate the \`defineTheme(...)\` call and find the existing \`tokens: { ... }\` block inside it.`,
+      `- For each entry below, find a line whose key matches the token name and replace its value with the value below. Preserve indentation, quote style, and trailing comma. Replace any existing trailing inline comment with the annotation comment provided.`,
+      `- If a token is not present, insert a new line at the bottom of the \`tokens\` block (just before the closing \`}\`) using the same indentation and quote style as sibling entries.`,
+      `- For \`--color-syntax-*\` entries: prefer to update the \`defineSyntaxTheme({ tokens: { ... } })\` block instead — strip the \`--color-syntax-\` prefix to get the key name (e.g. \`--color-syntax-keyword\` → \`keyword\`). Only fall back to inserting them as direct \`--color-syntax-*\` tokens inside \`defineTheme.tokens\` if no \`defineSyntaxTheme\` block exists.`,
+      `- Do not modify any other tokens, comments, or surrounding code.`,
+      '',
+      inner,
+    ].join('\n');
+  }, [overrides, serializeCtx, themeName, overrideCount]);
+
+  const handleCopySnippet = async () => {
+    if (!promptSnippet) return;
+    try {
+      await navigator.clipboard.writeText(promptSnippet);
+      setJustCopied(true);
+      // Auto-clear the confirmation after a beat so the footer text
+      // doesn't permanently say "Copied" — it should fade back to the
+      // pending count.
+      setTimeout(() => setJustCopied(false), 1800);
+    } catch {
+      // Clipboard permission denied (rare; some browsers when not
+      // focused). Surface no UI fallback in this direct-copy flow —
+      // the user can re-trigger after focusing the page. A future
+      // version could re-introduce a preview modal as the fallback.
+    }
+  };
 
   // Pre-bucket tokens into the docsite categories. We pass the *union*
   // of every color token the audit knows about (theme-defined + XDS
@@ -567,7 +605,9 @@ export function ThemeAuditDrawer({
         {overrideCount > 0 && (
           <div style={S.applyFooter}>
             <XDSText type="supporting" color="secondary">
-              {overrideCount} token{overrideCount === 1 ? '' : 's'} pending
+              {justCopied
+                ? 'Copied to clipboard'
+                : `${overrideCount} token${overrideCount === 1 ? '' : 's'} pending`}
             </XDSText>
             <XDSHStack gap={2}>
               <XDSButton
@@ -577,23 +617,15 @@ export function ThemeAuditDrawer({
                 onClick={() => dispatchOverrides({type: 'reset'})}
               />
               <XDSButton
-                label={`Export (${overrideCount})`}
+                label={`Copy snippet (${overrideCount})`}
                 variant="primary"
                 size="sm"
-                onClick={() => setExportOpen(true)}
+                onClick={handleCopySnippet}
               />
             </XDSHStack>
           </div>
         )}
       </aside>
-      {exportOpen && (
-        <ExportModal
-          themeName={themeName}
-          overrides={overrides}
-          ctx={serializeCtx}
-          onClose={() => setExportOpen(false)}
-        />
-      )}
     </>
   );
 }
@@ -1098,124 +1130,3 @@ function PaletteTab({
   );
 }
 
-// =============================================================================
-// Export modal — unchanged from previous version
-// =============================================================================
-
-interface ExportModalProps {
-  themeName: string;
-  overrides: OverridesMap;
-  ctx: SerializeContext;
-  onClose: () => void;
-}
-
-function ExportModal({
-  themeName,
-  overrides,
-  ctx,
-  onClose,
-}: ExportModalProps) {
-  // Wrap the bare `tokens: { ... }` snippet in an LLM-friendly prompt so
-  // pasting into Cursor / Claude / any other coding agent gives the model
-  // enough context to apply the edits without further instruction. The
-  // prompt is the single source of truth for both the visible <pre> and
-  // the clipboard payload.
-  const promptSnippet = useMemo(() => {
-    const inner = serializeAsTokensBlock(overrides, ctx);
-    const filePath = `packages/themes/${themeName}/src/${themeName}Theme.ts`;
-    const tokenCount = Object.keys(overrides).length;
-    return [
-      `Apply the following ${tokenCount} token override${tokenCount === 1 ? '' : 's'} to ${filePath}.`,
-      '',
-      'Rules:',
-      `- Locate the \`defineTheme(...)\` call and find the existing \`tokens: { ... }\` block inside it.`,
-      `- For each entry below, find a line whose key matches the token name and replace its value with the value below. Preserve indentation, quote style, and trailing comma. Replace any existing trailing inline comment with the annotation comment provided.`,
-      `- If a token is not present, insert a new line at the bottom of the \`tokens\` block (just before the closing \`}\`) using the same indentation and quote style as sibling entries.`,
-      `- For \`--color-syntax-*\` entries: prefer to update the \`defineSyntaxTheme({ tokens: { ... } })\` block instead — strip the \`--color-syntax-\` prefix to get the key name (e.g. \`--color-syntax-keyword\` → \`keyword\`). Only fall back to inserting them as direct \`--color-syntax-*\` tokens inside \`defineTheme.tokens\` if no \`defineSyntaxTheme\` block exists.`,
-      `- Do not modify any other tokens, comments, or surrounding code.`,
-      '',
-      inner,
-    ].join('\n');
-  }, [overrides, ctx, themeName]);
-
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(promptSnippet);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      // Clipboard permission denied (rare; some browsers when not
-      // focused). Fall back to selecting the visible <pre> so the user
-      // can ⌘+C manually.
-      const node = document.getElementById('xds-audit-snippet');
-      if (!node) return;
-      const range = document.createRange();
-      range.selectNodeContents(node);
-      const sel = window.getSelection();
-      sel?.removeAllRanges();
-      sel?.addRange(range);
-    }
-  };
-
-  return (
-    <XDSDialog
-      isOpen
-      onOpenChange={open => {
-        if (!open) onClose();
-      }}
-      width={720}
-      maxHeight="80vh"
-      padding={0}>
-      <XDSLayout
-        header={
-          <XDSDialogHeader
-            title={`Export · ${themeName}Theme.ts`}
-            onOpenChange={open => {
-              if (!open) onClose();
-            }}
-          />
-        }
-        content={
-          <XDSLayoutContent padding={0}>
-            <pre
-              id="xds-audit-snippet"
-              style={{
-                margin: 0,
-                padding: '16px 20px',
-                fontFamily: MONO,
-                fontSize: 11,
-                lineHeight: 1.6,
-                background: 'var(--color-background-body)',
-                color: 'var(--color-text-primary)',
-                whiteSpace: 'pre-wrap',
-                overflowX: 'auto',
-              }}>
-              {promptSnippet}
-            </pre>
-          </XDSLayoutContent>
-        }
-        footer={
-          <XDSLayoutFooter hasDivider padding={3}>
-            <XDSHStack gap={3} vAlign="center" style={{width: '100%'}}>
-              <div style={{flex: 1, minWidth: 0}}>
-                {copied && (
-                  <XDSText type="supporting" color="secondary">
-                    Copied to clipboard
-                  </XDSText>
-                )}
-              </div>
-              <XDSButton
-                label={copied ? 'Copied' : 'Copy snippet'}
-                variant="primary"
-                size="sm"
-                onClick={handleCopy}
-              />
-            </XDSHStack>
-          </XDSLayoutFooter>
-        }
-      />
-    </XDSDialog>
-  );
-}
