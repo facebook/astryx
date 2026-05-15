@@ -12,14 +12,12 @@ import {XDSThumbnail} from '@xds/core/Thumbnail';
 import {XDSTable, proportional, pixel} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
+  XDSChartV2 as XDSChart,
+  XDSChartGrid,
+  XDSChartAxis,
+  area,
+  line,
+} from '@xds/lab';
 import {
   FunnelIcon,
   ArrowDownTrayIcon,
@@ -539,53 +537,26 @@ export default function TablePageChartTemplate() {
           />
         </XDSHStack>
 
-        <ResponsiveContainer width="100%" height={280}>
-          <AreaChart
-            data={revenueData}
-            margin={{left: -10, right: 25, top: 5, bottom: 0}}>
-            <defs>
-              <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#2dd4bf" stopOpacity={0.15} />
-                <stop offset="95%" stopColor="#2dd4bf" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="var(--color-border)"
-              vertical={false}
-            />
-            <XAxis
-              dataKey="date"
-              tick={{fontSize: 12, fill: 'var(--color-text-secondary)'}}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              tick={{fontSize: 12, fill: 'var(--color-text-secondary)'}}
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={(v: number) => `$${v}`}
-            />
-            <Tooltip
-              formatter={(value: number) => [
-                `$${value.toLocaleString()}`,
-                'Revenue',
-              ]}
-              contentStyle={{
-                borderRadius: 8,
-                border: '1px solid var(--color-border)',
-                background: 'var(--color-surface)',
-              }}
-            />
-            <Area
-              type="monotone"
-              dataKey="revenue"
-              stroke="#14b8a6"
-              strokeWidth={2}
-              fill="url(#revenueGrad)"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+        <XDSChart
+          data={revenueData}
+          xKey="date"
+          series={[
+            area('revenue', {color: '#14b8a6', gradient: true}),
+            line('revenue', {color: '#14b8a6'}),
+          ]}
+          grid={<XDSChartGrid horizontal />}
+          axes={
+            <>
+              <XDSChartAxis position="bottom" />
+              <XDSChartAxis
+                position="left"
+                tickFormat={(v: unknown) => `$${v}`}
+              />
+            </>
+          }
+          height={280}
+          margin={{left: 40, right: 10, top: 10, bottom: 30}}
+        />
 
         <XDSTable<OrderRow>
           data={orders}
