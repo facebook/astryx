@@ -771,21 +771,21 @@ const orders: OrderRow[] = [
 ];
 
 const revenueData = [
-  {date: 'Jan 1', revenue: 110},
-  {date: 'Jan 2', revenue: 70},
-  {date: 'Jan 3', revenue: 130},
-  {date: 'Jan 4', revenue: 90},
-  {date: 'Jan 5', revenue: 180},
-  {date: 'Jan 6', revenue: 140},
-  {date: 'Jan 7', revenue: 110},
-  {date: 'Jan 8', revenue: 190},
-  {date: 'Jan 9', revenue: 130},
-  {date: 'Jan 10', revenue: 95},
-  {date: 'Jan 11', revenue: 160},
-  {date: 'Jan 12', revenue: 185},
-  {date: 'Jan 13', revenue: 140},
-  {date: 'Jan 14', revenue: 175},
-  {date: 'Jan 15', revenue: 150},
+  {date: 'Jan 1', revenue: 5200},
+  {date: 'Jan 2', revenue: 4800},
+  {date: 'Jan 3', revenue: 6100},
+  {date: 'Jan 4', revenue: 7400},
+  {date: 'Jan 5', revenue: 5900},
+  {date: 'Jan 6', revenue: 6800},
+  {date: 'Jan 7', revenue: 7200},
+  {date: 'Jan 8', revenue: 8300},
+  {date: 'Jan 9', revenue: 6500},
+  {date: 'Jan 10', revenue: 5400},
+  {date: 'Jan 11', revenue: 7800},
+  {date: 'Jan 12', revenue: 9200},
+  {date: 'Jan 13', revenue: 6900},
+  {date: 'Jan 14', revenue: 8600},
+  {date: 'Jan 15', revenue: 7100},
 ];
 
 const statusColor: Record<string, 'green' | 'blue' | 'orange' | 'red'> = {
@@ -907,7 +907,7 @@ export default function TablePageShoeStoreHeatmapTemplate() {
               <XDSChartAxis position="bottom" />
               <XDSChartAxis
                 position="left"
-                tickFormat={(v: unknown) => `$${v}`}
+                tickFormat={(v: unknown) => `$${Number(v) / 1000}k`}
               />
             </>
           }
