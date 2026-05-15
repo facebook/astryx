@@ -149,10 +149,10 @@ export const butterTheme = defineTheme({
     '--color-text-cyan': ['#004649', '#004649'],
 
     // Gray (uses the neutral palette)
-    '--color-background-gray': ['#dde2f2', '#dde2f2'],
-    '--color-border-gray': ['#c1c6d5', '#c1c6d5'],
-    '--color-icon-gray': ['#333b4f', '#333b4f'],
-    '--color-text-gray': ['#333b4f', '#333b4f'],
+    '--color-background-gray': ['#f0edd4', '#f0edd4'],
+    '--color-border-gray': ['#d6d3b8', '#d6d3b8'],
+    '--color-icon-gray': ['#4a4732', '#4a4732'],
+    '--color-text-gray': ['#4a4732', '#4a4732'],
 
     // Green
     '--color-background-green': ['#c1efb8', '#c1efb8'],
