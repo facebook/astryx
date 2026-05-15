@@ -1,6 +1,5 @@
 'use client';
 
-import {useMemo} from 'react';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSVStack, XDSHStack, XDSStackItem} from '@xds/core/Layout';
 import {XDSText, XDSHeading} from '@xds/core/Text';
@@ -13,10 +12,11 @@ import {XDSThumbnail} from '@xds/core/Thumbnail';
 import {XDSTable, proportional, pixel} from '@xds/core/Table';
 import type {XDSTableColumn} from '@xds/core/Table';
 import {
-  XDSChart,
+  XDSChartV2 as XDSChart,
+  XDSChartGrid,
   XDSChartAxis,
-  XDSChartHeatmapGL,
-  useXDSChartColors,
+  area,
+  line,
 } from '@xds/lab';
 import {
   FunnelIcon,
@@ -48,8 +48,6 @@ interface OrderRow extends Record<string, unknown> {
   amount: number;
   status: 'completed' | 'processing' | 'shipped' | 'refunded';
   date: string;
-  dayOfWeek: number;
-  hour: number;
 }
 
 const PRODUCTS = [
@@ -103,8 +101,6 @@ const orders: OrderRow[] = [
     amount: 130,
     status: 'completed',
     date: '2025-01-12',
-    dayOfWeek: 0,
-    hour: 9,
   },
   {
     id: 'ORD-1002',
@@ -116,8 +112,6 @@ const orders: OrderRow[] = [
     amount: 190,
     status: 'completed',
     date: '2025-01-12',
-    dayOfWeek: 0,
-    hour: 10,
   },
   {
     id: 'ORD-1003',
@@ -129,8 +123,6 @@ const orders: OrderRow[] = [
     amount: 70,
     status: 'shipped',
     date: '2025-01-12',
-    dayOfWeek: 0,
-    hour: 10,
   },
   {
     id: 'ORD-1004',
@@ -142,8 +134,6 @@ const orders: OrderRow[] = [
     amount: 180,
     status: 'processing',
     date: '2025-01-12',
-    dayOfWeek: 0,
-    hour: 11,
   },
   {
     id: 'ORD-1005',
@@ -155,8 +145,6 @@ const orders: OrderRow[] = [
     amount: 140,
     status: 'completed',
     date: '2025-01-12',
-    dayOfWeek: 0,
-    hour: 11,
   },
   {
     id: 'ORD-1006',
@@ -168,8 +156,6 @@ const orders: OrderRow[] = [
     amount: 110,
     status: 'completed',
     date: '2025-01-12',
-    dayOfWeek: 0,
-    hour: 11,
   },
   {
     id: 'ORD-1007',
@@ -181,8 +167,6 @@ const orders: OrderRow[] = [
     amount: 130,
     status: 'completed',
     date: '2025-01-12',
-    dayOfWeek: 0,
-    hour: 12,
   },
   {
     id: 'ORD-1008',
@@ -194,8 +178,6 @@ const orders: OrderRow[] = [
     amount: 190,
     status: 'shipped',
     date: '2025-01-12',
-    dayOfWeek: 0,
-    hour: 12,
   },
   {
     id: 'ORD-1009',
@@ -207,8 +189,6 @@ const orders: OrderRow[] = [
     amount: 70,
     status: 'completed',
     date: '2025-01-12',
-    dayOfWeek: 0,
-    hour: 13,
   },
   {
     id: 'ORD-1010',
@@ -220,8 +200,6 @@ const orders: OrderRow[] = [
     amount: 180,
     status: 'completed',
     date: '2025-01-12',
-    dayOfWeek: 0,
-    hour: 13,
   },
   {
     id: 'ORD-1011',
@@ -233,8 +211,6 @@ const orders: OrderRow[] = [
     amount: 140,
     status: 'completed',
     date: '2025-01-12',
-    dayOfWeek: 0,
-    hour: 14,
   },
   {
     id: 'ORD-1012',
@@ -246,8 +222,6 @@ const orders: OrderRow[] = [
     amount: 110,
     status: 'completed',
     date: '2025-01-12',
-    dayOfWeek: 0,
-    hour: 15,
   },
   {
     id: 'ORD-1013',
@@ -259,8 +233,6 @@ const orders: OrderRow[] = [
     amount: 130,
     status: 'shipped',
     date: '2025-01-12',
-    dayOfWeek: 0,
-    hour: 16,
   },
   {
     id: 'ORD-1014',
@@ -272,8 +244,6 @@ const orders: OrderRow[] = [
     amount: 190,
     status: 'completed',
     date: '2025-01-12',
-    dayOfWeek: 0,
-    hour: 17,
   },
   // Mon (1) — light-medium, midday into afternoon
   {
@@ -286,8 +256,6 @@ const orders: OrderRow[] = [
     amount: 70,
     status: 'refunded',
     date: '2025-01-13',
-    dayOfWeek: 1,
-    hour: 12,
   },
   {
     id: 'ORD-1016',
@@ -299,8 +267,6 @@ const orders: OrderRow[] = [
     amount: 180,
     status: 'completed',
     date: '2025-01-13',
-    dayOfWeek: 1,
-    hour: 13,
   },
   {
     id: 'ORD-1058',
@@ -312,8 +278,6 @@ const orders: OrderRow[] = [
     amount: 140,
     status: 'completed',
     date: '2025-01-13',
-    dayOfWeek: 1,
-    hour: 14,
   },
   {
     id: 'ORD-1059',
@@ -325,8 +289,6 @@ const orders: OrderRow[] = [
     amount: 110,
     status: 'shipped',
     date: '2025-01-13',
-    dayOfWeek: 1,
-    hour: 15,
   },
   // Tue (2) — afternoon concentrated: 2pm–5pm hot
   {
@@ -339,8 +301,6 @@ const orders: OrderRow[] = [
     amount: 140,
     status: 'processing',
     date: '2025-01-14',
-    dayOfWeek: 2,
-    hour: 13,
   },
   {
     id: 'ORD-1018',
@@ -352,8 +312,6 @@ const orders: OrderRow[] = [
     amount: 110,
     status: 'completed',
     date: '2025-01-14',
-    dayOfWeek: 2,
-    hour: 14,
   },
   {
     id: 'ORD-1019',
@@ -365,8 +323,6 @@ const orders: OrderRow[] = [
     amount: 130,
     status: 'shipped',
     date: '2025-01-14',
-    dayOfWeek: 2,
-    hour: 14,
   },
   {
     id: 'ORD-1020',
@@ -378,8 +334,6 @@ const orders: OrderRow[] = [
     amount: 190,
     status: 'completed',
     date: '2025-01-14',
-    dayOfWeek: 2,
-    hour: 14,
   },
   {
     id: 'ORD-1021',
@@ -391,8 +345,6 @@ const orders: OrderRow[] = [
     amount: 70,
     status: 'completed',
     date: '2025-01-14',
-    dayOfWeek: 2,
-    hour: 15,
   },
   {
     id: 'ORD-1022',
@@ -404,8 +356,6 @@ const orders: OrderRow[] = [
     amount: 180,
     status: 'completed',
     date: '2025-01-14',
-    dayOfWeek: 2,
-    hour: 15,
   },
   {
     id: 'ORD-1023',
@@ -417,8 +367,6 @@ const orders: OrderRow[] = [
     amount: 140,
     status: 'shipped',
     date: '2025-01-14',
-    dayOfWeek: 2,
-    hour: 16,
   },
   {
     id: 'ORD-1024',
@@ -430,8 +378,6 @@ const orders: OrderRow[] = [
     amount: 110,
     status: 'processing',
     date: '2025-01-14',
-    dayOfWeek: 2,
-    hour: 16,
   },
   {
     id: 'ORD-1025',
@@ -443,8 +389,6 @@ const orders: OrderRow[] = [
     amount: 130,
     status: 'completed',
     date: '2025-01-14',
-    dayOfWeek: 2,
-    hour: 17,
   },
   // Wed (3) — light-medium, midday into afternoon
   {
@@ -457,8 +401,6 @@ const orders: OrderRow[] = [
     amount: 190,
     status: 'completed',
     date: '2025-01-15',
-    dayOfWeek: 3,
-    hour: 12,
   },
   {
     id: 'ORD-1027',
@@ -470,8 +412,6 @@ const orders: OrderRow[] = [
     amount: 70,
     status: 'completed',
     date: '2025-01-15',
-    dayOfWeek: 3,
-    hour: 13,
   },
   {
     id: 'ORD-1028',
@@ -483,8 +423,6 @@ const orders: OrderRow[] = [
     amount: 180,
     status: 'shipped',
     date: '2025-01-15',
-    dayOfWeek: 3,
-    hour: 14,
   },
   {
     id: 'ORD-1060',
@@ -496,8 +434,6 @@ const orders: OrderRow[] = [
     amount: 130,
     status: 'completed',
     date: '2025-01-15',
-    dayOfWeek: 3,
-    hour: 15,
   },
   {
     id: 'ORD-1061',
@@ -509,8 +445,6 @@ const orders: OrderRow[] = [
     amount: 140,
     status: 'completed',
     date: '2025-01-15',
-    dayOfWeek: 3,
-    hour: 16,
   },
   // Thu (4) — afternoon concentrated: 1pm–5pm hot
   {
@@ -523,8 +457,6 @@ const orders: OrderRow[] = [
     amount: 140,
     status: 'completed',
     date: '2025-01-09',
-    dayOfWeek: 4,
-    hour: 13,
   },
   {
     id: 'ORD-1030',
@@ -536,8 +468,6 @@ const orders: OrderRow[] = [
     amount: 110,
     status: 'completed',
     date: '2025-01-09',
-    dayOfWeek: 4,
-    hour: 13,
   },
   {
     id: 'ORD-1031',
@@ -549,8 +479,6 @@ const orders: OrderRow[] = [
     amount: 130,
     status: 'completed',
     date: '2025-01-09',
-    dayOfWeek: 4,
-    hour: 14,
   },
   {
     id: 'ORD-1032',
@@ -562,8 +490,6 @@ const orders: OrderRow[] = [
     amount: 190,
     status: 'completed',
     date: '2025-01-09',
-    dayOfWeek: 4,
-    hour: 14,
   },
   {
     id: 'ORD-1033',
@@ -575,8 +501,6 @@ const orders: OrderRow[] = [
     amount: 70,
     status: 'shipped',
     date: '2025-01-09',
-    dayOfWeek: 4,
-    hour: 14,
   },
   {
     id: 'ORD-1034',
@@ -588,8 +512,6 @@ const orders: OrderRow[] = [
     amount: 180,
     status: 'completed',
     date: '2025-01-09',
-    dayOfWeek: 4,
-    hour: 15,
   },
   {
     id: 'ORD-1035',
@@ -601,8 +523,6 @@ const orders: OrderRow[] = [
     amount: 140,
     status: 'completed',
     date: '2025-01-09',
-    dayOfWeek: 4,
-    hour: 15,
   },
   {
     id: 'ORD-1036',
@@ -614,8 +534,6 @@ const orders: OrderRow[] = [
     amount: 110,
     status: 'processing',
     date: '2025-01-09',
-    dayOfWeek: 4,
-    hour: 16,
   },
   {
     id: 'ORD-1037',
@@ -627,8 +545,6 @@ const orders: OrderRow[] = [
     amount: 130,
     status: 'completed',
     date: '2025-01-09',
-    dayOfWeek: 4,
-    hour: 17,
   },
   // Fri (5) — medium, early afternoon
   {
@@ -641,8 +557,6 @@ const orders: OrderRow[] = [
     amount: 190,
     status: 'completed',
     date: '2025-01-10',
-    dayOfWeek: 5,
-    hour: 12,
   },
   {
     id: 'ORD-1039',
@@ -654,8 +568,6 @@ const orders: OrderRow[] = [
     amount: 70,
     status: 'completed',
     date: '2025-01-10',
-    dayOfWeek: 5,
-    hour: 13,
   },
   {
     id: 'ORD-1040',
@@ -667,8 +579,6 @@ const orders: OrderRow[] = [
     amount: 180,
     status: 'shipped',
     date: '2025-01-10',
-    dayOfWeek: 5,
-    hour: 13,
   },
   {
     id: 'ORD-1041',
@@ -680,8 +590,6 @@ const orders: OrderRow[] = [
     amount: 140,
     status: 'completed',
     date: '2025-01-10',
-    dayOfWeek: 5,
-    hour: 14,
   },
   // Sat (6) — spread across 9am–6pm, very hot
   {
@@ -694,8 +602,6 @@ const orders: OrderRow[] = [
     amount: 110,
     status: 'completed',
     date: '2025-01-11',
-    dayOfWeek: 6,
-    hour: 9,
   },
   {
     id: 'ORD-1043',
@@ -707,8 +613,6 @@ const orders: OrderRow[] = [
     amount: 130,
     status: 'shipped',
     date: '2025-01-11',
-    dayOfWeek: 6,
-    hour: 9,
   },
   {
     id: 'ORD-1044',
@@ -720,8 +624,6 @@ const orders: OrderRow[] = [
     amount: 190,
     status: 'completed',
     date: '2025-01-11',
-    dayOfWeek: 6,
-    hour: 10,
   },
   {
     id: 'ORD-1045',
@@ -733,8 +635,6 @@ const orders: OrderRow[] = [
     amount: 70,
     status: 'completed',
     date: '2025-01-11',
-    dayOfWeek: 6,
-    hour: 10,
   },
   {
     id: 'ORD-1046',
@@ -746,8 +646,6 @@ const orders: OrderRow[] = [
     amount: 180,
     status: 'completed',
     date: '2025-01-11',
-    dayOfWeek: 6,
-    hour: 11,
   },
   {
     id: 'ORD-1047',
@@ -759,8 +657,6 @@ const orders: OrderRow[] = [
     amount: 140,
     status: 'processing',
     date: '2025-01-11',
-    dayOfWeek: 6,
-    hour: 11,
   },
   {
     id: 'ORD-1048',
@@ -772,8 +668,6 @@ const orders: OrderRow[] = [
     amount: 110,
     status: 'completed',
     date: '2025-01-11',
-    dayOfWeek: 6,
-    hour: 11,
   },
   {
     id: 'ORD-1049',
@@ -785,8 +679,6 @@ const orders: OrderRow[] = [
     amount: 130,
     status: 'completed',
     date: '2025-01-11',
-    dayOfWeek: 6,
-    hour: 12,
   },
   {
     id: 'ORD-1050',
@@ -798,8 +690,6 @@ const orders: OrderRow[] = [
     amount: 190,
     status: 'completed',
     date: '2025-01-11',
-    dayOfWeek: 6,
-    hour: 12,
   },
   {
     id: 'ORD-1051',
@@ -811,8 +701,6 @@ const orders: OrderRow[] = [
     amount: 70,
     status: 'shipped',
     date: '2025-01-11',
-    dayOfWeek: 6,
-    hour: 13,
   },
   {
     id: 'ORD-1052',
@@ -824,8 +712,6 @@ const orders: OrderRow[] = [
     amount: 180,
     status: 'completed',
     date: '2025-01-11',
-    dayOfWeek: 6,
-    hour: 13,
   },
   {
     id: 'ORD-1053',
@@ -837,8 +723,6 @@ const orders: OrderRow[] = [
     amount: 140,
     status: 'completed',
     date: '2025-01-11',
-    dayOfWeek: 6,
-    hour: 14,
   },
   {
     id: 'ORD-1054',
@@ -850,8 +734,6 @@ const orders: OrderRow[] = [
     amount: 110,
     status: 'completed',
     date: '2025-01-11',
-    dayOfWeek: 6,
-    hour: 15,
   },
   {
     id: 'ORD-1055',
@@ -863,8 +745,6 @@ const orders: OrderRow[] = [
     amount: 130,
     status: 'shipped',
     date: '2025-01-11',
-    dayOfWeek: 6,
-    hour: 16,
   },
   {
     id: 'ORD-1056',
@@ -876,8 +756,6 @@ const orders: OrderRow[] = [
     amount: 190,
     status: 'completed',
     date: '2025-01-11',
-    dayOfWeek: 6,
-    hour: 17,
   },
   {
     id: 'ORD-1057',
@@ -889,37 +767,26 @@ const orders: OrderRow[] = [
     amount: 70,
     status: 'completed',
     date: '2025-01-11',
-    dayOfWeek: 6,
-    hour: 18,
   },
 ];
 
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const HOURS = [
-  '9am',
-  '10am',
-  '11am',
-  '12pm',
-  '1pm',
-  '2pm',
-  '3pm',
-  '4pm',
-  '5pm',
-  '6pm',
-  '7pm',
+const revenueData = [
+  {date: 'Jan 1', revenue: 110},
+  {date: 'Jan 2', revenue: 70},
+  {date: 'Jan 3', revenue: 130},
+  {date: 'Jan 4', revenue: 90},
+  {date: 'Jan 5', revenue: 180},
+  {date: 'Jan 6', revenue: 140},
+  {date: 'Jan 7', revenue: 110},
+  {date: 'Jan 8', revenue: 190},
+  {date: 'Jan 9', revenue: 130},
+  {date: 'Jan 10', revenue: 95},
+  {date: 'Jan 11', revenue: 160},
+  {date: 'Jan 12', revenue: 185},
+  {date: 'Jan 13', revenue: 140},
+  {date: 'Jan 14', revenue: 175},
+  {date: 'Jan 15', revenue: 150},
 ];
-
-function buildHeatmapData(data: OrderRow[]) {
-  return HOURS.flatMap((hour, hi) =>
-    DAYS.map((day, di) => {
-      const hourValue = 9 + hi;
-      const count = data.filter(
-        o => o.dayOfWeek === di && o.hour === hourValue,
-      ).length;
-      return {day, hour, orders: count};
-    }),
-  );
-}
 
 const statusColor: Record<string, 'green' | 'blue' | 'orange' | 'red'> = {
   completed: 'green',
@@ -1001,30 +868,6 @@ const columns: XDSTableColumn<OrderRow>[] = [
   },
 ];
 
-// ============= HEATMAP =============
-
-function ActivityHeatmap() {
-  const colors = useXDSChartColors();
-  const heatmapData = useMemo(() => buildHeatmapData(orders), []);
-
-  return (
-    <XDSChart
-      data={heatmapData}
-      xKey="day"
-      yKeys={['orders']}
-      height={280}
-      margin={{left: 0, right: 0, top: 0, bottom: 30}}>
-      <XDSChartAxis position="bottom" />
-      <XDSChartHeatmapGL
-        xKey="day"
-        yKey="hour"
-        valueKey="orders"
-        colorRange={[...colors.sequential.blue(5)].reverse()}
-      />
-    </XDSChart>
-  );
-}
-
 // ============= PAGE =============
 
 export default function TablePageShoeStoreHeatmapTemplate() {
@@ -1051,7 +894,26 @@ export default function TablePageShoeStoreHeatmapTemplate() {
           />
         </XDSHStack>
 
-        <ActivityHeatmap />
+        <XDSChart
+          data={revenueData}
+          xKey="date"
+          series={[
+            area('revenue', {color: '#3b82f6', gradient: true}),
+            line('revenue', {color: '#3b82f6'}),
+          ]}
+          grid={<XDSChartGrid horizontal />}
+          axes={
+            <>
+              <XDSChartAxis position="bottom" />
+              <XDSChartAxis
+                position="left"
+                tickFormat={(v: unknown) => `$${v}`}
+              />
+            </>
+          }
+          height={280}
+          margin={{left: 40, right: 10, top: 10, bottom: 30}}
+        />
 
         <XDSTable<OrderRow>
           data={orders}
