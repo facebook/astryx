@@ -331,7 +331,7 @@ export const butterTheme = defineTheme({
     // semantic fills match the banner colors (Success / Warning / Error).
     'progressbar-track': {
       base: {
-        backgroundColor: 'light-dark(#ffffff, #725538)',
+        backgroundColor: 'light-dark(#e5e3d4, #725538)',
       },
     },
     'progressbar-fill': {
