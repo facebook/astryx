@@ -319,6 +319,22 @@ export const butterTheme = defineTheme({
         borderRadius: 'var(--radius-container)',
         padding: 'var(--spacing-4)',
       },
+      'variant:info': {
+        '--color-text-primary': '#1d1c11',
+        '--color-text-secondary': '#605f52',
+      },
+      'variant:success': {
+        '--color-text-primary': '#1d1c11',
+        '--color-text-secondary': '#605f52',
+      },
+      'variant:warning': {
+        '--color-text-primary': '#1d1c11',
+        '--color-text-secondary': '#605f52',
+      },
+      'variant:error': {
+        '--color-text-primary': '#1d1c11',
+        '--color-text-secondary': '#605f52',
+      },
     },
 
     section: {
