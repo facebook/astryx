@@ -335,6 +335,50 @@ export const butterTheme = defineTheme({
         '--color-text-primary': '#1d1c11',
         '--color-text-secondary': '#605f52',
       },
+      'variant:blue': {
+        '--color-text-primary': '#1d1c11',
+        '--color-text-secondary': '#605f52',
+      },
+      'variant:cyan': {
+        '--color-text-primary': '#1d1c11',
+        '--color-text-secondary': '#605f52',
+      },
+      'variant:gray': {
+        '--color-text-primary': '#1d1c11',
+        '--color-text-secondary': '#605f52',
+      },
+      'variant:green': {
+        '--color-text-primary': '#1d1c11',
+        '--color-text-secondary': '#605f52',
+      },
+      'variant:orange': {
+        '--color-text-primary': '#1d1c11',
+        '--color-text-secondary': '#605f52',
+      },
+      'variant:pink': {
+        '--color-text-primary': '#1d1c11',
+        '--color-text-secondary': '#605f52',
+      },
+      'variant:purple': {
+        '--color-text-primary': '#1d1c11',
+        '--color-text-secondary': '#605f52',
+      },
+      'variant:red': {
+        '--color-text-primary': '#1d1c11',
+        '--color-text-secondary': '#605f52',
+      },
+      'variant:teal': {
+        '--color-text-primary': '#1d1c11',
+        '--color-text-secondary': '#605f52',
+      },
+      'variant:yellow': {
+        '--color-text-primary': '#1d1c11',
+        '--color-text-secondary': '#605f52',
+      },
+      'variant:muted': {
+        '--color-text-primary': '#1d1c11',
+        '--color-text-secondary': '#605f52',
+      },
     },
 
     section: {
