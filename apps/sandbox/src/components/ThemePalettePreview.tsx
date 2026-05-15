@@ -383,7 +383,7 @@ const S = {
     ({
       background: bg,
       borderRadius: 10,
-      border: '1px solid rgba(0,0,0,0.08)',
+      border: '1px solid light-dark(rgba(0,0,0,0.08), rgba(255,255,255,0.15))',
       height: 88,
     }) as React.CSSProperties,
   coreMeta: {
