@@ -2,23 +2,30 @@
 
 import {XDSVStack} from '@xds/core/Layout';
 import {stoneTheme} from '@xds/theme-stone/built';
+// `stonePalettes` is only exported from the source entry, not /built.
+import {stonePalettes} from '@xds/theme-stone';
 import {ThemePalettePreview} from '@/components/ThemePalettePreview';
 import type {TonalColor} from '@/components/ThemePalettePreview';
 
 const MONTSERRAT =
   '"Montserrat", "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
+// Pass the canonical hand-tuned `stonePalettes` ramps to the audit
+// drawer so its snap-to-ramp detector matches against the actual
+// stone palette values. Without this, tokens whose values come from
+// the canonical ramp show up as "off-ramp" against the pure HCT
+// generator's slightly different ramp.
 const TONAL_COLORS: TonalColor[] = [
-  {name: 'Stone Neutral', sourceHex: '#e2e2e2'},
-  {name: 'Blue', sourceHex: '#d7e4f5'},
-  {name: 'Cyan', sourceHex: '#cce8e5'},
-  {name: 'Green', sourceHex: '#d0e9ce', semantic: 'Success'},
-  {name: 'Teal', sourceHex: '#d4e7dc'},
-  {name: 'Yellow', sourceHex: '#f4e1b7', semantic: 'Warning'},
-  {name: 'Orange', sourceHex: '#ffdcbb'},
-  {name: 'Red', sourceHex: '#f9dcd7', semantic: 'Error'},
-  {name: 'Pink', sourceHex: '#f0dde8'},
-  {name: 'Purple', sourceHex: '#e8dff3'},
+  {name: 'Stone Neutral', sourceHex: '#e2e2e2', tones: stonePalettes.neutral},
+  {name: 'Blue', sourceHex: '#d7e4f5', tones: stonePalettes.blue},
+  {name: 'Cyan', sourceHex: '#cce8e5', tones: stonePalettes.cyan},
+  {name: 'Green', sourceHex: '#d0e9ce', semantic: 'Success', tones: stonePalettes.green},
+  {name: 'Teal', sourceHex: '#d4e7dc', tones: stonePalettes.teal},
+  {name: 'Yellow', sourceHex: '#f4e1b7', semantic: 'Warning', tones: stonePalettes.yellow},
+  {name: 'Orange', sourceHex: '#ffdcbb', tones: stonePalettes.orange},
+  {name: 'Red', sourceHex: '#f9dcd7', semantic: 'Error', tones: stonePalettes.red},
+  {name: 'Pink', sourceHex: '#f0dde8', tones: stonePalettes.pink},
+  {name: 'Purple', sourceHex: '#e8dff3', tones: stonePalettes.purple},
 ];
 
 const CORE = [

@@ -252,15 +252,31 @@ export interface TonalColor {
   semantic?: string;
   note?: string;
   /**
-   * Optional pre-computed tonal ramp keyed by tone (0-100).
-   * When provided, the preview renders these exact values instead of
-   * deriving them from `sourceHex` via the built-in HCT algorithm —
-   * use this to keep the displayed strip in sync with the theme's
-   * own hand-tuned palette (so card/badge variants visually match).
+   * Optional pre-computed canonical ramp keyed by tone (0-100).
+   *
+   * Two purposes, both served by the same field:
+   *
+   *   1. **Visible ramp accuracy** — when provided, the preview renders
+   *      these exact values instead of deriving them from `sourceHex`
+   *      via the built-in HCT algorithm, so the displayed strip stays
+   *      in sync with the theme's own hand-tuned palette (card/badge
+   *      variants visually match).
+   *
+   *   2. **Audit snap accuracy** — themes with hand-tuned palettes
+   *      (stone, gothic, y2k, butter) export `*Palettes` objects whose
+   *      values drift from the pure HCT generator by a couple of \u0394E
+   *      units. The audit drawer uses these canonical values for
+   *      snap-to-ramp matching so tokens whose values come from the
+   *      canonical ramp don't show up as "off-ramp".
    *
    * Numeric keys are interpreted as tone steps; non-numeric keys
-   * (e.g. `hue`, `chroma`) are ignored. This shape matches theme
-   * palette exports like `butterPalettes.blue`.
+   * (e.g. `hue`, `chroma`) are ignored. This permissive shape matches
+   * theme palette exports like `stonePalettes.red` (which carry both).
+   *
+   * Omit for themes that don't carry a custom-tuned ramp — the audit
+   * + preview both fall back to generating the ramp from `sourceHex`
+   * via HCT, which is correct for those themes (their tokens were
+   * generated the same way).
    */
   tones?: Readonly<Record<string | number, string | number>>;
   /**
