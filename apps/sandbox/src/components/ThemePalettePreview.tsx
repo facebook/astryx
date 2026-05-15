@@ -262,6 +262,14 @@ export interface ThemePalettePreviewProps {
    * would render identically.
    */
   singleMode?: Mode;
+  /**
+   * Optional theme-specific paragraph rendered under the "Elevations"
+   * section heading. Use this to describe the shadow design (e.g. "deepened
+   * drop with all-around 1px white inset for a Figma-style bezel" for
+   * neutral; "warm, low-alpha drop shadow stack" for stone). Defaults to a
+   * generic description that's accurate for any theme.
+   */
+  shadowDescription?: string;
 }
 
 type Mode = 'light' | 'dark';
@@ -775,7 +783,16 @@ function SurfacesSection({mode}: {mode: Mode}) {
  * so the inset rim used by the figma-style shadow tokens has a slightly
  * lighter base to catch; light mode keeps a white card.
  */
-function ElevationsSection({mode}: {mode: Mode}) {
+const DEFAULT_SHADOW_DESCRIPTION =
+  'Three shadow levels mapped to the components that use them.';
+
+function ElevationsSection({
+  mode,
+  description = DEFAULT_SHADOW_DESCRIPTION,
+}: {
+  mode: Mode;
+  description?: string;
+}) {
   const levels = [
     {
       label: 'Low — popovers / dropdowns / composer',
@@ -824,10 +841,7 @@ function ElevationsSection({mode}: {mode: Mode}) {
           margin: 0,
           marginBottom: 12,
         }}>
-        Three shadow levels mapped to the components that use them. In dark
-        mode each shadow combines a deepened drop with an all-around 1px
-        white inset (Figma-style bezel) so surfaces lift visibly against
-        the canvas.
+        {description}
       </p>
       <div
         style={{
@@ -1029,6 +1043,7 @@ function ModeColumn({
   coreSwatches,
   extraSections,
   leadingExtras,
+  shadowDescription,
   bare = false,
 }: {
   theme: XDSDefinedTheme;
@@ -1036,6 +1051,7 @@ function ModeColumn({
   coreSwatches?: CoreSwatch[];
   extraSections?: React.ReactNode;
   leadingExtras?: React.ReactNode;
+  shadowDescription?: string;
   /**
    * When true, render the column as a transparent layout container
    * (no background, border, or padding) — the outer page provides the
@@ -1073,7 +1089,7 @@ function ModeColumn({
           <CheckboxRadioSwitchSection />
           <CardVariantsSection />
           <SurfacesSection mode={mode} />
-          <ElevationsSection mode={mode} />
+          <ElevationsSection mode={mode} description={shadowDescription} />
           {extraSections}
         </div>
       </XDSLayerProvider>
@@ -1093,6 +1109,7 @@ export function ThemePalettePreview({
   coreSwatches,
   extraSections,
   leadingExtras,
+  shadowDescription,
   componentPreviewOnly = false,
   singleMode,
 }: ThemePalettePreviewProps) {
@@ -1109,6 +1126,7 @@ export function ThemePalettePreview({
           coreSwatches={coreSwatches}
           extraSections={extraSections}
           leadingExtras={leadingExtras}
+          shadowDescription={shadowDescription}
           bare
         />
       );
@@ -1121,6 +1139,7 @@ export function ThemePalettePreview({
           coreSwatches={coreSwatches}
           extraSections={extraSections}
           leadingExtras={leadingExtras}
+          shadowDescription={shadowDescription}
         />
         <ModeColumn
           theme={theme}
@@ -1128,6 +1147,7 @@ export function ThemePalettePreview({
           coreSwatches={coreSwatches}
           extraSections={extraSections}
           leadingExtras={leadingExtras}
+          shadowDescription={shadowDescription}
         />
       </>
     );

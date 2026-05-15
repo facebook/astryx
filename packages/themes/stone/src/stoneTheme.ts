@@ -3,11 +3,31 @@
  *
  * A warm, earthy neutral theme inspired by natural stone and sandstone.
  * Core palette: #28282A, #84848B, #D8D8DB, #f3f3f5, #FFFFFF
- * Uses Montserrat for headings and Figtree for body text.
+ * Montserrat for headings, Figtree for body, JetBrains Mono for code.
  */
 
 import {defineTheme, defineSyntaxTheme} from '@xds/core/theme';
 import {stoneIconRegistry} from './icons';
+
+/**
+ * Input status border overrides (per-component, per-status). All 9 input
+ * components share inputStatusBorderStyles in core, which read
+ * --color-{success,warning,error} (T30 light / T80 dark = saturated text
+ * tone). Stone redefines those vars inside each input's status scope to
+ * T60 light / T70 dark so the border (and the matching status icon) reads
+ * as a softer hue rim, in line with the gentle T90 status message bubble.
+ */
+const INPUT_STATUS_VARS = {
+  'status:success': {
+    '--color-success': 'light-dark(#7f977e, #99b298)',  // Green T60 / T70
+  },
+  'status:warning': {
+    '--color-warning': 'light-dark(#9f8f68, #bbaa81)',   // Yellow T60 / T70
+  },
+  'status:error': {
+    '--color-error': 'light-dark(#a58b86, #c0a5a1)',     // Red T60 / T70
+  },
+} as const;
 
 /** Stone syntax palette — derived from categorical hues at T40 (light) / T70 (dark). */
 const stoneSyntax = defineSyntaxTheme({
@@ -37,17 +57,20 @@ export const stoneTheme = defineTheme({
     scale: {base: 14, ratio: 1.25},
     body: {
       family: 'Figtree',
+      url: 'https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap',
       fallbacks:
         '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
     },
     heading: {
       family: 'Montserrat',
+      url: 'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap',
       fallbacks:
         '"Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
       weights: {3: 'bold', 4: 'bold'},
     },
     code: {
       family: 'JetBrains Mono',
+      url: 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap',
       fallbacks: '"SF Mono", Monaco, Consolas, monospace',
     },
   },
@@ -72,7 +95,7 @@ export const stoneTheme = defineTheme({
     '--color-overlay': ['#28282a80', '#28282aCC'],
     '--color-overlay-hover': ['#28282a0D', '#f3f3f50D'],
     '--color-overlay-pressed': ['#28282a1A', '#f3f3f51A'],
-    '--color-background-muted': ['#f3f3f5', '#28282a'],
+    '--color-background-muted': ['#dddcdf', '#3b3b3f'],   // T88 C=1.5 / T25 C=3
 
     // Text — H=291
     '--color-text-primary': ['#28282a', '#f3f3f5'],        // T16 / T96
@@ -82,9 +105,10 @@ export const stoneTheme = defineTheme({
     '--color-on-dark': '#FFFFFF',
     '--color-on-light': '#28282a',
     '--color-on-accent': ['#FFFFFF', '#28282a'],
-    '--color-on-success': ['#374c36', '#b4cdb2'],          // Green T30 / T80
-    '--color-on-error': ['#58413e', '#dcc0bc'],             // Red T30 / T80
-    '--color-on-warning': ['#524622', '#d7c59c'],           // Yellow T30 / T80
+    // Text on top of matching status surface (badge fill, banner content).
+    '--color-on-success': ['#374c36', '#d0e9ce'],          // Green T30 / T90
+    '--color-on-error': ['#58413e', '#f9dcd7'],             // Red T30 / T90
+    '--color-on-warning': ['#524622', '#f4e1b7'],           // Yellow T30 / T90
 
     // Icon — H=291
     '--color-icon-accent': ['#28282a', '#f3f3f5'],
@@ -110,73 +134,82 @@ export const stoneTheme = defineTheme({
     '--color-border-emphasized': ['#83838a', '#5e5e61'],    // T55 C=4 / T40 C=2
 
     // Effects — H=291
-    '--color-skeleton': ['#d7d7da', '#5e5e61'],             // T86 C=1.6 / T40 C=2
+    '--color-skeleton': ['#d4d4da', '#5e5e64'],             // T85 / T40 from H=291 C=3
     '--color-shadow': ['#28282a1A', '#0000004D'],
     '--color-tint-hover': ['black', 'white'],
 
     // Typography override
     '--text-supporting-size': '12px',
 
-    // Categorical — Blue (indigo blue)
+    // Categorical hues
+    //   Light: T90 solid bg + T30 text (pastel surface, dark text)
+    //   Dark:  T35 solid bg + T90 text — snaps to canonical palette stops
+    //          per theming-infra.mdc §7. T90 dark text is the SAME hex as
+    //          the light-mode bg pastel — clean palette symmetry, ~6–9:1
+    //          contrast on the T35 surface across all hues (passes AA Body).
+    // Borders: light T85 / dark T25 — one step inward from surface in both
+    //          modes, matching the light-mode T90/T85 spacing.
+
     // Categorical — Blue H=265 C=10
-    '--color-background-blue': ['#d7e4f5', '#a0acbd'],
-    '--color-border-blue': ['#c9d6e7', '#939faf'],
-    '--color-icon-blue': ['#3c4856', '#1b2734'],
-    '--color-text-blue': ['#3c4856', '#1b2734'],
+    '--color-background-blue': ['#d7e4f5', '#485362'],     // light T90 / dark T35
+    '--color-border-blue': ['#c9d6e7', '#313c4a'],          // light T85 / dark T25
+    '--color-icon-blue': ['#3c4856', '#d7e4f5'],            // light T30 / dark T90
+    '--color-text-blue': ['#3c4856', '#d7e4f5'],
 
     // Categorical — Cyan H=190 C=10
-    '--color-background-cyan': ['#cce8e5', '#95b1ae'],
-    '--color-border-cyan': ['#bedad7', '#88a3a0'],
-    '--color-icon-cyan': ['#334b49', '#122a28'],
-    '--color-text-cyan': ['#334b49', '#122a28'],
+    '--color-background-cyan': ['#cce8e5', '#3e5755'],
+    '--color-border-cyan': ['#bedad7', '#28403e'],
+    '--color-icon-cyan': ['#334b49', '#cce8e5'],
+    '--color-text-cyan': ['#334b49', '#cce8e5'],
 
-    // Categorical — Gray (pure neutral, C=0)
-    '--color-background-gray': ['#e2e2e2', '#ababab'],
-    '--color-border-gray': ['#d4d4d4', '#9e9e9e'],
-    '--color-icon-gray': ['#474747', '#262626'],
-    '--color-text-gray': ['#474747', '#262626'],
+    // Categorical — Gray (pure neutral, C=0). Same T35/T25/T90 pattern from
+    // the neutral H=291 C=3 ramp.
+    '--color-background-gray': ['#e2e2e2', '#525257'],     // dark neutral T35
+    '--color-border-gray': ['#d4d4d4', '#3b3b3f'],          // dark neutral T25
+    '--color-icon-gray': ['#474747', '#e2e2e8'],            // dark neutral T90
+    '--color-text-gray': ['#474747', '#e2e2e8'],
 
     // Categorical — Green H=142 C=17
-    '--color-background-green': ['#d0e9ce', '#99b298'],
-    '--color-border-green': ['#c2dbc0', '#8ca48b'],
-    '--color-icon-green': ['#374c36', '#162a16'],
-    '--color-text-green': ['#374c36', '#162a16'],
+    '--color-background-green': ['#d0e9ce', '#425841'],
+    '--color-border-green': ['#c2dbc0', '#2b402b'],
+    '--color-icon-green': ['#374c36', '#d0e9ce'],
+    '--color-text-green': ['#374c36', '#d0e9ce'],
 
     // Categorical — Orange H=70 C=22
-    '--color-background-orange': ['#ffdcbb', '#c6a586'],
-    '--color-border-orange': ['#f1ceae', '#b89879'],
-    '--color-icon-orange': ['#5b4227', '#372104'],
-    '--color-text-orange': ['#5b4227', '#372104'],
+    '--color-background-orange': ['#ffdcbb', '#684d32'],
+    '--color-border-orange': ['#f1ceae', '#4f361c'],
+    '--color-icon-orange': ['#5b4227', '#ffdcbb'],
+    '--color-text-orange': ['#5b4227', '#ffdcbb'],
 
     // Categorical — Pink H=340 C=9
-    '--color-background-pink': ['#f0dde8', '#b8a6b1'],
-    '--color-border-pink': ['#e2cfda', '#ab99a3'],
-    '--color-icon-pink': ['#52424c', '#30222a'],
-    '--color-text-pink': ['#52424c', '#30222a'],
+    '--color-background-pink': ['#f0dde8', '#5e4e57'],
+    '--color-border-pink': ['#e2cfda', '#463740'],
+    '--color-icon-pink': ['#52424c', '#f0dde8'],
+    '--color-text-pink': ['#52424c', '#f0dde8'],
 
     // Categorical — Purple H=307 C=11
-    '--color-background-purple': ['#e8dff3', '#b0a8bb'],
-    '--color-border-purple': ['#d9d1e5', '#a39aad'],
-    '--color-icon-purple': ['#4b4454', '#292332'],
-    '--color-text-purple': ['#4b4454', '#292332'],
+    '--color-background-purple': ['#e8dff3', '#564f60'],
+    '--color-border-purple': ['#d9d1e5', '#3f3949'],
+    '--color-icon-purple': ['#4b4454', '#e8dff3'],
+    '--color-text-purple': ['#4b4454', '#e8dff3'],
 
     // Categorical — Red H=33 C=11
-    '--color-background-red': ['#f9dcd7', '#c0a5a1'],
-    '--color-border-red': ['#ebcec9', '#b39893'],
-    '--color-icon-red': ['#58413e', '#35211e'],
-    '--color-text-red': ['#58413e', '#35211e'],
+    '--color-background-red': ['#f9dcd7', '#644d49'],
+    '--color-border-red': ['#ebcec9', '#4c3633'],
+    '--color-icon-red': ['#58413e', '#f9dcd7'],
+    '--color-text-red': ['#58413e', '#f9dcd7'],
 
     // Categorical — Teal H=158 C=9
-    '--color-background-teal': ['#d4e7dc', '#9dafa5'],
-    '--color-border-teal': ['#c6d9ce', '#90a297'],
-    '--color-icon-teal': ['#3b4a41', '#1a2921'],
-    '--color-text-teal': ['#3b4a41', '#1a2921'],
+    '--color-background-teal': ['#d4e7dc', '#46564d'],
+    '--color-border-teal': ['#c6d9ce', '#303f36'],
+    '--color-icon-teal': ['#3b4a41', '#d4e7dc'],
+    '--color-text-teal': ['#3b4a41', '#d4e7dc'],
 
     // Categorical — Yellow H=90 C=23
-    '--color-background-yellow': ['#f4e1b7', '#bbaa81'],
-    '--color-border-yellow': ['#e5d3a9', '#ad9c75'],
-    '--color-icon-yellow': ['#524622', '#2f2500'],
-    '--color-text-yellow': ['#524622', '#2f2500'],
+    '--color-background-yellow': ['#f4e1b7', '#5e512d'],
+    '--color-border-yellow': ['#e5d3a9', '#463a18'],
+    '--color-icon-yellow': ['#524622', '#f4e1b7'],
+    '--color-text-yellow': ['#524622', '#f4e1b7'],
 
     // =========================================================================
     // Radius — clean and subtle
@@ -219,60 +252,128 @@ export const stoneTheme = defineTheme({
         },
       },
       'variant:destructive': {
-        backgroundColor: 'light-dark(#f9dcd7, #dcc0bc)',
-        color: 'light-dark(#58413e, #4c3633)',
+        backgroundColor: 'var(--color-background-red)',
+        color: 'var(--color-text-red)',
       },
     },
 
+    // Semantic variants point at categorical hue tokens — single source of truth.
     badge: {
       'variant:info': {
-        backgroundColor: 'light-dark(#d7e4f5, #bbc8d9)',
-        color: 'light-dark(#3c4856, #313c4a)',
+        backgroundColor: 'var(--color-background-blue)',
+        color: 'var(--color-text-blue)',
       },
       'variant:neutral': {
-        backgroundColor: 'light-dark(#e2e2e2, #c6c6c6)',
-        color: 'light-dark(#474747, #3b3b3b)',
+        backgroundColor: 'var(--color-background-gray)',
+        color: 'var(--color-text-gray)',
       },
       'variant:success': {
-        backgroundColor: 'light-dark(#d0e9ce, #b4cdb2)',
-        color: 'light-dark(#374c36, #2b402b)',
+        backgroundColor: 'var(--color-background-green)',
+        color: 'var(--color-text-green)',
       },
       'variant:warning': {
-        backgroundColor: 'light-dark(#f4e1b7, #d7c59c)',
-        color: 'light-dark(#524622, #463a18)',
+        backgroundColor: 'var(--color-background-yellow)',
+        color: 'var(--color-text-yellow)',
       },
       'variant:error': {
-        backgroundColor: 'light-dark(#f9dcd7, #dcc0bc)',
-        color: 'light-dark(#58413e, #4c3633)',
+        backgroundColor: 'var(--color-background-red)',
+        color: 'var(--color-text-red)',
       },
     },
 
+    // StyleX paints the banner surface from @layer priority4 (above
+    // @layer xds-theme), so a direct backgroundColor override loses the
+    // cascade. Redefine the muted token instead so StyleX's var() resolves
+    // to the categorical bg in our scope.
     banner: {
       'status:info': {
-        backgroundColor: 'light-dark(#d7e4f5, #bbc8d9)',
-        '--color-text-primary': 'light-dark(#3c4856, #313c4a)',
-        '--color-text-secondary': 'light-dark(#3c4856, #313c4a)',
-        '--color-accent': 'light-dark(#3c4856, #313c4a)',
+        '--color-accent-muted': 'var(--color-background-blue)',
+        '--color-text-primary': 'var(--color-text-blue)',
+        '--color-text-secondary': 'var(--color-text-blue)',
+        '--color-accent': 'var(--color-text-blue)',
       },
       'status:success': {
-        backgroundColor: 'light-dark(#d0e9ce, #b4cdb2)',
-        '--color-text-primary': 'light-dark(#374c36, #2b402b)',
-        '--color-text-secondary': 'light-dark(#374c36, #2b402b)',
-        '--color-success': 'light-dark(#374c36, #2b402b)',
+        '--color-success-muted': 'var(--color-background-green)',
+        '--color-text-primary': 'var(--color-text-green)',
+        '--color-text-secondary': 'var(--color-text-green)',
+        '--color-success': 'var(--color-text-green)',
       },
       'status:warning': {
-        backgroundColor: 'light-dark(#f4e1b7, #d7c59c)',
-        '--color-text-primary': 'light-dark(#524622, #463a18)',
-        '--color-text-secondary': 'light-dark(#524622, #463a18)',
-        '--color-warning': 'light-dark(#524622, #463a18)',
+        '--color-warning-muted': 'var(--color-background-yellow)',
+        '--color-text-primary': 'var(--color-text-yellow)',
+        '--color-text-secondary': 'var(--color-text-yellow)',
+        '--color-warning': 'var(--color-text-yellow)',
       },
       'status:error': {
-        backgroundColor: 'light-dark(#f9dcd7, #dcc0bc)',
-        '--color-text-primary': 'light-dark(#58413e, #4c3633)',
-        '--color-text-secondary': 'light-dark(#58413e, #4c3633)',
-        '--color-error': 'light-dark(#58413e, #4c3633)',
+        '--color-error-muted': 'var(--color-background-red)',
+        '--color-text-primary': 'var(--color-text-red)',
+        '--color-text-secondary': 'var(--color-text-red)',
+        '--color-error': 'var(--color-text-red)',
       },
     },
+
+    // Fill: light = T90 (same hex as banner/badge surface — fill reads as
+    // the same color family as the matching status surface). Dark = T70.
+    // Hexes from the preview Tonal Palettes ramp. accent (default) +
+    // indeterminate both route to blue for the in-progress / loading look.
+    'progressbar-fill': {
+      'variant:accent': {
+        backgroundColor: 'light-dark(#d7e4f5, #a0acbc)',  // Blue T90 / T70
+      },
+      'variant:positive': {
+        backgroundColor: 'light-dark(#d0e9ce, #9ab298)',  // Green T90 / T70
+      },
+      'variant:warning': {
+        backgroundColor: 'light-dark(#f4e1b7, #bbaa82)',   // Yellow T90 / T70
+      },
+      'variant:negative': {
+        backgroundColor: 'light-dark(#f9dcd7, #c0a5a0)',   // Red T90 / T70
+      },
+    },
+
+    // Track default --color-background-muted reads near-body in stone;
+    // redirect to --color-skeleton so the channel stays visible.
+    'progressbar-track': {
+      base: {
+        backgroundColor: 'var(--color-skeleton)',
+      },
+    },
+
+    // Switch off-state track reads --color-background-gray by default.
+    // Redefine it inside the switch scope to --color-skeleton, matching
+    // the ProgressBar track. The on-state reads --color-accent (unaffected);
+    // disabled-off also picks up --color-skeleton for consistency.
+    switch: {
+      base: {
+        '--color-background-gray': 'var(--color-skeleton)',
+      },
+    },
+
+    // FieldStatus surface matches badge — see badge override above.
+    'field-status': {
+      'type:success': {
+        backgroundColor: 'var(--color-background-green)',
+      },
+      'type:warning': {
+        backgroundColor: 'var(--color-background-yellow)',
+      },
+      'type:error': {
+        backgroundColor: 'var(--color-background-red)',
+      },
+    },
+
+    // Input status borders + icons across all 9 input components share the
+    // same softer T60/T70 redirection. See INPUT_STATUS_VARS above.
+    'text-input': INPUT_STATUS_VARS,
+    'textarea': INPUT_STATUS_VARS,
+    'number-input': INPUT_STATUS_VARS,
+    'date-input': INPUT_STATUS_VARS,
+    'time-input': INPUT_STATUS_VARS,
+    'selector': INPUT_STATUS_VARS,
+    'multi-selector': INPUT_STATUS_VARS,
+    'typeahead': INPUT_STATUS_VARS,
+    'tokenizer': INPUT_STATUS_VARS,
+
 
 
     card: {
