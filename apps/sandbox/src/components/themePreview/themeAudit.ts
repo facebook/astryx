@@ -228,14 +228,24 @@ export interface TokenColor {
   dark: string | null;
   /** True when value is a `var(--…)` reference we can't statically resolve */
   indirect: boolean;
+  /**
+   * True when EITHER side of the token's raw value carries non-fully-opaque
+   * alpha — `#aabbccdd` (8-digit hex), `#abcd` (4-digit hex), or `rgba(…)`
+   * with alpha < 1. The audit drawer suppresses the snap button on these
+   * tokens because the snap targets are 6-digit ramp hexes — committing
+   * them would silently drop the transparency. The user can still edit
+   * alpha tokens via the Custom tab in the popover (where they retain
+   * the alpha when typing).
+   */
+  hasAlpha: boolean;
 }
 
 export function parseTokenColor(value: string | undefined): TokenColor {
-  if (!value) return {light: null, dark: null, indirect: false};
+  if (!value) return {light: null, dark: null, indirect: false, hasAlpha: false};
   const trimmed = value.trim();
 
   if (trimmed.startsWith('var(')) {
-    return {light: null, dark: null, indirect: true};
+    return {light: null, dark: null, indirect: true, hasAlpha: false};
   }
 
   const ld = trimmed.match(LIGHT_DARK_RE);
@@ -244,11 +254,43 @@ export function parseTokenColor(value: string | undefined): TokenColor {
       light: normalizeColorString(ld[1]),
       dark: normalizeColorString(ld[2]),
       indirect: false,
+      hasAlpha: containsAlpha(ld[1]) || containsAlpha(ld[2]),
     };
   }
 
   const single = normalizeColorString(trimmed);
-  return {light: single, dark: single, indirect: false};
+  return {
+    light: single,
+    dark: single,
+    indirect: false,
+    hasAlpha: containsAlpha(trimmed),
+  };
+}
+
+/**
+ * Detect whether a CSS color expression carries non-fully-opaque alpha:
+ *   - 8-digit hex `#aabbccdd` (last two hex digits are the alpha channel)
+ *   - 4-digit hex `#abcd` (last digit is the alpha channel)
+ *   - `rgba(...)` form with a 4th value
+ *
+ * Returns false for plain `#rrggbb` / `#rgb` / `rgb(...)` / `transparent` /
+ * `black` / `white` / anything we don't parse.
+ */
+function containsAlpha(input: string): boolean {
+  const v = input.trim();
+  if (/^#[0-9a-fA-F]{8}$/.test(v)) return true;
+  if (/^#[0-9a-fA-F]{4}$/.test(v)) return true;
+  if (/^rgba\(/i.test(v)) {
+    // rgba(r,g,b,a) — only return true when alpha is parseable AND < 1
+    const m = v.match(/^rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*([\d.]+)\s*\)/i);
+    if (m) {
+      const a = Number(m[1]);
+      return Number.isFinite(a) && a < 1;
+    }
+    // Couldn't parse the alpha but the function name said rgba — assume yes.
+    return true;
+  }
+  return false;
 }
 
 /**
@@ -303,6 +345,14 @@ export interface SnapAuditEntry {
   darkMatch: SnapMatch | null;
   /** True for `var(--…)` references that we couldn't resolve */
   indirect: boolean;
+  /**
+   * True when the raw token value carries non-fully-opaque alpha. The
+   * audit drawer suppresses the snap button on these rows because snap
+   * targets are 6-digit ramp hexes — committing them would silently
+   * drop the transparency. The user can still edit alpha tokens via
+   * the Custom tab in the popover, where typed hexes preserve alpha.
+   */
+  hasAlpha: boolean;
 }
 
 /**
@@ -331,11 +381,11 @@ export function auditSnapToRamps(
   for (const [name, value] of Object.entries(theme.tokens)) {
     const category = categorizeToken(name);
     if (!eligibleCategories.includes(category)) continue;
-    const {light, dark, indirect} = parseTokenColor(value);
+    const {light, dark, indirect, hasAlpha} = parseTokenColor(value);
     if (!light && !dark && !indirect) continue;
     const lightMatch = light ? findClosestRampStep(light, rampSeeds, 'light') : null;
     const darkMatch = dark ? findClosestRampStep(dark, rampSeeds, 'dark') : null;
-    out.push({name, category, light, dark, lightMatch, darkMatch, indirect});
+    out.push({name, category, light, dark, lightMatch, darkMatch, indirect, hasAlpha});
   }
   // Sort: worst (off-ramp) first so the noisy rows surface to the top.
   // Within the same verdict, alphabetical for stable ordering.

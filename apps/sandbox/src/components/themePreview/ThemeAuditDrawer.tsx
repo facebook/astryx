@@ -768,13 +768,30 @@ function ColorRow({
           // Only shown for `near` / `off` rows since `exact` / `snapped`
           // rows are already on-ramp and `edited` rows show `reset`
           // instead.
-          <XDSButton
-            label="snap"
-            variant="ghost"
-            size="sm"
-            tooltip={`Snap to ${match.rampName} T${match.tone} (ΔE ${match.deltaE.toFixed(1)})`}
-            onClick={() => onPickPalette(match.rampName, match.tone as ToneStep)}
-          />
+          //
+          // Suppress on alpha tokens (overlays, shadows, muted surfaces):
+          // snap targets are 6-digit ramp hexes, so committing them
+          // would silently drop the transparency. Show a small "alpha"
+          // hint instead so the user knows why the affordance is
+          // missing — they can still edit via the popover Custom tab,
+          // where typed hexes preserve alpha.
+          snap.hasAlpha ? (
+            <span
+              title="Snap suppressed: this token carries alpha that the 6-digit ramp swatch would drop. Use the Custom tab in the popover to edit while keeping transparency."
+              style={{cursor: 'help'}}>
+              <XDSText type="supporting" color="secondary">
+                alpha
+              </XDSText>
+            </span>
+          ) : (
+            <XDSButton
+              label="snap"
+              variant="ghost"
+              size="sm"
+              tooltip={`Snap to ${match.rampName} T${match.tone} (ΔE ${match.deltaE.toFixed(1)})`}
+              onClick={() => onPickPalette(match.rampName, match.tone as ToneStep)}
+            />
+          )
         ) : null}
       </div>
     </div>
