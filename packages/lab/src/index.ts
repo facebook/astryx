@@ -108,6 +108,11 @@ export {
   type XDSChartColorsAPI,
   type SequentialHue,
   type TokenResolver,
+  compactNumber,
+  currency,
+  percent,
+  shortDate,
+  monthYear,
 } from './Chart';
 
 // Radial charts — spider, pie, donut

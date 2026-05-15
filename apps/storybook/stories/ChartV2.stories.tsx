@@ -2,7 +2,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSChartV2 as XDSChart, bar, line, area} from '@xds/lab';
-import {XDSChartGrid, XDSChartAxis} from '@xds/lab';
+import {XDSChartGrid, XDSChartAxis, currency} from '@xds/lab';
 
 const meta: Meta<typeof XDSChart> = {
   title: 'Lab/XDSChart v2',
@@ -40,7 +40,7 @@ export const SimpleBar: StoryObj = {
       axes={
         <>
           <XDSChartAxis position="bottom" />
-          <XDSChartAxis position="left" />
+          <XDSChartAxis position="left" tickFormat={currency()} />
         </>
       }
       height={300}

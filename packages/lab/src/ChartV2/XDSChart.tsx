@@ -43,9 +43,7 @@ export interface XDSChartProps {
   legend?: boolean | XDSChartLegendProps;
   interactions?: ReactNode;
   children?: ReactNode;
-  /** Chart title displayed above the visualization */
   title?: string;
-  /** Subtitle displayed below the title */
   subtitle?: string;
 }
 

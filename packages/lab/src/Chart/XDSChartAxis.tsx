@@ -18,8 +18,12 @@ export interface XDSChartAxisProps {
   position: 'top' | 'right' | 'bottom' | 'left';
   /** Number of ticks (approximate — d3 decides final count) */
   tickCount?: number;
+  /** Maximum number of tick labels to show. Labels are evenly skipped when exceeded. */
+  maxTicks?: number;
   /** Custom tick formatter */
   tickFormat?: (value: unknown) => string;
+  /** Truncate labels to this many characters (appends "\u2026"). */
+  truncate?: number;
   /** Enable smooth transitions for streaming (default: true) */
   animated?: boolean;
 }
@@ -31,13 +35,16 @@ export interface XDSChartAxisProps {
  * @example
  * ```
  * <XDSChartAxis position="bottom" />
- * <XDSChartAxis position="left" tickCount={5} />
+ * <XDSChartAxis position="left" tickCount={5} tickFormat={currency} />
+ * <XDSChartAxis position="bottom" maxTicks={6} truncate={10} />
  * ```
  */
 export function XDSChartAxis({
   position,
   tickCount = 5,
+  maxTicks,
   tickFormat,
+  truncate,
   animated = true,
 }: XDSChartAxisProps) {
   const {width, height, xScale, yScale} = useChart();
@@ -46,20 +53,30 @@ export function XDSChartAxis({
   const scale = isHorizontal ? xScale : yScale;
 
   const ticks = useMemo(() => {
+    let allTicks: {value: unknown; offset: number}[];
     if (isBandScale(scale)) {
-      return scale.domain().map(d => ({
+      allTicks = scale.domain().map(d => ({
         value: d,
         offset: (scale(d) ?? 0) + scale.bandwidth() / 2,
       }));
+    } else {
+      const linearScale = scale as
+        | ScaleLinear<number, number>
+        | ScaleTime<number, number>;
+      allTicks = linearScale.ticks(tickCount).map(d => ({
+        value: d,
+        offset: linearScale(d as number & Date),
+      }));
     }
-    const linearScale = scale as
-      | ScaleLinear<number, number>
-      | ScaleTime<number, number>;
-    return linearScale.ticks(tickCount).map(d => ({
-      value: d,
-      offset: linearScale(d as number & Date),
-    }));
-  }, [scale, tickCount]);
+
+    // Auto-skip: show every Nth label if maxTicks is exceeded
+    if (maxTicks && allTicks.length > maxTicks) {
+      const step = Math.ceil(allTicks.length / maxTicks);
+      allTicks = allTicks.filter((_, i) => i % step === 0);
+    }
+
+    return allTicks;
+  }, [scale, tickCount, maxTicks]);
 
   const transform =
     position === 'bottom'
@@ -81,7 +98,13 @@ export function XDSChartAxis({
     return 0;
   })();
 
-  const format = tickFormat ?? String;
+  const baseFormat = tickFormat ?? String;
+  const format = truncate
+    ? (value: unknown) => {
+        const str = baseFormat(value);
+        return str.length > truncate ? str.slice(0, truncate) + '\u2026' : str;
+      }
+    : baseFormat;
   const tickSize = 6;
 
   // Transition style for smooth tick movement during streaming
