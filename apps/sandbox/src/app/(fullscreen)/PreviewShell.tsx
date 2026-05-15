@@ -15,7 +15,7 @@ import {
 import {XDSTreeList} from '@xds/core/TreeList';
 import type {XDSTreeListItemData} from '@xds/core/TreeList';
 import {categories} from '../sandboxPages';
-import {useThemeControls} from '../providers';
+import {useThemeControls, SANDBOX_THEMES} from '../providers';
 import {sourceRegistry} from '../../generated/sourceRegistry';
 import {templates} from '../../generated/templateRegistry';
 import {blocks} from '../../generated/blockRegistry';
@@ -868,21 +868,16 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
 
         <XDSDropdownMenu
           button={{
-            label: themeName.charAt(0).toUpperCase() + themeName.slice(1),
+            label:
+              SANDBOX_THEMES.find(t => t.id === themeName)?.label ?? themeName,
             variant: 'ghost',
             size: 'sm',
           }}
           hasChevron
-          items={[
-            {label: 'Default', onClick: () => setThemeName('default')},
-            {label: 'Neutral', onClick: () => setThemeName('neutral')},
-            {label: 'Brutalist', onClick: () => setThemeName('brutalist')},
-            {label: 'Matcha', onClick: () => setThemeName('matcha')},
-            {label: 'Daily', onClick: () => setThemeName('daily')},
-            {label: 'Stone', onClick: () => setThemeName('stone')},
-            {label: 'Gothic', onClick: () => setThemeName('gothic')},
-            {label: 'Chocolate', onClick: () => setThemeName('chocolate')},
-          ]}
+          items={SANDBOX_THEMES.map(({id, label}) => ({
+            label,
+            onClick: () => setThemeName(id),
+          }))}
         />
         <XDSButton
           variant="ghost"
