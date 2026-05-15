@@ -111,7 +111,7 @@ export function sizeCanvas(
  * Call from a useEffect. Returns a cleanup function.
  */
 export function mountCanvasOverSVG(
-  svgMarker: SVGElement,
+  svgMarker: SVGGraphicsElement,
   canvas: HTMLCanvasElement,
   width: number,
   height: number,
@@ -134,7 +134,7 @@ export function mountCanvasOverSVG(
   // This is a Tier 1 guarantee — we derive position from the SVG, not from props.
   const svgRect = svg.getBoundingClientRect();
   const parentRect = parent.getBoundingClientRect();
-  const markerCTM = (svgMarker as SVGGraphicsElement).getScreenCTM();
+  const markerCTM = svgMarker.getScreenCTM();
   if (markerCTM) {
     canvas.style.left = `${markerCTM.e - parentRect.left}px`;
     canvas.style.top = `${markerCTM.f - parentRect.top}px`;
