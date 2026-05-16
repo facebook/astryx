@@ -385,7 +385,7 @@ const S = {
     gap: 24,
   } as React.CSSProperties,
   modeCol: (bg: string, fg: string) =>
-    ({
+    (({
       background: bg,
       color: fg,
       border: '1px solid var(--color-border)',
@@ -393,8 +393,8 @@ const S = {
       padding: 24,
       display: 'flex',
       flexDirection: 'column' as const,
-      gap: 28,
-    }) as React.CSSProperties,
+      gap: 28
+    }) as React.CSSProperties),
   modeLabel: {
     fontSize: 11,
     fontWeight: 600,
@@ -417,12 +417,12 @@ const S = {
     gap: 10,
   } as React.CSSProperties,
   coreSwatch: (bg: string) =>
-    ({
+    (({
       background: bg,
       borderRadius: 10,
       border: '1px solid light-dark(rgba(0,0,0,0.08), rgba(255,255,255,0.15))',
-      height: 88,
-    }) as React.CSSProperties,
+      height: 88
+    }) as React.CSSProperties),
   coreMeta: {
     marginTop: 6,
     fontFamily: MONO,
@@ -441,12 +441,12 @@ const S = {
     gap: 4,
   } as React.CSSProperties,
   surfaceSwatch: (bg: string, ring: string) =>
-    ({
+    (({
       height: 56,
       background: bg,
       borderRadius: 8,
-      border: `1px solid ${ring}`,
-    }) as React.CSSProperties,
+      border: `1px solid ${ring}`
+    }) as React.CSSProperties),
   surfaceMeta: {
     fontFamily: MONO,
     fontSize: 9.5,
@@ -474,22 +474,22 @@ const S = {
     border: '1px solid rgba(0,0,0,0.06)',
   } as React.CSSProperties,
   tonalCell: (bg: string) =>
-    ({
+    (({
       flex: 1,
       height: 36,
       background: bg,
       display: 'flex',
       alignItems: 'flex-end',
       justifyContent: 'center',
-      paddingBottom: 2,
-    }) as React.CSSProperties,
+      paddingBottom: 2
+    }) as React.CSSProperties),
   tonalNum: (tone: number) =>
-    ({
+    (({
       fontSize: 7,
       fontFamily: MONO,
       color: tone >= 50 ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.5)',
-      pointerEvents: 'none' as const,
-    }) as React.CSSProperties,
+      pointerEvents: 'none' as const
+    }) as React.CSSProperties),
   tonalHct: {
     width: 60,
     flexShrink: 0,
@@ -499,7 +499,7 @@ const S = {
     textAlign: 'right' as const,
   } as React.CSSProperties,
   markerDot: (tone: number) =>
-    ({
+    (({
       position: 'absolute' as const,
       top: 2,
       left: '50%',
@@ -513,18 +513,18 @@ const S = {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      lineHeight: 1,
-    }) as React.CSSProperties,
+      lineHeight: 1
+    }) as React.CSSProperties),
   // Pill shows the token count when more than one token snaps to the same
   // tone step. Stays inside the marker dot so the strip layout is unchanged.
   markerCount: (tone: number) =>
-    ({
+    (({
       fontSize: 7.5,
       fontWeight: 700,
       fontFamily: MONO,
       color: tone >= 50 ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.95)',
-      pointerEvents: 'none' as const,
-    }) as React.CSSProperties,
+      pointerEvents: 'none' as const
+    }) as React.CSSProperties),
 };
 
 // =============================================================================
@@ -726,7 +726,7 @@ function ProgressBarSection() {
         <XDSProgressBar
           value={40}
           label="Upload"
-          variant="positive"
+          variant='success'
           hasValueLabel
         />
         <XDSProgressBar

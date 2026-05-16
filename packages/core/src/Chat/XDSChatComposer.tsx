@@ -343,7 +343,7 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
       <XDSIcon
         icon={status.type === 'error' ? 'error' : 'warning'}
         size="md"
-        color={status.type === 'error' ? 'negative' : 'warning'}
+        color={status.type === 'error' ? 'error' : 'warning'}
       />
       {status.message}
     </div>

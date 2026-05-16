@@ -197,7 +197,7 @@ export interface XDSTableColumn<T extends Record<string, unknown>> {
    * @compositionHint Use renderCell to compose rich table cells:
    * - XDSBadge for status labels (success/warning/error variants)
    * - XDSStatusDot for colored indicators
-   * - XDSText with color="positive"|"negative" for formatted values
+   * - XDSText with color="success"|"error" for formatted values
    * - XDSHStack to combine multiple elements in a cell
    * - XDSAvatar for user/entity cells
    *
@@ -205,7 +205,7 @@ export interface XDSTableColumn<T extends Record<string, unknown>> {
    * ```tsx
    * renderCell: (item) => (
    *   <XDSHStack gap={2} align="center">
-   *     <XDSStatusDot status={item.isActive ? 'positive' : 'negative'} />
+   *     <XDSStatusDot status={item.isActive ? 'success' : 'error'} />
    *     <XDSBadge variant={item.isActive ? 'success' : 'error'} label={item.isActive ? 'Active' : 'Inactive'} />
    *   </XDSHStack>
    * )

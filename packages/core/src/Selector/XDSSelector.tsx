@@ -296,11 +296,11 @@ const STATUS_ICON_MAP: Record<XDSSelectorStatusType, XDSIconName> = {
 
 const STATUS_ICON_COLOR_MAP: Record<
   XDSSelectorStatusType,
-  'warning' | 'negative' | 'positive'
+  'warning' | 'error' | 'success'
 > = {
   warning: 'warning',
-  error: 'negative',
-  success: 'positive',
+  error: 'error',
+  success: 'success',
 };
 
 export type XDSSelectorSize = 'sm' | 'md' | 'lg';

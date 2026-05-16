@@ -306,11 +306,11 @@ export function XDSDateInput({
 
   const statusIconColorMap: Record<
     XDSInputStatusType,
-    'warning' | 'negative' | 'positive'
+    'warning' | 'error' | 'success'
   > = {
     warning: 'warning',
-    error: 'negative',
-    success: 'positive',
+    error: 'error',
+    success: 'success',
   };
 
   // Constraint checking for text input validation (reuses calendar logic)

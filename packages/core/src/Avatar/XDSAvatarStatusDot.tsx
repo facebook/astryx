@@ -66,9 +66,9 @@ function resolveStatusDotSize(avatarSize: number): {
  * ```
  */
 export interface XDSAvatarStatusDotVariantMap {
-  positive: true;
+  success: true;
   neutral: true;
-  negative: true;
+  error: true;
 }
 
 /**
@@ -79,12 +79,12 @@ export type XDSAvatarStatusDotVariant = keyof XDSAvatarStatusDotVariantMap;
 export interface XDSAvatarStatusDotProps extends XDSBaseProps<HTMLSpanElement> {
   /**
    * The semantic color variant of the dot.
-   * - `positive` — green dot (e.g. online, accepted)
+   * - `success` — green dot (e.g. online, accepted)
    * - `neutral` — gray dot (e.g. offline, pending)
-   * - `negative` — red dot (e.g. busy, rejected)
+   * - `error` — red dot (e.g. busy, rejected)
    *
    * Matches the `variant` convention from `XDSStatusDot`.
-   * @default 'positive'
+   * @default 'success'
    */
   variant?: XDSAvatarStatusDotVariant;
   /**
@@ -101,7 +101,7 @@ export interface XDSAvatarStatusDotProps extends XDSBaseProps<HTMLSpanElement> {
    *
    * @example
    * ```
-   * <XDSAvatarStatusDot variant="positive" label="Verified" icon={<CheckIcon />} />
+   * <XDSAvatarStatusDot variant="success" label="Verified" icon={<CheckIcon />} />
    * ```
    */
   icon?: ReactNode;
@@ -117,13 +117,13 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  positive: {
+  success: {
     backgroundColor: colorVars['--color-success'],
   },
   neutral: {
     backgroundColor: colorVars['--color-text-secondary'],
   },
-  negative: {
+  error: {
     backgroundColor: colorVars['--color-error'],
   },
   icon: {
@@ -150,9 +150,9 @@ const dynamicStyles = stylex.create({
 const variantStyleMap: Partial<
   Record<XDSAvatarStatusDotVariant, stylex.StyleXStyles>
 > = {
-  positive: styles.positive,
+  success: styles.success,
   neutral: styles.neutral,
-  negative: styles.negative,
+  error: styles.error,
 };
 
 /**
@@ -167,17 +167,17 @@ const variantStyleMap: Partial<
  * <XDSAvatar
  *   name="John Doe"
  *   size="medium"
- *   status={<XDSAvatarStatusDot variant="positive" label="Online" />}
+ *   status={<XDSAvatarStatusDot variant="success" label="Online" />}
  * />
  * <XDSAvatar
  *   name="Jane Smith"
  *   size="large"
- *   status={<XDSAvatarStatusDot variant="positive" label="Verified" icon={<CheckIcon />} />}
+ *   status={<XDSAvatarStatusDot variant="success" label="Verified" icon={<CheckIcon />} />}
  * />
  * ```
  */
 export function XDSAvatarStatusDot({
-  variant = 'positive',
+  variant = 'success',
   label,
   icon,
   xstyle,

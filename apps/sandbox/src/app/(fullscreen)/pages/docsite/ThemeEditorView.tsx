@@ -1209,7 +1209,6 @@ function ComponentPreview() {
           />
         </XDSCard>
       </div>
-
       {/* Savings Targets */}
       <div style={CARD_WRAP}>
         <XDSCard>
@@ -1270,7 +1269,6 @@ function ComponentPreview() {
           />
         </XDSCard>
       </div>
-
       {/* Buy Investment */}
       <div style={CARD_WRAP}>
         <XDSCard>
@@ -1326,7 +1324,6 @@ function ComponentPreview() {
           />
         </XDSCard>
       </div>
-
       {/* Recent Transactions */}
       <div style={CARD_WRAP}>
         <XDSCard>
@@ -1423,7 +1420,6 @@ function ComponentPreview() {
           />
         </XDSCard>
       </div>
-
       {/* Stock Performance */}
       <div style={CARD_WRAP}>
         <XDSCard>
@@ -1446,7 +1442,6 @@ function ComponentPreview() {
           </XDSVStack>
         </XDSCard>
       </div>
-
       {/* Card Balance */}
       <div style={CARD_WRAP}>
         <XDSCard>
@@ -1480,7 +1475,6 @@ function ComponentPreview() {
           </XDSVStack>
         </XDSCard>
       </div>
-
       {/* Power Usage */}
       <div style={CARD_WRAP}>
         <XDSCard>
@@ -1522,7 +1516,6 @@ function ComponentPreview() {
           </XDSVStack>
         </XDSCard>
       </div>
-
       {/* Clearinghouse Balance */}
       <div style={CARD_WRAP}>
         <XDSCard>
@@ -1571,7 +1564,6 @@ function ComponentPreview() {
           </XDSVStack>
         </XDSCard>
       </div>
-
       {/* Payout Preferences */}
       <div style={CARD_WRAP}>
         <XDSCard>
@@ -1635,7 +1627,6 @@ function ComponentPreview() {
           />
         </XDSCard>
       </div>
-
       {/* Q2 Dividend Income */}
       <div style={CARD_WRAP}>
         <XDSCard>
@@ -1700,7 +1691,6 @@ function ComponentPreview() {
           />
         </XDSCard>
       </div>
-
       {/* Payments Navigation */}
       <div style={CARD_WRAP}>
         <XDSCard>
@@ -1748,7 +1738,6 @@ function ComponentPreview() {
           </XDSVStack>
         </XDSCard>
       </div>
-
       {/* FAQ / Settings Tabs */}
       <div style={CARD_WRAP}>
         <XDSCard>
@@ -1797,7 +1786,6 @@ function ComponentPreview() {
           />
         </XDSCard>
       </div>
-
       {/* Savings Target Progress */}
       <div style={CARD_WRAP}>
         <XDSCard>
@@ -1829,7 +1817,6 @@ function ComponentPreview() {
           </XDSVStack>
         </XDSCard>
       </div>
-
       {/* Kitchen Island (Smart Home) */}
       <div style={CARD_WRAP}>
         <XDSCard>
@@ -1870,7 +1857,6 @@ function ComponentPreview() {
           />
         </XDSCard>
       </div>
-
       {/* Upcoming Payments */}
       <div style={CARD_WRAP}>
         <XDSCard>
@@ -1907,7 +1893,6 @@ function ComponentPreview() {
           </XDSVStack>
         </XDSCard>
       </div>
-
       {/* Syncing Accounts */}
       <div style={CARD_WRAP}>
         <XDSCard>
@@ -1935,7 +1920,6 @@ function ComponentPreview() {
           />
         </XDSCard>
       </div>
-
       {/* Notifications */}
       <div style={CARD_WRAP}>
         <XDSCard>
@@ -1993,7 +1977,6 @@ function ComponentPreview() {
           />
         </XDSCard>
       </div>
-
       {/* Dollar-Cost Averaging */}
       <div style={CARD_WRAP}>
         <XDSCard>
@@ -2010,7 +1993,6 @@ function ComponentPreview() {
           </XDSVStack>
         </XDSCard>
       </div>
-
       {/* Buttons & Overlays */}
       <div style={CARD_WRAP}>
         <XDSCard>
@@ -2072,7 +2054,6 @@ function ComponentPreview() {
           </XDSVStack>
         </XDSCard>
       </div>
-
       {/* Form Controls */}
       <div style={CARD_WRAP}>
         <XDSCard>
@@ -2123,7 +2104,6 @@ function ComponentPreview() {
           </XDSVStack>
         </XDSCard>
       </div>
-
       {/* Loading & Status */}
       <div style={CARD_WRAP}>
         <XDSCard>
@@ -2172,7 +2152,7 @@ function ComponentPreview() {
             <XDSDivider variant="strong" />
             <XDSHStack gap={4} vAlign="center">
               <XDSHStack gap={2} vAlign="center">
-                <XDSStatusDot variant="positive" label="Online" isPulsing />
+                <XDSStatusDot variant='success' label="Online" isPulsing />
                 <XDSText type="body">Online</XDSText>
               </XDSHStack>
               <XDSHStack gap={2} vAlign="center">
@@ -2180,14 +2160,13 @@ function ComponentPreview() {
                 <XDSText type="body">Away</XDSText>
               </XDSHStack>
               <XDSHStack gap={2} vAlign="center">
-                <XDSStatusDot variant="negative" label="Busy" isPulsing />
+                <XDSStatusDot variant='error' label="Busy" isPulsing />
                 <XDSText type="body">Busy</XDSText>
               </XDSHStack>
             </XDSHStack>
           </XDSVStack>
         </XDSCard>
       </div>
-
       {/* Surface Interactions */}
       <div style={CARD_WRAP}>
         <XDSCard>

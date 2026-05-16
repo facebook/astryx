@@ -88,7 +88,7 @@ describe('XDSProgressBar', () => {
   });
 
   it('renders with all variant options', () => {
-    const variants = ['accent', 'positive', 'warning', 'negative'] as const;
+    const variants = ['accent', 'success', 'warning', 'error'] as const;
     for (const variant of variants) {
       const {unmount} = render(
         <XDSProgressBar value={50} label={variant} variant={variant} />,
@@ -160,7 +160,7 @@ describe('XDSProgressBar', () => {
     });
 
     it('renders with all variants in indeterminate mode', () => {
-      const variants = ['accent', 'positive', 'warning', 'negative'] as const;
+      const variants = ['accent', 'success', 'warning', 'error'] as const;
       for (const variant of variants) {
         const {unmount} = render(
           <XDSProgressBar isIndeterminate label={variant} variant={variant} />,

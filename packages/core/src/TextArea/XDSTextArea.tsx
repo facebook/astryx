@@ -295,11 +295,11 @@ export function XDSTextArea({
 
   const statusIconColorMap: Record<
     XDSTextAreaStatusType,
-    'warning' | 'negative' | 'positive'
+    'warning' | 'error' | 'success'
   > = {
     warning: 'warning',
-    error: 'negative',
-    success: 'positive',
+    error: 'error',
+    success: 'success',
   };
 
   const ariaDescribedBy =

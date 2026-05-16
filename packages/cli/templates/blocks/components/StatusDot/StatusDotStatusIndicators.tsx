@@ -7,9 +7,9 @@ import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
 const statuses = [
-  {variant: 'positive', label: 'Online'},
+  {variant: 'success', label: 'Online'},
   {variant: 'warning', label: 'Away'},
-  {variant: 'negative', label: 'Offline'},
+  {variant: 'error', label: 'Offline'},
   {variant: 'neutral', label: 'Unknown'},
 ] as const;
 

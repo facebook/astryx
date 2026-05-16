@@ -232,7 +232,7 @@ export const WithStatus: Story = {
           src="https://i.pravatar.cc/150?img=20"
           name="Online User"
           size="large"
-          status={<XDSAvatarStatusDot variant="positive" label="Online" />}
+          status={<XDSAvatarStatusDot variant='success' label="Online" />}
         />
         <XDSAvatar
           src="https://i.pravatar.cc/150?img=21"
@@ -244,7 +244,7 @@ export const WithStatus: Story = {
           src="https://i.pravatar.cc/150?img=22"
           name="Busy User"
           size="large"
-          status={<XDSAvatarStatusDot variant="negative" label="Busy" />}
+          status={<XDSAvatarStatusDot variant='error' label="Busy" />}
         />
       </div>
     </div>
@@ -264,27 +264,27 @@ export const StatusAcrossAllSizes: Story = {
         <XDSAvatar
           name="TY"
           size="tiny"
-          status={<XDSAvatarStatusDot variant="positive" />}
+          status={<XDSAvatarStatusDot variant='success' />}
         />
         <XDSAvatar
           name="XS"
           size="xsmall"
-          status={<XDSAvatarStatusDot variant="positive" />}
+          status={<XDSAvatarStatusDot variant='success' />}
         />
         <XDSAvatar
           name="SM"
           size="small"
-          status={<XDSAvatarStatusDot variant="positive" />}
+          status={<XDSAvatarStatusDot variant='success' />}
         />
         <XDSAvatar
           name="MD"
           size="medium"
-          status={<XDSAvatarStatusDot variant="positive" />}
+          status={<XDSAvatarStatusDot variant='success' />}
         />
         <XDSAvatar
           name="LG"
           size="large"
-          status={<XDSAvatarStatusDot variant="positive" />}
+          status={<XDSAvatarStatusDot variant='success' />}
         />
       </div>
 
@@ -294,19 +294,19 @@ export const StatusAcrossAllSizes: Story = {
           src="https://i.pravatar.cc/150?img=30"
           name="U1"
           size={20}
-          status={<XDSAvatarStatusDot variant="positive" />}
+          status={<XDSAvatarStatusDot variant='success' />}
         />
         <XDSAvatar
           src="https://i.pravatar.cc/150?img=31"
           name="U2"
           size={32}
-          status={<XDSAvatarStatusDot variant="positive" />}
+          status={<XDSAvatarStatusDot variant='success' />}
         />
         <XDSAvatar
           src="https://i.pravatar.cc/150?img=32"
           name="U3"
           size={48}
-          status={<XDSAvatarStatusDot variant="negative" />}
+          status={<XDSAvatarStatusDot variant='error' />}
         />
         <XDSAvatar
           src="https://i.pravatar.cc/150?img=33"
@@ -318,13 +318,13 @@ export const StatusAcrossAllSizes: Story = {
           src="https://i.pravatar.cc/150?img=34"
           name="U5"
           size={96}
-          status={<XDSAvatarStatusDot variant="positive" />}
+          status={<XDSAvatarStatusDot variant='success' />}
         />
         <XDSAvatar
           src="https://i.pravatar.cc/150?img=35"
           name="U6"
           size={128}
-          status={<XDSAvatarStatusDot variant="positive" />}
+          status={<XDSAvatarStatusDot variant='success' />}
         />
       </div>
 
@@ -334,7 +334,7 @@ export const StatusAcrossAllSizes: Story = {
           src="https://i.pravatar.cc/150?img=40"
           name="Positive"
           size="medium"
-          status={<XDSAvatarStatusDot variant="positive" label="Online" />}
+          status={<XDSAvatarStatusDot variant='success' label="Online" />}
         />
         <XDSAvatar
           src="https://i.pravatar.cc/150?img=41"
@@ -346,7 +346,7 @@ export const StatusAcrossAllSizes: Story = {
           src="https://i.pravatar.cc/150?img=42"
           name="Negative"
           size="medium"
-          status={<XDSAvatarStatusDot variant="negative" label="Busy" />}
+          status={<XDSAvatarStatusDot variant='error' label="Busy" />}
         />
       </div>
     </div>
@@ -382,7 +382,7 @@ export const StatusWithIcon: Story = {
           size="tiny"
           status={
             <XDSAvatarStatusDot
-              variant="positive"
+              variant='success'
               label="Verified"
               icon={<CheckIcon />}
             />
@@ -393,7 +393,7 @@ export const StatusWithIcon: Story = {
           size="xsmall"
           status={
             <XDSAvatarStatusDot
-              variant="positive"
+              variant='success'
               label="Verified"
               icon={<CheckIcon />}
             />
@@ -404,7 +404,7 @@ export const StatusWithIcon: Story = {
           size="small"
           status={
             <XDSAvatarStatusDot
-              variant="positive"
+              variant='success'
               label="Verified"
               icon={<CheckIcon />}
             />
@@ -416,7 +416,7 @@ export const StatusWithIcon: Story = {
           size="medium"
           status={
             <XDSAvatarStatusDot
-              variant="positive"
+              variant='success'
               label="Verified"
               icon={<CheckIcon />}
             />
@@ -428,7 +428,7 @@ export const StatusWithIcon: Story = {
           size="large"
           status={
             <XDSAvatarStatusDot
-              variant="positive"
+              variant='success'
               label="Verified"
               icon={<CheckIcon />}
             />
@@ -444,7 +444,7 @@ export const StatusWithIcon: Story = {
           size={20}
           status={
             <XDSAvatarStatusDot
-              variant="positive"
+              variant='success'
               label="Verified"
               icon={<CheckIcon />}
             />
@@ -456,7 +456,7 @@ export const StatusWithIcon: Story = {
           size={32}
           status={
             <XDSAvatarStatusDot
-              variant="positive"
+              variant='success'
               label="Verified"
               icon={<CheckIcon />}
             />
@@ -468,7 +468,7 @@ export const StatusWithIcon: Story = {
           size={48}
           status={
             <XDSAvatarStatusDot
-              variant="positive"
+              variant='success'
               label="Verified"
               icon={<CheckIcon />}
             />
@@ -480,7 +480,7 @@ export const StatusWithIcon: Story = {
           size={72}
           status={
             <XDSAvatarStatusDot
-              variant="positive"
+              variant='success'
               label="Verified"
               icon={<CheckIcon />}
             />
@@ -492,7 +492,7 @@ export const StatusWithIcon: Story = {
           size={96}
           status={
             <XDSAvatarStatusDot
-              variant="positive"
+              variant='success'
               label="Verified"
               icon={<CheckIcon />}
             />
@@ -504,7 +504,7 @@ export const StatusWithIcon: Story = {
           size={128}
           status={
             <XDSAvatarStatusDot
-              variant="positive"
+              variant='success'
               label="Verified"
               icon={<CheckIcon />}
             />
@@ -520,7 +520,7 @@ export const StatusWithIcon: Story = {
           size="large"
           status={
             <XDSAvatarStatusDot
-              variant="positive"
+              variant='success'
               label="Verified"
               icon={<CheckIcon />}
             />
@@ -544,7 +544,7 @@ export const StatusWithIcon: Story = {
           size="large"
           status={
             <XDSAvatarStatusDot
-              variant="negative"
+              variant='error'
               label="Rejected"
               icon={<CheckIcon />}
             />

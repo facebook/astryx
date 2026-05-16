@@ -46,10 +46,10 @@ import type {XDSBaseProps} from '../XDSBaseProps';
  */
 export interface XDSProgressBarVariantMap {
   accent: true;
-  positive: true;
+  success: true;
   warning: true;
   neutral: true;
-  negative: true;
+  error: true;
 }
 
 /**
@@ -196,13 +196,13 @@ const variantStyles = stylex.create({
   accent: {
     backgroundColor: colorVars['--color-accent'],
   },
-  positive: {
+  success: {
     backgroundColor: colorVars['--color-success'],
   },
   warning: {
     backgroundColor: colorVars['--color-warning'],
   },
-  negative: {
+  error: {
     backgroundColor: colorVars['--color-error'],
   },
   neutral: {

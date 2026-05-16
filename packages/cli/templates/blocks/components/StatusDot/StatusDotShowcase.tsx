@@ -11,7 +11,7 @@ export default function StatusDotShowcase() {
       <XDSStatusDot variant="positive" label="Positive" />
       <XDSStatusDot variant="warning" label="Warning" />
       <XDSStatusDot variant="negative" label="Negative" />
-      <XDSStatusDot variant="info" label="Info" />
+      <XDSStatusDot variant="accent" label="Info" />
       <XDSStatusDot variant="neutral" label="Neutral" />
     </XDSHStack>
   );

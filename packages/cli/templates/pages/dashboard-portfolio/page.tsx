@@ -496,7 +496,7 @@ function MarketCard({
             <XDSIcon
               icon={positive ? ArrowUpIcon : ArrowDownIcon}
               size="xsm"
-              color={positive ? 'positive' : 'negative'}
+              color={positive ? 'success' : 'error'}
             />
             <XDSText type="body" color="secondary">
               {change}
@@ -615,7 +615,7 @@ function MetricCard({
             <XDSIcon
               icon={positive ? ArrowUpIcon : ArrowDownIcon}
               size="xsm"
-              color={positive ? 'positive' : 'negative'}
+              color={positive ? 'success' : 'error'}
             />
             <XDSText type="body" color="secondary">
               {change}

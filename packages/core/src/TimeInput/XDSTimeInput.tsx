@@ -334,11 +334,11 @@ export function XDSTimeInput({
 
   const statusIconColorMap: Record<
     XDSInputStatusType,
-    'warning' | 'negative' | 'positive'
+    'warning' | 'error' | 'success'
   > = {
     warning: 'warning',
-    error: 'negative',
-    success: 'positive',
+    error: 'error',
+    success: 'success',
   };
 
   const ariaDescribedBy =

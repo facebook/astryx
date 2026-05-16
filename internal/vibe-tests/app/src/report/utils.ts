@@ -28,20 +28,20 @@ export const DIMENSION_LABELS: Record<UniversalDimension, string> = {
 
 export function scoreToStatusVariant(
   score: number,
-): 'positive' | 'neutral' | 'warning' | 'negative' {
-  if (score >= 90) return 'positive';
+): 'success' | 'neutral' | 'warning' | 'error' {
+  if (score >= 90) return 'success';
   if (score >= 70) return 'neutral';
   if (score >= 50) return 'warning';
-  return 'negative';
+  return 'error';
 }
 
 export function scoreToProgressVariant(
   score: number,
-): 'positive' | 'accent' | 'warning' | 'negative' {
-  if (score >= 90) return 'positive';
+): 'success' | 'accent' | 'warning' | 'error' {
+  if (score >= 90) return 'success';
   if (score >= 70) return 'accent';
   if (score >= 50) return 'warning';
-  return 'negative';
+  return 'error';
 }
 
 /** Compute overall score. Null-safe for optional design dimension. */

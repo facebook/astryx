@@ -42,8 +42,8 @@ export type SVGIconColor =
   | 'secondary'
   | 'disabled'
   | 'accent'
-  | 'positive'
-  | 'negative'
+  | 'success'
+  | 'error'
   | 'warning'
   | 'inherit';
 

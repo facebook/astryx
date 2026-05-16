@@ -37,8 +37,8 @@ const meta: Meta<typeof XDSIcon> = {
         'tertiary',
         'disabled',
         'accent',
-        'positive',
-        'negative',
+        'success',
+        'error',
         'warning',
         'inherit',
       ],
@@ -87,14 +87,14 @@ export const Accent: Story = {
 export const Positive: Story = {
   args: {
     icon: CheckCircleIcon,
-    color: 'positive',
+    color: 'success',
   },
 };
 
 export const Negative: Story = {
   args: {
     icon: XCircleIcon,
-    color: 'negative',
+    color: 'error',
   },
 };
 
@@ -136,7 +136,7 @@ export const Large: Story = {
 export const SolidIcon: Story = {
   args: {
     icon: HeartIconSolid,
-    color: 'negative',
+    color: 'error',
     size: 'lg',
   },
 };
@@ -149,8 +149,8 @@ export const AllColors: Story = {
       <XDSIcon icon={CogIcon} color="tertiary" />
       <XDSIcon icon={BellIcon} color="disabled" />
       <XDSIcon icon={HeartIcon} color="accent" />
-      <XDSIcon icon={CheckCircleIcon} color="positive" />
-      <XDSIcon icon={XCircleIcon} color="negative" />
+      <XDSIcon icon={CheckCircleIcon} color='success' />
+      <XDSIcon icon={XCircleIcon} color='error' />
       <XDSIcon icon={ExclamationTriangleIcon} color="warning" />
     </div>
   ),
@@ -177,7 +177,7 @@ export const OutlineVsSolid: Story = {
           alignItems: 'center',
           gap: '8px',
         }}>
-        <XDSIcon icon={HeartIcon} size="lg" color="negative" />
+        <XDSIcon icon={HeartIcon} size="lg" color='error' />
         <span style={{fontSize: '12px', color: '#666'}}>Outline</span>
       </div>
       <div
@@ -187,7 +187,7 @@ export const OutlineVsSolid: Story = {
           alignItems: 'center',
           gap: '8px',
         }}>
-        <XDSIcon icon={HeartIconSolid} size="lg" color="negative" />
+        <XDSIcon icon={HeartIconSolid} size="lg" color='error' />
         <span style={{fontSize: '12px', color: '#666'}}>Solid</span>
       </div>
       <div

@@ -7,9 +7,9 @@ import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
 const statuses = [
-  {icon: 'success' as const, color: 'positive' as const, label: 'Deployed successfully'},
+  {icon: 'success' as const, color: 'success' as const, label: 'Deployed successfully'},
   {icon: 'warning' as const, color: 'warning' as const, label: 'Build has warnings'},
-  {icon: 'error' as const, color: 'negative' as const, label: 'Pipeline failed'},
+  {icon: 'error' as const, color: 'error' as const, label: 'Pipeline failed'},
   {icon: 'info' as const, color: 'accent' as const, label: 'New version available'},
 ] as const;
 

@@ -75,9 +75,9 @@ export const docs = {
       props: [
         {
           name: 'variant',
-          type: "'positive' | 'neutral' | 'negative'",
+          type: "'success' | 'neutral' | 'error'",
           description: 'Semantic color variant of the dot.',
-          default: "'positive'",
+          default: "'success'",
         },
         {
           name: 'label',
@@ -142,7 +142,7 @@ export const docsZh = {
       name: 'XDSAvatarStatusDot',
       description: '尺寸感知的状态指示点，从上下文中读取头像尺寸并等比缩放。',
       props: [
-        {name: 'variant', type: "'positive' | 'neutral' | 'negative'", description: '状态点的语义颜色变体。', default: "'positive'"},
+        {name: 'variant', type: "'success' | 'neutral' | 'error'", description: '状态点的语义颜色变体。', default: "'success'"},
         {name: 'label', type: 'string', description: '屏幕阅读器的无障碍标签。'},
         {name: 'icon', type: 'ReactNode', description: '居中显示在状态点内的图标（tiny 尺寸时隐藏）。'},
       ],

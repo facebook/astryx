@@ -58,16 +58,16 @@ const styles = stylex.create({
  * Variant styles mapping to theme color tokens
  */
 const variants = stylex.create({
-  positive: {
+  success: {
     backgroundColor: colorVars['--color-success'],
   },
   warning: {
     backgroundColor: colorVars['--color-warning'],
   },
-  negative: {
+  error: {
     backgroundColor: colorVars['--color-error'],
   },
-  info: {
+  accent: {
     backgroundColor: colorVars['--color-accent'],
   },
   neutral: {
@@ -89,10 +89,10 @@ const variants = stylex.create({
  * ```
  */
 export interface XDSStatusDotVariantMap {
-  positive: true;
+  success: true;
   warning: true;
-  negative: true;
-  info: true;
+  error: true;
+  accent: true;
   neutral: true;
 }
 
@@ -130,9 +130,9 @@ export interface XDSStatusDotProps extends XDSBaseProps<HTMLSpanElement> {
  *
  * @example
  * ```
- * <XDSStatusDot variant="positive" label="Online" />
- * <XDSStatusDot variant="negative" label="Offline" />
- * <XDSStatusDot variant="positive" label="Live" isPulsing />
+ * <XDSStatusDot variant="success" label="Online" />
+ * <XDSStatusDot variant="error" label="Offline" />
+ * <XDSStatusDot variant="success" label="Live" isPulsing />
  * ```
  */
 export function XDSStatusDot({

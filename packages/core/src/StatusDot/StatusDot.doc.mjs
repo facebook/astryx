@@ -8,7 +8,7 @@ export const docs = {
   props: [
     {
       name: 'variant',
-      type: "'positive' | 'warning' | 'negative' | 'info' | 'neutral'",
+      type: "'success' | 'warning' | 'error' | 'accent' | 'neutral'",
       description: 'Semantic color variant.',
       required: true,
     },
@@ -55,7 +55,7 @@ export const docsZh = {
   props: [
     {
       name: 'variant',
-      type: "'positive' | 'warning' | 'negative' | 'info' | 'neutral'",
+      type: "'success' | 'warning' | 'error' | 'accent' | 'neutral'",
       description: '语义颜色变体。',
       required: true,
     },

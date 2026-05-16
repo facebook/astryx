@@ -970,8 +970,8 @@ export default function ExampleCardsPage() {
                 {[
                   {name: 'Dashboard', color: 'info' as const},
                   {name: 'Transactions', color: 'info' as const},
-                  {name: 'Investments', color: 'positive' as const},
-                  {name: 'Goals', color: 'positive' as const},
+                  {name: 'Investments', color: 'success' as const},
+                  {name: 'Goals', color: 'success' as const},
                   {name: 'Budget', color: 'warning' as const},
                   {name: 'Reports', color: 'warning' as const},
                   {name: 'Documents', color: 'info' as const},
@@ -989,11 +989,11 @@ export default function ExampleCardsPage() {
                 {[
                   {name: 'Profile', color: 'info' as const},
                   {name: 'Billing', color: 'info' as const},
-                  {name: 'Notifications', color: 'positive' as const},
+                  {name: 'Notifications', color: 'success' as const},
                   {name: 'Security', color: 'warning' as const},
-                  {name: 'Help Center', color: 'positive' as const},
+                  {name: 'Help Center', color: 'success' as const},
                   {name: 'Contact Us', color: 'info' as const},
-                  {name: 'Status', color: 'positive' as const},
+                  {name: 'Status', color: 'success' as const},
                 ].map(item => (
                   <XDSHStack key={item.name} gap={2} vAlign="center">
                     <XDSStatusDot variant={item.color} label={item.name} />
@@ -1288,7 +1288,7 @@ export default function ExampleCardsPage() {
                 </XDSVStack>
                 <XDSHStack gap={2} vAlign="center">
                   <XDSText type="supporting">Locked</XDSText>
-                  <XDSStatusDot variant="positive" label="Locked" />
+                  <XDSStatusDot variant='success' label="Locked" />
                 </XDSHStack>
               </div>
               <div {...stylex.props(styles.placeholder)}>

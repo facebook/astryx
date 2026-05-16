@@ -186,8 +186,8 @@ const statusRole: Record<XDSBannerStatus, 'alert' | 'status'> = {
 const statusIconColor = {
   info: 'accent',
   warning: 'warning',
-  error: 'negative',
-  success: 'positive',
+  error: 'error',
+  success: 'success',
 } as const;
 
 // =============================================================================

@@ -19,10 +19,10 @@ describe('XDSStatusDot', () => {
 
   it('renders with all variant types', () => {
     const variants = [
-      'positive',
+      'success',
       'warning',
-      'negative',
-      'info',
+      'error',
+      'accent',
       'neutral',
     ] as const;
 

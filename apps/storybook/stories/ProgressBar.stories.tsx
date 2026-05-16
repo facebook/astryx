@@ -22,7 +22,7 @@ const meta: Meta<typeof XDSProgressBar> = {
     },
     variant: {
       control: 'select',
-      options: ['accent', 'positive', 'warning', 'negative'],
+      options: ['accent', 'success', 'warning', 'error'],
       description: 'Semantic color variant',
     },
     size: {
@@ -85,7 +85,7 @@ export const Variants: Story = {
       <XDSProgressBar
         value={80}
         label="Positive"
-        variant="positive"
+        variant='success'
         hasValueLabel
       />
       <XDSProgressBar
@@ -97,7 +97,7 @@ export const Variants: Story = {
       <XDSProgressBar
         value={92}
         label="Negative"
-        variant="negative"
+        variant='error'
         hasValueLabel
       />
       <XDSProgressBar
@@ -162,7 +162,7 @@ export const Full: Story = {
     value: 100,
     label: 'Complete',
     hasValueLabel: true,
-    variant: 'positive',
+    variant: 'success',
   },
 };
 
@@ -191,9 +191,9 @@ export const IndeterminateVariants: Story = {
         width: '300px',
       }}>
       <XDSProgressBar isIndeterminate label="Accent" variant="accent" />
-      <XDSProgressBar isIndeterminate label="Positive" variant="positive" />
+      <XDSProgressBar isIndeterminate label="Positive" variant='success' />
       <XDSProgressBar isIndeterminate label="Warning" variant="warning" />
-      <XDSProgressBar isIndeterminate label="Negative" variant="negative" />
+      <XDSProgressBar isIndeterminate label="Negative" variant='error' />
       <XDSProgressBar isIndeterminate label="Neutral" variant="neutral" />
     </div>
   ),

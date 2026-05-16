@@ -44,7 +44,7 @@ export const docs = {
     },
     {
       name: 'variant',
-      type: "'accent' | 'positive' | 'warning' | 'negative'",
+      type: "'accent' | 'success' | 'warning' | 'error'",
       description: 'Semantic color variant.',
       default: "'accent'",
     },
@@ -72,7 +72,7 @@ export const docs = {
       'A horizontal bar showing the completion progress of a task. Use it for operations where the duration is known, or as an animated indicator when progress can\'t be calculated. Supports semantic color variants, value labels, and custom formatting.',
     bestPractices: [
       { guidance: true, description: "Use a determinate bar when the total amount of work is known, and indeterminate when it's not." },
-      { guidance: true, description: 'Choose a color variant that matches the context — accent for general progress, positive for success, warning or negative for alerts.' },
+      { guidance: true, description: 'Choose a color variant that matches the context — accent for general progress, success for completion, warning or error for alerts.' },
       { guidance: true, description: "Always provide a label, even if hidden — screen readers need it to announce what's loading." },
       { guidance: false, description: 'Place icons or labels inside the bar — compose them alongside it using layout components.' },
       { guidance: false, description: "Use a progress bar for instant actions — it's meant for operations that take noticeable time." },
@@ -123,7 +123,7 @@ export const docsZh = {
     },
     {
       name: 'variant',
-      type: "'accent' | 'positive' | 'warning' | 'negative'",
+      type: "'accent' | 'success' | 'warning' | 'error'",
       description: '语义颜色变体。',
       default: "'accent'",
     },
@@ -151,7 +151,7 @@ export const docsZh = {
       'A horizontal bar showing the completion progress of a task. Use it for operations where the duration is known, or as an animated indicator when progress can\'t be calculated. Supports semantic color variants, value labels, and custom formatting.',
     bestPractices: [
       { guidance: true, description: "Use a determinate bar when the total amount of work is known, and indeterminate when it's not." },
-      { guidance: true, description: 'Choose a color variant that matches the context — accent for general progress, positive for success, warning or negative for alerts.' },
+      { guidance: true, description: 'Choose a color variant that matches the context — accent for general progress, success for completion, warning or error for alerts.' },
       { guidance: true, description: "Always provide a label, even if hidden — screen readers need it to announce what's loading." },
       { guidance: false, description: 'Place icons or labels inside the bar — compose them alongside it using layout components.' },
       { guidance: false, description: "Use a progress bar for instant actions — it's meant for operations that take noticeable time." },
@@ -169,7 +169,7 @@ export const docsDense = {
       'A horizontal bar showing the completion progress of a task. Use it for operations where the duration is known, or as an animated indicator when progress can\'t be calculated. Supports semantic color variants, value labels, and custom formatting.',
     bestPractices: [
       { guidance: true, description: "Use a determinate bar when the total amount of work is known, and indeterminate when it's not." },
-      { guidance: true, description: 'Choose a color variant that matches the context — accent for general progress, positive for success, warning or negative for alerts.' },
+      { guidance: true, description: 'Choose a color variant that matches the context — accent for general progress, success for completion, warning or error for alerts.' },
       { guidance: true, description: "Always provide a label, even if hidden — screen readers need it to announce what's loading." },
       { guidance: false, description: 'Place icons or labels inside the bar — compose them alongside it using layout components.' },
       { guidance: false, description: "Use a progress bar for instant actions — it's meant for operations that take noticeable time." },

@@ -281,7 +281,7 @@ const columns: XDSTableColumn<ReviewRow>[] = [
     renderCell: (item: ReviewRow) => (
       <XDSHStack gap={2} vAlign="center">
         <XDSStatusDot
-          variant={item.testStatus === 'passed' ? 'positive' : 'negative'}
+          variant={item.testStatus === 'passed' ? 'success' : 'error'}
           label={item.testStatus === 'passed' ? 'Passed' : 'Failed'}
         />
         <XDSText type="supporting">

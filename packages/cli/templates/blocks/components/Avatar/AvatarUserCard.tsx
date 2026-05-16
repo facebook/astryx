@@ -10,7 +10,7 @@ const USERS = [
   {
     name: 'Alex Daniels',
     role: 'Engineering Lead',
-    variant: 'positive' as const,
+    variant: 'success' as const,
     src: 'https://lookaside.facebook.com/assets/vs_datakit_profile_photos_t66173184/VS-Design-Tools-Datakit-05.jpg',
   },
   {
@@ -22,7 +22,7 @@ const USERS = [
   {
     name: 'Carol Davis',
     role: 'Engineering Manager',
-    variant: 'negative' as const,
+    variant: 'error' as const,
     src: 'https://lookaside.facebook.com/assets/vs_datakit_profile_photos_t66173184/VS-Design-Tools-Datakit-60.jpg',
   },
 ];

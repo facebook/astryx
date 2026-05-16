@@ -62,10 +62,10 @@ const colorStyles = stylex.create({
   accent: {
     color: colorVars['--color-accent'],
   },
-  positive: {
+  success: {
     color: colorVars['--color-success'],
   },
-  negative: {
+  error: {
     color: colorVars['--color-error'],
   },
   warning: {
