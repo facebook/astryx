@@ -44,7 +44,7 @@
     "@types/node": "^25.8.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^4.3.0",
+    "@vitejs/plugin-react": "^6.0.2",
     "@vitest/coverage-v8": "^2.1.0",
     "eslint": "^10.4.0",
     "husky": "^9.1.7",
