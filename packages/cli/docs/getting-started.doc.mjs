@@ -148,17 +148,29 @@ yarn dev`,
       content: [
         {
           type: 'prose',
-          text: 'The CLI is your reference for components, tokens, templates, and docs. Use it to discover what\u2019s available.',
+          text: 'The CLI is your reference for components, tokens, templates, and docs. For reliable invocation (especially with AI assistants), add this script to your package.json:',
+        },
+        {
+          type: 'code',
+          lang: 'json',
+          label: 'package.json',
+          code: `"scripts": {
+  "xds": "node node_modules/@xds/cli/bin/xds.mjs"
+}`,
+        },
+        {
+          type: 'prose',
+          text: 'Then discover what\'s available:',
         },
         {
           type: 'code',
           lang: 'bash',
           label: 'Terminal',
-          code: `npx xds component              # list all components
-npx xds component Button       # props, usage, theming for Button
-npx xds docs                   # list all doc topics
-npx xds template --list        # available page templates
-npx xds docs tokens            # spacing, color, radius reference`,
+          code: `npm run xds -- component          # list all components
+npm run xds -- component Button   # props, usage, theming for Button
+npm run xds -- docs               # list all doc topics
+npm run xds -- template --list    # available page templates
+npm run xds -- docs tokens        # spacing, color, radius reference`,
         },
       ],
     },

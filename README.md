@@ -26,6 +26,16 @@ yarn add @xds/core @xds/theme-default
 yarn add -D @xds/cli
 ```
 
+For reliable CLI access, add this script to your `package.json`:
+
+```json
+"scripts": {
+  "xds": "node node_modules/@xds/cli/bin/xds.mjs"
+}
+```
+
+Then use the CLI as `npm run xds -- component --list`. This avoids path errors when AI assistants or new developers invoke the CLI directly.
+
 Then follow the [setup guide](packages/core/README.md#quick-start) to import styles, configure the theme provider, and start using components.
 
 ## Packages

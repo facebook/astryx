@@ -112,6 +112,36 @@ If you don't know all three, run \`npx xds init --features agents\` to generate 
       ],
     },
     {
+      title: 'The npm run xds Pattern',
+      content: [
+        {
+          type: 'prose',
+          text: 'AI agents frequently invoke the CLI with incorrect paths (e.g. node_modules/@xds/cli/bin/docs.mjs instead of xds.mjs), leading to silent failures. Adding an npm script alias with the correct path eliminates this entirely.',
+        },
+        {
+          type: 'code',
+          lang: 'json',
+          label: 'package.json',
+          code: `"scripts": {
+  "xds": "node node_modules/@xds/cli/bin/xds.mjs"
+}`,
+        },
+        {
+          type: 'prose',
+          text: 'With this alias, agents use `npm run xds -- component --list` instead of guessing the binary path. The `--` separator is standard npm convention for passing flags to scripts.',
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          label: 'Reliable CLI invocation',
+          code: `npm run xds -- component --list
+npm run xds -- component Dialog --dense
+npm run xds -- docs styling --dense
+npm run xds -- docs tokens --dense`,
+        },
+      ],
+    },
+    {
       title: 'The --dense Flag',
       content: [
         {
