@@ -45,6 +45,7 @@ import {
   useXDSChatComposerTokens,
   isCustomToken,
 } from './useXDSChatComposerTokens';
+import {ensureCaretInside, insertTextAtCursor} from './chatComposerSelection';
 import {XDSChatPastedTextToken} from './XDSChatPastedTextToken';
 import {
   useXDSChatPasteAsToken,
@@ -263,24 +264,6 @@ function serialize(node: Node): string {
   return result;
 }
 
-/** Insert plain text at the current selection using the Selection API. */
-function insertTextAtCursor(text: string): void {
-  const selection = window.getSelection();
-  if (!selection || selection.rangeCount === 0) return;
-
-  const range = selection.getRangeAt(0);
-  range.deleteContents();
-
-  const textNode = document.createTextNode(text);
-  range.insertNode(textNode);
-
-  // Move cursor after inserted text
-  range.setStartAfter(textNode);
-  range.collapse(true);
-  selection.removeAllRanges();
-  selection.addRange(range);
-}
-
 // =============================================================================
 // Component
 // =============================================================================
@@ -322,19 +305,23 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
   >(() => undefined);
   const insertTextRef = useRef<(text: string) => void>(() => {});
 
-  useImperativeHandle(ref, () => {
-    const h: XDSChatComposerInputHandle = {
-      insertToken: (token: XDSChatComposerToken) =>
-        insertTokenRef.current(token),
-      expandToken: (id: string) => tokens.expandToken(id),
-      insertText: (text: string) => insertTextRef.current(text),
-      focus: () => editableRef.current?.focus(),
-      getValue: () =>
-        serialize(editableRef.current ?? document.createElement('div')),
-    };
-    selfRef.current = h;
-    return h;
-  });
+  // A single handle object shared between the forwarded ref (via
+  // `useImperativeHandle`) and `selfRef` (used by internal consumers
+  // like paste-as-token). We can't rely on `useImperativeHandle`'s
+  // factory to populate `selfRef` because React only runs that factory
+  // when a parent attaches a ref — without this, paste-as-token would
+  // silently no-op whenever `XDSChatComposerInput` is rendered without
+  // a forwarded ref (e.g. inside `XDSChatComposer`).
+  const handle: XDSChatComposerInputHandle = {
+    insertToken: (token: XDSChatComposerToken) => insertTokenRef.current(token),
+    expandToken: (id: string) => tokens.expandToken(id),
+    insertText: (text: string) => insertTextRef.current(text),
+    focus: () => editableRef.current?.focus(),
+    getValue: () =>
+      serialize(editableRef.current ?? document.createElement('div')),
+  };
+  selfRef.current = handle;
+  useImperativeHandle(ref, () => handle);
 
   useEffect(() => {
     if (controlledValue !== undefined && editableRef.current) {
@@ -375,7 +362,9 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
       : (pasteAsTokenProp ?? defaultPasteAsToken);
 
   const insertText = useCallback((text: string) => {
-    insertTextAtCursor(text);
+    const editable = editableRef.current;
+    if (!editable) return;
+    insertTextAtCursor(editable, text);
   }, []);
 
   // Keep stable refs in sync for imperative handle
@@ -505,6 +494,14 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
 
   const handlePaste = useCallback(
     (e: ClipboardEvent<HTMLDivElement>) => {
+      const editable = editableRef.current;
+      if (!editable) return;
+
+      // Place a caret at the end of the editable if the Selection has
+      // no Range inside it — programmatic focus alone doesn't create
+      // one in Chromium/Firefox.
+      ensureCaretInside(editable);
+
       // Handle paste near/into tokens first
       if (tokens.handlePaste(e)) {
         return;
@@ -533,7 +530,7 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
         return;
       }
 
-      insertTextAtCursor(text);
+      insertTextAtCursor(editable, text);
       emitChange();
     },
     [onFiles, onPasteProp, emitChange, tokens, pasteAsToken],

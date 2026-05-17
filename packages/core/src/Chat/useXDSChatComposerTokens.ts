@@ -19,6 +19,7 @@
  */
 
 import {useCallback, useState} from 'react';
+import {ensureCaretInside, insertTextAtCursor} from './chatComposerSelection';
 import type {
   XDSChatComposerToken,
   XDSChatComposerTokenCustom,
@@ -67,20 +68,6 @@ export function isCustomToken(
   return 'render' in token && typeof token.render === 'function';
 }
 
-/** Insert plain text at the current selection. */
-function insertTextAtCursor(text: string): void {
-  const selection = window.getSelection();
-  if (!selection || selection.rangeCount === 0) return;
-  const range = selection.getRangeAt(0);
-  range.deleteContents();
-  const textNode = document.createTextNode(text);
-  range.insertNode(textNode);
-  range.setStartAfter(textNode);
-  range.collapse(true);
-  selection.removeAllRanges();
-  selection.addRange(range);
-}
-
 /** Check if a node is inside or is a token span. */
 function isInsideToken(node: Node): HTMLElement | null {
   let current: Node | null = node;
@@ -112,7 +99,9 @@ export function useXDSChatComposerTokens({
       const editable = editableRef.current;
       if (!editable) return;
 
-      const selection = window.getSelection();
+      // Place a caret at the end of the editable if there's no Range
+      // inside it (programmatic focus does not create one).
+      const selection = ensureCaretInside(editable);
       if (!selection || selection.rangeCount === 0) return;
 
       const range = selection.getRangeAt(0);
@@ -199,7 +188,10 @@ export function useXDSChatComposerTokens({
   // --- Paste near tokens ---
   const handlePaste = useCallback(
     (e: React.ClipboardEvent): boolean => {
-      const selection = window.getSelection();
+      const editable = editableRef.current;
+      if (!editable) return false;
+
+      const selection = ensureCaretInside(editable);
       if (!selection || selection.rangeCount === 0) return false;
 
       const range = selection.getRangeAt(0);
@@ -223,14 +215,14 @@ export function useXDSChatComposerTokens({
         selection.removeAllRanges();
         selection.addRange(newRange);
 
-        insertTextAtCursor(text);
+        insertTextAtCursor(editable, text);
         onEmitChange();
         return true;
       }
 
       return false;
     },
-    [onEmitChange],
+    [editableRef, onEmitChange],
   );
 
   // --- Expand token (replace with text) ---

@@ -146,6 +146,117 @@ describe('XDSChatComposerInput', () => {
     });
   });
 
+  // Paste / insert paths used to bail silently when the contenteditable
+  // was programmatically focused but no Selection range existed inside
+  // it — the common case after `XDSChatComposer.handleBodyClick` calls
+  // `editable.focus()`. Browsers do not create a Range on bare focus.
+  // See `chatComposerSelection.ts`.
+  describe('selection recovery (no range inside editable)', () => {
+    function clearSelection() {
+      window.getSelection()?.removeAllRanges();
+    }
+
+    it('paste inserts plain text after a focus() with no selection range', () => {
+      const onChange = vi.fn();
+      render(<XDSChatComposerInput onChange={onChange} />);
+      const textbox = screen.getByRole('textbox');
+
+      textbox.focus();
+      clearSelection();
+      expect(window.getSelection()?.rangeCount ?? 0).toBe(0);
+
+      fireEvent.paste(textbox, {
+        clipboardData: {
+          files: [],
+          getData: (type: string) => (type === 'text/plain' ? 'hello' : ''),
+        },
+      });
+
+      expect(textbox.textContent).toBe('hello');
+      expect(onChange).toHaveBeenLastCalledWith('hello');
+    });
+
+    it('paste inserts a token chip for long pastes after a focus() with no selection range', () => {
+      render(<XDSChatComposerInput />);
+      const textbox = screen.getByRole('textbox');
+
+      textbox.focus();
+      clearSelection();
+
+      // Default pasteAsToken threshold is 200 chars.
+      const long = 'a'.repeat(250);
+      fireEvent.paste(textbox, {
+        clipboardData: {
+          files: [],
+          getData: (type: string) => (type === 'text/plain' ? long : ''),
+        },
+      });
+
+      expect(textbox.querySelector('[data-xds-token]')).toBeInTheDocument();
+    });
+
+    it('imperative insertToken works after a focus() with no selection range', () => {
+      let handle: XDSChatComposerInputHandle | null = null;
+      render(
+        <XDSChatComposerInput
+          ref={h => {
+            handle = h;
+          }}
+        />,
+      );
+      const textbox = screen.getByRole('textbox');
+
+      textbox.focus();
+      clearSelection();
+
+      handle!.insertToken({
+        value: '@sam',
+        label: '@Sam Rivera',
+        variant: 'blue' as const,
+      });
+
+      expect(textbox.querySelector('[data-xds-token]')).toBeInTheDocument();
+    });
+
+    it('imperative insertText works after a focus() with no selection range', () => {
+      let handle: XDSChatComposerInputHandle | null = null;
+      render(
+        <XDSChatComposerInput
+          ref={h => {
+            handle = h;
+          }}
+        />,
+      );
+      const textbox = screen.getByRole('textbox');
+
+      textbox.focus();
+      clearSelection();
+
+      handle!.insertText('hello');
+      expect(textbox.textContent).toContain('hello');
+    });
+
+    it('paste falls through to plain-text path when pasteAsToken={false}', () => {
+      const onChange = vi.fn();
+      render(<XDSChatComposerInput pasteAsToken={false} onChange={onChange} />);
+      const textbox = screen.getByRole('textbox');
+
+      textbox.focus();
+      clearSelection();
+
+      const long = 'b'.repeat(250);
+      fireEvent.paste(textbox, {
+        clipboardData: {
+          files: [],
+          getData: (type: string) => (type === 'text/plain' ? long : ''),
+        },
+      });
+
+      expect(textbox.querySelector('[data-xds-token]')).not.toBeInTheDocument();
+      expect(textbox.textContent).toBe(long);
+    });
+  });
+
   describe('triggers', () => {
     it('accepts triggers with searchSource', () => {
       const triggers = [createMentionTrigger()];
