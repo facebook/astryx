@@ -585,7 +585,7 @@ export function PowerSearchEditPopover({
   const valueEditorRef = useRef<HTMLDivElement>(null);
 
   // Reset state when filter changes (new popover opened)
-  React.useEffect(() => {
+  useEffect(() => {
     setPartialFilter(initialFilter);
   }, [initialFilter]);
 
@@ -704,7 +704,7 @@ export function PowerSearchEditPopover({
   const isNestedType = operatorValue?.type === 'nested';
 
   // For empty type, auto-save on mount
-  React.useEffect(() => {
+  useEffect(() => {
     if (isEmptyType && partialFilter.field && partialFilter.operator) {
       onSave({
         field: partialFilter.field,

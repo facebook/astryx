@@ -32,7 +32,13 @@
  * ```
  */
 
-import React, {useId, useInsertionEffect, useMemo, useRef} from 'react';
+import React, {
+  useContext,
+  useId,
+  useInsertionEffect,
+  useMemo,
+  useRef,
+} from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
 import type {ThemeMode} from './types';
@@ -300,7 +306,7 @@ export function XDSTheme({
   mode = 'system',
   children,
 }: XDSThemeProps): React.ReactElement {
-  const isNested = React.useContext(XDSThemeNestingContext);
+  const isNested = useContext(XDSThemeNestingContext);
 
   useThemeStyleInjection(theme);
   useThemeFontLoading(theme);

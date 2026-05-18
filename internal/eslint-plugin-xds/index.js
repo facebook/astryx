@@ -20,6 +20,7 @@ import noReactIntrospectionRule from './no-react-introspection.js';
 import noClassnameClobberRule from './no-classname-clobber.js';
 import noHardcodedAnchorRule from './no-hardcoded-anchor.js';
 import noBorderShorthandRule from './no-border-shorthand.js';
+import noReactNamespaceHooksRule from './no-react-namespace-hooks.js';
 
 // =============================================================================
 // Rule: no-hardcoded-styles
@@ -228,6 +229,7 @@ const plugin = {
     'no-classname-clobber': noClassnameClobberRule,
     'no-hardcoded-anchor': noHardcodedAnchorRule,
     'no-border-shorthand': noBorderShorthandRule,
+    'no-react-namespace-hooks': noReactNamespaceHooksRule,
   },
   configs: {},
 };
@@ -247,6 +249,7 @@ plugin.configs.strict = {
     '@xds/no-classname-clobber': 'error',
     '@xds/no-hardcoded-anchor': 'error',
     '@xds/no-border-shorthand': 'error',
+    '@xds/no-react-namespace-hooks': 'error',
   },
 };
 
@@ -265,6 +268,7 @@ plugin.configs.recommended = {
     '@xds/no-classname-clobber': 'error',
     '@xds/no-hardcoded-anchor': 'warn',
     '@xds/no-border-shorthand': 'warn',
+    '@xds/no-react-namespace-hooks': 'error',
   },
 };
 

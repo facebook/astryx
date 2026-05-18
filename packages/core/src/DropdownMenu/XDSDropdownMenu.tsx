@@ -22,6 +22,7 @@
 
 import React, {
   useCallback,
+  useEffect,
   useId,
   useMemo,
   useRef,
@@ -242,7 +243,7 @@ export function XDSDropdownMenu({
   });
 
   // Sync controlled open state → popover, and focus first item on open
-  React.useEffect(() => {
+  useEffect(() => {
     if (isControlled) {
       if (controlledIsOpen && !popover.isOpen) {
         popover.show();

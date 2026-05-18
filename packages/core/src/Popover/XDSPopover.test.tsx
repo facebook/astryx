@@ -9,7 +9,7 @@
 
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import React from 'react';
+import React, {useRef} from 'react';
 import {XDSPopover} from './XDSPopover';
 
 // Store original matches to restore later
@@ -143,7 +143,7 @@ describe('XDSPopover', () => {
 
   it('supports anchorRef sibling mode', () => {
     function AnchorRefTest() {
-      const ref = React.useRef<HTMLButtonElement>(null);
+      const ref = useRef<HTMLButtonElement>(null);
       return (
         <>
           <button ref={ref}>Anchor</button>
