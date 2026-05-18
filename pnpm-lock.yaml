@@ -452,6 +452,9 @@ importers:
       '@xds/build':
         specifier: '*'
         version: link:../../packages/build
+      commander:
+        specifier: ^12.1.0
+        version: 12.1.0
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -461,6 +464,12 @@ importers:
       '@xds/core':
         specifier: '*'
         version: link:../../packages/core
+      '@xds/lab':
+        specifier: '*'
+        version: link:../../packages/lab
+      '@xds/theme-brutalist':
+        specifier: '*'
+        version: link:../../packages/themes/brutalist
       '@xds/theme-default':
         specifier: '*'
         version: link:../../packages/themes/default
@@ -649,6 +658,19 @@ importers:
       jiti:
         specifier: ^2.7.0
         version: 2.7.0
+    devDependencies:
+      '@xds/core':
+        specifier: '*'
+        version: link:../core
+      '@xds/lab':
+        specifier: '*'
+        version: link:../lab
+      '@xds/theme-default':
+        specifier: '*'
+        version: link:../themes/default
+      '@xds/theme-neutral':
+        specifier: '*'
+        version: link:../themes/neutral
 
   packages/core:
     dependencies:
