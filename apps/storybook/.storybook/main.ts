@@ -38,6 +38,13 @@ const config: StorybookConfig = {
 
     return {
       ...config,
+      optimizeDeps: {
+        ...config.optimizeDeps,
+        // Vite waits for all module transforms to finish before committing
+        // pre-bundled deps. The StyleX Babel plugin stalls on some XDS core
+        // components, so the crawl never completes and deps are never served.
+        holdUntilCrawlEnd: false,
+      },
       plugins: [
         {
           name: 'xds-color-scheme',
