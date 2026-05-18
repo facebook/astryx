@@ -12,12 +12,7 @@ on:
     branches: ["main"]
   merge_group:
 
-permissions:
-  contents: write
-  pages: write
-  id-token: write
-  pull-requests: write
-  actions: read
+permissions: {}
 
 concurrency:
   group: "ci-${{ github.event.merge_group.head_sha || github.head_ref }}"
@@ -29,6 +24,8 @@ jobs:
   check-scope:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       docsite_only: ${{ steps.scope.outputs.docsite_only }}
     steps:
@@ -57,6 +54,8 @@ jobs:
   # Docsite data extraction tests — always runs, fast (~2s)
   docsite-test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6
 
@@ -76,6 +75,8 @@ jobs:
     needs: [check-scope]
     if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       has_components: ${{ steps.check.outputs.has_components }}
     steps:
@@ -95,6 +96,8 @@ jobs:
   test:
     needs: [check-scope]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Skip for docsite-only changes
         if: needs.check-scope.outputs.docsite_only == 'true'
@@ -132,6 +135,8 @@ jobs:
   build:
     needs: [check-scope]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       storybook_url: ${{ steps.urls.outputs.storybook_url }}
       short_hash: ${{ steps.urls.outputs.short_hash }}
@@ -253,6 +258,8 @@ jobs:
     if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true'
     needs: [build, check-scope]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     concurrency:
       group: "pr-preview-${{ needs.build.outputs.pr_number }}"
       cancel-in-progress: true
@@ -318,6 +325,9 @@ jobs:
     if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true'
     needs: [build, check-scope]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -390,6 +400,8 @@ jobs:
     needs: [build, check-components]
     if: github.event_name == 'pull_request' && needs.check-components.outputs.has_components == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -434,6 +446,9 @@ jobs:
     needs: [build, check-components, pr-a11y]
     if: always() && github.event_name == 'pull_request' && needs.build.result == 'success' && needs.check-components.outputs.has_components == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v6

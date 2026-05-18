@@ -9,13 +9,14 @@ on:
     - cron: "0 6 * * *" # daily at 6am UTC
   workflow_dispatch: # manual trigger
 
-permissions:
-  contents: write
-  pull-requests: read
+permissions: {}
 
 jobs:
   prune:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
     steps:
       - name: Checkout
         uses: actions/checkout@v6

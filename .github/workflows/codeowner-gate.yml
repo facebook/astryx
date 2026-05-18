@@ -19,14 +19,15 @@ on:
   pull_request_review:
     types: [submitted]
 
-permissions:
-  checks: write
-  pull-requests: read
-  contents: read
+permissions: {}
 
 jobs:
   codeowner-gate:
     runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: read
+      contents: read
     steps:
       - name: Checkout CODEOWNERS and DESIGNOWNERS
         uses: actions/checkout@v6

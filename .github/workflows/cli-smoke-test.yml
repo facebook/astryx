@@ -11,8 +11,7 @@ on:
       - "apps/docsite/**"
   merge_group:
 
-permissions:
-  contents: read
+permissions: {}
 
 concurrency:
   group: "cli-smoke-${{ github.event.merge_group.head_sha || github.head_ref }}"
@@ -21,6 +20,8 @@ concurrency:
 jobs:
   smoke-test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6
 

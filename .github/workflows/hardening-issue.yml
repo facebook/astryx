@@ -13,15 +13,16 @@ on:
     types: [closed]
     branches: [main]
 
-permissions:
-  issues: write
-  contents: read
-  pull-requests: read
+permissions: {}
 
 jobs:
   create-hardening-issues:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+      pull-requests: read
     steps:
       - name: Detect new components and create hardening issues
         uses: actions/github-script@v9

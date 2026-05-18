@@ -16,12 +16,7 @@ on:
         required: true
         type: string
 
-permissions:
-  contents: write
-  pages: write
-  id-token: write
-  pull-requests: read
-  actions: read
+permissions: {}
 
 concurrency:
   group: "pr-preview-${{ github.event.inputs.pr_number }}"
@@ -30,6 +25,10 @@ concurrency:
 jobs:
   redeploy-preview:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+      actions: read
 
     env:
       PR_NUMBER: ${{ github.event.inputs.pr_number }}

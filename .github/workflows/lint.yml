@@ -8,6 +8,8 @@ on:
   pull_request:
     branches: [main]
 
+permissions: {}
+
 jobs:
   lint:
     runs-on: ubuntu-latest

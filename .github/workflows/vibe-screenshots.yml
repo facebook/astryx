@@ -29,13 +29,14 @@ concurrency:
   group: vibe-screenshots-${{ github.run_id }}
   cancel-in-progress: false
 
-permissions:
-  contents: write
+permissions: {}
 
 jobs:
   build-previews:
     name: Build Previews
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -74,6 +75,8 @@ jobs:
     name: Capture Screenshots
     needs: build-previews
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -121,6 +124,8 @@ jobs:
     needs: screenshot
     if: ${{ github.event.inputs.deploy_to_gh_pages != 'false' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout gh-pages
         uses: actions/checkout@v6

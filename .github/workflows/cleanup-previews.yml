@@ -15,13 +15,14 @@ on:
         default: false
         type: boolean
 
-permissions:
-  contents: write
-  pull-requests: read
+permissions: {}
 
 jobs:
   cleanup:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
     steps:
       - name: Checkout gh-pages
         uses: actions/checkout@v6

@@ -22,10 +22,7 @@ on:
     branches: ["main"]
   workflow_dispatch:
 
-permissions:
-  contents: write
-  pages: write
-  id-token: write
+permissions: {}
 
 concurrency:
   group: "pages-deploy"
@@ -36,6 +33,8 @@ jobs:
   # Fails if exports are stale — run `node scripts/sync-exports.js` locally to fix.
   sync-exports:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6
 
@@ -45,6 +44,8 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6
         with:
@@ -65,6 +66,8 @@ jobs:
     needs: test
     if: always() && !cancelled() && needs.test.result == 'success'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -258,6 +261,8 @@ jobs:
     needs: test
     if: always() && !cancelled() && needs.test.result == 'success'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -290,6 +295,8 @@ jobs:
     needs: test
     if: always() && !cancelled() && needs.test.result == 'success'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v6

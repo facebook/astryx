@@ -19,9 +19,7 @@ on:
     paths:
       - "packages/cli/src/codemods/**"
 
-permissions:
-  contents: read
-  pull-requests: write
+permissions: {}
 
 concurrency:
   group: "codemod-verify-${{ github.head_ref }}"
@@ -30,6 +28,9 @@ concurrency:
 jobs:
   verify-codemods:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - name: Checkout PR
         uses: actions/checkout@v6
