@@ -203,7 +203,11 @@ async function main() {
     fs.unlinkSync(tmpFile);
   }
 
-  // Compare formatted codemod output against formatted PR versions
+  // Compare codemod changes against PR versions.
+  // Instead of requiring exact file match, we verify that every line the
+  // codemod REMOVED from base is also absent in the PR, and every line it
+  // ADDED is present in the PR. This allows the PR to contain additional
+  // changes from stacked commits that are beyond the codemod's scope.
   let mismatches = 0;
   let matches = 0;
   const mismatchDetails = [];
@@ -221,16 +225,43 @@ async function main() {
       matches++;
       console.log(`  ✅ ${file}`);
     } else {
-      mismatches++;
-      const actualLines = actual.split('\n');
-      const expectedLines = expected.split('\n');
-      let diffCount = 0;
-      const maxLen = Math.max(actualLines.length, expectedLines.length);
-      for (let i = 0; i < maxLen; i++) {
-        if (actualLines[i] !== expectedLines[i]) diffCount++;
+      // Check if the codemod's changes are a subset of the PR's changes.
+      // The codemod transforms base → actual. The PR transforms base → expected.
+      // We verify that lines removed by codemod are also removed in PR,
+      // and lines added by codemod are present in PR.
+      const baseLines = (baseVersions[file] || '').split('\n');
+      const codemodLines = actual.split('\n');
+      const prLines = expected.split('\n');
+
+      // Find lines removed by codemod (in base but not in codemod output)
+      const codemodRemovedFromBase = baseLines.filter((l) => !codemodLines.includes(l));
+      // Find lines added by codemod (in codemod output but not in base)
+      const codemodAddedToBase = codemodLines.filter((l) => !baseLines.includes(l));
+
+      // Check: removed lines should also be absent from PR
+      const missingRemovals = codemodRemovedFromBase.filter(
+        (l) => l.trim() && prLines.includes(l),
+      );
+      // Check: added lines should be present in PR
+      const missingAdditions = codemodAddedToBase.filter(
+        (l) => l.trim() && !prLines.includes(l),
+      );
+
+      if (missingRemovals.length === 0 && missingAdditions.length === 0) {
+        matches++;
+        console.log(`  ✅ ${file} (superset — PR includes codemod changes + additional edits)`);
+      } else {
+        mismatches++;
+        const issues = [];
+        if (missingRemovals.length > 0) {
+          issues.push(`${missingRemovals.length} line(s) codemod removed still present in PR`);
+        }
+        if (missingAdditions.length > 0) {
+          issues.push(`${missingAdditions.length} line(s) codemod added missing from PR`);
+        }
+        mismatchDetails.push({file, diffLines: missingRemovals.length + missingAdditions.length, issues: issues.join('; ')});
+        console.log(`  ❌ ${file} (${issues.join('; ')})`);
       }
-      mismatchDetails.push({file, diffLines: diffCount});
-      console.log(`  ❌ ${file} (${diffCount} lines differ)`);
     }
   }
 
@@ -250,9 +281,9 @@ async function main() {
   console.log(`  ❌ Mismatches:   ${mismatches}`);
 
   if (mismatches > 0) {
-    console.log('\nMismatched files (codemod output ≠ committed changes):');
-    for (const {file, diffLines} of mismatchDetails) {
-      console.log(`  ❌ ${file} (${diffLines} line${diffLines === 1 ? '' : 's'} differ)`);
+    console.log('\nMismatched files (codemod changes not fully reflected in PR):');
+    for (const {file, diffLines, issues} of mismatchDetails) {
+      console.log(`  ❌ ${file} (${issues || diffLines + ' lines differ'})`);
     }
     console.log('\n⚠️  The codemod did not reproduce the committed consumer changes.');
     console.log('This means either:');
