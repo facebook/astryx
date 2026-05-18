@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Codemod: Migrate pre-v0.0.12 icon-only XDSButton to XDSIconButton
  * @see https://github.com/facebookexperimental/xds/issues/1321

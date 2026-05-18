@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Codemod: Unify visibility callbacks to onOpenChange
  * @see https://github.com/facebookexperimental/xds/pull/473

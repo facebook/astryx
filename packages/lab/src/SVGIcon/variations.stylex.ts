@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file variations.stylex.ts
  * @input Icon token vars

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file icons.ts
  * @input Lucide icon SVG paths

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {describe, it, expect} from 'vitest';
 import {component} from '../api/component.mjs';
 import {findShowcase, findRelatedBlocks} from '../api/template.mjs';

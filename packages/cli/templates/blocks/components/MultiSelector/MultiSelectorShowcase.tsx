@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {XDSMultiSelector} from '@xds/core/MultiSelector';
 
 export default function MultiSelectorShowcase() {

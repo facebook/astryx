@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 export const COMPONENT_CATEGORIES = [
   {
     label: 'Core',

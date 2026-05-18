@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 
 /**
  * Generates apps/docsite/src/app/playground/preview/scope.ts

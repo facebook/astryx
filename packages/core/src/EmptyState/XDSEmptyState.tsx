@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSEmptyState.tsx
  * @input Uses React, HTMLAttributes

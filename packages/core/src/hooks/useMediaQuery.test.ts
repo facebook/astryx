@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file useMediaQuery.test.ts
  * @input Uses vitest, @testing-library/react, useMediaQuery hook

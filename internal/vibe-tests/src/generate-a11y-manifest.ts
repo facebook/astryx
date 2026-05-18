@@ -1,4 +1,6 @@
 #!/usr/bin/env tsx
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Accessibility Manifest Generator
  * @description Generates accessibility manifests from official sources for XDS and baseline (Radix/shadcn)

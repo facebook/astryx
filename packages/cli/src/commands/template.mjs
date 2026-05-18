@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file template command — thin CLI wrapper around api/template.mjs
  */

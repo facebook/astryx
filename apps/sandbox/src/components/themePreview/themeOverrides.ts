@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * Pending-overrides model for the audit drawer's interactive editor.
  *

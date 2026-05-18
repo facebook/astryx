@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {describe, it, expect} from 'vitest';
 import {m4Reduce, type M4Point} from './m4';
 

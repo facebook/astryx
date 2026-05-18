@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {XDSDialog} from '@xds/core/Dialog';
 import {XDSVStack} from '@xds/core/Stack';
 import {XDSText} from '@xds/core/Text';

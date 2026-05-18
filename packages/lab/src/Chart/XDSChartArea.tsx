@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSChartArea.tsx
  * @output Renders a filled area between two y-bounds — confidence intervals, bands, ranges

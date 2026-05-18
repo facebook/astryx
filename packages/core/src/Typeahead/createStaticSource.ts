@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file createStaticSource.ts
  * @input Array of searchable items, optional config

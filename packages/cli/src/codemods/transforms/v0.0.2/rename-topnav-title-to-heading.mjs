@@ -1,3 +1,7 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Codemod: Rename XDSTopNavTitle → XDSTopNavHeading, title → heading
  * @see https://github.com/facebookexperimental/xds/pull/527

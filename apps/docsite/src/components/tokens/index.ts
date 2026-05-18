@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 export {ColorTokenTable} from './ColorTokenTable';
 export {SpacingTokenTable} from './SpacingTokenTable';
 export {SizeTokenTable} from './SizeTokenTable';

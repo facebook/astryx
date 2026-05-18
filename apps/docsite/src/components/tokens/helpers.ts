@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {useContext, useMemo} from 'react';
 import type {UseXDSThemeReturn} from '@xds/core/theme';
 import {

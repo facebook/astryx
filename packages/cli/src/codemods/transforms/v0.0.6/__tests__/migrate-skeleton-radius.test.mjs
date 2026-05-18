@@ -1,3 +1,7 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {describe, it, expect} from 'vitest';
 
 async function applyTransform(source) {

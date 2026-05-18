@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Codemod: Migrate gap/rowGap/columnGap from string tokens to numeric values
  *

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSChartReferenceLine.tsx
  * @output Horizontal or vertical reference line with crosshair-style badge label

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * Color token categories — copied verbatim from the docsite Theme Editor
  * (`apps/sandbox/src/app/(fullscreen)/pages/docsite/ThemeEditorView.tsx`)

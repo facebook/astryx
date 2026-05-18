@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file icons.tsx
  * @position Inline SVG icons used by the sandbox shell (sidebar + topnav).

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSChatTokenizedText} from '@xds/core/Chat';
 import {XDSChatMessage, XDSChatMessageBubble} from '@xds/core/Chat';

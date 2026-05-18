@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file pathTransforms.ts
  * @description SVG path manipulation utilities for XIF personality axes.

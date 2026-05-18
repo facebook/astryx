@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {XDSHeading} from '@xds/core/Text';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSSection} from '@xds/core/Section';

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {categories} from '../../sandboxPages';
 import {CategoryContent} from './CategoryContent';
 

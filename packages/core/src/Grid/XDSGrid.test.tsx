@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSGrid.test.tsx
  * @input Uses vitest, @testing-library/react, XDSGrid and XDSGridSpan components

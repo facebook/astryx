@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSVegaChart.tsx
  * @input A Vega or Vega-Lite spec (distinguished by $schema), parse config/options, view options, and data

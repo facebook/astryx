@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSChartDot.tsx
  * @output Renders scatter dots for a data key

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file marks/dot.tsx
  * @output Dot/scatter series — self-contained resolve + render

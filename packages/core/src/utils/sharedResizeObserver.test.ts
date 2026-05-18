@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 
 describe('sharedResizeObserver', () => {

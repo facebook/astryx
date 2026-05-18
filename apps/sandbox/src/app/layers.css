@@ -1,3 +1,5 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
 /* Layer order declaration — must be the first CSS in the bundle.
    Separate file because webpack hoists @import content above inline
    CSS, so an inline @layer statement in globals.css would appear

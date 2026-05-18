@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSDialog.test.tsx
  * @input Uses vitest, @testing-library/react, XDSDialog component

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSChartBrush.tsx
  * @output Drag-to-select region. Supports x-only or 2D (xy) brush modes.

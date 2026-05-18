@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file domainTokens/index.ts
  * @input None (re-exports sub-modules)

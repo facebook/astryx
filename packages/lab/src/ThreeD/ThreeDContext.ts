@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file ThreeDContext.ts
  * @output React context for 3D chart components

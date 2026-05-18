@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file marks/line.tsx
  * @output Line series — self-contained resolve + render

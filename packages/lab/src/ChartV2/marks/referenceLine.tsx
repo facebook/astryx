@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file marks/referenceLine.tsx
  * @output Horizontal or vertical reference line/band annotation

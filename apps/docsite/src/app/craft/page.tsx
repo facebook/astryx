@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * Page type: craft landing
  * Template gallery with hover overlay cards.

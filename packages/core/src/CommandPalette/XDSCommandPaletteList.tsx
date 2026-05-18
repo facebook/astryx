@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSCommandPaletteList.tsx
  * @input Uses React, StyleX, CommandPaletteContext

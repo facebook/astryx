@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSTreeList} from '@xds/core/TreeList';
 import type {XDSTreeListItemData} from '@xds/core/TreeList';

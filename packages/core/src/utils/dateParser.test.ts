@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file dateParser.test.ts
  * @input Uses vitest, dateParser utilities

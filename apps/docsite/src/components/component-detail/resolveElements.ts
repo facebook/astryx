@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * Resolves ElementDescriptor objects into React elements at runtime.
  * Shared between InteractivePreview (for playground defaults) and

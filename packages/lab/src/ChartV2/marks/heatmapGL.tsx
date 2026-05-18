@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file marks/heatmapGL.tsx
  * @output WebGL heatmap — 2D grid of colored cells on canvas

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import React, {Suspense, lazy} from 'react';
 import {createRoot} from 'react-dom/client';
 

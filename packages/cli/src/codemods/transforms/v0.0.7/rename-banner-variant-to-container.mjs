@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Codemod: Rename XDSBanner variant to container
  * @see https://github.com/facebookexperimental/xds/pull/814

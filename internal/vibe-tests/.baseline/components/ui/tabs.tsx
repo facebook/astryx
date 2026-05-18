@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import * as React from "react"
 import * as TabsPrimitive from "@radix-ui/react-tabs"
 

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {RuleTester} from 'eslint';
 import noReactIntrospectionRule from './no-react-introspection.js';
 

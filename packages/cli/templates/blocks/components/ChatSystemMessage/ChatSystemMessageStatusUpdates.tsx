@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 'use client';
 
 import {XDSChatMessageList, XDSChatSystemMessage} from '@xds/core/Chat';

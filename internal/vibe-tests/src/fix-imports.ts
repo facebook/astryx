@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Standalone codemod: fix missing XDS imports in vibe test results
  *

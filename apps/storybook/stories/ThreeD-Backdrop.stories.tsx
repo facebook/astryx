@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import type {Meta, StoryObj} from '@storybook/react';
 import {useMemo} from 'react';
 import {XDS3DChart, use3D} from '@xds/lab';

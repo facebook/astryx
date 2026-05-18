@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 export {XDSChart, type XDSChartProps, type YBaseline} from './XDSChart';
 export {XDSChartAxis, type XDSChartAxisProps} from './XDSChartAxis';
 export {XDSChartGrid, type XDSChartGridProps} from './XDSChartGrid';

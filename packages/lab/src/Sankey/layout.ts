@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file layout.ts
  * @output Pure layout algorithm — computes node and link positions

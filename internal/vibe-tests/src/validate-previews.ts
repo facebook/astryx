@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Standalone validator: check built preview HTML for unresolved XDS refs
  *

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Codemod: Remove size prop from XDSStatusDot and XDSProgressBar
  * @see https://github.com/facebookexperimental/xds/issues/904

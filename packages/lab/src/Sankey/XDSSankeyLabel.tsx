@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSSankeyLabel.tsx
  * @output Renders node labels — rotated on bar or beside it based on fit

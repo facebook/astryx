@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 'use client';
 
 import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';

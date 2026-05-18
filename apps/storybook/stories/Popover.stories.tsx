@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import React from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSPopover} from '@xds/core/Popover';

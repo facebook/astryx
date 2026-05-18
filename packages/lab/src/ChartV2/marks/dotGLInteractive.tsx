@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file marks/dotGLInteractive.tsx
  * @output WebGL scatter with GPU color-picking for O(1) nearest-point hover

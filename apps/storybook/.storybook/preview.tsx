@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import type {Preview, Decorator} from '@storybook/react';
 import * as React from 'react';
 import {XDSTheme, XDSLayerProvider} from '@xds/core';

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import React from 'react';
 import type {XDSIconRegistry} from '@xds/core/Icon';
 

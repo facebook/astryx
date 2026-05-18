@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {describe, it, expect} from 'vitest';
 import {hexToHct, hctToHex, tonalPalette, hexWithAlpha} from './hct';
 

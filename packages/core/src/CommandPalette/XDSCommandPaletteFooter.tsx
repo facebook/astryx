@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSCommandPaletteFooter.tsx
  * @input Uses React, StyleX, XDSKbd

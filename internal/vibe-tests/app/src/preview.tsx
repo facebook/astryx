@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import React, {Suspense, lazy} from 'react';
 import {XDSTheme} from '@xds/core/theme';
 import {defaultTheme} from '@xds/theme/default';

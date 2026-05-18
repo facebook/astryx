@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file useXDSTableFiltering.test.tsx
  * @input useXDSTableFiltering, XDSTable, React testing utilities

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSChartTooltip.tsx
  * @output Hover tooltip with optional crosshair lines, rendered in the top layer

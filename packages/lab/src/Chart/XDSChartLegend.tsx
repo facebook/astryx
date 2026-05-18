@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSChartLegend.tsx
  * @output Renders a legend — discrete swatches or continuous gradient bar

@@ -1,3 +1,5 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 # Re-deploy Preview
 #
 # Manually re-deploys a PR's preview build (Storybook + Sandbox) to GitHub Pages.

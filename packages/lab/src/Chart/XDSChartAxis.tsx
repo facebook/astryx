@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSChartAxis.tsx
  * @output Renders an axis (top, right, bottom, left) using the chart's scales

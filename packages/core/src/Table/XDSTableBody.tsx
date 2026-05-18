@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 'use client';
 import type {ReactNode} from 'react';
 import type {StyleXStyles} from '../theme/types';

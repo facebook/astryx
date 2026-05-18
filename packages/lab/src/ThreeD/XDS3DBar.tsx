@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDS3DBar.tsx
  * @output 3D bar chart — projected rectangles with depth shading

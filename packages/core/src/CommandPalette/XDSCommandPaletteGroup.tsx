@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSCommandPaletteGroup.tsx
  * @input Uses React, StyleX

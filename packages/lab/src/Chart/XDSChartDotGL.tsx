@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSChartDotGL.tsx
  * @output WebGL scatter — single draw call, canvas mounted outside SVG for sharp DPR

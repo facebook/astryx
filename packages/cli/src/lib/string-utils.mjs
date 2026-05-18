@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file String utilities — fuzzy matching and semantic search for component names
  */

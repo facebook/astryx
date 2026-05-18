@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Utility functions for the vibeability test harness
  * @position internal/vibe-tests/src/utils.ts

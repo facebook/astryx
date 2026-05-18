@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 
 /**
  * @description Runs accessibility audits on component stories using axe-core

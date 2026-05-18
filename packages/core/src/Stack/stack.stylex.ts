@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file stack.stylex.ts
  * @input Uses @stylexjs/stylex, spacing from theme

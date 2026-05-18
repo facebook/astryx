@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Codemod: Rename XDSBanner endButton to endContent
  * @see https://github.com/facebookexperimental/xds/pull/437

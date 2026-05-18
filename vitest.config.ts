@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file vitest.config.ts
  * @input Uses vitest/config, @vitejs/plugin-react

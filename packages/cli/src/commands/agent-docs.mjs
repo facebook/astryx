@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file agent-docs — Install/update agent docs for AI coding tools
  *

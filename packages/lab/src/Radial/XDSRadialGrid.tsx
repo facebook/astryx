@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSRadialGrid.tsx
  * @output Renders concentric grid rings and axis lines for spider charts

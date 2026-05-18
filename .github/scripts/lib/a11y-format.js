@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * Shared a11y formatting utilities for PR enrichment.
  * Used by generate-pr-comment.js and test-pr-enrichment.js.

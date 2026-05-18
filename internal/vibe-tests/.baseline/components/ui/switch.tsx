@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import * as React from "react"
 import * as SwitchPrimitives from "@radix-ui/react-switch"
 

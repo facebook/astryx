@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSCommandPalette.test.tsx
  * @input Uses vitest, @testing-library/react, XDSCommandPalette

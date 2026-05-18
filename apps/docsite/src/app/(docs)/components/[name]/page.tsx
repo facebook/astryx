@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * Component detail page.
  * Server component that resolves data, then delegates to ComponentDetailClient

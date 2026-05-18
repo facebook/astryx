@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * Generates apps/sandbox/src/generated/cliRegistry.ts by introspecting
  * the @xds/cli Commander.js program after all commands register.

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file marks/area.tsx
  * @output Area series — fill under line with stacking + gradient support

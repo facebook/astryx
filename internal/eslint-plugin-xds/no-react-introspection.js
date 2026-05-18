@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file no-react-introspection.js
  * @description ESLint rule banning React child introspection and prop inspection.

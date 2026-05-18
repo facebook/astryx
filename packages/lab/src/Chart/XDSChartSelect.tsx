@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSChartSelect.tsx
  * @output Click/tap to select data points. Pointer events.

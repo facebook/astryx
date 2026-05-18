@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file dateParser.ts
  * @input Uses Intl.DateTimeFormat for locale detection

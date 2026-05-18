@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';

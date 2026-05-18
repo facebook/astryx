@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Codemod: Rename Section/Toolbar variant "wash" to "muted"
  * @see https://github.com/facebookexperimental/xds/pull/2063

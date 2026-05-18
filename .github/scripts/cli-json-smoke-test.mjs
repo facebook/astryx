@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * CLI JSON smoke test — validates --json output for every supported command.
  *

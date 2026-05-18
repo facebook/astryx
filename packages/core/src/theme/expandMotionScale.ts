@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file expandMotionScale.ts
  * @input Motion scale configuration { fast, medium, ratio, easing? }

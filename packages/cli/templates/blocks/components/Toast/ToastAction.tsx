@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 // In production, use useXDSToast() hook for proper positioning, stacking, and lifecycle.
 'use client';
 

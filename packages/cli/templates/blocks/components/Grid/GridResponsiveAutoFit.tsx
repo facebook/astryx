@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 'use client';
 
 import {spacingVars} from '@xds/core/theme/tokens.stylex';

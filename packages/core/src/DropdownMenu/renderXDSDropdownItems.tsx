@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file renderXDSDropdownItems.tsx
  * @output Converts data-driven menu items into XDSDropdownMenuItem components

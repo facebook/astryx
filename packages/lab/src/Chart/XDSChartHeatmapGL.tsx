@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSChartHeatmapGL.tsx
  * @output WebGL heatmap — 2D grid, canvas mounted outside SVG

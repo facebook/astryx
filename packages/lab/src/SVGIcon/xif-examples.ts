@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file xif-examples.ts
  * @description Example icons demonstrating XIF spec features

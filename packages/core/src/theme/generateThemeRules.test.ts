@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file generateThemeRules.test.ts
  * Tests that generateThemeRules produces correct, consistent CSS rules

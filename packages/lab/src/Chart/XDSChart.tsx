@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSChart.tsx
  * @output Root chart container — sets up SVG, scales, and context

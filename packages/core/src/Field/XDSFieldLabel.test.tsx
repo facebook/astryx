@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSFieldLabel.test.tsx
  * @input Uses vitest, @testing-library/react, XDSFieldLabel component

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file types.ts
  * @output Sankey chart types — nodes, links, layout, and context

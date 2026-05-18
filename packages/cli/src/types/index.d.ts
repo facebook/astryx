@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 export * from './base';
 export * from './component';
 export * from './discover';

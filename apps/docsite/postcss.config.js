@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /* global module, require */
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const babelConfig = require('./babel.config');

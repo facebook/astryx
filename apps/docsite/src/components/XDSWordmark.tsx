@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 // XDS wordmark SVG — uses currentColor for light/dark adaptation
 export const XDS_WORDMARK = (
   <svg

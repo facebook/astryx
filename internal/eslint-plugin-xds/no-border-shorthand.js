@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file no-border-shorthand.js
  * @description Disallow border shorthand in stylex.create(). StyleX should use

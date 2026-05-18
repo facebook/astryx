@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Universal Compare — side-by-side comparison of two or three iterations
  *

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSHoverCard, useXDSHoverCard} from '@xds/core/HoverCard';
 import {XDSButton} from '@xds/core/Button';

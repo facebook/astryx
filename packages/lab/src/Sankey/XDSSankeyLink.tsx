@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSSankeyLink.tsx
  * @output Renders flow ribbons with configurable color modes

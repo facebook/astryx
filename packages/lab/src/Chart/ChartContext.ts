@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file ChartContext.ts
  * @output React context for sharing scales and dimensions between chart components

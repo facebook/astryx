@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import type {UniversalDimension, UniversalScore} from './types';
 
 /** The 5 code-analysis dimensions (always present). */

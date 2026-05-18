@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSStack.tsx
  * @input Uses React, ElementType, stack utility

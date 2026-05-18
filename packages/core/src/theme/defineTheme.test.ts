@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {describe, it, expect, vi} from 'vitest';
 import type {XDSIconRegistry} from '../Icon/globalIconRegistry';
 import {

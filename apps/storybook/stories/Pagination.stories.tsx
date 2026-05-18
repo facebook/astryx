@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
 import {XDSPagination} from '@xds/core/Pagination';

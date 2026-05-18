@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /// <reference types="next" />
 /// <reference types="next/image-types/global" />
 

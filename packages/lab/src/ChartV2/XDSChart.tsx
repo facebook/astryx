@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSChart.tsx (v2)
  * @output Root chart — coordinates layout, rendering, and events

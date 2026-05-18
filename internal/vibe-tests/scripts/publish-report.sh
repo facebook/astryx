@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 set -euo pipefail
 
 # Publish a vibe test report to GitHub Pages.

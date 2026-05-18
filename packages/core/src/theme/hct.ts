@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file hct.ts
  * @input Hex color string (#RRGGBB)

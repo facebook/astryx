@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file columnUtils.ts
  * @input XDSTableColumn types from types.ts

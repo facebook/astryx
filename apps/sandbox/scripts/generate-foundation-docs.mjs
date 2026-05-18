@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 
 /**
  * Pre-generate resolved foundation docs as a JSON file for the sandbox.

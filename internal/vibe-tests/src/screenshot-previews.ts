@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Screenshot pre-built preview HTML files using Playwright
  * @input Pre-built preview HTML files from build-previews.ts

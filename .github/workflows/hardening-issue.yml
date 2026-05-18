@@ -1,3 +1,5 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 # Auto-create hardening issues for new components
 #
 # When a PR merges that adds a new component directory under packages/core/src/,

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file text.stylex.ts
  * @input Uses StyleX, theme tokens

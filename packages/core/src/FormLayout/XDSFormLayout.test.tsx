@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSFormLayout.test.tsx
  * @input Uses vitest, @testing-library/react, XDSFormLayout component

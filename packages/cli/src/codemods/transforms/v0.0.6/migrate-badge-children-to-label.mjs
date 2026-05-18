@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * Codemod: Migrate XDSBadge from children to label prop
  *

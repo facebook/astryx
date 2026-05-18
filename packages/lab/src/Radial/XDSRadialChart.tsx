@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSRadialChart.tsx
  * @output Root radial chart container — spider, pie, donut

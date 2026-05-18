@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file sync-exports.js
  * @description Auto-generates the "exports" map in packages/core/package.json

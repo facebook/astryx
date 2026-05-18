@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file groupItems.ts
  * @input Array of XDSSearchableItem with optional auxiliaryData.group

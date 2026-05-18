@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDS3DAxis.tsx
  * @output 3D axis lines with labels at each end

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSAlertDialog.test.tsx
  * @input Uses vitest, @testing-library/react, XDSAlertDialog component

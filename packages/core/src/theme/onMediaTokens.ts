@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file onMediaTokens.ts
  * @input Theme token values from defineTheme

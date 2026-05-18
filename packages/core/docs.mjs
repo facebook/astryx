@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Lightweight XDS component docs — zero dependencies, ships with @xds/core.
  *

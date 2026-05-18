@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Core types for the vibeability test harness
  * @position internal/vibe-tests/src/types.ts

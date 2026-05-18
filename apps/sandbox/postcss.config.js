@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /* global module, __dirname */
 const path = require('path');
 const {postcss} = require('@xds/build');

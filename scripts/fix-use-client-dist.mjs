@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * Post-build: ensure "use client" is the FIRST LINE of dist files that need it.
  * tsup may insert babel helpers before the directive — this moves it to line 1.

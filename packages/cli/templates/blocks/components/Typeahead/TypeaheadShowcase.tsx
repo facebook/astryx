@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {XDSTypeahead} from '@xds/core/Typeahead';
 import type {XDSSearchableItem, XDSSearchSource} from '@xds/core/Typeahead';
 

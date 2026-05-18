@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {describe, it, expect, vi} from 'vitest';
 import {renderHook} from '@testing-library/react';
 import React from 'react';

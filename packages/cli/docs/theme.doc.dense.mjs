@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /** @type {import('../../core/src/docs-types').ReferenceTranslationDoc} */
 
 export const docsDense = {

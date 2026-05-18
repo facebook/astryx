@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSFieldStatus.tsx
  * @input Uses React, stylex, theme tokens

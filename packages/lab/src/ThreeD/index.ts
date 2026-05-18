@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 export {XDS3DChart, type XDS3DChartProps} from './XDS3DChart';
 export {XDS3DScatter, type XDS3DScatterProps} from './XDS3DScatter';
 export {XDS3DScatterGL, type XDS3DScatterGLProps} from './XDS3DScatterGL';

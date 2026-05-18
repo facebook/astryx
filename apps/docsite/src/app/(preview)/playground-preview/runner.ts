@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {scope} from './scope';
 
 interface BabelStandalone {

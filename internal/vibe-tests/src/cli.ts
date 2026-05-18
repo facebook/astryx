@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file CLI entry point for vibe-tests harness
  * @position internal/vibe-tests/src/cli.ts

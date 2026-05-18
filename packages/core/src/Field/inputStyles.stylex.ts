@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file inputStyles.stylex.ts
  * @input Uses theme tokens (color, spacing, radius, shadow, transition)

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * Parses a stringified TypeScript prop type into a control descriptor
  * that the playground can render an input for.

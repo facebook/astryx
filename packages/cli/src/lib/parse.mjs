@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Consumer utilities for parsing XDS CLI JSON output.
  *

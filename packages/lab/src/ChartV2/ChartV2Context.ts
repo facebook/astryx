@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {createContext, useContext} from 'react';
 import type {ChartV2Context} from './types';
 

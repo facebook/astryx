@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSFieldLabel.tsx
  * @input Uses React, XDSIcon, XDSIconType

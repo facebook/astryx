@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDS3DGrid.tsx
  * @output 3D wireframe grid on the floor plane (y=0)

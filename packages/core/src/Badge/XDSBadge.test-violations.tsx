@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Test file with intentional violations for ESLint plugin testing
  * Run with: yarn lint packages/core/src/Badge/XDSBadge.test-violations.tsx

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSChartDotGLInteractive.tsx
  * @output WebGL scatter with GPU color-picking for O(1) nearest-point hover detection

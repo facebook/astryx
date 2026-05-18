@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file formatFilterValue.ts
  * @input OperatorValue, FilterValue, config

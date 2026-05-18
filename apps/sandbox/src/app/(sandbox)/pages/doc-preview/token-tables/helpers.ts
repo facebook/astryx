@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import type {XDSDefinedTheme} from '@xds/core/theme';
 import {xdsTokenDefaults} from '@xds/core/theme';
 

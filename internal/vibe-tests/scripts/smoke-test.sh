@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 # @file Vibe test infrastructure smoke test
 #
 # Validates the vibe test pipeline works end-to-end without spawning

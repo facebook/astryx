@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSChatToolCalls, type XDSChatToolCallItem} from '@xds/core/Chat';
 import {useState, useCallback} from 'react';

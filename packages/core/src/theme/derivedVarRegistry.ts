@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Derived variable registry — maps CSS properties to internal vars.
  *

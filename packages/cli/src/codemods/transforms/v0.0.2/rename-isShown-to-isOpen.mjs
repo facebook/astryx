@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Codemod: Rename `isShown` prop to `isOpen` on Dialog and Popover
  * @see https://github.com/facebookexperimental/xds/pull/472

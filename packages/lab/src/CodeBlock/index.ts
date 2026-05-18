@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file CodeBlock component barrel export
  * @deprecated Import from '@xds/core/CodeBlock' instead.

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file boolean-prop-naming.test.mjs
  * @description Tests for the XDS boolean prop naming ESLint rule.

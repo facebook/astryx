@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSVegaChart, buildVegaLiteConfig} from '@xds/vega';
 import type {AnySpec} from '@xds/vega';

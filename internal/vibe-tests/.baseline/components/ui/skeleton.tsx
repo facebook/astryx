@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import { cn } from "@/lib/utils"
 
 function Skeleton({

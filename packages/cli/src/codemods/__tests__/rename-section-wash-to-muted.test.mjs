@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {describe, expect, test} from 'vitest';
 import {applyTransform} from 'jscodeshift/dist/testUtils.js';
 import transform from '../transforms/v0.0.14/rename-section-wash-to-muted.mjs';

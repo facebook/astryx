@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSDateInput.test.tsx
  * @input Uses vitest, @testing-library/react, XDSDateInput component

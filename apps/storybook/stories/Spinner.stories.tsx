@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSSpinner} from '@xds/core/Spinner';
 import {XDSText} from '@xds/core/Text';

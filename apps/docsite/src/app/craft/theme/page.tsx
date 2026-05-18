@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * Page type: theme editor
  * Live theme customization with token adjustments and preview.

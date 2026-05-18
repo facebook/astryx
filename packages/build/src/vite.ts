@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import type {Plugin} from 'vite';
 import stylexBabelPlugin from '@stylexjs/babel-plugin';
 import stylex from '@stylexjs/unplugin';

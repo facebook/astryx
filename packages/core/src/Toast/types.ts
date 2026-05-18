@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import type {ReactNode} from 'react';
 
 /** Toast status type. Controls color scheme. */

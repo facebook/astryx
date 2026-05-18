@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file ESLint plugin for XDS design system
  * @description Enforces usage of design tokens and XDS conventions

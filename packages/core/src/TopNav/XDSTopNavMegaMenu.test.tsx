@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSTopNavMegaMenu.test.tsx
  * @input Uses vitest, @testing-library/react, XDSTopNavMegaMenu and sub-components

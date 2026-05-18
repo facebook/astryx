@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSIcon.test.tsx
  * @input Uses vitest, @testing-library/react, XDSIcon component

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import type {Meta, StoryObj} from '@storybook/react';
 import {Fragment} from 'react';
 import {XDSSVGIcon, type SVGIconVariation, type SVGIconDef} from '@xds/lab';

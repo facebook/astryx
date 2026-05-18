@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSNumberInput.test.tsx
  * @input Uses vitest, @testing-library/react, XDSNumberInput component

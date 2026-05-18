@@ -1,3 +1,5 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 # Codemod verification — ensures codemods can reproduce callsite changes
 #
 # When a PR adds/modifies codemods AND touches consumer code (apps/, stories),

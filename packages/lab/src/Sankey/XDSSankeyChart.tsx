@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSSankeyChart.tsx
  * @output Root Sankey container — computes layout and provides context

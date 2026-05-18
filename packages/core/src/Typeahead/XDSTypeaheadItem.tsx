@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSTypeaheadItem.tsx
  * @input Uses React, StyleX, XDSSearchableItem

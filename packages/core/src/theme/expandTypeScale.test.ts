@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file expandTypeScale.test.ts
  * Tests for the two-layer type scale computation.

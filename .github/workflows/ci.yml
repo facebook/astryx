@@ -1,3 +1,5 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 # PR CI: test, build, analyze, a11y audit, and comment
 # Everything runs in parallel where possible
 #

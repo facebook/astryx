@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {describe, it, expect, beforeEach} from 'vitest';
 import {registerIcons, getIcon, resetIcons} from './globalIconRegistry';
 

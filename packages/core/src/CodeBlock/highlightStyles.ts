@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file highlightStyles.ts
  * @input Syntax token defaults from domainTokens

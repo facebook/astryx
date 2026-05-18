@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file usePowerSearchConfig.test.ts
  * @input createPowerSearchConfig utility

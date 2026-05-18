@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSToken.test.tsx
  * @input Uses vitest, @testing-library/react, XDSToken component

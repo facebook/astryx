@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSRadialTooltip.tsx
  * @output Hover tooltip for radial charts (pie/donut/spider)

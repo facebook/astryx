@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file useXDSTableColumnSettings.test.tsx
  * @input useXDSTableColumnSettings, useXDSTableColumnSettingsState, XDSTable, React testing utilities

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file expandColorScale.ts
  * @input Color scale configuration { accent, neutralStyle?, contrast? }

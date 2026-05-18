@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSRadialSlice.tsx
  * @output Renders pie/donut slices from radial context

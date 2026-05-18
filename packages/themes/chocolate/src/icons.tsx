@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file icons.tsx
  * @input Uses lucide-react icon components, XDSIconRegistry type

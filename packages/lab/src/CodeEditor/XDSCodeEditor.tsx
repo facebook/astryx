@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSCodeEditor.tsx
  * @input Uses React, StyleX, theme tokens, CSS Custom Highlight API

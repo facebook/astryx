@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file getXDSChartColors.ts
  * @output Pure function to resolve chart colors from a theme — no React required

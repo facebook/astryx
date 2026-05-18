@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file SankeyContext.ts
  * @output React context for sharing Sankey layout between components

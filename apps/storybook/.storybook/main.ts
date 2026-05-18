@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import type {StorybookConfig} from '@storybook/react-vite';
 import {xdsStylex} from '@xds/build/vite';
 import path from 'path';

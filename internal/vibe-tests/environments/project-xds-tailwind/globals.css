@@ -1,3 +1,5 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
 @layer reset, theme, base, xds-base, xds-theme, components, utilities;
 
 @import "tailwindcss/theme.css" layer(theme);

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSKbd.test.tsx
  * @input Uses React Testing Library, XDSKbd

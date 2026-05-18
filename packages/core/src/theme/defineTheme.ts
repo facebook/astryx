@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * defineTheme — Create an XDS theme from a flat token map.
  *

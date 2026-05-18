@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSRadialAxis.tsx
  * @output Renders axis labels at each spider vertex

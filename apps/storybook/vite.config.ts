@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file vite.config.ts
  * @input Uses vite, @vitejs/plugin-react, @stylexjs/unplugin

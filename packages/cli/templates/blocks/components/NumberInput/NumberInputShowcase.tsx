@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {XDSNumberInput} from '@xds/core/NumberInput';
 
 export default function NumberInputShowcase() {

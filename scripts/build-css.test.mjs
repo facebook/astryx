@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file build-css.test.mjs
  * Integration test for build-css.mjs

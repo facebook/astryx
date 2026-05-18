@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file useXDSChartColors.ts
  * @output Theme-aware chart color palette hook

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSSelectorOption.tsx
  * @output Exports XDSSelectorOption component for custom option rendering

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Hook discovery — find, list, and resolve XDS hooks
  */

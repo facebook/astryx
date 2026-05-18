@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file useXDSChartRange.ts
  * @output Hook that tracks streaming data ranges and provides domains for XDSChart

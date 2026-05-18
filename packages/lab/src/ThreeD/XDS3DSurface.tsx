@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDS3DSurface.tsx
  * @output 3D surface mesh — projected triangulated grid with color mapping

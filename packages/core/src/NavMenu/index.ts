@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 'use client';
 export {XDSNavHeadingMenu} from './XDSNavHeadingMenu';
 export type {XDSNavHeadingMenuProps} from './XDSNavHeadingMenu';

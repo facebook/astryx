@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file presentational-component.js
  * @description ESLint rule enforcing presentational component constraints.

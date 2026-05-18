@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSEmptyState} from '@xds/core/EmptyState';
 import {XDSButton} from '@xds/core/Button';

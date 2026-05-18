@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 # scripts/prune-branches.sh — Delete remote branches with merged/closed PRs
 #
 # Usage:

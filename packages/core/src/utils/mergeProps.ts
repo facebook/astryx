@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * Merge xds-* class name, stylex.props result, and optional consumer className/style.
  *

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDS3DScatterGL.tsx
  * @output WebGL 3D scatter — canvas overlaid outside SVG for sharp DPR rendering

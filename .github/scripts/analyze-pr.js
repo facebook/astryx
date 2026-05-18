@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 
 /**
  * @description Analyzes PR changes to detect new/modified components and gather stats

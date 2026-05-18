@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSSelector.test.tsx
  * @input Uses vitest, @testing-library/react, @testing-library/user-event

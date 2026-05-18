@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file edgeCompensation.stylex.ts
  * @input Uses @stylexjs/stylex

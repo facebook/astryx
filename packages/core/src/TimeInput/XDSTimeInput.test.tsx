@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSTimeInput.test.tsx
  * @input Uses vitest, @testing-library/react, XDSTimeInput component

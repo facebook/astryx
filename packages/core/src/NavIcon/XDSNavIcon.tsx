@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSNavIcon.tsx
  * @input Uses React, HTMLAttributes, ReactNode

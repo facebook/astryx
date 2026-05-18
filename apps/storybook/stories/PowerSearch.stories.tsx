@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import React, {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSPowerSearch} from '@xds/core/PowerSearch';

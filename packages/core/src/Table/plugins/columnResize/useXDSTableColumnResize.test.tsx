@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file useXDSTableColumnResize.test.tsx
  * @input useXDSTableColumnResize, XDSTable, React testing utilities

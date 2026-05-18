@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file marks/candlestick.tsx
  * @output Candlestick (OHLC) series

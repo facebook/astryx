@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file schema.ts
  * @input A spec object (Vega or Vega-Lite)

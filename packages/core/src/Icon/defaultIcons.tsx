@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file defaultIcons.tsx
  * @input Uses React JSX for inline SVGs

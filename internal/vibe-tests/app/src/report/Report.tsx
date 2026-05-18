@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {useState} from 'react';
 import {XDSTheme} from '@xds/core/theme';
 import {XDSVStack} from '@xds/core/Stack';

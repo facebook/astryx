@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 export {useXDSTableSelection} from './useXDSTableSelection';
 export type {UseXDSTableSelectionConfig} from './useXDSTableSelection';
 export {useXDSTableSelectionState} from './useXDSTableSelectionState';

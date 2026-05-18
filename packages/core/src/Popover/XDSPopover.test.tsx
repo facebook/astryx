@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSPopover.test.tsx
  * @input Uses vitest, @testing-library/react, XDSPopover component

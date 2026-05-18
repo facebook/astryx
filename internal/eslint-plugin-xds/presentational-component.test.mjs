@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file presentational-component.test.mjs
  * Tests for the presentational-component ESLint rule

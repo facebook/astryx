@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSChartGrid.tsx
  * @output Renders horizontal and/or vertical grid lines

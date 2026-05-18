@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 export {XDSRadialChart, type XDSRadialChartProps} from './XDSRadialChart';
 export {XDSRadialGrid, type XDSRadialGridProps} from './XDSRadialGrid';
 export {XDSRadialArea, type XDSRadialAreaProps} from './XDSRadialArea';

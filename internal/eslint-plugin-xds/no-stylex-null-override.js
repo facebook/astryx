@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file no-stylex-null-override.js
  * @description Disallow null values as style overrides in stylex.create().

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file useXDSTableSelection.test.tsx
  * @input useXDSTableSelection, XDSTable, React testing utilities

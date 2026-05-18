@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file no-classname-clobber.js
  * @description Disallow `className` or `style` alongside `{...stylex.props()}` on JSX elements.

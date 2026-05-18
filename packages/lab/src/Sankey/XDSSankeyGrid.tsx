@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSSankeyGrid.tsx
  * @output Dashed vertical lines at each column + optional column headers

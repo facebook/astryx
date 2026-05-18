@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 export {bar, type BarOptions} from './bar';
 export {line, type LineOptions} from './line';
 export {dot, type DotOptions} from './dot';

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 export {useXDSTableFiltering, toSearchFilters} from './useXDSTableFiltering';
 export {useXDSTableFilterState} from './useXDSTableFilterState';
 export type {UseXDSTableFilterStateResult} from './useXDSTableFilterState';

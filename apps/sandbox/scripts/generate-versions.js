@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /* global require, console, __dirname */
 /* eslint-disable no-undef, @typescript-eslint/no-require-imports */
 /**

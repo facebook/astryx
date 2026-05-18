@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSChartErrorBar.tsx
  * @output Renders error bars (whiskers) at each data point

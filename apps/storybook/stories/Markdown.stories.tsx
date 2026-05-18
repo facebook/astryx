@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {useState, useEffect, useCallback} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSMarkdown} from '@xds/core/Markdown';

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {describe, expect, test} from 'vitest';
 import {versions, getTransformsBetween} from '../registry.mjs';
 

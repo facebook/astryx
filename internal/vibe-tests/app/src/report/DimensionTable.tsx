@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {XDSTable} from '@xds/core/Table';
 import {XDSStatusDot} from '@xds/core/StatusDot';
 import {XDSHStack} from '@xds/core/Stack';

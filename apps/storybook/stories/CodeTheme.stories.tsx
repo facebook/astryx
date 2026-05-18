@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import type {Meta, StoryObj} from '@storybook/react';
 import React from 'react';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';

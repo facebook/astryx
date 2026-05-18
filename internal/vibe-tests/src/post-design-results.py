@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 """
 Post Night Watch design judge results as a GitHub issue comment.
 

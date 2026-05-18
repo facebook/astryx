@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file gap-report command — File a gap report for missing XDS capabilities
  *

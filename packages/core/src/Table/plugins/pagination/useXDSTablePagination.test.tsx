@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file useXDSTablePagination.test.tsx
  * @input useXDSTablePagination, XDSTable, XDSPagination, React testing utilities

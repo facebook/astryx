@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 
 export default function RadioListShowcase() {

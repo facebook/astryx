@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Codemod: Migrate useXDSIcon → getIcon, remove IconRegistryContext
  * @see https://github.com/facebookexperimental/xds/pull/531

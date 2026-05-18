@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSRadialArea.tsx
  * @output Renders a spider/radar polygon for a dataset

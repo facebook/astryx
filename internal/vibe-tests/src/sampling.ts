@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Sampling utilities for stratified prompt selection
  * @position internal/vibe-tests/src/sampling.ts

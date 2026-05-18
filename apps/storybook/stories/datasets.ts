@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * Fetch datasets from the vega-datasets CDN.
  * Supports JSON and CSV. Caches in memory.

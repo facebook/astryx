@@ -1,3 +1,7 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * XDS Default Theme
  *

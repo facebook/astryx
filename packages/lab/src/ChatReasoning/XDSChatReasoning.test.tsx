@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {render, screen, fireEvent} from '@testing-library/react';
 import {XDSChatReasoning} from './XDSChatReasoning';
 

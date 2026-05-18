@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {describe, it, expect} from 'vitest';
 import {tokenize, tokenizeAsync, tokenizeStreaming, flatTokensToLines} from './tokenizer';
 import type {TokenLine} from './tokenizer';

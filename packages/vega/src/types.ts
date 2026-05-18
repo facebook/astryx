@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file types.ts
  * @input Vega and Vega-Lite spec types, and the XDS Vega wrapper API surface

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSDateInput} from '@xds/core/DateInput';

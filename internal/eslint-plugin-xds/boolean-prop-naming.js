@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file boolean-prop-naming.js
  * @description ESLint rule enforcing XDS boolean prop naming conventions.

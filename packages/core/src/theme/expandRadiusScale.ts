@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file expandRadiusScale.ts
  * @input Radius scale configuration { base, multiplier }

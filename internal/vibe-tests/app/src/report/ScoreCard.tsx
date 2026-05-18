@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {XDSCard} from '@xds/core/Card';
 import {XDSVStack} from '@xds/core/Stack';
 import {XDSHStack} from '@xds/core/Stack';

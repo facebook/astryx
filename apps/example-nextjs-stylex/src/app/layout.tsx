@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import type {Metadata} from 'next';
 import './globals.css';
 import {Providers} from './providers';

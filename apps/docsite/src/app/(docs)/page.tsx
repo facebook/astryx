@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * Page type: overview
  * Home page — hero, libraries, foundations.

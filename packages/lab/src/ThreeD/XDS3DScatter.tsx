@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDS3DScatter.tsx
  * @output 3D scatter plot — projected circles with depth-based sizing/opacity

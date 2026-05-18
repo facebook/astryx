@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file marks/streamGL.tsx
  * @output WebGL streaming time-series line — ring buffer, canvas outside SVG

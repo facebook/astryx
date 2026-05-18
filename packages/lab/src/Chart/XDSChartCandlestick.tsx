@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSChartCandlestick.tsx
  * @output Renders candlestick/box-whisker marks for OHLC or statistical data

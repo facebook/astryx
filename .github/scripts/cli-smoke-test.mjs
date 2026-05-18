@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * CLI smoke test — auto-discovers every command and checks for output + clean exit.
  *

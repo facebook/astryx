@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file docblock-example-format.js
  * @description ESLint rule enforcing @example blocks use fenced code.

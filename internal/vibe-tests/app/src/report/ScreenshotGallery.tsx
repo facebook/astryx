@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {useState} from 'react';
 import {XDSCard} from '@xds/core/Card';
 import {XDSVStack} from '@xds/core/Stack';

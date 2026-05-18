@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import xdsPlugin from "./internal/eslint-plugin-xds/index.js";

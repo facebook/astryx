@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Codemod: Rename initialX props to defaultX pattern
  * @see https://github.com/facebookexperimental/xds/pull/470

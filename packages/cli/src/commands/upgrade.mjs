@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file upgrade command — Full version-to-version upgrade pipeline
  *

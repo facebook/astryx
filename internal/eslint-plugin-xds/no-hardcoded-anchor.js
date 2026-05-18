@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file no-hardcoded-anchor.js
  * @description Disallow hardcoded `<a>` elements in XDS core components.

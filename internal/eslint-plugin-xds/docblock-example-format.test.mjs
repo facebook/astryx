@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file docblock-example-format.test.mjs
  * Tests for the docblock-example-format ESLint rule.

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSMobileNav.test.tsx
  * @input Uses vitest, @testing-library/react, XDSMobileNav component

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file globalIconRegistry.tsx
  * @input None (pure module-level state)

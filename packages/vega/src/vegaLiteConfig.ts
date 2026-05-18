@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file vegaLiteConfig.ts
  * @input XDS theme tokens via useXDSTheme

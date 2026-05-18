@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 export {useXDSTableColumnSettings} from './useXDSTableColumnSettings';
 export type {
   UseXDSTableColumnSettingsConfig,

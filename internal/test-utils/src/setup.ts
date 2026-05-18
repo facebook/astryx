@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file setup.ts
  * @input Uses @testing-library/jest-dom/vitest

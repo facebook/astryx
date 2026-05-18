@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSTabList.test.tsx
  * @input Uses vitest, @testing-library/react, TabList components

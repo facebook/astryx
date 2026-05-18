@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSCenter.test.tsx
  * @input Uses vitest, @testing-library/react, XDSCenter component

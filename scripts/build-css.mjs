@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file build-css.mjs
  * Post-build script that extracts StyleX CSS from compiled source files

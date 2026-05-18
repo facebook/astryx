@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * Source check: verify files using React client APIs have "use client"
  * as their FIRST LINE (before any comments or JSDoc).

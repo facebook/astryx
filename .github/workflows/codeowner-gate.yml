@@ -1,3 +1,5 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 # Code owner gate: blocks merge unless a code owner has approved
 # Code owners themselves can merge freely (auto-pass)
 #

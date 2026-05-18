@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSTable.perf.test.tsx
  * @input XDSTable, React testing utilities

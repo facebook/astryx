@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSTheme} from '@xds/core/theme';

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file webgl.ts
  * @output Shared WebGL utilities for chart components

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file sandboxPages.ts
  * @position Central registry of all sandbox pages, grouped by category.

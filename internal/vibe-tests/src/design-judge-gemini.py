@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 """
 Night Watch Design Judge — Gemini 2.5 Pro Vision scoring.
 

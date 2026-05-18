@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file utils.ts
  * @output Server-safe re-exports of pure Markdown parser functions

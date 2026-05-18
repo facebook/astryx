@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file marks/errorBar.tsx
  * @output Error bar (whisker) series — vertical high/low bounds

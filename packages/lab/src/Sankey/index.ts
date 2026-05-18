@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 export {XDSSankeyChart, type XDSSankeyChartProps} from './XDSSankeyChart';
 export {
   XDSSankeyLink,

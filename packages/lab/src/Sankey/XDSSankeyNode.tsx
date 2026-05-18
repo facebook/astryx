@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSSankeyNode.tsx
  * @output Renders node indicators with optional glow

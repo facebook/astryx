@@ -1,3 +1,5 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 # Prune remote branches whose PRs are merged/closed, plus stale branches
 # with no PR older than 60 days.
 name: Prune merged branches

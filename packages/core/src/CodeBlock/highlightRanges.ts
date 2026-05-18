@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file highlightRanges.ts
  * @input Line divs, per-line token arrays, CSS Custom Highlight API

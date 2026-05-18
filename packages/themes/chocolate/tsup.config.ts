@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {defineConfig} from 'tsup';
 
 export default defineConfig({

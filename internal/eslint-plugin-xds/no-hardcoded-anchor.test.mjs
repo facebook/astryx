@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file no-hardcoded-anchor.test.mjs
  * @description Tests for the no-hardcoded-anchor ESLint rule.

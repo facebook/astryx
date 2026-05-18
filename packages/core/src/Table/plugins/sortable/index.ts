@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 export {useXDSTableSortable} from './useXDSTableSortable';
 export type {
   UseXDSTableSortableConfig,

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file marks/bar.tsx
  * @output Bar series — self-contained resolve + render

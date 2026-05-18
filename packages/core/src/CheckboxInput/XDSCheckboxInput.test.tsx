@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSCheckboxInput.test.tsx
  * @input Uses vitest, @testing-library/react, XDSCheckboxInput component

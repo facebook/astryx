@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {headers} from 'next/headers';
 import {DocsShell} from '../../components/DocsShell';
 import {components} from '../../generated/componentRegistry';

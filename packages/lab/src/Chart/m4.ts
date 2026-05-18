@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file m4.ts
  * @output m4Reduce — pixel-aware time series data reduction

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Codemod: Rename XDSSelector `items` prop to `options`
  * @see https://github.com/facebookexperimental/xds/pull/479

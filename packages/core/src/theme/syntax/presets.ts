@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file theme/syntax/presets.ts
  * @output 12 community syntax theme presets

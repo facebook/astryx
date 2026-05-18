@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file layout.ts
  * @output Computes scales, stacking, grouping, then delegates to each series.resolve()

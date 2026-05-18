@@ -1,3 +1,5 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 # Deploy Storybook + Sandbox to GitHub Pages, publish packages to Metaccio,
 # and publish @canary dist-tag from latest main.
 # Only runs on push to main — simple and sequential: sync → test → deploy + publish + canary

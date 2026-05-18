@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /** @type {import('./src/docs-types').GroupDoc} */
 
 /**

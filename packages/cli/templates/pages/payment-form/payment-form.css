@@ -1,3 +1,5 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
 /* Prevent layout shift when scrollbar appears/disappears (e.g. accordion toggle) */
 html {
   scrollbar-gutter: stable;

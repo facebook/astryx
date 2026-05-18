@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDS3DChart.tsx
  * @output Root 3D chart container — projected SVG with depth sorting

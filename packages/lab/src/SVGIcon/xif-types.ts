@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file xif-types.ts
  * @description XDS Icon Format (XIF) type definitions — v0.1.0 draft

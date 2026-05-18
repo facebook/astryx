@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * Butter theme palette generator — single-anchor smooth ramp.
  *

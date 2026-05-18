@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file index.ts
  * @input Uses @testing-library/react, @testing-library/user-event

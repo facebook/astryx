@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import path from 'path';
 import {fileURLToPath} from 'url';
 import {defineConfig} from 'vite';

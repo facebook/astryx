@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file layerAnimations.stylex.ts
  * @input Uses StyleX, theme duration/easing tokens

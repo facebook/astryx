@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * Page type: long-form-doc
  * Renders guide and foundation docs from the pipeline.

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Codemod: Migrate Badge dot mode → StatusDot
  * @see https://github.com/facebookexperimental/xds/pull/945

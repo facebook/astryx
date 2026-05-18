@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Codemod: Rename XDSSideNavHeader → XDSSideNavHeading, rename props
  * @see https://github.com/facebookexperimental/xds/pull/527
