@@ -8,7 +8,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {XDSDropdownMenu} from './XDSDropdownMenu';
 import {XDSDropdownMenuItem} from './XDSDropdownMenuItem';
@@ -107,6 +107,28 @@ describe('XDSDropdownMenu', () => {
       />,
     );
     expect(screen.getByTestId('my-dropdown')).toBeInTheDocument();
+  });
+});
+
+describe('XDSDropdownMenu light-dismiss race', () => {
+  it('does not re-open the menu when a click follows a hide within the guard window', () => {
+    // Reproduces the iOS Safari race: pointerdown fires light-dismiss before
+    // the subsequent click on the trigger; without the guard, the click would
+    // immediately re-open the menu in the same tap.
+    render(
+      <XDSDropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Edit'}]}
+        data-testid="xds-dropdown-menu"
+      />,
+    );
+
+    const trigger = screen.getByTestId('xds-dropdown-menu');
+    fireEvent.click(trigger); // open
+    fireEvent.click(trigger); // close (stamps guard)
+    fireEvent.click(trigger); // would re-open without guard
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(1);
+    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalledTimes(1);
   });
 });
 
