@@ -77,7 +77,6 @@ Battle-tested design solutions for common interactions and workflows: table page
 | `apps/`     | Example apps and Storybook                                  |
 | `packages/` | Published packages: core, cli, themes                       |
 | `internal/` | Internal tooling: test utilities, eslint plugin, vibe tests |
-| `e2e/`      | End-to-end tests (Playwright)                               |
 
 ## Contributing
 
