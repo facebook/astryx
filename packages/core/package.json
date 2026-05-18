@@ -193,6 +193,12 @@
       "import": "./dist/CommandPalette/index.mjs",
       "require": "./dist/CommandPalette/index.js"
     },
+    "./ContextMenu": {
+      "source": "./src/ContextMenu/index.ts",
+      "types": "./dist/ContextMenu/index.d.ts",
+      "import": "./dist/ContextMenu/index.mjs",
+      "require": "./dist/ContextMenu/index.js"
+    },
     "./DateInput": {
       "source": "./src/DateInput/index.ts",
       "types": "./dist/DateInput/index.d.ts",

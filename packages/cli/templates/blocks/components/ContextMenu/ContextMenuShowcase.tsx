@@ -1,0 +1,30 @@
+'use client';
+
+import * as stylex from '@stylexjs/stylex';
+import {XDSContextMenu} from '@xds/core/ContextMenu';
+
+const styles = stylex.create({
+  area: {
+    padding: '48px',
+    borderWidth: '2px',
+    borderStyle: 'dashed',
+    borderColor: '#d1d5db',
+    borderRadius: '8px',
+    textAlign: 'center',
+    color: '#6b7280',
+    userSelect: 'none',
+  },
+});
+
+export default function ContextMenuShowcase() {
+  return (
+    <XDSContextMenu
+      items={[
+        {label: 'Cut', onClick: () => {}},
+        {label: 'Copy', onClick: () => {}},
+        {label: 'Paste', onClick: () => {}},
+      ]}>
+      <div {...stylex.props(styles.area)}>Right-click this area</div>
+    </XDSContextMenu>
+  );
+}
