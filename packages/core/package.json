@@ -235,6 +235,12 @@
       "import": "./dist/Field/index.mjs",
       "require": "./dist/Field/index.js"
     },
+    "./FileInput": {
+      "source": "./src/FileInput/index.ts",
+      "types": "./dist/FileInput/index.d.ts",
+      "import": "./dist/FileInput/index.mjs",
+      "require": "./dist/FileInput/index.js"
+    },
     "./FormLayout": {
       "source": "./src/FormLayout/index.ts",
       "types": "./dist/FormLayout/index.d.ts",

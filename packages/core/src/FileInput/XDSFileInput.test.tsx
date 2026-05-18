@@ -1,0 +1,529 @@
+/**
+ * @file XDSFileInput.test.tsx
+ * @input Uses vitest, @testing-library/react, XDSFileInput component
+ * @output Unit tests for XDSFileInput component behavior
+ * @position Testing; validates XDSFileInput.tsx implementation
+ *
+ * SYNC: When XDSFileInput.tsx changes, update tests to match new behavior
+ */
+
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+import {describe, it, expect, vi} from 'vitest';
+import {render, screen, fireEvent} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import {XDSFileInput} from './XDSFileInput';
+
+function createFile(
+  name: string,
+  size: number,
+  type: string = 'text/plain',
+): File {
+  const content = new Uint8Array(size);
+  return new File([content], name, {type});
+}
+
+describe('XDSFileInput', () => {
+  it('renders with label', () => {
+    render(<XDSFileInput label="Resume" value={null} onChange={() => {}} />);
+    expect(screen.getByText('Resume')).toBeInTheDocument();
+  });
+
+  it('renders default placeholder for single file', () => {
+    render(<XDSFileInput label="File" value={null} onChange={() => {}} />);
+    expect(screen.getByText('Choose file')).toBeInTheDocument();
+  });
+
+  it('renders default placeholder for multiple files', () => {
+    render(
+      <XDSFileInput
+        label="Files"
+        value={null}
+        onChange={() => {}}
+        isMultiple
+      />,
+    );
+    expect(screen.getByText('Choose files')).toBeInTheDocument();
+  });
+
+  it('renders custom placeholder', () => {
+    render(
+      <XDSFileInput
+        label="Upload"
+        value={null}
+        onChange={() => {}}
+        placeholder="Drop here"
+      />,
+    );
+    expect(screen.getByText('Drop here')).toBeInTheDocument();
+  });
+
+  it('displays selected file name', () => {
+    const file = createFile('report.pdf', 1024, 'application/pdf');
+    render(<XDSFileInput label="Document" value={file} onChange={() => {}} />);
+    expect(screen.getByText('report.pdf')).toBeInTheDocument();
+  });
+
+  it('displays multiple file names', () => {
+    const files = [createFile('a.txt', 100), createFile('b.txt', 200)];
+    render(
+      <XDSFileInput
+        label="Files"
+        value={files}
+        onChange={() => {}}
+        isMultiple
+      />,
+    );
+    expect(screen.getByText('a.txt, b.txt')).toBeInTheDocument();
+  });
+
+  it('forwards ref to the native input', () => {
+    const ref = vi.fn();
+    render(
+      <XDSFileInput
+        ref={ref}
+        label="Upload"
+        value={null}
+        onChange={() => {}}
+      />,
+    );
+    expect(ref).toHaveBeenCalledWith(expect.any(HTMLInputElement));
+  });
+
+  it('visually hides label when isLabelHidden is true', () => {
+    render(
+      <XDSFileInput
+        label="Upload"
+        isLabelHidden
+        value={null}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByText('Upload')).toBeInTheDocument();
+  });
+
+  it('sets aria-required when isRequired is true', () => {
+    render(
+      <XDSFileInput
+        label="Resume"
+        isRequired
+        value={null}
+        onChange={() => {}}
+      />,
+    );
+    const input = document.querySelector('input[type="file"]')!;
+    expect(input).toHaveAttribute('aria-required', 'true');
+  });
+
+  it('does not set aria-required by default', () => {
+    render(<XDSFileInput label="Resume" value={null} onChange={() => {}} />);
+    const input = document.querySelector('input[type="file"]')!;
+    expect(input).not.toHaveAttribute('aria-required');
+  });
+
+  it('sets disabled attribute when isDisabled is true', () => {
+    render(
+      <XDSFileInput
+        label="Upload"
+        isDisabled
+        value={null}
+        onChange={() => {}}
+      />,
+    );
+    const input = document.querySelector('input[type="file"]')!;
+    expect(input).toBeDisabled();
+  });
+
+  it('sets aria-invalid when status type is error', () => {
+    render(
+      <XDSFileInput
+        label="Upload"
+        value={null}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Something went wrong'}}
+      />,
+    );
+    const input = document.querySelector('input[type="file"]')!;
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('does not set aria-invalid for warning status', () => {
+    render(
+      <XDSFileInput
+        label="Upload"
+        value={null}
+        onChange={() => {}}
+        status={{type: 'warning'}}
+      />,
+    );
+    const input = document.querySelector('input[type="file"]')!;
+    expect(input).not.toHaveAttribute('aria-invalid');
+  });
+
+  it('renders status message when provided', () => {
+    render(
+      <XDSFileInput
+        label="Upload"
+        value={null}
+        onChange={() => {}}
+        status={{type: 'error', message: 'File too large'}}
+      />,
+    );
+    expect(screen.getByText('File too large')).toBeInTheDocument();
+  });
+
+  it('renders description text', () => {
+    render(
+      <XDSFileInput
+        label="Upload"
+        value={null}
+        onChange={() => {}}
+        description="Max 5MB"
+      />,
+    );
+    expect(screen.getByText('Max 5MB')).toBeInTheDocument();
+  });
+
+  describe('file selection via native input', () => {
+    it('calls onChange when a file is selected', () => {
+      const handleChange = vi.fn();
+      render(
+        <XDSFileInput label="Upload" value={null} onChange={handleChange} />,
+      );
+      const input = document.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
+      const file = createFile('test.txt', 100);
+      fireEvent.change(input, {target: {files: [file]}});
+      expect(handleChange).toHaveBeenCalledWith(file);
+    });
+
+    it('calls onChange with File[] when isMultiple', () => {
+      const handleChange = vi.fn();
+      render(
+        <XDSFileInput
+          label="Upload"
+          value={null}
+          onChange={handleChange}
+          isMultiple
+        />,
+      );
+      const input = document.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
+      const files = [createFile('a.txt', 100), createFile('b.txt', 200)];
+      fireEvent.change(input, {target: {files}});
+      expect(handleChange).toHaveBeenCalledWith(files);
+    });
+
+    it('sets accept attribute on native input', () => {
+      render(
+        <XDSFileInput
+          label="Upload"
+          value={null}
+          onChange={() => {}}
+          accept=".pdf,.doc"
+        />,
+      );
+      const input = document.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
+      expect(input).toHaveAttribute('accept', '.pdf,.doc');
+    });
+
+    it('sets multiple attribute when isMultiple', () => {
+      render(
+        <XDSFileInput
+          label="Upload"
+          value={null}
+          onChange={() => {}}
+          isMultiple
+        />,
+      );
+      const input = document.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
+      expect(input).toHaveAttribute('multiple');
+    });
+  });
+
+  describe('validation', () => {
+    it('rejects files exceeding maxSize', () => {
+      const handleChange = vi.fn();
+      render(
+        <XDSFileInput
+          label="Upload"
+          value={null}
+          onChange={handleChange}
+          maxSize={1024}
+        />,
+      );
+      const input = document.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
+      const largeFile = createFile('big.txt', 2048);
+      fireEvent.change(input, {target: {files: [largeFile]}});
+      expect(handleChange).toHaveBeenCalledWith(null);
+    });
+
+    it('accepts files within maxSize', () => {
+      const handleChange = vi.fn();
+      render(
+        <XDSFileInput
+          label="Upload"
+          value={null}
+          onChange={handleChange}
+          maxSize={1024}
+        />,
+      );
+      const input = document.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
+      const file = createFile('small.txt', 512);
+      fireEvent.change(input, {target: {files: [file]}});
+      expect(handleChange).toHaveBeenCalledWith(file);
+    });
+
+    it('limits files to maxFiles', () => {
+      const handleChange = vi.fn();
+      render(
+        <XDSFileInput
+          label="Upload"
+          value={null}
+          onChange={handleChange}
+          isMultiple
+          maxFiles={2}
+        />,
+      );
+      const input = document.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
+      const files = [
+        createFile('a.txt', 100),
+        createFile('b.txt', 100),
+        createFile('c.txt', 100),
+      ];
+      fireEvent.change(input, {target: {files}});
+      expect(handleChange).toHaveBeenCalledWith([
+        expect.objectContaining({name: 'a.txt'}),
+        expect.objectContaining({name: 'b.txt'}),
+      ]);
+    });
+
+    it('rejects files with non-matching accept types', () => {
+      const handleChange = vi.fn();
+      render(
+        <XDSFileInput
+          label="Upload"
+          value={null}
+          onChange={handleChange}
+          accept=".pdf"
+        />,
+      );
+      const input = document.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
+      const file = createFile('image.png', 100, 'image/png');
+      fireEvent.change(input, {target: {files: [file]}});
+      expect(handleChange).toHaveBeenCalledWith(null);
+    });
+
+    it('accepts files matching wildcard accept types', () => {
+      const handleChange = vi.fn();
+      render(
+        <XDSFileInput
+          label="Upload"
+          value={null}
+          onChange={handleChange}
+          accept="image/*"
+        />,
+      );
+      const input = document.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
+      const file = createFile('photo.jpg', 100, 'image/jpeg');
+      fireEvent.change(input, {target: {files: [file]}});
+      expect(handleChange).toHaveBeenCalledWith(file);
+    });
+  });
+
+  describe('clear button', () => {
+    it('shows clear button when files are selected', () => {
+      const file = createFile('test.txt', 100);
+      render(<XDSFileInput label="Upload" value={file} onChange={() => {}} />);
+      expect(
+        screen.getByRole('button', {name: 'Clear Upload'}),
+      ).toBeInTheDocument();
+    });
+
+    it('does not show clear button when no files selected', () => {
+      render(<XDSFileInput label="Upload" value={null} onChange={() => {}} />);
+      expect(
+        screen.queryByRole('button', {name: 'Clear Upload'}),
+      ).not.toBeInTheDocument();
+    });
+
+    it('does not show clear button when disabled', () => {
+      const file = createFile('test.txt', 100);
+      render(
+        <XDSFileInput
+          label="Upload"
+          value={file}
+          onChange={() => {}}
+          isDisabled
+        />,
+      );
+      expect(
+        screen.queryByRole('button', {name: 'Clear Upload'}),
+      ).not.toBeInTheDocument();
+    });
+
+    it('calls onChange with null when clear is clicked', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      const file = createFile('test.txt', 100);
+      render(
+        <XDSFileInput label="Upload" value={file} onChange={handleChange} />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Clear Upload'}));
+      expect(handleChange).toHaveBeenCalledWith(null);
+    });
+
+    it('does not show clear button during loading', () => {
+      const file = createFile('test.txt', 100);
+      render(
+        <XDSFileInput
+          label="Upload"
+          value={file}
+          onChange={() => {}}
+          isLoading
+        />,
+      );
+      expect(
+        screen.queryByRole('button', {name: 'Clear Upload'}),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  describe('drag and drop', () => {
+    it('calls onChange when files are dropped in dropzone mode', () => {
+      const handleChange = vi.fn();
+      render(
+        <XDSFileInput
+          label="Upload"
+          value={null}
+          onChange={handleChange}
+          mode="dropzone"
+        />,
+      );
+      const dropzone = screen.getByRole('button', {name: 'Upload'});
+      const file = createFile('dropped.txt', 100);
+      fireEvent.drop(dropzone, {
+        dataTransfer: {files: [file]},
+      });
+      expect(handleChange).toHaveBeenCalledWith(file);
+    });
+
+    it('does not handle drop in input mode', () => {
+      const handleChange = vi.fn();
+      render(
+        <XDSFileInput label="Upload" value={null} onChange={handleChange} />,
+      );
+      const dropzone = screen.getByRole('button', {name: 'Upload'});
+      const file = createFile('dropped.txt', 100);
+      fireEvent.drop(dropzone, {
+        dataTransfer: {files: [file]},
+      });
+      expect(handleChange).not.toHaveBeenCalled();
+    });
+
+    it('does not handle drop when disabled', () => {
+      const handleChange = vi.fn();
+      render(
+        <XDSFileInput
+          label="Upload"
+          value={null}
+          onChange={handleChange}
+          mode="dropzone"
+          isDisabled
+        />,
+      );
+      const dropzone = screen.getByRole('button', {name: 'Upload'});
+      const file = createFile('dropped.txt', 100);
+      fireEvent.drop(dropzone, {
+        dataTransfer: {files: [file]},
+      });
+      expect(handleChange).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('keyboard interaction', () => {
+    it('opens file picker on Enter key', () => {
+      render(<XDSFileInput label="Upload" value={null} onChange={() => {}} />);
+      const dropzone = screen.getByRole('button', {name: 'Upload'});
+      const input = document.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
+      const clickSpy = vi.spyOn(input, 'click');
+      fireEvent.keyDown(dropzone, {key: 'Enter'});
+      expect(clickSpy).toHaveBeenCalled();
+      clickSpy.mockRestore();
+    });
+
+    it('opens file picker on Space key', () => {
+      render(<XDSFileInput label="Upload" value={null} onChange={() => {}} />);
+      const dropzone = screen.getByRole('button', {name: 'Upload'});
+      const input = document.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
+      const clickSpy = vi.spyOn(input, 'click');
+      fireEvent.keyDown(dropzone, {key: ' '});
+      expect(clickSpy).toHaveBeenCalled();
+      clickSpy.mockRestore();
+    });
+  });
+
+  describe('dropzone mode', () => {
+    it('renders in dropzone mode', () => {
+      render(
+        <XDSFileInput
+          label="Upload"
+          value={null}
+          onChange={() => {}}
+          mode="dropzone"
+        />,
+      );
+      expect(screen.getByText('Choose file')).toBeInTheDocument();
+    });
+
+    it('displays file name in dropzone mode', () => {
+      const file = createFile('doc.pdf', 100, 'application/pdf');
+      render(
+        <XDSFileInput
+          label="Upload"
+          value={file}
+          onChange={() => {}}
+          mode="dropzone"
+        />,
+      );
+      expect(screen.getByText('doc.pdf')).toBeInTheDocument();
+    });
+  });
+
+  describe('data-testid', () => {
+    it('passes data-testid to native input', () => {
+      render(
+        <XDSFileInput
+          label="Upload"
+          value={null}
+          onChange={() => {}}
+          data-testid="file-upload"
+        />,
+      );
+      const input = document.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
+      expect(input).toHaveAttribute('data-testid', 'file-upload');
+    });
+  });
+});
