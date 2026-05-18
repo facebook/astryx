@@ -296,7 +296,7 @@ describe('XDSMultiSelector', () => {
           value={[]}
           onChange={() => {}}
         />
-        <button>Next</button>
+        <button type="button">Next</button>
       </>,
     );
 

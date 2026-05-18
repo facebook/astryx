@@ -820,20 +820,23 @@ function PopoverFilterTrigger({
 
   // Build a local store override so FilterControl writes to the draft
   // instead of the consumer's state.
-  const draftStore: FilterStore = {
-    getConfig() {
-      return {
-        ...store.getConfig(),
-        filters: {
-          ...store.getConfig().filters,
-          [columnKey]: draft ?? undefined,
-        },
-        onFilterChange: (_key: string, val: XDSTableFilterValue | null) => {
-          setDraft(val);
-        },
-      };
-    },
-  };
+  const draftStore = useMemo<FilterStore>(
+    () => ({
+      getConfig() {
+        return {
+          ...store.getConfig(),
+          filters: {
+            ...store.getConfig().filters,
+            [columnKey]: draft ?? undefined,
+          },
+          onFilterChange: (_key: string, val: XDSTableFilterValue | null) => {
+            setDraft(val);
+          },
+        };
+      },
+    }),
+    [store, columnKey, draft, setDraft],
+  );
 
   return (
     <XDSPopover

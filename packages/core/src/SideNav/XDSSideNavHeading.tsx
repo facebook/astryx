@@ -19,7 +19,7 @@
  * - /packages/cli/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
-import {useCallback, useRef, type ReactNode} from 'react';
+import {useCallback, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -376,6 +376,11 @@ export function XDSSideNavHeading({
     hasCloseButton: false,
   });
 
+  const closeMenuCtx = useMemo(
+    () => ({closeMenu: popover.hide}),
+    [popover.hide],
+  );
+
   const {triggerProps, contentProps, menuRef, setTriggerEl} = useXDSMenuHover({
     show: popover.show,
     hide: popover.hide,
@@ -494,8 +499,7 @@ export function XDSSideNavHeading({
                   )}
                 </span>
               </button>
-              <XDSNavHeadingCloseContext.Provider
-                value={{closeMenu: popover.hide}}>
+              <XDSNavHeadingCloseContext.Provider value={closeMenuCtx}>
                 {menu}
               </XDSNavHeadingCloseContext.Provider>
             </div>,
@@ -546,10 +550,7 @@ export function XDSSideNavHeading({
     <span {...stylex.props(styles.textContainer)}>
       {superheading &&
         (hasAnyHref && superheadingHref && menu ? (
-          <XDSLink
-            href={superheadingHref}
-            color="secondary"
-            size="xsm">
+          <XDSLink href={superheadingHref} color="secondary" size="xsm">
             {superheading}
           </XDSLink>
         ) : (
@@ -569,10 +570,7 @@ export function XDSSideNavHeading({
       </span>
       {subheading &&
         (hasAnyHref && subheadingHref && menu ? (
-          <XDSLink
-            href={subheadingHref}
-            color="secondary"
-            size="xsm">
+          <XDSLink href={subheadingHref} color="secondary" size="xsm">
             {subheading}
           </XDSLink>
         ) : (
@@ -760,20 +758,14 @@ export function XDSSideNavHeading({
         <span {...stylex.props(styles.textContainer)}>
           {superheading &&
             (superheadingHref ? (
-              <XDSLink
-                href={superheadingHref}
-                color="secondary"
-                size="xsm">
+              <XDSLink href={superheadingHref} color="secondary" size="xsm">
                 {superheading}
               </XDSLink>
             ) : (
               <span {...stylex.props(styles.superheading)}>{superheading}</span>
             ))}
           {headingHref ? (
-            <XDSLink
-              href={headingHref}
-              color="primary"
-              weight="semibold">
+            <XDSLink href={headingHref} color="primary" weight="semibold">
               {heading}
             </XDSLink>
           ) : (
@@ -787,10 +779,7 @@ export function XDSSideNavHeading({
           )}
           {subheading &&
             (subheadingHref ? (
-              <XDSLink
-                href={subheadingHref}
-                color="secondary"
-                size="xsm">
+              <XDSLink href={subheadingHref} color="secondary" size="xsm">
                 {subheading}
               </XDSLink>
             ) : (

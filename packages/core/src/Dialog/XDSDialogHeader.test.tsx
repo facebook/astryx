@@ -129,7 +129,7 @@ describe('XDSDialogHeader', () => {
     render(
       <XDSDialogHeader
         title="Title"
-        endContent={<button>Custom Action</button>}
+        endContent={<button type="button">Custom Action</button>}
       />,
     );
     expect(
@@ -142,7 +142,7 @@ describe('XDSDialogHeader', () => {
       <XDSDialogHeader
         title="Title"
         onOpenChange={() => {}}
-        endContent={<button>Custom Action</button>}
+        endContent={<button type="button">Custom Action</button>}
       />,
     );
     expect(
@@ -153,7 +153,10 @@ describe('XDSDialogHeader', () => {
 
   it('renders startContent before the title', () => {
     render(
-      <XDSDialogHeader title="Title" startContent={<button>Back</button>} />,
+      <XDSDialogHeader
+        title="Title"
+        startContent={<button type="button">Back</button>}
+      />,
     );
     expect(screen.getByRole('button', {name: 'Back'})).toBeInTheDocument();
   });
@@ -162,8 +165,8 @@ describe('XDSDialogHeader', () => {
     render(
       <XDSDialogHeader
         title="Title"
-        startContent={<button>Back</button>}
-        endContent={<button>Save</button>}
+        startContent={<button type="button">Back</button>}
+        endContent={<button type="button">Save</button>}
         onOpenChange={() => {}}
       />,
     );

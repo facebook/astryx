@@ -90,7 +90,7 @@ describe('XDSChatLayout', () => {
     render(
       <XDSChatLayout
         composer={<div>composer</div>}
-        scrollButton={<button>Scroll to bottom</button>}>
+        scrollButton={<button type="button">Scroll to bottom</button>}>
         <div>msg</div>
       </XDSChatLayout>,
     );

@@ -254,10 +254,15 @@ describe('XDSSideNavHeading', () => {
 // XDSSideNavHeading — collapsed mode
 // =============================================================================
 
+const COLLAPSED_CONTEXT = {
+  isCollapsed: true,
+  toggle: () => {},
+  isCollapsible: true,
+};
+
 function CollapsedWrapper({children}: {children: ReactNode}) {
   return (
-    <XDSSideNavCollapseContext.Provider
-      value={{isCollapsed: true, toggle: () => {}, isCollapsible: true}}>
+    <XDSSideNavCollapseContext.Provider value={COLLAPSED_CONTEXT}>
       {children}
     </XDSSideNavCollapseContext.Provider>
   );
@@ -721,9 +726,9 @@ describe('SideNav integration', () => {
     render(
       <XDSSideNav
         header={<XDSSideNavHeading heading="My App" />}
-        topContent={<button>Create</button>}
+        topContent={<button type="button">Create</button>}
         footer={<div data-testid="promo">Promo</div>}
-        footerIcons={<button>Help</button>}>
+        footerIcons={<button type="button">Help</button>}>
         <XDSSideNavSection title="Main">
           <XDSSideNavItem label="Dashboard" isSelected />
           <XDSSideNavItem label="Projects" />

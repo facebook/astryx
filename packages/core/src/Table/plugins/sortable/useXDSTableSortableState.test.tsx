@@ -292,13 +292,17 @@ describe('useXDSTableSortableState', () => {
       return (
         <>
           <button
+            type="button"
             data-testid="external-sort"
             onClick={() =>
               setSort([{sortKey: 'age', direction: 'descending'}])
             }>
             Sort by age desc
           </button>
-          <button data-testid="clear-sort" onClick={() => setSort([])}>
+          <button
+            type="button"
+            data-testid="clear-sort"
+            onClick={() => setSort([])}>
             Clear sort
           </button>
           <SortableStateTable sort={sort} onSortChange={setSort} />

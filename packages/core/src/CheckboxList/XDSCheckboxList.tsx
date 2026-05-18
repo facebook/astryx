@@ -16,7 +16,14 @@
  * - /packages/cli/templates/blocks/components/CheckboxList/ (showcase blocks)
  */
 
-import {useId, useOptimistic, useTransition, type ReactNode} from 'react';
+import {
+  useCallback,
+  useId,
+  useMemo,
+  useOptimistic,
+  useTransition,
+  type ReactNode,
+} from 'react';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSField} from '../Field/XDSField';
 import type {XDSInputStatus} from '../Field/types';
@@ -170,23 +177,36 @@ export function XDSCheckboxList({
   const [optimisticValue, setOptimisticValue] = useOptimistic(effectiveValue);
   const isBusy = isLoading || optimisticValue !== effectiveValue;
 
-  const handleChange = (newValues: string[]) => {
-    onChange?.(newValues);
-    if (changeAction) {
-      startTransition(async () => {
-        setOptimisticValue(newValues);
-        await changeAction(newValues);
-      });
-    }
-  };
+  const handleChange = useCallback(
+    (newValues: string[]) => {
+      onChange?.(newValues);
+      if (changeAction) {
+        startTransition(async () => {
+          setOptimisticValue(newValues);
+          await changeAction(newValues);
+        });
+      }
+    },
+    [onChange, changeAction, startTransition, setOptimisticValue],
+  );
 
-  const contextValue: XDSCheckboxListContextValue = {
-    value: isCollectionMode ? optimisticValue : undefined,
-    onChange: isCollectionMode ? handleChange : undefined,
-    isDisabled,
-    isReadOnly,
-    isBusy,
-  };
+  const contextValue = useMemo<XDSCheckboxListContextValue>(
+    () => ({
+      value: isCollectionMode ? optimisticValue : undefined,
+      onChange: isCollectionMode ? handleChange : undefined,
+      isDisabled,
+      isReadOnly,
+      isBusy,
+    }),
+    [
+      isCollectionMode,
+      optimisticValue,
+      handleChange,
+      isDisabled,
+      isReadOnly,
+      isBusy,
+    ],
+  );
 
   return (
     <XDSField

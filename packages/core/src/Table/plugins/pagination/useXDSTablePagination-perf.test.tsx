@@ -74,13 +74,22 @@ function PluginStabilityTracker({
 
   return (
     <div>
-      <button data-testid="next-page" onClick={() => setPage(p => p + 1)}>
+      <button
+        type="button"
+        data-testid="next-page"
+        onClick={() => setPage(p => p + 1)}>
         Next
       </button>
-      <button data-testid="prev-page" onClick={() => setPage(p => p - 1)}>
+      <button
+        type="button"
+        data-testid="prev-page"
+        onClick={() => setPage(p => p - 1)}>
         Prev
       </button>
-      <button data-testid="change-size" onClick={() => setPageSize(10)}>
+      <button
+        type="button"
+        data-testid="change-size"
+        onClick={() => setPageSize(10)}>
         Size 10
       </button>
       <span data-testid="page">{page}</span>
@@ -131,7 +140,10 @@ function PaginationRenderCountTable({
 
   return (
     <div>
-      <button data-testid="next-page" onClick={() => setPage(p => p + 1)}>
+      <button
+        type="button"
+        data-testid="next-page"
+        onClick={() => setPage(p => p + 1)}>
         Next
       </button>
       <XDSTable

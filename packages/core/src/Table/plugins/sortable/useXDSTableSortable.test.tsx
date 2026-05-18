@@ -43,10 +43,12 @@ const sortableColumns: XDSTableColumn<User>[] = [
 // Test Helpers
 // =============================================================================
 
+const EMPTY_SORT: XDSTableSortState = [];
+
 function SortableTable({
   columns = sortableColumns,
   data = users,
-  initialSort = [] as XDSTableSortState,
+  initialSort = EMPTY_SORT,
   allowUnsortedState = false,
   isMultiSortEnabled = false,
   onSortChange: externalOnSortChange,

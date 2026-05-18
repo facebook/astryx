@@ -30,9 +30,11 @@ export interface XDSLayerProviderProps {
  * </XDSLayerProvider>
  * ```
  */
+const DEFAULT_TOAST_CONFIG = {};
+
 export function XDSLayerProvider({
   children,
-  toast: toastConfig = {},
+  toast: toastConfig = DEFAULT_TOAST_CONFIG,
 }: XDSLayerProviderProps) {
   const existingContext = useXDSLayerContext();
 

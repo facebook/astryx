@@ -45,7 +45,7 @@ describe('XDSHoverCard', () => {
   it('renders trigger element', () => {
     render(
       <XDSHoverCard content={<span>Card content</span>}>
-        <button>Trigger</button>
+        <button type="button">Trigger</button>
       </XDSHoverCard>,
     );
     expect(screen.getByRole('button', {name: 'Trigger'})).toBeInTheDocument();
@@ -54,7 +54,7 @@ describe('XDSHoverCard', () => {
   it('does not show content initially', () => {
     render(
       <XDSHoverCard content={<span>Card content</span>}>
-        <button>Trigger</button>
+        <button type="button">Trigger</button>
       </XDSHoverCard>,
     );
     // Content is in DOM (popover not open but element exists)
@@ -65,7 +65,7 @@ describe('XDSHoverCard', () => {
   it('injects aria-describedby on trigger', () => {
     render(
       <XDSHoverCard content={<span>Card content</span>}>
-        <button>Trigger</button>
+        <button type="button">Trigger</button>
       </XDSHoverCard>,
     );
     const trigger = screen.getByRole('button', {name: 'Trigger'});
@@ -75,7 +75,9 @@ describe('XDSHoverCard', () => {
   it('merges existing aria-describedby', () => {
     render(
       <XDSHoverCard content={<span>Card content</span>}>
-        <button aria-describedby="existing-id">Trigger</button>
+        <button type="button" aria-describedby="existing-id">
+          Trigger
+        </button>
       </XDSHoverCard>,
     );
     const trigger = screen.getByRole('button', {name: 'Trigger'});
@@ -90,7 +92,7 @@ describe('XDSHoverCard', () => {
         content={<span>Card content</span>}
         onOpenChange={onOpenChange}
         delay={0}>
-        <button>Trigger</button>
+        <button type="button">Trigger</button>
       </XDSHoverCard>,
     );
 
@@ -110,7 +112,7 @@ describe('XDSHoverCard', () => {
         onOpenChange={onOpenChange}
         isEnabled={false}
         delay={0}>
-        <button>Trigger</button>
+        <button type="button">Trigger</button>
       </XDSHoverCard>,
     );
 
@@ -141,7 +143,7 @@ describe('XDSHoverCard', () => {
       vi.mocked(HTMLElement.prototype.showPopover).mockClear();
       render(
         <XDSHoverCard content={<span>Default open card</span>} isDefaultOpen>
-          <button>Trigger</button>
+          <button type="button">Trigger</button>
         </XDSHoverCard>,
       );
 
@@ -157,7 +159,7 @@ describe('XDSHoverCard', () => {
           content={<span>Default open card</span>}
           isDefaultOpen
           onOpenChange={onOpenChange}>
-          <button>Trigger</button>
+          <button type="button">Trigger</button>
         </XDSHoverCard>,
       );
 
@@ -170,7 +172,7 @@ describe('XDSHoverCard', () => {
       vi.mocked(HTMLElement.prototype.showPopover).mockClear();
       render(
         <XDSHoverCard content={<span>Not default open</span>}>
-          <button>Trigger</button>
+          <button type="button">Trigger</button>
         </XDSHoverCard>,
       );
 
@@ -186,7 +188,7 @@ describe('XDSHoverCard', () => {
           isDefaultOpen
           onOpenChange={onOpenChange}
           hideDelay={0}>
-          <button>Trigger</button>
+          <button type="button">Trigger</button>
         </XDSHoverCard>,
       );
 
@@ -215,7 +217,7 @@ describe('XDSHoverCard', () => {
           onOpenChange={onOpenChange}
           delay={0}
           hideDelay={0}>
-          <button>Trigger</button>
+          <button type="button">Trigger</button>
         </XDSHoverCard>,
       );
 
@@ -241,10 +243,10 @@ describe('XDSHoverCard', () => {
 
       render(
         <XDSHoverCard
-          content={<button>Interactive button</button>}
+          content={<button type="button">Interactive button</button>}
           delay={0}
           hideDelay={0}>
-          <button>Trigger</button>
+          <button type="button">Trigger</button>
         </XDSHoverCard>,
       );
 
@@ -269,10 +271,10 @@ describe('XDSHoverCard', () => {
     it('refocuses trigger after Escape from content', async () => {
       render(
         <XDSHoverCard
-          content={<button>Interactive button</button>}
+          content={<button type="button">Interactive button</button>}
           delay={0}
           hideDelay={0}>
-          <button>Trigger</button>
+          <button type="button">Trigger</button>
         </XDSHoverCard>,
       );
 
@@ -300,11 +302,11 @@ describe('XDSHoverCard', () => {
       const onOpenChange = vi.fn();
       render(
         <XDSHoverCard
-          content={<button>Interactive button</button>}
+          content={<button type="button">Interactive button</button>}
           onOpenChange={onOpenChange}
           delay={0}
           hideDelay={0}>
-          <button>Trigger</button>
+          <button type="button">Trigger</button>
         </XDSHoverCard>,
       );
 
