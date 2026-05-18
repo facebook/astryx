@@ -43,8 +43,6 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         if: steps.scope.outputs.docsite_only != 'true'
-        with:
-          version: 9
       - uses: actions/setup-node@v6
         if: steps.scope.outputs.docsite_only != 'true'
         with:

@@ -2,7 +2,7 @@
 
 /**
  * @file Test file with intentional violations for ESLint plugin testing
- * Run with: yarn lint packages/core/src/Badge/XDSBadge.test-violations.tsx
+ * Run with: pnpm lint packages/core/src/Badge/XDSBadge.test-violations.tsx
  */
 
 import * as stylex from '@stylexjs/stylex';

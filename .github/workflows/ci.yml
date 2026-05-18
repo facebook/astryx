@@ -60,8 +60,6 @@ jobs:
       - uses: actions/checkout@v6
 
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
       - uses: actions/setup-node@v6
         with:
           node-version: 22
@@ -111,8 +109,6 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         if: needs.check-scope.outputs.docsite_only != 'true'
-        with:
-          version: 9
       - uses: actions/setup-node@v6
         if: needs.check-scope.outputs.docsite_only != 'true'
         with:
@@ -161,6 +157,10 @@ jobs:
       - name: Fetch base branch for PR analysis
         if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
         run: git fetch origin ${{ github.base_ref }} --depth=1
+
+      - name: Setup pnpm
+        if: needs.check-scope.outputs.docsite_only != 'true'
+        uses: pnpm/action-setup@v4
 
       - name: Setup Node.js
         if: needs.check-scope.outputs.docsite_only != 'true'
@@ -412,6 +412,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v6

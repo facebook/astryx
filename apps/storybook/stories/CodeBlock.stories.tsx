@@ -217,7 +217,7 @@ if [ ! -d "$DEPLOY_DIR" ]; then
   mkdir -p "$DEPLOY_DIR"
 fi
 
-yarn build
+pnpm build
 cp -r dist/* "$DEPLOY_DIR/"
 
 echo "Deploy complete: $VERSION"`,

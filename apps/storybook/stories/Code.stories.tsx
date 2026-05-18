@@ -79,7 +79,7 @@ export const VariousContent: Story = {
         Variable: <XDSCode>const count = 0</XDSCode>
       </XDSText>
       <XDSText type="body">
-        Terminal: <XDSCode>yarn build --watch</XDSCode>
+        Terminal: <XDSCode>pnpm build --watch</XDSCode>
       </XDSText>
       <XDSText type="body">
         CSS property: <XDSCode>border-radius: 8px</XDSCode>

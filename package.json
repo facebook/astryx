@@ -54,7 +54,7 @@
     "vite-plugin-singlefile": "^2.3.3",
     "vitest": "^2.1.0"
   },
-  "packageManager": "pnpm@9.15.4",
+  "packageManager": "pnpm@10.33.4",
   "lint-staged": {
     "*.{ts,tsx}": "eslint --cache --fix",
     "*.{ts,tsx,md}": "prettier --write"
@@ -65,13 +65,18 @@
       "postcss": "^8.5.10",
       "picomatch": "^4.0.4",
       "micromatch>picomatch": "^2.3.2",
-      "jscodeshift>picomatch": "^2.3.2",
       "anymatch>picomatch": "^2.3.2",
-      "eslint>minimatch": "^3.1.4",
       "test-exclude>minimatch": "^9.0.7",
-      "brace-expansion": "^1.1.13",
       "dompurify": "^3.3.2",
       "vite": "^6.4.2"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "@swc/core",
+      "sharp",
+      "@parcel/watcher",
+      "core-js",
+      "puppeteer"
+    ]
   }
 }
