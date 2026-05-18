@@ -8,8 +8,8 @@
  * Results are stored in the same format as the automated harness.
  *
  * Usage:
- *   yarn workspace @xds/vibe-tests interactive
- *   yarn workspace @xds/vibe-tests interactive --sample 5
+ *   pnpm -F @xds/vibe-tests interactive
+ *   pnpm -F @xds/vibe-tests interactive --sample 5
  */
 
 import * as fs from 'node:fs';
@@ -1036,7 +1036,7 @@ For each test, the subagent should:
    (Use individual files to avoid parallel write conflicts)
 
 ### After All Tests Complete
-Run: yarn workspace @xds/vibe-tests aggregate --iteration ${iterationId}
+Run: pnpm -F @xds/vibe-tests aggregate --iteration ${iterationId}
 
 This will:
 - Read all results from results/ directory

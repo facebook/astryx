@@ -671,7 +671,7 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "prepack": "yarn build",
+    "prepack": "pnpm build",
     "build": "tsup && node ../../scripts/postbuild-use-client.mjs && tsc --project tsconfig.build.json",
     "dev": "tsup --watch",
     "test": "vitest run --root ../..",
@@ -679,7 +679,7 @@
     "lint": "eslint src",
     "typecheck:docs": "tsc --project tsconfig.docs.json",
     "build:css": "node ../../scripts/build-css.mjs",
-    "postbuild": "yarn build:css && node ../../scripts/fix-use-client-dist.mjs"
+    "postbuild": "pnpm build:css && node ../../scripts/fix-use-client-dist.mjs"
   },
   "peerDependencies": {
     "react": ">=19.0.0",

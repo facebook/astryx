@@ -65,7 +65,7 @@ Recommends adding `letterSpacing` when `fontSize` is defined (common design patt
 ### Local Development (Human Mode)
 
 ```bash
-yarn lint
+pnpm lint
 # ESLint running in RECOMMENDED (human) mode
 # Shows warnings but doesn't fail
 ```
@@ -73,11 +73,11 @@ yarn lint
 ### CI / Agent Mode
 
 ```bash
-yarn lint:strict
+pnpm lint:strict
 # or
-XDS_STRICT_LINT=1 yarn lint
+XDS_STRICT_LINT=1 pnpm lint
 # or (automatic in GitHub Actions)
-CI=true yarn lint
+CI=true pnpm lint
 
 # ESLint running in STRICT (agent/CI) mode
 # Errors cause build failure
@@ -89,10 +89,10 @@ A test file with intentional violations is provided:
 
 ```bash
 # Human mode - shows warnings
-yarn lint packages/core/src/Badge/XDSBadge.test-violations.tsx
+pnpm lint packages/core/src/Badge/XDSBadge.test-violations.tsx
 
 # Strict mode - shows errors
-yarn lint:strict packages/core/src/Badge/XDSBadge.test-violations.tsx
+pnpm lint:strict packages/core/src/Badge/XDSBadge.test-violations.tsx
 ```
 
 Expected output in strict mode:

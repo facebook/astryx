@@ -2,4 +2,4 @@
 internal/vibe-tests/.baseline/components/ui/** linguist-generated=true binary
 
 # Lock files
-yarn.lock linguist-generated=true
+pnpm-lock.yaml linguist-generated=true

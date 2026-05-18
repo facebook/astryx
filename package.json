@@ -3,37 +3,31 @@
   "version": "0.0.0",
   "private": true,
   "license": "MIT",
-  "workspaces": [
-    "apps/*",
-    "packages/*",
-    "packages/themes/*",
-    "internal/*"
-  ],
   "scripts": {
-    "preinstall": "npx only-allow yarn",
-    "build": "yarn workspace @xds/build build && yarn workspace @xds/core build && yarn workspace @xds/vega build && yarn workspace @xds/theme-default build && yarn workspace @xds/theme-neutral build && yarn workspace @xds/theme-brutalist build && yarn workspace @xds/theme-daily build && yarn workspace @xds/theme-matcha build && yarn workspace @xds/theme-stone build && yarn workspace @xds/theme-gothic build && yarn workspace @xds/theme-chocolate build && yarn workspace @xds/theme-y2k build && yarn workspace @xds/theme-butter build",
-    "dev": "yarn workspace @xds/storybook dev",
+    "build": "pnpm -F @xds/core build && pnpm -F @xds/vega build && pnpm -F @xds/theme-default build && pnpm -F @xds/theme-neutral build && pnpm -F @xds/theme-brutalist build && pnpm -F @xds/theme-daily build && pnpm -F @xds/theme-matcha build && pnpm -F @xds/theme-stone build && pnpm -F @xds/theme-gothic build && pnpm -F @xds/theme-chocolate build && pnpm -F @xds/theme-y2k build && pnpm -F @xds/theme-butter build",
+    "dev": "pnpm -F @xds/storybook dev",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest --coverage",
     "check:package-boundaries": "node scripts/check-package-boundaries.js",
-    "check:repo": "yarn check:sync && yarn check:package-boundaries",
+    "check:repo": "pnpm check:sync && pnpm check:package-boundaries",
     "check:sync": "node scripts/check-sync.js",
-    "lint": "yarn check:repo && eslint .",
-    "lint:strict": "yarn check:repo && XDS_STRICT_LINT=1 eslint .",
-    "storybook": "yarn workspace @xds/storybook dev",
-    "storybook:build": "yarn workspace @xds/storybook build",
+    "lint": "pnpm check:repo && eslint .",
+    "lint:strict": "pnpm check:repo && XDS_STRICT_LINT=1 eslint .",
+    "storybook": "pnpm -F @xds/storybook dev",
+    "storybook:build": "pnpm -F @xds/storybook build",
+    "docs": "pnpm -F @xds/docs dev",
     "sync:exports": "node scripts/sync-exports.js",
     "sync:exports:check": "node scripts/sync-exports.js --check",
-    "xds": "yarn workspace @xds/cli xds",
+    "xds": "pnpm -F @xds/cli xds",
     "package:source": "node scripts/package-source.js",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "verify-exports": "node scripts/verify-exports.mjs",
-    "release": "yarn build && changeset publish",
+    "release": "pnpm build && changeset publish",
     "prepare": "husky install",
-    "dev:sandbox": "yarn workspace @xds/core build && yarn workspace @xds/sandbox dev",
-    "dev:sandbox:source": "XDS_SOURCE=1 yarn workspace @xds/sandbox dev"
+    "dev:sandbox": "pnpm -F @xds/core build && pnpm -F @xds/sandbox dev",
+    "dev:sandbox:source": "XDS_SOURCE=1 pnpm -F @xds/sandbox dev"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.3",
@@ -60,22 +54,24 @@
     "vite-plugin-singlefile": "^2.3.3",
     "vitest": "^2.1.0"
   },
-  "resolutions": {
-    "prettier": "^3.8.3",
-    "postcss": "^8.5.10",
-    "**/picomatch": "^4.0.4",
-    "micromatch/**/picomatch": "^2.3.2",
-    "jscodeshift/**/picomatch": "^2.3.2",
-    "anymatch/**/picomatch": "^2.3.2",
-    "eslint/**/minimatch": "^3.1.4",
-    "test-exclude/**/minimatch": "^9.0.7",
-    "**/brace-expansion": "^1.1.13",
-    "dompurify": "^3.3.2",
-    "vite": "^6.4.2"
-  },
-  "packageManager": "yarn@1.22.22",
+  "packageManager": "pnpm@9.15.4",
   "lint-staged": {
     "*.{ts,tsx}": "eslint --cache --fix",
     "*.{ts,tsx,md}": "prettier --write"
+  },
+  "pnpm": {
+    "overrides": {
+      "prettier": "^3.8.3",
+      "postcss": "^8.5.10",
+      "picomatch": "^4.0.4",
+      "micromatch>picomatch": "^2.3.2",
+      "jscodeshift>picomatch": "^2.3.2",
+      "anymatch>picomatch": "^2.3.2",
+      "eslint>minimatch": "^3.1.4",
+      "test-exclude>minimatch": "^9.0.7",
+      "brace-expansion": "^1.1.13",
+      "dompurify": "^3.3.2",
+      "vite": "^6.4.2"
+    }
   }
 }

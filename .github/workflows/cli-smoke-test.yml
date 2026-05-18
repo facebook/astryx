@@ -25,18 +25,21 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
       - uses: actions/setup-node@v6
         with:
           node-version: 22
-          cache: "yarn"
+          cache: "pnpm"
 
-      - run: yarn install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile
 
       - name: CLI smoke test
         run: node .github/scripts/cli-smoke-test.mjs
 
       - name: Typecheck JSON API types
-        run: cd packages/cli && yarn typecheck:json-api
+        run: cd packages/cli && pnpm typecheck:json-api
 
       - name: CLI --json smoke test
         run: node .github/scripts/cli-json-smoke-test.mjs

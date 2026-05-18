@@ -21,7 +21,7 @@ Renders [Vega](https://vega.github.io/vega/) and [Vega-Lite](https://vega.github
 ## Installation
 
 ```bash
-yarn add @xds/vega vega vega-lite
+pnpm add @xds/vega vega vega-lite
 ```
 
 ## Usage
@@ -157,5 +157,5 @@ Parses and validates a Vega `$schema` URL. Returns:
 ## Build
 
 ```bash
-yarn workspace @xds/vega build
+pnpm -F @xds/vega build
 ```

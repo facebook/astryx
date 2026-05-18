@@ -29,7 +29,7 @@ Follow the full component lifecycle documented on the XDS wiki:
   - `{ComponentName}Showcase.doc.mjs` — must set `isShowcase: true` and `componentsUsed: ['{ComponentName}']`
 - Wire up: add to `packages/core/src/index.ts`
 - Run `node scripts/sync-exports.js` to update package.json exports
-- Run `yarn build && yarn test && yarn lint`
+- Run `pnpm build && pnpm test && pnpm lint`
 
 ### Key conventions
 

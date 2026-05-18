@@ -22,6 +22,15 @@ For full setup instructions, see the **[@xds/core README](packages/core/README.m
 Quick install:
 
 ```bash
+# pnpm
+pnpm add @xds/core @xds/theme-default
+pnpm add -D @xds/cli
+
+# npm
+npm install @xds/core @xds/theme-default
+npm install -D @xds/cli
+
+# yarn
 yarn add @xds/core @xds/theme-default
 yarn add -D @xds/cli
 ```

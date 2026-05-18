@@ -45,13 +45,13 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '22'
-          cache: 'yarn'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Build core packages
-        run: yarn build
+        run: pnpm build
 
       - name: Build preview HTML files
         run: |
@@ -85,10 +85,10 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '22'
-          cache: 'yarn'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Install Playwright
         run: npx playwright install chromium --with-deps
