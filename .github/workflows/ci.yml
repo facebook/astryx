@@ -112,6 +112,10 @@ jobs:
       - run: yarn install --frozen-lockfile
         if: needs.check-scope.outputs.docsite_only != 'true'
 
+      - name: Check copyright headers
+        if: needs.check-scope.outputs.docsite_only != 'true'
+        run: ./scripts/add-copyright.sh --check
+
       - name: Check package.json exports are in sync
         if: needs.check-scope.outputs.docsite_only != 'true'
         run: node scripts/sync-exports.js --check

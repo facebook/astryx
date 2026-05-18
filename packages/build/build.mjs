@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * Compiles src/vite.ts → dist/vite.mjs for npm distribution.
  *

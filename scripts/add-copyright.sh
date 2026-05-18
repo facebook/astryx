@@ -38,6 +38,7 @@ done < <(
     -not -path '*/dist/*' \
     -not -path '*/.claude/*' \
     -not -path '*/.changeset/*' \
+    -not -path '*/.next/*' \
     -not -path '*/.husky/_/*' \
     -not -path '*/__snapshots__/*' \
     -print0

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file no-react-namespace-hooks.js
  * @description ESLint rule requiring direct imports of React hooks
