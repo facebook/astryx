@@ -105,12 +105,15 @@ const styles = stylex.create({
 const sizeStyles = stylex.create({
   sm: {
     height: sizeVars['--size-element-sm'],
+    minWidth: 180,
   },
   md: {
     height: sizeVars['--size-element-md'],
+    minWidth: 180,
   },
   lg: {
     height: sizeVars['--size-element-lg'],
+    minWidth: 180,
   },
 });
 

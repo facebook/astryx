@@ -193,6 +193,12 @@
       "import": "./dist/DateInput/index.mjs",
       "require": "./dist/DateInput/index.js"
     },
+    "./DateTimePicker": {
+      "source": "./src/DateTimePicker/index.ts",
+      "types": "./dist/DateTimePicker/index.d.ts",
+      "import": "./dist/DateTimePicker/index.mjs",
+      "require": "./dist/DateTimePicker/index.js"
+    },
     "./Dialog": {
       "source": "./src/Dialog/index.ts",
       "types": "./dist/Dialog/index.d.ts",
