@@ -199,6 +199,12 @@
       "import": "./dist/DateInput/index.mjs",
       "require": "./dist/DateInput/index.js"
     },
+    "./DateRangePicker": {
+      "source": "./src/DateRangePicker/index.ts",
+      "types": "./dist/DateRangePicker/index.d.ts",
+      "import": "./dist/DateRangePicker/index.mjs",
+      "require": "./dist/DateRangePicker/index.js"
+    },
     "./DateTimePicker": {
       "source": "./src/DateTimePicker/index.ts",
       "types": "./dist/DateTimePicker/index.d.ts",
