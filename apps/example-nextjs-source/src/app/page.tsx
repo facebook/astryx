@@ -186,8 +186,8 @@ export default function Home() {
             />
             <XDSSwitch
               label="Enable notifications"
-              isSelected={toggle}
-              onChange={setToggle}
+              value={toggle}
+              onChange={(checked) => setToggle(checked)}
             />
           </XDSVStack>
 
