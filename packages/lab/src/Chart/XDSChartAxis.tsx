@@ -66,6 +66,17 @@ export function XDSChartAxis({
         ? `translate(${width},0)`
         : undefined;
 
+  // For the bottom axis, draw the axis line at y=0 when the domain spans negative values
+  const axisLineY = (() => {
+    if (position !== 'bottom') return 0;
+    const domain = yScale.domain();
+    if (domain[0] < 0 && domain[1] > 0) {
+      // The axis line should appear at the zero mark relative to the bottom edge
+      return yScale(0) - height;
+    }
+    return 0;
+  })();
+
   const format = tickFormat ?? String;
   const tickSize = 6;
 
@@ -76,12 +87,12 @@ export function XDSChartAxis({
 
   return (
     <g transform={transform}>
-      {/* Axis line */}
+      {/* Axis line — at y=0 for bottom axis when domain spans negative values */}
       <line
         x1={isHorizontal ? 0 : 0}
         x2={isHorizontal ? width : 0}
-        y1={isHorizontal ? 0 : 0}
-        y2={isHorizontal ? 0 : height}
+        y1={isHorizontal ? axisLineY : 0}
+        y2={isHorizontal ? axisLineY : height}
         stroke="var(--color-border-emphasized)"
         strokeWidth={1}
       />
