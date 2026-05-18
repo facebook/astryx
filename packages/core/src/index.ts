@@ -18,6 +18,7 @@ export type {XDSBaseProps} from './XDSBaseProps';
 export * from './AppShell';
 export * from './AspectRatio';
 export * from './Avatar';
+export * from './AvatarGroup';
 export * from './Badge';
 export * from './Banner';
 export * from './Blockquote';

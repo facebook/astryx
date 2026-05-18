@@ -91,6 +91,12 @@
       "import": "./dist/Avatar/index.mjs",
       "require": "./dist/Avatar/index.js"
     },
+    "./AvatarGroup": {
+      "source": "./src/AvatarGroup/index.ts",
+      "types": "./dist/AvatarGroup/index.d.ts",
+      "import": "./dist/AvatarGroup/index.mjs",
+      "require": "./dist/AvatarGroup/index.js"
+    },
     "./Badge": {
       "source": "./src/Badge/index.ts",
       "types": "./dist/Badge/index.d.ts",

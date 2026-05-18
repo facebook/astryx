@@ -11,7 +11,7 @@
  * SYNC: When modified, update this header and /packages/core/src/Avatar/Avatar.doc.mjs
  */
 
-export {XDSAvatar} from './XDSAvatar';
+export {XDSAvatar, resolveSize} from './XDSAvatar';
 export type {XDSAvatarProps, XDSAvatarSize} from './XDSAvatar';
 export {XDSAvatarStatusDot} from './XDSAvatarStatusDot';
 export type {

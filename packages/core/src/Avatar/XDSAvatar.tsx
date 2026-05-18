@@ -84,7 +84,7 @@ export type XDSAvatarSize = XDSAvatarNamedSize | XDSAvatarNumericSize;
 /**
  * Resolves named sizes to their numeric pixel values
  */
-function resolveSize(size: XDSAvatarSize): number {
+export function resolveSize(size: XDSAvatarSize): number {
   if (typeof size === 'number') {
     return size;
   }
