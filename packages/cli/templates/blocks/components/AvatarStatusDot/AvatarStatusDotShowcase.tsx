@@ -11,7 +11,7 @@ export default function AvatarStatusDotShowcase() {
       <XDSAvatar
         name="Online User"
         size="large"
-        status={<XDSAvatarStatusDot variant="positive" label="Online" />}
+        status={<XDSAvatarStatusDot variant="success" label="Online" />}
       />
       <XDSAvatar
         name="Away User"
@@ -21,7 +21,7 @@ export default function AvatarStatusDotShowcase() {
       <XDSAvatar
         name="Busy User"
         size="large"
-        status={<XDSAvatarStatusDot variant="negative" label="Busy" />}
+        status={<XDSAvatarStatusDot variant="error" label="Busy" />}
       />
     </XDSHStack>
   );

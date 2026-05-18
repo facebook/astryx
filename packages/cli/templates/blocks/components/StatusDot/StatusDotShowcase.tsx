@@ -8,9 +8,9 @@ import {XDSHStack} from '@xds/core/Layout';
 export default function StatusDotShowcase() {
   return (
     <XDSHStack gap={2} vAlign="center">
-      <XDSStatusDot variant="positive" label="Positive" />
+      <XDSStatusDot variant="success" label="Positive" />
       <XDSStatusDot variant="warning" label="Warning" />
-      <XDSStatusDot variant="negative" label="Negative" />
+      <XDSStatusDot variant="error" label="Negative" />
       <XDSStatusDot variant="accent" label="Info" />
       <XDSStatusDot variant="neutral" label="Neutral" />
     </XDSHStack>

@@ -17,7 +17,7 @@ export default function ProgressBarSemanticVariants() {
       <XDSProgressBar
         value={80}
         label="Positive"
-        variant="positive"
+        variant="success"
         hasValueLabel
       />
       <XDSProgressBar
@@ -29,7 +29,7 @@ export default function ProgressBarSemanticVariants() {
       <XDSProgressBar
         value={92}
         label="Negative"
-        variant="negative"
+        variant="error"
         hasValueLabel
       />
       <XDSProgressBar

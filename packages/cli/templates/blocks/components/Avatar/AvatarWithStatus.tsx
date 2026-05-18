@@ -12,7 +12,7 @@ export default function AvatarWithStatus() {
         src="https://lookaside.facebook.com/assets/vs_datakit_profile_photos_t66173184/VS-Design-Tools-Datakit-05.jpg"
         name="Alex Daniels"
         size="large"
-        status={<XDSAvatarStatusDot variant="positive" label="Online" />}
+        status={<XDSAvatarStatusDot variant="success" label="Online" />}
       />
       <XDSAvatar
         src="https://lookaside.facebook.com/assets/vs_datakit_profile_photos_t66173184/VS-Design-Tools-Datakit-30.jpg"
@@ -24,7 +24,7 @@ export default function AvatarWithStatus() {
         src="https://lookaside.facebook.com/assets/vs_datakit_profile_photos_t66173184/VS-Design-Tools-Datakit-60.jpg"
         name="Carol Davis"
         size="large"
-        status={<XDSAvatarStatusDot variant="negative" label="Busy" />}
+        status={<XDSAvatarStatusDot variant="error" label="Busy" />}
       />
     </XDSStack>
   );

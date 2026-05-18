@@ -12,7 +12,7 @@ export default function AvatarShowcase() {
         name="Ann Smith"
         size="large"
         src="https://lookaside.facebook.com/assets/vs_datakit_profile_photos_t66173184/VS-Design-Tools-Datakit-30.jpg"
-        status={<XDSAvatarStatusDot variant="positive" label="Online" />}
+        status={<XDSAvatarStatusDot variant="success" label="Online" />}
       />
       <XDSAvatar
         name="Alex Daniels"
@@ -23,7 +23,7 @@ export default function AvatarShowcase() {
       <XDSAvatar
         name="Taylor Nguyen"
         size="large"
-        status={<XDSAvatarStatusDot variant="negative" label="Online" />}
+        status={<XDSAvatarStatusDot variant="error" label="Online" />}
       />
     </XDSStack>
   );

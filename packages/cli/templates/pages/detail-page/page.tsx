@@ -282,12 +282,17 @@ function PageHeader({
                 </XDSHStack>
               </XDSLink>
               <XDSVStack gap={0}>
-                <XDSHeading level={1} maxLines={1}>#1001</XDSHeading>
+                <XDSHeading level={1} maxLines={1}>
+                  #1001
+                </XDSHeading>
                 <XDSOverflowList
                   gap={1}
                   minVisibleItems={2}
                   overflowRenderer={overflowItems => (
-                    <XDSBadge variant="neutral" label={`+${overflowItems.length} more`} />
+                    <XDSBadge
+                      variant="neutral"
+                      label={`+${overflowItems.length} more`}
+                    />
                   )}>
                   <XDSHStack gap={1} vAlign="center">
                     <XDSText type="body" maxLines={1}>
@@ -623,7 +628,7 @@ function RightPanel() {
             <XDSProgressBar
               label="Risk level"
               value={15}
-              variant="positive"
+              variant="success"
               isLabelHidden
             />
             <XDSText type="body">Recommendation: Fulfill order</XDSText>

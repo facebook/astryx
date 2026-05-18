@@ -13,7 +13,7 @@ export default function TabListTabsWithStatusDot() {
       <XDSTab
         value="production"
         label="Production"
-        endContent={<XDSStatusDot variant="positive" label="Healthy" />}
+        endContent={<XDSStatusDot variant="success" label="Healthy" />}
       />
       <XDSTab
         value="staging"
