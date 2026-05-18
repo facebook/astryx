@@ -48,6 +48,7 @@ import {
 import {XDSIcon, renderIconSlot, type XDSIconType} from '../Icon';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
+import {useXDSInputGroup} from '../InputGroup/XDSInputGroupContext';
 
 const styles = stylex.create({
   wrapper: {
@@ -118,6 +119,8 @@ const sizeStyles = stylex.create({
 });
 
 export type XDSNumberInputSize = keyof typeof sizeStyles;
+
+import {groupStyles} from '../InputGroup/groupStyles';
 
 // Re-export shared types for convenience
 
@@ -368,6 +371,7 @@ export function XDSNumberInput({
   const statusMessageID = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const inputGroup = useXDSInputGroup();
 
   // Pending input while user is typing (null = show formatted value)
   const [pendingInput, setPendingInput] = useState<string | null>(null);
@@ -520,6 +524,81 @@ export function XDSNumberInput({
       disabled: isDisabled,
     });
 
+  const inputWrapper = (
+    <div
+      ref={containerRef}
+      onClick={handleWrapperClick}
+      onMouseUp={handleWrapperMouseUp}
+      {...mergeProps(
+        xdsClassName('number-input', {size, status: status?.type ?? null}),
+        stylex.props(
+          inputWrapperStyles.base,
+          styles.wrapper,
+          sizeStyles[size],
+          isDisabled && inputWrapperStyles.disabled,
+          status && inputStatusBorderStyles[status.type],
+          status && inputStatusHoverShadowStyles[status.type],
+          status && inputStatusFocusWithinStyles[status.type],
+          inputGroup && groupStyles.inGroup,
+          xstyle,
+        ),
+        className,
+        style,
+      )}>
+      {startIcon && renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
+      <input
+        {...rest}
+        ref={setRefs}
+        id={id}
+        name={htmlName}
+        type="number"
+        autoComplete={autoComplete}
+        value={displayValue}
+        onChange={handleInputChange}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        disabled={isDisabled}
+        autoFocus={hasAutoFocus}
+        data-autofocus={hasAutoFocus || undefined}
+        min={min ?? undefined}
+        max={max ?? undefined}
+        step={step ?? undefined}
+        aria-describedby={ariaDescribedBy}
+        aria-required={isRequired === true ? 'true' : undefined}
+        aria-invalid={status?.type === 'error' ? 'true' : undefined}
+        aria-label={inputGroup ? label : undefined}
+        {...stylex.props(
+          styles.input,
+          isDisabled && styles.inputDisabled,
+          !isInputValid && styles.inputInvalid,
+        )}
+      />
+      {units && <span {...stylex.props(styles.units)}>{units}</span>}
+      {hasClear && value != null && !isDisabled && (
+        <button
+          type="button"
+          onClick={handleClear}
+          aria-label={`Clear ${label}`}
+          {...stylex.props(styles.clearButton)}>
+          <XDSIcon icon="close" size="sm" color="secondary" />
+        </button>
+      )}
+      {status && !inputGroup && (
+        <XDSIcon
+          icon={statusIconMap[status.type]}
+          size="md"
+          color={statusIconColorMap[status.type]}
+        />
+      )}
+    </div>
+  );
+
+  if (inputGroup) {
+    return inputWrapper;
+  }
+
   return (
     <XDSField
       label={label}
@@ -541,73 +620,7 @@ export function XDSNumberInput({
           : undefined
       }
       labelTooltip={labelTooltip}>
-      <div
-        ref={containerRef}
-        onClick={handleWrapperClick}
-        onMouseUp={handleWrapperMouseUp}
-        {...mergeProps(
-          xdsClassName('number-input', {size, status: status?.type ?? null}),
-          stylex.props(
-            inputWrapperStyles.base,
-            styles.wrapper,
-            sizeStyles[size],
-            isDisabled && inputWrapperStyles.disabled,
-            status && inputStatusBorderStyles[status.type],
-            status && inputStatusHoverShadowStyles[status.type],
-            status && inputStatusFocusWithinStyles[status.type],
-            xstyle,
-          ),
-          className,
-          style,
-        )}>
-        {startIcon &&
-          renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
-        <input
-          {...rest}
-          ref={setRefs}
-          id={id}
-          name={htmlName}
-          type="number"
-          autoComplete={autoComplete}
-          value={displayValue}
-          onChange={handleInputChange}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          disabled={isDisabled}
-          autoFocus={hasAutoFocus}
-          data-autofocus={hasAutoFocus || undefined}
-          min={min ?? undefined}
-          max={max ?? undefined}
-          step={step ?? undefined}
-          aria-describedby={ariaDescribedBy}
-          aria-required={isRequired === true ? 'true' : undefined}
-          aria-invalid={status?.type === 'error' ? 'true' : undefined}
-          {...stylex.props(
-            styles.input,
-            isDisabled && styles.inputDisabled,
-            !isInputValid && styles.inputInvalid,
-          )}
-        />
-        {units && <span {...stylex.props(styles.units)}>{units}</span>}
-        {hasClear && value != null && !isDisabled && (
-          <button
-            type="button"
-            onClick={handleClear}
-            aria-label={`Clear ${label}`}
-            {...stylex.props(styles.clearButton)}>
-            <XDSIcon icon="close" size="sm" color="secondary" />
-          </button>
-        )}
-        {status && (
-          <XDSIcon
-            icon={statusIconMap[status.type]}
-            size="md"
-            color={statusIconColorMap[status.type]}
-          />
-        )}
-      </div>
+      {inputWrapper}
     </XDSField>
   );
 }

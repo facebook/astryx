@@ -105,6 +105,8 @@ const sizeStyles = stylex.create({
 
 export type XDSTextInputSize = keyof typeof sizeStyles;
 
+import {groupStyles} from '../InputGroup/groupStyles';
+
 // Re-export shared types for convenience
 
 export type {
@@ -114,6 +116,7 @@ export type {
 import {xdsClassName, mergeProps} from '../utils';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
+import {useXDSInputGroup} from '../InputGroup/XDSInputGroupContext';
 import {XDSBaseProps} from '../XDSBaseProps';
 
 export type XDSTextInputType = 'text' | 'password' | 'email';
@@ -268,6 +271,7 @@ export function XDSTextInput({
   const statusMessageID = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const inputGroup = useXDSInputGroup();
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
@@ -334,6 +338,80 @@ export function XDSTextInput({
       disabled: isDisabled,
     });
 
+  const inputWrapper = (
+    <div
+      ref={containerRef}
+      onClick={handleWrapperClick}
+      onMouseUp={handleWrapperMouseUp}
+      {...mergeProps(
+        xdsClassName('text-input', {size, status: status?.type ?? null}),
+        stylex.props(
+          inputWrapperStyles.base,
+          sizeStyles[size],
+          isDisabled && inputWrapperStyles.disabled,
+          status && inputStatusBorderStyles[status.type],
+          status && inputStatusHoverShadowStyles[status.type],
+          status && inputStatusFocusWithinStyles[status.type],
+          inputGroup && groupStyles.inGroup,
+          xstyle,
+        ),
+        className,
+        style,
+      )}>
+      {startIcon && renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
+      <input
+        {...rest}
+        ref={setRefs}
+        id={id}
+        name={htmlName}
+        type={type}
+        value={String(optimisticValue)}
+        onChange={handleChange}
+        onKeyDown={
+          onEnter || onKeyDown
+            ? e => {
+                if (e.key === 'Enter') {
+                  onEnter?.();
+                }
+                onKeyDown?.(e);
+              }
+            : undefined
+        }
+        placeholder={placeholder}
+        disabled={isDisabled}
+        autoFocus={hasAutoFocus}
+        data-autofocus={hasAutoFocus || undefined}
+        aria-describedby={ariaDescribedBy}
+        aria-required={isRequired === true ? 'true' : undefined}
+        aria-invalid={status?.type === 'error' ? 'true' : undefined}
+        aria-busy={isBusy || undefined}
+        aria-label={inputGroup ? label : undefined}
+        {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
+      />
+      {hasClear && value !== '' && !isDisabled && (
+        <button
+          type="button"
+          onClick={handleClear}
+          aria-label={`Clear ${label}`}
+          {...stylex.props(styles.clearButton)}>
+          <XDSIcon icon="close" size="sm" color="secondary" />
+        </button>
+      )}
+      {isBusy && <XDSSpinner size="sm" />}
+      {status && !inputGroup && (
+        <XDSIcon
+          icon={statusIconMap[status.type]}
+          size="md"
+          color={statusIconColorMap[status.type]}
+        />
+      )}
+    </div>
+  );
+
+  if (inputGroup) {
+    return inputWrapper;
+  }
+
   return (
     <XDSField
       label={label}
@@ -354,72 +432,7 @@ export function XDSTextInput({
           : undefined
       }
       labelTooltip={labelTooltip}>
-      <div
-        ref={containerRef}
-        onClick={handleWrapperClick}
-        onMouseUp={handleWrapperMouseUp}
-        {...mergeProps(
-          xdsClassName('text-input', {size, status: status?.type ?? null}),
-          stylex.props(
-            inputWrapperStyles.base,
-            sizeStyles[size],
-            isDisabled && inputWrapperStyles.disabled,
-            status && inputStatusBorderStyles[status.type],
-            status && inputStatusHoverShadowStyles[status.type],
-            status && inputStatusFocusWithinStyles[status.type],
-            xstyle,
-          ),
-          className,
-          style,
-        )}>
-        {startIcon &&
-          renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
-        <input
-          {...rest}
-          ref={setRefs}
-          id={id}
-          name={htmlName}
-          type={type}
-          value={String(optimisticValue)}
-          onChange={handleChange}
-          onKeyDown={
-            onEnter || onKeyDown
-              ? e => {
-                  if (e.key === 'Enter') {
-                    onEnter?.();
-                  }
-                  onKeyDown?.(e);
-                }
-              : undefined
-          }
-          placeholder={placeholder}
-          disabled={isDisabled}
-          autoFocus={hasAutoFocus}
-          data-autofocus={hasAutoFocus || undefined}
-          aria-describedby={ariaDescribedBy}
-          aria-required={isRequired === true ? 'true' : undefined}
-          aria-invalid={status?.type === 'error' ? 'true' : undefined}
-          aria-busy={isBusy || undefined}
-          {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
-        />
-        {hasClear && value !== '' && !isDisabled && (
-          <button
-            type="button"
-            onClick={handleClear}
-            aria-label={`Clear ${label}`}
-            {...stylex.props(styles.clearButton)}>
-            <XDSIcon icon="close" size="sm" color="secondary" />
-          </button>
-        )}
-        {isBusy && <XDSSpinner size="sm" />}
-        {status && (
-          <XDSIcon
-            icon={statusIconMap[status.type]}
-            size="md"
-            color={statusIconColorMap[status.type]}
-          />
-        )}
-      </div>
+      {inputWrapper}
     </XDSField>
   );
 }

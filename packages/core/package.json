@@ -265,6 +265,12 @@
       "import": "./dist/IconButton/index.mjs",
       "require": "./dist/IconButton/index.js"
     },
+    "./InputGroup": {
+      "source": "./src/InputGroup/index.ts",
+      "types": "./dist/InputGroup/index.d.ts",
+      "import": "./dist/InputGroup/index.mjs",
+      "require": "./dist/InputGroup/index.js"
+    },
     "./Kbd": {
       "source": "./src/Kbd/index.ts",
       "types": "./dist/Kbd/index.d.ts",
