@@ -103,6 +103,12 @@
       "import": "./dist/Banner/index.mjs",
       "require": "./dist/Banner/index.js"
     },
+    "./Blockquote": {
+      "source": "./src/Blockquote/index.ts",
+      "types": "./dist/Blockquote/index.d.ts",
+      "import": "./dist/Blockquote/index.mjs",
+      "require": "./dist/Blockquote/index.js"
+    },
     "./Breadcrumbs": {
       "source": "./src/Breadcrumbs/index.ts",
       "types": "./dist/Breadcrumbs/index.d.ts",

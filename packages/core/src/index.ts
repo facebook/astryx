@@ -18,6 +18,7 @@ export * from './AspectRatio';
 export * from './Avatar';
 export * from './Badge';
 export * from './Banner';
+export * from './Blockquote';
 export * from './Breadcrumbs';
 export * from './Button';
 export * from './IconButton';

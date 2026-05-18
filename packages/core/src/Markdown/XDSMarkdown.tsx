@@ -26,6 +26,7 @@ import {
 import {XDSCodeBlock, XDSCode} from '../CodeBlock';
 import {XDSCheckboxList} from '../CheckboxList/XDSCheckboxList';
 import {XDSCheckboxListItem} from '../CheckboxList/XDSCheckboxListItem';
+import {XDSBlockquote} from '../Blockquote/XDSBlockquote';
 import {XDSList} from '../List/XDSList';
 import {XDSListItem} from '../List/XDSListItem';
 import {XDSTable} from '../Table/XDSTable';
@@ -337,16 +338,6 @@ const styles = stylex.create({
   },
   noMarginBlockEnd: {
     marginBlockEnd: 0,
-  },
-  // Blockquote
-  blockquote: {
-    borderInlineStartWidth: spacingVars['--spacing-0-5'],
-    borderInlineStartStyle: 'solid',
-    borderInlineStartColor: colorVars['--color-border-emphasized'],
-    paddingInlineStart: spacingVars['--spacing-4'],
-    color: colorVars['--color-text-secondary'],
-    marginInlineStart: 0,
-    marginInlineEnd: 0,
   },
   // Table
   codeBlockWrapper: {
@@ -1163,20 +1154,19 @@ function renderBlock(
         return <BlockquoteComp key={index}>{bqC}</BlockquoteComp>;
       }
       return (
-        <blockquote
+        <XDSBlockquote
           key={index}
-          {...stylex.props(
-            styles.blockquote,
+          xstyle={[
             spacing,
             contentWidthValue != null
               ? dynamicStyles.proseWidth(contentWidthValue)
-              : null,
+              : undefined,
             contentAlign !== 'start'
               ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
-              : null,
+              : undefined,
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
-          )}>
+          ]}>
           {node.children.map((c, i) =>
             renderBlock(
               c,
@@ -1194,7 +1184,7 @@ function renderBlock(
               components,
             ),
           )}
-        </blockquote>
+        </XDSBlockquote>
       );
     }
     case 'list': {
@@ -1407,7 +1397,16 @@ function renderBlock(
                       node.alignments[i] === 'right' && cellAlignStyles.right,
                     ]}>
                     {h.children.map((c, j) =>
-                      renderInline(c, j, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins, components),
+                      renderInline(
+                        c,
+                        j,
+                        onLinkClick,
+                        cursor,
+                        citationCtx,
+                        linkComponent,
+                        inlinePlugins,
+                        components,
+                      ),
                     )}
                   </XDSTableHeaderCell>
                 ))}
@@ -1425,7 +1424,16 @@ function renderBlock(
                       node.alignments[j] === 'right' && cellAlignStyles.right,
                     ]}>
                     {cell.children.map((c, k) =>
-                      renderInline(c, k, onLinkClick, cursor, citationCtx, linkComponent, inlinePlugins, components),
+                      renderInline(
+                        c,
+                        k,
+                        onLinkClick,
+                        cursor,
+                        citationCtx,
+                        linkComponent,
+                        inlinePlugins,
+                        components,
+                      ),
                     )}
                   </XDSTableCell>
                 ));
