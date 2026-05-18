@@ -85,7 +85,7 @@ export const Variants: Story = {
       <XDSProgressBar
         value={80}
         label="Positive"
-        variant='success'
+        variant="success"
         hasValueLabel
       />
       <XDSProgressBar
@@ -97,7 +97,7 @@ export const Variants: Story = {
       <XDSProgressBar
         value={92}
         label="Negative"
-        variant='error'
+        variant="error"
         hasValueLabel
       />
       <XDSProgressBar
@@ -191,9 +191,9 @@ export const IndeterminateVariants: Story = {
         width: '300px',
       }}>
       <XDSProgressBar isIndeterminate label="Accent" variant="accent" />
-      <XDSProgressBar isIndeterminate label="Positive" variant='success' />
+      <XDSProgressBar isIndeterminate label="Positive" variant="success" />
       <XDSProgressBar isIndeterminate label="Warning" variant="warning" />
-      <XDSProgressBar isIndeterminate label="Negative" variant='error' />
+      <XDSProgressBar isIndeterminate label="Negative" variant="error" />
       <XDSProgressBar isIndeterminate label="Neutral" variant="neutral" />
     </div>
   ),

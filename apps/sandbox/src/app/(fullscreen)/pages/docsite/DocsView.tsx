@@ -550,14 +550,14 @@ function VersionCard({
               <ChangelogSection
                 label="Breaking Changes"
                 items={version.breakingChanges}
-                dotVariant="negative"
+                dotVariant="error"
               />
             )}
             {(!visibleSection || visibleSection === 'Features') && (
               <ChangelogSection
                 label="New Features"
                 items={version.features}
-                dotVariant="positive"
+                dotVariant="success"
               />
             )}
             {(!visibleSection || visibleSection === 'Fixes') && (
@@ -579,7 +579,7 @@ function VersionCard({
                     gap={2}
                     vAlign="center"
                     style={{marginBottom: 10}}>
-                    <XDSStatusDot variant='accent' label="Codemods" />
+                    <XDSStatusDot variant="accent" label="Codemods" />
                     <XDSText
                       type="supporting"
                       color="secondary"

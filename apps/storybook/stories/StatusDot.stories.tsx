@@ -40,10 +40,10 @@ export const Default: Story = {
 export const Variants: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-      <XDSStatusDot variant='success' label="Positive" />
+      <XDSStatusDot variant="success" label="Positive" />
       <XDSStatusDot variant="warning" label="Warning" />
-      <XDSStatusDot variant='error' label="Negative" />
-      <XDSStatusDot variant='accent' label="Info" />
+      <XDSStatusDot variant="error" label="Negative" />
+      <XDSStatusDot variant="accent" label="Info" />
       <XDSStatusDot variant="neutral" label="Neutral" />
     </div>
   ),
@@ -52,9 +52,9 @@ export const Variants: Story = {
 export const Pulsing: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-      <XDSStatusDot variant='success' label="Live" isPulsing />
+      <XDSStatusDot variant="success" label="Live" isPulsing />
       <XDSStatusDot variant="warning" label="Processing" isPulsing />
-      <XDSStatusDot variant='error' label="Error" isPulsing />
+      <XDSStatusDot variant="error" label="Error" isPulsing />
     </div>
   ),
 };
@@ -63,7 +63,7 @@ export const StatusIndicators: Story = {
   render: () => (
     <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
       <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-        <XDSStatusDot variant='success' label="Online" />
+        <XDSStatusDot variant="success" label="Online" />
         <span>Online</span>
       </div>
       <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
@@ -71,7 +71,7 @@ export const StatusIndicators: Story = {
         <span>Away</span>
       </div>
       <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-        <XDSStatusDot variant='error' label="Offline" />
+        <XDSStatusDot variant="error" label="Offline" />
         <span>Offline</span>
       </div>
       <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>

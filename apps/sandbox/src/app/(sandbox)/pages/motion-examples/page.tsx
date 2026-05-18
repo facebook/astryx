@@ -259,9 +259,7 @@ function MicroInteractionsCard() {
               hasCloseButton={false}>
               <XDSButton label="Start" variant="secondary" size="sm" />
             </XDSPopover>
-            <XDSHoverCard
-              content={<HoverCardDemoContent />}
-              placement="below">
+            <XDSHoverCard content={<HoverCardDemoContent />} placement="below">
               <XDSButton label="HoverCard" variant="secondary" size="sm" />
             </XDSHoverCard>
             <XDSTooltip content="Tooltip · duration-fast-max">
@@ -277,7 +275,11 @@ function MicroInteractionsCard() {
             Switches — thumb slide, track color · duration-fast
           </XDSText>
           <XDSHStack gap={4}>
-            <XDSSwitch label="Notifications" value={switch1} onChange={setSwitch1} />
+            <XDSSwitch
+              label="Notifications"
+              value={switch1}
+              onChange={setSwitch1}
+            />
             <XDSSwitch label="Sync" value={switch2} onChange={setSwitch2} />
           </XDSHStack>
         </XDSVStack>
@@ -448,7 +450,7 @@ function LoadingStatusCard() {
           </XDSText>
           <XDSHStack gap={4} vAlign="center">
             <XDSHStack gap={2} vAlign="center">
-              <XDSStatusDot variant='success' label="Online" isPulsing />
+              <XDSStatusDot variant="success" label="Online" isPulsing />
               <XDSText type="body">Online</XDSText>
             </XDSHStack>
             <XDSHStack gap={2} vAlign="center">
@@ -456,7 +458,7 @@ function LoadingStatusCard() {
               <XDSText type="body">Away</XDSText>
             </XDSHStack>
             <XDSHStack gap={2} vAlign="center">
-              <XDSStatusDot variant='error' label="Busy" isPulsing />
+              <XDSStatusDot variant="error" label="Busy" isPulsing />
               <XDSText type="body">Busy</XDSText>
             </XDSHStack>
           </XDSHStack>

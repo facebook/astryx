@@ -2152,7 +2152,7 @@ function ComponentPreview() {
             <XDSDivider variant="strong" />
             <XDSHStack gap={4} vAlign="center">
               <XDSHStack gap={2} vAlign="center">
-                <XDSStatusDot variant='success' label="Online" isPulsing />
+                <XDSStatusDot variant="success" label="Online" isPulsing />
                 <XDSText type="body">Online</XDSText>
               </XDSHStack>
               <XDSHStack gap={2} vAlign="center">
@@ -2160,7 +2160,7 @@ function ComponentPreview() {
                 <XDSText type="body">Away</XDSText>
               </XDSHStack>
               <XDSHStack gap={2} vAlign="center">
-                <XDSStatusDot variant='error' label="Busy" isPulsing />
+                <XDSStatusDot variant="error" label="Busy" isPulsing />
                 <XDSText type="body">Busy</XDSText>
               </XDSHStack>
             </XDSHStack>

@@ -307,7 +307,7 @@ export const ColoredIconToolbar: Story = {
         <XDSToggleButton
           label="Link"
           icon={<XDSIcon icon={LinkIcon} size="sm" color="secondary" />}
-          pressedIcon={<XDSIcon icon={LinkIcon} size="sm" color='success' />}
+          pressedIcon={<XDSIcon icon={LinkIcon} size="sm" color="success" />}
           isPressed={pressed.link}
           onPressedChange={() => toggle('link')}
           isIconOnly

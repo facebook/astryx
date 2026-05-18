@@ -121,6 +121,12 @@ async function main() {
   const earliestIdx = allVersions.indexOf(earliestVersion);
   const fromVersion = earliestIdx > 0 ? allVersions[earliestIdx - 1] : '0.0.0';
 
+  // Save the base versions to detect which files the codemod actually modified
+  const baseVersions = {};
+  for (const file of revertedFiles) {
+    baseVersions[file] = fs.readFileSync(file, 'utf-8');
+  }
+
   // Run codemods on each affected consumer directory
   const affectedDirs = [
     ...new Set(
@@ -146,18 +152,44 @@ async function main() {
     });
   }
 
+  // Filter to only files the codemod actually modified.
+  // Files unchanged by the codemod have unrelated edits in this PR — skip them.
+  const codemodModifiedFiles = revertedFiles.filter((file) => {
+    try {
+      return fs.readFileSync(file, 'utf-8') !== baseVersions[file];
+    } catch {
+      return false;
+    }
+  });
+  const skippedFiles = revertedFiles.filter((f) => !codemodModifiedFiles.includes(f));
+
+  if (codemodModifiedFiles.length === 0) {
+    console.log('\n✅ Codemod made no changes to consumer files — nothing to verify.');
+    for (const file of consumerFiles) {
+      fs.writeFileSync(file, prVersions[file]);
+    }
+    process.exit(0);
+  }
+
+  if (skippedFiles.length > 0) {
+    console.log(`\nSkipping ${skippedFiles.length} file(s) not modified by codemod:`);
+    for (const file of skippedFiles) {
+      console.log(`  ⏭  ${file}`);
+    }
+  }
+
   // Format codemod output with prettier to normalize style differences
   // (jscodeshift's toSource() may change quotes, spacing, etc.)
-  console.log('Formatting codemod output with prettier...');
+  console.log('\nFormatting codemod output with prettier...');
   try {
-    run(`npx prettier --write ${revertedFiles.map((f) => `"${f}"`).join(' ')}`);
+    run(`npx prettier --write ${codemodModifiedFiles.map((f) => `"${f}"`).join(' ')}`);
   } catch (e) {
     console.log('  ⚠️  Prettier formatting failed, comparing raw output');
   }
 
   // Also format the expected (PR) versions for a fair comparison
   const formattedExpected = {};
-  for (const file of revertedFiles) {
+  for (const file of codemodModifiedFiles) {
     // Use the original file extension so prettier can infer the parser
     const ext = path.extname(file);
     const tmpFile = file.replace(ext, `.expected${ext}`);
@@ -176,7 +208,7 @@ async function main() {
   let matches = 0;
   const mismatchDetails = [];
 
-  for (const file of revertedFiles) {
+  for (const file of codemodModifiedFiles) {
     const expected = formattedExpected[file] || prVersions[file];
     let actual;
     try {

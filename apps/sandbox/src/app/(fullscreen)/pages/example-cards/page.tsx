@@ -968,13 +968,13 @@ export default function ExampleCardsPage() {
                   Overview
                 </XDSText>
                 {[
-                  {name: 'Dashboard', color: 'info' as const},
-                  {name: 'Transactions', color: 'info' as const},
+                  {name: 'Dashboard', color: 'accent' as const},
+                  {name: 'Transactions', color: 'accent' as const},
                   {name: 'Investments', color: 'success' as const},
                   {name: 'Goals', color: 'success' as const},
                   {name: 'Budget', color: 'warning' as const},
                   {name: 'Reports', color: 'warning' as const},
-                  {name: 'Documents', color: 'info' as const},
+                  {name: 'Documents', color: 'accent' as const},
                 ].map(item => (
                   <XDSHStack key={item.name} gap={2} vAlign="center">
                     <XDSStatusDot variant={item.color} label={item.name} />
@@ -987,12 +987,12 @@ export default function ExampleCardsPage() {
                   Account
                 </XDSText>
                 {[
-                  {name: 'Profile', color: 'info' as const},
-                  {name: 'Billing', color: 'info' as const},
+                  {name: 'Profile', color: 'accent' as const},
+                  {name: 'Billing', color: 'accent' as const},
                   {name: 'Notifications', color: 'success' as const},
                   {name: 'Security', color: 'warning' as const},
                   {name: 'Help Center', color: 'success' as const},
-                  {name: 'Contact Us', color: 'info' as const},
+                  {name: 'Contact Us', color: 'accent' as const},
                   {name: 'Status', color: 'success' as const},
                 ].map(item => (
                   <XDSHStack key={item.name} gap={2} vAlign="center">
@@ -1288,7 +1288,7 @@ export default function ExampleCardsPage() {
                 </XDSVStack>
                 <XDSHStack gap={2} vAlign="center">
                   <XDSText type="supporting">Locked</XDSText>
-                  <XDSStatusDot variant='success' label="Locked" />
+                  <XDSStatusDot variant="success" label="Locked" />
                 </XDSHStack>
               </div>
               <div {...stylex.props(styles.placeholder)}>

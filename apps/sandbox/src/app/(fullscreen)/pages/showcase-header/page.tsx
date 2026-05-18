@@ -71,7 +71,7 @@ export default function ShowcaseHeaderPage() {
         </div>
 
         <div {...stylex.props(styles.availableRow)}>
-          <XDSStatusDot variant='success' label="Available" isPulsing />
+          <XDSStatusDot variant="success" label="Available" isPulsing />
           <XDSText type="body" color="secondary">
             Available now
           </XDSText>

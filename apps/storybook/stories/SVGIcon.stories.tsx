@@ -44,8 +44,8 @@ const meta: Meta<typeof XDSSVGIcon> = {
         'secondary',
         'disabled',
         'accent',
-        'success',
-        'error',
+        'positive',
+        'negative',
         'warning',
         'inherit',
       ] as SVGIconColor[],
@@ -231,8 +231,8 @@ const COLORS: SVGIconColor[] = [
   'secondary',
   'disabled',
   'accent',
-  'success',
-  'error',
+  'positive',
+  'negative',
   'warning',
 ];
 
