@@ -74,14 +74,17 @@ export interface SeriesDef {
     groupInfo?: {index: number; count: number},
   ): ResolvedPoint[];
   /**
+   * Whether this series is the topmost in its stack group.
+   * Set by the layout engine before render() is called.
+   * Marks can use this to decide corner rounding, borders, etc.
+   */
+  _isTopOfStack?: boolean;
+  /**
    * Render the mark given resolved positions.
    * Called by the chart root during the render pass.
    * Returns SVG elements (or manages its own canvas for WebGL).
    */
-  render(
-    resolved: ResolvedPoint[],
-    ctx: SeriesContext,
-  ): ReactNode;
+  render(resolved: ResolvedPoint[], ctx: SeriesContext): ReactNode;
 }
 
 /** Resolved positions for all series */
