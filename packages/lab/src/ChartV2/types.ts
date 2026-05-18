@@ -52,6 +52,8 @@ export interface SeriesDef {
   readonly key: string;
   /** Data keys this series reads from — used to compute y domain */
   readonly dataKeys: string[];
+  /** Whether this series is the topmost in its stack (set during layout) */
+  _isTopOfStack?: boolean;
   /** Layout hints the chart root uses for cross-series coordination */
   readonly layout: {
     /** Stack group — series with same stack accumulate */
