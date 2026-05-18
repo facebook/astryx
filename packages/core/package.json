@@ -121,6 +121,12 @@
       "import": "./dist/Button/index.mjs",
       "require": "./dist/Button/index.js"
     },
+    "./ButtonGroup": {
+      "source": "./src/ButtonGroup/index.ts",
+      "types": "./dist/ButtonGroup/index.d.ts",
+      "import": "./dist/ButtonGroup/index.mjs",
+      "require": "./dist/ButtonGroup/index.js"
+    },
     "./Calendar": {
       "source": "./src/Calendar/index.ts",
       "types": "./dist/Calendar/index.d.ts",

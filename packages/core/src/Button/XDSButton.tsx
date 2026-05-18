@@ -26,6 +26,7 @@ import {
   sizeVars,
   spacingVars,
   radiusVars,
+  borderVars,
   durationVars,
   easeVars,
   fontWeightVars,
@@ -36,6 +37,7 @@ import {XDSSpinner} from '../Spinner';
 
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
+import {useXDSButtonGroup} from '../ButtonGroup/XDSButtonGroupContext';
 import {xdsClassName, mergeProps} from '../utils';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
@@ -392,6 +394,69 @@ const loadingStyles = stylex.create({
   },
 });
 
+const groupStyles = stylex.create({
+  horizontal: {
+    borderStartStartRadius: {
+      default: 0,
+      ':first-child': radiusVars['--radius-element'],
+    },
+    borderEndStartRadius: {
+      default: 0,
+      ':first-child': radiusVars['--radius-element'],
+    },
+    borderStartEndRadius: {
+      default: 0,
+      ':last-child': radiusVars['--radius-element'],
+    },
+    borderEndEndRadius: {
+      default: 0,
+      ':last-child': radiusVars['--radius-element'],
+    },
+    borderInlineStartWidth: {
+      default: borderVars['--border-width'],
+      ':first-child': 0,
+    },
+    borderInlineStartStyle: {
+      default: 'solid' as const,
+      ':first-child': 'none' as const,
+    },
+    borderInlineStartColor: colorVars['--color-border'],
+  },
+  vertical: {
+    borderStartStartRadius: {
+      default: 0,
+      ':first-child': radiusVars['--radius-element'],
+    },
+    borderStartEndRadius: {
+      default: 0,
+      ':first-child': radiusVars['--radius-element'],
+    },
+    borderEndStartRadius: {
+      default: 0,
+      ':last-child': radiusVars['--radius-element'],
+    },
+    borderEndEndRadius: {
+      default: 0,
+      ':last-child': radiusVars['--radius-element'],
+    },
+    borderBlockStartWidth: {
+      default: borderVars['--border-width'],
+      ':first-child': 0,
+    },
+    borderBlockStartStyle: {
+      default: 'solid' as const,
+      ':first-child': 'none' as const,
+    },
+    borderBlockStartColor: colorVars['--color-border'],
+  },
+  onSolidHorizontal: {
+    borderInlineStartColor: colorVars['--color-on-accent'],
+  },
+  onSolidVertical: {
+    borderBlockStartColor: colorVars['--color-on-accent'],
+  },
+});
+
 /**
  * A versatile button component with multiple variants.
  *
@@ -441,11 +506,13 @@ export function XDSButton({
   ...props
 }: XDSButtonProps): ReactNode {
   const size = useXDSSize(sizeProp, 'md');
+  const buttonGroup = useXDSButtonGroup();
 
   const [isPending, startTransition] = useTransition();
   const actionInFlightRef = useRef(false);
   const isLoadingState = isLoading || isPending;
-  const buttonDisabled = isDisabled || isLoadingState;
+  const groupDisabled = buttonGroup?.isDisabled ?? false;
+  const buttonDisabled = isDisabled || groupDisabled || isLoadingState;
   const useLightSpinner = variant === 'primary' || variant === 'destructive';
   // isIconOnly prop is the source of truth for icon-only rendering.
   // When false (default), label is always rendered as visible text.
@@ -505,6 +572,15 @@ export function XDSButton({
     useAriaDisabled && styles.ariaDisabled,
     isLoadingState && loadingStyles.loading,
     renderAsLink && styles.link,
+    buttonGroup &&
+      (buttonGroup.orientation === 'horizontal'
+        ? groupStyles.horizontal
+        : groupStyles.vertical),
+    buttonGroup &&
+      (variant === 'primary' || variant === 'destructive') &&
+      (buttonGroup.orientation === 'horizontal'
+        ? groupStyles.onSolidHorizontal
+        : groupStyles.onSolidVertical),
     xstyle,
   );
 

@@ -23,6 +23,7 @@ export * from './Banner';
 export * from './Blockquote';
 export * from './Breadcrumbs';
 export * from './Button';
+export * from './ButtonGroup';
 export * from './IconButton';
 export * from './Card';
 export * from './ClickableCard';
