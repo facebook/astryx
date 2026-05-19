@@ -147,7 +147,11 @@ describe('XDSBanner', () => {
       <XDSBanner
         status="info"
         title="With Action"
-        endContent={<button data-testid="end-btn">Action</button>}
+        endContent={
+          <button type="button" data-testid="end-btn">
+            Action
+          </button>
+        }
       />,
     );
     expect(screen.getByTestId('end-btn')).toBeInTheDocument();

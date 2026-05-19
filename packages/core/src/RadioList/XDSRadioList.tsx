@@ -16,7 +16,7 @@
  * - /packages/cli/templates/blocks/components/RadioList/ (showcase blocks)
  */
 
-import {createContext, useId, type ReactNode} from 'react';
+import {createContext, useId, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {XDSField} from '../Field/XDSField';
@@ -56,7 +56,10 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSRadioListProps extends Omit<XDSBaseProps<HTMLElement>, 'onChange'> {
+export interface XDSRadioListProps extends Omit<
+  XDSBaseProps<HTMLElement>,
+  'onChange'
+> {
   /**
    * Label text for the radio group (always rendered for accessibility).
    */
@@ -163,15 +166,10 @@ export function XDSRadioList({
   const descriptionID = useId();
   const statusMessageID = useId();
 
-  const contextValue: XDSRadioListContextValue = {
-    name,
-    value,
-    onChange,
-    isDisabled,
-    isRequired,
-    size,
-    status,
-  };
+  const contextValue = useMemo<XDSRadioListContextValue>(
+    () => ({name, value, onChange, isDisabled, isRequired, size, status}),
+    [name, value, onChange, isDisabled, isRequired, size, status],
+  );
 
   return (
     <XDSField

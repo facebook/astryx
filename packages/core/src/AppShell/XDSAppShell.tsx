@@ -638,18 +638,26 @@ export function XDSAppShell({
   // When below breakpoint, TopNav renders in mobile-bar mode (heading + endContent + toggle).
   // Wrap with mobile content context so TopNav knows there's SideNav content
   // in the drawer and shows the toggle even without its own collapsible items.
+  const mobileContentValue =
+    hasSideNavContent && mobileNavHasToggle ? (
+      // eslint-disable-next-line @eslint-react/no-unstable-context-value -- context transports ReactNode; instability is inherent
+      <XDSSideNavRenderContext value="drawer-content">
+        <div ref={sideNavRef} style={{display: 'contents'}}>
+          {sideNav}
+        </div>
+      </XDSSideNavRenderContext>
+    ) : null;
+
+  const drawerMobileContentValue = hasSideNavContent ? (
+    // eslint-disable-next-line @eslint-react/no-unstable-context-value -- context transports ReactNode; instability is inherent
+    <XDSSideNavRenderContext value="drawer-content">
+      {sideNav}
+    </XDSSideNavRenderContext>
+  ) : null;
+
   const topNavContent = hasTopNav ? (
     isBelowBreakpoint && !mobileNavDisabled && mobileNavReactNode == null ? (
-      <XDSTopNavMobileContentContext
-        value={
-          hasSideNavContent && mobileNavHasToggle ? (
-            <XDSSideNavRenderContext value="drawer-content">
-              <div ref={sideNavRef} style={{display: 'contents'}}>
-                {sideNav}
-              </div>
-            </XDSSideNavRenderContext>
-          ) : null
-        }>
+      <XDSTopNavMobileContentContext value={mobileContentValue}>
         <XDSTopNavRenderContext value="mobile-bar">
           <div ref={topNavRef} style={{display: 'contents'}}>
             {topNav}
@@ -848,14 +856,7 @@ export function XDSAppShell({
                 </div>
               )}
               {hasTopNav && hasTopNavContent && (
-                <XDSTopNavMobileContentContext
-                  value={
-                    hasSideNavContent ? (
-                      <XDSSideNavRenderContext value="drawer-content">
-                        {sideNav}
-                      </XDSSideNavRenderContext>
-                    ) : null
-                  }>
+                <XDSTopNavMobileContentContext value={drawerMobileContentValue}>
                   <XDSTopNavRenderContext value="drawer">
                     {topNav}
                   </XDSTopNavRenderContext>

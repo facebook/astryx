@@ -84,7 +84,11 @@ describe('XDSEmptyState', () => {
     render(
       <XDSEmptyState
         title="No results"
-        actions={<button data-testid="action-btn">Retry</button>}
+        actions={
+          <button type="button" data-testid="action-btn">
+            Retry
+          </button>
+        }
       />,
     );
     expect(screen.getByTestId('action-btn')).toBeInTheDocument();
@@ -127,8 +131,8 @@ describe('XDSEmptyState', () => {
         description="Try a different search term."
         actions={
           <>
-            <button>Clear filters</button>
-            <button>Go back</button>
+            <button type="button">Clear filters</button>
+            <button type="button">Go back</button>
           </>
         }
         data-testid="full-empty-state"

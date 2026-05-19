@@ -15,7 +15,7 @@
  * - /packages/cli/templates/blocks/components/Avatar/ (showcase blocks)
  */
 
-import {useState, type ReactNode} from 'react';
+import {useMemo, useState, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -268,7 +268,7 @@ export function XDSAvatar({
   const showIcon = !showImage && !showFallbackImage && !name;
 
   const accessibleName = alt || name || 'Avatar';
-  const numericSize = resolveSize(size);
+  const numericSize = useMemo(() => resolveSize(size), [size]);
 
   return (
     <XDSAvatarSizeContext.Provider value={numericSize}>

@@ -235,7 +235,11 @@ describe('XDSCheckboxList', () => {
         <XDSCheckboxListItem
           label="Option A"
           value="a"
-          endContent={<button data-testid="end-btn">Action</button>}
+          endContent={
+            <button type="button" data-testid="end-btn">
+              Action
+            </button>
+          }
         />
       </XDSCheckboxList>,
     );

@@ -52,7 +52,7 @@ describe('XDSPopover', () => {
   it('renders trigger element', () => {
     render(
       <XDSPopover content={<span>Popover content</span>} label="Test popover">
-        <button>Open</button>
+        <button type="button">Open</button>
       </XDSPopover>,
     );
     expect(screen.getByRole('button', {name: 'Open'})).toBeInTheDocument();
@@ -61,7 +61,7 @@ describe('XDSPopover', () => {
   it('sets aria-haspopup on trigger', () => {
     render(
       <XDSPopover content={<span>Content</span>} label="Test">
-        <button>Trigger</button>
+        <button type="button">Trigger</button>
       </XDSPopover>,
     );
     const trigger = screen.getByRole('button', {name: 'Trigger'});
@@ -71,7 +71,7 @@ describe('XDSPopover', () => {
   it('sets aria-expanded=false initially', () => {
     render(
       <XDSPopover content={<span>Content</span>} label="Test">
-        <button>Trigger</button>
+        <button type="button">Trigger</button>
       </XDSPopover>,
     );
     const trigger = screen.getByRole('button', {name: 'Trigger'});
@@ -81,7 +81,7 @@ describe('XDSPopover', () => {
   it('opens on click and updates aria-expanded', () => {
     render(
       <XDSPopover content={<span>Popover content</span>} label="Test">
-        <button>Open</button>
+        <button type="button">Open</button>
       </XDSPopover>,
     );
     const trigger = screen.getByRole('button', {name: 'Open'});
@@ -92,7 +92,7 @@ describe('XDSPopover', () => {
   it('renders popover content with role=dialog', () => {
     render(
       <XDSPopover content={<span>Hello</span>} label="Greeting">
-        <button>Open</button>
+        <button type="button">Open</button>
       </XDSPopover>,
     );
     // The dialog is inside a popover element — hidden from accessibility tree
@@ -109,7 +109,7 @@ describe('XDSPopover', () => {
         content={<span>Content</span>}
         label="Test"
         onOpenChange={onOpenChange}>
-        <button>Open</button>
+        <button type="button">Open</button>
       </XDSPopover>,
     );
     fireEvent.click(screen.getByRole('button', {name: 'Open'}));
@@ -124,7 +124,7 @@ describe('XDSPopover', () => {
         label="Test"
         isEnabled={false}
         onOpenChange={onOpenChange}>
-        <button>Open</button>
+        <button type="button">Open</button>
       </XDSPopover>,
     );
     fireEvent.click(screen.getByRole('button', {name: 'Open'}));
@@ -137,7 +137,7 @@ describe('XDSPopover', () => {
         content={<span>Content</span>}
         label="Test"
         data-testid="my-popover">
-        <button>Open</button>
+        <button type="button">Open</button>
       </XDSPopover>,
     );
     expect(screen.getByTestId('my-popover')).toBeInTheDocument();
@@ -148,7 +148,9 @@ describe('XDSPopover', () => {
       const ref = useRef<HTMLButtonElement>(null);
       return (
         <>
-          <button ref={ref}>Anchor</button>
+          <button type="button" ref={ref}>
+            Anchor
+          </button>
           <XDSPopover
             anchorRef={ref as React.RefObject<HTMLElement>}
             content={<span>Sibling content</span>}
@@ -167,7 +169,7 @@ describe('XDSPopover', () => {
     render(
       <XDSPopover content={<span>Content</span>} label="Test">
         <div>
-          <button>Nested button</button>
+          <button type="button">Nested button</button>
         </div>
       </XDSPopover>,
     );

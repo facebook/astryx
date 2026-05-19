@@ -54,8 +54,10 @@ const pixelColumns: XDSTableColumn<TestItem>[] = [
 // Test Helpers
 // =============================================================================
 
+const EMPTY_WIDTHS: Record<string, number> = {};
+
 function ResizeTable({
-  columnWidths: initialWidths = {},
+  columnWidths: initialWidths = EMPTY_WIDTHS,
   onColumnResizeEnd,
   minWidth,
   maxWidth,
@@ -616,7 +618,7 @@ describe('useXDSTableColumnResize', () => {
         });
         return (
           <div>
-            <button onClick={() => setCols([...cols].reverse())}>
+            <button type="button" onClick={() => setCols([...cols].reverse())}>
               Reorder
             </button>
             <XDSTable

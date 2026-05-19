@@ -15,10 +15,14 @@ function TestHarness() {
 
   return (
     <div>
-      <button onClick={() => dialog.show(<div>Dialog content</div>)}>
+      <button
+        type="button"
+        onClick={() => dialog.show(<div>Dialog content</div>)}>
         Open
       </button>
-      <button onClick={() => dialog.hide()}>Close</button>
+      <button type="button" onClick={() => dialog.hide()}>
+        Close
+      </button>
       <span data-testid="status">{dialog.isOpen ? 'open' : 'closed'}</span>
       {dialog.element}
     </div>
@@ -56,7 +60,9 @@ describe('useXDSImperativeDialog', () => {
       const dialog = useXDSImperativeDialog();
       return (
         <div>
-          <button onClick={() => dialog.show(<div>Wide content</div>, {width: 720})}>
+          <button
+            type="button"
+            onClick={() => dialog.show(<div>Wide content</div>, {width: 720})}>
             Open Wide
           </button>
           <span data-testid="status">{dialog.isOpen ? 'open' : 'closed'}</span>

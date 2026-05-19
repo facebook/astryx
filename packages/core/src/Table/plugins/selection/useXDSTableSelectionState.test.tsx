@@ -40,11 +40,13 @@ const columns: XDSTableColumn<TestItem>[] = [{key: 'name', header: 'Name'}];
 // Helper
 // =============================================================================
 
+const EMPTY_SET = new Set<string>();
+
 function StateHelperTable({
   data = testData,
   getIsItemEnabled,
   getIsItemSelectable,
-  initialSelected = new Set<string>(),
+  initialSelected = EMPTY_SET,
 }: {
   data?: TestItem[];
   getIsItemEnabled?: (item: TestItem) => boolean;

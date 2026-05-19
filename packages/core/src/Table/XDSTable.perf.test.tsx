@@ -61,7 +61,7 @@ describe('XDSTable render performance', () => {
 
         return (
           <div>
-            <button onClick={() => setUnrelatedState(n => n + 1)}>
+            <button type="button" onClick={() => setUnrelatedState(n => n + 1)}>
               Increment: {unrelatedState}
             </button>
             <XDSTable data={data} columns={testColumns} idKey="id" />
@@ -99,7 +99,7 @@ describe('XDSTable render performance', () => {
 
         return (
           <div>
-            <button onClick={() => setUnrelatedState(n => n + 1)}>
+            <button type="button" onClick={() => setUnrelatedState(n => n + 1)}>
               Increment: {unrelatedState}
             </button>
             <XDSTable data={data} columns={inlineColumns} idKey="id" />
@@ -154,7 +154,9 @@ describe('XDSTable render performance', () => {
 
         return (
           <div>
-            <button onClick={updateSingleRow}>Update Row 2</button>
+            <button type="button" onClick={updateSingleRow}>
+              Update Row 2
+            </button>
             <XDSTable data={data} columns={stableColumns} idKey="id" />
           </div>
         );
@@ -218,7 +220,9 @@ describe('XDSTable render performance', () => {
 
         return (
           <div>
-            <button onClick={updateSingleRow}>Update Row 2</button>
+            <button type="button" onClick={updateSingleRow}>
+              Update Row 2
+            </button>
             <XDSTable data={data} columns={columns} idKey="id" />
           </div>
         );
@@ -268,7 +272,9 @@ describe('XDSTable render performance', () => {
 
         return (
           <div>
-            <button onClick={replaceWithSameContent}>Replace Data</button>
+            <button type="button" onClick={replaceWithSameContent}>
+              Replace Data
+            </button>
             <XDSTable data={data} columns={stableColumns} idKey="id" />
           </div>
         );
@@ -315,7 +321,7 @@ describe('XDSTable render performance', () => {
 
         return (
           <div>
-            <button onClick={() => setData(prev => [...prev])}>
+            <button type="button" onClick={() => setData(prev => [...prev])}>
               Force Update
             </button>
             <XDSTable data={data} columns={stableColumns} idKey="id" />
@@ -364,7 +370,7 @@ describe('XDSTable render performance', () => {
 
         return (
           <div>
-            <button onClick={() => setData(prev => [...prev])}>
+            <button type="button" onClick={() => setData(prev => [...prev])}>
               Force Update
             </button>
             <XDSTable data={data} columns={columns} idKey="id" />
@@ -406,7 +412,7 @@ describe('XDSTable render performance', () => {
 
         return (
           <div>
-            <button onClick={() => setData(createTestData(5))}>
+            <button type="button" onClick={() => setData(createTestData(5))}>
               Recreate Data
             </button>
             <XDSTable data={data} columns={testColumns} idKey="id" />
@@ -469,6 +475,7 @@ describe('XDSTable render performance', () => {
         return (
           <div>
             <button
+              type="button"
               onClick={() =>
                 setItems(prev =>
                   prev.map((item, i) =>

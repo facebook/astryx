@@ -1,3 +1,4 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSDateTimePicker} from '@xds/core/DateTimePicker';

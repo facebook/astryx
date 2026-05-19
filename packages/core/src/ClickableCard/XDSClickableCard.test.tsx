@@ -52,7 +52,9 @@ describe('XDSClickableCard', () => {
     const handleButtonClick = vi.fn();
     render(
       <XDSClickableCard label="Test card" onClick={handleCardClick}>
-        <button onClick={handleButtonClick}>Nested</button>
+        <button type="button" onClick={handleButtonClick}>
+          Nested
+        </button>
       </XDSClickableCard>,
     );
     fireEvent.click(screen.getByText('Nested'));
@@ -73,7 +75,10 @@ describe('XDSClickableCard', () => {
 
   it('hidden link passes target attribute', () => {
     render(
-      <XDSClickableCard label="External" href="https://example.com" target="_blank">
+      <XDSClickableCard
+        label="External"
+        href="https://example.com"
+        target="_blank">
         Content
       </XDSClickableCard>,
     );

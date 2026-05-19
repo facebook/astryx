@@ -45,7 +45,7 @@ describe('XDSTooltip', () => {
   it('renders trigger element', () => {
     render(
       <XDSTooltip content="Tooltip text">
-        <button>Trigger</button>
+        <button type="button">Trigger</button>
       </XDSTooltip>,
     );
     expect(screen.getByRole('button', {name: 'Trigger'})).toBeInTheDocument();
@@ -55,7 +55,7 @@ describe('XDSTooltip', () => {
     const onOpenChange = vi.fn();
     render(
       <XDSTooltip content="Tooltip text" onOpenChange={onOpenChange} delay={0}>
-        <button>Trigger</button>
+        <button type="button">Trigger</button>
       </XDSTooltip>,
     );
 
@@ -71,7 +71,7 @@ describe('XDSTooltip', () => {
     it('shows tooltip on mount when isDefaultOpen is true', async () => {
       render(
         <XDSTooltip content="Default open tooltip" isDefaultOpen>
-          <button>Trigger</button>
+          <button type="button">Trigger</button>
         </XDSTooltip>,
       );
 
@@ -88,7 +88,7 @@ describe('XDSTooltip', () => {
           content="Default open tooltip"
           isDefaultOpen
           onOpenChange={onOpenChange}>
-          <button>Trigger</button>
+          <button type="button">Trigger</button>
         </XDSTooltip>,
       );
 
@@ -101,7 +101,7 @@ describe('XDSTooltip', () => {
       vi.mocked(HTMLElement.prototype.showPopover).mockClear();
       render(
         <XDSTooltip content="Not default open">
-          <button>Trigger</button>
+          <button type="button">Trigger</button>
         </XDSTooltip>,
       );
 
@@ -118,7 +118,7 @@ describe('XDSTooltip', () => {
           isDefaultOpen
           onOpenChange={onOpenChange}
           hideDelay={0}>
-          <button>Trigger</button>
+          <button type="button">Trigger</button>
         </XDSTooltip>,
       );
 

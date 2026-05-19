@@ -178,9 +178,9 @@ describe('XDSToolbar', () => {
         label="Actions"
         startContent={
           <>
-            <button>Cut</button>
-            <button>Copy</button>
-            <button>Paste</button>
+            <button type="button">Cut</button>
+            <button type="button">Copy</button>
+            <button type="button">Paste</button>
           </>
         }
       />,
@@ -208,9 +208,9 @@ describe('XDSToolbar', () => {
         orientation="vertical"
         startContent={
           <>
-            <button>Cut</button>
-            <button>Copy</button>
-            <button>Paste</button>
+            <button type="button">Cut</button>
+            <button type="button">Copy</button>
+            <button type="button">Paste</button>
           </>
         }
       />,
@@ -234,9 +234,9 @@ describe('XDSToolbar', () => {
         label="Actions"
         startContent={
           <>
-            <button>Cut</button>
-            <button>Copy</button>
-            <button>Paste</button>
+            <button type="button">Cut</button>
+            <button type="button">Copy</button>
+            <button type="button">Paste</button>
           </>
         }
       />,

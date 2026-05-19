@@ -16,7 +16,7 @@
  * - /packages/cli/templates/blocks/components/Breadcrumbs/ (showcase blocks)
  */
 
-import {createContext, type ReactNode} from 'react';
+import {createContext, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
@@ -152,7 +152,10 @@ export function XDSBreadcrumbs({
   ref,
   ...rest
 }: XDSBreadcrumbsProps) {
-  const ctxValue: BreadcrumbContextValue = {variant, separator};
+  const ctxValue = useMemo<BreadcrumbContextValue>(
+    () => ({variant, separator}),
+    [variant, separator],
+  );
 
   return (
     <BreadcrumbCtx.Provider value={ctxValue}>

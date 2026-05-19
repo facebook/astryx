@@ -20,7 +20,7 @@
  * - /packages/cli/templates/blocks/components/TopNav/ (showcase blocks)
  */
 
-import {useCallback, useRef, type ReactNode} from 'react';
+import {useCallback, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {
@@ -337,6 +337,11 @@ export function XDSTopNavHeading({
     hasCloseButton: false,
   });
 
+  const closeMenuCtx = useMemo(
+    () => ({closeMenu: popover.hide}),
+    [popover.hide],
+  );
+
   const {triggerProps, contentProps, menuRef, setTriggerEl} = useXDSMenuHover({
     show: popover.show,
     hide: popover.hide,
@@ -519,8 +524,7 @@ export function XDSTopNavHeading({
             {...stylex.props(styles.popoverContent)}
             {...contentProps}>
             {popoverHeadingContent}
-            <XDSNavHeadingCloseContext.Provider
-              value={{closeMenu: popover.hide}}>
+            <XDSNavHeadingCloseContext.Provider value={closeMenuCtx}>
               {menu}
             </XDSNavHeadingCloseContext.Provider>
           </div>,
@@ -583,8 +587,7 @@ export function XDSTopNavHeading({
             {...stylex.props(styles.popoverContent)}
             {...contentProps}>
             {popoverHeadingContent}
-            <XDSNavHeadingCloseContext.Provider
-              value={{closeMenu: popover.hide}}>
+            <XDSNavHeadingCloseContext.Provider value={closeMenuCtx}>
               {menu}
             </XDSNavHeadingCloseContext.Provider>
           </div>,

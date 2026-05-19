@@ -62,7 +62,7 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 22
           cache: 'yarn'
 
       - run: yarn install --frozen-lockfile
@@ -106,7 +106,7 @@ jobs:
       - uses: actions/setup-node@v6
         if: needs.check-scope.outputs.docsite_only != 'true'
         with:
-          node-version: 20
+          node-version: 22
           cache: 'yarn'
 
       - run: yarn install --frozen-lockfile
@@ -154,7 +154,7 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true'
         uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 22
           cache: 'yarn'
 
       - name: Install dependencies

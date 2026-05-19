@@ -169,8 +169,10 @@ export type XDSDropdownMenuProps =
  * />
  * ```
  */
+const DEFAULT_BUTTON = {label: 'Menu'} as const;
+
 export function XDSDropdownMenu({
-  button = {label: 'Menu'},
+  button = DEFAULT_BUTTON,
   isMenuOpen: controlledIsOpen,
   onOpenChange,
   menuWidth,
