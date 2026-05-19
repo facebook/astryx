@@ -34,13 +34,7 @@
  * ```
  */
 
-import React, {
-  useContext,
-  useId,
-  useInsertionEffect,
-  useMemo,
-  useRef,
-} from 'react';
+import React, {useContext, useId, useInsertionEffect, useMemo} from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
 import type {ThemeMode} from './types';
@@ -171,80 +165,6 @@ function useThemeStyleInjection(theme: XDSDefinedTheme): void {
 }
 
 // =============================================================================
-// Font loading for themes that declare fonts
-// =============================================================================
-
-/**
- * Hook that loads fonts declared in theme.fonts at runtime.
- *
- * Uses useIsomorphicLayoutEffect to inject font stylesheets before the browser paints,
- * minimizing flash of unstyled text (FOUT).
- *
- * This is the fallback loading path — the preferred approach is to add
- * <link rel="stylesheet" href="..."> to your document <head>. For discoverability,
- * `npx xds theme build` prints font instructions in the build output.
- *
- * A console warning is logged for each font loaded at runtime
- * to encourage moving to the preload path.
- */
-function useThemeFontLoading(theme: XDSDefinedTheme): void {
-  const injectedLinksRef = useRef<HTMLLinkElement[]>([]);
-
-  useIsomorphicLayoutEffect(() => {
-    if (typeof document === 'undefined') return;
-    if (!theme.fonts || theme.fonts.length === 0) return;
-
-    const newLinks: HTMLLinkElement[] = [];
-
-    for (const font of theme.fonts) {
-      // Check if this specific font family has a loaded @font-face
-      // NOTE: document.fonts.check() is unreliable here — it returns true
-      // when ANY font in the fallback stack can render the text, even if
-      // the requested family isn't actually loaded. Instead, check if a
-      // FontFace with this family name exists in the FontFaceSet.
-      const hasFontFace = [...document.fonts].some(
-        f =>
-          f.family.replace(/["']/g, '') === font.family &&
-          f.status === 'loaded',
-      );
-      if (hasFontFace) continue;
-
-      // Check if we already injected a link for this URL
-      const existing = document.head.querySelector(
-        `link[rel="stylesheet"][href="${font.url}"]`,
-      );
-      if (existing) continue;
-
-      // Inject the font stylesheet
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = font.url;
-      document.head.appendChild(link);
-      newLinks.push(link);
-
-      // Dev-mode warning to encourage preloading
-      // Warn to encourage preloading — only visible in devtools
-      console.warn(
-        `[XDS] Theme "${theme.name}" loaded font "${font.family}" at runtime. ` +
-          `For better performance, add to your document <head>:\n` +
-          `  <link rel="stylesheet" href="${font.url}" />`,
-      );
-    }
-
-    injectedLinksRef.current = newLinks;
-
-    return () => {
-      for (const link of injectedLinksRef.current) {
-        if (link.parentNode) {
-          link.parentNode.removeChild(link);
-        }
-      }
-      injectedLinksRef.current = [];
-    };
-  }, [theme.fonts, theme.name]);
-}
-
-// =============================================================================
 // Root color-scheme sync
 // =============================================================================
 
@@ -311,7 +231,6 @@ export function XDSTheme({
   const isNested = useContext(XDSThemeNestingContext);
 
   useThemeStyleInjection(theme);
-  useThemeFontLoading(theme);
   useRootThemeSync(isNested, mode, theme.name);
 
   // Get color-scheme style

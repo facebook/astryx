@@ -144,7 +144,6 @@ export type {
   XDSTextSize,
   XDSTextWeight,
   XDSTextColor,
-  ThemeFontSource,
   TypographyConfig,
   TypographyRole,
   FontWeight,

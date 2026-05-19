@@ -21,13 +21,13 @@ import {stoneIconRegistry} from './icons';
  */
 const INPUT_STATUS_VARS = {
   'status:success': {
-    '--color-success': 'light-dark(#7f977e, #99b298)',  // Green T60 / T70
+    '--color-success': 'light-dark(#7f977e, #99b298)', // Green T60 / T70
   },
   'status:warning': {
-    '--color-warning': 'light-dark(#9f8f68, #bbaa81)',   // Yellow T60 / T70
+    '--color-warning': 'light-dark(#9f8f68, #bbaa81)', // Yellow T60 / T70
   },
   'status:error': {
-    '--color-error': 'light-dark(#a58b86, #c0a5a1)',     // Red T60 / T70
+    '--color-error': 'light-dark(#a58b86, #c0a5a1)', // Red T60 / T70
   },
 } as const;
 
@@ -42,18 +42,18 @@ const INPUT_STATUS_VARS = {
 const stoneSyntax = defineSyntaxTheme({
   name: 'xds-stone',
   tokens: {
-    keyword: ['#645a72', '#b2a7c1'],     // Purple T40 / T70
-    string: ['#4e6357', '#9bb19a'],      // Teal T40 / Green T70
-    comment: ['#5e5e5e', '#ababb0'],     // Stone Neutral T40 / T70
-    number: ['#755752', '#bea792'],      // Red T40 / Orange T70
-    function: ['#506072', '#99adc6'],    // Blue T40 / T70
-    type: ['#645a72', '#b2a7c1'],        // Purple T40 / T70
-    variable: ['#5e5e5e', '#ababb0'],    // Stone Neutral T40 / T70
-    operator: ['#5e5e5e', '#ababb0'],    // Stone Neutral T40 / T70
-    constant: ['#755752', '#bea792'],    // Red T40 / Orange T70
-    tag: ['#775751', '#c7a39d'],         // Red T40 / T70
-    attribute: ['#79693f', '#b6aa90'],   // Yellow T45 / T70
-    property: ['#4e6357', '#94b2a0'],    // Teal T40 / T70
+    keyword: ['#645a72', '#b2a7c1'], // Purple T40 / T70
+    string: ['#4e6357', '#9bb19a'], // Teal T40 / Green T70
+    comment: ['#5e5e5e', '#ababb0'], // Stone Neutral T40 / T70
+    number: ['#755752', '#bea792'], // Red T40 / Orange T70
+    function: ['#506072', '#99adc6'], // Blue T40 / T70
+    type: ['#645a72', '#b2a7c1'], // Purple T40 / T70
+    variable: ['#5e5e5e', '#ababb0'], // Stone Neutral T40 / T70
+    operator: ['#5e5e5e', '#ababb0'], // Stone Neutral T40 / T70
+    constant: ['#755752', '#bea792'], // Red T40 / Orange T70
+    tag: ['#775751', '#c7a39d'], // Red T40 / T70
+    attribute: ['#79693f', '#b6aa90'], // Yellow T45 / T70
+    property: ['#4e6357', '#94b2a0'], // Teal T40 / T70
     punctuation: ['#5e5e5e', '#ababb0'], // Stone Neutral T40 / T70
     background: ['#f3f3f5', '#171719'],
   },
@@ -66,20 +66,17 @@ export const stoneTheme = defineTheme({
     scale: {base: 14, ratio: 1.25},
     body: {
       family: 'Figtree',
-      url: 'https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap',
       fallbacks:
         '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
     },
     heading: {
       family: 'Montserrat',
-      url: 'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap',
       fallbacks:
         '"Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
       weights: {3: 'bold', 4: 'bold'},
     },
     code: {
       family: 'JetBrains Mono',
-      url: 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap',
       fallbacks: '"SF Mono", Monaco, Consolas, monospace',
     },
   },
@@ -96,55 +93,55 @@ export const stoneTheme = defineTheme({
 
     // Core semantic — all neutrals H=291
     // Stone 900 T=16 C=1.4, Stone 500 T=55 C=4, Stone 300 T=86 C=1.6, Stone 100 T=96 C=1
-    '--color-accent': ['#25252a', '#f3f3f5'],  // light: Stone Neutral T15
-    '--color-accent-muted': ['#25252a14', '#f3f3f5'],  // light: Stone Neutral T15 · 8%
-    '--color-neutral': ['#25252a0f', '#f3f3f5'],  // light: Stone Neutral T15 · 6%
-    '--color-background-surface': ['#ffffff', '#1b1b1f'],  // dark: Stone Neutral T10
-    '--color-background-body': ['#f3f3f5', '#111015'],  // dark: Stone Neutral T5
-    '--color-overlay': ['#25252a80', '#28282a'],  // light: Stone Neutral T15 · 50%
-    '--color-overlay-hover': ['#25252a0d', '#f3f3f5'],  // light: Stone Neutral T15 · 5%
-    '--color-overlay-pressed': ['#25252a1a', '#f3f3f5'],  // light: Stone Neutral T15 · 10%
-    '--color-background-muted': ['#e2e2e8', '#3b3b3f'],  // light: Stone Neutral T90
+    '--color-accent': ['#25252a', '#f3f3f5'], // light: Stone Neutral T15
+    '--color-accent-muted': ['#25252a14', '#f3f3f5'], // light: Stone Neutral T15 · 8%
+    '--color-neutral': ['#25252a0f', '#f3f3f5'], // light: Stone Neutral T15 · 6%
+    '--color-background-surface': ['#ffffff', '#1b1b1f'], // dark: Stone Neutral T10
+    '--color-background-body': ['#f3f3f5', '#111015'], // dark: Stone Neutral T5
+    '--color-overlay': ['#25252a80', '#28282a'], // light: Stone Neutral T15 · 50%
+    '--color-overlay-hover': ['#25252a0d', '#f3f3f5'], // light: Stone Neutral T15 · 5%
+    '--color-overlay-pressed': ['#25252a1a', '#f3f3f5'], // light: Stone Neutral T15 · 10%
+    '--color-background-muted': ['#e2e2e8', '#3b3b3f'], // light: Stone Neutral T90
 
     // Text — H=291
-    '--color-text-primary': ['#25252a', '#f3f3f5'],  // light: Stone Neutral T15
-    '--color-text-secondary': ['#83838a', '#9d9da3'],      // T55 C=4 / T65 C=3
-    '--color-text-disabled': ['#d7d7da', '#5e5e61'],       // T86 C=1.6 / T40 C=2
-    '--color-text-accent': ['#25252a', '#f3f3f5'],  // light: Stone Neutral T15
+    '--color-text-primary': ['#25252a', '#f3f3f5'], // light: Stone Neutral T15
+    '--color-text-secondary': ['#83838a', '#9d9da3'], // T55 C=4 / T65 C=3
+    '--color-text-disabled': ['#d7d7da', '#5e5e61'], // T86 C=1.6 / T40 C=2
+    '--color-text-accent': ['#25252a', '#f3f3f5'], // light: Stone Neutral T15
     '--color-on-dark': '#FFFFFF',
-    '--color-on-light': ['#25252a', '#28282a'],  // light: Stone Neutral T15
-    '--color-on-accent': ['#ffffff', '#25252a'],  // dark: Stone Neutral T15
+    '--color-on-light': ['#25252a', '#28282a'], // light: Stone Neutral T15
+    '--color-on-accent': ['#ffffff', '#25252a'], // dark: Stone Neutral T15
     // Text on top of matching status surface (badge fill, banner content).
-    '--color-on-success': ['#374c36', '#d0e9ce'],          // Green T30 / T90
-    '--color-on-error': ['#58413e', '#f9dcd7'],             // Red T30 / T90
-    '--color-on-warning': ['#524622', '#f4e1b7'],           // Yellow T30 / T90
+    '--color-on-success': ['#374c36', '#d0e9ce'], // Green T30 / T90
+    '--color-on-error': ['#58413e', '#f9dcd7'], // Red T30 / T90
+    '--color-on-warning': ['#524622', '#f4e1b7'], // Yellow T30 / T90
 
     // Icon — H=291
-    '--color-icon-accent': ['#25252a', '#f3f3f5'],  // light: Stone Neutral T15
-    '--color-icon-primary': ['#25252a', '#f3f3f5'],  // light: Stone Neutral T15
-    '--color-icon-secondary': ['#83838a', '#9d9da3'],      // T55 C=4 / T65 C=3
-    '--color-icon-disabled': ['#d7d7da', '#5e5e61'],       // T86 C=1.6 / T40 C=2
+    '--color-icon-accent': ['#25252a', '#f3f3f5'], // light: Stone Neutral T15
+    '--color-icon-primary': ['#25252a', '#f3f3f5'], // light: Stone Neutral T15
+    '--color-icon-secondary': ['#83838a', '#9d9da3'], // T55 C=4 / T65 C=3
+    '--color-icon-disabled': ['#d7d7da', '#5e5e61'], // T86 C=1.6 / T40 C=2
 
     // Surface variants — H=291
-    '--color-background-card': ['#FFFFFF', '#242325'],      // T14
-    '--color-background-popover': ['#ffffff', '#25252a'],  // dark: Stone Neutral T15
-    '--color-background-inverted': ['#25252a', '#f3f3f5'],  // light: Stone Neutral T15
+    '--color-background-card': ['#FFFFFF', '#242325'], // T14
+    '--color-background-popover': ['#ffffff', '#25252a'], // dark: Stone Neutral T15
+    '--color-background-inverted': ['#25252a', '#f3f3f5'], // light: Stone Neutral T15
 
     // Status / Sentiment — T50 from palette for icons/borders (visible color)
-    '--color-success': ['#374c36', '#b4cdb2'],              // Green T30 / T80
-    '--color-success-muted': ['#d0e9ce', '#b4cdb2'],       // Green T90 / T80
-    '--color-error': ['#58413e', '#dcc0bc'],                // Red T30 / T80
-    '--color-error-muted': ['#f9dcd7', '#dcc0bc'],          // Red T90 / T80
-    '--color-warning': ['#524622', '#d7c59c'],              // Yellow T30 / T80
-    '--color-warning-muted': ['#f4e1b7', '#d7c59c'],       // Yellow T90 / T80
+    '--color-success': ['#374c36', '#b4cdb2'], // Green T30 / T80
+    '--color-success-muted': ['#d0e9ce', '#b4cdb2'], // Green T90 / T80
+    '--color-error': ['#58413e', '#dcc0bc'], // Red T30 / T80
+    '--color-error-muted': ['#f9dcd7', '#dcc0bc'], // Red T90 / T80
+    '--color-warning': ['#524622', '#d7c59c'], // Yellow T30 / T80
+    '--color-warning-muted': ['#f4e1b7', '#d7c59c'], // Yellow T90 / T80
 
     // Border — H=291
-    '--color-border': ['#e2e2e8', '#f3f3f5'],  // light: Stone Neutral T90
-    '--color-border-emphasized': ['#83838a', '#5e5e61'],    // T55 C=4 / T40 C=2
+    '--color-border': ['#e2e2e8', '#f3f3f5'], // light: Stone Neutral T90
+    '--color-border-emphasized': ['#83838a', '#5e5e61'], // T55 C=4 / T40 C=2
 
     // Effects — H=291
-    '--color-skeleton': ['#d4d4da', '#5e5e64'],             // T85 / T40 from H=291 C=3
-    '--color-shadow': ['#25252a1a', '#000000'],  // light: Stone Neutral T15 · 10%
+    '--color-skeleton': ['#d4d4da', '#5e5e64'], // T85 / T40 from H=291 C=3
+    '--color-shadow': ['#25252a1a', '#000000'], // light: Stone Neutral T15 · 10%
     '--color-tint-hover': ['black', 'white'],
 
     // Typography override
@@ -160,9 +157,9 @@ export const stoneTheme = defineTheme({
     //          modes, matching the light-mode T90/T85 spacing.
 
     // Categorical — Blue H=265 C=10
-    '--color-background-blue': ['#d7e4f5', '#485362'],     // light T90 / dark T35
-    '--color-border-blue': ['#c9d6e7', '#313c4a'],          // light T85 / dark T25
-    '--color-icon-blue': ['#3c4856', '#d7e4f5'],            // light T30 / dark T90
+    '--color-background-blue': ['#d7e4f5', '#485362'], // light T90 / dark T35
+    '--color-border-blue': ['#c9d6e7', '#313c4a'], // light T85 / dark T25
+    '--color-icon-blue': ['#3c4856', '#d7e4f5'], // light T30 / dark T90
     '--color-text-blue': ['#3c4856', '#d7e4f5'],
 
     // Categorical — Cyan H=190 C=10
@@ -173,10 +170,10 @@ export const stoneTheme = defineTheme({
 
     // Categorical — Gray (pure neutral, C=0). Same T35/T25/T90 pattern from
     // the neutral H=291 C=3 ramp.
-    '--color-background-gray': ['#e2e2e8', '#525257'],  // light: Stone Neutral T90
-    '--color-border-gray': ['#d4d4da', '#3b3b3f'],  // light: Stone Neutral T85
-    '--color-icon-gray': ['#46464b', '#e2e2e8'],  // light: Stone Neutral T30
-    '--color-text-gray': ['#46464b', '#e2e2e8'],  // light: Stone Neutral T30
+    '--color-background-gray': ['#e2e2e8', '#525257'], // light: Stone Neutral T90
+    '--color-border-gray': ['#d4d4da', '#3b3b3f'], // light: Stone Neutral T85
+    '--color-icon-gray': ['#46464b', '#e2e2e8'], // light: Stone Neutral T30
+    '--color-text-gray': ['#46464b', '#e2e2e8'], // light: Stone Neutral T30
 
     // Categorical — Green H=142 C=17
     '--color-background-green': ['#d0e9ce', '#425841'],
@@ -233,12 +230,9 @@ export const stoneTheme = defineTheme({
     // =========================================================================
     // Shadows
     // =========================================================================
-    '--shadow-low':
-      '0 2px 4px #28282A0D, 0 4px 8px #28282A1A',
-    '--shadow-med':
-      '0 2px 4px #28282A0D, 0 4px 12px #28282A1A',
-    '--shadow-high':
-      '0 4px 6px #28282A1A, 0 12px 24px #28282A26',
+    '--shadow-low': '0 2px 4px #28282A0D, 0 4px 8px #28282A1A',
+    '--shadow-med': '0 2px 4px #28282A0D, 0 4px 12px #28282A1A',
+    '--shadow-high': '0 4px 6px #28282A1A, 0 12px 24px #28282A26',
     '--shadow-inset-hover': 'inset 0px 0px 0px 2px #28282A30',
     '--shadow-inset-selected': 'inset 0px 0px 0px 2px #28282A50',
     '--shadow-inset-success': 'inset 0px 0px 0px 2px #83838a30',
@@ -327,16 +321,16 @@ export const stoneTheme = defineTheme({
     // indeterminate both route to blue for the in-progress / loading look.
     'progressbar-fill': {
       'variant:accent': {
-        backgroundColor: 'light-dark(#d7e4f5, #a0acbc)',  // Blue T90 / T70
+        backgroundColor: 'light-dark(#d7e4f5, #a0acbc)', // Blue T90 / T70
       },
       'variant:success': {
-        backgroundColor: 'light-dark(#d0e9ce, #9ab298)',  // Green T90 / T70
+        backgroundColor: 'light-dark(#d0e9ce, #9ab298)', // Green T90 / T70
       },
       'variant:warning': {
-        backgroundColor: 'light-dark(#f4e1b7, #bbaa82)',   // Yellow T90 / T70
+        backgroundColor: 'light-dark(#f4e1b7, #bbaa82)', // Yellow T90 / T70
       },
       'variant:error': {
-        backgroundColor: 'light-dark(#f9dcd7, #c0a5a0)',   // Red T90 / T70
+        backgroundColor: 'light-dark(#f9dcd7, #c0a5a0)', // Red T90 / T70
       },
     },
 
@@ -374,16 +368,14 @@ export const stoneTheme = defineTheme({
     // Input status borders + icons across all 9 input components share the
     // same softer T60/T70 redirection. See INPUT_STATUS_VARS above.
     'text-input': INPUT_STATUS_VARS,
-    'textarea': INPUT_STATUS_VARS,
+    textarea: INPUT_STATUS_VARS,
     'number-input': INPUT_STATUS_VARS,
     'date-input': INPUT_STATUS_VARS,
     'time-input': INPUT_STATUS_VARS,
-    'selector': INPUT_STATUS_VARS,
+    selector: INPUT_STATUS_VARS,
     'multi-selector': INPUT_STATUS_VARS,
-    'typeahead': INPUT_STATUS_VARS,
-    'tokenizer': INPUT_STATUS_VARS,
-
-
+    typeahead: INPUT_STATUS_VARS,
+    tokenizer: INPUT_STATUS_VARS,
 
     card: {
       base: {
@@ -408,83 +400,253 @@ export const stoneTheme = defineTheme({
  */
 export const stonePalettes = {
   neutral: {
-    hue: 291, chroma: 3,
-    0: '#000000', 5: '#111015', 10: '#1b1b1f', 15: '#25252a', 20: '#303034',
-    25: '#3b3b3f', 30: '#46464b', 35: '#525257', 40: '#5e5e63', 45: '#6a6a6f',
-    50: '#77777c', 55: '#838388', 60: '#909095', 65: '#9d9da3', 70: '#ababb0',
-    75: '#b8b8be', 80: '#c6c6cc', 85: '#d4d4da', 90: '#e2e2e8', 95: '#f0f0f6',
+    hue: 291,
+    chroma: 3,
+    0: '#000000',
+    5: '#111015',
+    10: '#1b1b1f',
+    15: '#25252a',
+    20: '#303034',
+    25: '#3b3b3f',
+    30: '#46464b',
+    35: '#525257',
+    40: '#5e5e63',
+    45: '#6a6a6f',
+    50: '#77777c',
+    55: '#838388',
+    60: '#909095',
+    65: '#9d9da3',
+    70: '#ababb0',
+    75: '#b8b8be',
+    80: '#c6c6cc',
+    85: '#d4d4da',
+    90: '#e2e2e8',
+    95: '#f0f0f6',
     100: '#ffffff',
   },
   blue: {
-    hue: 265, chroma: 10,
-    0: '#000000', 5: '#04121e', 10: '#111c29', 15: '#1b2734', 20: '#26313f',
-    25: '#313c4a', 30: '#3c4856', 35: '#485362', 40: '#545f6e', 45: '#606c7b',
-    50: '#6c7888', 55: '#798595', 60: '#8692a2', 65: '#939faf', 70: '#a0acbd',
-    75: '#adbacb', 80: '#bbc8d9', 85: '#c9d6e7', 90: '#d7e4f5', 95: '#e7f2ff',
+    hue: 265,
+    chroma: 10,
+    0: '#000000',
+    5: '#04121e',
+    10: '#111c29',
+    15: '#1b2734',
+    20: '#26313f',
+    25: '#313c4a',
+    30: '#3c4856',
+    35: '#485362',
+    40: '#545f6e',
+    45: '#606c7b',
+    50: '#6c7888',
+    55: '#798595',
+    60: '#8692a2',
+    65: '#939faf',
+    70: '#a0acbd',
+    75: '#adbacb',
+    80: '#bbc8d9',
+    85: '#c9d6e7',
+    90: '#d7e4f5',
+    95: '#e7f2ff',
     100: '#ffffff',
   },
   cyan: {
-    hue: 190, chroma: 10,
-    0: '#000000', 5: '#001613', 10: '#071f1e', 15: '#122a28', 20: '#1d3433',
-    25: '#28403e', 30: '#334b49', 35: '#3e5755', 40: '#4a6361', 45: '#566f6d',
-    50: '#627c7a', 55: '#6f8986', 60: '#7b9693', 65: '#88a3a0', 70: '#95b1ae',
-    75: '#a3bebb', 80: '#b0ccc9', 85: '#bedad7', 90: '#cce8e5', 95: '#daf7f4',
+    hue: 190,
+    chroma: 10,
+    0: '#000000',
+    5: '#001613',
+    10: '#071f1e',
+    15: '#122a28',
+    20: '#1d3433',
+    25: '#28403e',
+    30: '#334b49',
+    35: '#3e5755',
+    40: '#4a6361',
+    45: '#566f6d',
+    50: '#627c7a',
+    55: '#6f8986',
+    60: '#7b9693',
+    65: '#88a3a0',
+    70: '#95b1ae',
+    75: '#a3bebb',
+    80: '#b0ccc9',
+    85: '#bedad7',
+    90: '#cce8e5',
+    95: '#daf7f4',
     100: '#ffffff',
   },
   green: {
-    hue: 142, chroma: 17,
-    0: '#000000', 5: '#001700', 10: '#0c200a', 15: '#162a16', 20: '#213521',
-    25: '#2b402b', 30: '#374c36', 35: '#425841', 40: '#4e644d', 45: '#5a7059',
-    50: '#667d65', 55: '#728a71', 60: '#7f977e', 65: '#8ca48b', 70: '#99b298',
-    75: '#a7bfa5', 80: '#b4cdb2', 85: '#c2dbc0', 90: '#d0e9ce', 95: '#def8dc',
+    hue: 142,
+    chroma: 17,
+    0: '#000000',
+    5: '#001700',
+    10: '#0c200a',
+    15: '#162a16',
+    20: '#213521',
+    25: '#2b402b',
+    30: '#374c36',
+    35: '#425841',
+    40: '#4e644d',
+    45: '#5a7059',
+    50: '#667d65',
+    55: '#728a71',
+    60: '#7f977e',
+    65: '#8ca48b',
+    70: '#99b298',
+    75: '#a7bfa5',
+    80: '#b4cdb2',
+    85: '#c2dbc0',
+    90: '#d0e9ce',
+    95: '#def8dc',
     100: '#ffffff',
   },
   teal: {
-    hue: 158, chroma: 9,
-    0: '#000000', 5: '#00150a', 10: '#101e17', 15: '#1a2921', 20: '#25342b',
-    25: '#303f36', 30: '#3b4a41', 35: '#46564d', 40: '#526259', 45: '#5e6e65',
-    50: '#6a7b71', 55: '#77887e', 60: '#83958a', 65: '#90a297', 70: '#9dafa5',
-    75: '#abbdb2', 80: '#b8cbc0', 85: '#c6d9ce', 90: '#d4e7dc', 95: '#e2f5ea',
+    hue: 158,
+    chroma: 9,
+    0: '#000000',
+    5: '#00150a',
+    10: '#101e17',
+    15: '#1a2921',
+    20: '#25342b',
+    25: '#303f36',
+    30: '#3b4a41',
+    35: '#46564d',
+    40: '#526259',
+    45: '#5e6e65',
+    50: '#6a7b71',
+    55: '#77887e',
+    60: '#83958a',
+    65: '#90a297',
+    70: '#9dafa5',
+    75: '#abbdb2',
+    80: '#b8cbc0',
+    85: '#c6d9ce',
+    90: '#d4e7dc',
+    95: '#e2f5ea',
     100: '#ffffff',
   },
   yellow: {
-    hue: 90, chroma: 23,
-    0: '#000000', 5: '#1f0f00', 10: '#261a00', 15: '#2f2500', 20: '#3a2f0d',
-    25: '#463a18', 30: '#524622', 35: '#5e512d', 40: '#6b5d39', 45: '#786944',
-    50: '#857650', 55: '#92825c', 60: '#9f8f68', 65: '#ad9c75', 70: '#bbaa81',
-    75: '#c9b78e', 80: '#d7c59c', 85: '#e5d3a9', 90: '#f4e1b7', 95: '#ffefc7',
+    hue: 90,
+    chroma: 23,
+    0: '#000000',
+    5: '#1f0f00',
+    10: '#261a00',
+    15: '#2f2500',
+    20: '#3a2f0d',
+    25: '#463a18',
+    30: '#524622',
+    35: '#5e512d',
+    40: '#6b5d39',
+    45: '#786944',
+    50: '#857650',
+    55: '#92825c',
+    60: '#9f8f68',
+    65: '#ad9c75',
+    70: '#bbaa81',
+    75: '#c9b78e',
+    80: '#d7c59c',
+    85: '#e5d3a9',
+    90: '#f4e1b7',
+    95: '#ffefc7',
     100: '#ffffff',
   },
   orange: {
-    hue: 70, chroma: 22,
-    0: '#000000', 5: '#250a00', 10: '#2d1700', 15: '#372104', 20: '#432c12',
-    25: '#4f361c', 30: '#5b4227', 35: '#684d32', 40: '#75593d', 45: '#826548',
-    50: '#8f7154', 55: '#9d7e60', 60: '#aa8b6d', 65: '#b89879', 70: '#c6a586',
-    75: '#d4b393', 80: '#e3c0a0', 85: '#f1ceae', 90: '#ffdcbb', 95: '#ffeddc',
+    hue: 70,
+    chroma: 22,
+    0: '#000000',
+    5: '#250a00',
+    10: '#2d1700',
+    15: '#372104',
+    20: '#432c12',
+    25: '#4f361c',
+    30: '#5b4227',
+    35: '#684d32',
+    40: '#75593d',
+    45: '#826548',
+    50: '#8f7154',
+    55: '#9d7e60',
+    60: '#aa8b6d',
+    65: '#b89879',
+    70: '#c6a586',
+    75: '#d4b393',
+    80: '#e3c0a0',
+    85: '#f1ceae',
+    90: '#ffdcbb',
+    95: '#ffeddc',
     100: '#ffffff',
   },
   red: {
-    hue: 33, chroma: 11,
-    0: '#000000', 5: '#210a04', 10: '#2a1714', 15: '#35211e', 20: '#402b28',
-    25: '#4c3633', 30: '#58413e', 35: '#644d49', 40: '#715955', 45: '#7e6561',
-    50: '#8a716d', 55: '#987e7a', 60: '#a58b86', 65: '#b39893', 70: '#c0a5a1',
-    75: '#ceb3ae', 80: '#dcc0bc', 85: '#ebcec9', 90: '#f9dcd7', 95: '#ffece9',
+    hue: 33,
+    chroma: 11,
+    0: '#000000',
+    5: '#210a04',
+    10: '#2a1714',
+    15: '#35211e',
+    20: '#402b28',
+    25: '#4c3633',
+    30: '#58413e',
+    35: '#644d49',
+    40: '#715955',
+    45: '#7e6561',
+    50: '#8a716d',
+    55: '#987e7a',
+    60: '#a58b86',
+    65: '#b39893',
+    70: '#c0a5a1',
+    75: '#ceb3ae',
+    80: '#dcc0bc',
+    85: '#ebcec9',
+    90: '#f9dcd7',
+    95: '#ffece9',
     100: '#ffffff',
   },
   pink: {
-    hue: 340, chroma: 9,
-    0: '#000000', 5: '#1b0c16', 10: '#251720', 15: '#30222a', 20: '#3b2c35',
-    25: '#463740', 30: '#52424c', 35: '#5e4e57', 40: '#6a5a63', 45: '#776670',
-    50: '#83727c', 55: '#907f89', 60: '#9d8c96', 65: '#ab99a3', 70: '#b8a6b1',
-    75: '#c6b4be', 80: '#d4c1cc', 85: '#e2cfda', 90: '#f0dde8', 95: '#ffebf7',
+    hue: 340,
+    chroma: 9,
+    0: '#000000',
+    5: '#1b0c16',
+    10: '#251720',
+    15: '#30222a',
+    20: '#3b2c35',
+    25: '#463740',
+    30: '#52424c',
+    35: '#5e4e57',
+    40: '#6a5a63',
+    45: '#776670',
+    50: '#83727c',
+    55: '#907f89',
+    60: '#9d8c96',
+    65: '#ab99a3',
+    70: '#b8a6b1',
+    75: '#c6b4be',
+    80: '#d4c1cc',
+    85: '#e2cfda',
+    90: '#f0dde8',
+    95: '#ffebf7',
     100: '#ffffff',
   },
   purple: {
-    hue: 307, chroma: 11,
-    0: '#000000', 5: '#150e1d', 10: '#1f1927', 15: '#292332', 20: '#342e3d',
-    25: '#3f3949', 30: '#4b4454', 35: '#564f60', 40: '#635b6d', 45: '#6f6779',
-    50: '#7b7486', 55: '#888193', 60: '#958da0', 65: '#a39aad', 70: '#b0a8bb',
-    75: '#beb5c9', 80: '#cbc3d7', 85: '#d9d1e5', 90: '#e8dff3', 95: '#f6edff',
+    hue: 307,
+    chroma: 11,
+    0: '#000000',
+    5: '#150e1d',
+    10: '#1f1927',
+    15: '#292332',
+    20: '#342e3d',
+    25: '#3f3949',
+    30: '#4b4454',
+    35: '#564f60',
+    40: '#635b6d',
+    45: '#6f6779',
+    50: '#7b7486',
+    55: '#888193',
+    60: '#958da0',
+    65: '#a39aad',
+    70: '#b0a8bb',
+    75: '#beb5c9',
+    80: '#cbc3d7',
+    85: '#d9d1e5',
+    90: '#e8dff3',
+    95: '#f6edff',
     100: '#ffffff',
   },
 } as const;
