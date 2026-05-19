@@ -397,13 +397,13 @@ export const butterTheme = defineTheme({
       },
     },
     'progressbar-fill': {
-      'variant:positive': {
+      'variant:success': {
         backgroundColor: '#91D143',
       },
       'variant:warning': {
         backgroundColor: '#ffc502',
       },
-      'variant:negative': {
+      'variant:error': {
         backgroundColor: '#fc473b',
       },
     },

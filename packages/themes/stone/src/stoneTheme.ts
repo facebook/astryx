@@ -329,13 +329,13 @@ export const stoneTheme = defineTheme({
       'variant:accent': {
         backgroundColor: 'light-dark(#d7e4f5, #a0acbc)',  // Blue T90 / T70
       },
-      'variant:positive': {
+      'variant:success': {
         backgroundColor: 'light-dark(#d0e9ce, #9ab298)',  // Green T90 / T70
       },
       'variant:warning': {
         backgroundColor: 'light-dark(#f4e1b7, #bbaa82)',   // Yellow T90 / T70
       },
-      'variant:negative': {
+      'variant:error': {
         backgroundColor: 'light-dark(#f9dcd7, #c0a5a0)',   // Red T90 / T70
       },
     },

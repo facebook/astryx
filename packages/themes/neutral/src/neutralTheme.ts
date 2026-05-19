@@ -563,7 +563,7 @@ export const neutralTheme = defineTheme({
         // Blue T50 saturated stop (= variant:info badge bg)
         '--color-accent': '#0074e2',
       },
-      'variant:positive': {
+      'variant:success': {
         // Green T45 saturated stop (= variant:success badge bg)
         '--color-success': '#198100',
       },
@@ -571,7 +571,7 @@ export const neutralTheme = defineTheme({
         // Yellow T85 saturated stop (= variant:warning badge bg)
         '--color-warning': '#ffce2f',
       },
-      'variant:negative': {
+      'variant:error': {
         // Red T55 saturated stop (= variant:error badge bg)
         '--color-error': '#e33f4a',
       },
