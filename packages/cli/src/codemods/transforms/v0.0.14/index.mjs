@@ -14,6 +14,10 @@ import renameSectionWashToMuted, {
   meta as renameSectionWashToMutedMeta,
 } from './rename-section-wash-to-muted.mjs';
 
+import renameStatusVariants, {
+  meta as renameStatusVariantsMeta,
+} from './rename-status-variants.mjs';
+
 export default [
   {
     name: 'rename-action-props',
@@ -24,5 +28,10 @@ export default [
     name: 'rename-section-wash-to-muted',
     transform: renameSectionWashToMuted,
     meta: renameSectionWashToMutedMeta,
+  },
+  {
+    name: 'rename-status-variants',
+    transform: renameStatusVariants,
+    meta: renameStatusVariantsMeta,
   },
 ];
