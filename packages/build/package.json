@@ -26,12 +26,17 @@
     ".": "./src/config.js",
     "./babel": "./src/babel.js",
     "./postcss": "./src/index.js",
-    "./vite": "./src/vite.ts",
+    "./vite": "./dist/vite.mjs",
     "./next": "./src/next.js"
   },
   "files": [
-    "src"
+    "src",
+    "dist"
   ],
+  "scripts": {
+    "build": "node build.mjs",
+    "prepack": "npm run build"
+  },
   "peerDependencies": {
     "@stylexjs/babel-plugin": ">=0.18.0",
     "@babel/core": ">=7.0.0",
@@ -42,6 +47,9 @@
     "fast-glob": "^3.3.0",
     "glob-parent": "^6.0.0",
     "is-glob": "^4.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
   },
   "peerDependenciesMeta": {
     "@stylexjs/unplugin": {

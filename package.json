@@ -10,7 +10,7 @@
     "internal/*"
   ],
   "scripts": {
-    "build": "yarn workspace @xds/core build && yarn workspace @xds/vega build && yarn workspace @xds/theme-default build && yarn workspace @xds/theme-neutral build && yarn workspace @xds/theme-brutalist build && yarn workspace @xds/theme-daily build && yarn workspace @xds/theme-matcha build && yarn workspace @xds/theme-stone build && yarn workspace @xds/theme-gothic build && yarn workspace @xds/theme-chocolate build && yarn workspace @xds/theme-y2k build && yarn workspace @xds/theme-butter build",
+    "build": "yarn workspace @xds/build build && yarn workspace @xds/core build && yarn workspace @xds/vega build && yarn workspace @xds/theme-default build && yarn workspace @xds/theme-neutral build && yarn workspace @xds/theme-brutalist build && yarn workspace @xds/theme-daily build && yarn workspace @xds/theme-matcha build && yarn workspace @xds/theme-stone build && yarn workspace @xds/theme-gothic build && yarn workspace @xds/theme-chocolate build && yarn workspace @xds/theme-y2k build && yarn workspace @xds/theme-butter build",
     "dev": "yarn workspace @xds/storybook dev",
     "test": "vitest run",
     "test:watch": "vitest",
