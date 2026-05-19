@@ -1,7 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 'use client';
 
-import {XDSAvatarGroup} from '@xds/core/AvatarGroup';
+import {XDSAvatarGroup, XDSAvatarGroupOverflow} from '@xds/core/AvatarGroup';
+import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
@@ -40,24 +41,22 @@ export default function AvatarGroupShowcase() {
         <XDSText type="supporting" color="secondary">
           Team members
         </XDSText>
-        <XDSAvatarGroup avatars={USERS} size="medium" />
+        <XDSAvatarGroup size="medium">
+          {USERS.map(u => (
+            <XDSAvatar key={u.key} src={u.src} name={u.name} />
+          ))}
+        </XDSAvatarGroup>
       </XDSStack>
       <XDSStack direction="vertical" gap={3}>
         <XDSText type="supporting" color="secondary">
           With overflow
         </XDSText>
-        <XDSAvatarGroup avatars={USERS} maxVisibleCount={3} size="medium" />
-      </XDSStack>
-      <XDSStack direction="vertical" gap={3}>
-        <XDSText type="supporting" color="secondary">
-          Server-side count
-        </XDSText>
-        <XDSAvatarGroup
-          avatars={USERS.slice(0, 3)}
-          maxVisibleCount={3}
-          overflowCount={44}
-          size="medium"
-        />
+        <XDSAvatarGroup size="medium">
+          {USERS.slice(0, 3).map(u => (
+            <XDSAvatar key={u.key} src={u.src} name={u.name} />
+          ))}
+          <XDSAvatarGroupOverflow count={USERS.length - 3} />
+        </XDSAvatarGroup>
       </XDSStack>
     </XDSStack>
   );

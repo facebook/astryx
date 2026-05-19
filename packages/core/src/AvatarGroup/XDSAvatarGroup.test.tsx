@@ -3,119 +3,39 @@ import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {XDSAvatarGroup} from './XDSAvatarGroup';
-
-const AVATARS = [
-  {name: 'Alice', src: '/alice.jpg', key: 'alice'},
-  {name: 'Bob', src: '/bob.jpg', key: 'bob'},
-  {name: 'Charlie', src: '/charlie.jpg', key: 'charlie'},
-  {name: 'Diana', src: '/diana.jpg', key: 'diana'},
-  {name: 'Eve', src: '/eve.jpg', key: 'eve'},
-];
+import {XDSAvatarGroupOverflow} from './XDSAvatarGroupOverflow';
+import {XDSAvatar} from '../Avatar';
 
 describe('XDSAvatarGroup', () => {
-  it('renders all avatars when no maxVisibleCount is set', () => {
-    render(<XDSAvatarGroup avatars={AVATARS.slice(0, 3)} />);
+  it('renders all avatar children', () => {
+    render(
+      <XDSAvatarGroup>
+        <XDSAvatar name="Alice" />
+        <XDSAvatar name="Bob" />
+        <XDSAvatar name="Charlie" />
+      </XDSAvatarGroup>,
+    );
 
     expect(screen.getByLabelText('Alice')).toBeInTheDocument();
     expect(screen.getByLabelText('Bob')).toBeInTheDocument();
     expect(screen.getByLabelText('Charlie')).toBeInTheDocument();
   });
 
-  it('limits visible avatars when maxVisibleCount is set', () => {
-    render(
-      <XDSAvatarGroup avatars={AVATARS.slice(0, 3)} maxVisibleCount={2} />,
-    );
-
-    expect(screen.getByLabelText('Alice')).toBeInTheDocument();
-    expect(screen.getByLabelText('Bob')).toBeInTheDocument();
-    expect(screen.queryByLabelText('Charlie')).not.toBeInTheDocument();
-  });
-
-  it('shows overflow indicator with hidden count', () => {
-    render(
-      <XDSAvatarGroup avatars={AVATARS.slice(0, 4)} maxVisibleCount={2} />,
-    );
-
-    expect(screen.getByLabelText('2 more')).toBeInTheDocument();
-    expect(screen.getByText('+2')).toBeInTheDocument();
-  });
-
-  it('adds overflowCount to hidden count', () => {
-    render(
-      <XDSAvatarGroup
-        avatars={AVATARS.slice(0, 3)}
-        maxVisibleCount={2}
-        overflowCount={10}
-      />,
-    );
-
-    expect(screen.getByLabelText('11 more')).toBeInTheDocument();
-    expect(screen.getByText('+11')).toBeInTheDocument();
-  });
-
-  it('shows overflowCount even when all avatars are visible', () => {
-    render(
-      <XDSAvatarGroup
-        avatars={AVATARS.slice(0, 3)}
-        maxVisibleCount={5}
-        overflowCount={44}
-      />,
-    );
-
-    expect(screen.getByLabelText('44 more')).toBeInTheDocument();
-    expect(screen.getByText('+44')).toBeInTheDocument();
-  });
-
-  it('renders overflow as span when onClickOverflow is not set', () => {
-    render(
-      <XDSAvatarGroup avatars={AVATARS.slice(0, 2)} maxVisibleCount={1} />,
-    );
-
-    const overflow = screen.getByLabelText('1 more');
-    expect(overflow.tagName).toBe('SPAN');
-  });
-
-  it('renders overflow as button when onClickOverflow is set', () => {
-    render(
-      <XDSAvatarGroup
-        avatars={AVATARS.slice(0, 2)}
-        maxVisibleCount={1}
-        onClickOverflow={() => {}}
-      />,
-    );
-
-    const overflow = screen.getByLabelText('1 more');
-    expect(overflow.tagName).toBe('BUTTON');
-  });
-
-  it('calls onClickOverflow when overflow indicator is clicked', async () => {
-    const user = userEvent.setup();
-    const handleClick = vi.fn();
-
-    render(
-      <XDSAvatarGroup
-        avatars={AVATARS.slice(0, 2)}
-        maxVisibleCount={1}
-        onClickOverflow={handleClick}
-      />,
-    );
-
-    await user.click(screen.getByLabelText('1 more'));
-    expect(handleClick).toHaveBeenCalledOnce();
-  });
-
   it('renders with role="group" and default aria-label', () => {
-    render(<XDSAvatarGroup avatars={AVATARS.slice(0, 1)} />);
+    render(
+      <XDSAvatarGroup>
+        <XDSAvatar name="Alice" />
+      </XDSAvatarGroup>,
+    );
 
     expect(screen.getByRole('group')).toHaveAttribute('aria-label', 'Avatars');
   });
 
   it('accepts a custom aria-label', () => {
     render(
-      <XDSAvatarGroup
-        avatars={AVATARS.slice(0, 1)}
-        aria-label="Team members"
-      />,
+      <XDSAvatarGroup aria-label="Team members">
+        <XDSAvatar name="Alice" />
+      </XDSAvatarGroup>,
     );
 
     expect(screen.getByRole('group')).toHaveAttribute(
@@ -126,37 +46,106 @@ describe('XDSAvatarGroup', () => {
 
   it('applies data-testid', () => {
     render(
-      <XDSAvatarGroup
-        avatars={AVATARS.slice(0, 1)}
-        data-testid="avatar-group"
-      />,
+      <XDSAvatarGroup data-testid="avatar-group">
+        <XDSAvatar name="Alice" />
+      </XDSAvatarGroup>,
     );
 
     expect(screen.getByTestId('avatar-group')).toBeInTheDocument();
   });
 
-  it('does not show overflow when maxVisibleCount exceeds avatar count', () => {
-    render(
-      <XDSAvatarGroup avatars={AVATARS.slice(0, 2)} maxVisibleCount={10} />,
-    );
-
-    expect(screen.getByLabelText('Alice')).toBeInTheDocument();
-    expect(screen.getByLabelText('Bob')).toBeInTheDocument();
-    expect(screen.queryByText(/\+\d/)).not.toBeInTheDocument();
-  });
-
   it('applies size class to the group', () => {
-    render(<XDSAvatarGroup avatars={AVATARS.slice(0, 1)} size="medium" />);
+    render(
+      <XDSAvatarGroup size="medium">
+        <XDSAvatar name="Alice" />
+      </XDSAvatarGroup>,
+    );
 
     const group = screen.getByRole('group');
     expect(group.className).toContain('xds-avatar-group');
     expect(group.className).toContain('medium');
   });
 
-  it('renders empty group when avatars is empty', () => {
-    render(<XDSAvatarGroup avatars={[]} data-testid="empty" />);
+  it('renders empty group when no children', () => {
+    render(<XDSAvatarGroup data-testid="empty">{[]}</XDSAvatarGroup>);
 
     expect(screen.getByTestId('empty')).toBeInTheDocument();
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  });
+});
+
+describe('XDSAvatarGroupOverflow', () => {
+  it('renders overflow count as span by default', () => {
+    render(
+      <XDSAvatarGroup>
+        <XDSAvatar name="Alice" />
+        <XDSAvatarGroupOverflow count={5} />
+      </XDSAvatarGroup>,
+    );
+
+    const overflow = screen.getByLabelText('5 more');
+    expect(overflow.tagName).toBe('SPAN');
+    expect(overflow).toHaveTextContent('+5');
+  });
+
+  it('renders as button when onClick is provided', () => {
+    render(
+      <XDSAvatarGroup>
+        <XDSAvatar name="Alice" />
+        <XDSAvatarGroupOverflow count={3} onClick={() => {}} />
+      </XDSAvatarGroup>,
+    );
+
+    const overflow = screen.getByLabelText('3 more');
+    expect(overflow.tagName).toBe('BUTTON');
+  });
+
+  it('calls onClick when clicked', async () => {
+    const user = userEvent.setup();
+    const handleClick = vi.fn();
+
+    render(
+      <XDSAvatarGroup>
+        <XDSAvatar name="Alice" />
+        <XDSAvatarGroupOverflow count={3} onClick={handleClick} />
+      </XDSAvatarGroup>,
+    );
+
+    await user.click(screen.getByLabelText('3 more'));
+    expect(handleClick).toHaveBeenCalledOnce();
+  });
+
+  it('renders custom children instead of default label', () => {
+    render(
+      <XDSAvatarGroup>
+        <XDSAvatar name="Alice" />
+        <XDSAvatarGroupOverflow count={5}>
+          <span data-testid="custom">more</span>
+        </XDSAvatarGroupOverflow>
+      </XDSAvatarGroup>,
+    );
+
+    expect(screen.getByTestId('custom')).toBeInTheDocument();
+  });
+
+  it('works with sliced avatar list and server-side count', () => {
+    const users = ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve'];
+    const serverTotal = 47;
+    const visibleCount = 3;
+
+    render(
+      <XDSAvatarGroup size="medium">
+        {users.slice(0, visibleCount).map(name => (
+          <XDSAvatar key={name} name={name} />
+        ))}
+        <XDSAvatarGroupOverflow count={serverTotal - visibleCount} />
+      </XDSAvatarGroup>,
+    );
+
+    expect(screen.getByLabelText('Alice')).toBeInTheDocument();
+    expect(screen.getByLabelText('Bob')).toBeInTheDocument();
+    expect(screen.getByLabelText('Charlie')).toBeInTheDocument();
+    expect(screen.getByLabelText('44 more')).toBeInTheDocument();
+    expect(screen.getByText('+44')).toBeInTheDocument();
   });
 });

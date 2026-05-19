@@ -1,10 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSAvatarGroup} from '@xds/core/AvatarGroup';
+import {XDSAvatarGroup, XDSAvatarGroupOverflow} from '@xds/core/AvatarGroup';
+import {XDSAvatar} from '@xds/core/Avatar';
 import {spacingVars, typographyVars} from '@xds/core/theme/tokens.stylex';
 
-const AVATARS = [
+const USERS = [
   {name: 'Alice Johnson', src: 'https://i.pravatar.cc/150?img=1', key: 'alice'},
   {name: 'Bob Smith', src: 'https://i.pravatar.cc/150?img=2', key: 'bob'},
   {
@@ -16,7 +17,7 @@ const AVATARS = [
   {name: 'Eve Park', src: 'https://i.pravatar.cc/150?img=5', key: 'eve'},
 ];
 
-const styles = stylex.create({
+const storyStyles = stylex.create({
   storyWrapper: {
     display: 'flex',
     flexDirection: 'column',
@@ -33,14 +34,6 @@ const meta: Meta<typeof XDSAvatarGroup> = {
   component: XDSAvatarGroup,
   tags: ['autodocs'],
   argTypes: {
-    maxVisibleCount: {
-      control: 'number',
-      description: 'Maximum visible avatars before overflow',
-    },
-    overflowCount: {
-      control: 'number',
-      description: 'Additional count for overflow indicator',
-    },
     size: {
       control: 'select',
       options: ['tiny', 'xsmall', 'small', 'medium', 'large'],
@@ -52,56 +45,106 @@ const meta: Meta<typeof XDSAvatarGroup> = {
 export default meta;
 type Story = StoryObj<typeof XDSAvatarGroup>;
 
+/** Basic avatar group showing all members. */
 export const Default: Story = {
-  args: {
-    avatars: AVATARS.slice(0, 3),
-    size: 'medium',
-  },
+  render: () => (
+    <XDSAvatarGroup size="medium">
+      {USERS.slice(0, 3).map(u => (
+        <XDSAvatar key={u.key} src={u.src} name={u.name} />
+      ))}
+    </XDSAvatarGroup>
+  ),
 };
 
-export const WithMax: Story = {
-  args: {
-    avatars: AVATARS,
-    maxVisibleCount: 3,
-    size: 'medium',
-  },
+/** Sliced to 3 with "+N" overflow indicator. */
+export const WithOverflow: Story = {
+  render: () => (
+    <XDSAvatarGroup size="medium">
+      {USERS.slice(0, 3).map(u => (
+        <XDSAvatar key={u.key} src={u.src} name={u.name} />
+      ))}
+      <XDSAvatarGroupOverflow count={USERS.length - 3} />
+    </XDSAvatarGroup>
+  ),
 };
 
-export const WithOverflowCount: Story = {
-  args: {
-    avatars: AVATARS.slice(0, 3),
-    maxVisibleCount: 3,
-    overflowCount: 44,
-    size: 'medium',
-  },
+/** Clickable overflow indicator. */
+export const ClickableOverflow: Story = {
+  render: () => (
+    <XDSAvatarGroup size="medium">
+      {USERS.slice(0, 3).map(u => (
+        <XDSAvatar key={u.key} src={u.src} name={u.name} />
+      ))}
+      <XDSAvatarGroupOverflow
+        count={USERS.length - 3}
+        onClick={() => alert('Show all participants')}
+      />
+    </XDSAvatarGroup>
+  ),
 };
 
-export const WithClickableOverflow: Story = {
-  args: {
-    avatars: AVATARS,
-    maxVisibleCount: 3,
-    size: 'medium',
-    onClickOverflow: () => alert('Show all participants'),
-  },
+/** Server-side total count (47 participants, only 3 rendered). */
+export const ServerSideCount: Story = {
+  render: () => (
+    <XDSAvatarGroup size="medium">
+      {USERS.slice(0, 3).map(u => (
+        <XDSAvatar key={u.key} src={u.src} name={u.name} />
+      ))}
+      <XDSAvatarGroupOverflow count={44} />
+    </XDSAvatarGroup>
+  ),
 };
 
+/** Per-avatar status dots — just works with compositional API. */
+export const WithStatusDots: Story = {
+  render: () => (
+    <XDSAvatarGroup size="medium">
+      <XDSAvatar
+        src="https://i.pravatar.cc/150?img=1"
+        name="Alice"
+        statusDot={{color: 'positive'}}
+      />
+      <XDSAvatar
+        src="https://i.pravatar.cc/150?img=2"
+        name="Bob"
+        statusDot={{color: 'warning'}}
+      />
+      <XDSAvatar
+        src="https://i.pravatar.cc/150?img=3"
+        name="Charlie"
+        statusDot={{color: 'negative'}}
+      />
+    </XDSAvatarGroup>
+  ),
+};
+
+/** All sizes side by side. */
 export const AllSizes: Story = {
   render: () => (
-    <div {...stylex.props(styles.storyWrapper)}>
+    <div {...stylex.props(storyStyles.storyWrapper)}>
       {(['tiny', 'xsmall', 'small', 'medium', 'large'] as const).map(size => (
         <div key={size}>
-          <h4 {...stylex.props(styles.heading)}>{size}</h4>
-          <XDSAvatarGroup avatars={AVATARS} maxVisibleCount={3} size={size} />
+          <h4 {...stylex.props(storyStyles.heading)}>{size}</h4>
+          <XDSAvatarGroup size={size}>
+            {USERS.slice(0, 3).map(u => (
+              <XDSAvatar key={u.key} src={u.src} name={u.name} />
+            ))}
+            <XDSAvatarGroupOverflow count={USERS.length - 3} />
+          </XDSAvatarGroup>
         </div>
       ))}
     </div>
   ),
 };
 
+/** Initials fallback when no images provided. */
 export const InitialsFallback: Story = {
-  args: {
-    avatars: AVATARS.map(({name, key}) => ({name, key})),
-    maxVisibleCount: 4,
-    size: 'medium',
-  },
+  render: () => (
+    <XDSAvatarGroup size="medium">
+      {USERS.slice(0, 4).map(u => (
+        <XDSAvatar key={u.key} name={u.name} />
+      ))}
+      <XDSAvatarGroupOverflow count={1} />
+    </XDSAvatarGroup>
+  ),
 };

@@ -25,6 +25,7 @@ import {
   radiusVars,
 } from '../theme/tokens.stylex';
 import {XDSAvatarSizeContext} from './XDSAvatarSizeContext';
+import {useXDSAvatarGroup} from '../AvatarGroup/XDSAvatarGroupContext';
 import {xdsClassName, mergeProps} from '../utils';
 
 /**
@@ -156,8 +157,32 @@ const dynamicStyles = stylex.create({
   statusPosition: (size: number) => ({
     bottom: size * CIRCLE_EDGE_OFFSET_RATIO,
     right: size * CIRCLE_EDGE_OFFSET_RATIO,
-    // Shift by half the element's size to center it on the circle edge
     transform: 'translate(50%, 50%)',
+  }),
+});
+
+const BORDER_WIDTH = 2;
+
+const groupStyles = stylex.create({
+  ring: {
+    borderRadius: radiusVars['--radius-full'],
+    borderWidth: BORDER_WIDTH,
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-background-surface'],
+    backgroundColor: colorVars['--color-background-surface'],
+    boxSizing: 'content-box',
+  },
+  overlap: {
+    marginInlineStart: {
+      default: null,
+      ':not(:first-child)': 'var(--_avatar-group-overlap)',
+    },
+  },
+});
+
+const groupDynamicStyles = stylex.create({
+  overlap: (offset: number) => ({
+    '--_avatar-group-overlap': `${offset}px`,
   }),
 });
 
@@ -268,7 +293,9 @@ export function XDSAvatar({
   const showIcon = !showImage && !showFallbackImage && !name;
 
   const accessibleName = alt || name || 'Avatar';
-  const numericSize = useMemo(() => resolveSize(size), [size]);
+  const avatarGroup = useXDSAvatarGroup();
+  const resolvedSize = avatarGroup?.size ?? size;
+  const numericSize = useMemo(() => resolveSize(resolvedSize), [resolvedSize]);
 
   return (
     <XDSAvatarSizeContext.Provider value={numericSize}>
@@ -278,8 +305,14 @@ export function XDSAvatar({
         aria-label={accessibleName}
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('avatar', {size}),
-          stylex.props(styles.wrapper, xstyle),
+          xdsClassName('avatar', {size: resolvedSize}),
+          stylex.props(
+            styles.wrapper,
+            avatarGroup && groupStyles.ring,
+            avatarGroup && groupStyles.overlap,
+            avatarGroup && groupDynamicStyles.overlap(-avatarGroup.overlap),
+            xstyle,
+          ),
           className,
           style,
         )}
