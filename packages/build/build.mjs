@@ -32,7 +32,7 @@ buildSync({
 // Fix babel.js path: dist/vite.mjs resolves __dirname to dist/,
 // but babel.js lives in src/
 let content = readFileSync('dist/vite.mjs', 'utf8');
-content = content.replace(
+content = content.replaceAll(
   'resolve(__dirname, "babel.js")',
   'resolve(__dirname, "../src/babel.js")',
 );

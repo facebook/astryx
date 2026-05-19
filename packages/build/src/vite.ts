@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import type {Plugin} from 'vite';
+import type {Plugin, UserConfig} from 'vite';
 import stylexBabelPlugin from '@stylexjs/babel-plugin';
 import stylex from '@stylexjs/unplugin';
 import path from 'path';
@@ -11,12 +11,42 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const XDS_LIBRARY_PATTERN = 'node_modules/@xds/';
 const STYLEX_CSS_PATH = '/virtual:stylex.css';
 
+/**
+ * Browser targets for lightningcss (opt-in).
+ * Only needed if your StyleX version lowers light-dark() without them.
+ * Exported for consumers who want to opt in explicitly.
+ */
+export const LIGHTNINGCSS_TARGETS = {
+  chrome: 123 << 16,
+  firefox: 120 << 16,
+  safari: (17 << 16) | (5 << 8),
+};
+
+/**
+ * Legacy options shape — kept for backward compatibility.
+ * Prefer the zero-config form: xdsStylex()
+ */
+export interface XDSVitePluginLegacyOptions {
+  stylexOptions: Parameters<typeof stylex.vite>[0];
+  libraryPattern?: string;
+  layers?: {
+    library?: string;
+    product?: string;
+  };
+}
+
 export interface XDSVitePluginOptions {
   /**
-   * Options passed to @stylexjs/unplugin.
-   * See https://stylexjs.com/docs/api/configuration/babel-plugin/
+   * Whether to enable dev mode for StyleX.
+   * @default process.env.NODE_ENV !== 'production'
    */
-  stylexOptions: Parameters<typeof stylex.vite>[0];
+  dev?: boolean;
+
+  /**
+   * Root directory for module resolution.
+   * @default process.cwd()
+   */
+  rootDir?: string;
 
   /**
    * Pattern to identify XDS library files vs product files.
@@ -33,51 +63,87 @@ export interface XDSVitePluginOptions {
     /** Layer name for product styles @default 'product' */
     product?: string;
   };
+
+  /**
+   * LightningCSS browser targets. Only needed if your StyleX version
+   * lowers light-dark() without them. Most recent versions preserve
+   * light-dark() by default.
+   * @default undefined (no targets set)
+   */
+  lightningcssTargets?: Record<string, number>;
+
+  /**
+   * Extra StyleX options to merge.
+   */
+  stylexOverrides?: Record<string, unknown>;
 }
 
 /**
- * Vite plugin for XDS source builds.
+ * XDS Vite plugin for source builds.
  *
- * Wraps @stylexjs/unplugin to compile StyleX from both XDS library source
- * and product code, then splits the CSS output into separate named layers:
+ * Provides sensible defaults for StyleX compilation with XDS.
+ * Just spread into your plugins array:
  *
- *   reset < xds-base (library) < xds-theme < product (app)
+ *   plugins: [...xdsStylex(), react()]
  *
- * The babel wrapper plugin (@xds/build/babel) is injected into the
- * unplugin's babelConfig.plugins so it runs BEFORE the hardcoded
- * StyleX instance. Our wrapper transforms stylex.create() calls with
- * the correct prefix per file, leaving nothing for the stock instance.
+ * Handles:
+ * - StyleX compilation with correct settings
+ * - CSS layer ordering (reset < xds-base < xds-theme < product)
+ * - resolve.alias for @xds/core source
+ * - optimizeDeps.exclude to prevent Vite pre-bundling XDS
+ *
+ * @param options — optional overrides
  */
-export function xdsStylex(options: XDSVitePluginOptions): Plugin[] {
+export function xdsStylex(options: XDSVitePluginOptions | XDSVitePluginLegacyOptions = {}): Plugin[] {
+  // Detect legacy API: xdsStylex({stylexOptions: {...}})
+  if ('stylexOptions' in options && options.stylexOptions) {
+    return xdsStylexLegacy(options as XDSVitePluginLegacyOptions);
+  }
+
+  const opts = options as XDSVitePluginOptions;
   const {
-    stylexOptions,
+    dev = process.env.NODE_ENV !== 'production',
+    rootDir = process.cwd(),
     libraryPattern = XDS_LIBRARY_PATTERN,
     layers = {},
-  } = options;
+    lightningcssTargets,
+    stylexOverrides = {},
+  } = opts;
 
   const libraryLayer = layers.library ?? 'xds-base';
   const productLayer = layers.product ?? 'product';
 
+  // Build StyleX options with sensible defaults
+  const stylexOptions: Record<string, unknown> = {
+    dev,
+    runtimeInjection: false,
+    treeshakeCompensation: true,
+    unstable_moduleResolution: {
+      type: 'commonJS',
+      rootDir,
+    },
+    ...(lightningcssTargets && {
+      lightningcssOptions: {targets: lightningcssTargets},
+    }),
+    ...stylexOverrides,
+  };
+
   // Inject our babel wrapper as a user plugin — it runs before the
   // unplugin's hardcoded StyleX instance and handles prefix routing.
   const xdsBabelPlugin = path.resolve(__dirname, 'babel.js');
-  const existingPlugins = stylexOptions.babelConfig?.plugins ?? [];
 
   const basePlugin = stylex.vite({
-    ...stylexOptions,
+    ...(stylexOptions as any),
     useCSSLayers: true,
     babelConfig: {
-      ...stylexOptions.babelConfig,
       plugins: [
         [
           xdsBabelPlugin,
           {
-            ...(stylexOptions as any),
-            // Remove babelConfig to avoid circular reference
+            ...stylexOptions,
             babelConfig: undefined,
           },
         ],
-        ...existingPlugins,
       ],
     },
   });
@@ -96,7 +162,170 @@ export function xdsStylex(options: XDSVitePluginOptions): Plugin[] {
     },
   };
 
-  // Split-layer interceptor plugin
+  // Config plugin — injects resolve.alias and optimizeDeps
+  const configPlugin: Plugin = {
+    name: 'xds-config',
+    config(): UserConfig {
+      // Discover all @xds/* packages to exclude from pre-bundling.
+      // XDS ships as source that must be compiled by StyleX — pre-bundling
+      // strips stylex.create/defineVars calls and causes runtime errors.
+      let xdsPackages: string[] = ['@xds/core'];
+      try {
+        const fs = require('fs');
+        const xdsDir = path.resolve(rootDir, 'node_modules/@xds');
+        if (fs.existsSync(xdsDir)) {
+          xdsPackages = fs.readdirSync(xdsDir)
+            .filter((name: string) => !name.startsWith('.'))
+            .map((name: string) => `@xds/${name}`);
+        }
+      } catch {
+        // Fallback to just @xds/core if discovery fails
+      }
+
+      return {
+        resolve: {
+          alias: {
+            '@xds/core/theme/tokens.stylex': path.resolve(
+              rootDir,
+              'node_modules/@xds/core/src/theme/tokens.stylex.ts',
+            ),
+            '@xds/core': path.resolve(rootDir, 'node_modules/@xds/core/src'),
+          },
+        },
+        optimizeDeps: {
+          exclude: xdsPackages,
+        },
+      };
+    },
+  };
+
+  // Split-layer interceptor plugin (dev server only)
+  const splitLayerPlugin: Plugin = {
+    name: 'xds-split-layers',
+    configureServer(server) {
+      let stylexPlugin: any = null;
+
+      return () => {
+        for (const p of server.config.plugins.flat()) {
+          if ((p as any)?.__stylexGetSharedStore) {
+            stylexPlugin = p;
+            break;
+          }
+        }
+
+        server.middlewares.stack.unshift({
+          route: '',
+          handle: (req: any, res: any, next: any) => {
+            if (!req.url?.startsWith(STYLEX_CSS_PATH)) {
+              return next();
+            }
+
+            if (!stylexPlugin) {
+              res.statusCode = 200;
+              res.setHeader('Content-Type', 'text/css');
+              res.end('');
+              return;
+            }
+
+            const shared = stylexPlugin.__stylexGetSharedStore?.();
+            const rulesById = shared?.rulesById;
+
+            if (!rulesById || rulesById.size === 0) {
+              res.statusCode = 200;
+              res.setHeader('Content-Type', 'text/css');
+              res.end('');
+              return;
+            }
+
+            const libraryRules: any[] = [];
+            const productRules: any[] = [];
+
+            for (const [filePath, rules] of rulesById.entries()) {
+              if (filePath.includes(libraryPattern)) {
+                libraryRules.push(...rules);
+              } else {
+                productRules.push(...rules);
+              }
+            }
+
+            const libraryCss = libraryRules.length
+              ? stylexBabelPlugin.processStylexRules(libraryRules, {
+                  useLayers: true,
+                })
+              : '';
+            const productCss = productRules.length
+              ? stylexBabelPlugin.processStylexRules(productRules, {
+                  useLayers: true,
+                })
+              : '';
+
+            const parts: string[] = [];
+            if (libraryCss)
+              parts.push(`@layer ${libraryLayer} {\n${libraryCss}\n}`);
+            if (productCss)
+              parts.push(`@layer ${productLayer} {\n${productCss}\n}`);
+
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'text/css');
+            res.setHeader('Cache-Control', 'no-store');
+            res.end(parts.join('\n\n'));
+          },
+        });
+      };
+    },
+  };
+
+  return [configPlugin, layerOrderPlugin, basePlugin, splitLayerPlugin];
+}
+
+/**
+ * Legacy implementation — handles the old xdsStylex({stylexOptions: {...}}) API.
+ * Used by Storybook and other existing configs.
+ */
+function xdsStylexLegacy(options: XDSVitePluginLegacyOptions): Plugin[] {
+  const {
+    stylexOptions,
+    libraryPattern = XDS_LIBRARY_PATTERN,
+    layers = {},
+  } = options;
+
+  const libraryLayer = layers.library ?? 'xds-base';
+  const productLayer = layers.product ?? 'product';
+
+  const xdsBabelPlugin = path.resolve(__dirname, 'babel.js');
+  const existingPlugins = stylexOptions.babelConfig?.plugins ?? [];
+
+  const basePlugin = stylex.vite({
+    ...stylexOptions,
+    useCSSLayers: true,
+    babelConfig: {
+      ...stylexOptions.babelConfig,
+      plugins: [
+        [
+          xdsBabelPlugin,
+          {
+            ...(stylexOptions as any),
+            babelConfig: undefined,
+          },
+        ],
+        ...existingPlugins,
+      ],
+    },
+  });
+
+  const layerOrderPlugin: Plugin = {
+    name: 'xds-css-layer-order',
+    transformIndexHtml() {
+      return [
+        {
+          tag: 'style',
+          children: `@layer reset, ${libraryLayer}, xds-theme, ${productLayer};`,
+          injectTo: 'head-prepend',
+        },
+      ];
+    },
+  };
+
   const splitLayerPlugin: Plugin = {
     name: 'xds-split-layers',
     configureServer(server) {
