@@ -121,9 +121,9 @@ interface TaskRow extends Record<string, unknown> {
 
 const STATUS_DOT_VARIANT: Record<
   TaskStatus,
-  'success' | 'info' | 'neutral' | 'warning'
+  'success' | 'accent' | 'neutral' | 'warning'
 > = {
-  in_progress: 'info',
+  in_progress: 'accent',
   todo: 'warning',
   backlog: 'neutral',
   done: 'success',
