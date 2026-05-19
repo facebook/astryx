@@ -37,7 +37,7 @@ importers:
         specifier: ^14.5.0
         version: 14.6.1(@testing-library/dom@10.4.1)
       '@types/node':
-        specifier: ^25.8.0
+        specifier: ^25.9.0
         version: 25.9.0
       '@types/react':
         specifier: ^19.2.14
@@ -79,7 +79,7 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
       typescript-eslint:
-        specifier: ^8.59.3
+        specifier: ^8.59.4
         version: 8.59.4(eslint@10.4.0(jiti@2.7.0))(typescript@6.0.3)
       vite-plugin-singlefile:
         specifier: ^2.3.3
@@ -373,6 +373,43 @@ importers:
         specifier: ^6.4.2
         version: 6.4.2(@types/node@25.9.0)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.3)
 
+  apps/example-vite-tailwind:
+    dependencies:
+      '@xds/core':
+        specifier: '*'
+        version: link:../../packages/core
+      '@xds/theme-default':
+        specifier: '*'
+        version: link:../../packages/themes/default
+      react:
+        specifier: ^19.2.6
+        version: 19.2.6
+      react-dom:
+        specifier: ^19.2.6
+        version: 19.2.6(react@19.2.6)
+    devDependencies:
+      '@tailwindcss/vite':
+        specifier: ^4
+        version: 4.3.0(vite@6.4.2(@types/node@25.9.0)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.3))
+      '@types/react':
+        specifier: ^19.2.14
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: ^19.2.3
+        version: 19.2.3(@types/react@19.2.14)
+      '@vitejs/plugin-react':
+        specifier: ^4.3.0
+        version: 4.7.0(vite@6.4.2(@types/node@25.9.0)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.3))
+      tailwindcss:
+        specifier: ^4
+        version: 4.3.0
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vite:
+        specifier: ^6.4.2
+        version: 6.4.2(@types/node@25.9.0)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.3)
+
   apps/sandbox:
     dependencies:
       '@heroicons/react':
@@ -446,7 +483,7 @@ importers:
         specifier: ^0.18.3
         version: 0.18.3
       '@types/node':
-        specifier: ^25.8.0
+        specifier: ^25.9.0
         version: 25.9.0
       '@types/react':
         specifier: ^19.2.14
@@ -625,7 +662,7 @@ importers:
         specifier: ^4.2.1
         version: 4.3.0
       tsx:
-        specifier: ^4.22.0
+        specifier: ^4.22.2
         version: 4.22.3
 
   packages/build:
@@ -653,8 +690,8 @@ importers:
         version: 6.4.2(@types/node@25.9.0)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.3)
     devDependencies:
       esbuild:
-        specifier: ^0.25.0
-        version: 0.25.12
+        specifier: ^0.28.0
+        version: 0.28.0
 
   packages/cli:
     dependencies:
@@ -3480,6 +3517,11 @@ packages:
 
   '@tailwindcss/postcss@4.3.0':
     resolution: {integrity: sha512-Jm05Tjx+9yCLGv5qw1c+84Psds8MnyrEQYCB+FFk2lgGiUjlRqdxke4mVTuYrj2xnVZqKim2Apr5ySuQRYAw/w==}
+
+  '@tailwindcss/vite@4.3.0':
+    resolution: {integrity: sha512-t6J3OrB5Fc0ExuhohouH0fWUGMYL6PTLhW+E7zIk/pdbnJARZDCwjBznFnkh5ynRnIRSI4YjtTH0t6USjJISrw==}
+    peerDependencies:
+      vite: ^6.4.2
 
   '@testing-library/dom@10.4.1':
     resolution: {integrity: sha512-o4PXJQidqJl82ckFaXUeoAW+XysPLauYI43Abki5hABd853iMhitooc6znOnczgbTYmEP6U6/y1ZyKAIsvMKGg==}
@@ -8133,6 +8175,13 @@ snapshots:
       '@tailwindcss/oxide': 4.3.0
       postcss: 8.5.15
       tailwindcss: 4.3.0
+
+  '@tailwindcss/vite@4.3.0(vite@6.4.2(@types/node@25.9.0)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.3))':
+    dependencies:
+      '@tailwindcss/node': 4.3.0
+      '@tailwindcss/oxide': 4.3.0
+      tailwindcss: 4.3.0
+      vite: 6.4.2(@types/node@25.9.0)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.3)
 
   '@testing-library/dom@10.4.1':
     dependencies:
