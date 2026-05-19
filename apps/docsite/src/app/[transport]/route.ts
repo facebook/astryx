@@ -31,7 +31,6 @@ const visibleComponents = allComponents.filter(c => !c.hidden);
 // ── Context Budget Guardrails ──────────────────────────────────────────
 // Topics where full output causes agent context degradation (from #2182).
 // For these, we serve brief API surface by default.
-const BRIEF_ONLY_SECTIONS = new Set(['defineTheme', 'Scale Configs', 'Token Architecture']);
 const MAX_BRIEF_TOKENS = 800; // ~3200 chars — safe budget for any single result
 
 /**
@@ -366,11 +365,12 @@ const handler = createMcpHandler(
             const templateBlocks = blocks
               .filter(b => b.exampleFor === t.slug)
               .slice(0, 1);
+            const template = t as typeof t & {slug: string};
             results.push({
               type: 'template',
-              slug: (t as any).slug,
-              name: t.name,
-              description: t.description,
+              slug: template.slug,
+              name: template.name,
+              description: template.description,
               ...(templateBlocks.length > 0
                 ? {preview: templateBlocks[0].source}
                 : {}),
