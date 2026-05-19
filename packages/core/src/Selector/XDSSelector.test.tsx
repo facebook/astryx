@@ -278,7 +278,7 @@ describe('XDSSelector', () => {
             onChange={() => {}}
             hasSearch
           />
-          <button>Next</button>
+          <button type="button">Next</button>
         </>,
       );
 
