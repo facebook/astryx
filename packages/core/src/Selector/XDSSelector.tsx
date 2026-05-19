@@ -205,11 +205,6 @@ const styles = stylex.create({
   popover: {
     minWidth: 'anchor-size(width)',
   },
-  popoverWithSearch: {
-    minWidth: 'anchor-size(width)',
-    marginBlockStart: spacingVars['--spacing-1'],
-  },
-
   // Search input
   searchWrapper: {
     paddingInline: spacingVars['--spacing-2'],
@@ -929,13 +924,14 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
 
       {popover.render(
         hasSearch ? (
-          <div {...stylex.props(styles.dropdown)}>
+          <div>
             {renderSearch()}
             <div
               ref={listboxRef}
               id={listboxId}
               role="listbox"
-              aria-labelledby={triggerId}>
+              aria-labelledby={triggerId}
+              {...stylex.props(styles.dropdown)}>
               {renderOptions()}
             </div>
           </div>
@@ -956,9 +952,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
         {
           placement: 'below',
           alignment: 'start',
-          xstyle: hasSearch
-            ? styles.popoverWithSearch
-            : [styles.popover, layerAnimations.below],
+          xstyle: [styles.popover, layerAnimations.below],
         },
       )}
     </XDSField>

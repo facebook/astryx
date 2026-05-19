@@ -253,11 +253,12 @@ export function useCombobox({
           }
           break;
 
-        case 'Enter':
         case ' ':
-          if (e.key === ' ' && hasSearch) {
+          if (hasSearch) {
             break;
           }
+        // falls through
+        case 'Enter':
           e.preventDefault();
           if (isOpen && highlightedIndex >= 0) {
             const item = selectableItems[highlightedIndex];
