@@ -10,7 +10,6 @@ import {useRef, useEffect, useMemo} from 'react';
 import {scaleBand} from 'd3-scale';
 import {useChart} from './ChartContext';
 import {isBandScale} from './utils';
-import type {ScaleBand} from 'd3-scale';
 import {
   hexToGL,
   getWebGLContext,
@@ -115,7 +114,7 @@ export function XDSChartHeatmapGL({
     const canvas = canvasRef.current;
     if (!canvas || width <= 0 || height <= 0 || !isBandScale(xScale)) return;
 
-    const dpr = sizeCanvas(canvas, width, height);
+    sizeCanvas(canvas, width, height);
 
     if (!glRef.current) glRef.current = getWebGLContext(canvas);
     const gl = glRef.current;

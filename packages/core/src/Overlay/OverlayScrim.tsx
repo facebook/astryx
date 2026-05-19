@@ -207,7 +207,6 @@ export function OverlayScrim({
   children,
 }: OverlayScrimProps) {
   const isHoverMode = showOn === 'hover' || showOn === 'hover-or-focus';
-  const isStrip = position === 'bottom' || position === 'top';
   const isControlled = isOpen !== undefined;
 
   const themeMode =

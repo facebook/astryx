@@ -471,7 +471,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
   );
 
   // Track the current query for creatable mode
-  const [creatableQuery, setCreatableQuery] = useState('');
+  const [_creatableQuery, setCreatableQuery] = useState('');
 
   const filteredSource: XDSSearchSource<T> = useMemo(
     () => ({

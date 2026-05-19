@@ -9,7 +9,6 @@ import {useRef, useEffect, useMemo} from 'react';
 import {scaleBand} from 'd3-scale';
 import type {SeriesDef, ResolvedPoint} from '../types';
 import type {ScaleBand} from 'd3-scale';
-import {useChartV2} from '../ChartV2Context';
 import {
   hexToGL,
   getWebGLContext,
@@ -105,7 +104,8 @@ function HeatmapGLCanvas({
 
   const domain = useMemo((): [number, number] => {
     if (domainProp) return domainProp;
-    let min = Infinity, max = -Infinity;
+    let min = Infinity,
+      max = -Infinity;
     for (const d of data) {
       const v = d[valueKey];
       if (typeof v === 'number') {
@@ -190,7 +190,19 @@ function HeatmapGLCanvas({
 
     gl.deleteBuffer(posBuf);
     gl.deleteBuffer(colBuf);
-  }, [data, xKey, yKey, valueKey, xScale, yBandScale, width, height, domain, ramp, cellGap]);
+  }, [
+    data,
+    xKey,
+    yKey,
+    valueKey,
+    xScale,
+    yBandScale,
+    width,
+    height,
+    domain,
+    ramp,
+    cellGap,
+  ]);
 
   if (width <= 0 || height <= 0) return null;
   return <g ref={markerRef} />;
@@ -226,7 +238,8 @@ export function heatmapGL(options: HeatmapGLOptions): SeriesDef {
       if (!('bandwidth' in xScale)) return points;
       for (let i = 0; i < data.length; i++) {
         const d = data[i];
-        const px = ((xScale as ScaleBand<string>)(String(d[xKey])) ?? 0) +
+        const px =
+          ((xScale as ScaleBand<string>)(String(d[xKey])) ?? 0) +
           (xScale as ScaleBand<string>).bandwidth() / 2;
         const v = typeof d[valueKey] === 'number' ? (d[valueKey] as number) : 0;
         points.push({px, py: yScale(v), py0: yScale(0), dataIndex: i});

@@ -9,14 +9,11 @@ import React, {
   useState,
   useEffect,
   useCallback,
-  Activity,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSSkeleton} from '@xds/core/Skeleton';
-import {XDSText} from '@xds/core/Text';
 
 const FIXED_SCALE = 0.5;
-const PREVIEW_HEIGHT = 1080;
 
 const styles = stylex.create({
   container: {
@@ -51,33 +48,6 @@ const styles = stylex.create({
     backgroundColor: 'var(--color-background-muted)',
   },
 });
-
-class ThumbnailErrorBoundary extends React.Component<
-  {children: React.ReactNode; slug: string},
-  {hasError: boolean}
-> {
-  constructor(props: {children: React.ReactNode; slug: string}) {
-    super(props);
-    this.state = {hasError: false};
-  }
-
-  static getDerivedStateFromError() {
-    return {hasError: true};
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div {...stylex.props(styles.errorFallback)}>
-          <XDSText type="supporting" color="secondary">
-            Preview unavailable
-          </XDSText>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
 
 /**
  * Lazy-loaded template component registry.

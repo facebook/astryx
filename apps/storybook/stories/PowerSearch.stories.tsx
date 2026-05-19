@@ -3,10 +3,7 @@
 import React, {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSPowerSearch} from '@xds/core/PowerSearch';
-import type {
-  PowerSearchConfig,
-  PowerSearchFilter,
-} from '@xds/core/PowerSearch';
+import type {PowerSearchConfig, PowerSearchFilter} from '@xds/core/PowerSearch';
 import type {XDSSearchSource, XDSSearchableItem} from '@xds/core/Typeahead';
 import {XDSButton} from '@xds/core/Button';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
@@ -1132,11 +1129,18 @@ import type {
   PowerSearchTokenProps,
   PowerSearchEditorProps,
 } from '@xds/core/PowerSearch';
-import {XDSPowerSearchToken, XDSPowerSearchFilterEditor} from '@xds/core/PowerSearch';
 import {XDSToken} from '@xds/core/Token';
 import {XDSHStack} from '@xds/core/Stack';
 
-function StatusToken({filter, field, operator, maxLength, onClick, onRemove, isDisabled}: PowerSearchTokenProps) {
+function StatusToken({
+  filter,
+  field,
+  operator,
+  _maxLength,
+  onClick,
+  onRemove,
+  isDisabled,
+}: PowerSearchTokenProps) {
   const value = filter.value.type === 'enum' ? filter.value.value : '?';
   const colors: Record<string, string> = {
     open: '#22c55e',
@@ -1153,18 +1157,35 @@ function StatusToken({filter, field, operator, maxLength, onClick, onRemove, isD
           {value}
         </span>
       }
-      onClick={onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick(); } : undefined}
+      onClick={
+        onClick
+          ? (e: React.MouseEvent) => {
+              e.stopPropagation();
+              onClick();
+            }
+          : undefined
+      }
       onRemove={onRemove}
       isDisabled={isDisabled}
     />
   );
 }
 
-function CustomIntegerEditor({config, filter, mode, onSave, onCancel, saveButtonLabel, isReadOnly}: PowerSearchEditorProps) {
+function CustomIntegerEditor({
+  _config,
+  filter,
+  _mode,
+  onSave,
+  onCancel,
+  _saveButtonLabel,
+  isReadOnly,
+}: PowerSearchEditorProps) {
   const current = filter.value?.type === 'integer' ? filter.value.value : 50;
   return (
     <div style={{padding: 16}}>
-      <p style={{margin: '0 0 12px', fontSize: 13}}>Custom range editor for integer fields:</p>
+      <p style={{margin: '0 0 12px', fontSize: 13}}>
+        Custom range editor for integer fields:
+      </p>
       <XDSHStack gap={2} vAlign="center">
         <input
           type="range"
@@ -1183,7 +1204,13 @@ function CustomIntegerEditor({config, filter, mode, onSave, onCancel, saveButton
         />
         <span style={{fontSize: 12, whiteSpace: 'nowrap'}}>{current}</span>
       </XDSHStack>
-      <div style={{marginTop: 12, display: 'flex', gap: 8, justifyContent: 'flex-end'}}>
+      <div
+        style={{
+          marginTop: 12,
+          display: 'flex',
+          gap: 8,
+          justifyContent: 'flex-end',
+        }}>
         <button onClick={onCancel}>Cancel</button>
       </div>
     </div>
@@ -1199,7 +1226,11 @@ export const WithCustomComponents: Story = {
   render: args => {
     const [filters, setFilters] = useState<PowerSearchFilter[]>([
       {field: 'status', operator: 'is', value: {type: 'enum', value: 'open'}},
-      {field: 'line_count', operator: 'gt', value: {type: 'integer', value: 200}},
+      {
+        field: 'line_count',
+        operator: 'gt',
+        value: {type: 'integer', value: 200},
+      },
     ]);
     return (
       <div>
@@ -1211,13 +1242,20 @@ export const WithCustomComponents: Story = {
           components={customComponents}
         />
         <p style={{marginTop: 16, fontSize: 13, color: '#666'}}>
-          <strong>Custom overrides:</strong> Status tokens show colored text (custom Token).
-          Integer fields use a range slider editor (custom Editor).
+          <strong>Custom overrides:</strong> Status tokens show colored text
+          (custom Token). Integer fields use a range slider editor (custom
+          Editor).
         </p>
       </div>
     );
   },
   args: {placeholder: 'Search with custom components...'},
-  decorators: [Story => (<div style={{width: 700}}><Story /></div>)],
+  decorators: [
+    Story => (
+      <div style={{width: 700}}>
+        <Story />
+      </div>
+    ),
+  ],
   name: 'Custom Components Map',
 };

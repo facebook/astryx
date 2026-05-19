@@ -216,21 +216,6 @@ const DEFAULT_TEXT_WEIGHTS: Record<string, string> = {
   'display-3': 'var(--font-weight-normal)',
 };
 
-/**
- * Line-height target ratios. Headings are tighter, body text is more generous.
- */
-const HEADING_LH_RATIO = 1.3;
-const TEXT_LH_RATIOS: Record<string, number> = {
-  body: 1.5,
-  large: 1.45,
-  label: 1.4,
-  code: 1.5,
-  supporting: 1.5,
-  'display-1': 1.2, // tighter — large text reads better tight
-  'display-2': 1.2,
-  'display-3': 1.2,
-};
-
 // =============================================================================
 // Computation
 // =============================================================================
@@ -370,7 +355,7 @@ const TEXT_FONT_FAMILIES: Record<string, string> = {
  * Generate component style overrides for heading and text components.
  */
 export function generateTypeScaleComponents(
-  config: XDSTypeScaleConfig,
+  _config: XDSTypeScaleConfig,
 ): Record<string, Record<string, Record<string, string>>> {
   const components: Record<string, Record<string, Record<string, string>>> = {};
 

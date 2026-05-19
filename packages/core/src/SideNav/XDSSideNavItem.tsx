@@ -31,7 +31,6 @@ import {
   borderVars,
   radiusVars,
 } from '../theme/tokens.stylex';
-import {XDSIcon} from '../Icon';
 import {renderIconSlot, type XDSIconType} from '../Icon';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';

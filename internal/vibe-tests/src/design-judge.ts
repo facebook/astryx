@@ -27,7 +27,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {getResultsDir, ensureDir, writeJson, readJson} from './utils.js';
+import {getResultsDir, writeJson, readJson} from './utils.js';
 
 // ============================================================
 // Types

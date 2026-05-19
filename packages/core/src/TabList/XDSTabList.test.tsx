@@ -208,7 +208,7 @@ describe('XDSTabList', () => {
   });
 
   it('does not render endContent wrapper when endContent is not provided', () => {
-    const {container} = render(
+    render(
       <XDSTabList value="home" onChange={() => {}}>
         <XDSTab value="home" label="Home" />
       </XDSTabList>,

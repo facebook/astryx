@@ -26,11 +26,7 @@ import {
 } from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
 import {overflowStyles, containerEdgeStyles} from './table.stylex';
-import {
-  useTableContext,
-  buildDividerStyles,
-  mergeXStyle,
-} from './useTableCellStyles';
+import {useTableContext, mergeXStyle} from './useTableCellStyles';
 import {xdsClassName, mergeProps} from '../utils';
 
 /** Props for XDSTableHeaderCell — `<th>` wrapper with context-aware styling */

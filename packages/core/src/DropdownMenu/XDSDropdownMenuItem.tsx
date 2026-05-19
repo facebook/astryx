@@ -21,7 +21,6 @@
 import {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {XDSIcon} from '../Icon';
 import {renderIconSlot, type XDSIconType} from '../Icon';
 import {XDSText} from '../Text';
 import {

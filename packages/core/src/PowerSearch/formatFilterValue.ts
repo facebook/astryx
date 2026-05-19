@@ -53,7 +53,7 @@ function formatRelativeDate(value: string): string {
   return value;
 }
 
-function formatDateRange(value: {start: unknown; end: unknown}): string {
+function formatDateRange(_value: {start: unknown; end: unknown}): string {
   return 'date range';
 }
 

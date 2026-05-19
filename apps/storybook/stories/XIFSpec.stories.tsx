@@ -9,13 +9,11 @@ import type {
   XIFPath,
 } from '../../../packages/lab/src/SVGIcon/xif-types';
 import {
-  xifCheck,
   xifHome,
   xifFile,
   xifShield,
   xifBell,
   xifStar,
-  xifBellOverride,
   xifExamples,
 } from '../../../packages/lab/src/SVGIcon/xif-examples';
 
@@ -143,8 +141,6 @@ export const CompositionSlots: StoryObj = {
   render: () => {
     const shieldDef = xifToSvgIconDef(xifShield);
     const fileDef = xifToSvgIconDef(xifFile);
-    const checkDef = xifToSvgIconDef(xifCheck);
-
     // Manually demonstrate what slot composition would produce
     // (Until the component natively supports slots)
     const composedShieldCheck: SVGIconDef = {
@@ -441,7 +437,6 @@ import {
   applyPersonality,
   roundCorners,
   addCurvature,
-  adjustTension,
 } from '../../../packages/lab/src/SVGIcon/pathTransforms';
 
 /** Simple test shapes for demonstrating transforms */
@@ -469,8 +464,6 @@ export const PathTransformPlayground: StoryObj = {
     // so we render multiple preset rows instead
     const roundingLevels = [0, 0.2, 0.4, 0.6, 0.8, 1.0];
     const curvatureLevels = [0, 0.2, 0.5, 0.8, 1.0];
-    const tensionLevels = [0, 0.25, 0.5, 0.75, 1.0];
-
     const shapes = Object.entries(testShapes);
 
     return (

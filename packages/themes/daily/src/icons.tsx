@@ -30,7 +30,6 @@ import {
   Wrench,
   Square,
   Mic,
-  CircleDot,
 } from 'lucide-react';
 
 const iconProps = {

@@ -188,9 +188,9 @@ const GlobeIcon = () => (
 // =============================================================================
 
 export default function MegaMenuPage() {
-  const [menuOpen1, setMenuOpen1] = useState(false);
-  const [menuOpen2, setMenuOpen2] = useState(false);
-  const [menuOpen3, setMenuOpen3] = useState(false);
+  const [_menuOpen1, setMenuOpen1] = useState(false);
+  const [_menuOpen2, setMenuOpen2] = useState(false);
+  const [_menuOpen3, setMenuOpen3] = useState(false);
 
   return (
     <div {...stylex.props(styles.container)}>

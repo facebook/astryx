@@ -2,11 +2,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {
-  colorVars,
-  spacingVars,
-  radiusVars,
-} from '@xds/core/theme/tokens.stylex';
+import {colorVars, radiusVars} from '@xds/core/theme/tokens.stylex';
 import {XDSResizeHandle, useXDSResizable} from '@xds/core/Resizable';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {

@@ -10,12 +10,7 @@
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import {render, screen, fireEvent, act} from '@testing-library/react';
 import {PowerSearchValueEditor} from './PowerSearchValueEditor';
-import type {
-  OperatorValue,
-  FilterValue,
-  FilterValueEntityList,
-  PowerSearchEntity,
-} from './types';
+import type {FilterValueEntityList, PowerSearchEntity} from './types';
 import type {InternalConfig} from './useInternalConfig';
 import type {XDSSearchableItem, XDSSearchSource} from '../Typeahead/types';
 

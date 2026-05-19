@@ -69,7 +69,7 @@ function DotGLCanvas({
   width: number;
   height: number;
 }) {
-  const {svgRef} = useChartV2();
+  const {svgRef: _svgRef} = useChartV2();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const glRef = useRef<WebGLRenderingContext | null>(null);
   const programRef = useRef<WebGLProgram | null>(null);
@@ -159,7 +159,9 @@ export function dotGL(dataKey: string, options: DotGLOptions): SeriesDef {
         const d = data[i];
         let px: number;
         if ('bandwidth' in xScale) {
-          px = ((xScale as ScaleBand<string>)(String(d[xKey])) ?? 0) + (xScale as ScaleBand<string>).bandwidth() / 2;
+          px =
+            ((xScale as ScaleBand<string>)(String(d[xKey])) ?? 0) +
+            (xScale as ScaleBand<string>).bandwidth() / 2;
         } else {
           px = xScale(d[xKey] as number);
         }

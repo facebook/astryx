@@ -14,7 +14,6 @@
  */
 
 import {useRef, useEffect, useMemo} from 'react';
-import {createPortal} from 'react-dom';
 import {use3D} from './ThreeDContext';
 
 export interface XDS3DScatterGLProps {

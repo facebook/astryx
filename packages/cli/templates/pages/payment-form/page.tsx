@@ -190,7 +190,7 @@ export default function PaymentFormPage() {
   const [email, setEmail] = useState('');
   const [emailOffers, setEmailOffers] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState('standard');
-  const [paymentMethod, setPaymentMethod] = useState('card');
+  const [paymentMethod, _setPaymentMethod] = useState('card');
   const [cardNumber, setCardNumber] = useState('');
   const [expiry, setExpiry] = useState('');
   const [expYear, setExpYear] = useState('');
@@ -835,14 +835,10 @@ export default function PaymentFormPage() {
                       <XDSLink href="#" type="supporting">
                         Refund policy
                       </XDSLink>
-                      <XDSLink
-                        href="#"
-                        type="supporting">
+                      <XDSLink href="#" type="supporting">
                         Privacy policy
                       </XDSLink>
-                      <XDSLink
-                        href="#"
-                        type="supporting">
+                      <XDSLink href="#" type="supporting">
                         Terms of service
                       </XDSLink>
                       <XDSLink href="#" type="supporting">
@@ -928,14 +924,10 @@ export default function PaymentFormPage() {
                                       max={10}
                                       isIntegerOnly
                                     />
-                                    <XDSLink
-                                      href="#"
-                                      type="supporting">
+                                    <XDSLink href="#" type="supporting">
                                       Remove
                                     </XDSLink>
-                                    <XDSLink
-                                      href="#"
-                                      type="supporting">
+                                    <XDSLink href="#" type="supporting">
                                       Save
                                     </XDSLink>
                                   </XDSHStack>

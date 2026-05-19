@@ -400,7 +400,7 @@ describe('XDSDropdownMenu icon-only mode', () => {
 
 describe('XDSDropdownMenu hasChevron', () => {
   it('hides chevron when hasChevron is false', () => {
-    const {container} = render(
+    render(
       <XDSDropdownMenu
         button={{label: 'Sort by'}}
         hasChevron={false}

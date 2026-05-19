@@ -534,7 +534,7 @@ describe('showcaseRegistry', () => {
   });
 
   it('every entry is a function (dynamic import loader)', () => {
-    for (const [key, loader] of Object.entries(showcaseRegistry)) {
+    for (const [_key, loader] of Object.entries(showcaseRegistry)) {
       expect(typeof loader).toBe('function');
     }
   });
@@ -609,9 +609,6 @@ describe('exampleRegistry', () => {
   it('does not include showcases', () => {
     // Every example in the registry should NOT be a showcase
     // (showcases have their own registry)
-    const allExampleNames = Object.values(exampleRegistry)
-      .flat()
-      .map(e => e.name);
     // Showcase names typically don't have a dash separator
     // but more importantly, the generator filters isShowcase: true
     // Just verify count makes sense: examples + showcases ≈ total blocks

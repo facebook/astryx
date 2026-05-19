@@ -76,7 +76,7 @@ export function TemplatePreview({
     'idle',
   );
   const [linkCopied, setLinkCopied] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
+  const [_isScrolled, setIsScrolled] = useState(false);
 
   const handleSave = useCallback(() => {
     setSaveState('saving');
@@ -183,8 +183,7 @@ export function TemplatePreview({
                       }))}
                     />
                   </XDSTooltip>
-                  <XDSTooltip
-                    content={isDarkMode ? 'Dark mode' : 'Light mode'}>
+                  <XDSTooltip content={isDarkMode ? 'Dark mode' : 'Light mode'}>
                     <XDSButton
                       label={isDarkMode ? 'Dark mode' : 'Light mode'}
                       variant="ghost"
@@ -195,14 +194,15 @@ export function TemplatePreview({
                   </XDSTooltip>
                 </div>
               )}
-              <div style={{
-                position: 'absolute',
-                left: 16,
-                right: 32,
-                display: 'flex',
-                justifyContent: 'center',
-                pointerEvents: 'none',
-              }}>
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 16,
+                  right: 32,
+                  display: 'flex',
+                  justifyContent: 'center',
+                  pointerEvents: 'none',
+                }}>
                 <XDSSegmentedControl
                   value={viewportSize}
                   onChange={setViewportSize}
@@ -240,8 +240,7 @@ export function TemplatePreview({
                     />
                   </XDSTooltip>
                   {saveState === 'saved' ? (
-                    <XDSTooltip
-                      content={linkCopied ? 'Copied!' : 'Copy link'}>
+                    <XDSTooltip content={linkCopied ? 'Copied!' : 'Copy link'}>
                       <XDSButton
                         label={linkCopied ? 'Copied' : 'Copy link'}
                         variant="ghost"

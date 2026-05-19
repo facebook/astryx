@@ -12,13 +12,7 @@
  * - /packages/cli/templates/blocks/components/Stack/ (showcase blocks)
  */
 
-import {
-  createElement,
-  type ElementType,
-  type HTMLAttributes,
-  type ReactNode,
-  type Ref,
-} from 'react';
+import {createElement, type ElementType, type ReactNode, type Ref} from 'react';
 import {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';

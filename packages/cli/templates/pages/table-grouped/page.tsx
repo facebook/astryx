@@ -40,7 +40,6 @@ import {XDSIcon} from '@xds/core/Icon';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSStatusDot} from '@xds/core/StatusDot';
 import {XDSDivider} from '@xds/core/Divider';
-import {XDSToolbar} from '@xds/core/Toolbar';
 import {XDSMetadataList, XDSMetadataListItem} from '@xds/core/MetadataList';
 import {
   XDSTable,
@@ -67,7 +66,6 @@ import {
   UserIcon,
   TrashIcon,
   EllipsisHorizontalIcon,
-  AdjustmentsHorizontalIcon,
 } from '@heroicons/react/24/outline';
 import {XMarkIcon} from '@heroicons/react/24/outline';
 import {
@@ -596,13 +594,6 @@ const allTasks: TaskRow[] = [
   },
 ];
 
-const STATUS_BADGE: Record<TaskStatus, 'neutral'> = {
-  in_progress: 'neutral',
-  todo: 'neutral',
-  backlog: 'neutral',
-  done: 'neutral',
-};
-
 const STATUS_LABEL: Record<TaskStatus, string> = {
   in_progress: 'In Progress',
   todo: 'Todo',
@@ -965,8 +956,8 @@ function TaskDetailPanel({
 }
 
 export default function DataTableTemplate() {
-  const [search, setSearch] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState('all');
+  const [search, _setSearch] = useState('');
+  const [priorityFilter, _setPriorityFilter] = useState('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<TaskRow | null>(null);
   const [powerSearchFilters, setPowerSearchFilters] = useState<

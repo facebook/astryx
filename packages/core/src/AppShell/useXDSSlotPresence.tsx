@@ -50,11 +50,6 @@ export function useXDSSlotPresence(initialValue = false) {
   const observerRef = useRef<MutationObserver | null>(null);
   const elementRef = useRef<HTMLDivElement | null>(null);
 
-  const check = useCallback(() => {
-    const el = elementRef.current;
-    setHasContent(el ? hasChildContent(el) : false);
-  }, []);
-
   // Callback ref — called when elements mount/unmount
   const ref = useCallback((node: HTMLDivElement | null) => {
     // Clean up previous observer

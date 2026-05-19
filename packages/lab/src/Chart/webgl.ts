@@ -134,7 +134,6 @@ export function mountCanvasOverSVG(
   // The marker sits inside the chart's <g transform="translate(margin)">
   // so its bounding rect includes the margin offset automatically.
   // This is a Tier 1 guarantee — we derive position from the SVG, not from props.
-  const svgRect = svg.getBoundingClientRect();
   const parentRect = parent.getBoundingClientRect();
   const markerCTM = svgMarker.getScreenCTM();
   if (markerCTM) {

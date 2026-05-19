@@ -27,7 +27,6 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {spacingVars} from '../theme/tokens.stylex';
 
 /**
  * The data attribute that edge-compensatable components apply.

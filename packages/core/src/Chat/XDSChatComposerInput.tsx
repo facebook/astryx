@@ -37,7 +37,6 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
-  radiusVars,
   typeScaleVars,
   typographyVars,
 } from '../theme/tokens.stylex';

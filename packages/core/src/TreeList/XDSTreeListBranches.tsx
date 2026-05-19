@@ -46,8 +46,6 @@ const styles = stylex.create({
   verticalFull: {
     height: 'calc(100% + 1px)',
   },
-
-
 });
 
 // =============================================================================
@@ -70,7 +68,7 @@ interface XDSTreeListBranchesProps {
  */
 export function XDSTreeListBranches({
   ancestorsIsLast,
-  isLast,
+  isLast: _isLast,
   nestedLevel,
 }: XDSTreeListBranchesProps) {
   return (
@@ -84,9 +82,11 @@ export function XDSTreeListBranches({
           level !== nestedLevel - 1 && (
             <div
               key={level}
-              {...mergeProps(stylex.props(styles.container), {style: {
-                left: `calc(${BRANCH_MARGIN} + ${level} * ${LEVEL_INDENT})`,
-              }})}>
+              {...mergeProps(stylex.props(styles.container), {
+                style: {
+                  left: `calc(${BRANCH_MARGIN} + ${level} * ${LEVEL_INDENT})`,
+                },
+              })}>
               <div
                 {...stylex.props(styles.verticalLine, styles.verticalFull)}
               />
@@ -95,20 +95,16 @@ export function XDSTreeListBranches({
       )}
       {nestedLevel > 0 && (
         <div
-          {...mergeProps(stylex.props(styles.container), {style: {
-            left: `calc(${BRANCH_MARGIN} + ${nestedLevel - 1} * ${LEVEL_INDENT})`,
-          }})}>
-          <div
-            {...stylex.props(
-              styles.verticalLine,
-              styles.verticalFull,
-            )}
-          />
+          {...mergeProps(stylex.props(styles.container), {
+            style: {
+              left: `calc(${BRANCH_MARGIN} + ${nestedLevel - 1} * ${LEVEL_INDENT})`,
+            },
+          })}>
+          <div {...stylex.props(styles.verticalLine, styles.verticalFull)} />
         </div>
       )}
     </>
   );
 }
-
 
 XDSTreeListBranches.displayName = 'XDSTreeListBranches';

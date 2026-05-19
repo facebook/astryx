@@ -18,7 +18,6 @@
 
 import {useId, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {

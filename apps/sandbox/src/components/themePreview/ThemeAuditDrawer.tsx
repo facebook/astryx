@@ -36,12 +36,7 @@ import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSHStack, XDSVStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 
-import {
-  TONE_STEPS,
-  type Mode,
-  type RampSeed,
-  type ToneStep,
-} from './colorMath';
+import {TONE_STEPS, type Mode, type RampSeed, type ToneStep} from './colorMath';
 import {
   auditSnapToRamps,
   buildTonalUsageMap,
@@ -57,7 +52,6 @@ import {
   buildModeOverride,
   composeAlphaHex,
   countOverrides,
-  describeOverride,
   formatHexWithAlpha,
   isValidHex,
   normalizeHex,
@@ -69,10 +63,7 @@ import {
   type OverridesMap,
   type SerializeContext,
 } from './themeOverrides';
-import {
-  getCategorizedColorTokens,
-  getTokenLabel,
-} from './colorCategories';
+import {getCategorizedColorTokens, getTokenLabel} from './colorCategories';
 
 // =============================================================================
 // Types & exports
@@ -152,8 +143,7 @@ const S = {
     borderRadius: 9,
     background:
       count > 0 ? 'var(--color-accent)' : 'var(--color-background-muted)',
-    color:
-      count > 0 ? 'var(--color-on-accent)' : 'var(--color-text-secondary)',
+    color: count > 0 ? 'var(--color-on-accent)' : 'var(--color-text-secondary)',
     fontSize: 10,
     fontWeight: 700,
     fontFamily: MONO,
@@ -577,7 +567,9 @@ export function ThemeAuditDrawer({
                     mode={mode}
                     override={overrides[tokenName]?.[mode]}
                     onPickPalette={(rampName, tone, alpha) => {
-                      const seed = audit.rampSeeds.find(s => s.name === rampName);
+                      const seed = audit.rampSeeds.find(
+                        s => s.name === rampName,
+                      );
                       if (!seed) return;
                       dispatchOverrides({
                         type: 'set',
@@ -685,7 +677,7 @@ function ColorRow({
   // transparency is honored everywhere it matters visually.
   const activeHexBase = override?.hex
     ? normalizeHex(override.hex)
-    : sourceHex ?? '';
+    : (sourceHex ?? '');
   const activeHexWithAlpha = activeHexBase
     ? composeAlphaHex(activeHexBase, activeAlpha)
     : '';
@@ -699,11 +691,13 @@ function ColorRow({
     ? parseTokenColor(diff.defaultValue)
     : null;
   const defaultHexBase =
-    mode === 'light' ? defaultParsed?.light ?? null : defaultParsed?.dark ?? null;
+    mode === 'light'
+      ? (defaultParsed?.light ?? null)
+      : (defaultParsed?.dark ?? null);
   const defaultAlpha =
     mode === 'light'
-      ? defaultParsed?.alphaLight ?? 1
-      : defaultParsed?.alphaDark ?? 1;
+      ? (defaultParsed?.alphaLight ?? 1)
+      : (defaultParsed?.alphaDark ?? 1);
   const defaultHexWithAlpha = defaultHexBase
     ? composeAlphaHex(defaultHexBase, defaultAlpha)
     : null;
@@ -835,8 +829,7 @@ function ColorRow({
             size="sm"
             onClick={onReset}
           />
-        ) : match &&
-          (match.verdict === 'near' || match.verdict === 'off') ? (
+        ) : match && (match.verdict === 'near' || match.verdict === 'off') ? (
           // "Snap to nearest ramp step" — surfaces the auto-detected
           // closest match as a one-click action so the user doesn't
           // have to open the popover and pick the dropdowns manually
@@ -920,10 +913,10 @@ function EditorPopoverContent({
   const initialPaletteRamp =
     override?.kind === 'palette'
       ? override.rampName
-      : paletteHint?.rampName ?? rampSeeds[0]?.name ?? '';
-  const initialPaletteTone = (override?.kind === 'palette'
-    ? override.tone
-    : paletteHint?.tone ?? 50) as ToneStep;
+      : (paletteHint?.rampName ?? rampSeeds[0]?.name ?? '');
+  const initialPaletteTone = (
+    override?.kind === 'palette' ? override.tone : (paletteHint?.tone ?? 50)
+  ) as ToneStep;
   const [paletteRamp, setPaletteRamp] = useState<string>(initialPaletteRamp);
   const [paletteTone, setPaletteTone] = useState<ToneStep>(initialPaletteTone);
   // Editable alpha lives at the popover level so both tabs can mutate
@@ -1025,11 +1018,7 @@ function EditorPopoverContent({
           alphaPct={palettePct}
           setAlphaPct={setPalettePct}
           onPick={(rampName, tone, alphaOverride) =>
-            onPickPalette(
-              rampName,
-              tone,
-              alphaOverride ?? palettePct / 100,
-            )
+            onPickPalette(rampName, tone, alphaOverride ?? palettePct / 100)
           }
         />
       )}
@@ -1378,4 +1367,3 @@ function PaletteTab({
     </XDSVStack>
   );
 }
-

@@ -21,7 +21,6 @@
  * - /packages/cli/templates/blocks/components/Thumbnail/ (showcase blocks)
  */
 
-import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,

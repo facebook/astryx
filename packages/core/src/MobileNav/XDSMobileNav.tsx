@@ -276,8 +276,8 @@ export function XDSMobileNav({
   label,
   'data-testid': testId,
   xstyle,
-  className,
-  style,
+  className: _className,
+  style: _style,
   ref,
 }: XDSMobileNavProps) {
   // Read from AppShell context as fallback

@@ -11,13 +11,11 @@ import {useChart} from './ChartContext';
 import {xPixel} from './utils';
 import {
   hexToGL,
-  getCanvasDPR,
   getWebGLContext,
   setupGLState,
   sizeCanvas,
   mountCanvasOverSVG,
   createProgram,
-  CIRCLE_FRAG_BODY,
   POINT_SIZE_COMPENSATION,
 } from './webgl';
 

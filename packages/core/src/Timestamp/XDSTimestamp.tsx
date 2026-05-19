@@ -25,7 +25,7 @@ import type {
   XDSTextColor,
   XDSTextWeight,
 } from '../theme/types';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 const LazyXDSTooltip = lazy(() =>
@@ -128,11 +128,9 @@ const styles = stylex.create({
 // Formatting utilities
 // =============================================================================
 
-const SECOND = 1;
 const MINUTE = 60;
 const HOUR = 3600;
 const DAY = 86400;
-const WEEK = 7 * DAY;
 const MONTH = 30 * DAY;
 const YEAR = 365 * DAY;
 

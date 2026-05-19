@@ -38,7 +38,7 @@ import {
   typographyVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps, groupItems} from '../utils';
-import type {XDSSearchableItem, XDSSearchSource} from '../Typeahead/types';
+import type {XDSSearchableItem} from '../Typeahead/types';
 import type {
   XDSChatComposerTrigger,
   XDSChatComposerToken,

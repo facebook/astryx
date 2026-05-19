@@ -6,7 +6,6 @@ import {useState} from 'react';
 import {XDSSwitch} from '@xds/core/Switch';
 import {XDSCard} from '@xds/core/Card';
 import {XDSVStack} from '@xds/core/Layout';
-import {XDSCenter} from '@xds/core/Center';
 
 export default function SwitchSettingsPanel() {
   const [notifications, setNotifications] = useState(false);
