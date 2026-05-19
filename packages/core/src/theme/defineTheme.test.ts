@@ -80,7 +80,6 @@ describe('defineTheme', () => {
   });
 
   it('includes icons in the theme', () => {
-     
     const icons = {close: 'X'} as Partial<XDSIconRegistry>;
     const theme = defineTheme({name: 'icons', icons});
     expect(theme.icons).toBe(icons);
@@ -562,60 +561,7 @@ describe('custom status via components', () => {
   });
 });
 
-describe('typography fonts derivation', () => {
-  it('derives fonts array from typography roles with urls', () => {
-    const theme = defineTheme({
-      name: 'font-test',
-      typography: {
-        body: {
-          family: 'Figtree',
-          fallbacks: 'sans-serif',
-          url: 'https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700',
-        },
-        code: {
-          family: 'JetBrains Mono',
-          fallbacks: 'monospace',
-          url: 'https://fonts.googleapis.com/css2?family=JetBrains+Mono',
-        },
-      },
-    });
-    expect(theme.fonts).toHaveLength(2);
-    expect(theme.fonts![0].family).toBe('Figtree');
-    expect(theme.fonts![1].family).toBe('JetBrains Mono');
-    expect(theme.fonts![1].url).toContain('JetBrains');
-  });
-
-  it('returns undefined fonts when no typography specified', () => {
-    const theme = defineTheme({name: 'no-fonts'});
-    expect(theme.fonts).toBeUndefined();
-  });
-
-  it('returns undefined fonts when typography has no urls', () => {
-    const theme = defineTheme({
-      name: 'no-urls',
-      typography: {
-        body: {family: 'Courier New', fallbacks: 'monospace'},
-      },
-    });
-    expect(theme.fonts).toBeUndefined();
-  });
-
-  it('deduplicates fonts when heading inherits from body', () => {
-    const theme = defineTheme({
-      name: 'dedup',
-      typography: {
-        body: {
-          family: 'Geist',
-          fallbacks: 'sans-serif',
-          url: 'https://example.com/geist.css',
-        },
-        // heading inherits body — same font, should not duplicate
-      },
-    });
-    expect(theme.fonts).toHaveLength(1);
-    expect(theme.fonts![0].family).toBe('Geist');
-  });
-
+describe('typography font family derivation', () => {
   it('derives font family tokens from typography roles', () => {
     const theme = defineTheme({
       name: 'family-tokens',
@@ -671,12 +617,10 @@ describe('typography fonts derivation', () => {
         body: {
           family: 'Figtree',
           fallbacks: 'sans-serif',
-          url: 'https://fonts.googleapis.com/css2?family=Figtree',
         },
       },
     });
     expect(theme.name).toBe('combo');
-    expect(theme.fonts).toHaveLength(1);
     expect(theme.tokens['--font-family-body']).toBe('Figtree, sans-serif');
     // scale tokens should still be present
     expect(theme.tokens['--text-heading-4-size']).toBeDefined();
@@ -1153,22 +1097,19 @@ describe('defineTheme extends', () => {
     expect(child.name).toBe('my-brand');
   });
 
-  it('inherits fonts from base theme', () => {
+  it('inherits font family tokens from base theme', () => {
     const base = defineTheme({
       name: 'base',
       typography: {
         body: {
           family: 'Geist',
           fallbacks: 'sans-serif',
-          url: 'https://fonts.example.com/geist.css',
         },
         scale: {base: 14, ratio: 1.2},
       },
     });
     const child = defineTheme({name: 'child', extends: base});
-    expect(child.fonts).toEqual([
-      {family: 'Geist', url: 'https://fonts.example.com/geist.css'},
-    ]);
+    expect(child.tokens['--font-family-body']).toBe('Geist, sans-serif');
   });
 
   it('typography in child overrides base typography tokens', () => {

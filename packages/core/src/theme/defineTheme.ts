@@ -31,7 +31,7 @@
  */
 
 import type {XDSIconRegistry} from '../Icon/globalIconRegistry';
-import type {ThemeFontSource, TypographyConfig, FontWeight} from './types';
+import type {TypographyConfig, FontWeight} from './types';
 import {
   resolveOnMedia,
   type OnMediaOverrides,
@@ -189,17 +189,19 @@ export interface XDSDefineThemeInput {
   /**
    * Unified typography configuration — fonts, scale, and weights.
    *
-   * Replaces the separate `typeScale` and `fonts` fields with a single
-   * config. Scale controls sizing; roles (body, heading, code) declare
+   * Scale controls sizing; roles (body, heading, code) declare
    * fonts, fallbacks, and weights. Heading inherits from body if omitted.
+   *
+   * Font loading is the consumer's responsibility — add a <link> or
+   * @import for your fonts before rendering the theme.
    *
    * @example
    * ```tsx
    * typography: {
    *   scale: { base: 14, ratio: 1.2 },
-   *   body: { family: 'Geist', fallbacks: '-apple-system, sans-serif', url: '...' },
+   *   body: { family: 'Geist', fallbacks: '-apple-system, sans-serif' },
    *   heading: { weight: 'semibold', weights: { 3: 'bold', 4: 'bold' } },
-   *   code: { family: 'Geist Mono', fallbacks: '"SF Mono", monospace', url: '...' },
+   *   code: { family: 'Geist Mono', fallbacks: '"SF Mono", monospace' },
    * }
    * ```
    */
@@ -335,11 +337,6 @@ export interface XDSDefinedTheme {
   icons?: Partial<XDSIconRegistry>;
   /** Whether this theme has been pre-compiled by theme build CLI */
   __built?: true;
-  /**
-   * Font declarations — fonts this theme requires.
-   * Passed through from defineTheme input unchanged.
-   */
-  fonts?: ThemeFontSource[];
   /**
    * Raw input tokens preserved from defineTheme() input.
    * Keeps [light, dark] tuples intact for programmatic access
@@ -603,51 +600,21 @@ export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
     components = deepMergeComponents(base.components, components);
   }
 
-  // 4. Derive fonts array from typography roles (for runtime loading)
-  let fonts: ThemeFontSource[] | undefined;
-  if (typo) {
-    const seen = new Set<string>();
-    const fontList: ThemeFontSource[] = [];
-    // Heading inherits from body — collect body first, then heading (may be same), then code
-    for (const role of [typo.body, typo.heading, typo.code]) {
-      if (role?.family && role.url && !seen.has(role.family)) {
-        seen.add(role.family);
-        fontList.push({family: role.family, url: role.url});
-      }
-    }
-    // If heading has no family/url but body does, body is already in the list
-    if (fontList.length > 0) fonts = fontList;
-  }
-
-  // 5. Resolve on-media token overrides (defaults + user overrides)
+  // 4. Resolve on-media token overrides (defaults + user overrides)
   const __onDark = resolveOnMedia('dark', input.onDark);
   const __onLight = resolveOnMedia('light', input.onLight);
 
-  // 6. Merge icons — input icons override base icons
+  // 5. Merge icons — input icons override base icons
   const icons =
     input.icons && base?.icons
       ? {...base.icons, ...input.icons}
-      : input.icons ?? base?.icons;
-
-  // 7. Merge fonts — input fonts take priority, deduplicate by family
-  let mergedFonts = fonts;
-  if (!mergedFonts && base?.fonts) {
-    mergedFonts = base.fonts;
-  } else if (mergedFonts && base?.fonts) {
-    const seen = new Set(mergedFonts.map(f => f.family));
-    for (const font of base.fonts) {
-      if (!seen.has(font.family)) {
-        mergedFonts.push(font);
-      }
-    }
-  }
+      : (input.icons ?? base?.icons);
 
   return {
     name: input.name,
     tokens,
     components,
     icons,
-    fonts: mergedFonts,
     __inputTokens: input.tokens,
     __onDark,
     __onLight,
@@ -885,9 +852,10 @@ export function generateThemeRules(theme: XDSDefinedTheme): string[] {
             const derived = getDerivedVars(component, prop);
             // Padding longhands (paddingBlock, paddingInline, etc.) also
             // match the 'padding' derived entry for container expansion.
-            const paddingDerived = PADDING_PROPS.has(prop) && prop !== 'padding'
-              ? getDerivedVars(component, 'padding')
-              : [];
+            const paddingDerived =
+              PADDING_PROPS.has(prop) && prop !== 'padding'
+                ? getDerivedVars(component, 'padding')
+                : [];
             for (const entry of [...derived, ...paddingDerived]) {
               if (entry.expand === 'container' && PADDING_PROPS.has(prop)) {
                 containerExpanded = true;

@@ -6,25 +6,6 @@
  * Shared types used across XDS components.
  */
 
-/**
- * A font source declaration for a theme.
- * Used to declare fonts the theme requires so they can be preloaded,
- * reported at build time, and loaded at runtime as a fallback.
- *
- * @example
- * ```
- * fonts: [
- *   { family: 'Figtree', url: 'https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700' },
- * ]
- * ```
- */
-export interface ThemeFontSource {
-  /** Font family name, e.g. 'Figtree' */
-  family: string;
-  /** URL to load the font from, e.g. a Google Fonts URL */
-  url: string;
-}
-
 // =============================================================================
 // Typography config types
 // =============================================================================
@@ -43,23 +24,24 @@ export type FontWeight =
 /**
  * A typography role declaration (body, heading, or code).
  *
+ * Fonts must be loaded by the consumer (e.g. via a <link> tag in <head>
+ * or an @import in CSS). XDS does not handle font loading — it only
+ * sets the font-family token so the font is used once available.
+ *
  * @example
  * ```
  * body: {
  *   family: 'Geist',
  *   fallbacks: '"Geist Fallback", -apple-system, sans-serif',
- *   url: 'https://cdn.jsdelivr.net/npm/geist@1/dist/fonts/geist-sans/style.css',
  *   weight: 'normal',
  * }
  * ```
  */
 export interface TypographyRole {
-  /** Primary font name — used for font loading detection via document.fonts.check() */
+  /** Primary font name — must be loaded by the consumer (e.g. Google Fonts link tag) */
   family?: string;
   /** CSS fallback font stack (appended after family in the computed --font-* token) */
   fallbacks?: string;
-  /** Stylesheet URL for runtime font loading. Omit for system fonts. */
-  url?: string;
   /** Default font weight for this role */
   weight?: FontWeight;
   /** Per-level weight overrides (heading only: keys are heading levels 1–6) */
@@ -69,20 +51,20 @@ export interface TypographyRole {
 /**
  * Unified typography configuration.
  *
- * Replaces the separate `typeScale`, `fonts`, and font token overrides
- * with a single config object.
- *
  * - `scale` controls the geometric type scale (base size + ratio)
  * - `body`, `heading`, `code` declare fonts, fallbacks, weights per role
- * - `heading` inherits family/fallbacks/url from `body` if not specified
+ * - `heading` inherits family/fallbacks from `body` if not specified
+ *
+ * Font loading is the consumer's responsibility. Add a <link> or @import
+ * for your fonts before rendering the theme.
  *
  * @example
  * ```
  * typography: {
  *   scale: { base: 14, ratio: 1.2 },
- *   body: { family: 'Geist', fallbacks: '-apple-system, sans-serif', url: '...' },
+ *   body: { family: 'Geist', fallbacks: '-apple-system, sans-serif' },
  *   heading: { weight: 'semibold', weights: { 3: 'bold', 4: 'bold' } },
- *   code: { family: 'Geist Mono', fallbacks: '"SF Mono", monospace', url: '...' },
+ *   code: { family: 'Geist Mono', fallbacks: '"SF Mono", monospace' },
  * }
  * ```
  */
