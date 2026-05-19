@@ -33,9 +33,12 @@ fs.mkdirSync(OUT_DIR, {recursive: true});
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
+const COPYRIGHT_HEADER =
+  '// Copyright (c) Meta Platforms, Inc. and affiliates.\n\n';
+
 function writeRegistry(filename, content) {
   const outPath = path.join(OUT_DIR, filename);
-  fs.writeFileSync(outPath, content, 'utf-8');
+  fs.writeFileSync(outPath, COPYRIGHT_HEADER + content, 'utf-8');
   console.log(`  wrote ${path.relative(REPO_ROOT, outPath)}`);
 }
 

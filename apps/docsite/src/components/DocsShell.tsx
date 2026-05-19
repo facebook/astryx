@@ -48,10 +48,10 @@ function buildComponentSidebar(): {
 
 export function DocsShell({
   children,
-  _components,
+  components: _components,
   packages,
   docTopics,
-  _templates,
+  templates: _templates,
   defaultIsMobile,
 }: DocsShellProps) {
   const pathname = usePathname();
