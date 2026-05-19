@@ -3,12 +3,10 @@
 'use client';
 
 import {useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
 import {XDSTextArea} from '@xds/core/TextArea';
-import {colorVars} from '@xds/core/theme/tokens.stylex';
 import {categories} from '../../../sandboxPages';
 import DocTopNav from '../doc-nav/DocTopNav';
 
@@ -19,15 +17,6 @@ const allPages = categories.flatMap(cat =>
 const GRID_AREAS = `"a a b b b" "c c c d d" "e f f g g" "h h i i i"`;
 const GRID_ROWS = '280px 320px 260px 300px';
 const AREA_KEYS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'];
-
-const styles = stylex.create({
-  dashedCard: {
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: colorVars['--color-border'],
-    borderRadius: 16,
-  },
-});
 
 export default function DocHomePage() {
   const [search, setSearch] = useState('');

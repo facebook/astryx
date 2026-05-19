@@ -7,11 +7,9 @@ import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
 import {
-  ChartBarIcon,
   CubeIcon,
   HomeIcon,
   DocumentTextIcon,
-  Cog6ToothIcon,
   BellIcon,
 } from '@heroicons/react/24/outline';
 

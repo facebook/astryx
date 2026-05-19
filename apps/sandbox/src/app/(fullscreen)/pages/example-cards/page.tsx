@@ -20,7 +20,6 @@ import {XDSCheckboxInput} from '@xds/core/CheckboxInput';
 import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
 import {XDSProgressBar} from '@xds/core/ProgressBar';
 import {XDSSpinner} from '@xds/core/Spinner';
-import {XDSSkeleton} from '@xds/core/Skeleton';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSLink} from '@xds/core/Link';
@@ -161,7 +160,6 @@ export default function ExampleCardsPage() {
         <XDSHStack gap={2}>
           <XDSSelector
             label="Theme"
-           
             options={themeOptions}
             value={themeName.charAt(0).toUpperCase() + themeName.slice(1)}
             onChange={(v: string) => setThemeName(v.toLowerCase())}
@@ -169,7 +167,6 @@ export default function ExampleCardsPage() {
           />
           <XDSSelector
             label="Mode"
-           
             options={modeOptions}
             value={mode === 'dark' ? 'Dark' : 'Light'}
             onChange={(v: string) => setMode(v.toLowerCase() as ThemeMode)}
@@ -187,14 +184,11 @@ export default function ExampleCardsPage() {
           minHeight: '100%',
         }}>
         {/* Contribution History */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <div {...stylex.props(styles.row)}>
-                <XDSHeading level={3}>
-                  Contribution History
-                </XDSHeading>
+                <XDSHeading level={3}>Contribution History</XDSHeading>
                 <XDSBadge label="+12% vs last month" variant="info" />
               </div>
               <XDSText type="supporting" color="secondary">
@@ -251,15 +245,17 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Payout Threshold */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <div {...stylex.props(styles.row)}>
-                <XDSHeading level={3}>
-                  Payout Threshold
-                </XDSHeading>
-                <XDSButton label="" icon={<XDSIcon icon="close" size="sm" />} variant="ghost" size="sm" />
+                <XDSHeading level={3}>Payout Threshold</XDSHeading>
+                <XDSButton
+                  label=""
+                  icon={<XDSIcon icon="close" size="sm" />}
+                  variant="ghost"
+                  size="sm"
+                />
               </div>
               <XDSText type="supporting" color="secondary">
                 Set the minimum balance required before a payout is triggered.
@@ -310,14 +306,11 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Savings Targets */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <div {...stylex.props(styles.row)}>
-                <XDSHeading level={3}>
-                  Savings Targets
-                </XDSHeading>
+                <XDSHeading level={3}>Savings Targets</XDSHeading>
                 <XDSButton label="New Goal" variant="primary" size="sm" />
               </div>
               <XDSText type="supporting" color="secondary">
@@ -361,13 +354,10 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Buy Investment */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={4}>
-              <XDSHeading level={3}>
-                Buy Investment
-              </XDSHeading>
+              <XDSHeading level={3}>Buy Investment</XDSHeading>
               <XDSTextInput
                 label="Amount to Invest"
                 value="1,000.00"
@@ -409,13 +399,10 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Account Access */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={4}>
-              <XDSHeading level={3}>
-                Account Access
-              </XDSHeading>
+              <XDSHeading level={3}>Account Access</XDSHeading>
               <XDSText type="supporting" color="secondary">
                 Update your credentials or re-authenticate.
               </XDSText>
@@ -449,15 +436,17 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Payout Preferences */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <div {...stylex.props(styles.row)}>
-                <XDSHeading level={3}>
-                  Payout Preferences
-                </XDSHeading>
-                <XDSButton label="" icon={<XDSIcon icon="close" size="sm" />} variant="ghost" size="sm" />
+                <XDSHeading level={3}>Payout Preferences</XDSHeading>
+                <XDSButton
+                  label=""
+                  icon={<XDSIcon icon="close" size="sm" />}
+                  variant="ghost"
+                  size="sm"
+                />
               </div>
               <XDSText type="supporting" color="secondary">
                 Receiving Method
@@ -495,13 +484,10 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Stock Performance */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
-              <XDSHeading level={3}>
-                Stock Performance
-              </XDSHeading>
+              <XDSHeading level={3}>Stock Performance</XDSHeading>
               <XDSText type="supporting" color="secondary">
                 6-month price history.
               </XDSText>
@@ -510,7 +496,6 @@ export default function ExampleCardsPage() {
                 options={['VOO', 'AAPL', 'GOOGL', 'MSFT']}
                 value={ticker}
                 onChange={setTicker}
-               
               />
               <div {...stylex.props(styles.chart)}>
                 {[30, 45, 38, 52, 48, 55, 42, 60, 58, 65, 50, 70].map(
@@ -528,13 +513,10 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Distribute Track */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
-              <XDSHeading level={3}>
-                Distribute Track
-              </XDSHeading>
+              <XDSHeading level={3}>Distribute Track</XDSHeading>
               <XDSText type="supporting" color="secondary">
                 Upload your first master and start reaching listeners on
                 Spotify, Apple Music and more.
@@ -548,8 +530,7 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Clearinghouse Balance */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <XDSText type="supporting" color="secondary">
@@ -592,22 +573,17 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Recent Transactions */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <div {...stylex.props(styles.row)}>
                 <XDSVStack gap={1}>
-                  <XDSHeading level={3}>
-                    Recent Transactions
-                  </XDSHeading>
+                  <XDSHeading level={3}>Recent Transactions</XDSHeading>
                   <XDSText type="supporting" color="secondary">
                     Your latest account activity.
                   </XDSText>
                 </XDSVStack>
-                <XDSLink href="#">
-                  View All
-                </XDSLink>
+                <XDSLink href="#">View All</XDSLink>
               </div>
               <XDSDivider />
               {[
@@ -677,8 +653,7 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Card Balance */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <div {...stylex.props(styles.row)}>
@@ -696,9 +671,7 @@ export default function ExampleCardsPage() {
                     Payment Due
                   </XDSText>
                   <XDSHeading level={3}>1 Apr</XDSHeading>
-                  <XDSLink href="#">
-                    Pay Early
-                  </XDSLink>
+                  <XDSLink href="#">Pay Early</XDSLink>
                 </XDSVStack>
               </div>
               <XDSText type="supporting" color="secondary">
@@ -745,13 +718,10 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Power Usage */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
-              <XDSHeading level={3}>
-                Power Usage
-              </XDSHeading>
+              <XDSHeading level={3}>Power Usage</XDSHeading>
               <XDSText type="supporting" color="secondary">
                 Whole Home
               </XDSText>
@@ -796,13 +766,10 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Explore Catalog */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
-              <XDSHeading level={3}>
-                Explore Catalog
-              </XDSHeading>
+              <XDSHeading level={3}>Explore Catalog</XDSHeading>
               <XDSText type="supporting" color="secondary">
                 Check your ISRC codes, metadata, and visual assets before going
                 live.
@@ -813,15 +780,17 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Transfer Funds */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <div {...stylex.props(styles.row)}>
-                <XDSHeading level={3}>
-                  Transfer Funds
-                </XDSHeading>
-                <XDSButton label="" icon={<XDSIcon icon="close" size="sm" />} variant="ghost" size="sm" />
+                <XDSHeading level={3}>Transfer Funds</XDSHeading>
+                <XDSButton
+                  label=""
+                  icon={<XDSIcon icon="close" size="sm" />}
+                  variant="ghost"
+                  size="sm"
+                />
               </div>
               <XDSText type="supporting" color="secondary">
                 Move money between your connected accounts.
@@ -890,13 +859,10 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Set a New Milestone */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={4}>
-              <XDSHeading level={3}>
-                Set a new milestone
-              </XDSHeading>
+              <XDSHeading level={3}>Set a new milestone</XDSHeading>
               <XDSText type="supporting" color="secondary">
                 Define your financial target and we&apos;ll help you pace your
                 savings.
@@ -928,13 +894,10 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Connect Bank */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
-              <XDSHeading level={3}>
-                Connect Bank
-              </XDSHeading>
+              <XDSHeading level={3}>Connect Bank</XDSHeading>
               <XDSText type="supporting" color="secondary">
                 Link your payment method to receive monthly royalty
                 distributions automatically.
@@ -945,15 +908,17 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Preferences */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <div {...stylex.props(styles.row)}>
-                <XDSHeading level={3}>
-                  Preferences
-                </XDSHeading>
-                <XDSButton label="" icon={<XDSIcon icon="close" size="sm" />} variant="ghost" size="sm" />
+                <XDSHeading level={3}>Preferences</XDSHeading>
+                <XDSButton
+                  label=""
+                  icon={<XDSIcon icon="close" size="sm" />}
+                  variant="ghost"
+                  size="sm"
+                />
               </div>
               <XDSText type="supporting" color="secondary">
                 Manage your account settings and notifications.
@@ -995,8 +960,7 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Settings Navigation */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSHStack gap={6}>
               <XDSVStack gap={3} style={{flex: 1}}>
@@ -1042,8 +1006,7 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Payments Navigation */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <XDSHStack gap={2} vAlign="center">
@@ -1093,8 +1056,7 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* FAQ / Settings Tabs */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSTabList value={settingsTab} onChange={setSettingsTab}>
@@ -1132,13 +1094,10 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Upcoming Payments */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
-              <XDSHeading level={3}>
-                Upcoming Payments
-              </XDSHeading>
+              <XDSHeading level={3}>Upcoming Payments</XDSHeading>
               <XDSText type="supporting" color="secondary">
                 Select a date to view scheduled payments.
               </XDSText>
@@ -1172,8 +1131,7 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* QR Code / Mobile Connect */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <div {...stylex.props(styles.placeholder)}>
@@ -1198,15 +1156,17 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Q2 Dividend Income */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <div {...stylex.props(styles.row)}>
-                <XDSHeading level={3}>
-                  Q2 Dividend Income
-                </XDSHeading>
-                <XDSButton label="" icon={<XDSIcon icon="close" size="sm" />} variant="ghost" size="sm" />
+                <XDSHeading level={3}>Q2 Dividend Income</XDSHeading>
+                <XDSButton
+                  label=""
+                  icon={<XDSIcon icon="close" size="sm" />}
+                  variant="ghost"
+                  size="sm"
+                />
               </div>
               <XDSText type="supporting" color="secondary">
                 Quarterly dividend payouts across your portfolio holdings.
@@ -1240,8 +1200,7 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Savings Target Progress */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSHeading level={2}>$24,000</XDSHeading>
@@ -1273,13 +1232,10 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Dollar-Cost Averaging */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
-              <XDSHeading level={3}>
-                Dollar-Cost Averaging
-              </XDSHeading>
+              <XDSHeading level={3}>Dollar-Cost Averaging</XDSHeading>
               <XDSText type="supporting" color="secondary">
                 A strategy for building wealth over time.
               </XDSText>
@@ -1295,8 +1251,7 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Cover Art / Upload */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSText type="supporting" color="secondary">
@@ -1312,9 +1267,7 @@ export default function ExampleCardsPage() {
                   borderRadius: 8,
                 }}
               />
-              <XDSHeading level={3}>
-                Upload Artwork
-              </XDSHeading>
+              <XDSHeading level={3}>Upload Artwork</XDSHeading>
               <XDSText type="supporting" color="secondary">
                 Minimum 3000 × 3000px — JPEG or PNG only
               </XDSText>
@@ -1323,15 +1276,12 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Front Door (Smart Home) */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <div {...stylex.props(styles.row)}>
                 <XDSVStack gap={0}>
-                  <XDSHeading level={3}>
-                    Front Door
-                  </XDSHeading>
+                  <XDSHeading level={3}>Front Door</XDSHeading>
                   <XDSText type="supporting" color="secondary">
                     Smart Lock Pro
                   </XDSText>
@@ -1349,13 +1299,11 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Stock Holdings */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSTextInput
                 label="Search holdings"
-               
                 placeholder="Search holdings or tickers..."
                 value=""
                 onChange={() => {}}
@@ -1426,14 +1374,11 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Kitchen Island (Smart Home) */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={4}>
               <div {...stylex.props(styles.row)}>
-                <XDSHeading level={3}>
-                  Kitchen Island
-                </XDSHeading>
+                <XDSHeading level={3}>Kitchen Island</XDSHeading>
                 <XDSSwitch label="On" value={true} onChange={() => {}} />
               </div>
               <XDSText type="supporting" color="secondary">
@@ -1459,13 +1404,10 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Living Room (Smart Home) */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
-              <XDSHeading level={3}>
-                Living Room
-              </XDSHeading>
+              <XDSHeading level={3}>Living Room</XDSHeading>
               <XDSText type="supporting" color="secondary">
                 Roller Shades
               </XDSText>
@@ -1484,13 +1426,10 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Social Links */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={4}>
-              <XDSHeading level={3}>
-                Social Links
-              </XDSHeading>
+              <XDSHeading level={3}>Social Links</XDSHeading>
               <XDSTextInput
                 label="Spotify Artist URL"
                 value={spotifyUrl}
@@ -1520,13 +1459,10 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Notifications */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={4}>
-              <XDSHeading level={3}>
-                Notifications
-              </XDSHeading>
+              <XDSHeading level={3}>Notifications</XDSHeading>
               <XDSText type="supporting" color="secondary">
                 Choose what you want to be notified about.
               </XDSText>
@@ -1578,16 +1514,13 @@ export default function ExampleCardsPage() {
         </div>
 
         {/* Syncing Accounts */}
-        <div
-          style={{breakInside: 'avoid', marginBottom: 24}}>
+        <div style={{breakInside: 'avoid', marginBottom: 24}}>
           <XDSCard>
             <XDSVStack gap={3}>
               <XDSHStack gap={3} vAlign="center">
                 <XDSSpinner size="sm" />
                 <XDSVStack gap={1}>
-                  <XDSHeading level={3}>
-                    Syncing your accounts
-                  </XDSHeading>
+                  <XDSHeading level={3}>Syncing your accounts</XDSHeading>
                   <XDSText type="supporting" color="secondary">
                     We&apos;re pulling in your latest transactions. This usually
                     takes a few seconds.
@@ -1605,13 +1538,19 @@ export default function ExampleCardsPage() {
 
         {/* Badges & Tokens */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, gridColumn: '1 / -1'}}>
+          style={{
+            breakInside: 'avoid',
+            marginBottom: 24,
+            gridColumn: '1 / -1',
+          }}>
           <XDSCard>
             <XDSVStack gap={4}>
               <XDSHeading level={3}>Badges & Tokens</XDSHeading>
               <XDSDivider />
               <XDSVStack gap={3}>
-                <XDSText type="supporting" color="secondary">Badge Variants</XDSText>
+                <XDSText type="supporting" color="secondary">
+                  Badge Variants
+                </XDSText>
                 <XDSHStack gap={2} vAlign="center" wrap="wrap">
                   <XDSBadge label="Default" />
                   <XDSBadge label="Info" variant="info" />
@@ -1620,7 +1559,9 @@ export default function ExampleCardsPage() {
                   <XDSBadge label="Error" variant="error" />
                 </XDSHStack>
                 <XDSDivider />
-                <XDSText type="supporting" color="secondary">Tokens</XDSText>
+                <XDSText type="supporting" color="secondary">
+                  Tokens
+                </XDSText>
                 <XDSHStack gap={2} vAlign="center" wrap="wrap">
                   <XDSToken label="Default" />
                   <XDSToken label="Blue" color="blue" />
@@ -1643,24 +1584,59 @@ export default function ExampleCardsPage() {
 
         {/* Input Components */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, gridColumn: '1 / -1'}}>
+          style={{
+            breakInside: 'avoid',
+            marginBottom: 24,
+            gridColumn: '1 / -1',
+          }}>
           <XDSCard>
             <XDSVStack gap={4}>
               <XDSHeading level={3}>Input Components</XDSHeading>
               <XDSDivider />
               <XDSVStack gap={4}>
                 <XDSHStack gap={4} wrap="wrap">
-                  <XDSTextInput label="Default" placeholder="Enter text..." value="" onChange={() => {}} />
-                  <XDSTextInput label="With value" value="Hello world" onChange={() => {}} />
-                  <XDSTextInput label="Disabled" value="Can't edit" isDisabled onChange={() => {}} />
+                  <XDSTextInput
+                    label="Default"
+                    placeholder="Enter text..."
+                    value=""
+                    onChange={() => {}}
+                  />
+                  <XDSTextInput
+                    label="With value"
+                    value="Hello world"
+                    onChange={() => {}}
+                  />
+                  <XDSTextInput
+                    label="Disabled"
+                    value="Can't edit"
+                    isDisabled
+                    onChange={() => {}}
+                  />
                 </XDSHStack>
                 <XDSHStack gap={4} wrap="wrap">
-                  <XDSTextInput label="Error state" status={{type: "error", message: "This field is required"}} value="" onChange={() => {}} />
-                  <XDSTextInput label="Success state" status={{type: "success", message: "Looks good!"}} value="Valid input" onChange={() => {}} />
-                  <XDSTextInput label="With placeholder" placeholder="Enter email..." value="" onChange={() => {}} />
+                  <XDSTextInput
+                    label="Error state"
+                    status={{type: 'error', message: 'This field is required'}}
+                    value=""
+                    onChange={() => {}}
+                  />
+                  <XDSTextInput
+                    label="Success state"
+                    status={{type: 'success', message: 'Looks good!'}}
+                    value="Valid input"
+                    onChange={() => {}}
+                  />
+                  <XDSTextInput
+                    label="With placeholder"
+                    placeholder="Enter email..."
+                    value=""
+                    onChange={() => {}}
+                  />
                 </XDSHStack>
                 <XDSDivider />
-                <XDSText type="supporting" color="secondary">Selector</XDSText>
+                <XDSText type="supporting" color="secondary">
+                  Selector
+                </XDSText>
                 <XDSHStack gap={4} wrap="wrap">
                   <XDSSelector
                     label="Choose option"
@@ -1677,30 +1653,70 @@ export default function ExampleCardsPage() {
                   />
                 </XDSHStack>
                 <XDSDivider />
-                <XDSText type="supporting" color="secondary">Slider</XDSText>
+                <XDSText type="supporting" color="secondary">
+                  Slider
+                </XDSText>
                 <XDSSlider label="Volume" value={65} onChange={() => {}} />
                 <XDSDivider />
-                <XDSText type="supporting" color="secondary">Toggle Controls</XDSText>
+                <XDSText type="supporting" color="secondary">
+                  Toggle Controls
+                </XDSText>
                 <XDSHStack gap={6} vAlign="center" wrap="wrap">
                   <XDSSwitch label="On" value={true} onChange={() => {}} />
                   <XDSSwitch label="Off" value={false} onChange={() => {}} />
-                  <XDSSwitch label="Disabled on" value={true} isDisabled onChange={() => {}} />
-                  <XDSSwitch label="Disabled off" value={false} isDisabled onChange={() => {}} />
+                  <XDSSwitch
+                    label="Disabled on"
+                    value={true}
+                    isDisabled
+                    onChange={() => {}}
+                  />
+                  <XDSSwitch
+                    label="Disabled off"
+                    value={false}
+                    isDisabled
+                    onChange={() => {}}
+                  />
                 </XDSHStack>
                 <XDSDivider />
-                <XDSText type="supporting" color="secondary">Checkbox</XDSText>
+                <XDSText type="supporting" color="secondary">
+                  Checkbox
+                </XDSText>
                 <XDSHStack gap={6} wrap="wrap">
-                  <XDSCheckboxInput label="Checked" value={true} onChange={() => {}} />
-                  <XDSCheckboxInput label="Unchecked" value={false} onChange={() => {}} />
-                  <XDSCheckboxInput label="Checked disabled" value={true} isDisabled onChange={() => {}} />
-                  <XDSCheckboxInput label="Unchecked disabled" value={false} isDisabled onChange={() => {}} />
+                  <XDSCheckboxInput
+                    label="Checked"
+                    value={true}
+                    onChange={() => {}}
+                  />
+                  <XDSCheckboxInput
+                    label="Unchecked"
+                    value={false}
+                    onChange={() => {}}
+                  />
+                  <XDSCheckboxInput
+                    label="Checked disabled"
+                    value={true}
+                    isDisabled
+                    onChange={() => {}}
+                  />
+                  <XDSCheckboxInput
+                    label="Unchecked disabled"
+                    value={false}
+                    isDisabled
+                    onChange={() => {}}
+                  />
                 </XDSHStack>
                 <XDSDivider />
-                <XDSText type="supporting" color="secondary">Radio</XDSText>
+                <XDSText type="supporting" color="secondary">
+                  Radio
+                </XDSText>
                 <XDSRadioList label="Radio" value="a" onChange={() => {}}>
                   <XDSRadioListItem value="a" label="Choice A" />
                   <XDSRadioListItem value="b" label="Choice B" />
-                  <XDSRadioListItem value="c" label="Choice C (disabled)" isDisabled />
+                  <XDSRadioListItem
+                    value="c"
+                    label="Choice C (disabled)"
+                    isDisabled
+                  />
                 </XDSRadioList>
               </XDSVStack>
             </XDSVStack>
@@ -1709,14 +1725,20 @@ export default function ExampleCardsPage() {
 
         {/* Button Variants */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, gridColumn: '1 / -1'}}>
+          style={{
+            breakInside: 'avoid',
+            marginBottom: 24,
+            gridColumn: '1 / -1',
+          }}>
           <XDSCard>
             <XDSVStack gap={4}>
               <XDSHeading level={3}>Button Variants</XDSHeading>
               <XDSDivider />
               <XDSVStack gap={3}>
                 <XDSVStack gap={1}>
-                  <XDSText type="supporting" color="secondary">Primary</XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    Primary
+                  </XDSText>
                   <XDSHStack gap={2} vAlign="center" wrap="wrap">
                     <XDSButton label="Small" variant="primary" size="sm" />
                     <XDSButton label="Medium" variant="primary" size="md" />
@@ -1725,25 +1747,39 @@ export default function ExampleCardsPage() {
                   </XDSHStack>
                 </XDSVStack>
                 <XDSVStack gap={1}>
-                  <XDSText type="supporting" color="secondary">Secondary</XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    Secondary
+                  </XDSText>
                   <XDSHStack gap={2} vAlign="center" wrap="wrap">
                     <XDSButton label="Small" variant="secondary" size="sm" />
                     <XDSButton label="Medium" variant="secondary" size="md" />
                     <XDSButton label="Large" variant="secondary" size="lg" />
-                    <XDSButton label="Disabled" variant="secondary" isDisabled />
+                    <XDSButton
+                      label="Disabled"
+                      variant="secondary"
+                      isDisabled
+                    />
                   </XDSHStack>
                 </XDSVStack>
                 <XDSVStack gap={1}>
-                  <XDSText type="supporting" color="secondary">Destructive</XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    Destructive
+                  </XDSText>
                   <XDSHStack gap={2} vAlign="center" wrap="wrap">
                     <XDSButton label="Small" variant="destructive" size="sm" />
                     <XDSButton label="Medium" variant="destructive" size="md" />
                     <XDSButton label="Large" variant="destructive" size="lg" />
-                    <XDSButton label="Disabled" variant="destructive" isDisabled />
+                    <XDSButton
+                      label="Disabled"
+                      variant="destructive"
+                      isDisabled
+                    />
                   </XDSHStack>
                 </XDSVStack>
                 <XDSVStack gap={1}>
-                  <XDSText type="supporting" color="secondary">Ghost</XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    Ghost
+                  </XDSText>
                   <XDSHStack gap={2} vAlign="center" wrap="wrap">
                     <XDSButton label="Small" variant="ghost" size="sm" />
                     <XDSButton label="Medium" variant="ghost" size="md" />
@@ -1752,50 +1788,142 @@ export default function ExampleCardsPage() {
                   </XDSHStack>
                 </XDSVStack>
                 <XDSDivider />
-                <XDSText type="supporting" color="secondary">Theme-specific variants (Meta)</XDSText>
+                <XDSText type="supporting" color="secondary">
+                  Theme-specific variants (Meta)
+                </XDSText>
                 <XDSVStack gap={1}>
-                  <XDSText type="supporting" color="secondary">Primary Muted</XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    Primary Muted
+                  </XDSText>
                   <XDSHStack gap={2} vAlign="center" wrap="wrap">
-                    <XDSButton label="Small" variant={'primary-muted' as never} size="sm" />
-                    <XDSButton label="Medium" variant={'primary-muted' as never} size="md" />
-                    <XDSButton label="Large" variant={'primary-muted' as never} size="lg" />
-                    <XDSButton label="Disabled" variant={'primary-muted' as never} isDisabled />
+                    <XDSButton
+                      label="Small"
+                      variant={'primary-muted' as never}
+                      size="sm"
+                    />
+                    <XDSButton
+                      label="Medium"
+                      variant={'primary-muted' as never}
+                      size="md"
+                    />
+                    <XDSButton
+                      label="Large"
+                      variant={'primary-muted' as never}
+                      size="lg"
+                    />
+                    <XDSButton
+                      label="Disabled"
+                      variant={'primary-muted' as never}
+                      isDisabled
+                    />
                   </XDSHStack>
                 </XDSVStack>
                 <XDSVStack gap={1}>
-                  <XDSText type="supporting" color="secondary">Destructive Muted</XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    Destructive Muted
+                  </XDSText>
                   <XDSHStack gap={2} vAlign="center" wrap="wrap">
-                    <XDSButton label="Small" variant={'destructive-muted' as never} size="sm" />
-                    <XDSButton label="Medium" variant={'destructive-muted' as never} size="md" />
-                    <XDSButton label="Large" variant={'destructive-muted' as never} size="lg" />
-                    <XDSButton label="Disabled" variant={'destructive-muted' as never} isDisabled />
+                    <XDSButton
+                      label="Small"
+                      variant={'destructive-muted' as never}
+                      size="sm"
+                    />
+                    <XDSButton
+                      label="Medium"
+                      variant={'destructive-muted' as never}
+                      size="md"
+                    />
+                    <XDSButton
+                      label="Large"
+                      variant={'destructive-muted' as never}
+                      size="lg"
+                    />
+                    <XDSButton
+                      label="Disabled"
+                      variant={'destructive-muted' as never}
+                      isDisabled
+                    />
                   </XDSHStack>
                 </XDSVStack>
                 <XDSVStack gap={1}>
-                  <XDSText type="supporting" color="secondary">Primary Outline</XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    Primary Outline
+                  </XDSText>
                   <XDSHStack gap={2} vAlign="center" wrap="wrap">
-                    <XDSButton label="Small" variant={'primary-outline' as never} size="sm" />
-                    <XDSButton label="Medium" variant={'primary-outline' as never} size="md" />
-                    <XDSButton label="Large" variant={'primary-outline' as never} size="lg" />
-                    <XDSButton label="Disabled" variant={'primary-outline' as never} isDisabled />
+                    <XDSButton
+                      label="Small"
+                      variant={'primary-outline' as never}
+                      size="sm"
+                    />
+                    <XDSButton
+                      label="Medium"
+                      variant={'primary-outline' as never}
+                      size="md"
+                    />
+                    <XDSButton
+                      label="Large"
+                      variant={'primary-outline' as never}
+                      size="lg"
+                    />
+                    <XDSButton
+                      label="Disabled"
+                      variant={'primary-outline' as never}
+                      isDisabled
+                    />
                   </XDSHStack>
                 </XDSVStack>
                 <XDSVStack gap={1}>
-                  <XDSText type="supporting" color="secondary">Secondary Outline</XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    Secondary Outline
+                  </XDSText>
                   <XDSHStack gap={2} vAlign="center" wrap="wrap">
-                    <XDSButton label="Small" variant={'secondary-outline' as never} size="sm" />
-                    <XDSButton label="Medium" variant={'secondary-outline' as never} size="md" />
-                    <XDSButton label="Large" variant={'secondary-outline' as never} size="lg" />
-                    <XDSButton label="Disabled" variant={'secondary-outline' as never} isDisabled />
+                    <XDSButton
+                      label="Small"
+                      variant={'secondary-outline' as never}
+                      size="sm"
+                    />
+                    <XDSButton
+                      label="Medium"
+                      variant={'secondary-outline' as never}
+                      size="md"
+                    />
+                    <XDSButton
+                      label="Large"
+                      variant={'secondary-outline' as never}
+                      size="lg"
+                    />
+                    <XDSButton
+                      label="Disabled"
+                      variant={'secondary-outline' as never}
+                      isDisabled
+                    />
                   </XDSHStack>
                 </XDSVStack>
                 <XDSVStack gap={1}>
-                  <XDSText type="supporting" color="secondary">Destructive Outline</XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    Destructive Outline
+                  </XDSText>
                   <XDSHStack gap={2} vAlign="center" wrap="wrap">
-                    <XDSButton label="Small" variant={'destructive-outline' as never} size="sm" />
-                    <XDSButton label="Medium" variant={'destructive-outline' as never} size="md" />
-                    <XDSButton label="Large" variant={'destructive-outline' as never} size="lg" />
-                    <XDSButton label="Disabled" variant={'destructive-outline' as never} isDisabled />
+                    <XDSButton
+                      label="Small"
+                      variant={'destructive-outline' as never}
+                      size="sm"
+                    />
+                    <XDSButton
+                      label="Medium"
+                      variant={'destructive-outline' as never}
+                      size="md"
+                    />
+                    <XDSButton
+                      label="Large"
+                      variant={'destructive-outline' as never}
+                      size="lg"
+                    />
+                    <XDSButton
+                      label="Disabled"
+                      variant={'destructive-outline' as never}
+                      isDisabled
+                    />
                   </XDSHStack>
                 </XDSVStack>
               </XDSVStack>
@@ -1805,69 +1933,117 @@ export default function ExampleCardsPage() {
 
         {/* Typography Scale */}
         <div
-          style={{breakInside: 'avoid', marginBottom: 24, gridColumn: '1 / -1'}}>
+          style={{
+            breakInside: 'avoid',
+            marginBottom: 24,
+            gridColumn: '1 / -1',
+          }}>
           <XDSCard>
             <XDSVStack gap={4}>
               <XDSHeading level={3}>Typography Scale</XDSHeading>
               <XDSDivider />
               <XDSVStack gap={3}>
                 <XDSVStack gap={0}>
-                  <XDSText type="supporting" color="secondary">Display 1</XDSText>
-                  <XDSText type="display-1" as="h1">The quick brown fox</XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    Display 1
+                  </XDSText>
+                  <XDSText type="display-1" as="h1">
+                    The quick brown fox
+                  </XDSText>
                 </XDSVStack>
                 <XDSVStack gap={0}>
-                  <XDSText type="supporting" color="secondary">Display 2</XDSText>
-                  <XDSText type="display-2" as="h1">The quick brown fox</XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    Display 2
+                  </XDSText>
+                  <XDSText type="display-2" as="h1">
+                    The quick brown fox
+                  </XDSText>
                 </XDSVStack>
                 <XDSVStack gap={0}>
-                  <XDSText type="supporting" color="secondary">Display 3</XDSText>
-                  <XDSText type="display-3" as="h1">The quick brown fox</XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    Display 3
+                  </XDSText>
+                  <XDSText type="display-3" as="h1">
+                    The quick brown fox
+                  </XDSText>
                 </XDSVStack>
                 <XDSDivider />
                 <XDSVStack gap={0}>
-                  <XDSText type="supporting" color="secondary">Heading 1</XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    Heading 1
+                  </XDSText>
                   <XDSHeading level={1}>The quick brown fox</XDSHeading>
                 </XDSVStack>
                 <XDSVStack gap={0}>
-                  <XDSText type="supporting" color="secondary">Heading 2</XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    Heading 2
+                  </XDSText>
                   <XDSHeading level={2}>The quick brown fox</XDSHeading>
                 </XDSVStack>
                 <XDSVStack gap={0}>
-                  <XDSText type="supporting" color="secondary">Heading 3</XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    Heading 3
+                  </XDSText>
                   <XDSHeading level={3}>The quick brown fox</XDSHeading>
                 </XDSVStack>
                 <XDSVStack gap={0}>
-                  <XDSText type="supporting" color="secondary">Heading 4</XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    Heading 4
+                  </XDSText>
                   <XDSHeading level={4}>The quick brown fox</XDSHeading>
                 </XDSVStack>
                 <XDSVStack gap={0}>
-                  <XDSText type="supporting" color="secondary">Heading 5</XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    Heading 5
+                  </XDSText>
                   <XDSHeading level={5}>The quick brown fox</XDSHeading>
                 </XDSVStack>
                 <XDSVStack gap={0}>
-                  <XDSText type="supporting" color="secondary">Heading 6</XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    Heading 6
+                  </XDSText>
                   <XDSHeading level={6}>The quick brown fox</XDSHeading>
                 </XDSVStack>
                 <XDSDivider />
                 <XDSVStack gap={0}>
-                  <XDSText type="supporting" color="secondary">Large</XDSText>
-                  <XDSText type="large">The quick brown fox jumps over the lazy dog</XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    Large
+                  </XDSText>
+                  <XDSText type="large">
+                    The quick brown fox jumps over the lazy dog
+                  </XDSText>
                 </XDSVStack>
                 <XDSVStack gap={0}>
-                  <XDSText type="supporting" color="secondary">Body</XDSText>
-                  <XDSText type="body">The quick brown fox jumps over the lazy dog</XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    Body
+                  </XDSText>
+                  <XDSText type="body">
+                    The quick brown fox jumps over the lazy dog
+                  </XDSText>
                 </XDSVStack>
                 <XDSVStack gap={0}>
-                  <XDSText type="supporting" color="secondary">Label</XDSText>
-                  <XDSText type="label">The quick brown fox jumps over the lazy dog</XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    Label
+                  </XDSText>
+                  <XDSText type="label">
+                    The quick brown fox jumps over the lazy dog
+                  </XDSText>
                 </XDSVStack>
                 <XDSVStack gap={0}>
-                  <XDSText type="supporting" color="secondary">Supporting</XDSText>
-                  <XDSText type="supporting">The quick brown fox jumps over the lazy dog</XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    Supporting
+                  </XDSText>
+                  <XDSText type="supporting">
+                    The quick brown fox jumps over the lazy dog
+                  </XDSText>
                 </XDSVStack>
                 <XDSVStack gap={0}>
-                  <XDSText type="supporting" color="secondary">Code</XDSText>
-                  <XDSText type="code">const fox = &apos;quick brown&apos;;</XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    Code
+                  </XDSText>
+                  <XDSText type="code">
+                    const fox = &apos;quick brown&apos;;
+                  </XDSText>
                 </XDSVStack>
               </XDSVStack>
             </XDSVStack>

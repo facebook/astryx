@@ -586,7 +586,7 @@ describe('XDSList', () => {
   });
 
   it('does not render markers when listStyle is none', () => {
-    const {container} = render(
+    render(
       <XDSList listStyle="disc">
         <XDSListItem label="With marker" data-testid="with-marker" />
       </XDSList>,
@@ -594,7 +594,7 @@ describe('XDSList', () => {
     const withMarker = screen.getByTestId('with-marker');
     const markerCount = withMarker.children.length;
 
-    const {container: container2} = render(
+    render(
       <XDSList listStyle="none">
         <XDSListItem label="Plain item" data-testid="no-marker" />
       </XDSList>,

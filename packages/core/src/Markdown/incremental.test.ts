@@ -297,7 +297,7 @@ describe('streaming structural suppression', () => {
   it('suppresses table separator without data rows', () => {
     const state = createIncrementalState();
     const input = 'Intro\n\n| Col1 | Col2 |\n| --- | --- |';
-    const blocks = parseMarkdownIncremental(input, state);
+    parseMarkdownIncremental(input, state);
     // Should suppress: header + separator but no data rows yet
     // Actually this is a valid table with 0 data rows — parser may render it.
     // The key test is that we don't show partial pipe syntax.
@@ -418,7 +418,10 @@ describe('streaming end-to-end: no raw syntax visible', () => {
     return text;
   }
 
-  function streamCharByChar(fullText: string): {snapshots: BlockNode[][]; visibleTexts: string[]} {
+  function streamCharByChar(fullText: string): {
+    snapshots: BlockNode[][];
+    visibleTexts: string[];
+  } {
     const state = createIncrementalState();
     const snapshots: BlockNode[][] = [];
     const visibleTexts: string[] = [];
@@ -446,7 +449,9 @@ describe('streaming end-to-end: no raw syntax visible', () => {
     // Text may briefly shrink when ** becomes formatting (markers removed
     // from visible text) — that's expected and correct.
     // Final result should have the full text (without raw markers)
-    expect(visibleTexts[visibleTexts.length - 1]).toBe('Hello bold text and more');
+    expect(visibleTexts[visibleTexts.length - 1]).toBe(
+      'Hello bold text and more',
+    );
   });
 
   it('never shows raw * during italic streaming', () => {
@@ -484,7 +489,8 @@ describe('streaming end-to-end: no raw syntax visible', () => {
   });
 
   it('table rows render incrementally after header established', () => {
-    const text = '| A | B |\n| --- | --- |\n| r1a | r1b |\n| r2a | r2b |\n| r3a | r3b |';
+    const text =
+      '| A | B |\n| --- | --- |\n| r1a | r1b |\n| r2a | r2b |\n| r3a | r3b |';
     const state = createIncrementalState();
     let maxRows = 0;
     // Stream by line to see rows appear incrementally

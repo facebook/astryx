@@ -44,7 +44,6 @@ import {
   ExclamationTriangleIcon,
   ArrowTopRightOnSquareIcon,
   StopIcon,
-  StopCircleIcon,
 } from '@heroicons/react/24/solid';
 
 const iconProps = {

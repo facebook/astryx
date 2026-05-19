@@ -16,7 +16,6 @@ import type {XDSTableColumn} from '../../types';
 import {
   useXDSTableSortable,
   type XDSTableSortState,
-  type UseXDSTableSortableConfig,
 } from './useXDSTableSortable';
 
 // =============================================================================

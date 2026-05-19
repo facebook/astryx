@@ -236,9 +236,6 @@ describe('useOverflow', () => {
     });
 
     // Get the observer that was created
-    const observer = (
-      FakeResizeObserver as unknown as {mock: {instances: FakeResizeObserver[]}}
-    ).mock?.instances;
     // Instead, check disconnect is called when ref is set to null
     act(() => {
       result.current.containerRef(null);

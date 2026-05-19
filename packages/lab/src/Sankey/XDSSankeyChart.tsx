@@ -18,12 +18,7 @@ import {
 } from 'react';
 import {SankeyProvider} from './SankeyContext';
 import {computeLayout} from './layout';
-import type {
-  SankeyNode,
-  SankeyLink,
-  SankeyColumn,
-  SankeyColumnDef,
-} from './types';
+import type {SankeyNode, SankeyLink, SankeyColumn} from './types';
 
 export interface XDSSankeyChartProps {
   /** Node definitions */

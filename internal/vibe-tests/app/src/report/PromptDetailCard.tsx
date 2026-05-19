@@ -120,9 +120,6 @@ export function PromptDetailCard({
   onViewCode,
   previewUrls,
 }: PromptDetailCardProps) {
-  const hasBoth = !!(xdsScore && baselineScore);
-  const hasAll = !!(xdsScore && baselineScore && htmlScore);
-  const hasFourWay = !!(xdsScore && baselineScore && xdsTailwindScore);
   const hasAnyPreview =
     previewUrls?.xds ||
     previewUrls?.baseline ||

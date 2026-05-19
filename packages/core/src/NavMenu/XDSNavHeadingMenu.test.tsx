@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen, within} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {XDSNavHeadingMenu} from './XDSNavHeadingMenu';
 import {XDSNavHeadingMenuItem} from './XDSNavHeadingMenuItem';
@@ -32,7 +32,7 @@ describe('XDSNavHeadingMenu', () => {
   });
 
   it('applies size class to container', () => {
-    const {container} = render(
+    render(
       <XDSNavHeadingMenu size="lg">
         <XDSNavHeadingMenuItem label="Item" />
       </XDSNavHeadingMenu>,

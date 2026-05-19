@@ -12,7 +12,6 @@ import {
   XDSSideNavHeading,
   XDSSideNavItem,
   XDSSideNavSection,
-  XDSSideNavCollapseButton,
 } from '@xds/core/SideNav';
 import {
   XDSTopNav,
@@ -34,7 +33,6 @@ import {XDSBadge} from '@xds/core/Badge';
 import {XDSButton} from '@xds/core/Button';
 import {XDSNavIcon} from '@xds/core/NavIcon';
 import {XDSBanner} from '@xds/core/Banner';
-import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSNavMenuItem} from '@xds/core/NavMenu';
 
 // =============================================================================

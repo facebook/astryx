@@ -6,7 +6,7 @@
  * @position Standalone mark; chart root calls resolve() then render()
  */
 
-import type {SeriesDef, SeriesContext, ResolvedPoint} from '../types';
+import type {SeriesDef, ResolvedPoint} from '../types';
 import type {ScaleBand} from 'd3-scale';
 
 export type ColorAccessor =

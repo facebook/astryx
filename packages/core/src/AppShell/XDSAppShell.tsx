@@ -41,7 +41,6 @@ import {XDSLayout} from '../Layout/XDSLayout';
 import {XDSLayoutHeader} from '../Layout/XDSLayoutHeader';
 import {XDSLayoutPanel} from '../Layout/XDSLayoutPanel';
 import {XDSLayoutContent} from '../Layout/XDSLayoutContent';
-import {XDSMobileNav} from '../MobileNav/XDSMobileNav';
 import {XDSMobileNavToggle} from '../MobileNav/XDSMobileNavToggle';
 import {XDSSideNavRenderContext} from '../SideNav/XDSSideNavRenderContext';
 import {XDSTopNavRenderContext} from '../TopNav/XDSTopNavRenderContext';

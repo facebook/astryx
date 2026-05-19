@@ -5,11 +5,22 @@
  * @output Line series — self-contained resolve + render
  */
 
-import {line as d3Line, curveLinear, curveMonotoneX, curveNatural, curveStep} from 'd3-shape';
-import type {SeriesDef, SeriesContext, ResolvedPoint} from '../types';
+import {
+  line as d3Line,
+  curveLinear,
+  curveMonotoneX,
+  curveNatural,
+  curveStep,
+} from 'd3-shape';
+import type {SeriesDef, ResolvedPoint} from '../types';
 import type {ScaleBand} from 'd3-scale';
 
-const CURVES = {linear: curveLinear, monotone: curveMonotoneX, natural: curveNatural, step: curveStep} as const;
+const CURVES = {
+  linear: curveLinear,
+  monotone: curveMonotoneX,
+  natural: curveNatural,
+  step: curveStep,
+} as const;
 export type CurveType = keyof typeof CURVES;
 
 export interface LineOptions {
@@ -38,7 +49,9 @@ export function line(dataKey: string, options: LineOptions = {}): SeriesDef {
         const d = data[i];
         let px: number;
         if ('bandwidth' in xScale) {
-          px = ((xScale as ScaleBand<string>)(String(d[xKey])) ?? 0) + (xScale as ScaleBand<string>).bandwidth() / 2;
+          px =
+            ((xScale as ScaleBand<string>)(String(d[xKey])) ?? 0) +
+            (xScale as ScaleBand<string>).bandwidth() / 2;
         } else {
           px = xScale(d[xKey] as number);
         }
@@ -59,10 +72,16 @@ export function line(dataKey: string, options: LineOptions = {}): SeriesDef {
       const pathD = pathGen(resolved) ?? '';
       return (
         <g>
-          <path d={pathD} fill="none" stroke={color} strokeWidth={strokeWidth} />
-          {dots && resolved.map((p, i) => (
-            <circle key={i} cx={p.px} cy={p.py} r={3} fill={color} />
-          ))}
+          <path
+            d={pathD}
+            fill="none"
+            stroke={color}
+            strokeWidth={strokeWidth}
+          />
+          {dots &&
+            resolved.map((p, i) => (
+              <circle key={i} cx={p.px} cy={p.py} r={3} fill={color} />
+            ))}
         </g>
       );
     },

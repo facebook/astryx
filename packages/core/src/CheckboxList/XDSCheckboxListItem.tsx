@@ -127,7 +127,7 @@ export function XDSCheckboxListItem({
     );
   }
 
-  const [isFocused, setIsFocused] = useState(false);
+  const [_isFocused, setIsFocused] = useState(false);
 
   // Density from list context for checkbox sizing
   const listCtx = useContext(XDSListContext);

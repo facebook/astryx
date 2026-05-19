@@ -2,8 +2,7 @@
 
 'use client';
 
-import {useState, useEffect, useCallback, useRef} from 'react';
-import * as stylex from '@stylexjs/stylex';
+import {useState, useCallback, useRef} from 'react';
 import {XDSVStack, XDSHStack} from '@xds/core/Stack';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSCard} from '@xds/core/Card';
@@ -350,7 +349,6 @@ function SoundBarsButton({
   size?: 'sm' | 'md';
 }) {
   const {isListening, bands, volume} = dictation;
-  const boosted = Math.min(Math.pow(volume / 0.1, 0.5), 1);
   const isClipping = volume >= 0.1;
 
   const hueShift = isClipping ? Math.min((volume - 0.1) / 0.1, 1) * 60 : 0;
@@ -424,18 +422,6 @@ function SoundBarsButton({
 // =============================================================================
 // Page-level styles
 // =============================================================================
-
-const pageStyles = stylex.create({
-  variantCell: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '16px',
-    cursor: 'pointer',
-    borderRadius: '8px',
-  },
-});
 
 // =============================================================================
 // Page
@@ -536,30 +522,68 @@ export default function DictationLabPage() {
           {/* Debug: Raw vs Calibrated bands */}
           {dictation.isListening && (
             <XDSVStack gap={1}>
-              <XDSText type="supporting" weight="semibold">Band Debug (raw vs calibrated)</XDSText>
-              <div style={{display: 'flex', gap: 8, fontFamily: 'monospace', fontSize: 11}}>
-                {['170-340', '340-860', '860-1.7k', '1.7-3k', '3k+'].map((label, i) => {
-                  const raw = dictation.rawBands[i] ?? 0;
-                  const clean = dictation.bands[i] ?? 0;
-                  const barH = 40;
-                  return (
-                    <div key={label} style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, flex: 1}}>
-                      <div style={{display: 'flex', gap: 2, alignItems: 'flex-end', height: barH}}>
-                        <div style={{
-                          width: 8, backgroundColor: 'rgba(200,200,200,0.5)',
-                          height: Math.min(raw * barH * 5, barH), borderRadius: 2,
-                        }} />
-                        <div style={{
-                          width: 8, backgroundColor: 'var(--color-accent, hsl(210, 80%, 50%))',
-                          height: Math.min(clean * barH * 5, barH), borderRadius: 2,
-                        }} />
+              <XDSText type="supporting" weight="semibold">
+                Band Debug (raw vs calibrated)
+              </XDSText>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 8,
+                  fontFamily: 'monospace',
+                  fontSize: 11,
+                }}>
+                {['170-340', '340-860', '860-1.7k', '1.7-3k', '3k+'].map(
+                  (label, i) => {
+                    const raw = dictation.rawBands[i] ?? 0;
+                    const clean = dictation.bands[i] ?? 0;
+                    const barH = 40;
+                    return (
+                      <div
+                        key={label}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: 2,
+                          flex: 1,
+                        }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            gap: 2,
+                            alignItems: 'flex-end',
+                            height: barH,
+                          }}>
+                          <div
+                            style={{
+                              width: 8,
+                              backgroundColor: 'rgba(200,200,200,0.5)',
+                              height: Math.min(raw * barH * 5, barH),
+                              borderRadius: 2,
+                            }}
+                          />
+                          <div
+                            style={{
+                              width: 8,
+                              backgroundColor:
+                                'var(--color-accent, hsl(210, 80%, 50%))',
+                              height: Math.min(clean * barH * 5, barH),
+                              borderRadius: 2,
+                            }}
+                          />
+                        </div>
+                        <span style={{opacity: 0.5, fontSize: 9}}>{label}</span>
+                        <span style={{opacity: 0.4}}>r:{raw.toFixed(3)}</span>
+                        <span
+                          style={{
+                            color: 'var(--color-accent, hsl(210, 80%, 50%))',
+                          }}>
+                          c:{clean.toFixed(3)}
+                        </span>
                       </div>
-                      <span style={{opacity: 0.5, fontSize: 9}}>{label}</span>
-                      <span style={{opacity: 0.4}}>r:{raw.toFixed(3)}</span>
-                      <span style={{color: 'var(--color-accent, hsl(210, 80%, 50%))'}}>c:{clean.toFixed(3)}</span>
-                    </div>
-                  );
-                })}
+                    );
+                  },
+                )}
               </div>
               <XDSText type="supporting" color="disabled">
                 Gray = raw mic input, Blue = after noise floor subtraction

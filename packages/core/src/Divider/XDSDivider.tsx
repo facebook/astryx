@@ -15,7 +15,7 @@
  * - /packages/cli/templates/blocks/components/Divider/ (showcase blocks)
  */
 
-import {type HTMLAttributes, type ReactNode} from 'react';
+import {type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';

@@ -16,7 +16,6 @@ import {ShowcasePreview} from './ShowcasePreview';
 import {BestPractices} from './BestPractices';
 import {HookSignature} from './HookSignature';
 import {ExampleBlock} from './ExampleBlock';
-import {PropsTable} from './PropsTable';
 import {
   InteractivePreviewStage,
   useInteractiveState,

@@ -89,7 +89,7 @@ export function XDS3DBar({
   return (
     <g>
       {bars.map(b => {
-        const face = (pts: {px: number; py: number}[], shade: number) =>
+        const face = (pts: {px: number; py: number}[], _shade: number) =>
           pts.map(p => `${p.px},${p.py}`).join(' ');
 
         // Front face

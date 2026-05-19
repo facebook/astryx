@@ -6,11 +6,9 @@ import {
   colorVars,
   radiusVars,
   spacingVars,
-  typographyVars,
 } from '@xds/core/theme/tokens.stylex';
 import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
 import {XDSLayout, XDSLayoutContent, XDSLayoutPanel} from '@xds/core/Layout';
-import {XDSText, XDSHeading} from '@xds/core/Text';
 
 const s = stylex.create({
   shell: {

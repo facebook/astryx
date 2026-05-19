@@ -151,8 +151,6 @@ function cleanupRanges(ranges: RangeEntry[]): void {
 // Chunked application with lazy content-visibility support
 // ---------------------------------------------------------------------------
 
-const LINE_CHUNK_SIZE = 50;
-
 /**
  * Apply ranges for all [data-line] divs inside a container element.
  * Returns the RangeEntry[] so the caller can clean them up later.

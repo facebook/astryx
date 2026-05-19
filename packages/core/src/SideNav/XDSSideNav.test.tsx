@@ -438,7 +438,7 @@ describe('XDSSideNavHeading headerEndContent', () => {
 
 describe('XDSSideNavHeading truncation tooltips', () => {
   it('attaches truncation refs to heading text spans', () => {
-    const {container} = render(
+    render(
       <XDSSideNavHeading
         heading="My App"
         superheading="Acme Corp"

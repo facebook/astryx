@@ -15,7 +15,7 @@ import {
   useCallback,
   type MutableRefObject,
 } from 'react';
-import type {SeriesDef, ResolvedPoint} from '../types';
+import type {SeriesDef} from '../types';
 import {useChartV2} from '../ChartV2Context';
 import {
   hexToGL,

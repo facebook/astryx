@@ -230,7 +230,7 @@ export function XDSToggleButton({
   tooltip,
   value,
   xstyle,
-  className,
+  className: _className,
   style,
   ...props
 }: XDSToggleButtonProps): ReactNode {

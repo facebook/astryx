@@ -78,7 +78,7 @@ function StringEditor({
   operatorValue,
   filterValue,
   onChange,
-  onEnter,
+  onEnter: _onEnter,
 }: {
   operatorValue: OperatorValue & {type: 'string'};
   filterValue: FilterValue | undefined;

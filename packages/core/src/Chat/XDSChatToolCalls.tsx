@@ -461,7 +461,7 @@ function CallRow({call}: {call: XDSChatToolCallItem}) {
 export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
   const {
     calls,
-    label: customLabel,
+    label: _customLabel,
     isExpanded: controlledExpanded,
     defaultIsExpanded,
     onExpandedChange,
@@ -471,11 +471,6 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
     ...rest
   } = props;
 
-  const hasErrors = calls.some(c => c.status === 'error');
-  const errorCount = calls.filter(c => c.status === 'error').length;
-  const isStreaming = calls.some(
-    c => c.status === 'running' || c.status === 'pending',
-  );
   const autoDefault = defaultIsExpanded ?? false;
   const [internalExpanded, setInternalExpanded] = useState(autoDefault);
   const isControlled = controlledExpanded !== undefined;

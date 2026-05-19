@@ -18,7 +18,7 @@ import {
   beforeEach,
   afterEach,
 } from 'vitest';
-import {render, screen, fireEvent, act} from '@testing-library/react';
+import {render, screen, fireEvent} from '@testing-library/react';
 import {XDSAppShell} from './XDSAppShell';
 import {XDSMobileNav} from '../MobileNav';
 import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '../SideNav';

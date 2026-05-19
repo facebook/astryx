@@ -172,7 +172,7 @@ describe('XDSSection', () => {
   });
 
   it('renders nested sections with explicit inner padding override', () => {
-    const {container} = render(
+    render(
       <XDSSection padding={6}>
         <XDSSection padding={2} data-testid="inner">
           Inner

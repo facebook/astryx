@@ -19,7 +19,7 @@
 import {type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, spacingVars} from '../theme/tokens.stylex';
+import {spacingVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSTopNavSlotContext} from './TopNavContext';
 import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';

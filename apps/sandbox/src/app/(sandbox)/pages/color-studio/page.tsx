@@ -17,13 +17,9 @@ import {
 } from '@xds/core/SegmentedControl';
 
 import {
-  hexToHct,
   hexToOklch,
   oklchClampedHex,
   hctToHex,
-  tonalPalette,
-  oklchTonalPalette,
-  TONE_STEPS,
   toneToOklabL,
   DEFAULT_OKLCH_CHROMA,
   DEFAULT_OKLCH_HUE,
@@ -146,7 +142,6 @@ const S = {
 // =============================================================================
 // Multi-color presets
 // =============================================================================
-
 
 // =============================================================================
 // Palette Color Entry
@@ -275,7 +270,9 @@ interface CustomChannel {
 
 function generateToneSteps(count: number): number[] {
   if (count <= 1) return [50];
-  return Array.from({length: count}, (_, i) => Math.round((i / (count - 1)) * 100));
+  return Array.from({length: count}, (_, i) =>
+    Math.round((i / (count - 1)) * 100),
+  );
 }
 
 function TonalRamps({
@@ -299,8 +296,6 @@ function TonalRamps({
     return map;
   }, [palette]);
 
-  const unassigned = palette.filter(pc => !pc.role);
-
   return (
     <div style={{marginBottom: 24}}>
       <h2
@@ -321,7 +316,15 @@ function TonalRamps({
         <span style={S.tonalLabel} />
         <div style={S.tonalStrip}>
           {toneSteps.map(t => (
-            <div key={t} style={{flex: 1, textAlign: 'center' as const, fontSize: 8, fontFamily: MONO, color: '#aaa'}}>
+            <div
+              key={t}
+              style={{
+                flex: 1,
+                textAlign: 'center' as const,
+                fontSize: 8,
+                fontFamily: MONO,
+                color: '#aaa',
+              }}>
               {t}
             </div>
           ))}
@@ -336,12 +339,21 @@ function TonalRamps({
         if (ch.role === 'gray') {
           hue = assigned
             ? hexToOklch(assigned.hex).H
-            : grayTone === 'warm' ? 60 : grayTone === 'cool' ? 260 : 0;
-          chroma = (assigned
-            ? Math.min(hexToOklch(assigned.hex).C, 0.02)
-            : grayTone === 'neutral' ? 0.003 : 0.012) * vibrancy;
+            : grayTone === 'warm'
+              ? 60
+              : grayTone === 'cool'
+                ? 260
+                : 0;
+          chroma =
+            (assigned
+              ? Math.min(hexToOklch(assigned.hex).C, 0.02)
+              : grayTone === 'neutral'
+                ? 0.003
+                : 0.012) * vibrancy;
         } else {
-          const oklch = assigned ? hexToOklch(assigned.hex) : {C: ch.oklchChroma, H: ch.oklchHue};
+          const oklch = assigned
+            ? hexToOklch(assigned.hex)
+            : {C: ch.oklchChroma, H: ch.oklchHue};
           hue = oklch.H;
           chroma = oklch.C * vibrancy;
         }
@@ -349,13 +361,27 @@ function TonalRamps({
         return (
           <div key={ch.role} style={S.tonalRow}>
             <span
-              style={{...S.tonalLabel, color: assigned ? '#4f46e5' : '#888', fontWeight: assigned ? 600 : 400}}
-              title={assigned ? `${ch.name} ← ${assigned.name}` : `${ch.name} (default)`}>
+              style={{
+                ...S.tonalLabel,
+                color: assigned ? '#4f46e5' : '#888',
+                fontWeight: assigned ? 600 : 400,
+              }}
+              title={
+                assigned
+                  ? `${ch.name} ← ${assigned.name}`
+                  : `${ch.name} (default)`
+              }>
               {ch.name}
             </span>
             <div style={S.tonalStrip}>
               {toneSteps.map(t => (
-                <div key={t} style={S.tonalCell(oklchClampedHex(toneToOklabL(t), chroma, hue))} title={`${ch.name} T${t}`} />
+                <div
+                  key={t}
+                  style={S.tonalCell(
+                    oklchClampedHex(toneToOklabL(t), chroma, hue),
+                  )}
+                  title={`${ch.name} T${t}`}
+                />
               ))}
             </div>
             <span style={S.tonalHct}>H:{hue.toFixed(0)}</span>
@@ -367,10 +393,18 @@ function TonalRamps({
         const chroma = oklch.C * vibrancy;
         return (
           <div key={cc.id} style={S.tonalRow}>
-            <span style={{...S.tonalLabel, color: '#4f46e5', fontWeight: 600}}>{cc.name}</span>
+            <span style={{...S.tonalLabel, color: '#4f46e5', fontWeight: 600}}>
+              {cc.name}
+            </span>
             <div style={S.tonalStrip}>
               {toneSteps.map(t => (
-                <div key={t} style={S.tonalCell(oklchClampedHex(toneToOklabL(t), chroma, oklch.H))} title={`${cc.name} T${t}`} />
+                <div
+                  key={t}
+                  style={S.tonalCell(
+                    oklchClampedHex(toneToOklabL(t), chroma, oklch.H),
+                  )}
+                  title={`${cc.name} T${t}`}
+                />
               ))}
             </div>
             <span style={S.tonalHct}>H:{oklch.H.toFixed(0)}</span>
@@ -488,7 +522,6 @@ export default function ColorStudioPage() {
     setPalette(prev => [...prev, makePaletteColor('Color ' + _nextId, hex)]);
   }, []);
 
-
   return (
     <div style={S.page}>
       {/* ═══ Sidebar ═══ */}
@@ -502,8 +535,12 @@ export default function ColorStudioPage() {
           <div style={S.sidebarScroll}>
             <XDSVStack gap={5}>
               {/* Controls */}
-              <XDSHStack vAlign="center" style={{justifyContent: 'space-between'}}>
-                <XDSText type="supporting" color="secondary">Steps</XDSText>
+              <XDSHStack
+                vAlign="center"
+                style={{justifyContent: 'space-between'}}>
+                <XDSText type="supporting" color="secondary">
+                  Steps
+                </XDSText>
                 <XDSNumberInput
                   label="Steps"
                   isLabelHidden
@@ -516,8 +553,16 @@ export default function ColorStudioPage() {
                 />
               </XDSHStack>
 
-              <XDSHStack vAlign="center" gap={3} style={{justifyContent: 'space-between'}}>
-                <XDSText type="supporting" color="secondary" style={{flexShrink: 0}}>Vibrancy</XDSText>
+              <XDSHStack
+                vAlign="center"
+                gap={3}
+                style={{justifyContent: 'space-between'}}>
+                <XDSText
+                  type="supporting"
+                  color="secondary"
+                  style={{flexShrink: 0}}>
+                  Vibrancy
+                </XDSText>
                 <div style={{flex: 1}}>
                   <XDSSlider
                     label="Vibrancy"
@@ -532,8 +577,12 @@ export default function ColorStudioPage() {
                 </div>
               </XDSHStack>
 
-              <XDSHStack vAlign="center" style={{justifyContent: 'space-between'}}>
-                <XDSText type="supporting" color="secondary">Gray</XDSText>
+              <XDSHStack
+                vAlign="center"
+                style={{justifyContent: 'space-between'}}>
+                <XDSText type="supporting" color="secondary">
+                  Gray
+                </XDSText>
                 <XDSSegmentedControl
                   label="Gray tone"
                   value={grayTone}
@@ -547,8 +596,12 @@ export default function ColorStudioPage() {
 
               {/* Color Set — colors with role assignments */}
               <XDSVStack gap={2}>
-                <XDSHStack vAlign="center" style={{justifyContent: 'space-between'}}>
-                  <XDSText type="label" weight="semibold">Brand Colors</XDSText>
+                <XDSHStack
+                  vAlign="center"
+                  style={{justifyContent: 'space-between'}}>
+                  <XDSText type="label" weight="semibold">
+                    Brand Colors
+                  </XDSText>
                   <XDSIconButton
                     label="Add color"
                     variant="ghost"
@@ -571,8 +624,12 @@ export default function ColorStudioPage() {
 
               {/* Custom Colors — extra ramps without roles */}
               <XDSVStack gap={2}>
-                <XDSHStack vAlign="center" style={{justifyContent: 'space-between'}}>
-                  <XDSText type="label" weight="semibold">Color Sets</XDSText>
+                <XDSHStack
+                  vAlign="center"
+                  style={{justifyContent: 'space-between'}}>
+                  <XDSText type="label" weight="semibold">
+                    Color Sets
+                  </XDSText>
                   <XDSIconButton
                     label="Add custom color"
                     variant="ghost"
@@ -580,21 +637,36 @@ export default function ColorStudioPage() {
                     onClick={() => {
                       const h = Math.random() * 360;
                       const hex = oklchClampedHex(0.5, 0.12, h);
-                      setCustomChannels(prev => [...prev, {id: nextId(), name: `Custom ${prev.length + 1}`, hex}]);
+                      setCustomChannels(prev => [
+                        ...prev,
+                        {id: nextId(), name: `Custom ${prev.length + 1}`, hex},
+                      ]);
                     }}
                     icon={<span style={{fontSize: 16, lineHeight: 1}}>+</span>}
                   />
                 </XDSHStack>
                 {customChannels.length === 0 && (
-                  <XDSText type="supporting" color="secondary">Add colors to generate extra ramps</XDSText>
+                  <XDSText type="supporting" color="secondary">
+                    Add colors to generate extra ramps
+                  </XDSText>
                 )}
                 {customChannels.map(cc => (
-                  <XDSHStack key={cc.id} gap={2} vAlign="center" style={{padding: '4px 0'}}>
+                  <XDSHStack
+                    key={cc.id}
+                    gap={2}
+                    vAlign="center"
+                    style={{padding: '4px 0'}}>
                     <div style={S.swatch(cc.hex)}>
                       <input
                         type="color"
                         value={cc.hex}
-                        onChange={e => setCustomChannels(prev => prev.map(c => c.id === cc.id ? {...c, hex: e.target.value} : c))}
+                        onChange={e =>
+                          setCustomChannels(prev =>
+                            prev.map(c =>
+                              c.id === cc.id ? {...c, hex: e.target.value} : c,
+                            ),
+                          )
+                        }
                         style={S.colorInput}
                       />
                     </div>
@@ -603,7 +675,13 @@ export default function ColorStudioPage() {
                         label="Name"
                         isLabelHidden
                         value={cc.name}
-                        onChange={v => setCustomChannels(prev => prev.map(c => c.id === cc.id ? {...c, name: v} : c))}
+                        onChange={v =>
+                          setCustomChannels(prev =>
+                            prev.map(c =>
+                              c.id === cc.id ? {...c, name: v} : c,
+                            ),
+                          )
+                        }
                         size="sm"
                       />
                     </div>
@@ -611,13 +689,18 @@ export default function ColorStudioPage() {
                       label="Remove"
                       variant="ghost"
                       size="sm"
-                      onClick={() => setCustomChannels(prev => prev.filter(c => c.id !== cc.id))}
-                      icon={<span style={{fontSize: 14, lineHeight: 1}}>✕</span>}
+                      onClick={() =>
+                        setCustomChannels(prev =>
+                          prev.filter(c => c.id !== cc.id),
+                        )
+                      }
+                      icon={
+                        <span style={{fontSize: 14, lineHeight: 1}}>✕</span>
+                      }
                     />
                   </XDSHStack>
                 ))}
               </XDSVStack>
-
             </XDSVStack>
           </div>
         </div>
@@ -632,7 +715,6 @@ export default function ColorStudioPage() {
           customChannels={customChannels}
           toneSteps={toneSteps}
         />
-
       </main>
     </div>
   );

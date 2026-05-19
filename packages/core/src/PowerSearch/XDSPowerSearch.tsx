@@ -50,8 +50,6 @@ import {PowerSearchEditPopover} from './PowerSearchEditPopover';
 import type {
   PowerSearchConfig,
   PowerSearchFilter,
-  PowerSearchField,
-  PowerSearchOperator,
   PartialFilter,
   PowerSearchItem,
   PowerSearchAuxData,
@@ -784,7 +782,16 @@ export function XDSPowerSearch({
         />
       );
     },
-    [filters, config, configProp, maxTokenLength, isReadOnly, isDisabled, handleTokenClick, componentOverrides],
+    [
+      filters,
+      config,
+      configProp,
+      maxTokenLength,
+      isReadOnly,
+      isDisabled,
+      handleTokenClick,
+      componentOverrides,
+    ],
   );
 
   // Custom typeahead item renderer — adds field icon and description

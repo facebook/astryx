@@ -17,12 +17,7 @@
 
 import React, {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {
-  useXDSLayer,
-  type ContextRenderProps,
-  type LayerPlacement,
-  type LayerAlignment,
-} from '../Layer/useXDSLayer';
+import {useXDSLayer, type ContextRenderProps} from '../Layer/useXDSLayer';
 import {useFocusTrap} from '../hooks/useFocusTrap';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {

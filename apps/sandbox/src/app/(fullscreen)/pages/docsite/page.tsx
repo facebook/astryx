@@ -15,8 +15,6 @@ import {useSearchParams} from 'next/navigation';
 
 import {
   TEMPLATES,
-  AVATAR_IMAGE,
-  XDS_DESIGN_AVATAR,
   FILTER_COLUMNS,
   PROFILE_CRAFT_ITEMS,
   THEME_PICKER_ENTRIES,
@@ -31,14 +29,12 @@ import {ChatPanel} from './ChatPanel';
 import type {PanelTab, PointedElement} from './ChatPanel';
 import {InlinePublishPanel} from './InlinePublishPanel';
 import {TemplatePreview} from './TemplatePreview';
-import {SharePopoverContent} from './SharePopover';
 import {TemplatePreviewModal} from './TemplatePreviewModal';
 import {AppTopNav} from './AppTopNav';
 import {DocsView} from './DocsView';
 import {ThemeEditorView} from './ThemeEditorView';
 import {ProfileView} from './ProfileView';
 import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSAvatar} from '@xds/core/Avatar';
 import {XDSStack} from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
@@ -927,39 +923,6 @@ function DocsiteLandingTemplate() {
   const handleClearFilters = useCallback(() => {
     setActiveFilters(new Set());
   }, []);
-
-  const handleProfileAction = useCallback(
-    (action: 'craft' | 'bookmarked' | 'used' | 'settings') => {
-      if (action === 'settings') {
-        setIsSettingsOpen(true);
-      } else if (action === 'craft') {
-        setPreviewTarget(null);
-        setCraftTitle('My Craft');
-        setIsCraftResults(true);
-        setIsProfileResults(true);
-        setCraftStatusFilter('all');
-        setCraftLoading(true);
-        if (craftLoadingTimer.current) clearTimeout(craftLoadingTimer.current);
-        craftLoadingTimer.current = setTimeout(() => {
-          setCraftLoading(false);
-          craftLoadingTimer.current = null;
-        }, 900);
-      } else {
-        const label = action === 'bookmarked' ? 'Bookmarked' : 'Used';
-        setPreviewTarget(null);
-        setCraftTitle(label);
-        setIsProfileResults(true);
-        setIsCraftResults(false);
-        setCraftLoading(true);
-        if (craftLoadingTimer.current) clearTimeout(craftLoadingTimer.current);
-        craftLoadingTimer.current = setTimeout(() => {
-          setCraftLoading(false);
-          craftLoadingTimer.current = null;
-        }, 900);
-      }
-    },
-    [],
-  );
 
   const filteredTemplates = useMemo(() => {
     return TEMPLATES.map((t, i) => ({...t, originalIndex: i})).filter(t => {

@@ -31,12 +31,6 @@ import {xdsClassName, mergeProps} from '../utils';
 const DELAY_TIME = 1000;
 
 /**
- * Duration of one fade cycle (ms).
- * Controls how quickly the skeleton pulses between opacity values.
- */
-const FADE_TIME = 1000;
-
-/**
  * Stagger increment between sequential skeleton elements (ms).
  * Creates a wave effect when multiple skeletons are used together.
  */

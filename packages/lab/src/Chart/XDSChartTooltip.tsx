@@ -159,7 +159,7 @@ export function XDSChartTooltip({
 
         // For each y key, compute distance to that point
         let bestDistForDatum = Infinity;
-        let bestYKey = yKeys[0];
+        let _bestYKey = yKeys[0];
 
         for (const yk of yKeys) {
           const yv = datum[yk];
@@ -169,7 +169,7 @@ export function XDSChartTooltip({
           const dist = dx * dx + dy * dy; // squared euclidean
           if (dist < bestDistForDatum) {
             bestDistForDatum = dist;
-            bestYKey = yk;
+            _bestYKey = yk;
           }
         }
 

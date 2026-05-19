@@ -39,7 +39,6 @@ describe('XDSChatLayout', () => {
     // The dock (parent of the composer's wrapper) should have position: fixed
     const dock = composer.parentElement?.parentElement;
     expect(dock).toBeTruthy();
-    const dockStyle = window.getComputedStyle(dock!);
     // StyleX applies classes, so check the element exists in the DOM structure
     expect(dock?.tagName).toBe('DIV');
   });
@@ -69,9 +68,7 @@ describe('XDSChatLayout', () => {
 
   it('has container-type on root', () => {
     render(
-      <XDSChatLayout
-        composer={<div>composer</div>}
-        data-testid="layout-root">
+      <XDSChatLayout composer={<div>composer</div>} data-testid="layout-root">
         <div>msg</div>
       </XDSChatLayout>,
     );
@@ -82,9 +79,7 @@ describe('XDSChatLayout', () => {
 
   it('applies data-testid', () => {
     render(
-      <XDSChatLayout
-        composer={<div>composer</div>}
-        data-testid="my-layout">
+      <XDSChatLayout composer={<div>composer</div>} data-testid="my-layout">
         <div>msg</div>
       </XDSChatLayout>,
     );

@@ -5,7 +5,7 @@
 import {useState} from 'react';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
-import {XDSVStack, XDSHStack, XDSStackItem} from '@xds/core/Layout';
+import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSText, XDSHeading} from '@xds/core/Text';

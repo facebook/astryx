@@ -147,7 +147,7 @@ function resolveFilterConfig(
  * const filteredData = applyFilters(searchFilters, data);
  * ```
  */
-export function toSearchFilters<T extends Record<string, unknown>>(
+export function toSearchFilters<_T extends Record<string, unknown>>(
   filters: XDSTableFilterState,
   columns: ReadonlyArray<{
     key: string;

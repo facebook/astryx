@@ -16,10 +16,7 @@ import {
   typeScaleVars,
   colorVars,
 } from '../theme/tokens.stylex';
-import type {
-  XDSDropdownMenuOption,
-  XDSDropdownMenuItemData,
-} from './XDSDropdownMenu';
+import type {XDSDropdownMenuOption} from './XDSDropdownMenu';
 
 const styles = stylex.create({
   sectionHeading: {

@@ -3,7 +3,6 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSStatusDot} from '@xds/core/StatusDot';

@@ -10,7 +10,7 @@
  * the initial domains captured on mount.
  */
 
-import {useCallback, useRef, useState, useEffect} from 'react';
+import {useCallback, useRef, useEffect} from 'react';
 import {createPortal} from 'react-dom';
 import {XDSIconButton} from '@xds/core/IconButton';
 import {useChart} from './ChartContext';

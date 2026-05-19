@@ -13,13 +13,7 @@ import {Command} from 'commander';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import type {Iteration} from './types.js';
-import {
-  loadTestSet,
-  readJsonl,
-  readJson,
-  getResultsDir,
-} from './utils.js';
-import type {TestResult} from './types.js';
+import {readJson} from './utils.js';
 
 const program = new Command();
 

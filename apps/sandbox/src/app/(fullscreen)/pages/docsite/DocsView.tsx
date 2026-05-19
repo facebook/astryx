@@ -12,7 +12,6 @@ import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {XDSStack} from '@xds/core/Layout';
 import {XDSCard} from '@xds/core/Card';
-import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSNavMenuItem} from '@xds/core/NavMenu';
 import {XDSTable, pixel} from '@xds/core/Table';
@@ -23,21 +22,18 @@ import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {XDSCommandPalette} from '@xds/core/CommandPalette';
 import {
   ExternalLinkIcon,
-  ContrastIcon,
   FullscreenIcon,
   SearchIcon,
   ProfileIcon,
   PaletteIcon,
   GridIcon,
   CodeIcon,
-  UploadIcon,
   SparklesIcon,
   HeartIcon,
   TerminalIcon,
   ChatIcon,
   ChartsIcon,
   DownloadIcon,
-  SendIcon,
   ChevronDownIcon,
 } from './docsite-icons';
 import {XDSBadge} from '@xds/core/Badge';
@@ -65,11 +61,9 @@ import {
   CLI_VERSION,
   type CliCommand,
 } from '@/generated/cliRegistry';
-import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
-
 import {XDSPopover} from '@xds/core/Popover';
 import {XDSGrid} from '@xds/core/Grid';
-import {XDSTheme, expandTypeScale, defineTheme} from '@xds/core/theme';
+import {XDSTheme, defineTheme} from '@xds/core/theme';
 import type {XDSDefinedTheme} from '@xds/core/theme';
 import {defaultTheme} from '@xds/theme-default/built';
 import {neutralTheme} from '@xds/theme-neutral/built';
@@ -84,7 +78,6 @@ import {SEARCH_COMMANDS, basePath} from './constants';
 import {
   COMPONENT_CATEGORIES,
   getComponentName,
-  getComponentDocs,
   getComponentDesc,
 } from './docsview-data';
 
@@ -3149,57 +3142,6 @@ const VEGA_COMPONENTS: {
   },
 ];
 
-const CHAT_COMPONENTS: {
-  label: string;
-  items: {key: string; name: string; desc: string}[];
-}[] = [
-  {
-    label: 'Messaging',
-    items: [
-      {
-        key: 'chat',
-        name: 'Chat',
-        desc: 'Conversational message interface with bubbles, input, and thread support.',
-      },
-      {
-        key: 'chat-composer',
-        name: 'ChatComposer',
-        desc: 'Rich text composer with attachments, mentions, and slash commands.',
-      },
-      {
-        key: 'chat-composer-input',
-        name: 'ChatComposerInput',
-        desc: 'Controlled input for the chat composer with mention triggers.',
-      },
-      {
-        key: 'chat-layout',
-        name: 'ChatLayout',
-        desc: 'Full chat page layout with message list, composer, and empty state.',
-      },
-    ],
-  },
-  {
-    label: 'Content',
-    items: [
-      {
-        key: 'chat-tokenized-text',
-        name: 'ChatTokenizedText',
-        desc: 'Renders text with inline tokens like @mentions and #tags.',
-      },
-      {
-        key: 'chat-tool-calls',
-        name: 'ChatToolCalls',
-        desc: 'Displays AI tool call results with status and expandable details.',
-      },
-      {
-        key: 'chat-dictation',
-        name: 'ChatDictation',
-        desc: 'Voice dictation input with recording states and waveform.',
-      },
-    ],
-  },
-];
-
 function PackageGridPage({
   packageKey,
   components,
@@ -4663,7 +4605,6 @@ function LibraryOverview({
               cli: TerminalIcon,
             };
             const IconComp = ICON_MAP[pkg.iconType];
-            const isDesign = pkg.category === 'designing';
             return (
               <div
                 key={pkg.key}
@@ -4904,7 +4845,6 @@ function ComponentDetailPage({
   onCraft: () => void;
 }) {
   const [exampleTabs, setExampleTabs] = useState<Record<string, string>>({});
-  const docs = useMemo(() => getComponentDocs(activeNav), [activeNav]);
   const componentName = getComponentName(activeNav);
   const desc = getComponentDesc(activeNav);
 

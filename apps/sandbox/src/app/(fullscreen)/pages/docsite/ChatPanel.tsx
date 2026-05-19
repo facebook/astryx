@@ -11,14 +11,11 @@ import {
   XDSChatMessage,
   XDSChatMessageBubble,
 } from '@xds/core/Chat';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSEmptyState} from '@xds/core/EmptyState';
-import {XDSMetadataList, XDSMetadataListItem} from '@xds/core/MetadataList';
 import {XDSText} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
-import {ArrowLeftIcon, CursorIcon, SparklesIcon} from './docsite-icons';
-import {ShimmerText} from './ShimmerText';
+import {ArrowLeftIcon, CursorIcon} from './docsite-icons';
 import {MOCK_CODE} from './constants';
 
 const composerStyles = stylex.create({

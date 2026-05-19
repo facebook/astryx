@@ -15,13 +15,7 @@
  * - /packages/cli/templates/blocks/components/TopNav/ (showcase blocks)
  */
 
-import {
-  useCallback,
-  useId,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import {useCallback, useId, useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useXDSPopover} from '../Popover/useXDSPopover';
 import {useXDSMenuHover} from '../hooks/useXDSMenuHover';
@@ -361,7 +355,7 @@ export function XDSTopNavMenu({
               <LinkComponent
                 key={i}
                 href={item.href}
-                onClick={(e: React.MouseEvent) => {
+                onClick={(_e: React.MouseEvent) => {
                   item.onClick?.();
                   closeMobileNav();
                 }}

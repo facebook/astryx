@@ -10,7 +10,7 @@ import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSNumberInput} from '@xds/core/NumberInput';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSCard} from '@xds/core/Card';
-import {XDSHStack, XDSVStack, XDSStack} from '@xds/core/Stack';
+import {XDSHStack, XDSVStack} from '@xds/core/Stack';
 import {
   XDSLayout,
   XDSLayoutHeader,
@@ -39,7 +39,6 @@ import {XDSPopover} from '@xds/core/Popover';
 import {XDSHoverCard} from '@xds/core/HoverCard';
 import {XDSTooltip} from '@xds/core/Tooltip';
 import {XDSSpinner} from '@xds/core/Spinner';
-import {XDSMarkdown} from '@xds/core/Markdown';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {
   XDSSegmentedControl,
@@ -97,7 +96,6 @@ import {
   ChartBarIcon,
   UserGroupIcon,
   DocumentTextIcon,
-  PhotoIcon,
   SwatchIcon,
   Square3Stack3DIcon,
   StopIcon,
@@ -310,8 +308,6 @@ const COMPONENT_VAR_TO_OVERRIDE: Record<
   },
   '--composer-padding': {component: 'chat-composer', cssProperty: 'padding'},
 };
-
-const COMPONENT_VAR_NAMES = new Set(Object.keys(COMPONENT_VAR_TO_OVERRIDE));
 
 const COMPONENT_VARS: Record<string, {label: string; vars: ComponentVar[]}> = {
   button: {
@@ -712,10 +708,6 @@ const TYPOGRAPHY_CATEGORIES = {
   ],
 } as const;
 
-type TypographyCategoryValue =
-  | string[]
-  | {description: string; tokens: string[]};
-
 // =============================================================================
 // Helper Functions
 // =============================================================================
@@ -811,12 +803,6 @@ function ColorSwatch({
         : `light-dark(${parsed.light}, ${newColor})`
       : newColor;
     onChange(tokenName, newValue);
-  };
-
-  const handleAlphaChange = (newAlpha: number) => {
-    if (colorParsed) {
-      handleColorChange(colorParsed.hex, newAlpha);
-    }
   };
 
   return (
@@ -1083,18 +1069,6 @@ function TypographyEditor({
 // =============================================================================
 // Preview Components
 // =============================================================================
-
-interface SpacingRow extends Record<string, unknown> {
-  token: string;
-  value: string;
-  preview: React.ReactNode;
-}
-
-const spacingTableColumns: XDSTableColumn<SpacingRow>[] = [
-  {key: 'token', header: 'Token'},
-  {key: 'value', header: 'Value'},
-  {key: 'preview', header: 'Preview'},
-];
 
 const ROW: React.CSSProperties = {
   display: 'flex',
@@ -1367,9 +1341,7 @@ function ComponentPreview() {
                       Your latest account activity.
                     </XDSText>
                   </XDSVStack>
-                  <XDSLink href="#">
-                    View All
-                  </XDSLink>
+                  <XDSLink href="#">View All</XDSLink>
                 </div>
               </XDSLayoutHeader>
             }
@@ -1494,9 +1466,7 @@ function ComponentPreview() {
                   Payment Due
                 </XDSText>
                 <XDSHeading level={3}>1 Apr</XDSHeading>
-                <XDSLink href="#">
-                  Pay Early
-                </XDSLink>
+                <XDSLink href="#">Pay Early</XDSLink>
               </XDSVStack>
             </div>
             <XDSText type="supporting" color="secondary">
@@ -2569,234 +2539,6 @@ function PopoverSettingsContent() {
   );
 }
 
-function MicroInteractionsPreview() {
-  const [switch1, setSwitch1] = React.useState(false);
-  const [switch2, setSwitch2] = React.useState(true);
-  const [check1, setCheck1] = React.useState(false);
-  const [check2, setCheck2] = React.useState(true);
-  const [sliderValue, setSliderValue] = React.useState(50);
-  const [selectorValue, setSelectorValue] = React.useState('Apple');
-
-  return (
-    <XDSCard>
-      <XDSVStack gap={4}>
-        <XDSText type="label" display="block">
-          Micro-Interactions
-        </XDSText>
-        <div>
-          <XDSText type="supporting" color="secondary" display="block">
-            Buttons — hover, press, focus
-          </XDSText>
-          <XDSHStack gap={2} style={{marginTop: 8}}>
-            <XDSButton label="Primary" variant="primary" onClick={() => {}} />
-            <XDSButton
-              label="Secondary"
-              variant="secondary"
-              onClick={() => {}}
-            />
-            <XDSButton label="Ghost" variant="ghost" onClick={() => {}} />
-            <XDSDropdownMenu
-              button={{label: 'Dropdown', variant: 'secondary'}}
-              items={[
-                {label: 'Edit', onClick: () => {}},
-                {label: 'Duplicate', onClick: () => {}},
-                {type: 'divider' as const},
-                {label: 'Delete', onClick: () => {}},
-              ]}
-            />
-          </XDSHStack>
-        </div>
-        <XDSDivider variant="strong" />
-        <div>
-          <XDSText type="supporting" color="secondary" display="block">
-            Popover / HoverCard / Tooltip
-          </XDSText>
-          <XDSHStack
-            gap={2}
-            vAlign="center"
-            style={{marginTop: 8, flexWrap: 'wrap'}}>
-            <XDSPopover content={<PopoverSettingsContent />} placement="below">
-              <XDSButton label="Popover" variant="secondary" size="sm" />
-            </XDSPopover>
-            <XDSHoverCard
-              content={
-                <div style={{padding: 12, maxWidth: 240}}>
-                  <XDSText
-                    type="label"
-                    display="block"
-                    style={{marginBottom: 4}}>
-                    HoverCard
-                  </XDSText>
-                  <XDSText type="supporting" color="secondary">
-                    Hover to trigger.
-                  </XDSText>
-                </div>
-              }
-              placement="below">
-              <XDSButton
-                label="HoverCard"
-                variant="secondary"
-                size="sm"
-                onClick={() => {}}
-              />
-            </XDSHoverCard>
-            <XDSTooltip content="Tooltip preview">
-              <XDSButton
-                label="Tooltip"
-                variant="secondary"
-                size="sm"
-                onClick={() => {}}
-              />
-            </XDSTooltip>
-          </XDSHStack>
-        </div>
-        <XDSDivider variant="strong" />
-        <div>
-          <XDSText type="supporting" color="secondary" display="block">
-            Switches & Checkboxes
-          </XDSText>
-          <XDSHStack gap={4} style={{marginTop: 8}}>
-            <XDSSwitch label="Switch 1" value={switch1} onChange={setSwitch1} />
-            <XDSSwitch label="Switch 2" value={switch2} onChange={setSwitch2} />
-            <XDSCheckboxInput
-              label="Check A"
-              value={check1}
-              onChange={setCheck1}
-            />
-            <XDSCheckboxInput
-              label="Check B"
-              value={check2}
-              onChange={setCheck2}
-            />
-          </XDSHStack>
-        </div>
-        <XDSDivider variant="strong" />
-        <div>
-          <XDSText type="supporting" color="secondary" display="block">
-            Slider & Selector
-          </XDSText>
-          <XDSHStack gap={4} vAlign="end" style={{marginTop: 8}}>
-            <div style={{flex: 1, maxWidth: 200}}>
-              <XDSSlider
-                label="Volume"
-                value={sliderValue}
-                onChange={setSliderValue}
-                min={0}
-                max={100}
-              />
-            </div>
-            <div style={{maxWidth: 160}}>
-              <XDSSelector
-                label="Fruit"
-                options={['Apple', 'Banana', 'Orange', 'Mango']}
-                value={selectorValue}
-                onChange={setSelectorValue}
-              />
-            </div>
-          </XDSHStack>
-        </div>
-      </XDSVStack>
-    </XDSCard>
-  );
-}
-
-function LoadingStatusPreview() {
-  const [progressValue, setProgressValue] = React.useState(65);
-  return (
-    <XDSCard>
-      <XDSVStack gap={4}>
-        <XDSText type="label" display="block">
-          Loading & Status
-        </XDSText>
-        <XDSHStack gap={4} vAlign="center">
-          <XDSSpinner size="sm" />
-          <XDSSpinner size="md" />
-          <XDSSpinner size="lg" />
-        </XDSHStack>
-        <XDSDivider variant="strong" />
-        <XDSVStack gap={2}>
-          <XDSHStack gap={3} vAlign="center">
-            <XDSSkeleton width={40} height={40} radius="rounded" index={0} />
-            <XDSVStack gap={1} style={{flex: 1}}>
-              <XDSSkeleton width={160} height={14} index={1} />
-              <XDSSkeleton width={100} height={10} index={2} />
-            </XDSVStack>
-          </XDSHStack>
-          <XDSSkeleton width="100%" height={12} index={3} />
-          <XDSSkeleton width="80%" height={12} index={4} />
-        </XDSVStack>
-        <XDSDivider variant="strong" />
-        <XDSVStack gap={3}>
-          <XDSProgressBar value={progressValue} label={`${progressValue}%`} />
-          <XDSHStack gap={2}>
-            {[0, 25, 50, 75, 100].map(v => (
-              <XDSButton
-                key={v}
-                label={`${v}%`}
-                variant="ghost"
-                size="sm"
-                onClick={() => setProgressValue(v)}
-              />
-            ))}
-          </XDSHStack>
-        </XDSVStack>
-        <XDSDivider variant="strong" />
-        <XDSHStack gap={4} vAlign="center">
-          <XDSHStack gap={2} vAlign="center">
-            <XDSStatusDot variant="positive" label="Online" isPulsing />
-            <XDSText type="body">Online</XDSText>
-          </XDSHStack>
-          <XDSHStack gap={2} vAlign="center">
-            <XDSStatusDot variant="warning" label="Away" isPulsing />
-            <XDSText type="body">Away</XDSText>
-          </XDSHStack>
-          <XDSHStack gap={2} vAlign="center">
-            <XDSStatusDot variant="negative" label="Busy" isPulsing />
-            <XDSText type="body">Busy</XDSText>
-          </XDSHStack>
-        </XDSHStack>
-      </XDSVStack>
-    </XDSCard>
-  );
-}
-
-function SurfaceInteractionsPreview() {
-  const [activeTab, setActiveTab] = React.useState('overview');
-  return (
-    <XDSCard>
-      <XDSVStack gap={4}>
-        <XDSText type="label" display="block">
-          Surface Interactions
-        </XDSText>
-        <XDSTabList value={activeTab} onChange={setActiveTab}>
-          <XDSTab value="overview" label="Overview" />
-          <XDSTab value="analytics" label="Analytics" />
-          <XDSTab value="reports" label="Reports" />
-          <XDSTab value="settings" label="Settings" />
-        </XDSTabList>
-        <XDSDivider variant="strong" />
-        <XDSList density="balanced">
-          <XDSListItem
-            label="Dashboard"
-            description="View your metrics"
-            onClick={() => {}}
-          />
-          <XDSListItem
-            label="Projects"
-            description="Manage active projects"
-            onClick={() => {}}
-          />
-          <XDSListItem
-            label="Settings"
-            description="Configure preferences"
-            onClick={() => {}}
-          />
-        </XDSList>
-      </XDSVStack>
-    </XDSCard>
-  );
-}
-
 function MotionPreview() {
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
   const [overlayOpen, setOverlayOpen] = React.useState(false);
@@ -3630,7 +3372,7 @@ function generateThemeCode(
 // =============================================================================
 
 export function ThemeEditorView({
-  activeView,
+  activeView: _activeView,
   setActiveView,
   initialImage,
   initialTheme,
@@ -3646,9 +3388,9 @@ export function ThemeEditorView({
 }) {
   // Token editing state
   const [activeGroup, setActiveGroup] = React.useState<TokenGroupKey>('colors');
-  const [activeColorCategory, setActiveColorCategory] =
+  const [_activeColorCategory, _setActiveColorCategory] =
     React.useState<string>('Core Semantic');
-  const [activeTypographyCategory, setActiveTypographyCategory] =
+  const [_activeTypographyCategory, _setActiveTypographyCategory] =
     React.useState<string>('Heading 1');
   const [themeName] = React.useState('custom');
   const [mode, setMode] = React.useState<'light' | 'dark'>('light');
@@ -3657,14 +3399,12 @@ export function ThemeEditorView({
   const [overlayPanelOpen, setOverlayPanelOpen] = React.useState(false);
   const [activePreview, setActivePreview] = React.useState('preview');
 
-  const isMotionGroup = activeGroup === 'duration' || activeGroup === 'easing';
-
   const [typeScaleBase, setTypeScaleBase] = React.useState(14);
   const [typeScaleRatio, setTypeScaleRatio] = React.useState(1.2);
   const [panelMode, setPanelMode] = React.useState<'editor' | 'target' | 'raw'>(
     'editor',
   );
-  const [targetComponent, setTargetComponent] = React.useState<string | null>(
+  const [_targetComponent, _setTargetComponent] = React.useState<string | null>(
     null,
   );
   const [collapsedSections, setCollapsedSections] = React.useState<
@@ -4590,7 +4330,7 @@ export function ThemeEditorView({
                   collapsed={collapsedSections}
                   onToggle={toggleSection}>
                   <div style={{display: 'flex', gap: 6}}>
-                    {Object.entries(UNIFIED_PRESETS).map(([key, p]) => {
+                    {Object.entries(UNIFIED_PRESETS).map(([key, _p]) => {
                       const isSelected = activePreset === key;
                       const gap =
                         key === 'compact'

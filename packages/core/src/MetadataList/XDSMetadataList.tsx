@@ -18,7 +18,6 @@
 
 import {Children, useId, useMemo, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   spacingVars,
   colorVars,
@@ -269,7 +268,9 @@ export function XDSMetadataList({
         {titleContent}
         <dl
           id={contentId}
-          {...mergeProps(stylex.props(styles.dl, getGridStyle()), {style: dynamicGridStyle})}>
+          {...mergeProps(stylex.props(styles.dl, getGridStyle()), {
+            style: dynamicGridStyle,
+          })}>
           {visibleChildren}
         </dl>
         {isExceedMax && (
