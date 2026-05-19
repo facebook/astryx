@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file Codemod: Rename status variants positive/negative → success/error
  * @see https://github.com/facebookexperimental/xds/issues/996
