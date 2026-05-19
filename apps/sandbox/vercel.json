@@ -1,0 +1,4 @@
+{
+  "installCommand": "cd ../.. && yarn install",
+  "buildCommand": "cd ../.. && yarn build && yarn workspace @xds/sandbox build"
+}
