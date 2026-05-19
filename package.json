@@ -4,7 +4,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "build": "pnpm -F @xds/core build && pnpm -F @xds/vega build && pnpm -F @xds/theme-default build && pnpm -F @xds/theme-neutral build && pnpm -F @xds/theme-brutalist build && pnpm -F @xds/theme-daily build && pnpm -F @xds/theme-matcha build && pnpm -F @xds/theme-stone build && pnpm -F @xds/theme-gothic build && pnpm -F @xds/theme-chocolate build && pnpm -F @xds/theme-y2k build && pnpm -F @xds/theme-butter build",
+    "build": "pnpm -F @xds/build build && pnpm -F @xds/core build && pnpm -F @xds/vega build && pnpm -F @xds/theme-default build && pnpm -F @xds/theme-neutral build && pnpm -F @xds/theme-brutalist build && pnpm -F @xds/theme-daily build && pnpm -F @xds/theme-matcha build && pnpm -F @xds/theme-stone build && pnpm -F @xds/theme-gothic build && pnpm -F @xds/theme-chocolate build && pnpm -F @xds/theme-y2k build && pnpm -F @xds/theme-butter build",
     "dev": "pnpm -F @xds/storybook dev",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -73,6 +73,7 @@
       "micromatch>picomatch": "^2.3.2",
       "anymatch>picomatch": "^2.3.2",
       "test-exclude>minimatch": "^9.0.7",
+      "brace-expansion": "^1.1.13",
       "dompurify": "^3.3.2",
       "vite": "^6.4.2"
     },
