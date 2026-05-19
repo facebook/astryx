@@ -147,7 +147,12 @@ export function XDSCitation({
   const icon = source.icon;
   const Tag = href ? 'a' : 'span';
   const linkProps = href
-    ? {href, target: '_blank' as const, rel: 'noopener noreferrer' as const, title}
+    ? {
+        href,
+        target: '_blank' as const,
+        rel: 'noopener noreferrer' as const,
+        title,
+      }
     : {title};
 
   // Both <a> and <span> extend HTMLElement — narrow via intersection
@@ -157,15 +162,19 @@ export function XDSCitation({
   if (variant === 'number') {
     return (
       <Tag
+        {...rest}
         ref={elementRef}
         role="doc-noteref"
         aria-label={`Citation ${number}: ${title}`}
         data-testid={testId}
         {...linkProps}
-        {...rest}
         {...mergeProps(
           xdsClassName('citation', {variant}),
-          stylex.props(styles.number, href != null && styles.numberHover, xstyle),
+          stylex.props(
+            styles.number,
+            href != null && styles.numberHover,
+            xstyle,
+          ),
           className,
           style,
         )}>
@@ -176,12 +185,12 @@ export function XDSCitation({
 
   return (
     <Tag
+      {...rest}
       ref={elementRef}
       role="doc-noteref"
       aria-label={`Citation ${number}: ${title}`}
       data-testid={testId}
       {...linkProps}
-      {...rest}
       {...mergeProps(
         xdsClassName('citation', {variant}),
         stylex.props(
