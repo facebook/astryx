@@ -7,7 +7,7 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSBadge} from '@xds/core/Badge';
-import {XDSDivider} from '@xds/core';
+import {XDSDivider} from '@xds/core/Divider';
 
 const styles = stylex.create({
   main: {

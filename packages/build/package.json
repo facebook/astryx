@@ -26,11 +26,12 @@
     ".": "./src/config.js",
     "./babel": "./src/babel.js",
     "./postcss": "./src/index.js",
-    "./vite": "./src/vite.ts",
+    "./vite": "./dist/vite.mjs",
     "./next": "./src/next.js"
   },
   "files": [
-    "src"
+    "src",
+    "dist"
   ],
   "peerDependencies": {
     "@stylexjs/babel-plugin": ">=0.18.0",
@@ -50,5 +51,12 @@
     "vite": {
       "optional": true
     }
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "prepack": "npm run build"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
   }
 }
