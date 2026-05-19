@@ -72,8 +72,7 @@
       "picomatch": "^4.0.4",
       "micromatch>picomatch": "^2.3.2",
       "anymatch>picomatch": "^2.3.2",
-      "test-exclude>minimatch": "^9.0.7",
-      "brace-expansion": "^1.1.13",
+      "minimatch": "^9.0.7",
       "dompurify": "^3.3.2",
       "vite": "^6.4.2"
     },
