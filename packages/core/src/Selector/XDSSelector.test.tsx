@@ -267,6 +267,29 @@ describe('XDSSelector', () => {
       expect(onChange).toHaveBeenCalledWith('Banana');
     });
 
+    it('closes dropdown on Tab without preventing default focus movement', async () => {
+      const user = userEvent.setup();
+      render(
+        <>
+          <XDSSelector
+            label="Fruit"
+            options={OPTIONS}
+            value="Apple"
+            onChange={() => {}}
+            hasSearch
+          />
+          <button>Next</button>
+        </>,
+      );
+
+      const trigger = screen.getByRole('combobox');
+      await user.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+      await user.keyboard('{Tab}');
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+
     it('uses custom search placeholder', async () => {
       const user = userEvent.setup();
       render(
