@@ -640,6 +640,7 @@ export function XDSAppShell({
   // in the drawer and shows the toggle even without its own collapsible items.
   const mobileContentValue =
     hasSideNavContent && mobileNavHasToggle ? (
+      // eslint-disable-next-line @eslint-react/no-unstable-context-value -- context transports ReactNode; instability is inherent
       <XDSSideNavRenderContext value="drawer-content">
         <div ref={sideNavRef} style={{display: 'contents'}}>
           {sideNav}
@@ -648,6 +649,7 @@ export function XDSAppShell({
     ) : null;
 
   const drawerMobileContentValue = hasSideNavContent ? (
+    // eslint-disable-next-line @eslint-react/no-unstable-context-value -- context transports ReactNode; instability is inherent
     <XDSSideNavRenderContext value="drawer-content">
       {sideNav}
     </XDSSideNavRenderContext>
