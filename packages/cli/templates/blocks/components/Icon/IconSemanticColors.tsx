@@ -30,12 +30,12 @@ export default function IconSemanticColors() {
         <XDSText type="supporting">accent</XDSText>
       </XDSVStack>
       <XDSVStack gap={1} hAlign="center">
-        <XDSIcon icon="success" color="positive" />
-        <XDSText type="supporting">positive</XDSText>
+        <XDSIcon icon="success" color="success" />
+        <XDSText type="supporting">success</XDSText>
       </XDSVStack>
       <XDSVStack gap={1} hAlign="center">
-        <XDSIcon icon="error" color="negative" />
-        <XDSText type="supporting">negative</XDSText>
+        <XDSIcon icon="error" color="error" />
+        <XDSText type="supporting">error</XDSText>
       </XDSVStack>
       <XDSVStack gap={1} hAlign="center">
         <XDSIcon icon="warning" color="warning" />

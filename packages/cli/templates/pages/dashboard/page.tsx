@@ -391,9 +391,7 @@ const topPagesColumns: XDSTableColumn<PageRow>[] = [
           label={`${item.page} views`}
           isLabelHidden
         />
-        <XDSText type="supporting">
-          {item.views.toLocaleString()} views
-        </XDSText>
+        <XDSText type="supporting">{item.views.toLocaleString()} views</XDSText>
       </XDSVStack>
     ),
   },
@@ -623,9 +621,9 @@ function MetricCard({
           <XDSHeading level={2}>{value}</XDSHeading>
           <XDSHStack gap={1} vAlign="center">
             {positive ? (
-              <XDSIcon icon={ArrowUpIcon} size="xsm" color="positive" />
+              <XDSIcon icon={ArrowUpIcon} size="xsm" color="success" />
             ) : (
-              <XDSIcon icon={ArrowDownIcon} size="xsm" color="negative" />
+              <XDSIcon icon={ArrowDownIcon} size="xsm" color="error" />
             )}
             <XDSText type="body" color="secondary">
               {change}
@@ -721,9 +719,7 @@ function TableCard<T extends {id: string}>({
       <XDSVStack gap={6}>
         <XDSHStack hAlign="between" vAlign="center">
           <XDSHeading level={4}>{title}</XDSHeading>
-          <XDSLink href={linkHref}>
-            {linkLabel}
-          </XDSLink>
+          <XDSLink href={linkHref}>{linkLabel}</XDSLink>
         </XDSHStack>
         <XDSTable<T>
           data={data}
@@ -747,9 +743,7 @@ function DashboardSideNav() {
       header={
         <XDSSideNavHeading
           icon={
-            <XDSNavIcon
-              icon={<XDSIcon icon={ChartBarIconSolid} size="sm" />}
-            />
+            <XDSNavIcon icon={<XDSIcon icon={ChartBarIconSolid} size="sm" />} />
           }
           heading="Analytics"
           headingHref="/"
@@ -819,7 +813,7 @@ export default function DashboardTemplate() {
 
         {/* Metric Cards */}
         <XDSGrid columns={{minWidth: 320, repeat: 'fit'}} gap={4}>
-          {[0, 2].map((start) => (
+          {[0, 2].map(start => (
             <XDSGrid
               key={start}
               columns={{minWidth: 240, repeat: 'fit'}}
