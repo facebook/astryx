@@ -1,3 +1,4 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
 /**
  * @file XDSContextMenu.test.tsx
  * @input Uses vitest, @testing-library/react, XDSContextMenu component

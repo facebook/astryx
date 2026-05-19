@@ -1,3 +1,4 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSContextMenu, XDSContextMenuItem} from '@xds/core/ContextMenu';
 import {XDSDivider} from '@xds/core/Divider';

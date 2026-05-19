@@ -1,3 +1,4 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
 'use client';
 
 /**
@@ -103,6 +104,8 @@ export type XDSContextMenuOption = XDSDropdownMenuOption;
 // =============================================================================
 
 interface XDSContextMenuBaseProps extends XDSBaseProps {
+  /** Ref forwarded to the trigger wrapper element. */
+  ref?: React.Ref<HTMLDivElement>;
   /** The trigger area — right-click on this to open the menu. */
   children: ReactNode;
   /** Custom menu width. @default '160px' */
@@ -117,6 +120,8 @@ interface XDSContextMenuBaseProps extends XDSBaseProps {
   hasAutoFocus?: boolean;
   /** When true, right-click shows the native browser context menu instead. */
   isDisabled?: boolean;
+  /** Called when the menu opens or closes. */
+  onOpenChange?: (isOpen: boolean) => void;
   'data-testid'?: string;
 }
 
@@ -169,6 +174,8 @@ export function XDSContextMenu({
   size = 'md',
   hasAutoFocus = true,
   isDisabled = false,
+  onOpenChange,
+  ref,
   className,
   style,
   xstyle,
@@ -184,8 +191,14 @@ export function XDSContextMenu({
 
   const layer = useXDSLayer({
     mode: 'fixed',
-    onHide: useCallback(() => setIsOpen(false), []),
-    onShow: useCallback(() => setIsOpen(true), []),
+    onHide: useCallback(() => {
+      setIsOpen(false);
+      onOpenChange?.(false);
+    }, [onOpenChange]),
+    onShow: useCallback(() => {
+      setIsOpen(true);
+      onOpenChange?.(true);
+    }, [onOpenChange]),
     lightDismiss: false,
   });
 
@@ -263,7 +276,7 @@ export function XDSContextMenu({
 
   return (
     <>
-      <div onContextMenu={handleContextMenu} data-testid={testId}>
+      <div ref={ref} onContextMenu={handleContextMenu} data-testid={testId}>
         {children}
       </div>
 
