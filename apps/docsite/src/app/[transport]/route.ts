@@ -124,7 +124,7 @@ function briefComponent(comp: typeof visibleComponents[0]) {
     props: topProps,
     totalProps: comp.props.length,
     group: comp.group,
-    ...(comp.relatedComponents.length > 0
+    ...(comp.relatedComponents && comp.relatedComponents.length > 0
       ? {related: comp.relatedComponents.slice(0, 4)}
       : {}),
   };
