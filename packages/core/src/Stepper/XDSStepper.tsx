@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 'use client';
 
 /**
@@ -57,6 +59,9 @@ const styles = stylex.create({
   root: {
     display: 'flex',
     width: '100%',
+    listStyleType: 'none',
+    margin: 0,
+    padding: 0,
   },
   horizontal: {
     flexDirection: 'row',
@@ -108,21 +113,22 @@ export function XDSStepper({
 
   return (
     <XDSStepperContext.Provider value={ctxValue}>
-      <nav
-        ref={ref}
-        aria-label={label}
-        {...mergeProps(
-          xdsClassName('stepper', {orientation}),
-          stylex.props(
-            styles.root,
-            orientation === 'horizontal' ? styles.horizontal : styles.vertical,
-            xstyle,
-          ),
-          className,
-          style,
-        )}
-        {...rest}>
-        {children}
+      <nav ref={ref} aria-label={label} {...rest}>
+        <ol
+          {...mergeProps(
+            xdsClassName('stepper', {orientation}),
+            stylex.props(
+              styles.root,
+              orientation === 'horizontal'
+                ? styles.horizontal
+                : styles.vertical,
+              xstyle,
+            ),
+            className,
+            style,
+          )}>
+          {children}
+        </ol>
       </nav>
     </XDSStepperContext.Provider>
   );

@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 'use client';
 
 /**
@@ -27,9 +29,13 @@ import {
   easeVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import {XDSIcon} from '../Icon';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSStepperContext} from './XDSStepperContext';
 
-export interface XDSStepProps {
+export interface XDSStepProps extends XDSBaseProps<HTMLDivElement> {
+  /** Ref forwarded to the root element */
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * Zero-based index of this step. Used to determine active/completed state
    * relative to the parent's activeStep.
@@ -67,10 +73,6 @@ export interface XDSStepProps {
    * @default false
    */
   hasError?: boolean;
-  /**
-   * Test ID for testing utilities.
-   */
-  'data-testid'?: string;
 }
 
 const styles = stylex.create({
@@ -102,10 +104,10 @@ const styles = stylex.create({
     alignItems: 'center',
     paddingInline: spacingVars['--spacing-2'],
     minWidth: spacingVars['--spacing-6'],
-    height: '28px',
+    height: spacingVars['--spacing-7'],
   },
   horizontalConnectorLine: {
-    height: '2px',
+    height: spacingVars['--spacing-0-5'],
     width: '100%',
     borderRadius: radiusVars['--radius-full'],
     transitionProperty: 'background-color',
@@ -129,7 +131,7 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    width: '28px',
+    width: spacingVars['--spacing-7'],
     flexShrink: 0,
   },
   verticalConnector: {
@@ -139,7 +141,7 @@ const styles = stylex.create({
     paddingBlock: spacingVars['--spacing-1'],
   },
   verticalConnectorLine: {
-    width: '2px',
+    width: spacingVars['--spacing-0-5'],
     height: '100%',
     borderRadius: radiusVars['--radius-full'],
     transitionProperty: 'background-color',
@@ -162,8 +164,8 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '28px',
-    height: '28px',
+    width: spacingVars['--spacing-7'],
+    height: spacingVars['--spacing-7'],
     borderRadius: radiusVars['--radius-full'],
     fontSize: typeScaleVars['--text-supporting-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
@@ -173,7 +175,7 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
     flexShrink: 0,
     userSelect: 'none',
-    borderWidth: '2px',
+    borderWidth: spacingVars['--spacing-0-5'],
     borderStyle: 'solid',
     position: 'relative',
   },
@@ -225,6 +227,7 @@ const styles = stylex.create({
     flexDirection: 'column',
     alignItems: 'center',
     paddingBlockStart: spacingVars['--spacing-1'],
+    // No spacing token at 120px — nearest are --spacing-12 (48px) and --spacing-14 (56px)
     maxWidth: '120px',
   },
   labelRowVertical: {
@@ -285,43 +288,6 @@ const styles = stylex.create({
   },
 });
 
-function CheckIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 14 14"
-      fill="none"
-      aria-hidden="true">
-      <path
-        d="M11.5 3.5L5.5 10L2.5 7"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function WarningIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 14 14"
-      fill="none"
-      aria-hidden="true">
-      <path
-        d="M7 4V7.5M7 9.5V10"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
 /**
  * An individual step within an XDSStepper. Renders a numbered indicator
  * circle, a connector line to the next step, and a label with optional
@@ -342,7 +308,12 @@ export function XDSStep({
   isCompleted: isCompletedProp,
   isDisabled = false,
   hasError = false,
+  xstyle,
+  className,
+  style,
+  ref,
   'data-testid': dataTestId,
+  ...rest
 }: XDSStepProps) {
   const ctx = useXDSStepperContext();
   const {activeStep, orientation, isNonLinear, onStepClick} = ctx;
@@ -360,11 +331,11 @@ export function XDSStep({
   };
 
   const indicatorContent = hasError ? (
-    <WarningIcon />
+    <XDSIcon icon="warning" size="sm" color="inherit" />
   ) : icon != null ? (
     icon
   ) : isCompleted ? (
-    <CheckIcon />
+    <XDSIcon icon="check" size="sm" color="inherit" />
   ) : (
     <span>{step + 1}</span>
   );
@@ -451,13 +422,17 @@ export function XDSStep({
   if (isVertical) {
     return (
       <div
+        ref={ref}
         {...mergeProps(
           xdsClassName('step', {state: stepState}),
-          stylex.props(styles.verticalRoot),
+          stylex.props(styles.verticalRoot, xstyle),
+          className,
+          style,
         )}
         aria-current={isActive ? 'step' : undefined}
         data-testid={dataTestId}
-        role="listitem">
+        role="listitem"
+        {...rest}>
         <div {...stylex.props(styles.verticalIndicatorColumn)}>
           {indicator}
           <div {...stylex.props(styles.verticalConnector)}>
@@ -486,13 +461,17 @@ export function XDSStep({
 
   return (
     <div
+      ref={ref}
       {...mergeProps(
         xdsClassName('step', {state: stepState}),
-        stylex.props(styles.horizontalRoot),
+        stylex.props(styles.horizontalRoot, xstyle),
+        className,
+        style,
       )}
       aria-current={isActive ? 'step' : undefined}
       data-testid={dataTestId}
-      role="listitem">
+      role="listitem"
+      {...rest}>
       <div {...stylex.props(styles.horizontalContent)}>
         {indicator}
         {labelNode}
