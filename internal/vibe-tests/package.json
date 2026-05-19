@@ -59,6 +59,6 @@
     "postcss": "^8.5.13",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.2.1",
-    "tsx": "^4.22.0"
+    "tsx": "^4.22.2"
   }
 }
