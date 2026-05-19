@@ -25,7 +25,7 @@
     "@xds/theme-brutalist": "*",
     "@xds/theme-matcha": "*",
     "@xds/theme-daily": "*",
-    "next": "^15.5.15",
+    "next": "^15.5.16",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "recharts": "^2.15.3",

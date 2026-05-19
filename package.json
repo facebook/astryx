@@ -68,7 +68,9 @@
     "anymatch/**/picomatch": "^2.3.2",
     "eslint/**/minimatch": "^3.1.4",
     "test-exclude/**/minimatch": "^9.0.7",
-    "**/brace-expansion": "^1.1.13"
+    "**/brace-expansion": "^1.1.13",
+    "dompurify": "^3.3.2",
+    "vite": "^6.4.2"
   },
   "packageManager": "yarn@1.22.22",
   "lint-staged": {
