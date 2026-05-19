@@ -401,7 +401,7 @@ export function PlaygroundClient() {
       <div {...stylex.props(s.toolbar)}>
         <XDSHStack gap={8} align="center">
           <XDSStatusDot
-            variant={previewError ? "negative" : previewReady ? "positive" : "warning"}
+            variant={previewError ? "error" : previewReady ? "success" : "warning"}
             label={previewError ? "Error" : previewReady ? "Ready" : "Loading"}
           />
           <XDSText color="secondary" type="supporting">
