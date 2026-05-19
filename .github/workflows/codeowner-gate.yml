@@ -26,10 +26,12 @@ jobs:
   codeowner-gate:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout DESIGNOWNERS
+      - name: Checkout CODEOWNERS and DESIGNOWNERS
         uses: actions/checkout@v6
         with:
-          sparse-checkout: .github/DESIGNOWNERS
+          sparse-checkout: |
+            .github/CODEOWNERS
+            .github/DESIGNOWNERS
           sparse-checkout-cone-mode: false
 
       - name: Check code owner status
@@ -39,8 +41,26 @@ jobs:
             const fs = require('fs');
 
             // --- Configuration ---
-            // Keep this list in sync with .github/CODEOWNERS
-            const CODE_OWNERS = ['cixzhang', 'josephfarina'];
+            // Read code owners from .github/CODEOWNERS
+            let CODE_OWNERS = [];
+            try {
+              const codeownersContent = fs.readFileSync('.github/CODEOWNERS', 'utf8');
+              CODE_OWNERS = [...new Set(
+                codeownersContent
+                  .split('\n')
+                  .map(line => line.replace(/#.*$/, '').trim()) // strip comments
+                  .filter(line => line.length > 0)
+                  .flatMap(line => {
+                    // Each line is: <pattern> <owners...>
+                    // Owners start with @, strip the @ prefix
+                    const parts = line.split(/\s+/);
+                    return parts.slice(1).map(owner => owner.replace(/^@/, ''));
+                  })
+              )];
+            } catch (e) {
+              console.log('No CODEOWNERS file found, falling back to empty list');
+            }
+            console.log(`Code owners: ${CODE_OWNERS.join(', ') || '(none)'}`);
 
             // Read design owners from file
             let DESIGNOWNERS = [];
