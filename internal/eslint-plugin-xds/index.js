@@ -43,9 +43,9 @@ const STYLE_PROPERTIES = {
   },
   lineHeight: {
     pattern: /^['"]?\d+(\.\d+)?(px|rem|em)?['"]?$/,
-    tokenVar: 'lineHeightVars',
-    message: 'Consider using lineHeightVars token for consistency',
-    examples: ["lineHeightVars['--leading-normal']"],
+    tokenVar: 'typeScaleVars',
+    message: 'Consider using a typeScaleVars leading token for consistency',
+    examples: ["typeScaleVars['--text-body-leading']"],
   },
   // Spacing properties
   padding: {
