@@ -1,38 +1,41 @@
 /**
- * @file legend.tsx
- * @output Chart legend — renders labeled swatches with position/alignment control
- * @position Internal helper; called by XDSChart root
+ * @file XDSChartLegend.tsx
+ * @output Standalone chart legend component
+ * @position Can be used inside XDSChart via the `legend` prop, or independently
+ *
+ * @example
+ * // Via XDSChart
+ * <XDSChart legend={{position: 'top', alignment: 'start'}} ... />
+ *
+ * // Standalone
+ * <XDSChartLegend items={[{label: 'Revenue', color: '#3b82f6'}]} />
  */
 
 import {XDSText} from '@xds/core';
 import {XDSVStack, XDSHStack} from '@xds/core';
+import type {LegendItem} from './legend';
+
+export type {LegendItem};
 
 export type LegendPosition = 'top' | 'bottom' | 'start' | 'end';
 export type LegendAlignment = 'start' | 'center' | 'end';
 
-export interface LegendItem {
-  label: string;
-  color: string;
-  /** Mark type — determines swatch shape (square for bar/area/dot, line for line) */
-  type?: string;
-}
-
-export interface LegendConfig {
-  /** Position of the legend relative to the chart */
-  position?: LegendPosition;
-  /** Alignment of the legend within its position */
-  alignment?: LegendAlignment;
-  /** Manual legend items. Auto-derived from series if not provided. */
+export interface XDSChartLegendProps {
+  /** Legend items to display */
   items?: LegendItem[];
+  /** Position of the legend relative to the chart. Default: 'bottom' */
+  position?: LegendPosition;
+  /** Alignment of the legend within its position. Default: 'start' */
+  alignment?: LegendAlignment;
 }
 
-export interface ChartLegendProps {
-  items: LegendItem[];
-  position: LegendPosition;
-  alignment: LegendAlignment;
-}
+export function XDSChartLegend({
+  items = [],
+  position = 'bottom',
+  alignment = 'start',
+}: XDSChartLegendProps) {
+  if (items.length === 0) return null;
 
-export function ChartLegend({items, position, alignment}: ChartLegendProps) {
   const isVertical = position === 'start' || position === 'end';
 
   if (isVertical) {

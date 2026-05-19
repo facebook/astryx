@@ -28,7 +28,8 @@ import {ChartProvider} from '../Chart/ChartContext';
 import {XDSText} from '@xds/core';
 import {XDSVStack, XDSHStack} from '@xds/core';
 import * as stylex from '@stylexjs/stylex';
-import {ChartLegend, type LegendConfig, type LegendItem, type LegendPosition, type LegendAlignment} from './legend';
+import {XDSChartLegend, type XDSChartLegendProps} from './XDSChartLegend';
+import {deriveLegendItems} from './legend';
 
 export interface XDSChartProps {
   data: Record<string, unknown>[];
@@ -39,7 +40,7 @@ export interface XDSChartProps {
   grid?: ReactNode;
   axes?: ReactNode;
   /** Legend configuration. Pass `true` for defaults, or a config object. */
-  legend?: boolean | LegendConfig;
+  legend?: boolean | XDSChartLegendProps;
   interactions?: ReactNode;
   children?: ReactNode;
   /** Chart title displayed above the visualization */
@@ -221,32 +222,24 @@ export function XDSChart({
   );
 
   // ─── Legend ────────────────────────────────────────────────────────────
-  const legendConfig = useMemo((): LegendConfig | null => {
-    if (!legend) return null;
-    if (legend === true) return {position: 'bottom', alignment: 'start'};
-    return {position: 'bottom', alignment: 'start', ...legend};
-  }, [legend]);
+  const legendConfig = legend === true ? {} : legend || null;
 
-  const legendItems = useMemo((): LegendItem[] => {
-    if (!legendConfig) return [];
-    if (legendConfig.items) return legendConfig.items;
-    // Auto-derive from series — skip utility marks (referenceLine, errorBar, band)
-    const skipTypes = new Set(['referenceLine', 'errorBar', 'band']);
-    return series
-      .filter(s => !skipTypes.has(s.type) && s.color)
-      .map(s => ({label: s.label ?? s.key, color: s.color!, type: s.type}));
-  }, [legendConfig, series]);
+  const legendElement = legendConfig ? (
+    <XDSChartLegend
+      items={legendConfig.items ?? deriveLegendItems(series)}
+      position={legendConfig.position}
+      alignment={legendConfig.alignment}
+    />
+  ) : null;
+
+  const legendPosition = legendConfig?.position ?? 'bottom';
+  const isLegendHorizontal =
+    legendPosition === 'start' || legendPosition === 'end';
 
   // ─── Render ───────────────────────────────────────────────────────────
   if (containerWidth === 0) {
     return <div ref={containerRef} style={{width: '100%', height}} />;
   }
-
-  const legendElement = legendItems.length > 0 ? (
-    <ChartLegend items={legendItems} position={legendConfig!.position!} alignment={legendConfig!.alignment!} />
-  ) : null;
-
-  const isLegendHorizontal = legendConfig?.position === 'start' || legendConfig?.position === 'end';
 
   return (
     <div ref={containerRef} style={{width: '100%'}}>
@@ -270,17 +263,17 @@ export function XDSChart({
             renderSvg()
           ) : isLegendHorizontal ? (
             <XDSHStack gap={4}>
-              {legendConfig.position === 'start' && legendElement}
+              {legendPosition === 'start' && legendElement}
               <div style={{flex: 1, minWidth: 0, overflow: 'hidden'}}>
                 {renderSvg()}
               </div>
-              {legendConfig.position === 'end' && legendElement}
+              {legendPosition === 'end' && legendElement}
             </XDSHStack>
           ) : (
             <XDSVStack gap={4}>
-              {legendConfig.position === 'top' && legendElement}
+              {legendPosition === 'top' && legendElement}
               {renderSvg()}
-              {legendConfig.position === 'bottom' && legendElement}
+              {legendPosition === 'bottom' && legendElement}
             </XDSVStack>
           )}
         </ChartProvider>

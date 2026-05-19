@@ -194,6 +194,9 @@ export {
 export {
   XDSChart as XDSChartV2,
   type XDSChartProps as XDSChartV2Props,
+  XDSChartLegend as XDSChartV2Legend,
+  type XDSChartLegendProps as XDSChartV2LegendProps,
+  type LegendItem as XDSChartV2LegendItem,
   bar,
   line,
   dot,
