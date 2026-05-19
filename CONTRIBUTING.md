@@ -93,7 +93,6 @@ yarn dev
 ```
 xds/
 ├── apps/
-│   ├── docs/           # Documentation site
 │   ├── storybook/      # Component playground (localhost:6006)
 │   └── sandbox/        # Development testing
 │
@@ -101,12 +100,10 @@ xds/
 │   ├── core/           # Core components (Button, Input, etc.)
 │   ├── cli/            # CLI tooling (npx xds)
 │   ├── lab/            # Experimental components (not yet stable)
-│   └── themes/         # Theme presets (default, neutral, brutalist)
+│   └── themes/         # Theme presets (default, neutral, daily, and more)
 │
-├── internal/           # Internal tooling (not published)
-│   └── test-utils/     # Shared test helpers
-│
-└── e2e/                # End-to-end tests
+└── internal/           # Internal tooling (not published)
+    └── test-utils/     # Shared test helpers
 ```
 
 ## Development Workflow
@@ -242,9 +239,6 @@ yarn workspace @xds/core test
 
 # With coverage
 yarn test:coverage
-
-# Screenshot tests
-yarn test:screenshots
 ```
 
 ### Test Structure
@@ -322,3 +316,19 @@ This creates a file in `.changeset/` — commit it with your PR.
 - Rebuild the package: `yarn workspace @xds/core build`
 - Hard refresh browser: Cmd+Shift+R (Mac) or Ctrl+Shift+R (Windows)
 - Clear Storybook cache: Remove `apps/storybook/node_modules/.cache`
+
+## Contributor License Agreement ("CLA")
+
+In order to accept your pull request, we need you to submit a CLA. You only need
+to do this once to work on any of Meta's open source projects.
+
+Complete your CLA here: <https://code.facebook.com/cla>
+
+## Issues
+
+We use GitHub issues to track public bugs. Please ensure your description is
+clear and has sufficient instructions to be able to reproduce the issue.
+
+Meta has a [bounty program](https://bugbounty.meta.com/) for the safe disclosure
+of security bugs. In those cases, please go through the process outlined on that
+page and do not file a public issue.

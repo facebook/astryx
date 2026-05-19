@@ -54,7 +54,7 @@ apps/example-nextjs-tailwind/.next
 .parity-test-results.json
 .worktree-parity-test
 .npmrc
--e 
+
 # Patch files
 *.patch
 *.rej

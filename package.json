@@ -10,6 +10,7 @@
     "internal/*"
   ],
   "scripts": {
+    "preinstall": "npx only-allow yarn",
     "build": "yarn workspace @xds/build build && yarn workspace @xds/core build && yarn workspace @xds/vega build && yarn workspace @xds/theme-default build && yarn workspace @xds/theme-neutral build && yarn workspace @xds/theme-brutalist build && yarn workspace @xds/theme-daily build && yarn workspace @xds/theme-matcha build && yarn workspace @xds/theme-stone build && yarn workspace @xds/theme-gothic build && yarn workspace @xds/theme-chocolate build && yarn workspace @xds/theme-y2k build && yarn workspace @xds/theme-butter build",
     "dev": "yarn workspace @xds/storybook dev",
     "test": "vitest run",
@@ -22,7 +23,6 @@
     "lint:strict": "yarn check:repo && XDS_STRICT_LINT=1 eslint .",
     "storybook": "yarn workspace @xds/storybook dev",
     "storybook:build": "yarn workspace @xds/storybook build",
-    "docs": "yarn workspace @xds/docs dev",
     "sync:exports": "node scripts/sync-exports.js",
     "sync:exports:check": "node scripts/sync-exports.js --check",
     "xds": "yarn workspace @xds/cli xds",
