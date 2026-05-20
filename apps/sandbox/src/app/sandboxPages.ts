@@ -88,6 +88,12 @@ export const categories: SandboxCategory[] = [
           'Duration and easing tokens applied to common animation patterns',
       },
       {
+        name: 'Motion Audit',
+        href: '/pages/motion-audit/',
+        description:
+          'Before/after comparison of proposed motion improvements',
+      },
+      {
         name: 'App Shell',
         href: '/pages/shell-lab/',
         description: 'Experiment with app shell layouts and navigation',
