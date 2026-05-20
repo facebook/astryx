@@ -4,10 +4,10 @@
  * @file useXDSLinkComponent.test.tsx
  * @input Uses vitest, @testing-library/react, useXDSLinkComponent, XDSLinkProvider
  * @output Unit tests for useXDSLinkComponent hook and XDSLinkProvider
- * @position Testing; validates polymorphic link resolution
+ * @position Testing; validates polymorphic link resolution and `to` prop injection
  */
 
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {forwardRef, type ComponentPropsWithoutRef} from 'react';
 import {useXDSLinkComponent} from './useXDSLinkComponent';
@@ -42,6 +42,25 @@ const AnotherLink = forwardRef<
   </a>
 ));
 AnotherLink.displayName = 'AnotherLink';
+
+/**
+ * A mock "to"-based router link that reads `to` instead of `href`.
+ * Simulates React Router / TanStack Router behavior.
+ */
+const ToBasedRouterLink = forwardRef<
+  HTMLAnchorElement,
+  {
+    to?: string;
+    href?: string;
+    children?: React.ReactNode;
+    [key: string]: unknown;
+  }
+>(({to, children, ...props}, ref) => (
+  <a ref={ref} href={to} data-router-link data-to={to} {...props}>
+    {children}
+  </a>
+));
+ToBasedRouterLink.displayName = 'ToBasedRouterLink';
 
 // =============================================================================
 // useXDSLinkComponent
@@ -82,6 +101,100 @@ describe('useXDSLinkComponent', () => {
     const link = screen.getByTestId('resolved-link');
     expect(link).toHaveAttribute('data-custom-link');
     expect(link).not.toHaveAttribute('data-another-link');
+  });
+});
+
+// =============================================================================
+// `to` prop injection
+// =============================================================================
+
+describe('useXDSLinkComponent — to prop', () => {
+  it('passes `to` equal to `href` for custom components via provider', () => {
+    const spy = vi.fn(
+      ({
+        children,
+        ...props
+      }: {
+        children?: React.ReactNode;
+        [key: string]: unknown;
+      }) => (
+        <a
+          data-testid="spy-link"
+          data-to={props.to as string}
+          href={props.href as string}>
+          {children}
+        </a>
+      ),
+    );
+    const SpyLink = forwardRef<
+      HTMLAnchorElement,
+      {children?: React.ReactNode; [key: string]: unknown}
+    >((props, _ref) => spy(props));
+    SpyLink.displayName = 'SpyLink';
+
+    render(
+      <XDSLinkProvider component={SpyLink}>
+        <TestConsumer />
+      </XDSLinkProvider>,
+    );
+
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({href: '/test', to: '/test'}),
+    );
+  });
+
+  it('passes `to` equal to `href` for custom components via `as` prop', () => {
+    const spy = vi.fn(
+      ({
+        children,
+        ...props
+      }: {
+        children?: React.ReactNode;
+        [key: string]: unknown;
+      }) => (
+        <a data-testid="spy-link" href={props.href as string}>
+          {children}
+        </a>
+      ),
+    );
+    const SpyLink = forwardRef<
+      HTMLAnchorElement,
+      {children?: React.ReactNode; [key: string]: unknown}
+    >((props, _ref) => spy(props));
+    SpyLink.displayName = 'SpyLink';
+
+    render(<TestConsumer as={SpyLink} />);
+
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({href: '/test', to: '/test'}),
+    );
+  });
+
+  it('does NOT pass `to` for native <a> (no provider, no as)', () => {
+    render(<TestConsumer />);
+    const link = screen.getByTestId('resolved-link');
+    // Native <a> doesn't use `to`, and we don't wrap it
+    expect(link).toHaveAttribute('href', '/test');
+    expect(link).not.toHaveAttribute('to');
+  });
+
+  it('works with to-based router links (e.g. React Router)', () => {
+    render(
+      <XDSLinkProvider component={ToBasedRouterLink}>
+        <TestConsumer />
+      </XDSLinkProvider>,
+    );
+    const link = screen.getByTestId('resolved-link');
+    expect(link).toHaveAttribute('data-router-link');
+    expect(link).toHaveAttribute('data-to', '/test');
+    expect(link).toHaveAttribute('href', '/test');
+  });
+
+  it('to-based router works with as prop override', () => {
+    render(<TestConsumer as={ToBasedRouterLink} />);
+    const link = screen.getByTestId('resolved-link');
+    expect(link).toHaveAttribute('data-router-link');
+    expect(link).toHaveAttribute('data-to', '/test');
   });
 });
 
