@@ -66,8 +66,7 @@ export interface XDSCircularProgressProps extends XDSBaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
   /**
    * Current value of the circular progress.
-   * Ignored when `isIndeterminate` is true.
-   * @default 0
+   * When omitted, the component renders an indeterminate spinning animation.
    */
   value?: number;
   /**
@@ -102,14 +101,6 @@ export interface XDSCircularProgressProps extends XDSBaseProps<HTMLDivElement> {
    * @default 'accent'
    */
   variant?: XDSCircularProgressVariant;
-  /**
-   * When true, renders an animated spinning indicator.
-   * Use when the progress amount is unknown.
-   * The `value` prop is ignored in this mode.
-   * Respects `prefers-reduced-motion` by slowing the animation.
-   * @default false
-   */
-  isIndeterminate?: boolean;
   /**
    * Test ID for testing utilities.
    */
@@ -217,6 +208,10 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     borderWidth: 0,
   },
+  ringWrapper: {
+    position: 'relative',
+    display: 'inline-flex',
+  },
 });
 
 const variantStyles = stylex.create({
@@ -266,18 +261,17 @@ const trackVariantStyles = stylex.create({
  * ```
  * <XDSCircularProgress value={75} label="Upload progress" />
  * <XDSCircularProgress value={75} label="Progress" max={100}>75%</XDSCircularProgress>
- * <XDSCircularProgress isIndeterminate label="Loading..." />
+ * <XDSCircularProgress label="Loading..." />
  * ```
  */
 export function XDSCircularProgress({
-  value = 0,
+  value,
   max = 100,
   label,
   isLabelHidden = true,
   children,
   size = 'md',
   variant = 'accent',
-  isIndeterminate = false,
   xstyle,
   className,
   style,
@@ -286,11 +280,13 @@ export function XDSCircularProgress({
   ...rest
 }: XDSCircularProgressProps) {
   const labelId = useId();
+  const isIndeterminate = value == null;
   const {diameter, strokeWidth} = SIZE_CONFIG[size];
   const radius = (diameter - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
-  const clampedValue = Math.min(Math.max(0, value), max);
+  const resolvedValue = value ?? 0;
+  const clampedValue = Math.min(Math.max(0, resolvedValue), max);
   const percentage = max > 0 ? clampedValue / max : 0;
   const dashoffset = circumference * (1 - percentage);
 
@@ -315,7 +311,7 @@ export function XDSCircularProgress({
         {label}
       </span>
 
-      <div style={{position: 'relative', display: 'inline-flex'}}>
+      <div {...stylex.props(styles.ringWrapper)}>
         <svg
           role={isIndeterminate ? 'progressbar' : 'meter'}
           aria-labelledby={labelId}

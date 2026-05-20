@@ -31,9 +31,9 @@ const meta: Meta<typeof XDSCircularProgress> = {
       options: ['accent', 'success', 'warning', 'error', 'neutral'],
       description: 'Semantic color variant',
     },
-    isIndeterminate: {
+    isLabelHidden: {
       control: 'boolean',
-      description: 'Spinning animation',
+      description: 'Visually hide the label',
     },
   },
 };
@@ -118,7 +118,6 @@ export const Full: Story = {
 
 export const Indeterminate: Story = {
   args: {
-    isIndeterminate: true,
     label: 'Loading...',
   },
 };
@@ -126,9 +125,9 @@ export const Indeterminate: Story = {
 export const IndeterminateSizes: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '24px', alignItems: 'center'}}>
-      <XDSCircularProgress isIndeterminate size="sm" label="Loading small" />
-      <XDSCircularProgress isIndeterminate size="md" label="Loading medium" />
-      <XDSCircularProgress isIndeterminate size="lg" label="Loading large" />
+      <XDSCircularProgress size="sm" label="Loading small" />
+      <XDSCircularProgress size="md" label="Loading medium" />
+      <XDSCircularProgress size="lg" label="Loading large" />
     </div>
   ),
 };
@@ -136,10 +135,10 @@ export const IndeterminateSizes: Story = {
 export const IndeterminateVariants: Story = {
   render: () => (
     <div style={{display: 'flex', gap: '24px', alignItems: 'center'}}>
-      <XDSCircularProgress isIndeterminate label="Accent" variant="accent" />
-      <XDSCircularProgress isIndeterminate label="Positive" variant="success" />
-      <XDSCircularProgress isIndeterminate label="Warning" variant="warning" />
-      <XDSCircularProgress isIndeterminate label="Negative" variant="error" />
+      <XDSCircularProgress label="Accent" variant="accent" />
+      <XDSCircularProgress label="Positive" variant="success" />
+      <XDSCircularProgress label="Warning" variant="warning" />
+      <XDSCircularProgress label="Negative" variant="error" />
     </div>
   ),
 };

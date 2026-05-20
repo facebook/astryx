@@ -9,8 +9,7 @@ export const docs = {
     {
       name: 'value',
       type: 'number',
-      description: 'Current value (ignored when indeterminate).',
-      default: '0',
+      description: 'Current value. When omitted, renders an indeterminate spinning animation.',
     },
     {
       name: 'max',
@@ -48,12 +47,6 @@ export const docs = {
       default: "'accent'",
     },
     {
-      name: 'isIndeterminate',
-      type: 'boolean',
-      description: 'Animated spinning indicator for unknown progress. Respects prefers-reduced-motion.',
-      default: 'false',
-    },
-    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -71,7 +64,7 @@ export const docs = {
     description:
       'A circular progress indicator that shows completion as a ring or arc. Use it for upload progress, score displays, dashboard gauges, or compact progress where horizontal space is limited. Complements XDSProgressBar for radial layouts.',
     bestPractices: [
-      { guidance: true, description: 'Use determinate mode when the total amount of work is known, and indeterminate when it cannot be calculated.' },
+      { guidance: true, description: 'Pass a value for determinate progress; omit value for an indeterminate spinner.' },
       { guidance: true, description: 'Provide center content (children) to give context — a percentage, icon, or short label.' },
       { guidance: true, description: 'Always provide a label, even though it is visually hidden by default — screen readers need it.' },
       { guidance: false, description: 'Use circular progress for long text labels — use XDSProgressBar instead, which has more room for label and value display.' },
@@ -87,8 +80,7 @@ export const docsZh = {
     {
       name: 'value',
       type: 'number',
-      description: '当前值（不确定模式下忽略）。',
-      default: '0',
+      description: '当前值。省略时渲染不确定旋转动画。',
     },
     {
       name: 'max',
@@ -126,12 +118,6 @@ export const docsZh = {
       default: "'accent'",
     },
     {
-      name: 'isIndeterminate',
-      type: 'boolean',
-      description: '用于未知进度的旋转动画指示器。遵循 prefers-reduced-motion。',
-      default: 'false',
-    },
-    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description: '用于布局自定义的 StyleX 样式。必须是 stylex.create() 的值。',
@@ -148,7 +134,7 @@ export const docsZh = {
     description:
       'A circular progress indicator that shows completion as a ring or arc. Use it for upload progress, score displays, dashboard gauges, or compact progress where horizontal space is limited. Complements XDSProgressBar for radial layouts.',
     bestPractices: [
-      { guidance: true, description: 'Use determinate mode when the total amount of work is known, and indeterminate when it cannot be calculated.' },
+      { guidance: true, description: 'Pass a value for determinate progress; omit value for an indeterminate spinner.' },
       { guidance: true, description: 'Provide center content (children) to give context — a percentage, icon, or short label.' },
       { guidance: true, description: 'Always provide a label, even though it is visually hidden by default — screen readers need it.' },
       { guidance: false, description: 'Use circular progress for long text labels — use XDSProgressBar instead, which has more room for label and value display.' },
@@ -165,7 +151,7 @@ export const docsDense = {
     description:
       'A circular progress indicator that shows completion as a ring or arc. Use it for upload progress, score displays, dashboard gauges, or compact progress where horizontal space is limited. Complements XDSProgressBar for radial layouts.',
     bestPractices: [
-      { guidance: true, description: 'Use determinate mode when the total amount of work is known, and indeterminate when it cannot be calculated.' },
+      { guidance: true, description: 'Pass a value for determinate progress; omit value for an indeterminate spinner.' },
       { guidance: true, description: 'Provide center content (children) to give context — a percentage, icon, or short label.' },
       { guidance: true, description: 'Always provide a label, even though it is visually hidden by default — screen readers need it.' },
       { guidance: false, description: 'Use circular progress for long text labels — use XDSProgressBar instead, which has more room for label and value display.' },
@@ -173,14 +159,13 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    value: 'Current value (ignored when indeterminate).',
+    value: 'Current value. Omit for indeterminate spinning animation.',
     max: 'Maximum value.',
     label: 'Accessible label for screen readers (required).',
     isLabelHidden: 'Visually hide label (remains accessible). Defaults to true.',
     children: 'Center content — percentage, icon, or custom.',
     size: 'Ring diameter (32px, 48px, 64px).',
     variant: 'Semantic color variant for the fill.',
-    isIndeterminate: 'Spinning animation for unknown progress.',
     xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
   },
 };

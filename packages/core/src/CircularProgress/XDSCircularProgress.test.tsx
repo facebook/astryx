@@ -112,14 +112,14 @@ describe('XDSCircularProgress', () => {
   });
 
   describe('indeterminate mode', () => {
-    it('renders with role="progressbar" when isIndeterminate', () => {
-      render(<XDSCircularProgress isIndeterminate label="Loading" />);
+    it('renders indeterminate when value is omitted', () => {
+      render(<XDSCircularProgress label="Loading" />);
       const progressbar = screen.getByRole('progressbar');
       expect(progressbar).toBeInTheDocument();
     });
 
     it('does not set aria-valuenow/min/max when indeterminate', () => {
-      render(<XDSCircularProgress isIndeterminate label="Loading" />);
+      render(<XDSCircularProgress label="Loading" />);
       const progressbar = screen.getByRole('progressbar');
       expect(progressbar).not.toHaveAttribute('aria-valuenow');
       expect(progressbar).not.toHaveAttribute('aria-valuemin');
@@ -127,7 +127,7 @@ describe('XDSCircularProgress', () => {
     });
 
     it('is labelled via aria-labelledby when indeterminate', () => {
-      render(<XDSCircularProgress isIndeterminate label="Loading data" />);
+      render(<XDSCircularProgress label="Loading data" />);
       const progressbar = screen.getByRole('progressbar');
       expect(progressbar).toHaveAttribute('aria-labelledby');
     });
@@ -142,11 +142,7 @@ describe('XDSCircularProgress', () => {
       ] as const;
       for (const variant of variants) {
         const {unmount} = render(
-          <XDSCircularProgress
-            isIndeterminate
-            label={variant}
-            variant={variant}
-          />,
+          <XDSCircularProgress label={variant} variant={variant} />,
         );
         expect(screen.getByRole('progressbar')).toBeInTheDocument();
         unmount();
@@ -154,11 +150,7 @@ describe('XDSCircularProgress', () => {
     });
 
     it('renders children alongside indeterminate animation', () => {
-      render(
-        <XDSCircularProgress isIndeterminate label="Loading">
-          ...
-        </XDSCircularProgress>,
-      );
+      render(<XDSCircularProgress label="Loading">...</XDSCircularProgress>);
       expect(screen.getByText('...')).toBeInTheDocument();
     });
   });
