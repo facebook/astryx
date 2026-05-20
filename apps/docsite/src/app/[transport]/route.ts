@@ -1,11 +1,18 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file MCP Server route handler for the XDS docsite.
+ * @file MCP Server route handler — concierge variant.
  *
- * Exposes XDS component documentation, reference docs, templates, and blocks
- * via the Model Context Protocol. This allows AI agents (Cursor, Claude Desktop,
- * Windsurf, etc.) to query XDS knowledge without needing the CLI installed locally.
+ * Single tool: ask(query)
+ *
+ * The server acts as a context-aware concierge that composes targeted responses
+ * from multiple data sources (components, docs, blocks, templates). Instead of
+ * returning pre-shaped full docs, it assembles only the relevant pieces based
+ * on what the agent is trying to accomplish.
+ *
+ * Key insight: an agent building a sidebar needs ~400 tokens of targeted info
+ * (imports, composition pattern, key props, example) — not 4,700 tokens of
+ * everything ever documented about SideNav.
  *
  * Transport: Streamable HTTP (via mcp-handler)
  * Endpoint: /mcp (primary), /sse (legacy)
@@ -21,491 +28,355 @@ import {templates} from '../../generated/templateRegistry';
 const allComponents = Object.values(components).flat();
 const visibleComponents = allComponents.filter(c => !c.hidden);
 
+// ── Aliases / synonym map ──────────────────────────────────────────────
+const ALIASES: Record<string, string[]> = {
+  sidebar: ['SideNav', 'SideNavSection', 'SideNavItem', 'AppShell'],
+  toast: ['Toast', 'useXDSToast'],
+  notification: ['Toast', 'useXDSToast', 'Banner'],
+  'success message': ['Toast', 'useXDSToast'],
+  alert: ['AlertDialog', 'useXDSImperativeAlertDialog', 'Banner'],
+  confirmation: ['AlertDialog', 'useXDSImperativeAlertDialog'],
+  modal: ['Dialog', 'DialogHeader', 'useXDSImperativeDialog'],
+  popup: ['Dialog', 'Popover'],
+  dropdown: ['DropdownMenu', 'Selector', 'DropdownMenuItem'],
+  select: ['Selector', 'MultiSelector'],
+  table: ['Table', 'BaseTable', 'useXDSTableSortable', 'useXDSTableSelection'],
+  sortable: ['useXDSTableSortable'],
+  selection: ['useXDSTableSelection'],
+  tabs: ['TabList', 'Tab', 'TabPanel'],
+  form: ['FormLayout', 'TextInput', 'Selector', 'Switch', 'RadioList', 'Field'],
+  input: ['TextInput', 'TextArea', 'BaseTypeahead'],
+  autocomplete: ['Typeahead', 'BaseTypeahead'],
+  navigation: ['SideNav', 'TopNav', 'TopNavItem', 'MobileNav', 'Breadcrumb'],
+  nav: ['SideNav', 'TopNav', 'MobileNav'],
+  layout: ['AppShell', 'Layout', 'LayoutPanel', 'LayoutContent'],
+  grid: ['Grid', 'GridItem'],
+  card: ['Card', 'CardHeader', 'CardContent', 'CardFooter'],
+  button: ['Button', 'ButtonGroup'],
+  chat: ['ChatLayout', 'ChatMessageList', 'ChatMessage', 'ChatComposer'],
+  command: ['CommandPalette', 'CommandPaletteItem'],
+  tooltip: ['Tooltip'],
+  avatar: ['Avatar', 'AvatarStatusDot'],
+  badge: ['Badge'],
+  switch: ['Switch'],
+  toggle: ['Switch'],
+  radio: ['RadioList'],
+  checkbox: ['Checkbox'],
+  loading: ['Spinner', 'Skeleton'],
+  menu: ['DropdownMenu', 'ContextMenu', 'MoreMenu'],
+  'dark mode': ['Theme'],
+  theming: ['Theme'],
+  icon: ['Icon'],
+  search: ['Typeahead', 'BaseTypeahead', 'CommandPalette'],
+};
+
+// ── Query Intent Classification ────────────────────────────────────────
+
+type QueryIntent =
+  | 'how_to_build'
+  | 'what_props'
+  | 'how_to_use'
+  | 'find_component'
+  | 'theming'
+  | 'template_lookup';
+
+function classifyIntent(query: string): QueryIntent {
+  const lower = query.toLowerCase();
+  if (/\b(theme|theming|brand|color scheme|dark mode|light mode|define\s*theme|visual identity)\b/.test(lower))
+    return 'theming';
+  if (/\b(template|page layout|dashboard layout|settings page|landing page)\b/.test(lower))
+    return 'template_lookup';
+  if (/\b(props?|api|interface|types?|params?|arguments?|signature)\b/.test(lower))
+    return 'what_props';
+  if (/\b(how (do|to|can)|show me how|usage|pattern|example of)\b/.test(lower))
+    return 'how_to_use';
+  if (/\b(build|create|add|make|implement|set up|need a|want a|give me)\b/.test(lower))
+    return 'how_to_build';
+  return 'find_component';
+}
+
+// ── Component Resolution ───────────────────────────────────────────────
+
+function resolveComponents(query: string): typeof visibleComponents[0][] {
+  const lower = query.toLowerCase();
+  const found = new Set<string>();
+
+  // Check aliases
+  for (const [alias, names] of Object.entries(ALIASES)) {
+    if (lower.includes(alias)) {
+      names.forEach(n => found.add(n.toLowerCase()));
+    }
+  }
+
+  // Direct name matches
+  for (const comp of visibleComponents) {
+    if (lower.includes(comp.name.toLowerCase())) {
+      found.add(comp.name.toLowerCase());
+    }
+    for (const kw of comp.keywords) {
+      if (lower.includes(kw.toLowerCase()) && kw.length > 3) {
+        found.add(comp.name.toLowerCase());
+      }
+    }
+  }
+
+  return visibleComponents.filter(c => found.has(c.name.toLowerCase()));
+}
+
+// ── Response Composers ─────────────────────────────────────────────────
+
+function composeQuickRef(comp: typeof visibleComponents[0]) {
+  const keyProps = comp.props
+    .filter(p => p.required || ['variant', 'size', 'label', 'options', 'value', 'onChange', 'children', 'items'].includes(p.name))
+    .slice(0, 8)
+    .map(p => {
+      const parts = [`${p.name}${p.required ? '*' : ''}: ${p.type}`];
+      if (p.default) parts.push(`(default: ${p.default})`);
+      return parts.join(' ');
+    });
+
+  return {
+    name: comp.name,
+    import: `import {${comp.moduleName}} from '@xds/core/${comp.name}';`,
+    description: comp.description,
+    keyProps,
+    ...(comp.relatedComponents && comp.relatedComponents.length > 0
+      ? {composedWith: comp.relatedComponents.slice(0, 5)}
+      : {}),
+    ...(comp.params ? {returns: comp.returns} : {}),
+  };
+}
+
+function composeImplementation(comps: typeof visibleComponents[0][]) {
+  const result: {
+    imports: string[];
+    components: Array<{name: string; description: string; keyProps: string[]}>;
+    example?: {name: string; source: string};
+    tips?: string[];
+  } = {imports: [], components: []};
+
+  const seenImports = new Set<string>();
+  for (const comp of comps.slice(0, 5)) {
+    const imp = `import {${comp.moduleName}} from '@xds/core/${comp.name}';`;
+    if (!seenImports.has(imp)) {
+      seenImports.add(imp);
+      result.imports.push(imp);
+    }
+    const keyProps = comp.props
+      .filter(p => p.required || ['variant', 'size', 'label', 'children', 'items', 'options', 'value', 'onChange'].includes(p.name))
+      .slice(0, 6)
+      .map(p => `${p.name}${p.required ? '*' : ''}: ${p.type}`);
+    result.components.push({name: comp.name, description: comp.description, keyProps});
+  }
+
+  // Best matching example
+  const primaryComp = comps[0];
+  if (primaryComp) {
+    const showcase = blocks.find(
+      b => b.exampleFor.toLowerCase() === primaryComp.name.toLowerCase() && b.isShowcase,
+    );
+    if (showcase) {
+      result.example = {name: showcase.name, source: showcase.source};
+    }
+  }
+
+  // Tips
+  const tips: string[] = [];
+  for (const comp of comps.slice(0, 2)) {
+    if (comp.usage?.bestPractices) {
+      for (const bp of comp.usage.bestPractices.slice(0, 2)) {
+        if (bp.guidance) tips.push(`${comp.name}: ${bp.description}`);
+      }
+    }
+  }
+  if (tips.length > 0) result.tips = tips;
+
+  return result;
+}
+
+function composeThemingResponse(query: string) {
+  const lower = query.toLowerCase();
+  const themeDocs = docTopics.find(d => d.topic === 'theme');
+  if (!themeDocs) return {error: 'Theme documentation not found.'};
+
+  if (/\b(set up|define|create|custom|brand|gold|navy|coral|green)\b/.test(lower)) {
+    const defineSection = themeDocs.sections.find(s =>
+      s.title.toLowerCase().includes('definetheme'),
+    );
+    const quickStart = themeDocs.sections.find(s =>
+      s.title.toLowerCase().includes('quick start'),
+    );
+    return {
+      topic: 'Setting up a custom theme',
+      quickStart: quickStart?.content,
+      defineTheme: defineSection?.content,
+      hint: 'After defining your theme, wrap your app with <XDSTheme theme={yourTheme}>. Components inherit the theme automatically via tokens.',
+    };
+  }
+
+  if (/\b(dark|light|mode|switch)\b/.test(lower)) {
+    const darkSection = themeDocs.sections.find(s =>
+      s.title.toLowerCase().includes('dark') || s.title.toLowerCase().includes('mode'),
+    );
+    return {
+      topic: 'Dark/light mode',
+      content: darkSection?.content,
+      hint: 'Tokens use [light, dark] tuples. XDSTheme handles switching automatically.',
+    };
+  }
+
+  return {
+    topic: 'Theme System',
+    description: themeDocs.description,
+    sections: themeDocs.sections.map(s => s.title),
+    quickStart: themeDocs.sections[0]?.content,
+    hint: 'Ask about: "set up custom theme", "dark mode", "design tokens".',
+  };
+}
+
+function composeTemplateResponse(query: string) {
+  const lower = query.toLowerCase();
+  const matched = templates.filter(
+    t => lower.includes(t.name.toLowerCase()) ||
+         lower.includes(((t as {slug: string}).slug ?? '').toLowerCase()) ||
+         t.description.toLowerCase().split(' ').some(w => w.length > 4 && lower.includes(w)),
+  );
+
+  if (matched.length === 0) {
+    return {
+      available: templates.slice(0, 10).map(t => ({
+        name: t.name,
+        slug: (t as {slug: string}).slug,
+        description: t.description,
+      })),
+      hint: 'Ask about a specific template for source code.',
+    };
+  }
+
+  return matched.slice(0, 3).map(t => {
+    const tBlocks = blocks.filter(b => b.exampleFor === (t as {slug: string}).slug).slice(0, 1);
+    return {
+      name: t.name,
+      slug: (t as {slug: string}).slug,
+      description: t.description,
+      ...(tBlocks.length > 0 ? {source: tBlocks[0].source} : {}),
+    };
+  });
+}
+
+// ── Main Handler ───────────────────────────────────────────────────────
+
 const handler = createMcpHandler(
   server => {
-    // ── Tool: list_components ──────────────────────────────────────────
     server.tool(
-      'list_components',
-      'List all XDS components, optionally filtered by group or search query. ' +
-        'Returns component names, descriptions, and groups.',
+      'ask',
+      `Ask about XDS design system components, patterns, theming, or templates.\n\n` +
+        `Describe what you're trying to build or what you need to know. Returns targeted ` +
+        `imports, props, patterns, and examples — composed for your specific need.\n\n` +
+        `Examples:\n` +
+        `- "build a sidebar with sections for navigation"\n` +
+        `- "add a sortable table with row selection"\n` +
+        `- "show a success toast after form submit"\n` +
+        `- "what props does Button take"\n` +
+        `- "set up a custom theme with dark navy and gold"\n` +
+        `- "settings page template"\n` +
+        `- "how do I use the Selector component"`,
       {
-        group: z
-          .string()
-          .optional()
-          .describe(
-            'Filter by component group (e.g. "Dialog", "Navigation", "Form"). ' +
-              'Omit to list all components.',
-          ),
-        query: z
-          .string()
-          .optional()
-          .describe(
-            'Search query to filter components by name, description, or keywords.',
-          ),
-      },
-      async ({group, query}) => {
-        let filtered = visibleComponents;
-
-        if (group) {
-          const lowerGroup = group.toLowerCase();
-          filtered = filtered.filter(
-            c => c.group?.toLowerCase() === lowerGroup,
-          );
-        }
-
-        if (query) {
-          const lower = query.toLowerCase();
-          filtered = filtered.filter(
-            c =>
-              c.name.toLowerCase().includes(lower) ||
-              c.description.toLowerCase().includes(lower) ||
-              c.keywords.some(k => k.toLowerCase().includes(lower)),
-          );
-        }
-
-        const result = filtered.map(c => ({
-          name: c.name,
-          moduleName: c.moduleName,
-          group: c.group,
-          description: c.description,
-          hasProps: c.props.length > 0,
-          isHook: c.params !== null,
-        }));
-
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
-      },
-    );
-
-    // ── Tool: get_component ────────────────────────────────────────────
-    server.tool(
-      'get_component',
-      'Get full documentation for an XDS component including props, usage ' +
-        'guidelines, best practices, theming, and accessibility info.',
-      {
-        name: z
-          .string()
-          .describe(
-            'Component name (e.g. "Button", "Dialog", "Table"). ' +
-              'Case-insensitive, with or without "XDS" prefix.',
-          ),
-        section: z
-          .enum(['all', 'props', 'usage', 'theming'])
-          .optional()
-          .describe(
-            'Which section to return. Defaults to "all" for full docs.',
-          ),
-      },
-      async ({name, section = 'all'}) => {
-        const normalized = name.replace(/^XDS/i, '');
-        const comp = visibleComponents.find(
-          c => c.name.toLowerCase() === normalized.toLowerCase(),
-        );
-
-        if (!comp) {
-          // Fuzzy match
-          const lower = normalized.toLowerCase();
-          const candidates = visibleComponents
-            .filter(
-              c =>
-                c.name.toLowerCase().includes(lower) ||
-                lower.includes(c.name.toLowerCase()),
-            )
-            .slice(0, 5);
-
-          const suggestions =
-            candidates.length > 0
-              ? `\nDid you mean: ${candidates.map(c => c.name).join(', ')}?`
-              : '';
-          return {
-            content: [
-              {
-                type: 'text' as const,
-                text: `Component "${name}" not found.${suggestions}`,
-              },
-            ],
-            isError: true,
-          };
-        }
-
-        let result: Record<string, unknown>;
-
-        switch (section) {
-          case 'props':
-            result = {
-              name: comp.name,
-              moduleName: comp.moduleName,
-              props: comp.props,
-              ...(comp.params ? {params: comp.params, returns: comp.returns} : {}),
-            };
-            break;
-          case 'usage':
-            result = {
-              name: comp.name,
-              usage: comp.usage,
-            };
-            break;
-          case 'theming':
-            result = {
-              name: comp.name,
-              theming: comp.theming,
-            };
-            break;
-          default:
-            result = {
-              name: comp.name,
-              moduleName: comp.moduleName,
-              group: comp.group,
-              description: comp.description,
-              props: comp.props,
-              usage: comp.usage,
-              theming: comp.theming,
-              relatedComponents: comp.relatedComponents,
-              relatedHooks: comp.relatedHooks,
-              ...(comp.params ? {params: comp.params, returns: comp.returns} : {}),
-            };
-        }
-
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
-      },
-    );
-
-    // ── Tool: get_docs ─────────────────────────────────────────────────
-    server.tool(
-      'get_docs',
-      'Get XDS reference documentation on topics like spacing, color, ' +
-        'typography, theming, getting started, etc.',
-      {
-        topic: z
-          .string()
-          .optional()
-          .describe(
-            'Topic slug (e.g. "spacing", "color", "getting-started"). ' +
-              'Omit to list all available topics.',
-          ),
-        section: z
-          .string()
-          .optional()
-          .describe(
-            'Return only a specific section by title (case-insensitive substring match).',
-          ),
-      },
-      async ({topic, section}) => {
-        if (!topic) {
-          const list = docTopics.map(d => ({
-            topic: d.topic,
-            title: d.title,
-            description: d.description,
-            category: d.category,
-          }));
-          return {
-            content: [
-              {
-                type: 'text' as const,
-                text: JSON.stringify(list, null, 2),
-              },
-            ],
-          };
-        }
-
-        const doc = docTopics.find(
-          d => d.topic.toLowerCase() === topic.toLowerCase(),
-        );
-        if (!doc) {
-          const available = docTopics.map(d => d.topic).join(', ');
-          return {
-            content: [
-              {
-                type: 'text' as const,
-                text: `Topic "${topic}" not found. Available: ${available}`,
-              },
-            ],
-            isError: true,
-          };
-        }
-
-        if (section) {
-          const match = doc.sections.find(s =>
-            s.title.toLowerCase().includes(section.toLowerCase()),
-          );
-          if (!match) {
-            const available = doc.sections.map(s => s.title).join(', ');
-            return {
-              content: [
-                {
-                  type: 'text' as const,
-                  text: `Section "${section}" not found in "${topic}". Available: ${available}`,
-                },
-              ],
-              isError: true,
-            };
-          }
-          return {
-            content: [
-              {
-                type: 'text' as const,
-                text: JSON.stringify(match, null, 2),
-              },
-            ],
-          };
-        }
-
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: JSON.stringify(doc, null, 2),
-            },
-          ],
-        };
-      },
-    );
-
-    // ── Tool: list_templates ───────────────────────────────────────────
-    server.tool(
-      'list_templates',
-      'List available XDS page templates. Templates are full-page layouts ' +
-        'like dashboards, AI chat, settings, etc.',
-      {
-        query: z
-          .string()
-          .optional()
-          .describe('Search by name or description.'),
+        query: z.string().describe(
+          'What you need — describe what you\'re building or what you want to know.',
+        ),
       },
       async ({query}) => {
-        let filtered = templates;
+        const intent = classifyIntent(query);
+        let response: unknown;
 
-        if (query) {
-          const lower = query.toLowerCase();
-          filtered = filtered.filter(
-            t =>
-              t.name.toLowerCase().includes(lower) ||
-              t.description.toLowerCase().includes(lower),
-          );
+        switch (intent) {
+          case 'theming': {
+            response = composeThemingResponse(query);
+            break;
+          }
+          case 'template_lookup': {
+            response = composeTemplateResponse(query);
+            break;
+          }
+          case 'what_props': {
+            const comps = resolveComponents(query);
+            if (comps.length === 0) {
+              response = {error: 'Component not found.', hint: 'Try: Button, Table, Dialog, SideNav, Selector, Toast'};
+            } else {
+              const comp = comps[0];
+              response = {
+                name: comp.name,
+                import: `import {${comp.moduleName}} from '@xds/core/${comp.name}';`,
+                props: comp.props,
+                ...(comp.params ? {hookParams: comp.params, returns: comp.returns} : {}),
+              };
+            }
+            break;
+          }
+          case 'how_to_use': {
+            const comps = resolveComponents(query);
+            if (comps.length === 0) {
+              response = {error: 'Component not found.', hint: 'Try: Button, Table, Dialog, SideNav, Toast'};
+            } else {
+              const comp = comps[0];
+              const showcase = blocks.find(
+                b => b.exampleFor.toLowerCase() === comp.name.toLowerCase() && b.isShowcase,
+              );
+              response = {
+                ...composeQuickRef(comp),
+                ...(comp.params ? {hookParams: comp.params, returns: comp.returns} : {}),
+                ...(comp.usage?.bestPractices
+                  ? {tips: comp.usage.bestPractices.filter(b => b.guidance).slice(0, 3).map(b => b.description)}
+                  : {}),
+                ...(showcase ? {example: {name: showcase.name, source: showcase.source}} : {}),
+              };
+            }
+            break;
+          }
+          case 'how_to_build': {
+            const comps = resolveComponents(query);
+            if (comps.length === 0) {
+              const templateResult = composeTemplateResponse(query);
+              response = Array.isArray(templateResult) && templateResult.length > 0
+                ? templateResult
+                : {error: 'Could not identify components.', hint: 'Mention UI elements: sidebar, table, form, dialog, toast'};
+            } else {
+              response = composeImplementation(comps);
+            }
+            break;
+          }
+          default: {
+            const comps = resolveComponents(query);
+            if (comps.length === 0) {
+              const lower = query.toLowerCase();
+              const matches = visibleComponents
+                .filter(c =>
+                  c.name.toLowerCase().includes(lower) ||
+                  c.description.toLowerCase().includes(lower) ||
+                  c.keywords.some(k => k.toLowerCase().includes(lower)),
+                )
+                .slice(0, 8);
+              response = matches.length > 0
+                ? matches.map(composeQuickRef)
+                : {error: `No matches for "${query}".`, hint: 'Try: sidebar, table, form, dropdown, toast, dialog, button'};
+            } else {
+              response = comps.slice(0, 6).map(composeQuickRef);
+            }
+          }
         }
 
         return {
-          content: [
-            {
-              type: 'text' as const,
-              text: JSON.stringify(filtered, null, 2),
-            },
-          ],
-        };
-      },
-    );
-
-    // ── Tool: get_block_source ─────────────────────────────────────────
-    server.tool(
-      'get_block_source',
-      'Get the TSX source code for a specific XDS block/example. ' +
-        'Useful for seeing how components are composed together in practice.',
-      {
-        name: z
-          .string()
-          .optional()
-          .describe(
-            'Block directory name (e.g. "AlertDialogDeleteConfirmation"). ' +
-              'Omit to search by component.',
-          ),
-        component: z
-          .string()
-          .optional()
-          .describe(
-            'Find blocks that demonstrate this component (e.g. "Button", "Dialog").',
-          ),
-        showcaseOnly: z
-          .boolean()
-          .optional()
-          .describe('If true, only return the primary showcase example.'),
-      },
-      async ({name, component, showcaseOnly}) => {
-        if (name) {
-          const block = blocks.find(
-            b => b.dirName.toLowerCase() === name.toLowerCase(),
-          );
-          if (!block) {
-            return {
-              content: [
-                {
-                  type: 'text' as const,
-                  text: `Block "${name}" not found.`,
-                },
-              ],
-              isError: true,
-            };
-          }
-          return {
-            content: [
-              {
-                type: 'text' as const,
-                text: `// ${block.name}\n// ${block.description}\n\n${block.source}`,
-              },
-            ],
-          };
-        }
-
-        if (component) {
-          let matching = blocks.filter(
-            b => b.exampleFor.toLowerCase() === component.toLowerCase(),
-          );
-          if (showcaseOnly) {
-            matching = matching.filter(b => b.isShowcase);
-          }
-
-          if (matching.length === 0) {
-            return {
-              content: [
-                {
-                  type: 'text' as const,
-                  text: `No blocks found for component "${component}".`,
-                },
-              ],
-              isError: true,
-            };
-          }
-
-          // Return list with sources (limit to 5 to avoid huge responses)
-          const results = matching.slice(0, 5).map(b => ({
-            name: b.name,
-            dirName: b.dirName,
-            description: b.description,
-            isShowcase: b.isShowcase,
-            source: b.source,
-          }));
-
-          return {
-            content: [
-              {
-                type: 'text' as const,
-                text: JSON.stringify(results, null, 2),
-              },
-            ],
-          };
-        }
-
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: 'Provide either "name" or "component" parameter.',
-            },
-          ],
-          isError: true,
-        };
-      },
-    );
-
-    // ── Tool: search ───────────────────────────────────────────────────
-    server.tool(
-      'search',
-      'Search across all XDS resources — components, docs, templates, ' +
-        'and blocks. Returns the most relevant matches.',
-      {
-        query: z.string().describe('Search query.'),
-        limit: z
-          .number()
-          .optional()
-          .describe('Max results to return (default 10).'),
-      },
-      async ({query, limit = 10}) => {
-        const lower = query.toLowerCase();
-        const results: Array<{
-          type: string;
-          name: string;
-          description: string;
-          score: number;
-        }> = [];
-
-        // Search components
-        for (const c of visibleComponents) {
-          let score = 0;
-          if (c.name.toLowerCase() === lower) score = 100;
-          else if (c.name.toLowerCase().includes(lower)) score = 80;
-          else if (c.description.toLowerCase().includes(lower)) score = 60;
-          else if (c.keywords.some(k => k.toLowerCase().includes(lower)))
-            score = 50;
-          if (score > 0) {
-            results.push({
-              type: 'component',
-              name: c.name,
-              description: c.description,
-              score,
-            });
-          }
-        }
-
-        // Search docs
-        for (const d of docTopics) {
-          let score = 0;
-          if (d.topic.toLowerCase() === lower) score = 100;
-          else if (d.title.toLowerCase().includes(lower)) score = 80;
-          else if (d.description.toLowerCase().includes(lower)) score = 60;
-          if (score > 0) {
-            results.push({
-              type: 'doc',
-              name: d.topic,
-              description: d.description,
-              score,
-            });
-          }
-        }
-
-        // Search templates
-        for (const t of templates) {
-          let score = 0;
-          if (t.name.toLowerCase().includes(lower)) score = 70;
-          else if (t.description.toLowerCase().includes(lower)) score = 50;
-          if (score > 0) {
-            results.push({
-              type: 'template',
-              name: t.slug,
-              description: t.description,
-              score,
-            });
-          }
-        }
-
-        results.sort((a, b) => b.score - a.score);
-        const top = results.slice(0, limit);
-
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: JSON.stringify(top, null, 2),
-            },
-          ],
+          content: [{type: 'text' as const, text: JSON.stringify(response, null, 2)}],
         };
       },
     );
   },
   {
     capabilities: {tools: {}},
-    serverInfo: {
-      name: 'xds',
-      version: '1.0.0',
-    },
+    serverInfo: {name: 'xds', version: '2.0.0'},
   },
-  {
-    basePath: '',
-    maxDuration: 60,
-    disableSse: true,
-    verboseLogs: process.env.NODE_ENV === 'development',
-  },
+  {basePath: '', maxDuration: 60, disableSse: true, verboseLogs: process.env.NODE_ENV === 'development'},
 );
 
 export {handler as GET, handler as POST, handler as DELETE};
