@@ -102,27 +102,51 @@ export default tseslint.config(
       // React fundamentals
       '@eslint-react/rules-of-hooks': reactSeverity,
       '@eslint-react/purity': reactSeverity,
+      '@eslint-react/unsupported-syntax': reactSeverity,
 
       // Component structure bugs
       '@eslint-react/no-nested-component-definitions': reactSeverity,
+      '@eslint-react/no-nested-lazy-component-declarations': reactSeverity,
       '@eslint-react/no-unstable-default-props': reactSeverity,
       '@eslint-react/no-unstable-context-value': reactSeverity,
       '@eslint-react/set-state-in-render': reactSeverity,
+      '@eslint-react/no-missing-component-display-name': reactSeverity,
+
+      // Hooks
+      '@eslint-react/use-memo': reactSeverity,
+      '@eslint-react/no-unnecessary-use-prefix': reactSeverity,
+      '@eslint-react/no-create-ref': reactSeverity,
 
       // DOM correctness
       '@eslint-react/dom-no-missing-button-type': reactSeverity,
       '@eslint-react/dom-no-void-elements-with-children': reactSeverity,
+      '@eslint-react/dom-no-dangerously-set-innerhtml': reactSeverity,
+      '@eslint-react/dom-no-dangerously-set-innerhtml-with-children': reactSeverity,
+      '@eslint-react/dom-no-find-dom-node': reactSeverity,
+      '@eslint-react/dom-no-flush-sync': reactSeverity,
+      '@eslint-react/dom-no-script-url': reactSeverity,
+      '@eslint-react/dom-no-string-style-prop': reactSeverity,
+      '@eslint-react/dom-no-unknown-property': reactSeverity,
 
       // JSX correctness
       '@eslint-react/no-missing-key': reactSeverity,
       '@eslint-react/jsx-no-comment-textnodes': reactSeverity,
       '@eslint-react/jsx-no-leaked-dollar': reactSeverity,
+      '@eslint-react/jsx-no-children-prop': reactSeverity,
+      '@eslint-react/jsx-no-children-prop-with-children': reactSeverity,
+      '@eslint-react/jsx-no-key-after-spread': reactSeverity,
+      '@eslint-react/jsx-no-leaked-semicolon': reactSeverity,
+      '@eslint-react/jsx-no-useless-fragment': reactSeverity,
+
+      // Naming conventions
+      '@eslint-react/naming-convention-context-name': reactSeverity,
 
       // Resource leak prevention
       '@eslint-react/web-api-no-leaked-event-listener': reactSeverity,
       '@eslint-react/web-api-no-leaked-interval': reactSeverity,
       '@eslint-react/web-api-no-leaked-timeout': reactSeverity,
       '@eslint-react/web-api-no-leaked-resize-observer': reactSeverity,
+      '@eslint-react/web-api-no-leaked-fetch': reactSeverity,
     },
   },
 );

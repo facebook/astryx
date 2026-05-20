@@ -5,7 +5,7 @@
 /**
  * @file XDSBreadcrumbs.tsx
  * @input Uses React, createContext, stylex, theme tokens
- * @output Exports XDSBreadcrumbs component, XDSBreadcrumbsProps, BreadcrumbCtx
+ * @output Exports XDSBreadcrumbs component, XDSBreadcrumbsProps, BreadcrumbContext
  * @position Core container component; consumed by index.ts
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -63,7 +63,7 @@ export interface BreadcrumbContextValue {
   separator: ReactNode;
 }
 
-export const BreadcrumbCtx = createContext<BreadcrumbContextValue>({
+export const BreadcrumbContext = createContext<BreadcrumbContextValue>({
   variant: 'default',
   separator: '/',
 });
@@ -158,7 +158,7 @@ export function XDSBreadcrumbs({
   );
 
   return (
-    <BreadcrumbCtx.Provider value={ctxValue}>
+    <BreadcrumbContext.Provider value={ctxValue}>
       <nav
         ref={ref}
         aria-label={label}
@@ -171,7 +171,7 @@ export function XDSBreadcrumbs({
         {...rest}>
         <ol {...stylex.props(listStyles.root)}>{children}</ol>
       </nav>
-    </BreadcrumbCtx.Provider>
+    </BreadcrumbContext.Provider>
   );
 }
 

@@ -25,7 +25,7 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, typeScaleVars} from '../theme/tokens.stylex';
-import {BreadcrumbCtx} from './XDSBreadcrumbs';
+import {BreadcrumbContext} from './XDSBreadcrumbs';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {xdsClassName, mergeProps} from '../utils';
@@ -174,7 +174,7 @@ export function XDSBreadcrumbItem({
   startIcon,
   'data-testid': testId,
 }: XDSBreadcrumbItemProps) {
-  const ctx = useContext(BreadcrumbCtx);
+  const ctx = useContext(BreadcrumbContext);
   const LinkComponent = useXDSLinkComponent(as);
   const isSupporting = ctx.variant === 'supporting';
   const liRef = useRef<HTMLLIElement>(null);

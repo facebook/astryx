@@ -306,11 +306,13 @@ describe('XDSTopNavItem', () => {
     const AnotherLink = forwardRef<
       HTMLAnchorElement,
       ComponentPropsWithoutRef<'a'>
-    >(({children, ...props}, ref) => (
-      <a ref={ref} data-another-link {...props}>
-        {children}
-      </a>
-    ));
+    >(function AnotherLink({children, ...props}, ref) {
+      return (
+        <a ref={ref} data-another-link {...props}>
+          {children}
+        </a>
+      );
+    });
     render(
       <XDSLinkProvider component={AnotherLink}>
         <XDSTopNavItem label="Home" href="/" as={CustomLink} />

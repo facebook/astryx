@@ -27,29 +27,17 @@ CustomLink.displayName = 'CustomLink';
 
 describe('XDSLink', () => {
   it('renders children as link text', () => {
-    render(
-      <XDSLink href="/test">
-        Click me
-      </XDSLink>,
-    );
+    render(<XDSLink href="/test">Click me</XDSLink>);
     expect(screen.getByRole('link', {name: 'Click me'})).toBeInTheDocument();
   });
 
   it('renders with href attribute', () => {
-    render(
-      <XDSLink href="/destination">
-        Link
-      </XDSLink>,
-    );
+    render(<XDSLink href="/destination">Link</XDSLink>);
     expect(screen.getByRole('link')).toHaveAttribute('href', '/destination');
   });
 
   it('does not render aria-label when label is omitted', () => {
-    render(
-      <XDSLink href="/test">
-        Visible text
-      </XDSLink>,
-    );
+    render(<XDSLink href="/test">Visible text</XDSLink>);
     expect(screen.getByRole('link')).not.toHaveAttribute('aria-label');
   });
 
@@ -122,10 +110,7 @@ describe('XDSLink', () => {
 
   it('renders external link with existing rel merged', () => {
     render(
-      <XDSLink
-        href="https://example.com"
-        isExternalLink
-        rel="sponsored">
+      <XDSLink href="https://example.com" isExternalLink rel="sponsored">
         External Link
       </XDSLink>,
     );
@@ -199,9 +184,7 @@ describe('XDSLink', () => {
   it('renders custom component from XDSLinkProvider', () => {
     render(
       <XDSLinkProvider component={CustomLink}>
-        <XDSLink href="/provider">
-          Provider Link
-        </XDSLink>
+        <XDSLink href="/provider">Provider Link</XDSLink>
       </XDSLinkProvider>,
     );
     const link = screen.getByRole('link', {name: 'Provider Link'});
@@ -212,11 +195,13 @@ describe('XDSLink', () => {
     const AnotherLink = forwardRef<
       HTMLAnchorElement,
       ComponentPropsWithoutRef<'a'>
-    >(({children, ...props}, ref) => (
-      <a ref={ref} data-another-link {...props}>
-        {children}
-      </a>
-    ));
+    >(function AnotherLink({children, ...props}, ref) {
+      return (
+        <a ref={ref} data-another-link {...props}>
+          {children}
+        </a>
+      );
+    });
     render(
       <XDSLinkProvider component={AnotherLink}>
         <XDSLink href="/override" as={CustomLink}>
