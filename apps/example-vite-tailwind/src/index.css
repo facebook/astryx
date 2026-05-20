@@ -1,0 +1,17 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+/*
+ * Layer order for XDS + Tailwind coexistence in Vite.
+ *
+ * Desired priority (lowest → highest):
+ *   reset → theme → base → xds-base → xds-theme → components → utilities
+ */
+@layer reset, theme, base, xds-base, xds-theme, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "@xds/core/reset.css";
+@import "@xds/core/xds.css";
+@import "@xds/theme-default/theme.css";
+@import "@xds/core/tailwind-theme.css";
+@import "tailwindcss/utilities.css" layer(utilities);

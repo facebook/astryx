@@ -2914,6 +2914,15 @@
     postcss "^8.5.10"
     tailwindcss "4.3.0"
 
+"@tailwindcss/vite@^4":
+  version "4.3.0"
+  resolved "https://registry.yarnpkg.com/@tailwindcss/vite/-/vite-4.3.0.tgz#b2bbc069a4c700ea7aef5ee30416d84b7652e136"
+  integrity sha512-t6J3OrB5Fc0ExuhohouH0fWUGMYL6PTLhW+E7zIk/pdbnJARZDCwjBznFnkh5ynRnIRSI4YjtTH0t6USjJISrw==
+  dependencies:
+    "@tailwindcss/node" "4.3.0"
+    "@tailwindcss/oxide" "4.3.0"
+    tailwindcss "4.3.0"
+
 "@testing-library/dom@^10.0.0":
   version "10.4.1"
   resolved "https://registry.npmjs.org/@testing-library/dom/-/dom-10.4.1.tgz"
