@@ -87,7 +87,7 @@ export interface UseImageModeOptions {
  */
 function perceptualLightness(r: number, g: number, b: number): number {
   const lin = (c: number) => Math.pow(c / 255, 2.4);
-  const y = 0.2126729 * lin(r) + 0.7151522 * lin(g) + 0.0721750 * lin(b);
+  const y = 0.2126729 * lin(r) + 0.7151522 * lin(g) + 0.072175 * lin(b);
   return Math.pow(y, 0.56);
 }
 
@@ -143,7 +143,9 @@ export function useImageMode(
         const imageData = ctx.getImageData(0, 0, sampleSize, sampleSize).data;
 
         // Average all sampled pixels
-        let totalR = 0, totalG = 0, totalB = 0;
+        let totalR = 0,
+          totalG = 0,
+          totalB = 0;
         const pixelCount = sampleSize * sampleSize;
         for (let i = 0; i < imageData.length; i += 4) {
           totalR += imageData[i];
@@ -169,7 +171,7 @@ export function useImageMode(
     return () => {
       cancelled = true;
     };
-  }, [src, region?.x, region?.y, region?.width, region?.height, threshold, fallback]);
+  }, [src, region, threshold, fallback]);
 
   return mode;
 }

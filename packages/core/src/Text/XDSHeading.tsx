@@ -245,7 +245,7 @@ export function XDSHeading({
         headingRef as React.MutableRefObject<HTMLHeadingElement | null>
       ).current = element;
     },
-    [ref, truncation.ref],
+    [ref, truncation],
   );
 
   // Build inline style for -webkit-line-clamp (dynamic value)

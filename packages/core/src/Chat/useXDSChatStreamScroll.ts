@@ -221,7 +221,7 @@ export function useXDSChatStreamScroll({
     lockedRef.current = false;
     animatingRef.current = false;
     setIsLocked(false);
-  }, [scrollRef]);
+  }, []);
 
   const scrollIfLocked = useCallback(() => {
     if (!enabled) return;

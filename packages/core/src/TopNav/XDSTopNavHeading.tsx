@@ -363,7 +363,7 @@ export function XDSTopNavHeading({
         popover.triggerRef(el);
       }
     },
-    [ref, popover, menu],
+    [ref, popover, menu, setTriggerEl],
   );
 
   const showChevron = !!menu;

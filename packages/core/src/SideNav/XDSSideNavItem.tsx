@@ -18,7 +18,14 @@
  * - /packages/cli/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
-import {useCallback, useId, useRef, useState, type ReactNode} from 'react';
+import {
+  useCallback,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -368,8 +375,10 @@ export function XDSSideNavItem({
   });
 
   // Collapse state for items with children
-  const itemCollapsibleConfig =
-    typeof itemCollapsible === 'object' ? itemCollapsible : {};
+  const itemCollapsibleConfig = useMemo(
+    () => (typeof itemCollapsible === 'object' ? itemCollapsible : {}),
+    [itemCollapsible],
+  );
   const isItemCollapsible = hasChildren && itemCollapsible !== false;
   const itemControlledCollapsed = itemCollapsibleConfig.isCollapsed;
   const isItemControlled = itemControlledCollapsed !== undefined;

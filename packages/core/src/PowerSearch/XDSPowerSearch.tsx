@@ -654,7 +654,7 @@ export function XDSPowerSearch({
         }
       }
     },
-    [config, filters, onChange],
+    [config, filters, onChange, setPopoverState],
   );
 
   // Handle clicking a token to edit
@@ -675,7 +675,7 @@ export function XDSPowerSearch({
         },
       });
     },
-    [filters, isReadOnly, isDisabled],
+    [filters, isReadOnly, isDisabled, setPopoverState],
   );
 
   // Handle popover save

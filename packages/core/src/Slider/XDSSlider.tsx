@@ -18,6 +18,7 @@
 
 import {
   useId,
+  useMemo,
   useRef,
   useState,
   useCallback,
@@ -362,9 +363,10 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
     describedByParts.length > 0 ? describedByParts.join(' ') : undefined;
 
   // Value helpers
-  const values: number[] = isRange
-    ? (value as [number, number])
-    : [value as number];
+  const values: number[] = useMemo(
+    () => (isRange ? (value as [number, number]) : [value as number]),
+    [isRange, value],
+  );
 
   const valuesRef = useRef(values);
   valuesRef.current = values;

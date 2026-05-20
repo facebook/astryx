@@ -247,7 +247,7 @@ export function XDSText({
       // Local ref for tooltip anchor
       (textRef as React.MutableRefObject<HTMLElement | null>).current = element;
     },
-    [ref, truncation.ref],
+    [ref, truncation],
   );
 
   // Build inline style for -webkit-line-clamp (dynamic value)

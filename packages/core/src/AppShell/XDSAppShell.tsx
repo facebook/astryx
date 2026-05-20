@@ -625,7 +625,13 @@ export function XDSAppShell({
       isMobileNavEnabled: mobileNavEnabled,
       hasAutoToggle: mobileNavHasToggle,
     }),
-    [isBelowBreakpoint, isMobileNavOpen, setMobileNavOpen, mobileNavEnabled],
+    [
+      isBelowBreakpoint,
+      isMobileNavOpen,
+      setMobileNavOpen,
+      mobileNavEnabled,
+      mobileNavHasToggle,
+    ],
   );
 
   // =========================================================================

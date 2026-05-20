@@ -15,6 +15,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   type ReactNode,
   type RefCallback,
@@ -260,8 +261,10 @@ export function useXDSTooltip(
     onHide,
   });
 
-  // StyleX for the popover container
-  const popoverXstyle = [styles.container, marginStyle];
+  const popoverXstyle = useMemo(
+    () => [styles.container, marginStyle],
+    [marginStyle],
+  );
 
   const showTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -379,7 +382,7 @@ export function useXDSTooltip(
       layer.ref(el);
       interactionRef(el);
     },
-    [layer.ref, interactionRef],
+    [layer, interactionRef],
   );
 
   // Cleanup on unmount
@@ -394,7 +397,7 @@ export function useXDSTooltip(
     if (isDefaultOpen) {
       layer.show();
     }
-    // Only run on mount — isDefaultOpen is not reactive
+    // eslint-disable-next-line @eslint-react/exhaustive-deps -- mount-only: isDefaultOpen is not reactive
   }, []);
 
   // Controlled open state — overrides hover/focus triggers

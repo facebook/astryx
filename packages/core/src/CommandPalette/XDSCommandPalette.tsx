@@ -386,7 +386,14 @@ export function XDSCommandPalette<
         }
       });
     },
-    [searchSource, searchResults, startTransition, value, combobox],
+    [
+      searchSource,
+      searchResults,
+      startTransition,
+      value,
+      combobox,
+      setOptimisticResults,
+    ],
   );
 
   // Bootstrap on open — the only remaining effect.
@@ -394,7 +401,7 @@ export function XDSCommandPalette<
     if (isOpen) {
       runSearch('');
     }
-  }, [isOpen]);
+  }, [isOpen, runSearch]);
 
   // Wrap combobox's onKeyDown to intercept Escape (close palette) and
   // Enter on highlight (select + close), since we're not using combobox's

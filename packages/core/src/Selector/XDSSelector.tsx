@@ -626,6 +626,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
     if (isDefaultOpen) {
       popover.show();
     }
+    // eslint-disable-next-line @eslint-react/exhaustive-deps -- mount-only: isDefaultOpen is not reactive
   }, []);
 
   // Calculate offset to position selected item over trigger
@@ -769,7 +770,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
       children,
       highlightedIndex,
       size,
-      value,
+      normalizedValue,
       getItemId,
       onItemSelect,
       onItemMouseEnter,
@@ -827,7 +828,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
     }
 
     return elements;
-  }, [options, renderItem, listboxId, hasSearch, searchQuery, filteredItems]);
+  }, [options, renderItem, hasSearch, searchQuery, filteredItems]);
 
   return (
     <XDSField

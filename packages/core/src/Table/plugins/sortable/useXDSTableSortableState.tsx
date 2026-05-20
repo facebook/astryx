@@ -248,6 +248,10 @@ export function useXDSTableSortableState<
   const comparatorsRef = useRef(comparators);
   comparatorsRef.current = comparators;
 
+  // Stable ref for onSortChange to avoid recreating sortConfig on inline callback identity changes
+  const onSortChangeRef = useRef(onSortChange);
+  onSortChangeRef.current = onSortChange;
+
   // Sorted data — memoized on sort state + data identity
   const sortedData = useMemo(
     () => sortData(data, sort, comparatorsRef.current),
@@ -264,11 +268,11 @@ export function useXDSTableSortableState<
   const sortConfig = useMemo(
     (): UseXDSTableSortableConfig<TSortKey> => ({
       sort,
-      onSortChange,
+      onSortChange: onSortChangeRef.current,
       allowUnsortedState,
       isMultiSortEnabled,
     }),
-    [sort, onSortChange, allowUnsortedState, isMultiSortEnabled],
+    [sort, allowUnsortedState, isMultiSortEnabled],
   );
 
   return {sortedData, sort, sortConfig, applySort};

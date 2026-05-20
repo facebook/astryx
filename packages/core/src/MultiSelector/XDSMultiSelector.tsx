@@ -706,6 +706,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
     if (isDefaultOpen) {
       popover.show();
     }
+    // eslint-disable-next-line @eslint-react/exhaustive-deps -- mount-only: isDefaultOpen is not reactive
   }, []);
 
   // Handle toggle
@@ -841,7 +842,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
           searchRef.current?.focus();
         });
       }
-    }, [popover, hasSearch, filteredItems, optimisticValue]),
+    }, [popover, hasSearch, optimisticValue]),
     onClose: popover.hide,
     onToggle: handleNavigableToggle,
     listboxId,

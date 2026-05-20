@@ -402,7 +402,7 @@ export function XDSSideNavHeading({
         popover.triggerRef(el);
       }
     },
-    [ref, popover, menu],
+    [ref, popover, menu, setTriggerEl],
   );
 
   // In collapsed mode: hide if no icon, show icon-only if has icon

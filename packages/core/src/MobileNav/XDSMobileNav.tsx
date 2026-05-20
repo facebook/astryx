@@ -26,7 +26,14 @@
  * - /packages/cli/templates/blocks/components/MobileNav/ (showcase blocks)
  */
 
-import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   borderVars,
@@ -283,15 +290,18 @@ export function XDSMobileNav({
   // Read from AppShell context as fallback
   const appShellMobile = useXDSAppShellMobile();
   const isOpen = isOpenProp ?? appShellMobile.isMobileNavOpen;
-  const onOpenChange =
-    onOpenChangeProp ??
-    ((open: boolean) => {
-      if (open) {
-        appShellMobile.openMobileNav();
-      } else {
-        appShellMobile.closeMobileNav();
-      }
-    });
+  const onOpenChange = useMemo(
+    () =>
+      onOpenChangeProp ??
+      ((open: boolean) => {
+        if (open) {
+          appShellMobile.openMobileNav();
+        } else {
+          appShellMobile.closeMobileNav();
+        }
+      }),
+    [onOpenChangeProp, appShellMobile],
+  );
 
   const dialogRef = useRef<HTMLDialogElement>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
@@ -365,7 +375,7 @@ export function XDSMobileNav({
       }
       document.documentElement.style.overflow = '';
     };
-  }, [isOpen]);
+  }, [isOpen, side]);
 
   // Handle native cancel event (Escape key) — prevent default and route through onOpenChange
   const handleCancel = useCallback(

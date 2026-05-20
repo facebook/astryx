@@ -247,14 +247,13 @@ export function XDSLayout({
   );
 
   // Memoize slots info to avoid unnecessary re-renders
+  const hasHeader = header != null;
+  const hasFooter = footer != null;
+  const hasStart = start != null;
+  const hasEnd = end != null;
   const slotsValue = useMemo<LayoutSlots>(
-    () => ({
-      hasHeader: header != null,
-      hasFooter: footer != null,
-      hasStart: start != null,
-      hasEnd: end != null,
-    }),
-    [header != null, footer != null, start != null, end != null],
+    () => ({hasHeader, hasFooter, hasStart, hasEnd}),
+    [hasHeader, hasFooter, hasStart, hasEnd],
   );
 
   const tree = (

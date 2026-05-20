@@ -379,7 +379,7 @@ export function XDSTimeInput({
     return optimisticValue
       ? formatDisplayTime(optimisticValue, hasSeconds)
       : '';
-  }, [pendingInput, value, formatDisplayTime, hasSeconds]);
+  }, [pendingInput, optimisticValue, formatDisplayTime, hasSeconds]);
 
   // Check if current input is valid (for styling purposes)
   const isInputValid = useMemo(() => {

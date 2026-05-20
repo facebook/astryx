@@ -103,6 +103,7 @@ export default tseslint.config(
       '@eslint-react/rules-of-hooks': reactSeverity,
       '@eslint-react/purity': reactSeverity,
       '@eslint-react/unsupported-syntax': reactSeverity,
+      '@eslint-react/exhaustive-deps': reactSeverity,
 
       // Component structure bugs
       '@eslint-react/no-nested-component-definitions': reactSeverity,

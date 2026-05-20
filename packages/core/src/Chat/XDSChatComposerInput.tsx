@@ -334,6 +334,8 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
     }
   }, [controlledValue]);
 
+  const cleanupPortalsRef = useRef<(() => void) | null>(null);
+
   const emitChange = useCallback(() => {
     if (!editableRef.current) return;
     const text = serialize(editableRef.current);
@@ -346,7 +348,7 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
     const trimmedEmpty = text.trim().length === 0 && !hasTokens;
     setIsEmpty(trimmedEmpty);
     onChange?.(trimmedEmpty ? '' : text);
-    tokens.cleanupPortals();
+    cleanupPortalsRef.current?.();
   }, [onChange]);
 
   // --- Token management (via hook) ---
@@ -354,6 +356,7 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
     editableRef,
     onEmitChange: emitChange,
   });
+  cleanupPortalsRef.current = tokens.cleanupPortals;
 
   // --- Paste-as-token (internal default) ---
   const defaultPasteAsToken = useXDSChatPasteAsToken({inputRef: selfRef});
