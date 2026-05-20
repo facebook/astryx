@@ -92,6 +92,7 @@ const commands = [
   {name: 'theme', path: './commands/build-theme.mjs', register: 'registerTheme'},
   {name: 'hook', path: './commands/hook/index.mjs', register: 'registerHook'},
   {name: 'discover', path: './commands/discover.mjs', register: 'registerDiscover'},
+  {name: 'search', path: './commands/search.mjs', register: 'registerSearch'},
 ];
 
 for (const cmd of commands) {
