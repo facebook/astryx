@@ -15,6 +15,12 @@ export {
   type XDSChartSwatchVariant,
 } from './XDSChartSwatch';
 export {
+  XDSChartTooltip,
+  type XDSChartTooltipProps,
+  type XDSChartTooltipPlacement,
+} from './XDSChartTooltip';
+export {type TooltipSeriesValue} from './tooltip';
+export {
   bar,
   line,
   dot,

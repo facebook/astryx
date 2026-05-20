@@ -36,6 +36,7 @@ export const SimpleBar: StoryObj = {
       xKey="month"
       title="Monthly Revenue"
       series={[bar('revenue', {color: '#3b82f6'})]}
+      tooltip={true}
       grid={<XDSChartGrid horizontal />}
       axes={
         <>
@@ -143,6 +144,7 @@ export const MixedMarks: StoryObj = {
         bar('revenue', {color: '#3b82f6', label: 'Revenue'}),
         line('trend', {color: '#f59e0b', label: 'Trend'}),
       ]}
+      tooltip={true}
       legend={{position: 'end', alignment: 'start'}}
       grid={<XDSChartGrid horizontal />}
       axes={
