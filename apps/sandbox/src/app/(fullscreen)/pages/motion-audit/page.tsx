@@ -425,7 +425,7 @@ function ButtonLoadingDemo() {
               setTimeout(() => setCurrentLoading(false), 2000);
             }}
           />
-          <XDSText type="detail">Click to trigger loading state</XDSText>
+          <XDSText type="supporting">Click to trigger loading state</XDSText>
         </div>
         <div {...stylex.props(styles.side)}>
           <span {...stylex.props(styles.sideLabel, styles.proposedLabel)}>PROPOSED</span>
@@ -437,7 +437,7 @@ function ButtonLoadingDemo() {
               setTimeout(() => setProposedLoading(false), 2000);
             }}
           />
-          <XDSText type="detail">
+          <XDSText type="supporting">
             (Same component — crossfade would require internal change to XDSButton)
           </XDSText>
         </div>
@@ -466,7 +466,7 @@ function DropdownDemo() {
               {label: "Delete"},
             ]}
           />
-          <XDSText type="detail">Open → close quickly to feel the instant vanish</XDSText>
+          <XDSText type="supporting">Open → close quickly to feel the instant vanish</XDSText>
         </div>
         <div {...stylex.props(styles.side)}>
           <span {...stylex.props(styles.sideLabel, styles.proposedLabel)}>PROPOSED</span>
@@ -479,7 +479,7 @@ function DropdownDemo() {
               {label: "Delete"},
             ]}
           />
-          <XDSText type="detail">
+          <XDSText type="supporting">
             (Same component — exit fade requires layerAnimations.stylex.ts change)
           </XDSText>
         </div>
@@ -569,7 +569,7 @@ function TreeListDemo() {
           <XDSCard>
             <XDSTreeList items={treeData} density="compact" />
           </XDSCard>
-          <XDSText type="detail">
+          <XDSText type="supporting">
             (Same component — height animation requires XDSTreeListItem internal change)
           </XDSText>
         </div>
