@@ -175,6 +175,12 @@
       "import": "./dist/CheckboxList/index.mjs",
       "require": "./dist/CheckboxList/index.js"
     },
+    "./CircularProgress": {
+      "source": "./src/CircularProgress/index.ts",
+      "types": "./dist/CircularProgress/index.d.ts",
+      "import": "./dist/CircularProgress/index.mjs",
+      "require": "./dist/CircularProgress/index.js"
+    },
     "./Citation": {
       "source": "./src/Citation/index.ts",
       "types": "./dist/Citation/index.d.ts",
