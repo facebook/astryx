@@ -13,7 +13,7 @@ import React from 'react';
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, act, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {forwardRef, type ComponentPropsWithoutRef, type ReactNode} from 'react';
+import {type ReactNode} from 'react';
 import {XDSSideNav} from './XDSSideNav';
 import {XDSSideNavHeading} from './XDSSideNavHeading';
 import {XDSSideNavItem} from './XDSSideNavItem';
@@ -21,14 +21,17 @@ import {XDSSideNavSection} from './XDSSideNavSection';
 import {XDSLinkProvider} from '../Link/XDSLinkProvider';
 import {XDSSideNavCollapseContext} from './XDSSideNavCollapseContext';
 
-const CustomLink = forwardRef<HTMLAnchorElement, ComponentPropsWithoutRef<'a'>>(
-  ({children, ...props}, ref) => (
+function CustomLink({
+  children,
+  ref,
+  ...props
+}: React.ComponentPropsWithRef<'a'>) {
+  return (
     <a ref={ref} data-custom-link {...props}>
       {children}
     </a>
-  ),
-);
-CustomLink.displayName = 'CustomLink';
+  );
+}
 
 // =============================================================================
 // XDSSideNav

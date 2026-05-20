@@ -3,19 +3,21 @@
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {forwardRef, type ComponentPropsWithoutRef} from 'react';
 import {XDSBreadcrumbs} from './XDSBreadcrumbs';
 import {XDSBreadcrumbItem} from './XDSBreadcrumbItem';
 import {XDSLinkProvider} from '../Link/XDSLinkProvider';
 
-const CustomLink = forwardRef<HTMLAnchorElement, ComponentPropsWithoutRef<'a'>>(
-  ({children, ...props}, ref) => (
+function CustomLink({
+  children,
+  ref,
+  ...props
+}: React.ComponentPropsWithRef<'a'>) {
+  return (
     <a ref={ref} data-custom-link {...props}>
       {children}
     </a>
-  ),
-);
-CustomLink.displayName = 'CustomLink';
+  );
+}
 
 describe('XDSBreadcrumbs', () => {
   it('renders a nav landmark with aria-label', () => {

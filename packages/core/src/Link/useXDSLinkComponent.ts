@@ -20,7 +20,7 @@
  * - /packages/core/src/Link/Link.doc.mjs
  */
 
-import {useContext, useMemo, forwardRef, createElement} from 'react';
+import {useContext, useMemo, createElement} from 'react';
 import {XDSLinkContext} from './XDSLinkContext';
 import type {XDSLinkComponentType} from './types';
 
@@ -35,11 +35,17 @@ import type {XDSLinkComponentType} from './types';
 function createLinkWithTo(
   Component: XDSLinkComponentType,
 ): XDSLinkComponentType {
-  const LinkWithTo = forwardRef<unknown, {href?: string; to?: string}>(
-    ({href, ...rest}, ref) => {
-      return createElement(Component, {ref, href, to: href, ...rest});
-    },
-  );
+  function LinkWithTo({
+    href,
+    ref,
+    ...rest
+  }: {
+    href?: string;
+    to?: string;
+    ref?: React.Ref<unknown>;
+  }) {
+    return createElement(Component, {ref, href, to: href, ...rest});
+  }
   LinkWithTo.displayName = `LinkWithTo(${
     typeof Component === 'string'
       ? Component
