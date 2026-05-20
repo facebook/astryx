@@ -16,7 +16,7 @@ import {XDSDropdownMenu} from "@xds/core/DropdownMenu";
 import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from "@xds/core/SideNav";
 import {XDSCard} from "@xds/core/Card";
 import {XDSBadge} from "@xds/core/Badge";
-import {XDSIcon} from "@xds/core/Icon";
+import {HomeIcon, FolderIcon, Cog6ToothIcon} from "@heroicons/react/20/solid";
 import {
   durationVars,
   easeVars,
@@ -636,10 +636,10 @@ function SideNavDemo() {
           <div {...stylex.props(styles.sidenavArea)}>
             <div style={{width: currentCollapsed ? "56px" : "240px", overflow: "hidden", borderRight: "1px solid var(--color-border)"}}>
               <XDSSideNav collapsible>
-                <XDSSideNavSection>
-                  <XDSSideNavItem label="Dashboard" icon={<XDSIcon icon="home" size="sm" />} />
-                  <XDSSideNavItem label="Projects" icon={<XDSIcon icon="folder" size="sm" />} />
-                  <XDSSideNavItem label="Settings" icon={<XDSIcon icon="settings" size="sm" />} />
+                <XDSSideNavSection title="Navigation">
+                  <XDSSideNavItem label="Dashboard" icon={<HomeIcon width={16} height={16} />} />
+                  <XDSSideNavItem label="Projects" icon={<FolderIcon width={16} height={16} />} />
+                  <XDSSideNavItem label="Settings" icon={<Cog6ToothIcon width={16} height={16} />} />
                 </XDSSideNavSection>
               </XDSSideNav>
             </div>
@@ -664,10 +664,10 @@ function SideNavDemo() {
               proposedCollapsed ? styles.sidenavCollapsed : styles.sidenavExpanded,
             )}>
               <XDSSideNav collapsible>
-                <XDSSideNavSection>
-                  <XDSSideNavItem label="Dashboard" icon={<XDSIcon icon="home" size="sm" />} />
-                  <XDSSideNavItem label="Projects" icon={<XDSIcon icon="folder" size="sm" />} />
-                  <XDSSideNavItem label="Settings" icon={<XDSIcon icon="settings" size="sm" />} />
+                <XDSSideNavSection title="Navigation">
+                  <XDSSideNavItem label="Dashboard" icon={<HomeIcon width={16} height={16} />} />
+                  <XDSSideNavItem label="Projects" icon={<FolderIcon width={16} height={16} />} />
+                  <XDSSideNavItem label="Settings" icon={<Cog6ToothIcon width={16} height={16} />} />
                 </XDSSideNavSection>
               </XDSSideNav>
             </div>
