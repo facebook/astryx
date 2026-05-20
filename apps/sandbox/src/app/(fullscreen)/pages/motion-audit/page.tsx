@@ -458,7 +458,7 @@ function DropdownDemo() {
         <div {...stylex.props(styles.side)}>
           <span {...stylex.props(styles.sideLabel, styles.currentLabel)}>XDS CURRENT</span>
           <XDSDropdownMenu
-            trigger={{label: "Actions", variant: "secondary", size: "sm"}}
+            button={{label: "Actions", variant: "secondary", size: "sm"}}
             items={[
               {label: "Edit"},
               {label: "Duplicate"},
@@ -471,7 +471,7 @@ function DropdownDemo() {
         <div {...stylex.props(styles.side)}>
           <span {...stylex.props(styles.sideLabel, styles.proposedLabel)}>PROPOSED</span>
           <XDSDropdownMenu
-            trigger={{label: "Actions", variant: "secondary", size: "sm"}}
+            button={{label: "Actions", variant: "secondary", size: "sm"}}
             items={[
               {label: "Edit"},
               {label: "Duplicate"},
@@ -499,7 +499,7 @@ function SkeletonDemo() {
       <div {...stylex.props(styles.grid)}>
         <div {...stylex.props(styles.side)}>
           <span {...stylex.props(styles.sideLabel, styles.currentLabel)}>XDS CURRENT</span>
-          <XDSVStack gap={2} style={{width: "100%"}}>
+          <XDSVStack gap={2}>
             <XDSSkeleton width="80%" height={16} />
             <XDSSkeleton width="60%" height={16} index={1} />
             <XDSSkeleton width="70%" height={16} index={2} />
@@ -508,7 +508,7 @@ function SkeletonDemo() {
         </div>
         <div {...stylex.props(styles.side)}>
           <span {...stylex.props(styles.sideLabel, styles.proposedLabel)}>PROPOSED</span>
-          <XDSVStack gap={2} style={{width: "100%"}}>
+          <XDSVStack gap={2}>
             <div {...stylex.props(styles.skeletonProposed)} style={{width: "80%", height: 16, borderRadius: 6, background: "var(--color-skeleton)"}} />
             <div {...stylex.props(styles.skeletonProposed)} style={{width: "60%", height: 16, borderRadius: 6, background: "var(--color-skeleton)", animationDelay: "200ms"}} />
             <div {...stylex.props(styles.skeletonProposed)} style={{width: "70%", height: 16, borderRadius: 6, background: "var(--color-skeleton)", animationDelay: "400ms"}} />
@@ -594,9 +594,9 @@ function DialogDemo() {
         <div {...stylex.props(styles.side)}>
           <span {...stylex.props(styles.sideLabel, styles.currentLabel)}>XDS CURRENT</span>
           <XDSButton label="Open Dialog" variant="secondary" size="sm" onClick={() => setCurrentOpen(true)} />
-          <XDSDialog isOpen={currentOpen} onClose={() => setCurrentOpen(false)} purpose="info">
+          <XDSDialog isOpen={currentOpen} onOpenChange={() => setCurrentOpen(false)} purpose="info">
             <XDSDialogHeader title="Confirm action" />
-            <XDSVStack gap={3} style={{padding: "16px"}}>
+            <XDSVStack gap={3}>
               <XDSText type="body">This dialog has directional entry animation already. Close it to see the exit.</XDSText>
               <XDSButton label="Close" onClick={() => setCurrentOpen(false)} />
             </XDSVStack>
@@ -605,9 +605,9 @@ function DialogDemo() {
         <div {...stylex.props(styles.side)}>
           <span {...stylex.props(styles.sideLabel, styles.proposedLabel)}>PROPOSED</span>
           <XDSButton label="Open Dialog" variant="secondary" size="sm" onClick={() => setProposedOpen(true)} />
-          <XDSDialog isOpen={proposedOpen} onClose={() => setProposedOpen(false)} purpose="info">
+          <XDSDialog isOpen={proposedOpen} onOpenChange={() => setProposedOpen(false)} purpose="info">
             <XDSDialogHeader title="Confirm action" />
-            <XDSVStack gap={3} style={{padding: "16px"}}>
+            <XDSVStack gap={3}>
               <XDSText type="body">Same dialog — the exit animation improvement requires internal change (allow-discrete on ::backdrop + content).</XDSText>
               <XDSButton label="Close" onClick={() => setProposedOpen(false)} />
             </XDSVStack>
