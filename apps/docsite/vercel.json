@@ -1,4 +1,4 @@
 {
-  "installCommand": "cd ../.. && yarn install",
-  "buildCommand": "cd ../.. && yarn build && yarn workspace @xds/docsite build"
+  "installCommand": "cd ../.. && pnpm install",
+  "buildCommand": "cd ../.. && pnpm build && pnpm -F @xds/docsite build"
 }

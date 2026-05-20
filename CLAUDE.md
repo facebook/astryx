@@ -18,7 +18,7 @@ Tests how well AGENTS.md helps LLMs generate correct XDS component code.
 
 **How to execute:**
 
-1. Run `yarn workspace @xds/vibe-tests interactive --sample <count>` to set up iteration
+1. Run `pnpm -F @xds/vibe-tests interactive --sample <count>` to set up iteration
 2. Spawn parallel subagents (one per test prompt) to:
    - Read the task file from `results/<iteration>/tasks/{promptId}.json`
    - Generate code for the prompt using XDS components (AGENTS.md auto-injected)
@@ -26,7 +26,7 @@ Tests how well AGENTS.md helps LLMs generate correct XDS component code.
    - Write `.tsx` result to `results/<iteration>/results/{promptId}.tsx`
    - Write `.json` metadata to `results/<iteration>/results/{promptId}.json`
 3. Trigger `gh workflow run vibe-screenshots.yml` to build previews and capture screenshots
-4. Run `yarn workspace @xds/vibe-tests aggregate --iteration <id>` to see results
+4. Run `pnpm -F @xds/vibe-tests aggregate --iteration <id>` to see results
 
 **Degradation mode (--degradation):**
 Tests context retention across 10-turn conversations with filler, distractor, and recovery turns.
@@ -70,7 +70,7 @@ Documentation lives in two places:
 
 ## Quick Reference
 
-- **Package manager**: Yarn 1 (Classic)
+- **Package manager**: pnpm 10 (via corepack — see CONTRIBUTING.md)
 - **Testing**: Vitest (colocated tests)
 - **Components**: `packages/core/`
 - **Storybook**: `apps/storybook/`

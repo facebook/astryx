@@ -53,11 +53,10 @@ apps/sandbox/next-env.d.ts
 apps/example-nextjs-tailwind/.next
 .parity-test-results.json
 .worktree-parity-test
-.npmrc
-
 # Patch files
 *.patch
 *.rej
 
-# Lockfiles (Yarn is the package manager)
+# Lockfiles (pnpm is the package manager — see pnpm-workspace.yaml)
 package-lock.json
+yarn.lock

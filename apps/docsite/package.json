@@ -4,10 +4,8 @@
   "private": true,
   "scripts": {
     "generate": "node scripts/generate-data.mjs && node scripts/generate-playground-types.mjs",
-    "predev": "node scripts/generate-data.mjs && node scripts/generate-playground-types.mjs",
-    "dev": "next dev",
-    "prebuild": "node scripts/generate-data.mjs && node scripts/generate-playground-types.mjs",
-    "build": "next build",
+    "dev": "pnpm generate && next dev",
+    "build": "pnpm generate && next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

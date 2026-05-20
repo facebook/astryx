@@ -17,19 +17,29 @@ nvm install 22
 **Via nodejs.org:**
 Download and install from https://nodejs.org
 
-### Yarn
+### pnpm
 
-Install Yarn 1 (Classic) after Node.js is set up:
+XDS uses [pnpm](https://pnpm.io/) as its package manager (declared in
+`packageManager` field of `package.json`). The easiest way to install it
+is via [Corepack](https://nodejs.org/api/corepack.html), which ships with
+Node.js:
 
 ```bash
-npm install -g yarn
+corepack enable
+```
+
+This makes the `pnpm` command available with the exact version XDS pins.
+Alternatively, install pnpm directly:
+
+```bash
+npm install -g pnpm@9
 ```
 
 Verify installation:
 
 ```bash
 node --version   # v22.x.x
-yarn --version   # 1.22.x
+pnpm --version   # 9.x.x
 ```
 
 ## Getting Started
@@ -40,14 +50,14 @@ git clone https://github.com/facebookexperimental/xds.git
 cd xds
 
 # Install dependencies
-yarn install
+pnpm install
 
 # Build core package first (required for Storybook)
-yarn workspace @xds/core build
+pnpm -F @xds/core build
 
 # Start Storybook for component development
 cd apps/storybook
-yarn dev
+pnpm dev
 ```
 
 ### Running Storybook
@@ -58,17 +68,17 @@ Storybook loads pre-built packages from `dist/` folders, so you need to build pa
 
 ```bash
 # Build all packages
-yarn build
+pnpm build
 
 # Or build just core
-yarn workspace @xds/core build
+pnpm -F @xds/core build
 ```
 
 **Start Storybook:**
 
 ```bash
 cd apps/storybook
-yarn dev
+pnpm dev
 ```
 
 Storybook will open at http://localhost:6006 with:
@@ -81,11 +91,11 @@ Storybook will open at http://localhost:6006 with:
 
 ```bash
 # Rebuild core package
-yarn workspace @xds/core build
+pnpm -F @xds/core build
 
 # Restart Storybook to see changes
 cd apps/storybook
-yarn dev
+pnpm dev
 ```
 
 ## Project Structure
@@ -112,13 +122,13 @@ xds/
 
 | Command           | Description                       |
 | ----------------- | --------------------------------- |
-| `yarn install`    | Install all dependencies          |
-| `yarn dev`        | Start all dev servers             |
-| `yarn build`      | Build all packages                |
-| `yarn test`       | Run all tests                     |
-| `yarn test:watch` | Run tests in watch mode           |
-| `yarn storybook`  | Start Storybook at localhost:6006 |
-| `yarn lint`       | Lint all packages                 |
+| `pnpm install`    | Install all dependencies          |
+| `pnpm dev`        | Start all dev servers             |
+| `pnpm build`      | Build all packages                |
+| `pnpm test`       | Run all tests                     |
+| `pnpm test:watch` | Run tests in watch mode           |
+| `pnpm storybook`  | Start Storybook at localhost:6006 |
+| `pnpm lint`       | Lint all packages                 |
 
 ## Adding a New Component
 
@@ -221,7 +231,7 @@ export * from './MyComponent';
 > **Note:** Do not manually edit the `"exports"` field in `packages/core/package.json`.
 > It is auto-generated from the `src/` directory by `scripts/sync-exports.js` and
 > committed automatically when changes land on `main`. If you need to verify your
-> component will be included, run `yarn sync:exports:check`.
+> component will be included, run `pnpm sync:exports:check`.
 
 ## Testing
 
@@ -229,16 +239,19 @@ export * from './MyComponent';
 
 ```bash
 # All tests
-yarn test
+pnpm test
 
 # Watch mode
-yarn test:watch
+pnpm test:watch
 
 # Specific package
-yarn workspace @xds/core test
+pnpm -F @xds/core test
 
 # With coverage
-yarn test:coverage
+pnpm test:coverage
+
+# Screenshot tests
+pnpm test:screenshots
 ```
 
 ### Test Structure
@@ -260,7 +273,7 @@ We use [Changesets](https://github.com/changesets/changesets) for versioning.
 When you make a change that should be released:
 
 ```bash
-yarn changeset
+pnpm changeset
 ```
 
 Follow the prompts to:
@@ -281,8 +294,8 @@ This creates a file in `.changeset/` — commit it with your PR.
 
 1. Create a feature branch from `main`
 2. Make your changes with tests
-3. Run `yarn test` and `yarn lint`
-4. Add a changeset if needed: `yarn changeset`
+3. Run `pnpm test` and `pnpm lint`
+4. Add a changeset if needed: `pnpm changeset`
 5. Open a PR with a clear description
 
 ## Code Style
@@ -299,7 +312,7 @@ This creates a file in `.changeset/` — commit it with your PR.
 **"Failed to fetch dynamically imported module"**
 
 - Cause: Core package not built or out of date
-- Fix: `yarn workspace @xds/core build` then restart Storybook
+- Fix: `pnpm -F @xds/core build` then restart Storybook
 
 **"React is not defined"**
 
@@ -313,7 +326,7 @@ This creates a file in `.changeset/` — commit it with your PR.
 
 **Changes not appearing in Storybook**
 
-- Rebuild the package: `yarn workspace @xds/core build`
+- Rebuild the package: `pnpm -F @xds/core build`
 - Hard refresh browser: Cmd+Shift+R (Mac) or Ctrl+Shift+R (Windows)
 - Clear Storybook cache: Remove `apps/storybook/node_modules/.cache`
 

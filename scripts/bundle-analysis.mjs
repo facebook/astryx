@@ -179,7 +179,7 @@ function printFull(comps, cu) {
 }
 
 // Main
-if (!existsSync(DIST)) { console.error('Run `yarn build` first.'); process.exit(1); }
+if (!existsSync(DIST)) { console.error('Run `pnpm build` first.'); process.exit(1); }
 const args = process.argv.slice(2);
 const jsonMode = args.includes('--json');
 const cmpIdx = args.indexOf('--compare');

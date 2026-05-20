@@ -23,4 +23,4 @@ Components in lab:
 import {XDSCodeEditor} from '@xds/lab';
 ```
 
-Since this is a workspace package (not published), imports resolve via yarn workspaces in storybook and sandbox.
+Since this is a workspace package (not published), imports resolve via pnpm workspaces in storybook and sandbox.

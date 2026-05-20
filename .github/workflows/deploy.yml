@@ -51,16 +51,17 @@ jobs:
         with:
           ref: main
 
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v6
         with:
           node-version: 22
-          cache: 'yarn'
+          cache: 'pnpm'
 
-      - run: yarn install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile
 
-      - run: yarn test
+      - run: pnpm test
 
-      - run: yarn build
+      - run: pnpm build
 
   deploy:
     needs: test
@@ -74,32 +75,35 @@ jobs:
         with:
           ref: main
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 22
-          cache: 'yarn'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Build core package
-        run: yarn build
+        run: pnpm build
 
       - name: Build Storybook
-        run: yarn workspace @xds/storybook build
+        run: pnpm -F @xds/storybook build
 
       - name: Cache Next.js build
         uses: actions/cache@v5
         with:
           path: apps/sandbox/.next/cache
-          key: nextjs-sandbox-${{ hashFiles('yarn.lock') }}-${{ hashFiles('packages/core/dist/**') }}
+          key: nextjs-sandbox-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('packages/core/dist/**') }}
           restore-keys: |
-            nextjs-sandbox-${{ hashFiles('yarn.lock') }}-
+            nextjs-sandbox-${{ hashFiles('pnpm-lock.yaml') }}-
             nextjs-sandbox-
 
       - name: Build Sandbox
-        run: yarn workspace @xds/sandbox build
+        run: pnpm -F @xds/sandbox build
         env:
           SANDBOX_BASE_PATH: /sandbox
 
@@ -267,17 +271,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 22
-          cache: 'yarn'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Build all packages
-        run: yarn build
+        run: pnpm build
 
       - name: Configure Metaccio registry
         run: |
@@ -285,7 +292,7 @@ jobs:
           echo "//registry.facebook.net/:_authToken=${{ secrets.METACCIO_PUBLISH_TOKEN }}" >> .npmrc
 
       - name: Publish changed packages
-        run: yarn changeset publish
+        run: pnpm changeset publish
 
   # Publish canary versions to Metaccio on every push to main.
   # The @canary dist-tag always points to the latest main commit:
@@ -301,17 +308,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 22
-          cache: 'yarn'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Build all packages
-        run: yarn build
+        run: pnpm build
 
       - name: Configure Metaccio registry
         run: |

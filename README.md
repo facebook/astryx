@@ -22,6 +22,15 @@ For full setup instructions, see the **[@xds/core README](packages/core/README.m
 Quick install:
 
 ```bash
+# pnpm
+pnpm add @xds/core @xds/theme-default
+pnpm add -D @xds/cli
+
+# npm
+npm install @xds/core @xds/theme-default
+npm install -D @xds/cli
+
+# yarn
 yarn add @xds/core @xds/theme-default
 yarn add -D @xds/cli
 ```
@@ -40,15 +49,15 @@ Then follow the [setup guide](packages/core/README.md#quick-start) to import sty
 
 ## Packages
 
-| Package                                         | Description                                           | README                                       |
-| ----------------------------------------------- | ----------------------------------------------------- | -------------------------------------------- |
-| [`@xds/core`](packages/core)                    | Components, theme system, and utilities               | [README](packages/core/README.md)            |
-| [`@xds/cli`](packages/cli)                      | CLI tooling — component docs, scaffolding, codemods   | [README](packages/cli/README.md)             |
-| [`@xds/build`](packages/build)                  | Build plugins for StyleX source builds                | [README](packages/build/README.md)           |
-| [`@xds/vega`](packages/vega)                    | Vega/Vega-Lite chart wrapper                          | [README](packages/vega/README.md)            |
-| [`@xds/theme-default`](packages/themes/default) | Clean, professional default theme                     | [README](packages/themes/default/README.md)  |
-| [`@xds/theme-neutral`](packages/themes/neutral) | Muted, minimal aesthetic theme                        | [README](packages/themes/neutral/README.md)  |
-| [`@xds/theme-daily`](packages/themes/daily)     | Warm, productivity-focused theme                      | [README](packages/themes/daily/README.md)    |
+| Package                                         | Description                                         | README                                      |
+| ----------------------------------------------- | --------------------------------------------------- | ------------------------------------------- |
+| [`@xds/core`](packages/core)                    | Components, theme system, and utilities             | [README](packages/core/README.md)           |
+| [`@xds/cli`](packages/cli)                      | CLI tooling — component docs, scaffolding, codemods | [README](packages/cli/README.md)            |
+| [`@xds/build`](packages/build)                  | Build plugins for StyleX source builds              | [README](packages/build/README.md)          |
+| [`@xds/vega`](packages/vega)                    | Vega/Vega-Lite chart wrapper                        | [README](packages/vega/README.md)           |
+| [`@xds/theme-default`](packages/themes/default) | Clean, professional default theme                   | [README](packages/themes/default/README.md) |
+| [`@xds/theme-neutral`](packages/themes/neutral) | Muted, minimal aesthetic theme                      | [README](packages/themes/neutral/README.md) |
+| [`@xds/theme-daily`](packages/themes/daily)     | Warm, productivity-focused theme                    | [README](packages/themes/daily/README.md)   |
 
 ## Philosophy
 
@@ -80,7 +89,14 @@ Battle-tested design solutions for common interactions and workflows: table page
 
 ## Contributing
 
-We welcome contributions! Please see our contributing guide for details.
+We welcome contributions! See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the full guide.
+
+Quick start for contributors: this repo uses **pnpm 10** via [Corepack](https://nodejs.org/api/corepack.html). Enable it once and the right pnpm version installs automatically:
+
+```bash
+corepack enable
+pnpm install
+```
 
 ## License
 

@@ -4,7 +4,7 @@
  * @file Data extraction tests for the docsite.
  *
  * Validates that the generated registries contain expected data.
- * Run: yarn workspace @xds/docsite test
+ * Run: pnpm -F @xds/docsite test
  */
 
 import * as fs from 'node:fs';

@@ -47,25 +47,28 @@ jobs:
         with:
           ref: ${{ steps.pr-info.outputs.head_sha }}
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 22
-          cache: yarn
+          cache: pnpm
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Build core
-        run: yarn build
+        run: pnpm build
 
       - name: Build Storybook
-        run: yarn workspace @xds/storybook build
+        run: pnpm -F @xds/storybook build
 
       - name: Build Sandbox
         env:
           SANDBOX_BASE_PATH: /pr/${{ github.event.inputs.pr_number }}/sandbox
-        run: yarn workspace @xds/sandbox build
+        run: pnpm -F @xds/sandbox build
 
       - name: Deploy to GitHub Pages
         env:

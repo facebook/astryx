@@ -55,5 +55,31 @@
     "@clack/prompts": "^1.4.0",
     "commander": "^12.1.0",
     "jiti": "^2.7.0"
+  },
+  "peerDependencies": {
+    "@xds/core": "*",
+    "@xds/lab": "*",
+    "@xds/theme-default": "*",
+    "@xds/theme-neutral": "*"
+  },
+  "peerDependenciesMeta": {
+    "@xds/core": {
+      "optional": true
+    },
+    "@xds/lab": {
+      "optional": true
+    },
+    "@xds/theme-default": {
+      "optional": true
+    },
+    "@xds/theme-neutral": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@xds/core": "*",
+    "@xds/lab": "*",
+    "@xds/theme-default": "*",
+    "@xds/theme-neutral": "*"
   }
 }

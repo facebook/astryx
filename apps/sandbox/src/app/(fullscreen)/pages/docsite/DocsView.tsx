@@ -4244,7 +4244,7 @@ function PublishingPage() {
         </XDSHeading>
         <XDSCard padding={0}>
           <XDSCodeBlock
-            code={`# Clone the repo\ngit clone https://github.com/facebookexperimental/xds.git\ncd xds\n\n# Install dependencies\nyarn install\n\n# Start the sandbox\nyarn workspace @xds/sandbox dev\n\n# Run tests\nyarn test\n\n# Run storybook\nyarn storybook`}
+            code={`# Clone the repo\ngit clone https://github.com/facebookexperimental/xds.git\ncd xds\n\n# Install dependencies\npnpm install\n\n# Start the sandbox\npnpm -F @xds/sandbox dev\n\n# Run tests\npnpm test\n\n# Run storybook\npnpm storybook`}
             title="Terminal"
             language="bash"
             hasCopyButton
