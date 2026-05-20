@@ -1,5 +1,33 @@
 # @xds/cli
 
+# 0.0.14
+
+#### Codemods
+
+- `rename-action-props` — Rename `on*Action` props to `*Action` (React 19 convention) (#1942)
+- `rename-status-variants` — Rename `positive`/`negative` status to `success`/`error` (#2175)
+- `rename-section-wash-to-muted` — Rename Section `wash` variant to `muted` (#2063)
+
+#### New Features
+
+- **New component showcases** — XDSAvatarGroup, XDSInputGroup, XDSStepper, XDSButtonGroup, XDSContextMenu, XDSFileInput, XDSDateRangePicker, XDSDateTimePicker, XDSBlockquote
+- **Hook documentation system** — `xds hooks` CLI command for hook docs (#1849)
+- **Playground defaults** — Added to 19 more components (#2047)
+- **Theme/MediaTheme/SyntaxTheme showcases** — Utility showcase support (#2040, #2028)
+- **Slot elements** — Wired through playground UI for ReactNode props (#2012, #2005)
+- **`exampleFor` field** — Added to all block templates (#1966)
+- **`scaffold` flag** — Template metadata scaffold support (#1939)
+- **Table page templates** — Heatmap Status, Matcha Store, Chart Shoe Store (#2172, #2149, #2154)
+
+#### Fixes
+
+- **Group useXDSToast and useXDSCollapsible** with their parent components in docs (#2049)
+- **DropdownMenu inline data types** — Inline into items prop docs (#2027)
+- **Parent hook docs** to their component in docsite (#2022)
+
+
+---
+
 # 0.0.13
 
 #### Codemods

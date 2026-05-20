@@ -1,5 +1,116 @@
 # @xds/core
 
+# 0.0.14
+
+#### Breaking Changes
+
+- **`on*Action` → `*Action` (React 19 convention)** — `onChangeAction` → `changeAction`, `onClickAction` → `clickAction`, `onPressedChangeAction` → `pressedChangeAction`, `onScrollToTopAction` → `scrollToTopAction`. Aligns with React 19 action prop naming. (#1942)
+  **Codemod:** `npx xds upgrade --codemod rename-action-props`
+- **Status naming: `positive`/`negative` → `success`/`error`** — Converge status variant naming across all components. (#2175)
+  **Codemod:** `npx xds upgrade --codemod rename-status-variants`
+- **Section `wash` → `muted`** — Rename variant for consistency with XDSCard. (#2063)
+  **Codemod:** `npx xds upgrade --codemod rename-section-wash-to-muted`
+- **Stack `direction` defaults to `vertical`** — `XDSStack` no longer requires an explicit `direction` prop; omitting it gives vertical layout. (#1945)
+- **Table `textOverflow` default changed to `truncate`** — Was `wrap`, now truncates by default with tooltip on hover. (#2096)
+- **Remove deprecated `*Raw` token aliases** — Migrate any `*Raw` usage to standard tokens. (#2095)
+- **Remove runtime font loading from `defineTheme`** — Fonts are now handled at the CSS level only. (#2226)
+
+#### Upgrade
+
+```bash
+npx xds upgrade --apply
+```
+
+This runs all three codemods (`rename-action-props`, `rename-status-variants`, `rename-section-wash-to-muted`) in sequence.
+
+#### New Components
+
+- **XDSAvatarGroup** — Stacked avatar display for teams and lists (#2183)
+- **XDSInputGroup** — Combine multiple inputs into a single visual group (#2207)
+- **XDSStepper / XDSStep** — Multi-step flows and progress indicators (#2206)
+- **XDSButtonGroup** — Group related buttons with shared styling (#2202)
+- **XDSContextMenu** — Right-click context menus with nested items (#2195)
+- **XDSFileInput** — File upload with drag-and-drop support (#2184)
+- **XDSDateRangePicker** — Date range selection with calendar UI (#2201)
+- **XDSDateTimePicker** — Combined date and time input (#2199)
+- **XDSBlockquote** — Styled blockquote component (#2198)
+- **XDSOverlay** — Scrim + media theme overlay with CSS-first hover and touch support (#1912)
+- **XDSNavHeadingMenu** — Container component with size and keyboard nav (#1999)
+
+#### New Features
+
+- **Link `to` prop** — Pass `to` alongside `href` for router compatibility (#2237)
+- **Selector `hasSearch`** — Enable filtering/searching within selector options (#2142)
+- **CodeBlock `container` prop** — Control width and border on code blocks (#2132)
+- **Heading `display` type variants** — Large display headings for hero sections (#2054)
+- **Text custom theme-defined types** — Support arbitrary text types from your theme (#1840)
+- **Table structural children mode** — Use `<XDSTable>` with JSX children + Markdown integration (#2098)
+- **Table content-aware column widths** — Auto layout for children mode (#2105)
+- **Table responsive horizontal scroll** — Default column min-widths (#2043)
+- **TabList carousel overflow** — Arrow navigation for overflowing tabs (#1978)
+- **PowerSearch `components` map** — Per-type token and editor overrides (#2076)
+- **Markdown `components` map** — Custom component injection + XDSCitation extraction (#2073)
+- **Markdown `inlinePlugins`** — Custom text pattern rendering (#1917)
+- **SideNav built-in resize** — Integrate `useXDSResizable` directly (#1877)
+- **Resizable pill placement offset** — Auto-collapse flipping (#1876)
+- **Theme `--color-track` token** — Spinner consumes it for fully tokenized track (#2170)
+- **Server-safe utility subpath exports** — `@xds/core/server` for RSC (#1981)
+- **XDSLinkProvider adoption** — All link-rendering components now use the provider (#1906)
+
+#### Fixes
+
+- **Chat composer paste** — Fix silently dropped paste when no forwarded ref (#2179)
+- **Citation** — Prevent rest spread from overriding accessibility props; extend XDSBaseProps (#2217, #2092)
+- **Field** — Neutral gray hover shadow, focus border on input, horizontal-labels grid, z-index containment, click-to-focus on wrapper (#2157, #2059, #1890, #1839)
+- **FormLayout** — Equal-width horizontal children via CSS Grid (#2058)
+- **Link `label`** — Make optional; aria-label harms AT on text links (#2031)
+- **TopNav** — Stop click propagation on heading links, remove hover delay, add selected state to xdsClassName (#2135, #2133, #1997)
+- **Spinner** — Simplify color resolution with useXDSTheme (#2124)
+- **Markdown tables** — Reset container padding, alignment and width fixes (#2121, #2109)
+- **Calendar** — Add isolation to day cell container (#2001)
+- **CommandPalette/MultiSelector** — Prevent iOS zoom on input focus (#1993)
+- **Dialog** — Target-based backdrop detection for native popup compat (#1892)
+- **Typeahead** — Propagate generic type; prevent empty popover after selection (#2014, #1943)
+- **Selector/MultiSelector** — Resolve nested button HTML violation (#1853)
+- **ClickableCard** — Merge caller xstyle with internal interactive styles (#1893)
+- **RadioList** — Extend XDSBaseProps for standard prop inheritance; fix typography tokens (#2093, #1902)
+- **Tokenizer** — Add status to xdsClassName for theme targeting (#1995)
+- **List** — Wrap header + list in column container for flex parents (#2017)
+- **Section** — Propagate explicit padding to nested sections (#1972)
+- **AppShell** — Match flex layout properties on sticky sidenav container (#1850)
+- **Menu hover** — Gate behind `(hover: hover)` media query (#2046)
+- **ResizeObserver** — Migrate all usage to shared singleton for performance (#1990)
+- **Layout** — Container-driven edge compensation via :has() (#1987)
+- **Missing `xdsClassName` hooks** — Added to components using border tokens (#2244)
+- **ProgressBar** — Add xdsClassName to track for theme targeting (#2079)
+- **z-index isolation** — Add isolation to components with leaky z-index (#2004)
+- **`use client` directives** — Added to CommandPalette barrel, CodeBlock, ClickableCard, and others (#2069, #2048, #1833)
+- **Thumbnail** — Focus ring clipped by overflow hidden (#2264)
+- **DropdownMenu** — Light-dismiss + click-toggle race on touch browsers (#2186)
+- **Theme** — Baseline media theme color-scheme flip, standalone theme text styling fixes (#1921, #1831)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+- @czarandy
+- @ernestt
+- @josephfarina
+- @kentonquatman
+- @lexs
+- @marie-lucas
+- @nynexman4464
+- @rubyycheung
+- @rumble
+- @saivazian
+- @tedmcdo
+- @thedjpetersen
+- @zurfyx
+- @imdreamrunner
+
+---
+
 # 0.0.13
 
 #### Breaking Changes
@@ -381,6 +492,7 @@ Preview changes first (dry run): `npx xds upgrade --to 0.0.2`
 List all available codemods: `npx xds upgrade --list`
 
 12 codemods included:
+
 - `rename-selector-items-to-options` — Selector `items` → `options`
 - `unify-visibility-to-onOpenChange` — onHide/onClose/onShow/onToggle → `onOpenChange`
 - `unify-uncontrolled-to-defaultX` — initialIsOpen/initialIsExpanded → defaultX

@@ -1,6 +1,6 @@
 {
   "name": "@xds/theme-brutalist",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "private": true,
   "description": "Brutalist theme for XDS — zero radius, monospace, heavy borders",
   "author": "Meta Open Source",
@@ -49,9 +49,9 @@
     "build": "xds theme build src/brutalistTheme.ts -o dist/theme.css && tsup && tsc --project tsconfig.build.json"
   },
   "peerDependencies": {
-    "@xds/core": "0.0.13"
+    "@xds/core": "0.0.14"
   },
   "devDependencies": {
-    "@xds/cli": "0.0.13"
+    "@xds/cli": "0.0.14"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@xds/theme-gothic",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "displayName": "Gothic Theme",
   "private": false,
   "description": "Dark gothic theme for XDS \u2014 deep blue-gray palette with Manufacturing Consent headings, Fustat body, and Lucide icons",
@@ -52,11 +52,11 @@
     "lucide-react": "^1.16.0"
   },
   "peerDependencies": {
-    "@xds/core": "0.0.13",
+    "@xds/core": "0.0.14",
     "react": ">=19"
   },
   "devDependencies": {
-    "@xds/cli": "0.0.13"
+    "@xds/cli": "0.0.14"
   },
   "module": "./dist/source.mjs"
 }

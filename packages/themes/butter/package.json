@@ -1,6 +1,6 @@
 {
   "name": "@xds/theme-butter",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "displayName": "Butter Theme",
   "private": false,
   "description": "Warm, golden butter theme for XDS — creamy yellow palette with soft, inviting tones",
@@ -52,11 +52,11 @@
     "lucide-react": "^1.16.0"
   },
   "peerDependencies": {
-    "@xds/core": "0.0.13",
+    "@xds/core": "0.0.14",
     "react": ">=19"
   },
   "devDependencies": {
-    "@xds/cli": "0.0.13"
+    "@xds/cli": "0.0.14"
   },
   "module": "./dist/source.mjs"
 }

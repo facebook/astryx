@@ -764,7 +764,7 @@ importers:
         specifier: '>=0.10.0'
         version: 0.18.3
       '@xds/core':
-        specifier: 0.0.13
+        specifier: 0.0.14
         version: link:../core
       d3-array:
         specifier: ^3.2.4
@@ -795,17 +795,17 @@ importers:
   packages/themes/brutalist:
     dependencies:
       '@xds/core':
-        specifier: 0.0.13
+        specifier: 0.0.14
         version: link:../../core
     devDependencies:
       '@xds/cli':
-        specifier: 0.0.13
+        specifier: 0.0.14
         version: link:../../cli
 
   packages/themes/butter:
     dependencies:
       '@xds/core':
-        specifier: 0.0.13
+        specifier: 0.0.14
         version: link:../../core
       lucide-react:
         specifier: ^1.16.0
@@ -815,13 +815,13 @@ importers:
         version: 19.2.6
     devDependencies:
       '@xds/cli':
-        specifier: 0.0.13
+        specifier: 0.0.14
         version: link:../../cli
 
   packages/themes/chocolate:
     dependencies:
       '@xds/core':
-        specifier: 0.0.13
+        specifier: 0.0.14
         version: link:../../core
       lucide-react:
         specifier: ^1.16.0
@@ -831,13 +831,13 @@ importers:
         version: 19.2.6
     devDependencies:
       '@xds/cli':
-        specifier: 0.0.13
+        specifier: 0.0.14
         version: link:../../cli
 
   packages/themes/daily:
     dependencies:
       '@xds/core':
-        specifier: 0.0.13
+        specifier: 0.0.14
         version: link:../../core
       lucide-react:
         specifier: ^1.16.0
@@ -847,7 +847,7 @@ importers:
         version: 19.2.6
     devDependencies:
       '@xds/cli':
-        specifier: 0.0.13
+        specifier: 0.0.14
         version: link:../../cli
 
   packages/themes/default:
@@ -856,20 +856,20 @@ importers:
         specifier: ^2.2.0
         version: 2.2.0(react@19.2.6)
       '@xds/core':
-        specifier: 0.0.13
+        specifier: 0.0.14
         version: link:../../core
       react:
         specifier: '>=19'
         version: 19.2.6
     devDependencies:
       '@xds/cli':
-        specifier: 0.0.13
+        specifier: 0.0.14
         version: link:../../cli
 
   packages/themes/gothic:
     dependencies:
       '@xds/core':
-        specifier: 0.0.13
+        specifier: 0.0.14
         version: link:../../core
       lucide-react:
         specifier: ^1.16.0
@@ -879,13 +879,13 @@ importers:
         version: 19.2.6
     devDependencies:
       '@xds/cli':
-        specifier: 0.0.13
+        specifier: 0.0.14
         version: link:../../cli
 
   packages/themes/matcha:
     dependencies:
       '@xds/core':
-        specifier: 0.0.13
+        specifier: 0.0.14
         version: link:../../core
       lucide-react:
         specifier: ^1.16.0
@@ -895,13 +895,13 @@ importers:
         version: 19.2.6
     devDependencies:
       '@xds/cli':
-        specifier: 0.0.13
+        specifier: 0.0.14
         version: link:../../cli
 
   packages/themes/neutral:
     dependencies:
       '@xds/core':
-        specifier: 0.0.13
+        specifier: 0.0.14
         version: link:../../core
       lucide-react:
         specifier: ^1.16.0
@@ -911,13 +911,13 @@ importers:
         version: 19.2.6
     devDependencies:
       '@xds/cli':
-        specifier: 0.0.13
+        specifier: 0.0.14
         version: link:../../cli
 
   packages/themes/stone:
     dependencies:
       '@xds/core':
-        specifier: 0.0.13
+        specifier: 0.0.14
         version: link:../../core
       lucide-react:
         specifier: ^1.16.0
@@ -927,13 +927,13 @@ importers:
         version: 19.2.6
     devDependencies:
       '@xds/cli':
-        specifier: 0.0.13
+        specifier: 0.0.14
         version: link:../../cli
 
   packages/themes/y2k:
     dependencies:
       '@xds/core':
-        specifier: 0.0.13
+        specifier: 0.0.14
         version: link:../../core
       lucide-react:
         specifier: ^1.16.0
@@ -943,7 +943,7 @@ importers:
         version: 19.2.6
     devDependencies:
       '@xds/cli':
-        specifier: 0.0.13
+        specifier: 0.0.14
         version: link:../../cli
 
   packages/vega:
