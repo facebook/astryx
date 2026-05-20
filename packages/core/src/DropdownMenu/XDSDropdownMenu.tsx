@@ -391,9 +391,9 @@ export function XDSDropdownMenu({
             className,
             style,
           )}>
-          <XDSDropdownMenuContext.Provider value={contextValue}>
+          <XDSDropdownMenuContext value={contextValue}>
             {menuContent}
-          </XDSDropdownMenuContext.Provider>
+          </XDSDropdownMenuContext>
         </div>,
         {
           placement: 'below',

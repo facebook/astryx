@@ -4,7 +4,7 @@
 
 /**
  * @file XDSRadioListItem.tsx
- * @input Uses React useContext, useId, XDSRadioListContext
+ * @input Uses React use, useId, XDSRadioListContext
  * @output Exports XDSRadioListItem component, XDSRadioListItemProps
  * @position Core implementation; consumed by index.ts, tested by XDSRadioList.test.tsx
  *
@@ -16,7 +16,7 @@
  * - /packages/cli/templates/blocks/components/RadioList/ (showcase blocks)
  */
 
-import {useContext, useId, type ReactNode} from 'react';
+import {use, useId, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -243,7 +243,7 @@ export function XDSRadioListItem({
   endContent,
   'data-testid': dataTestId,
 }: XDSRadioListItemProps) {
-  const context = useContext(XDSRadioListContext);
+  const context = use(XDSRadioListContext);
   if (!context) {
     throw new Error('XDSRadioListItem must be used within an XDSRadioList');
   }

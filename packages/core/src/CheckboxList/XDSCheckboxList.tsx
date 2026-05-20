@@ -233,11 +233,11 @@ export function XDSCheckboxList({
         xdsClassName('checkbox-list') + (className ? ` ${className}` : '')
       }
       style={style}>
-      <XDSCheckboxListContext.Provider value={contextValue}>
+      <XDSCheckboxListContext value={contextValue}>
         <XDSList density={density} hasDividers={hasDividers}>
           {children}
         </XDSList>
-      </XDSCheckboxListContext.Provider>
+      </XDSCheckboxListContext>
     </XDSField>
   );
 }

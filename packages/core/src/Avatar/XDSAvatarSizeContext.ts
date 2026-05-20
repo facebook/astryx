@@ -12,7 +12,6 @@
  * - /packages/core/src/Avatar/Avatar.doc.mjs
  */
 
-
 import {createContext} from 'react';
 
 /**
@@ -22,3 +21,4 @@ import {createContext} from 'react';
  * Default value of 36 matches the default 'small' avatar size.
  */
 export const XDSAvatarSizeContext = createContext<number>(36);
+XDSAvatarSizeContext.displayName = 'XDSAvatarSizeContext';

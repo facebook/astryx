@@ -9,7 +9,7 @@
  * @position Shared context; consumed by input components for group-aware styling
  */
 
-import {createContext, useContext} from 'react';
+import {createContext, use} from 'react';
 
 export interface XDSInputGroupContextValue {
   isInGroup: true;
@@ -17,11 +17,12 @@ export interface XDSInputGroupContextValue {
 
 export const XDSInputGroupContext =
   createContext<XDSInputGroupContextValue | null>(null);
+XDSInputGroupContext.displayName = 'XDSInputGroupContext';
 
 /**
  * Hook for input components to detect when inside an InputGroup.
  * Returns null when used outside a group.
  */
 export function useXDSInputGroup(): XDSInputGroupContextValue | null {
-  return useContext(XDSInputGroupContext);
+  return use(XDSInputGroupContext);
 }

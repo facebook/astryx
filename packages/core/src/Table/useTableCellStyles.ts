@@ -17,7 +17,7 @@
  * - /packages/core/src/Table/XDSTableHeaderCell.tsx
  */
 
-import {useContext} from 'react';
+import {use} from 'react';
 import type {StyleXStyles} from '../theme/types';
 import {XDSTableContext, type XDSTableContextValue} from './XDSTableContext';
 
@@ -68,5 +68,5 @@ export function mergeXStyle(
  * signaling that the component should render unstyled.
  */
 export function useTableContext(): XDSTableContextValue | null {
-  return useContext(XDSTableContext);
+  return use(XDSTableContext);
 }

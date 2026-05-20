@@ -4,7 +4,7 @@
 
 /**
  * @file XDSSizeContext.ts
- * @input React createContext, useContext
+ * @input React createContext, use
  * @output Exports XDSSizeContext, useXDSSize, XDSElementSize, XDSSizeProvider
  * @position Context provider; consumed by Button, TextInput, TabList, Selector, etc.
  *
@@ -13,7 +13,7 @@
  * fallback — an explicit `size` prop always wins.
  */
 
-import {createContext, useContext} from 'react';
+import {createContext, use} from 'react';
 
 /**
  * Standard element sizes used across interactive components.
@@ -26,6 +26,7 @@ export type XDSElementSize = 'sm' | 'md' | 'lg';
  * `null` means no container is providing a size — components use their own default.
  */
 export const XDSSizeContext = createContext<XDSElementSize | null>(null);
+XDSSizeContext.displayName = 'XDSSizeContext';
 
 /**
  * Resolve the effective size from an explicit prop, inherited context, or default.
@@ -44,7 +45,7 @@ export function useXDSSize<T extends string = XDSElementSize>(
   sizeProp?: T,
   defaultSize: T = 'md' as T,
 ): T {
-  const inherited = useContext(XDSSizeContext);
+  const inherited = use(XDSSizeContext);
   return sizeProp ?? (inherited as T | null) ?? defaultSize;
 }
 

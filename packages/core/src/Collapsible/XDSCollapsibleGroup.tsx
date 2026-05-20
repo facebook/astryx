@@ -23,7 +23,6 @@
  * - /packages/cli/templates/blocks/components/Collapsible/ (showcase blocks)
  */
 
-
 import {useCallback, useMemo, useState, type ReactNode} from 'react';
 import {CollapsibleGroupContext} from './XDSCollapsibleGroupContext';
 import type {CollapsibleGroupContextValue} from './XDSCollapsibleGroupContext';
@@ -169,9 +168,9 @@ export function XDSCollapsibleGroup({
   );
 
   return (
-    <CollapsibleGroupContext.Provider value={contextValue}>
+    <CollapsibleGroupContext value={contextValue}>
       {children}
-    </CollapsibleGroupContext.Provider>
+    </CollapsibleGroupContext>
   );
 }
 

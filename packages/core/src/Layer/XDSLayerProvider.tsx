@@ -49,14 +49,14 @@ export function XDSLayerProvider({
   }
 
   return (
-    <XDSLayerContext.Provider value={contextValue}>
+    <XDSLayerContext value={contextValue}>
       <XDSToastViewport
         position={toastConfig.position}
         maxVisible={toastConfig.maxVisible}
         inset={toastConfig.inset}>
         {children}
       </XDSToastViewport>
-    </XDSLayerContext.Provider>
+    </XDSLayerContext>
   );
 }
 

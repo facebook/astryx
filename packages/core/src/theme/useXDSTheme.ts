@@ -15,7 +15,7 @@
  * - /packages/core/src/theme/index.ts
  */
 
-import {createContext, useContext, useMemo} from 'react';
+import {createContext, use, useMemo} from 'react';
 import type {ThemeMode} from './types';
 import type {XDSDefinedTheme, XDSTokenValue} from './defineTheme';
 import {xdsTokenDefaults} from './defineTheme';
@@ -42,6 +42,7 @@ export interface XDSThemeContextValue {
  * @internal
  */
 export const XDSThemeContext = createContext<XDSThemeContextValue | null>(null);
+XDSThemeContext.displayName = 'XDSThemeContext';
 
 // =============================================================================
 // Return type
@@ -168,7 +169,7 @@ function buildDefaultTokens(mode: 'light' | 'dark'): Record<string, string> {
  * ```
  */
 export function useXDSTheme(): UseXDSThemeReturn {
-  const ctx = useContext(XDSThemeContext);
+  const ctx = use(XDSThemeContext);
 
   // Resolve 'system' to 'light' | 'dark' using the OS preference
   const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');

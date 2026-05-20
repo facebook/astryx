@@ -15,7 +15,7 @@
 
 import {
   createContext,
-  useContext,
+  use,
   useRef,
   useMemo,
   useState,
@@ -312,10 +312,12 @@ interface FilterStore {
 }
 
 const FilterStoreContext = createContext<FilterStore | null>(null);
+FilterStoreContext.displayName = 'FilterStoreContext';
 
 /** Variant is stable per plugin instance — kept in a separate context so
  *  slot components can read it without going through the mutable store. */
 const FilterVariantContext = createContext<XDSTableFilterVariant>('popover');
+FilterVariantContext.displayName = 'FilterVariantContext';
 
 // =============================================================================
 // Styles
@@ -394,7 +396,7 @@ function TextFilterControl({
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
-  const store = useContext(FilterStoreContext)!;
+  const store = use(FilterStoreContext)!;
   const config = store.getConfig();
   const value = config.filters[columnKey];
   const strValue = typeof value === 'string' ? value : '';
@@ -429,7 +431,7 @@ function NumberFilterControl({
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
-  const store = useContext(FilterStoreContext)!;
+  const store = use(FilterStoreContext)!;
   const config = store.getConfig();
   const value = config.filters[columnKey];
   const numValue = typeof value === 'number' ? value : null;
@@ -488,7 +490,7 @@ function SelectorFilterControl({
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
-  const store = useContext(FilterStoreContext)!;
+  const store = use(FilterStoreContext)!;
   const config = store.getConfig();
   const value = config.filters[columnKey];
   const strValue = typeof value === 'string' ? value : '';
@@ -551,7 +553,7 @@ function MultiSelectorFilterControl({
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
-  const store = useContext(FilterStoreContext)!;
+  const store = use(FilterStoreContext)!;
   const config = store.getConfig();
   const value = config.filters[columnKey];
   const arrValue = Array.isArray(value) ? value : [];
@@ -592,7 +594,7 @@ function DateFilterControl({
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
-  const store = useContext(FilterStoreContext)!;
+  const store = use(FilterStoreContext)!;
   const value = store.getConfig().filters[columnKey] as string | undefined;
 
   return (
@@ -620,7 +622,7 @@ function TimeFilterControl({
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
-  const store = useContext(FilterStoreContext)!;
+  const store = use(FilterStoreContext)!;
   const value = store.getConfig().filters[columnKey] as string | undefined;
 
   return (
@@ -650,7 +652,7 @@ function StringListFilterControl({
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
-  const store = useContext(FilterStoreContext)!;
+  const store = use(FilterStoreContext)!;
   const value =
     (store.getConfig().filters[columnKey] as string[] | undefined) ?? [];
 
@@ -787,7 +789,7 @@ function PopoverFilterTrigger({
   header: string;
   operatorValue: OperatorValue;
 }) {
-  const store = useContext(FilterStoreContext)!;
+  const store = use(FilterStoreContext)!;
   const config = store.getConfig();
   const value = config.filters[columnKey];
   const hasValue = value != null;
@@ -846,7 +848,7 @@ function PopoverFilterTrigger({
       placement="below"
       alignment="start"
       content={
-        <FilterStoreContext.Provider value={draftStore}>
+        <FilterStoreContext value={draftStore}>
           <div {...stylex.props(filterStyles.popoverContent)}>
             <FilterControl
               columnKey={columnKey}
@@ -870,7 +872,7 @@ function PopoverFilterTrigger({
               />
             </div>
           </div>
-        </FilterStoreContext.Provider>
+        </FilterStoreContext>
       }>
       <button
         type="button"
@@ -948,7 +950,7 @@ function InlineFilterSlot({
   header: string;
   operatorValue: OperatorValue | undefined;
 }) {
-  const variant = useContext(FilterVariantContext);
+  const variant = use(FilterVariantContext);
   const size = 'sm';
   const placeholderStyle =
     variant === 'inline-compact'
@@ -1043,11 +1045,11 @@ export function useXDSTableFiltering<T extends Record<string, unknown>>(
 
       transformTableContext(children: ReactNode) {
         return (
-          <FilterStoreContext.Provider value={store}>
-            <FilterVariantContext.Provider value={variant}>
+          <FilterStoreContext value={store}>
+            <FilterVariantContext value={variant}>
               {children}
-            </FilterVariantContext.Provider>
-          </FilterStoreContext.Provider>
+            </FilterVariantContext>
+          </FilterStoreContext>
         );
       },
 

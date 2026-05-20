@@ -20,3 +20,4 @@ export interface XDSToastContextValue {
  * falls back to a self-mounting viewport when no provider exists.
  */
 export const XDSToastContext = createContext<XDSToastContextValue | null>(null);
+XDSToastContext.displayName = 'XDSToastContext';

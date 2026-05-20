@@ -519,7 +519,7 @@ export function XDSCommandPalette<
       maxHeight={maxHeight}
       purpose="info"
       aria-label={label}>
-      <CommandPaletteContext.Provider value={contextValue}>
+      <CommandPaletteContext value={contextValue}>
         <XDSLayout
           defaultHasDividers
           header={
@@ -538,7 +538,7 @@ export function XDSCommandPalette<
             </XDSLayoutFooter>
           }
         />
-      </CommandPaletteContext.Provider>
+      </CommandPaletteContext>
     </XDSDialog>
   );
 }

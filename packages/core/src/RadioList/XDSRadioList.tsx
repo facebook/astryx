@@ -41,6 +41,7 @@ export interface XDSRadioListContextValue {
 
 export const XDSRadioListContext =
   createContext<XDSRadioListContextValue | null>(null);
+XDSRadioListContext.displayName = 'XDSRadioListContext';
 
 const styles = stylex.create({
   radiogroup: {
@@ -216,9 +217,9 @@ export function XDSRadioList({
             orientation === 'vertical' ? styles.vertical : styles.horizontal,
           ),
         )}>
-        <XDSRadioListContext.Provider value={contextValue}>
+        <XDSRadioListContext value={contextValue}>
           {children}
-        </XDSRadioListContext.Provider>
+        </XDSRadioListContext>
       </div>
     </XDSField>
   );

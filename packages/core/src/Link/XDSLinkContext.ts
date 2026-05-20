@@ -19,7 +19,6 @@
  * - /packages/core/src/Link/Link.doc.mjs
  */
 
-
 import {createContext} from 'react';
 import type {XDSLinkComponentType} from './types';
 
@@ -35,3 +34,4 @@ export interface XDSLinkContextValue {
  * Defaults to null (components fall back to native `<a>`).
  */
 export const XDSLinkContext = createContext<XDSLinkContextValue | null>(null);
+XDSLinkContext.displayName = 'XDSLinkContext';

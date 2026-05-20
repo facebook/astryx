@@ -272,9 +272,9 @@ describe('XDSField', () => {
     }: {
       children: React.ReactNode;
     }) => (
-      <XDSFormLayoutContext.Provider value={{direction: 'horizontal-labels'}}>
+      <XDSFormLayoutContext value={{direction: 'horizontal-labels'}}>
         {children}
-      </XDSFormLayoutContext.Provider>
+      </XDSFormLayoutContext>
     );
 
     it('applies display:contents when in horizontal-labels context', () => {

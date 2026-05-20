@@ -18,13 +18,7 @@
  * - /packages/cli/templates/blocks/components/ToggleButton/ (showcase blocks)
  */
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  type ReactNode,
-} from 'react';
+import {createContext, useCallback, use, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import type {XDSButtonSize} from '../Button';
@@ -48,13 +42,14 @@ interface XDSToggleButtonGroupContextValue {
 
 export const XDSToggleButtonGroupContext =
   createContext<XDSToggleButtonGroupContextValue | null>(null);
+XDSToggleButtonGroupContext.displayName = 'XDSToggleButtonGroupContext';
 
 /**
  * Hook for XDSToggleButton to read group context.
  * Returns null when used outside a group.
  */
 export function useXDSToggleButtonGroup(): XDSToggleButtonGroupContextValue | null {
-  return useContext(XDSToggleButtonGroupContext);
+  return use(XDSToggleButtonGroupContext);
 }
 
 // =============================================================================
@@ -229,7 +224,7 @@ export function XDSToggleButtonGroup(
   );
 
   return (
-    <XDSToggleButtonGroupContext.Provider value={contextValue}>
+    <XDSToggleButtonGroupContext value={contextValue}>
       <div
         role="group"
         aria-label={label}
@@ -244,7 +239,7 @@ export function XDSToggleButtonGroup(
         )}>
         {children}
       </div>
-    </XDSToggleButtonGroupContext.Provider>
+    </XDSToggleButtonGroupContext>
   );
 }
 

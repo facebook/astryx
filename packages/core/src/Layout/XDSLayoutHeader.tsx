@@ -17,7 +17,7 @@
 
 import type {AriaRole, ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {useContext} from 'react';
+import {use} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSLayoutDividerContext} from './XDSLayoutDividerContext';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
@@ -146,7 +146,7 @@ export function XDSLayoutHeader({
   ref,
   ...props
 }: XDSLayoutHeaderProps) {
-  const dividerCtx = useContext(XDSLayoutDividerContext);
+  const dividerCtx = use(XDSLayoutDividerContext);
   const resolvedHasDivider =
     hasDivider ?? dividerCtx?.defaultHasDividers ?? false;
   const isZeroPadding = padding === 0;

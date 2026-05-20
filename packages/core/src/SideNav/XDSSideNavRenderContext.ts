@@ -4,7 +4,7 @@
 
 /**
  * @file XDSSideNavRenderContext.ts
- * @input React createContext, useContext
+ * @input React createContext, use
  * @output Exports XDSSideNavRenderContext and useXDSSideNavRenderMode hook
  * @position Internal context for controlling SideNav rendering mode
  *
@@ -15,7 +15,7 @@
  * - 'drawer': children only, skip heading + footerIcons (mobile drawer)
  */
 
-import {createContext, useContext} from 'react';
+import {createContext, use} from 'react';
 
 export type XDSSideNavRenderMode =
   | 'default'
@@ -25,10 +25,11 @@ export type XDSSideNavRenderMode =
 
 export const XDSSideNavRenderContext =
   createContext<XDSSideNavRenderMode>('default');
+XDSSideNavRenderContext.displayName = 'XDSSideNavRenderContext';
 
 /**
  * Read the current SideNav render mode from context.
  */
 export function useXDSSideNavRenderMode(): XDSSideNavRenderMode {
-  return useContext(XDSSideNavRenderContext);
+  return use(XDSSideNavRenderContext);
 }

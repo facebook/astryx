@@ -373,7 +373,7 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
   );
 
   return (
-    <XDSChatComposerContext.Provider value={composerContext}>
+    <XDSChatComposerContext value={composerContext}>
       <div
         {...mergeProps(
           xdsClassName('chat-composer', {density}),
@@ -415,7 +415,7 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
 
         {statusPosition === 'bottom' && statusEl}
       </div>
-    </XDSChatComposerContext.Provider>
+    </XDSChatComposerContext>
   );
 }
 

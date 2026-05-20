@@ -524,9 +524,9 @@ export function XDSTopNavHeading({
             {...stylex.props(styles.popoverContent)}
             {...contentProps}>
             {popoverHeadingContent}
-            <XDSNavHeadingCloseContext.Provider value={closeMenuCtx}>
+            <XDSNavHeadingCloseContext value={closeMenuCtx}>
               {menu}
-            </XDSNavHeadingCloseContext.Provider>
+            </XDSNavHeadingCloseContext>
           </div>,
           {
             placement: 'below',
@@ -587,9 +587,9 @@ export function XDSTopNavHeading({
             {...stylex.props(styles.popoverContent)}
             {...contentProps}>
             {popoverHeadingContent}
-            <XDSNavHeadingCloseContext.Provider value={closeMenuCtx}>
+            <XDSNavHeadingCloseContext value={closeMenuCtx}>
               {menu}
-            </XDSNavHeadingCloseContext.Provider>
+            </XDSNavHeadingCloseContext>
           </div>,
           {
             placement: 'below',

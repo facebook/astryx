@@ -16,7 +16,7 @@
  * - /packages/cli/templates/blocks/components/MetadataList/ (showcase blocks)
  */
 
-import {useContext, type ReactNode} from 'react';
+import {use, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -144,7 +144,7 @@ export function XDSMetadataListItem({
   'data-testid': testId,
   ref,
 }: XDSMetadataListItemProps) {
-  const ctx = useContext(XDSMetadataListContext);
+  const ctx = use(XDSMetadataListContext);
   const labelPosition = ctx?.labelConfig.position ?? 'start';
   const isStacked =
     labelPosition === 'top' || ctx?.orientation === 'horizontal';

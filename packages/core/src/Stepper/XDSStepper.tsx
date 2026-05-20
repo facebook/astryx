@@ -112,7 +112,7 @@ export function XDSStepper({
   );
 
   return (
-    <XDSStepperContext.Provider value={ctxValue}>
+    <XDSStepperContext value={ctxValue}>
       <nav ref={ref} aria-label={label} {...rest}>
         <ol
           {...mergeProps(
@@ -130,7 +130,7 @@ export function XDSStepper({
           {children}
         </ol>
       </nav>
-    </XDSStepperContext.Provider>
+    </XDSStepperContext>
   );
 }
 

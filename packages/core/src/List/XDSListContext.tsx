@@ -21,3 +21,4 @@ export interface XDSListContextValue {
 }
 
 export const XDSListContext = createContext<XDSListContextValue | null>(null);
+XDSListContext.displayName = 'XDSListContext';

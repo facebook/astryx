@@ -14,7 +14,6 @@
  * - /packages/cli/templates/blocks/components/Collapsible/ (showcase blocks)
  */
 
-
 import {createContext} from 'react';
 
 /**
@@ -33,3 +32,4 @@ export interface CollapsibleGroupContextValue {
  */
 export const CollapsibleGroupContext =
   createContext<CollapsibleGroupContextValue | null>(null);
+CollapsibleGroupContext.displayName = 'CollapsibleGroupContext';

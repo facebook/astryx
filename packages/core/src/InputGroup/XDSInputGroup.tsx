@@ -160,7 +160,7 @@ export function XDSInputGroup({
   const contextValue = useMemo(() => ({isInGroup: true as const}), []);
 
   return (
-    <XDSInputGroupContext.Provider value={contextValue}>
+    <XDSInputGroupContext value={contextValue}>
       <XDSSizeProvider value={size}>
         <XDSField
           label={label}
@@ -205,7 +205,7 @@ export function XDSInputGroup({
           </div>
         </XDSField>
       </XDSSizeProvider>
-    </XDSInputGroupContext.Provider>
+    </XDSInputGroupContext>
   );
 }
 

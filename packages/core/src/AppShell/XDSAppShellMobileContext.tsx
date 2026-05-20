@@ -4,7 +4,7 @@
 
 /**
  * @file XDSAppShellMobileContext.tsx
- * @input Uses React createContext, useContext
+ * @input Uses React createContext, use
  * @output Exports XDSAppShellMobileContext, useXDSAppShellMobile
  * @position Internal context for mobile nav state; consumed by XDSMobileNavToggle, XDSTopNav (future)
  *
@@ -13,7 +13,7 @@
  * to adapt rendering based on mobile context.
  */
 
-import {createContext, useContext} from 'react';
+import {createContext, use} from 'react';
 
 export interface XDSAppShellMobileContextValue {
   /** Whether the viewport is below the mobile breakpoint */
@@ -44,10 +44,11 @@ const defaultValue: XDSAppShellMobileContextValue = {
 
 export const XDSAppShellMobileContext =
   createContext<XDSAppShellMobileContextValue>(defaultValue);
+XDSAppShellMobileContext.displayName = 'XDSAppShellMobileContext';
 
 /**
  * Hook to access mobile nav state from anywhere in the AppShell tree.
  */
 export function useXDSAppShellMobile(): XDSAppShellMobileContextValue {
-  return useContext(XDSAppShellMobileContext);
+  return use(XDSAppShellMobileContext);
 }

@@ -12,7 +12,7 @@
  * items don't need to register themselves.
  */
 
-import {createContext, useContext} from 'react';
+import {createContext, use} from 'react';
 
 export interface XDSDropdownMenuContextValue {
   /** Close the menu and return focus to trigger */
@@ -23,11 +23,12 @@ export interface XDSDropdownMenuContextValue {
 
 export const XDSDropdownMenuContext =
   createContext<XDSDropdownMenuContextValue | null>(null);
+XDSDropdownMenuContext.displayName = 'XDSDropdownMenuContext';
 
 /**
  * Hook for compound menu items to access menu state.
  * Returns null outside of a DropdownMenu.
  */
 export function useXDSDropdownMenuContext(): XDSDropdownMenuContextValue | null {
-  return useContext(XDSDropdownMenuContext);
+  return use(XDSDropdownMenuContext);
 }

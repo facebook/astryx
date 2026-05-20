@@ -366,7 +366,7 @@ export function XDSChatLayout({
         : styles.dockInnerBalanced;
 
   return (
-    <XDSChatLayoutContext.Provider value={layoutContext}>
+    <XDSChatLayoutContext value={layoutContext}>
       <div
         ref={setRootRef}
         data-testid={testId}
@@ -412,7 +412,7 @@ export function XDSChatLayout({
           </div>
         </div>
       </div>
-    </XDSChatLayoutContext.Provider>
+    </XDSChatLayoutContext>
   );
 }
 

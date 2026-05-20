@@ -293,9 +293,9 @@ export function XDSContextMenu({
             className,
             style,
           )}>
-          <XDSDropdownMenuContext.Provider value={contextValue}>
+          <XDSDropdownMenuContext value={contextValue}>
             {resolvedMenuContent}
-          </XDSDropdownMenuContext.Provider>
+          </XDSDropdownMenuContext>
         </div>,
         {
           x: positionRef.current.x,

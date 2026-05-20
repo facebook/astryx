@@ -8,7 +8,7 @@
  * @position Shared context; consumed by children for group-aware styling
  */
 
-import {createContext, useContext} from 'react';
+import {createContext, use} from 'react';
 import type {XDSAvatarSize} from '../Avatar';
 
 export interface XDSAvatarGroupContextValue {
@@ -19,7 +19,8 @@ export interface XDSAvatarGroupContextValue {
 
 export const XDSAvatarGroupContext =
   createContext<XDSAvatarGroupContextValue | null>(null);
+XDSAvatarGroupContext.displayName = 'XDSAvatarGroupContext';
 
 export function useXDSAvatarGroup(): XDSAvatarGroupContextValue | null {
-  return useContext(XDSAvatarGroupContext);
+  return use(XDSAvatarGroupContext);
 }

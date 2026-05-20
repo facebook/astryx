@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-"use client";
+'use client';
 
 /**
  * @file XDSSyntaxTheme.tsx
@@ -11,7 +11,7 @@
  * @see https://github.com/facebookexperimental/xds/issues/1148
  */
 
-import React, {createContext, useContext, useMemo} from 'react';
+import React, {createContext, use, useMemo} from 'react';
 import {
   syntaxThemeStyle,
   resolveSyntaxTokenForMode,
@@ -31,6 +31,7 @@ interface SyntaxThemeContextValue {
 }
 
 const SyntaxThemeContext = createContext<SyntaxThemeContextValue | null>(null);
+SyntaxThemeContext.displayName = 'SyntaxThemeContext';
 
 // =============================================================================
 // Return type
@@ -70,7 +71,7 @@ export interface UseXDSSyntaxThemeReturn {
  * }
  */
 export function useXDSSyntaxTheme(): UseXDSSyntaxThemeReturn | null {
-  const ctx = useContext(SyntaxThemeContext);
+  const ctx = use(SyntaxThemeContext);
   const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
   const effectiveMode: 'light' | 'dark' = prefersDark ? 'dark' : 'light';
 
@@ -117,11 +118,11 @@ export function XDSSyntaxTheme({
   const value = useMemo(() => ({theme}), [theme]);
 
   return (
-    <SyntaxThemeContext.Provider value={value}>
+    <SyntaxThemeContext value={value}>
       <div style={style} data-xds-syntax-theme={theme.name}>
         {children}
       </div>
-    </SyntaxThemeContext.Provider>
+    </SyntaxThemeContext>
   );
 }
 

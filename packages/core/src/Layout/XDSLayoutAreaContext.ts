@@ -12,7 +12,6 @@
  * - /packages/core/src/Layout/Layout.doc.mjs
  */
 
-
 import {createContext} from 'react';
 
 /**
@@ -35,3 +34,4 @@ export type LayoutArea =
  * - Adjust internal spacing
  */
 export const XDSLayoutAreaContext = createContext<LayoutArea>(null);
+XDSLayoutAreaContext.displayName = 'XDSLayoutAreaContext';

@@ -252,7 +252,7 @@ export function XDSMetadataList({
         : undefined;
 
   return (
-    <XDSMetadataListContext.Provider value={contextValue}>
+    <XDSMetadataListContext value={contextValue}>
       <div
         ref={ref}
         data-testid={testId}
@@ -284,7 +284,7 @@ export function XDSMetadataList({
           </button>
         )}
       </div>
-    </XDSMetadataListContext.Provider>
+    </XDSMetadataListContext>
   );
 }
 

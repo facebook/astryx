@@ -115,7 +115,7 @@ export function XDSTabList({
   );
 
   return (
-    <XDSTabListContext.Provider value={contextValue}>
+    <XDSTabListContext value={contextValue}>
       <nav
         aria-label="Tabs"
         {...{[EDGE_COMP_ATTR]: ''}}
@@ -133,7 +133,7 @@ export function XDSTabList({
         )}>
         {children}
       </nav>
-    </XDSTabListContext.Provider>
+    </XDSTabListContext>
   );
 }
 

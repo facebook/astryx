@@ -798,7 +798,7 @@ export function XDSAppShell({
     ) : undefined;
 
   return (
-    <XDSAppShellMobileContext.Provider value={mobileContextValue}>
+    <XDSAppShellMobileContext value={mobileContextValue}>
       <div
         ref={setShellRef}
         data-testid={dataTestId}
@@ -871,7 +871,7 @@ export function XDSAppShell({
             </ActivityWrapper>
           )}
       </div>
-    </XDSAppShellMobileContext.Provider>
+    </XDSAppShellMobileContext>
   );
 }
 

@@ -214,7 +214,7 @@ export function XDSChatMessageList({
         : styles.gapBalanced;
 
   return (
-    <XDSChatListContext.Provider value={contextValue}>
+    <XDSChatListContext value={contextValue}>
       <div
         ref={ref}
         role="log"
@@ -249,7 +249,7 @@ export function XDSChatMessageList({
           ) : null}
         </div>
       </div>
-    </XDSChatListContext.Provider>
+    </XDSChatListContext>
   );
 }
 

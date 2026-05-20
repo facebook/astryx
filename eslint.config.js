@@ -145,6 +145,11 @@ export default tseslint.config(
       '@eslint-react/naming-convention-context-name': reactSeverity,
       '@eslint-react/naming-convention-ref-name': reactSeverity,
 
+      // React 19 modernization
+      '@eslint-react/no-context-provider': reactSeverity,
+      '@eslint-react/no-use-context': reactSeverity,
+      '@eslint-react/no-missing-context-display-name': reactSeverity,
+
       // Resource leak prevention
       '@eslint-react/web-api-no-leaked-event-listener': reactSeverity,
       '@eslint-react/web-api-no-leaked-interval': reactSeverity,

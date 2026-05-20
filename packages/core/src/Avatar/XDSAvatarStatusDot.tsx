@@ -15,7 +15,7 @@
  * - /packages/cli/templates/blocks/components/Avatar/ (showcase blocks)
  */
 
-import {useContext, type ReactNode} from 'react';
+import {use, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars} from '../theme/tokens.stylex';
@@ -185,7 +185,7 @@ export function XDSAvatarStatusDot({
   style,
   ...props
 }: XDSAvatarStatusDotProps) {
-  const avatarSize = useContext(XDSAvatarSizeContext);
+  const avatarSize = use(XDSAvatarSizeContext);
   const {dotSize, borderWidth, iconSize} = resolveStatusDotSize(avatarSize);
 
   return (

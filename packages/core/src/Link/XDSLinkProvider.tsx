@@ -25,7 +25,6 @@
  * - /packages/cli/templates/blocks/components/Link/ (showcase blocks)
  */
 
-
 import {useMemo, type ReactNode} from 'react';
 import {XDSLinkContext} from './XDSLinkContext';
 import type {XDSLinkComponentType} from './types';
@@ -54,7 +53,5 @@ export interface XDSLinkProviderProps {
  */
 export function XDSLinkProvider({component, children}: XDSLinkProviderProps) {
   const value = useMemo(() => ({component}), [component]);
-  return (
-    <XDSLinkContext.Provider value={value}>{children}</XDSLinkContext.Provider>
-  );
+  return <XDSLinkContext value={value}>{children}</XDSLinkContext>;
 }

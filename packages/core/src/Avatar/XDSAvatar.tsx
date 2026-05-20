@@ -298,7 +298,7 @@ export function XDSAvatar({
   const numericSize = useMemo(() => resolveSize(resolvedSize), [resolvedSize]);
 
   return (
-    <XDSAvatarSizeContext.Provider value={numericSize}>
+    <XDSAvatarSizeContext value={numericSize}>
       <div
         ref={ref}
         role="img"
@@ -359,7 +359,7 @@ export function XDSAvatar({
           </div>
         )}
       </div>
-    </XDSAvatarSizeContext.Provider>
+    </XDSAvatarSizeContext>
   );
 }
 
