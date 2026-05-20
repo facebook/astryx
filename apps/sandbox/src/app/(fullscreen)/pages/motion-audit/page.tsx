@@ -635,7 +635,7 @@ function SideNavDemo() {
           <span {...stylex.props(styles.sideLabel, styles.currentLabel)}>XDS CURRENT</span>
           <div {...stylex.props(styles.sidenavArea)}>
             <div style={{width: currentCollapsed ? "56px" : "240px", overflow: "hidden", borderRight: "1px solid var(--color-border)"}}>
-              <XDSSideNav isCollapsible>
+              <XDSSideNav collapsible>
                 <XDSSideNavSection>
                   <XDSSideNavItem label="Dashboard" icon={<XDSIcon icon="home" size="sm" />} />
                   <XDSSideNavItem label="Projects" icon={<XDSIcon icon="folder" size="sm" />} />
@@ -663,7 +663,7 @@ function SideNavDemo() {
               styles.sidenavWrapper,
               proposedCollapsed ? styles.sidenavCollapsed : styles.sidenavExpanded,
             )}>
-              <XDSSideNav isCollapsible>
+              <XDSSideNav collapsible>
                 <XDSSideNavSection>
                   <XDSSideNavItem label="Dashboard" icon={<XDSIcon icon="home" size="sm" />} />
                   <XDSSideNavItem label="Projects" icon={<XDSIcon icon="folder" size="sm" />} />
