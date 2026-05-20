@@ -21,6 +21,7 @@ import {
   fontWeightVars,
   radiusVars,
 } from '../theme/tokens.stylex';
+import {xdsClassName, mergeProps} from '../utils';
 import {useXDSAvatarGroup} from './XDSAvatarGroupContext';
 
 const BORDER_WIDTH = 2;
@@ -115,13 +116,16 @@ export function XDSAvatarGroupOverflow({
         type="button"
         onClick={onClick}
         aria-label={label}
-        {...stylex.props(
-          styles.base,
-          styles.button,
-          styles.overlap,
-          dynamicStyles.size(numericSize),
-          dynamicStyles.fontSize(numericSize),
-          dynamicStyles.overlap(-overlap),
+        {...mergeProps(
+          xdsClassName('avatar-group-overflow'),
+          stylex.props(
+            styles.base,
+            styles.button,
+            styles.overlap,
+            dynamicStyles.size(numericSize),
+            dynamicStyles.fontSize(numericSize),
+            dynamicStyles.overlap(-overlap),
+          ),
         )}>
         {content}
       </button>
@@ -131,12 +135,15 @@ export function XDSAvatarGroupOverflow({
   return (
     <span
       aria-label={label}
-      {...stylex.props(
-        styles.base,
-        styles.overlap,
-        dynamicStyles.size(numericSize),
-        dynamicStyles.fontSize(numericSize),
-        dynamicStyles.overlap(-overlap),
+      {...mergeProps(
+        xdsClassName('avatar-group-overflow'),
+        stylex.props(
+          styles.base,
+          styles.overlap,
+          dynamicStyles.size(numericSize),
+          dynamicStyles.fontSize(numericSize),
+          dynamicStyles.overlap(-overlap),
+        ),
       )}>
       {content}
     </span>

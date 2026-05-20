@@ -34,6 +34,7 @@ import {
   radiusVars,
   fontWeightVars,
   typeScaleVars,
+  borderVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {edgeCompSlot} from '../Layout/edgeCompensation.stylex';
@@ -260,9 +261,9 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-background-card'],
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-4'],
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderBottomWidth: 1,
+    borderLeftWidth: borderVars['--border-width'],
+    borderRightWidth: borderVars['--border-width'],
+    borderBottomWidth: borderVars['--border-width'],
     borderLeftStyle: 'solid',
     borderRightStyle: 'solid',
     borderBottomStyle: 'solid',

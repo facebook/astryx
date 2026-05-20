@@ -151,7 +151,7 @@ export function XDSButtonGroup({
           aria-disabled={isDisabled || undefined}
           data-testid={testId}
           {...mergeProps(
-            xdsClassName('button-group', {size}),
+            xdsClassName('button-group', {size, orientation}),
             stylex.props(
               styles.group,
               orientation === 'vertical' && styles.vertical,
