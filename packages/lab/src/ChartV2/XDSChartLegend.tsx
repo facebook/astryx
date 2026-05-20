@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSChartLegend.tsx
  * @output Standalone chart legend component
@@ -13,6 +15,7 @@
 
 import {XDSText} from '@xds/core';
 import {XDSVStack, XDSHStack} from '@xds/core';
+import {XDSChartSwatch, swatchVariantForType} from './XDSChartSwatch';
 import type {LegendItem} from './legend';
 
 export type {LegendItem};
@@ -38,56 +41,27 @@ export function XDSChartLegend({
 
   const isVertical = position === 'start' || position === 'end';
 
+  const legendItems = items.map(item => (
+    <XDSHStack key={item.label} gap={2} vAlign="center">
+      <XDSChartSwatch
+        color={item.color}
+        variant={swatchVariantForType(item.type)}
+      />
+      <XDSText type="supporting">{item.label}</XDSText>
+    </XDSHStack>
+  ));
+
   if (isVertical) {
     return (
       <XDSVStack gap={2} hAlign={alignment}>
-        {items.map(item => (
-          <XDSHStack key={item.label} gap={2} vAlign="center">
-            <LegendSwatch color={item.color} type={item.type} />
-            <XDSText type="supporting">{item.label}</XDSText>
-          </XDSHStack>
-        ))}
+        {legendItems}
       </XDSVStack>
     );
   }
 
   return (
     <XDSHStack gap={4} justify={alignment} vAlign="center" wrap="wrap">
-      {items.map(item => (
-        <XDSHStack key={item.label} gap={2} vAlign="center">
-          <LegendSwatch color={item.color} type={item.type} />
-          <XDSText type="supporting">{item.label}</XDSText>
-        </XDSHStack>
-      ))}
+      {legendItems}
     </XDSHStack>
-  );
-}
-
-function LegendSwatch({color, type}: {color: string; type?: string}) {
-  if (type === 'line') {
-    return (
-      <div
-        style={{
-          width: 10,
-          height: 3,
-          borderRadius: 1.5,
-          backgroundColor: color,
-          flexShrink: 0,
-        }}
-      />
-    );
-  }
-
-  return (
-    <div
-      style={{
-        width: 8,
-        height: 8,
-        borderRadius: 2,
-        backgroundColor: color,
-        flexShrink: 0,
-        marginInline: 1,
-      }}
-    />
   );
 }

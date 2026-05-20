@@ -52,8 +52,16 @@ export interface XDSChartProps {
 const DEFAULT_MARGIN: ChartMargin = {top: 16, right: 16, bottom: 32, left: 48};
 
 const styles = stylex.create({
+  container: {
+    width: '100%',
+  },
   title: {
     marginBottom: 16,
+  },
+  chartArea: {
+    flex: 1,
+    minWidth: 0,
+    overflow: 'hidden',
   },
 });
 
@@ -238,11 +246,17 @@ export function XDSChart({
 
   // ─── Render ───────────────────────────────────────────────────────────
   if (containerWidth === 0) {
-    return <div ref={containerRef} style={{width: '100%', height}} />;
+    return (
+      <div
+        ref={containerRef}
+        {...stylex.props(styles.container)}
+        style={{height}}
+      />
+    );
   }
 
   return (
-    <div ref={containerRef} style={{width: '100%'}}>
+    <div ref={containerRef} {...stylex.props(styles.container)}>
       {(title || subtitle) && (
         <div {...stylex.props(styles.title)}>
           {title && (
@@ -264,9 +278,7 @@ export function XDSChart({
           ) : isLegendHorizontal ? (
             <XDSHStack gap={4}>
               {legendPosition === 'start' && legendElement}
-              <div style={{flex: 1, minWidth: 0, overflow: 'hidden'}}>
-                {renderSvg()}
-              </div>
+              <div {...stylex.props(styles.chartArea)}>{renderSvg()}</div>
               {legendPosition === 'end' && legendElement}
             </XDSHStack>
           ) : (

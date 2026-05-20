@@ -9,6 +9,12 @@ export {
 } from './XDSChartLegend';
 export {type LegendItem} from './legend';
 export {
+  XDSChartSwatch,
+  swatchVariantForType,
+  type XDSChartSwatchProps,
+  type XDSChartSwatchVariant,
+} from './XDSChartSwatch';
+export {
   bar,
   line,
   dot,

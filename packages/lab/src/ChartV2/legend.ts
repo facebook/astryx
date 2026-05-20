@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file legend.ts
  * @output Legend utility — derives legend items from series definitions
