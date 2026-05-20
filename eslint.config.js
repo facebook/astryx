@@ -15,9 +15,9 @@ import xdsPlugin from "./internal/eslint-plugin-xds/index.js";
  * - Humans: Recommended mode (warnings) - Default for local development
  *
  * Usage:
- *   yarn lint                    # Human mode (warnings)
- *   XDS_STRICT_LINT=1 yarn lint  # Strict mode (errors)
- *   CI=true yarn lint            # Also triggers strict mode
+ *   pnpm lint                    # Human mode (warnings)
+ *   XDS_STRICT_LINT=1 pnpm lint  # Strict mode (errors)
+ *   CI=true pnpm lint            # Also triggers strict mode
  */
 
 const isStrictMode = process.env.XDS_STRICT_LINT === '1' || process.env.CI === 'true';
@@ -37,7 +37,8 @@ export default tseslint.config(
       "**/*.mjs",
       "**/*.test-violations.tsx",
       "apps/example-nextjs/*.js",
-      "apps/example-nextjs/next-env.d.ts",
+      "**/next-env.d.ts",
+      "**/.next/**",
       "apps/example-nextjs-source/*.js",
       "apps/docsite/*.js",
       "apps/docsite/scripts/**",

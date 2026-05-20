@@ -5,14 +5,14 @@ The OSS documentation site for XDS. Built with Next.js and StyleX.
 ## Quick Start
 
 ```bash
-yarn install     # from repo root
-yarn build       # build all packages (themes need built exports)
+pnpm install     # from repo root
+pnpm build       # build all packages (themes need built exports)
 cd apps/docsite
-yarn generate    # extract data from the monorepo into src/generated/
-yarn dev         # start the dev server
+pnpm generate    # extract data from the monorepo into src/generated/
+pnpm dev         # start the dev server
 ```
 
-`yarn dev` and `yarn build` both run `generate` automatically via `predev`/`prebuild` scripts.
+`pnpm dev` and `pnpm build` both run `generate` automatically via `predev`/`prebuild` scripts.
 
 ## How It Works
 
@@ -56,7 +56,7 @@ This means:
 2. Add `"@xds/theme-<name>": "*"` to `apps/docsite/package.json` dependencies
 3. Add `@import "@xds/theme-<name>/theme.css"` to `src/app/globals.css`
 4. Load the theme's fonts (see below)
-5. Run `yarn generate` — the theme appears in `themeRegistry.ts`, `packageRegistry.ts`, the sidebar, craft page, and package detail page automatically
+5. Run `pnpm generate` — the theme appears in `themeRegistry.ts`, `packageRegistry.ts`, the sidebar, craft page, and package detail page automatically
 
 > Only add **public** (non-private) theme packages to the docsite.
 
@@ -76,7 +76,7 @@ them. Check the theme's `## Fonts` section for the specific Google Fonts URL.
 
 1. Create the package under `packages/<name>/`
 2. Add `"@xds/<name>": "*"` to `apps/docsite/package.json` dependencies
-3. Run `yarn generate`
+3. Run `pnpm generate`
 
 The package appears in the sidebar, the libraries section, and gets its own
 `/packages/<name>` detail page. If the package contains `.doc.mjs` files,
@@ -105,15 +105,15 @@ apps/docsite/
 
 | Command           | What it does                                    |
 | ----------------- | ----------------------------------------------- |
-| `yarn generate`   | Run the data pipeline                           |
-| `yarn dev`        | Start Next.js dev server (auto-generates first) |
-| `yarn build`      | Production build (auto-generates first)         |
-| `yarn typecheck`  | Run `tsc --noEmit`                              |
-| `yarn test`       | Run vitest                                      |
-| `yarn test:watch` | Run vitest in watch mode                        |
+| `pnpm generate`   | Run the data pipeline                           |
+| `pnpm dev`        | Start Next.js dev server (auto-generates first) |
+| `pnpm build`      | Production build (auto-generates first)         |
+| `pnpm typecheck`  | Run `tsc --noEmit`                              |
+| `pnpm test`       | Run vitest                                      |
+| `pnpm test:watch` | Run vitest in watch mode                        |
 
 ## Testing
 
 Tests live in `src/__tests__/data-extraction.test.ts` and validate the generated
 registries — package discovery, component extraction, theme wiring, etc. Run
-`yarn generate` before running tests since they import from `src/generated/`.
+`pnpm generate` before running tests since they import from `src/generated/`.

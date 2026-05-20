@@ -37,12 +37,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v6
         with:
           node-version: 22
-          cache: "yarn"
+          cache: "pnpm"
 
-      - run: yarn install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile
 
       - name: Verify codemod reproduces callsite changes
         id: verify

@@ -59,15 +59,16 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v6
         with:
           node-version: 22
-          cache: 'yarn'
+          cache: 'pnpm'
 
-      - run: yarn install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile
 
       - name: Generate and test docsite data
-        run: yarn workspace @xds/docsite generate && yarn workspace @xds/docsite test
+        run: pnpm -F @xds/docsite generate && pnpm -F @xds/docsite test
 
   # Lightweight check — does the PR touch any core components?
   # Gates pr-a11y to avoid unnecessary work
@@ -106,13 +107,15 @@ jobs:
       - uses: actions/checkout@v6
         if: needs.check-scope.outputs.docsite_only != 'true'
 
+      - uses: pnpm/action-setup@v4
+        if: needs.check-scope.outputs.docsite_only != 'true'
       - uses: actions/setup-node@v6
         if: needs.check-scope.outputs.docsite_only != 'true'
         with:
           node-version: 22
-          cache: 'yarn'
+          cache: 'pnpm'
 
-      - run: yarn install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile
         if: needs.check-scope.outputs.docsite_only != 'true'
 
       - name: Check copyright headers
@@ -127,7 +130,7 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true'
         run: node scripts/generate-token-docs.mjs --check
 
-      - run: yarn test
+      - run: pnpm test
         if: needs.check-scope.outputs.docsite_only != 'true'
 
   # Build storybook + analyze components (parallel with test)
@@ -155,20 +158,24 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
         run: git fetch origin ${{ github.base_ref }} --depth=1
 
+      - name: Setup pnpm
+        if: needs.check-scope.outputs.docsite_only != 'true'
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         if: needs.check-scope.outputs.docsite_only != 'true'
         uses: actions/setup-node@v6
         with:
           node-version: 22
-          cache: 'yarn'
+          cache: 'pnpm'
 
       - name: Install dependencies
         if: needs.check-scope.outputs.docsite_only != 'true'
-        run: yarn install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Build core package
         if: needs.check-scope.outputs.docsite_only != 'true'
-        run: yarn build
+        run: pnpm build
 
       - name: Verify package exports
         if: needs.check-scope.outputs.docsite_only != 'true'
@@ -176,25 +183,25 @@ jobs:
 
       - name: Typecheck component docs
         if: needs.check-scope.outputs.docsite_only != 'true'
-        run: yarn workspace @xds/core typecheck:docs
+        run: pnpm -F @xds/core typecheck:docs
 
       - name: Typecheck template docs
         if: needs.check-scope.outputs.docsite_only != 'true'
-        run: yarn workspace @xds/cli typecheck:template-docs
+        run: pnpm -F @xds/cli typecheck:template-docs
 
       - name: Cache Next.js build
         if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
         uses: actions/cache@v5
         with:
           path: apps/sandbox/.next/cache
-          key: nextjs-sandbox-${{ hashFiles('yarn.lock') }}-${{ hashFiles('packages/core/dist/**') }}
+          key: nextjs-sandbox-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('packages/core/dist/**') }}
           restore-keys: |
-            nextjs-sandbox-${{ hashFiles('yarn.lock') }}-
+            nextjs-sandbox-${{ hashFiles('pnpm-lock.yaml') }}-
             nextjs-sandbox-
 
       - name: Build Storybook
         if: needs.check-scope.outputs.docsite_only != 'true'
-        run: yarn workspace @xds/storybook build
+        run: pnpm -F @xds/storybook build
 
       - name: Compute PR preview path
         if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
@@ -213,7 +220,7 @@ jobs:
 
       - name: Build Sandbox
         if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
-        run: yarn workspace @xds/sandbox build
+        run: pnpm -F @xds/sandbox build
         env:
           SANDBOX_BASE_PATH: /pr/${{ steps.urls.outputs.pr_number }}/sandbox
           NODE_OPTIONS: '--max-old-space-size=8192'
@@ -406,11 +413,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 22
-          cache: 'yarn'
+          cache: 'pnpm'
 
       - name: Download analysis artifact
         uses: actions/download-artifact@v8
@@ -424,7 +434,7 @@ jobs:
           path: apps/storybook/dist
 
       - name: Install Playwright
-        run: yarn install --frozen-lockfile && npx playwright install chromium
+        run: pnpm install --frozen-lockfile && npx playwright install chromium
 
       - name: Run accessibility audit
         run: |

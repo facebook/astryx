@@ -41,13 +41,15 @@ jobs:
         if: steps.scope.outputs.docsite_only == 'true'
         run: echo "Docsite-only PR — skipping lint"
 
+      - uses: pnpm/action-setup@v4
+        if: steps.scope.outputs.docsite_only != 'true'
       - uses: actions/setup-node@v6
         if: steps.scope.outputs.docsite_only != 'true'
         with:
           node-version: 22
-          cache: 'yarn'
+          cache: 'pnpm'
 
-      - run: yarn install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile
         if: steps.scope.outputs.docsite_only != 'true'
 
       - name: Clear ESLint cache
@@ -56,8 +58,8 @@ jobs:
 
       - name: Check repository guardrails
         if: steps.scope.outputs.docsite_only != 'true'
-        run: yarn check:repo
+        run: pnpm check:repo
 
       - name: Run ESLint
         if: steps.scope.outputs.docsite_only != 'true'
-        run: yarn lint
+        run: pnpm lint

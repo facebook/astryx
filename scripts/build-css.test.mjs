@@ -49,8 +49,8 @@ describe('build-css xds.css', () => {
   let xdsCss;
 
   beforeAll(async () => {
-    console.log('Running yarn build...');
-    execSync('yarn build', {cwd: ROOT, stdio: 'pipe', timeout: 120_000});
+    console.log('Running pnpm build...');
+    execSync('pnpm build', {cwd: ROOT, stdio: 'pipe', timeout: 120_000});
     xdsCss = await fs.readFile(path.join(CORE_DIST, 'xds.css'), 'utf8');
   }, 180_000);
 

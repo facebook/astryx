@@ -6,7 +6,7 @@
  * verify-exports.mjs
  *
  * Verifies that all package.json export fields (main, module, types, exports)
- * resolve to files that actually exist on disk. Designed to run AFTER `yarn build`
+ * resolve to files that actually exist on disk. Designed to run AFTER `pnpm build`
  * to catch cases where packages point to dist files that weren't produced.
  *
  * Exit code 1 if any exports are broken.

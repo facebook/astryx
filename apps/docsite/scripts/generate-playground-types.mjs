@@ -41,7 +41,7 @@ function collectDts(dir, base = dir) {
 console.log(`Scanning ${distDir} for .d.ts files...`);
 
 if (!existsSync(distDir)) {
-  console.log('dist/ not found — skipping playground types generation (run yarn build first)');
+  console.log('dist/ not found — skipping playground types generation (run pnpm build first)');
   // Write an empty placeholder so the app doesn't 404
   writeFileSync(join(outDir, 'playground-types.json'), '{}');
   process.exit(0);

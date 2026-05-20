@@ -46,6 +46,14 @@ function withXDS(nextConfig = {}) {
         'default',
       ];
 
+      // Preserve the symlinked node_modules path so Next.js's
+      // transpilePackages matcher recognizes @xds/* packages under
+      // pnpm's symlinked layout. Without this, webpack dereferences
+      // the symlink to packages/<name>/... which doesn't contain
+      // "node_modules/@xds" and transpilation is silently skipped,
+      // breaking subpath imports like '@xds/core/AlertDialog'.
+      config.resolve.symlinks = false;
+
       // Call user's webpack config if provided
       if (existingWebpack) {
         return existingWebpack(config, context);

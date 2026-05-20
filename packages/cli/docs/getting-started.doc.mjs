@@ -140,8 +140,8 @@ const overrides = stylex.create({
           label: 'Clone and run an example',
           code: `git clone https://github.com/facebookexperimental/xds.git
 cd xds/apps/example-nextjs
-yarn install
-yarn dev`,
+pnpm install
+pnpm dev`,
         },
       ],
     },

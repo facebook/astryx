@@ -5,10 +5,10 @@
 #
 # Validates the vibe test pipeline works end-to-end without spawning
 # sub-agents or running LLMs. Uses a fixture .tsx file to test:
-#   1. yarn interactive (task creation)
-#   2. yarn aggregate (universal scoring)
-#   3. yarn compare (cross-target comparison)
-#   4. yarn report:build (report generation)
+# 0. pnpm interactive (task creation)
+# 0. pnpm aggregate (universal scoring)
+# 0. pnpm compare (cross-target comparison)
+# 0. pnpm report:build (report generation)
 #
 # Usage:
 #   bash scripts/smoke-test.sh
@@ -85,7 +85,7 @@ check "no calculateTier in source" bash -c '! grep -rq "calculateTier" src/ --in
 echo ""
 
 # -------------------------------------------------------
-# Phase 1: Task creation (yarn interactive)
+# 0. pnpm interactive)
 # -------------------------------------------------------
 echo "Phase 1: Task creation"
 SMOKE_ID="smoke-$(date +%s)"
@@ -95,7 +95,7 @@ check "generate-skill-doc.sh runs" bash scripts/generate-skill-doc.sh
 check "skill doc generated" test -f .generated/xds-skill.md
 
 # Create tasks for 1 prompt
-OUTPUT=$(yarn --silent interactive --target xds --persona naive --sample 1 2>&1)
+OUTPUT=$(pnpm --silent interactive --target xds --persona naive --sample 1 2>&1)
 ITER_ID=$(echo "$OUTPUT" | grep "^Iteration:" | awk '{print $2}')
 
 if [ -z "$ITER_ID" ]; then
@@ -119,7 +119,7 @@ fi
 echo ""
 
 # -------------------------------------------------------
-# Phase 2: Scoring (yarn aggregate)
+# 0. pnpm aggregate)
 # -------------------------------------------------------
 echo "Phase 2: Universal scoring"
 
@@ -155,14 +155,14 @@ FIXTURE_META
   check "fixture .json written" test -f "results/$ITER_ID/results/$PROMPT_ID.json"
 
   # Run aggregate (the renamed script → universal-aggregate)
-  AGG_OUTPUT=$(yarn --silent aggregate --iteration "$ITER_ID" 2>&1)
+  AGG_OUTPUT=$(pnpm --silent aggregate --iteration "$ITER_ID" 2>&1)
   AGG_EXIT=$?
 
   if [ $AGG_EXIT -eq 0 ]; then
-    echo -e "  ${GREEN}✓${NC} yarn aggregate succeeded"
+    echo -e "  ${GREEN}✓${NC} pnpm aggregate succeeded"
     PASS=$((PASS + 1))
   else
-    echo -e "  ${RED}✗${NC} yarn aggregate failed (exit $AGG_EXIT)"
+    echo -e "  ${RED}✗${NC} pnpm aggregate failed (exit $AGG_EXIT)"
     echo "    Output: $(echo "$AGG_OUTPUT" | tail -5)"
     FAIL=$((FAIL + 1))
   fi
@@ -223,13 +223,13 @@ fi
 echo ""
 
 # -------------------------------------------------------
-# Phase 3: Comparison (yarn compare)
+# 0. pnpm compare)
 # -------------------------------------------------------
 echo "Phase 3: Comparison"
 
 if [ -n "$ITER_ID" ]; then
   # Create a second iteration (baseline) with the same prompt
-  OUTPUT2=$(yarn --silent interactive --target baseline --persona naive --prompts "$PROMPT_ID" 2>&1)
+  OUTPUT2=$(pnpm --silent interactive --target baseline --persona naive --prompts "$PROMPT_ID" 2>&1)
   ITER_ID2=$(echo "$OUTPUT2" | grep "^Iteration:" | awk '{print $2}')
 
   if [ -n "$ITER_ID2" ]; then
@@ -260,18 +260,18 @@ FIXTURE2
 FIXTURE2_META
 
     # Aggregate baseline
-    yarn --silent aggregate --iteration "$ITER_ID2" > /dev/null 2>&1
+    pnpm --silent aggregate --iteration "$ITER_ID2" > /dev/null 2>&1
     check "baseline universal.json created" test -f "results/$ITER_ID2/universal.json"
 
     # Run compare
-    CMP_OUTPUT=$(yarn --silent compare --xds "$ITER_ID" --baseline "$ITER_ID2" 2>&1)
+    CMP_OUTPUT=$(pnpm --silent compare --xds "$ITER_ID" --baseline "$ITER_ID2" 2>&1)
     CMP_EXIT=$?
     
     if [ $CMP_EXIT -eq 0 ]; then
-      echo -e "  ${GREEN}✓${NC} yarn compare succeeded"
+      echo -e "  ${GREEN}✓${NC} pnpm compare succeeded"
       PASS=$((PASS + 1))
     else
-      echo -e "  ${RED}✗${NC} yarn compare failed (exit $CMP_EXIT)"
+      echo -e "  ${RED}✗${NC} pnpm compare failed (exit $CMP_EXIT)"
       echo "    Output: $(echo "$CMP_OUTPUT" | tail -5)"
       FAIL=$((FAIL + 1))
     fi
@@ -294,20 +294,20 @@ echo "Phase 4: Report build"
 
 if [ -n "$ITER_ID" ] && [ -n "${ITER_ID2:-}" ]; then
   set +e
-  REPORT_OUTPUT=$(yarn --silent report:build --iteration "$ITER_ID" --baseline "$ITER_ID2" 2>&1)
+  REPORT_OUTPUT=$(pnpm --silent report:build --iteration "$ITER_ID" --baseline "$ITER_ID2" 2>&1)
   REPORT_EXIT=$?
   set -e
 
   if [ $REPORT_EXIT -eq 0 ]; then
-    echo -e "  ${GREEN}✓${NC} yarn report:build succeeded"
+    echo -e "  ${GREEN}✓${NC} pnpm report:build succeeded"
     PASS=$((PASS + 1))
   else
     # Check if this is the known vite theme alias bug (pre-existing, not our fault)
     if echo "$REPORT_OUTPUT" | grep -q "EISDIR\|themes/default/src"; then
-      echo -e "  ${YELLOW}⊘${NC} yarn report:build skipped (known vite theme alias issue — not related to scoring)"
+      echo -e "  ${YELLOW}⊘${NC} pnpm report:build skipped (known vite theme alias issue — not related to scoring)"
       SKIP=$((SKIP + 1))
     else
-      echo -e "  ${RED}✗${NC} yarn report:build failed (exit $REPORT_EXIT)"
+      echo -e "  ${RED}✗${NC} pnpm report:build failed (exit $REPORT_EXIT)"
       echo "    Output: $(echo "$REPORT_OUTPUT" | tail -5)"
       FAIL=$((FAIL + 1))
     fi

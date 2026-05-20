@@ -8,6 +8,8 @@
   },
   "dependencies": {
     "@xds/core": "*",
+    "@xds/lab": "*",
+    "@xds/theme-brutalist": "*",
     "@xds/theme-default": "*",
     "@xds/theme-neutral": "*",
     "@xds/vega": "*",

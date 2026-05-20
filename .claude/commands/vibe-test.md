@@ -30,14 +30,14 @@ Three targets are compared: *XDS*, *baseline* (shadcn/Tailwind), and *raw HTML/C
 cd internal/vibe-tests
 
 # 1. Sample prompts for XDS (records the prompt IDs)
-yarn interactive --target xds --persona naive --sample <count>
+pnpm interactive --target xds --persona naive --sample <count>
 # Note the iteration ID and prompt IDs from the output
 
 # 2. Reuse same prompts for baseline
-yarn interactive --target baseline --persona naive --prompts <comma-separated-ids>
+pnpm interactive --target baseline --persona naive --prompts <comma-separated-ids>
 
 # 3. Reuse same prompts for HTML
-yarn interactive --target html --persona naive --prompts <comma-separated-ids>
+pnpm interactive --target html --persona naive --prompts <comma-separated-ids>
 ```
 
 This creates:
@@ -127,8 +127,8 @@ If GHA fails: `gh run view $RUN_ID --log-failed`
 
 ```bash
 cd internal/vibe-tests
-yarn aggregate --iteration <xds-id>
-yarn report:deploy --iteration <xds-id> --baseline <baseline-id> --html <html-id>
+pnpm aggregate --iteration <xds-id>
+pnpm report:deploy --iteration <xds-id> --baseline <baseline-id> --html <html-id>
 ```
 
 Report URL: `https://facebookexperimental.github.io/xds/reports/<xds-id>/`

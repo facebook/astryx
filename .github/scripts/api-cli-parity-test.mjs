@@ -168,7 +168,7 @@ if (!skipBaseline) {
   try {
     execSync(`git worktree add "${wt}" ${baselineRef} --detach 2>/dev/null`, {cwd: ROOT});
     if (!fs.existsSync(path.join(wt, 'node_modules'))) {
-      execSync('yarn install --frozen-lockfile 2>/dev/null || true', {cwd: wt, timeout: 60_000});
+      execSync('pnpm install --frozen-lockfile 2>/dev/null || true', {cwd: wt, timeout: 60_000});
     }
     const oldCli = path.join(wt, 'packages/cli/bin/xds.mjs');
     for (const r of results) {

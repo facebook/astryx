@@ -107,6 +107,6 @@ Both resets can run together without conflicts. Neither breaks the other's compo
 ## Running
 
 ```bash
-yarn install
-yarn dev  # or: cd apps/example-nextjs-tailwind && npx next dev
+pnpm install
+pnpm dev  # or: cd apps/example-nextjs-tailwind && npx next dev
 ```
