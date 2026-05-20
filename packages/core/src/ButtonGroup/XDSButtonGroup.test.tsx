@@ -9,7 +9,6 @@
  * SYNC: When ButtonGroup component changes, update tests to match new behavior
  */
 
-import {createRef} from 'react';
 import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {XDSButtonGroup} from './XDSButtonGroup';
@@ -74,15 +73,19 @@ describe('XDSButtonGroup', () => {
   });
 
   it('forwards ref to the root element', () => {
-    const ref = createRef<HTMLDivElement>();
+    let refValue: HTMLDivElement | null = null;
     render(
-      <XDSButtonGroup label="Actions" ref={ref}>
+      <XDSButtonGroup
+        label="Actions"
+        ref={el => {
+          refValue = el;
+        }}>
         <XDSButton label="Copy" />
       </XDSButtonGroup>,
     );
 
-    expect(ref.current).toBeInstanceOf(HTMLDivElement);
-    expect(ref.current).toBe(screen.getByRole('group'));
+    expect(refValue).toBeInstanceOf(HTMLDivElement);
+    expect(refValue).toBe(screen.getByRole('group'));
   });
 
   it('sets aria-orientation', () => {

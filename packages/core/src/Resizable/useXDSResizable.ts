@@ -322,6 +322,7 @@ function useSingleResizable(
  * Region keys must be stable across renders (same count and order).
  * This is enforced by the caller providing a static `regions` object.
  */
+// eslint-disable-next-line @eslint-react/no-unnecessary-use-prefix -- calls useSingleResizable in .map()
 function useMultiResizable(
   config: UseXDSResizableMultiConfig,
 ): Record<string, ResizableRegion> {
