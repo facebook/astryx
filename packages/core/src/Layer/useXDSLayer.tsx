@@ -374,7 +374,7 @@ export function useXDSLayer(
         positionAnchor: anchorId,
         positionArea: getPositionArea(placement, alignment),
         positionTryFallbacks: 'flip-block, flip-inline, flip-block flip-inline',
-      } as React.CSSProperties;
+      };
 
       const stylexResult = stylex.props(styles.base, xstyle);
       const combinedClassName = extraClassName

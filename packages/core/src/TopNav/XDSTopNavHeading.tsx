@@ -466,11 +466,11 @@ export function XDSTopNavHeading({
   }
 
   // Whole heading is a link (no menu, single headingHref)
-  if (isWholeHeadingLink) {
+  if (isWholeHeadingLink && headingHref) {
     return (
       <LinkComponent
         ref={ref as React.Ref<HTMLAnchorElement>}
-        href={headingHref!}
+        href={headingHref}
         data-testid={testId}
         {...mergeProps(
           xdsClassName('top-nav-heading'),

@@ -368,7 +368,7 @@ function CallRow({call}: {call: XDSChatToolCallItem}) {
             <span {...stylex.props(styles.statusIconCircle)} />
             <span {...stylex.props(styles.statusIconInner)}>
               <XDSIcon
-                icon={STATUS_ICON_NAMES[status]!}
+                icon={STATUS_ICON_NAMES[status] ?? 'check'}
                 size="xsm"
                 color="inherit"
               />
@@ -548,7 +548,7 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
                   <span {...stylex.props(styles.statusIconCircle)} />
                   <span {...stylex.props(styles.statusIconInner)}>
                     <XDSIcon
-                      icon={STATUS_ICON_NAMES[latestStatus]!}
+                      icon={STATUS_ICON_NAMES[latestStatus] ?? 'check'}
                       size="xsm"
                       color="inherit"
                     />

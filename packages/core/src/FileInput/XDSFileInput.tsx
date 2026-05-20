@@ -585,7 +585,7 @@ export function XDSFileInput({
   const fileNames = hasFiles
     ? Array.isArray(value)
       ? value.map(f => f.name).join(', ')
-      : value!.name
+      : (value?.name ?? '')
     : null;
 
   const renderDropzoneContent = () => {

@@ -528,7 +528,8 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
       ) {
         const createdValue = item.id.slice(CREATABLE_ID_PREFIX.length);
         if (selectedIds.has(createdValue)) return;
-        const realItem = {id: createdValue, label: createdValue} as T;
+        const base = {id: createdValue, label: createdValue};
+        const realItem = base as T;
         const newItems = [...value, realItem];
         onChange(newItems, {item: realItem, type: 'create'});
         return;
@@ -625,6 +626,13 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
       />
     );
   });
+
+  const popoverOverrideStyle: React.CSSProperties = {
+    positionArea: undefined,
+    positionTryFallbacks: undefined,
+    top: 'anchor(top)',
+    left: 'anchor(start)',
+  };
 
   const wrapperContent = (
     <div
@@ -769,12 +777,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
             placement: 'below',
             alignment: 'start',
             xstyle: styles.layerPopover,
-            style: {
-              positionArea: undefined,
-              positionTryFallbacks: undefined,
-              top: 'anchor(top)',
-              left: 'anchor(start)',
-            } as React.CSSProperties,
+            style: popoverOverrideStyle,
           },
         )}
       </>

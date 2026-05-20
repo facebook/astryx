@@ -150,7 +150,7 @@ export function XDSTreeList({
       setExpandedKeysOverride(prev => {
         const next = new Map(prev);
         const isCurrentlyExpanded = prev.has(id)
-          ? prev.get(id)!
+          ? (prev.get(id) ?? false)
           : expandedKeysFromProps.has(id);
         next.set(id, !isCurrentlyExpanded);
         return next;
@@ -167,7 +167,7 @@ export function XDSTreeList({
     return items.map((item, index) => {
       const isLast = index === items.length - 1;
       const isExpanded = expandedKeysOverride.has(item.id)
-        ? expandedKeysOverride.get(item.id)!
+        ? (expandedKeysOverride.get(item.id) ?? false)
         : expandedKeysFromProps.has(item.id);
       const hasChildren = item.children != null && item.children.length > 0;
 
@@ -178,7 +178,7 @@ export function XDSTreeList({
       const renderedChildren =
         isExpanded && hasChildren
           ? renderItems(
-              item.children!,
+              item.children ?? [],
               nestedLevel + 1,
               ancestorsIsLastForChildren,
             )

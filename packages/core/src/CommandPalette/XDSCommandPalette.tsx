@@ -154,7 +154,7 @@ function buildSelectableItems(
         groupOrder.push(group);
         groups.set(group, []);
       }
-      groups.get(group)!.push(item);
+      groups.get(group)?.push(item);
     } else {
       ungrouped.push(item);
     }
@@ -162,7 +162,7 @@ function buildSelectableItems(
 
   const result: XDSSelectorOptionData[] = [];
   for (const heading of groupOrder) {
-    for (const item of groups.get(heading)!) {
+    for (const item of groups.get(heading) ?? []) {
       result.push({value: item.id, label: item.label});
     }
   }
@@ -211,7 +211,7 @@ function ItemRenderer<T extends XDSSearchableItem>({
         groupOrder.push(group);
         groups.set(group, []);
       }
-      groups.get(group)!.push(item);
+      groups.get(group)?.push(item);
     } else {
       ungrouped.push(item);
     }
@@ -221,7 +221,7 @@ function ItemRenderer<T extends XDSSearchableItem>({
     <>
       {groupOrder.map(heading => (
         <XDSCommandPaletteGroup key={heading} heading={heading}>
-          {groups.get(heading)!.map(renderOne)}
+          {(groups.get(heading) ?? []).map(renderOne)}
         </XDSCommandPaletteGroup>
       ))}
       {ungrouped.map(renderOne)}

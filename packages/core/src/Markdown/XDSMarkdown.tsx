@@ -1009,6 +1009,11 @@ function renderBlock(
   inlinePlugins?: MarkdownInlinePlugin[],
   components?: Partial<XDSMarkdownComponents>,
 ): React.ReactNode {
+  const blockAlignMargin = BLOCK_ALIGN_MARGIN[contentAlign];
+  const blockAlignStyle =
+    blockAlignMargin != null
+      ? dynamicStyles.blockAlign(blockAlignMargin)
+      : null;
   const spacing = getElementSpacing(node, density);
   const isFirst = index === 0;
   const isLast = index === blockCount - 1;
@@ -1125,9 +1130,7 @@ function renderBlock(
               contentWidthValue != null
                 ? dynamicStyles.blockWidth(contentWidthValue)
                 : undefined,
-              BLOCK_ALIGN_MARGIN[contentAlign] != null
-                ? dynamicStyles.blockAlign(BLOCK_ALIGN_MARGIN[contentAlign]!)
-                : undefined,
+              blockAlignStyle,
             ]}
           />
         </div>
@@ -1382,7 +1385,9 @@ function renderBlock(
               ? dynamicStyles.blockWidth(contentWidthValue)
               : null,
             BLOCK_ALIGN_MARGIN[contentAlign] != null
-              ? dynamicStyles.blockAlign(BLOCK_ALIGN_MARGIN[contentAlign]!)
+              ? dynamicStyles.blockAlign(
+                  BLOCK_ALIGN_MARGIN[contentAlign] as string,
+                )
               : null,
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,

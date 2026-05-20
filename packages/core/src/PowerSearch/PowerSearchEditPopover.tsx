@@ -140,24 +140,24 @@ function isEditableFilterComplete(
 function editableToCompleteFilter(
   config: InternalConfig,
   ef: EditablePartialFilter,
-): PowerSearchFilter {
-  const op = config.getOperator(ef.field, ef.operator!);
+): PowerSearchFilter | null {
+  if (!ef.operator) return null;
+  const op = config.getOperator(ef.field, ef.operator);
   if (op?.value.type === 'nested') {
+    const subs = (ef._subFilters ?? [])
+      .map(s => editableToCompleteFilter(config, s))
+      .filter((s): s is PowerSearchFilter => s != null);
     return {
       field: ef.field,
-      operator: ef.operator!,
-      value: {
-        type: 'nested',
-        value: (ef._subFilters ?? []).map(s =>
-          editableToCompleteFilter(config, s),
-        ),
-      },
+      operator: ef.operator,
+      value: {type: 'nested', value: subs},
     };
   }
+  if (ef.value == null) return null;
   return {
     field: ef.field,
-    operator: ef.operator!,
-    value: ef.value!,
+    operator: ef.operator,
+    value: ef.value,
   };
 }
 

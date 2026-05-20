@@ -62,6 +62,21 @@ export default tseslint.config(
         destructuredArrayIgnorePattern: "^_",
         caughtErrorsIgnorePattern: "^_",
       }],
+      "no-console": ["warn", { allow: ["warn", "error"] }],
+      "@typescript-eslint/no-non-null-assertion": "warn",
+      "@typescript-eslint/consistent-type-assertions": ["warn", {
+        assertionStyle: "as",
+        objectLiteralTypeAssertions: "never",
+      }],
+    },
+  },
+  // Test files — relax rules for test ergonomics
+  {
+    files: ["**/*.test.{ts,tsx}", "**/*.perf.test.{ts,tsx}"],
+    rules: {
+      "no-console": "off",
+      "@typescript-eslint/no-non-null-assertion": "off",
+      "@typescript-eslint/consistent-type-assertions": "off",
     },
   },
   // Copyright header — all source files must have the Meta copyright notice

@@ -179,7 +179,7 @@ const styles = stylex.create({
     '--_button-radius': `calc(${radiusVars['--radius-element']} - ${spacingVars['--spacing-1']})`,
     height: 20,
     minWidth: 20,
-  } as Record<string, string | number>,
+  } satisfies Record<string, string | number>,
   disabled: {
     opacity: 0.5,
     pointerEvents: 'none' as const,

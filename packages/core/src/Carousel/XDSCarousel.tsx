@@ -170,7 +170,7 @@ const styles = stylex.create({
   },
   buttonRadiusOverride: {
     '--_button-radius': radiusVars['--radius-full'],
-  } as Record<string, string>,
+  } satisfies Record<string, string>,
 });
 
 const gapStyles = stylex.create({
@@ -263,6 +263,12 @@ export function XDSCarousel({
           ? styles.fadeEnd
           : null;
 
+  const coverStyle: React.CSSProperties = {
+    positionArea: 'center',
+    width: 'anchor-size(width)',
+    height: 'anchor-size(height)',
+  };
+
   return (
     <div
       ref={(el: HTMLDivElement | null) => {
@@ -333,12 +339,7 @@ export function XDSCarousel({
         {
           placement: 'below',
           alignment: 'center',
-          style: {
-            // Override anchor positioning to cover the anchor instead of below it
-            positionArea: 'center',
-            width: 'anchor-size(width)',
-            height: 'anchor-size(height)',
-          } as React.CSSProperties,
+          style: coverStyle,
           xstyle: styles.buttonOverlay,
         },
       )}
