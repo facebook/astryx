@@ -118,6 +118,7 @@ export default tseslint.config(
       '@eslint-react/no-unnecessary-use-prefix': reactSeverity,
       '@eslint-react/no-create-ref': reactSeverity,
       '@eslint-react/no-forward-ref': reactSeverity,
+      '@eslint-react/no-unused-state': reactSeverity,
 
       // DOM correctness
       '@eslint-react/dom-no-missing-button-type': reactSeverity,
@@ -142,6 +143,7 @@ export default tseslint.config(
 
       // Naming conventions
       '@eslint-react/naming-convention-context-name': reactSeverity,
+      '@eslint-react/naming-convention-ref-name': reactSeverity,
 
       // Resource leak prevention
       '@eslint-react/web-api-no-leaked-event-listener': reactSeverity,

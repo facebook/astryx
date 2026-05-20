@@ -470,9 +470,6 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
     [value],
   );
 
-  // Track the current query for creatable mode
-  const [_creatableQuery, setCreatableQuery] = useState('');
-
   const filteredSource: XDSSearchSource<T> = useMemo(
     () => ({
       search: async (query: string) => {
@@ -685,14 +682,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
         hasAutoFocus={hasAutoFocus}
         inputId={inputId}
         ariaDescribedBy={ariaDescribedBy}
-        onChangeQuery={
-          hasCreate
-            ? (q: string) => {
-                setCreatableQuery(q);
-                onChangeQuery?.(q);
-              }
-            : onChangeQuery
-        }
+        onChangeQuery={onChangeQuery}
         debounceMs={debounceMs}
         onKeyDown={handleKeyDown}
         anchorRef={wrapperRef}
