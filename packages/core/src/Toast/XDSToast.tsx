@@ -117,11 +117,16 @@ export function XDSToast({
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isPausedRef = useRef(false);
   const remainingRef = useRef(autoHideDuration);
-  const startTimeRef = useRef(Date.now());
+  // Will be initialized by startTimer when actually used
+  const startTimeRef = useRef<number | null>(null);
 
   const startTimer = useCallback(() => {
-    if (!isAutoHide) return;
-    if (timerRef.current) clearTimeout(timerRef.current);
+    if (!isAutoHide) {
+      return;
+    }
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
     startTimeRef.current = Date.now();
     timerRef.current = setTimeout(() => {
       onDismiss('auto');
@@ -129,18 +134,24 @@ export function XDSToast({
   }, [isAutoHide, onDismiss]);
 
   const pauseTimer = useCallback(() => {
-    if (!isAutoHide || isPausedRef.current) return;
+    if (!isAutoHide || isPausedRef.current) {
+      return;
+    }
     isPausedRef.current = true;
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
-    const elapsed = Date.now() - startTimeRef.current;
-    remainingRef.current = Math.max(remainingRef.current - elapsed, 1000);
+    if (startTimeRef.current != null) {
+      const elapsed = Date.now() - startTimeRef.current;
+      remainingRef.current = Math.max(remainingRef.current - elapsed, 1000);
+    }
   }, [isAutoHide]);
 
   const resumeTimer = useCallback(() => {
-    if (!isAutoHide || !isPausedRef.current) return;
+    if (!isAutoHide || !isPausedRef.current) {
+      return;
+    }
     isPausedRef.current = false;
     startTimer();
   }, [isAutoHide, startTimer]);

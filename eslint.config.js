@@ -99,6 +99,10 @@ export default tseslint.config(
     files: ["packages/core/src/**/*.{ts,tsx}"],
     plugins: eslintReact.configs.recommended.plugins,
     rules: {
+      // React fundamentals
+      '@eslint-react/rules-of-hooks': reactSeverity,
+      '@eslint-react/purity': reactSeverity,
+
       // Component structure bugs
       '@eslint-react/no-nested-component-definitions': reactSeverity,
       '@eslint-react/no-unstable-default-props': reactSeverity,

@@ -320,6 +320,34 @@ export function XDSTopNavMenu({
   const [drawerExpanded, setDrawerExpanded] = useState(false);
   const menuId = useId();
 
+  const slot = useTopNavSlot();
+  const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  const popover = useXDSPopover({
+    dialogLabel: label,
+    xstyle: styles.menuOffset,
+  });
+
+  const {triggerProps, contentProps, menuRef, setTriggerEl} = useXDSMenuHover({
+    show: popover.show,
+    hide: popover.hide,
+    isOpen: popover.isOpen,
+    isEnabled: true,
+    showDelay: delay,
+    hideDelay,
+  });
+
+  const setTriggerRef = useCallback(
+    (el: HTMLButtonElement | null) => {
+      (
+        triggerButtonRef as React.MutableRefObject<HTMLButtonElement | null>
+      ).current = el;
+      popover.triggerRef(el);
+      setTriggerEl(el);
+    },
+    [popover, setTriggerEl],
+  );
+
   // Mobile bar: hide menus entirely
   if (renderMode === 'mobile-bar') {
     return null;
@@ -382,34 +410,6 @@ export function XDSTopNavMenu({
   }
 
   // Default: desktop popover
-  const slot = useTopNavSlot();
-  const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
-
-  const popover = useXDSPopover({
-    dialogLabel: label,
-    xstyle: styles.menuOffset,
-  });
-
-  const {triggerProps, contentProps, menuRef, setTriggerEl} = useXDSMenuHover({
-    show: popover.show,
-    hide: popover.hide,
-    isOpen: popover.isOpen,
-    isEnabled: true,
-    showDelay: delay,
-    hideDelay,
-  });
-
-  const setTriggerRef = useCallback(
-    (el: HTMLButtonElement | null) => {
-      (
-        triggerButtonRef as React.MutableRefObject<HTMLButtonElement | null>
-      ).current = el;
-      popover.triggerRef(el);
-      setTriggerEl(el);
-    },
-    [popover, setTriggerEl],
-  );
-
   return (
     <>
       <button

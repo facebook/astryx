@@ -334,6 +334,7 @@ function useMultiResizable(
   // Call hooks unconditionally in stable order (same count every render).
 
   const regionResults = regionEntries.map(([key, regionConfig]) =>
+    // eslint-disable-next-line @eslint-react/rules-of-hooks -- region count is stable (documented contract)
     useSingleResizable({
       ...regionConfig,
       autoSaveId: autoSaveId ? `${autoSaveId}:${key}` : undefined,
@@ -361,7 +362,9 @@ export function useXDSResizable(
   config: UseXDSResizableSingleConfig | UseXDSResizableMultiConfig,
 ): ResizableRegion | Record<string, ResizableRegion> {
   if ('regions' in config) {
+    // eslint-disable-next-line @eslint-react/rules-of-hooks -- branch is determined by call-site type (stable per call site)
     return useMultiResizable(config);
   }
+  // eslint-disable-next-line @eslint-react/rules-of-hooks -- branch is determined by call-site type (stable per call site)
   return useSingleResizable(config);
 }
