@@ -203,8 +203,8 @@ function useSingleResizable(
   const [isCollapsed, setIsCollapsed] = useState(
     () => persisted === 0 && collapsible,
   );
-  const preCollapseSize = useRef(size);
-  const dragStartSize = useRef(size);
+  const preCollapseSizeRef = useRef(size);
+  const dragStartSizeRef = useRef(size);
 
   useEffect(() => {
     if (autoSaveId) {
@@ -214,7 +214,7 @@ function useSingleResizable(
 
   const collapse = useCallback(() => {
     if (!collapsible) return;
-    preCollapseSize.current = size;
+    preCollapseSizeRef.current = size;
     setIsCollapsed(true);
     setSize(0);
     onCollapseChange?.(true);
@@ -223,7 +223,7 @@ function useSingleResizable(
 
   const expand = useCallback(() => {
     setIsCollapsed(false);
-    const restored = preCollapseSize.current || resolvedDefault;
+    const restored = preCollapseSizeRef.current || resolvedDefault;
     const newSize = clampSize(restored, minSizePx, maxSizePx, snaps);
     setSize(newSize);
     onCollapseChange?.(false);
@@ -248,15 +248,15 @@ function useSingleResizable(
   );
 
   const onResizeStart = useCallback(() => {
-    dragStartSize.current = isCollapsed ? 0 : size;
+    dragStartSizeRef.current = isCollapsed ? 0 : size;
   }, [size, isCollapsed]);
 
   const onResizeMove = useCallback(
     (delta: number) => {
-      const raw = dragStartSize.current + delta;
+      const raw = dragStartSizeRef.current + delta;
       if (collapsible && raw < collapsedSize) {
         if (!isCollapsed) {
-          preCollapseSize.current = size;
+          preCollapseSizeRef.current = size;
           onCollapseChange?.(true);
         }
         setIsCollapsed(true);
