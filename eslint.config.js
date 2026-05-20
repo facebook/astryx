@@ -117,6 +117,7 @@ export default tseslint.config(
       '@eslint-react/use-memo': reactSeverity,
       '@eslint-react/no-unnecessary-use-prefix': reactSeverity,
       '@eslint-react/no-create-ref': reactSeverity,
+      '@eslint-react/no-forward-ref': reactSeverity,
 
       // DOM correctness
       '@eslint-react/dom-no-missing-button-type': reactSeverity,

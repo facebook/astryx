@@ -12,20 +12,22 @@
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {forwardRef, type ComponentPropsWithoutRef} from 'react';
 import {XDSTabList} from './XDSTabList';
 import {XDSTab} from './XDSTab';
 import {XDSTabMenu} from './XDSTabMenu';
 import {XDSLinkProvider} from '../Link/XDSLinkProvider';
 
-const CustomLink = forwardRef<HTMLAnchorElement, ComponentPropsWithoutRef<'a'>>(
-  ({children, ...props}, ref) => (
+function CustomLink({
+  children,
+  ref,
+  ...props
+}: React.ComponentPropsWithRef<'a'>) {
+  return (
     <a ref={ref} data-custom-link {...props}>
       {children}
     </a>
-  ),
-);
-CustomLink.displayName = 'CustomLink';
+  );
+}
 
 // Store original matches to restore later
 const originalMatches = HTMLElement.prototype.matches;

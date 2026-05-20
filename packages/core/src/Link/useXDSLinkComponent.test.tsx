@@ -9,7 +9,6 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import {forwardRef, type ComponentPropsWithoutRef} from 'react';
 import {useXDSLinkComponent} from './useXDSLinkComponent';
 import {XDSLinkProvider} from './XDSLinkProvider';
 import type {XDSLinkComponentType} from './types';
@@ -24,43 +23,52 @@ function TestConsumer({as}: {as?: XDSLinkComponentType}) {
   );
 }
 
-const CustomLink = forwardRef<HTMLAnchorElement, ComponentPropsWithoutRef<'a'>>(
-  ({children, ...props}, ref) => (
+function CustomLink({
+  children,
+  ref,
+  ...props
+}: React.ComponentPropsWithRef<'a'>) {
+  return (
     <a ref={ref} data-custom-link {...props}>
       {children}
     </a>
-  ),
-);
-CustomLink.displayName = 'CustomLink';
+  );
+}
 
-const AnotherLink = forwardRef<
-  HTMLAnchorElement,
-  ComponentPropsWithoutRef<'a'>
->(({children, ...props}, ref) => (
-  <a ref={ref} data-another-link {...props}>
-    {children}
-  </a>
-));
-AnotherLink.displayName = 'AnotherLink';
+function AnotherLink({
+  children,
+  ref,
+  ...props
+}: React.ComponentPropsWithRef<'a'>) {
+  return (
+    <a ref={ref} data-another-link {...props}>
+      {children}
+    </a>
+  );
+}
 
 /**
  * A mock "to"-based router link that reads `to` instead of `href`.
  * Simulates React Router / TanStack Router behavior.
  */
-const ToBasedRouterLink = forwardRef<
-  HTMLAnchorElement,
-  {
-    to?: string;
-    href?: string;
-    children?: React.ReactNode;
-    [key: string]: unknown;
-  }
->(({to, children, ...props}, ref) => (
-  <a ref={ref} href={to} data-router-link data-to={to} {...props}>
-    {children}
-  </a>
-));
-ToBasedRouterLink.displayName = 'ToBasedRouterLink';
+function ToBasedRouterLink({
+  to,
+  children,
+  ref,
+  ...props
+}: {
+  to?: string;
+  href?: string;
+  children?: React.ReactNode;
+  ref?: React.Ref<HTMLAnchorElement>;
+  [key: string]: unknown;
+}) {
+  return (
+    <a ref={ref} href={to} data-router-link data-to={to} {...props}>
+      {children}
+    </a>
+  );
+}
 
 // =============================================================================
 // useXDSLinkComponent
@@ -126,11 +134,12 @@ describe('useXDSLinkComponent — to prop', () => {
         </a>
       ),
     );
-    const SpyLink = forwardRef<
-      HTMLAnchorElement,
-      {children?: React.ReactNode; [key: string]: unknown}
-    >((props, _ref) => spy(props));
-    SpyLink.displayName = 'SpyLink';
+    function SpyLink(props: {
+      children?: React.ReactNode;
+      [key: string]: unknown;
+    }) {
+      return spy(props);
+    }
 
     render(
       <XDSLinkProvider component={SpyLink}>
@@ -157,11 +166,12 @@ describe('useXDSLinkComponent — to prop', () => {
         </a>
       ),
     );
-    const SpyLink = forwardRef<
-      HTMLAnchorElement,
-      {children?: React.ReactNode; [key: string]: unknown}
-    >((props, _ref) => spy(props));
-    SpyLink.displayName = 'SpyLink';
+    function SpyLink(props: {
+      children?: React.ReactNode;
+      [key: string]: unknown;
+    }) {
+      return spy(props);
+    }
 
     render(<TestConsumer as={SpyLink} />);
 
