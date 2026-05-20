@@ -1541,7 +1541,9 @@ export function XDSMarkdown({
   // When not streaming, the hook returns children unchanged (no-op).
   const smoothedText = useXDSStreamingText(children, isStreaming);
 
-  const incrementalState = useRef<IncrementalState>(createIncrementalState());
+  const incrementalStateRef = useRef<IncrementalState>(
+    createIncrementalState(),
+  );
   // Track how much text content was rendered on the previous pass.
   // Everything beyond this boundary is "new" and gets the fade-in animation.
   const prevTextLenRef = useRef(0);
@@ -1549,14 +1551,14 @@ export function XDSMarkdown({
   const blocks = useMemo(() => {
     if (isStreaming) {
       if (smoothedText === '') {
-        incrementalState.current = createIncrementalState();
+        incrementalStateRef.current = createIncrementalState();
         prevTextLenRef.current = 0;
         return [];
       }
       const input = trimStreamingArtifacts(smoothedText);
       return parseMarkdownIncremental(
         input,
-        incrementalState.current,
+        incrementalStateRef.current,
         sourceIds,
       );
     }
