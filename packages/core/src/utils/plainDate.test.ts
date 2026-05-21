@@ -9,7 +9,7 @@ import {
   plainDateToDate,
   plainDateFromDate,
   plainDateToday,
-  plainDateDaysInMonth,
+  getDaysInMonth,
   plainDateDayOfWeek,
   plainDateAddMonths,
   plainDateAddDays,
@@ -131,29 +131,29 @@ describe('plainDateToday', () => {
   });
 });
 
-describe('plainDateDaysInMonth', () => {
+describe('getDaysInMonth', () => {
   it('returns 31 for January', () => {
-    expect(plainDateDaysInMonth(2026, 1)).toBe(31);
+    expect(getDaysInMonth(2026, 1)).toBe(31);
   });
 
   it('returns 28 for February in a non-leap year', () => {
-    expect(plainDateDaysInMonth(2026, 2)).toBe(28);
+    expect(getDaysInMonth(2026, 2)).toBe(28);
   });
 
   it('returns 29 for February in a leap year', () => {
-    expect(plainDateDaysInMonth(2024, 2)).toBe(29);
+    expect(getDaysInMonth(2024, 2)).toBe(29);
   });
 
   it('returns 30 for April', () => {
-    expect(plainDateDaysInMonth(2026, 4)).toBe(30);
+    expect(getDaysInMonth(2026, 4)).toBe(30);
   });
 
   it('handles century non-leap year', () => {
-    expect(plainDateDaysInMonth(1900, 2)).toBe(28);
+    expect(getDaysInMonth(1900, 2)).toBe(28);
   });
 
   it('handles 400-year leap year', () => {
-    expect(plainDateDaysInMonth(2000, 2)).toBe(29);
+    expect(getDaysInMonth(2000, 2)).toBe(29);
   });
 });
 

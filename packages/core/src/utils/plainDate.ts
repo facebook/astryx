@@ -24,7 +24,7 @@ export function plainDateCreate(
   if (month < 1 || month > 12) {
     throw new RangeError(`month must be 1–12, got ${month}`);
   }
-  const maxDay = plainDateDaysInMonth(year, month);
+  const maxDay = getDaysInMonth(year, month);
   if (day < 1 || day > maxDay) {
     throw new RangeError(
       `day must be 1–${maxDay} for ${year}-${String(month).padStart(2, '0')}, got ${day}`,
@@ -61,7 +61,7 @@ export function plainDateToday(): PlainDate {
   return plainDateFromDate(new Date());
 }
 
-export function plainDateDaysInMonth(year: number, month: number): number {
+export function getDaysInMonth(year: number, month: number): number {
   if (month === 2) {
     const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
     return leap ? 29 : 28;
@@ -74,18 +74,13 @@ export function plainDateDayOfWeek(pd: PlainDate): number {
 }
 
 export function plainDateAddMonths(pd: PlainDate, n: number): PlainDate {
-  let month = pd.month + n;
-  let year = pd.year;
-  while (month > 12) {
-    month -= 12;
-    year++;
-  }
-  while (month < 1) {
-    month += 12;
-    year--;
-  }
-  const maxDay = plainDateDaysInMonth(year, month);
-  return {year, month, day: Math.min(pd.day, maxDay)};
+  const d = new Date(pd.year, pd.month - 1 + n, 1);
+  const maxDay = getDaysInMonth(d.getFullYear(), d.getMonth() + 1);
+  return {
+    year: d.getFullYear(),
+    month: d.getMonth() + 1,
+    day: Math.min(pd.day, maxDay),
+  };
 }
 
 export function plainDateAddDays(pd: PlainDate, n: number): PlainDate {

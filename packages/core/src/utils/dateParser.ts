@@ -18,7 +18,7 @@ import {
   plainDateToDate,
   plainDateFromISO,
   plainDateToISO,
-  plainDateDaysInMonth,
+  getDaysInMonth,
 } from './plainDate';
 
 export {
@@ -205,12 +205,7 @@ function createPlainDate(
   month: number,
   day: number,
 ): PlainDate | null {
-  if (
-    month < 1 ||
-    month > 12 ||
-    day < 1 ||
-    day > plainDateDaysInMonth(year, month)
-  ) {
+  if (month < 1 || month > 12 || day < 1 || day > getDaysInMonth(year, month)) {
     return null;
   }
   return {year, month, day};

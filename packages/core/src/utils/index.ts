@@ -27,7 +27,7 @@ export {
   plainDateToDate,
   plainDateFromDate,
   plainDateToday,
-  plainDateDaysInMonth,
+  getDaysInMonth,
   plainDateDayOfWeek,
   plainDateAddMonths,
   plainDateAddDays,

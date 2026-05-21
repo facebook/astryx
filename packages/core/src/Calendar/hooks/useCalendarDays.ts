@@ -17,7 +17,7 @@ import type {DayOfWeek, ISODateString} from '../../utils/dateTypes';
 import {
   type PlainDate,
   plainDateToISO,
-  plainDateDaysInMonth,
+  getDaysInMonth,
   plainDateDayOfWeek,
   plainDateAddDays,
 } from '../../utils/plainDate';
@@ -87,7 +87,7 @@ export function useCalendarDays(
 
   // Calculate grid structure
   const gridInfo = useMemo(() => {
-    const totalDaysInMonth = plainDateDaysInMonth(year, month);
+    const totalDaysInMonth = getDaysInMonth(year, month);
 
     // Calculate starting offset based on weekStartsOn
     let startingDayOfWeek =
