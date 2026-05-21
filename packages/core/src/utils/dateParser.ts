@@ -14,11 +14,11 @@
 import type {ISODateString} from './dateTypes';
 import {
   type PlainDate,
+  plainDateCreate,
   plainDateFromDate,
   plainDateToDate,
   plainDateFromISO,
   plainDateToISO,
-  getDaysInMonth,
 } from './plainDate';
 
 export {
@@ -63,7 +63,7 @@ export function parseDateInput(input: string): PlainDate | null {
   const isoMatch = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
   if (isoMatch) {
     const [, year, month, day] = isoMatch;
-    return createPlainDate(+year, +month, +day);
+    return tryCreatePlainDate(+year, +month, +day);
   }
 
   // 2. Try full month name formats with year
@@ -75,7 +75,7 @@ export function parseDateInput(input: string): PlainDate | null {
     const [, monthName, day, year] = monthFirstWithYearMatch;
     const month = parseMonthName(monthName);
     if (month !== null) {
-      return createPlainDate(+year, month, +day);
+      return tryCreatePlainDate(+year, month, +day);
     }
   }
 
@@ -87,7 +87,7 @@ export function parseDateInput(input: string): PlainDate | null {
     const [, day, monthName, year] = dayFirstWithYearMatch;
     const month = parseMonthName(monthName);
     if (month !== null) {
-      return createPlainDate(+year, month, +day);
+      return tryCreatePlainDate(+year, month, +day);
     }
   }
 
@@ -98,7 +98,7 @@ export function parseDateInput(input: string): PlainDate | null {
     const [, monthName, day] = monthFirstNoYearMatch;
     const month = parseMonthName(monthName);
     if (month !== null) {
-      return createPlainDate(currentYear, month, +day);
+      return tryCreatePlainDate(currentYear, month, +day);
     }
   }
 
@@ -108,7 +108,7 @@ export function parseDateInput(input: string): PlainDate | null {
     const [, day, monthName] = dayFirstNoYearMatch;
     const month = parseMonthName(monthName);
     if (month !== null) {
-      return createPlainDate(currentYear, month, +day);
+      return tryCreatePlainDate(currentYear, month, +day);
     }
   }
 
@@ -167,7 +167,7 @@ function parseNumericDate(
     }
   }
 
-  return createPlainDate(year, month, day);
+  return tryCreatePlainDate(year, month, day);
 }
 
 function parseMonthName(name: string): number | null {
@@ -200,21 +200,14 @@ function parseMonthName(name: string): number | null {
   return months[name.toLowerCase()] ?? null;
 }
 
-function createPlainDate(
+function tryCreatePlainDate(
   year: number,
   month: number,
   day: number,
 ): PlainDate | null {
-  if (month < 1 || month > 12 || day < 1 || day > getDaysInMonth(year, month)) {
+  try {
+    return plainDateCreate(year, month, day);
+  } catch {
     return null;
   }
-  return {year, month, day};
-}
-
-export function formatDisplayDate(iso: ISODateString): string {
-  return new Intl.DateTimeFormat(undefined, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(plainDateToDate(plainDateFromISO(iso)));
 }

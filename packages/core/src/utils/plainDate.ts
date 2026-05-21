@@ -7,14 +7,9 @@
  * @position Shared utility; replaces scattered Date usage across Calendar hooks
  */
 
-import type {ISODateString} from './dateTypes';
+import type {ISODateString, PlainDate} from './dateTypes';
 
-export interface PlainDate {
-  readonly year: number;
-  /** 1-based (1 = January, 12 = December) */
-  readonly month: number;
-  readonly day: number;
-}
+export type {PlainDate} from './dateTypes';
 
 export function plainDateCreate(
   year: number,
@@ -122,16 +117,24 @@ export function plainDateSetFirstOfMonth(pd: PlainDate): PlainDate {
 }
 
 export function plainDateGetWeekNumber(pd: PlainDate): number {
-  const d = new Date(Date.UTC(pd.year, pd.month - 1, pd.day));
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const d = plainDateToDate(pd);
+  const dayNum = d.getDay() || 7;
+  d.setDate(d.getDate() + 4 - dayNum);
+  const yearStart = new Date(d.getFullYear(), 0, 1);
   return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
 }
 
 export function plainDateFormatAccessible(pd: PlainDate): string {
   return new Intl.DateTimeFormat(undefined, {
     weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(plainDateToDate(pd));
+}
+
+export function plainDateFormatDisplay(pd: PlainDate): string {
+  return new Intl.DateTimeFormat(undefined, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',

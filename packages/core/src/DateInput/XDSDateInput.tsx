@@ -53,8 +53,12 @@ import {
 } from '../Calendar';
 import {useCalendarConstraints} from '../Calendar/hooks';
 import {useXDSPopover} from '../Popover';
-import {parseDateInput, formatDisplayDate} from '../utils';
-import {plainDateToISO} from '../utils/plainDate';
+import {parseDateInput} from '../utils';
+import {
+  plainDateFromISO,
+  plainDateToISO,
+  plainDateFormatDisplay,
+} from '../utils/plainDate';
 
 const styles = stylex.create({
   iconButton: {
@@ -342,7 +346,7 @@ export function XDSDateInput({
     pendingInput !== null
       ? pendingInput
       : optimisticValue && /^\d{4}-\d{2}-\d{2}$/.test(optimisticValue)
-        ? formatDisplayDate(optimisticValue)
+        ? plainDateFormatDisplay(plainDateFromISO(optimisticValue))
         : '';
 
   // Check if current input is valid (for styling purposes)

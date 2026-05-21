@@ -17,6 +17,14 @@ export type ISODateString =
 /** Day of week: 0 = Sunday through 6 = Saturday */
 export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
+/** Immutable date record with 1-based month. */
+export interface PlainDate {
+  readonly year: number;
+  /** 1-based (1 = January, 12 = December) */
+  readonly month: number;
+  readonly day: number;
+}
+
 /** Date range with start and end dates */
 export interface DateRange {
   start: ISODateString;

@@ -60,7 +60,6 @@ import {useInputContainer} from '../hooks/useInputContainer';
 import {
   type ISOTimeString,
   parseDateInput,
-  formatDisplayDate,
   parseTimeInput,
   formatDisplayTime12h,
   formatDisplayTime24h,
@@ -70,7 +69,11 @@ import {
   xdsClassName,
   mergeProps,
 } from '../utils';
-import {plainDateToISO} from '../utils/plainDate';
+import {
+  plainDateFromISO,
+  plainDateToISO,
+  plainDateFormatDisplay,
+} from '../utils/plainDate';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
@@ -465,7 +468,7 @@ export function XDSDateTimeInput({
     datePendingInput !== null
       ? datePendingInput
       : valueParts.date && /^\d{4}-\d{2}-\d{2}$/.test(valueParts.date)
-        ? formatDisplayDate(valueParts.date)
+        ? plainDateFormatDisplay(plainDateFromISO(valueParts.date))
         : '';
 
   const isDateInputValid =
