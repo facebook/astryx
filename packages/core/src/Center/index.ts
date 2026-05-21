@@ -12,4 +12,4 @@
  */
 
 export {XDSCenter} from './XDSCenter';
-export type {XDSCenterProps, CenterAxis} from './XDSCenter';
+export type {XDSCenterProps, XDSCenterAxis, CenterAxis} from './XDSCenter';
