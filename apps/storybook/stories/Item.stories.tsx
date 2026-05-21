@@ -48,20 +48,20 @@ export const ContactList: Story = {
   render: () => (
     <XDSStack gap={0}>
       <XDSItem
-        media={<XDSAvatar name="Alice Johnson" size="sm" />}
+        media={<XDSAvatar name="Alice Johnson" size={40} />}
         label="Alice Johnson"
         description="Engineering Lead"
         trailing={<XDSBadge label="Admin" />}
         onClick={() => {}}
       />
       <XDSItem
-        media={<XDSAvatar name="Bob Smith" size="sm" />}
+        media={<XDSAvatar name="Bob Smith" size={40} />}
         label="Bob Smith"
         description="Product Designer"
         onClick={() => {}}
       />
       <XDSItem
-        media={<XDSAvatar name="Carol Williams" size="sm" />}
+        media={<XDSAvatar name="Carol Williams" size={40} />}
         label="Carol Williams"
         description="Data Scientist"
         trailing={<XDSText color="secondary">Away</XDSText>}
@@ -76,7 +76,7 @@ export const Notifications: Story = {
   render: () => (
     <XDSStack gap={0}>
       <XDSItem
-        media={<XDSAvatar name="Alice" size="sm" />}
+        media={<XDSAvatar name="Alice" size={40} />}
         label={
           <>
             <b>Alice</b> commented on your PR
@@ -226,7 +226,7 @@ export const AlignStart: Story = {
   render: () => (
     <XDSItem
       align="start"
-      media={<XDSAvatar name="Alice" size="sm" />}
+      media={<XDSAvatar name="Alice" size={40} />}
       label="Alice Johnson"
       description="This is a longer description that wraps across multiple lines to demonstrate the align=start behavior, which positions the media and trailing content at the top rather than vertically centering them."
       trailing={<XDSText color="secondary">Just now</XDSText>}

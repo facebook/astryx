@@ -14,7 +14,7 @@ export default function ItemShowcase() {
   return (
     <XDSStack gap={0}>
       <XDSItem
-        media={<XDSAvatar name="Alice Johnson" size="sm" />}
+        media={<XDSAvatar name="Alice Johnson" size={40} />}
         label="Alice Johnson"
         description="Engineering Lead"
         trailing={<XDSBadge label="Admin" />}
