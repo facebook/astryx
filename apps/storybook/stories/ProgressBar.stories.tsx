@@ -25,11 +25,6 @@ const meta: Meta<typeof XDSProgressBar> = {
       options: ['accent', 'success', 'warning', 'error', 'neutral'],
       description: 'Semantic color variant',
     },
-    status: {
-      control: 'select',
-      options: ['active', 'paused', 'canceled'],
-      description: 'Semantic status state',
-    },
     isLabelHidden: {
       control: 'boolean',
       description: 'Visually hide the label',
@@ -38,9 +33,9 @@ const meta: Meta<typeof XDSProgressBar> = {
       control: 'boolean',
       description: 'Show formatted value',
     },
-    description: {
-      control: 'text',
-      description: 'Secondary description below bar',
+    isDisabled: {
+      control: 'boolean',
+      description: 'Disabled state (grayed out)',
     },
   },
 };
@@ -89,8 +84,8 @@ export const Variants: Story = {
         hasValueLabel
       />
       <XDSProgressBar
-        value={100}
-        label="Success (complete)"
+        value={80}
+        label="Success"
         variant="success"
         hasValueLabel
       />
@@ -111,7 +106,28 @@ export const Variants: Story = {
   ),
 };
 
-export const WithDescription: Story = {
+export const Disabled: Story = {
+  render: () => (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
+        width: '300px',
+      }}>
+      <XDSProgressBar
+        value={30}
+        label="Upload canceled"
+        isDisabled
+        hasValueLabel
+      />
+      <XDSProgressBar isIndeterminate label="Processing disabled" isDisabled />
+    </div>
+  ),
+};
+
+export const ComposedWithDescription: Story = {
+  name: 'Composed: with description',
   render: () => (
     <div style={{width: '300px'}}>
       <XDSProgressBar
@@ -119,88 +135,15 @@ export const WithDescription: Story = {
         max={100}
         label="Download progress"
         hasValueLabel
-        description="40 MB / 100 MB downloaded"
       />
-    </div>
-  ),
-};
-
-export const StatusPaused: Story = {
-  name: 'Status: Paused',
-  render: () => (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '16px',
-        width: '300px',
-      }}>
-      <XDSProgressBar
-        value={45}
-        label="Upload paused"
-        status="paused"
-        hasValueLabel
-        description="Paused — tap to resume"
-      />
-      <XDSProgressBar
-        isIndeterminate
-        label="Processing paused"
-        status="paused"
-      />
-    </div>
-  ),
-};
-
-export const StatusCanceled: Story = {
-  name: 'Status: Canceled',
-  render: () => (
-    <div style={{width: '300px'}}>
-      <XDSProgressBar
-        value={30}
-        label="Upload canceled"
-        status="canceled"
-        hasValueLabel
-        description="Upload was canceled"
-      />
-    </div>
-  ),
-};
-
-export const StatusIcons: Story = {
-  name: 'Status Icons',
-  render: () => (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '16px',
-        width: '300px',
-      }}>
-      <XDSProgressBar
-        value={100}
-        label="Complete"
-        variant="success"
-        hasValueLabel
-      />
-      <XDSProgressBar
-        value={80}
-        label="Disk almost full"
-        variant="warning"
-        hasValueLabel
-      />
-      <XDSProgressBar
-        value={95}
-        label="Upload failed"
-        variant="error"
-        hasValueLabel
-      />
-      <XDSProgressBar value={45} label="Paused" status="paused" hasValueLabel />
-      <XDSProgressBar
-        value={30}
-        label="Canceled"
-        status="canceled"
-        hasValueLabel
-      />
+      <div
+        style={{
+          fontSize: '12px',
+          color: 'var(--color-text-secondary)',
+          marginTop: '4px',
+        }}>
+        40 MB / 100 MB downloaded
+      </div>
     </div>
   ),
 };

@@ -55,25 +55,10 @@ export const docs = {
       default: 'false',
     },
     {
-      name: 'status',
-      type: "'active' | 'paused' | 'canceled'",
-      description: 'Semantic state of the progress operation. Shows status icons automatically.',
-      default: "'active'",
-    },
-    {
-      name: 'description',
-      type: 'string',
-      description: 'Secondary description shown below the bar (e.g. "40 MB / 100 MB downloaded").',
-    },
-    {
-      name: 'endContent',
-      type: 'ReactNode',
-      description: 'Content rendered in the header row to the right.',
-    },
-    {
-      name: 'bottomContent',
-      type: 'ReactNode',
-      description: 'Content rendered below the progress bar track.',
+      name: 'isDisabled',
+      type: 'boolean',
+      description: 'Visually disabled state — grays out the fill and text. Use for canceled or inactive operations.',
+      default: 'false',
     },
     {
       name: 'xstyle',
@@ -144,7 +129,7 @@ export const docsZh = {
     },
     {
       name: 'variant',
-      type: "'accent' | 'success' | 'warning' | 'error'",
+      type: "'accent' | 'success' | 'warning' | 'error' | 'neutral'",
       description: '语义颜色变体。',
       default: "'accent'",
     },
@@ -152,6 +137,12 @@ export const docsZh = {
       name: 'isIndeterminate',
       type: 'boolean',
       description: '用于未知进度的动画加载指示器。',
+      default: 'false',
+    },
+    {
+      name: 'isDisabled',
+      type: 'boolean',
+      description: '视觉禁用状态——使填充条和文本变灰。用于已取消或不活跃的操作。',
       default: 'false',
     },
     {
@@ -206,10 +197,7 @@ export const docsDense = {
     formatValueLabel: 'Custom value label formatter; defaults to percentage string.',
     variant: 'Semantic color variant.',
     isIndeterminate: 'Animated loading indicator for unknown progress.',
-    status: 'Semantic state: active, paused, or canceled. Shows status icons automatically.',
-    description: 'Secondary description below the bar.',
-    endContent: 'Content in the header row to the right.',
-    bottomContent: 'Content below the progress bar track.',
+    isDisabled: 'Visually disabled — grays out fill and text.',
     xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
   },
 };

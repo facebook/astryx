@@ -11,5 +11,4 @@ export type {
   XDSProgressBarProps,
   XDSProgressBarVariant,
   XDSProgressBarVariantMap,
-  XDSProgressBarStatus,
 } from './XDSProgressBar';

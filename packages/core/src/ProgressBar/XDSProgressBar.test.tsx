@@ -122,6 +122,22 @@ describe('XDSProgressBar', () => {
     expect(meter).toHaveAttribute('aria-valuemax', '0');
   });
 
+  // Disabled state
+  describe('disabled state', () => {
+    it('renders with isDisabled', () => {
+      render(
+        <XDSProgressBar value={50} label="Canceled" isDisabled hasValueLabel />,
+      );
+      expect(screen.getByRole('meter')).toBeInTheDocument();
+      expect(screen.getByText('50%')).toBeInTheDocument();
+    });
+
+    it('still renders label when disabled', () => {
+      render(<XDSProgressBar value={50} label="Canceled upload" isDisabled />);
+      expect(screen.getByText('Canceled upload')).toBeInTheDocument();
+    });
+  });
+
   // Indeterminate mode tests
   describe('indeterminate mode', () => {
     it('renders with role="progressbar" when isIndeterminate', () => {
@@ -177,94 +193,6 @@ describe('XDSProgressBar', () => {
         expect(screen.getByRole('progressbar')).toBeInTheDocument();
         unmount();
       }
-    });
-  });
-
-  // Status tests
-  describe('status', () => {
-    it('renders with paused status', () => {
-      render(
-        <XDSProgressBar
-          value={50}
-          label="Upload"
-          status="paused"
-          hasValueLabel
-        />,
-      );
-      expect(screen.getByRole('meter')).toBeInTheDocument();
-      expect(screen.getByText('50%')).toBeInTheDocument();
-    });
-
-    it('renders with canceled status', () => {
-      render(
-        <XDSProgressBar
-          value={50}
-          label="Upload"
-          status="canceled"
-          hasValueLabel
-        />,
-      );
-      expect(screen.getByRole('meter')).toBeInTheDocument();
-      expect(screen.getByText('50%')).toBeInTheDocument();
-    });
-
-    it('renders status icons as aria-hidden', () => {
-      const {container} = render(
-        <XDSProgressBar value={50} label="Upload" status="paused" />,
-      );
-      const svgs = container.querySelectorAll('svg');
-      for (const svg of svgs) {
-        expect(svg).toHaveAttribute('aria-hidden', 'true');
-      }
-    });
-  });
-
-  // Description and content slots
-  describe('description and content slots', () => {
-    it('renders description below the bar', () => {
-      render(
-        <XDSProgressBar
-          value={40}
-          label="Download"
-          description="40 MB / 100 MB"
-        />,
-      );
-      expect(screen.getByText('40 MB / 100 MB')).toBeInTheDocument();
-    });
-
-    it('renders endContent in the header', () => {
-      render(
-        <XDSProgressBar
-          value={50}
-          label="Upload"
-          endContent={<span data-testid="end">End</span>}
-        />,
-      );
-      expect(screen.getByTestId('end')).toBeInTheDocument();
-    });
-
-    it('renders bottomContent below the bar', () => {
-      render(
-        <XDSProgressBar
-          value={50}
-          label="Upload"
-          bottomContent={<span data-testid="bottom">Bottom</span>}
-        />,
-      );
-      expect(screen.getByTestId('bottom')).toBeInTheDocument();
-    });
-
-    it('bottomContent takes precedence over description', () => {
-      render(
-        <XDSProgressBar
-          value={50}
-          label="Upload"
-          description="Should not show"
-          bottomContent={<span>Custom bottom</span>}
-        />,
-      );
-      expect(screen.getByText('Custom bottom')).toBeInTheDocument();
-      expect(screen.queryByText('Should not show')).not.toBeInTheDocument();
     });
   });
 });
