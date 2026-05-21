@@ -1267,21 +1267,12 @@ function renderBlock(
 
                 const checkboxItem = (
                   <XDSCheckboxListItem
-                    key={i}
+                    key={itemIsNew ? `fade-task-${i}` : i}
                     value={`task-${i}`}
                     label={label}
+                    xstyle={itemIsNew ? streamingStyles.fadeIn : undefined}
                   />
                 );
-
-                if (itemIsNew) {
-                  return (
-                    <span
-                      key={`fade-task-${i}`}
-                      {...stylex.props(streamingStyles.fadeIn)}>
-                      {checkboxItem}
-                    </span>
-                  );
-                }
 
                 return checkboxItem;
               })}
@@ -1307,6 +1298,7 @@ function renderBlock(
           <XDSList
             listStyle={node.ordered ? 'decimal' : 'disc'}
             density="compact"
+            start={node.ordered ? node.start : undefined}
             xstyle={styles.blockIndent}>
             {node.items.map((item, i) => {
               const firstChild = item.children[0];
@@ -1358,11 +1350,11 @@ function renderBlock(
 
               if (itemIsNew) {
                 return (
-                  <span
+                  <XDSListItem
                     key={`fade-li-${i}-${cursor.offset - itemTextLen}`}
-                    {...stylex.props(streamingStyles.fadeIn)}>
-                    <XDSListItem label={label} />
-                  </span>
+                    label={label}
+                    xstyle={streamingStyles.fadeIn}
+                  />
                 );
               }
 
