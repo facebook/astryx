@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, beforeAll} from 'vitest';
 import {defineTheme, generateOnMediaCSS} from './defineTheme';
 import {
   defaultOnDarkTokens,

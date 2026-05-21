@@ -11,7 +11,11 @@ import {describe, it, expect} from 'vitest';
 import {renderHook} from '@testing-library/react';
 import {usePowerSearchSource} from './usePowerSearchSource';
 import {useInternalConfig} from './useInternalConfig';
-import type {PowerSearchConfig, PowerSearchAuxData} from './types';
+import type {
+  PowerSearchConfig,
+  PowerSearchAuxData,
+  PowerSearchItem,
+} from './types';
 
 // =============================================================================
 // Helpers
@@ -23,6 +27,27 @@ function createSource(config: PowerSearchConfig) {
     return usePowerSearchSource(internal);
   });
   return result.current;
+}
+
+function syncBootstrap(
+  source: ReturnType<typeof createSource>,
+): PowerSearchItem[] {
+  const result = source.bootstrap();
+  if (result instanceof Promise) {
+    throw new Error('Expected synchronous bootstrap');
+  }
+  return result;
+}
+
+function syncSearch(
+  source: ReturnType<typeof createSource>,
+  query: string,
+): PowerSearchItem[] {
+  const result = source.search(query);
+  if (result instanceof Promise) {
+    throw new Error('Expected synchronous search');
+  }
+  return result;
 }
 
 // =============================================================================
@@ -75,14 +100,17 @@ describe('usePowerSearchSource', () => {
   describe('bootstrap (no query)', () => {
     it('returns only field names without operator labels', () => {
       const source = createSource(baseConfig);
-      const items = source.bootstrap();
+      const items = syncBootstrap(source);
 
-      expect(items.map(i => i.label)).toEqual(['Title', 'Status']);
+      expect(items.map((i: PowerSearchItem) => i.label)).toEqual([
+        'Title',
+        'Status',
+      ]);
     });
 
     it('sets defaultOperator on bootstrap items', () => {
       const source = createSource(baseConfig);
-      const items = source.bootstrap();
+      const items = syncBootstrap(source);
 
       const titleAux = items[0].auxiliaryData as PowerSearchAuxData;
       expect(titleAux.fieldKey).toBe('title');
@@ -95,21 +123,21 @@ describe('usePowerSearchSource', () => {
 
     it('empty search returns same as bootstrap', () => {
       const source = createSource(baseConfig);
-      expect(source.search('')).toEqual(source.bootstrap());
+      expect(syncSearch(source, '')).toEqual(syncBootstrap(source));
     });
   });
 
   describe('search (with query)', () => {
     it('shows field name for partial match', () => {
       const source = createSource(baseConfig);
-      const results = source.search('tit');
+      const results = syncSearch(source, 'tit');
 
       expect(results.some(r => r.label === 'Title')).toBe(true);
     });
 
     it('shows all field+operator combos for partial match', () => {
       const source = createSource(baseConfig);
-      const results = source.search('tit');
+      const results = syncSearch(source, 'tit');
       const labels = results.map(r => r.label);
 
       expect(labels).toContain('Title');
@@ -119,21 +147,21 @@ describe('usePowerSearchSource', () => {
 
     it('matches query against combined field and operator label', () => {
       const source = createSource(baseConfig);
-      const results = source.search('title contains');
+      const results = syncSearch(source, 'title contains');
 
       expect(results.some(r => r.label === 'Title contains')).toBe(true);
     });
 
     it('matches partial field + operator query', () => {
       const source = createSource(baseConfig);
-      const results = source.search('title con');
+      const results = syncSearch(source, 'title con');
 
       expect(results.some(r => r.label === 'Title contains')).toBe(true);
     });
 
     it('field name item uses defaultOperator', () => {
       const source = createSource(baseConfig);
-      const results = source.search('tit');
+      const results = syncSearch(source, 'tit');
 
       const titleItem = results.find(r => r.label === 'Title');
       const aux = titleItem?.auxiliaryData as PowerSearchAuxData;
@@ -142,7 +170,7 @@ describe('usePowerSearchSource', () => {
 
     it('field+operator items use specific operator', () => {
       const source = createSource(baseConfig);
-      const results = source.search('tit');
+      const results = syncSearch(source, 'tit');
 
       const isItem = results.find(r => r.label === 'Title is');
       const aux = isItem?.auxiliaryData as PowerSearchAuxData;
@@ -153,7 +181,7 @@ describe('usePowerSearchSource', () => {
   describe('contentSearchFieldKey', () => {
     it('shows content search item for non-matching query', () => {
       const source = createSource(configWithContentSearch);
-      const results = source.search('foobar');
+      const results = syncSearch(source, 'foobar');
 
       expect(results[0].label).toBe('"foobar"');
       const aux = results[0].auxiliaryData as PowerSearchAuxData;
@@ -164,7 +192,7 @@ describe('usePowerSearchSource', () => {
 
     it('does not show content search item when query exactly matches a field name', () => {
       const source = createSource(configWithContentSearch);
-      const results = source.search('title');
+      const results = syncSearch(source, 'title');
 
       const contentItem = results.find(r => r.label.startsWith('"'));
       expect(contentItem).toBeUndefined();
@@ -172,7 +200,7 @@ describe('usePowerSearchSource', () => {
 
     it('does not show content search item when query exactly matches field + operator', () => {
       const source = createSource(configWithContentSearch);
-      const results = source.search('Title contains');
+      const results = syncSearch(source, 'Title contains');
 
       const contentItem = results.find(r => r.label.startsWith('"'));
       expect(contentItem).toBeUndefined();
@@ -180,7 +208,7 @@ describe('usePowerSearchSource', () => {
 
     it('exact match check is case-insensitive', () => {
       const source = createSource(configWithContentSearch);
-      const results = source.search('TITLE');
+      const results = syncSearch(source, 'TITLE');
 
       const contentItem = results.find(r => r.label.startsWith('"'));
       expect(contentItem).toBeUndefined();
@@ -188,7 +216,7 @@ describe('usePowerSearchSource', () => {
 
     it('shows content search item for partial field match', () => {
       const source = createSource(configWithContentSearch);
-      const results = source.search('tit');
+      const results = syncSearch(source, 'tit');
 
       expect(results[0].label).toBe('"tit"');
       // Field and field+operator results should still appear after
@@ -198,7 +226,7 @@ describe('usePowerSearchSource', () => {
 
     it('does not show content search item when contentSearchFieldKey is not set', () => {
       const source = createSource(baseConfig);
-      const results = source.search('foobar');
+      const results = syncSearch(source, 'foobar');
 
       const contentItem = results.find(r => r.label.startsWith('"'));
       expect(contentItem).toBeUndefined();
@@ -206,7 +234,7 @@ describe('usePowerSearchSource', () => {
 
     it('content search item is first in results', () => {
       const source = createSource(configWithContentSearch);
-      const results = source.search('sta');
+      const results = syncSearch(source, 'sta');
 
       expect(results[0].label).toBe('"sta"');
       expect(results.length).toBeGreaterThan(1);
@@ -216,7 +244,7 @@ describe('usePowerSearchSource', () => {
   describe('field+operator+value suggestions', () => {
     it('suggests all string-valued operators for "title foobar"', () => {
       const source = createSource(baseConfig);
-      const results = source.search('title foobar');
+      const results = syncSearch(source, 'title foobar');
 
       const valueItems = results.filter(r => r.label.includes('"foobar"'));
       expect(valueItems.map(r => r.label)).toEqual([
@@ -238,7 +266,7 @@ describe('usePowerSearchSource', () => {
 
     it('suggests only the matching operator for "title contains foobar"', () => {
       const source = createSource(baseConfig);
-      const results = source.search('title contains foobar');
+      const results = syncSearch(source, 'title contains foobar');
 
       const valueItems = results.filter(r => r.label.includes('"foobar"'));
       expect(valueItems).toHaveLength(1);
@@ -250,7 +278,7 @@ describe('usePowerSearchSource', () => {
 
     it('does not suggest "<field> <value>" matches when explicit operator matched', () => {
       const source = createSource(baseConfig);
-      const results = source.search('title contains foobar');
+      const results = syncSearch(source, 'title contains foobar');
 
       // Should NOT have 'Title is "contains foobar"' or similar
       const spurious = results.filter(r =>
@@ -261,7 +289,7 @@ describe('usePowerSearchSource', () => {
 
     it('suggests only the matching operator for "title is foobar"', () => {
       const source = createSource(baseConfig);
-      const results = source.search('title is foobar');
+      const results = syncSearch(source, 'title is foobar');
 
       const valueItems = results.filter(r => r.label.includes('"foobar"'));
       expect(valueItems).toHaveLength(1);
@@ -272,7 +300,7 @@ describe('usePowerSearchSource', () => {
 
     it('is case-insensitive for field and operator matching', () => {
       const source = createSource(baseConfig);
-      const results = source.search('TITLE CONTAINS hello');
+      const results = syncSearch(source, 'TITLE CONTAINS hello');
 
       const valueItem = results.find(r => r.label === 'Title contains "hello"');
       expect(valueItem).toBeDefined();
@@ -280,7 +308,7 @@ describe('usePowerSearchSource', () => {
 
     it('preserves original case of the value', () => {
       const source = createSource(baseConfig);
-      const results = source.search('title FooBar');
+      const results = syncSearch(source, 'title FooBar');
 
       const valueItem = results.find(
         r => r.label === 'Title contains "FooBar"',
@@ -292,7 +320,7 @@ describe('usePowerSearchSource', () => {
 
     it('does not suggest value match for non-string operators', () => {
       const source = createSource(baseConfig);
-      const results = source.search('status foobar');
+      const results = syncSearch(source, 'status foobar');
 
       const valueItem = results.find(r => r.label.includes('"foobar"'));
       expect(valueItem).toBeUndefined();
@@ -300,7 +328,7 @@ describe('usePowerSearchSource', () => {
 
     it('does not suggest value match when remainder matches an operator prefix', () => {
       const source = createSource(baseConfig);
-      const results = source.search('title con');
+      const results = syncSearch(source, 'title con');
 
       // "con" is a prefix of "contains", so should not suggest a value match
       const valueItem = results.find(r => r.label.includes('"con"'));
@@ -322,7 +350,7 @@ describe('usePowerSearchSource', () => {
         ],
       };
       const source = createSource(config);
-      const results = source.search('title foobar');
+      const results = syncSearch(source, 'title foobar');
 
       const valueItem = results.find(r => r.label.includes('"foobar"'));
       expect(valueItem).toBeUndefined();
@@ -346,7 +374,7 @@ describe('usePowerSearchSource', () => {
         ],
       };
       const source = createSource(config);
-      const results = source.search('tags hello');
+      const results = syncSearch(source, 'tags hello');
 
       const valueItem = results.find(r => r.label === 'Tags contains "hello"');
       expect(valueItem).toBeDefined();
@@ -391,7 +419,7 @@ describe('usePowerSearchSource', () => {
         ],
       };
       const source = createSource(config);
-      const results = source.search('genre fiction');
+      const results = syncSearch(source, 'genre fiction');
 
       const valueItems = results.filter(
         r => r.label.startsWith('Genre ') && r.label.includes('Fiction'),
@@ -443,7 +471,7 @@ describe('usePowerSearchSource', () => {
         ],
       };
       const source = createSource(config);
-      const results = source.search('genre is fiction');
+      const results = syncSearch(source, 'genre is fiction');
 
       const valueItems = results.filter(r => r.label === 'Genre is Fiction');
       expect(valueItems).toHaveLength(1);
@@ -456,7 +484,7 @@ describe('usePowerSearchSource', () => {
 
     it('suggests multiple matching enum values for partial match', () => {
       const source = createSource(baseConfig);
-      const results = source.search('status o');
+      const results = syncSearch(source, 'status o');
 
       // "o" matches "Open" and "Closed"
       const valueItems = results.filter(
@@ -470,7 +498,7 @@ describe('usePowerSearchSource', () => {
 
     it('does not suggest enum values when no labels match', () => {
       const source = createSource(baseConfig);
-      const results = source.search('status xyz');
+      const results = syncSearch(source, 'status xyz');
 
       const valueItems = results.filter(
         r => r.label.startsWith('Status is ') && r.label !== 'Status is',
@@ -502,7 +530,7 @@ describe('usePowerSearchSource', () => {
         ],
       };
       const source = createSource(config);
-      const results = source.search('tags bug');
+      const results = syncSearch(source, 'tags bug');
 
       const valueItem = results.find(r => r.label === 'Tags includes Bug');
       expect(valueItem).toBeDefined();

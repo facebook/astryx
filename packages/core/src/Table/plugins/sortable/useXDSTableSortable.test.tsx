@@ -551,7 +551,7 @@ describe('useXDSTableSortable', () => {
     });
 
     it('plugin object is referentially stable across renders', () => {
-      const plugins: ReturnType<typeof useXDSTableSortable>[] = [];
+      const plugins: ReturnType<typeof useXDSTableSortable<User>>[] = [];
 
       function Capture() {
         const plugin = useXDSTableSortable<User>({

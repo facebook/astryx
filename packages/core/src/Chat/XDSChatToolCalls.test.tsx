@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {render, screen, fireEvent} from '@testing-library/react';
+import {describe, it, expect} from 'vitest';
 import {XDSChatToolCalls} from './XDSChatToolCalls';
 
 describe('XDSChatToolCalls', () => {

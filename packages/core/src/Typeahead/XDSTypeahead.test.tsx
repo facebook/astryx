@@ -37,7 +37,10 @@ beforeAll(() => {
     this.dispatchEvent(event);
   });
 
-  HTMLElement.prototype.matches = function (selector: string) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (HTMLElement.prototype as any).matches = function (
+    selector: string,
+  ): boolean {
     if (selector === ':popover-open') {
       return popoverOpenState.get(this) ?? false;
     }
@@ -46,7 +49,8 @@ beforeAll(() => {
 });
 
 afterAll(() => {
-  HTMLElement.prototype.matches = originalMatches;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (HTMLElement.prototype as any).matches = originalMatches;
 });
 
 // Test data

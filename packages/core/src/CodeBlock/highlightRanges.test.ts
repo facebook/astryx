@@ -11,13 +11,12 @@ const mockHighlightsMap = new Map<string, MockHighlight>();
 beforeEach(() => {
   mockHighlightsMap.clear();
 
-  // @ts-expect-error - mocking global CSS.highlights
   globalThis.CSS = {
     highlights: {
       get: (name: string) => mockHighlightsMap.get(name),
       set: (name: string, h: MockHighlight) => mockHighlightsMap.set(name, h),
-    },
-  };
+    } as unknown as HighlightRegistry,
+  } as typeof CSS;
 
   // @ts-expect-error - mocking global Highlight
   globalThis.Highlight = MockHighlight;
@@ -49,8 +48,8 @@ describe('applyHighlightRangesChunked', () => {
   it('creates ranges for tokens on each line', () => {
     const codeEl = createCodeElement(['const x = 1;', 'let y = 2;']);
     const tokenLines: TokenLine[] = [
-      [{type: 'keyword', start: 0, end: 5}],  // "const"
-      [{type: 'keyword', start: 0, end: 3}],  // "let"
+      [{type: 'keyword', start: 0, end: 5}], // "const"
+      [{type: 'keyword', start: 0, end: 3}], // "let"
     ];
 
     // Need to inject the style element mock
@@ -70,10 +69,7 @@ describe('applyHighlightRangesChunked', () => {
 
   it('handles empty token lines', () => {
     const codeEl = createCodeElement(['', 'const x = 1;']);
-    const tokenLines: TokenLine[] = [
-      [],
-      [{type: 'keyword', start: 0, end: 5}],
-    ];
+    const tokenLines: TokenLine[] = [[], [{type: 'keyword', start: 0, end: 5}]];
 
     const mockStyle = document.createElement('style');
     mockStyle.setAttribute('data-xds-highlight-styles', '');
