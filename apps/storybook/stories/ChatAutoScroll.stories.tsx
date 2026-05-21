@@ -310,7 +310,7 @@ export const ScrollBehaviorComparison: StoryObj = {
           text: '',
           customElement: (
             <div {...stylex.props(styles.customElement)}>
-              <XDSText type="small" weight="bold">
+              <XDSText type="label" weight="bold">
                 Architecture Diagram
               </XDSText>
               <div {...stylex.props(styles.customElementInner)}>
@@ -384,9 +384,10 @@ export const ScrollBehaviorComparison: StoryObj = {
             onClick={handleReset}
           />
           <div {...stylex.props(styles.statusPill)}>
-            <XDSBadge variant={isStreaming ? 'green' : 'neutral'}>
-              {isStreaming ? 'Streaming' : 'Idle'}
-            </XDSBadge>
+            <XDSBadge
+              variant={isStreaming ? 'green' : 'neutral'}
+              label={isStreaming ? 'Streaming' : 'Idle'}
+            />
           </div>
         </div>
 
@@ -544,11 +545,14 @@ export const RapidToolCalls: StoryObj = {
             onClick={handleReset}
           />
           <div {...stylex.props(styles.statusPill)}>
-            <XDSBadge variant={isRunning ? 'yellow' : 'neutral'}>
-              {isRunning
-                ? `Tool call ${counterRef.current}/10`
-                : `${messages.length - 1} messages`}
-            </XDSBadge>
+            <XDSBadge
+              variant={isRunning ? 'yellow' : 'neutral'}
+              label={
+                isRunning
+                  ? `Tool call ${counterRef.current}/10`
+                  : `${messages.length - 1} messages`
+              }
+            />
           </div>
         </div>
 
@@ -799,15 +803,17 @@ export const MixedStreamAndTools: StoryObj = {
                   : phase === 'tools'
                     ? 'yellow'
                     : 'neutral'
-              }>
-              {phase === 'idle'
-                ? 'Ready'
-                : phase === 'streaming'
-                  ? 'Streaming text...'
-                  : phase === 'tools'
-                    ? 'Adding tool calls...'
-                    : 'Complete'}
-            </XDSBadge>
+              }
+              label={
+                phase === 'idle'
+                  ? 'Ready'
+                  : phase === 'streaming'
+                    ? 'Streaming text...'
+                    : phase === 'tools'
+                      ? 'Adding tool calls...'
+                      : 'Complete'
+              }
+            />
           </div>
         </div>
 
