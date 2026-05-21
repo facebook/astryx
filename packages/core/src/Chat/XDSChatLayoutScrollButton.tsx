@@ -27,12 +27,16 @@ import {
 } from '../theme/tokens.stylex';
 import {XDSIcon} from '../Icon';
 import {XDSButton} from '../Button';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 // =============================================================================
 // Types
 // =============================================================================
 
-export interface XDSChatLayoutScrollButtonProps {
+export interface XDSChatLayoutScrollButtonProps extends Omit<
+  XDSBaseProps<HTMLDivElement>,
+  'onClick'
+> {
   /** Whether the button is visible. */
   isVisible: boolean;
   /** Optional label — expands the button (e.g. "New messages"). */

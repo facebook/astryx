@@ -15,7 +15,6 @@
 
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
@@ -24,6 +23,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 const styles = stylex.create({
   base: {
@@ -40,27 +40,11 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSCodeProps {
+export interface XDSCodeProps extends XDSBaseProps<HTMLElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLElement>;
   /** Code content */
   children: ReactNode;
-  /**
-   * StyleX styles for layout customization (margins, positioning, sizing).
-   * Must be a `stylex.create()` value — not an inline style object.
-   *
-   * @example
-   * ```
-   * const styles = stylex.create({ wrapper: { marginTop: 8 } });
-   * <XDSCode xstyle={styles.wrapper} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /** CSS class name(s) */
-  className?: string;
-  /** Inline styles */
-  style?: React.CSSProperties;
-  'data-testid'?: string;
 }
 
 /**
@@ -93,8 +77,7 @@ export function XDSCode({
         className,
         style,
       )}
-      data-testid={props['data-testid']}
-    >
+      data-testid={props['data-testid']}>
       {children}
     </code>
   );

@@ -21,7 +21,6 @@
 
 import {useCallback, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
@@ -41,6 +40,7 @@ import {useXDSSideNavCollapse} from './XDSSideNavCollapseContext';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSMenuHover} from '../hooks/useXDSMenuHover';
 import {XDSNavHeadingCloseContext} from '../NavMenu/XDSNavMenuContext';
 
@@ -235,7 +235,7 @@ const styles = stylex.create({
 // Types
 // =============================================================================
 
-export interface XDSSideNavHeadingProps {
+export interface XDSSideNavHeadingProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
   /**
@@ -285,31 +285,6 @@ export interface XDSSideNavHeadingProps {
    * - With hrefs → links are independent, chevron/remaining area is the trigger
    */
   menu?: ReactNode;
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
-  /**
-   * Test ID for the root element.
-   */
-  'data-testid'?: string;
 }
 
 // =============================================================================

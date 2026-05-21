@@ -12,15 +12,8 @@
  * - /packages/cli/templates/blocks/components/CommandPalette/ (showcase blocks)
  */
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  type InputHTMLAttributes,
-  type ReactNode,
-} from 'react';
+import {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSIcon} from '../Icon';
 import {XDSSpinner} from '../Spinner';
 import {xdsClassName, mergeProps} from '../utils';
@@ -31,6 +24,7 @@ import {
   typographyVars,
 } from '../theme/tokens.stylex';
 import {useCommandPaletteContext} from './CommandPaletteContext';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 const styles = stylex.create({
   wrapper: {
@@ -88,8 +82,8 @@ const styles = stylex.create({
 });
 
 export interface XDSCommandPaletteInputProps extends Omit<
-  InputHTMLAttributes<HTMLInputElement>,
-  'type' | 'role' | 'children' | 'autoFocus'
+  XDSBaseProps<HTMLInputElement>,
+  'onChange'
 > {
   /** Ref forwarded to the input element (for focus management). */
   ref?: React.Ref<HTMLInputElement>;
@@ -125,17 +119,8 @@ export interface XDSCommandPaletteInputProps extends Omit<
    */
   endContent?: ReactNode;
 
-  /**
-   * StyleX styles for layout customization (margins, positioning, sizing).
-   * Must be a `stylex.create()` value — not an inline style object.
-   *
-   * @example
-   * ```
-   * const styles = stylex.create({ wrapper: { marginTop: 8 } });
-   * <XDSCommandPaletteInput xstyle={styles.wrapper} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
+  /** Native onChange handler for the input element. */
+  onChange?: React.ChangeEventHandler<HTMLInputElement>;
 }
 
 /**

@@ -24,6 +24,7 @@ import {useXDSChatMessageContext} from './XDSChatContext';
 import {XDSIcon} from '../Icon';
 import type {XDSIconName} from '../Icon/globalIconRegistry';
 import {mergeProps, xdsClassName} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 export type XDSChatMessageStatus =
   | 'sending'
@@ -84,7 +85,7 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSChatMessageMetadataProps {
+export interface XDSChatMessageMetadataProps extends XDSBaseProps<HTMLDivElement> {
   /** Timestamp content — ReactNode (e.g. XDSTimestamp) or string. */
   timestamp?: ReactNode;
   /** Footer content — model info, ratings, reactions. */

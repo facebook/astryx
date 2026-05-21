@@ -20,7 +20,6 @@
 
 import {useId, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
@@ -28,6 +27,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSSideNavCollapse} from './XDSSideNavCollapseContext';
 // =============================================================================
 // Styles
@@ -89,7 +89,7 @@ const styles = stylex.create({
 // Types
 // =============================================================================
 
-export interface XDSSideNavSectionProps {
+export interface XDSSideNavSectionProps extends XDSBaseProps<HTMLDivElement> {
   /**
    * Section title.
    */
@@ -112,30 +112,6 @@ export interface XDSSideNavSectionProps {
    * @default false
    */
   isHeaderHidden?: boolean;
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <XDSSideNavSection title="Main" xstyle={overrides.root}>...</XDSSideNavSection>
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element.
-   */
-  style?: React.CSSProperties;
-  /**
-   * Test ID for the section element.
-   */
-  'data-testid'?: string;
 }
 
 // =============================================================================

@@ -21,7 +21,6 @@
 
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
@@ -31,10 +30,11 @@ import {
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSDivider} from '../Divider';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 export type XDSChatSystemMessageVariant = 'default' | 'divider';
 
-export interface XDSChatSystemMessageProps {
+export interface XDSChatSystemMessageProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
 
@@ -56,24 +56,6 @@ export interface XDSChatSystemMessageProps {
    * Accepts any ReactNode — typically an XDSIcon.
    */
   icon?: ReactNode;
-
-  /**
-   * StyleX styles for layout customization (margins, positioning, sizing).
-   * Must be a `stylex.create()` value — not an inline style object.
-   *
-   * @example
-   * ```
-   * const styles = stylex.create({ wrapper: { marginTop: 8 } });
-   * <XDSChatSystemMessage xstyle={styles.wrapper} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /** CSS class name(s). */
-  className?: string;
-  /** Inline styles. */
-  style?: React.CSSProperties;
-  /** Test ID. */
-  'data-testid'?: string;
 }
 
 // =============================================================================

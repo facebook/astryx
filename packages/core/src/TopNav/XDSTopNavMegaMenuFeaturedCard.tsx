@@ -27,6 +27,7 @@ import {
   fontWeightVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 
 // =============================================================================
@@ -74,7 +75,7 @@ const styles = stylex.create({
 // Types
 // =============================================================================
 
-export interface XDSTopNavMegaMenuFeaturedCardProps {
+export interface XDSTopNavMegaMenuFeaturedCardProps extends XDSBaseProps<HTMLDivElement> {
   /** Card title. */
   title: string;
   /** Description text below the title. */

@@ -23,12 +23,16 @@ import {BreadcrumbContext} from './XDSBreadcrumbs';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 // =============================================================================
 // Props
 // =============================================================================
 
-export interface XDSBreadcrumbItemProps {
+export interface XDSBreadcrumbItemProps extends Omit<
+  XDSBaseProps<HTMLLIElement>,
+  'onClick'
+> {
   /**
    * Custom component to render instead of `<a>` for breadcrumb links.
    * Overrides the provider-level default set by XDSLinkProvider.
@@ -57,10 +61,6 @@ export interface XDSBreadcrumbItemProps {
    * Optional icon rendered before the label.
    */
   startIcon?: ReactNode;
-  /**
-   * Test ID for the list item.
-   */
-  'data-testid'?: string;
 }
 
 // =============================================================================

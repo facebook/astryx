@@ -40,13 +40,16 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import type {XDSSearchableItem, XDSSearchSource} from './types';
 
 // =============================================================================
 // Types
 // =============================================================================
 
-export interface XDSBaseTypeaheadProps<T extends XDSSearchableItem> {
+export interface XDSBaseTypeaheadProps<
+  T extends XDSSearchableItem,
+> extends Omit<XDSBaseProps<HTMLElement>, 'onChange'> {
   /**
    * Search source providing items.
    */

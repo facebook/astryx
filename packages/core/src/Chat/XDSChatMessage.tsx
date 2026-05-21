@@ -21,7 +21,6 @@
 
 import {type ReactNode, useMemo, useId} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
@@ -35,8 +34,9 @@ import {
   type XDSChatDensity,
 } from './XDSChatContext';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
-export interface XDSChatMessageProps {
+export interface XDSChatMessageProps extends XDSBaseProps<HTMLElement> {
   ref?: React.Ref<HTMLDivElement>;
   sender: XDSChatMessageSender;
   children: ReactNode;
@@ -56,20 +56,6 @@ export interface XDSChatMessageProps {
    */
   metadata?: ReactNode;
   density?: XDSChatDensity;
-  /**
-   * StyleX styles for layout customization (margins, positioning, sizing).
-   * Must be a `stylex.create()` value — not an inline style object.
-   *
-   * @example
-   * ```
-   * const styles = stylex.create({ wrapper: { marginTop: 8 } });
-   * <XDSChatMessage xstyle={styles.wrapper} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  className?: string;
-  style?: React.CSSProperties;
-  'data-testid'?: string;
 }
 
 const styles = stylex.create({

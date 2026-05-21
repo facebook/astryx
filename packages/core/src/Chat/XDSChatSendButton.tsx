@@ -18,18 +18,18 @@
  */
 
 import type {ReactNode} from 'react';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import * as stylex from '@stylexjs/stylex';
 import {XDSButton} from '../Button';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {useXDSChatComposerContext} from './XDSChatContext';
 import {xdsClassName} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 // =============================================================================
 // Types
 // =============================================================================
 
-export interface XDSChatSendButtonProps {
+export interface XDSChatSendButtonProps extends XDSBaseProps<HTMLElement> {
   /** Whether the assistant is currently streaming a response. */
   isStreaming?: boolean;
   /** Whether the send button is disabled. Defaults to `!canSend` from context. */
@@ -44,17 +44,6 @@ export interface XDSChatSendButtonProps {
   stopIcon?: ReactNode;
   /** Button size. @default 'md' */
   size?: 'sm' | 'md';
-  /**
-   * StyleX styles for layout customization (margins, positioning, sizing).
-   * Must be a `stylex.create()` value — not an inline style object.
-   *
-   * @example
-   * ```
-   * const styles = stylex.create({ wrapper: { marginTop: 8 } });
-   * <XDSChatSendButton xstyle={styles.wrapper} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
 }
 
 // =============================================================================

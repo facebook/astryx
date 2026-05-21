@@ -27,7 +27,6 @@
 
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
@@ -37,10 +36,11 @@ import {
 } from '../theme/tokens.stylex';
 import {useXDSChatMessageContext} from './XDSChatContext';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 export type XDSChatMessageBubbleVariant = 'filled' | 'ghost';
 
-export interface XDSChatMessageBubbleProps {
+export interface XDSChatMessageBubbleProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
 
@@ -82,24 +82,6 @@ export interface XDSChatMessageBubbleProps {
    * Leave unset for standalone bubbles (full radius).
    */
   group?: 'first' | 'middle' | 'last';
-
-  /**
-   * StyleX styles for layout customization (margins, positioning, sizing).
-   * Must be a `stylex.create()` value — not an inline style object.
-   *
-   * @example
-   * ```
-   * const styles = stylex.create({ wrapper: { marginTop: 8 } });
-   * <XDSChatMessageBubble xstyle={styles.wrapper} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /** CSS class name(s). */
-  className?: string;
-  /** Inline styles. */
-  style?: React.CSSProperties;
-  /** Test ID. */
-  'data-testid'?: string;
 }
 
 // =============================================================================

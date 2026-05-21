@@ -40,6 +40,7 @@ import {useXDSPopover} from '../Popover/useXDSPopover';
 import {XDSGrid} from '../Grid/XDSGrid';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useTopNavSlot} from './TopNavContext';
 import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
@@ -201,7 +202,7 @@ const styles = stylex.create({
 // Types
 // =============================================================================
 
-export interface XDSTopNavMegaMenuProps {
+export interface XDSTopNavMegaMenuProps extends XDSBaseProps<HTMLButtonElement> {
   /** The visible label for the nav item trigger. */
   label: string;
   /**

@@ -24,7 +24,7 @@ import React, {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSBaseTypeahead} from '../Typeahead/XDSBaseTypeahead';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {
@@ -92,7 +92,10 @@ export interface XDSTokenizerHandle {
   blur(): void;
 }
 
-export interface XDSTokenizerProps<T extends XDSSearchableItem> {
+export interface XDSTokenizerProps<T extends XDSSearchableItem> extends Omit<
+  XDSBaseProps<HTMLDivElement>,
+  'onChange'
+> {
   /** Accessible label (required). */
   label: string;
   /** Visually hide the label. @default false */
@@ -172,29 +175,6 @@ export interface XDSTokenizerProps<T extends XDSSearchableItem> {
   onFocus?: (e: React.FocusEvent) => void;
   /** Fires when focus leaves the tokenizer entirely. */
   onBlur?: (e: React.FocusEvent) => void;
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
-  /** Test ID. */
-  'data-testid'?: string;
   /** Imperative handle ref for focus/blur control. */
   ref?: React.Ref<XDSTokenizerHandle>;
 }

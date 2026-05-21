@@ -26,8 +26,12 @@
 import {useCallback, useMemo, useState, type ReactNode} from 'react';
 import {CollapsibleGroupContext} from './XDSCollapsibleGroupContext';
 import type {CollapsibleGroupContextValue} from './XDSCollapsibleGroupContext';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
-export interface XDSCollapsibleGroupProps {
+export interface XDSCollapsibleGroupProps extends Omit<
+  XDSBaseProps<HTMLElement>,
+  'onChange'
+> {
   /**
    * Whether only one item can be open at a time, or multiple.
    * @default "single"

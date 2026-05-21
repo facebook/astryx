@@ -20,6 +20,7 @@ import {
   typeScaleVars,
   typographyVars,
 } from '../theme/tokens.stylex';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 const styles = stylex.create({
   empty: {
@@ -36,7 +37,7 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSCommandPaletteEmptyProps {
+export interface XDSCommandPaletteEmptyProps extends XDSBaseProps<HTMLDivElement> {
   /** The message or content to display. */
   children: ReactNode;
 }

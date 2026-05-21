@@ -14,6 +14,7 @@
 
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps} from '../utils';
 
 import {
@@ -70,7 +71,7 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSFieldLabelProps {
+export interface XDSFieldLabelProps extends XDSBaseProps<HTMLLabelElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLLabelElement>;
   /**

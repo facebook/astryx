@@ -31,6 +31,7 @@ import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSAppShellMobile} from '../AppShell/XDSAppShellMobileContext';
 
 // =============================================================================
@@ -138,7 +139,10 @@ const styles = stylex.create({
 // Types
 // =============================================================================
 
-export interface XDSTopNavMegaMenuItemProps {
+export interface XDSTopNavMegaMenuItemProps extends Omit<
+  XDSBaseProps<HTMLElement>,
+  'onClick'
+> {
   /** Display title for the menu item. */
   title: string;
   /** Optional description text displayed below the title. */
@@ -154,11 +158,6 @@ export interface XDSTopNavMegaMenuItemProps {
    * Overrides the provider-level default set by XDSLinkProvider.
    */
   as?: XDSLinkComponentType;
-  /**
-   * tabIndex — set by parent when inside a closed popover.
-   * @internal
-   */
-  tabIndex?: number;
 }
 
 // =============================================================================

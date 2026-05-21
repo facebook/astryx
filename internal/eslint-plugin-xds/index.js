@@ -24,6 +24,7 @@ import noHardcodedAnchorRule from './no-hardcoded-anchor.js';
 import noBorderShorthandRule from './no-border-shorthand.js';
 import noReactNamespaceHooksRule from './no-react-namespace-hooks.js';
 import copyrightHeaderRule from './copyright-header.js';
+import requireBasePropsRule from './require-base-props.js';
 
 // =============================================================================
 // Rule: no-hardcoded-styles
@@ -233,6 +234,7 @@ const plugin = {
     'no-hardcoded-anchor': noHardcodedAnchorRule,
     'no-border-shorthand': noBorderShorthandRule,
     'no-react-namespace-hooks': noReactNamespaceHooksRule,
+    'require-base-props': requireBasePropsRule,
     'copyright-header': copyrightHeaderRule,
   },
   configs: {},
@@ -254,6 +256,7 @@ plugin.configs.strict = {
     '@xds/no-hardcoded-anchor': 'error',
     '@xds/no-border-shorthand': 'error',
     '@xds/no-react-namespace-hooks': 'error',
+    '@xds/require-base-props': 'error',
     '@xds/copyright-header': 'error',
   },
 };
@@ -274,6 +277,7 @@ plugin.configs.recommended = {
     '@xds/no-hardcoded-anchor': 'warn',
     '@xds/no-border-shorthand': 'warn',
     '@xds/no-react-namespace-hooks': 'error',
+    '@xds/require-base-props': 'warn',
     '@xds/copyright-header': 'error',
   },
 };

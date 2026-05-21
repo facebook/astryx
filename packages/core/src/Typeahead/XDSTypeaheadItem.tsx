@@ -20,6 +20,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {XDSSearchableItem} from './types';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
@@ -28,7 +29,7 @@ import {xdsClassName, mergeProps} from '../utils';
 
 export interface XDSTypeaheadItemProps<
   T extends XDSSearchableItem = XDSSearchableItem,
-> {
+> extends XDSBaseProps<HTMLDivElement> {
   /**
    * The search result item.
    */

@@ -43,6 +43,7 @@ import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {useXDSPopover} from '../Popover/useXDSPopover';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSTooltip} from '../Tooltip';
 import {navItemStyles, type NavItemSize} from '../NavItem/navItemStyles.stylex';
 import {
@@ -242,7 +243,7 @@ function NavItemElement({
 // Types
 // =============================================================================
 
-export interface XDSSideNavItemProps {
+export interface XDSSideNavItemProps extends XDSBaseProps<HTMLElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLElement>;
   /**
@@ -312,10 +313,6 @@ export interface XDSSideNavItemProps {
    * @default 'md'
    */
   size?: NavItemSize;
-  /**
-   * Test ID for the item element.
-   */
-  'data-testid'?: string;
 }
 
 // =============================================================================

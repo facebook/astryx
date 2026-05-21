@@ -30,8 +30,9 @@ import {
 import {useXDSSegmentedControlContext} from './XDSSegmentedControlContext';
 import type {XDSSegmentedControlSize} from './XDSSegmentedControlContext';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
-export interface XDSSegmentedControlItemProps {
+export interface XDSSegmentedControlItemProps extends XDSBaseProps<HTMLButtonElement> {
   /**
    * Unique value for this segment. Matched against the parent's value.
    */

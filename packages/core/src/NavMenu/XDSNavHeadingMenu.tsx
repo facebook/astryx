@@ -4,9 +4,9 @@
 
 import {useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {useListFocus} from '../hooks/useListFocus';
 import {
   XDSNavHeadingMenuContext,
@@ -34,7 +34,7 @@ const sizeStyles = stylex.create({
   },
 });
 
-export interface XDSNavHeadingMenuProps {
+export interface XDSNavHeadingMenuProps extends XDSBaseProps<HTMLDivElement> {
   /** Menu items (XDSNavHeadingMenuItem, dividers, custom content). */
   children: ReactNode;
 
@@ -48,21 +48,6 @@ export interface XDSNavHeadingMenuProps {
    * Minimum width override. Takes precedence over size-based defaults.
    */
   minWidth?: number | string;
-
-  /**
-   * StyleX styles for layout customization.
-   * Must be a `stylex.create()` value.
-   */
-  xstyle?: StyleXStyles;
-
-  /** CSS class name(s) appended to the root element. */
-  className?: string;
-
-  /** Inline styles applied to the root element. */
-  style?: React.CSSProperties;
-
-  /** Test ID for testing frameworks. */
-  'data-testid'?: string;
 }
 
 /**
