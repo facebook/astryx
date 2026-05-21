@@ -29,7 +29,7 @@ import {
 } from '../theme/tokens.stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSListContext} from './XDSListContext';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName} from '../utils';
 import {XDSItem} from '../Item';
 
 // =============================================================================
@@ -103,14 +103,6 @@ export interface XDSListItemProps extends XDSBaseProps<HTMLLIElement> {
 // =============================================================================
 
 const styles = stylex.create({
-  item: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-2'],
-    position: 'relative',
-    boxSizing: 'border-box',
-    textAlign: 'start',
-  },
   withCounter: {
     counterIncrement: 'xds-list',
   },
@@ -171,10 +163,6 @@ const markerStyles = stylex.create({
 });
 
 const embeddedStyles = stylex.create({
-  root: {
-    flex: 1,
-    minWidth: 0,
-  },
   noRadius: {
     borderRadius: 0,
   },
@@ -235,36 +223,42 @@ export function XDSListItem({
 
   const itemDensity = density === 'compact' ? 'compact' : 'default';
 
+  const mediaContent =
+    marker != null && startContent != null ? (
+      <>
+        {marker}
+        {startContent}
+      </>
+    ) : (
+      (marker ?? startContent)
+    );
+
   return (
-    <li
+    <XDSItem
+      as="li"
       ref={ref}
+      media={mediaContent}
+      label={label}
+      description={description}
+      trailing={endContent}
+      onClick={onClick}
+      href={href}
+      target={target as '_blank' | '_self'}
+      isDisabled={isDisabled}
+      isSelected={isSelected}
+      density={itemDensity}
+      xstyle={[
+        hasMarkers && styles.withCounter,
+        hasDividers && styles.withDivider,
+        hasDividers && embeddedStyles.noRadius,
+        xstyle,
+      ]}
+      className={[xdsClassName('list-item'), className]
+        .filter(Boolean)
+        .join(' ')}
+      style={style}
       {...restProps}
-      {...mergeProps(
-        xdsClassName('list-item'),
-        stylex.props(
-          styles.item,
-          hasMarkers && styles.withCounter,
-          hasDividers && styles.withDivider,
-          xstyle,
-        ),
-        className,
-        style,
-      )}>
-      {marker}
-      <XDSItem
-        media={startContent}
-        label={label}
-        description={description}
-        trailing={endContent}
-        onClick={onClick}
-        href={href}
-        target={target as '_blank' | '_self'}
-        isDisabled={isDisabled}
-        isSelected={isSelected}
-        density={itemDensity}
-        xstyle={[embeddedStyles.root, hasDividers && embeddedStyles.noRadius]}
-      />
-    </li>
+    />
   );
 }
 

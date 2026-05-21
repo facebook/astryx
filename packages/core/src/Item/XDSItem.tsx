@@ -37,9 +37,15 @@ import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 export type XDSItemAlign = 'center' | 'start';
 export type XDSItemDensity = 'default' | 'compact';
 
-export interface XDSItemProps extends XDSBaseProps<HTMLDivElement> {
+export interface XDSItemProps extends XDSBaseProps<HTMLElement> {
   /** Ref forwarded to the root element. */
-  ref?: React.Ref<HTMLDivElement>;
+  ref?: React.Ref<HTMLElement>;
+
+  /**
+   * HTML element to render as the root.
+   * @default 'div'
+   */
+  as?: 'div' | 'li' | 'span';
 
   /**
    * Leading visual — avatar, icon, image, or any ReactNode.
@@ -245,14 +251,10 @@ const styles = stylex.create({
   media: {
     flex: '0 0 auto',
     display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   trailing: {
     flex: '0 0 auto',
     display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
     marginInlineStart: 'auto',
   },
 });
@@ -293,6 +295,7 @@ const densityStyles = stylex.create({
  * ```
  */
 export function XDSItem({
+  as: Component = 'div',
   media,
   label,
   description,
@@ -434,7 +437,7 @@ export function XDSItem({
   );
 
   return (
-    <div
+    <Component
       ref={ref}
       aria-selected={isSelected || undefined}
       aria-disabled={isDisabled || undefined}
@@ -464,7 +467,7 @@ export function XDSItem({
             : undefined
       }>
       {innerContent}
-    </div>
+    </Component>
   );
 }
 
