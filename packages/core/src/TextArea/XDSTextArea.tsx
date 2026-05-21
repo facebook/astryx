@@ -54,7 +54,7 @@ const styles = stylex.create({
   wrapper: {
     zIndex: 1,
     alignItems: 'flex-start',
-    paddingBlock: spacingVars['--spacing-2'],
+    paddingBlock: spacingVars['--spacing-1'],
   },
   textarea: {
     display: 'block',

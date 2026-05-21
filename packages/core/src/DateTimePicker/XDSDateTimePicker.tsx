@@ -771,6 +771,17 @@ export function XDSDateTimePicker({
             status && inputStatusHoverShadowStyles[status.type],
             status && inputStatusFocusWithinStyles[status.type],
           )}>
+          <button
+            type="button"
+            onClick={handleCalendarToggle}
+            disabled={isEffectivelyDisabled}
+            aria-label={popover.isOpen ? 'Close calendar' : 'Open calendar'}
+            {...stylex.props(
+              styles.iconButton,
+              isEffectivelyDisabled && styles.iconButtonDisabled,
+            )}>
+            <XDSIcon icon="calendar" size="sm" color="secondary" />
+          </button>
           <input
             ref={setDateRefs}
             id={dateInputId}
@@ -807,17 +818,6 @@ export function XDSDateTimePicker({
               <XDSIcon icon="close" size="sm" color="secondary" />
             </button>
           )}
-          <button
-            type="button"
-            onClick={handleCalendarToggle}
-            disabled={isEffectivelyDisabled}
-            aria-label={popover.isOpen ? 'Close calendar' : 'Open calendar'}
-            {...stylex.props(
-              styles.iconButton,
-              isEffectivelyDisabled && styles.iconButtonDisabled,
-            )}>
-            <XDSIcon icon="calendar" size="sm" color="secondary" />
-          </button>
           {isBusy && <XDSSpinner size="sm" />}
           {status && (
             <XDSIcon

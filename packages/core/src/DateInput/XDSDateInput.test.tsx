@@ -296,16 +296,16 @@ describe('XDSDateInput', () => {
     );
   });
 
-  // --- P1: Tab order input-first, button-second ---
+  // --- P1: Tab order: calendar button first, then input ---
 
-  it('renders input before button in DOM order', () => {
+  it('renders calendar button before input in DOM order', () => {
     const {container} = render(
       <XDSDateInput label="Date" onChange={() => {}} />,
     );
     const input = container.querySelector('input');
     const button = container.querySelector('button');
-    // Input should come before button in the DOM
-    expect(input!.compareDocumentPosition(button!)).toBe(
+    // Calendar button should come before input in the DOM
+    expect(button!.compareDocumentPosition(input!)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
     );
   });

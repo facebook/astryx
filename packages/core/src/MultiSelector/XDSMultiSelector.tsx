@@ -27,7 +27,7 @@ import React, {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useXDSPopover} from '../Popover/useXDSPopover';
-import {XDSIcon} from '../Icon';
+import {XDSIcon, renderIconSlot, type XDSIconType} from '../Icon';
 import type {XDSIconName} from '../Icon';
 import {
   XDSField,
@@ -443,6 +443,11 @@ export interface XDSMultiSelectorProps<
   labelTooltip?: string;
 
   /**
+   * Icon displayed at the start of the selector trigger.
+   */
+  startIcon?: ReactNode | XDSIconType;
+
+  /**
    * Whether to show a clear button when values are selected.
    * When clicked, resets the value to an empty array and returns focus to the trigger.
    * @default false
@@ -539,6 +544,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
   size = 'md',
   status,
   labelTooltip,
+  startIcon,
   hasClear = false,
   hasSelectAll = false,
   selectAllLabel = 'Select all',
@@ -1113,6 +1119,8 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
           className,
           style,
         )}>
+        {startIcon &&
+          renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
         <button
           ref={triggerRef}
           id={triggerId}
