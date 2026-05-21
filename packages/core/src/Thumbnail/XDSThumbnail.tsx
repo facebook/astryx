@@ -153,6 +153,14 @@ const styles = stylex.create({
       },
       ':active': 0.75,
     },
+    outline: {
+      default: null,
+      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: {
+      default: '0',
+      ':has(:focus-visible)': '2px',
+    },
   },
   interactiveButton: {
     all: 'unset',
@@ -160,14 +168,6 @@ const styles = stylex.create({
     display: 'block',
     width: '100%',
     height: '100%',
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
     borderRadius: radiusVars['--radius-element'],
     overflow: 'hidden',
   },
