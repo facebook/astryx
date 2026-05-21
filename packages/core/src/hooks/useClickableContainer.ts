@@ -179,6 +179,7 @@ export function useClickableContainer({
           // handles navigation (client-side transitions in Next.js, etc.).
           interactiveRef.current.click();
         } else {
+          // eslint-disable-next-line react-compiler/react-compiler -- browser navigation API
           window.location.href = href;
         }
       }

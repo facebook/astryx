@@ -150,6 +150,7 @@ export function useXDSChatStreamScroll({
     const diff = target - el.scrollTop;
 
     if (Math.abs(diff) < 0.5 && Math.abs(velocityRef.current) < 0.1) {
+      // eslint-disable-next-line react-compiler/react-compiler -- imperative DOM: scrollTop assignment
       el.scrollTop = target;
       animatingRef.current = false;
       lastTickRef.current = undefined;
