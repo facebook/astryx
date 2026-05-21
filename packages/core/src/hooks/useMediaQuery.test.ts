@@ -51,18 +51,16 @@ describe('useMediaQuery', () => {
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
   });
 
-  it('returns false on initial render (SSR-safe)', () => {
+  it('returns false when media query does not match', () => {
     const {result} = renderHook(() => useMediaQuery('(max-width: 768px)'));
-    // Before the effect runs, should be false
     expect(result.current).toBe(false);
   });
 
-  it('syncs with matchMedia on mount', () => {
+  it('returns true when media query matches', () => {
     mockMql = createMockMatchMedia(true);
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
 
     const {result} = renderHook(() => useMediaQuery('(max-width: 768px)'));
-    // After effect, should match the mql state
     expect(result.current).toBe(true);
   });
 

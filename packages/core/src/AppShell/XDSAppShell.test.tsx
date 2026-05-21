@@ -251,14 +251,19 @@ describe('XDSAppShell', () => {
     expect(window.matchMedia).toHaveBeenCalled();
   });
 
-  it('does not track breakpoint when mobileNav breakpoint is none', () => {
+  it('does not enter mobile mode when mobileNav breakpoint is none', () => {
     render(
       <XDSAppShell sideNav={<TestSideNav />} mobileNav={{breakpoint: 'none'}}>
         <div>Content</div>
       </XDSAppShell>,
     );
 
-    expect(window.matchMedia).not.toHaveBeenCalled();
+    // breakpoint 'none' uses (max-width: 0px) which never matches,
+    // so sideNav stays inline and no mobile nav toggle appears
+    expect(screen.getByText('Nav')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /menu/i}),
+    ).not.toBeInTheDocument();
   });
 
   // ===========================================================================
