@@ -311,10 +311,15 @@ export function XDSItem({
   className,
   style,
   ref,
+  role,
   ...restProps
 }: XDSItemProps) {
   const LinkComponent = useXDSLinkComponent();
   const isInteractive = onClick != null || href != null;
+  // When a semantic role is provided (e.g. "menuitem"), a parent component
+  // handles keyboard access. Skip the invisible button/anchor and put
+  // onClick directly on the root element instead.
+  const hasParentRole = role != null;
 
   const isStringLabel = typeof label === 'string';
   const isStringDescription = typeof description === 'string';
@@ -375,7 +380,15 @@ export function XDSItem({
     <>
       {media != null && <span {...stylex.props(styles.media)}>{media}</span>}
 
-      {href != null ? (
+      {hasParentRole ? (
+        <span
+          {...stylex.props(
+            styles.content,
+            isDisabled && styles.disabledContent,
+          )}>
+          {labelAndDescription}
+        </span>
+      ) : href != null ? (
         <LinkComponent
           href={href}
           target={target}
@@ -436,13 +449,20 @@ export function XDSItem({
           isInteractive && styles.focusVisibleOutline,
           isHighlighted && styles.highlighted,
           isSelected && styles.selected,
-          isDisabled && styles.disabled,
+          isDisabled && !hasParentRole && styles.disabled,
           xstyle,
         ),
         className,
         style,
       )}
-      onClick={isInteractive ? handleContainerClick : undefined}>
+      role={role}
+      onClick={
+        hasParentRole
+          ? onClick
+          : isInteractive
+            ? handleContainerClick
+            : undefined
+      }>
       {innerContent}
     </div>
   );
