@@ -70,7 +70,7 @@ import {
   xdsClassName,
   mergeProps,
 } from '../utils';
-import {fromISO} from '../utils/plainDate';
+import {plainDateFromISO} from '../utils/plainDate';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
@@ -585,7 +585,7 @@ export function XDSDateTimeInput({
       if (
         parsed &&
         parsed !== valueParts.date &&
-        !isDateDisabled(fromISO(parsed))
+        !isDateDisabled(plainDateFromISO(parsed))
       ) {
         lastFiredDateRef.current = parsed;
         handleDateChange(parsed, 'input');
@@ -609,7 +609,7 @@ export function XDSDateTimeInput({
     }
 
     const parsed = parseDateInput(datePendingInput);
-    if (parsed && !isDateDisabled(fromISO(parsed))) {
+    if (parsed && !isDateDisabled(plainDateFromISO(parsed))) {
       if (parsed !== valueParts.date) {
         handleDateChange(parsed, 'input');
       }

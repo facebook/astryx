@@ -14,7 +14,7 @@
 
 import {useMemo} from 'react';
 import type {ISODateString} from '../XDSCalendar';
-import {type PlainDate, toISO} from '../../utils/plainDate';
+import {type PlainDate, plainDateToISO} from '../../utils/plainDate';
 import type {CalendarDay} from './useCalendarDays';
 
 /**
@@ -86,7 +86,7 @@ export function useCalendarRovingTabindex(
       const isSelectedInMonth =
         selectedDate.year === year && selectedDate.month === month1;
       if (isSelectedInMonth && !isDateDisabled(selectedDate)) {
-        return toISO(selectedDate);
+        return plainDateToISO(selectedDate);
       }
     }
 
@@ -94,7 +94,7 @@ export function useCalendarRovingTabindex(
     const isTodayInMonth = today.year === year && today.month === month1;
 
     if (isTodayInMonth && !isDateDisabled(today)) {
-      return toISO(today);
+      return plainDateToISO(today);
     }
 
     // Priority 3: First enabled day in this month

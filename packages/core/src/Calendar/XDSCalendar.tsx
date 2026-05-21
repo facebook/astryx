@@ -42,19 +42,20 @@ import {
 } from './styles';
 import {
   type PlainDate,
-  fromISO,
-  toISO,
-  toDate,
-  fromDate,
-  today as todayFn,
-  firstOfMonth,
-  addMonths,
-  addDays,
-  compare,
-  isSameDay,
-  isInRange as isPlainDateInRange,
-  getWeekNumber,
-  formatAccessible,
+  plainDateFromISO,
+  plainDateToISO,
+  plainDateToDate,
+  plainDateFromDate,
+  plainDateToday,
+  plainDateFirstOfMonth,
+  plainDateAddMonths,
+  plainDateAddDays,
+  plainDateIsBefore,
+  plainDateIsAfter,
+  plainDateIsSameDay,
+  plainDateIsInRange,
+  plainDateGetWeekNumber,
+  plainDateFormatAccessible,
 } from '../utils/plainDate';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -212,7 +213,7 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
   } = props;
 
   // Today's date (memoized)
-  const today = useMemo(() => todayFn(), []);
+  const today = useMemo(() => plainDateToday(), []);
 
   // Internal state for uncontrolled mode
   const [internalValue, setInternalValue] = useState<
@@ -235,23 +236,23 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
   // Focus date state (which month is visible)
   const [internalFocusDate, setInternalFocusDate] = useState<PlainDate>(() => {
     if (focusDateProp) {
-      return fromISO(focusDateProp);
+      return plainDateFromISO(focusDateProp);
     }
     if (effectiveValue) {
       if (typeof effectiveValue === 'string') {
-        return fromISO(effectiveValue);
+        return plainDateFromISO(effectiveValue);
       } else {
-        return fromISO(effectiveValue.start);
+        return plainDateFromISO(effectiveValue.start);
       }
     }
-    return todayFn();
+    return plainDateToday();
   });
 
   // Use controlled focusDate if callback is provided, otherwise use internal state
   const isControlledFocus =
     focusDateProp !== undefined && onFocusDateChange !== undefined;
   const focusDate = isControlledFocus
-    ? fromISO(focusDateProp)
+    ? plainDateFromISO(focusDateProp)
     : internalFocusDate;
 
   // Expose imperative handle for external navigation
@@ -262,7 +263,7 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
         if (isControlledFocus) {
           onFocusDateChange?.(date);
         } else {
-          setInternalFocusDate(fromISO(date));
+          setInternalFocusDate(plainDateFromISO(date));
         }
       },
     }),
@@ -271,13 +272,13 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
 
   // Base month (first day of focus month)
   const baseMonth = useMemo(() => {
-    return firstOfMonth(focusDate);
+    return plainDateFirstOfMonth(focusDate);
   }, [focusDate]);
 
   // Generate visible months
   const visibleMonths = useMemo(() => {
     return Array.from({length: numberOfMonths}, (_, i) => {
-      return addMonths(baseMonth, i);
+      return plainDateAddMonths(baseMonth, i);
     });
   }, [baseMonth, numberOfMonths]);
 
@@ -288,9 +289,11 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
       month: 'long',
     });
     if (numberOfMonths === 1) {
-      return formatter.format(toDate(visibleMonths[0]));
+      return formatter.format(plainDateToDate(visibleMonths[0]));
     }
-    return visibleMonths.map(m => formatter.format(toDate(m))).join(' – ');
+    return visibleMonths
+      .map(m => formatter.format(plainDateToDate(m)))
+      .join(' – ');
   }, [visibleMonths, numberOfMonths]);
 
   // Determine if prev/next navigation is possible based on min/max
@@ -298,7 +301,7 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
     if (!min) {
       return true;
     }
-    const minDate = fromISO(min);
+    const minDate = plainDateFromISO(min);
     // Can't go back if min is in the current focus month
     return (
       minDate.year < baseMonth.year ||
@@ -310,9 +313,9 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
     if (!max) {
       return true;
     }
-    const maxDate = fromISO(max);
+    const maxDate = plainDateFromISO(max);
     // Check against the last visible month, not just baseMonth
-    const lastVisibleMonth = addMonths(baseMonth, numberOfMonths - 1);
+    const lastVisibleMonth = plainDateAddMonths(baseMonth, numberOfMonths - 1);
     return (
       maxDate.year > lastVisibleMonth.year ||
       (maxDate.year === lastVisibleMonth.year &&
@@ -323,15 +326,15 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
   // Navigation handlers
   const navigateMonth = useCallback(
     (delta: number, focusedDate?: ISODateString, offset?: number) => {
-      const newPd = addMonths(baseMonth, delta);
-      const newISO = toISO(newPd);
+      const newPd = plainDateAddMonths(baseMonth, delta);
+      const newISO = plainDateToISO(newPd);
 
       // Calculate target focus date if a focused date was provided
       if (focusedDate) {
-        const currentPd = fromISO(focusedDate);
+        const currentPd = plainDateFromISO(focusedDate);
         const daysToMove = offset ?? 7;
-        const targetPd = addDays(currentPd, delta * daysToMove);
-        setPendingFocus(toISO(targetPd));
+        const targetPd = plainDateAddDays(currentPd, delta * daysToMove);
+        setPendingFocus(plainDateToISO(targetPd));
       }
 
       if (onFocusDateChange) {
@@ -362,11 +365,14 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
   // Day click handler
   const handleDayClick = useCallback(
     (date: PlainDate) => {
-      const iso = toISO(date);
+      const iso = plainDateToISO(date);
 
       if (mode === 'single') {
         setInternalValue(iso);
-        (onChange as XDSCalendarSingleProps['onChange'])?.(iso, toDate(date));
+        (onChange as XDSCalendarSingleProps['onChange'])?.(
+          iso,
+          plainDateToDate(date),
+        );
       } else {
         // Range mode
         if (rangeSelectionStart === null) {
@@ -374,12 +380,12 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
           setRangeSelectionStart(iso);
         } else {
           // Second click - complete the range
-          const startPd = fromISO(rangeSelectionStart);
+          const startPd = plainDateFromISO(rangeSelectionStart);
           let start: ISODateString;
           let end: ISODateString;
 
           // Ensure start <= end
-          if (compare(date, startPd) < 0) {
+          if (plainDateIsBefore(date, startPd)) {
             start = iso;
             end = rangeSelectionStart;
           } else {
@@ -449,7 +455,9 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
             hasVariableRowCount={hasVariableRowCount}
             weekStartsOn={weekStartsOn}
             onDayClick={handleDayClick}
-            onDayHover={date => setHoveredDate(date ? toISO(date) : null)}
+            onDayHover={date =>
+              setHoveredDate(date ? plainDateToISO(date) : null)
+            }
             today={today}
             onNavigatePrevious={(focusedDate, offset) =>
               navigateMonth(-1, focusedDate, offset)
@@ -535,7 +543,7 @@ function MonthGrid({
   // Parse selected date for roving tabindex priority
   const selectedDateForTabindex = useMemo(() => {
     if (mode === 'single' && value && typeof value === 'string') {
-      return fromISO(value as ISODateString);
+      return plainDateFromISO(value as ISODateString);
     }
     return null;
   }, [mode, value]);
@@ -566,7 +574,7 @@ function MonthGrid({
       return null;
     }
 
-    return toISO(fromDate(parsed));
+    return plainDateToISO(plainDateFromDate(parsed));
   }, []);
 
   // Handle navigation to previous month
@@ -626,8 +634,8 @@ function MonthGrid({
       'button:not([disabled])',
     );
 
-    const targetPd = fromISO(pendingFocus);
-    const targetLabel = formatAccessible(targetPd);
+    const targetPd = plainDateFromISO(pendingFocus);
+    const targetLabel = plainDateFormatAccessible(targetPd);
 
     let targetButton: HTMLElement | null = null;
     for (const button of buttons) {
@@ -651,16 +659,16 @@ function MonthGrid({
   let rangeEnd: PlainDate | null = null;
 
   if (mode === 'single' && value && typeof value === 'string') {
-    selectedDate = fromISO(value as ISODateString);
+    selectedDate = plainDateFromISO(value as ISODateString);
   } else if (mode === 'range' && value && typeof value === 'object') {
     const range = value as DateRange;
-    rangeStart = fromISO(range.start);
-    rangeEnd = fromISO(range.end);
+    rangeStart = plainDateFromISO(range.start);
+    rangeEnd = plainDateFromISO(range.end);
   }
 
   // Handle in-progress range selection
   if (rangeSelectionStart) {
-    rangeStart = fromISO(rangeSelectionStart);
+    rangeStart = plainDateFromISO(rangeSelectionStart);
     rangeEnd = rangeStart;
   }
 
@@ -668,10 +676,10 @@ function MonthGrid({
   let previewStart: PlainDate | null = null;
   let previewEnd: PlainDate | null = null;
   if (mode === 'range' && rangeSelectionStart && hoveredDate) {
-    const startPd = fromISO(rangeSelectionStart);
-    const hoverPd = fromISO(hoveredDate);
-    if (!isSameDay(startPd, hoverPd)) {
-      if (compare(hoverPd, startPd) < 0) {
+    const startPd = plainDateFromISO(rangeSelectionStart);
+    const hoverPd = plainDateFromISO(hoveredDate);
+    if (!plainDateIsSameDay(startPd, hoverPd)) {
+      if (plainDateIsBefore(hoverPd, startPd)) {
         previewStart = hoverPd;
         previewEnd = startPd;
       } else {
@@ -686,7 +694,7 @@ function MonthGrid({
     return new Intl.DateTimeFormat(undefined, {
       year: 'numeric',
       month: 'long',
-    }).format(toDate(month));
+    }).format(plainDateToDate(month));
   }, [month]);
 
   return (
@@ -727,7 +735,7 @@ function MonthGrid({
         )}>
         {weeks.map((week, weekIndex) => {
           const weekDate = week.find(d => !d.isOutside)?.date || week[0].date;
-          const weekNum = getWeekNumber(weekDate);
+          const weekNum = plainDateGetWeekNumber(weekDate);
 
           return (
             <div
@@ -813,25 +821,26 @@ function DayCell({
   // Outside days should not be clickable even when visible
   const effectivelyDisabled = isDisabled || isOutside;
 
-  const isToday = isSameDay(date, today);
+  const isToday = plainDateIsSameDay(date, today);
   const isSelected =
-    mode === 'single' && selectedDate && isSameDay(date, selectedDate);
+    mode === 'single' && selectedDate && plainDateIsSameDay(date, selectedDate);
   const isInRange =
     mode === 'range' &&
     rangeStart &&
     rangeEnd &&
-    isPlainDateInRange(date, rangeStart, rangeEnd);
+    plainDateIsInRange(date, rangeStart, rangeEnd);
   const isRangeStart =
-    mode === 'range' && rangeStart && isSameDay(date, rangeStart);
-  const isRangeEnd = mode === 'range' && rangeEnd && isSameDay(date, rangeEnd);
+    mode === 'range' && rangeStart && plainDateIsSameDay(date, rangeStart);
+  const isRangeEnd =
+    mode === 'range' && rangeEnd && plainDateIsSameDay(date, rangeEnd);
 
   // Preview range calculations
   const isInPreview =
     previewStart &&
     previewEnd &&
-    isPlainDateInRange(date, previewStart, previewEnd);
-  const isPreviewStart = previewStart && isSameDay(date, previewStart);
-  const isPreviewEnd = previewEnd && isSameDay(date, previewEnd);
+    plainDateIsInRange(date, previewStart, previewEnd);
+  const isPreviewStart = previewStart && plainDateIsSameDay(date, previewStart);
+  const isPreviewEnd = previewEnd && plainDateIsSameDay(date, previewEnd);
 
   // Determine cell background for range
   const hasRangeBackground = isInRange;
@@ -885,7 +894,7 @@ function DayCell({
         type="button"
         role="gridcell"
         data-date={day.iso}
-        aria-label={formatAccessible(date)}
+        aria-label={plainDateFormatAccessible(date)}
         aria-selected={isSelected || isInRange || undefined}
         aria-disabled={effectivelyDisabled || undefined}
         disabled={isDisabled}

@@ -16,13 +16,13 @@ import {useState, useMemo, useCallback} from 'react';
 import type {ISODateString} from '../XDSCalendar';
 import {
   type PlainDate,
-  fromISO,
-  toISO,
-  toDate,
-  today as todayFn,
-  firstOfMonth,
-  addMonths,
-  addDays,
+  plainDateFromISO,
+  plainDateToISO,
+  plainDateToDate,
+  plainDateToday,
+  plainDateFirstOfMonth,
+  plainDateAddMonths,
+  plainDateAddDays,
 } from '../../utils/plainDate';
 
 /**
@@ -104,30 +104,30 @@ export function useCalendarNavigation(
   // Internal focus date state (PlainDate)
   const [internalFocusDate, setInternalFocusDate] = useState<PlainDate>(() => {
     if (focusDateProp) {
-      return fromISO(focusDateProp);
+      return plainDateFromISO(focusDateProp);
     }
     if (initialValue) {
-      return fromISO(initialValue);
+      return plainDateFromISO(initialValue);
     }
-    return todayFn();
+    return plainDateToday();
   });
 
   // Determine if focus is controlled
   const isControlledFocus =
     focusDateProp !== undefined && onFocusDateChange !== undefined;
   const focusDate: PlainDate = isControlledFocus
-    ? fromISO(focusDateProp)
+    ? plainDateFromISO(focusDateProp)
     : internalFocusDate;
 
   // Base month (first day of focus month)
   const baseMonth = useMemo(() => {
-    return firstOfMonth(focusDate);
+    return plainDateFirstOfMonth(focusDate);
   }, [focusDate]);
 
   // Generate visible months
   const visibleMonths = useMemo(() => {
     return Array.from({length: numberOfMonths}, (_, i) => {
-      return addMonths(baseMonth, i);
+      return plainDateAddMonths(baseMonth, i);
     });
   }, [baseMonth, numberOfMonths]);
 
@@ -138,24 +138,26 @@ export function useCalendarNavigation(
       month: 'long',
     });
     if (numberOfMonths === 1) {
-      return formatter.format(toDate(visibleMonths[0]));
+      return formatter.format(plainDateToDate(visibleMonths[0]));
     }
-    return visibleMonths.map(m => formatter.format(toDate(m))).join(' – ');
+    return visibleMonths
+      .map(m => formatter.format(plainDateToDate(m)))
+      .join(' – ');
   }, [visibleMonths, numberOfMonths]);
 
   // Navigate to previous/next month
   const navigateMonth = useCallback(
     (delta: number, focusedDate?: ISODateString, offset?: number) => {
-      const newMonth = addMonths(baseMonth, delta);
-      const newISO = toISO(newMonth);
+      const newMonth = plainDateAddMonths(baseMonth, delta);
+      const newISO = plainDateToISO(newMonth);
 
       // Calculate target focus date if provided
       if (focusedDate) {
-        const currentDate = fromISO(focusedDate);
+        const currentDate = plainDateFromISO(focusedDate);
         // Use the provided offset (1 for horizontal, 7 for vertical)
         const daysToMove = offset ?? 7;
-        const targetDate = addDays(currentDate, delta * daysToMove);
-        setPendingFocus(toISO(targetDate));
+        const targetDate = plainDateAddDays(currentDate, delta * daysToMove);
+        setPendingFocus(plainDateToISO(targetDate));
       }
 
       if (onFocusDateChange) {

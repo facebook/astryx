@@ -9,10 +9,10 @@
 
 export {
   type PlainDate,
-  fromISO as parseISO,
-  toISO as dateToISO,
-  isSameDay,
-  isInRange as isDateInRange,
-  getWeekNumber,
-  formatAccessible as formatAccessibleDate,
+  plainDateFromISO as parseISO,
+  plainDateToISO as dateToISO,
+  plainDateIsSameDay as isSameDay,
+  plainDateIsInRange as isDateInRange,
+  plainDateGetWeekNumber as getWeekNumber,
+  plainDateFormatAccessible as formatAccessibleDate,
 } from '../utils/plainDate';

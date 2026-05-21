@@ -3,27 +3,28 @@
 import {describe, it, expect} from 'vitest';
 import {
   type PlainDate,
-  fromISO,
-  toISO,
-  toDate,
-  fromDate,
-  today,
-  daysInMonth,
-  dayOfWeek,
-  addMonths,
-  addDays,
-  compare,
-  isSameDay,
-  isInRange,
-  firstOfMonth,
-  getWeekNumber,
-  formatAccessible,
+  plainDateFromISO,
+  plainDateToISO,
+  plainDateToDate,
+  plainDateFromDate,
+  plainDateToday,
+  plainDateDaysInMonth,
+  plainDateDayOfWeek,
+  plainDateAddMonths,
+  plainDateAddDays,
+  plainDateIsBefore,
+  plainDateIsAfter,
+  plainDateIsSameDay,
+  plainDateIsInRange,
+  plainDateFirstOfMonth,
+  plainDateGetWeekNumber,
+  plainDateFormatAccessible,
 } from './plainDate';
 import type {ISODateString} from '../Calendar/XDSCalendar';
 
-describe('fromISO', () => {
+describe('plainDateFromISO', () => {
   it('parses a standard ISO date', () => {
-    expect(fromISO('2026-01-25' as ISODateString)).toEqual({
+    expect(plainDateFromISO('2026-01-25' as ISODateString)).toEqual({
       year: 2026,
       month: 1,
       day: 25,
@@ -31,12 +32,12 @@ describe('fromISO', () => {
   });
 
   it('parses date with 1-based month', () => {
-    const dec = fromISO('2026-12-31' as ISODateString);
+    const dec = plainDateFromISO('2026-12-31' as ISODateString);
     expect(dec.month).toBe(12);
   });
 
   it('handles single-digit month/day when padded', () => {
-    expect(fromISO('2026-03-05' as ISODateString)).toEqual({
+    expect(plainDateFromISO('2026-03-05' as ISODateString)).toEqual({
       year: 2026,
       month: 3,
       day: 5,
@@ -44,21 +45,21 @@ describe('fromISO', () => {
   });
 });
 
-describe('toISO', () => {
+describe('plainDateToISO', () => {
   it('formats a PlainDate to ISO string', () => {
-    expect(toISO({year: 2026, month: 1, day: 25})).toBe('2026-01-25');
+    expect(plainDateToISO({year: 2026, month: 1, day: 25})).toBe('2026-01-25');
   });
 
   it('pads single-digit month and day', () => {
-    expect(toISO({year: 2026, month: 3, day: 5})).toBe('2026-03-05');
+    expect(plainDateToISO({year: 2026, month: 3, day: 5})).toBe('2026-03-05');
   });
 
   it('pads year to 4 digits', () => {
-    expect(toISO({year: 1, month: 1, day: 1})).toBe('0001-01-01');
+    expect(plainDateToISO({year: 1, month: 1, day: 1})).toBe('0001-01-01');
   });
 });
 
-describe('fromISO ↔ toISO roundtrip', () => {
+describe('plainDateFromISO / plainDateToISO roundtrip', () => {
   it.each([
     '2026-01-01',
     '2026-06-15',
@@ -66,24 +67,24 @@ describe('fromISO ↔ toISO roundtrip', () => {
     '2000-02-29',
     '1999-11-30',
   ])('roundtrips %s', iso => {
-    expect(toISO(fromISO(iso as ISODateString))).toBe(iso);
+    expect(plainDateToISO(plainDateFromISO(iso as ISODateString))).toBe(iso);
   });
 });
 
-describe('toDate / fromDate', () => {
+describe('plainDateToDate / plainDateFromDate', () => {
   it('converts PlainDate to Date and back', () => {
     const pd: PlainDate = {year: 2026, month: 3, day: 15};
-    const d = toDate(pd);
+    const d = plainDateToDate(pd);
     expect(d.getFullYear()).toBe(2026);
     expect(d.getMonth()).toBe(2); // 0-based
     expect(d.getDate()).toBe(15);
-    expect(fromDate(d)).toEqual(pd);
+    expect(plainDateFromDate(d)).toEqual(pd);
   });
 });
 
-describe('today', () => {
+describe('plainDateToday', () => {
   it('returns current date with 1-based month', () => {
-    const t = today();
+    const t = plainDateToday();
     const now = new Date();
     expect(t.year).toBe(now.getFullYear());
     expect(t.month).toBe(now.getMonth() + 1);
@@ -91,52 +92,52 @@ describe('today', () => {
   });
 });
 
-describe('daysInMonth', () => {
+describe('plainDateDaysInMonth', () => {
   it('returns 31 for January', () => {
-    expect(daysInMonth(2026, 1)).toBe(31);
+    expect(plainDateDaysInMonth(2026, 1)).toBe(31);
   });
 
   it('returns 28 for February in a non-leap year', () => {
-    expect(daysInMonth(2026, 2)).toBe(28);
+    expect(plainDateDaysInMonth(2026, 2)).toBe(28);
   });
 
   it('returns 29 for February in a leap year', () => {
-    expect(daysInMonth(2024, 2)).toBe(29);
+    expect(plainDateDaysInMonth(2024, 2)).toBe(29);
   });
 
   it('returns 30 for April', () => {
-    expect(daysInMonth(2026, 4)).toBe(30);
+    expect(plainDateDaysInMonth(2026, 4)).toBe(30);
   });
 
   it('handles century non-leap year', () => {
-    expect(daysInMonth(1900, 2)).toBe(28);
+    expect(plainDateDaysInMonth(1900, 2)).toBe(28);
   });
 
   it('handles 400-year leap year', () => {
-    expect(daysInMonth(2000, 2)).toBe(29);
+    expect(plainDateDaysInMonth(2000, 2)).toBe(29);
   });
 });
 
-describe('dayOfWeek', () => {
+describe('plainDateDayOfWeek', () => {
   it('returns 0 for a known Sunday', () => {
     // 2026-01-04 is a Sunday
-    expect(dayOfWeek({year: 2026, month: 1, day: 4})).toBe(0);
+    expect(plainDateDayOfWeek({year: 2026, month: 1, day: 4})).toBe(0);
   });
 
   it('returns 1 for a known Monday', () => {
     // 2026-01-05 is a Monday
-    expect(dayOfWeek({year: 2026, month: 1, day: 5})).toBe(1);
+    expect(plainDateDayOfWeek({year: 2026, month: 1, day: 5})).toBe(1);
   });
 
   it('returns 6 for a known Saturday', () => {
     // 2026-01-03 is a Saturday
-    expect(dayOfWeek({year: 2026, month: 1, day: 3})).toBe(6);
+    expect(plainDateDayOfWeek({year: 2026, month: 1, day: 3})).toBe(6);
   });
 });
 
-describe('addMonths', () => {
+describe('plainDateAddMonths', () => {
   it('adds months within the same year', () => {
-    expect(addMonths({year: 2026, month: 1, day: 15}, 3)).toEqual({
+    expect(plainDateAddMonths({year: 2026, month: 1, day: 15}, 3)).toEqual({
       year: 2026,
       month: 4,
       day: 15,
@@ -144,7 +145,7 @@ describe('addMonths', () => {
   });
 
   it('rolls over to the next year', () => {
-    expect(addMonths({year: 2026, month: 11, day: 15}, 3)).toEqual({
+    expect(plainDateAddMonths({year: 2026, month: 11, day: 15}, 3)).toEqual({
       year: 2027,
       month: 2,
       day: 15,
@@ -152,7 +153,7 @@ describe('addMonths', () => {
   });
 
   it('subtracts months', () => {
-    expect(addMonths({year: 2026, month: 3, day: 15}, -2)).toEqual({
+    expect(plainDateAddMonths({year: 2026, month: 3, day: 15}, -2)).toEqual({
       year: 2026,
       month: 1,
       day: 15,
@@ -160,7 +161,7 @@ describe('addMonths', () => {
   });
 
   it('rolls back to previous year', () => {
-    expect(addMonths({year: 2026, month: 1, day: 15}, -2)).toEqual({
+    expect(plainDateAddMonths({year: 2026, month: 1, day: 15}, -2)).toEqual({
       year: 2025,
       month: 11,
       day: 15,
@@ -168,7 +169,7 @@ describe('addMonths', () => {
   });
 
   it('clamps day when target month is shorter', () => {
-    expect(addMonths({year: 2026, month: 1, day: 31}, 1)).toEqual({
+    expect(plainDateAddMonths({year: 2026, month: 1, day: 31}, 1)).toEqual({
       year: 2026,
       month: 2,
       day: 28,
@@ -176,7 +177,7 @@ describe('addMonths', () => {
   });
 
   it('clamps day to Feb 29 in leap year', () => {
-    expect(addMonths({year: 2024, month: 1, day: 31}, 1)).toEqual({
+    expect(plainDateAddMonths({year: 2024, month: 1, day: 31}, 1)).toEqual({
       year: 2024,
       month: 2,
       day: 29,
@@ -184,9 +185,9 @@ describe('addMonths', () => {
   });
 });
 
-describe('addDays', () => {
+describe('plainDateAddDays', () => {
   it('adds days within the same month', () => {
-    expect(addDays({year: 2026, month: 1, day: 15}, 5)).toEqual({
+    expect(plainDateAddDays({year: 2026, month: 1, day: 15}, 5)).toEqual({
       year: 2026,
       month: 1,
       day: 20,
@@ -194,7 +195,7 @@ describe('addDays', () => {
   });
 
   it('rolls over to next month', () => {
-    expect(addDays({year: 2026, month: 1, day: 30}, 3)).toEqual({
+    expect(plainDateAddDays({year: 2026, month: 1, day: 30}, 3)).toEqual({
       year: 2026,
       month: 2,
       day: 2,
@@ -202,7 +203,7 @@ describe('addDays', () => {
   });
 
   it('rolls over to next year', () => {
-    expect(addDays({year: 2026, month: 12, day: 30}, 3)).toEqual({
+    expect(plainDateAddDays({year: 2026, month: 12, day: 30}, 3)).toEqual({
       year: 2027,
       month: 1,
       day: 2,
@@ -210,7 +211,7 @@ describe('addDays', () => {
   });
 
   it('subtracts days', () => {
-    expect(addDays({year: 2026, month: 1, day: 15}, -5)).toEqual({
+    expect(plainDateAddDays({year: 2026, month: 1, day: 15}, -5)).toEqual({
       year: 2026,
       month: 1,
       day: 10,
@@ -218,7 +219,7 @@ describe('addDays', () => {
   });
 
   it('rolls back to previous month', () => {
-    expect(addDays({year: 2026, month: 2, day: 1}, -1)).toEqual({
+    expect(plainDateAddDays({year: 2026, month: 2, day: 1}, -1)).toEqual({
       year: 2026,
       month: 1,
       day: 31,
@@ -226,42 +227,66 @@ describe('addDays', () => {
   });
 });
 
-describe('compare', () => {
-  it('returns 0 for equal dates', () => {
+describe('plainDateIsBefore / plainDateIsAfter', () => {
+  it('returns false for equal dates (isBefore)', () => {
     expect(
-      compare({year: 2026, month: 1, day: 15}, {year: 2026, month: 1, day: 15}),
-    ).toBe(0);
+      plainDateIsBefore(
+        {year: 2026, month: 1, day: 15},
+        {year: 2026, month: 1, day: 15},
+      ),
+    ).toBe(false);
   });
 
-  it('returns negative when first is earlier', () => {
+  it('returns false for equal dates (isAfter)', () => {
     expect(
-      compare({year: 2026, month: 1, day: 14}, {year: 2026, month: 1, day: 15}),
-    ).toBeLessThan(0);
+      plainDateIsAfter(
+        {year: 2026, month: 1, day: 15},
+        {year: 2026, month: 1, day: 15},
+      ),
+    ).toBe(false);
   });
 
-  it('returns positive when first is later', () => {
+  it('returns true when first is earlier (isBefore)', () => {
     expect(
-      compare({year: 2026, month: 1, day: 16}, {year: 2026, month: 1, day: 15}),
-    ).toBeGreaterThan(0);
+      plainDateIsBefore(
+        {year: 2026, month: 1, day: 14},
+        {year: 2026, month: 1, day: 15},
+      ),
+    ).toBe(true);
+  });
+
+  it('returns true when first is later (isAfter)', () => {
+    expect(
+      plainDateIsAfter(
+        {year: 2026, month: 1, day: 16},
+        {year: 2026, month: 1, day: 15},
+      ),
+    ).toBe(true);
   });
 
   it('compares by year first', () => {
     expect(
-      compare({year: 2025, month: 12, day: 31}, {year: 2026, month: 1, day: 1}),
-    ).toBeLessThan(0);
+      plainDateIsBefore(
+        {year: 2025, month: 12, day: 31},
+        {year: 2026, month: 1, day: 1},
+      ),
+    ).toBe(true);
   });
 
   it('compares by month when years equal', () => {
     expect(
-      compare({year: 2026, month: 1, day: 31}, {year: 2026, month: 2, day: 1}),
-    ).toBeLessThan(0);
+      plainDateIsBefore(
+        {year: 2026, month: 1, day: 31},
+        {year: 2026, month: 2, day: 1},
+      ),
+    ).toBe(true);
   });
 });
 
-describe('isSameDay', () => {
+describe('plainDateIsSameDay', () => {
   it('returns true for same date', () => {
     expect(
-      isSameDay(
+      plainDateIsSameDay(
         {year: 2026, month: 1, day: 15},
         {year: 2026, month: 1, day: 15},
       ),
@@ -270,7 +295,7 @@ describe('isSameDay', () => {
 
   it('returns false for different day', () => {
     expect(
-      isSameDay(
+      plainDateIsSameDay(
         {year: 2026, month: 1, day: 15},
         {year: 2026, month: 1, day: 16},
       ),
@@ -279,7 +304,7 @@ describe('isSameDay', () => {
 
   it('returns false for different month', () => {
     expect(
-      isSameDay(
+      plainDateIsSameDay(
         {year: 2026, month: 1, day: 15},
         {year: 2026, month: 2, day: 15},
       ),
@@ -287,34 +312,40 @@ describe('isSameDay', () => {
   });
 });
 
-describe('isInRange', () => {
+describe('plainDateIsInRange', () => {
   const start: PlainDate = {year: 2026, month: 1, day: 10};
   const end: PlainDate = {year: 2026, month: 1, day: 20};
 
   it('returns true for date within range', () => {
-    expect(isInRange({year: 2026, month: 1, day: 15}, start, end)).toBe(true);
+    expect(
+      plainDateIsInRange({year: 2026, month: 1, day: 15}, start, end),
+    ).toBe(true);
   });
 
   it('returns true for start boundary', () => {
-    expect(isInRange(start, start, end)).toBe(true);
+    expect(plainDateIsInRange(start, start, end)).toBe(true);
   });
 
   it('returns true for end boundary', () => {
-    expect(isInRange(end, start, end)).toBe(true);
+    expect(plainDateIsInRange(end, start, end)).toBe(true);
   });
 
   it('returns false for date before range', () => {
-    expect(isInRange({year: 2026, month: 1, day: 9}, start, end)).toBe(false);
+    expect(plainDateIsInRange({year: 2026, month: 1, day: 9}, start, end)).toBe(
+      false,
+    );
   });
 
   it('returns false for date after range', () => {
-    expect(isInRange({year: 2026, month: 1, day: 21}, start, end)).toBe(false);
+    expect(
+      plainDateIsInRange({year: 2026, month: 1, day: 21}, start, end),
+    ).toBe(false);
   });
 });
 
-describe('firstOfMonth', () => {
+describe('plainDateFirstOfMonth', () => {
   it('returns first day of the same month', () => {
-    expect(firstOfMonth({year: 2026, month: 3, day: 15})).toEqual({
+    expect(plainDateFirstOfMonth({year: 2026, month: 3, day: 15})).toEqual({
       year: 2026,
       month: 3,
       day: 1,
@@ -323,27 +354,27 @@ describe('firstOfMonth', () => {
 
   it('is a no-op for day 1', () => {
     const pd = {year: 2026, month: 3, day: 1};
-    expect(firstOfMonth(pd)).toEqual(pd);
+    expect(plainDateFirstOfMonth(pd)).toEqual(pd);
   });
 });
 
-describe('getWeekNumber', () => {
+describe('plainDateGetWeekNumber', () => {
   it('returns week 1 for Jan 1 2026 (Thursday)', () => {
-    expect(getWeekNumber({year: 2026, month: 1, day: 1})).toBe(1);
+    expect(plainDateGetWeekNumber({year: 2026, month: 1, day: 1})).toBe(1);
   });
 
   it('returns week 53 for Dec 31 2020 (Thursday in ISO week 53)', () => {
-    expect(getWeekNumber({year: 2020, month: 12, day: 31})).toBe(53);
+    expect(plainDateGetWeekNumber({year: 2020, month: 12, day: 31})).toBe(53);
   });
 
   it('returns week 1 for Jan 4 (always in ISO week 1)', () => {
-    expect(getWeekNumber({year: 2026, month: 1, day: 4})).toBe(1);
+    expect(plainDateGetWeekNumber({year: 2026, month: 1, day: 4})).toBe(1);
   });
 });
 
-describe('formatAccessible', () => {
+describe('plainDateFormatAccessible', () => {
   it('returns a human-readable date string', () => {
-    const result = formatAccessible({year: 2026, month: 1, day: 25});
+    const result = plainDateFormatAccessible({year: 2026, month: 1, day: 25});
     expect(result).toContain('2026');
     expect(result).toContain('25');
   });

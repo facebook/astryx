@@ -19,21 +19,22 @@ export {
 
 export type {PlainDate} from './plainDate';
 export {
-  fromISO,
-  toISO,
-  toDate,
-  fromDate,
-  today,
-  daysInMonth,
-  dayOfWeek,
-  addMonths,
-  addDays,
-  compare,
-  isSameDay,
-  isInRange,
-  firstOfMonth,
-  getWeekNumber,
-  formatAccessible,
+  plainDateFromISO,
+  plainDateToISO,
+  plainDateToDate,
+  plainDateFromDate,
+  plainDateToday,
+  plainDateDaysInMonth,
+  plainDateDayOfWeek,
+  plainDateAddMonths,
+  plainDateAddDays,
+  plainDateIsBefore,
+  plainDateIsAfter,
+  plainDateIsSameDay,
+  plainDateIsInRange,
+  plainDateFirstOfMonth,
+  plainDateGetWeekNumber,
+  plainDateFormatAccessible,
 } from './plainDate';
 
 export {

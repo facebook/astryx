@@ -12,9 +12,18 @@
  */
 
 import type {ISODateString} from '../Calendar';
-import {fromISO, toISO, toDate, fromDate, daysInMonth} from './plainDate';
+import {
+  plainDateFromISO,
+  plainDateToISO,
+  plainDateToDate,
+  plainDateFromDate,
+  plainDateDaysInMonth,
+} from './plainDate';
 
-export {fromISO as parseISO, toISO as dateToISO} from './plainDate';
+export {
+  plainDateFromISO as parseISO,
+  plainDateToISO as dateToISO,
+} from './plainDate';
 
 /**
  * Detects if the user's locale uses day-first date format (DD/MM/YYYY).
@@ -125,7 +134,7 @@ export function parseDateInput(input: string): ISODateString | null {
   // 6. Fall back to native Date parsing for other formats
   const parsed = new Date(trimmed);
   if (!isNaN(parsed.getTime())) {
-    return toISO(fromDate(parsed));
+    return plainDateToISO(plainDateFromDate(parsed));
   }
 
   return null;
@@ -213,10 +222,15 @@ function createISODate(
   month: number,
   day: number,
 ): ISODateString | null {
-  if (month < 1 || month > 12 || day < 1 || day > daysInMonth(year, month)) {
+  if (
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > plainDateDaysInMonth(year, month)
+  ) {
     return null;
   }
-  return toISO({year, month, day});
+  return plainDateToISO({year, month, day});
 }
 
 export function formatDisplayDate(iso: ISODateString): string {
@@ -224,5 +238,5 @@ export function formatDisplayDate(iso: ISODateString): string {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-  }).format(toDate(fromISO(iso)));
+  }).format(plainDateToDate(plainDateFromISO(iso)));
 }

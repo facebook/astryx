@@ -18,7 +18,11 @@
 
 import {useId, useCallback, useMemo, useOptimistic, useTransition} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {fromISO, toDate, today as todayFn} from '../utils/plainDate';
+import {
+  plainDateFromISO,
+  plainDateToDate,
+  plainDateToday,
+} from '../utils/plainDate';
 import type {XDSIconName} from '../Icon';
 import {
   colorVars,
@@ -179,13 +183,13 @@ function formatRangeDisplay(range: DateRange | null): string {
   if (!range) {
     return '';
   }
-  const start = fromISO(range.start);
-  const end = fromISO(range.end);
-  const currentYear = todayFn().year;
+  const start = plainDateFromISO(range.start);
+  const end = plainDateFromISO(range.end);
+  const currentYear = plainDateToday().year;
   const sameYear = start.year === end.year && start.year === currentYear;
 
   const fmt = sameYear ? shortDateFormatter : shortDateWithYearFormatter;
-  return `${fmt.format(toDate(start))} – ${fmt.format(toDate(end))}`;
+  return `${fmt.format(plainDateToDate(start))} – ${fmt.format(plainDateToDate(end))}`;
 }
 
 function isRangeEqual(a: DateRange | null, b: DateRange | null): boolean {

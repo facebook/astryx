@@ -16,10 +16,10 @@ import {useMemo} from 'react';
 import type {DayOfWeek, ISODateString} from '../XDSCalendar';
 import {
   type PlainDate,
-  toISO,
-  daysInMonth,
-  dayOfWeek,
-  addDays,
+  plainDateToISO,
+  plainDateDaysInMonth,
+  plainDateDayOfWeek,
+  plainDateAddDays,
 } from '../../utils/plainDate';
 
 /**
@@ -89,11 +89,11 @@ export function useCalendarDays(
   // Note: `month` is 0-based from the public API; convert to 1-based for plainDate fns
   const gridInfo = useMemo(() => {
     const month1 = month + 1; // 1-based month for plainDate utilities
-    const totalDaysInMonth = daysInMonth(year, month1);
+    const totalDaysInMonth = plainDateDaysInMonth(year, month1);
 
     // Calculate starting offset based on weekStartsOn
     let startingDayOfWeek =
-      dayOfWeek({year, month: month1, day: 1}) - weekStartsOn;
+      plainDateDayOfWeek({year, month: month1, day: 1}) - weekStartsOn;
     if (startingDayOfWeek < 0) {
       startingDayOfWeek += 7;
     }
@@ -136,12 +136,12 @@ export function useCalendarDays(
       const isOutside = dayOffset < 1 || dayOffset > totalDaysInMonth;
       // For in-month days, construct directly; for outside days, use addDays
       const pd: PlainDate = isOutside
-        ? addDays(firstOfMonth, dayOffset - 1)
+        ? plainDateAddDays(firstOfMonth, dayOffset - 1)
         : {year, month: month1, day: dayOffset};
 
       result.push({
         date: pd,
-        iso: toISO(pd),
+        iso: plainDateToISO(pd),
         isOutside,
         dayNumber: pd.day,
       });

@@ -14,7 +14,13 @@
 
 import {useCallback, useMemo} from 'react';
 import type {ISODateString} from '../XDSCalendar';
-import {type PlainDate, fromISO, toDate, compare} from '../../utils/plainDate';
+import {
+  type PlainDate,
+  plainDateFromISO,
+  plainDateToDate,
+  plainDateIsBefore,
+  plainDateIsAfter,
+} from '../../utils/plainDate';
 
 /**
  * Configuration for date constraints
@@ -71,26 +77,26 @@ export function useCalendarConstraints(
   const {min, max, dateConstraints} = options;
 
   // Parse min/max dates
-  const minDate = useMemo(() => (min ? fromISO(min) : null), [min]);
-  const maxDate = useMemo(() => (max ? fromISO(max) : null), [max]);
+  const minDate = useMemo(() => (min ? plainDateFromISO(min) : null), [min]);
+  const maxDate = useMemo(() => (max ? plainDateFromISO(max) : null), [max]);
 
   // Check if a date is disabled
   const isDateDisabled = useCallback(
     (date: PlainDate): boolean => {
       // Check min bound
-      if (minDate && compare(date, minDate) < 0) {
+      if (minDate && plainDateIsBefore(date, minDate)) {
         return true;
       }
 
       // Check max bound
-      if (maxDate && compare(date, maxDate) > 0) {
+      if (maxDate && plainDateIsAfter(date, maxDate)) {
         return true;
       }
 
       // Check custom constraints (convert to Date for public API compatibility)
       if (dateConstraints) {
         for (const constraint of dateConstraints) {
-          if (!constraint(toDate(date))) {
+          if (!constraint(plainDateToDate(date))) {
             return true;
           }
         }

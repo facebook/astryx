@@ -16,23 +16,23 @@ export interface PlainDate {
   readonly day: number;
 }
 
-export function fromISO(str: ISODateString): PlainDate {
+export function plainDateFromISO(str: ISODateString): PlainDate {
   const [year, month, day] = str.split('-').map(Number);
   return {year, month, day};
 }
 
-export function toISO(pd: PlainDate): ISODateString {
+export function plainDateToISO(pd: PlainDate): ISODateString {
   const y = String(pd.year).padStart(4, '0');
   const m = String(pd.month).padStart(2, '0');
   const d = String(pd.day).padStart(2, '0');
   return `${y}-${m}-${d}` as ISODateString;
 }
 
-export function toDate(pd: PlainDate): Date {
+export function plainDateToDate(pd: PlainDate): Date {
   return new Date(pd.year, pd.month - 1, pd.day);
 }
 
-export function fromDate(d: Date): PlainDate {
+export function plainDateFromDate(d: Date): PlainDate {
   return {
     year: d.getFullYear(),
     month: d.getMonth() + 1,
@@ -40,11 +40,11 @@ export function fromDate(d: Date): PlainDate {
   };
 }
 
-export function today(): PlainDate {
-  return fromDate(new Date());
+export function plainDateToday(): PlainDate {
+  return plainDateFromDate(new Date());
 }
 
-export function daysInMonth(year: number, month: number): number {
+export function plainDateDaysInMonth(year: number, month: number): number {
   if (month === 2) {
     const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
     return leap ? 29 : 28;
@@ -52,11 +52,11 @@ export function daysInMonth(year: number, month: number): number {
   return [0, 31, 0, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month];
 }
 
-export function dayOfWeek(pd: PlainDate): number {
+export function plainDateDayOfWeek(pd: PlainDate): number {
   return new Date(pd.year, pd.month - 1, pd.day).getDay();
 }
 
-export function addMonths(pd: PlainDate, n: number): PlainDate {
+export function plainDateAddMonths(pd: PlainDate, n: number): PlainDate {
   let month = pd.month + n;
   let year = pd.year;
   while (month > 12) {
@@ -67,17 +67,16 @@ export function addMonths(pd: PlainDate, n: number): PlainDate {
     month += 12;
     year--;
   }
-  const maxDay = daysInMonth(year, month);
+  const maxDay = plainDateDaysInMonth(year, month);
   return {year, month, day: Math.min(pd.day, maxDay)};
 }
 
-export function addDays(pd: PlainDate, n: number): PlainDate {
-  // Use Date for reliable rollover across month/year boundaries
+export function plainDateAddDays(pd: PlainDate, n: number): PlainDate {
   const d = new Date(pd.year, pd.month - 1, pd.day + n);
-  return fromDate(d);
+  return plainDateFromDate(d);
 }
 
-export function compare(a: PlainDate, b: PlainDate): number {
+function compare(a: PlainDate, b: PlainDate): number {
   if (a.year !== b.year) {
     return a.year - b.year;
   }
@@ -87,11 +86,19 @@ export function compare(a: PlainDate, b: PlainDate): number {
   return a.day - b.day;
 }
 
-export function isSameDay(a: PlainDate, b: PlainDate): boolean {
+export function plainDateIsBefore(a: PlainDate, b: PlainDate): boolean {
+  return compare(a, b) < 0;
+}
+
+export function plainDateIsAfter(a: PlainDate, b: PlainDate): boolean {
+  return compare(a, b) > 0;
+}
+
+export function plainDateIsSameDay(a: PlainDate, b: PlainDate): boolean {
   return a.year === b.year && a.month === b.month && a.day === b.day;
 }
 
-export function isInRange(
+export function plainDateIsInRange(
   pd: PlainDate,
   start: PlainDate,
   end: PlainDate,
@@ -99,11 +106,11 @@ export function isInRange(
   return compare(pd, start) >= 0 && compare(pd, end) <= 0;
 }
 
-export function firstOfMonth(pd: PlainDate): PlainDate {
+export function plainDateFirstOfMonth(pd: PlainDate): PlainDate {
   return {year: pd.year, month: pd.month, day: 1};
 }
 
-export function getWeekNumber(pd: PlainDate): number {
+export function plainDateGetWeekNumber(pd: PlainDate): number {
   const d = new Date(Date.UTC(pd.year, pd.month - 1, pd.day));
   const dayNum = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
@@ -111,11 +118,11 @@ export function getWeekNumber(pd: PlainDate): number {
   return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
 }
 
-export function formatAccessible(pd: PlainDate): string {
+export function plainDateFormatAccessible(pd: PlainDate): string {
   return new Intl.DateTimeFormat(undefined, {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-  }).format(toDate(pd));
+  }).format(plainDateToDate(pd));
 }
