@@ -71,6 +71,13 @@ export interface XDSListProps extends XDSBaseProps<
   listStyle?: XDSListMarkerStyle;
 
   /**
+   * Starting number for ordered lists (listStyle='decimal').
+   * Sets the CSS counter to begin at this value.
+   * @default 1
+   */
+  start?: number;
+
+  /**
    * Test ID for testing frameworks.
    */
   'data-testid'?: string;
@@ -104,6 +111,12 @@ const styles = stylex.create({
   },
 });
 
+const dynamicStyles = stylex.create({
+  counterStart: (value: number) => ({
+    counterReset: `xds-list ${value}`,
+  }),
+});
+
 // =============================================================================
 // Component
 // =============================================================================
@@ -132,6 +145,7 @@ export function XDSList({
   hasDividers = false,
   header,
   listStyle = 'none',
+  start,
   xstyle,
   className,
   style,
@@ -158,7 +172,10 @@ export function XDSList({
         stylex.props(
           styles.list,
           hasDividers && styles.withDividers,
-          listStyle !== 'none' && styles.withCounter,
+          listStyle !== 'none' &&
+            (start != null && start !== 1
+              ? dynamicStyles.counterStart(start - 1)
+              : styles.withCounter),
           xstyle,
         ),
         className,

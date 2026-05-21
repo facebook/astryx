@@ -107,6 +107,31 @@ describe('XDSMarkdown', () => {
     expect(ol).toBeInTheDocument();
   });
 
+  it('renders ordered list items as direct children of ol (no span wrapper)', () => {
+    render(<XDSMarkdown>{'1. First\n2. Second\n3. Third'}</XDSMarkdown>);
+    const ol = document.querySelector('ol')!;
+    const directChildren = Array.from(ol.children);
+    // All direct children should be <li> elements — no <span> wrappers
+    expect(directChildren.every(c => c.tagName === 'LI')).toBe(true);
+    expect(directChildren).toHaveLength(3);
+  });
+
+  it('applies counter-increment class to ordered list items', () => {
+    render(<XDSMarkdown>{'1. First\n2. Second\n3. Third'}</XDSMarkdown>);
+    const ol = document.querySelector('ol')!;
+    const lis = ol.querySelectorAll('li');
+    // Each li should have the counter-increment class
+    lis.forEach(li => {
+      expect(li.className).toContain('withCounter');
+    });
+  });
+
+  it('applies counter-reset class to ordered list container', () => {
+    render(<XDSMarkdown>{'1. First\n2. Second'}</XDSMarkdown>);
+    const ol = document.querySelector('ol')!;
+    expect(ol.className).toContain('withCounter');
+  });
+
   it('renders task lists with checkboxes', () => {
     render(<XDSMarkdown>{'- [x] Done\n- [ ] Todo'}</XDSMarkdown>);
     const checkboxes = document.querySelectorAll('input[type="checkbox"]');
@@ -116,9 +141,7 @@ describe('XDSMarkdown', () => {
   });
 
   it('renders tables', () => {
-    render(
-      <XDSMarkdown>{'| A | B |\n| --- | --- |\n| 1 | 2 |'}</XDSMarkdown>,
-    );
+    render(<XDSMarkdown>{'| A | B |\n| --- | --- |\n| 1 | 2 |'}</XDSMarkdown>);
     expect(document.querySelector('table')).toBeInTheDocument();
     expect(document.querySelectorAll('th')).toHaveLength(2);
     expect(document.querySelectorAll('td')).toHaveLength(2);
@@ -138,9 +161,7 @@ describe('XDSMarkdown', () => {
   });
 
   it('shifts heading levels with headingLevelStart', () => {
-    render(
-      <XDSMarkdown headingLevelStart={3}>{'# Heading 1'}</XDSMarkdown>,
-    );
+    render(<XDSMarkdown headingLevelStart={3}>{'# Heading 1'}</XDSMarkdown>);
     expect(screen.getByText('Heading 1').tagName).toBe('H3');
   });
 
@@ -187,7 +208,9 @@ describe('XDSMarkdown', () => {
 
   it('sanitizes data: URLs in images', () => {
     const {container} = render(
-      <XDSMarkdown>{'![xss](data:text/html,<script>alert(1)</script>)'}</XDSMarkdown>,
+      <XDSMarkdown>
+        {'![xss](data:text/html,<script>alert(1)</script>)'}
+      </XDSMarkdown>,
     );
     const img = container.querySelector('img');
     expect(img).toBeNull();
@@ -195,7 +218,9 @@ describe('XDSMarkdown', () => {
 
   it('allows safe URLs', () => {
     const {container} = render(
-      <XDSMarkdown>{'[safe](https://example.com) and [relative](/page)'}</XDSMarkdown>,
+      <XDSMarkdown>
+        {'[safe](https://example.com) and [relative](/page)'}
+      </XDSMarkdown>,
     );
     const links = container.querySelectorAll('a');
     expect(links).toHaveLength(2);
@@ -213,7 +238,10 @@ function createTicketPlugin(): MarkdownInlinePlugin {
   return {
     pattern: /\b([A-Z][A-Z0-9]+-\d+)\b/g,
     render: (match, key) => (
-      <a key={key} href={`https://issues.example.com/browse/${match[1]}`} data-testid="ticket-link">
+      <a
+        key={key}
+        href={`https://issues.example.com/browse/${match[1]}`}
+        data-testid="ticket-link">
         {match[0]}
       </a>
     ),
@@ -225,7 +253,10 @@ function createXRefPlugin(): MarkdownInlinePlugin {
   return {
     pattern: /\bX(\d+)\b/g,
     render: (match, key) => (
-      <a key={key} href={`https://xref.example.com/${match[1]}`} data-testid="xref-link">
+      <a
+        key={key}
+        href={`https://xref.example.com/${match[1]}`}
+        data-testid="xref-link">
         {match[0]}
       </a>
     ),
@@ -242,7 +273,9 @@ describe('inlinePlugins', () => {
     );
     const link = container.querySelector('[data-testid="ticket-link"]');
     expect(link).toBeInTheDocument();
-    expect(link!.getAttribute('href')).toBe('https://issues.example.com/browse/PROJ-123');
+    expect(link!.getAttribute('href')).toBe(
+      'https://issues.example.com/browse/PROJ-123',
+    );
     expect(link!.textContent).toBe('PROJ-123');
   });
 
@@ -255,9 +288,13 @@ describe('inlinePlugins', () => {
     const ticketLink = container.querySelector('[data-testid="ticket-link"]');
     const xrefLink = container.querySelector('[data-testid="xref-link"]');
     expect(ticketLink).toBeInTheDocument();
-    expect(ticketLink!.getAttribute('href')).toBe('https://issues.example.com/browse/PROJ-123');
+    expect(ticketLink!.getAttribute('href')).toBe(
+      'https://issues.example.com/browse/PROJ-123',
+    );
     expect(xrefLink).toBeInTheDocument();
-    expect(xrefLink!.getAttribute('href')).toBe('https://xref.example.com/99999');
+    expect(xrefLink!.getAttribute('href')).toBe(
+      'https://xref.example.com/99999',
+    );
   });
 
   it('does not transform patterns inside fenced code blocks', () => {
@@ -299,13 +336,17 @@ describe('inlinePlugins', () => {
     const narrowPlugin: MarkdownInlinePlugin = {
       pattern: /PROJ-\d+/g,
       render: (match, key) => (
-        <span key={key} data-testid="narrow-match">{match[0]}</span>
+        <span key={key} data-testid="narrow-match">
+          {match[0]}
+        </span>
       ),
     };
     const broadPlugin: MarkdownInlinePlugin = {
       pattern: /[A-Z]+-\d+/g,
       render: (match, key) => (
-        <span key={key} data-testid="broad-match">{match[0]}</span>
+        <span key={key} data-testid="broad-match">
+          {match[0]}
+        </span>
       ),
     };
     const {container} = render(
@@ -313,7 +354,9 @@ describe('inlinePlugins', () => {
         {'Check PROJ-123'}
       </XDSMarkdown>,
     );
-    expect(container.querySelector('[data-testid="narrow-match"]')).toBeInTheDocument();
+    expect(
+      container.querySelector('[data-testid="narrow-match"]'),
+    ).toBeInTheDocument();
     expect(container.querySelector('[data-testid="broad-match"]')).toBeNull();
   });
 
@@ -322,7 +365,9 @@ describe('inlinePlugins', () => {
       pattern: /\b([A-Z]+-\d+)\b/g,
       getEndIndex: () => false,
       render: (match, key) => (
-        <a key={key} data-testid="ticket-link">{match[0]}</a>
+        <a key={key} data-testid="ticket-link">
+          {match[0]}
+        </a>
       ),
     };
     const {container} = render(
@@ -347,7 +392,11 @@ describe('inlinePlugins', () => {
         return match.index! + match[0].length;
       },
       render: (match, key) => {
-        return <span key={key} data-testid="tag-match">{match[0]}</span>;
+        return (
+          <span key={key} data-testid="tag-match">
+            {match[0]}
+          </span>
+        );
       },
     };
     const {container} = render(
@@ -367,11 +416,11 @@ describe('inlinePlugins', () => {
       </XDSMarkdown>,
     );
     const withoutPlugins = render(
-      <XDSMarkdown>
-        {'Hello **world** and `code`'}
-      </XDSMarkdown>,
+      <XDSMarkdown>{'Hello **world** and `code`'}</XDSMarkdown>,
     );
-    expect(withPlugins.container.textContent).toBe(withoutPlugins.container.textContent);
+    expect(withPlugins.container.textContent).toBe(
+      withoutPlugins.container.textContent,
+    );
   });
 
   it('transforms patterns inside bold/italic text', () => {

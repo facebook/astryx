@@ -84,6 +84,18 @@ describe('XDSList', () => {
     expect(container.querySelector('ul')).not.toBeInTheDocument();
   });
 
+  it('applies custom counter start value', () => {
+    const {container} = render(
+      <XDSList listStyle="decimal" start={3}>
+        <XDSListItem label="Third" />
+        <XDSListItem label="Fourth" />
+      </XDSList>,
+    );
+    const ol = container.querySelector('ol')!;
+    // The counter-reset style should include the start offset (start - 1 = 2)
+    expect(ol.className).toContain('counterStart');
+  });
+
   it('renders as <ul> when listStyle is disc', () => {
     const {container} = render(
       <XDSList listStyle="disc">
