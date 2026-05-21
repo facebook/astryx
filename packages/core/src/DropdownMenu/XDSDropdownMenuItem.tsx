@@ -10,6 +10,8 @@
  * Interactive menu item with role="menuitem". Keyboard navigation
  * is handled by useListFocus on the parent menu container.
  *
+ * Composes XDSItem for the shared media + label + description + trailing layout.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/DropdownMenu/DropdownMenu.doc.mjs
  * - /packages/core/src/DropdownMenu/XDSDropdownMenu.test.tsx
@@ -22,7 +24,7 @@ import {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {renderIconSlot, type XDSIconType} from '../Icon';
-import {XDSText} from '../Text';
+import {XDSItem} from '../Item';
 import {
   colorVars,
   spacingVars,
@@ -37,7 +39,6 @@ const styles = stylex.create({
     boxSizing: 'border-box',
     display: 'flex',
     alignItems: 'center',
-    gap: spacingVars['--spacing-2'],
     width: '100%',
     padding: spacingVars['--spacing-2'],
     borderRadius: `max(0px, calc(var(--_dropdown-menu-radius, ${spacingVars['--spacing-2']}) - var(--_dropdown-menu-padding, ${spacingVars['--spacing-1']})))`,
@@ -54,12 +55,6 @@ const styles = stylex.create({
     textAlign: 'left',
     outline: 'none',
   },
-  content: {
-    display: 'flex',
-    flexDirection: 'column',
-    flex: 1,
-    minWidth: 0,
-  },
   disabled: {
     opacity: 0.5,
     cursor: 'not-allowed',
@@ -75,6 +70,14 @@ const itemSizeStyles = stylex.create({
     paddingBlock: spacingVars['--spacing-1-5'],
   },
   lg: {},
+});
+
+const embeddedStyles = stylex.create({
+  root: {
+    paddingBlock: 0,
+    paddingInline: 0,
+    borderRadius: 0,
+  },
 });
 
 export interface XDSDropdownMenuItemProps {
@@ -160,22 +163,17 @@ export function XDSDropdownMenuItem({
         className,
         style,
       )}>
-      {icon && renderIconSlot(icon, {size: 'sm', color: 'secondary'})}
-      <span {...stylex.props(styles.content)}>
-        {typeof label === 'string' ? (
-          <XDSText type="body" maxLines={1}>
-            {label}
-          </XDSText>
-        ) : (
-          label
-        )}
-        {description && (
-          <XDSText type="supporting" maxLines={1}>
-            {description}
-          </XDSText>
-        )}
-      </span>
-      {children}
+      <XDSItem
+        media={
+          icon
+            ? renderIconSlot(icon, {size: 'sm', color: 'secondary'})
+            : undefined
+        }
+        label={label}
+        description={description}
+        trailing={children}
+        xstyle={embeddedStyles.root}
+      />
     </div>
   );
 }

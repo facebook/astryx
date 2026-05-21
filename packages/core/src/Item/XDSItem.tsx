@@ -1,0 +1,451 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+'use client';
+
+/**
+ * @file XDSItem.tsx
+ * @input Uses React, ReactNode, StyleXStyles, theme tokens
+ * @output Exports XDSItem component, XDSItemProps type
+ * @position Core layout primitive; consumed by index.ts, tested by XDSItem.test.tsx
+ *
+ * SYNC: When modified, update these files to stay in sync:
+ * - /packages/core/src/Item/Item.doc.mjs
+ * - /packages/core/src/Item/XDSItem.test.tsx
+ * - /packages/core/src/Item/index.ts
+ * - /apps/storybook/stories/Item.stories.tsx
+ * - /packages/cli/templates/blocks/components/Item/ (showcase blocks)
+ */
+
+import type {ReactNode} from 'react';
+import * as stylex from '@stylexjs/stylex';
+import {
+  colorVars,
+  radiusVars,
+  spacingVars,
+  durationVars,
+  easeVars,
+  typeScaleVars,
+} from '../theme/tokens.stylex';
+import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsClassName, mergeProps} from '../utils';
+import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
+
+// =============================================================================
+// Types
+// =============================================================================
+
+export type XDSItemAlign = 'center' | 'start';
+export type XDSItemDensity = 'default' | 'compact';
+
+export interface XDSItemProps extends XDSBaseProps<HTMLDivElement> {
+  /** Ref forwarded to the root element. */
+  ref?: React.Ref<HTMLDivElement>;
+
+  /**
+   * Leading visual — avatar, icon, image, or any ReactNode.
+   */
+  media?: ReactNode;
+
+  /**
+   * Primary text identifying this item. Required.
+   * Accepts string (auto-styled) or ReactNode (for rich content).
+   */
+  label: ReactNode;
+
+  /**
+   * Secondary text — subtitle, description, or supporting info.
+   */
+  description?: ReactNode;
+
+  /**
+   * Trailing content — badges, metadata, timestamps, action buttons.
+   * Positioned to the right, flex-shrink: 0.
+   */
+  trailing?: ReactNode;
+
+  /**
+   * Vertical alignment of the media and trailing slots.
+   * @default 'center'
+   */
+  align?: XDSItemAlign;
+
+  /**
+   * Density: "default" (8px padding) or "compact" (4px block padding).
+   * @default 'default'
+   */
+  density?: XDSItemDensity;
+
+  /**
+   * Max lines before label truncates. When set, overflow is hidden
+   * and text-overflow: ellipsis is applied.
+   */
+  labelLines?: number;
+
+  /**
+   * Max lines before description truncates. When set, overflow is hidden
+   * and text-overflow: ellipsis is applied.
+   */
+  descriptionLines?: number;
+
+  /**
+   * Click handler. Makes the item clickable with button semantics.
+   */
+  onClick?: (event: React.MouseEvent) => void;
+
+  /**
+   * Link URL. Makes the item a link via an invisible anchor element.
+   */
+  href?: string;
+
+  /**
+   * Link target (e.g., '_blank'). Only used with href.
+   */
+  target?: '_blank' | '_self';
+
+  /**
+   * Highlighted state (hover/keyboard focus appearance).
+   * @default false
+   */
+  isHighlighted?: boolean;
+
+  /**
+   * Selected state.
+   * @default false
+   */
+  isSelected?: boolean;
+
+  /**
+   * Disabled state.
+   * @default false
+   */
+  isDisabled?: boolean;
+
+  /**
+   * Test ID for testing frameworks.
+   */
+  'data-testid'?: string;
+}
+
+// =============================================================================
+// Styles
+// =============================================================================
+
+const styles = stylex.create({
+  root: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-2'],
+    position: 'relative',
+    boxSizing: 'border-box',
+    textAlign: 'start',
+    borderRadius: radiusVars['--radius-element'],
+  },
+  alignStart: {
+    alignItems: 'flex-start',
+  },
+  interactive: {
+    cursor: 'pointer',
+    transitionProperty: 'background-color',
+    transitionDuration: durationVars['--duration-fast-min'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+    backgroundColor: {
+      default: 'transparent',
+      ':hover': {
+        '@media (hover: hover)': colorVars['--color-overlay-hover'],
+      },
+      ':active': colorVars['--color-overlay-pressed'],
+    },
+  },
+  focusVisibleOutline: {
+    outline: {
+      default: 'none',
+      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: {
+      default: '0',
+      ':has(:focus-visible)': '2px',
+    },
+  },
+  highlighted: {
+    backgroundColor: colorVars['--color-overlay-hover'],
+  },
+  selected: {
+    backgroundColor: colorVars['--color-accent-muted'],
+  },
+  disabled: {
+    cursor: 'not-allowed',
+    pointerEvents: 'none' as const,
+  },
+  disabledContent: {
+    opacity: 0.5,
+  },
+  invisibleButton: {
+    all: 'unset',
+    cursor: 'inherit',
+    font: 'inherit',
+    color: 'inherit',
+    display: 'flex',
+    flexDirection: 'column',
+    flex: 1,
+    minWidth: 0,
+    textAlign: 'start',
+    outline: 'none',
+  },
+  invisibleAnchor: {
+    all: 'unset',
+    cursor: 'inherit',
+    font: 'inherit',
+    color: 'inherit',
+    display: 'flex',
+    flexDirection: 'column',
+    flex: 1,
+    minWidth: 0,
+    textAlign: 'start',
+    textDecoration: 'none',
+    outline: 'none',
+  },
+  content: {
+    display: 'flex',
+    flexDirection: 'column',
+    flex: 1,
+    minWidth: 0,
+    textAlign: 'start',
+  },
+  label: {
+    color: colorVars['--color-text-primary'],
+    fontSize: typeScaleVars['--text-body-size'],
+    lineHeight: typeScaleVars['--text-body-leading'],
+  },
+  labelSingleTruncate: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  labelMultiTruncate: {
+    overflow: 'hidden',
+    display: '-webkit-box',
+    WebkitBoxOrient: 'vertical' as const,
+  },
+  description: {
+    color: colorVars['--color-text-secondary'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+  },
+  descriptionSingleTruncate: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  descriptionMultiTruncate: {
+    overflow: 'hidden',
+    display: '-webkit-box',
+    WebkitBoxOrient: 'vertical' as const,
+  },
+  media: {
+    flex: '0 0 auto',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  trailing: {
+    flex: '0 0 auto',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginInlineStart: 'auto',
+  },
+});
+
+const dynamicStyles = stylex.create({
+  lineClamp: (lines: number) => ({
+    WebkitLineClamp: lines,
+  }),
+});
+
+const densityStyles = stylex.create({
+  default: {
+    paddingBlock: spacingVars['--spacing-2'],
+  },
+  compact: {
+    paddingBlock: spacingVars['--spacing-1'],
+  },
+});
+
+// =============================================================================
+// Component
+// =============================================================================
+
+/**
+ * A universal item primitive that unifies the "media + label + description +
+ * trailing content" layout pattern. Use as a building block for list items,
+ * menu items, contact rows, notification items, and more.
+ *
+ * @example
+ * ```
+ * <XDSItem
+ *   media={<XDSAvatar src={user.avatar} size="sm" />}
+ *   label={user.name}
+ *   description={user.role}
+ *   trailing={<XDSBadge>Admin</XDSBadge>}
+ *   onClick={() => navigate(`/users/${user.id}`)}
+ * />
+ * ```
+ */
+export function XDSItem({
+  media,
+  label,
+  description,
+  trailing,
+  align = 'center',
+  density = 'default',
+  labelLines,
+  descriptionLines,
+  onClick,
+  href,
+  target,
+  isHighlighted = false,
+  isSelected = false,
+  isDisabled = false,
+  xstyle,
+  className,
+  style,
+  ref,
+  ...restProps
+}: XDSItemProps) {
+  const LinkComponent = useXDSLinkComponent();
+  const isInteractive = onClick != null || href != null;
+
+  const isStringLabel = typeof label === 'string';
+  const isStringDescription = typeof description === 'string';
+
+  const labelTruncateStyle =
+    labelLines != null
+      ? labelLines === 1
+        ? styles.labelSingleTruncate
+        : styles.labelMultiTruncate
+      : isStringLabel
+        ? styles.labelSingleTruncate
+        : null;
+
+  const descriptionTruncateStyle =
+    descriptionLines != null
+      ? descriptionLines === 1
+        ? styles.descriptionSingleTruncate
+        : styles.descriptionMultiTruncate
+      : isStringDescription
+        ? styles.descriptionSingleTruncate
+        : null;
+
+  const labelAndDescription = (
+    <>
+      <span
+        {...stylex.props(
+          styles.label,
+          labelTruncateStyle,
+          labelLines != null &&
+            labelLines > 1 &&
+            dynamicStyles.lineClamp(labelLines),
+        )}>
+        {label}
+      </span>
+      {description != null && (
+        <span
+          {...stylex.props(
+            styles.description,
+            descriptionTruncateStyle,
+            descriptionLines != null &&
+              descriptionLines > 1 &&
+              dynamicStyles.lineClamp(descriptionLines),
+          )}>
+          {description}
+        </span>
+      )}
+    </>
+  );
+
+  const handleContainerClick = (e: React.MouseEvent) => {
+    if (isDisabled) return;
+    const target = e.target as HTMLElement;
+    if (target.closest('button, a, input, select, textarea')) return;
+    onClick?.(e);
+  };
+
+  const innerContent = (
+    <>
+      {media != null && <span {...stylex.props(styles.media)}>{media}</span>}
+
+      {href != null ? (
+        <LinkComponent
+          href={href}
+          target={target}
+          aria-disabled={isDisabled || undefined}
+          tabIndex={isDisabled ? -1 : undefined}
+          {...stylex.props(
+            styles.invisibleAnchor,
+            isDisabled && styles.disabledContent,
+          )}>
+          {labelAndDescription}
+        </LinkComponent>
+      ) : onClick != null ? (
+        <button
+          type="button"
+          onClick={onClick}
+          disabled={isDisabled}
+          {...stylex.props(
+            styles.invisibleButton,
+            isDisabled && styles.disabledContent,
+          )}>
+          {labelAndDescription}
+        </button>
+      ) : (
+        <span
+          {...stylex.props(
+            styles.content,
+            isDisabled && styles.disabledContent,
+          )}>
+          {labelAndDescription}
+        </span>
+      )}
+
+      {trailing != null && (
+        <span
+          {...stylex.props(
+            styles.trailing,
+            isDisabled && styles.disabledContent,
+          )}>
+          {trailing}
+        </span>
+      )}
+    </>
+  );
+
+  return (
+    <div
+      ref={ref}
+      aria-selected={isSelected || undefined}
+      aria-disabled={isDisabled || undefined}
+      {...restProps}
+      {...mergeProps(
+        xdsClassName('item', {density, align}),
+        stylex.props(
+          styles.root,
+          densityStyles[density],
+          align === 'start' && styles.alignStart,
+          isInteractive && styles.interactive,
+          isInteractive && styles.focusVisibleOutline,
+          isHighlighted && styles.highlighted,
+          isSelected && styles.selected,
+          isDisabled && styles.disabled,
+          xstyle,
+        ),
+        className,
+        style,
+      )}
+      onClick={isInteractive ? handleContainerClick : undefined}>
+      {innerContent}
+    </div>
+  );
+}
+
+XDSItem.displayName = 'XDSItem';

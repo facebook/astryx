@@ -4,29 +4,22 @@
  * @file XDSSelectorOption.tsx
  * @output Exports XDSSelectorOption component for custom option rendering
  * @position Sub-component; used by XDSSelector and consumers for custom options
+ *
+ * Composes XDSItem for the shared media + label + description + trailing layout.
  */
 
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {renderIconSlot, type XDSIconType} from '../Icon';
-import {XDSText} from '../Text';
-import {spacingVars} from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {XDSItem} from '../Item';
+import {xdsClassName} from '../utils';
 
-const styles = stylex.create({
+const embeddedStyles = stylex.create({
   root: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-2'],
-    flex: 1,
-    minWidth: 0,
-  },
-  content: {
-    display: 'flex',
-    flexDirection: 'column',
-    flex: 1,
-    minWidth: 0,
+    paddingBlock: 0,
+    paddingInline: 0,
+    borderRadius: 0,
   },
 });
 
@@ -107,30 +100,21 @@ export function XDSSelectorOption({
   style,
 }: XDSSelectorOptionProps) {
   return (
-    <span
-      {...mergeProps(
-        xdsClassName('selector-option'),
-        stylex.props(styles.root, xstyle),
-        className,
-        style,
-      )}>
-      {icon && renderIconSlot(icon, {size: 'sm', color: 'secondary'})}
-      <span {...stylex.props(styles.content)}>
-        {typeof label === 'string' ? (
-          <XDSText type="body" maxLines={1}>
-            {label}
-          </XDSText>
-        ) : (
-          label
-        )}
-        {description && (
-          <XDSText type="supporting" maxLines={1}>
-            {description}
-          </XDSText>
-        )}
-      </span>
-      {children}
-    </span>
+    <XDSItem
+      media={
+        icon
+          ? renderIconSlot(icon, {size: 'sm', color: 'secondary'})
+          : undefined
+      }
+      label={label}
+      description={description}
+      trailing={children}
+      xstyle={[embeddedStyles.root, xstyle]}
+      className={[xdsClassName('selector-option'), className]
+        .filter(Boolean)
+        .join(' ')}
+      style={style}
+    />
   );
 }
 
