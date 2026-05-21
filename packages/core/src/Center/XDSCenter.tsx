@@ -15,7 +15,6 @@
  * - /packages/cli/templates/blocks/components/Center/ (showcase blocks)
  */
 
-
 import {type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
@@ -46,7 +45,10 @@ const dynamicStyles = stylex.create({
   }),
 });
 
-export type CenterAxis = 'both' | 'horizontal' | 'vertical';
+export type XDSCenterAxis = 'both' | 'horizontal' | 'vertical';
+
+/** @deprecated Use `XDSCenterAxis` instead. */
+export type CenterAxis = XDSCenterAxis;
 
 export interface XDSCenterProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
@@ -58,7 +60,7 @@ export interface XDSCenterProps extends XDSBaseProps<HTMLDivElement> {
    * - `vertical`: Center vertically only (alignItems: center)
    * @default 'both'
    */
-  axis?: CenterAxis;
+  axis?: XDSCenterAxis;
 
   /**
    * Width of the container.
