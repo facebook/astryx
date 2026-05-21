@@ -9,6 +9,7 @@
 
 import {describe, it, expect} from 'vitest';
 import {createPowerSearchConfig} from './usePowerSearchConfig';
+import type {InferData} from './usePowerSearchConfig';
 import type {PowerSearchFilter} from './types';
 
 // =============================================================================
@@ -46,14 +47,14 @@ const defs = [
 
 const {config, applyFilters} = createPowerSearchConfig(defs, 'TestConfig');
 
-const data = [
+const data: Array<InferData<typeof defs>> = [
   {
     name: 'Alice Johnson',
     age: 30,
     createdAt: 1700000000,
     active: true,
     role: 'admin',
-    status: 'active',
+    status: ['active'],
     tags: ['frontend', 'lead'],
   },
   {
@@ -62,7 +63,7 @@ const data = [
     createdAt: 1700100000,
     active: false,
     role: 'user',
-    status: 'inactive',
+    status: ['inactive'],
     tags: ['backend'],
   },
   {
@@ -71,7 +72,7 @@ const data = [
     createdAt: 1700200000,
     active: true,
     role: 'user',
-    status: 'pending',
+    status: ['pending'],
     tags: ['frontend', 'backend'],
   },
   {
@@ -80,10 +81,10 @@ const data = [
     createdAt: 1700300000,
     active: true,
     role: 'admin',
-    status: 'active',
+    status: ['active'],
     tags: ['devops'],
   },
-] as const;
+];
 
 function filter(
   field: string,
@@ -479,14 +480,14 @@ describe('applyFilters', () => {
 
   describe('date: works with Date objects', () => {
     it('converts Date to unix seconds', () => {
-      const dateData = [
+      const dateData: Array<InferData<typeof defs>> = [
         {
           name: 'Test',
           age: 1,
           createdAt: new Date(1700100000 * 1000),
           active: true,
           role: 'user',
-          status: 'active',
+          status: ['active'],
           tags: ['a'],
         },
       ];
@@ -785,14 +786,14 @@ describe('applyFilters', () => {
     });
 
     it('handles string_list field with scalar value (non-array)', () => {
-      const scalarData = [
+      const scalarData: Array<InferData<typeof defs>> = [
         {
           name: 'Test',
           age: 1,
           createdAt: 0,
           active: true,
           role: 'user',
-          status: 'active',
+          status: ['active'],
           tags: 'solo' as unknown as ReadonlyArray<string>,
         },
       ];

@@ -81,7 +81,7 @@ function ResizeTable({
     },
     minWidth,
     maxWidth,
-    columns: columnsProp,
+    columns: columnsProp as XDSTableColumn<Record<string, unknown>>[],
   });
 
   return (

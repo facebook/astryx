@@ -29,7 +29,10 @@ beforeEach(() => {
     this.dispatchEvent(event);
   });
   const originalMatches = HTMLElement.prototype.matches;
-  HTMLElement.prototype.matches = function (selector: string) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (HTMLElement.prototype as any).matches = function (
+    selector: string,
+  ): boolean {
     if (selector === ':popover-open') {
       return this.hasAttribute('popover-open');
     }

@@ -133,7 +133,8 @@ describe('integration with XDSTable', () => {
     const state = useXDSTableColumnSettingsState({
       columns: columnOptions,
       activeColumnKeys: activeKeys,
-      onChangeActiveColumnKeys: setActiveKeys,
+      onChangeActiveColumnKeys: (keys: readonly string[]) =>
+        setActiveKeys([...keys]),
     });
 
     const plugin = useXDSTableColumnSettings<User>(state.columnSettingsConfig);

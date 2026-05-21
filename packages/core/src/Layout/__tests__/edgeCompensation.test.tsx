@@ -51,7 +51,7 @@ describe('Edge Compensation', () => {
     });
 
     it('does not apply edge comp attribute to danger variant', () => {
-      render(<XDSButton label="Delete" variant="danger" />);
+      render(<XDSButton label="Delete" variant="destructive" />);
       const button = screen.getByRole('button', {name: 'Delete'});
       expect(button).not.toHaveAttribute(EDGE_COMP_ATTR);
     });
@@ -60,8 +60,8 @@ describe('Edge Compensation', () => {
   describe('Tab data attribute', () => {
     it('applies edge comp attribute to tab', () => {
       render(
-        <XDSTabList label="Tabs">
-          <XDSTab label="Tab 1" />
+        <XDSTabList value="" onChange={() => {}} aria-label="Tabs">
+          <XDSTab value="tab1" label="Tab 1" />
         </XDSTabList>,
       );
       const tab = screen.getByRole('button', {name: 'Tab 1'});
@@ -70,8 +70,8 @@ describe('Edge Compensation', () => {
 
     it('applies edge comp attribute to TabList wrapper', () => {
       render(
-        <XDSTabList label="Tabs">
-          <XDSTab label="Tab 1" />
+        <XDSTabList value="" onChange={() => {}} aria-label="Tabs">
+          <XDSTab value="tab1" label="Tab 1" />
         </XDSTabList>,
       );
       const nav = screen.getByRole('navigation', {name: 'Tabs'});

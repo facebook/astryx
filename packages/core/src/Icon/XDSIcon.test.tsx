@@ -43,10 +43,10 @@ describe('XDSIcon', () => {
     rerender(<XDSIcon icon={HomeIcon} color="accent" data-testid="icon" />);
     expect(screen.getByTestId('icon')).toBeInTheDocument();
 
-    rerender(<XDSIcon icon={HomeIcon} color="positive" data-testid="icon" />);
+    rerender(<XDSIcon icon={HomeIcon} color="success" data-testid="icon" />);
     expect(screen.getByTestId('icon')).toBeInTheDocument();
 
-    rerender(<XDSIcon icon={HomeIcon} color="negative" data-testid="icon" />);
+    rerender(<XDSIcon icon={HomeIcon} color="error" data-testid="icon" />);
     expect(screen.getByTestId('icon')).toBeInTheDocument();
 
     rerender(<XDSIcon icon={HomeIcon} color="warning" data-testid="icon" />);

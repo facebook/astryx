@@ -10,6 +10,7 @@
  */
 
 import {render, screen} from '@testing-library/react';
+import {describe, it, expect, afterEach} from 'vitest';
 import {XDSKbd} from './XDSKbd';
 
 describe('XDSKbd', () => {

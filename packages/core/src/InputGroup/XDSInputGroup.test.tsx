@@ -20,7 +20,12 @@ describe('XDSInputGroup', () => {
     render(
       <XDSInputGroup label="Price">
         <XDSInputGroupText>$</XDSInputGroupText>
-        <XDSTextInput label="Amount" isLabelHidden onChange={() => {}} />
+        <XDSTextInput
+          label="Amount"
+          isLabelHidden
+          value=""
+          onChange={() => {}}
+        />
       </XDSInputGroup>,
     );
 
@@ -32,7 +37,12 @@ describe('XDSInputGroup', () => {
   it('renders the visible label', () => {
     render(
       <XDSInputGroup label="Price">
-        <XDSTextInput label="Amount" isLabelHidden onChange={() => {}} />
+        <XDSTextInput
+          label="Amount"
+          isLabelHidden
+          value=""
+          onChange={() => {}}
+        />
       </XDSInputGroup>,
     );
 
@@ -43,7 +53,12 @@ describe('XDSInputGroup', () => {
     render(
       <XDSInputGroup label="Price">
         <XDSInputGroupText>$</XDSInputGroupText>
-        <XDSTextInput label="Amount" isLabelHidden onChange={() => {}} />
+        <XDSTextInput
+          label="Amount"
+          isLabelHidden
+          value=""
+          onChange={() => {}}
+        />
       </XDSInputGroup>,
     );
 
@@ -53,7 +68,12 @@ describe('XDSInputGroup', () => {
   it('renders the input', () => {
     render(
       <XDSInputGroup label="Price">
-        <XDSTextInput label="Amount" isLabelHidden onChange={() => {}} />
+        <XDSTextInput
+          label="Amount"
+          isLabelHidden
+          value=""
+          onChange={() => {}}
+        />
       </XDSInputGroup>,
     );
 
@@ -64,7 +84,7 @@ describe('XDSInputGroup', () => {
     render(
       <XDSInputGroup label="Website">
         <XDSInputGroupText>https://</XDSInputGroupText>
-        <XDSTextInput label="URL" isLabelHidden onChange={() => {}} />
+        <XDSTextInput label="URL" isLabelHidden value="" onChange={() => {}} />
         <XDSInputGroupText>.com</XDSInputGroupText>
       </XDSInputGroup>,
     );
@@ -77,7 +97,12 @@ describe('XDSInputGroup', () => {
   it('applies data-testid', () => {
     render(
       <XDSInputGroup label="Price" data-testid="price-group">
-        <XDSTextInput label="Amount" isLabelHidden onChange={() => {}} />
+        <XDSTextInput
+          label="Amount"
+          isLabelHidden
+          value=""
+          onChange={() => {}}
+        />
       </XDSInputGroup>,
     );
 
@@ -87,7 +112,12 @@ describe('XDSInputGroup', () => {
   it('renders description text', () => {
     render(
       <XDSInputGroup label="Price" description="Enter the price in USD">
-        <XDSTextInput label="Amount" isLabelHidden onChange={() => {}} />
+        <XDSTextInput
+          label="Amount"
+          isLabelHidden
+          value=""
+          onChange={() => {}}
+        />
       </XDSInputGroup>,
     );
 
@@ -99,7 +129,12 @@ describe('XDSInputGroup', () => {
       <XDSInputGroup
         label="Price"
         status={{type: 'error', message: 'Price is required'}}>
-        <XDSTextInput label="Amount" isLabelHidden onChange={() => {}} />
+        <XDSTextInput
+          label="Amount"
+          isLabelHidden
+          value=""
+          onChange={() => {}}
+        />
       </XDSInputGroup>,
     );
 
@@ -109,7 +144,12 @@ describe('XDSInputGroup', () => {
   it('renders with hidden label', () => {
     render(
       <XDSInputGroup label="Price" isLabelHidden>
-        <XDSTextInput label="Amount" isLabelHidden onChange={() => {}} />
+        <XDSTextInput
+          label="Amount"
+          isLabelHidden
+          value=""
+          onChange={() => {}}
+        />
       </XDSInputGroup>,
     );
 
@@ -120,14 +160,24 @@ describe('XDSInputGroup', () => {
   it('renders with different sizes', () => {
     const {rerender} = render(
       <XDSInputGroup label="Price" size="sm">
-        <XDSTextInput label="Amount" isLabelHidden onChange={() => {}} />
+        <XDSTextInput
+          label="Amount"
+          isLabelHidden
+          value=""
+          onChange={() => {}}
+        />
       </XDSInputGroup>,
     );
     expect(screen.getByRole('textbox')).toBeInTheDocument();
 
     rerender(
       <XDSInputGroup label="Price" size="lg">
-        <XDSTextInput label="Amount" isLabelHidden onChange={() => {}} />
+        <XDSTextInput
+          label="Amount"
+          isLabelHidden
+          value=""
+          onChange={() => {}}
+        />
       </XDSInputGroup>,
     );
     expect(screen.getByRole('textbox')).toBeInTheDocument();

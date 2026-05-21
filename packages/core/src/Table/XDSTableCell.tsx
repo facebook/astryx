@@ -45,6 +45,10 @@ export interface XDSTableCellProps extends XDSBaseProps<HTMLTableCellElement> {
   scope?: 'col' | 'row' | 'colgroup' | 'rowgroup';
   /** Space-separated list of header cell IDs this cell is described by. */
   headers?: string;
+  /** Number of columns this cell spans. Standard HTML `<td>` attribute. */
+  colSpan?: number;
+  /** Number of rows this cell spans. Standard HTML `<td>` attribute. */
+  rowSpan?: number;
   children?: ReactNode;
   /**
    * StyleX styles for layout customization (margins, positioning, sizing).

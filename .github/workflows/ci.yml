@@ -193,6 +193,10 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true'
         run: pnpm -F @xds/storybook typecheck
 
+      - name: Typecheck core (including tests)
+        if: needs.check-scope.outputs.docsite_only != 'true'
+        run: pnpm -F @xds/core typecheck
+
       - name: Cache Next.js build
         if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
         uses: actions/cache@v5

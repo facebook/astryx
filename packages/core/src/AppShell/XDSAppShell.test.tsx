@@ -458,7 +458,7 @@ describe('XDSAppShell', () => {
           <XDSMobileNav
             isOpen={true}
             onOpenChange={() => {}}
-            title="Test App"
+            header="Test App"
             data-testid="appshell-mobile-nav">
             <div>Mobile Nav Content</div>
           </XDSMobileNav>

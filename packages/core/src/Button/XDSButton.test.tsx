@@ -199,8 +199,12 @@ describe('XDSButton', () => {
   it('fires onClick before clickAction', async () => {
     const user = userEvent.setup();
     const order: string[] = [];
-    const handleClick = vi.fn(() => order.push('onClick'));
-    const handleAction = vi.fn(() => order.push('clickAction'));
+    const handleClick = vi.fn(() => {
+      order.push('onClick');
+    });
+    const handleAction = vi.fn(() => {
+      order.push('clickAction');
+    });
     render(
       <XDSButton
         label="Test"
