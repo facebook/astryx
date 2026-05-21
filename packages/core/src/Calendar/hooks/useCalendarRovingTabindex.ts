@@ -13,7 +13,7 @@
  */
 
 import {useMemo} from 'react';
-import type {ISODateString} from '../XDSCalendar';
+import type {ISODateString} from '../../utils/dateTypes';
 import {type PlainDate, plainDateToISO} from '../../utils/plainDate';
 import type {CalendarDay} from './useCalendarDays';
 
@@ -27,7 +27,7 @@ export interface UseCalendarRovingTabindexOptions {
   today: PlainDate;
   /** The year being displayed */
   year: number;
-  /** The month being displayed (0-11) */
+  /** The month being displayed (1-based: 1 = January, 12 = December) */
   month: number;
   /** Function to check if a date is disabled */
   isDateDisabled: (date: PlainDate) => boolean;
@@ -61,7 +61,7 @@ export interface UseCalendarRovingTabindexReturn {
  *   days,
  *   today: {year: 2026, month: 1, day: 20},
  *   year: 2026,
- *   month: 0, // 0-based month
+ *   month: 1, // January (1-based)
  *   isDateDisabled,
  * });
  *
@@ -78,20 +78,17 @@ export function useCalendarRovingTabindex(
 
   // Determine which day should be tabbable
   const tabbableDate = useMemo(() => {
-    // Note: `month` is 0-based from the public API; PlainDate.month is 1-based
-    const month1 = month + 1;
-
     // Priority 1: Selected date if visible in this month and enabled
     if (selectedDate) {
       const isSelectedInMonth =
-        selectedDate.year === year && selectedDate.month === month1;
+        selectedDate.year === year && selectedDate.month === month;
       if (isSelectedInMonth && !isDateDisabled(selectedDate)) {
         return plainDateToISO(selectedDate);
       }
     }
 
     // Priority 2: Today if visible in this month and enabled
-    const isTodayInMonth = today.year === year && today.month === month1;
+    const isTodayInMonth = today.year === year && today.month === month;
 
     if (isTodayInMonth && !isDateDisabled(today)) {
       return plainDateToISO(today);

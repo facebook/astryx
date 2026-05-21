@@ -3,6 +3,7 @@
 import {describe, it, expect} from 'vitest';
 import {
   type PlainDate,
+  plainDateCreate,
   plainDateFromISO,
   plainDateToISO,
   plainDateToDate,
@@ -14,13 +15,51 @@ import {
   plainDateAddDays,
   plainDateIsBefore,
   plainDateIsAfter,
-  plainDateIsSameDay,
+  plainDateIsEqual,
   plainDateIsInRange,
-  plainDateFirstOfMonth,
+  plainDateSetFirstOfMonth,
   plainDateGetWeekNumber,
   plainDateFormatAccessible,
 } from './plainDate';
-import type {ISODateString} from '../Calendar/XDSCalendar';
+import type {ISODateString} from './dateTypes';
+
+describe('plainDateCreate', () => {
+  it('creates a valid PlainDate', () => {
+    expect(plainDateCreate(2026, 1, 25)).toEqual({
+      year: 2026,
+      month: 1,
+      day: 25,
+    });
+  });
+
+  it('throws for month < 1', () => {
+    expect(() => plainDateCreate(2026, 0, 1)).toThrow(RangeError);
+  });
+
+  it('throws for month > 12', () => {
+    expect(() => plainDateCreate(2026, 13, 1)).toThrow(RangeError);
+  });
+
+  it('throws for day < 1', () => {
+    expect(() => plainDateCreate(2026, 1, 0)).toThrow(RangeError);
+  });
+
+  it('throws for day exceeding month length', () => {
+    expect(() => plainDateCreate(2026, 2, 29)).toThrow(RangeError);
+  });
+
+  it('allows Feb 29 in a leap year', () => {
+    expect(plainDateCreate(2024, 2, 29)).toEqual({
+      year: 2024,
+      month: 2,
+      day: 29,
+    });
+  });
+
+  it('throws for Feb 30 even in a leap year', () => {
+    expect(() => plainDateCreate(2024, 2, 30)).toThrow(RangeError);
+  });
+});
 
 describe('plainDateFromISO', () => {
   it('parses a standard ISO date', () => {
@@ -283,10 +322,10 @@ describe('plainDateIsBefore / plainDateIsAfter', () => {
   });
 });
 
-describe('plainDateIsSameDay', () => {
+describe('plainDateIsEqual', () => {
   it('returns true for same date', () => {
     expect(
-      plainDateIsSameDay(
+      plainDateIsEqual(
         {year: 2026, month: 1, day: 15},
         {year: 2026, month: 1, day: 15},
       ),
@@ -295,7 +334,7 @@ describe('plainDateIsSameDay', () => {
 
   it('returns false for different day', () => {
     expect(
-      plainDateIsSameDay(
+      plainDateIsEqual(
         {year: 2026, month: 1, day: 15},
         {year: 2026, month: 1, day: 16},
       ),
@@ -304,7 +343,7 @@ describe('plainDateIsSameDay', () => {
 
   it('returns false for different month', () => {
     expect(
-      plainDateIsSameDay(
+      plainDateIsEqual(
         {year: 2026, month: 1, day: 15},
         {year: 2026, month: 2, day: 15},
       ),
@@ -318,34 +357,34 @@ describe('plainDateIsInRange', () => {
 
   it('returns true for date within range', () => {
     expect(
-      plainDateIsInRange({year: 2026, month: 1, day: 15}, start, end),
+      plainDateIsInRange({year: 2026, month: 1, day: 15}, [start, end]),
     ).toBe(true);
   });
 
   it('returns true for start boundary', () => {
-    expect(plainDateIsInRange(start, start, end)).toBe(true);
+    expect(plainDateIsInRange(start, [start, end])).toBe(true);
   });
 
   it('returns true for end boundary', () => {
-    expect(plainDateIsInRange(end, start, end)).toBe(true);
+    expect(plainDateIsInRange(end, [start, end])).toBe(true);
   });
 
   it('returns false for date before range', () => {
-    expect(plainDateIsInRange({year: 2026, month: 1, day: 9}, start, end)).toBe(
-      false,
-    );
+    expect(
+      plainDateIsInRange({year: 2026, month: 1, day: 9}, [start, end]),
+    ).toBe(false);
   });
 
   it('returns false for date after range', () => {
     expect(
-      plainDateIsInRange({year: 2026, month: 1, day: 21}, start, end),
+      plainDateIsInRange({year: 2026, month: 1, day: 21}, [start, end]),
     ).toBe(false);
   });
 });
 
-describe('plainDateFirstOfMonth', () => {
+describe('plainDateSetFirstOfMonth', () => {
   it('returns first day of the same month', () => {
-    expect(plainDateFirstOfMonth({year: 2026, month: 3, day: 15})).toEqual({
+    expect(plainDateSetFirstOfMonth({year: 2026, month: 3, day: 15})).toEqual({
       year: 2026,
       month: 3,
       day: 1,
@@ -354,7 +393,7 @@ describe('plainDateFirstOfMonth', () => {
 
   it('is a no-op for day 1', () => {
     const pd = {year: 2026, month: 3, day: 1};
-    expect(plainDateFirstOfMonth(pd)).toEqual(pd);
+    expect(plainDateSetFirstOfMonth(pd)).toEqual(pd);
   });
 });
 

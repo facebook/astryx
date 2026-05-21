@@ -4,19 +4,20 @@
  * @file dateParser.ts
  * @input Uses Intl.DateTimeFormat for locale detection
  * @output Exports date parsing utilities for user input
- * @position Core utility; used by XDSDatePicker
+ * @position Core utility; used by XDSDateInput, XDSDateTimeInput
  *
  * SYNC: When modified, update:
  * - /packages/core/src/utils/dateParser.test.ts
  * - /packages/core/src/utils/index.ts
  */
 
-import type {ISODateString} from '../Calendar';
+import type {ISODateString} from './dateTypes';
 import {
+  type PlainDate,
+  plainDateFromDate,
+  plainDateToDate,
   plainDateFromISO,
   plainDateToISO,
-  plainDateToDate,
-  plainDateFromDate,
   plainDateDaysInMonth,
 } from './plainDate';
 
@@ -37,7 +38,7 @@ export function isLocaleDayFirst(): boolean {
 }
 
 /**
- * Parses user input into an ISO date string.
+ * Parses user input into a PlainDate.
  *
  * Supports:
  * - ISO format: "2026-01-25"
@@ -48,9 +49,9 @@ export function isLocaleDayFirst(): boolean {
  *
  * For ambiguous numeric formats (both numbers ≤ 12), uses locale preference.
  *
- * @returns ISODateString if valid, null if unparseable
+ * @returns PlainDate if valid, null if unparseable
  */
-export function parseDateInput(input: string): ISODateString | null {
+export function parseDateInput(input: string): PlainDate | null {
   const trimmed = input.trim();
   if (!trimmed) {
     return null;
@@ -62,7 +63,7 @@ export function parseDateInput(input: string): ISODateString | null {
   const isoMatch = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
   if (isoMatch) {
     const [, year, month, day] = isoMatch;
-    return createISODate(+year, +month, +day);
+    return createPlainDate(+year, +month, +day);
   }
 
   // 2. Try full month name formats with year
@@ -74,7 +75,7 @@ export function parseDateInput(input: string): ISODateString | null {
     const [, monthName, day, year] = monthFirstWithYearMatch;
     const month = parseMonthName(monthName);
     if (month !== null) {
-      return createISODate(+year, month, +day);
+      return createPlainDate(+year, month, +day);
     }
   }
 
@@ -86,7 +87,7 @@ export function parseDateInput(input: string): ISODateString | null {
     const [, day, monthName, year] = dayFirstWithYearMatch;
     const month = parseMonthName(monthName);
     if (month !== null) {
-      return createISODate(+year, month, +day);
+      return createPlainDate(+year, month, +day);
     }
   }
 
@@ -97,7 +98,7 @@ export function parseDateInput(input: string): ISODateString | null {
     const [, monthName, day] = monthFirstNoYearMatch;
     const month = parseMonthName(monthName);
     if (month !== null) {
-      return createISODate(currentYear, month, +day);
+      return createPlainDate(currentYear, month, +day);
     }
   }
 
@@ -107,7 +108,7 @@ export function parseDateInput(input: string): ISODateString | null {
     const [, day, monthName] = dayFirstNoYearMatch;
     const month = parseMonthName(monthName);
     if (month !== null) {
-      return createISODate(currentYear, month, +day);
+      return createPlainDate(currentYear, month, +day);
     }
   }
 
@@ -117,7 +118,7 @@ export function parseDateInput(input: string): ISODateString | null {
   );
   if (numericWithYearMatch) {
     const [, first, sep1, second, sep2, year] = numericWithYearMatch;
-    // Reject mixed separators (e.g., "1/25.2026")
+
     if (sep1 !== sep2) {
       return null;
     }
@@ -134,41 +135,29 @@ export function parseDateInput(input: string): ISODateString | null {
   // 6. Fall back to native Date parsing for other formats
   const parsed = new Date(trimmed);
   if (!isNaN(parsed.getTime())) {
-    return plainDateToISO(plainDateFromDate(parsed));
+    return plainDateFromDate(parsed);
   }
 
   return null;
 }
 
-/**
- * Parses ambiguous numeric dates using heuristics and locale.
- *
- * Heuristics:
- * - If first > 12, it must be the day (e.g., 25/1/2026 → Jan 25)
- * - If second > 12, it must be the day (e.g., 1/25/2026 → Jan 25)
- * - If both ≤ 12, use locale preference (day-first vs month-first)
- */
 function parseNumericDate(
   first: number,
   second: number,
   year: number,
-): ISODateString | null {
+): PlainDate | null {
   let day: number;
   let month: number;
 
   if (first > 12 && second <= 12) {
-    // First must be day (e.g., 25/1/2026)
     day = first;
     month = second;
   } else if (second > 12 && first <= 12) {
-    // Second must be day (e.g., 1/25/2026)
     month = first;
     day = second;
   } else if (first > 12 && second > 12) {
-    // Both > 12 is invalid
     return null;
   } else {
-    // Both ≤ 12: ambiguous, use locale preference
     if (isLocaleDayFirst()) {
       day = first;
       month = second;
@@ -178,12 +167,9 @@ function parseNumericDate(
     }
   }
 
-  return createISODate(year, month, day);
+  return createPlainDate(year, month, day);
 }
 
-/**
- * Parses month name (full or abbreviated) to 1-12.
- */
 function parseMonthName(name: string): number | null {
   const months: Record<string, number> = {
     january: 1,
@@ -214,14 +200,11 @@ function parseMonthName(name: string): number | null {
   return months[name.toLowerCase()] ?? null;
 }
 
-/**
- * Creates an ISO date string, validating the date is real.
- */
-function createISODate(
+function createPlainDate(
   year: number,
   month: number,
   day: number,
-): ISODateString | null {
+): PlainDate | null {
   if (
     month < 1 ||
     month > 12 ||
@@ -230,7 +213,7 @@ function createISODate(
   ) {
     return null;
   }
-  return plainDateToISO({year, month, day});
+  return {year, month, day};
 }
 
 export function formatDisplayDate(iso: ISODateString): string {

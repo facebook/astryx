@@ -11,7 +11,7 @@ export {
   type PlainDate,
   plainDateFromISO as parseISO,
   plainDateToISO as dateToISO,
-  plainDateIsSameDay as isSameDay,
+  plainDateIsEqual as isSameDay,
   plainDateIsInRange as isDateInRange,
   plainDateGetWeekNumber as getWeekNumber,
   plainDateFormatAccessible as formatAccessibleDate,

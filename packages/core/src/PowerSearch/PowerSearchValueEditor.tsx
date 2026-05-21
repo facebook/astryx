@@ -21,7 +21,7 @@ import type {
 } from './types';
 import type {InternalConfig} from './useInternalConfig';
 import type {XDSSearchableItem, XDSSearchSource} from '../Typeahead/types';
-import type {ISODateString} from '../Calendar';
+import type {ISODateString} from '../utils/dateTypes';
 import type {ISOTimeString} from '../utils';
 
 // Lazy import to avoid circular deps — these are all from the same package

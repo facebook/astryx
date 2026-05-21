@@ -7,7 +7,7 @@
  * @position Shared utility; replaces scattered Date usage across Calendar hooks
  */
 
-import type {ISODateString} from '../Calendar/XDSCalendar';
+import type {ISODateString} from './dateTypes';
 
 export interface PlainDate {
   readonly year: number;
@@ -16,9 +16,26 @@ export interface PlainDate {
   readonly day: number;
 }
 
+export function plainDateCreate(
+  year: number,
+  month: number,
+  day: number,
+): PlainDate {
+  if (month < 1 || month > 12) {
+    throw new RangeError(`month must be 1–12, got ${month}`);
+  }
+  const maxDay = plainDateDaysInMonth(year, month);
+  if (day < 1 || day > maxDay) {
+    throw new RangeError(
+      `day must be 1–${maxDay} for ${year}-${String(month).padStart(2, '0')}, got ${day}`,
+    );
+  }
+  return {year, month, day};
+}
+
 export function plainDateFromISO(str: ISODateString): PlainDate {
   const [year, month, day] = str.split('-').map(Number);
-  return {year, month, day};
+  return plainDateCreate(year, month, day);
 }
 
 export function plainDateToISO(pd: PlainDate): ISODateString {
@@ -53,7 +70,7 @@ export function plainDateDaysInMonth(year: number, month: number): number {
 }
 
 export function plainDateDayOfWeek(pd: PlainDate): number {
-  return new Date(pd.year, pd.month - 1, pd.day).getDay();
+  return plainDateToDate(pd).getDay();
 }
 
 export function plainDateAddMonths(pd: PlainDate, n: number): PlainDate {
@@ -94,19 +111,18 @@ export function plainDateIsAfter(a: PlainDate, b: PlainDate): boolean {
   return compare(a, b) > 0;
 }
 
-export function plainDateIsSameDay(a: PlainDate, b: PlainDate): boolean {
-  return a.year === b.year && a.month === b.month && a.day === b.day;
+export function plainDateIsEqual(a: PlainDate, b: PlainDate): boolean {
+  return compare(a, b) === 0;
 }
 
 export function plainDateIsInRange(
   pd: PlainDate,
-  start: PlainDate,
-  end: PlainDate,
+  range: [PlainDate, PlainDate],
 ): boolean {
-  return compare(pd, start) >= 0 && compare(pd, end) <= 0;
+  return compare(pd, range[0]) >= 0 && compare(pd, range[1]) <= 0;
 }
 
-export function plainDateFirstOfMonth(pd: PlainDate): PlainDate {
+export function plainDateSetFirstOfMonth(pd: PlainDate): PlainDate {
   return {year: pd.year, month: pd.month, day: 1};
 }
 

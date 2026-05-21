@@ -47,12 +47,12 @@ import {
   plainDateToDate,
   plainDateFromDate,
   plainDateToday,
-  plainDateFirstOfMonth,
+  plainDateSetFirstOfMonth,
   plainDateAddMonths,
   plainDateAddDays,
   plainDateIsBefore,
   plainDateIsAfter,
-  plainDateIsSameDay,
+  plainDateIsEqual,
   plainDateIsInRange,
   plainDateGetWeekNumber,
   plainDateFormatAccessible,
@@ -63,24 +63,8 @@ import {xdsClassName, mergeProps} from '../utils';
 // Types
 // =============================================================================
 
-/**
- * ISO 8601 date string in YYYY-MM-DD format.
- * Example: "2026-01-28"
- */
-
-export type ISODateString =
-  `${number}${number}${number}${number}-${number}${number}-${number}${number}`;
-
-/** Day of week: 0 = Sunday through 6 = Saturday */
-
-export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
-
-/** Date range with start and end dates */
-
-export interface DateRange {
-  start: ISODateString;
-  end: ISODateString;
-}
+export type {ISODateString, DayOfWeek, DateRange} from '../utils/dateTypes';
+import type {ISODateString, DayOfWeek, DateRange} from '../utils/dateTypes';
 
 /** Imperative handle for XDSCalendar ref */
 
@@ -272,7 +256,7 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
 
   // Base month (first day of focus month)
   const baseMonth = useMemo(() => {
-    return plainDateFirstOfMonth(focusDate);
+    return plainDateSetFirstOfMonth(focusDate);
   }, [focusDate]);
 
   // Generate visible months
@@ -524,12 +508,11 @@ function MonthGrid({
   onPendingFocusHandled,
 }: MonthGridProps) {
   const year = month.year;
-  const monthIndex = month.month - 1;
 
   // Use hooks for days generation and constraints
   const {days, weeks, dayNames} = useCalendarDays({
     year,
-    month: monthIndex,
+    month: month.month,
     weekStartsOn,
     hasVariableRowCount,
   });
@@ -552,7 +535,7 @@ function MonthGrid({
     days,
     today,
     year,
-    month: monthIndex,
+    month: month.month,
     isDateDisabled,
     selectedDate: selectedDateForTabindex,
   });
@@ -678,7 +661,7 @@ function MonthGrid({
   if (mode === 'range' && rangeSelectionStart && hoveredDate) {
     const startPd = plainDateFromISO(rangeSelectionStart);
     const hoverPd = plainDateFromISO(hoveredDate);
-    if (!plainDateIsSameDay(startPd, hoverPd)) {
+    if (!plainDateIsEqual(startPd, hoverPd)) {
       if (plainDateIsBefore(hoverPd, startPd)) {
         previewStart = hoverPd;
         previewEnd = startPd;
@@ -821,26 +804,26 @@ function DayCell({
   // Outside days should not be clickable even when visible
   const effectivelyDisabled = isDisabled || isOutside;
 
-  const isToday = plainDateIsSameDay(date, today);
+  const isToday = plainDateIsEqual(date, today);
   const isSelected =
-    mode === 'single' && selectedDate && plainDateIsSameDay(date, selectedDate);
+    mode === 'single' && selectedDate && plainDateIsEqual(date, selectedDate);
   const isInRange =
     mode === 'range' &&
     rangeStart &&
     rangeEnd &&
-    plainDateIsInRange(date, rangeStart, rangeEnd);
+    plainDateIsInRange(date, [rangeStart, rangeEnd]);
   const isRangeStart =
-    mode === 'range' && rangeStart && plainDateIsSameDay(date, rangeStart);
+    mode === 'range' && rangeStart && plainDateIsEqual(date, rangeStart);
   const isRangeEnd =
-    mode === 'range' && rangeEnd && plainDateIsSameDay(date, rangeEnd);
+    mode === 'range' && rangeEnd && plainDateIsEqual(date, rangeEnd);
 
   // Preview range calculations
   const isInPreview =
     previewStart &&
     previewEnd &&
-    plainDateIsInRange(date, previewStart, previewEnd);
-  const isPreviewStart = previewStart && plainDateIsSameDay(date, previewStart);
-  const isPreviewEnd = previewEnd && plainDateIsSameDay(date, previewEnd);
+    plainDateIsInRange(date, [previewStart, previewEnd]);
+  const isPreviewStart = previewStart && plainDateIsEqual(date, previewStart);
+  const isPreviewEnd = previewEnd && plainDateIsEqual(date, previewEnd);
 
   // Determine cell background for range
   const hasRangeBackground = isInRange;

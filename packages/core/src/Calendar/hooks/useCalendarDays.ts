@@ -13,7 +13,7 @@
  */
 
 import {useMemo} from 'react';
-import type {DayOfWeek, ISODateString} from '../XDSCalendar';
+import type {DayOfWeek, ISODateString} from '../../utils/dateTypes';
 import {
   type PlainDate,
   plainDateToISO,
@@ -42,7 +42,7 @@ export interface CalendarDay {
 export interface UseCalendarDaysOptions {
   /** The year to generate days for */
   year: number;
-  /** The month index (0-11) */
+  /** The month (1-based: 1 = January, 12 = December) */
   month: number;
   /** First day of week (0=Sunday through 6=Saturday) */
   weekStartsOn?: DayOfWeek;
@@ -74,7 +74,7 @@ export interface UseCalendarDaysReturn {
  * ```
  * const {days, weeks, dayNames} = useCalendarDays({
  *   year: 2026,
- *   month: 0, // January (0-based)
+ *   month: 1, // January (1-based)
  *   weekStartsOn: 0, // Sunday
  * });
  * // days[i].date is a PlainDate { year, month (1-based), day }
@@ -86,14 +86,12 @@ export function useCalendarDays(
   const {year, month, weekStartsOn = 0, hasVariableRowCount = false} = options;
 
   // Calculate grid structure
-  // Note: `month` is 0-based from the public API; convert to 1-based for plainDate fns
   const gridInfo = useMemo(() => {
-    const month1 = month + 1; // 1-based month for plainDate utilities
-    const totalDaysInMonth = plainDateDaysInMonth(year, month1);
+    const totalDaysInMonth = plainDateDaysInMonth(year, month);
 
     // Calculate starting offset based on weekStartsOn
     let startingDayOfWeek =
-      plainDateDayOfWeek({year, month: month1, day: 1}) - weekStartsOn;
+      plainDateDayOfWeek({year, month, day: 1}) - weekStartsOn;
     if (startingDayOfWeek < 0) {
       startingDayOfWeek += 7;
     }
@@ -127,17 +125,15 @@ export function useCalendarDays(
       startingDayOfWeek,
       totalCells,
     } = gridInfo;
-    const month1 = month + 1; // 1-based month
-    const firstOfMonth: PlainDate = {year, month: month1, day: 1};
+    const firstOfMonth: PlainDate = {year, month, day: 1};
     const result: CalendarDay[] = [];
 
     for (let i = 0; i < totalCells; i++) {
       const dayOffset = i - startingDayOfWeek + 1;
       const isOutside = dayOffset < 1 || dayOffset > totalDaysInMonth;
-      // For in-month days, construct directly; for outside days, use addDays
       const pd: PlainDate = isOutside
         ? plainDateAddDays(firstOfMonth, dayOffset - 1)
-        : {year, month: month1, day: dayOffset};
+        : {year, month, day: dayOffset};
 
       result.push({
         date: pd,

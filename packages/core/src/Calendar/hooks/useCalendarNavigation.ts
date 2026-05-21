@@ -13,14 +13,14 @@
  */
 
 import {useState, useMemo, useCallback} from 'react';
-import type {ISODateString} from '../XDSCalendar';
+import type {ISODateString} from '../../utils/dateTypes';
 import {
   type PlainDate,
   plainDateFromISO,
   plainDateToISO,
   plainDateToDate,
   plainDateToday,
-  plainDateFirstOfMonth,
+  plainDateSetFirstOfMonth,
   plainDateAddMonths,
   plainDateAddDays,
 } from '../../utils/plainDate';
@@ -121,7 +121,7 @@ export function useCalendarNavigation(
 
   // Base month (first day of focus month)
   const baseMonth = useMemo(() => {
-    return plainDateFirstOfMonth(focusDate);
+    return plainDateSetFirstOfMonth(focusDate);
   }, [focusDate]);
 
   // Generate visible months

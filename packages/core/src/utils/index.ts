@@ -9,6 +9,8 @@
 
 export type {SizeValue} from './types';
 
+export type {ISODateString, DayOfWeek, DateRange} from './dateTypes';
+
 export {
   parseDateInput,
   formatDisplayDate,
@@ -19,6 +21,7 @@ export {
 
 export type {PlainDate} from './plainDate';
 export {
+  plainDateCreate,
   plainDateFromISO,
   plainDateToISO,
   plainDateToDate,
@@ -30,9 +33,9 @@ export {
   plainDateAddDays,
   plainDateIsBefore,
   plainDateIsAfter,
-  plainDateIsSameDay,
+  plainDateIsEqual,
   plainDateIsInRange,
-  plainDateFirstOfMonth,
+  plainDateSetFirstOfMonth,
   plainDateGetWeekNumber,
   plainDateFormatAccessible,
 } from './plainDate';

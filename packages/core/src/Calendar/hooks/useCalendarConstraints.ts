@@ -13,7 +13,7 @@
  */
 
 import {useCallback, useMemo} from 'react';
-import type {ISODateString} from '../XDSCalendar';
+import type {ISODateString} from '../../utils/dateTypes';
 import {
   type PlainDate,
   plainDateFromISO,
