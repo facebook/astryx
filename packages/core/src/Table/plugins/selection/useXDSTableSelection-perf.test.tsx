@@ -249,7 +249,9 @@ describe('Selection plugin render performance', () => {
 
     // Only row-1 should have re-rendered
     for (const id of Object.keys(renderCounts)) {
-      if (id === 'row-1') continue;
+      if (id === 'row-1') {
+        continue;
+      }
       expect(renderCounts[id]).toBe(0);
     }
   });

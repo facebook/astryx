@@ -198,7 +198,9 @@ export function useXDSTableColumnSettingsState<
     const avSet = new Set(
       cfg.columns.filter(c => c.isAlwaysVisible).map(c => c.key),
     );
-    if (avSet.has(key)) return;
+    if (avSet.has(key)) {
+      return;
+    }
 
     const currentKeys = cfg.activeColumnKeys;
     const currentSet = new Set(currentKeys);

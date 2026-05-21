@@ -368,7 +368,9 @@ export function XDSPagination({
   }
 
   const handlePageChange = (newPage: number) => {
-    if (isDisabled || isPending) return;
+    if (isDisabled || isPending) {
+      return;
+    }
     onChange(newPage);
     if (changeAction) {
       startTransition(async () => {
@@ -414,7 +416,9 @@ export function XDSPagination({
   const renderIndicator = () => {
     switch (variant) {
       case 'pages': {
-        if (computedTotalPages == null) return null;
+        if (computedTotalPages == null) {
+          return null;
+        }
         const pageRange = generatePageRange(
           page,
           computedTotalPages,
@@ -457,7 +461,9 @@ export function XDSPagination({
       }
 
       case 'count': {
-        if (totalItems == null) return null;
+        if (totalItems == null) {
+          return null;
+        }
         return (
           <span {...stylex.props(styles.infoText)}>
             <XDSText type="body" size="sm" color="secondary">
@@ -468,7 +474,9 @@ export function XDSPagination({
       }
 
       case 'compact': {
-        if (computedTotalPages == null) return null;
+        if (computedTotalPages == null) {
+          return null;
+        }
         return (
           <span {...stylex.props(styles.infoText)}>
             <XDSText type="body" size="sm" color="secondary">
@@ -479,7 +487,9 @@ export function XDSPagination({
       }
 
       case 'dots': {
-        if (computedTotalPages == null) return null;
+        if (computedTotalPages == null) {
+          return null;
+        }
         return (
           <div
             {...stylex.props(styles.dotsContainer)}

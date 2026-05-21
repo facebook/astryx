@@ -112,7 +112,9 @@ export function Providers({children}: {children: React.ReactNode}) {
     try {
       const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
       const storedMode = window.localStorage.getItem(MODE_STORAGE_KEY);
-      if (storedTheme && storedTheme in themes) setThemeName(storedTheme);
+      if (storedTheme && storedTheme in themes) {
+        setThemeName(storedTheme);
+      }
       if (storedMode === 'light' || storedMode === 'dark') {
         setMode(storedMode as ThemeMode);
       }
@@ -126,7 +128,9 @@ export function Providers({children}: {children: React.ReactNode}) {
   // Skip writes until after hydration to avoid overwriting stored values on
   // first render, and skip entirely when embedded (parent controls theme).
   useEffect(() => {
-    if (isEmbed || !hasHydrated) return;
+    if (isEmbed || !hasHydrated) {
+      return;
+    }
     try {
       window.localStorage.setItem(THEME_STORAGE_KEY, themeName);
     } catch {
@@ -135,7 +139,9 @@ export function Providers({children}: {children: React.ReactNode}) {
   }, [themeName, isEmbed, hasHydrated]);
 
   useEffect(() => {
-    if (isEmbed || !hasHydrated) return;
+    if (isEmbed || !hasHydrated) {
+      return;
+    }
     try {
       window.localStorage.setItem(MODE_STORAGE_KEY, mode);
     } catch {
@@ -145,12 +151,18 @@ export function Providers({children}: {children: React.ReactNode}) {
 
   // When embedded, sync theme/mode from parent shell via postMessage
   useEffect(() => {
-    if (!isEmbed) return;
+    if (!isEmbed) {
+      return;
+    }
     const handler = (event: MessageEvent) => {
       if (event.data?.type === 'xds-theme-sync') {
         const {theme: newTheme, mode: newMode} = event.data;
-        if (newTheme && newTheme in themes) setThemeName(newTheme);
-        if (newMode === 'light' || newMode === 'dark') setMode(newMode);
+        if (newTheme && newTheme in themes) {
+          setThemeName(newTheme);
+        }
+        if (newMode === 'light' || newMode === 'dark') {
+          setMode(newMode);
+        }
       }
     };
     window.addEventListener('message', handler);

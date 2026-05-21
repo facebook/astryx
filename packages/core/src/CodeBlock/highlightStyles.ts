@@ -81,8 +81,12 @@ let inserted = false;
  * Safe to call multiple times — only injects once.
  */
 export function ensureHighlightStyles(): void {
-  if (inserted) return;
-  if (typeof document === 'undefined') return;
+  if (inserted) {
+    return;
+  }
+  if (typeof document === 'undefined') {
+    return;
+  }
 
   const style = document.createElement('style');
   style.setAttribute('data-xds-highlight-styles', '');

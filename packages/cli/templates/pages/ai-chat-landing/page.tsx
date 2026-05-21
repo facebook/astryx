@@ -400,7 +400,9 @@ export default function AIChatTemplate() {
 
   const handleSubmit = useCallback(
     (value: string) => {
-      if (!value.trim()) return;
+      if (!value.trim()) {
+        return;
+      }
 
       const userMsg: ChatMessage = {
         id: Date.now(),
@@ -428,7 +430,9 @@ export default function AIChatTemplate() {
 
   const replaceWithSuggestion = (prompt: string) => {
     const input = composerInputRef.current;
-    if (!input) return;
+    if (!input) {
+      return;
+    }
     input.focus();
     // Select all existing content so insertText replaces it
     const sel = window.getSelection();

@@ -61,7 +61,9 @@ function resolveColumnCount(
   nodes: SankeyNode[],
   links: SankeyLink[],
 ): number {
-  if (columns) return columns.length;
+  if (columns) {
+    return columns.length;
+  }
   // Quick topological column count
   const inDegree = new Map<string, number>();
   const outEdges = new Map<string, string[]>();
@@ -87,7 +89,9 @@ function resolveColumnCount(
     for (const tgt of outEdges.get(id) || []) {
       colMap.set(tgt, Math.max(colMap.get(tgt) || 0, col + 1));
       inDegree.set(tgt, (inDegree.get(tgt) || 0) - 1);
-      if (inDegree.get(tgt) === 0) queue.push(tgt);
+      if (inDegree.get(tgt) === 0) {
+        queue.push(tgt);
+      }
     }
   }
   return Math.max(...Array.from(colMap.values()), 0) + 1;
@@ -132,7 +136,9 @@ export function XDSSankeyChart({
 
   useLayoutEffect(() => {
     const el = containerRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     const ro = new ResizeObserver(entries => {
       const w = entries[0]?.contentRect.width ?? 0;
       setContainerWidth(w);
@@ -151,7 +157,9 @@ export function XDSSankeyChart({
   const needsScroll = containerWidth > 0 && chartWidth > containerWidth;
 
   const layout = useMemo(() => {
-    if (containerWidth === 0) return null;
+    if (containerWidth === 0) {
+      return null;
+    }
     return computeLayout(nodes, links, {
       width: chartWidth,
       height,
@@ -171,7 +179,9 @@ export function XDSSankeyChart({
   ]);
 
   const ctx = useMemo(() => {
-    if (!layout) return null;
+    if (!layout) {
+      return null;
+    }
     return {
       nodes: layout.nodes,
       links: layout.links,

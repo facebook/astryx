@@ -122,7 +122,9 @@ export const Brush2D: StoryObj = {
           .map(d => ({hp: d.Horsepower, mpg: d.Miles_per_Gallon})),
       [raw],
     );
-    if (!data.length) return <XDSText type="supporting">Loading…</XDSText>;
+    if (!data.length) {
+      return <XDSText type="supporting">Loading…</XDSText>;
+    }
     return (
       <XDSStack direction="vertical" gap={4}>
         <XDSHeading level={3}>2D Brush — Scatter Plot</XDSHeading>
@@ -167,7 +169,9 @@ export const Crosshair: StoryObj = {
           .map(d => ({hp: d.Horsepower, mpg: d.Miles_per_Gallon})),
       [raw],
     );
-    if (!data.length) return <XDSText type="supporting">Loading…</XDSText>;
+    if (!data.length) {
+      return <XDSText type="supporting">Loading…</XDSText>;
+    }
     return (
       <XDSStack direction="vertical" gap={4}>
         <XDSHeading level={3}>Crosshair</XDSHeading>
@@ -211,7 +215,9 @@ export const ZoomPan: StoryObj = {
     );
     const [xDomain, setXDomain] = useState<[number, number]>([40, 230]);
     const [yDomain, setYDomain] = useState<[number, number]>([8, 47]);
-    if (!data.length) return <XDSText type="supporting">Loading…</XDSText>;
+    if (!data.length) {
+      return <XDSText type="supporting">Loading…</XDSText>;
+    }
     return (
       <XDSStack direction="vertical" gap={4}>
         <XDSHeading level={3}>Zoom & Pan</XDSHeading>
@@ -257,7 +263,9 @@ export const ClickSelect: StoryObj = {
       [raw],
     );
     const [selected, setSelected] = useState<number[]>([]);
-    if (!data.length) return <XDSText type="supporting">Loading…</XDSText>;
+    if (!data.length) {
+      return <XDSText type="supporting">Loading…</XDSText>;
+    }
     return (
       <XDSStack direction="vertical" gap={4}>
         <XDSHeading level={3}>Click to Select</XDSHeading>

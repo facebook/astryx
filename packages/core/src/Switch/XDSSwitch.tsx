@@ -336,8 +336,12 @@ export function XDSSwitch({
   // Build aria-describedby from description and status message
   // Only include descriptionID when the element actually renders
   const describedByParts: string[] = [];
-  if (description && !isLabelHidden) describedByParts.push(descriptionID);
-  if (status?.message) describedByParts.push(statusMessageID);
+  if (description && !isLabelHidden) {
+    describedByParts.push(descriptionID);
+  }
+  if (status?.message) {
+    describedByParts.push(statusMessageID);
+  }
   const ariaDescribedBy =
     describedByParts.length > 0 ? describedByParts.join(' ') : undefined;
 
@@ -352,7 +356,9 @@ export function XDSSwitch({
         disabled={isDisabled}
         required={isRequired}
         onChange={e => {
-          if (isBusy) return;
+          if (isBusy) {
+            return;
+          }
           const checked = e.target.checked;
           onChange?.(checked, e);
           if (changeAction && !e.defaultPrevented) {

@@ -124,10 +124,14 @@ function resolveFilterConfig(
   const operatorKey = typeof filter === 'string' ? undefined : filter.operator;
 
   const field = searchConfig.fields.find(f => f.key === fieldKey);
-  if (!field) return undefined;
+  if (!field) {
+    return undefined;
+  }
 
   const operator = resolveOperator(field, operatorKey);
-  if (!operator) return undefined;
+  if (!operator) {
+    return undefined;
+  }
 
   return operator.value;
 }
@@ -158,9 +162,13 @@ export function toSearchFilters<_T extends Record<string, unknown>>(
   const result: PowerSearchFilter[] = [];
 
   for (const col of columns) {
-    if (!col.filter) continue;
+    if (!col.filter) {
+      continue;
+    }
     const value = filters[col.key];
-    if (value == null) continue;
+    if (value == null) {
+      continue;
+    }
 
     const fieldKey =
       typeof col.filter === 'string' ? col.filter : col.filter.field;
@@ -168,13 +176,19 @@ export function toSearchFilters<_T extends Record<string, unknown>>(
       typeof col.filter === 'string' ? undefined : col.filter.operator;
 
     const field = searchConfig.fields.find(f => f.key === fieldKey);
-    if (!field) continue;
+    if (!field) {
+      continue;
+    }
 
     const operator = resolveOperator(field, operatorKey);
-    if (!operator) continue;
+    if (!operator) {
+      continue;
+    }
 
     const filterValue = tableValueToFilterValue(value, operator.value);
-    if (!filterValue) continue;
+    if (!filterValue) {
+      continue;
+    }
 
     result.push({field: fieldKey, operator: operator.key, value: filterValue});
   }
@@ -316,10 +330,11 @@ FilterStoreContext.displayName = 'FilterStoreContext';
 
 function useFilterStore(): FilterStore {
   const store = use(FilterStoreContext);
-  if (!store)
+  if (!store) {
     throw new Error(
       'useFilterStore must be used within a Table with filtering',
     );
+  }
   return store;
 }
 
@@ -908,7 +923,9 @@ function PopoverFilterTrigger({
 function getHeaderString(
   column: XDSTableColumn<Record<string, unknown>>,
 ): string {
-  if (typeof column.header === 'string') return column.header;
+  if (typeof column.header === 'string') {
+    return column.header;
+  }
   return column.key;
 }
 
@@ -1078,7 +1095,9 @@ export function useXDSTableFiltering<T extends Record<string, unknown>>(
 
         if (variant === 'popover') {
           // No operator value on this column — nothing to render.
-          if (!operatorValue) return props;
+          if (!operatorValue) {
+            return props;
+          }
 
           return {
             ...props,

@@ -177,11 +177,15 @@ function generateXDSManifest(): A11yManifest {
   // Find all component directories with README.md
   const findReadmes = (dir: string): string[] => {
     const readmes: string[] = [];
-    if (!fs.existsSync(dir)) return readmes;
+    if (!fs.existsSync(dir)) {
+      return readmes;
+    }
 
     const entries = fs.readdirSync(dir, {withFileTypes: true});
     for (const entry of entries) {
-      if (entry.name === 'node_modules') continue;
+      if (entry.name === 'node_modules') {
+        continue;
+      }
       const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         const readmePath = path.join(fullPath, 'README.md');

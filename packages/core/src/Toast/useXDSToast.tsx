@@ -19,7 +19,9 @@ let fallbackRoot: ReturnType<typeof createRoot> | null = null;
 let fallbackWarned = false;
 
 function getFallbackContext(): XDSToastContextValue {
-  if (fallbackContext) return fallbackContext;
+  if (fallbackContext) {
+    return fallbackContext;
+  }
 
   if (typeof document === 'undefined') {
     throw new Error(
@@ -74,7 +76,9 @@ function getFallbackContext(): XDSToastContextValue {
       } else {
         pending.push(entry);
         ctxReady.then(ctx => {
-          for (const e of pending) ctx.addToast(e);
+          for (const e of pending) {
+            ctx.addToast(e);
+          }
           pending.length = 0;
         });
       }

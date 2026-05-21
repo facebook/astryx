@@ -152,7 +152,9 @@ export function XDSCheckboxListItem({
   const isInteractive = !effectiveReadOnly && (ctx != null || onCheck != null);
 
   const handleToggle = () => {
-    if (effectiveDisabled || effectiveReadOnly || isBusy) return;
+    if (effectiveDisabled || effectiveReadOnly || isBusy) {
+      return;
+    }
 
     if (ctx && ctx.value !== undefined && value !== undefined) {
       // Collection mode

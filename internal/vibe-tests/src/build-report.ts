@@ -42,9 +42,12 @@ function ensureCssDist(): void {
   );
 
   const missing: string[] = [];
-  if (!fs.existsSync(xdsCss)) missing.push('@xds/core/dist/xds.css');
-  if (!fs.existsSync(themeCss))
+  if (!fs.existsSync(xdsCss)) {
+    missing.push('@xds/core/dist/xds.css');
+  }
+  if (!fs.existsSync(themeCss)) {
     missing.push('@xds/theme-default/dist/theme.css');
+  }
 
   if (missing.length > 0) {
     console.log('📦 Building CSS dist files (required for report)...');
@@ -139,8 +142,12 @@ function ensureComparison(
 ): UniversalComparison {
   const resultsDir = getResultsDir();
   const idParts = [xdsId, baselineId];
-  if (htmlId) idParts.push(htmlId);
-  if (xdsTailwindId) idParts.push(xdsTailwindId);
+  if (htmlId) {
+    idParts.push(htmlId);
+  }
+  if (xdsTailwindId) {
+    idParts.push(xdsTailwindId);
+  }
   const comparisonFilename = `comparison-${idParts.join('-')}.json`;
   const comparisonPath = path.join(resultsDir, comparisonFilename);
 
@@ -235,10 +242,14 @@ function injectDataIntoHtml(htmlPath: string, dataScript: string): void {
  */
 function inlineCss(htmlPath: string, distDir: string): void {
   const assetsDir = path.join(distDir, 'assets');
-  if (!fs.existsSync(assetsDir)) return;
+  if (!fs.existsSync(assetsDir)) {
+    return;
+  }
 
   const cssFiles = fs.readdirSync(assetsDir).filter(f => f.endsWith('.css'));
-  if (cssFiles.length === 0) return;
+  if (cssFiles.length === 0) {
+    return;
+  }
 
   console.log(`   Inlining ${cssFiles.length} CSS file(s)...`);
   let html = fs.readFileSync(htmlPath, 'utf-8');
@@ -382,7 +393,9 @@ async function main() {
       const manifest = JSON.parse(
         fs.readFileSync(screenshotManifestPath, 'utf-8'),
       );
-      if (!screenshots) screenshots = {};
+      if (!screenshots) {
+        screenshots = {};
+      }
       // Flatten the nested manifest into filename → relative URL
       for (const [_promptId, targets] of Object.entries(manifest)) {
         for (const [_target, viewports] of Object.entries(

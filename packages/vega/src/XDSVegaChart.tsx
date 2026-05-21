@@ -94,14 +94,18 @@ export function XDSVegaChart({
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     let cancelled = false;
     let view: View | null = null;
 
     const fail = (err: unknown) => {
       if (!cancelled) {
-        onErrorRef.current?.(err instanceof Error ? err : new Error(String(err)));
+        onErrorRef.current?.(
+          err instanceof Error ? err : new Error(String(err)),
+        );
       }
     };
 
@@ -161,8 +165,11 @@ export function XDSVegaChart({
     <div
       ref={node => {
         containerRef.current = node;
-        if (typeof ref === 'function') ref(node);
-        else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        if (typeof ref === 'function') {
+          ref(node);
+        } else if (ref) {
+          (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        }
       }}
       className={className}
       style={style}

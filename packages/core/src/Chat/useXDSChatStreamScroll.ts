@@ -190,7 +190,9 @@ export function useXDSChatStreamScroll({
   const scrollToMessage = useCallback(
     (el: HTMLElement) => {
       const container = scrollRef.current;
-      if (!container) return;
+      if (!container) {
+        return;
+      }
       const containerRect = container.getBoundingClientRect();
       const elRect = el.getBoundingClientRect();
       const offset = elRect.top - containerRect.top + container.scrollTop;
@@ -202,7 +204,9 @@ export function useXDSChatStreamScroll({
 
   const scrollToLastMessage = useCallback(() => {
     const container = scrollRef.current;
-    if (!container) return;
+    if (!container) {
+      return;
+    }
     const messages = container.getElementsByClassName('xds-chat-message');
     const last = messages[messages.length - 1];
     if (last instanceof HTMLElement) {
@@ -224,7 +228,9 @@ export function useXDSChatStreamScroll({
   }, []);
 
   const scrollIfLocked = useCallback(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      return;
+    }
     if (lockedRef.current) {
       startAnimation();
     }
@@ -234,7 +240,9 @@ export function useXDSChatStreamScroll({
 
   useEffect(() => {
     const el = scrollRef.current;
-    if (!el || !enabled) return;
+    if (!el || !enabled) {
+      return;
+    }
 
     // Initialize tracking values
     lastScrollTopRef.current = el.scrollTop;

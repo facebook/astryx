@@ -138,7 +138,9 @@ export const ZeroCentered: StoryObj = {
       let raf: number;
       const tick = () => {
         tRef.current += 1;
-        if (Math.random() < 0.003) quakeRef.current = 30 + Math.random() * 50;
+        if (Math.random() < 0.003) {
+          quakeRef.current = 30 + Math.random() * 50;
+        }
         quakeRef.current *= 0.97;
         const tremor = (Math.random() - 0.5) * 2;
         const quake =

@@ -313,15 +313,21 @@ function findIdeal(
     idealsDir,
     `${promptId}__${viewport}__${theme}.png`,
   );
-  if (fs.existsSync(specific)) return specific;
+  if (fs.existsSync(specific)) {
+    return specific;
+  }
 
   // Viewport match: cwm-1__desktop.png
   const viewportMatch = path.join(idealsDir, `${promptId}__${viewport}.png`);
-  if (fs.existsSync(viewportMatch)) return viewportMatch;
+  if (fs.existsSync(viewportMatch)) {
+    return viewportMatch;
+  }
 
   // Generic fallback: cwm-1.png
   const generic = path.join(idealsDir, `${promptId}.png`);
-  if (fs.existsSync(generic)) return generic;
+  if (fs.existsSync(generic)) {
+    return generic;
+  }
 
   return null;
 }
@@ -331,7 +337,9 @@ function findIdeal(
  */
 export function listAvailableIdeals(): string[] {
   const idealsDir = getIdealsDir();
-  if (!fs.existsSync(idealsDir)) return [];
+  if (!fs.existsSync(idealsDir)) {
+    return [];
+  }
 
   const files = fs.readdirSync(idealsDir).filter(f => f.endsWith('.png'));
   const promptIds = new Set<string>();
@@ -368,7 +376,9 @@ function loadPromptText(promptId: string): string {
       testSetPath,
     );
     const match = testSet.prompts.find(p => p.id === promptId);
-    if (match) return match.prompt;
+    if (match) {
+      return match.prompt;
+    }
   }
 
   return `UI component identified as ${promptId}`;
@@ -465,8 +475,12 @@ async function main() {
 
   // Filter to prompts that have both screenshots and ideals
   const promptsToEvaluate = Object.keys(manifest).filter(promptId => {
-    if (prompts && !prompts.includes(promptId)) return false;
-    if (!availableIdeals.includes(promptId)) return false;
+    if (prompts && !prompts.includes(promptId)) {
+      return false;
+    }
+    if (!availableIdeals.includes(promptId)) {
+      return false;
+    }
     return true;
   });
 

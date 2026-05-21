@@ -204,7 +204,9 @@ export const Streaming: Story = {
     const [key, setKey] = useState(0);
 
     useEffect(() => {
-      if (!isStreaming) return;
+      if (!isStreaming) {
+        return;
+      }
       if (charIndex >= text.length) {
         setIsStreaming(false);
         return;
@@ -346,8 +348,7 @@ export const InlinePlugins: Story = {
               color: 'var(--color-text-accent, #0066FF)',
               textDecoration: 'none',
               fontWeight: 600,
-            }}
-          >
+            }}>
             {match[0]}
           </a>
         ),
@@ -363,8 +364,7 @@ export const InlinePlugins: Story = {
               color: 'var(--color-text-accent, #0066FF)',
               textDecoration: 'none',
               fontWeight: 600,
-            }}
-          >
+            }}>
             {match[0]}
           </a>
         ),
@@ -400,7 +400,10 @@ export const InlinePlugins: Story = {
 
     return (
       <div style={{maxWidth: 680}}>
-        <XDSMarkdown inlinePlugins={inlinePlugins} density="compact" headingLevelStart={2}>
+        <XDSMarkdown
+          inlinePlugins={inlinePlugins}
+          density="compact"
+          headingLevelStart={2}>
           {markdown}
         </XDSMarkdown>
       </div>

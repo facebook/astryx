@@ -68,13 +68,17 @@ export function useXDSImperativeAlertDialog(): XDSImperativeAlertDialogReturn {
   }, []);
 
   const element = useMemo(() => {
-    if (!options) return null;
+    if (!options) {
+      return null;
+    }
     return (
       <XDSAlertDialog
         {...options}
         isOpen={isOpen}
         onOpenChange={open => {
-          if (!open) setIsOpen(false);
+          if (!open) {
+            setIsOpen(false);
+          }
         }}
       />
     );

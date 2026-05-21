@@ -94,7 +94,9 @@ export function TemplatePreview({
 
   useEffect(() => {
     const el = scrollRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     const handleScroll = () => setIsScrolled(el.scrollTop > 8);
     el.addEventListener('scroll', handleScroll, {passive: true});
     return () => el.removeEventListener('scroll', handleScroll);

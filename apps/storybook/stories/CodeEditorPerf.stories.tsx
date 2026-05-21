@@ -21,13 +21,19 @@ function generateCode(lineCount: number): string {
   const lines: string[] = [];
   for (let i = 0; i < lineCount; i++) {
     const mod = i % 6;
-    if (mod === 0) lines.push(`import {Component${i}} from './module${i}';`);
-    else if (mod === 1) lines.push(`const value${i} = ${i} + Math.random();`);
-    else if (mod === 2) lines.push(`function compute${i}(x: number): number {`);
-    else if (mod === 3)
+    if (mod === 0) {
+      lines.push(`import {Component${i}} from './module${i}';`);
+    } else if (mod === 1) {
+      lines.push(`const value${i} = ${i} + Math.random();`);
+    } else if (mod === 2) {
+      lines.push(`function compute${i}(x: number): number {`);
+    } else if (mod === 3) {
       lines.push(`  return x * ${i} + value${Math.max(0, i - 2)};`);
-    else if (mod === 4) lines.push(`}`);
-    else lines.push(`// Line ${i + 1}: performance test`);
+    } else if (mod === 4) {
+      lines.push(`}`);
+    } else {
+      lines.push(`// Line ${i + 1}: performance test`);
+    }
   }
   return lines.join('\n');
 }

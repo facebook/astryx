@@ -36,7 +36,9 @@ export function stratifiedSample(
 
   // First pass: one from each category
   for (const category of categories) {
-    if (result.length >= sampleSize) break;
+    if (result.length >= sampleSize) {
+      break;
+    }
 
     const categoryPrompts = byCategory.get(category)!;
     const randomIndex = Math.floor(Math.random() * categoryPrompts.length);

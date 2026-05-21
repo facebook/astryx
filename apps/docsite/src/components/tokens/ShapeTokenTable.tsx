@@ -63,7 +63,9 @@ export function RadiusTokenTable({theme}: TokenTableProps) {
 
 export function BorderTokenTable({theme}: TokenTableProps) {
   const tokens = getTokensByPrefix(theme, '--border-');
-  if (tokens.length === 0) return null;
+  if (tokens.length === 0) {
+    return null;
+  }
 
   const data = tokens.map(name => ({
     tokenName: name,

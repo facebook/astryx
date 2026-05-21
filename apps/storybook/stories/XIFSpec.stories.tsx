@@ -104,13 +104,21 @@ export const SpecExamples: StoryObj = {
         {xifExamples.map(xif => {
           const def = xifToSvgIconDef(xif);
           const features: string[] = [];
-          if (xif.slots?.length) features.push('🔌 slots');
-          if (xif.paths.some(p => p.animate)) features.push('✨ animated');
-          if (xif.paths.some(p => p.personality))
+          if (xif.slots?.length) {
+            features.push('🔌 slots');
+          }
+          if (xif.paths.some(p => p.animate)) {
+            features.push('✨ animated');
+          }
+          if (xif.paths.some(p => p.personality)) {
             features.push('🎨 personality');
-          if (xif.overrides) features.push('🔀 overrides');
-          if (xif.paths.some(p => p.layer === 'secondary'))
+          }
+          if (xif.overrides) {
+            features.push('🔀 overrides');
+          }
+          if (xif.paths.some(p => p.layer === 'secondary')) {
             features.push('📐 two-layer');
+          }
 
           return (
             <Fragment key={xif.name}>

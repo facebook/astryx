@@ -95,34 +95,53 @@ function StreamGLCanvas({
   // Mount canvas outside SVG
   useEffect(() => {
     const marker = markerRef.current;
-    if (!marker) return;
-    if (!canvasRef.current)
+    if (!marker) {
+      return;
+    }
+    if (!canvasRef.current) {
       canvasRef.current = document.createElement('canvas');
+    }
     return mountCanvasOverSVG(marker, canvasRef.current, width, height);
   }, [width, height]);
 
   // Size canvas
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || width <= 0 || height <= 0) return;
+    if (!canvas || width <= 0 || height <= 0) {
+      return;
+    }
     sizeCanvas(canvas, width, height);
   }, [width, height]);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    if (!glRef.current) glRef.current = getWebGLContext(canvas);
+    if (!canvas) {
+      return;
+    }
+    if (!glRef.current) {
+      glRef.current = getWebGLContext(canvas);
+    }
     const gl = glRef.current;
-    if (!gl) return;
+    if (!gl) {
+      return;
+    }
 
-    if (!programRef.current) programRef.current = createProgram(gl, VERT, FRAG);
+    if (!programRef.current) {
+      programRef.current = createProgram(gl, VERT, FRAG);
+    }
     const program = programRef.current;
-    if (!program) return;
+    if (!program) {
+      return;
+    }
 
-    if (!bufRef.current) bufRef.current = gl.createBuffer();
+    if (!bufRef.current) {
+      bufRef.current = gl.createBuffer();
+    }
 
     const {data: ringData, head, count} = ring.current;
-    if (count < 2) return;
+    if (count < 2) {
+      return;
+    }
 
     const linearX = xScale as (v: number) => number;
     const drawBuf = new Float32Array(count * 2);
@@ -178,7 +197,9 @@ function StreamGLCanvas({
     [bufferSize, draw],
   );
 
-  if (width <= 0 || height <= 0) return null;
+  if (width <= 0 || height <= 0) {
+    return null;
+  }
   return <g ref={markerRef} />;
 }
 

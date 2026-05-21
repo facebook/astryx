@@ -120,8 +120,9 @@ function ElementControl({
           onChange(undefined);
         } else {
           const opt = control.options.find(o => o.label === next);
-          if (opt)
+          if (opt) {
             onChange(resolveSlotElement(opt.componentName, prop.slotElements));
+          }
         }
       }}
     />
@@ -144,12 +145,18 @@ function SlotListControl({
 
   const addItem = () => {
     const slotEl = prop.slotElements?.[0];
-    if (!slotEl) return;
+    if (!slotEl) {
+      return;
+    }
     const n = count + 1;
     const tweaked = {...slotEl};
     const props = {...(tweaked.props ?? {})};
-    if (typeof props.label === 'string') props.label = `${props.label} ${n}`;
-    if (typeof props.value === 'string') props.value = `${props.value}-${n}`;
+    if (typeof props.label === 'string') {
+      props.label = `${props.label} ${n}`;
+    }
+    if (typeof props.value === 'string') {
+      props.value = `${props.value}-${n}`;
+    }
     tweaked.props = props;
     const children =
       typeof tweaked.children === 'string'
@@ -163,7 +170,9 @@ function SlotListControl({
   };
 
   const removeItem = () => {
-    if (count > 0) onChange(items.slice(0, -1));
+    if (count > 0) {
+      onChange(items.slice(0, -1));
+    }
   };
 
   return (

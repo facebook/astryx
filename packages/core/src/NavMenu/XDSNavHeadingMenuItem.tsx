@@ -124,7 +124,9 @@ export function XDSNavHeadingMenuItem({
   const size = ctx?.size ?? 'md';
 
   const handleClick = useCallback(() => {
-    if (isDisabled) return;
+    if (isDisabled) {
+      return;
+    }
     onClick?.();
     ctx?.closeMenu();
   }, [isDisabled, onClick, ctx]);

@@ -80,7 +80,9 @@ export function AppTopNav({
 
   useEffect(() => {
     const el = document.getElementById('docsite-scroll');
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     const handleScroll = () => setIsScrolled(el.scrollTop > 170);
     el.addEventListener('scroll', handleScroll, {passive: true});
     handleScroll();

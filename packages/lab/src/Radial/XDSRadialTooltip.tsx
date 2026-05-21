@@ -98,16 +98,22 @@ export function XDSRadialTooltip({
 
   const hitTestPie = useCallback(
     (localX: number, localY: number): RadialTooltipDatum | null => {
-      if (!slices || slices.length === 0) return null;
+      if (!slices || slices.length === 0) {
+        return null;
+      }
 
       const dx = localX - cx;
       const dy = localY - cy;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
-      if (dist > radius || dist < innerRadius) return null;
+      if (dist > radius || dist < innerRadius) {
+        return null;
+      }
 
       let angle = Math.atan2(dy, dx);
-      if (angle < -Math.PI / 2) angle += 2 * Math.PI;
+      if (angle < -Math.PI / 2) {
+        angle += 2 * Math.PI;
+      }
 
       for (let i = 0; i < slices.length; i++) {
         const slice = slices[i];
@@ -128,13 +134,17 @@ export function XDSRadialTooltip({
 
   const hitTestSpider = useCallback(
     (localX: number, localY: number): RadialTooltipDatum | null => {
-      if (!axes || !angleByAxis || !axisDomains) return null;
+      if (!axes || !angleByAxis || !axisDomains) {
+        return null;
+      }
 
       const dx = localX - cx;
       const dy = localY - cy;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
-      if (dist > radius + 20) return null;
+      if (dist > radius + 20) {
+        return null;
+      }
 
       const angle = Math.atan2(dy, dx);
       let nearestAxis = axes[0];
@@ -142,14 +152,18 @@ export function XDSRadialTooltip({
 
       for (const [key, axisAngle] of angleByAxis) {
         let diff = Math.abs(angle - axisAngle);
-        if (diff > Math.PI) diff = 2 * Math.PI - diff;
+        if (diff > Math.PI) {
+          diff = 2 * Math.PI - diff;
+        }
         if (diff < minAngleDist) {
           minAngleDist = diff;
           nearestAxis = key;
         }
       }
 
-      if (minAngleDist > Math.PI / axes.length) return null;
+      if (minAngleDist > Math.PI / axes.length) {
+        return null;
+      }
 
       let bestIdx = 0;
       let bestVal = 0;
@@ -173,13 +187,17 @@ export function XDSRadialTooltip({
   const updateTooltip = useCallback(
     (e: React.PointerEvent<SVGCircleElement>) => {
       const svg = svgRef.current;
-      if (!svg) return;
+      if (!svg) {
+        return;
+      }
 
       const pt = svg.createSVGPoint();
       pt.x = e.clientX;
       pt.y = e.clientY;
       const ctm = svg.getScreenCTM()?.inverse();
-      if (!ctm) return;
+      if (!ctm) {
+        return;
+      }
       const local = pt.matrixTransform(ctm);
 
       const hit =
@@ -214,7 +232,9 @@ export function XDSRadialTooltip({
   // Mouse: hover. Touch: drag (only if active).
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<SVGCircleElement>) => {
-      if (e.pointerType !== 'mouse' && !active.current) return;
+      if (e.pointerType !== 'mouse' && !active.current) {
+        return;
+      }
       updateTooltip(e);
     },
     [updateTooltip],

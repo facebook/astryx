@@ -180,7 +180,9 @@ export function TemplateThumbnail({slug}: {slug: string}) {
   // Intersection observer: track visibility for Activity mode
   useEffect(() => {
     const el = containerRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
 
     const observer = new IntersectionObserver(
       ([entry]) => setIsVisible(entry.isIntersecting),
@@ -194,14 +196,18 @@ export function TemplateThumbnail({slug}: {slug: string}) {
   useEffect(() => {
     updateWidth();
     const el = containerRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     const ro = new ResizeObserver(updateWidth);
     ro.observe(el);
     return () => ro.disconnect();
   }, [updateWidth]);
 
   const Component = TEMPLATE_COMPONENTS[slug];
-  if (!Component) return null;
+  if (!Component) {
+    return null;
+  }
 
   return (
     <div ref={containerRef} {...stylex.props(styles.container)} inert>

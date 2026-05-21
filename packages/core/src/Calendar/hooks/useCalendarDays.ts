@@ -12,7 +12,6 @@
  * - /packages/core/src/Calendar/hooks/index.ts
  */
 
-
 import {useMemo} from 'react';
 import type {DayOfWeek, ISODateString} from '../XDSCalendar';
 
@@ -96,7 +95,9 @@ export function useCalendarDays(
 
     // Calculate starting offset based on weekStartsOn
     let startingDayOfWeek = firstDayOfMonth.getDay() - weekStartsOn;
-    if (startingDayOfWeek < 0) startingDayOfWeek += 7;
+    if (startingDayOfWeek < 0) {
+      startingDayOfWeek += 7;
+    }
 
     // Calculate total cells
     const totalDays = daysInMonth + startingDayOfWeek;

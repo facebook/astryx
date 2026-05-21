@@ -82,7 +82,9 @@ function ComponentThumbnail({name}: {name: string}) {
 
   useEffect(() => {
     const el = containerRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     const observer = new IntersectionObserver(
       ([entry]) => setIsVisible(entry.isIntersecting),
       {rootMargin: '200px'},
@@ -94,7 +96,9 @@ function ComponentThumbnail({name}: {name: string}) {
   useEffect(() => {
     updateWidth();
     const el = containerRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     const ro = new ResizeObserver(updateWidth);
     ro.observe(el);
     return () => ro.disconnect();

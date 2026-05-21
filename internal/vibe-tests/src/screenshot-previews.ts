@@ -143,21 +143,24 @@ async function main() {
       const screenshotsDir = path.join(iterDir, 'screenshots');
 
       if (!fs.existsSync(previewsDir)) {
-        console.error(
-          `  ⚠ No previews directory for ${iterationId}, skipping`,
-        );
+        console.error(`  ⚠ No previews directory for ${iterationId}, skipping`);
         continue;
       }
 
       // Read the preview manifest to find all HTML files
       const manifestPath = path.join(previewsDir, 'manifest.json');
-      const previewFiles: Array<{promptId: string; target: string; path: string}> =
-        [];
+      const previewFiles: Array<{
+        promptId: string;
+        target: string;
+        path: string;
+      }> = [];
 
       if (fs.existsSync(manifestPath)) {
         const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
         for (const [promptId, targets] of Object.entries(manifest)) {
-          if (prompts && !prompts.includes(promptId)) continue;
+          if (prompts && !prompts.includes(promptId)) {
+            continue;
+          }
           for (const [target, relPath] of Object.entries(
             targets as Record<string, string>,
           )) {
@@ -170,12 +173,16 @@ async function main() {
       } else {
         // No manifest — scan for HTML files directly
         const scanDir = (dir: string) => {
-          if (!fs.existsSync(dir)) return;
+          if (!fs.existsSync(dir)) {
+            return;
+          }
           for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
             if (entry.isDirectory()) {
               scanDir(path.join(dir, entry.name));
             } else if (entry.name.endsWith('.html')) {
-              const promptId = path.basename(path.dirname(path.join(dir, entry.name)));
+              const promptId = path.basename(
+                path.dirname(path.join(dir, entry.name)),
+              );
               const target = path.basename(entry.name, '.html');
               previewFiles.push({
                 promptId,
@@ -208,10 +215,7 @@ async function main() {
 
       for (const preview of previewFiles) {
         // Compute the URL relative to the served directory
-        const relPath = path.relative(
-          path.dirname(previewsDir),
-          preview.path,
-        );
+        const relPath = path.relative(path.dirname(previewsDir), preview.path);
 
         for (const [viewportName, viewport] of Object.entries(VIEWPORTS)) {
           for (const theme of THEMES) {
@@ -265,10 +269,7 @@ async function main() {
       }
 
       // Write screenshot manifest
-      writeJson(
-        path.join(screenshotsDir, 'manifest.json'),
-        screenshotManifest,
-      );
+      writeJson(path.join(screenshotsDir, 'manifest.json'), screenshotManifest);
 
       await server.close();
     }

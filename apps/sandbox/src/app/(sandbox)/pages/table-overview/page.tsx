@@ -436,7 +436,9 @@ export default function TableOverviewPage() {
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
   const filterRows = (rows: ReviewRow[]) => {
-    if (!search.trim()) return rows;
+    if (!search.trim()) {
+      return rows;
+    }
     const q = search.toLowerCase();
     return rows.filter(
       row =>

@@ -10,7 +10,9 @@ export function ShimmerText({isActive}: {isActive: boolean}) {
   const [dots, setDots] = useState('');
 
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive) {
+      return;
+    }
     const id = setInterval(() => {
       setDots(prev => (prev.length >= 3 ? '' : prev + '.'));
     }, 500);

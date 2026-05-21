@@ -160,7 +160,9 @@ export function XDSCommandPaletteItem({
   }, [isHighlighted]);
 
   const handleClick = useCallback(() => {
-    if (isDisabled) return;
+    if (isDisabled) {
+      return;
+    }
     onSelect?.(value);
     if (ctx) {
       ctx.selectItem(value);
@@ -169,7 +171,9 @@ export function XDSCommandPaletteItem({
   }, [isDisabled, value, onSelect, ctx]);
 
   const handleMouseEnter = useCallback(() => {
-    if (isDisabled || !ctx || itemIndex < 0) return;
+    if (isDisabled || !ctx || itemIndex < 0) {
+      return;
+    }
     ctx.setHighlightedIndex(itemIndex);
   }, [isDisabled, itemIndex, ctx]);
 

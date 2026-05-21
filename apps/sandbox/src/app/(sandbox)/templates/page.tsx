@@ -73,14 +73,20 @@ function parseSortFromParams(
   params: URLSearchParams,
 ): XDSTableSortState | undefined {
   const raw = params.get('sort');
-  if (!raw) return undefined;
+  if (!raw) {
+    return undefined;
+  }
   const [sortKey, dir] = raw.split(':');
-  if (!sortKey || (dir !== 'asc' && dir !== 'desc')) return undefined;
+  if (!sortKey || (dir !== 'asc' && dir !== 'desc')) {
+    return undefined;
+  }
   return [{sortKey, direction: dir === 'asc' ? 'ascending' : 'descending'}];
 }
 
 function serializeSort(sort: XDSTableSortState): string | null {
-  if (sort.length === 0) return null;
+  if (sort.length === 0) {
+    return null;
+  }
   const {sortKey, direction} = sort[0];
   return `${sortKey}:${direction === 'ascending' ? 'asc' : 'desc'}`;
 }
@@ -101,9 +107,13 @@ function buildSearchParams(
 ): string {
   const params = new URLSearchParams();
   const sortStr = serializeSort(sort);
-  if (sortStr) params.set('sort', sortStr);
+  if (sortStr) {
+    params.set('sort', sortStr);
+  }
   for (const [key, value] of Object.entries(filters)) {
-    if (value != null) params.set(`${FILTER_PREFIX}${key}`, String(value));
+    if (value != null) {
+      params.set(`${FILTER_PREFIX}${key}`, String(value));
+    }
   }
   const str = params.toString();
   return str ? `?${str}` : '';
@@ -141,8 +151,11 @@ function useTableSearchParams() {
   const onFilterChange = useCallback(
     (key: string, value: XDSTableFilterValue | null) => {
       const next = {...filters};
-      if (value == null) delete next[key];
-      else next[key] = value;
+      if (value == null) {
+        delete next[key];
+      } else {
+        next[key] = value;
+      }
       updateURL(sort, next);
     },
     [updateURL, sort, filters],
@@ -230,9 +243,7 @@ const columns: XDSTableColumn<TemplateRow>[] = [
     filter: 'isShowcase',
     width: pixel(100),
     renderCell: (row: TemplateRow) =>
-      row.isShowcase ? (
-        <XDSBadge label="Showcase" variant="info" />
-      ) : null,
+      row.isShowcase ? <XDSBadge label="Showcase" variant="info" /> : null,
   },
   {
     key: 'description',

@@ -51,9 +51,13 @@ const FALLBACK_TICK_MS_FAST = 8;
  */
 function parseDuration(value: string): number | null {
   const ms = value.match(/^([\d.]+)ms$/);
-  if (ms) return parseFloat(ms[1]);
+  if (ms) {
+    return parseFloat(ms[1]);
+  }
   const s = value.match(/^([\d.]+)s$/);
-  if (s) return parseFloat(s[1]) * 1000;
+  if (s) {
+    return parseFloat(s[1]) * 1000;
+  }
   return null;
 }
 
@@ -97,7 +101,9 @@ export function useXDSStreamingText(
   // fast → half that, floored at 4ms (roughly 2x speed)
   const {token} = useXDSTheme();
   const tickMs = useMemo(() => {
-    if (speed === 'instant') return 0;
+    if (speed === 'instant') {
+      return 0;
+    }
     const base = parseDuration(token('--duration-fast-min'));
     if (base == null) {
       return speed === 'fast' ? FALLBACK_TICK_MS_FAST : FALLBACK_TICK_MS;
@@ -130,7 +136,9 @@ export function useXDSStreamingText(
 
   // Animation loop
   useEffect(() => {
-    if (!isStreaming || speed === 'instant') return;
+    if (!isStreaming || speed === 'instant') {
+      return;
+    }
 
     function tick(now: number) {
       const elapsed = now - lastTickRef.current;

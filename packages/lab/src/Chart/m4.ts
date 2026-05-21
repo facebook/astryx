@@ -41,15 +41,21 @@ export function m4Reduce(
   width: number,
   xDomain?: [number, number],
 ): M4Point[] {
-  if (data.length === 0 || width <= 0) return [];
+  if (data.length === 0 || width <= 0) {
+    return [];
+  }
 
   // If data fits without reduction, return as-is
-  if (data.length <= width * 4) return data;
+  if (data.length <= width * 4) {
+    return data;
+  }
 
   const xMin = xDomain ? xDomain[0] : data[0].x;
   const xMax = xDomain ? xDomain[1] : data[data.length - 1].x;
   const xRange = xMax - xMin;
-  if (xRange <= 0) return [data[0]];
+  if (xRange <= 0) {
+    return [data[0]];
+  }
 
   const bucketCount = Math.ceil(width);
 
@@ -83,8 +89,12 @@ export function m4Reduce(
       bucket.max = point;
     } else {
       bucket.last = point;
-      if (point.y < bucket.min!.y) bucket.min = point;
-      if (point.y > bucket.max!.y) bucket.max = point;
+      if (point.y < bucket.min!.y) {
+        bucket.min = point;
+      }
+      if (point.y > bucket.max!.y) {
+        bucket.max = point;
+      }
     }
   }
 
@@ -93,7 +103,9 @@ export function m4Reduce(
   const result: M4Point[] = [];
 
   for (const bucket of buckets) {
-    if (!bucket.first) continue;
+    if (!bucket.first) {
+      continue;
+    }
 
     const points = [bucket.first, bucket.min!, bucket.max!, bucket.last!];
 

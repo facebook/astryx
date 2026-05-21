@@ -136,7 +136,9 @@ function StringListEditor({
   onChange: (value: FilterValue) => void;
 }) {
   const currentValue: XDSSearchableItem[] = useMemo(() => {
-    if (filterValue?.type !== 'string_list') return [];
+    if (filterValue?.type !== 'string_list') {
+      return [];
+    }
     return filterValue.value.map(v => ({id: v, label: v}));
   }, [filterValue]);
 
@@ -272,7 +274,9 @@ function DateAbsoluteEditor({
 }) {
   // Convert unixSeconds to ISO date string for the date input
   const currentValue = useMemo(() => {
-    if (filterValue?.type !== 'date_absolute') return undefined;
+    if (filterValue?.type !== 'date_absolute') {
+      return undefined;
+    }
     const date = new Date(filterValue.unixSeconds * 1000);
     return date.toISOString().split('T')[0] as ISODateString;
   }, [filterValue]);
@@ -358,7 +362,9 @@ function DateRangeEditor({
   onChange: (value: FilterValue) => void;
 }) {
   const startValue = useMemo(() => {
-    if (filterValue?.type !== 'date_range') return undefined;
+    if (filterValue?.type !== 'date_range') {
+      return undefined;
+    }
     const part = filterValue.value.start;
     if (part.type === 'ABSOLUTE') {
       return new Date(part.unixSeconds * 1000)
@@ -369,7 +375,9 @@ function DateRangeEditor({
   }, [filterValue]);
 
   const endValue = useMemo(() => {
-    if (filterValue?.type !== 'date_range') return undefined;
+    if (filterValue?.type !== 'date_range') {
+      return undefined;
+    }
     const part = filterValue.value.end;
     if (part.type === 'ABSOLUTE') {
       return new Date(part.unixSeconds * 1000)
@@ -486,7 +494,9 @@ function EnumListEditor({
   const source = useMemo(() => createStaticSource(items), [items]);
 
   const currentValue: XDSSearchableItem[] = useMemo(() => {
-    if (filterValue?.type !== 'enum_list') return [];
+    if (filterValue?.type !== 'enum_list') {
+      return [];
+    }
     return filterValue.value.map(v => {
       const item = operatorValue.values.find(e => e.value === v);
       return {id: v, label: item?.label ?? v};
@@ -533,7 +543,9 @@ function EntityListEditor({
 
   // Preserve photo in auxiliaryData so it round-trips through the tokenizer (#1106).
   const currentValue: XDSSearchableItem[] = useMemo(() => {
-    if (filterValue?.type !== 'entity_list') return [];
+    if (filterValue?.type !== 'entity_list') {
+      return [];
+    }
     return filterValue.value.map((entity: PowerSearchEntity) => ({
       id: entity.id,
       label: entity.label,

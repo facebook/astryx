@@ -55,7 +55,9 @@ function indexToColor(i: number): [number, number, number] {
 
 /** Decode an RGB pixel back to a point index. Returns -1 for background. */
 function colorToIndex(r: number, g: number, b: number): number {
-  if (r === 0 && g === 0 && b === 0) return -1;
+  if (r === 0 && g === 0 && b === 0) {
+    return -1;
+  }
   return ((r << 16) | (g << 8) | b) - 1;
 }
 
@@ -113,7 +115,9 @@ function compileShader(
   src: string,
 ): WebGLShader | null {
   const s = gl.createShader(type);
-  if (!s) return null;
+  if (!s) {
+    return null;
+  }
   gl.shaderSource(s, src);
   gl.compileShader(s);
   if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
@@ -130,9 +134,13 @@ function linkProgram(
 ): WebGLProgram | null {
   const vs = compileShader(gl, gl.VERTEX_SHADER, vert);
   const fs = compileShader(gl, gl.FRAGMENT_SHADER, frag);
-  if (!vs || !fs) return null;
+  if (!vs || !fs) {
+    return null;
+  }
   const p = gl.createProgram();
-  if (!p) return null;
+  if (!p) {
+    return null;
+  }
   gl.attachShader(p, vs);
   gl.attachShader(p, fs);
   gl.linkProgram(p);
@@ -205,7 +213,9 @@ export function XDSChartDotGLInteractive({
 
   // Render both passes
   useEffect(() => {
-    if (width <= 0 || height <= 0) return;
+    if (width <= 0 || height <= 0) {
+      return;
+    }
     const dpr = window.devicePixelRatio || 1;
 
     // --- Visible canvas ---
@@ -221,7 +231,9 @@ export function XDSChartDotGLInteractive({
           antialias: true,
         });
         const prog = gl ? linkProgram(gl, VERT_VIS, FRAG_VIS) : null;
-        if (gl && prog) visGLRef.current = {gl, prog};
+        if (gl && prog) {
+          visGLRef.current = {gl, prog};
+        }
       }
 
       const vis = visGLRef.current;
@@ -364,10 +376,14 @@ export function XDSChartDotGLInteractive({
   // Mouse handler — read pick buffer
   const handleMouseMove = useCallback((e: React.MouseEvent<SVGRectElement>) => {
     const pick = pickGLRef.current;
-    if (!pick) return;
+    if (!pick) {
+      return;
+    }
 
     const svg = e.currentTarget.ownerSVGElement;
-    if (!svg) return;
+    if (!svg) {
+      return;
+    }
     const pt = svg.createSVGPoint();
     pt.x = e.clientX;
     pt.y = e.clientY;
@@ -419,7 +435,9 @@ export function XDSChartDotGLInteractive({
     </div>
   );
 
-  if (width <= 0 || height <= 0) return null;
+  if (width <= 0 || height <= 0) {
+    return null;
+  }
 
   return (
     <g>

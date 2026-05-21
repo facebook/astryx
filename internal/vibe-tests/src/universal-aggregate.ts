@@ -169,7 +169,9 @@ async function main() {
         if (taskMeta.createdAt && completedAt) {
           const start = new Date(taskMeta.createdAt).getTime();
           const end = new Date(completedAt).getTime();
-          if (end > start) durationMs = Math.round(end - start);
+          if (end > start) {
+            durationMs = Math.round(end - start);
+          }
         }
       } catch {
         // ignore
@@ -180,7 +182,9 @@ async function main() {
         const taskStat = fs.statSync(taskPath);
         const resultStat = fs.statSync(codePath);
         const inferred = resultStat.mtimeMs - taskStat.mtimeMs;
-        if (inferred > 0) durationMs = Math.round(inferred);
+        if (inferred > 0) {
+          durationMs = Math.round(inferred);
+        }
       }
     }
 

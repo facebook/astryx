@@ -66,7 +66,9 @@ export interface UseXDSSyntaxThemeReturn {
  * @example
  * function CodeCanvas() {
  *   const syntax = useXDSSyntaxTheme();
- *   if (!syntax) return null;
+ *   if (!syntax) {
+ *     return null;
+ *   }
  *   ctx.fillStyle = syntax.token('keyword');
  * }
  */
@@ -76,7 +78,9 @@ export function useXDSSyntaxTheme(): UseXDSSyntaxThemeReturn | null {
   const effectiveMode: 'light' | 'dark' = prefersDark ? 'dark' : 'light';
 
   const tokens = useMemo(() => {
-    if (!ctx) return null;
+    if (!ctx) {
+      return null;
+    }
     const resolved: Partial<Record<SyntaxThemeTokenKey, string>> = {};
     for (const key of ALL_SYNTAX_KEYS) {
       resolved[key] = resolveSyntaxTokenForMode(
@@ -87,7 +91,9 @@ export function useXDSSyntaxTheme(): UseXDSSyntaxThemeReturn | null {
     return resolved as Record<SyntaxThemeTokenKey, string>;
   }, [ctx, effectiveMode]);
 
-  if (!ctx || !tokens) return null;
+  if (!ctx || !tokens) {
+    return null;
+  }
 
   return {
     name: ctx.theme.name,

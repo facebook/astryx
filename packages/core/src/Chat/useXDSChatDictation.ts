@@ -107,13 +107,17 @@ async function createVolumeAnalyser(
       calibrationSamples++;
       for (let i = 0; i < dataArray.length; i++) {
         const val = dataArray[i] / 255;
-        if (val > noiseFloor[i]) noiseFloor[i] = val;
+        if (val > noiseFloor[i]) {
+          noiseFloor[i] = val;
+        }
       }
     }
 
     function getCleanBin(i: number): number {
       const raw = dataArray[i] / 255;
-      if (calibrationSamples < CALIBRATION_FRAMES) return 0;
+      if (calibrationSamples < CALIBRATION_FRAMES) {
+        return 0;
+      }
       return Math.max(0, raw - noiseFloor[i] * 1.1);
     }
 
@@ -121,23 +125,34 @@ async function createVolumeAnalyser(
       calibrate,
       getVolume: () => {
         analyser.getByteFrequencyData(dataArray);
-        if (calibrationSamples < CALIBRATION_FRAMES) calibrate();
+        if (calibrationSamples < CALIBRATION_FRAMES) {
+          calibrate();
+        }
         let sum = 0;
-        for (let i = 0; i < dataArray.length; i++) sum += getCleanBin(i);
+        for (let i = 0; i < dataArray.length; i++) {
+          sum += getCleanBin(i);
+        }
         return sum / dataArray.length;
       },
       getBands: (count: number) => {
         analyser.getByteFrequencyData(dataArray);
-        if (calibrationSamples < CALIBRATION_FRAMES) calibrate();
+        if (calibrationSamples < CALIBRATION_FRAMES) {
+          calibrate();
+        }
         const bands: number[] = [];
         const binCount = dataArray.length;
         const voiceSplits = [3, 6, 11, 18, binCount];
-        const splits = count <= voiceSplits.length ? voiceSplits.slice(0, count) : voiceSplits;
+        const splits =
+          count <= voiceSplits.length
+            ? voiceSplits.slice(0, count)
+            : voiceSplits;
         let start = 1;
         for (let b = 0; b < splits.length; b++) {
           const end = splits[b];
           let sum = 0;
-          for (let i = start; i < end; i++) sum += getCleanBin(i);
+          for (let i = start; i < end; i++) {
+            sum += getCleanBin(i);
+          }
           bands.push(sum / (end - start));
           start = end;
         }
@@ -148,12 +163,17 @@ async function createVolumeAnalyser(
         const bands: number[] = [];
         const binCount = dataArray.length;
         const voiceSplits = [3, 6, 11, 18, binCount];
-        const splits = count <= voiceSplits.length ? voiceSplits.slice(0, count) : voiceSplits;
+        const splits =
+          count <= voiceSplits.length
+            ? voiceSplits.slice(0, count)
+            : voiceSplits;
         let start = 1;
         for (let b = 0; b < splits.length; b++) {
           const end = splits[b];
           let sum = 0;
-          for (let i = start; i < end; i++) sum += dataArray[i] / 255;
+          for (let i = start; i < end; i++) {
+            sum += dataArray[i] / 255;
+          }
           bands.push(sum / (end - start));
           start = end;
         }
@@ -161,7 +181,9 @@ async function createVolumeAnalyser(
       },
       cleanup: () => {
         source.disconnect();
-        for (const track of stream.getTracks()) track.stop();
+        for (const track of stream.getTracks()) {
+          track.stop();
+        }
       },
     };
   } catch {
@@ -207,7 +229,10 @@ function playPlop(
     osc.frequency.exponentialRampToValueAtTime(freq * 0.93, now + delay + dur);
     gain.gain.setValueAtTime(0.001, now);
     gain.gain.setValueAtTime(volume, now + delay);
-    gain.gain.exponentialRampToValueAtTime(volume * 0.2, now + delay + dur * 0.12);
+    gain.gain.exponentialRampToValueAtTime(
+      volume * 0.2,
+      now + delay + dur * 0.12,
+    );
     gain.gain.exponentialRampToValueAtTime(0.001, now + delay + dur);
     osc.connect(gain);
     gain.connect(ctx.destination);
@@ -219,13 +244,17 @@ function playPlop(
 }
 
 function playStartSound(getCtx: () => AudioContext) {
-  if (isIOS) return;
+  if (isIOS) {
+    return;
+  }
   playPlop(392, 0, getCtx);
   playPlop(523, 0.07, getCtx);
 }
 
 function playStopSound(getCtx: () => AudioContext) {
-  if (isIOS) return;
+  if (isIOS) {
+    return;
+  }
   playPlop(523, 0, getCtx);
   playPlop(392, 0.07, getCtx);
 }
@@ -289,7 +318,9 @@ export function useXDSChatDictation(
         setVolume(vol);
         const hist = volumeHistoryRef.current;
         hist.push(vol);
-        if (hist.length > 30) hist.shift();
+        if (hist.length > 30) {
+          hist.shift();
+        }
         setBands(analyser.getBands(5));
         setRawBands(analyser.getRawBands(5));
       }
@@ -320,7 +351,9 @@ export function useXDSChatDictation(
 
   const insertInterimSpan = useCallback(() => {
     const editable = getEditable();
-    if (!editable) return;
+    if (!editable) {
+      return;
+    }
     const span = document.createElement('span');
     span.setAttribute('data-xds-dictation-interim', '');
     span.contentEditable = 'false';
@@ -336,7 +369,11 @@ export function useXDSChatDictation(
   const removeInterimSpan = useCallback(() => {
     const span = interimSpanRef.current;
     if (span?.isConnected) {
-      try { span.remove(); } catch { /* Already removed */ }
+      try {
+        span.remove();
+      } catch {
+        /* Already removed */
+      }
     }
     interimSpanRef.current = null;
   }, []);
@@ -344,11 +381,15 @@ export function useXDSChatDictation(
   const transformTranscript = useCallback(
     (text: string) => {
       let t = text;
-      if (userTransform) t = userTransform(t);
+      if (userTransform) {
+        t = userTransform(t);
+      }
       const hist = volumeHistoryRef.current;
       const avgVolume =
         hist.length > 0 ? hist.reduce((a, b) => a + b, 0) / hist.length : 0;
-      if (avgVolume >= 0.15 && hist.length >= 10) t = t.toUpperCase();
+      if (avgVolume >= 0.15 && hist.length >= 10) {
+        t = t.toUpperCase();
+      }
       return t;
     },
     [userTransform],
@@ -395,19 +436,25 @@ export function useXDSChatDictation(
     onResult: inputRef ? undefined : onResultProp,
     onError,
     onStart: () => {
-      if (hasSounds) playStartSound(getAudioContextRef.current);
+      if (hasSounds) {
+        playStartSound(getAudioContextRef.current);
+      }
       createVolumeAnalyser(getAudioContextRef.current).then(analyser => {
         if (analyser) {
           analyserRef.current = analyser;
           startVolumePolling();
         }
       });
-      if (inputRef) insertInterimSpan();
+      if (inputRef) {
+        insertInterimSpan();
+      }
       callbacksRef.current.onStartProp?.();
     },
     onEnd: () => {
       stopVolumePolling();
-      if (hasSounds) playStopSound(getAudioContextRef.current);
+      if (hasSounds) {
+        playStopSound(getAudioContextRef.current);
+      }
       if (inputRef) {
         removeInterimSpan();
         const editable = getEditable();

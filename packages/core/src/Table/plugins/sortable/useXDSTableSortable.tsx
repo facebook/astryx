@@ -161,8 +161,12 @@ function resolveSortKey<T extends Record<string, unknown>>(
   column: XDSTableColumn<T>,
 ): string | null {
   const {sortable} = column;
-  if (!sortable) return null;
-  if (sortable === true) return column.key;
+  if (!sortable) {
+    return null;
+  }
+  if (sortable === true) {
+    return column.key;
+  }
   return sortable.sortKey ?? column.key;
 }
 
@@ -170,7 +174,9 @@ function getHeaderLabel<T extends Record<string, unknown>>(
   column: XDSTableColumn<T>,
 ): string {
   const {header} = column;
-  if (typeof header === 'string') return header;
+  if (typeof header === 'string') {
+    return header;
+  }
   return column.key;
 }
 
@@ -195,8 +201,12 @@ function getNextDirection(
   current: XDSTableSortDirection | null,
   allowUnsortedState: boolean,
 ): XDSTableSortDirection | null {
-  if (current == null) return 'ascending';
-  if (current === 'ascending') return 'descending';
+  if (current == null) {
+    return 'ascending';
+  }
+  if (current === 'ascending') {
+    return 'descending';
+  }
   // current === 'descending'
   return allowUnsortedState ? null : 'ascending';
 }
@@ -342,7 +352,9 @@ export function useXDSTableSortable<
         column: XDSTableColumn<T>,
       ): HeaderCellRenderProps {
         const sortKey = resolveSortKey(column);
-        if (sortKey == null) return props;
+        if (sortKey == null) {
+          return props;
+        }
 
         // Find sort entry for this column
         const cfg = configRef.current;

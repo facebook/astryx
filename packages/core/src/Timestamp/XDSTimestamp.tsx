@@ -152,7 +152,9 @@ function getRelativeTimeString(date: Date, now: Date): string {
   if (diffSeconds < 0) {
     // Future dates
     const absDiff = Math.abs(diffSeconds);
-    if (absDiff < MINUTE) return 'in a few seconds';
+    if (absDiff < MINUTE) {
+      return 'in a few seconds';
+    }
     if (absDiff < HOUR) {
       const mins = Math.round(absDiff / MINUTE);
       return `in ${mins} ${mins === 1 ? 'minute' : 'minutes'}`;
@@ -173,8 +175,12 @@ function getRelativeTimeString(date: Date, now: Date): string {
     return `in ${years} ${years === 1 ? 'year' : 'years'}`;
   }
 
-  if (diffSeconds < 10) return 'just now';
-  if (diffSeconds < MINUTE) return `${diffSeconds} seconds ago`;
+  if (diffSeconds < 10) {
+    return 'just now';
+  }
+  if (diffSeconds < MINUTE) {
+    return `${diffSeconds} seconds ago`;
+  }
   if (diffSeconds < HOUR) {
     const mins = Math.round(diffSeconds / MINUTE);
     return `${mins} ${mins === 1 ? 'minute' : 'minutes'} ago`;
@@ -183,7 +189,9 @@ function getRelativeTimeString(date: Date, now: Date): string {
     const hours = Math.round(diffSeconds / HOUR);
     return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
   }
-  if (diffSeconds < 2 * DAY) return 'yesterday';
+  if (diffSeconds < 2 * DAY) {
+    return 'yesterday';
+  }
   if (diffSeconds < MONTH) {
     const days = Math.round(diffSeconds / DAY);
     return `${days} days ago`;
@@ -271,9 +279,15 @@ function getFullAbsoluteString(date: Date): string {
 /** Returns the interval (in ms) at which a relative timestamp should update. */
 function getLiveInterval(diffSeconds: number): number {
   const absDiff = Math.abs(diffSeconds);
-  if (absDiff < MINUTE) return 1000; // every second
-  if (absDiff < HOUR) return 30_000; // every 30s
-  if (absDiff < DAY) return 60_000; // every minute
+  if (absDiff < MINUTE) {
+    return 1000;
+  } // every second
+  if (absDiff < HOUR) {
+    return 30_000;
+  } // every 30s
+  if (absDiff < DAY) {
+    return 60_000;
+  } // every minute
   return 300_000; // every 5 minutes
 }
 
@@ -349,7 +363,9 @@ export function XDSTimestamp({
 
   // Live updates
   useEffect(() => {
-    if (!isLive || effectiveFormat !== 'relative') return;
+    if (!isLive || effectiveFormat !== 'relative') {
+      return;
+    }
 
     const interval = getLiveInterval(diffSeconds);
     const timer = setInterval(() => {

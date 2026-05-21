@@ -274,10 +274,14 @@ const styles = stylex.create({
 
 function findItem(items: FileSystemItem[], id: string): FileSystemItem | null {
   for (const item of items) {
-    if (item.id === id) return item;
+    if (item.id === id) {
+      return item;
+    }
     if (item.children) {
       const found = findItem(item.children, id);
-      if (found) return found;
+      if (found) {
+        return found;
+      }
     }
   }
   return null;
@@ -315,10 +319,14 @@ export default function FileExplorerPage() {
   }, [selectedPath]);
 
   const currentFolderName = useMemo(() => {
-    if (selectedPath.length === 0) return 'Home';
+    if (selectedPath.length === 0) {
+      return 'Home';
+    }
     const lastId = selectedPath[selectedPath.length - 1];
     const item = findItem(FILESYSTEM, lastId);
-    if (item?.type === 'folder') return item.name;
+    if (item?.type === 'folder') {
+      return item.name;
+    }
     if (selectedPath.length >= 2) {
       const parent = findItem(
         FILESYSTEM,
@@ -330,7 +338,9 @@ export default function FileExplorerPage() {
   }, [selectedPath]);
 
   const selectedFile = useMemo(() => {
-    if (selectedPath.length === 0) return null;
+    if (selectedPath.length === 0) {
+      return null;
+    }
     const lastId = selectedPath[selectedPath.length - 1];
     const item = findItem(FILESYSTEM, lastId);
     return item?.type === 'file' ? item : null;

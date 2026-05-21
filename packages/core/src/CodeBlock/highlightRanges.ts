@@ -44,18 +44,24 @@ let dynamicStyleSheet: CSSStyleSheet | null = null;
  * Built-in types are pre-seeded and never reach this path.
  */
 function ensureDynamicHighlightType(tokenType: string): void {
-  if (registeredHighlightTypes.has(tokenType)) return;
+  if (registeredHighlightTypes.has(tokenType)) {
+    return;
+  }
   registeredHighlightTypes.add(tokenType);
 
   ensureHighlightStyles();
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {
+    return;
+  }
 
   if (!dynamicStyleSheet) {
     const style = document.createElement('style');
     style.setAttribute('data-xds-highlight-dynamic', '');
     document.head.appendChild(style);
     dynamicStyleSheet = style.sheet ?? null;
-    if (!dynamicStyleSheet) return;
+    if (!dynamicStyleSheet) {
+      return;
+    }
   }
 
   const name = `xds-${tokenType}`;
@@ -78,7 +84,9 @@ function createHighlightResolver(): (tokenType: string) => Highlight {
   const cache = new Map<string, Highlight>();
   return (tokenType: string): Highlight => {
     let highlight = cache.get(tokenType);
-    if (highlight) return highlight;
+    if (highlight) {
+      return highlight;
+    }
 
     ensureDynamicHighlightType(tokenType);
 
@@ -113,17 +121,23 @@ function applyLineRanges(
   results: RangeEntry[],
   resolve: (tokenType: string) => Highlight,
 ): void {
-  if (tokens.length === 0) return;
+  if (tokens.length === 0) {
+    return;
+  }
 
   // The text node is the first child of the line div.
   // In range mode, lines render plain text so this is always a Text node.
   const textNode = lineDiv.firstChild;
-  if (!textNode || textNode.nodeType !== Node.TEXT_NODE) return;
+  if (!textNode || textNode.nodeType !== Node.TEXT_NODE) {
+    return;
+  }
 
   const textLength = (textNode as Text).length;
 
   for (const token of tokens) {
-    if (token.start >= textLength || token.end <= 0) continue;
+    if (token.start >= textLength || token.end <= 0) {
+      continue;
+    }
 
     const start = Math.min(token.start, textLength);
     const end = Math.min(token.end, textLength);
@@ -235,7 +249,9 @@ export function applyHighlightRangesChunked(
   const listeners = new Map<Element, EventListener>();
 
   function applyChunk(wrapper: Element, index: number) {
-    if (chunkRanges.has(wrapper)) return; // already applied
+    if (chunkRanges.has(wrapper)) {
+      return;
+    } // already applied
     const ranges = applyRangesToContainer(
       wrapper,
       tokenLines,
@@ -327,7 +343,9 @@ export function applyHighlightRangesBatch(
 
   for (let i = 0; i < tokenLines.length; i++) {
     const divIndex = startLine + i;
-    if (divIndex >= lineDivs.length) break;
+    if (divIndex >= lineDivs.length) {
+      break;
+    }
 
     const lineDiv = lineDivs[divIndex];
     const tokens = tokenLines[i];
@@ -373,7 +391,9 @@ export function applyHighlightRangesFlat(
     current = walker.nextNode();
   }
 
-  if (textNodes.length === 0) return () => cleanupRanges(myRanges);
+  if (textNodes.length === 0) {
+    return () => cleanupRanges(myRanges);
+  }
 
   // Convert per-line tokens to absolute offsets.
   // The source code string has lines joined by \n, so each line starts
@@ -389,7 +409,9 @@ export function applyHighlightRangesFlat(
 
         const startPos = resolveOffset(textNodes, absStart);
         const endPos = resolveOffset(textNodes, absEnd);
-        if (!startPos || !endPos) continue;
+        if (!startPos || !endPos) {
+          continue;
+        }
 
         const highlight = resolve(token.type);
         try {

@@ -63,7 +63,9 @@ class PreviewErrorBoundary extends Component<
 }
 
 function pickPrimaryProps(name: string, props: PropDoc[]): KnobProp[] {
-  if (props.length === 0) return [];
+  if (props.length === 0) {
+    return [];
+  }
   return props.map(row => ({
     row,
     control: parsePropType(row.type, row.name, row.slotElements),
@@ -85,7 +87,9 @@ function buildInitialState(
 
   // Fill in remaining props from doc defaults / auto-generation
   for (const {row, control} of knobs) {
-    if (state[row.name] !== undefined) continue;
+    if (state[row.name] !== undefined) {
+      continue;
+    }
     const def = coerceDefault(row.default, control);
     if (def !== undefined) {
       state[row.name] = def;
@@ -130,11 +134,18 @@ function buildInitialState(
 }
 
 function formatValue(value: unknown): string {
-  if (value === undefined) return 'undefined';
-  if (value === null) return 'null';
-  if (typeof value === 'string') return `"${value}"`;
-  if (typeof value === 'boolean' || typeof value === 'number')
+  if (value === undefined) {
+    return 'undefined';
+  }
+  if (value === null) {
+    return 'null';
+  }
+  if (typeof value === 'string') {
+    return `"${value}"`;
+  }
+  if (typeof value === 'boolean' || typeof value === 'number') {
     return String(value);
+  }
   if (isValidElement(value)) {
     const el = value as React.ReactElement<Record<string, unknown>>;
     const type =
@@ -144,11 +155,15 @@ function formatValue(value: unknown): string {
           el.type.name ??
           'Component');
     const props = el.props;
-    if (!props || Object.keys(props).length === 0) return `<${type} />`;
+    if (!props || Object.keys(props).length === 0) {
+      return `<${type} />`;
+    }
     const propStr = Object.entries(props)
       .filter(([k]) => k !== 'children')
       .map(([k, v]) => {
-        if (typeof v === 'string') return `${k}="${v}"`;
+        if (typeof v === 'string') {
+          return `${k}="${v}"`;
+        }
         return `${k}={${JSON.stringify(v)}}`;
       })
       .join(' ');
@@ -164,11 +179,17 @@ function generateCode(name: string, state: Record<string, unknown>): string {
     ([k, v]) => v !== undefined && k !== 'isInline',
   );
 
-  if (entries.length === 0) return `<${componentName} />`;
+  if (entries.length === 0) {
+    return `<${componentName} />`;
+  }
 
   const propLines = entries.map(([key, value]) => {
-    if (typeof value === 'boolean' && value === true) return `  ${key}`;
-    if (typeof value === 'string') return `  ${key}="${value}"`;
+    if (typeof value === 'boolean' && value === true) {
+      return `  ${key}`;
+    }
+    if (typeof value === 'string') {
+      return `  ${key}="${value}"`;
+    }
     return `  ${key}={${formatValue(value)}}`;
   });
 

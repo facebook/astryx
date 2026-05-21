@@ -93,10 +93,14 @@ export function XDSRadialChart({
   const [containerWidth, setContainerWidth] = useState(0);
 
   useLayoutEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current) {
+      return;
+    }
     const observer = new ResizeObserver(entries => {
       const entry = entries[0];
-      if (entry) setContainerWidth(entry.contentRect.width);
+      if (entry) {
+        setContainerWidth(entry.contentRect.width);
+      }
     });
     observer.observe(containerRef.current);
     return () => observer.disconnect();
@@ -112,7 +116,9 @@ export function XDSRadialChart({
 
   // Spider: compute axis angles and domains
   const spiderCtx = useMemo(() => {
-    if (!axes || axes.length === 0) return {};
+    if (!axes || axes.length === 0) {
+      return {};
+    }
 
     const angleByAxis = new Map<string, number>();
     const step = (2 * Math.PI) / axes.length;
@@ -129,12 +135,18 @@ export function XDSRadialChart({
       for (const d of data) {
         const v = d[key];
         if (typeof v === 'number') {
-          if (v < min) min = v;
-          if (v > max) max = v;
+          if (v < min) {
+            min = v;
+          }
+          if (v > max) {
+            max = v;
+          }
         }
       }
       // Include 0 as floor
-      if (min > 0) min = 0;
+      if (min > 0) {
+        min = 0;
+      }
       axisDomains.set(key, [min, max]);
     }
 
@@ -146,14 +158,18 @@ export function XDSRadialChart({
 
   // Pie: compute slices
   const pieCtx = useMemo(() => {
-    if (!valueKey) return {};
+    if (!valueKey) {
+      return {};
+    }
 
     const total = data.reduce((sum, d) => {
       const v = d[valueKey];
       return sum + (typeof v === 'number' ? v : 0);
     }, 0);
 
-    if (total === 0) return {slices: []};
+    if (total === 0) {
+      return {slices: []};
+    }
 
     const totalPad = padAngle * data.length;
     const available = 2 * Math.PI - totalPad;

@@ -471,9 +471,14 @@ function countBlockTextLength(nodes: BlockNode[]): number {
         }
         break;
       case 'table':
-        for (const h of node.headers) len += countInlineTextLength(h.children);
-        for (const row of node.rows)
-          for (const cell of row) len += countInlineTextLength(cell.children);
+        for (const h of node.headers) {
+          len += countInlineTextLength(h.children);
+        }
+        for (const row of node.rows) {
+          for (const cell of row) {
+            len += countInlineTextLength(cell.children);
+          }
+        }
         break;
     }
   }
@@ -497,8 +502,12 @@ const DANGEROUS_URL_PATTERN = /^(javascript|data|vbscript):/i;
 
 function sanitizeUrl(url: string): string | null {
   const trimmed = url.trim();
-  if (trimmed.length === 0) return null;
-  if (DANGEROUS_URL_PATTERN.test(trimmed)) return null;
+  if (trimmed.length === 0) {
+    return null;
+  }
+  if (DANGEROUS_URL_PATTERN.test(trimmed)) {
+    return null;
+  }
   return trimmed;
 }
 
@@ -544,7 +553,9 @@ function applyInlinePlugins(
       let end: number;
       if (plugin.getEndIndex) {
         const result = plugin.getEndIndex(text, m);
-        if (result === false) continue;
+        if (result === false) {
+          continue;
+        }
         end = result;
       } else {
         end = m.index + m[0].length;
@@ -622,7 +633,9 @@ function wrapTextWithFade(
   const startOffset = cursor.offset;
   cursor.offset += content.length;
 
-  if (!cursor.active) return content;
+  if (!cursor.active) {
+    return content;
+  }
   if (startOffset >= cursor.boundary) {
     // Entirely new text
     return (
@@ -871,10 +884,13 @@ function renderInline(
     }
     case 'image': {
       const safeSrc = sanitizeUrl(node.src);
-      if (safeSrc == null) return <span key={index}>[{node.alt}]</span>;
+      if (safeSrc == null) {
+        return <span key={index}>[{node.alt}]</span>;
+      }
       const ImageComp = components?.image;
-      if (ImageComp)
+      if (ImageComp) {
         return <ImageComp key={index} src={safeSrc} alt={node.alt} />;
+      }
       return (
         <img
           key={index}
@@ -987,7 +1003,9 @@ function computeTableColumnMinWidths(node: {
     for (const row of node.rows) {
       if (row[colIdx]) {
         const len = countInlineTextLength(row[colIdx].children);
-        if (len > maxLen) maxLen = len;
+        if (len > maxLen) {
+          maxLen = len;
+        }
       }
     }
     return maxLen <= 6 ? 60 : maxLen <= 15 ? 80 : 120;
@@ -1040,12 +1058,13 @@ function renderBlock(
         ),
       );
       const HeadingComp = components?.heading;
-      if (HeadingComp)
+      if (HeadingComp) {
         return (
           <HeadingComp key={index} level={level}>
             {headingChildren}
           </HeadingComp>
         );
+      }
       const Tag = `h${level}` as const;
       return (
         <Tag
@@ -1081,8 +1100,9 @@ function renderBlock(
         ),
       );
       const ParagraphComp = components?.paragraph;
-      if (ParagraphComp)
+      if (ParagraphComp) {
         return <ParagraphComp key={index}>{paraChildren}</ParagraphComp>;
+      }
       return (
         <p
           key={index}
@@ -1105,7 +1125,7 @@ function renderBlock(
       // Track codeblock content in cursor for accurate character counting
       cursor.offset += node.content.length;
       const CodeBlockComp = components?.code;
-      if (CodeBlockComp)
+      if (CodeBlockComp) {
         return (
           <CodeBlockComp
             key={index}
@@ -1113,6 +1133,7 @@ function renderBlock(
             language={node.language}
           />
         );
+      }
       return (
         <div
           key={index}
@@ -1459,7 +1480,9 @@ function renderBlock(
     }
     case 'hr': {
       const HrComp = components?.hr;
-      if (HrComp) return <HrComp key={index} />;
+      if (HrComp) {
+        return <HrComp key={index} />;
+      }
       return (
         <hr
           key={index}

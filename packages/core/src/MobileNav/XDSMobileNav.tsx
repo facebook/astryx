@@ -328,7 +328,9 @@ export function XDSMobileNav({
   // close() is delayed so the slide-out transition can play.
   useEffect(() => {
     const dialog = dialogRef.current;
-    if (!dialog) return;
+    if (!dialog) {
+      return;
+    }
 
     if (closeTimeoutRef.current) {
       clearTimeout(closeTimeoutRef.current);

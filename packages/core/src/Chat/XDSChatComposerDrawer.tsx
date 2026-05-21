@@ -236,7 +236,9 @@ export function XDSChatComposerDrawer({
 
   const toggle = () => {
     const next = !isCollapsed;
-    if (!isControlled) setInternalCollapsed(next);
+    if (!isControlled) {
+      setInternalCollapsed(next);
+    }
     onCollapsedChange?.(next);
   };
 

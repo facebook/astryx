@@ -27,7 +27,9 @@ function fixMissingXDSImports(filePath: string, dryRun: boolean): string[] {
   while ((match = jsxPattern.exec(code)) !== null) {
     usedComponents.add(match[1]);
   }
-  if (usedComponents.size === 0) return [];
+  if (usedComponents.size === 0) {
+    return [];
+  }
 
   // Find already-imported XDS components
   const importedComponents = new Set<string>();
@@ -39,12 +41,16 @@ function fixMissingXDSImports(filePath: string, dryRun: boolean): string[] {
         .trim()
         .split(/\s+as\s+/)[0]
         .trim();
-      if (name.startsWith('XDS')) importedComponents.add(name);
+      if (name.startsWith('XDS')) {
+        importedComponents.add(name);
+      }
     }
   }
 
   const missing = [...usedComponents].filter(c => !importedComponents.has(c));
-  if (missing.length === 0) return [];
+  if (missing.length === 0) {
+    return [];
+  }
 
   if (!dryRun) {
     const importLine = `import {${missing.sort().join(', ')}} from '@xds/core';\n`;
@@ -106,7 +112,9 @@ function main() {
     }
 
     const codeDir = path.join(iterDir, 'results');
-    if (!fs.existsSync(codeDir)) continue;
+    if (!fs.existsSync(codeDir)) {
+      continue;
+    }
 
     const files = fs.readdirSync(codeDir).filter(f => f.endsWith('.tsx'));
 

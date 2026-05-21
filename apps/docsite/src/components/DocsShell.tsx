@@ -26,8 +26,12 @@ interface DocsShellProps {
 
 /** Foundations: tokens first, then alphabetical */
 const foundationsSort = (a: DocTopic, b: DocTopic) => {
-  if (a.topic === 'tokens') return -1;
-  if (b.topic === 'tokens') return 1;
+  if (a.topic === 'tokens') {
+    return -1;
+  }
+  if (b.topic === 'tokens') {
+    return 1;
+  }
   return a.title.localeCompare(b.title);
 };
 
@@ -40,7 +44,9 @@ function buildComponentSidebar(): {
   utilities: Array<{name: string; href: string}>;
 } {
   const grouped = groupedComponents['@xds/core'];
-  if (!grouped) return {componentItems: [], utilities: []};
+  if (!grouped) {
+    return {componentItems: [], utilities: []};
+  }
   return {componentItems: grouped.items, utilities: grouped.utilities};
 }
 

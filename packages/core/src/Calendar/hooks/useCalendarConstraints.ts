@@ -12,7 +12,6 @@
  * - /packages/core/src/Calendar/hooks/index.ts
  */
 
-
 import {useCallback, useMemo} from 'react';
 import type {ISODateString} from '../XDSCalendar';
 
@@ -86,15 +85,21 @@ export function useCalendarConstraints(
   const isDateDisabled = useCallback(
     (date: Date): boolean => {
       // Check min bound
-      if (minDate && date < minDate) return true;
+      if (minDate && date < minDate) {
+        return true;
+      }
 
       // Check max bound
-      if (maxDate && date > maxDate) return true;
+      if (maxDate && date > maxDate) {
+        return true;
+      }
 
       // Check custom constraints
       if (dateConstraints) {
         for (const constraint of dateConstraints) {
-          if (!constraint(date)) return true;
+          if (!constraint(date)) {
+            return true;
+          }
         }
       }
 

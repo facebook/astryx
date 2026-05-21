@@ -79,7 +79,9 @@ export default function LoginSSO() {
   const emailValid = isValidEmail(email);
 
   const handleContinue = () => {
-    if (!emailValid) return;
+    if (!emailValid) {
+      return;
+    }
     if (provider) {
       setStep('sso-confirm');
     } else {
@@ -132,7 +134,9 @@ export default function LoginSSO() {
                   onChange={setEmail}
                   size="lg"
                   onKeyDown={(e: React.KeyboardEvent) => {
-                    if (e.key === 'Enter') handleContinue();
+                    if (e.key === 'Enter') {
+                      handleContinue();
+                    }
                   }}
                 />
                 <XDSTextInput

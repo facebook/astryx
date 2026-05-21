@@ -240,14 +240,22 @@ const styles = stylex.create({
 // =============================================================================
 
 function getDensity(width: number): Density {
-  if (width < 480) return 'compact';
-  if (width <= 768) return 'balanced';
+  if (width < 480) {
+    return 'compact';
+  }
+  if (width <= 768) {
+    return 'balanced';
+  }
   return 'spacious';
 }
 
 function hasVisibleContent(children: ReactNode): boolean {
-  if (children == null || children === false) return false;
-  if (Array.isArray(children) && children.length === 0) return false;
+  if (children == null || children === false) {
+    return false;
+  }
+  if (Array.isArray(children) && children.length === 0) {
+    return false;
+  }
   return true;
 }
 
@@ -314,7 +322,9 @@ export function XDSChatLayout({
   // --- Density observer ---
   useEffect(() => {
     const root = rootRef.current;
-    if (!root) return;
+    if (!root) {
+      return;
+    }
     observeResize(root, () => {
       setDensity(getDensity(root.clientWidth));
     });

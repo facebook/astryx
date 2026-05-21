@@ -623,14 +623,18 @@ function groupTasks(
   const map = new Map<string, TaskRow[]>();
   for (const task of tasks) {
     const key = String(task[groupBy]) || '—';
-    if (!map.has(key)) map.set(key, []);
+    if (!map.has(key)) {
+      map.set(key, []);
+    }
     map.get(key)!.push(task);
   }
   return map;
 }
 
 function getGroupLabel(groupBy: GroupByField, key: string): string {
-  if (groupBy === 'status') return STATUS_LABEL[key as TaskStatus] ?? key;
+  if (groupBy === 'status') {
+    return STATUS_LABEL[key as TaskStatus] ?? key;
+  }
   if (groupBy === 'priority') {
     const labels: Record<string, string> = {
       urgent: 'Urgent',
@@ -866,7 +870,9 @@ function TaskDetailPanel({
   onClose: () => void;
   resizable: ResizableProps;
 }) {
-  if (!task) return null;
+  if (!task) {
+    return null;
+  }
   return (
     <XDSLayoutPanel
       hasDivider
@@ -979,8 +985,9 @@ export default function DataTableTemplate() {
           t.subtitle.toLowerCase().includes(q),
       );
     }
-    if (priorityFilter !== 'all')
+    if (priorityFilter !== 'all') {
       data = data.filter(t => t.priority === priorityFilter);
+    }
     return data;
   }, [search, priorityFilter]);
 
@@ -998,8 +1005,11 @@ export default function DataTableTemplate() {
   const toggleGroup = (key: string) => {
     setExpandedGroups(prev => {
       const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
       return next;
     });
   };
@@ -1093,7 +1103,9 @@ export default function DataTableTemplate() {
               </colgroup>
               {groupKeys.map(key => {
                 const tasks = grouped.get(key)!;
-                if (tasks.length === 0) return null;
+                if (tasks.length === 0) {
+                  return null;
+                }
                 const isExpanded = expandedGroups.has(key);
 
                 return (

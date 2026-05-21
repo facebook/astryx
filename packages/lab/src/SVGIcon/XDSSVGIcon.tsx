@@ -168,7 +168,9 @@ function needsMask(
   primaryFillShapes: IconShape[],
   secondaryShapes: IconShape[],
 ): boolean {
-  if (variation !== 'bold') return false;
+  if (variation !== 'bold') {
+    return false;
+  }
   return primaryFillShapes.length > 0 && secondaryShapes.length > 0;
 }
 
@@ -225,7 +227,9 @@ function renderFillRoleShapes(
       ? iconVars['--icon-layer-primary-opacity']
       : iconVars['--icon-layer-secondary-opacity'];
 
-  if (shapes.length === 0) return null;
+  if (shapes.length === 0) {
+    return null;
+  }
 
   return (
     <g
@@ -265,7 +269,9 @@ function renderStrokeRoleShapes(shapes: IconShape[], layer: LayerPrefix) {
       ? iconVars['--icon-layer-primary-stroke-role-width']
       : iconVars['--icon-layer-secondary-stroke-role-width'];
 
-  if (shapes.length === 0) return null;
+  if (shapes.length === 0) {
+    return null;
+  }
 
   return (
     <g

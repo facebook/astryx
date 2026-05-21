@@ -318,9 +318,11 @@ export function XDSSelectableCard({
     <XDSCard
       ref={(node: HTMLDivElement | null) => {
         containerRef.current = node;
-        if (typeof ref === 'function') ref(node);
-        else if (ref != null)
+        if (typeof ref === 'function') {
+          ref(node);
+        } else if (ref != null) {
           (ref as MutableRefObject<HTMLDivElement | null>).current = node;
+        }
       }}
       width={width}
       height={height}

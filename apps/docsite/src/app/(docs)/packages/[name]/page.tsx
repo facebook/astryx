@@ -78,7 +78,9 @@ export default async function PackagePage({
   const {name: slug} = await params;
   const pkgName = slugToPackageName(slug);
   const pkg = packages.find(p => p.name === pkgName);
-  if (!pkg) notFound();
+  if (!pkg) {
+    notFound();
+  }
 
   const isTheme = pkg.name.includes('theme-');
   const isComponentPkg = pkg.name === '@xds/core';

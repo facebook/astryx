@@ -46,7 +46,10 @@ function sortByOrder(tokens: string[], order: string[]): string[] {
 }
 
 function RadiusTokenTable({theme}: TokenTableProps) {
-  const tokens = sortByOrder(getTokensByPrefix(theme, '--radius-'), RADIUS_ORDER);
+  const tokens = sortByOrder(
+    getTokensByPrefix(theme, '--radius-'),
+    RADIUS_ORDER,
+  );
   const data = tokens.map(name => ({
     tokenName: name,
     value: resolveToken(theme, name),
@@ -62,8 +65,13 @@ function RadiusTokenTable({theme}: TokenTableProps) {
           header: 'Value',
           renderCell: (item: Record<string, unknown>) => (
             <XDSHStack gap={2} align="center">
-              <div {...stylex.props(styles.radiusBox)} style={{borderRadius: item.value as string}} />
-              <XDSText type="code" color="secondary">{item.value as string}</XDSText>
+              <div
+                {...stylex.props(styles.radiusBox)}
+                style={{borderRadius: item.value as string}}
+              />
+              <XDSText type="code" color="secondary">
+                {item.value as string}
+              </XDSText>
             </XDSHStack>
           ),
         },
@@ -77,7 +85,9 @@ function RadiusTokenTable({theme}: TokenTableProps) {
 
 function BorderTokenTable({theme}: TokenTableProps) {
   const tokens = getTokensByPrefix(theme, '--border-');
-  if (tokens.length === 0) return null;
+  if (tokens.length === 0) {
+    return null;
+  }
 
   const data = tokens.map(name => ({
     tokenName: name,
@@ -94,8 +104,13 @@ function BorderTokenTable({theme}: TokenTableProps) {
           header: 'Value',
           renderCell: (item: Record<string, unknown>) => (
             <XDSHStack gap={2} align="center">
-              <div {...stylex.props(styles.borderLine)} style={{borderBottomWidth: item.value as string}} />
-              <XDSText type="code" color="secondary">{item.value as string}</XDSText>
+              <div
+                {...stylex.props(styles.borderLine)}
+                style={{borderBottomWidth: item.value as string}}
+              />
+              <XDSText type="code" color="secondary">
+                {item.value as string}
+              </XDSText>
             </XDSHStack>
           ),
         },

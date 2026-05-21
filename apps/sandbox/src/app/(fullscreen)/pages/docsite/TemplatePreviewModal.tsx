@@ -138,13 +138,18 @@ export function TemplatePreviewModal({
   const togglePin = useCallback((key: string) => {
     setPinnedThemes(prev => {
       const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
       return next;
     });
   }, []);
 
-  if (!item) return null;
+  if (!item) {
+    return null;
+  }
 
   const themedImg = item.themeImages?.[selectedTheme] ?? item.img;
   const hasThemedImage =
@@ -355,7 +360,9 @@ export function TemplatePreviewModal({
                   isOpen={themeBrowseOpen}
                   onOpenChange={open => {
                     setThemeBrowseOpen(open);
-                    if (!open) setThemeSearch('');
+                    if (!open) {
+                      setThemeSearch('');
+                    }
                   }}
                   xstyle={popoverStyles.themeBrowse}
                   content={
@@ -400,7 +407,9 @@ export function TemplatePreviewModal({
                                 .toLowerCase()
                                 .includes(themeSearch.toLowerCase()),
                           );
-                          if (entries.length === 0) return null;
+                          if (entries.length === 0) {
+                            return null;
+                          }
                           return (
                             <div key={category}>
                               <div style={{marginBottom: 8}}>

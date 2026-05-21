@@ -80,7 +80,9 @@ export function useInputContainer({
 }: UseInputContainerOptions) {
   const onClick = useCallback(() => {
     const input = inputRef.current;
-    if (input == null) return;
+    if (input == null) {
+      return;
+    }
     if (
       input instanceof HTMLInputElement &&
       FOCUS_INPUT_TYPES.has(input.type)

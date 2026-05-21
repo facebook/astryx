@@ -175,7 +175,9 @@ function useIsItemSelected<T extends Record<string, unknown>>(
 
 function SelectAllCheckbox() {
   const store = use(SelectionStoreContext);
-  if (!store) return null;
+  if (!store) {
+    return null;
+  }
 
   return <SelectAllCheckboxInner store={store} />;
 }
@@ -202,7 +204,9 @@ function SelectAllCheckboxInner<T extends Record<string, unknown>>({
   const getSnapshot = useCallback(() => {
     const config = store.getConfig();
     const allSelected = config.getIsAllSelected();
-    if (allSelected) return SELECT_ALL;
+    if (allSelected) {
+      return SELECT_ALL;
+    }
     const indeterminate = config.getIsIndeterminate?.() ?? false;
     return indeterminate ? SELECT_INDETERMINATE : SELECT_NONE;
   }, [store]);
@@ -234,7 +238,9 @@ function SelectionCellContent<T extends Record<string, unknown>>({
   item: T;
 }) {
   const store = use(SelectionStoreContext);
-  if (!store) return null;
+  if (!store) {
+    return null;
+  }
 
   return <SelectionCellContentInner store={store} item={item} />;
 }
@@ -251,7 +257,9 @@ function SelectionCellContentInner<T extends Record<string, unknown>>({
   const selectable = config.getIsItemSelectable?.(item) ?? true;
   const enabled = config.getIsItemEnabled?.(item) ?? true;
 
-  if (!selectable) return null;
+  if (!selectable) {
+    return null;
+  }
 
   return (
     <XDSCheckboxInput
@@ -350,7 +358,9 @@ export function useXDSTableSelection<T extends Record<string, unknown>>(
         // imperative row styling. Each row manages its own subscription
         // and self-cleans when disconnected — no central element tracking.
         const selectionRef: React.RefCallback<HTMLTableRowElement> = el => {
-          if (!el) return;
+          if (!el) {
+            return;
+          }
           // Apply initial style
           applyRowSelectionStyle(el, store.getConfig().getIsItemSelected(item));
           // Subscribe for future changes

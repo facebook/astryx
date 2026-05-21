@@ -23,7 +23,9 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 function hasChildContent(el: HTMLElement): boolean {
   for (let i = 0; i < el.childNodes.length; i++) {
     const node = el.childNodes[i];
-    if (node.nodeType === Node.ELEMENT_NODE) return true;
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      return true;
+    }
     if (
       node.nodeType === Node.TEXT_NODE &&
       node.textContent &&

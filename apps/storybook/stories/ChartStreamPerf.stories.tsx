@@ -42,7 +42,9 @@ export const XDomainUpdateCost: StoryObj = {
         lastFrameRef.current = now;
 
         frameTimesRef.current.push(dt);
-        if (frameTimesRef.current.length > 60) frameTimesRef.current.shift();
+        if (frameTimesRef.current.length > 60) {
+          frameTimesRef.current.shift();
+        }
 
         // Update stats every 30 frames
         if (tRef.current % 30 === 0 && frameTimesRef.current.length > 0) {
@@ -127,7 +129,9 @@ export const ThrottledXDomain: StoryObj = {
         lastFrameRef.current = now;
 
         frameTimesRef.current.push(dt);
-        if (frameTimesRef.current.length > 60) frameTimesRef.current.shift();
+        if (frameTimesRef.current.length > 60) {
+          frameTimesRef.current.shift();
+        }
 
         if (tRef.current % 30 === 0 && frameTimesRef.current.length > 0) {
           const avg =
@@ -213,7 +217,9 @@ export const StressTest: StoryObj = {
         const dt = now - lastFrameRef.current;
         lastFrameRef.current = now;
         frameTimesRef.current.push(dt);
-        if (frameTimesRef.current.length > 60) frameTimesRef.current.shift();
+        if (frameTimesRef.current.length > 60) {
+          frameTimesRef.current.shift();
+        }
         if (tRef.current % 30 === 0 && frameTimesRef.current.length > 0) {
           const avg =
             frameTimesRef.current.reduce((a, b) => a + b, 0) /

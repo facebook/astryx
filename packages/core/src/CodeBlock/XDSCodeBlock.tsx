@@ -380,7 +380,9 @@ function hasHighlightAPI(): boolean {
  * so we can fall back to spans.
  */
 function isSafari(): boolean {
-  if (typeof navigator === 'undefined') return false;
+  if (typeof navigator === 'undefined') {
+    return false;
+  }
   const ua = navigator.userAgent;
   return /AppleWebKit/.test(ua) && !/Chrome/.test(ua);
 }
@@ -396,7 +398,9 @@ function useTokenLines(
   const [asyncTokens, setAsyncTokens] = useState<TokenLine[] | null>(null);
 
   const syncTokens = useMemo(() => {
-    if (code.length >= SYNC_TOKENIZE_THRESHOLD) return null;
+    if (code.length >= SYNC_TOKENIZE_THRESHOLD) {
+      return null;
+    }
     if (customTokenizer) {
       return flatTokensToLines(customTokenizer(code, language), code);
     }
@@ -404,13 +408,17 @@ function useTokenLines(
   }, [code, language, customTokenizer]);
 
   useEffect(() => {
-    if (code.length < SYNC_TOKENIZE_THRESHOLD) return;
+    if (code.length < SYNC_TOKENIZE_THRESHOLD) {
+      return;
+    }
 
     const abortController = new AbortController();
 
     if (customTokenizer) {
       Promise.resolve().then(() => {
-        if (abortController.signal.aborted) return;
+        if (abortController.signal.aborted) {
+          return;
+        }
         const flat = customTokenizer(code, language);
         setAsyncTokens(flatTokensToLines(flat, code));
       });
@@ -521,11 +529,15 @@ function RangeCodeContent({
   const codeRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    if (!hasHighlightAPI()) return;
+    if (!hasHighlightAPI()) {
+      return;
+    }
     ensureHighlightStyles();
 
     const codeEl = codeRef.current;
-    if (!codeEl || tokenLines.length === 0) return;
+    if (!codeEl || tokenLines.length === 0) {
+      return;
+    }
 
     return applyHighlightRangesChunked(codeEl, tokenLines);
   }, [tokenLines]);

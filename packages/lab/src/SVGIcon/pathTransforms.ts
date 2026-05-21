@@ -241,12 +241,16 @@ function angleBetween(v1: Point, v2: Point): number {
   const dot = v1.x * v2.x + v1.y * v2.y;
   const mag1 = Math.sqrt(v1.x ** 2 + v1.y ** 2);
   const mag2 = Math.sqrt(v2.x ** 2 + v2.y ** 2);
-  if (mag1 === 0 || mag2 === 0) return Math.PI;
+  if (mag1 === 0 || mag2 === 0) {
+    return Math.PI;
+  }
   return Math.acos(Math.max(-1, Math.min(1, dot / (mag1 * mag2))));
 }
 
 function getEndpoint(cmd: PathCommand): Point | null {
-  if (cmd.type === 'Z') return null;
+  if (cmd.type === 'Z') {
+    return null;
+  }
   return {x: cmd.x, y: cmd.y};
 }
 
@@ -262,7 +266,9 @@ function getEndpoint(cmd: PathCommand): Point | null {
  * @returns Modified d-string with rounded corners
  */
 export function roundCorners(d: string, cornerRounding: number): string {
-  if (cornerRounding <= 0) return d;
+  if (cornerRounding <= 0) {
+    return d;
+  }
   cornerRounding = Math.min(1, cornerRounding);
 
   const cmds = parsePath(d);
@@ -282,14 +288,18 @@ export function roundCorners(d: string, cornerRounding: number): string {
     if (curr.type === 'Z' && prev && (prev.type === 'L' || prev.type === 'Q')) {
       // Find the M that started this subpath
       let mIdx = i - 1;
-      while (mIdx >= 0 && cmds[mIdx].type !== 'M') mIdx--;
+      while (mIdx >= 0 && cmds[mIdx].type !== 'M') {
+        mIdx--;
+      }
       if (mIdx >= 0) {
         const mCmd = cmds[mIdx];
         const mPt = getEndpoint(mCmd)!;
         const prevPt = getEndpoint(prev)!;
         // Find the first L after M
         let firstL = mIdx + 1;
-        while (firstL < cmds.length && cmds[firstL].type !== 'L') firstL++;
+        while (firstL < cmds.length && cmds[firstL].type !== 'L') {
+          firstL++;
+        }
         if (firstL < cmds.length) {
           const firstLPt = getEndpoint(cmds[firstL])!;
 
@@ -396,7 +406,9 @@ export function roundCorners(d: string, cornerRounding: number): string {
  * @returns Modified d-string with curved segments
  */
 export function addCurvature(d: string, curvature: number): string {
-  if (curvature <= 0) return d;
+  if (curvature <= 0) {
+    return d;
+  }
   curvature = Math.min(1, curvature);
 
   const cmds = parsePath(d);
@@ -461,7 +473,9 @@ export function addCurvature(d: string, curvature: number): string {
  * @returns Modified d-string
  */
 export function adjustTension(d: string, tension: number): string {
-  if (tension === 0.5) return d;
+  if (tension === 0.5) {
+    return d;
+  }
 
   const cmds = parsePath(d);
   const result: PathCommand[] = [];

@@ -164,7 +164,9 @@ function PowerSearchTokenValue({
 
     case 'string_list': {
       const items = filterValue.value;
-      if (items.length === 0) return null;
+      if (items.length === 0) {
+        return null;
+      }
       if (items.length === 1) {
         return (
           <span {...stylex.props(tokenValueStyles.value)}>
@@ -189,7 +191,9 @@ function PowerSearchTokenValue({
 
     case 'enum_list': {
       const items = filterValue.value;
-      if (items.length === 0) return null;
+      if (items.length === 0) {
+        return null;
+      }
       if (operatorValue.type === 'enum_list') {
         const labels = items.map(v => getEnumLabel(operatorValue.values, v));
         if (labels.length === 1) {
@@ -229,7 +233,9 @@ function PowerSearchTokenValue({
 
     case 'entity_list': {
       const entities = filterValue.value;
-      if (entities.length === 0) return null;
+      if (entities.length === 0) {
+        return null;
+      }
       if (entities.length === 1) {
         return (
           <span {...stylex.props(tokenValueStyles.value)}>
@@ -604,10 +610,14 @@ export function XDSPowerSearch({
     ) => {
       if (change.type === 'add' && change.item) {
         const auxData = change.item.auxiliaryData as PowerSearchAuxData;
-        if (!auxData) return;
+        if (!auxData) {
+          return;
+        }
 
         const field = config.getField(auxData.fieldKey);
-        if (!field) return;
+        if (!field) {
+          return;
+        }
 
         const operator = auxData.operatorKey
           ? config.getOperator(auxData.fieldKey, auxData.operatorKey)
@@ -660,10 +670,14 @@ export function XDSPowerSearch({
   // Handle clicking a token to edit
   const handleTokenClick = useCallback(
     (index: number) => {
-      if (isReadOnly || isDisabled) return;
+      if (isReadOnly || isDisabled) {
+        return;
+      }
 
       const filter = filters[index];
-      if (filter.isReadOnly) return;
+      if (filter.isReadOnly) {
+        return;
+      }
 
       setPopoverState({
         type: 'editing',
@@ -798,7 +812,9 @@ export function XDSPowerSearch({
   const renderItem = useCallback(
     (item: PowerSearchItem) => {
       const auxData = item.auxiliaryData as PowerSearchAuxData | undefined;
-      if (!auxData) return <XDSTypeaheadItem item={item} />;
+      if (!auxData) {
+        return <XDSTypeaheadItem item={item} />;
+      }
 
       const field = config.getField(auxData.fieldKey);
       let icon: React.ReactNode = null;
@@ -831,8 +847,9 @@ export function XDSPowerSearch({
 
   // Resolve custom Editor override for the current popover filter
   const EditorOverride = useMemo(() => {
-    if (!popoverPartialFilter?.field || !popoverPartialFilter?.operator)
+    if (!popoverPartialFilter?.field || !popoverPartialFilter?.operator) {
       return undefined;
+    }
     const op = config.getOperator(
       popoverPartialFilter.field,
       popoverPartialFilter.operator,
@@ -842,7 +859,9 @@ export function XDSPowerSearch({
 
   // Render popover content — either custom Editor or default
   const popoverContent = useMemo(() => {
-    if (!popoverPartialFilter) return null;
+    if (!popoverPartialFilter) {
+      return null;
+    }
 
     const mode = popoverState.type === 'editing' ? 'edit' : 'create';
 

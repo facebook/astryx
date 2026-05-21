@@ -60,6 +60,8 @@ export function resolveElementDescriptor(
 }
 
 export function resolveValue(v: unknown): unknown {
-  if (isElementDescriptor(v)) return resolveElementDescriptor(v);
+  if (isElementDescriptor(v)) {
+    return resolveElementDescriptor(v);
+  }
   return v;
 }

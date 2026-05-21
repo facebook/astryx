@@ -248,7 +248,9 @@ export function XDSToggleButton({
   const resolvedIcon = isPressed && pressedIcon ? pressedIcon : icon;
 
   const handleClick = useCallback(() => {
-    if (isDisabled || isLoading) return;
+    if (isDisabled || isLoading) {
+      return;
+    }
 
     if (group && value != null) {
       // Delegate to group context

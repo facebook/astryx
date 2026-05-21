@@ -62,10 +62,14 @@ export default function Home() {
   }, [activeTab, search]);
 
   const groupedSections = useMemo(() => {
-    if (activeTab !== 'All') return null;
+    if (activeTab !== 'All') {
+      return null;
+    }
     const map = new Map<string, typeof allPages>();
     for (const page of filtered) {
-      if (!map.has(page.category)) map.set(page.category, []);
+      if (!map.has(page.category)) {
+        map.set(page.category, []);
+      }
       map.get(page.category)!.push(page);
     }
     return categories

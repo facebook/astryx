@@ -26,8 +26,12 @@ export function CategoryContent({slug}: {slug: string}) {
   const [search, setSearch] = useState('');
 
   const filtered = useMemo(() => {
-    if (!category) return [];
-    if (!search.trim()) return category.pages;
+    if (!category) {
+      return [];
+    }
+    if (!search.trim()) {
+      return category.pages;
+    }
     const q = search.toLowerCase();
     return category.pages.filter(
       p =>

@@ -38,7 +38,9 @@ function splitUnion(input: string): string[] {
     const c = input[i];
 
     if (inString) {
-      if (c === inString && input[i - 1] !== '\\') inString = null;
+      if (c === inString && input[i - 1] !== '\\') {
+        inString = null;
+      }
       continue;
     }
 
@@ -47,9 +49,11 @@ function splitUnion(input: string): string[] {
       continue;
     }
 
-    if (c === '(' || c === '[' || c === '{' || c === '<') depth++;
-    else if (c === ')' || c === ']' || c === '}' || c === '>') depth--;
-    else if (c === '|' && depth === 0) {
+    if (c === '(' || c === '[' || c === '{' || c === '<') {
+      depth++;
+    } else if (c === ')' || c === ']' || c === '}' || c === '>') {
+      depth--;
+    } else if (c === '|' && depth === 0) {
       parts.push(input.slice(start, i).trim());
       start = i + 1;
     }
@@ -65,7 +69,9 @@ export function parsePropType(
   slotElements?: Array<{__element: string; props?: Record<string, unknown>}>,
 ): PropControlDescriptor {
   const t = typeStr.trim();
-  if (!t) return {kind: 'unknown'};
+  if (!t) {
+    return {kind: 'unknown'};
+  }
 
   // If slotElements is declared, use it directly for the element control
   if (slotElements && slotElements.length > 0) {
@@ -80,11 +86,19 @@ export function parsePropType(
     return {kind: 'element', options};
   }
 
-  if (CALLBACK_RE.test(t)) return {kind: 'callback'};
+  if (CALLBACK_RE.test(t)) {
+    return {kind: 'callback'};
+  }
 
-  if (t === 'boolean') return {kind: 'boolean'};
-  if (t === 'string') return {kind: 'string'};
-  if (t === 'number') return {kind: 'number'};
+  if (t === 'boolean') {
+    return {kind: 'boolean'};
+  }
+  if (t === 'string') {
+    return {kind: 'string'};
+  }
+  if (t === 'number') {
+    return {kind: 'number'};
+  }
 
   if (t === 'SpacingStep') {
     return {
@@ -93,7 +107,9 @@ export function parsePropType(
       allowEmpty: false,
     };
   }
-  if (t === 'SizeValue') return {kind: 'number'};
+  if (t === 'SizeValue') {
+    return {kind: 'number'};
+  }
   if (t === 'XDSIconType' || t === 'XDSIconName') {
     return {
       kind: 'enum',
@@ -203,9 +219,13 @@ export function coerceDefault(
   raw: string | undefined,
   control: PropControlDescriptor,
 ): unknown {
-  if (raw == null) return undefined;
+  if (raw == null) {
+    return undefined;
+  }
   const v = raw.trim();
-  if (!v) return undefined;
+  if (!v) {
+    return undefined;
+  }
 
   switch (control.kind) {
     case 'boolean':

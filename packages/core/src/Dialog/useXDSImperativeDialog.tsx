@@ -63,7 +63,9 @@ export function useXDSImperativeDialog(
   const show = useCallback(
     (newContent: ReactNode, newOptions?: DialogOptions) => {
       setContent(newContent);
-      if (newOptions) setOptions(prev => ({...prev, ...newOptions}));
+      if (newOptions) {
+        setOptions(prev => ({...prev, ...newOptions}));
+      }
       setIsOpen(true);
     },
     [],
@@ -78,7 +80,9 @@ export function useXDSImperativeDialog(
       <XDSDialog
         isOpen={isOpen}
         onOpenChange={open => {
-          if (!open) setIsOpen(false);
+          if (!open) {
+            setIsOpen(false);
+          }
         }}
         {...(defaultOptions ?? {})}
         {...(options ?? {})}>

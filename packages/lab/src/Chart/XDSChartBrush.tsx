@@ -62,7 +62,9 @@ function localCoords(e: React.PointerEvent<SVGRectElement>): {
   y: number;
 } {
   const svg = e.currentTarget.ownerSVGElement;
-  if (!svg) return {x: 0, y: 0};
+  if (!svg) {
+    return {x: 0, y: 0};
+  }
   const pt = svg.createSVGPoint();
   pt.x = e.clientX;
   pt.y = e.clientY;
@@ -109,7 +111,9 @@ export function XDSChartBrush({
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent<SVGRectElement>) => {
-      if (!dragging.current) return;
+      if (!dragging.current) {
+        return;
+      }
       const {x, y} = localCoords(e);
       const {x: sx, y: sy} = startRef.current;
 
@@ -134,7 +138,9 @@ export function XDSChartBrush({
 
   const onPointerUp = useCallback(() => {
     dragging.current = false;
-    if (!brush) return;
+    if (!brush) {
+      return;
+    }
 
     const dx = Math.abs(brush.x1 - brush.x0);
     const dy = Math.abs(brush.y1 - brush.y0);
@@ -167,7 +173,9 @@ export function XDSChartBrush({
 
       selected = data.filter(d => {
         const xv = d[xKey];
-        if (typeof xv !== 'number' || xv < xMin || xv > xMax) return false;
+        if (typeof xv !== 'number' || xv < xMin || xv > xMax) {
+          return false;
+        }
         // Check all numeric values against y range
         return Object.entries(d).some(
           ([k, v]) =>

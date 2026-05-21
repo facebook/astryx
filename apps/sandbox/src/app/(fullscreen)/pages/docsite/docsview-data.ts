@@ -452,7 +452,9 @@ const COMPONENT_DOCS: {
 export function getComponentName(key: string): string {
   for (const cat of COMPONENT_CATEGORIES) {
     const item = cat.items.find(i => i.key === key);
-    if (item) return item.name;
+    if (item) {
+      return item.name;
+    }
   }
   return key;
 }
@@ -460,13 +462,17 @@ export function getComponentName(key: string): string {
 export function getComponentDesc(key: string): string {
   for (const cat of COMPONENT_CATEGORIES) {
     const item = cat.items.find(i => i.key === key);
-    if (item) return item.desc;
+    if (item) {
+      return item.desc;
+    }
   }
   return '';
 }
 
 export function getComponentDocs(key: string) {
-  if (COMPONENT_DOCS[key]) return COMPONENT_DOCS[key];
+  if (COMPONENT_DOCS[key]) {
+    return COMPONENT_DOCS[key];
+  }
   const name = getComponentName(key);
   const desc = getComponentDesc(key);
   return {

@@ -30,11 +30,14 @@ function wcagLuminance(r: number, g: number, b: number): number {
 /** APCA perceptual lightness: linearize, compute Y, apply power curve */
 function apcaLightness(r: number, g: number, b: number): number {
   const lin = (c: number) => Math.pow(c / 255, 2.4);
-  const y = 0.2126729 * lin(r) + 0.7151522 * lin(g) + 0.0721750 * lin(b);
+  const y = 0.2126729 * lin(r) + 0.7151522 * lin(g) + 0.072175 * lin(b);
   return Math.pow(y, 0.56);
 }
 
-const ALGO_CONFIG: Record<Algorithm, {fn: (r: number, g: number, b: number) => number; threshold: number}> = {
+const ALGO_CONFIG: Record<
+  Algorithm,
+  {fn: (r: number, g: number, b: number) => number; threshold: number}
+> = {
   gamma: {fn: gammaLuma, threshold: 0.5},
   wcag: {fn: wcagLuminance, threshold: 0.18},
   apca: {fn: apcaLightness, threshold: 0.5},
@@ -55,7 +58,10 @@ export function useImageModeTest(
   options: UseImageModeTestOptions = {},
 ): {mode: 'dark' | 'light' | null; value: number | null} {
   const {region, algorithm = 'gamma', fallback = null} = options;
-  const [result, setResult] = useState<{mode: 'dark' | 'light' | null; value: number | null}>({
+  const [result, setResult] = useState<{
+    mode: 'dark' | 'light' | null;
+    value: number | null;
+  }>({
     mode: fallback,
     value: null,
   });
@@ -75,22 +81,32 @@ export function useImageModeTest(
         const blob = await response.blob();
         const bitmap = await createImageBitmap(blob);
 
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
 
         const sx = region ? Math.round(region.x * bitmap.width) : 0;
         const sy = region ? Math.round(region.y * bitmap.height) : 0;
-        const sw = region ? Math.round(region.width * bitmap.width) : bitmap.width;
-        const sh = region ? Math.round(region.height * bitmap.height) : bitmap.height;
+        const sw = region
+          ? Math.round(region.width * bitmap.width)
+          : bitmap.width;
+        const sh = region
+          ? Math.round(region.height * bitmap.height)
+          : bitmap.height;
 
         const sampleSize = 10;
         const canvas = new OffscreenCanvas(sampleSize, sampleSize);
         const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+        if (!ctx) {
+          return;
+        }
 
         ctx.drawImage(bitmap, sx, sy, sw, sh, 0, 0, sampleSize, sampleSize);
         const imageData = ctx.getImageData(0, 0, sampleSize, sampleSize).data;
 
-        let totalR = 0, totalG = 0, totalB = 0;
+        let totalR = 0,
+          totalG = 0,
+          totalB = 0;
         const pixelCount = sampleSize * sampleSize;
         for (let i = 0; i < imageData.length; i += 4) {
           totalR += imageData[i];
@@ -98,7 +114,9 @@ export function useImageModeTest(
           totalB += imageData[i + 2];
         }
 
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
 
         const r = totalR / pixelCount;
         const g = totalG / pixelCount;
@@ -108,13 +126,25 @@ export function useImageModeTest(
 
         setResult({mode, value});
       } catch {
-        if (!cancelled) setResult({mode: fallback, value: null});
+        if (!cancelled) {
+          setResult({mode: fallback, value: null});
+        }
       }
     }
 
     detect();
-    return () => { cancelled = true; };
-  }, [src, region?.x, region?.y, region?.width, region?.height, algorithm, fallback]);
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    src,
+    region?.x,
+    region?.y,
+    region?.width,
+    region?.height,
+    algorithm,
+    fallback,
+  ]);
 
   return result;
 }

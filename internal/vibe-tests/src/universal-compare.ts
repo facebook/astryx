@@ -66,12 +66,18 @@ function winner(
     ['xds', xdsVal],
     ['baseline', baseVal],
   ];
-  if (htmlVal != null) entries.push(['html', htmlVal]);
-  if (xdsTailwindVal != null) entries.push(['xds-tailwind', xdsTailwindVal]);
+  if (htmlVal != null) {
+    entries.push(['html', htmlVal]);
+  }
+  if (xdsTailwindVal != null) {
+    entries.push(['xds-tailwind', xdsTailwindVal]);
+  }
 
   const max = Math.max(...entries.map(([, v]) => v));
   const atMax = entries.filter(([, v]) => v === max);
-  if (atMax.length > 1) return 'tie';
+  if (atMax.length > 1) {
+    return 'tie';
+  }
   return atMax[0][0];
 }
 
@@ -144,10 +150,14 @@ function toMarkdown(opts: {
   xdsTailwindId?: string;
   byPrompt: UniversalComparison['byPrompt'];
 }): string {
-  const {comparison, xdsId, baselineId, htmlId, xdsTailwindId, byPrompt} =
-    opts;
-  const {xds, baseline, html: htmlData, xdsTailwind: twData, winners} =
-    comparison;
+  const {comparison, xdsId, baselineId, htmlId, xdsTailwindId, byPrompt} = opts;
+  const {
+    xds,
+    baseline,
+    html: htmlData,
+    xdsTailwind: twData,
+    winners,
+  } = comparison;
   const dimensions = getDimensionNames();
   const lines: string[] = [];
 
@@ -199,15 +209,25 @@ function toMarkdown(opts: {
     let twWins = 0;
     let ties = 0;
     for (const [, data] of promptEntries) {
-      if (data.winner === 'xds') xWins++;
-      else if (data.winner === 'baseline') bWins++;
-      else if (data.winner === 'html') hWins++;
-      else if (data.winner === 'xds-tailwind') twWins++;
-      else ties++;
+      if (data.winner === 'xds') {
+        xWins++;
+      } else if (data.winner === 'baseline') {
+        bWins++;
+      } else if (data.winner === 'html') {
+        hWins++;
+      } else if (data.winner === 'xds-tailwind') {
+        twWins++;
+      } else {
+        ties++;
+      }
     }
     const parts = [`XDS ${xWins}`, `Baseline ${bWins}`];
-    if (htmlData) parts.push(`HTML ${hWins}`);
-    if (twData) parts.push(`XDS+TW ${twWins}`);
+    if (htmlData) {
+      parts.push(`HTML ${hWins}`);
+    }
+    if (twData) {
+      parts.push(`XDS+TW ${twWins}`);
+    }
     parts.push(`Tie ${ties}`);
     lines.push(
       `**Per-prompt wins:** ${parts.join(' · ')} (${promptEntries.length} prompts)`,
@@ -220,8 +240,12 @@ function toMarkdown(opts: {
     `XDS ${xds.darkModeRate}%`,
     `Baseline ${baseline.darkModeRate}%`,
   ];
-  if (htmlData) dmParts.push(`HTML ${htmlData.darkModeRate}%`);
-  if (twData) dmParts.push(`XDS+TW ${twData.darkModeRate}%`);
+  if (htmlData) {
+    dmParts.push(`HTML ${htmlData.darkModeRate}%`);
+  }
+  if (twData) {
+    dmParts.push(`XDS+TW ${twData.darkModeRate}%`);
+  }
   lines.push(`**Dark mode:** ${dmParts.join(' · ')}`);
 
   // Dimension winners
@@ -315,8 +339,12 @@ async function main() {
 
   // Save — include all IDs in filename for uniqueness
   const idParts = [xdsId, baselineId];
-  if (htmlId) idParts.push(htmlId);
-  if (xdsTailwindId) idParts.push(xdsTailwindId);
+  if (htmlId) {
+    idParts.push(htmlId);
+  }
+  if (xdsTailwindId) {
+    idParts.push(xdsTailwindId);
+  }
   const outputFilename = `comparison-${idParts.join('-')}.json`;
   const outputPath = path.join(getResultsDir(), outputFilename);
   writeJson(outputPath, comparison);
@@ -342,8 +370,12 @@ async function main() {
 
   // --- Print report ---
   const targetNames = ['XDS', 'Baseline'];
-  if (isThreeWay) targetNames.push('HTML');
-  if (isFourWay) targetNames.push('XDS+TW');
+  if (isThreeWay) {
+    targetNames.push('HTML');
+  }
+  if (isFourWay) {
+    targetNames.push('XDS+TW');
+  }
 
   const title = `📊 Universal Comparison: ${targetNames.join(' vs ')}`;
   console.log(`\n${title}`);
@@ -355,8 +387,12 @@ async function main() {
     {label: 'XDS', data: xds},
     {label: 'Baseline', data: baseline},
   ];
-  if (isThreeWay) targets.push({label: 'HTML', data: htmlData!});
-  if (isFourWay) targets.push({label: 'XDS+TW', data: twData!});
+  if (isThreeWay) {
+    targets.push({label: 'HTML', data: htmlData!});
+  }
+  if (isFourWay) {
+    targets.push({label: 'XDS+TW', data: twData!});
+  }
 
   // Use markdown-style table for CLI (simpler than box-drawing for N targets)
   const header = ['Dimension', ...targets.map(t => t.label), 'Winner'];
@@ -390,9 +426,7 @@ async function main() {
   const sep = colWidths.map(w => '─'.repeat(w + 2)).join('┼');
   console.log('┌' + sep.replaceAll('┼', '┬') + '┐');
   console.log(
-    '│' +
-      header.map((h, i) => ` ${h.padEnd(colWidths[i])} `).join('│') +
-      '│',
+    '│' + header.map((h, i) => ` ${h.padEnd(colWidths[i])} `).join('│') + '│',
   );
   console.log('├' + sep + '┤');
   for (let ri = 0; ri < rows.length; ri++) {
@@ -418,35 +452,48 @@ async function main() {
   }));
   if (targetEffMetrics.every(t => t.metrics.length > 0)) {
     const avgDpe = targetEffMetrics.map(
-      t => t.metrics.reduce((s, m) => s + m.decisionsPerElement, 0) / t.metrics.length,
+      t =>
+        t.metrics.reduce((s, m) => s + m.decisionsPerElement, 0) /
+        t.metrics.length,
     );
     const avgLines = targetEffMetrics.map(
       t => t.metrics.reduce((s, m) => s + m.codeLines, 0) / t.metrics.length,
     );
     console.log(`\n⚡ Efficiency Metrics:`);
     // For decisions/element, lower is better (reverse args for winner)
-    const dpeParts = targetEffMetrics.map((t, i) => `${t.label} ${avgDpe[i].toFixed(1)}`);
+    const dpeParts = targetEffMetrics.map(
+      (t, i) => `${t.label} ${avgDpe[i].toFixed(1)}`,
+    );
     console.log(`   Decisions/element: ${dpeParts.join(' | ')}`);
-    const linesParts = targetEffMetrics.map((t, i) => `${t.label} ${Math.round(avgLines[i])}`);
+    const linesParts = targetEffMetrics.map(
+      (t, i) => `${t.label} ${Math.round(avgLines[i])}`,
+    );
     console.log(`   Avg code lines:   ${linesParts.join(' | ')}`);
   }
 
   // Maintainability metrics comparison
   const targetMaintMetrics = targets.map(t => ({
     label: t.label,
-    metrics: Object.values(t.data.byPrompt).map(s => s.maintainability.metrics!),
+    metrics: Object.values(t.data.byPrompt).map(
+      s => s.maintainability.metrics!,
+    ),
   }));
   if (targetMaintMetrics.every(t => t.metrics.length > 0)) {
     const avgSem = targetMaintMetrics.map(
-      t => t.metrics.reduce((s, m) => s + m.semanticRatio, 0) / t.metrics.length,
+      t =>
+        t.metrics.reduce((s, m) => s + m.semanticRatio, 0) / t.metrics.length,
     );
-    const totalMagic = targetMaintMetrics.map(
-      t => t.metrics.reduce((s, m) => s + m.magicValueCount, 0),
+    const totalMagic = targetMaintMetrics.map(t =>
+      t.metrics.reduce((s, m) => s + m.magicValueCount, 0),
     );
     console.log(`\n🔧 Maintainability Metrics:`);
-    const semParts = targetMaintMetrics.map((t, i) => `${t.label} ${(avgSem[i] * 100).toFixed(0)}%`);
+    const semParts = targetMaintMetrics.map(
+      (t, i) => `${t.label} ${(avgSem[i] * 100).toFixed(0)}%`,
+    );
     console.log(`   Semantic ratio:   ${semParts.join(' | ')}`);
-    const magicParts = targetMaintMetrics.map((t, i) => `${t.label} ${totalMagic[i]}`);
+    const magicParts = targetMaintMetrics.map(
+      (t, i) => `${t.label} ${totalMagic[i]}`,
+    );
     console.log(`   Magic values:     ${magicParts.join(' | ')}`);
   }
 
@@ -456,15 +503,22 @@ async function main() {
     const costTargets = targets.filter(t => t.data.cost);
     const hasDuration = costTargets.some(t => t.data.cost!.avgDurationMs > 0);
     if (hasDuration) {
-      const durParts = costTargets.map(t => `${t.label} ${(t.data.cost!.avgDurationMs / 1000).toFixed(1)}s`);
+      const durParts = costTargets.map(
+        t => `${t.label} ${(t.data.cost!.avgDurationMs / 1000).toFixed(1)}s`,
+      );
       console.log(`   Avg duration:     ${durParts.join(' | ')}`);
     }
-    const linesParts = costTargets.map(t => `${t.label} ${t.data.cost!.avgOutputLines}`);
+    const linesParts = costTargets.map(
+      t => `${t.label} ${t.data.cost!.avgOutputLines}`,
+    );
     console.log(`   Avg output lines: ${linesParts.join(' | ')}`);
-    const docsParts = costTargets.map(t => `${t.label} ${t.data.cost!.avgDocsRead}`);
+    const docsParts = costTargets.map(
+      t => `${t.label} ${t.data.cost!.avgDocsRead}`,
+    );
     console.log(`   Avg docs read:    ${docsParts.join(' | ')}`);
     const tokenParts = costTargets.map(t => {
-      const total = t.data.cost!.estimatedInputTokens + t.data.cost!.estimatedOutputTokens;
+      const total =
+        t.data.cost!.estimatedInputTokens + t.data.cost!.estimatedOutputTokens;
       return `${t.label} ~${total}`;
     });
     console.log(`   Est. tokens:      ${tokenParts.join(' | ')}`);
@@ -474,14 +528,22 @@ async function main() {
   const promptEntries = Object.entries(byPrompt);
   if (promptEntries.length > 0) {
     const winCounts: Record<string, number> = {};
-    for (const t of targets) winCounts[t.label] = 0;
+    for (const t of targets) {
+      winCounts[t.label] = 0;
+    }
     winCounts['Tie'] = 0;
     for (const [, data] of promptEntries) {
-      if (data.winner === 'xds') winCounts['XDS']++;
-      else if (data.winner === 'baseline') winCounts['Baseline']++;
-      else if (data.winner === 'html') winCounts['HTML']++;
-      else if (data.winner === 'xds-tailwind') winCounts['XDS+TW']++;
-      else winCounts['Tie']++;
+      if (data.winner === 'xds') {
+        winCounts['XDS']++;
+      } else if (data.winner === 'baseline') {
+        winCounts['Baseline']++;
+      } else if (data.winner === 'html') {
+        winCounts['HTML']++;
+      } else if (data.winner === 'xds-tailwind') {
+        winCounts['XDS+TW']++;
+      } else {
+        winCounts['Tie']++;
+      }
     }
     const parts = targets.map(t => `${t.label} wins ${winCounts[t.label]}`);
     parts.push(`Ties ${winCounts['Tie']}`);

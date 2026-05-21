@@ -44,7 +44,9 @@ export function XDSRadialArea({
     useRadial();
 
   const points = useMemo(() => {
-    if (!axes || !angleByAxis || !radiusScale || !axisDomains) return [];
+    if (!axes || !angleByAxis || !radiusScale || !axisDomains) {
+      return [];
+    }
 
     // Find the data row matching this key
     // dataKey matches a value in the first non-axis field, or we use the index
@@ -54,7 +56,9 @@ export function XDSRadialArea({
         return Object.values(d).some(v => v === dataKey);
       }) ?? data[0];
 
-    if (!datum) return [];
+    if (!datum) {
+      return [];
+    }
 
     return axes.map(key => {
       const angle = angleByAxis.get(key)!;
@@ -71,7 +75,9 @@ export function XDSRadialArea({
     });
   }, [cx, cy, data, dataKey, axes, angleByAxis, radiusScale, axisDomains]);
 
-  if (points.length === 0) return null;
+  if (points.length === 0) {
+    return null;
+  }
 
   const pathPoints = points.map(p => `${p.x},${p.y}`).join(' ');
 

@@ -57,7 +57,9 @@ const HACK_KEYWORDS =
 
 function buildLanguage(lang: string): LangDef | null {
   const cached = langCache.get(lang);
-  if (cached !== undefined) return cached;
+  if (cached !== undefined) {
+    return cached;
+  }
 
   const def = buildLanguageUncached(lang);
   langCache.set(lang, def);
@@ -66,7 +68,9 @@ function buildLanguage(lang: string): LangDef | null {
 
 function buildLanguageUncached(lang: string): LangDef | null {
   const raw = buildLanguagePatterns(lang);
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
   return {
     defaultType: raw.defaultType,
     patterns: raw.patterns.map(p => {
@@ -78,7 +82,10 @@ function buildLanguageUncached(lang: string): LangDef | null {
 
 function buildLanguagePatterns(
   lang: string,
-): {patterns: Array<{type: string; regex: RegExp}>; defaultType: string} | null {
+): {
+  patterns: Array<{type: string; regex: RegExp}>;
+  defaultType: string;
+} | null {
   switch (lang) {
     case 'typescript':
     case 'javascript':
@@ -388,7 +395,9 @@ function tokenizeLine(
  */
 export function tokenize(code: string, language: string): TokenLine[] {
   const langDef = buildLanguage(language);
-  if (!langDef) return [];
+  if (!langDef) {
+    return [];
+  }
 
   const result: TokenLine[] = [];
   let lineStart = 0;
@@ -413,7 +422,9 @@ export async function tokenizeAsync(
   signal?: AbortSignal,
 ): Promise<TokenLine[]> {
   const langDef = buildLanguage(language);
-  if (!langDef) return [];
+  if (!langDef) {
+    return [];
+  }
 
   const result: TokenLine[] = [];
   let lineStart = 0;
@@ -426,7 +437,9 @@ export async function tokenizeAsync(
       lineStart = i + 1;
 
       if (charsInChunk >= ASYNC_CHUNK_SIZE && i < code.length) {
-        if (signal?.aborted) return result;
+        if (signal?.aborted) {
+          return result;
+        }
         charsInChunk = 0;
         await yieldToMain();
       }
@@ -448,7 +461,9 @@ export async function tokenizeStreaming(
   signal?: AbortSignal,
 ): Promise<void> {
   const langDef = buildLanguage(language);
-  if (!langDef) return;
+  if (!langDef) {
+    return;
+  }
 
   let lineStart = 0;
   let lineIndex = 0;
@@ -464,7 +479,9 @@ export async function tokenizeStreaming(
       lineStart = i + 1;
 
       if (charsInChunk >= ASYNC_CHUNK_SIZE && i < code.length) {
-        if (signal?.aborted) return;
+        if (signal?.aborted) {
+          return;
+        }
         onBatch(batch, batchStartLine);
         batch = [];
         batchStartLine = lineIndex;
@@ -490,7 +507,9 @@ export function flatTokensToLines(
 ): TokenLine[] {
   const lineStarts: number[] = [0];
   for (let i = 0; i < code.length; i++) {
-    if (code[i] === '\n') lineStarts.push(i + 1);
+    if (code[i] === '\n') {
+      lineStarts.push(i + 1);
+    }
   }
 
   const result: TokenLine[] = Array.from({length: lineStarts.length}, () => []);

@@ -156,10 +156,14 @@ export function XDSSpinner({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (canvas == null) return;
+    if (canvas == null) {
+      return;
+    }
 
     const context = canvas.getContext('2d');
-    if (!context) return;
+    if (!context) {
+      return;
+    }
 
     const {border, diameter} = SIZES[size];
     const pixelRatio = window.devicePixelRatio || 1;

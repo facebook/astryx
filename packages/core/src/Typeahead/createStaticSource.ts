@@ -62,10 +62,14 @@ export function createStaticSource<T extends XDSSearchableItem>(
   return {
     search(query: string): T[] {
       const lower = query.toLowerCase().trim();
-      if (lower === '') return items;
+      if (lower === '') {
+        return items;
+      }
 
       return items.filter(item => {
-        if (item.label.toLowerCase().includes(lower)) return true;
+        if (item.label.toLowerCase().includes(lower)) {
+          return true;
+        }
         if (getKeywords) {
           return getKeywords(item).some(kw => kw.toLowerCase().includes(lower));
         }

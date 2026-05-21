@@ -15,7 +15,6 @@
  * - /packages/core/src/hooks/index.ts
  */
 
-
 import {useCallback, useEffect, useRef} from 'react';
 
 /**
@@ -119,7 +118,9 @@ export interface UseFocusTrapReturn {
  * });
  *
  * useEffect(() => {
- *   if (isOpen) focusFirst();
+ *   if (isOpen) {
+ *     focusFirst();
+ *   }
  * }, [isOpen, focusFirst]);
  *
  * <div ref={containerRef}>
@@ -150,11 +151,15 @@ export function useFocusTrap(options: UseFocusTrapOptions): UseFocusTrapReturn {
    * Only redirects for keyboard navigation, not mouse clicks.
    */
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive) {
+      return;
+    }
 
     const handleFocus = (event: FocusEvent) => {
       const container = containerRef.current;
-      if (!container) return;
+      if (!container) {
+        return;
+      }
 
       const target = event.target as Node;
 
@@ -192,11 +197,15 @@ export function useFocusTrap(options: UseFocusTrapOptions): UseFocusTrapReturn {
    * Also tracks that keyboard navigation is occurring.
    */
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive) {
+      return;
+    }
 
     const handleKeyDown = (event: KeyboardEvent) => {
       const container = containerRef.current;
-      if (!container) return;
+      if (!container) {
+        return;
+      }
 
       if (event.key === 'Escape' && onEscape) {
         event.preventDefault();
@@ -209,7 +218,9 @@ export function useFocusTrap(options: UseFocusTrapOptions): UseFocusTrapReturn {
         isKeyboardNavigationRef.current = true;
 
         const focusable = getFocusableElements(container);
-        if (focusable.length === 0) return;
+        if (focusable.length === 0) {
+          return;
+        }
 
         const first = focusable[0];
         const last = focusable[focusable.length - 1];

@@ -25,7 +25,9 @@ export default async function ComponentPage({
 }) {
   const {name} = await params;
   const comp = allComponents.find(c => c.name === name);
-  if (!comp) notFound();
+  if (!comp) {
+    notFound();
+  }
 
   const pkg = Object.entries(components).find(([, comps]) =>
     comps.includes(comp),

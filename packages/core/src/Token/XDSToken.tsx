@@ -402,7 +402,9 @@ export function XDSToken({
   if (onClick != null) {
     const handleContainerClick = (e: React.MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (target.closest('button, a')) return;
+      if (target.closest('button, a')) {
+        return;
+      }
       onClick(e);
     };
 

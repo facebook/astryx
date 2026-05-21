@@ -134,17 +134,23 @@ export function XDSSegmentedControl({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (isDisabled) return;
+      if (isDisabled) {
+        return;
+      }
 
       const container = containerRef.current;
-      if (!container) return;
+      if (!container) {
+        return;
+      }
 
       const items = Array.from(
         container.querySelectorAll<HTMLButtonElement>(
           '[role="radio"]:not([aria-disabled="true"])',
         ),
       );
-      if (items.length === 0) return;
+      if (items.length === 0) {
+        return;
+      }
 
       const currentIndex = items.findIndex(
         item => item === document.activeElement,

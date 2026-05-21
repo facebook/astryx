@@ -72,6 +72,8 @@ export function getDerivedVars(
   property: string,
 ): DerivedVarEntry[] {
   const entries = derivedVarRegistry[component];
-  if (!entries) return [];
+  if (!entries) {
+    return [];
+  }
   return entries.filter(e => e.property === property);
 }

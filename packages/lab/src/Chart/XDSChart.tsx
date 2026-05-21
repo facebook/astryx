@@ -109,10 +109,14 @@ export function XDSChart({
   const [containerWidth, setContainerWidth] = useState(0);
 
   useLayoutEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current) {
+      return;
+    }
     const observer = new ResizeObserver(entries => {
       const entry = entries[0];
-      if (entry) setContainerWidth(entry.contentRect.width);
+      if (entry) {
+        setContainerWidth(entry.contentRect.width);
+      }
     });
     observer.observe(containerRef.current);
     return () => observer.disconnect();
@@ -122,7 +126,9 @@ export function XDSChart({
   // Must be non-passive to actually prevent default on touch events.
   useLayoutEffect(() => {
     const el = containerRef.current;
-    if (!el || !interactive) return;
+    if (!el || !interactive) {
+      return;
+    }
     const prevent = (e: TouchEvent) => e.preventDefault();
     el.addEventListener('touchstart', prevent, {passive: false});
     el.addEventListener('touchmove', prevent, {passive: false});
@@ -154,8 +160,12 @@ export function XDSChart({
       let min = Infinity;
       let max = -Infinity;
       for (const n of nums) {
-        if (n < min) min = n;
-        if (n > max) max = n;
+        if (n < min) {
+          min = n;
+        }
+        if (n > max) {
+          max = n;
+        }
       }
       return scaleLinear().domain([min, max]).range([0, innerWidth]).nice();
     }
@@ -182,8 +192,12 @@ export function XDSChart({
       for (const key of yKeys) {
         const v = d[key];
         if (typeof v === 'number') {
-          if (v < min) min = v;
-          if (v > max) max = v;
+          if (v < min) {
+            min = v;
+          }
+          if (v > max) {
+            max = v;
+          }
         }
       }
     }
@@ -193,8 +207,12 @@ export function XDSChart({
       min = -abs;
       max = abs;
     } else if (yBaseline === 'auto') {
-      if (min > 0) min = 0;
-      if (max < 0) max = 0;
+      if (min > 0) {
+        min = 0;
+      }
+      if (max < 0) {
+        max = 0;
+      }
     }
 
     return scaleLinear().domain([min, max]).range([innerHeight, 0]).nice();
@@ -223,7 +241,9 @@ export function XDSChart({
   const pointerToData = useCallback(
     (e: React.PointerEvent) => {
       const svg = svgRef.current;
-      if (!svg) return {x: null, y: 0, px: 0, py: 0};
+      if (!svg) {
+        return {x: null, y: 0, px: 0, py: 0};
+      }
       const pt = svg.createSVGPoint();
       pt.x = e.clientX;
       pt.y = e.clientY;

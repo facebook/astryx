@@ -587,7 +587,9 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
 
   // Filter items by search query
   const filteredItems = useMemo(() => {
-    if (!searchQuery) return selectableItems;
+    if (!searchQuery) {
+      return selectableItems;
+    }
     const query = searchQuery.toLowerCase();
     return selectableItems.filter(item =>
       (item.label ?? item.value).toLowerCase().includes(query),
@@ -701,7 +703,9 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
 
   // Render search input
   const renderSearch = useCallback(() => {
-    if (!hasSearch) return null;
+    if (!hasSearch) {
+      return null;
+    }
     return (
       <div {...stylex.props(styles.searchWrapper)}>
         <input

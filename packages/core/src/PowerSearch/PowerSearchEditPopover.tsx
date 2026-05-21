@@ -126,7 +126,9 @@ function isEditableFilterComplete(
   config: InternalConfig,
   ef: EditablePartialFilter,
 ): boolean {
-  if (!ef.field || !ef.operator) return false;
+  if (!ef.field || !ef.operator) {
+    return false;
+  }
   const op = config.getOperator(ef.field, ef.operator);
   if (op?.value.type === 'nested') {
     const subs = ef._subFilters ?? [];
@@ -141,7 +143,9 @@ function editableToCompleteFilter(
   config: InternalConfig,
   ef: EditablePartialFilter,
 ): PowerSearchFilter | null {
-  if (!ef.operator) return null;
+  if (!ef.operator) {
+    return null;
+  }
   const op = config.getOperator(ef.field, ef.operator);
   if (op?.value.type === 'nested') {
     const subs = (ef._subFilters ?? [])
@@ -153,7 +157,9 @@ function editableToCompleteFilter(
       value: {type: 'nested', value: subs},
     };
   }
-  if (ef.value == null) return null;
+  if (ef.value == null) {
+    return null;
+  }
   return {
     field: ef.field,
     operator: ef.operator,
@@ -418,7 +424,9 @@ function NestedEditor({
     (parentPath: number[]) => {
       const fields = config.getVisibleFields();
       const defaultField = fields[0];
-      if (!defaultField) return;
+      if (!defaultField) {
+        return;
+      }
 
       const defaultOp = config.getDefaultOperator(defaultField.key);
       const op = defaultOp
@@ -595,7 +603,9 @@ export function PowerSearchEditPopover({
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
       const container = valueEditorRef.current;
-      if (!container) return;
+      if (!container) {
+        return;
+      }
       const focusable = container.querySelector<HTMLElement>(
         'input:not([disabled]), button:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
       );

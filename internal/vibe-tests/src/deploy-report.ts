@@ -81,9 +81,13 @@ async function main() {
 
   console.log(`\n📦 Deploy Report Pipeline`);
   console.log(`   Iteration: ${iteration}`);
-  if (baseline) console.log(`   Baseline:  ${baseline}`);
+  if (baseline) {
+    console.log(`   Baseline:  ${baseline}`);
+  }
   console.log(`   Deploy to: ${deployPath}`);
-  if (dryRun) console.log(`   ⚠️  DRY RUN — will build but not push`);
+  if (dryRun) {
+    console.log(`   ⚠️  DRY RUN — will build but not push`);
+  }
   console.log('');
 
   // Step 1: Build previews if result files exist (.tsx or .json)
@@ -123,9 +127,15 @@ async function main() {
   // Step 2: Build the report
   console.log('🏗️  Step 2: Building report...');
   const buildArgs = [`--iteration ${iteration}`];
-  if (baseline) buildArgs.push(`--baseline ${baseline}`);
-  if (html) buildArgs.push(`--html ${html}`);
-  if (xdsTailwind) buildArgs.push(`--xds-tailwind ${xdsTailwind}`);
+  if (baseline) {
+    buildArgs.push(`--baseline ${baseline}`);
+  }
+  if (html) {
+    buildArgs.push(`--html ${html}`);
+  }
+  if (xdsTailwind) {
+    buildArgs.push(`--xds-tailwind ${xdsTailwind}`);
+  }
 
   run(`npx tsx src/build-report.ts ${buildArgs.join(' ')}`, {cwd: VIBE_DIR});
 
@@ -284,7 +294,9 @@ function injectScreenshotsIntoReport(
       }
     }
 
-    if (Object.keys(screenshots).length === 0) return;
+    if (Object.keys(screenshots).length === 0) {
+      return;
+    }
 
     let html = fs.readFileSync(htmlPath, 'utf-8');
 
@@ -327,7 +339,9 @@ function copyDirRecursive(src: string, dest: string): void {
 
 function countFiles(dir: string, ext: string): number {
   let count = 0;
-  if (!fs.existsSync(dir)) return 0;
+  if (!fs.existsSync(dir)) {
+    return 0;
+  }
   for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
     if (entry.isDirectory()) {
       count += countFiles(path.join(dir, entry.name), ext);
@@ -340,7 +354,9 @@ function countFiles(dir: string, ext: string): number {
 
 function updateReportsIndex(ghPagesDir: string): void {
   const reportsDir = path.join(ghPagesDir, 'reports');
-  if (!fs.existsSync(reportsDir)) return;
+  if (!fs.existsSync(reportsDir)) {
+    return;
+  }
 
   const entries = fs
     .readdirSync(reportsDir, {withFileTypes: true})

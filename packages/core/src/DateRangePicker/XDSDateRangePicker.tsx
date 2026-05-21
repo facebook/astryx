@@ -180,7 +180,9 @@ function parseISO(iso: ISODateString): Date {
 }
 
 function formatRangeDisplay(range: DateRange | null): string {
-  if (!range) return '';
+  if (!range) {
+    return '';
+  }
   const startDate = parseISO(range.start);
   const endDate = parseISO(range.end);
   const currentYear = new Date().getFullYear();
@@ -193,8 +195,12 @@ function formatRangeDisplay(range: DateRange | null): string {
 }
 
 function isRangeEqual(a: DateRange | null, b: DateRange | null): boolean {
-  if (a === b) return true;
-  if (!a || !b) return false;
+  if (a === b) {
+    return true;
+  }
+  if (!a || !b) {
+    return false;
+  }
   return a.start === b.start && a.end === b.end;
 }
 
@@ -409,7 +415,9 @@ export function XDSDateRangePicker({
 
   const fireChange = useCallback(
     (newValue: DateRange | null) => {
-      if (isBusy) return;
+      if (isBusy) {
+        return;
+      }
       onChange(newValue);
       if (changeAction) {
         startTransition(async () => {

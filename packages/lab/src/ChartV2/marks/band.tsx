@@ -33,23 +33,38 @@ export function band(options: BandOptions): SeriesDef {
         const d = data[i];
         let px: number;
         if ('bandwidth' in xScale) {
-          px = ((xScale as ScaleBand<string>)(String(d[xKey])) ?? 0) + (xScale as ScaleBand<string>).bandwidth() / 2;
+          px =
+            ((xScale as ScaleBand<string>)(String(d[xKey])) ?? 0) +
+            (xScale as ScaleBand<string>).bandwidth() / 2;
         } else {
           px = xScale(d[xKey] as number);
         }
-        const upper = typeof d[options.upper] === 'number' ? (d[options.upper] as number) : 0;
-        const lower = typeof d[options.lower] === 'number' ? (d[options.lower] as number) : 0;
+        const upper =
+          typeof d[options.upper] === 'number'
+            ? (d[options.upper] as number)
+            : 0;
+        const lower =
+          typeof d[options.lower] === 'number'
+            ? (d[options.lower] as number)
+            : 0;
         points.push({px, py: yScale(upper), py0: yScale(lower), dataIndex: i});
       }
       return points;
     },
 
     render(resolved) {
-      if (resolved.length === 0) return null;
+      if (resolved.length === 0) {
+        return null;
+      }
       const areaGen = d3Area<ResolvedPoint>()
-        .x(d => d.px).y0(d => d.py0).y1(d => d.py).curve(curveMonotoneX);
+        .x(d => d.px)
+        .y0(d => d.py0)
+        .y1(d => d.py)
+        .curve(curveMonotoneX);
       const pathD = areaGen(resolved) ?? '';
-      return <path d={pathD} fill={color} fillOpacity={opacity} stroke="none" />;
+      return (
+        <path d={pathD} fill={color} fillOpacity={opacity} stroke="none" />
+      );
     },
   };
 }

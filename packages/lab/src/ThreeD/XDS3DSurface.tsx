@@ -20,7 +20,9 @@ export interface XDS3DSurfaceProps {
 
 function lerpColor(colors: string[], t: number): string {
   const clamped = Math.max(0, Math.min(1, t));
-  if (colors.length === 1) return colors[0];
+  if (colors.length === 1) {
+    return colors[0];
+  }
   const scaled = clamped * (colors.length - 1);
   const lo = Math.floor(scaled);
   const hi = Math.min(lo + 1, colors.length - 1);
@@ -60,7 +62,9 @@ export function XDS3DSurface({
     const cols = xVals.length;
     const rows = zVals.length;
 
-    if (cols < 2 || rows < 2) return [];
+    if (cols < 2 || rows < 2) {
+      return [];
+    }
 
     // Build lookup grid
     const grid = new Map<string, Record<string, unknown>>();
@@ -79,7 +83,9 @@ export function XDS3DSurface({
           grid.get(`${xVals[c]},${zVals[r + 1]}`),
         ];
 
-        if (corners.some(c => !c)) continue;
+        if (corners.some(c => !c)) {
+          continue;
+        }
 
         const projected = corners.map(d => {
           const nx = normalize(d![xKey] as number, xDomain);

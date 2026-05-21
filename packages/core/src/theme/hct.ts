@@ -156,7 +156,9 @@ export function hexToHct(hex: string): HCT {
 
   const hueRad = Math.atan2(bLab, a);
   let hue = (hueRad * 180) / Math.PI;
-  if (hue < 0) hue += 360;
+  if (hue < 0) {
+    hue += 360;
+  }
 
   const chroma = Math.sqrt(a * a + bLab * bLab);
   const tone = L;
@@ -171,8 +173,12 @@ export function hexToHct(hex: string): HCT {
 export function hctToHex(hct: HCT): string {
   const {hue, chroma, tone} = hct;
 
-  if (tone <= 0) return '#000000';
-  if (tone >= 100) return '#FFFFFF';
+  if (tone <= 0) {
+    return '#000000';
+  }
+  if (tone >= 100) {
+    return '#FFFFFF';
+  }
   if (chroma < 0.5) {
     const gray = toneToGray(tone);
     return rgbToHex(gray, gray, gray);

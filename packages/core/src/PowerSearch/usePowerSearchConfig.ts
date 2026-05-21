@@ -375,9 +375,12 @@ function matchesFilter(
 
   switch (filterValue.type) {
     case 'empty': {
-      if (operator === BooleanOps.IS_TRUE) return Boolean(fieldValue) === true;
-      if (operator === BooleanOps.IS_FALSE)
+      if (operator === BooleanOps.IS_TRUE) {
+        return Boolean(fieldValue) === true;
+      }
+      if (operator === BooleanOps.IS_FALSE) {
         return Boolean(fieldValue) === false;
+      }
       return true;
     }
 
@@ -408,8 +411,12 @@ function matchesFilter(
 
     case 'date_absolute': {
       const ts = toUnixSeconds(fieldValue as Date | number);
-      if (operator === DateOps.BEFORE) return ts < filterValue.unixSeconds;
-      if (operator === DateOps.AFTER) return ts > filterValue.unixSeconds;
+      if (operator === DateOps.BEFORE) {
+        return ts < filterValue.unixSeconds;
+      }
+      if (operator === DateOps.AFTER) {
+        return ts > filterValue.unixSeconds;
+      }
       return true;
     }
 
@@ -424,19 +431,23 @@ function matchesFilter(
     }
 
     case 'enum': {
-      if (operator === EnumOps.IS)
+      if (operator === EnumOps.IS) {
         return String(fieldValue) === filterValue.value;
-      if (operator === EnumOps.IS_NOT)
+      }
+      if (operator === EnumOps.IS_NOT) {
         return String(fieldValue) !== filterValue.value;
+      }
       return true;
     }
 
     case 'enum_list': {
       const sv = String(fieldValue);
-      if (operator === EnumListOps.IS_ANY_OF)
+      if (operator === EnumListOps.IS_ANY_OF) {
         return filterValue.value.includes(sv);
-      if (operator === EnumListOps.IS_NONE_OF)
+      }
+      if (operator === EnumListOps.IS_NONE_OF) {
         return !filterValue.value.includes(sv);
+      }
       return true;
     }
 
@@ -520,7 +531,9 @@ export function createPowerSearchConfig<
     filters: ReadonlyArray<PowerSearchFilter>,
     data: ReadonlyArray<T>,
   ): Array<T> {
-    if (filters.length === 0) return [...data];
+    if (filters.length === 0) {
+      return [...data];
+    }
     return data.filter(row =>
       filters.every(f => matchesFilter(row as Record<string, unknown>, f)),
     );

@@ -160,7 +160,9 @@ export function XDSToast({
     remainingRef.current = autoHideDuration;
     startTimer();
     return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
     };
   }, [autoHideDuration, startTimer]);
 

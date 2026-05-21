@@ -242,7 +242,9 @@ export function useXDSTablePagination<T extends Record<string, unknown>>(
           paginationProps: props,
           align: a,
         } = configRef.current;
-        if (pos === 'none') return children;
+        if (pos === 'none') {
+          return children;
+        }
 
         // Don't render pagination when there's only one page and no more data.
         const resolvedTotalPages =
@@ -251,7 +253,9 @@ export function useXDSTablePagination<T extends Record<string, unknown>>(
             ? Math.ceil(props.totalItems / props.pageSize)
             : undefined);
         const isSinglePage = resolvedTotalPages === 1 && props.hasMore !== true;
-        if (isSinglePage) return children;
+        if (isSinglePage) {
+          return children;
+        }
 
         const makeWrapper = (side: 'above' | 'below') => (
           <div

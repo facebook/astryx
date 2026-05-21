@@ -75,7 +75,9 @@ function autoColumns(
       const newCol = col + 1;
       colMap.set(tgt, Math.max(colMap.get(tgt) || 0, newCol));
       inDegree.set(tgt, (inDegree.get(tgt) || 0) - 1);
-      if (inDegree.get(tgt) === 0) queue.push(tgt);
+      if (inDegree.get(tgt) === 0) {
+        queue.push(tgt);
+      }
     }
   }
 
@@ -130,7 +132,9 @@ export function computeLayout(
       (s, id) => s + (nodeMap.get(id)?.value || 0),
       0,
     );
-    if (total > maxColValue) maxColValue = total;
+    if (total > maxColValue) {
+      maxColValue = total;
+    }
   });
 
   const maxNodes = Math.max(...colDefs.map(c => c.ids.length));
@@ -154,7 +158,9 @@ export function computeLayout(
 
     col.ids.forEach(id => {
       const node = nodeMap.get(id);
-      if (!node) return;
+      if (!node) {
+        return;
+      }
       const h = node.value * valueScale;
       const color =
         node.color || DEFAULT_PALETTE[colorIdx % DEFAULT_PALETTE.length];

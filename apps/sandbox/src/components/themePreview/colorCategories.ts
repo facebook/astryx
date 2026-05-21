@@ -181,18 +181,24 @@ export type CategorizedTokens = Array<{
  * `defineSyntaxTheme()` API rather than as raw color tokens, and
  * surfacing them here would create a confusing second source of truth.
  */
-export function getCategorizedColorTokens(knownTokens?: Iterable<string>): CategorizedTokens {
+export function getCategorizedColorTokens(
+  knownTokens?: Iterable<string>,
+): CategorizedTokens {
   const seen = new Set<string>();
   const result: CategorizedTokens = [];
-  for (const [category, tokenNames] of Object.entries(COLOR_CATEGORIES) as Array<
-    [ColorCategoryName, readonly string[]]
-  >) {
+  for (const [category, tokenNames] of Object.entries(
+    COLOR_CATEGORIES,
+  ) as Array<[ColorCategoryName, readonly string[]]>) {
     const uniqueTokens = tokenNames.filter(t => {
-      if (seen.has(t)) return false;
+      if (seen.has(t)) {
+        return false;
+      }
       seen.add(t);
       return true;
     });
-    if (uniqueTokens.length === 0) continue;
+    if (uniqueTokens.length === 0) {
+      continue;
+    }
     result.push({category, tokens: [...uniqueTokens]});
   }
 
@@ -201,9 +207,15 @@ export function getCategorizedColorTokens(knownTokens?: Iterable<string>): Categ
     // Colors". Syntax tokens are filtered out entirely — see the JSDoc.
     const leftovers: string[] = [];
     for (const t of knownTokens) {
-      if (!t.startsWith('--color-')) continue;
-      if (t.startsWith('--color-syntax-')) continue;
-      if (seen.has(t)) continue;
+      if (!t.startsWith('--color-')) {
+        continue;
+      }
+      if (t.startsWith('--color-syntax-')) {
+        continue;
+      }
+      if (seen.has(t)) {
+        continue;
+      }
       seen.add(t);
       leftovers.push(t);
     }

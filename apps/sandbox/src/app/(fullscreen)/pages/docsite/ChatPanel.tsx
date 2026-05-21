@@ -292,7 +292,9 @@ function CodeEditor() {
             if (e.key === 'Tab') {
               e.preventDefault();
               const ta = textareaRef.current;
-              if (!ta) return;
+              if (!ta) {
+                return;
+              }
               const start = ta.selectionStart;
               const end = ta.selectionEnd;
               const val = ta.value;
@@ -472,7 +474,9 @@ export function ChatPanel({
             }>
             <XDSChatComposer
               onSubmit={() => {
-                if (!prompt.trim()) return;
+                if (!prompt.trim()) {
+                  return;
+                }
                 setMessages(prev => [
                   ...prev,
                   {role: 'user', text: prompt.trim()},

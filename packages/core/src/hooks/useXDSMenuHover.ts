@@ -121,7 +121,9 @@ export function useXDSMenuHover(
 
   // Hover: mouseenter activates hover mode and opens
   const handleMouseEnter = useCallback(() => {
-    if (!hasHover) return;
+    if (!hasHover) {
+      return;
+    }
     if (skipNextEnterRef.current) {
       skipNextEnterRef.current = false;
       return;
@@ -139,7 +141,9 @@ export function useXDSMenuHover(
 
   // Hover: mouseleave only closes if in hover mode
   const handleMouseLeave = useCallback(() => {
-    if (!hoverModeRef.current) return;
+    if (!hoverModeRef.current) {
+      return;
+    }
     clearTimeouts();
     hideTimerRef.current = setTimeout(() => {
       hide();

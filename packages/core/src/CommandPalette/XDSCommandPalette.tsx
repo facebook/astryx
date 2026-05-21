@@ -428,7 +428,9 @@ export function XDSCommandPalette<
         return;
       }
       // Space should type in the input, not trigger selection
-      if (e.key === ' ') return;
+      if (e.key === ' ') {
+        return;
+      }
       combobox.onKeyDown(e);
     },
     [combobox, handleClose, selectableItems, selectItem],
@@ -512,8 +514,11 @@ export function XDSCommandPalette<
       isOpen={isOpen}
       isInline={isInline}
       onOpenChange={open => {
-        if (!open) handleClose();
-        else onOpenChange(true);
+        if (!open) {
+          handleClose();
+        } else {
+          onOpenChange(true);
+        }
       }}
       width={width}
       maxHeight={maxHeight}

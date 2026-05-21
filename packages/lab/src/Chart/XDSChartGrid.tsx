@@ -34,12 +34,16 @@ export function XDSChartGrid({
   const {width, height, xScale, yScale} = useChart();
 
   const hLines = useMemo(() => {
-    if (!horizontal) return [];
+    if (!horizontal) {
+      return [];
+    }
     return yScale.ticks(5).map(tick => yScale(tick));
   }, [horizontal, yScale]);
 
   const vLines = useMemo(() => {
-    if (!vertical) return [];
+    if (!vertical) {
+      return [];
+    }
     if (isBandScale(xScale)) {
       return xScale
         .domain()

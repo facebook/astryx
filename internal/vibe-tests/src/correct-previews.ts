@@ -62,7 +62,9 @@ interface CorrectionTask {
  * Gives the LLM the actual API surface to fix against.
  */
 function getComponentDocs(code: string, target: string): string {
-  if (target !== 'xds') return '';
+  if (target !== 'xds') {
+    return '';
+  }
 
   // Extract XDS component names used in the file
   const components = new Set<string>();

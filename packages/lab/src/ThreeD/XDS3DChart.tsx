@@ -44,8 +44,12 @@ function computeDomain(
   for (const d of data) {
     const v = d[key];
     if (typeof v === 'number') {
-      if (v < min) min = v;
-      if (v > max) max = v;
+      if (v < min) {
+        min = v;
+      }
+      if (v > max) {
+        max = v;
+      }
     }
   }
   return [min === Infinity ? 0 : min, max === -Infinity ? 1 : max];
@@ -80,9 +84,13 @@ export function XDS3DChart({
   } | null>(null);
 
   useLayoutEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current) {
+      return;
+    }
     const obs = new ResizeObserver(e => {
-      if (e[0]) setContainerWidth(e[0].contentRect.width);
+      if (e[0]) {
+        setContainerWidth(e[0].contentRect.width);
+      }
     });
     obs.observe(containerRef.current);
     return () => obs.disconnect();
@@ -127,7 +135,9 @@ export function XDS3DChart({
 
   const handleStart = useCallback(
     (clientX: number, clientY: number) => {
-      if (!interactive) return;
+      if (!interactive) {
+        return;
+      }
       dragRef.current = {
         startX: clientX,
         startY: clientY,
@@ -139,7 +149,9 @@ export function XDS3DChart({
   );
 
   const handleMove = useCallback((clientX: number, clientY: number) => {
-    if (!dragRef.current) return;
+    if (!dragRef.current) {
+      return;
+    }
     const dx = clientX - dragRef.current.startX;
     const dy = clientY - dragRef.current.startY;
     setCamera({
@@ -157,7 +169,9 @@ export function XDS3DChart({
 
   // Auto-rotation — throttled to ~20fps to avoid overwhelming React with re-renders
   useEffect(() => {
-    if (autoRotate === 0) return;
+    if (autoRotate === 0) {
+      return;
+    }
     let raf: number;
     let lastUpdate = 0;
     const interval = 50; // ms between React updates (~20fps)
@@ -206,7 +220,15 @@ export function XDS3DChart({
   );
 
   return (
-    <div ref={containerRef} style={{width: '100%', touchAction: interactive ? 'none' : undefined, userSelect: interactive ? 'none' : undefined} as React.CSSProperties}>
+    <div
+      ref={containerRef}
+      style={
+        {
+          width: '100%',
+          touchAction: interactive ? 'none' : undefined,
+          userSelect: interactive ? 'none' : undefined,
+        } as React.CSSProperties
+      }>
       {containerWidth > 0 && (
         <svg
           width={containerWidth}
@@ -217,7 +239,9 @@ export function XDS3DChart({
           onMouseLeave={handleEnd}
           onTouchStart={e => {
             const t = e.touches[0];
-            if (t) handleStart(t.clientX, t.clientY);
+            if (t) {
+              handleStart(t.clientX, t.clientY);
+            }
           }}
           onTouchMove={e => {
             const t = e.touches[0];

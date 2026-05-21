@@ -120,7 +120,9 @@ export function useImageMode(
         const blob = await response.blob();
         const bitmap = await createImageBitmap(blob);
 
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
 
         // Determine source region
         const sx = region ? Math.round(region.x * bitmap.width) : 0;
@@ -138,7 +140,9 @@ export function useImageMode(
         const sampleSize = 10;
         const canvas = new OffscreenCanvas(sampleSize, sampleSize);
         const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+        if (!ctx) {
+          return;
+        }
 
         ctx.drawImage(bitmap, sx, sy, sw, sh, 0, 0, sampleSize, sampleSize);
         const imageData = ctx.getImageData(0, 0, sampleSize, sampleSize).data;
@@ -157,13 +161,17 @@ export function useImageMode(
         const g = totalG / pixelCount;
         const b = totalB / pixelCount;
 
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
 
         const lightness = perceptualLightness(r, g, b);
         setMode(lightness > threshold ? 'light' : 'dark');
       } catch {
         // CORS error, network error, etc. — keep fallback
-        if (!cancelled) setMode(fallback);
+        if (!cancelled) {
+          setMode(fallback);
+        }
       }
     }
 

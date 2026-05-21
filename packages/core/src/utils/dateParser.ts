@@ -40,7 +40,9 @@ export function isLocaleDayFirst(): boolean {
  */
 export function parseDateInput(input: string): ISODateString | null {
   const trimmed = input.trim();
-  if (!trimmed) return null;
+  if (!trimmed) {
+    return null;
+  }
 
   const currentYear = new Date().getFullYear();
 
@@ -104,7 +106,9 @@ export function parseDateInput(input: string): ISODateString | null {
   if (numericWithYearMatch) {
     const [, first, sep1, second, sep2, year] = numericWithYearMatch;
     // Reject mixed separators (e.g., "1/25.2026")
-    if (sep1 !== sep2) return null;
+    if (sep1 !== sep2) {
+      return null;
+    }
     return parseNumericDate(+first, +second, +year);
   }
 

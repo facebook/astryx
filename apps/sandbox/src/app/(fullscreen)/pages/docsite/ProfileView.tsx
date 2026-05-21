@@ -65,10 +65,18 @@ function timeAgo(dateStr: string): string {
   const then = new Date(dateStr);
   const diffMs = now.getTime() - then.getTime();
   const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  if (days < 1) return 'today';
-  if (days < 7) return `${days}d ago`;
-  if (days < 30) return `${Math.floor(days / 7)}w ago`;
-  if (days < 365) return `${Math.floor(days / 30)}mo ago`;
+  if (days < 1) {
+    return 'today';
+  }
+  if (days < 7) {
+    return `${days}d ago`;
+  }
+  if (days < 30) {
+    return `${Math.floor(days / 7)}w ago`;
+  }
+  if (days < 365) {
+    return `${Math.floor(days / 30)}mo ago`;
+  }
   return `${Math.floor(days / 365)}y ago`;
 }
 
@@ -456,7 +464,9 @@ function PreviewDialogShell({
     <XDSDialog
       isOpen={isOpen}
       onOpenChange={open => {
-        if (!open) onClose();
+        if (!open) {
+          onClose();
+        }
       }}
       width="90vw"
       maxHeight="90vh"
@@ -608,7 +618,9 @@ export function ProfileView({
   const setIsSettingsOpen = onSettingsChange;
 
   const previewItem = useMemo(() => {
-    if (!profileCraftName) return null;
+    if (!profileCraftName) {
+      return null;
+    }
     return (PROFILE_CRAFT_ITEMS.find(i => i.name === profileCraftName) ??
       null) as CraftItem | null;
   }, [profileCraftName]);
@@ -661,7 +673,9 @@ export function ProfileView({
   const [usedSort, setUsedSort] = useState('recent');
   const [usedTypeFilter, setUsedTypeFilter] = useState('all');
   const previewUsedItem = useMemo(() => {
-    if (!profileUsedName) return null;
+    if (!profileUsedName) {
+      return null;
+    }
     return (PROFILE_USED_ITEMS.find(i => i.name === profileUsedName) ??
       null) as UsedItem | null;
   }, [profileUsedName]);
@@ -743,7 +757,9 @@ export function ProfileView({
         items: [] as string[],
       };
     }
-    if (!profileCollectionName) return null;
+    if (!profileCollectionName) {
+      return null;
+    }
     return (
       PROFILE_COLLECTIONS.find(c => c.name === profileCollectionName) ?? null
     );
@@ -763,8 +779,12 @@ export function ProfileView({
       items = items.filter(i => i.status === craftStatusFilter);
     }
     items.sort((a, b) => {
-      if (craftSort === 'views') return b.views - a.views;
-      if (craftSort === 'uses') return b.used - a.used;
+      if (craftSort === 'views') {
+        return b.views - a.views;
+      }
+      if (craftSort === 'uses') {
+        return b.used - a.used;
+      }
       return (
         new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
       );
@@ -786,8 +806,12 @@ export function ProfileView({
       );
     }
     items.sort((a, b) => {
-      if (usedSort === 'frequency') return b.usageCount - a.usageCount;
-      if (usedSort === 'name') return a.name.localeCompare(b.name);
+      if (usedSort === 'frequency') {
+        return b.usageCount - a.usageCount;
+      }
+      if (usedSort === 'name') {
+        return a.name.localeCompare(b.name);
+      }
       return new Date(b.lastUsed).getTime() - new Date(a.lastUsed).getTime();
     });
     return items;
@@ -807,7 +831,9 @@ export function ProfileView({
   }, [bookmarkSearch, removedBookmarks]);
 
   const collectionItems = useMemo(() => {
-    if (!selectedCollection) return [];
+    if (!selectedCollection) {
+      return [];
+    }
     const itemNames = new Set(selectedCollection.items);
     return PROFILE_LIKED_ITEMS.filter(
       i => itemNames.has(i.name) && !removedBookmarks.has(i.name),
@@ -1172,8 +1198,11 @@ export function ProfileView({
                             onClick={() => {
                               setCollectionItemsDraft(prev => {
                                 const next = new Set(prev);
-                                if (next.has(item.name)) next.delete(item.name);
-                                else next.add(item.name);
+                                if (next.has(item.name)) {
+                                  next.delete(item.name);
+                                } else {
+                                  next.add(item.name);
+                                }
                                 return next;
                               });
                             }}
@@ -1213,9 +1242,11 @@ export function ProfileView({
                                     onChange={() => {
                                       setCollectionItemsDraft(prev => {
                                         const next = new Set(prev);
-                                        if (next.has(item.name))
+                                        if (next.has(item.name)) {
                                           next.delete(item.name);
-                                        else next.add(item.name);
+                                        } else {
+                                          next.add(item.name);
+                                        }
                                         return next;
                                       });
                                     }}
@@ -1691,7 +1722,9 @@ export function ProfileView({
       <XDSDialog
         isOpen={componentDrawerKey !== null}
         onOpenChange={open => {
-          if (!open) setComponentDrawerKey(null);
+          if (!open) {
+            setComponentDrawerKey(null);
+          }
         }}
         width="90vw"
         maxHeight="90vh"
@@ -1891,7 +1924,9 @@ export function ProfileView({
         }
         onMoreLikeThisClick={mlItem => {
           const found = PROFILE_LIKED_ITEMS.find(i => i.name === mlItem.name);
-          if (found) setPreviewBookmarkItem(found);
+          if (found) {
+            setPreviewBookmarkItem(found);
+          }
         }}
         exploreTags={[
           'website',
@@ -1967,7 +2002,9 @@ export function ProfileView({
                 const entries = THEME_PICKER_ENTRIES.filter(
                   e => e.category === category,
                 );
-                if (entries.length === 0) return null;
+                if (entries.length === 0) {
+                  return null;
+                }
                 return (
                   <div key={category} style={{marginBottom: 20}}>
                     <div style={{marginBottom: 8}}>

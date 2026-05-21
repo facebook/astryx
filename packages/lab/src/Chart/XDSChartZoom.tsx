@@ -111,7 +111,9 @@ export function XDSChartZoom({
   } | null>(null);
 
   useEffect(() => {
-    if (initialDomainsRef.current) return; // only capture once
+    if (initialDomainsRef.current) {
+      return;
+    } // only capture once
     const xDomain = isBandScale(xScale)
       ? null
       : ((xScale as ScaleLinear<number, number>).domain() as [number, number]);
@@ -185,7 +187,9 @@ export function XDSChartZoom({
       e.preventDefault();
 
       const svg = e.currentTarget.ownerSVGElement;
-      if (!svg) return;
+      if (!svg) {
+        return;
+      }
       const pt = svg.createSVGPoint();
       pt.x = e.clientX;
       pt.y = e.clientY;
@@ -293,14 +297,22 @@ export function XDSChartZoom({
 
   const onPointerUp = useCallback((e: React.PointerEvent<SVGRectElement>) => {
     pointersRef.current.delete(e.pointerId);
-    if (pointersRef.current.size < 2) pinchRef.current = null;
-    if (pointersRef.current.size === 0) dragRef.current = null;
+    if (pointersRef.current.size < 2) {
+      pinchRef.current = null;
+    }
+    if (pointersRef.current.size === 0) {
+      dragRef.current = null;
+    }
   }, []);
 
   const handleReset = useCallback(() => {
     const init = initialDomainsRef.current;
-    if (!init) return;
-    if (init.x) onXDomainChange?.(init.x);
+    if (!init) {
+      return;
+    }
+    if (init.x) {
+      onXDomainChange?.(init.x);
+    }
     onYDomainChange?.(init.y);
   }, [onXDomainChange, onYDomainChange]);
 

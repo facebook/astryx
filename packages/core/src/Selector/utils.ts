@@ -19,7 +19,9 @@ import type {
 export function isOptionData(
   option: XDSSelectorOptionType,
 ): option is XDSSelectorOptionData | string {
-  if (typeof option === 'string') return true;
+  if (typeof option === 'string') {
+    return true;
+  }
   return !('type' in option);
 }
 

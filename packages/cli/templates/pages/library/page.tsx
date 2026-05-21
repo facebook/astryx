@@ -57,7 +57,8 @@ const ITEMS: LibraryItem[] = [
       'Vertical and horizontal stack layouts with configurable gap and alignment.',
     category: 'Layout',
     type: 'Component',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/colorful-home-horizontal-1.png',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/colorful-home-horizontal-1.png',
   },
   {
     id: '2',
@@ -66,7 +67,8 @@ const ITEMS: LibraryItem[] = [
       'Responsive grid container with auto-fit columns and gap control.',
     category: 'Layout',
     type: 'Component',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-3.jpg',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-3.jpg',
   },
   {
     id: '3',
@@ -75,7 +77,8 @@ const ITEMS: LibraryItem[] = [
       'Surface container with optional padding, border, and shadow variants.',
     category: 'Layout',
     type: 'Component',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-2.png',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-2.png',
   },
   {
     id: '4',
@@ -83,7 +86,8 @@ const ITEMS: LibraryItem[] = [
     description: 'Centers its child both horizontally and vertically.',
     category: 'Layout',
     type: 'Utility',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/moody-scene-horizontal-1.png',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/moody-scene-horizontal-1.png',
   },
   {
     id: '5',
@@ -91,7 +95,8 @@ const ITEMS: LibraryItem[] = [
     description: 'Semantic page section with optional heading and divider.',
     category: 'Layout',
     type: 'Pattern',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/colorful-lifestyle-horizontal-2.png',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/colorful-lifestyle-horizontal-2.png',
   },
   {
     id: '6',
@@ -99,7 +104,8 @@ const ITEMS: LibraryItem[] = [
     description: 'Expandable region with animated height transition.',
     category: 'Layout',
     type: 'Component',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/light-scene-horizontal-1.png',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/light-scene-horizontal-1.png',
   },
   {
     id: '7',
@@ -108,7 +114,8 @@ const ITEMS: LibraryItem[] = [
       'Single-line text field with label, placeholder, and validation states.',
     category: 'Forms',
     type: 'Component',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/moody-working-horizontal-1.png',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/moody-working-horizontal-1.png',
   },
   {
     id: '8',
@@ -116,7 +123,8 @@ const ITEMS: LibraryItem[] = [
     description: 'Multi-line text field with auto-resize and character count.',
     category: 'Forms',
     type: 'Component',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/colorful-working-horizontal-3.png',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/colorful-working-horizontal-3.png',
   },
   {
     id: '9',
@@ -124,7 +132,8 @@ const ITEMS: LibraryItem[] = [
     description: 'Checkbox with label, indeterminate state, and group support.',
     category: 'Forms',
     type: 'Component',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-1.jpg',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-1.jpg',
   },
   {
     id: '10',
@@ -132,7 +141,8 @@ const ITEMS: LibraryItem[] = [
     description: 'Group of radio buttons with accessible fieldset wrapper.',
     category: 'Forms',
     type: 'Component',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/light-home-horizontal-1.png',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/light-home-horizontal-1.png',
   },
   {
     id: '11',
@@ -140,7 +150,8 @@ const ITEMS: LibraryItem[] = [
     description: 'Toggle switch for binary on/off settings.',
     category: 'Forms',
     type: 'Component',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/moody-home-horizontal-2.png',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/moody-home-horizontal-2.png',
   },
   {
     id: '12',
@@ -149,7 +160,8 @@ const ITEMS: LibraryItem[] = [
       'Dropdown or inline option selector with single and multi-select modes.',
     category: 'Forms',
     type: 'Component',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/colorful-product-1.png',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/colorful-product-1.png',
   },
   {
     id: '13',
@@ -158,7 +170,8 @@ const ITEMS: LibraryItem[] = [
       'Horizontal tab navigation with underline indicator and keyboard support.',
     category: 'Navigation',
     type: 'Component',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-5.jpg',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-5.jpg',
   },
   {
     id: '14',
@@ -166,7 +179,8 @@ const ITEMS: LibraryItem[] = [
     description: 'Application top bar with logo, nav links, and action slots.',
     category: 'Navigation',
     type: 'Pattern',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-1.png',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-1.png',
   },
   {
     id: '15',
@@ -175,7 +189,8 @@ const ITEMS: LibraryItem[] = [
       'Vertical sidebar navigation with collapsible groups and active states.',
     category: 'Navigation',
     type: 'Pattern',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/moody-lifestyle-horizontal-1.png',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/moody-lifestyle-horizontal-1.png',
   },
   {
     id: '16',
@@ -183,7 +198,8 @@ const ITEMS: LibraryItem[] = [
     description: 'Path trail navigation with separator and truncation support.',
     category: 'Navigation',
     type: 'Component',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/colorful-home-horizontal-2.png',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/colorful-home-horizontal-2.png',
   },
   {
     id: '17',
@@ -192,7 +208,8 @@ const ITEMS: LibraryItem[] = [
       'Page navigation with prev/next controls and page count display.',
     category: 'Navigation',
     type: 'Component',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/colorful-working-horizontal-1.png',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/colorful-working-horizontal-1.png',
   },
   {
     id: '18',
@@ -201,7 +218,8 @@ const ITEMS: LibraryItem[] = [
       'Bottom tab bar for mobile viewports with icon and label slots.',
     category: 'Navigation',
     type: 'Pattern',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-3.png',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-3.png',
   },
   {
     id: '19',
@@ -210,7 +228,8 @@ const ITEMS: LibraryItem[] = [
       'Compact label for status, count, or category with semantic color variants.',
     category: 'Feedback',
     type: 'Component',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/moody-working-horizontal-2.png',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/moody-working-horizontal-2.png',
   },
   {
     id: '20',
@@ -219,7 +238,8 @@ const ITEMS: LibraryItem[] = [
       'Full-width alert bar for info, success, warning, and error messages.',
     category: 'Feedback',
     type: 'Component',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-2.jpg',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-2.jpg',
   },
   {
     id: '21',
@@ -227,7 +247,8 @@ const ITEMS: LibraryItem[] = [
     description: 'Animated loading indicator with size and color variants.',
     category: 'Feedback',
     type: 'Component',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/colorful-lifestyle-horizontal-1.png',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/colorful-lifestyle-horizontal-1.png',
   },
   {
     id: '22',
@@ -235,7 +256,8 @@ const ITEMS: LibraryItem[] = [
     description: 'Horizontal bar indicating task completion percentage.',
     category: 'Feedback',
     type: 'Component',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/light-lifestyle-horizontal-1.png',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/light-lifestyle-horizontal-1.png',
   },
   {
     id: '23',
@@ -244,7 +266,8 @@ const ITEMS: LibraryItem[] = [
       'Small dot indicator for presence, health, or pipeline status.',
     category: 'Feedback',
     type: 'Component',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/moody-home-horizontal-1.png',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/moody-home-horizontal-1.png',
   },
   {
     id: '24',
@@ -253,7 +276,8 @@ const ITEMS: LibraryItem[] = [
       'Contextual label that appears on hover with configurable placement.',
     category: 'Feedback',
     type: 'Component',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/colorful-working-horizontal-2.png',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/colorful-working-horizontal-2.png',
   },
   {
     id: '25',
@@ -262,7 +286,8 @@ const ITEMS: LibraryItem[] = [
       'Feature-rich data table with sorting, selection, and column resizing.',
     category: 'Data',
     type: 'Component',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-4.jpg',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-4.jpg',
   },
   {
     id: '26',
@@ -271,7 +296,8 @@ const ITEMS: LibraryItem[] = [
       'User profile image with fallback initials and status dot support.',
     category: 'Data',
     type: 'Component',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-4.png',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-4.png',
   },
   {
     id: '27',
@@ -280,7 +306,8 @@ const ITEMS: LibraryItem[] = [
       'Placeholder shimmer for loading states matching content shapes.',
     category: 'Data',
     type: 'Utility',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/moody-lifestyle-horizontal-2.png',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/moody-lifestyle-horizontal-2.png',
   },
   {
     id: '28',
@@ -288,7 +315,8 @@ const ITEMS: LibraryItem[] = [
     description: 'Rich popover that appears on hover with arbitrary content.',
     category: 'Data',
     type: 'Component',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/moody-scene-horizontal-2.png',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/moody-scene-horizontal-2.png',
   },
   {
     id: '29',
@@ -297,7 +325,8 @@ const ITEMS: LibraryItem[] = [
       'Command-palette style search with grouped results and keyboard nav.',
     category: 'Data',
     type: 'Pattern',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/colorful-product-2.png',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/colorful-product-2.png',
   },
   {
     id: '30',
@@ -306,7 +335,8 @@ const ITEMS: LibraryItem[] = [
       'Autocomplete input with async suggestion loading and selection.',
     category: 'Data',
     type: 'Component',
-    imageUrl: 'https://lookaside.facebook.com/assets/xds_oss/moody-working-horizontal-3.png',
+    imageUrl:
+      'https://lookaside.facebook.com/assets/xds_oss/moody-working-horizontal-3.png',
   },
 ];
 
@@ -440,11 +470,15 @@ export default function LibraryPage() {
   }, [activeTab, search, sortOrder]);
 
   const groupedSections = useMemo(() => {
-    if (activeTab !== 'All') return null;
+    if (activeTab !== 'All') {
+      return null;
+    }
     const order = CATEGORIES.filter(c => c !== 'All');
     const map = new Map<string, LibraryItem[]>();
     for (const item of filtered) {
-      if (!map.has(item.category)) map.set(item.category, []);
+      if (!map.has(item.category)) {
+        map.set(item.category, []);
+      }
       map.get(item.category)!.push(item);
     }
     return order
@@ -527,7 +561,9 @@ export default function LibraryPage() {
                 </XDSCenter>
               ) : (
                 <XDSVStack gap={6}>
-                  {(groupedSections ?? [{category: activeTab, items: filtered}]).flatMap(section => [
+                  {(
+                    groupedSections ?? [{category: activeTab, items: filtered}]
+                  ).flatMap(section => [
                     <XDSDivider key={`d-${section.category}`} />,
                     <LibrarySection
                       key={section.category}

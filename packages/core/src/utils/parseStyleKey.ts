@@ -30,7 +30,9 @@
  * ```
  */
 export function parseStyleKey(key: string): string {
-  if (key === 'base') return '';
+  if (key === 'base') {
+    return '';
+  }
 
   return key
     .split('+')

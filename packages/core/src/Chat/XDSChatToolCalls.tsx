@@ -419,7 +419,9 @@ function CallRow({call}: {call: XDSChatToolCallItem}) {
     </div>
   );
 
-  if (!hasDetail) return row;
+  if (!hasDetail) {
+    return row;
+  }
 
   return (
     <div>
@@ -478,11 +480,15 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
 
   const toggle = useCallback(() => {
     const next = !isExpanded;
-    if (!isControlled) setInternalExpanded(next);
+    if (!isControlled) {
+      setInternalExpanded(next);
+    }
     onExpandedChange?.(next);
   }, [isExpanded, isControlled, onExpandedChange]);
 
-  if (calls.length === 0) return null;
+  if (calls.length === 0) {
+    return null;
+  }
 
   // Single call: render inline, no group chrome
   if (calls.length === 1) {

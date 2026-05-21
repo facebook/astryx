@@ -61,8 +61,11 @@ export function useXDSTableFilterState(
     (key: string, value: XDSTableFilterValue | null) => {
       setFilters(prev => {
         const next = {...prev};
-        if (value == null) delete next[key];
-        else next[key] = value;
+        if (value == null) {
+          delete next[key];
+        } else {
+          next[key] = value;
+        }
         return next;
       });
     },

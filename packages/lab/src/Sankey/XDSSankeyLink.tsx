@@ -50,9 +50,15 @@ function resolveColor(color: SankeyLinkColor): ResolvedMode {
   if (typeof color === 'object' && 'gradient' in color) {
     return {type: 'gradient', bias: color.gradient};
   }
-  if (color === 'gradient') return {type: 'gradient', bias: 0.5};
-  if (color === 'source') return {type: 'source'};
-  if (color === 'target') return {type: 'target'};
+  if (color === 'gradient') {
+    return {type: 'gradient', bias: 0.5};
+  }
+  if (color === 'source') {
+    return {type: 'source'};
+  }
+  if (color === 'target') {
+    return {type: 'target'};
+  }
   return {type: 'flat', value: color};
 }
 

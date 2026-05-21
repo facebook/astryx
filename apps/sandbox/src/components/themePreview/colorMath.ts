@@ -104,7 +104,11 @@ export function labToXyz(L: number, a: number, b: number): Rgb {
 
 export function hexToLab(hex: string): Rgb {
   const [r, g, b] = hexToRgb(hex);
-  const [x, y, z] = linearRgbToXyz(srgbToLinear(r), srgbToLinear(g), srgbToLinear(b));
+  const [x, y, z] = linearRgbToXyz(
+    srgbToLinear(r),
+    srgbToLinear(g),
+    srgbToLinear(b),
+  );
   return xyzToLab(x, y, z);
 }
 
@@ -115,7 +119,9 @@ export function hexToLab(hex: string): Rgb {
 export function hexToHct(hex: string): HCT {
   const [L, a, bL] = hexToLab(hex);
   let hue = (Math.atan2(bL, a) * 180) / Math.PI;
-  if (hue < 0) hue += 360;
+  if (hue < 0) {
+    hue += 360;
+  }
   return {
     hue,
     chroma: Math.sqrt(a * a + bL * bL),
@@ -130,8 +136,12 @@ export function hexToHct(hex: string): HCT {
  * round-trip cleanly through sRGB).
  */
 export function hctToHex({hue, chroma, tone}: HCT): string {
-  if (tone <= 0) return '#000000';
-  if (tone >= 100) return '#ffffff';
+  if (tone <= 0) {
+    return '#000000';
+  }
+  if (tone >= 100) {
+    return '#ffffff';
+  }
   if (chroma < 0.5) {
     const y = labFInv((tone + 16) / 116);
     const g = linearToSrgb(y);
@@ -161,7 +171,8 @@ export function hctToHex({hue, chroma, tone}: HCT): string {
       bv >= 0 &&
       bv <= 255;
     if (ok) {
-      best = '#' + [r, g, bv].map(c => c.toString(16).padStart(2, '0')).join('');
+      best =
+        '#' + [r, g, bv].map(c => c.toString(16).padStart(2, '0')).join('');
       lo = mid;
     } else {
       hi = mid;
@@ -187,7 +198,10 @@ export type ToneStep = (typeof TONE_STEPS)[number];
  * stays visibly hued; capped at chroma × 1.8 so peak saturation doesn't
  * exceed what the gamut binary-search inside hctToHex can reach.
  */
-export function tonalPalette(hue: number, chroma: number): Record<number, string> {
+export function tonalPalette(
+  hue: number,
+  chroma: number,
+): Record<number, string> {
   const result: Record<number, string> = {};
   const maxChroma = chroma * 1.8;
   for (const t of TONE_STEPS) {
@@ -283,9 +297,15 @@ export function deltaEHex(a: string, b: string): number {
 export type SnapVerdict = 'exact' | 'snapped' | 'near' | 'off';
 
 export function deltaEVerdict(d: number): SnapVerdict {
-  if (d <= 1.0) return 'exact';
-  if (d <= 2.5) return 'snapped';
-  if (d <= 5.0) return 'near';
+  if (d <= 1.0) {
+    return 'exact';
+  }
+  if (d <= 2.5) {
+    return 'snapped';
+  }
+  if (d <= 5.0) {
+    return 'near';
+  }
   return 'off';
 }
 
@@ -347,7 +367,9 @@ export function findClosestRampStep(
   seeds: RampSeed[],
   mode: Mode,
 ): SnapMatch | null {
-  if (seeds.length === 0) return null;
+  if (seeds.length === 0) {
+    return null;
+  }
   const targetLab = hexToLab(targetHex);
   let best: SnapMatch | null = null;
   for (const seed of seeds) {
@@ -374,7 +396,9 @@ export function findClosestRampStep(
       const swatch = lookup(t);
       // Canonical ramps may be sparse (e.g. only 0/5/10/…/100). Skip
       // tone steps without a value rather than crashing on `undefined`.
-      if (!swatch) continue;
+      if (!swatch) {
+        continue;
+      }
       const d = deltaE(targetLab, hexToLab(swatch));
       if (best == null || d < best.deltaE) {
         best = {

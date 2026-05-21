@@ -168,7 +168,9 @@ const defaultColorByType: Record<string, XDSTextColor> = {
  * their visual treatment comes from theme CSS overrides (.xds-text.<type>).
  */
 function resolveStyleType(type: XDSTextType): XDSBuiltinTextType {
-  if (type in sizeByTypeStyles) return type as XDSBuiltinTextType;
+  if (type in sizeByTypeStyles) {
+    return type as XDSBuiltinTextType;
+  }
   return 'body';
 }
 

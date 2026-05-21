@@ -13,7 +13,6 @@
  * - /packages/core/src/hooks/useGridFocus.test.ts
  */
 
-
 import {useCallback, useRef} from 'react';
 
 /**
@@ -129,7 +128,9 @@ export function useGridFocus(options: UseGridFocusOptions): UseGridFocusReturn {
    * Get all focusable cells in the grid.
    */
   const getCells = useCallback((): HTMLElement[] => {
-    if (!gridRef.current) return [];
+    if (!gridRef.current) {
+      return [];
+    }
     return Array.from(
       gridRef.current.querySelectorAll<HTMLElement>(cellSelector),
     );
@@ -153,7 +154,9 @@ export function useGridFocus(options: UseGridFocusOptions): UseGridFocusReturn {
   const focusCellInternal = useCallback(
     (index: number, currentColumn: number, offset: number) => {
       const cells = getCells();
-      if (cells.length === 0) return;
+      if (cells.length === 0) {
+        return;
+      }
 
       if (index < 0) {
         onNavigateBefore?.(currentColumn, offset);
@@ -175,7 +178,9 @@ export function useGridFocus(options: UseGridFocusOptions): UseGridFocusReturn {
   const focusCell = useCallback(
     (index: number) => {
       const cells = getCells();
-      if (cells.length === 0) return;
+      if (cells.length === 0) {
+        return;
+      }
       const clampedIndex = Math.max(0, Math.min(index, cells.length - 1));
       cells[clampedIndex]?.focus();
     },
@@ -204,7 +209,9 @@ export function useGridFocus(options: UseGridFocusOptions): UseGridFocusReturn {
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       const currentIndex = getCurrentIndex();
-      if (currentIndex === -1) return;
+      if (currentIndex === -1) {
+        return;
+      }
 
       const cells = getCells();
       const currentRow = Math.floor(currentIndex / columns);

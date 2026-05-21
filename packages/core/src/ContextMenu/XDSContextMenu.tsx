@@ -222,7 +222,9 @@ export function XDSContextMenu({
   // opening right-click as a dismiss event. Handling it ourselves via
   // mousedown avoids that race.
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      return;
+    }
     const handleClickOutside = (e: MouseEvent) => {
       const menu = listRef.current;
       if (menu && !menu.contains(e.target as Node)) {
@@ -252,7 +254,9 @@ export function XDSContextMenu({
 
   const handleContextMenu = useCallback(
     (e: React.MouseEvent) => {
-      if (isDisabled) return;
+      if (isDisabled) {
+        return;
+      }
       e.preventDefault();
       positionRef.current = {x: e.clientX, y: e.clientY};
       layer.show();
