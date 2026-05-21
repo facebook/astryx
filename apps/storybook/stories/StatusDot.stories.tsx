@@ -13,9 +13,6 @@ const meta: Meta<typeof XDSStatusDot> = {
       options: ['success', 'warning', 'error', 'accent', 'neutral'],
       description: 'Semantic color variant',
     },
-    size: {
-      table: {disable: true},
-    },
     label: {
       control: 'text',
       description: 'Accessible label',

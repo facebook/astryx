@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "storybook dev -p 6006",
-    "build": "storybook build -o dist"
+    "build": "storybook build -o dist",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@xds/core": "*",

@@ -18,6 +18,7 @@ import {
   lockIcon,
 } from '@xds/lab';
 import {XDSStack, XDSText, XDSDivider} from '@xds/core';
+import {XDSHeading} from '@xds/core/Text';
 
 const meta: Meta<typeof XDSSVGIcon> = {
   title: 'Lab/SVGIcon',
@@ -85,8 +86,8 @@ const VARIATIONS: SVGIconVariation[] = [
 export const VariationMatrix: Story = {
   render: () => (
     <XDSStack direction="vertical" gap={3}>
-      <XDSText variant="heading-3">Variation Matrix</XDSText>
-      <XDSText variant="body-sm" color="secondary">
+      <XDSHeading level={3}>Variation Matrix</XDSHeading>
+      <XDSText type="supporting" color="secondary">
         Same SVG paths, different visual treatments via CSS custom properties.
         Note how stroke-role elements (menu lines, calendar pegs, bell clapper)
         stay as strokes even in bold/bulk mode.
@@ -103,7 +104,7 @@ export const VariationMatrix: Story = {
         {VARIATIONS.map(v => (
           <XDSText
             key={v}
-            variant="label-sm"
+            type="label"
             color="secondary"
             style={{textAlign: 'center'}}>
             {v}
@@ -113,7 +114,7 @@ export const VariationMatrix: Story = {
         {/* Icon rows */}
         {starterIcons.map(icon => (
           <Fragment key={icon.name}>
-            <XDSText variant="label-sm">{icon.name}</XDSText>
+            <XDSText type="label">{icon.name}</XDSText>
             {VARIATIONS.map(v => (
               <div
                 key={`${icon.name}-${v}`}
@@ -135,22 +136,22 @@ export const VariationMatrix: Story = {
 export const RoleBehavior: Story = {
   render: () => (
     <XDSStack direction="vertical" gap={3}>
-      <XDSText variant="heading-3">Path Roles: Fill vs Stroke</XDSText>
-      <XDSText variant="body-sm" color="secondary">
+      <XDSHeading level={3}>Path Roles: Fill vs Stroke</XDSHeading>
+      <XDSText type="supporting" color="secondary">
         Stroke-role elements always stay as strokes. Fill-role elements switch
         between stroke (linear) and fill (bold). Compare Menu (all stroke-role)
         vs Home (fill-role body + fill-role door with mask knockout).
       </XDSText>
 
       <XDSStack direction="vertical" gap={2}>
-        <XDSText variant="label-sm" color="secondary">
+        <XDSText type="label" color="secondary">
           Menu — all stroke-role (lines never become fills)
         </XDSText>
-        <XDSStack direction="row" gap={3}>
+        <XDSStack direction="horizontal" gap={3}>
           {VARIATIONS.map(v => (
             <XDSStack direction="vertical" key={v} gap={0.5} hAlign="center">
               <XDSSVGIcon icon={menuIcon} variation={v} size="lg" />
-              <XDSText variant="label-sm" color="secondary">
+              <XDSText type="label" color="secondary">
                 {v}
               </XDSText>
             </XDSStack>
@@ -159,14 +160,14 @@ export const RoleBehavior: Story = {
 
         <XDSDivider />
 
-        <XDSText variant="label-sm" color="secondary">
+        <XDSText type="label" color="secondary">
           Home — fill-role body + door (mask gap in bold)
         </XDSText>
-        <XDSStack direction="row" gap={3}>
+        <XDSStack direction="horizontal" gap={3}>
           {VARIATIONS.map(v => (
             <XDSStack direction="vertical" key={v} gap={0.5} hAlign="center">
               <XDSSVGIcon icon={homeIcon} variation={v} size="lg" />
-              <XDSText variant="label-sm" color="secondary">
+              <XDSText type="label" color="secondary">
                 {v}
               </XDSText>
             </XDSStack>
@@ -175,14 +176,14 @@ export const RoleBehavior: Story = {
 
         <XDSDivider />
 
-        <XDSText variant="label-sm" color="secondary">
+        <XDSText type="label" color="secondary">
           Settings — fill-role gear + circle (mask gap in bold)
         </XDSText>
-        <XDSStack direction="row" gap={3}>
+        <XDSStack direction="horizontal" gap={3}>
           {VARIATIONS.map(v => (
             <XDSStack direction="vertical" key={v} gap={0.5} hAlign="center">
               <XDSSVGIcon icon={settingsIcon} variation={v} size="lg" />
-              <XDSText variant="label-sm" color="secondary">
+              <XDSText type="label" color="secondary">
                 {v}
               </XDSText>
             </XDSStack>
@@ -202,17 +203,15 @@ const SIZES: SVGIconSize[] = ['xsm', 'sm', 'md', 'lg'];
 export const SizeScale: Story = {
   render: () => (
     <XDSStack direction="vertical" gap={2}>
-      <XDSText variant="heading-3">
-        Size Scale with Optical Compensation
-      </XDSText>
-      <XDSText variant="body-sm" color="secondary">
+      <XDSHeading level={3}>Size Scale with Optical Compensation</XDSHeading>
+      <XDSText type="supporting" color="secondary">
         Stroke width auto-adjusts at smaller sizes for legibility.
       </XDSText>
-      <XDSStack direction="row" gap={3} vAlign="end">
+      <XDSStack direction="horizontal" gap={3} vAlign="end">
         {SIZES.map(size => (
           <XDSStack direction="vertical" key={size} gap={1} hAlign="center">
             <XDSSVGIcon icon={settingsIcon} variation="linear" size={size} />
-            <XDSText variant="label-sm" color="secondary">
+            <XDSText type="label" color="secondary">
               {size}
             </XDSText>
           </XDSStack>
@@ -239,8 +238,8 @@ const COLORS: SVGIconColor[] = [
 export const Colors: Story = {
   render: () => (
     <XDSStack direction="vertical" gap={2}>
-      <XDSText variant="heading-3">Semantic Colors</XDSText>
-      <XDSStack direction="row" gap={3}>
+      <XDSHeading level={3}>Semantic Colors</XDSHeading>
+      <XDSStack direction="horizontal" gap={3}>
         {COLORS.map(c => (
           <XDSStack direction="vertical" key={c} gap={1} hAlign="center">
             <XDSSVGIcon
@@ -249,7 +248,7 @@ export const Colors: Story = {
               size="lg"
               color={c}
             />
-            <XDSText variant="label-sm" color="secondary">
+            <XDSText type="label" color="secondary">
               {c}
             </XDSText>
           </XDSStack>
@@ -275,8 +274,8 @@ const MASK_GAP_ICONS = [
 export const MaskGaps: Story = {
   render: () => (
     <XDSStack direction="vertical" gap={3}>
-      <XDSText variant="heading-3">Mask Gaps on Different Backgrounds</XDSText>
-      <XDSText variant="body-sm" color="secondary">
+      <XDSHeading level={3}>Mask Gaps on Different Backgrounds</XDSHeading>
+      <XDSText type="supporting" color="secondary">
         Bold mode uses mask-based knockout gaps. Because the gap is transparent
         (not white), it works on any background — solid colors, surfaces, and
         gradients alike.
@@ -292,7 +291,7 @@ export const MaskGaps: Story = {
         },
       ].map(({label, bg}) => (
         <XDSStack direction="vertical" key={label} gap={1}>
-          <XDSText variant="label-sm" color="secondary">
+          <XDSText type="label" color="secondary">
             {label}
           </XDSText>
           <div
@@ -337,8 +336,8 @@ const STROKE_WIDTHS = [1, 1.5, 2, 2.5, 3];
 export const StrokeWidthRange: Story = {
   render: () => (
     <XDSStack direction="vertical" gap={3}>
-      <XDSText variant="heading-3">Stroke Width Range</XDSText>
-      <XDSText variant="body-sm" color="secondary">
+      <XDSHeading level={3}>Stroke Width Range</XDSHeading>
+      <XDSText type="supporting" color="secondary">
         Linear mode at stroke widths from 1 to 3. Thinner strokes feel lighter
         and more refined; thicker strokes add visual weight.
       </XDSText>
@@ -354,7 +353,7 @@ export const StrokeWidthRange: Story = {
         {STROKE_WIDTHS.map(w => (
           <XDSText
             key={w}
-            variant="label-sm"
+            type="label"
             color="secondary"
             style={{textAlign: 'center'}}>
             {w}
@@ -364,7 +363,7 @@ export const StrokeWidthRange: Story = {
         {/* Icon rows — first 8 starterIcons */}
         {starterIcons.slice(0, 8).map(icon => (
           <Fragment key={icon.name}>
-            <XDSText variant="label-sm">{icon.name}</XDSText>
+            <XDSText type="label">{icon.name}</XDSText>
             {STROKE_WIDTHS.map(w => (
               <div
                 key={`${icon.name}-${w}`}
@@ -391,8 +390,8 @@ export const StrokeWidthRange: Story = {
 export const StructuralDiversity: Story = {
   render: () => (
     <XDSStack direction="vertical" gap={3}>
-      <XDSText variant="heading-3">Structural Diversity</XDSText>
-      <XDSText variant="body-sm" color="secondary">
+      <XDSHeading level={3}>Structural Diversity</XDSHeading>
+      <XDSText type="supporting" color="secondary">
         New icons with diverse structures — organic curves, complex single
         paths, nested overlapping fills, and mixed fill+stroke roles — across
         all five variations.
@@ -409,7 +408,7 @@ export const StructuralDiversity: Story = {
         {VARIATIONS.map(v => (
           <XDSText
             key={v}
-            variant="label-sm"
+            type="label"
             color="secondary"
             style={{textAlign: 'center'}}>
             {v}
@@ -419,7 +418,7 @@ export const StructuralDiversity: Story = {
         {/* Icon rows — new icons only */}
         {starterIcons.slice(7).map(icon => (
           <Fragment key={icon.name}>
-            <XDSText variant="label-sm">{icon.name}</XDSText>
+            <XDSText type="label">{icon.name}</XDSText>
             {VARIATIONS.map(v => (
               <div
                 key={`${icon.name}-${v}`}

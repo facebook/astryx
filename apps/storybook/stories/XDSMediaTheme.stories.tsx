@@ -52,7 +52,7 @@ function OnDarkDemo() {
             Content on a dark surface — text, icons, and interactive elements
             automatically adapt.
           </XDSText>
-          <XDSStack direction="row" gap={2} align="center" wrap="wrap">
+          <XDSStack direction="horizontal" gap={2} align="center" wrap="wrap">
             <XDSButton label="Primary" />
             <XDSButton label="Secondary" variant="secondary" />
             <XDSButton label="Ghost" variant="ghost" />
@@ -60,7 +60,7 @@ function OnDarkDemo() {
               A link
             </XDSLink>
           </XDSStack>
-          <XDSStack direction="row" gap={2} align="center" wrap="wrap">
+          <XDSStack direction="horizontal" gap={2} align="center" wrap="wrap">
             <XDSBadge label="Badge" />
             <XDSIcon icon="info" size="md" />
             <XDSIcon icon="success" size="md" />
@@ -110,7 +110,11 @@ function OnLightDemo() {
                 Content on a light surface in dark mode — text and icons become
                 dark.
               </XDSText>
-              <XDSStack direction="row" gap={2} align="center" wrap="wrap">
+              <XDSStack
+                direction="horizontal"
+                gap={2}
+                align="center"
+                wrap="wrap">
                 <XDSButton label="Primary" />
                 <XDSButton label="Secondary" variant="secondary" />
                 <XDSButton label="Ghost" variant="ghost" />
@@ -157,7 +161,7 @@ function ToastDemo() {
           width: '100%',
         }}>
         <XDSMediaTheme mode="dark">
-          <XDSStack direction="row" gap={3} align="center" wrap="wrap">
+          <XDSStack direction="horizontal" gap={3} align="center" wrap="wrap">
             <XDSText style={{flex: 1}}>Changes saved successfully.</XDSText>
             <XDSButton label="Undo" variant="secondary" size="sm" />
             <XDSButton
@@ -182,7 +186,7 @@ function ToastDemo() {
           width: '100%',
         }}>
         <XDSMediaTheme mode="dark">
-          <XDSStack direction="row" gap={3} align="center" wrap="wrap">
+          <XDSStack direction="horizontal" gap={3} align="center" wrap="wrap">
             <XDSText style={{flex: 1}}>
               Failed to save. Check your connection.
             </XDSText>
@@ -238,7 +242,7 @@ function ComponentOverrideBoundaryDemo() {
             <XDSText type="supporting" weight="semibold">
               Normal surface (themed overrides)
             </XDSText>
-            <XDSStack direction="row" gap={2} align="center" wrap="wrap">
+            <XDSStack direction="horizontal" gap={2} align="center" wrap="wrap">
               <XDSButton label="Primary" />
               <XDSButton label="Secondary" variant="secondary" />
               <XDSButton label="Ghost" variant="ghost" />
@@ -260,7 +264,11 @@ function ComponentOverrideBoundaryDemo() {
               <XDSText type="supporting" weight="semibold">
                 Dark surface (same overrides, inverted tokens)
               </XDSText>
-              <XDSStack direction="row" gap={2} align="center" wrap="wrap">
+              <XDSStack
+                direction="horizontal"
+                gap={2}
+                align="center"
+                wrap="wrap">
                 <XDSButton label="Primary" />
                 <XDSButton label="Secondary" variant="secondary" />
                 <XDSButton label="Ghost" variant="ghost" />
@@ -301,7 +309,7 @@ function ThemedDemo() {
         <XDSTheme key={label} theme={theme}>
           <XDSStack gap={2}>
             <XDSText weight="semibold">{label}</XDSText>
-            <XDSStack direction="row" gap={3}>
+            <XDSStack direction="horizontal" gap={3}>
               {/* Normal surface */}
               <div
                 style={{
@@ -390,7 +398,7 @@ function CustomOverridesDemo() {
             padding: 16,
           }}>
           <XDSMediaTheme mode="dark">
-            <XDSStack direction="row" gap={2} align="center" wrap="wrap">
+            <XDSStack direction="horizontal" gap={2} align="center" wrap="wrap">
               <XDSButton label="Accent button" />
               <XDSButton label="Secondary" variant="secondary" />
               <XDSLink href="#" hasUnderline>
@@ -501,7 +509,7 @@ function AutoDetectDemo() {
         <code>useImageMode</code>, then applies the correct{' '}
         <code>XDSMediaTheme</code> surface. Text color adapts automatically.
       </XDSText>
-      <XDSStack direction="row" gap={3} style={{flexWrap: 'wrap'}}>
+      <XDSStack direction="horizontal" gap={3} style={{flexWrap: 'wrap'}}>
         {DEMO_IMAGES.map(img => (
           <ImageCard key={img.url} {...img} />
         ))}

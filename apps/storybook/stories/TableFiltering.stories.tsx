@@ -19,53 +19,47 @@ import {XDSEmptyState} from '@xds/core/EmptyState';
 import type {PowerSearchFilter} from '@xds/core/PowerSearch';
 
 interface Employee extends Record<string, unknown> {
-  id: string;
   name: string;
   email: string;
   role: string;
-  department: string;
+  department: readonly string[];
   level: number;
 }
 
 const employees: Employee[] = [
   {
-    id: '1',
     name: 'Alice',
     email: 'alice@example.com',
     role: 'Engineer',
-    department: 'Platform',
+    department: ['Platform'],
     level: 5,
   },
   {
-    id: '2',
     name: 'Bob',
     email: 'bob@example.com',
     role: 'Designer',
-    department: 'Product',
+    department: ['Product'],
     level: 4,
   },
   {
-    id: '3',
     name: 'Charlie',
     email: 'charlie@example.com',
     role: 'Manager',
-    department: 'Platform',
+    department: ['Platform'],
     level: 6,
   },
   {
-    id: '4',
     name: 'Diana',
     email: 'diana@example.com',
     role: 'Engineer',
-    department: 'Infrastructure',
+    department: ['Infrastructure'],
     level: 5,
   },
   {
-    id: '5',
     name: 'Eve',
     email: 'eve@example.com',
     role: 'Admin',
-    department: 'Operations',
+    department: ['Operations'],
     level: 3,
   },
 ];
@@ -133,7 +127,7 @@ export const TextFilter: Story = {
         <XDSTable
           data={data}
           columns={columns}
-          idKey="id"
+          idKey="name"
           plugins={{filter: filterPlugin}}
         />
       </div>
@@ -168,7 +162,7 @@ export const SelectorFilter: Story = {
         <XDSTable
           data={data}
           columns={columns}
-          idKey="id"
+          idKey="name"
           plugins={{filter: filterPlugin}}
         />
       </div>
@@ -204,7 +198,7 @@ export const MultiSelectorFilter: Story = {
         <XDSTable
           data={data}
           columns={columns}
-          idKey="id"
+          idKey="name"
           plugins={{filter: filterPlugin}}
         />
       </div>
@@ -240,7 +234,7 @@ export const NumberFilter: Story = {
         <XDSTable
           data={data}
           columns={columns}
-          idKey="id"
+          idKey="name"
           plugins={{filter: filterPlugin}}
         />
       </div>
@@ -276,7 +270,7 @@ export const InlineVariant: Story = {
         <XDSTable
           data={data}
           columns={columns}
-          idKey="id"
+          idKey="name"
           plugins={{filter: filterPlugin}}
         />
       </div>
@@ -306,7 +300,7 @@ export const WithSelection: Story = {
     );
     const {selectionConfig} = useXDSTableSelectionState({
       data,
-      idKey: 'id',
+      idKey: 'name',
       selectedKeys,
       setSelectedKeys,
     });
@@ -320,7 +314,7 @@ export const WithSelection: Story = {
         <XDSTable
           data={data}
           columns={columns}
-          idKey="id"
+          idKey="name"
           plugins={{selection: selectionPlugin, filter: filterPlugin}}
         />
       </div>
@@ -365,7 +359,7 @@ export const WithSorting: Story = {
         <XDSTable
           data={data}
           columns={columns}
-          idKey="id"
+          idKey="name"
           plugins={{sort: sortPlugin, filter: filterPlugin}}
         />
       </div>
@@ -396,7 +390,7 @@ export const WithResize: Story = {
       columnWidths,
       onColumnResizeEnd: updates =>
         setColumnWidths(prev => ({...prev, ...updates})),
-      columns,
+      columns: columns as XDSTableColumn<Record<string, unknown>>[],
     });
     const data = applyFilters(
       toSearchFilters(filters, columns, config) as PowerSearchFilter[],
@@ -411,7 +405,7 @@ export const WithResize: Story = {
         <XDSTable
           data={data}
           columns={columns}
-          idKey="id"
+          idKey="name"
           plugins={{filter: filterPlugin, resize: resizePlugin}}
         />
       </div>
@@ -446,7 +440,7 @@ export const WithAllPlugins: Story = {
       columnWidths,
       onColumnResizeEnd: updates =>
         setColumnWidths(prev => ({...prev, ...updates})),
-      columns,
+      columns: columns as XDSTableColumn<Record<string, unknown>>[],
     });
     const filtered = applyFilters(
       toSearchFilters(filters, columns, config) as PowerSearchFilter[],
@@ -455,7 +449,7 @@ export const WithAllPlugins: Story = {
     const data = applySort(filtered);
     const {selectionConfig} = useXDSTableSelectionState({
       data,
-      idKey: 'id',
+      idKey: 'name',
       selectedKeys,
       setSelectedKeys,
     });
@@ -469,7 +463,7 @@ export const WithAllPlugins: Story = {
         <XDSTable
           data={data}
           columns={columns}
-          idKey="id"
+          idKey="name"
           plugins={{
             selection: selectionPlugin,
             sort: sortPlugin,
@@ -511,7 +505,7 @@ export const InlineWithClear: Story = {
         <XDSTable
           data={data}
           columns={columns}
-          idKey="id"
+          idKey="name"
           plugins={{filter: filterPlugin}}
         />
       </div>
@@ -547,13 +541,13 @@ export const EmptyState: Story = {
         <XDSTable
           data={data}
           columns={columns}
-          idKey="id"
+          idKey="name"
           plugins={{filter: filterPlugin}}
           emptyState={
             <XDSEmptyState
               title="No results"
               description="Try adjusting your filters to find what you're looking for."
-              size="compact"
+              isCompact
             />
           }
         />

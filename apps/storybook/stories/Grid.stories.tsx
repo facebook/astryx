@@ -163,7 +163,9 @@ export const ResponsiveAutoFit: Story = {
     <XDSVStack gap={6}>
       <div {...stylex.props(styles.container)}>
         <XDSText type="supporting" xstyle={styles.sectionLabel}>
-          columns={{minWidth: 200}} with 2 items — cards stretch to fill (auto-fit)
+          {
+            'columns={{minWidth: 200}} with 2 items — cards stretch to fill (auto-fit)'
+          }
         </XDSText>
         <XDSGrid columns={{minWidth: 200}} gap={4}>
           <GridItem>Item 1</GridItem>

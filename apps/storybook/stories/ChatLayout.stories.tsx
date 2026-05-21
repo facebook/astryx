@@ -514,7 +514,10 @@ export const FullAIChat: StoryObj = {
                         <XDSChatMessageMetadata
                           timestamp={
                             <XDSTimestamp
-                              value={msg.sentAt ?? new Date(msg.id)}
+                              value={
+                                msg.sentAt?.toISOString() ??
+                                new Date(msg.id).toISOString()
+                              }
                               format="time"
                             />
                           }
@@ -555,7 +558,10 @@ export const FullAIChat: StoryObj = {
                   {!msg.isStreaming && msg.text && (
                     <XDSChatMessageMetadata
                       timestamp={
-                        <XDSTimestamp value={new Date(msg.id)} format="time" />
+                        <XDSTimestamp
+                          value={new Date(msg.id).toISOString()}
+                          format="time"
+                        />
                       }
                       footer={
                         <>

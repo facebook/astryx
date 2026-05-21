@@ -20,7 +20,7 @@ const meta: Meta<typeof XDSSkeleton> = {
     },
     radius: {
       control: 'select',
-      options: ['none', 'inner', 'content', 'element', 'container', 'rounded'],
+      options: ['none', 0, 1, 2, 3, 4, 'rounded'],
       description: 'Border radius using design tokens',
     },
     index: {
@@ -37,7 +37,7 @@ export const Default: Story = {
   args: {
     width: 200,
     height: 20,
-    radius: 'container',
+    radius: 3,
     index: 0,
   },
 };
@@ -46,8 +46,8 @@ export const Shapes: Story = {
   render: () => (
     <XDSHStack gap={4} vAlign="center">
       <XDSSkeleton width={40} height={40} radius="rounded" />
-      <XDSSkeleton width={100} height={20} radius="container" />
-      <XDSSkeleton width={120} height={32} radius="element" />
+      <XDSSkeleton width={100} height={20} radius={3} />
+      <XDSSkeleton width={120} height={32} radius={2} />
       <XDSSkeleton width={80} height={80} radius="none" />
     </XDSHStack>
   ),

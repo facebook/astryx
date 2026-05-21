@@ -121,7 +121,7 @@ const styles = stylex.create({
   // contentWidth demo containers
   cwContainer: {
     border: '2px dashed',
-    borderColor: colorVars['--color-border-default'],
+    borderColor: colorVars['--color-border'],
     borderRadius: radiusVars['--radius-container'],
     overflow: 'hidden',
   },
@@ -202,23 +202,25 @@ type Story = StoryObj<typeof XDSLayout>;
 // Interactive Playground
 // =============================================================================
 
+type SpacingStep = 0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10;
+
 interface PlaygroundArgs {
   // Card props
   cardWidth: number;
   cardHeight: number;
   // Layout props
-  layoutPadding: number;
+  layoutPadding: SpacingStep;
   // Header props
   showHeader: boolean;
   headerHasDivider: boolean;
-  headerPadding: number;
+  headerPadding: SpacingStep;
   // Content props
-  contentPadding: number;
+  contentPadding: SpacingStep;
   contentIsScrollable: boolean;
   // Footer props
   showFooter: boolean;
   footerHasDivider: boolean;
-  footerPadding: number;
+  footerPadding: SpacingStep;
   // Start panel props
   showStartPanel: boolean;
   startPanelWidth: number;
@@ -1326,7 +1328,7 @@ export const ContentWidthInAppShell: Story = {
         XDSLayout with contentWidth=640 nested inside an XDSAppShell
       </p>
       <div {...stylex.props(styles.cwContainer, styles.cwContainer900)}>
-        <XDSAppShell height={400}>
+        <XDSAppShell height="auto">
           <XDSLayout
             contentWidth={640}
             defaultHasDividers

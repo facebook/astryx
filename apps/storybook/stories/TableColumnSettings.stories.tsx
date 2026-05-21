@@ -117,9 +117,12 @@ export const BasicColumnToggle: Story = {
     const state = useXDSTableColumnSettingsState<UserColumnKey>({
       columns: columnOptions,
       activeColumnKeys: activeKeys,
-      onChangeActiveColumnKeys: setActiveKeys,
+      onChangeActiveColumnKeys: (keys: ReadonlyArray<UserColumnKey>) =>
+        setActiveKeys([...keys]),
     });
-    const plugin = useXDSTableColumnSettings<User>(state.columnSettingsConfig);
+    const plugin = useXDSTableColumnSettings<User, UserColumnKey>(
+      state.columnSettingsConfig,
+    );
     const selectorOptions = columnOptions.map(c => ({
       value: c.key,
       label: c.label,
@@ -163,9 +166,12 @@ export const DisabledColumns: Story = {
     const state = useXDSTableColumnSettingsState<UserColumnKey>({
       columns: columnOptions,
       activeColumnKeys: activeKeys,
-      onChangeActiveColumnKeys: setActiveKeys,
+      onChangeActiveColumnKeys: (keys: ReadonlyArray<UserColumnKey>) =>
+        setActiveKeys([...keys]),
     });
-    const plugin = useXDSTableColumnSettings<User>(state.columnSettingsConfig);
+    const plugin = useXDSTableColumnSettings<User, UserColumnKey>(
+      state.columnSettingsConfig,
+    );
     const selectorOptions = columnOptions.map(c => ({
       value: c.key,
       label: c.label,
@@ -210,10 +216,13 @@ export const ResetToDefault: Story = {
     const state = useXDSTableColumnSettingsState<UserColumnKey>({
       columns: columnOptions,
       activeColumnKeys: activeKeys,
-      onChangeActiveColumnKeys: setActiveKeys,
+      onChangeActiveColumnKeys: (keys: ReadonlyArray<UserColumnKey>) =>
+        setActiveKeys([...keys]),
       defaultColumnKeys: defaultKeys,
     });
-    const plugin = useXDSTableColumnSettings<User>(state.columnSettingsConfig);
+    const plugin = useXDSTableColumnSettings<User, UserColumnKey>(
+      state.columnSettingsConfig,
+    );
     const selectorOptions = columnOptions.map(c => ({
       value: c.key,
       label: c.label,
@@ -266,9 +275,10 @@ export const WithSelection: Story = {
     const state = useXDSTableColumnSettingsState<UserColumnKey>({
       columns: columnOptions,
       activeColumnKeys: activeKeys,
-      onChangeActiveColumnKeys: setActiveKeys,
+      onChangeActiveColumnKeys: (keys: ReadonlyArray<UserColumnKey>) =>
+        setActiveKeys([...keys]),
     });
-    const columnPlugin = useXDSTableColumnSettings<User>(
+    const columnPlugin = useXDSTableColumnSettings<User, UserColumnKey>(
       state.columnSettingsConfig,
     );
     const selectorOptions = columnOptions.map(c => ({

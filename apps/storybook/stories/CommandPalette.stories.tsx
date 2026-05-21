@@ -18,6 +18,7 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSIcon} from '@xds/core/Icon';
 import {createStaticSource} from '@xds/core/Typeahead';
 import type {XDSSearchSource, XDSSearchableItem} from '@xds/core/Typeahead';
+import type {XDSIconName} from '@xds/core/Icon';
 
 const meta: Meta<typeof XDSCommandPalette> = {
   title: 'Core/CommandPalette',
@@ -107,7 +108,7 @@ export const AutoGrouped: Story = {
 // ─── Custom rendering via renderItem ─────────────────────────────────────────
 
 type RichCommand = XDSSearchableItem<{
-  icon?: string;
+  icon?: XDSIconName;
   group?: string;
   shortcut?: string;
   keywords?: string[];
@@ -124,17 +125,17 @@ export const WithRenderItem: Story = {
       {
         id: 'dashboard',
         label: 'Go to Dashboard',
-        auxiliaryData: {icon: 'home', group: 'Navigation'},
+        auxiliaryData: {icon: 'menu', group: 'Navigation'},
       },
       {
         id: 'settings',
         label: 'Open Settings',
-        auxiliaryData: {icon: 'settings', group: 'Navigation', shortcut: '⌘,'},
+        auxiliaryData: {icon: 'wrench', group: 'Navigation', shortcut: '⌘,'},
       },
       {
         id: 'profile',
         label: 'View Profile',
-        auxiliaryData: {icon: 'user', group: 'Navigation'},
+        auxiliaryData: {icon: 'info', group: 'Navigation'},
       },
       {
         id: 'dark-mode',
@@ -233,15 +234,15 @@ export const Picker: Story = {
 export const AsyncSearch: Story = {
   render: function Render() {
     const [isOpen, setIsOpen] = useState(false);
-    const source = useMemo<XDSSearchSource>(
-      () => ({
-        _controller: null as AbortController | null,
+    const source = useMemo<XDSSearchSource>(() => {
+      let controller: AbortController | null = null;
+      return {
         cancel() {
-          this._controller?.abort();
+          controller?.abort();
         },
         async search(query: string) {
-          this.cancel();
-          this._controller = new AbortController();
+          controller?.abort();
+          controller = new AbortController();
           await new Promise(r => setTimeout(r, 400));
           const all = [
             {id: 'readme', label: 'README.md'},
@@ -257,9 +258,8 @@ export const AsyncSearch: Story = {
         bootstrap() {
           return [];
         },
-      }),
-      [],
-    );
+      };
+    }, []);
     return (
       <>
         <XDSButton label="Open File Search" onClick={() => setIsOpen(true)} />

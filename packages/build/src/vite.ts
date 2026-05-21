@@ -94,7 +94,9 @@ export interface XDSVitePluginOptions {
  *
  * @param options — optional overrides
  */
-export function xdsStylex(options: XDSVitePluginOptions | XDSVitePluginLegacyOptions = {}): Plugin[] {
+export function xdsStylex(
+  options: XDSVitePluginOptions | XDSVitePluginLegacyOptions = {},
+): Plugin[] {
   // Detect legacy API: xdsStylex({stylexOptions: {...}})
   if ('stylexOptions' in options && options.stylexOptions) {
     return xdsStylexLegacy(options as XDSVitePluginLegacyOptions);
@@ -174,7 +176,8 @@ export function xdsStylex(options: XDSVitePluginOptions | XDSVitePluginLegacyOpt
         const fs = require('fs');
         const xdsDir = path.resolve(rootDir, 'node_modules/@xds');
         if (fs.existsSync(xdsDir)) {
-          xdsPackages = fs.readdirSync(xdsDir)
+          xdsPackages = fs
+            .readdirSync(xdsDir)
             .filter((name: string) => !name.startsWith('.'))
             .map((name: string) => `@xds/${name}`);
         }
@@ -293,13 +296,13 @@ function xdsStylexLegacy(options: XDSVitePluginLegacyOptions): Plugin[] {
   const productLayer = layers.product ?? 'product';
 
   const xdsBabelPlugin = path.resolve(__dirname, 'babel.js');
-  const existingPlugins = stylexOptions.babelConfig?.plugins ?? [];
+  const existingPlugins = (stylexOptions as any).babelConfig?.plugins ?? [];
 
   const basePlugin = stylex.vite({
-    ...stylexOptions,
+    ...(stylexOptions as any),
     useCSSLayers: true,
     babelConfig: {
-      ...stylexOptions.babelConfig,
+      ...(stylexOptions as any).babelConfig,
       plugins: [
         [
           xdsBabelPlugin,

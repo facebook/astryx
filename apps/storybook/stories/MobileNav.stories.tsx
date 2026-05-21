@@ -61,7 +61,7 @@ export const Default: Story = {
         <XDSMobileNav
           isOpen={isOpen}
           onOpenChange={open => setIsOpen(open)}
-          title="Navigation">
+          header="Navigation">
           <XDSSideNavSection title="Main">
             <XDSSideNavItem
               label="Dashboard"
@@ -143,7 +143,7 @@ export const WithSideNavChildren: Story = {
         <XDSMobileNav
           isOpen={isOpen}
           onOpenChange={open => setIsOpen(open)}
-          title="My App">
+          header="My App">
           {navSections}
         </XDSMobileNav>
       </>
@@ -207,7 +207,7 @@ export const ResponsivePattern: Story = {
           <XDSMobileNav
             isOpen={drawerOpen}
             onOpenChange={open => setDrawerOpen(open)}
-            title="My App">
+            header="My App">
             {navSections}
           </XDSMobileNav>
         </>
@@ -249,7 +249,7 @@ export const EndSide: Story = {
         <XDSMobileNav
           isOpen={isOpen}
           onOpenChange={open => setIsOpen(open)}
-          title="Settings"
+          header="Settings"
           side="end">
           <XDSSideNavSection title="Settings">
             <XDSSideNavItem
@@ -279,7 +279,7 @@ export const CustomWidth: Story = {
         <XDSMobileNav
           isOpen={isOpen}
           onOpenChange={open => setIsOpen(open)}
-          title="Wide Navigation"
+          header="Wide Navigation"
           width={360}>
           <XDSSideNavSection title="Main">
             <XDSSideNavItem

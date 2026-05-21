@@ -237,15 +237,10 @@ const meta: Meta<typeof XDSAppShell> = {
       control: 'radio',
       options: ['fill', 'auto'],
     },
-    defaultIsSideNavCollapsed: {
-      control: 'boolean',
-      description: 'Whether the side nav starts collapsed',
-    },
-
-    background: {
+    variant: {
       control: 'radio',
-      options: ['surface', 'wash'],
-      description: 'Background color of the shell',
+      options: ['wash', 'surface', 'section', 'elevated'],
+      description: 'Navigation background style',
     },
   },
 };
@@ -262,22 +257,12 @@ type Story = StoryObj<typeof XDSAppShell>;
  * When top nav is turned off, the side nav automatically shows a header
  * with the app title since there's no top bar to display it.
  */
-export const Playground: StoryObj<
-  typeof XDSAppShell & {showTopNav: boolean; showSideNav: boolean}
-> = {
+export const Playground: StoryObj<typeof XDSAppShell> = {
   argTypes: {
-    showTopNav: {
-      control: 'boolean',
-      description: 'Show the top navigation bar',
-    },
-    showSideNav: {
-      control: 'boolean',
-      description: 'Show the side navigation',
-    },
-    background: {
+    variant: {
       control: 'radio',
-      options: ['surface', 'wash'],
-      description: 'Background color of the shell',
+      options: ['wash', 'surface', 'section', 'elevated'],
+      description: 'Navigation background style',
     },
     height: {
       control: 'radio',
@@ -285,31 +270,16 @@ export const Playground: StoryObj<
     },
   },
   args: {
-    showTopNav: true,
-    showSideNav: true,
-    background: 'wash',
+    variant: 'elevated',
     height: 'fill',
   },
-  render: function PlaygroundStory(args: {
-    showTopNav: boolean;
-    showSideNav: boolean;
-    background: 'surface' | 'wash';
-    height: 'fill' | 'auto';
-  }) {
+  render: function PlaygroundStory(args) {
     return (
       <XDSAppShell
         contentPadding={6}
-        topNav={args.showTopNav ? <AppTopNav /> : undefined}
-        sideNav={
-          args.showSideNav ? (
-            args.showTopNav ? (
-              <SideNavWithoutHeader />
-            ) : (
-              <SideNavWithHeader />
-            )
-          ) : undefined
-        }
-        background={args.background}
+        topNav={<AppTopNav />}
+        sideNav={<SideNavWithoutHeader />}
+        variant={args.variant}
         height={args.height}>
         <MockContent />
       </XDSAppShell>
@@ -461,7 +431,7 @@ export const FullFeatured: Story = {
       banner={
         <XDSBanner
           status="info"
-          variant="section"
+          container="section"
           title="System maintenance scheduled"
           description="The system will undergo maintenance tonight at 10pm UTC."
           isDismissable
@@ -491,13 +461,12 @@ export const AutoHeight: Story = {
 /**
  * Controlled collapse with external state.
  *
- * The toggle button lives in the TopNav but the collapse state lives in
- * AppShell. Pass `isSideNavCollapsed` and `onSideNavCollapsedChange` to
- * control the sidebar programmatically.
+ * The toggle button lives in the TopNav. The sidebar auto-collapses
+ * at the configured breakpoint. AppShell handles collapse and mobile
+ * overlay internally based on viewport size.
  */
 export const ControlledCollapse: Story = {
   render: function ControlledCollapseStory() {
-    const [collapsed, setCollapsed] = useState(false);
     return (
       <XDSAppShell
         contentPadding={6}
@@ -510,15 +479,12 @@ export const ControlledCollapse: Story = {
                 label="Toggle sidebar"
                 variant="ghost"
                 icon={<Bars3Icon style={{width: 16, height: 16}} />}
-                onClick={() => setCollapsed(!collapsed)}
                 isIconOnly
               />
             }
           />
         }
-        sideNav={<SideNavWithoutHeader />}
-        isSideNavCollapsed={collapsed}
-        onSideNavCollapsedChange={setCollapsed}>
+        sideNav={<SideNavWithoutHeader />}>
         <MockContent />
       </XDSAppShell>
     );
@@ -550,7 +516,7 @@ export const WithBanner: Story = {
       banner={
         <XDSBanner
           status="info"
-          variant="section"
+          container="section"
           title="System maintenance scheduled"
           description="The system will undergo maintenance tonight at 10pm UTC."
           isDismissable
@@ -679,7 +645,7 @@ export const WithMobileNav: Story = {
           <XDSMobileNav
             isOpen={mobileNavOpen}
             onOpenChange={open => setMobileNavOpen(open)}
-            title="Acme App">
+            header="Acme App">
             {navSections}
           </XDSMobileNav>
         }>
