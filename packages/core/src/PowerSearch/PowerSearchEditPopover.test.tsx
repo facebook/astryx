@@ -46,12 +46,15 @@ beforeAll(() => {
     Object.defineProperty(event, 'newState', {value: 'closed'});
     this.dispatchEvent(event);
   });
-  HTMLElement.prototype.matches = function (selector: string) {
+  HTMLElement.prototype.matches = function (
+    this: HTMLElement,
+    selector: string,
+  ) {
     if (selector === ':popover-open') {
       return popoverOpenState.get(this) ?? false;
     }
     return originalMatches.call(this, selector);
-  };
+  } as typeof HTMLElement.prototype.matches;
 });
 
 beforeEach(() => {

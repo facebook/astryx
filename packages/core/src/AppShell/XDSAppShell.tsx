@@ -51,6 +51,7 @@ import type {XDSAppShellMobileContextValue} from './XDSAppShellMobileContext';
 import type {SpacingStep} from '../utils/types';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps} from '../utils';
+import {useMediaQuery} from '../hooks/useMediaQuery';
 import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
 
 const HasActivity = typeof React.Activity !== 'undefined';
@@ -470,7 +471,6 @@ export function XDSAppShell({
   const mobileNavConfigContent: ReactNode | null =
     mobileNavConfig?.content ?? null;
   const mobileNavHasToggle = mobileNavConfig?.hasToggle !== false;
-  const mobileNavDefaultIsMobile = mobileNavConfig?.defaultIsMobile ?? false;
   const mobileNavIsControlled = mobileNavConfig?.isOpen !== undefined;
 
   // =========================================================================
@@ -488,9 +488,11 @@ export function XDSAppShell({
   // =========================================================================
   // Mobile nav open state (controlled + uncontrolled)
   // =========================================================================
-  const [isBelowBreakpoint, setIsBelowBreakpoint] = useState(
-    mobileNavDefaultIsMobile,
-  );
+  const breakpointQuery =
+    sideNavBreakpoint === 'none'
+      ? '(max-width: 0px)'
+      : `(max-width: ${BREAKPOINT_VALUES[sideNavBreakpoint]}px)`;
+  const isBelowBreakpoint = useMediaQuery(breakpointQuery);
   const [uncontrolledMobileOpen, setUncontrolledMobileOpen] = useState(false);
   const isMobileNavOpen = mobileNavConfig?.isOpen ?? uncontrolledMobileOpen;
 
@@ -573,33 +575,6 @@ export function XDSAppShell({
     observeResize(headerEl, () => updateHeight());
     return () => unobserveResize(headerEl);
   }, [isAuto]);
-
-  // =========================================================================
-  // Responsive breakpoint handling
-  //
-  // Uses matchMedia which is event-driven — the listener only fires when the
-  // media query match state actually changes, not on every resize. This is
-  // efficient and does not over-trigger.
-  // =========================================================================
-  useEffect(() => {
-    if (sideNavBreakpoint === 'none') {
-      return;
-    }
-
-    const breakpointPx = BREAKPOINT_VALUES[sideNavBreakpoint];
-    const mql = window.matchMedia(`(max-width: ${breakpointPx}px)`);
-
-    const handleChange = (e: MediaQueryListEvent | MediaQueryList) => {
-      const matches = 'matches' in e ? e.matches : false;
-      setIsBelowBreakpoint(matches);
-    };
-
-    // Check initial state
-    handleChange(mql);
-
-    mql.addEventListener('change', handleChange);
-    return () => mql.removeEventListener('change', handleChange);
-  }, [sideNavBreakpoint]);
 
   // =========================================================================
   // Determine if sideNav should show as overlay (mobile) or inline
