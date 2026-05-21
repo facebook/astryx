@@ -11,6 +11,7 @@
 
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {XDSTypeahead} from './XDSTypeahead';
 import {XDSBaseTypeahead} from './XDSBaseTypeahead';
 import type {XDSSearchSource, XDSSearchableItem} from './types';
@@ -456,5 +457,47 @@ describe('XDSTypeahead edit mode', () => {
 
     // onChange should not have been called — value restored
     expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
+describe('XDSBaseTypeahead paste behavior', () => {
+  it('pasting text triggers search results like typing', async () => {
+    const user = userEvent.setup();
+    render(
+      <XDSBaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+
+    const input = screen.getByRole('combobox');
+    await user.click(input);
+    await user.paste('App');
+
+    await waitFor(() => {
+      expect(screen.getByText('Apple')).toBeInTheDocument();
+    });
+  });
+
+  it('pasting non-matching text shows no results', async () => {
+    const user = userEvent.setup();
+    render(
+      <XDSBaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+
+    const input = screen.getByRole('combobox');
+    await user.click(input);
+    await user.paste('xyz');
+
+    await waitFor(() => {
+      expect(screen.getByText('No results found')).toBeInTheDocument();
+    });
   });
 });

@@ -11,6 +11,7 @@
 
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import {render, screen, fireEvent, act} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {XDSTokenizer} from './XDSTokenizer';
 import type {XDSSearchSource, XDSSearchableItem} from '../Typeahead/types';
 
@@ -658,6 +659,53 @@ describe('XDSTokenizer', () => {
 
       // Popover should not reopen with an empty menu after selection
       expect(input).toHaveAttribute('aria-expanded', 'false');
+    });
+  });
+
+  describe('paste behavior', () => {
+    it('pasting text triggers search results like typing', async () => {
+      const user = userEvent.setup();
+      render(
+        <XDSTokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[]}
+          onChange={() => {}}
+          debounceMs={0}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      await user.click(input);
+      await user.paste('Ali');
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+
+      expect(screen.getByText('Alice')).toBeInTheDocument();
+    });
+
+    it('pasting text shows Create option with hasCreate', async () => {
+      const user = userEvent.setup();
+      render(
+        <XDSTokenizer
+          label="Tags"
+          searchSource={userSource}
+          value={[]}
+          onChange={() => {}}
+          hasCreate
+          debounceMs={0}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      await user.click(input);
+      await user.paste('NewTag');
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+
+      expect(screen.getByText('Create "NewTag"')).toBeInTheDocument();
     });
   });
 });
