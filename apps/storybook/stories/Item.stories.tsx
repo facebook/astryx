@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {useState} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSItem} from '@xds/core/Item';
 import {XDSAvatar} from '@xds/core/Avatar';
@@ -8,6 +9,18 @@ import {XDSBadge} from '@xds/core/Badge';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSText} from '@xds/core/Text';
 import {XDSStack} from '@xds/core/Layout';
+
+const storyStyles = stylex.create({
+  iconCircle: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 40,
+    height: 40,
+    borderRadius: '50%',
+    backgroundColor: 'var(--color-background-muted)',
+  },
+});
 import {
   UserIcon,
   Cog6ToothIcon,
@@ -88,7 +101,11 @@ export const Notifications: Story = {
         onClick={() => {}}
       />
       <XDSItem
-        media={<XDSAvatar icon={<XDSIcon icon={BellIcon} />} size={40} />}
+        media={
+          <div {...stylex.props(storyStyles.iconCircle)}>
+            <XDSIcon icon={BellIcon} size="sm" />
+          </div>
+        }
         label="Build completed successfully"
         description="Pipeline #4521 — all 42 tests passed"
         trailing={<XDSText color="secondary">5h ago</XDSText>}
