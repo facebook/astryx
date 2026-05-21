@@ -1,28 +1,28 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file XDSDateTimePicker.test.tsx
- * @input Uses vitest, @testing-library/react, XDSDateTimePicker component
- * @output Unit tests for XDSDateTimePicker component behavior
- * @position Testing; validates XDSDateTimePicker.tsx implementation
+ * @file XDSDateTimeInput.test.tsx
+ * @input Uses vitest, @testing-library/react, XDSDateTimeInput component
+ * @output Unit tests for XDSDateTimeInput component behavior
+ * @position Testing; validates XDSDateTimeInput.tsx implementation
  *
- * SYNC: When XDSDateTimePicker.tsx changes, update tests to match new behavior
+ * SYNC: When XDSDateTimeInput.tsx changes, update tests to match new behavior
  */
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import {XDSDateTimePicker} from './XDSDateTimePicker';
-import type {ISODateTimeString} from './XDSDateTimePicker';
+import {XDSDateTimeInput} from './XDSDateTimeInput';
+import type {ISODateTimeString} from './XDSDateTimeInput';
 
-describe('XDSDateTimePicker', () => {
+describe('XDSDateTimeInput', () => {
   it('renders with label', () => {
-    render(<XDSDateTimePicker label="Meeting time" onChange={() => {}} />);
+    render(<XDSDateTimeInput label="Meeting time" onChange={() => {}} />);
     expect(screen.getByLabelText('Meeting time')).toBeInTheDocument();
   });
 
   it('renders with placeholder', () => {
     render(
-      <XDSDateTimePicker
+      <XDSDateTimeInput
         label="Time"
         onChange={() => {}}
         placeholder="Pick a date"
@@ -32,14 +32,14 @@ describe('XDSDateTimePicker', () => {
   });
 
   it('renders both date and time inputs', () => {
-    render(<XDSDateTimePicker label="Meeting" onChange={() => {}} />);
+    render(<XDSDateTimeInput label="Meeting" onChange={() => {}} />);
     expect(screen.getByRole('combobox')).toBeInTheDocument();
     expect(screen.getByLabelText('Time')).toBeInTheDocument();
   });
 
   it('displays formatted date in date input when value is provided', () => {
     render(
-      <XDSDateTimePicker
+      <XDSDateTimeInput
         label="Meeting"
         value={'2026-03-15T14:30' as ISODateTimeString}
         onChange={() => {}}
@@ -50,7 +50,7 @@ describe('XDSDateTimePicker', () => {
 
   it('displays formatted time in time input when value is provided (12h)', () => {
     render(
-      <XDSDateTimePicker
+      <XDSDateTimeInput
         label="Meeting"
         value={'2026-03-15T14:30' as ISODateTimeString}
         onChange={() => {}}
@@ -61,7 +61,7 @@ describe('XDSDateTimePicker', () => {
 
   it('displays formatted time in 24h format', () => {
     render(
-      <XDSDateTimePicker
+      <XDSDateTimeInput
         label="Meeting"
         value={'2026-03-15T14:30' as ISODateTimeString}
         onChange={() => {}}
@@ -73,7 +73,7 @@ describe('XDSDateTimePicker', () => {
 
   it('displays time with seconds', () => {
     render(
-      <XDSDateTimePicker
+      <XDSDateTimeInput
         label="Timestamp"
         value={'2026-03-15T14:30:45' as ISODateTimeString}
         onChange={() => {}}
@@ -85,13 +85,13 @@ describe('XDSDateTimePicker', () => {
 
   it('forwards ref to date input', () => {
     const ref = vi.fn();
-    render(<XDSDateTimePicker ref={ref} label="Meeting" onChange={() => {}} />);
+    render(<XDSDateTimeInput ref={ref} label="Meeting" onChange={() => {}} />);
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLInputElement));
   });
 
   it('visually hides label when isLabelHidden is true', () => {
     render(
-      <XDSDateTimePicker label="Meeting" isLabelHidden onChange={() => {}} />,
+      <XDSDateTimeInput label="Meeting" isLabelHidden onChange={() => {}} />,
     );
     const label = screen.getByText('Meeting');
     expect(label).toBeInTheDocument();
@@ -99,9 +99,7 @@ describe('XDSDateTimePicker', () => {
   });
 
   it('sets aria-required when isRequired is true', () => {
-    render(
-      <XDSDateTimePicker label="Meeting" isRequired onChange={() => {}} />,
-    );
+    render(<XDSDateTimeInput label="Meeting" isRequired onChange={() => {}} />);
     expect(screen.getByRole('combobox')).toHaveAttribute(
       'aria-required',
       'true',
@@ -109,31 +107,29 @@ describe('XDSDateTimePicker', () => {
   });
 
   it('does not set aria-required when isRequired is false', () => {
-    render(<XDSDateTimePicker label="Meeting" onChange={() => {}} />);
+    render(<XDSDateTimeInput label="Meeting" onChange={() => {}} />);
     expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-required');
   });
 
   it('sets disabled on both inputs when isDisabled is true', () => {
-    render(
-      <XDSDateTimePicker label="Meeting" isDisabled onChange={() => {}} />,
-    );
+    render(<XDSDateTimeInput label="Meeting" isDisabled onChange={() => {}} />);
     expect(screen.getByRole('combobox')).toBeDisabled();
     expect(screen.getByLabelText('Time')).toBeDisabled();
   });
 
   it('is not disabled by default', () => {
-    render(<XDSDateTimePicker label="Meeting" onChange={() => {}} />);
+    render(<XDSDateTimeInput label="Meeting" onChange={() => {}} />);
     expect(screen.getByRole('combobox')).not.toBeDisabled();
     expect(screen.getByLabelText('Time')).not.toBeDisabled();
   });
 
   it('date input has role="combobox"', () => {
-    render(<XDSDateTimePicker label="Meeting" onChange={() => {}} />);
+    render(<XDSDateTimeInput label="Meeting" onChange={() => {}} />);
     expect(screen.getByRole('combobox')).toBeInTheDocument();
   });
 
   it('date input has aria-haspopup="dialog"', () => {
-    render(<XDSDateTimePicker label="Meeting" onChange={() => {}} />);
+    render(<XDSDateTimeInput label="Meeting" onChange={() => {}} />);
     expect(screen.getByRole('combobox')).toHaveAttribute(
       'aria-haspopup',
       'dialog',
@@ -141,7 +137,7 @@ describe('XDSDateTimePicker', () => {
   });
 
   it('date input has aria-expanded=false by default', () => {
-    render(<XDSDateTimePicker label="Meeting" onChange={() => {}} />);
+    render(<XDSDateTimeInput label="Meeting" onChange={() => {}} />);
     expect(screen.getByRole('combobox')).toHaveAttribute(
       'aria-expanded',
       'false',
@@ -149,40 +145,38 @@ describe('XDSDateTimePicker', () => {
   });
 
   it('calendar button is focusable and clickable', () => {
-    render(<XDSDateTimePicker label="Meeting" onChange={() => {}} />);
+    render(<XDSDateTimeInput label="Meeting" onChange={() => {}} />);
     const button = screen.getByRole('button', {name: 'Open calendar'});
     expect(button).toBeInTheDocument();
     expect(button).not.toBeDisabled();
   });
 
   it('calendar button is disabled when isDisabled is true', () => {
-    render(
-      <XDSDateTimePicker label="Meeting" isDisabled onChange={() => {}} />,
-    );
+    render(<XDSDateTimeInput label="Meeting" isDisabled onChange={() => {}} />);
     const button = screen.getByRole('button', {name: 'Open calendar'});
     expect(button).toBeDisabled();
   });
 
   it('disables inputs and button when isLoading is true', () => {
-    render(<XDSDateTimePicker label="Meeting" isLoading onChange={() => {}} />);
+    render(<XDSDateTimeInput label="Meeting" isLoading onChange={() => {}} />);
     expect(screen.getByRole('combobox')).toBeDisabled();
     expect(screen.getByLabelText('Time')).toBeDisabled();
     expect(screen.getByRole('button', {name: 'Open calendar'})).toBeDisabled();
   });
 
   it('sets aria-busy when isLoading is true', () => {
-    render(<XDSDateTimePicker label="Meeting" isLoading onChange={() => {}} />);
+    render(<XDSDateTimeInput label="Meeting" isLoading onChange={() => {}} />);
     expect(screen.getByRole('combobox')).toHaveAttribute('aria-busy', 'true');
   });
 
   it('does not set aria-busy when not loading', () => {
-    render(<XDSDateTimePicker label="Meeting" onChange={() => {}} />);
+    render(<XDSDateTimeInput label="Meeting" onChange={() => {}} />);
     expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-busy');
   });
 
   it('renders status icon for error status', () => {
     render(
-      <XDSDateTimePicker
+      <XDSDateTimeInput
         label="Meeting"
         onChange={() => {}}
         status={{type: 'error', message: 'Invalid datetime'}}
@@ -196,7 +190,7 @@ describe('XDSDateTimePicker', () => {
 
   it('does not set aria-invalid for warning status', () => {
     render(
-      <XDSDateTimePicker
+      <XDSDateTimeInput
         label="Meeting"
         onChange={() => {}}
         status={{type: 'warning', message: 'Watch out'}}
@@ -207,7 +201,7 @@ describe('XDSDateTimePicker', () => {
 
   it('renders description and links via aria-describedby', () => {
     render(
-      <XDSDateTimePicker
+      <XDSDateTimeInput
         label="Meeting"
         description="Pick the meeting datetime"
         onChange={() => {}}
@@ -220,7 +214,7 @@ describe('XDSDateTimePicker', () => {
 
   it('links status message via aria-describedby', () => {
     render(
-      <XDSDateTimePicker
+      <XDSDateTimeInput
         label="Meeting"
         onChange={() => {}}
         status={{type: 'error', message: 'Invalid datetime'}}
@@ -237,7 +231,7 @@ describe('XDSDateTimePicker', () => {
   });
 
   it('handles Escape keydown on date input without error', () => {
-    render(<XDSDateTimePicker label="Meeting" onChange={() => {}} />);
+    render(<XDSDateTimeInput label="Meeting" onChange={() => {}} />);
     const input = screen.getByRole('combobox');
     fireEvent.keyDown(input, {key: 'Escape'});
   });
@@ -246,7 +240,7 @@ describe('XDSDateTimePicker', () => {
 
   it('calls onChange when valid date is typed', () => {
     const onChange = vi.fn();
-    render(<XDSDateTimePicker label="Meeting" onChange={onChange} />);
+    render(<XDSDateTimeInput label="Meeting" onChange={onChange} />);
 
     const input = screen.getByRole('combobox');
     fireEvent.change(input, {target: {value: '03/15/2026'}});
@@ -258,7 +252,7 @@ describe('XDSDateTimePicker', () => {
 
   it('does not call onChange while typing invalid date', () => {
     const onChange = vi.fn();
-    render(<XDSDateTimePicker label="Meeting" onChange={onChange} />);
+    render(<XDSDateTimeInput label="Meeting" onChange={onChange} />);
 
     const input = screen.getByRole('combobox');
     fireEvent.change(input, {target: {value: 'invalid'}});
@@ -269,7 +263,7 @@ describe('XDSDateTimePicker', () => {
   it('reverts date input on blur when input is invalid', () => {
     const onChange = vi.fn();
     render(
-      <XDSDateTimePicker
+      <XDSDateTimeInput
         label="Meeting"
         value={'2026-01-25T10:00' as ISODateTimeString}
         onChange={onChange}
@@ -288,7 +282,7 @@ describe('XDSDateTimePicker', () => {
 
   it('does not call onChange for time when no date is set', () => {
     const onChange = vi.fn();
-    render(<XDSDateTimePicker label="Meeting" onChange={onChange} />);
+    render(<XDSDateTimeInput label="Meeting" onChange={onChange} />);
 
     const timeInput = screen.getByLabelText('Time');
     fireEvent.change(timeInput, {target: {value: '3:45 pm'}});
@@ -299,7 +293,7 @@ describe('XDSDateTimePicker', () => {
   it('calls onChange for time when date is already set', () => {
     const onChange = vi.fn();
     render(
-      <XDSDateTimePicker
+      <XDSDateTimeInput
         label="Meeting"
         value={'2026-03-15T10:00' as ISODateTimeString}
         onChange={onChange}
@@ -315,7 +309,7 @@ describe('XDSDateTimePicker', () => {
   describe('hasClear', () => {
     it('shows clear button when hasClear is true and value exists', () => {
       render(
-        <XDSDateTimePicker
+        <XDSDateTimeInput
           label="Meeting"
           value={'2026-03-15T14:30' as ISODateTimeString}
           onChange={() => {}}
@@ -328,9 +322,7 @@ describe('XDSDateTimePicker', () => {
     });
 
     it('does not show clear button when value is undefined', () => {
-      render(
-        <XDSDateTimePicker label="Meeting" onChange={() => {}} hasClear />,
-      );
+      render(<XDSDateTimeInput label="Meeting" onChange={() => {}} hasClear />);
       expect(
         screen.queryByRole('button', {name: 'Clear Meeting'}),
       ).not.toBeInTheDocument();
@@ -338,7 +330,7 @@ describe('XDSDateTimePicker', () => {
 
     it('does not show clear button when hasClear is false', () => {
       render(
-        <XDSDateTimePicker
+        <XDSDateTimeInput
           label="Meeting"
           value={'2026-03-15T14:30' as ISODateTimeString}
           onChange={() => {}}
@@ -351,7 +343,7 @@ describe('XDSDateTimePicker', () => {
 
     it('does not show clear button when disabled', () => {
       render(
-        <XDSDateTimePicker
+        <XDSDateTimeInput
           label="Meeting"
           value={'2026-03-15T14:30' as ISODateTimeString}
           onChange={() => {}}
@@ -367,7 +359,7 @@ describe('XDSDateTimePicker', () => {
     it('calls onChange with undefined when clear is clicked', () => {
       const onChange = vi.fn();
       render(
-        <XDSDateTimePicker
+        <XDSDateTimeInput
           label="Meeting"
           value={'2026-03-15T14:30' as ISODateTimeString}
           onChange={onChange}

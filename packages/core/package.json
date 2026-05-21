@@ -217,17 +217,17 @@
       "import": "./dist/DateInput/index.mjs",
       "require": "./dist/DateInput/index.js"
     },
-    "./DateRangePicker": {
-      "source": "./src/DateRangePicker/index.ts",
-      "types": "./dist/DateRangePicker/index.d.ts",
-      "import": "./dist/DateRangePicker/index.mjs",
-      "require": "./dist/DateRangePicker/index.js"
+    "./DateRangeInput": {
+      "source": "./src/DateRangeInput/index.ts",
+      "types": "./dist/DateRangeInput/index.d.ts",
+      "import": "./dist/DateRangeInput/index.mjs",
+      "require": "./dist/DateRangeInput/index.js"
     },
-    "./DateTimePicker": {
-      "source": "./src/DateTimePicker/index.ts",
-      "types": "./dist/DateTimePicker/index.d.ts",
-      "import": "./dist/DateTimePicker/index.mjs",
-      "require": "./dist/DateTimePicker/index.js"
+    "./DateTimeInput": {
+      "source": "./src/DateTimeInput/index.ts",
+      "types": "./dist/DateTimeInput/index.d.ts",
+      "import": "./dist/DateTimeInput/index.mjs",
+      "require": "./dist/DateTimeInput/index.js"
     },
     "./Dialog": {
       "source": "./src/Dialog/index.ts",

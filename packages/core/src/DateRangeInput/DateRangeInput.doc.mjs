@@ -3,7 +3,7 @@
 /** @type {import('../docs-types').ComponentDoc} */
 
 export const docs = {
-  name: 'DateRangePicker',
+  name: 'DateRangeInput',
   keywords: ["daterangepicker","daterange","range","calendar","filter","analytics","period","schedule"],
   props: [
     { name: 'label', type: 'string', description: 'Label text.', required: true },
@@ -30,17 +30,17 @@ export const docs = {
   ],
   theming: {
     targets: [
-      { className: 'xds-date-range-picker', visualProps: ['size', 'status'] },
+      { className: 'xds-date-range-input', visualProps: ['size', 'status'] },
     ],
   },
   usage: {
-    description: 'DateRangePicker lets users select a start and end date from a dual-month calendar popover. Use it for filtering data by time period, report generation, analytics dashboards, and booking flows.',
+    description: 'DateRangeInput lets users select a start and end date from a dual-month calendar popover. Use it for filtering data by time period, report generation, analytics dashboards, and booking flows.',
     bestPractices: [
       { guidance: true, description: 'Use presets for common ranges like "Last 7 days" to speed up selection.' },
       { guidance: true, description: 'Use min/max to constrain selectable dates to valid ranges.' },
       { guidance: true, description: 'Keep hasClear enabled (default) so users can reset the filter.' },
       { guidance: true, description: 'Provide clear labels and descriptions so users understand what the range controls.' },
-      { guidance: false, description: 'Use DateRangePicker when only a single date is needed — use DateInput instead.' },
+      { guidance: false, description: 'Use DateRangeInput when only a single date is needed — use DateInput instead.' },
       { guidance: false, description: 'Hide the label without surrounding context that makes the purpose obvious.' },
     ],
     anatomy: [
@@ -59,7 +59,7 @@ export const docs = {
 export const docsDense = {
   description: 'date range picker with dual-month calendar popover and preset ranges',
   usage: {
-    description: 'DateRangePicker lets users select start+end dates from a dual-month calendar. Use for filtering, reports, analytics, and booking.',
+    description: 'DateRangeInput lets users select start+end dates from a dual-month calendar. Use for filtering, reports, analytics, and booking.',
     bestPractices: [
       { guidance: true, description: 'Use presets for common ranges. Use min/max for constraints.' },
       { guidance: true, description: 'Keep hasClear enabled. Provide clear labels.' },

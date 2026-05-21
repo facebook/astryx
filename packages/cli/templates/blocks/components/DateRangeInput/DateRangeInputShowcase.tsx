@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSDateRangePicker} from '@xds/core/DateRangePicker';
-import type {XDSDateRange} from '@xds/core/DateRangePicker';
+import {XDSDateRangeInput} from '@xds/core/DateRangeInput';
+import type {XDSDateRange} from '@xds/core/DateRangeInput';
 import type {ISODateString} from '@xds/core/Calendar';
 import {XDSStack} from '@xds/core/Layout';
 
@@ -23,12 +23,12 @@ const presets = [
   {label: 'Last 30 days', getRange: () => ({start: daysAgo(30), end: today()})},
 ];
 
-export default function DateRangePickerShowcase() {
+export default function DateRangeInputShowcase() {
   const [range, setRange] = useState<XDSDateRange | null>(null);
 
   return (
     <XDSStack direction="vertical" width="100%" style={{maxWidth: 400}}>
-      <XDSDateRangePicker
+      <XDSDateRangeInput
         label="Date range"
         value={range}
         onChange={setRange}
