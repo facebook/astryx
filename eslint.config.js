@@ -3,6 +3,7 @@
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import eslintReact from "@eslint-react/eslint-plugin";
+import reactCompiler from "eslint-plugin-react-compiler";
 import xdsPlugin from "./internal/eslint-plugin-xds/index.js";
 
 /* global process */
@@ -71,15 +72,6 @@ export default tseslint.config(
       }],
     },
   },
-  // Test files — relax rules for test ergonomics
-  {
-    files: ["**/*.test.{ts,tsx}", "**/*.perf.test.{ts,tsx}"],
-    rules: {
-      "no-console": "off",
-      "@typescript-eslint/no-non-null-assertion": "off",
-      "@typescript-eslint/consistent-type-assertions": "off",
-    },
-  },
   // Copyright header — all source files must have the Meta copyright notice
   {
     files: ["**/*.{ts,tsx}"],
@@ -113,8 +105,13 @@ export default tseslint.config(
   // Children.*/cloneElement are already covered by @xds/no-react-introspection.
   {
     files: ["packages/core/src/**/*.{ts,tsx}"],
-    plugins: eslintReact.configs.recommended.plugins,
+    plugins: {
+      ...eslintReact.configs.recommended.plugins,
+      'react-compiler': reactCompiler,
+    },
     rules: {
+      // React Compiler compatibility
+      'react-compiler/react-compiler': reactSeverity,
       // React fundamentals
       '@eslint-react/rules-of-hooks': reactSeverity,
       '@eslint-react/purity': reactSeverity,
@@ -172,6 +169,17 @@ export default tseslint.config(
       '@eslint-react/web-api-no-leaked-timeout': reactSeverity,
       '@eslint-react/web-api-no-leaked-resize-observer': reactSeverity,
       '@eslint-react/web-api-no-leaked-fetch': reactSeverity,
+    },
+  },
+  // Test files — relax rules for test ergonomics (must be after React rules
+  // block so it overrides react-compiler/react-compiler)
+  {
+    files: ["**/*.test.{ts,tsx}", "**/*.perf.test.{ts,tsx}"],
+    rules: {
+      "no-console": "off",
+      "@typescript-eslint/no-non-null-assertion": "off",
+      "@typescript-eslint/consistent-type-assertions": "off",
+      "react-compiler/react-compiler": "off",
     },
   },
 );

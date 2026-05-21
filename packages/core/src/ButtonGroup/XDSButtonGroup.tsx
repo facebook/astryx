@@ -137,6 +137,7 @@ export function XDSButtonGroup({
       <XDSSizeProvider value={size}>
         <div
           ref={(node: HTMLDivElement | null) => {
+            // eslint-disable-next-line react-compiler/react-compiler -- ref callback: assigning hook-returned ref
             (listRef as React.MutableRefObject<HTMLElement | null>).current =
               node;
             if (typeof ref === 'function') {

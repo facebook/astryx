@@ -375,9 +375,9 @@ export function useXDSResizable(
   config: UseXDSResizableSingleConfig | UseXDSResizableMultiConfig,
 ): ResizableRegion | Record<string, ResizableRegion> {
   if ('regions' in config) {
-    // eslint-disable-next-line @eslint-react/rules-of-hooks -- branch is determined by call-site type (stable per call site)
+    // eslint-disable-next-line @eslint-react/rules-of-hooks, react-compiler/react-compiler -- branch is determined by call-site type (stable per call site)
     return useMultiResizable(config);
   }
-  // eslint-disable-next-line @eslint-react/rules-of-hooks -- branch is determined by call-site type (stable per call site)
+  // eslint-disable-next-line @eslint-react/rules-of-hooks, react-compiler/react-compiler -- branch is determined by call-site type (stable per call site)
   return useSingleResizable(config);
 }

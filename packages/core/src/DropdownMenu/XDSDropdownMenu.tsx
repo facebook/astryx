@@ -359,14 +359,15 @@ export function XDSDropdownMenu({
             buttonRef as React.MutableRefObject<HTMLButtonElement | null>
           ).current = el;
           popover.triggerRef(el);
-          // Forward consumer ref from button config
           const consumerRef = button.ref;
           if (typeof consumerRef === 'function') {
             consumerRef(el);
           } else if (consumerRef) {
+            /* eslint-disable react-compiler/react-compiler -- ref callback: forwarding consumer ref object */
             (
               consumerRef as React.MutableRefObject<HTMLButtonElement | null>
             ).current = el;
+            /* eslint-enable react-compiler/react-compiler */
           }
         }}
         tooltip={isOpen ? undefined : button.tooltip}
