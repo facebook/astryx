@@ -774,6 +774,51 @@ export function trimStreamingArtifacts(input: string): string {
     }
   }
 
+  // Check for unclosed bold/italic mid-line: e.g. "Hello **bold" or "Hello *ital"
+  // Scan for * sequences and try to pair them. If an opener has no closer, trim from it.
+  {
+    let searchFrom = 0;
+    const openers: Array<{pos: number; len: number}> = [];
+    while (searchFrom < tail.length) {
+      const idx = tail.indexOf('*', searchFrom);
+      if (idx === -1) {break;}
+      // Determine marker length (* or ** or ***)
+      let markerLen = 1;
+      while (idx + markerLen < tail.length && tail[idx + markerLen] === '*') {
+        markerLen++;
+      }
+      if (markerLen > 3) {
+        // 4+ stars — not standard markdown emphasis, skip
+        searchFrom = idx + markerLen;
+        continue;
+      }
+      openers.push({pos: idx, len: markerLen});
+      searchFrom = idx + markerLen;
+    }
+    // Walk openers and try to pair them greedily.
+    const paired = new Set<number>();
+    for (let i = 0; i < openers.length; i++) {
+      if (paired.has(i)) {continue;}
+      const open = openers[i];
+      // Look for a matching closer of the same length after it
+      for (let j = i + 1; j < openers.length; j++) {
+        if (paired.has(j)) {continue;}
+        if (openers[j].len === open.len) {
+          paired.add(i);
+          paired.add(j);
+          break;
+        }
+      }
+    }
+    // Find the first unpaired opener — trim from it
+    for (let i = 0; i < openers.length; i++) {
+      if (!paired.has(i)) {
+        tail = tail.slice(0, openers[i].pos);
+        break;
+      }
+    }
+  }
+
   // Find trailing unclosed strikethrough (~~)
   if (tail.length >= 2 && tail.endsWith('~~')) {
     // Check if there's an opener before these closing ~~

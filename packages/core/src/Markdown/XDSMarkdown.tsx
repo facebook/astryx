@@ -9,7 +9,7 @@
  * @position Core implementation; renders markdown as XDS components
  */
 
-import {useMemo, useRef} from 'react';
+import {useEffect, useMemo, useRef} from 'react';
 import type React from 'react';
 import {Fragment} from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -1621,9 +1621,14 @@ export function XDSMarkdown({
     </div>
   );
 
-  // After rendering, update the boundary for the next pass.
-  // cursor.offset now holds the total character count of the rendered tree.
-  prevTextLenRef.current = cursor.offset;
+  // After commit, update the boundary for the next pass.
+  // This MUST be in useEffect (not during render) to be safe under
+  // React 18 StrictMode and concurrent rendering — render functions can
+  // be invoked multiple times before commit.
+  const renderedTextLen = cursor.offset;
+  useEffect(() => {
+    prevTextLenRef.current = renderedTextLen;
+  });
 
   return rendered;
 }

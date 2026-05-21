@@ -177,17 +177,17 @@ describe('trimStreamingArtifacts', () => {
     expect(trimStreamingArtifacts('Hello ***')).toBe('Hello ');
   });
 
-  it('keeps unclosed mid-line bold as plain text', () => {
-    // Mid-line ** with content after → kept as-is. The parser renders
-    // it as plain text, which is better than hiding content.
-    expect(trimStreamingArtifacts('Hello **bold')).toBe('Hello **bold');
-    expect(trimStreamingArtifacts('Hello **bo')).toBe('Hello **bo');
+  it('trims unclosed mid-line bold to hide partial syntax', () => {
+    // Mid-line ** with content after but no closer → trim from the opener
+    // to prevent flashing raw ** during streaming
+    expect(trimStreamingArtifacts('Hello **bold')).toBe('Hello ');
+    expect(trimStreamingArtifacts('Hello **bo')).toBe('Hello ');
     // Trailing ** with no content → still trimmed
     expect(trimStreamingArtifacts('Hello **')).toBe('Hello ');
   });
 
-  it('keeps unclosed mid-line italic as plain text', () => {
-    expect(trimStreamingArtifacts('Hello *ital')).toBe('Hello *ital');
+  it('trims unclosed mid-line italic to hide partial syntax', () => {
+    expect(trimStreamingArtifacts('Hello *ital')).toBe('Hello ');
     expect(trimStreamingArtifacts('Hello *')).toBe('Hello ');
   });
 
@@ -197,9 +197,9 @@ describe('trimStreamingArtifacts', () => {
     );
   });
 
-  it('keeps unclosed bold after closed bold as plain text', () => {
+  it('trims unclosed bold after closed bold', () => {
     expect(trimStreamingArtifacts('Hello **done** and **open')).toBe(
-      'Hello **done** and **open',
+      'Hello **done** and ',
     );
   });
 
@@ -457,6 +457,15 @@ describe('streaming end-to-end: no raw syntax visible', () => {
     expect(visibleTexts[visibleTexts.length - 1]).toBe(
       'Hello bold text and more',
     );
+  });
+
+  it('never shows raw ** during bold streaming', () => {
+    const text = 'Hello **bold text** and more';
+    const {visibleTexts} = streamCharByChar(text);
+    for (const visible of visibleTexts) {
+      // Raw ** should never appear in visible text
+      expect(visible).not.toContain('**');
+    }
   });
 
   it('never shows raw * during italic streaming', () => {
