@@ -83,7 +83,10 @@ describe('useXDSChatNewMessages — callback ref (issue #2282)', () => {
 
       return (
         <>
-          <button data-testid="mount" onClick={() => setMounted(true)}>
+          <button
+            type="button"
+            data-testid="mount"
+            onClick={() => setMounted(true)}>
             Mount
           </button>
           {mounted && (
@@ -118,7 +121,10 @@ describe('useXDSChatNewMessages — callback ref (issue #2282)', () => {
 
       return (
         <>
-          <button data-testid="unmount" onClick={() => setMounted(false)}>
+          <button
+            type="button"
+            data-testid="unmount"
+            onClick={() => setMounted(false)}>
             Unmount
           </button>
           {mounted && (
@@ -150,6 +156,7 @@ describe('useXDSChatNewMessages — callback ref (issue #2282)', () => {
       return (
         <>
           <button
+            type="button"
             data-testid="add-message"
             onClick={() =>
               setMessages(prev => [...prev, `msg-${prev.length}`])
@@ -188,8 +195,12 @@ describe('useXDSChatNewMessages — callback ref (issue #2282)', () => {
     // The inner content div should now be observed
     const contentObservation = activeObservations.find(o => {
       const el = o.element;
-      if (!el.querySelector?.('.xds-chat-message')) {return false;}
-      if (el.className?.includes('xds-chat-layout')) {return false;}
+      if (!el.querySelector?.('.xds-chat-message')) {
+        return false;
+      }
+      if (el.className?.includes('xds-chat-layout')) {
+        return false;
+      }
       return true;
     });
 
