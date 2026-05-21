@@ -124,6 +124,7 @@ export function plainDateGetWeekNumber(pd: PlainDate): number {
   return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
 }
 
+// e.g. "Wednesday, May 21, 2026" (locale-dependent)
 export function plainDateFormatAccessible(pd: PlainDate): string {
   return new Intl.DateTimeFormat(undefined, {
     weekday: 'long',
@@ -133,6 +134,7 @@ export function plainDateFormatAccessible(pd: PlainDate): string {
   }).format(plainDateToDate(pd));
 }
 
+// e.g. "May 21, 2026" (locale-dependent)
 export function plainDateFormatDisplay(pd: PlainDate): string {
   return new Intl.DateTimeFormat(undefined, {
     year: 'numeric',
