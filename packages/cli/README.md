@@ -6,6 +6,7 @@ The XDS CLI is the primary interface for working with the XDS design system — 
 npx xds --help
 npx xds component Button
 npx xds docs tokens
+npx xds docs migration
 npx xds template --list
 ```
 
