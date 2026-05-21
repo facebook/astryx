@@ -17,6 +17,25 @@ export {
   isLocaleDayFirst,
 } from './dateParser';
 
+export type {PlainDate} from './plainDate';
+export {
+  fromISO,
+  toISO,
+  toDate,
+  fromDate,
+  today,
+  daysInMonth,
+  dayOfWeek,
+  addMonths,
+  addDays,
+  compare,
+  isSameDay,
+  isInRange,
+  firstOfMonth,
+  getWeekNumber,
+  formatAccessible,
+} from './plainDate';
+
 export {
   parseISOTime,
   formatISOTime,

@@ -41,13 +41,21 @@ import {
   dayCellTheme,
 } from './styles';
 import {
-  dateToISO,
-  parseISO,
+  type PlainDate,
+  fromISO,
+  toISO,
+  toDate,
+  fromDate,
+  today as todayFn,
+  firstOfMonth,
+  addMonths,
+  addDays,
+  compare,
   isSameDay,
-  isDateInRange,
+  isInRange as isPlainDateInRange,
   getWeekNumber,
-  formatAccessibleDate,
-} from './utils';
+  formatAccessible,
+} from '../utils/plainDate';
 import {xdsClassName, mergeProps} from '../utils';
 
 // =============================================================================
@@ -204,7 +212,7 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
   } = props;
 
   // Today's date (memoized)
-  const today = useMemo(() => new Date(), []);
+  const today = useMemo(() => todayFn(), []);
 
   // Internal state for uncontrolled mode
   const [internalValue, setInternalValue] = useState<
@@ -225,25 +233,25 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
   const effectiveValue = value !== undefined ? value : internalValue;
 
   // Focus date state (which month is visible)
-  const [internalFocusDate, setInternalFocusDate] = useState<Date>(() => {
+  const [internalFocusDate, setInternalFocusDate] = useState<PlainDate>(() => {
     if (focusDateProp) {
-      return parseISO(focusDateProp);
+      return fromISO(focusDateProp);
     }
     if (effectiveValue) {
       if (typeof effectiveValue === 'string') {
-        return parseISO(effectiveValue);
+        return fromISO(effectiveValue);
       } else {
-        return parseISO(effectiveValue.start);
+        return fromISO(effectiveValue.start);
       }
     }
-    return new Date();
+    return todayFn();
   });
 
   // Use controlled focusDate if callback is provided, otherwise use internal state
   const isControlledFocus =
     focusDateProp !== undefined && onFocusDateChange !== undefined;
   const focusDate = isControlledFocus
-    ? parseISO(focusDateProp)
+    ? fromISO(focusDateProp)
     : internalFocusDate;
 
   // Expose imperative handle for external navigation
@@ -254,7 +262,7 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
         if (isControlledFocus) {
           onFocusDateChange?.(date);
         } else {
-          setInternalFocusDate(parseISO(date));
+          setInternalFocusDate(fromISO(date));
         }
       },
     }),
@@ -263,17 +271,13 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
 
   // Base month (first day of focus month)
   const baseMonth = useMemo(() => {
-    const d = new Date(focusDate);
-    d.setDate(1);
-    return d;
+    return firstOfMonth(focusDate);
   }, [focusDate]);
 
   // Generate visible months
   const visibleMonths = useMemo(() => {
     return Array.from({length: numberOfMonths}, (_, i) => {
-      const m = new Date(baseMonth);
-      m.setMonth(baseMonth.getMonth() + i);
-      return m;
+      return addMonths(baseMonth, i);
     });
   }, [baseMonth, numberOfMonths]);
 
@@ -284,9 +288,9 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
       month: 'long',
     });
     if (numberOfMonths === 1) {
-      return formatter.format(visibleMonths[0]);
+      return formatter.format(toDate(visibleMonths[0]));
     }
-    return visibleMonths.map(m => formatter.format(m)).join(' – ');
+    return visibleMonths.map(m => formatter.format(toDate(m))).join(' – ');
   }, [visibleMonths, numberOfMonths]);
 
   // Determine if prev/next navigation is possible based on min/max
@@ -294,12 +298,11 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
     if (!min) {
       return true;
     }
-    const minDate = parseISO(min);
+    const minDate = fromISO(min);
     // Can't go back if min is in the current focus month
     return (
-      minDate.getFullYear() < baseMonth.getFullYear() ||
-      (minDate.getFullYear() === baseMonth.getFullYear() &&
-        minDate.getMonth() < baseMonth.getMonth())
+      minDate.year < baseMonth.year ||
+      (minDate.year === baseMonth.year && minDate.month < baseMonth.month)
     );
   }, [min, baseMonth]);
 
@@ -307,36 +310,34 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
     if (!max) {
       return true;
     }
-    const maxDate = parseISO(max);
+    const maxDate = fromISO(max);
     // Check against the last visible month, not just baseMonth
-    const lastVisibleMonth = new Date(baseMonth);
-    lastVisibleMonth.setMonth(baseMonth.getMonth() + numberOfMonths - 1);
+    const lastVisibleMonth = addMonths(baseMonth, numberOfMonths - 1);
     return (
-      maxDate.getFullYear() > lastVisibleMonth.getFullYear() ||
-      (maxDate.getFullYear() === lastVisibleMonth.getFullYear() &&
-        maxDate.getMonth() > lastVisibleMonth.getMonth())
+      maxDate.year > lastVisibleMonth.year ||
+      (maxDate.year === lastVisibleMonth.year &&
+        maxDate.month > lastVisibleMonth.month)
     );
   }, [max, baseMonth, numberOfMonths]);
 
   // Navigation handlers
   const navigateMonth = useCallback(
     (delta: number, focusedDate?: ISODateString, offset?: number) => {
-      const newDate = new Date(baseMonth);
-      newDate.setMonth(baseMonth.getMonth() + delta);
-      const newISO = dateToISO(newDate);
+      const newPd = addMonths(baseMonth, delta);
+      const newISO = toISO(newPd);
 
       // Calculate target focus date if a focused date was provided
       if (focusedDate) {
-        const currentDate = parseISO(focusedDate);
+        const currentPd = fromISO(focusedDate);
         const daysToMove = offset ?? 7;
-        currentDate.setDate(currentDate.getDate() + delta * daysToMove);
-        setPendingFocus(dateToISO(currentDate));
+        const targetPd = addDays(currentPd, delta * daysToMove);
+        setPendingFocus(toISO(targetPd));
       }
 
       if (onFocusDateChange) {
         onFocusDateChange(newISO);
       } else {
-        setInternalFocusDate(newDate);
+        setInternalFocusDate(newPd);
       }
     },
     [baseMonth, onFocusDateChange],
@@ -360,12 +361,12 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
 
   // Day click handler
   const handleDayClick = useCallback(
-    (date: Date) => {
-      const iso = dateToISO(date);
+    (date: PlainDate) => {
+      const iso = toISO(date);
 
       if (mode === 'single') {
         setInternalValue(iso);
-        (onChange as XDSCalendarSingleProps['onChange'])?.(iso, date);
+        (onChange as XDSCalendarSingleProps['onChange'])?.(iso, toDate(date));
       } else {
         // Range mode
         if (rangeSelectionStart === null) {
@@ -373,12 +374,12 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
           setRangeSelectionStart(iso);
         } else {
           // Second click - complete the range
-          const startDate = parseISO(rangeSelectionStart);
+          const startPd = fromISO(rangeSelectionStart);
           let start: ISODateString;
           let end: ISODateString;
 
           // Ensure start <= end
-          if (date < startDate) {
+          if (compare(date, startPd) < 0) {
             start = iso;
             end = rangeSelectionStart;
           } else {
@@ -434,7 +435,7 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
       <div {...stylex.props(calendarStyles.monthsContainer)}>
         {visibleMonths.map(month => (
           <MonthGrid
-            key={`${month.getFullYear()}-${month.getMonth()}`}
+            key={`${month.year}-${month.month}`}
             month={month}
             value={effectiveValue}
             mode={mode}
@@ -448,7 +449,7 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
             hasVariableRowCount={hasVariableRowCount}
             weekStartsOn={weekStartsOn}
             onDayClick={handleDayClick}
-            onDayHover={date => setHoveredDate(date ? dateToISO(date) : null)}
+            onDayHover={date => setHoveredDate(date ? toISO(date) : null)}
             today={today}
             onNavigatePrevious={(focusedDate, offset) =>
               navigateMonth(-1, focusedDate, offset)
@@ -472,7 +473,7 @@ XDSCalendar.displayName = 'XDSCalendar';
 // =============================================================================
 
 interface MonthGridProps {
-  month: Date;
+  month: PlainDate;
   value: ISODateString | DateRange | undefined;
   mode: 'single' | 'range';
   rangeSelectionStart: ISODateString | null;
@@ -484,9 +485,9 @@ interface MonthGridProps {
   hasWeekNumbers: boolean;
   hasVariableRowCount: boolean;
   weekStartsOn: DayOfWeek;
-  onDayClick: (date: Date) => void;
-  onDayHover: (date: Date | null) => void;
-  today: Date;
+  onDayClick: (date: PlainDate) => void;
+  onDayHover: (date: PlainDate | null) => void;
+  today: PlainDate;
   onNavigatePrevious?: (focusedDate: ISODateString, offset: number) => void;
   onNavigateNext?: (focusedDate: ISODateString, offset: number) => void;
   pendingFocus?: ISODateString | null;
@@ -514,8 +515,8 @@ function MonthGrid({
   pendingFocus,
   onPendingFocusHandled,
 }: MonthGridProps) {
-  const year = month.getFullYear();
-  const monthIndex = month.getMonth();
+  const year = month.year;
+  const monthIndex = month.month - 1;
 
   // Use hooks for days generation and constraints
   const {days, weeks, dayNames} = useCalendarDays({
@@ -534,7 +535,7 @@ function MonthGrid({
   // Parse selected date for roving tabindex priority
   const selectedDateForTabindex = useMemo(() => {
     if (mode === 'single' && value && typeof value === 'string') {
-      return parseISO(value as ISODateString);
+      return fromISO(value as ISODateString);
     }
     return null;
   }, [mode, value]);
@@ -565,7 +566,7 @@ function MonthGrid({
       return null;
     }
 
-    return dateToISO(parsed);
+    return toISO(fromDate(parsed));
   }, []);
 
   // Handle navigation to previous month
@@ -625,8 +626,8 @@ function MonthGrid({
       'button:not([disabled])',
     );
 
-    const targetDate = parseISO(pendingFocus);
-    const targetLabel = formatAccessibleDate(targetDate);
+    const targetPd = fromISO(pendingFocus);
+    const targetLabel = formatAccessible(targetPd);
 
     let targetButton: HTMLElement | null = null;
     for (const button of buttons) {
@@ -645,37 +646,37 @@ function MonthGrid({
   }, [pendingFocus, gridRef, onPendingFocusHandled]);
 
   // Parse selection
-  let selectedDate: Date | null = null;
-  let rangeStart: Date | null = null;
-  let rangeEnd: Date | null = null;
+  let selectedDate: PlainDate | null = null;
+  let rangeStart: PlainDate | null = null;
+  let rangeEnd: PlainDate | null = null;
 
   if (mode === 'single' && value && typeof value === 'string') {
-    selectedDate = parseISO(value as ISODateString);
+    selectedDate = fromISO(value as ISODateString);
   } else if (mode === 'range' && value && typeof value === 'object') {
     const range = value as DateRange;
-    rangeStart = parseISO(range.start);
-    rangeEnd = parseISO(range.end);
+    rangeStart = fromISO(range.start);
+    rangeEnd = fromISO(range.end);
   }
 
   // Handle in-progress range selection
   if (rangeSelectionStart) {
-    rangeStart = parseISO(rangeSelectionStart);
+    rangeStart = fromISO(rangeSelectionStart);
     rangeEnd = rangeStart;
   }
 
   // Calculate preview range when hovering during range selection
-  let previewStart: Date | null = null;
-  let previewEnd: Date | null = null;
+  let previewStart: PlainDate | null = null;
+  let previewEnd: PlainDate | null = null;
   if (mode === 'range' && rangeSelectionStart && hoveredDate) {
-    const startDate = parseISO(rangeSelectionStart);
-    const hoverDate = parseISO(hoveredDate);
-    if (startDate.getTime() !== hoverDate.getTime()) {
-      if (hoverDate < startDate) {
-        previewStart = hoverDate;
-        previewEnd = startDate;
+    const startPd = fromISO(rangeSelectionStart);
+    const hoverPd = fromISO(hoveredDate);
+    if (!isSameDay(startPd, hoverPd)) {
+      if (compare(hoverPd, startPd) < 0) {
+        previewStart = hoverPd;
+        previewEnd = startPd;
       } else {
-        previewStart = startDate;
-        previewEnd = hoverDate;
+        previewStart = startPd;
+        previewEnd = hoverPd;
       }
     }
   }
@@ -685,7 +686,7 @@ function MonthGrid({
     return new Intl.DateTimeFormat(undefined, {
       year: 'numeric',
       month: 'long',
-    }).format(month);
+    }).format(toDate(month));
   }, [month]);
 
   return (
@@ -773,17 +774,17 @@ interface DayCellProps {
   day: CalendarDay;
   dayIndex: number;
   mode: 'single' | 'range';
-  selectedDate: Date | null;
-  rangeStart: Date | null;
-  rangeEnd: Date | null;
-  previewStart: Date | null;
-  previewEnd: Date | null;
-  today: Date;
+  selectedDate: PlainDate | null;
+  rangeStart: PlainDate | null;
+  rangeEnd: PlainDate | null;
+  previewStart: PlainDate | null;
+  previewEnd: PlainDate | null;
+  today: PlainDate;
   hasOutsideDays: boolean;
   isDisabled: boolean;
   isTabbable: boolean;
-  onDayClick: (date: Date) => void;
-  onDayHover: (date: Date | null) => void;
+  onDayClick: (date: PlainDate) => void;
+  onDayHover: (date: PlainDate | null) => void;
 }
 
 function DayCell({
@@ -819,14 +820,16 @@ function DayCell({
     mode === 'range' &&
     rangeStart &&
     rangeEnd &&
-    isDateInRange(date, rangeStart, rangeEnd);
+    isPlainDateInRange(date, rangeStart, rangeEnd);
   const isRangeStart =
     mode === 'range' && rangeStart && isSameDay(date, rangeStart);
   const isRangeEnd = mode === 'range' && rangeEnd && isSameDay(date, rangeEnd);
 
   // Preview range calculations
   const isInPreview =
-    previewStart && previewEnd && isDateInRange(date, previewStart, previewEnd);
+    previewStart &&
+    previewEnd &&
+    isPlainDateInRange(date, previewStart, previewEnd);
   const isPreviewStart = previewStart && isSameDay(date, previewStart);
   const isPreviewEnd = previewEnd && isSameDay(date, previewEnd);
 
@@ -882,7 +885,7 @@ function DayCell({
         type="button"
         role="gridcell"
         data-date={day.iso}
-        aria-label={formatAccessibleDate(date)}
+        aria-label={formatAccessible(date)}
         aria-selected={isSelected || isInRange || undefined}
         aria-disabled={effectivelyDisabled || undefined}
         disabled={isDisabled}

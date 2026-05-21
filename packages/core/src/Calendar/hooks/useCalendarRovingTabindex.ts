@@ -4,7 +4,7 @@
 
 /**
  * @file useCalendarRovingTabindex.ts
- * @input Uses React useMemo
+ * @input Uses React useMemo, PlainDate utilities
  * @output Exports useCalendarRovingTabindex hook for accessible grid navigation
  * @position Calendar-specific hook; used by XDSCalendar
  *
@@ -14,6 +14,7 @@
 
 import {useMemo} from 'react';
 import type {ISODateString} from '../XDSCalendar';
+import {type PlainDate, toISO} from '../../utils/plainDate';
 import type {CalendarDay} from './useCalendarDays';
 
 /**
@@ -22,16 +23,16 @@ import type {CalendarDay} from './useCalendarDays';
 export interface UseCalendarRovingTabindexOptions {
   /** All days in the grid */
   days: CalendarDay[];
-  /** Today's date */
-  today: Date;
+  /** Today's date as a PlainDate */
+  today: PlainDate;
   /** The year being displayed */
   year: number;
   /** The month being displayed (0-11) */
   month: number;
   /** Function to check if a date is disabled */
-  isDateDisabled: (date: Date) => boolean;
+  isDateDisabled: (date: PlainDate) => boolean;
   /** Currently selected date (if any) */
-  selectedDate?: Date | null;
+  selectedDate?: PlainDate | null;
 }
 
 /**
@@ -42,16 +43,6 @@ export interface UseCalendarRovingTabindexReturn {
   tabbableDate: ISODateString | null;
   /** Check if a specific date is the tabbable one */
   isTabbable: (iso: ISODateString) => boolean;
-}
-
-/**
- * Convert a Date to ISO date string format.
- */
-function dateToISO(date: Date): ISODateString {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}` as ISODateString;
 }
 
 /**
@@ -68,9 +59,9 @@ function dateToISO(date: Date): ISODateString {
  * ```
  * const {tabbableDate, isTabbable} = useCalendarRovingTabindex({
  *   days,
- *   today: new Date(),
+ *   today: {year: 2026, month: 1, day: 20},
  *   year: 2026,
- *   month: 0,
+ *   month: 0, // 0-based month
  *   isDateDisabled,
  * });
  *
@@ -87,22 +78,23 @@ export function useCalendarRovingTabindex(
 
   // Determine which day should be tabbable
   const tabbableDate = useMemo(() => {
+    // Note: `month` is 0-based from the public API; PlainDate.month is 1-based
+    const month1 = month + 1;
+
     // Priority 1: Selected date if visible in this month and enabled
     if (selectedDate) {
       const isSelectedInMonth =
-        selectedDate.getFullYear() === year &&
-        selectedDate.getMonth() === month;
+        selectedDate.year === year && selectedDate.month === month1;
       if (isSelectedInMonth && !isDateDisabled(selectedDate)) {
-        return dateToISO(selectedDate);
+        return toISO(selectedDate);
       }
     }
 
     // Priority 2: Today if visible in this month and enabled
-    const isTodayInMonth =
-      today.getFullYear() === year && today.getMonth() === month;
+    const isTodayInMonth = today.year === year && today.month === month1;
 
     if (isTodayInMonth && !isDateDisabled(today)) {
-      return dateToISO(today);
+      return toISO(today);
     }
 
     // Priority 3: First enabled day in this month

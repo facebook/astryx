@@ -53,7 +53,8 @@ import {
 } from '../Calendar';
 import {useCalendarConstraints} from '../Calendar/hooks';
 import {useXDSPopover} from '../Popover';
-import {parseDateInput, formatDisplayDate, parseISO} from '../utils';
+import {parseDateInput, formatDisplayDate} from '../utils';
+import {fromISO} from '../utils/plainDate';
 
 const styles = stylex.create({
   iconButton: {
@@ -415,7 +416,7 @@ export function XDSDateInput({
 
       // If the input is valid and passes constraints, update immediately
       const parsed = parseDateInput(newValue);
-      if (parsed && parsed !== value && !isDateDisabled(parseISO(parsed))) {
+      if (parsed && parsed !== value && !isDateDisabled(fromISO(parsed))) {
         lastFiredValueRef.current = parsed;
         fireChange(parsed);
         // Navigate calendar to show the parsed date's month
@@ -440,7 +441,7 @@ export function XDSDateInput({
     }
 
     const parsed = parseDateInput(pendingInput);
-    if (parsed && !isDateDisabled(parseISO(parsed))) {
+    if (parsed && !isDateDisabled(fromISO(parsed))) {
       if (parsed !== value) {
         fireChange(parsed);
       }

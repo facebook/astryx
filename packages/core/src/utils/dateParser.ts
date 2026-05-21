@@ -12,6 +12,9 @@
  */
 
 import type {ISODateString} from '../Calendar';
+import {fromISO, toISO, toDate, fromDate, daysInMonth} from './plainDate';
+
+export {fromISO as parseISO, toISO as dateToISO} from './plainDate';
 
 /**
  * Detects if the user's locale uses day-first date format (DD/MM/YYYY).
@@ -122,7 +125,7 @@ export function parseDateInput(input: string): ISODateString | null {
   // 6. Fall back to native Date parsing for other formats
   const parsed = new Date(trimmed);
   if (!isNaN(parsed.getTime())) {
-    return dateToISO(parsed);
+    return toISO(fromDate(parsed));
   }
 
   return null;
@@ -210,58 +213,16 @@ function createISODate(
   month: number,
   day: number,
 ): ISODateString | null {
-  if (month < 1 || month > 12 || day < 1 || day > 31) {
+  if (month < 1 || month > 12 || day < 1 || day > daysInMonth(year, month)) {
     return null;
   }
-
-  const date = new Date(year, month - 1, day);
-  // new Date(year, ...) treats 0-99 as 1900s; fix with setFullYear
-  date.setFullYear(year);
-
-  // Validate the date didn't overflow (e.g., Feb 30 → Mar 2)
-  if (
-    date.getFullYear() !== year ||
-    date.getMonth() !== month - 1 ||
-    date.getDate() !== day
-  ) {
-    return null;
-  }
-
-  return dateToISO(date);
+  return toISO({year, month, day});
 }
 
-/**
- * Converts a Date object to ISO date string.
- */
-export function dateToISO(date: Date): ISODateString {
-  const year = String(date.getFullYear()).padStart(4, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}` as ISODateString;
-}
-
-/**
- * Parses an ISO date string into a Date object.
- */
-export function parseISO(iso: ISODateString): Date {
-  const [year, month, day] = iso.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
-
-/**
- * Formats an ISO date string for display.
- * Uses locale-aware formatting with full month name.
- *
- * @example
- * ```
- * formatDisplayDate("2026-01-25") // "January 25, 2026"
- * ```
- */
 export function formatDisplayDate(iso: ISODateString): string {
-  const date = parseISO(iso);
   return new Intl.DateTimeFormat(undefined, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-  }).format(date);
+  }).format(toDate(fromISO(iso)));
 }
