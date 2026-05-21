@@ -513,4 +513,28 @@ describe('XDSDateInput', () => {
       expect(onChange).toHaveBeenCalledWith(undefined);
     });
   });
+
+  describe('external value changes', () => {
+    it('clears pending input when value changes externally', () => {
+      const onChange = vi.fn();
+      const {rerender} = render(
+        <XDSDateInput label="Date" value="2026-01-15" onChange={onChange} />,
+      );
+
+      const input = screen.getByRole('combobox');
+      expect(input).toHaveValue('January 15, 2026');
+
+      // User starts typing — sets pending input
+      fireEvent.change(input, {target: {value: 'Feb'}});
+      expect(input).toHaveValue('Feb');
+
+      // Value changes externally (e.g. parent resets the date)
+      rerender(
+        <XDSDateInput label="Date" value="2026-03-20" onChange={onChange} />,
+      );
+
+      // Pending input should be cleared, showing the new formatted value
+      expect(input).toHaveValue('March 20, 2026');
+    });
+  });
 });

@@ -42,20 +42,19 @@ beforeAll(() => {
     Object.defineProperty(event, 'newState', {value: 'closed'});
     this.dispatchEvent(event);
   });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (HTMLElement.prototype as any).matches = function (
+  HTMLElement.prototype.matches = function (
+    this: HTMLElement,
     selector: string,
-  ): boolean {
+  ) {
     if (selector === ':popover-open') {
       return popoverOpenState.get(this) ?? false;
     }
     return originalMatches.call(this, selector);
-  };
+  } as typeof HTMLElement.prototype.matches;
 });
 
 afterAll(() => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (HTMLElement.prototype as any).matches = originalMatches;
+  HTMLElement.prototype.matches = originalMatches;
 });
 
 // Minimal config stub — editors don't use it directly
