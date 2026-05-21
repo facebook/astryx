@@ -184,6 +184,10 @@ const styles = stylex.create({
     wordBreak: 'normal',
     overflowWrap: 'normal',
   },
+  codeCompact: {
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-2'],
+  },
   codeWrapped: {
     whiteSpace: 'pre-wrap',
     wordBreak: 'break-all',
@@ -339,6 +343,13 @@ export interface XDSCodeBlockProps extends XDSBaseProps<HTMLPreElement> {
   maxHeight?: number | string;
   isCollapsible?: boolean;
   collapsibleThreshold?: number;
+  /**
+   * Show the header bar (title, language label, copy button row).
+   * Set to `false` for a compact display with reduced padding — useful
+   * when embedding inside chat tool-call results or tight layouts.
+   * @default true
+   */
+  hasHeader?: boolean;
   size?: 'sm' | 'md';
   /**
    * Width of the code block. Accepts any CSS width value.
@@ -469,12 +480,14 @@ function SpanCodeContent({
   tokenLines,
   highlightSet,
   isWrapped,
+  isCompact,
   sizeStyle,
 }: {
   lines: string[];
   tokenLines: TokenLine[];
   highlightSet: Set<number> | null;
   isWrapped: boolean;
+  isCompact: boolean;
   sizeStyle: stylex.StyleXStyles;
 }) {
   useInsertionEffect(() => {
@@ -493,6 +506,7 @@ function SpanCodeContent({
     <code
       {...stylex.props(
         styles.code,
+        isCompact && styles.codeCompact,
         sizeStyle,
         isWrapped && styles.codeWrapped,
       )}>
@@ -510,12 +524,14 @@ function RangeCodeContent({
   tokenLines,
   highlightSet,
   isWrapped,
+  isCompact,
   sizeStyle,
 }: {
   lines: string[];
   tokenLines: TokenLine[];
   highlightSet: Set<number> | null;
   isWrapped: boolean;
+  isCompact: boolean;
   sizeStyle: stylex.StyleXStyles;
 }) {
   const codeRef = useRef<HTMLElement>(null);
@@ -540,6 +556,7 @@ function RangeCodeContent({
       ref={codeRef}
       {...stylex.props(
         styles.code,
+        isCompact && styles.codeCompact,
         sizeStyle,
         isWrapped && styles.codeWrapped,
       )}>
@@ -574,6 +591,7 @@ export function XDSCodeBlock({
   maxHeight,
   isCollapsible = false,
   collapsibleThreshold = 10,
+  hasHeader: hasHeaderProp = true,
   size = 'md',
   width: widthProp = 'fit-content',
   container = 'card',
@@ -619,7 +637,8 @@ export function XDSCodeBlock({
   const gutterSizeStyle = size === 'sm' ? styles.gutterSm : styles.gutterMd;
   const languageLabel =
     hasLanguageLabel && language !== 'plaintext' ? language : null;
-  const showHeader = title != null || languageLabel != null;
+  const showHeader =
+    hasHeaderProp !== false && (title != null || languageLabel != null);
 
   const canCollapse = isCollapsible && lines.length >= collapsibleThreshold;
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -736,6 +755,7 @@ export function XDSCodeBlock({
             tokenLines={tokenLines}
             highlightSet={highlightSet}
             isWrapped={isWrapped}
+            isCompact={hasHeaderProp === false}
             sizeStyle={sizeStyle}
           />
         ) : (
@@ -744,6 +764,7 @@ export function XDSCodeBlock({
             tokenLines={tokenLines}
             highlightSet={highlightSet}
             isWrapped={isWrapped}
+            isCompact={hasHeaderProp === false}
             sizeStyle={sizeStyle}
           />
         )}
