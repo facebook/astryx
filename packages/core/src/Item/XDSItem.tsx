@@ -72,7 +72,7 @@ export interface XDSItemProps extends XDSBaseProps<HTMLElement> {
 
   /**
    * Trailing content — badges, metadata, timestamps, action buttons.
-   * Positioned to the right, flex-shrink: 0.
+   * Positioned at the end, flex-shrink: 0.
    */
   trailing?: ReactNode;
 
@@ -381,9 +381,9 @@ export function XDSItem({
   );
 
   const handleContainerClick = (e: React.MouseEvent) => {
-    if (isDisabled) return;
+    if (isDisabled) {return;}
     const target = e.target as HTMLElement;
-    if (target.closest('button, a, input, select, textarea')) return;
+    if (target.closest('button, a, input, select, textarea')) {return;}
     onClick?.(e);
   };
 

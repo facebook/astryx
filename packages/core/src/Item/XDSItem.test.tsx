@@ -9,7 +9,6 @@
  * SYNC: When XDSItem component changes, update tests to match new behavior
  */
 
-import {createRef} from 'react';
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -75,9 +74,16 @@ describe('XDSItem', () => {
   // ===========================================================================
 
   it('forwards ref to the root element', () => {
-    const ref = createRef<HTMLDivElement>();
-    render(<XDSItem label="Item" ref={ref} />);
-    expect(ref.current).toBeInstanceOf(HTMLDivElement);
+    let refValue: HTMLElement | null = null;
+    render(
+      <XDSItem
+        label="Item"
+        ref={el => {
+          refValue = el;
+        }}
+      />,
+    );
+    expect(refValue).toBeInstanceOf(HTMLDivElement);
   });
 
   // ===========================================================================
@@ -257,7 +263,7 @@ describe('XDSItem', () => {
       />,
     );
     const button = container.querySelector('button');
-    const root = container.firstChild;
+    const root = container.firstElementChild;
     expect(root?.querySelector('[data-testid="media"]')).toBeInTheDocument();
     expect(root?.querySelector('[data-testid="trailing"]')).toBeInTheDocument();
     expect(

@@ -169,7 +169,7 @@ const embeddedStyles = stylex.create({
   },
 });
 
-export interface XDSRadioListItemProps {
+export interface XDSRadioListItemProps extends XDSBaseProps<HTMLDivElement> {
   /**
    * Label text for the radio item.
    */
