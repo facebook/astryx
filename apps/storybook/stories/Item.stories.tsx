@@ -18,7 +18,7 @@ const storyStyles = stylex.create({
     width: 40,
     height: 40,
     borderRadius: '50%',
-    backgroundColor: 'var(--color-background-muted)',
+    backgroundColor: 'var(--color-neutral)',
   },
 });
 import {
