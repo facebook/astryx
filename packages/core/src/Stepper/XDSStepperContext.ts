@@ -4,7 +4,7 @@
 
 /**
  * @file XDSStepperContext.ts
- * @input Uses React createContext/useContext
+ * @input Uses React createContext/use
  * @output Exports XDSStepperContext, useXDSStepperContext, and context types
  * @position Context for XDSStepper <-> XDSStep communication
  *
@@ -13,7 +13,7 @@
  * - /packages/core/src/Stepper/index.ts
  */
 
-import {createContext, useContext} from 'react';
+import {createContext, use} from 'react';
 
 export type XDSStepperOrientation = 'horizontal' | 'vertical';
 
@@ -27,9 +27,10 @@ export interface XDSStepperContextValue {
 export const XDSStepperContext = createContext<XDSStepperContextValue | null>(
   null,
 );
+XDSStepperContext.displayName = 'XDSStepperContext';
 
 export function useXDSStepperContext(): XDSStepperContextValue {
-  const ctx = useContext(XDSStepperContext);
+  const ctx = use(XDSStepperContext);
   if (ctx == null) {
     throw new Error(
       'useXDSStepperContext must be used within XDSStepper. ' +

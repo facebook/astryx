@@ -24,3 +24,4 @@ export interface LayoutDividerContextValue {
 
 export const XDSLayoutDividerContext =
   createContext<LayoutDividerContextValue | null>(null);
+XDSLayoutDividerContext.displayName = 'XDSLayoutDividerContext';

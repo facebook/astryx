@@ -17,7 +17,7 @@
 
 import type {AriaRole, ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {useContext} from 'react';
+import {use} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {XDSLayoutAreaContext} from './XDSLayoutAreaContext';
@@ -219,8 +219,8 @@ export function XDSLayoutPanel({
   ref,
   ...props
 }: XDSLayoutPanelProps) {
-  const area = useContext(XDSLayoutAreaContext);
-  const {hasHeader, hasFooter} = useContext(XDSLayoutSlotsContext);
+  const area = use(XDSLayoutAreaContext);
+  const {hasHeader, hasFooter} = use(XDSLayoutSlotsContext);
 
   // When resizable props are provided, use the hook-driven size
   const effectiveWidth = resizable ? resizable._size : width;

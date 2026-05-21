@@ -82,12 +82,12 @@ describe('XDSTopNavMegaMenu — default mode', () => {
 describe('XDSTopNavMegaMenu — mobile-bar mode', () => {
   it('returns null in mobile-bar mode', () => {
     const {container} = render(
-      <XDSTopNavRenderContext.Provider value="mobile-bar">
+      <XDSTopNavRenderContext value="mobile-bar">
         <XDSTopNavMegaMenu
           label="Products"
           items={<XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />}
         />
-      </XDSTopNavRenderContext.Provider>,
+      </XDSTopNavRenderContext>,
     );
     expect(container.innerHTML).toBe('');
   });
@@ -100,12 +100,12 @@ describe('XDSTopNavMegaMenu — mobile-bar mode', () => {
 describe('XDSTopNavMegaMenu — drawer mode', () => {
   it('renders a collapsible trigger with label', () => {
     render(
-      <XDSTopNavRenderContext.Provider value="drawer">
+      <XDSTopNavRenderContext value="drawer">
         <XDSTopNavMegaMenu
           label="Products"
           items={<XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />}
         />
-      </XDSTopNavRenderContext.Provider>,
+      </XDSTopNavRenderContext>,
     );
     const trigger = screen.getByRole('button', {name: 'Products'});
     expect(trigger).toBeInTheDocument();
@@ -116,7 +116,7 @@ describe('XDSTopNavMegaMenu — drawer mode', () => {
     const user = userEvent.setup();
 
     render(
-      <XDSTopNavRenderContext.Provider value="drawer">
+      <XDSTopNavRenderContext value="drawer">
         <XDSTopNavMegaMenu
           label="Products"
           items={
@@ -126,7 +126,7 @@ describe('XDSTopNavMegaMenu — drawer mode', () => {
             </>
           }
         />
-      </XDSTopNavRenderContext.Provider>,
+      </XDSTopNavRenderContext>,
     );
 
     const trigger = screen.getByRole('button', {name: 'Products'});
@@ -143,12 +143,12 @@ describe('XDSTopNavMegaMenu — drawer mode', () => {
     const user = userEvent.setup();
 
     render(
-      <XDSTopNavRenderContext.Provider value="drawer">
+      <XDSTopNavRenderContext value="drawer">
         <XDSTopNavMegaMenu
           label="Products"
           items={<XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />}
         />
-      </XDSTopNavRenderContext.Provider>,
+      </XDSTopNavRenderContext>,
     );
 
     const trigger = screen.getByRole('button', {name: 'Products'});
@@ -162,7 +162,7 @@ describe('XDSTopNavMegaMenu — drawer mode', () => {
     const user = userEvent.setup();
 
     render(
-      <XDSTopNavRenderContext.Provider value="drawer">
+      <XDSTopNavRenderContext value="drawer">
         <XDSTopNavMegaMenu
           label="Products"
           items={
@@ -173,7 +173,7 @@ describe('XDSTopNavMegaMenu — drawer mode', () => {
             />
           }
         />
-      </XDSTopNavRenderContext.Provider>,
+      </XDSTopNavRenderContext>,
     );
 
     await user.click(screen.getByRole('button', {name: 'Products'}));
@@ -186,12 +186,12 @@ describe('XDSTopNavMegaMenu — drawer mode', () => {
     const user = userEvent.setup();
 
     render(
-      <XDSTopNavRenderContext.Provider value="drawer">
+      <XDSTopNavRenderContext value="drawer">
         <XDSTopNavMegaMenu
           label="Products"
           items={<XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />}
         />
-      </XDSTopNavRenderContext.Provider>,
+      </XDSTopNavRenderContext>,
     );
 
     await user.click(screen.getByRole('button', {name: 'Products'}));
@@ -205,12 +205,12 @@ describe('XDSTopNavMegaMenu — drawer mode', () => {
     const handleClick = vi.fn();
 
     render(
-      <XDSTopNavRenderContext.Provider value="drawer">
+      <XDSTopNavRenderContext value="drawer">
         <XDSTopNavMegaMenu
           label="Tools"
           items={<XDSTopNavMegaMenuItem title="Export" onClick={handleClick} />}
         />
-      </XDSTopNavRenderContext.Provider>,
+      </XDSTopNavRenderContext>,
     );
 
     await user.click(screen.getByRole('button', {name: 'Tools'}));
@@ -223,13 +223,13 @@ describe('XDSTopNavMegaMenu — drawer mode', () => {
     const user = userEvent.setup();
 
     render(
-      <XDSTopNavRenderContext.Provider value="drawer">
+      <XDSTopNavRenderContext value="drawer">
         <XDSTopNavMegaMenu
           label="Products"
           items={<XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />}
           featured={<span>Featured: New AI Tools</span>}
         />
-      </XDSTopNavRenderContext.Provider>,
+      </XDSTopNavRenderContext>,
     );
 
     await user.click(screen.getByRole('button', {name: 'Products'}));
@@ -262,9 +262,9 @@ describe('XDSTopNavMegaMenuItem', () => {
 
   it('renders as a drawer item in drawer context', () => {
     render(
-      <XDSTopNavRenderContext.Provider value="drawer">
+      <XDSTopNavRenderContext value="drawer">
         <XDSTopNavMegaMenuItem title="Analytics" href="/analytics" />
-      </XDSTopNavRenderContext.Provider>,
+      </XDSTopNavRenderContext>,
     );
     expect(screen.getByRole('link', {name: /Analytics/})).toBeInTheDocument();
   });

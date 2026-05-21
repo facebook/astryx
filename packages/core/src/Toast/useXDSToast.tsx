@@ -2,7 +2,7 @@
 
 'use client';
 
-import {useCallback, useContext, useEffect, useRef} from 'react';
+import {useCallback, use, useEffect, useRef} from 'react';
 import {createRoot} from 'react-dom/client';
 import {XDSToastContext, type XDSToastContextValue} from './XDSToastContext';
 import {XDSToastViewport} from './XDSToastViewport';
@@ -46,7 +46,7 @@ function getFallbackContext(): XDSToastContextValue {
   });
 
   const FallbackCapture = () => {
-    const ctx = useContext(XDSToastContext);
+    const ctx = use(XDSToastContext);
     const doneRef = useRef(false);
     useEffect(() => {
       if (ctx && !doneRef.current) {
@@ -124,7 +124,7 @@ function generateToastId(): string {
  * ```
  */
 export function useXDSToast(): XDSShowToastFn {
-  const contextFromProvider = useContext(XDSToastContext);
+  const contextFromProvider = use(XDSToastContext);
 
   const showToast = useCallback(
     (options: XDSToastOptions): XDSToastDismissFn => {

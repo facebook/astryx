@@ -4,14 +4,14 @@
 
 /**
  * @file XDSTabListContext.ts
- * @input React createContext, useContext
+ * @input React createContext, use
  * @output Exports XDSTabListContext, useXDSTabListContext
  * @position Context provider; consumed by XDSTab.tsx, XDSTabMenu.tsx
  *
  * SYNC: When modified, update /packages/core/src/TabList/TabList.doc.mjs
  */
 
-import {createContext, useContext} from 'react';
+import {createContext, use} from 'react';
 
 /**
  * Size variants for tab list items.
@@ -39,12 +39,13 @@ export interface XDSTabListContextValue {
 export const XDSTabListContext = createContext<XDSTabListContextValue | null>(
   null,
 );
+XDSTabListContext.displayName = 'XDSTabListContext';
 
 /**
  * Returns XDSTabListContext value or throws if used outside XDSTabList.
  */
 export function useXDSTabListContext(): XDSTabListContextValue {
-  const ctx = useContext(XDSTabListContext);
+  const ctx = use(XDSTabListContext);
   if (ctx == null) {
     throw new Error(
       'useXDSTabListContext must be used within XDSTabList. ' +

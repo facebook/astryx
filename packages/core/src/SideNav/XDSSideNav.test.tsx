@@ -13,7 +13,7 @@ import React from 'react';
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, act, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {forwardRef, type ComponentPropsWithoutRef, type ReactNode} from 'react';
+import {type ReactNode} from 'react';
 import {XDSSideNav} from './XDSSideNav';
 import {XDSSideNavHeading} from './XDSSideNavHeading';
 import {XDSSideNavItem} from './XDSSideNavItem';
@@ -21,14 +21,17 @@ import {XDSSideNavSection} from './XDSSideNavSection';
 import {XDSLinkProvider} from '../Link/XDSLinkProvider';
 import {XDSSideNavCollapseContext} from './XDSSideNavCollapseContext';
 
-const CustomLink = forwardRef<HTMLAnchorElement, ComponentPropsWithoutRef<'a'>>(
-  ({children, ...props}, ref) => (
+function CustomLink({
+  children,
+  ref,
+  ...props
+}: React.ComponentPropsWithRef<'a'>) {
+  return (
     <a ref={ref} data-custom-link {...props}>
       {children}
     </a>
-  ),
-);
-CustomLink.displayName = 'CustomLink';
+  );
+}
 
 // =============================================================================
 // XDSSideNav
@@ -262,9 +265,9 @@ const COLLAPSED_CONTEXT = {
 
 function CollapsedWrapper({children}: {children: ReactNode}) {
   return (
-    <XDSSideNavCollapseContext.Provider value={COLLAPSED_CONTEXT}>
+    <XDSSideNavCollapseContext value={COLLAPSED_CONTEXT}>
       {children}
-    </XDSSideNavCollapseContext.Provider>
+    </XDSSideNavCollapseContext>
   );
 }
 
@@ -1013,7 +1016,7 @@ describe('XDSSideNavItem — mobile drawer close-on-activate', () => {
     return {
       closeMobileNav,
       ...render(
-        <XDSAppShellMobileContext.Provider
+        <XDSAppShellMobileContext
           value={{
             isMobile: true,
             isMobileNavOpen: true,
@@ -1024,7 +1027,7 @@ describe('XDSSideNavItem — mobile drawer close-on-activate', () => {
             hasAutoToggle: true,
           }}>
           <XDSSideNavRenderContext value="drawer">{ui}</XDSSideNavRenderContext>
-        </XDSAppShellMobileContext.Provider>,
+        </XDSAppShellMobileContext>,
       ),
     };
   }
@@ -1068,7 +1071,7 @@ describe('XDSSideNavItem — mobile drawer close-on-activate', () => {
     const user = userEvent.setup();
     const closeMobileNav = vi.fn();
     render(
-      <XDSAppShellMobileContext.Provider
+      <XDSAppShellMobileContext
         value={{
           isMobile: false,
           isMobileNavOpen: false,
@@ -1079,7 +1082,7 @@ describe('XDSSideNavItem — mobile drawer close-on-activate', () => {
           hasAutoToggle: true,
         }}>
         <XDSSideNavItem label="Home" href="/" data-testid="item" />
-      </XDSAppShellMobileContext.Provider>,
+      </XDSAppShellMobileContext>,
     );
     await user.click(screen.getByTestId('item'));
     expect(closeMobileNav).not.toHaveBeenCalled();

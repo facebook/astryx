@@ -9,7 +9,7 @@
  * @position Internal context; consumed by XDSChatMessage and XDSChatMessageBubble
  */
 
-import {createContext, useContext} from 'react';
+import {createContext, use} from 'react';
 
 export type XDSChatMessageSender = 'user' | 'assistant' | 'system';
 export type XDSChatDensity = 'compact' | 'balanced' | 'spacious';
@@ -21,9 +21,10 @@ export interface XDSChatMessageContextValue {
 
 export const XDSChatMessageContext =
   createContext<XDSChatMessageContextValue | null>(null);
+XDSChatMessageContext.displayName = 'XDSChatMessageContext';
 
 export function useXDSChatMessageContext(): XDSChatMessageContextValue | null {
-  return useContext(XDSChatMessageContext);
+  return use(XDSChatMessageContext);
 }
 
 export interface XDSChatListContextValue {
@@ -33,9 +34,10 @@ export interface XDSChatListContextValue {
 export const XDSChatListContext = createContext<XDSChatListContextValue | null>(
   null,
 );
+XDSChatListContext.displayName = 'XDSChatListContext';
 
 export function useXDSChatListContext(): XDSChatListContextValue | null {
-  return useContext(XDSChatListContext);
+  return use(XDSChatListContext);
 }
 
 // =============================================================================
@@ -55,9 +57,10 @@ export interface XDSChatComposerContextValue {
 
 export const XDSChatComposerContext =
   createContext<XDSChatComposerContextValue | null>(null);
+XDSChatComposerContext.displayName = 'XDSChatComposerContext';
 
 export function useXDSChatComposerContext(): XDSChatComposerContextValue | null {
-  return useContext(XDSChatComposerContext);
+  return use(XDSChatComposerContext);
 }
 
 // =============================================================================
@@ -73,7 +76,8 @@ export interface XDSChatLayoutContextValue {
 
 export const XDSChatLayoutContext =
   createContext<XDSChatLayoutContextValue | null>(null);
+XDSChatLayoutContext.displayName = 'XDSChatLayoutContext';
 
 export function useXDSChatLayoutContext(): XDSChatLayoutContextValue | null {
-  return useContext(XDSChatLayoutContext);
+  return use(XDSChatLayoutContext);
 }

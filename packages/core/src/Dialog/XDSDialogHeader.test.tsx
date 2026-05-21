@@ -86,9 +86,9 @@ describe('XDSDialogHeader', () => {
   it('renders with divider when context defaultHasDividers is true', () => {
     // With context true and no explicit prop, should match explicit hasDivider={true}
     const {container: ctxTrue} = render(
-      <XDSLayoutDividerContext.Provider value={{defaultHasDividers: true}}>
+      <XDSLayoutDividerContext value={{defaultHasDividers: true}}>
         <XDSDialogHeader title="Ctx true" />
-      </XDSLayoutDividerContext.Provider>,
+      </XDSLayoutDividerContext>,
     );
     const {container: explicitTrue} = render(
       <XDSDialogHeader title="Explicit true" hasDivider={true} />,
@@ -100,9 +100,9 @@ describe('XDSDialogHeader', () => {
 
   it('explicit hasDivider={false} overrides context defaultHasDividers=true', () => {
     const {container: overridden} = render(
-      <XDSLayoutDividerContext.Provider value={{defaultHasDividers: true}}>
+      <XDSLayoutDividerContext value={{defaultHasDividers: true}}>
         <XDSDialogHeader title="Overridden" hasDivider={false} />
-      </XDSLayoutDividerContext.Provider>,
+      </XDSLayoutDividerContext>,
     );
     const {container: noDivider} = render(
       <XDSDialogHeader title="No divider" hasDivider={false} />,

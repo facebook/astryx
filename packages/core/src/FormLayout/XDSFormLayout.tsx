@@ -143,7 +143,7 @@ export function XDSFormLayout({
   const contextValue = useMemo(() => ({direction}), [direction]);
 
   return (
-    <XDSFormLayoutContext.Provider value={contextValue}>
+    <XDSFormLayoutContext value={contextValue}>
       <div
         ref={ref}
         {...mergeProps(
@@ -160,7 +160,7 @@ export function XDSFormLayout({
         {...props}>
         {children}
       </div>
-    </XDSFormLayoutContext.Provider>
+    </XDSFormLayoutContext>
   );
 }
 

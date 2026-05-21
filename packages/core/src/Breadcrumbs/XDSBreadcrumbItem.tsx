@@ -4,7 +4,7 @@
 
 /**
  * @file XDSBreadcrumbItem.tsx
- * @input Uses React useContext/useRef/useEffect, stylex, theme tokens, BreadcrumbContext
+ * @input Uses React use/useRef/useEffect, stylex, theme tokens, BreadcrumbContext
  * @output Exports XDSBreadcrumbItem component and XDSBreadcrumbItemProps
  * @position Individual breadcrumb item; used inside XDSBreadcrumbs
  *
@@ -16,13 +16,7 @@
  * - /packages/cli/templates/blocks/components/Breadcrumbs/ (showcase blocks)
  */
 
-import {
-  useContext,
-  useRef,
-  useEffect,
-  type ReactNode,
-  type MouseEvent,
-} from 'react';
+import {use, useRef, useEffect, type ReactNode, type MouseEvent} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, typeScaleVars} from '../theme/tokens.stylex';
 import {BreadcrumbContext} from './XDSBreadcrumbs';
@@ -174,7 +168,7 @@ export function XDSBreadcrumbItem({
   startIcon,
   'data-testid': testId,
 }: XDSBreadcrumbItemProps) {
-  const ctx = useContext(BreadcrumbContext);
+  const ctx = use(BreadcrumbContext);
   const LinkComponent = useXDSLinkComponent(as);
   const isSupporting = ctx.variant === 'supporting';
   const liRef = useRef<HTMLLIElement>(null);

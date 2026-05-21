@@ -11,7 +11,7 @@
 
 import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import {useContext} from 'react';
+import {use} from 'react';
 import {XDSFormLayout} from './XDSFormLayout';
 import {XDSFormLayoutContext} from './XDSFormLayoutContext';
 import type {XDSFormLayoutDirection} from './XDSFormLayoutContext';
@@ -19,7 +19,7 @@ import {XDSField} from '../Field';
 
 // Helper component to read context
 function DirectionReader() {
-  const {direction} = useContext(XDSFormLayoutContext);
+  const {direction} = use(XDSFormLayoutContext);
   return <span data-testid="direction">{direction}</span>;
 }
 

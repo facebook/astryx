@@ -12,21 +12,23 @@
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {forwardRef, type ComponentPropsWithoutRef} from 'react';
 import {XDSTopNav} from './XDSTopNav';
 import {XDSTopNavHeading} from './XDSTopNavHeading';
 import {XDSNavIcon} from '../NavIcon';
 import {XDSTopNavItem} from './XDSTopNavItem';
 import {XDSLinkProvider} from '../Link/XDSLinkProvider';
 
-const CustomLink = forwardRef<HTMLAnchorElement, ComponentPropsWithoutRef<'a'>>(
-  ({children, ...props}, ref) => (
+function CustomLink({
+  children,
+  ref,
+  ...props
+}: React.ComponentPropsWithRef<'a'>) {
+  return (
     <a ref={ref} data-custom-link {...props}>
       {children}
     </a>
-  ),
-);
-CustomLink.displayName = 'CustomLink';
+  );
+}
 
 describe('XDSTopNav', () => {
   it('renders with navigation role', () => {
@@ -303,16 +305,17 @@ describe('XDSTopNavItem', () => {
   });
 
   it('as prop overrides XDSLinkProvider', () => {
-    const AnotherLink = forwardRef<
-      HTMLAnchorElement,
-      ComponentPropsWithoutRef<'a'>
-    >(function AnotherLink({children, ...props}, ref) {
+    function AnotherLink({
+      children,
+      ref,
+      ...props
+    }: React.ComponentPropsWithRef<'a'>) {
       return (
         <a ref={ref} data-another-link {...props}>
           {children}
         </a>
       );
-    });
+    }
     render(
       <XDSLinkProvider component={AnotherLink}>
         <XDSTopNavItem label="Home" href="/" as={CustomLink} />

@@ -227,7 +227,7 @@ export function XDSChatMessage({
   const nameId = useId();
 
   return (
-    <XDSChatMessageContext.Provider value={contextValue}>
+    <XDSChatMessageContext value={contextValue}>
       <article
         ref={ref}
         data-testid={testId}
@@ -265,7 +265,7 @@ export function XDSChatMessage({
           {metadata != null && !isSystem && <div>{metadata}</div>}
         </div>
       </article>
-    </XDSChatMessageContext.Provider>
+    </XDSChatMessageContext>
   );
 }
 

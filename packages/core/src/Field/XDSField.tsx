@@ -16,7 +16,7 @@
  * - /packages/cli/templates/blocks/components/Field/ (showcase blocks)
  */
 
-import {type HTMLAttributes, type ReactNode, useContext} from 'react';
+import {type HTMLAttributes, type ReactNode, use} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSFieldLabel} from './XDSFieldLabel';
@@ -190,7 +190,7 @@ export function XDSField({
   ref,
   ...props
 }: XDSFieldProps) {
-  const {direction} = useContext(XDSFormLayoutContext);
+  const {direction} = use(XDSFormLayoutContext);
   const isHorizontalLabels = direction === 'horizontal-labels';
 
   const resolvedDescriptionID =

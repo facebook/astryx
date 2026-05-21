@@ -115,7 +115,7 @@ export function XDSNavHeadingMenu({
   const inlineStyle = minWidth != null ? {...styleProp, minWidth} : styleProp;
 
   return (
-    <XDSNavHeadingMenuContext.Provider value={ctx}>
+    <XDSNavHeadingMenuContext value={ctx}>
       <div
         ref={listRef as React.RefObject<HTMLDivElement>}
         role="menu"
@@ -129,7 +129,7 @@ export function XDSNavHeadingMenu({
         )}>
         {children}
       </div>
-    </XDSNavHeadingMenuContext.Provider>
+    </XDSNavHeadingMenuContext>
   );
 }
 

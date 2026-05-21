@@ -4,7 +4,7 @@
 
 /**
  * @file XDSTopNavMobileContentContext.ts
- * @input React createContext, useContext
+ * @input React createContext, use
  * @output Exports XDSTopNavMobileContentContext and useXDSTopNavMobileContent
  * @position Internal context for passing additional drawer content to TopNav
  *
@@ -13,14 +13,15 @@
  * mobile drawer, producing a single combined drawer.
  */
 
-import {createContext, useContext, type ReactNode} from 'react';
+import {createContext, use, type ReactNode} from 'react';
 
 export const XDSTopNavMobileContentContext = createContext<ReactNode>(null);
+XDSTopNavMobileContentContext.displayName = 'XDSTopNavMobileContentContext';
 
 /**
  * Read additional mobile drawer content provided by AppShell.
  * Returns null when no additional content is available.
  */
 export function useXDSTopNavMobileContent(): ReactNode {
-  return useContext(XDSTopNavMobileContentContext);
+  return use(XDSTopNavMobileContentContext);
 }

@@ -187,6 +187,7 @@ export function XDSContextMenu({
 
   const menuId = useId();
   const positionRef = useRef({x: 0, y: 0});
+  // eslint-disable-next-line @eslint-react/no-unused-state -- isOpen triggers the click-outside effect
   const [isOpen, setIsOpen] = useState(false);
 
   const layer = useXDSLayer({
@@ -292,9 +293,9 @@ export function XDSContextMenu({
             className,
             style,
           )}>
-          <XDSDropdownMenuContext.Provider value={contextValue}>
+          <XDSDropdownMenuContext value={contextValue}>
             {resolvedMenuContent}
-          </XDSDropdownMenuContext.Provider>
+          </XDSDropdownMenuContext>
         </div>,
         {
           x: positionRef.current.x,

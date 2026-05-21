@@ -4,7 +4,7 @@
 
 /**
  * @file XDSSideNavCollapseContext.ts
- * @input React createContext, useContext
+ * @input React createContext, use
  * @output Exports XDSSideNavCollapseContext and useXDSSideNavCollapse hook
  * @position Internal context for sidenav collapse state
  *
@@ -12,7 +12,7 @@
  * sidenav children. Set by XDSSideNav when isCollapsible is true.
  */
 
-import {createContext, useContext} from 'react';
+import {createContext, use} from 'react';
 
 export interface XDSSideNavCollapseState {
   /** Whether the sidenav is currently collapsed */
@@ -28,12 +28,14 @@ export interface XDSSideNavCollapseState {
  */
 export type SideNavCollapseState = XDSSideNavCollapseState;
 
-export const XDSSideNavCollapseContext =
-  createContext<XDSSideNavCollapseState>({
+export const XDSSideNavCollapseContext = createContext<XDSSideNavCollapseState>(
+  {
     isCollapsed: false,
     toggle: () => {},
     isCollapsible: false,
-  });
+  },
+);
+XDSSideNavCollapseContext.displayName = 'XDSSideNavCollapseContext';
 
 /**
  * Read the sidenav collapse state from context.
@@ -41,5 +43,5 @@ export const XDSSideNavCollapseContext =
  * When used outside a sidenav with isCollapsible, isCollapsible is false.
  */
 export function useXDSSideNavCollapse(): XDSSideNavCollapseState {
-  return useContext(XDSSideNavCollapseContext);
+  return use(XDSSideNavCollapseContext);
 }

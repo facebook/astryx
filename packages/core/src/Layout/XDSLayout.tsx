@@ -171,11 +171,7 @@ function AreaProvider({
   if (children == null) {
     return null;
   }
-  return (
-    <XDSLayoutAreaContext.Provider value={area}>
-      {children}
-    </XDSLayoutAreaContext.Provider>
-  );
+  return <XDSLayoutAreaContext value={area}>{children}</XDSLayoutAreaContext>;
 }
 
 /**
@@ -257,7 +253,7 @@ export function XDSLayout({
   );
 
   const tree = (
-    <XDSLayoutSlotsContext.Provider value={slotsValue}>
+    <XDSLayoutSlotsContext value={slotsValue}>
       <div
         ref={ref}
         {...mergeProps(
@@ -297,14 +293,14 @@ export function XDSLayout({
           <AreaProvider area="footer">{footer}</AreaProvider>
         </div>
       </div>
-    </XDSLayoutSlotsContext.Provider>
+    </XDSLayoutSlotsContext>
   );
 
   if (dividerCtxValue != null) {
     return (
-      <XDSLayoutDividerContext.Provider value={dividerCtxValue}>
+      <XDSLayoutDividerContext value={dividerCtxValue}>
         {tree}
-      </XDSLayoutDividerContext.Provider>
+      </XDSLayoutDividerContext>
     );
   }
 

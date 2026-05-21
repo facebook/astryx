@@ -28,7 +28,6 @@ import type {
   XDSTableVerticalAlign,
   TablePlugin,
   TableRenderProps,
-
 } from './types';
 
 // =============================================================================
@@ -171,8 +170,6 @@ function buildTableStylePlugin<
   };
 }
 
-
-
 // =============================================================================
 // XDSTable Component
 // =============================================================================
@@ -210,7 +207,7 @@ function XDSTableInner<T extends Record<string, unknown>>({
   );
 
   return (
-    <XDSTableContext.Provider value={contextValue}>
+    <XDSTableContext value={contextValue}>
       <XDSBaseTable<T>
         ref={ref}
         data={data}
@@ -220,7 +217,7 @@ function XDSTableInner<T extends Record<string, unknown>>({
         scrollWrapper={TableScrollWrapper}
         {...rest}
       />
-    </XDSTableContext.Provider>
+    </XDSTableContext>
   );
 }
 

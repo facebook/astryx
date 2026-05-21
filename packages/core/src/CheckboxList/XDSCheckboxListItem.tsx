@@ -16,7 +16,7 @@
  * - /packages/cli/templates/blocks/components/CheckboxList/ (showcase blocks)
  */
 
-import {useContext, useState, type ReactNode} from 'react';
+import {use, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
@@ -119,7 +119,7 @@ export function XDSCheckboxListItem({
   style,
   ...restProps
 }: XDSCheckboxListItemProps) {
-  const ctx = useContext(XDSCheckboxListContext);
+  const ctx = use(XDSCheckboxListContext);
 
   if (ctx && ctx.value !== undefined && value === undefined) {
     throw new Error(
@@ -127,10 +127,8 @@ export function XDSCheckboxListItem({
     );
   }
 
-  const [_isFocused, setIsFocused] = useState(false);
-
   // Density from list context for checkbox sizing
-  const listCtx = useContext(XDSListContext);
+  const listCtx = use(XDSListContext);
   const density = listCtx?.density ?? 'balanced';
   const checkboxSize = density === 'compact' ? 'sm' : 'md';
 
@@ -201,8 +199,6 @@ export function XDSCheckboxListItem({
           isLabelHidden
           value={resolvedChecked}
           onChange={() => handleToggle()}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
           isDisabled={effectiveDisabled}
           isReadOnly={effectiveReadOnly}
           size={checkboxSize}

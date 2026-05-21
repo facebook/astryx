@@ -184,7 +184,7 @@ export function XDSToastViewport({
           : styles.bottomEnd;
 
   return (
-    <XDSToastContext.Provider value={contextValue}>
+    <XDSToastContext value={contextValue}>
       {children}
       <div
         ref={viewportRef}
@@ -233,7 +233,7 @@ export function XDSToastViewport({
           );
         })}
       </div>
-    </XDSToastContext.Provider>
+    </XDSToastContext>
   );
 }
 XDSToastViewport.displayName = 'XDSToastViewport';

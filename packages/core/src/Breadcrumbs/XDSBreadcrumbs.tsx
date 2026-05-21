@@ -67,6 +67,7 @@ export const BreadcrumbContext = createContext<BreadcrumbContextValue>({
   variant: 'default',
   separator: '/',
 });
+BreadcrumbContext.displayName = 'BreadcrumbContext';
 
 // =============================================================================
 // Props
@@ -158,7 +159,7 @@ export function XDSBreadcrumbs({
   );
 
   return (
-    <BreadcrumbContext.Provider value={ctxValue}>
+    <BreadcrumbContext value={ctxValue}>
       <nav
         ref={ref}
         aria-label={label}
@@ -171,7 +172,7 @@ export function XDSBreadcrumbs({
         {...rest}>
         <ol {...stylex.props(listStyles.root)}>{children}</ol>
       </nav>
-    </BreadcrumbContext.Provider>
+    </BreadcrumbContext>
   );
 }
 

@@ -13,7 +13,7 @@
  * - /packages/core/src/Layer/XDSLayerProvider.tsx
  */
 
-import {createContext, useContext} from 'react';
+import {createContext, use} from 'react';
 
 /**
  * Toast configuration passed through the layer provider.
@@ -47,10 +47,11 @@ export interface XDSLayerContextValue {
  * Default value is null — hooks detect this and use the fallback.
  */
 export const XDSLayerContext = createContext<XDSLayerContextValue | null>(null);
+XDSLayerContext.displayName = 'XDSLayerContext';
 
 /**
  * Hook to access the layer context. Returns null if no provider exists.
  */
 export function useXDSLayerContext(): XDSLayerContextValue | null {
-  return useContext(XDSLayerContext);
+  return use(XDSLayerContext);
 }

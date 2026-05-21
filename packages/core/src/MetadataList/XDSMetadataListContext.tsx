@@ -23,3 +23,4 @@ export interface XDSMetadataListContextValue {
 
 export const XDSMetadataListContext =
   createContext<XDSMetadataListContextValue | null>(null);
+XDSMetadataListContext.displayName = 'XDSMetadataListContext';

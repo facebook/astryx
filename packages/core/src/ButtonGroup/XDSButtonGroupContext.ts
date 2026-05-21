@@ -9,7 +9,7 @@
  * @position Shared context; consumed by XDSButton for group-aware styling
  */
 
-import {createContext, useContext} from 'react';
+import {createContext, use} from 'react';
 
 export type XDSButtonGroupOrientation = 'horizontal' | 'vertical';
 
@@ -20,11 +20,12 @@ export interface XDSButtonGroupContextValue {
 
 export const XDSButtonGroupContext =
   createContext<XDSButtonGroupContextValue | null>(null);
+XDSButtonGroupContext.displayName = 'XDSButtonGroupContext';
 
 /**
  * Hook for XDSButton to detect when it's inside a ButtonGroup.
  * Returns null when used outside a group.
  */
 export function useXDSButtonGroup(): XDSButtonGroupContextValue | null {
-  return useContext(XDSButtonGroupContext);
+  return use(XDSButtonGroupContext);
 }

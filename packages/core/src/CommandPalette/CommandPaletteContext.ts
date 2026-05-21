@@ -8,7 +8,7 @@
  * @position Internal context; consumed by composable sub-components
  */
 
-import {createContext, useContext} from 'react';
+import {createContext, use} from 'react';
 import type {XDSSearchableItem} from '../Typeahead';
 
 export interface CommandPaletteContextValue {
@@ -48,11 +48,12 @@ export interface CommandPaletteContextValue {
 
 export const CommandPaletteContext =
   createContext<CommandPaletteContextValue | null>(null);
+CommandPaletteContext.displayName = 'CommandPaletteContext';
 
 /**
  * Access the command palette context.
  * Returns null when used outside a CommandPalette (for standalone usage).
  */
 export function useCommandPaletteContext(): CommandPaletteContextValue | null {
-  return useContext(CommandPaletteContext);
+  return use(CommandPaletteContext);
 }

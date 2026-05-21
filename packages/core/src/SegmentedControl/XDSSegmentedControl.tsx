@@ -189,7 +189,7 @@ export function XDSSegmentedControl({
   );
 
   return (
-    <XDSSegmentedControlContext.Provider value={contextValue}>
+    <XDSSegmentedControlContext value={contextValue}>
       <div
         ref={containerRef}
         role="radiogroup"
@@ -210,7 +210,7 @@ export function XDSSegmentedControl({
         )}>
         {children}
       </div>
-    </XDSSegmentedControlContext.Provider>
+    </XDSSegmentedControlContext>
   );
 }
 

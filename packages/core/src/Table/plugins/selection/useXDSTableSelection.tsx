@@ -33,7 +33,7 @@
 
 import {
   createContext,
-  useContext,
+  use,
   useCallback,
   useEffect,
   useRef,
@@ -151,6 +151,7 @@ function mergeRefs<T>(...refs: (Ref<T> | undefined)[]): React.RefCallback<T> {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const SelectionStoreContext = createContext<SelectionStore<any> | null>(null);
+SelectionStoreContext.displayName = 'SelectionStoreContext';
 
 // =============================================================================
 // Hooks for subscribing to selection state
@@ -173,7 +174,7 @@ function useIsItemSelected<T extends Record<string, unknown>>(
 // =============================================================================
 
 function SelectAllCheckbox() {
-  const store = useContext(SelectionStoreContext);
+  const store = use(SelectionStoreContext);
   if (!store) return null;
 
   return <SelectAllCheckboxInner store={store} />;
@@ -232,7 +233,7 @@ function SelectionCellContent<T extends Record<string, unknown>>({
 }: {
   item: T;
 }) {
-  const store = useContext(SelectionStoreContext);
+  const store = use(SelectionStoreContext);
   if (!store) return null;
 
   return <SelectionCellContentInner store={store} item={item} />;
@@ -334,9 +335,9 @@ export function useXDSTableSelection<T extends Record<string, unknown>>(
     (): TablePlugin<T> => ({
       transformTableContext(children: ReactNode) {
         return (
-          <SelectionStoreContext.Provider value={store}>
+          <SelectionStoreContext value={store}>
             {children}
-          </SelectionStoreContext.Provider>
+          </SelectionStoreContext>
         );
       },
 

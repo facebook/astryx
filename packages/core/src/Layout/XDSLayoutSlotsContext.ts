@@ -47,3 +47,4 @@ const defaultSlots: LayoutSlots = {
  * (for applying outer padding).
  */
 export const XDSLayoutSlotsContext = createContext<LayoutSlots>(defaultSlots);
+XDSLayoutSlotsContext.displayName = 'XDSLayoutSlotsContext';

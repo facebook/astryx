@@ -4,7 +4,7 @@
 
 /**
  * @file XDSTopNavRenderContext.ts
- * @input React createContext, useContext
+ * @input React createContext, use
  * @output Exports XDSTopNavRenderContext and useXDSTopNavRenderMode hook
  * @position Internal context for controlling TopNav rendering mode
  *
@@ -15,16 +15,17 @@
  * - 'drawer': nav items as vertical list elements (mobile drawer)
  */
 
-import {createContext, useContext} from 'react';
+import {createContext, use} from 'react';
 
 export type XDSTopNavRenderMode = 'default' | 'mobile-bar' | 'drawer';
 
 export const XDSTopNavRenderContext =
   createContext<XDSTopNavRenderMode>('default');
+XDSTopNavRenderContext.displayName = 'XDSTopNavRenderContext';
 
 /**
  * Read the current TopNav render mode from context.
  */
 export function useXDSTopNavRenderMode(): XDSTopNavRenderMode {
-  return useContext(XDSTopNavRenderContext);
+  return use(XDSTopNavRenderContext);
 }

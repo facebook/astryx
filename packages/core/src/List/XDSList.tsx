@@ -169,22 +169,18 @@ export function XDSList({
   );
 
   if (header == null) {
-    return (
-      <XDSListContext.Provider value={contextValue}>
-        {listElement}
-      </XDSListContext.Provider>
-    );
+    return <XDSListContext value={contextValue}>{listElement}</XDSListContext>;
   }
 
   return (
-    <XDSListContext.Provider value={contextValue}>
+    <XDSListContext value={contextValue}>
       <div {...stylex.props(styles.root)}>
         <div id={headerId} {...stylex.props(styles.header)}>
           {header}
         </div>
         {listElement}
       </div>
-    </XDSListContext.Provider>
+    </XDSListContext>
   );
 }
 

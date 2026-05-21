@@ -34,7 +34,7 @@
  * ```
  */
 
-import React, {useContext, useId, useInsertionEffect, useMemo} from 'react';
+import React, {use, useId, useInsertionEffect, useMemo} from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
 import type {ThemeMode} from './types';
@@ -85,6 +85,7 @@ const wrapperStyles = stylex.create({
  * @internal
  */
 const XDSThemeNestingContext = React.createContext(false);
+XDSThemeNestingContext.displayName = 'XDSThemeNestingContext';
 
 // =============================================================================
 // Style injection for unbuilt themes
@@ -228,7 +229,7 @@ export function XDSTheme({
   mode = 'system',
   children,
 }: XDSThemeProps): React.ReactElement {
-  const isNested = useContext(XDSThemeNestingContext);
+  const isNested = use(XDSThemeNestingContext);
 
   useThemeStyleInjection(theme);
   useRootThemeSync(isNested, mode, theme.name);
@@ -251,16 +252,16 @@ export function XDSTheme({
   const ctxValue = useMemo(() => ({theme, mode}), [theme, mode]);
 
   return (
-    <XDSThemeContext.Provider value={ctxValue}>
-      <XDSThemeNestingContext.Provider value={true}>
+    <XDSThemeContext value={ctxValue}>
+      <XDSThemeNestingContext value={true}>
         <div
           {...stylex.props(wrapperStyles.base, colorSchemeStyle)}
           data-xds-theme={theme.name}
           data-theme={mode === 'system' ? undefined : mode}>
           {children}
         </div>
-      </XDSThemeNestingContext.Provider>
-    </XDSThemeContext.Provider>
+      </XDSThemeNestingContext>
+    </XDSThemeContext>
   );
 }
 

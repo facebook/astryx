@@ -499,9 +499,9 @@ export function XDSSideNavHeading({
                   )}
                 </span>
               </button>
-              <XDSNavHeadingCloseContext.Provider value={closeMenuCtx}>
+              <XDSNavHeadingCloseContext value={closeMenuCtx}>
                 {menu}
-              </XDSNavHeadingCloseContext.Provider>
+              </XDSNavHeadingCloseContext>
             </div>,
             {placement: 'below', alignment: 'start', xstyle: styles.popover},
           )}

@@ -11,7 +11,6 @@
  * SYNC: When modified, update these files to stay in sync:
  */
 
-
 import {createContext} from 'react';
 
 /**
@@ -34,3 +33,4 @@ export type XDSFormLayoutDirection =
 export const XDSFormLayoutContext = createContext<{
   direction: XDSFormLayoutDirection;
 }>({direction: 'vertical'});
+XDSFormLayoutContext.displayName = 'XDSFormLayoutContext';

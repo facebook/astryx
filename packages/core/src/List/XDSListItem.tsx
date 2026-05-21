@@ -16,7 +16,7 @@
  * - /packages/cli/templates/blocks/components/List/ (showcase blocks)
  */
 
-import {useContext, type ReactNode} from 'react';
+import {use, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -346,7 +346,7 @@ export function XDSListItem({
   ref,
   ...restProps
 }: XDSListItemProps) {
-  const ctx = useContext(XDSListContext);
+  const ctx = use(XDSListContext);
   const LinkComponent = useXDSLinkComponent();
   const density = ctx?.density ?? 'balanced';
   const hasDividers = ctx?.hasDividers ?? false;

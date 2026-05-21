@@ -133,7 +133,7 @@ export function XDSButtonGroup({
   );
 
   return (
-    <XDSButtonGroupContext.Provider value={contextValue}>
+    <XDSButtonGroupContext value={contextValue}>
       <XDSSizeProvider value={size}>
         <div
           ref={(node: HTMLDivElement | null) => {
@@ -164,7 +164,7 @@ export function XDSButtonGroup({
           {children}
         </div>
       </XDSSizeProvider>
-    </XDSButtonGroupContext.Provider>
+    </XDSButtonGroupContext>
   );
 }
 

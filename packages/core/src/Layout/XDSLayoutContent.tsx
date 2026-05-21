@@ -17,7 +17,7 @@
 
 import type {AriaRole, ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {useContext} from 'react';
+import {use} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {XDSLayoutSlotsContext} from './XDSLayoutSlotsContext';
@@ -175,9 +175,7 @@ export function XDSLayoutContent({
   ref,
   ...props
 }: XDSLayoutContentProps) {
-  const {hasHeader, hasFooter, hasStart, hasEnd} = useContext(
-    XDSLayoutSlotsContext,
-  );
+  const {hasHeader, hasFooter, hasStart, hasEnd} = use(XDSLayoutSlotsContext);
 
   const isZeroPadding = padding === 0;
 

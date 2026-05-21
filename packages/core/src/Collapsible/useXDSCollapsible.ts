@@ -4,7 +4,7 @@
 
 /**
  * @file useXDSCollapsible.ts
- * @input Uses React useState/useContext, CollapsibleGroupContext
+ * @input Uses React useState/use, CollapsibleGroupContext
  * @output Exports useXDSCollapsible hook, XDSCollapsibleConfig (formerly CollapsibleConfig), UseXDSCollapsibleOptions, UseXDSCollapsibleReturn types
  * @position Reusable hook for collapsible behavior — used by XDSCard, XDSSection, etc.
  *
@@ -21,7 +21,7 @@
  * NOTE: Public hooks use the `useXDS` prefix per XDS naming conventions.
  */
 
-import {useState, useContext} from 'react';
+import {useState, use} from 'react';
 import {CollapsibleGroupContext} from './XDSCollapsibleGroupContext';
 
 /**
@@ -82,7 +82,7 @@ export function useXDSCollapsible(
   const {isCollapsible, value} = options;
 
   // Check for CollapsibleGroup context
-  const group = useContext(CollapsibleGroupContext);
+  const group = use(CollapsibleGroupContext);
   const isControlledByGroup = group != null && value != null;
 
   // Parse config: true → empty config, object → as-is, false/undefined → null

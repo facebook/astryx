@@ -28,3 +28,4 @@ export interface XDSTableContextValue {
 }
 
 export const XDSTableContext = createContext<XDSTableContextValue | null>(null);
+XDSTableContext.displayName = 'XDSTableContext';

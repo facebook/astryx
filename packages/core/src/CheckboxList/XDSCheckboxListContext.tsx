@@ -21,3 +21,4 @@ export interface XDSCheckboxListContextValue {
 
 export const XDSCheckboxListContext =
   createContext<XDSCheckboxListContextValue | null>(null);
+XDSCheckboxListContext.displayName = 'XDSCheckboxListContext';

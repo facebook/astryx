@@ -214,7 +214,7 @@ export function XDSDropdownMenu({
   }, [isControlled, onOpenChange]);
 
   // Track whether to focus the first item when the menu opens
-  const shouldFocusOnOpen = useRef(false);
+  const shouldFocusOnOpenRef = useRef(false);
 
   const handleLayerShow = useCallback(() => {
     if (isControlled) {
@@ -222,8 +222,8 @@ export function XDSDropdownMenu({
     } else {
       setInternalIsOpen(true);
     }
-    if (shouldFocusOnOpen.current) {
-      shouldFocusOnOpen.current = false;
+    if (shouldFocusOnOpenRef.current) {
+      shouldFocusOnOpenRef.current = false;
       // focusFirst is called via openAndFocus below — defer to rAF
       // so the popover content is rendered before we query for items
     }
@@ -391,9 +391,9 @@ export function XDSDropdownMenu({
             className,
             style,
           )}>
-          <XDSDropdownMenuContext.Provider value={contextValue}>
+          <XDSDropdownMenuContext value={contextValue}>
             {menuContent}
-          </XDSDropdownMenuContext.Provider>
+          </XDSDropdownMenuContext>
         </div>,
         {
           placement: 'below',

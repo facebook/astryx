@@ -216,9 +216,9 @@ describe('context forwarding', () => {
       </XDSNavHeadingMenu>,
       {
         wrapper: ({children}) => (
-          <XDSNavHeadingCloseContext.Provider value={{closeMenu}}>
+          <XDSNavHeadingCloseContext value={{closeMenu}}>
             {children}
-          </XDSNavHeadingCloseContext.Provider>
+          </XDSNavHeadingCloseContext>
         ),
       },
     );
@@ -235,9 +235,9 @@ describe('context forwarding', () => {
       </XDSNavHeadingMenu>,
       {
         wrapper: ({children}) => (
-          <XDSNavHeadingCloseContext.Provider value={{closeMenu}}>
+          <XDSNavHeadingCloseContext value={{closeMenu}}>
             {children}
-          </XDSNavHeadingCloseContext.Provider>
+          </XDSNavHeadingCloseContext>
         ),
       },
     );

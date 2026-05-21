@@ -2,7 +2,7 @@
 
 'use client';
 
-import {createContext, useContext} from 'react';
+import {createContext, use} from 'react';
 
 export type XDSNavHeadingMenuSize = 'sm' | 'md' | 'lg';
 
@@ -17,9 +17,10 @@ export interface XDSNavHeadingCloseContextValue {
 
 export const XDSNavHeadingCloseContext =
   createContext<XDSNavHeadingCloseContextValue | null>(null);
+XDSNavHeadingCloseContext.displayName = 'XDSNavHeadingCloseContext';
 
 export function useXDSNavHeadingCloseContext(): XDSNavHeadingCloseContextValue | null {
-  return useContext(XDSNavHeadingCloseContext);
+  return use(XDSNavHeadingCloseContext);
 }
 
 /**
@@ -33,7 +34,8 @@ export interface XDSNavHeadingMenuContextValue {
 
 export const XDSNavHeadingMenuContext =
   createContext<XDSNavHeadingMenuContextValue | null>(null);
+XDSNavHeadingMenuContext.displayName = 'XDSNavHeadingMenuContext';
 
 export function useXDSNavHeadingMenuContext(): XDSNavHeadingMenuContextValue | null {
-  return useContext(XDSNavHeadingMenuContext);
+  return use(XDSNavHeadingMenuContext);
 }

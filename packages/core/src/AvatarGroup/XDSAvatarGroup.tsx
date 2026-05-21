@@ -91,7 +91,7 @@ export function XDSAvatarGroup({
   );
 
   return (
-    <XDSAvatarGroupContext.Provider value={contextValue}>
+    <XDSAvatarGroupContext value={contextValue}>
       <div
         ref={ref}
         role="group"
@@ -106,7 +106,7 @@ export function XDSAvatarGroup({
         {...props}>
         {children}
       </div>
-    </XDSAvatarGroupContext.Provider>
+    </XDSAvatarGroupContext>
   );
 }
 

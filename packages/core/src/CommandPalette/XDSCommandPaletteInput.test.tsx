@@ -100,9 +100,9 @@ describe('XDSCommandPaletteInput inline context', () => {
   it('does not auto-focus when context isInline is true', () => {
     const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus');
     render(
-      <CommandPaletteContext.Provider value={makeContext({isInline: true})}>
+      <CommandPaletteContext value={makeContext({isInline: true})}>
         <XDSCommandPaletteInput />
-      </CommandPaletteContext.Provider>,
+      </CommandPaletteContext>,
     );
 
     const input = screen.getByRole('combobox');
@@ -115,9 +115,9 @@ describe('XDSCommandPaletteInput inline context', () => {
 
   it('auto-focuses when context isInline is false', async () => {
     render(
-      <CommandPaletteContext.Provider value={makeContext({isInline: false})}>
+      <CommandPaletteContext value={makeContext({isInline: false})}>
         <XDSCommandPaletteInput />
-      </CommandPaletteContext.Provider>,
+      </CommandPaletteContext>,
     );
 
     // Auto-focus uses requestAnimationFrame — flush it
