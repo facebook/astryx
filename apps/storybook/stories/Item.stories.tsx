@@ -88,7 +88,7 @@ export const Notifications: Story = {
         onClick={() => {}}
       />
       <XDSItem
-        media={<XDSIcon icon={BellIcon} size="sm" />}
+        media={<XDSAvatar icon={<XDSIcon icon={BellIcon} />} size={40} />}
         label="Build completed successfully"
         description="Pipeline #4521 — all 42 tests passed"
         trailing={<XDSText color="secondary">5h ago</XDSText>}
