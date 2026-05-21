@@ -57,7 +57,8 @@ import {parseDateInput} from '../utils';
 import {
   plainDateFromISO,
   plainDateToISO,
-  plainDateFormatDisplay,
+  plainDateFormat,
+  DATE_FORMAT_LONG,
 } from '../utils/plainDate';
 
 const styles = stylex.create({
@@ -346,7 +347,7 @@ export function XDSDateInput({
     pendingInput !== null
       ? pendingInput
       : optimisticValue && /^\d{4}-\d{2}-\d{2}$/.test(optimisticValue)
-        ? plainDateFormatDisplay(plainDateFromISO(optimisticValue))
+        ? plainDateFormat(plainDateFromISO(optimisticValue), DATE_FORMAT_LONG)
         : '';
 
   // Check if current input is valid (for styling purposes)

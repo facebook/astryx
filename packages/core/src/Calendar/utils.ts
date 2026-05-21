@@ -7,6 +7,8 @@
  * @position Shared utilities; used by XDSCalendar, XDSCalendarMonthGrid, XDSCalendarDayCell
  */
 
+import {plainDateFormat, DATE_FORMAT_WITH_WEEKDAY} from '../utils/plainDate';
+
 export {
   type PlainDate,
   plainDateFromISO as parseISO,
@@ -14,5 +16,13 @@ export {
   plainDateIsEqual as isSameDay,
   plainDateIsInRange as isDateInRange,
   plainDateGetWeekNumber as getWeekNumber,
-  plainDateFormatAccessible as formatAccessibleDate,
 } from '../utils/plainDate';
+
+export {plainDateFormat, DATE_FORMAT_WITH_WEEKDAY};
+
+/** @deprecated Use `plainDateFormat(pd, DATE_FORMAT_WITH_WEEKDAY)` instead. */
+export function formatAccessibleDate(
+  ...args: Parameters<typeof plainDateFormat>
+): string {
+  return plainDateFormat(args[0], DATE_FORMAT_WITH_WEEKDAY);
+}

@@ -19,7 +19,8 @@ import {
   plainDateIsInRange,
   plainDateSetFirstOfMonth,
   plainDateGetWeekNumber,
-  plainDateFormatAccessible,
+  plainDateFormat,
+  DATE_FORMAT_WITH_WEEKDAY,
 } from './plainDate';
 import type {ISODateString} from './dateTypes';
 
@@ -431,9 +432,12 @@ describe('plainDateGetWeekNumber', () => {
   });
 });
 
-describe('plainDateFormatAccessible', () => {
-  it('returns a human-readable date string', () => {
-    const result = plainDateFormatAccessible({year: 2026, month: 1, day: 25});
+describe('plainDateFormat', () => {
+  it('returns a human-readable date string with weekday', () => {
+    const result = plainDateFormat(
+      {year: 2026, month: 1, day: 25},
+      DATE_FORMAT_WITH_WEEKDAY,
+    );
     expect(result).toContain('2026');
     expect(result).toContain('25');
   });

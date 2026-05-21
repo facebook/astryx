@@ -125,20 +125,25 @@ export function plainDateGetWeekNumber(pd: PlainDate): number {
 }
 
 // e.g. "Wednesday, May 21, 2026" (locale-dependent)
-export function plainDateFormatAccessible(pd: PlainDate): string {
-  return new Intl.DateTimeFormat(undefined, {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(plainDateToDate(pd));
-}
+export const DATE_FORMAT_WITH_WEEKDAY: Intl.DateTimeFormatOptions = {
+  weekday: 'long',
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+};
 
 // e.g. "May 21, 2026" (locale-dependent)
-export function plainDateFormatDisplay(pd: PlainDate): string {
-  return new Intl.DateTimeFormat(undefined, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(plainDateToDate(pd));
+export const DATE_FORMAT_LONG: Intl.DateTimeFormatOptions = {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+};
+
+export function plainDateFormat(
+  pd: PlainDate,
+  options: Intl.DateTimeFormatOptions,
+): string {
+  return new Intl.DateTimeFormat(undefined, options).format(
+    plainDateToDate(pd),
+  );
 }

@@ -72,7 +72,8 @@ import {
 import {
   plainDateFromISO,
   plainDateToISO,
-  plainDateFormatDisplay,
+  plainDateFormat,
+  DATE_FORMAT_LONG,
 } from '../utils/plainDate';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
@@ -468,7 +469,7 @@ export function XDSDateTimeInput({
     datePendingInput !== null
       ? datePendingInput
       : valueParts.date && /^\d{4}-\d{2}-\d{2}$/.test(valueParts.date)
-        ? plainDateFormatDisplay(plainDateFromISO(valueParts.date))
+        ? plainDateFormat(plainDateFromISO(valueParts.date), DATE_FORMAT_LONG)
         : '';
 
   const isDateInputValid =

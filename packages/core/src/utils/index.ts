@@ -35,8 +35,9 @@ export {
   plainDateIsInRange,
   plainDateSetFirstOfMonth,
   plainDateGetWeekNumber,
-  plainDateFormatAccessible,
-  plainDateFormatDisplay,
+  plainDateFormat,
+  DATE_FORMAT_WITH_WEEKDAY,
+  DATE_FORMAT_LONG,
 } from './plainDate';
 
 export {

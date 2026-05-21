@@ -55,7 +55,8 @@ import {
   plainDateIsEqual,
   plainDateIsInRange,
   plainDateGetWeekNumber,
-  plainDateFormatAccessible,
+  plainDateFormat,
+  DATE_FORMAT_WITH_WEEKDAY,
 } from '../utils/plainDate';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -618,7 +619,7 @@ function MonthGrid({
     );
 
     const targetPd = plainDateFromISO(pendingFocus);
-    const targetLabel = plainDateFormatAccessible(targetPd);
+    const targetLabel = plainDateFormat(targetPd, DATE_FORMAT_WITH_WEEKDAY);
 
     let targetButton: HTMLElement | null = null;
     for (const button of buttons) {
@@ -877,7 +878,7 @@ function DayCell({
         type="button"
         role="gridcell"
         data-date={day.iso}
-        aria-label={plainDateFormatAccessible(date)}
+        aria-label={plainDateFormat(date, DATE_FORMAT_WITH_WEEKDAY)}
         aria-selected={isSelected || isInRange || undefined}
         aria-disabled={effectivelyDisabled || undefined}
         disabled={isDisabled}
