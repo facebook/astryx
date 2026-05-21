@@ -227,19 +227,19 @@ describe('plainDateAddMonths', () => {
     });
   });
 
-  it('clamps day when target month is shorter', () => {
+  it('overflows day into next month when target month is shorter', () => {
     expect(plainDateAddMonths({year: 2026, month: 1, day: 31}, 1)).toEqual({
       year: 2026,
-      month: 2,
-      day: 28,
+      month: 3,
+      day: 3,
     });
   });
 
-  it('clamps day to Feb 29 in leap year', () => {
+  it('overflows Jan 31 + 1 month in leap year', () => {
     expect(plainDateAddMonths({year: 2024, month: 1, day: 31}, 1)).toEqual({
       year: 2024,
-      month: 2,
-      day: 29,
+      month: 3,
+      day: 2,
     });
   });
 });

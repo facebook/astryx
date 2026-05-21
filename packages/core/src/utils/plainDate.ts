@@ -72,16 +72,9 @@ export function plainDateDayOfWeek(pd: PlainDate): number {
 }
 
 export function plainDateAddMonths(pd: PlainDate, n: number): PlainDate {
-  // Set day to 1 first to avoid Date overflow (e.g. Jan 31 + 1 month → Mar 3)
-  const d = plainDateToDate({...pd, day: 1});
+  const d = plainDateToDate(pd);
   d.setMonth(d.getMonth() + n);
-  // Clamp day to target month length (e.g. Jan 31 + 1 month → Feb 28, not Mar 3)
-  const maxDay = getDaysInMonth(d.getFullYear(), d.getMonth() + 1);
-  return {
-    year: d.getFullYear(),
-    month: d.getMonth() + 1,
-    day: Math.min(pd.day, maxDay),
-  };
+  return plainDateFromDate(d);
 }
 
 export function plainDateAddDays(pd: PlainDate, n: number): PlainDate {
