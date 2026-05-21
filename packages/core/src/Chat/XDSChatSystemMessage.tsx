@@ -92,7 +92,6 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
     textAlign: 'center',
-    userSelect: 'none',
   },
   dividerWrap: {
     width: '100%',
