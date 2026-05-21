@@ -418,10 +418,28 @@ function splitTableRow(line: string): string[] {
   if (end > start && line[end - 1] === '|') {
     end--;
   }
-  return line
-    .slice(start, end)
-    .split('|')
-    .map(segment => segment.trim());
+  // Split on unescaped pipes (not preceded by backslash)
+  const content = line.slice(start, end);
+  const cells: string[] = [];
+  let current = '';
+  for (let i = 0; i < content.length; i++) {
+    if (
+      content[i] === '\\' &&
+      i + 1 < content.length &&
+      content[i + 1] === '|'
+    ) {
+      // Escaped pipe — keep the backslash-pipe literal for parseInline to handle
+      current += '\\|';
+      i++;
+    } else if (content[i] === '|') {
+      cells.push(current.trim());
+      current = '';
+    } else {
+      current += content[i];
+    }
+  }
+  cells.push(current.trim());
+  return cells;
 }
 
 function parseTable(
