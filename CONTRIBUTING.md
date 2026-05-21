@@ -20,9 +20,9 @@ Download and install from https://nodejs.org
 ### pnpm
 
 XDS uses [pnpm](https://pnpm.io/) as its package manager (declared in
-`packageManager` field of `package.json`). The easiest way to install it
-is via [Corepack](https://nodejs.org/api/corepack.html), which ships with
-Node.js:
+the `packageManager` field of `package.json`). The easiest way to install
+it is via [Corepack](https://nodejs.org/api/corepack.html), which ships
+with Node.js:
 
 ```bash
 corepack enable
@@ -32,14 +32,24 @@ This makes the `pnpm` command available with the exact version XDS pins.
 Alternatively, install pnpm directly:
 
 ```bash
-npm install -g pnpm@9
+# Via npm
+npm install -g pnpm@10
+
+# Via Homebrew (macOS)
+brew install pnpm
+
+# Via standalone installer (no npm or Node.js required)
+curl -fsSL https://get.pnpm.io/install.sh | env PNPM_VERSION=10.33.4 sh -
+
+# Via GitHub releases (single binary, no dependencies)
+# https://github.com/pnpm/pnpm/releases/latest
 ```
 
 Verify installation:
 
 ```bash
 node --version   # v22.x.x
-pnpm --version   # 9.x.x
+pnpm --version   # 10.x.x
 ```
 
 ## Getting Started
@@ -306,6 +316,29 @@ This creates a file in `.changeset/` — commit it with your PR.
 - Export types alongside components
 
 ## Troubleshooting
+
+### pnpm Installation Issues
+
+If `corepack enable` succeeds but `pnpm` fails to download its binary
+(e.g. `ECONNRESET`, `fetch failed`, or `503` from `registry.npmjs.org`),
+your environment likely blocks outbound network access.
+
+**Alternative install methods (no `registry.npmjs.org` needed):**
+
+```bash
+brew install pnpm                        # Homebrew (macOS)
+curl -fsSL https://get.pnpm.io/install.sh | sh -  # Standalone installer
+npm install -g pnpm@10                   # Via npm
+```
+
+You can also download the binary directly from
+[GitHub Releases](https://github.com/pnpm/pnpm/releases/latest).
+
+**Sandboxed IDE terminals:** if your IDE blocks all network, run
+`corepack enable && pnpm install` from a regular terminal first, then
+open the project in your IDE — `node_modules` is on the local filesystem
+and doesn't need network to use.
+
 
 ### Storybook Issues
 
