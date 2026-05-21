@@ -16,7 +16,7 @@
  * - /packages/cli/templates/blocks/components/ProgressBar/ (showcase blocks)
  */
 
-import {useId} from 'react';
+import {useId, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 import {
@@ -29,6 +29,8 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import {XDSIcon} from '../Icon';
+import type {XDSIconName, XDSIconColor} from '../Icon';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 /**
@@ -57,6 +59,11 @@ export interface XDSProgressBarVariantMap {
  * Extensible via module augmentation of XDSProgressBarVariantMap.
  */
 export type XDSProgressBarVariant = keyof XDSProgressBarVariantMap;
+
+/**
+ * Semantic state of the progress operation.
+ */
+export type XDSProgressBarStatus = 'active' | 'paused' | 'canceled';
 
 export interface XDSProgressBarProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
@@ -106,10 +113,45 @@ export interface XDSProgressBarProps extends XDSBaseProps<HTMLDivElement> {
    */
   isIndeterminate?: boolean;
   /**
+   * Semantic state of the progress operation.
+   * - `'active'` (default): normal progress
+   * - `'paused'`: operation is paused, shows pause icon
+   * - `'canceled'`: operation was canceled, grays out bar, shows X icon
+   * @default 'active'
+   */
+  status?: XDSProgressBarStatus;
+  /**
+   * Secondary description shown below the bar.
+   * Use for additional context like "40 MB / 100 MB downloaded".
+   */
+  description?: string;
+  /**
+   * Content rendered in the header row to the right.
+   * Use for custom icons, badges, or actions.
+   */
+  endContent?: ReactNode;
+  /**
+   * Content rendered below the progress bar track.
+   * Takes precedence over `description` when both are provided.
+   */
+  bottomContent?: ReactNode;
+  /**
    * Test ID for testing utilities.
    */
   'data-testid'?: string;
 }
+
+// =============================================================================
+// Status icon mapping
+// =============================================================================
+
+const statusIconNames: Record<string, XDSIconName> = {
+  canceled: 'close',
+  paused: 'stop',
+  success: 'success',
+  warning: 'warning',
+  error: 'error',
+};
 
 // =============================================================================
 // Indeterminate animation
@@ -141,17 +183,35 @@ const styles = stylex.create({
     justifyContent: 'space-between',
     alignItems: 'baseline',
   },
+  headerLeft: {
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: spacingVars['--spacing-2'],
+    minWidth: 0,
+  },
+  headerRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+    flexShrink: 0,
+  },
   label: {
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-primary'],
   },
+  labelCanceled: {
+    color: colorVars['--color-text-disabled'],
+  },
   valueLabel: {
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
+  },
+  valueLabelCanceled: {
+    color: colorVars['--color-text-disabled'],
   },
   visuallyHidden: {
     position: 'absolute',
@@ -190,6 +250,21 @@ const styles = stylex.create({
     animationTimingFunction: 'ease-in-out',
     animationIterationCount: 'infinite',
   },
+  indeterminatePaused: {
+    animationPlayState: 'paused',
+  },
+  description: {
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    fontWeight: fontWeightVars['--font-weight-normal'],
+    color: colorVars['--color-text-secondary'],
+  },
+  descriptionCanceled: {
+    color: colorVars['--color-text-disabled'],
+  },
+  bottom: {
+    marginTop: `calc(-1 * ${spacingVars['--spacing-1']})`,
+  },
 });
 
 const variantStyles = stylex.create({
@@ -208,10 +283,43 @@ const variantStyles = stylex.create({
   neutral: {
     backgroundColor: colorVars['--color-text-disabled'],
   },
+  canceled: {
+    backgroundColor: colorVars['--color-text-disabled'],
+  },
 });
 
 function defaultFormatValueLabel(value: number, max: number): string {
   return `${Math.round((value / max) * 100)}%`;
+}
+
+/**
+ * Resolve the status icon to show based on variant, status, and completion.
+ */
+function resolveStatusIcon(
+  variant: XDSProgressBarVariant,
+  status: XDSProgressBarStatus,
+  isComplete: boolean,
+  isIndeterminate: boolean,
+): {iconName: XDSIconName; iconColor: XDSIconColor} | null {
+  if (status === 'canceled') {
+    return {iconName: statusIconNames.canceled, iconColor: 'disabled'};
+  }
+  if (status === 'paused') {
+    return {iconName: statusIconNames.paused, iconColor: 'secondary'};
+  }
+  if (isIndeterminate) {
+    return null;
+  }
+  if (variant === 'success' && isComplete) {
+    return {iconName: statusIconNames.success, iconColor: 'success'};
+  }
+  if (variant === 'warning') {
+    return {iconName: statusIconNames.warning, iconColor: 'warning'};
+  }
+  if (variant === 'error') {
+    return {iconName: statusIconNames.error, iconColor: 'error'};
+  }
+  return null;
 }
 
 /**
@@ -221,19 +329,19 @@ function defaultFormatValueLabel(value: number, max: number): string {
  * disk usage, etc). In indeterminate mode, shows an animated loading indicator
  * for unknown progress.
  *
+ * Supports semantic status states (paused, canceled) with auto-derived icons,
+ * and flexible layout via description and content slots.
+ *
  * Styles use XDS theme tokens via StyleX.
  * Wrap your app in <Theme> to apply a theme.
- *
- * ProgressBar is intentionally minimal — compose additional labels, status
- * icons, and descriptions alongside the bar using layout components rather
- * than adding props to ProgressBar itself.
  *
  * @example
  * ```
  * <XDSProgressBar value={75} label="Upload progress" />
  * <XDSProgressBar isIndeterminate label="Loading..." />
- * <XDSProgressBar value={3.2} max={5} label="Disk usage" hasValueLabel
- *   formatValueLabel={(v, m) => `${v} GB / ${m} GB`} />
+ * <XDSProgressBar value={75} label="Upload" status="paused" hasValueLabel />
+ * <XDSProgressBar value={40} label="Download" hasValueLabel
+ *   description="40 MB / 100 MB downloaded" />
  * ```
  */
 export function XDSProgressBar({
@@ -245,6 +353,10 @@ export function XDSProgressBar({
   formatValueLabel = defaultFormatValueLabel,
   variant = 'accent',
   isIndeterminate = false,
+  status = 'active',
+  description,
+  endContent,
+  bottomContent,
   xstyle,
   className,
   style,
@@ -256,15 +368,34 @@ export function XDSProgressBar({
   const clampedValue = Math.min(Math.max(0, value), max);
   const percentage = max > 0 ? (clampedValue / max) * 100 : 0;
   const valueText = formatValueLabel(clampedValue, max);
+  const isComplete = clampedValue >= max && max > 0;
+  const isCanceled = status === 'canceled';
+  const isPaused = status === 'paused';
 
-  // In indeterminate mode, don't show value label
   const showValueLabel = hasValueLabel && !isIndeterminate;
+
+  const statusIconResult = resolveStatusIcon(
+    variant,
+    status,
+    isComplete,
+    isIndeterminate,
+  );
+
+  const fillVariant = isCanceled ? 'canceled' : variant;
+
+  const hasHeader =
+    !isLabelHidden ||
+    showValueLabel ||
+    statusIconResult != null ||
+    endContent != null;
+
+  const hasBottom = bottomContent != null || description != null;
 
   return (
     <div
       ref={ref}
       {...mergeProps(
-        xdsClassName('progressbar', {variant}),
+        xdsClassName('progressbar', {variant, status}),
         stylex.props(styles.container, xstyle),
         className,
         style,
@@ -272,19 +403,38 @@ export function XDSProgressBar({
       data-testid={dataTestId}
       {...rest}>
       {/* Label row */}
-      {!isLabelHidden || showValueLabel ? (
+      {hasHeader ? (
         <div {...stylex.props(styles.header)}>
-          <span
-            id={labelId}
-            {...stylex.props(
-              styles.label,
-              isLabelHidden && styles.visuallyHidden,
-            )}>
-            {label}
-          </span>
-          {showValueLabel && (
-            <span {...stylex.props(styles.valueLabel)}>{valueText}</span>
-          )}
+          <div {...stylex.props(styles.headerLeft)}>
+            <span
+              id={labelId}
+              {...stylex.props(
+                styles.label,
+                isLabelHidden && styles.visuallyHidden,
+                isCanceled && styles.labelCanceled,
+              )}>
+              {label}
+            </span>
+          </div>
+          <div {...stylex.props(styles.headerRight)}>
+            {statusIconResult && (
+              <XDSIcon
+                icon={statusIconResult.iconName}
+                size="xsm"
+                color={statusIconResult.iconColor}
+              />
+            )}
+            {showValueLabel && (
+              <span
+                {...stylex.props(
+                  styles.valueLabel,
+                  isCanceled && styles.valueLabelCanceled,
+                )}>
+                {valueText}
+              </span>
+            )}
+            {endContent}
+          </div>
         </div>
       ) : (
         <span id={labelId} {...stylex.props(styles.visuallyHidden)}>
@@ -307,20 +457,39 @@ export function XDSProgressBar({
         {isIndeterminate ? (
           <div
             {...mergeProps(
-              xdsClassName('progressbar-fill', {variant}),
-              stylex.props(styles.indeterminateFill, variantStyles[variant]),
+              xdsClassName('progressbar-fill', {variant: fillVariant}),
+              stylex.props(
+                styles.indeterminateFill,
+                variantStyles[fillVariant],
+                isPaused && styles.indeterminatePaused,
+              ),
             )}
           />
         ) : (
           <div
             {...mergeProps(
-              xdsClassName('progressbar-fill', {variant}),
-              stylex.props(styles.fill, variantStyles[variant]),
+              xdsClassName('progressbar-fill', {variant: fillVariant}),
+              stylex.props(styles.fill, variantStyles[fillVariant]),
             )}
             style={{width: `${percentage}%`}}
           />
         )}
       </div>
+
+      {/* Bottom content */}
+      {hasBottom && (
+        <div {...stylex.props(styles.bottom)}>
+          {bottomContent ?? (
+            <span
+              {...stylex.props(
+                styles.description,
+                isCanceled && styles.descriptionCanceled,
+              )}>
+              {description}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }

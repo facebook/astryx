@@ -21,10 +21,8 @@ describe('XDSProgressBar', () => {
 
   it('hides label visually when isLabelHidden is true', () => {
     render(<XDSProgressBar value={50} label="Hidden label" isLabelHidden />);
-    // Label should still be in the DOM for a11y
     const label = screen.getByText('Hidden label');
     expect(label).toBeInTheDocument();
-    // The meter should still be labelled
     const meter = screen.getByRole('meter');
     expect(meter).toHaveAttribute('aria-labelledby');
   });
@@ -88,7 +86,13 @@ describe('XDSProgressBar', () => {
   });
 
   it('renders with all variant options', () => {
-    const variants = ['accent', 'success', 'warning', 'error'] as const;
+    const variants = [
+      'accent',
+      'success',
+      'warning',
+      'error',
+      'neutral',
+    ] as const;
     for (const variant of variants) {
       const {unmount} = render(
         <XDSProgressBar value={50} label={variant} variant={variant} />,
@@ -108,7 +112,6 @@ describe('XDSProgressBar', () => {
       <XDSProgressBar value={60} label="Hidden" isLabelHidden hasValueLabel />,
     );
     expect(screen.getByText('60%')).toBeInTheDocument();
-    // Label is still in DOM for a11y
     expect(screen.getByText('Hidden')).toBeInTheDocument();
   });
 
@@ -160,7 +163,13 @@ describe('XDSProgressBar', () => {
     });
 
     it('renders with all variants in indeterminate mode', () => {
-      const variants = ['accent', 'success', 'warning', 'error'] as const;
+      const variants = [
+        'accent',
+        'success',
+        'warning',
+        'error',
+        'neutral',
+      ] as const;
       for (const variant of variants) {
         const {unmount} = render(
           <XDSProgressBar isIndeterminate label={variant} variant={variant} />,
@@ -168,6 +177,94 @@ describe('XDSProgressBar', () => {
         expect(screen.getByRole('progressbar')).toBeInTheDocument();
         unmount();
       }
+    });
+  });
+
+  // Status tests
+  describe('status', () => {
+    it('renders with paused status', () => {
+      render(
+        <XDSProgressBar
+          value={50}
+          label="Upload"
+          status="paused"
+          hasValueLabel
+        />,
+      );
+      expect(screen.getByRole('meter')).toBeInTheDocument();
+      expect(screen.getByText('50%')).toBeInTheDocument();
+    });
+
+    it('renders with canceled status', () => {
+      render(
+        <XDSProgressBar
+          value={50}
+          label="Upload"
+          status="canceled"
+          hasValueLabel
+        />,
+      );
+      expect(screen.getByRole('meter')).toBeInTheDocument();
+      expect(screen.getByText('50%')).toBeInTheDocument();
+    });
+
+    it('renders status icons as aria-hidden', () => {
+      const {container} = render(
+        <XDSProgressBar value={50} label="Upload" status="paused" />,
+      );
+      const svgs = container.querySelectorAll('svg');
+      for (const svg of svgs) {
+        expect(svg).toHaveAttribute('aria-hidden', 'true');
+      }
+    });
+  });
+
+  // Description and content slots
+  describe('description and content slots', () => {
+    it('renders description below the bar', () => {
+      render(
+        <XDSProgressBar
+          value={40}
+          label="Download"
+          description="40 MB / 100 MB"
+        />,
+      );
+      expect(screen.getByText('40 MB / 100 MB')).toBeInTheDocument();
+    });
+
+    it('renders endContent in the header', () => {
+      render(
+        <XDSProgressBar
+          value={50}
+          label="Upload"
+          endContent={<span data-testid="end">End</span>}
+        />,
+      );
+      expect(screen.getByTestId('end')).toBeInTheDocument();
+    });
+
+    it('renders bottomContent below the bar', () => {
+      render(
+        <XDSProgressBar
+          value={50}
+          label="Upload"
+          bottomContent={<span data-testid="bottom">Bottom</span>}
+        />,
+      );
+      expect(screen.getByTestId('bottom')).toBeInTheDocument();
+    });
+
+    it('bottomContent takes precedence over description', () => {
+      render(
+        <XDSProgressBar
+          value={50}
+          label="Upload"
+          description="Should not show"
+          bottomContent={<span>Custom bottom</span>}
+        />,
+      );
+      expect(screen.getByText('Custom bottom')).toBeInTheDocument();
+      expect(screen.queryByText('Should not show')).not.toBeInTheDocument();
     });
   });
 });
