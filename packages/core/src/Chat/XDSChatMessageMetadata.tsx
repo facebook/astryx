@@ -12,7 +12,7 @@
  * Direction reverses for user sender.
  */
 
-import type {ReactNode} from 'react';
+import React, {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -86,6 +86,7 @@ const styles = stylex.create({
 });
 
 export interface XDSChatMessageMetadataProps extends XDSBaseProps<HTMLDivElement> {
+  ref?: React.Ref<HTMLDivElement>;
   /** Timestamp content — ReactNode (e.g. XDSTimestamp) or string. */
   timestamp?: ReactNode;
   /** Footer content — model info, ratings, reactions. */
@@ -109,6 +110,7 @@ export interface XDSChatMessageMetadataProps extends XDSBaseProps<HTMLDivElement
  * ```
  */
 export function XDSChatMessageMetadata({
+  ref,
   timestamp,
   footer,
   status,
@@ -126,6 +128,7 @@ export function XDSChatMessageMetadata({
 
   return (
     <div
+      ref={ref}
       {...mergeProps(
         xdsClassName('chat-message-metadata'),
         stylex.props(

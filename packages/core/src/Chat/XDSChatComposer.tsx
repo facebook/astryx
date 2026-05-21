@@ -23,7 +23,7 @@
  * - /packages/cli/templates/blocks/components/ChatComposer/ (block examples)
  */
 
-import {
+import React, {
   useState,
   useCallback,
   useRef,
@@ -64,6 +64,7 @@ export interface XDSChatComposerProps extends Omit<
   XDSBaseProps<HTMLDivElement>,
   'onChange' | 'onSubmit'
 > {
+  ref?: React.Ref<HTMLDivElement>;
   /** Called when the user submits the message */
   onSubmit: (value: string) => void;
   /** Called when the user clicks stop during streaming */
@@ -265,6 +266,7 @@ const styles = stylex.create({
  */
 export function XDSChatComposer(props: XDSChatComposerProps) {
   const {
+    ref,
     onSubmit,
     onStop,
     isStreaming = false,
@@ -377,6 +379,7 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
   return (
     <XDSChatComposerContext value={composerContext}>
       <div
+        ref={ref}
         {...mergeProps(
           xdsClassName('chat-composer', {density}),
           stylex.props(styles.root, isDisabled && styles.rootDisabled),

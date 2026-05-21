@@ -94,7 +94,7 @@ const styles = stylex.create({
 });
 
 export interface XDSLayoutContentProps extends XDSBaseProps<HTMLDivElement> {
-  ref?: React.Ref<HTMLElement>;
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * Content to render inside the content area.
    */
@@ -181,7 +181,7 @@ export function XDSLayoutContent({
 
   return (
     <div
-      ref={ref as React.Ref<HTMLDivElement>}
+      ref={ref}
       role={role}
       aria-label={label}
       {...mergeProps(

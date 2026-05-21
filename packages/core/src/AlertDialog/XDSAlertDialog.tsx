@@ -16,7 +16,7 @@
  * - /packages/cli/templates/blocks/components/AlertDialog/ (showcase blocks)
  */
 
-import {useId, useCallback} from 'react';
+import React, {useId, useCallback} from 'react';
 import {XDSDialog} from '../Dialog';
 import {XDSLayout} from '../Layout/XDSLayout';
 import {XDSLayoutContent} from '../Layout/XDSLayoutContent';
@@ -28,7 +28,8 @@ import {XDSButton, type XDSButtonVariant} from '../Button';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName} from '../utils';
 
-export interface XDSAlertDialogProps extends XDSBaseProps<HTMLDivElement> {
+export interface XDSAlertDialogProps extends XDSBaseProps<HTMLDialogElement> {
+  ref?: React.Ref<HTMLDialogElement>;
   /**
    * Whether the dialog is open.
    */
@@ -114,6 +115,7 @@ export interface XDSAlertDialogProps extends XDSBaseProps<HTMLDivElement> {
  * ```
  */
 export function XDSAlertDialog({
+  ref,
   isOpen,
   isInline,
   onOpenChange,
@@ -139,6 +141,7 @@ export function XDSAlertDialog({
 
   return (
     <XDSDialog
+      ref={ref}
       isOpen={isOpen}
       isInline={isInline}
       onOpenChange={onOpenChange}

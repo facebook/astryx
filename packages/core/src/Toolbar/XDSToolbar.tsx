@@ -139,7 +139,7 @@ export type XDSToolbarSize = XDSElementSize;
 
 export interface XDSToolbarProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root XDSSection element */
-  ref?: React.Ref<HTMLElement>;
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * Content aligned to the start (left in LTR).
    */

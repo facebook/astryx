@@ -74,6 +74,7 @@ export interface XDSChatToolCallItem {
 }
 
 export interface XDSChatToolCallsProps extends XDSBaseProps<HTMLDivElement> {
+  ref?: React.Ref<HTMLDivElement>;
   /** Array of tool call data. */
   calls: XDSChatToolCallItem[];
   /** Custom summary label for groups. Auto-generated from count if omitted. */
@@ -470,6 +471,7 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
     xstyle,
     className,
     style,
+    ref,
     ...rest
   } = props;
 
@@ -494,6 +496,7 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
   if (calls.length === 1) {
     return (
       <div
+        ref={ref}
         {...mergeProps(
           xdsClassName('chat-tool-calls'),
           stylex.props(styles.root, xstyle),
@@ -512,6 +515,7 @@ export function XDSChatToolCalls(props: XDSChatToolCallsProps) {
 
   return (
     <div
+      ref={ref}
       {...mergeProps(
         xdsClassName('chat-tool-calls'),
         stylex.props(styles.root, xstyle),

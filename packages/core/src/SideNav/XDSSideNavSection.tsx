@@ -18,7 +18,7 @@
  * - /packages/cli/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
-import {useId, type ReactNode} from 'react';
+import React, {useId, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -90,6 +90,7 @@ const styles = stylex.create({
 // =============================================================================
 
 export interface XDSSideNavSectionProps extends XDSBaseProps<HTMLDivElement> {
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * Section title.
    */
@@ -133,6 +134,7 @@ export interface XDSSideNavSectionProps extends XDSBaseProps<HTMLDivElement> {
  * ```
  */
 export function XDSSideNavSection({
+  ref,
   title,
   subtitle,
   children,
@@ -179,6 +181,7 @@ export function XDSSideNavSection({
 
   return (
     <div
+      ref={ref}
       role="group"
       aria-labelledby={titleId}
       data-testid={testId}

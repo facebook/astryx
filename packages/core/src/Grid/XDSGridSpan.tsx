@@ -21,7 +21,7 @@ import {xdsClassName, mergeProps} from '../utils';
 
 export interface XDSGridSpanProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
-  ref?: React.Ref<HTMLElement>;
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * Number of columns to span, or 'full' to span all columns.
    * - Number: `grid-column: span N`
@@ -109,7 +109,7 @@ export function XDSGridSpan({
 
   return (
     <div
-      ref={ref as React.Ref<HTMLDivElement>}
+      ref={ref}
       {...mergeProps(
         xdsClassName('grid-span'),
         stylex.props(baseStyles.span, xstyle),

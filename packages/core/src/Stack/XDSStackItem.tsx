@@ -22,7 +22,7 @@ import {
 } from './stackItem.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 
-export interface XDSStackItemProps extends XDSBaseProps<HTMLDivElement> {
+export interface XDSStackItemProps extends XDSBaseProps<HTMLElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLElement>;
   /**

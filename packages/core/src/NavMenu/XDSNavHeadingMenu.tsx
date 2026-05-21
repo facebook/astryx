@@ -2,7 +2,7 @@
 
 'use client';
 
-import {useMemo, type ReactNode} from 'react';
+import React, {useMemo, useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
@@ -35,6 +35,7 @@ const sizeStyles = stylex.create({
 });
 
 export interface XDSNavHeadingMenuProps extends XDSBaseProps<HTMLDivElement> {
+  ref?: React.Ref<HTMLDivElement>;
   /** Menu items (XDSNavHeadingMenuItem, dividers, custom content). */
   children: ReactNode;
 
@@ -74,6 +75,7 @@ export interface XDSNavHeadingMenuProps extends XDSBaseProps<HTMLDivElement> {
  * ```
  */
 export function XDSNavHeadingMenu({
+  ref,
   children,
   size = 'md',
   minWidth,
@@ -89,6 +91,18 @@ export function XDSNavHeadingMenu({
     onEscape: closeMenu,
   });
 
+  const mergedRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      (listRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      if (typeof ref === 'function') {
+        ref(node);
+      } else if (ref != null) {
+        (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      }
+    },
+    [ref, listRef],
+  );
+
   const ctx = useMemo(
     () => ({
       closeMenu: closeMenu ?? (() => {}),
@@ -102,7 +116,7 @@ export function XDSNavHeadingMenu({
   return (
     <XDSNavHeadingMenuContext value={ctx}>
       <div
-        ref={listRef as React.RefObject<HTMLDivElement>}
+        ref={mergedRef}
         role="menu"
         onKeyDown={handleKeyDown}
         data-testid={testId}

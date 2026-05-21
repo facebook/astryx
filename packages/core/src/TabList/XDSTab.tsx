@@ -15,7 +15,7 @@
  * - /packages/cli/templates/blocks/components/TabList/ (showcase blocks)
  */
 
-import {useCallback, type ReactNode} from 'react';
+import React, {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -43,6 +43,7 @@ export interface XDSTabProps extends XDSBaseProps<HTMLButtonElement> {
    * Only applies when `href` is provided. Must accept href, className, style, and children props.
    */
   as?: XDSLinkComponentType;
+  ref?: React.Ref<HTMLButtonElement>;
   /**
    * Unique value for this tab. Matched against XDSTabListContext.value.
    */
@@ -213,6 +214,7 @@ const iconSizeStyles = stylex.create({
  */
 export function XDSTab({
   as,
+  ref,
   value,
   label,
   href,
@@ -299,7 +301,11 @@ export function XDSTab({
 
   if (href != null) {
     return (
-      <LinkComponent href={href} onClick={handleSelect} {...sharedProps}>
+      <LinkComponent
+        ref={ref}
+        href={href}
+        onClick={handleSelect}
+        {...sharedProps}>
         {hoverBgElement}
         {iconElement}
         {labelElement}
@@ -310,7 +316,7 @@ export function XDSTab({
   }
 
   return (
-    <button type="button" onClick={handleSelect} {...sharedProps}>
+    <button ref={ref} type="button" onClick={handleSelect} {...sharedProps}>
       {hoverBgElement}
       {iconElement}
       {labelElement}

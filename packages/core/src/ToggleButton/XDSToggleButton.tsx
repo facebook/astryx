@@ -20,7 +20,7 @@
  * - /packages/cli/templates/blocks/components/ToggleButton/ (showcase blocks)
  */
 
-import {useCallback, type ReactNode} from 'react';
+import React, {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, fontWeightVars} from '../theme/tokens.stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -69,6 +69,7 @@ const labelStyles = stylex.create({
 // =============================================================================
 
 export interface XDSToggleButtonProps extends XDSBaseProps<HTMLButtonElement> {
+  ref?: React.Ref<HTMLButtonElement>;
   /**
    * Accessible label for the button (required).
    * Used as visible text, or as aria-label for icon-only buttons.
@@ -198,6 +199,7 @@ export interface XDSToggleButtonProps extends XDSBaseProps<HTMLButtonElement> {
  * ```
  */
 export function XDSToggleButton({
+  ref,
   label,
   isPressed: isPressedProp,
   onPressedChange: onPressedChangeProp,
@@ -282,6 +284,7 @@ export function XDSToggleButton({
 
   return (
     <XDSButton
+      ref={ref}
       label={label}
       variant="ghost"
       size={size}

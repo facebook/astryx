@@ -23,7 +23,7 @@
  * - /packages/cli/templates/blocks/components/Collapsible/ (showcase blocks)
  */
 
-import {useCallback, useMemo, useState, type ReactNode} from 'react';
+import React, {useCallback, useMemo, useState, type ReactNode} from 'react';
 import {CollapsibleGroupContext} from './XDSCollapsibleGroupContext';
 import type {CollapsibleGroupContextValue} from './XDSCollapsibleGroupContext';
 import type {XDSBaseProps} from '../XDSBaseProps';
@@ -32,6 +32,7 @@ export interface XDSCollapsibleGroupProps extends Omit<
   XDSBaseProps<HTMLElement>,
   'onChange'
 > {
+  ref?: React.Ref<HTMLElement>;
   /**
    * Whether only one item can be open at a time, or multiple.
    * @default "single"
