@@ -51,7 +51,6 @@ import {
   plainDateAddMonths,
   plainDateAddDays,
   plainDateIsBefore,
-  plainDateIsAfter,
   plainDateIsEqual,
   plainDateIsInRange,
   plainDateGetWeekNumber,
