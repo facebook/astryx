@@ -23,10 +23,7 @@ import {use, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
-  radiusVars,
   spacingVars,
-  durationVars,
-  easeVars,
   typeScaleVars,
   borderVars,
 } from '../theme/tokens.stylex';
@@ -110,19 +107,12 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-2'],
     position: 'relative',
     boxSizing: 'border-box',
     textAlign: 'start',
   },
   withCounter: {
     counterIncrement: 'xds-list',
-  },
-  withRadius: {
-    borderRadius: radiusVars['--radius-element'],
-  },
-  noRadius: {
-    borderRadius: 0,
   },
   withDivider: {
     borderBlockEndWidth: borderVars['--border-width'],
@@ -131,55 +121,6 @@ const styles = stylex.create({
     ':last-child': {
       borderBlockEnd: 'none',
     },
-  },
-  interactive: {
-    cursor: 'pointer',
-    transitionProperty: 'background-color',
-    transitionDuration: durationVars['--duration-fast-min'],
-    transitionTimingFunction: easeVars['--ease-standard'],
-    backgroundColor: {
-      default: 'transparent',
-      ':hover': {
-        '@media (hover: hover)': colorVars['--color-overlay-hover'],
-      },
-      ':active': colorVars['--color-overlay-pressed'],
-    },
-  },
-  focusVisibleOutline: {
-    outline: {
-      default: 'none',
-      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':has(:focus-visible)': '2px',
-    },
-  },
-  disabled: {
-    cursor: 'not-allowed',
-    pointerEvents: 'none' as const,
-  },
-  selected: {
-    backgroundColor: colorVars['--color-accent-muted'],
-  },
-});
-
-const densityStyles = stylex.create({
-  compact: {
-    paddingBlock: spacingVars['--spacing-1'],
-    fontSize: typeScaleVars['--text-body-size'],
-    lineHeight: typeScaleVars['--text-body-leading'],
-  },
-  balanced: {
-    paddingBlock: spacingVars['--spacing-2'],
-    fontSize: typeScaleVars['--text-body-size'],
-    lineHeight: typeScaleVars['--text-body-leading'],
-  },
-  spacious: {
-    paddingBlock: spacingVars['--spacing-3'],
-    paddingInline: spacingVars['--spacing-3'],
-    fontSize: typeScaleVars['--text-body-size'],
-    lineHeight: typeScaleVars['--text-body-leading'],
   },
 });
 
@@ -231,11 +172,11 @@ const markerStyles = stylex.create({
 
 const embeddedStyles = stylex.create({
   root: {
-    paddingBlock: 0,
-    paddingInline: 0,
-    borderRadius: 0,
     flex: 1,
     minWidth: 0,
+  },
+  noRadius: {
+    borderRadius: 0,
   },
 });
 
@@ -278,8 +219,6 @@ export function XDSListItem({
   const hasDividers = ctx?.hasDividers ?? false;
   const listStyle = ctx?.listStyle ?? 'none';
   const hasMarkers = listStyle !== 'none';
-  const isInteractive = onClick != null || href != null;
-
 
   const marker =
     listStyle === 'disc' ? (
@@ -294,24 +233,18 @@ export function XDSListItem({
       <span {...stylex.props(markerStyles.number)} />
     ) : null;
 
+  const itemDensity = density === 'compact' ? 'compact' : 'default';
+
   return (
     <li
       ref={ref}
-      aria-selected={isSelected || undefined}
-      aria-disabled={isDisabled || undefined}
       {...restProps}
       {...mergeProps(
         xdsClassName('list-item'),
         stylex.props(
           styles.item,
           hasMarkers && styles.withCounter,
-          densityStyles[density],
-          hasDividers ? styles.noRadius : styles.withRadius,
           hasDividers && styles.withDivider,
-          isInteractive && styles.interactive,
-          isInteractive && styles.focusVisibleOutline,
-          isDisabled && styles.disabled,
-          isSelected && styles.selected,
           xstyle,
         ),
         className,
@@ -327,7 +260,9 @@ export function XDSListItem({
         href={href}
         target={target as '_blank' | '_self'}
         isDisabled={isDisabled}
-        xstyle={embeddedStyles.root}
+        isSelected={isSelected}
+        density={itemDensity}
+        xstyle={[embeddedStyles.root, hasDividers && embeddedStyles.noRadius]}
       />
     </li>
   );

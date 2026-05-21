@@ -438,8 +438,8 @@ describe('XDSList', () => {
         <XDSListItem label="Disabled" isDisabled />
       </XDSList>,
     );
-    const li = container.querySelector('li');
-    expect(li).toHaveAttribute('aria-disabled', 'true');
+    const item = container.querySelector('.xds-item');
+    expect(item).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('disables the invisible button when isDisabled', () => {
@@ -476,8 +476,8 @@ describe('XDSList', () => {
         <XDSListItem label="Selected" isSelected onClick={() => {}} />
       </XDSList>,
     );
-    const li = container.querySelector('li');
-    expect(li).toHaveAttribute('aria-selected', 'true');
+    const item = container.querySelector('.xds-item');
+    expect(item).toHaveAttribute('aria-selected', 'true');
   });
 
   it('does not apply aria-selected when not selected', () => {
