@@ -117,6 +117,7 @@ export function XDSOverlay({
     }
     const radius = getComputedStyle(firstChild).borderRadius;
     if (radius && radius !== '0px') {
+      // eslint-disable-next-line react-compiler/react-compiler -- imperative DOM: syncing border-radius from child
       el.style.borderRadius = radius;
     }
   }, []);

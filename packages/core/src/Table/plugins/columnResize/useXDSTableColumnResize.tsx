@@ -312,6 +312,7 @@ function ResizeHandle({
     (dragging: boolean) => {
       const table = tableRef.current;
       if (table) {
+        // eslint-disable-next-line react-compiler/react-compiler -- imperative DOM: disable text selection during drag
         table.style.userSelect = dragging ? 'none' : '';
       }
     },
