@@ -3,17 +3,17 @@
 'use client';
 
 /**
- * @file XDSDateRangePicker.tsx
+ * @file XDSDateRangeInput.tsx
  * @input Uses React, XDSField, XDSCalendar (range mode), useXDSPopover
- * @output Exports XDSDateRangePicker component, XDSDateRangePickerProps
- * @position Core implementation; consumed by index.ts, tested by XDSDateRangePicker.test.tsx
+ * @output Exports XDSDateRangeInput component, XDSDateRangeInputProps
+ * @position Core implementation; consumed by index.ts, tested by XDSDateRangeInput.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/DateRangePicker/DateRangePicker.doc.mjs (props table, features, implementation notes)
- * - /packages/core/src/DateRangePicker/XDSDateRangePicker.test.tsx (tests for new/changed behavior)
- * - /packages/core/src/DateRangePicker/index.ts (exports if types change)
- * - /apps/storybook/stories/DateRangePicker.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/DateRangePicker/ (showcase blocks)
+ * - /packages/core/src/DateRangeInput/DateRangeInput.doc.mjs (props table, features, implementation notes)
+ * - /packages/core/src/DateRangeInput/XDSDateRangeInput.test.tsx (tests for new/changed behavior)
+ * - /packages/core/src/DateRangeInput/index.ts (exports if types change)
+ * - /apps/storybook/stories/DateRangeInput.stories.tsx (storybook stories)
+ * - /packages/cli/templates/blocks/components/DateRangeInput/ (showcase blocks)
  */
 
 import {useId, useCallback, useMemo, useOptimistic, useTransition} from 'react';
@@ -52,11 +52,11 @@ export interface XDSDateRangePreset {
   getRange: () => DateRange;
 }
 
-export type XDSDateRangePickerSize = 'sm' | 'md';
+export type XDSDateRangeInputSize = 'sm' | 'md';
 
 export type {
-  XDSInputStatus as XDSDateRangePickerStatus,
-  XDSInputStatusType as XDSDateRangePickerStatusType,
+  XDSInputStatus as XDSDateRangeInputStatus,
+  XDSInputStatusType as XDSDateRangeInputStatusType,
 } from '../Field';
 
 const styles = stylex.create({
@@ -204,7 +204,7 @@ function isRangeEqual(a: DateRange | null, b: DateRange | null): boolean {
   return a.start === b.start && a.end === b.end;
 }
 
-export interface XDSDateRangePickerProps extends Omit<
+export interface XDSDateRangeInputProps extends Omit<
   XDSBaseProps,
   'onChange' | 'defaultValue'
 > {
@@ -304,7 +304,7 @@ export interface XDSDateRangePickerProps extends Omit<
    * The size of the trigger.
    * @default 'md'
    */
-  size?: XDSDateRangePickerSize;
+  size?: XDSDateRangeInputSize;
 
   /**
    * Status indicator for the input.
@@ -334,7 +334,7 @@ export interface XDSDateRangePickerProps extends Omit<
  *
  * @example
  * ```
- * <XDSDateRangePicker
+ * <XDSDateRangeInput
  *   label="Date range"
  *   value={range}
  *   onChange={setRange}
@@ -344,7 +344,7 @@ export interface XDSDateRangePickerProps extends Omit<
  * />
  * ```
  */
-export function XDSDateRangePicker({
+export function XDSDateRangeInput({
   label,
   isLabelHidden = false,
   description,
@@ -370,7 +370,7 @@ export function XDSDateRangePicker({
   style,
   ref,
   ...rest
-}: XDSDateRangePickerProps) {
+}: XDSDateRangeInputProps) {
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -491,7 +491,7 @@ export function XDSDateRangePicker({
         ref={popover.triggerRef}
         {...rest}
         {...mergeProps(
-          xdsClassName('date-range-picker', {
+          xdsClassName('date-range-input', {
             size,
             status: status?.type ?? null,
           }),
@@ -507,6 +507,18 @@ export function XDSDateRangePicker({
           className,
           style,
         )}>
+        <button
+          type="button"
+          onClick={handleToggle}
+          disabled={isEffectivelyDisabled}
+          aria-label={popover.isOpen ? 'Close calendar' : 'Open calendar'}
+          tabIndex={-1}
+          {...stylex.props(
+            styles.iconButton,
+            isEffectivelyDisabled && styles.iconButtonDisabled,
+          )}>
+          <XDSIcon icon="calendar" size="sm" color="secondary" />
+        </button>
         <button
           ref={ref}
           id={id}
@@ -537,18 +549,6 @@ export function XDSDateRangePicker({
             <XDSIcon icon="close" size="sm" color="secondary" />
           </button>
         )}
-        <button
-          type="button"
-          onClick={handleToggle}
-          disabled={isEffectivelyDisabled}
-          aria-label={popover.isOpen ? 'Close calendar' : 'Open calendar'}
-          tabIndex={-1}
-          {...stylex.props(
-            styles.iconButton,
-            isEffectivelyDisabled && styles.iconButtonDisabled,
-          )}>
-          <XDSIcon icon="calendar" size="sm" color="secondary" />
-        </button>
         {isBusy && <XDSSpinner size="sm" />}
         {status && (
           <XDSIcon
@@ -601,4 +601,4 @@ export function XDSDateRangePicker({
   );
 }
 
-XDSDateRangePicker.displayName = 'XDSDateRangePicker';
+XDSDateRangeInput.displayName = 'XDSDateRangeInput';

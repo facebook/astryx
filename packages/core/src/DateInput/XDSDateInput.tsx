@@ -517,6 +517,17 @@ export function XDSDateInput({
           className,
           style,
         )}>
+        <button
+          type="button"
+          onClick={handleToggle}
+          disabled={isEffectivelyDisabled}
+          aria-label={popover.isOpen ? 'Close calendar' : 'Open calendar'}
+          {...stylex.props(
+            styles.iconButton,
+            isEffectivelyDisabled && styles.iconButtonDisabled,
+          )}>
+          <XDSIcon icon="calendar" size="sm" color="secondary" />
+        </button>
         <input
           ref={setRefs}
           id={id}
@@ -553,17 +564,6 @@ export function XDSDateInput({
             <XDSIcon icon="close" size="sm" color="secondary" />
           </button>
         )}
-        <button
-          type="button"
-          onClick={handleToggle}
-          disabled={isEffectivelyDisabled}
-          aria-label={popover.isOpen ? 'Close calendar' : 'Open calendar'}
-          {...stylex.props(
-            styles.iconButton,
-            isEffectivelyDisabled && styles.iconButtonDisabled,
-          )}>
-          <XDSIcon icon="calendar" size="sm" color="secondary" />
-        </button>
         {isBusy && <XDSSpinner size="sm" />}
         {status && (
           <XDSIcon

@@ -3,7 +3,7 @@
 /** @type {import('../docs-types').ComponentDoc} */
 
 export const docs = {
-  name: 'DateTimePicker',
+  name: 'DateTimeInput',
   keywords: ["datetimepicker","datetime","datepicker","timepicker","calendar","schedule","event","deadline","timestamp"],
   props: [
     {
@@ -139,18 +139,18 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-date-time-picker', visualProps: ['size', 'status']},
+      {className: 'xds-date-time-input', visualProps: ['size', 'status']},
     ],
   },
   usage: {
-    description: 'DateTimePicker combines a calendar popover with a time input for selecting both a date and time in a single interaction flow. Use it for scheduling, event creation, deadline setting, or any form field that needs a specific datetime.',
+    description: 'DateTimeInput combines a calendar popover with a time input for selecting both a date and time in a single interaction flow. Use it for scheduling, event creation, deadline setting, or any form field that needs a specific datetime.',
     bestPractices: [
       { guidance: true, description: 'Provide clear labels and descriptions so users understand what datetime is expected.' },
       { guidance: true, description: 'Use min and max to restrict selectable datetimes to valid ranges.' },
       { guidance: true, description: 'Use hasClear when the datetime is optional so the user can easily reset it.' },
       { guidance: true, description: 'Choose the hour format (12h or 24h) that matches your audience’s locale.' },
-      { guidance: false, description: 'Use DateTimePicker when only a date is needed — use DateInput instead.' },
-      { guidance: false, description: 'Use DateTimePicker when only a time is needed — use TimeInput instead.' },
+      { guidance: false, description: 'Use DateTimeInput when only a date is needed — use DateInput instead.' },
+      { guidance: false, description: 'Use DateTimeInput when only a time is needed — use TimeInput instead.' },
       { guidance: false, description: 'Hide the label without surrounding context that makes the field purpose obvious.' },
     ],
     anatomy: [
@@ -167,16 +167,16 @@ export const docs = {
 
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
-  name: 'DateTimePicker',
+  name: 'DateTimeInput',
   usage: {
-    description: 'DateTimePicker combines a calendar popover with a time input for selecting both a date and time in a single interaction flow. Use it for scheduling, event creation, deadline setting, or any form field that needs a specific datetime.',
+    description: 'DateTimeInput combines a calendar popover with a time input for selecting both a date and time in a single interaction flow. Use it for scheduling, event creation, deadline setting, or any form field that needs a specific datetime.',
     bestPractices: [
       { guidance: true, description: 'Provide clear labels and descriptions so users understand what datetime is expected.' },
       { guidance: true, description: 'Use min and max to restrict selectable datetimes to valid ranges.' },
       { guidance: true, description: 'Use hasClear when the datetime is optional so the user can easily reset it.' },
       { guidance: true, description: 'Choose the hour format (12h or 24h) that matches your audience’s locale.' },
-      { guidance: false, description: 'Use DateTimePicker when only a date is needed — use DateInput instead.' },
-      { guidance: false, description: 'Use DateTimePicker when only a time is needed — use TimeInput instead.' },
+      { guidance: false, description: 'Use DateTimeInput when only a date is needed — use DateInput instead.' },
+      { guidance: false, description: 'Use DateTimeInput when only a time is needed — use TimeInput instead.' },
       { guidance: false, description: 'Hide the label without surrounding context that makes the field purpose obvious.' },
     ],
   },
@@ -207,7 +207,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-date-time-picker', visualProps: ['size', 'status']},
+      {className: 'xds-date-time-input', visualProps: ['size', 'status']},
     ],
   },
 };
@@ -216,7 +216,7 @@ export const docsZh = {
 export const docsDense = {
   description: 'combined date + time picker with calendar popover and time input',
   usage: {
-    description: 'DateTimePicker combines a calendar popover with a time input for selecting both a date and time. Use for scheduling, events, deadlines, or any form field needing a datetime.',
+    description: 'DateTimeInput combines a calendar popover with a time input for selecting both a date and time. Use for scheduling, events, deadlines, or any form field needing a datetime.',
     bestPractices: [
       { guidance: true, description: 'Clear labels + descriptions. Use min/max for valid datetime ranges.' },
       { guidance: true, description: 'Use hasClear for optional datetimes. Choose hour format matching locale.' },

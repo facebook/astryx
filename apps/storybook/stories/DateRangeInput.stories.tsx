@@ -2,8 +2,8 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSDateRangePicker} from '@xds/core/DateRangePicker';
-import type {XDSDateRange} from '@xds/core/DateRangePicker';
+import {XDSDateRangeInput} from '@xds/core/DateRangeInput';
+import type {XDSDateRange} from '@xds/core/DateRangeInput';
 import type {ISODateString} from '@xds/core/Calendar';
 
 function daysAgo(n: number): ISODateString {
@@ -40,9 +40,9 @@ const defaultPresets = [
   },
 ];
 
-const meta: Meta<typeof XDSDateRangePicker> = {
-  title: 'Core/Inputs/DateRangePicker',
-  component: XDSDateRangePicker,
+const meta: Meta<typeof XDSDateRangeInput> = {
+  title: 'Core/Inputs/DateRangeInput',
+  component: XDSDateRangeInput,
   tags: ['autodocs'],
   argTypes: {
     label: {control: 'text', description: 'Label text (required)'},
@@ -70,12 +70,12 @@ const meta: Meta<typeof XDSDateRangePicker> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSDateRangePicker>;
+type Story = StoryObj<typeof XDSDateRangeInput>;
 
 export const Default: Story = {
   render: args => {
     const [value, setValue] = useState<XDSDateRange | null>(null);
-    return <XDSDateRangePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Date range',
@@ -88,7 +88,7 @@ export const WithValue: Story = {
       start: '2026-03-10' as ISODateString,
       end: '2026-03-20' as ISODateString,
     });
-    return <XDSDateRangePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Report period',
@@ -98,7 +98,7 @@ export const WithValue: Story = {
 export const WithPresets: Story = {
   render: args => {
     const [value, setValue] = useState<XDSDateRange | null>(null);
-    return <XDSDateRangePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Date range',
@@ -112,7 +112,7 @@ export const WithPresetsAndValue: Story = {
       start: daysAgo(7),
       end: today(),
     });
-    return <XDSDateRangePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Analytics period',
@@ -123,7 +123,7 @@ export const WithPresetsAndValue: Story = {
 export const WithDescription: Story = {
   render: args => {
     const [value, setValue] = useState<XDSDateRange | null>(null);
-    return <XDSDateRangePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Coverage period',
@@ -134,7 +134,7 @@ export const WithDescription: Story = {
 export const WithMinMax: Story = {
   render: args => {
     const [value, setValue] = useState<XDSDateRange | null>(null);
-    return <XDSDateRangePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Booking dates',
@@ -147,7 +147,7 @@ export const WithMinMax: Story = {
 export const Optional: Story = {
   render: args => {
     const [value, setValue] = useState<XDSDateRange | null>(null);
-    return <XDSDateRangePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Filter by date',
@@ -158,7 +158,7 @@ export const Optional: Story = {
 export const Required: Story = {
   render: args => {
     const [value, setValue] = useState<XDSDateRange | null>(null);
-    return <XDSDateRangePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Coverage period',
@@ -172,7 +172,7 @@ export const Disabled: Story = {
       start: '2026-03-10' as ISODateString,
       end: '2026-03-20' as ISODateString,
     });
-    return <XDSDateRangePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Locked range',
@@ -183,7 +183,7 @@ export const Disabled: Story = {
 export const SmallSize: Story = {
   render: args => {
     const [value, setValue] = useState<XDSDateRange | null>(null);
-    return <XDSDateRangePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Date range',
@@ -194,7 +194,7 @@ export const SmallSize: Story = {
 export const SingleMonth: Story = {
   render: args => {
     const [value, setValue] = useState<XDSDateRange | null>(null);
-    return <XDSDateRangePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Date range',
@@ -205,7 +205,7 @@ export const SingleMonth: Story = {
 export const WithErrorStatus: Story = {
   render: args => {
     const [value, setValue] = useState<XDSDateRange | null>(null);
-    return <XDSDateRangePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Date range',
@@ -219,7 +219,7 @@ export const WithWarningStatus: Story = {
       start: '2026-03-01' as ISODateString,
       end: '2026-06-30' as ISODateString,
     });
-    return <XDSDateRangePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Date range',
@@ -233,7 +233,7 @@ export const NoClear: Story = {
       start: '2026-03-10' as ISODateString,
       end: '2026-03-20' as ISODateString,
     });
-    return <XDSDateRangePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Required range',
@@ -263,21 +263,21 @@ export const AllVariations: Story = {
           gap: '16px',
           maxWidth: '340px',
         }}>
-        <XDSDateRangePicker label="Default" value={v1} onChange={setV1} />
-        <XDSDateRangePicker label="With value" value={v2} onChange={setV2} />
-        <XDSDateRangePicker
+        <XDSDateRangeInput label="Default" value={v1} onChange={setV1} />
+        <XDSDateRangeInput label="With value" value={v2} onChange={setV2} />
+        <XDSDateRangeInput
           label="With presets"
           value={v3}
           onChange={setV3}
           presets={defaultPresets}
         />
-        <XDSDateRangePicker
+        <XDSDateRangeInput
           label="Disabled"
           isDisabled
           value={v4}
           onChange={setV4}
         />
-        <XDSDateRangePicker
+        <XDSDateRangeInput
           label="With error"
           value={v5}
           onChange={setV5}

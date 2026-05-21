@@ -3,17 +3,17 @@
 'use client';
 
 /**
- * @file XDSDateTimePicker.tsx
+ * @file XDSDateTimeInput.tsx
  * @input Uses React, XDSField, XDSCalendar, useXDSPopover, time parsing utilities
- * @output Exports XDSDateTimePicker component, XDSDateTimePickerProps
- * @position Core implementation; consumed by index.ts, tested by XDSDateTimePicker.test.tsx
+ * @output Exports XDSDateTimeInput component, XDSDateTimeInputProps
+ * @position Core implementation; consumed by index.ts, tested by XDSDateTimeInput.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/DateTimePicker/DateTimePicker.doc.mjs (props table, features, implementation notes)
- * - /packages/core/src/DateTimePicker/XDSDateTimePicker.test.tsx (tests for new/changed behavior)
- * - /packages/core/src/DateTimePicker/index.ts (exports if types change)
- * - /apps/storybook/stories/DateTimePicker.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/DateTimePicker/ (showcase blocks)
+ * - /packages/core/src/DateTimeInput/DateTimeInput.doc.mjs (props table, features, implementation notes)
+ * - /packages/core/src/DateTimeInput/XDSDateTimeInput.test.tsx (tests for new/changed behavior)
+ * - /packages/core/src/DateTimeInput/index.ts (exports if types change)
+ * - /apps/storybook/stories/DateTimeInput.stories.tsx (storybook stories)
+ * - /packages/cli/templates/blocks/components/DateTimeInput/ (showcase blocks)
  */
 
 import {
@@ -78,13 +78,13 @@ export type ISODateTimeString = string & {
   readonly __brand: 'ISODateTimeString';
 };
 
-export type XDSDateTimePickerHourFormat = '12h' | '24h';
+export type XDSDateTimeInputHourFormat = '12h' | '24h';
 
-export type XDSDateTimePickerSize = 'sm' | 'md';
+export type XDSDateTimeInputSize = 'sm' | 'md';
 
 export type {
-  XDSInputStatus as XDSDateTimePickerStatus,
-  XDSInputStatusType as XDSDateTimePickerStatusType,
+  XDSInputStatus as XDSDateTimeInputStatus,
+  XDSInputStatusType as XDSDateTimeInputStatusType,
 } from '../Field';
 
 const styles = stylex.create({
@@ -163,7 +163,7 @@ const sizeStyles = stylex.create({
   },
 });
 
-export interface XDSDateTimePickerProps extends Omit<
+export interface XDSDateTimeInputProps extends Omit<
   XDSBaseProps,
   'onChange' | 'defaultValue'
 > {
@@ -254,7 +254,7 @@ export interface XDSDateTimePickerProps extends Omit<
    * Hour display format.
    * @default '12h'
    */
-  hourFormat?: XDSDateTimePickerHourFormat;
+  hourFormat?: XDSDateTimeInputHourFormat;
 
   /**
    * Time increment in minutes when using arrow keys in the time input.
@@ -278,7 +278,7 @@ export interface XDSDateTimePickerProps extends Omit<
    * The size of the inputs.
    * @default 'md'
    */
-  size?: XDSDateTimePickerSize;
+  size?: XDSDateTimeInputSize;
 
   /**
    * Status indicator for the input.
@@ -344,14 +344,14 @@ function getDefaultTime(hasSeconds: boolean): ISOTimeString {
  *
  * @example
  * ```
- * <XDSDateTimePicker
+ * <XDSDateTimeInput
  *   label="Meeting time"
  *   value={dateTime}
  *   onChange={setDateTime}
  * />
  * ```
  */
-export function XDSDateTimePicker({
+export function XDSDateTimeInput({
   label,
   isLabelHidden = false,
   description,
@@ -379,7 +379,7 @@ export function XDSDateTimePicker({
   style,
   ref,
   ...rest
-}: XDSDateTimePickerProps) {
+}: XDSDateTimeInputProps) {
   const dateInputId = useId();
   const timeInputId = useId();
   const descriptionID = useId();
@@ -780,7 +780,7 @@ export function XDSDateTimePicker({
       <div
         {...rest}
         {...mergeProps(
-          xdsClassName('date-time-picker', {
+          xdsClassName('date-time-input', {
             size,
             status: status?.type ?? null,
           }),
@@ -800,6 +800,17 @@ export function XDSDateTimePicker({
             status && inputStatusHoverShadowStyles[status.type],
             status && inputStatusFocusWithinStyles[status.type],
           )}>
+          <button
+            type="button"
+            onClick={handleCalendarToggle}
+            disabled={isEffectivelyDisabled}
+            aria-label={popover.isOpen ? 'Close calendar' : 'Open calendar'}
+            {...stylex.props(
+              styles.iconButton,
+              isEffectivelyDisabled && styles.iconButtonDisabled,
+            )}>
+            <XDSIcon icon="calendar" size="sm" color="secondary" />
+          </button>
           <input
             ref={setDateRefs}
             id={dateInputId}
@@ -836,17 +847,6 @@ export function XDSDateTimePicker({
               <XDSIcon icon="close" size="sm" color="secondary" />
             </button>
           )}
-          <button
-            type="button"
-            onClick={handleCalendarToggle}
-            disabled={isEffectivelyDisabled}
-            aria-label={popover.isOpen ? 'Close calendar' : 'Open calendar'}
-            {...stylex.props(
-              styles.iconButton,
-              isEffectivelyDisabled && styles.iconButtonDisabled,
-            )}>
-            <XDSIcon icon="calendar" size="sm" color="secondary" />
-          </button>
           {isBusy && <XDSSpinner size="sm" />}
           {status && (
             <XDSIcon
@@ -912,4 +912,4 @@ export function XDSDateTimePicker({
   );
 }
 
-XDSDateTimePicker.displayName = 'XDSDateTimePicker';
+XDSDateTimeInput.displayName = 'XDSDateTimeInput';

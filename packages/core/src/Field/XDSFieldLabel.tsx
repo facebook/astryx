@@ -34,7 +34,7 @@ const styles = stylex.create({
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-label-size'],
     fontWeight: fontWeightVars['--font-weight-medium'],
-    color: colorVars['--color-text-primary'],
+    color: colorVars['--color-text-secondary'],
     cursor: 'pointer',
   },
   labelDisabled: {

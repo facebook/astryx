@@ -3,18 +3,18 @@
 'use client';
 
 import {useState} from 'react';
-import {XDSDateTimePicker} from '@xds/core/DateTimePicker';
-import type {ISODateTimeString} from '@xds/core/DateTimePicker';
+import {XDSDateTimeInput} from '@xds/core/DateTimeInput';
+import type {ISODateTimeString} from '@xds/core/DateTimeInput';
 import {XDSStack} from '@xds/core/Layout';
 
-export default function DateTimePickerShowcase() {
+export default function DateTimeInputShowcase() {
   const [dateTime, setDateTime] = useState<ISODateTimeString | undefined>(
     undefined,
   );
 
   return (
     <XDSStack direction="vertical" width="100%" style={{maxWidth: 400}}>
-      <XDSDateTimePicker
+      <XDSDateTimeInput
         label="Meeting time"
         placeholder="Select a date"
         value={dateTime}

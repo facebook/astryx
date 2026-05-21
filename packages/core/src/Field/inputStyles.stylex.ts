@@ -57,9 +57,9 @@ export const inputWrapperStyles = stylex.create({
     boxShadow: {
       default: 'none',
       ':hover:not(:focus-within)': {
-        '@media (hover: hover)': shadowVars['--shadow-inset-hover'],
+        '@media (hover: hover)': `inset 0px 0px 0px 2px color-mix(in srgb, ${colorVars['--color-border-emphasized']} 30%, transparent)`,
       },
-      ':focus-within': shadowVars['--shadow-inset-selected'],
+      ':focus-within': `inset 0px 0px 0px 2px ${colorVars['--color-accent-muted']}`,
     },
     outline: 'none',
   },
