@@ -33,6 +33,7 @@ import {
   XDSField,
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
+  inputWrapperStyles,
 } from '../Field';
 import {XDSDivider} from '../Divider';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
@@ -42,7 +43,6 @@ import {
   sizeVars,
   spacingVars,
   radiusVars,
-  shadowVars,
   durationVars,
   easeVars,
   typographyVars,
@@ -75,14 +75,6 @@ const styles = stylex.create({
     width: '100%',
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-3'],
-    borderWidth: borderVars['--border-width'],
-    borderStyle: 'solid',
-    borderColor: {
-      default: colorVars['--color-border-emphasized'],
-      ':focus-within': colorVars['--color-accent'],
-    },
-    borderRadius: radiusVars['--radius-element'],
-    backgroundColor: colorVars['--color-background-surface'],
     fontFamily: typographyVars['--font-family-body'],
     fontSize: {
       default: typeScaleVars['--text-label-size'],
@@ -91,17 +83,6 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-label-leading'],
     color: colorVars['--color-text-primary'],
     cursor: 'pointer',
-    transitionProperty: 'border-color, box-shadow',
-    transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easeVars['--ease-standard'],
-    boxShadow: {
-      default: 'none',
-      ':hover:not(:focus-within)': {
-        '@media (hover: hover)': shadowVars['--shadow-inset-hover'],
-      },
-      ':focus-within': shadowVars['--shadow-inset-selected'],
-    },
-    outline: 'none',
   },
   // Trigger button — the actual combobox button, visually integrated with the container
   trigger: {
@@ -129,11 +110,6 @@ const styles = stylex.create({
     },
     outlineOffset: '0',
     borderRadius: radiusVars['--radius-element'],
-  },
-  triggerDisabled: {
-    cursor: 'not-allowed',
-    opacity: 0.5,
-    borderColor: colorVars['--color-border-emphasized'],
   },
   triggerPlaceholder: {
     color: colorVars['--color-text-secondary'],
@@ -863,9 +839,10 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
         {...mergeProps(
           xdsClassName('selector', {size, status: status?.type ?? null}),
           stylex.props(
+            inputWrapperStyles.base,
             styles.triggerContainer,
             sizeStyles[size],
-            isDisabled && styles.triggerDisabled,
+            isDisabled && inputWrapperStyles.disabled,
             !selectedItem && styles.triggerPlaceholder,
             status && inputStatusBorderStyles[status.type],
             status && inputStatusHoverShadowStyles[status.type],
