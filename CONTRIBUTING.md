@@ -339,7 +339,6 @@ You can also download the binary directly from
 open the project in your IDE — `node_modules` is on the local filesystem
 and doesn't need network to use.
 
-**Custom npm mirror:** `COREPACK_NPM_REGISTRY=https://your-mirror corepack enable`
 
 ### Storybook Issues
 
