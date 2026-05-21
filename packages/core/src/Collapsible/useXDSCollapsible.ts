@@ -99,8 +99,8 @@ export function useXDSCollapsible(
 
   // Determine open state from the appropriate source
   let isOpen: boolean;
-  if (isControlledByGroup) {
-    isOpen = group.isOpen(value!);
+  if (isControlledByGroup && value != null) {
+    isOpen = group.isOpen(value);
   } else if (config?.isOpen !== undefined) {
     isOpen = config.isOpen;
   } else {
@@ -109,8 +109,8 @@ export function useXDSCollapsible(
 
   // Toggle handler dispatches to the appropriate controller
   const toggle = () => {
-    if (isControlledByGroup) {
-      group.toggle(value!);
+    if (isControlledByGroup && value != null) {
+      group.toggle(value);
     } else if (config?.onOpenChange) {
       config.onOpenChange(!isOpen);
     } else {

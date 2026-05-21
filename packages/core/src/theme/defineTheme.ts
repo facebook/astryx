@@ -750,7 +750,7 @@ function expandContainerPadding(
     parsed.blockStart === parsed.blockEnd;
 
   if (allSame) {
-    tokens.push([prefix, effectiveInlineStart!]);
+    tokens.push([prefix, effectiveInlineStart ?? '']);
     return tokens;
   }
 

@@ -140,14 +140,14 @@ export function defineSyntaxTheme(input: SyntaxThemeInput): SyntaxTheme {
   }
 
   // Resolve tuples to light-dark() CSS strings
-  const resolved: SyntaxThemeTokenMap = {} as SyntaxThemeTokenMap;
+  const resolved: Partial<SyntaxThemeTokenMap> = {};
   for (const key of ALL_SYNTAX_KEYS) {
     resolved[key] = resolveTokenValue(input.tokens[key]);
   }
 
   return {
     name: input.name,
-    tokens: resolved,
+    tokens: resolved as SyntaxThemeTokenMap,
     __inputTokens: {...input.tokens},
   };
 }

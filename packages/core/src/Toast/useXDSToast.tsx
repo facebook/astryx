@@ -40,7 +40,7 @@ function getFallbackContext(): XDSToastContextValue {
   container.setAttribute('data-xds-toast-fallback', '');
   document.body.appendChild(container);
 
-  let resolveCtx: (ctx: XDSToastContextValue) => void;
+  let resolveCtx: ((ctx: XDSToastContextValue) => void) | undefined;
   const ctxReady = new Promise<XDSToastContextValue>(r => {
     resolveCtx = r;
   });
@@ -52,7 +52,7 @@ function getFallbackContext(): XDSToastContextValue {
       if (ctx && !doneRef.current) {
         doneRef.current = true;
         fallbackContext = ctx;
-        resolveCtx!(ctx);
+        resolveCtx?.(ctx);
       }
     }, [ctx]);
     return null;

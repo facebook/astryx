@@ -492,9 +492,7 @@ export function XDSAppShell({
     mobileNavDefaultIsMobile,
   );
   const [uncontrolledMobileOpen, setUncontrolledMobileOpen] = useState(false);
-  const isMobileNavOpen = mobileNavIsControlled
-    ? mobileNavConfig!.isOpen!
-    : uncontrolledMobileOpen;
+  const isMobileNavOpen = mobileNavConfig?.isOpen ?? uncontrolledMobileOpen;
 
   const setMobileNavOpen = useCallback(
     (open: boolean) => {

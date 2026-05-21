@@ -314,6 +314,15 @@ interface FilterStore {
 const FilterStoreContext = createContext<FilterStore | null>(null);
 FilterStoreContext.displayName = 'FilterStoreContext';
 
+function useFilterStore(): FilterStore {
+  const store = use(FilterStoreContext);
+  if (!store)
+    throw new Error(
+      'useFilterStore must be used within a Table with filtering',
+    );
+  return store;
+}
+
 /** Variant is stable per plugin instance — kept in a separate context so
  *  slot components can read it without going through the mutable store. */
 const FilterVariantContext = createContext<XDSTableFilterVariant>('popover');
@@ -396,7 +405,7 @@ function TextFilterControl({
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
-  const store = use(FilterStoreContext)!;
+  const store = useFilterStore();
   const config = store.getConfig();
   const value = config.filters[columnKey];
   const strValue = typeof value === 'string' ? value : '';
@@ -431,7 +440,7 @@ function NumberFilterControl({
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
-  const store = use(FilterStoreContext)!;
+  const store = useFilterStore();
   const config = store.getConfig();
   const value = config.filters[columnKey];
   const numValue = typeof value === 'number' ? value : null;
@@ -490,7 +499,7 @@ function SelectorFilterControl({
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
-  const store = use(FilterStoreContext)!;
+  const store = useFilterStore();
   const config = store.getConfig();
   const value = config.filters[columnKey];
   const strValue = typeof value === 'string' ? value : '';
@@ -553,7 +562,7 @@ function MultiSelectorFilterControl({
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
-  const store = use(FilterStoreContext)!;
+  const store = useFilterStore();
   const config = store.getConfig();
   const value = config.filters[columnKey];
   const arrValue = Array.isArray(value) ? value : [];
@@ -594,7 +603,7 @@ function DateFilterControl({
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
-  const store = use(FilterStoreContext)!;
+  const store = useFilterStore();
   const value = store.getConfig().filters[columnKey] as string | undefined;
 
   return (
@@ -622,7 +631,7 @@ function TimeFilterControl({
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
-  const store = use(FilterStoreContext)!;
+  const store = useFilterStore();
   const value = store.getConfig().filters[columnKey] as string | undefined;
 
   return (
@@ -652,7 +661,7 @@ function StringListFilterControl({
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
-  const store = use(FilterStoreContext)!;
+  const store = useFilterStore();
   const value =
     (store.getConfig().filters[columnKey] as string[] | undefined) ?? [];
 
@@ -789,7 +798,7 @@ function PopoverFilterTrigger({
   header: string;
   operatorValue: OperatorValue;
 }) {
-  const store = use(FilterStoreContext)!;
+  const store = useFilterStore();
   const config = store.getConfig();
   const value = config.filters[columnKey];
   const hasValue = value != null;

@@ -280,10 +280,12 @@ export function clampTime(
   if (!parsed) return time;
 
   if (min && compareTime(time, min) < 0) {
-    return formatISOTime(parseISOTime(min)!, includeSeconds);
+    const parsedMin = parseISOTime(min);
+    if (parsedMin) return formatISOTime(parsedMin, includeSeconds);
   }
   if (max && compareTime(time, max) > 0) {
-    return formatISOTime(parseISOTime(max)!, includeSeconds);
+    const parsedMax = parseISOTime(max);
+    if (parsedMax) return formatISOTime(parsedMax, includeSeconds);
   }
 
   return time;

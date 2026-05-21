@@ -153,7 +153,10 @@ function TableRowInner<T extends Record<string, unknown>>({
     const cellRenderProps = applyPlugins(
       plugins,
       p => p.transformBodyCell,
-      {htmlProps: initialCellHtmlProps, styles: []} as BodyCellRenderProps,
+      {
+        htmlProps: initialCellHtmlProps,
+        styles: [],
+      } satisfies BodyCellRenderProps,
       col,
       item,
     );
@@ -161,7 +164,7 @@ function TableRowInner<T extends Record<string, unknown>>({
     const isDefaultRenderer = !col.renderCell;
     const rawContent = isDefaultRenderer
       ? defaultCellRenderer(item, col.key)
-      : col.renderCell!(item);
+      : (col.renderCell?.(item) ?? null);
 
     // In truncate mode, wrap default-rendered string content in
     // <XDSText maxLines={1}> for smart tooltips that only appear
@@ -197,7 +200,11 @@ function TableRowInner<T extends Record<string, unknown>>({
   const rowRenderProps = applyPlugins(
     plugins,
     p => p.transformBodyRow,
-    {htmlProps: {}, styles: [], children: <>{cells}</>} as BodyRowRenderProps,
+    {
+      htmlProps: {},
+      styles: [],
+      children: <>{cells}</>,
+    } satisfies BodyRowRenderProps,
     item,
     rowIndex,
   );
@@ -279,9 +286,12 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
   // Use stable empty array when no plugins provided
   const plugins = pluginsProp ?? (EMPTY_PLUGINS as TablePlugin<T>[]);
 
-  const RowComponent = XDSTableRow as React.ComponentType<TableRowComponentProps>;
-  const CellComponent = XDSTableCell as React.ComponentType<TableCellComponentProps>;
-  const HeaderCellComponent = XDSTableHeaderCell as React.ComponentType<TableHeaderCellComponentProps>;
+  const RowComponent =
+    XDSTableRow as React.ComponentType<TableRowComponentProps>;
+  const CellComponent =
+    XDSTableCell as React.ComponentType<TableCellComponentProps>;
+  const HeaderCellComponent =
+    XDSTableHeaderCell as React.ComponentType<TableHeaderCellComponentProps>;
 
   // Resolve columns: explicit > auto-generated from data.
   const baseColumns: XDSTableColumn<T>[] =
@@ -314,7 +324,7 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
   const tableRenderProps = applyPlugins(plugins, p => p.transformTable, {
     htmlProps: {...userTableProps},
     styles: children ? [styles.table, styles.tableAutoLayout] : [styles.table],
-  } as TableRenderProps);
+  } satisfies TableRenderProps);
 
   // --- Plugin pipeline: header cells ---
   const headerCells = resolvedColumns.map(col => {
@@ -335,7 +345,7 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
         htmlProps: initialHeaderHtmlProps,
         styles: [],
         content: headerContent,
-      } as HeaderCellRenderProps,
+      } satisfies HeaderCellRenderProps,
       col,
     );
 
@@ -397,7 +407,7 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
       htmlProps: {},
       styles: [],
       children: <>{headerCells}</>,
-    } as HeaderRowRenderProps,
+    } satisfies HeaderRowRenderProps,
   );
 
   // --- Render ---
@@ -424,29 +434,55 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
         stylex.props(...tableRenderProps.styles),
       )}
       style={tableStyle}>
-      {children
-        ? children
-        : (
-          <>
-            {hasColumns && (
-              <XDSTableHeader>
-                <RowComponent {...headerRowRenderProps.htmlProps} xstyle={headerRowRenderProps.styles}>
-                  {headerRowRenderProps.children}
-                </RowComponent>
-              </XDSTableHeader>
-            )}
-            <XDSTableBody>
-              {hasData
-                ? data.map((item, rowIndex) => {
-                    const rowKey = idKey == null ? rowIndex : typeof idKey === 'function' ? idKey(item) : String(item[idKey]);
-                    return (<MemoizedTableRow<T> key={rowKey} item={item} rowIndex={rowIndex} rowKey={rowKey} columns={resolvedColumns} plugins={plugins} textOverflow={textOverflow} RowComponent={RowComponent} CellComponent={CellComponent} />);
-                  })
-                : data != null && emptyState !== false && (
-                    <tr><td colSpan={resolvedColumns.length}>{emptyState ?? <XDSEmptyState title="No data" isCompact />}</td></tr>
-                  )}
-            </XDSTableBody>
-          </>
-        )}
+      {children ? (
+        children
+      ) : (
+        <>
+          {hasColumns && (
+            <XDSTableHeader>
+              <RowComponent
+                {...headerRowRenderProps.htmlProps}
+                xstyle={headerRowRenderProps.styles}>
+                {headerRowRenderProps.children}
+              </RowComponent>
+            </XDSTableHeader>
+          )}
+          <XDSTableBody>
+            {hasData
+              ? data.map((item, rowIndex) => {
+                  const rowKey =
+                    idKey == null
+                      ? rowIndex
+                      : typeof idKey === 'function'
+                        ? idKey(item)
+                        : String(item[idKey]);
+                  return (
+                    <MemoizedTableRow<T>
+                      key={rowKey}
+                      item={item}
+                      rowIndex={rowIndex}
+                      rowKey={rowKey}
+                      columns={resolvedColumns}
+                      plugins={plugins}
+                      textOverflow={textOverflow}
+                      RowComponent={RowComponent}
+                      CellComponent={CellComponent}
+                    />
+                  );
+                })
+              : data != null &&
+                emptyState !== false && (
+                  <tr>
+                    <td colSpan={resolvedColumns.length}>
+                      {emptyState ?? (
+                        <XDSEmptyState title="No data" isCompact />
+                      )}
+                    </td>
+                  </tr>
+                )}
+          </XDSTableBody>
+        </>
+      )}
     </table>
   );
 

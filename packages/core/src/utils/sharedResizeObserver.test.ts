@@ -31,9 +31,8 @@ describe('sharedResizeObserver', () => {
   });
 
   it('creates a single ResizeObserver for multiple elements', async () => {
-    const {observeResize, unobserveResize} = await import(
-      './sharedResizeObserver'
-    );
+    const {observeResize, unobserveResize} =
+      await import('./sharedResizeObserver');
 
     const el1 = document.createElement('div');
     const el2 = document.createElement('div');
@@ -51,9 +50,8 @@ describe('sharedResizeObserver', () => {
   });
 
   it('fires callback synchronously on registration', async () => {
-    const {observeResize, unobserveResize} = await import(
-      './sharedResizeObserver'
-    );
+    const {observeResize, unobserveResize} =
+      await import('./sharedResizeObserver');
 
     const el = document.createElement('div');
     const cb = vi.fn();
@@ -62,17 +60,14 @@ describe('sharedResizeObserver', () => {
 
     // Callback should have fired once immediately with a synthetic entry
     expect(cb).toHaveBeenCalledTimes(1);
-    expect(cb).toHaveBeenCalledWith(
-      expect.objectContaining({target: el}),
-    );
+    expect(cb).toHaveBeenCalledWith(expect.objectContaining({target: el}));
 
     unobserveResize(el);
   });
 
   it('dispatches resize entries to the correct callbacks', async () => {
-    const {observeResize, unobserveResize} = await import(
-      './sharedResizeObserver'
-    );
+    const {observeResize, unobserveResize} =
+      await import('./sharedResizeObserver');
 
     const el1 = document.createElement('div');
     const el2 = document.createElement('div');
@@ -108,9 +103,8 @@ describe('sharedResizeObserver', () => {
   });
 
   it('destroys the observer when the last element is unobserved', async () => {
-    const {observeResize, unobserveResize} = await import(
-      './sharedResizeObserver'
-    );
+    const {observeResize, unobserveResize} =
+      await import('./sharedResizeObserver');
 
     const el1 = document.createElement('div');
     const el2 = document.createElement('div');
@@ -126,9 +120,8 @@ describe('sharedResizeObserver', () => {
   });
 
   it('recreates observer after full teardown', async () => {
-    const {observeResize, unobserveResize} = await import(
-      './sharedResizeObserver'
-    );
+    const {observeResize, unobserveResize} =
+      await import('./sharedResizeObserver');
 
     const el1 = document.createElement('div');
     observeResize(el1, vi.fn());
@@ -143,9 +136,8 @@ describe('sharedResizeObserver', () => {
   });
 
   it('replaces callback when same element is observed twice', async () => {
-    const {observeResize, unobserveResize} = await import(
-      './sharedResizeObserver'
-    );
+    const {observeResize, unobserveResize} =
+      await import('./sharedResizeObserver');
 
     const el = document.createElement('div');
     const cb1 = vi.fn();

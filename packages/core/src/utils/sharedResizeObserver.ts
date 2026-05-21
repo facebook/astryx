@@ -66,7 +66,8 @@ export function observeResize(
 
   // Fire once immediately so callers get an initial measurement
   // without duplicating their logic outside the observer path.
-  callback({target: element} as ResizeObserverEntry);
+  const entry: Partial<ResizeObserverEntry> = {target: element};
+  callback(entry as ResizeObserverEntry);
 }
 
 /**

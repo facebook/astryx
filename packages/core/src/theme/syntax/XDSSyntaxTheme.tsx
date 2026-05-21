@@ -77,14 +77,14 @@ export function useXDSSyntaxTheme(): UseXDSSyntaxThemeReturn | null {
 
   const tokens = useMemo(() => {
     if (!ctx) return null;
-    const resolved = {} as Record<SyntaxThemeTokenKey, string>;
+    const resolved: Partial<Record<SyntaxThemeTokenKey, string>> = {};
     for (const key of ALL_SYNTAX_KEYS) {
       resolved[key] = resolveSyntaxTokenForMode(
         ctx.theme.__inputTokens[key],
         effectiveMode,
       );
     }
-    return resolved;
+    return resolved as Record<SyntaxThemeTokenKey, string>;
   }, [ctx, effectiveMode]);
 
   if (!ctx || !tokens) return null;

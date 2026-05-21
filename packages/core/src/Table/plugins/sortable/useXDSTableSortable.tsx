@@ -215,7 +215,7 @@ function SortHeaderButton<T extends Record<string, unknown>>({
   configRef: React.RefObject<UseXDSTableSortableConfig>;
 }) {
   const config = configRef.current;
-  const sortKey = resolveSortKey(column)!;
+  const sortKey = resolveSortKey(column) ?? '';
   const entryIndex = config.sort.findIndex(e => e.sortKey === sortKey);
   const entry = entryIndex >= 0 ? config.sort[entryIndex] : null;
   const direction = entry?.direction ?? null;

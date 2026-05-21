@@ -142,8 +142,8 @@ export function XDSCheckboxListItem({
   // 2. Standalone mode (isChecked prop)
   // 3. Neither → unchecked
   let resolvedChecked: boolean | 'indeterminate' = false;
-  if (ctx && ctx.value !== undefined) {
-    resolvedChecked = ctx.value.includes(value!);
+  if (ctx && ctx.value !== undefined && value !== undefined) {
+    resolvedChecked = ctx.value.includes(value);
   } else if (isChecked !== undefined) {
     resolvedChecked = isChecked;
   }
@@ -154,13 +154,13 @@ export function XDSCheckboxListItem({
   const handleToggle = () => {
     if (effectiveDisabled || effectiveReadOnly || isBusy) return;
 
-    if (ctx && ctx.value !== undefined) {
+    if (ctx && ctx.value !== undefined && value !== undefined) {
       // Collection mode
-      const currentlyChecked = ctx.value.includes(value!);
+      const currentlyChecked = ctx.value.includes(value);
       if (currentlyChecked) {
         ctx.onChange?.(ctx.value.filter(v => v !== value));
       } else {
-        ctx.onChange?.([...ctx.value, value!]);
+        ctx.onChange?.([...ctx.value, value]);
       }
     } else {
       // Standalone mode

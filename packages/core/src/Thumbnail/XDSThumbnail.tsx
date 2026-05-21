@@ -171,6 +171,7 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-element'],
     overflow: 'hidden',
   },
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- CSS custom property requires type widening for StyleX
   removeButtonOverrides: {
     position: 'absolute',
     top: spacingVars['--spacing-1'],

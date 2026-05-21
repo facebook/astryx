@@ -70,7 +70,7 @@ export function groupItems<T extends XDSSearchableItem>(
         groupOrder.push(group);
         groups.set(group, []);
       }
-      groups.get(group)!.push(item);
+      groups.get(group)?.push(item);
     } else {
       ungrouped.push(item);
     }
@@ -78,7 +78,7 @@ export function groupItems<T extends XDSSearchableItem>(
 
   const result: ItemGroup<T>[] = groupOrder.map(heading => ({
     heading,
-    items: groups.get(heading)!,
+    items: groups.get(heading) ?? [],
   }));
 
   if (ungrouped.length > 0) {
