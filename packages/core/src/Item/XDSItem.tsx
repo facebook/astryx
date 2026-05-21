@@ -48,6 +48,13 @@ export interface XDSItemProps extends XDSBaseProps<HTMLElement> {
   as?: 'div' | 'li' | 'span';
 
   /**
+   * Content rendered as a direct flex child before the media slot,
+   * without a wrapper element. Use for list markers or other content
+   * that needs its own flex alignment (e.g. alignSelf: 'baseline').
+   */
+  startAdornment?: ReactNode;
+
+  /**
    * Leading visual — avatar, icon, image, or any ReactNode.
    */
   media?: ReactNode;
@@ -296,6 +303,7 @@ const densityStyles = stylex.create({
  */
 export function XDSItem({
   as: Component = 'div',
+  startAdornment,
   media,
   label,
   description,
@@ -381,6 +389,7 @@ export function XDSItem({
 
   const innerContent = (
     <>
+      {startAdornment}
       {media != null && <span {...stylex.props(styles.media)}>{media}</span>}
 
       {hasParentRole ? (

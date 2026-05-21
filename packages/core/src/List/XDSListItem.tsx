@@ -223,21 +223,12 @@ export function XDSListItem({
 
   const itemDensity = density === 'compact' ? 'compact' : 'default';
 
-  const mediaContent =
-    marker != null && startContent != null ? (
-      <>
-        {marker}
-        {startContent}
-      </>
-    ) : (
-      (marker ?? startContent)
-    );
-
   return (
     <XDSItem
       as="li"
       ref={ref}
-      media={mediaContent}
+      startAdornment={marker}
+      media={startContent}
       label={label}
       description={description}
       trailing={endContent}
