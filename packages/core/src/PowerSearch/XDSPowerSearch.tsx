@@ -789,7 +789,7 @@ export function XDSPowerSearch({
       ) {
         const entity = filter.value.value[0];
         tokenIcon = (
-          <XDSAvatar src={entity.photo} name={entity.label} size="xsmall" />
+          <XDSAvatar src={entity.photo} name={entity.label} size={16} />
         );
       }
 
