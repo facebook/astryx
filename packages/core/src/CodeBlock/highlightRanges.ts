@@ -54,7 +54,7 @@ function ensureDynamicHighlightType(tokenType: string): void {
     const style = document.createElement('style');
     style.setAttribute('data-xds-highlight-dynamic', '');
     document.head.appendChild(style);
-    dynamicStyleSheet = style.sheet ?? undefined;
+    dynamicStyleSheet = style.sheet ?? null;
     if (!dynamicStyleSheet) return;
   }
 

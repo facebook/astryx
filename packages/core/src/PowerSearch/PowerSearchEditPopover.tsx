@@ -377,9 +377,9 @@ function NestedEditor({
           ...partialFilter,
           value: {
             type: 'nested',
-            value: newSubFilters.map(sf =>
-              editableToCompleteFilter(config, sf),
-            ),
+            value: newSubFilters
+              .map(sf => editableToCompleteFilter(config, sf))
+              .filter((sf): sf is PowerSearchFilter => sf != null),
           },
         });
       } else {

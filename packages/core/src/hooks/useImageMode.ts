@@ -110,12 +110,13 @@ export function useImageMode(
       return;
     }
 
+    const srcUrl = src;
     let cancelled = false;
 
     async function detect() {
       try {
         // Load image as bitmap (async, doesn't block rendering)
-        const response = await fetch(src, {mode: 'cors'});
+        const response = await fetch(srcUrl, {mode: 'cors'});
         const blob = await response.blob();
         const bitmap = await createImageBitmap(blob);
 

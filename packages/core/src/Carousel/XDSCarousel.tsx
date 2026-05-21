@@ -168,9 +168,10 @@ const styles = stylex.create({
     opacity: 0,
     pointerEvents: 'none' as const,
   },
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- CSS custom property requires type widening for StyleX
   buttonRadiusOverride: {
     '--_button-radius': radiusVars['--radius-full'],
-  } satisfies Record<string, string>,
+  } as Record<string, string>,
 });
 
 const gapStyles = stylex.create({
