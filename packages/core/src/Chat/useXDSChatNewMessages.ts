@@ -15,6 +15,10 @@
  * Also calls onResize on every content height change so the scroll
  * hook can follow growing content (streaming).
  *
+ * Returns a callback ref — pass it as the contentRef in the layout
+ * context. When the element mounts (even late), the observer attaches
+ * automatically without needing state or version counters.
+ *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts (exports)
  */
@@ -27,12 +31,6 @@ import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
 // =============================================================================
 
 export interface UseXDSChatNewMessagesOptions {
-  /**
-   * Ref to the content element to observe (message list inner div).
-   * Can be a callback ref or a regular ref.
-   */
-  contentRef: React.RefObject<HTMLElement | null>;
-
   /**
    * Whether the scroll is currently locked (following content).
    * When locked, new messages don't flag — the user is already at the bottom.
@@ -52,6 +50,12 @@ export interface UseXDSChatNewMessagesReturn {
 
   /** Dismiss the new messages flag. */
   dismiss: () => void;
+
+  /**
+   * Callback ref to attach to the content element.
+   * Handles late mount — observer attaches whenever the element appears.
+   */
+  contentRef: (el: HTMLElement | null) => void;
 }
 
 // =============================================================================
@@ -59,7 +63,6 @@ export interface UseXDSChatNewMessagesReturn {
 // =============================================================================
 
 export function useXDSChatNewMessages({
-  contentRef,
   isLocked,
   onResize,
 }: UseXDSChatNewMessagesOptions): UseXDSChatNewMessagesReturn {
@@ -71,36 +74,61 @@ export function useXDSChatNewMessages({
   const onResizeRef = useRef(onResize);
   onResizeRef.current = onResize;
 
-  // Observe content for height changes
-  useEffect(() => {
-    const el = contentRef.current;
-    if (!el) {
-      return;
-    }
+  // Track the current content element. When the callback ref fires,
+  // we tear down the old observer and set up a new one.
+  const elementRef = useRef<HTMLElement | null>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
 
+  const attach = useCallback((el: HTMLElement) => {
     observeResize(el, () => {
-      // Notify scroll hook of any height change
       onResizeRef.current?.();
 
-      // Check if a new message was appended
       const messages = el.getElementsByClassName('xds-chat-message');
       const last = messages.length > 0 ? messages[messages.length - 1] : null;
 
       if (last && last !== lastMessageRef.current) {
         lastMessageRef.current = last;
-        // Only flag if unlocked — user is scrolled up
         if (!isLockedRef.current) {
           setHasNewMessages(true);
         }
       }
     });
 
-    return () => unobserveResize(el);
-  }, [contentRef]);
+    cleanupRef.current = () => unobserveResize(el);
+  }, []);
+
+  const detach = useCallback(() => {
+    cleanupRef.current?.();
+    cleanupRef.current = null;
+  }, []);
+
+  // Callback ref — handles mount, unmount, and element swap
+  const contentRef = useCallback(
+    (el: HTMLElement | null) => {
+      if (el === elementRef.current) {
+        return;
+      }
+
+      // Detach from previous element
+      detach();
+      elementRef.current = el;
+
+      // Attach to new element
+      if (el) {
+        attach(el);
+      }
+    },
+    [attach, detach],
+  );
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => detach();
+  }, [detach]);
 
   const dismiss = useCallback(() => {
     setHasNewMessages(false);
   }, []);
 
-  return {hasNewMessages, dismiss};
+  return {hasNewMessages, dismiss, contentRef};
 }

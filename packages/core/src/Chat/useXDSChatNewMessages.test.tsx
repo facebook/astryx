@@ -2,7 +2,7 @@
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, act} from '@testing-library/react';
-import {useRef, useState} from 'react';
+import {useState} from 'react';
 import {XDSChatLayout} from './XDSChatLayout';
 import {XDSChatMessageList} from './XDSChatMessageList';
 import {XDSChatMessage} from './XDSChatMessage';
@@ -10,7 +10,7 @@ import {XDSChatMessageBubble} from './XDSChatMessageBubble';
 import {useXDSChatNewMessages} from './useXDSChatNewMessages';
 
 // ---------------------------------------------------------------------------
-// Test infrastructure: track which elements ResizeObserver is observing
+// Test infrastructure: track ResizeObserver observations
 // ---------------------------------------------------------------------------
 
 type ObserverEntry = {element: Element; callback: ResizeObserverCallback};
@@ -27,7 +27,6 @@ class FakeResizeObserver {
   observe(el: Element) {
     this.observed.add(el);
     activeObservations.push({element: el, callback: this.callback});
-    // Fire initial callback (matches real ResizeObserver behavior)
     this.callback([{target: el} as ResizeObserverEntry], this);
   }
 
@@ -53,48 +52,34 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-/** Fire a resize on all currently-observed elements */
-function fireAllResizes() {
-  for (const {element, callback} of activeObservations) {
-    callback([{target: element} as ResizeObserverEntry], {} as ResizeObserver);
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('useXDSChatNewMessages — late content mount (issue #2282)', () => {
-  it('calls onResize when XDSChatMessageList is present from initial render', () => {
+describe('useXDSChatNewMessages — callback ref (issue #2282)', () => {
+  it('attaches observer when element is provided immediately', () => {
     const onResize = vi.fn();
 
-    // Minimal test: hook directly with a pre-set ref
     function TestHarness() {
-      const ref = useRef<HTMLDivElement>(null);
-      useXDSChatNewMessages({contentRef: ref, isLocked: true, onResize});
+      const {contentRef} = useXDSChatNewMessages({isLocked: true, onResize});
       return (
-        <div ref={ref} data-testid="content">
+        <div ref={contentRef} data-testid="content">
           <div className="xds-chat-message">msg</div>
         </div>
       );
     }
 
     render(<TestHarness />);
-
-    // observeResize fires immediately on registration, so onResize should
-    // have been called at least once
+    // observeResize fires initial callback → onResize called
     expect(onResize).toHaveBeenCalled();
   });
 
-  it('does NOT call onResize when contentRef is set after initial effect (the bug)', () => {
+  it('attaches observer when element mounts late (callback ref)', () => {
     const onResize = vi.fn();
 
-    // Reproduces the Clio pattern: contentRef starts null, gets set later
     function TestHarness() {
-      const contentRef = useRef<HTMLElement | null>(null);
+      const {contentRef} = useXDSChatNewMessages({isLocked: true, onResize});
       const [mounted, setMounted] = useState(false);
-
-      useXDSChatNewMessages({contentRef, isLocked: true, onResize});
 
       return (
         <>
@@ -102,11 +87,7 @@ describe('useXDSChatNewMessages — late content mount (issue #2282)', () => {
             Mount
           </button>
           {mounted && (
-            <div
-              ref={el => {
-                contentRef.current = el;
-              }}
-              data-testid="content">
+            <div ref={contentRef} data-testid="content">
               <div className="xds-chat-message">msg</div>
             </div>
           )}
@@ -116,28 +97,53 @@ describe('useXDSChatNewMessages — late content mount (issue #2282)', () => {
 
     const {getByTestId} = render(<TestHarness />);
 
-    // onResize should NOT have been called — contentRef.current was null
+    // Before mount — no element, no observer
     expect(onResize).not.toHaveBeenCalled();
 
-    // Now mount the content element (sets contentRef.current)
+    // Mount the content element
     act(() => {
       getByTestId('mount').click();
     });
 
-    // Fire resizes on all observed elements
-    fireAllResizes();
-
-    // BUG: onResize is STILL not called because the effect never re-ran
-    // to observe the newly-set contentRef.current.
-    // When this test fails (after the fix), change the assertion to:
-    //   expect(onResize).toHaveBeenCalled();
-    expect(onResize).not.toHaveBeenCalled();
+    // Callback ref fires → observer attaches → initial callback → onResize
+    expect(onResize).toHaveBeenCalled();
   });
 
-  it('does NOT observe content element in full XDSChatLayout with late XDSChatMessageList mount', () => {
-    // End-to-end reproduction of the Clio bug:
-    // XDSChatLayout starts with emptyState, then XDSChatMessageList
-    // mounts when the first message arrives.
+  it('detaches observer when element unmounts', () => {
+    const onResize = vi.fn();
+
+    function TestHarness() {
+      const {contentRef} = useXDSChatNewMessages({isLocked: true, onResize});
+      const [mounted, setMounted] = useState(true);
+
+      return (
+        <>
+          <button data-testid="unmount" onClick={() => setMounted(false)}>
+            Unmount
+          </button>
+          {mounted && (
+            <div ref={contentRef} data-testid="content">
+              <div className="xds-chat-message">msg</div>
+            </div>
+          )}
+        </>
+      );
+    }
+
+    const {getByTestId} = render(<TestHarness />);
+    expect(onResize).toHaveBeenCalled();
+
+    const observationsBefore = activeObservations.length;
+
+    act(() => {
+      getByTestId('unmount').click();
+    });
+
+    // Observer should have been detached
+    expect(activeObservations.length).toBeLessThan(observationsBefore);
+  });
+
+  it('works end-to-end with XDSChatLayout conditional XDSChatMessageList', () => {
     function TestApp() {
       const [messages, setMessages] = useState<string[]>([]);
 
@@ -169,38 +175,24 @@ describe('useXDSChatNewMessages — late content mount (issue #2282)', () => {
 
     const {getByTestId, getByText} = render(<TestApp />);
 
-    // Verify empty state is showing
+    // Empty state showing — no content observer yet
     expect(getByText('Empty state')).toBeInTheDocument();
 
-    // Record observations before message
-    const observationCountBefore = activeObservations.length;
-
-    // Add first message — triggers XDSChatMessageList mount
+    // Add first message — XDSChatMessageList mounts
     act(() => {
       getByTestId('add-message').click();
     });
 
-    // Verify message rendered
     expect(getByText('msg-0')).toBeInTheDocument();
 
-    // Check if the inner content div (inside XDSChatMessageList) got observed.
-    // The inner div has the message list gap styles applied.
-    // We look for an observation on an element that contains .xds-chat-message
-    // AND is not the root layout element.
+    // The inner content div should now be observed
     const contentObservation = activeObservations.find(o => {
       const el = o.element;
-      // Must contain a chat message
       if (!el.querySelector?.('.xds-chat-message')) {return false;}
-      // Must NOT be the root chat-layout (that's the density observer)
       if (el.className?.includes('xds-chat-layout')) {return false;}
       return true;
     });
 
-    // BUG: The content inner div is NOT being observed because
-    // useXDSChatNewMessages's effect ran when contentRef.current was null
-    // and never re-ran after XDSChatMessageList set it.
-    // When the fix is applied, change this to:
-    //   expect(contentObservation).toBeDefined();
-    expect(contentObservation).toBeUndefined();
+    expect(contentObservation).toBeDefined();
   });
 });
