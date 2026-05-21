@@ -3,6 +3,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSAvatarGroup, XDSAvatarGroupOverflow} from '@xds/core/AvatarGroup';
 import {XDSAvatar} from '@xds/core/Avatar';
+import {XDSStatusDot} from '@xds/core/StatusDot';
 import {spacingVars, typographyVars} from '@xds/core/theme/tokens.stylex';
 
 const USERS = [
@@ -102,17 +103,17 @@ export const WithStatusDots: Story = {
       <XDSAvatar
         src="https://i.pravatar.cc/150?img=1"
         name="Alice"
-        statusDot={{color: 'positive'}}
+        status={<XDSStatusDot variant="success" label="Online" />}
       />
       <XDSAvatar
         src="https://i.pravatar.cc/150?img=2"
         name="Bob"
-        statusDot={{color: 'warning'}}
+        status={<XDSStatusDot variant="warning" label="Away" />}
       />
       <XDSAvatar
         src="https://i.pravatar.cc/150?img=3"
         name="Charlie"
-        statusDot={{color: 'negative'}}
+        status={<XDSStatusDot variant="error" label="Offline" />}
       />
     </XDSAvatarGroup>
   ),

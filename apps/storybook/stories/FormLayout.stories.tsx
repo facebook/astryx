@@ -233,7 +233,7 @@ export const InDialog: Story = {
     return (
       <div {...stylex.props(dialogStyles.container)}>
         <div {...stylex.props(dialogStyles.header)}>
-          <XDSText variant="subtitle">Edit Profile</XDSText>
+          <XDSText type="label">Edit Profile</XDSText>
         </div>
         <div {...stylex.props(dialogStyles.body)}>
           <form

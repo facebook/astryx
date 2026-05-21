@@ -156,8 +156,16 @@ export const VerticalWithContent: Story = {
           <XDSStep step={0} label="Account" description="Create your account">
             {activeStep === 0 && (
               <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
-                <XDSTextInput label="Email" placeholder="you@example.com" />
-                <XDSTextInput label="Password" placeholder="••••••••" />
+                <XDSTextInput
+                  label="Email"
+                  placeholder="you@example.com"
+                  value=""
+                />
+                <XDSTextInput
+                  label="Password"
+                  placeholder="••••••••"
+                  value=""
+                />
                 <div>
                   <XDSButton
                     label="Continue"
@@ -174,9 +182,17 @@ export const VerticalWithContent: Story = {
             description="Tell us about yourself">
             {activeStep === 1 && (
               <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
-                <XDSTextInput label="Full name" placeholder="Jane Doe" />
-                <XDSTextInput label="Company" placeholder="Acme Inc." />
-                <XDSTextInput label="Role" placeholder="Engineer" />
+                <XDSTextInput
+                  label="Full name"
+                  placeholder="Jane Doe"
+                  value=""
+                />
+                <XDSTextInput
+                  label="Company"
+                  placeholder="Acme Inc."
+                  value=""
+                />
+                <XDSTextInput label="Role" placeholder="Engineer" value="" />
                 <div style={{display: 'flex', gap: 8}}>
                   <XDSButton
                     label="Back"

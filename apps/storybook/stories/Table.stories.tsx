@@ -98,7 +98,7 @@ const columns: XDSTableColumn<User>[] = [
 // Meta
 // =============================================================================
 
-const meta: Meta<typeof XDSTable> = {
+const meta: Meta = {
   title: 'Core/Table',
   component: XDSTable,
   tags: ['autodocs'],
@@ -130,7 +130,7 @@ const meta: Meta<typeof XDSTable> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj;
 
 // =============================================================================
 // Stories

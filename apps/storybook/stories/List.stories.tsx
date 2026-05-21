@@ -235,13 +235,13 @@ function ToggleHeaderDemo() {
             alignItems: 'center',
             justifyContent: 'space-between',
           }}>
-          <XDSText variant="label" size="large">
+          <XDSText type="label" size="lg">
             Notifications
           </XDSText>
           <XDSSwitch
             label="Show archived"
-            isSelected={showArchived}
-            onChange={setShowArchived}
+            value={showArchived}
+            onChange={checked => setShowArchived(checked)}
           />
         </div>
       }>
@@ -289,7 +289,7 @@ export const HeaderInFlexParent: Story = {
         padding: 16,
       }}>
       <div style={{flex: 1}}>
-        <XDSText variant="label" size="large">
+        <XDSText type="label" size="lg">
           Sidebar
         </XDSText>
       </div>

@@ -2,8 +2,14 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {Fragment} from 'react';
-import {XDSSVGIcon, type SVGIconVariation, type SVGIconDef} from '@xds/lab';
+import {
+  XDSSVGIcon,
+  type SVGIconVariation,
+  type SVGIconDef,
+  type IconShape,
+} from '@xds/lab';
 import {XDSStack, XDSText, XDSDivider} from '@xds/core';
+import {XDSHeading} from '@xds/core/Text';
 import type {
   XIFIcon,
   XIFPath,
@@ -22,14 +28,16 @@ import {
 // =============================================================================
 
 function xifToSvgIconDef(xif: XIFIcon): SVGIconDef {
-  const toPaths = (paths: XIFPath[]) =>
-    paths.map(p => ({
-      type: p.type ?? ('path' as const),
-      attrs: Object.fromEntries(
-        Object.entries(p.attrs).map(([k, v]) => [k, String(v)]),
-      ),
-      role: p.role,
-    }));
+  const toPaths = (paths: XIFPath[]): IconShape[] =>
+    paths
+      .filter(p => (p.type ?? 'path') !== 'ellipse')
+      .map(p => ({
+        type: (p.type ?? 'path') as IconShape['type'],
+        attrs: Object.fromEntries(
+          Object.entries(p.attrs).map(([k, v]) => [k, String(v)]),
+        ),
+        role: p.role,
+      }));
 
   const primary = toPaths(
     xif.paths.filter(p => (p.layer ?? 'primary') === 'primary'),
@@ -68,7 +76,7 @@ const VARIATIONS: SVGIconVariation[] = [
 export const SpecExamples: StoryObj = {
   render: () => (
     <XDSStack direction="vertical" gap={3}>
-      <XDSText type="heading-3">XIF Spec Examples</XDSText>
+      <XDSHeading level={3}>XIF Spec Examples</XDSHeading>
       <XDSText type="supporting">
         Icons defined using the XDS Icon Format specification. Each demonstrates
         a different capability: stroke-only, two-layer knockout, composable
@@ -187,7 +195,7 @@ export const CompositionSlots: StoryObj = {
 
     return (
       <XDSStack direction="vertical" gap={3}>
-        <XDSText type="heading-3">Composition via Slots</XDSText>
+        <XDSHeading level={3}>Composition via Slots</XDSHeading>
         <XDSText type="supporting">
           Icons with <code>slots</code> accept sub-icons. One shield base +
           different badges = many composed icons without extra path data.
@@ -215,7 +223,7 @@ export const CompositionSlots: StoryObj = {
 
         <XDSDivider />
 
-        <XDSText type="heading-4">Slot Definition</XDSText>
+        <XDSHeading level={4}>Slot Definition</XDSHeading>
         <XDSText type="supporting">
           The shield icon defines:{' '}
           <code>
@@ -251,7 +259,7 @@ export const PersonalityAxes: StoryObj = {
 
     return (
       <XDSStack direction="vertical" gap={3}>
-        <XDSText type="heading-3">Personality Axes (Conceptual)</XDSText>
+        <XDSHeading level={3}>Personality Axes (Conceptual)</XDSHeading>
         <XDSText type="supporting">
           Shape personality parameters adjust the <em>feel</em> of icons without
           changing their structure. All adjustments are relative — preserving
@@ -378,7 +386,7 @@ export const AnimationIntent: StoryObj = {
     return (
       <XDSStack direction="vertical" gap={3}>
         <style dangerouslySetInnerHTML={{__html: animStyles}} />
-        <XDSText type="heading-3">Animation Types (Live)</XDSText>
+        <XDSHeading level={3}>Animation Types (Live)</XDSHeading>
         <XDSText type="supporting">
           Icons declare animation intent per path. The theme resolves timing.
           Each demo loops on page load.
@@ -468,7 +476,7 @@ export const PathTransformPlayground: StoryObj = {
 
     return (
       <XDSStack direction="vertical" gap={4}>
-        <XDSText type="heading-3">Path Transform Playground</XDSText>
+        <XDSHeading level={3}>Path Transform Playground</XDSHeading>
         <XDSText type="supporting">
           Live path manipulation with sagitta-corrected corner rounding. Sharp
           corners (like star tips) round less aggressively than gentle corners —
@@ -476,7 +484,7 @@ export const PathTransformPlayground: StoryObj = {
         </XDSText>
 
         {/* Corner Rounding */}
-        <XDSText type="heading-4">Corner Rounding (sagitta-corrected)</XDSText>
+        <XDSHeading level={4}>Corner Rounding (sagitta-corrected)</XDSHeading>
         <XDSText type="supporting">
           Same cornerRounding value across all shapes. Sharp corners get less
           radius, gentle corners get more — visually balanced.
@@ -526,7 +534,7 @@ export const PathTransformPlayground: StoryObj = {
         <XDSDivider />
 
         {/* Segment Curvature */}
-        <XDSText type="heading-4">Segment Curvature</XDSText>
+        <XDSHeading level={4}>Segment Curvature</XDSHeading>
         <XDSText type="supporting">
           Straight line segments gain a perpendicular bow. Subtle at low values,
           pronounced at high.
@@ -576,9 +584,9 @@ export const PathTransformPlayground: StoryObj = {
         <XDSDivider />
 
         {/* Combined: Rounding + Curvature presets */}
-        <XDSText type="heading-4">
+        <XDSHeading level={4}>
           Personality Presets (combined transforms)
-        </XDSText>
+        </XDSHeading>
         <div
           style={{
             display: 'grid',

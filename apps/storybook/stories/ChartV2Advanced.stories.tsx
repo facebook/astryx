@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {useMemo, useRef, useEffect} from 'react';
+import {useMemo, useRef, useEffect, type MutableRefObject} from 'react';
 import {
   XDSChartV2 as XDSChart,
   bar,
@@ -13,6 +13,7 @@ import {
   dotGL,
   heatmapGL,
   streamGL,
+  type StreamGLHandle,
 } from '@xds/lab';
 import {XDSChartGrid, XDSChartAxis} from '@xds/lab';
 
@@ -32,7 +33,8 @@ const stockData = Array.from({length: 30}, (_, i) => {
     day: `Day ${i + 1}`,
     open: Math.round(open * 10) / 10,
     close: Math.round(close * 10) / 10,
-    high: Math.round(Math.max(open, close, base + Math.random() * 10) * 10) / 10,
+    high:
+      Math.round(Math.max(open, close, base + Math.random() * 10) * 10) / 10,
     low: Math.round(Math.min(open, close, base - Math.random() * 10) * 10) / 10,
     volume: Math.round(500 + Math.random() * 1000),
   };
@@ -60,7 +62,7 @@ const salesData = [
   {month: 'Jun', sales: 70, target: 50, errorHigh: 76, errorLow: 64},
 ];
 
-const scatterData = Array.from({length: 200}, (_) => ({
+const scatterData = Array.from({length: 200}, _ => ({
   x: Math.random() * 100,
   y: Math.random() * 100,
 }));
@@ -73,7 +75,10 @@ for (const day of days) {
       hour: `${hour}`,
       day,
       traffic: Math.round(
-        50 + Math.sin(hour / 4) * 30 + (day === 'Sat' || day === 'Sun' ? -20 : 10) + Math.random() * 20,
+        50 +
+          Math.sin(hour / 4) * 30 +
+          (day === 'Sat' || day === 'Sun' ? -20 : 10) +
+          Math.random() * 20,
       ),
     });
   }
@@ -88,10 +93,22 @@ export const Candlestick: StoryObj = {
       data={stockData}
       xKey="day"
       series={[
-        candlestick({open: 'open', high: 'high', low: 'low', close: 'close', upColor: '#22c55e', downColor: '#ef4444'}),
+        candlestick({
+          open: 'open',
+          high: 'high',
+          low: 'low',
+          close: 'close',
+          upColor: '#22c55e',
+          downColor: '#ef4444',
+        }),
       ]}
       grid={<XDSChartGrid horizontal />}
-      axes={<><XDSChartAxis position="bottom" /><XDSChartAxis position="left" /></>}
+      axes={
+        <>
+          <XDSChartAxis position="bottom" />
+          <XDSChartAxis position="left" />
+        </>
+      }
       height={350}
     />
   ),
@@ -105,7 +122,20 @@ export const FinancialComposite: StoryObj = {
       let sum = 0;
       return stockData.map((d, i) => {
         sum += d.close;
-        return {...d, ma5: i >= 4 ? Math.round((sum - stockData.slice(0, i - 4).reduce((s, v) => s + v.close, 0)) / 5 * 10) / 10 : undefined};
+        return {
+          ...d,
+          ma5:
+            i >= 4
+              ? Math.round(
+                  ((sum -
+                    stockData
+                      .slice(0, i - 4)
+                      .reduce((s, v) => s + v.close, 0)) /
+                    5) *
+                    10,
+                ) / 10
+              : undefined,
+        };
       });
     }, []);
     return (
@@ -113,12 +143,24 @@ export const FinancialComposite: StoryObj = {
         data={data}
         xKey="day"
         series={[
-          candlestick({open: 'open', high: 'high', low: 'low', close: 'close', upColor: '#22c55e', downColor: '#ef4444'}),
+          candlestick({
+            open: 'open',
+            high: 'high',
+            low: 'low',
+            close: 'close',
+            upColor: '#22c55e',
+            downColor: '#ef4444',
+          }),
           line('ma5', {color: '#f59e0b', strokeWidth: 1.5}),
           bar('volume', {color: '#94a3b8', opacity: 0.3}),
         ]}
         grid={<XDSChartGrid horizontal />}
-        axes={<><XDSChartAxis position="bottom" /><XDSChartAxis position="left" /></>}
+        axes={
+          <>
+            <XDSChartAxis position="bottom" />
+            <XDSChartAxis position="left" />
+          </>
+        }
         height={400}
       />
     );
@@ -132,12 +174,27 @@ export const ConfidenceBands: StoryObj = {
       data={predictionData}
       xKey="x"
       series={[
-        band({upper: 'upper95', lower: 'lower95', color: '#3b82f6', opacity: 0.1}),
-        band({upper: 'upper80', lower: 'lower80', color: '#3b82f6', opacity: 0.2}),
+        band({
+          upper: 'upper95',
+          lower: 'lower95',
+          color: '#3b82f6',
+          opacity: 0.1,
+        }),
+        band({
+          upper: 'upper80',
+          lower: 'lower80',
+          color: '#3b82f6',
+          opacity: 0.2,
+        }),
         line('mean', {color: '#3b82f6', strokeWidth: 2}),
       ]}
       grid={<XDSChartGrid horizontal />}
-      axes={<><XDSChartAxis position="bottom" /><XDSChartAxis position="left" /></>}
+      axes={
+        <>
+          <XDSChartAxis position="bottom" />
+          <XDSChartAxis position="left" />
+        </>
+      }
       height={300}
     />
   ),
@@ -154,10 +211,21 @@ export const ErrorBarsWithTarget: StoryObj = {
         bar('sales', {color: '#3b82f6'}),
         errorBar({high: 'errorHigh', low: 'errorLow', color: '#1e3a5f'}),
         referenceLine({y: 50, label: 'Target', color: '#ef4444'}),
-        referenceLine({y: 40, y2: 60, label: 'Acceptable', color: '#22c55e', opacity: 0.1}),
+        referenceLine({
+          y: 40,
+          y2: 60,
+          label: 'Acceptable',
+          color: '#22c55e',
+          bandOpacity: 0.1,
+        }),
       ]}
       grid={<XDSChartGrid horizontal />}
-      axes={<><XDSChartAxis position="bottom" /><XDSChartAxis position="left" /></>}
+      axes={
+        <>
+          <XDSChartAxis position="bottom" />
+          <XDSChartAxis position="left" />
+        </>
+      }
       height={300}
     />
   ),
@@ -172,7 +240,12 @@ export const WebGLScatter: StoryObj = {
       xKey="x"
       series={[dotGL('y', {color: '#3b82f6', size: 4})]}
       grid={<XDSChartGrid horizontal vertical />}
-      axes={<><XDSChartAxis position="bottom" /><XDSChartAxis position="left" /></>}
+      axes={
+        <>
+          <XDSChartAxis position="bottom" />
+          <XDSChartAxis position="left" />
+        </>
+      }
       height={400}
     />
   ),
@@ -186,9 +259,19 @@ export const WebGLHeatmap: StoryObj = {
       data={heatmapData}
       xKey="hour"
       series={[
-        heatmapGL({xKey: 'hour', yKey: 'day', valueKey: 'traffic', colorRange: ['#eff6ff', '#1e40af']}),
+        heatmapGL({
+          xKey: 'hour',
+          yKey: 'day',
+          valueKey: 'traffic',
+          colorRange: ['#eff6ff', '#1e40af'],
+        }),
       ]}
-      axes={<><XDSChartAxis position="bottom" /><XDSChartAxis position="left" /></>}
+      axes={
+        <>
+          <XDSChartAxis position="bottom" />
+          <XDSChartAxis position="left" />
+        </>
+      }
       height={280}
     />
   ),
@@ -198,11 +281,16 @@ export const WebGLHeatmap: StoryObj = {
 export const StreamingLine: StoryObj = {
   name: 'Streaming (streamGL)',
   render: () => {
-    const handleRef = useRef<{push: (point: {x: number; y: number}) => void}>(null);
+    const handleRef = useRef<StreamGLHandle | null>(
+      null,
+    ) as MutableRefObject<StreamGLHandle | null>;
     useEffect(() => {
       let t = 0;
       const interval = setInterval(() => {
-        handleRef.current?.push({x: t, y: 50 + Math.sin(t / 10) * 30 + Math.random() * 10});
+        handleRef.current?.push(
+          t,
+          50 + Math.sin(t / 10) * 30 + Math.random() * 10,
+        );
         t++;
       }, 200);
       return () => clearInterval(interval);
@@ -212,9 +300,14 @@ export const StreamingLine: StoryObj = {
       <XDSChart
         data={[]}
         xKey="x"
-        series={[streamGL('y', {handleRef, window: 60000, color: '#3b82f6'})]}
+        series={[streamGL({handleRef, color: '#3b82f6'})]}
         grid={<XDSChartGrid horizontal />}
-        axes={<><XDSChartAxis position="bottom" /><XDSChartAxis position="left" /></>}
+        axes={
+          <>
+            <XDSChartAxis position="bottom" />
+            <XDSChartAxis position="left" />
+          </>
+        }
         height={300}
       />
     );
@@ -227,24 +320,45 @@ export const KitchenSink: StoryObj = {
   render: () => {
     const data = salesData.map((d, i, arr) => ({
       ...d,
-      runAvg: Math.round(arr.slice(0, i + 1).reduce((s, v) => s + v.sales, 0) / (i + 1) * 10) / 10,
-      upper: Math.round((arr.slice(0, i + 1).reduce((s, v) => s + v.sales, 0) / (i + 1) + 8) * 10) / 10,
-      lower: Math.round((arr.slice(0, i + 1).reduce((s, v) => s + v.sales, 0) / (i + 1) - 8) * 10) / 10,
+      runAvg:
+        Math.round(
+          (arr.slice(0, i + 1).reduce((s, v) => s + v.sales, 0) / (i + 1)) * 10,
+        ) / 10,
+      upper:
+        Math.round(
+          (arr.slice(0, i + 1).reduce((s, v) => s + v.sales, 0) / (i + 1) + 8) *
+            10,
+        ) / 10,
+      lower:
+        Math.round(
+          (arr.slice(0, i + 1).reduce((s, v) => s + v.sales, 0) / (i + 1) - 8) *
+            10,
+        ) / 10,
     }));
     return (
       <XDSChart
         data={data}
         xKey="month"
         series={[
-          referenceLine({y: 40, y2: 60, color: '#22c55e', opacity: 0.08}),
+          referenceLine({y: 40, y2: 60, color: '#22c55e', bandOpacity: 0.08}),
           referenceLine({y: 50, label: 'Target', color: '#ef4444'}),
-          band({upper: 'upper', lower: 'lower', color: '#f59e0b', opacity: 0.15}),
+          band({
+            upper: 'upper',
+            lower: 'lower',
+            color: '#f59e0b',
+            opacity: 0.15,
+          }),
           bar('sales', {color: '#3b82f6'}),
           errorBar({high: 'errorHigh', low: 'errorLow', color: '#1e3a5f'}),
           line('runAvg', {color: '#f59e0b', strokeWidth: 2}),
         ]}
         grid={<XDSChartGrid horizontal />}
-        axes={<><XDSChartAxis position="bottom" /><XDSChartAxis position="left" /></>}
+        axes={
+          <>
+            <XDSChartAxis position="bottom" />
+            <XDSChartAxis position="left" />
+          </>
+        }
         height={400}
       />
     );

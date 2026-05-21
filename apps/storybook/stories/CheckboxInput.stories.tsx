@@ -320,7 +320,7 @@ export const WithStartIcon: Story = {
   args: {
     label: 'Enable notifications',
     description: 'Receive alerts when important events occur',
-    startIcon: BellIcon,
+    labelIcon: BellIcon,
   },
 };
 
