@@ -331,6 +331,12 @@
       "import": "./dist/Layout/index.mjs",
       "require": "./dist/Layout/index.js"
     },
+    "./Lightbox": {
+      "source": "./src/Lightbox/index.ts",
+      "types": "./dist/Lightbox/index.d.ts",
+      "import": "./dist/Lightbox/index.mjs",
+      "require": "./dist/Lightbox/index.js"
+    },
     "./Link": {
       "source": "./src/Link/index.ts",
       "types": "./dist/Link/index.d.ts",
