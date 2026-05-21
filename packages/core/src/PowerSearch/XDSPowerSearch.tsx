@@ -30,6 +30,7 @@ import {
 } from '../Tokenizer';
 import {XDSTypeaheadItem} from '../Typeahead/XDSTypeaheadItem';
 import {XDSToken} from '../Token';
+import {XDSAvatar} from '../Avatar';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {XDSIcon} from '../Icon';
 import type {XDSIconType} from '../Icon';
@@ -779,9 +780,23 @@ export function XDSPowerSearch({
           />
         ) : undefined;
 
+      // Show entity photo as token icon for single-entity filters
+      let tokenIcon: ReactNode | undefined;
+      if (
+        filter?.value.type === 'entity_list' &&
+        filter.value.value.length === 1 &&
+        filter.value.value[0].photo
+      ) {
+        const entity = filter.value.value[0];
+        tokenIcon = (
+          <XDSAvatar src={entity.photo} name={entity.label} size="xsmall" />
+        );
+      }
+
       return (
         <XDSToken
           label={tokenLabel}
+          icon={tokenIcon}
           endContent={valueContent}
           onClick={
             handleClick
