@@ -586,11 +586,6 @@ export function PowerSearchEditPopover({
     useState<PartialFilter>(initialFilter);
   const valueEditorRef = useRef<HTMLDivElement>(null);
 
-  // Reset state when filter changes (new popover opened)
-  useEffect(() => {
-    setPartialFilter(initialFilter);
-  }, [initialFilter]);
-
   // Focus the first focusable element inside the value editor after mount
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -602,7 +597,7 @@ export function PowerSearchEditPopover({
       focusable?.focus();
     });
     return () => cancelAnimationFrame(frame);
-  }, [initialFilter]);
+  }, []);
 
   const currentOperator = partialFilter.operator
     ? config.getOperator(partialFilter.field, partialFilter.operator)

@@ -846,9 +846,15 @@ export function XDSPowerSearch({
 
     const mode = popoverState.type === 'editing' ? 'edit' : 'create';
 
+    const popoverKey =
+      popoverState.type === 'editing'
+        ? `edit-${popoverState.filterIndex}-${popoverPartialFilter.field}`
+        : `add-${popoverPartialFilter.field}`;
+
     if (EditorOverride) {
       return (
         <EditorOverride
+          key={popoverKey}
           config={configProp}
           filter={popoverPartialFilter}
           mode={mode}
@@ -862,6 +868,7 @@ export function XDSPowerSearch({
 
     return (
       <PowerSearchEditPopover
+        key={popoverKey}
         config={config}
         filter={popoverPartialFilter}
         mode={mode}
@@ -873,7 +880,7 @@ export function XDSPowerSearch({
     );
   }, [
     popoverPartialFilter,
-    popoverState.type,
+    popoverState,
     EditorOverride,
     configProp,
     config,

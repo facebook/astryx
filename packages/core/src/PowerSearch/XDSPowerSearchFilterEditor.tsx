@@ -35,6 +35,7 @@ export function XDSPowerSearchFilterEditor({
 
   return (
     <PowerSearchEditPopover
+      key={filter.field}
       config={config}
       filter={filter}
       mode={mode}
