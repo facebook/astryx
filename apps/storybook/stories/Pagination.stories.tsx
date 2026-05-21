@@ -38,7 +38,9 @@ export default meta;
 type Story = StoryObj<typeof XDSPagination>;
 
 // Interactive wrapper for controlled state
-function PaginationDemo(props: React.ComponentProps<typeof XDSPagination>) {
+function PaginationDemo(
+  props: Omit<React.ComponentProps<typeof XDSPagination>, 'onChange'>,
+) {
   const [page, setPage] = useState(props.page ?? 1);
   const [pageSize, setPageSize] = useState(props.pageSize ?? 10);
   return (

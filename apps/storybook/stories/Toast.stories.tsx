@@ -50,7 +50,7 @@ export const Types: StoryObj = {
     const toast = useXDSToast();
     const types: XDSToastType[] = ['info', 'error'];
     return (
-      <XDSStack direction="row" gap={2}>
+      <XDSStack direction="horizontal" gap={2}>
         {types.map(type => (
           <XDSButton
             key={type}
@@ -85,7 +85,7 @@ export const WithAction: StoryObj = {
   render: function WithActionStory() {
     const toast = useXDSToast();
     return (
-      <XDSStack direction="row" gap={2}>
+      <XDSStack direction="horizontal" gap={2}>
         <XDSButton
           label="With button"
           onClick={() =>
@@ -170,7 +170,7 @@ export const ProgrammaticDismiss: StoryObj = {
     const toast = useXDSToast();
     const dismissRef = useRef<(() => void) | null>(null);
     return (
-      <XDSStack direction="row" gap={2}>
+      <XDSStack direction="horizontal" gap={2}>
         <XDSButton
           label="Show persistent toast"
           onClick={() => {
@@ -209,7 +209,7 @@ export const Deduplication: StoryObj = {
   render: function DeduplicationStory() {
     const toast = useXDSToast();
     return (
-      <XDSStack direction="row" gap={2}>
+      <XDSStack direction="horizontal" gap={2}>
         <XDSButton
           label="Offline (ignore)"
           onClick={() =>
@@ -272,8 +272,7 @@ export const Stacking: StoryObj = {
   parameters: {
     docs: {
       description: {
-        story:
-          'Multiple toasts stack vertically. Default max visible is 5.',
+        story: 'Multiple toasts stack vertically. Default max visible is 5.',
       },
     },
   },
@@ -325,10 +324,7 @@ export const ToastOverDialog: StoryObj = {
     return (
       <XDSStack gap={2}>
         <XDSButton label="Open dialog" onClick={() => setIsOpen(true)} />
-        <XDSDialog
-          isOpen={isOpen}
-          onClose={() => setIsOpen(false)}
-          title="Dialog with scoped toasts">
+        <XDSDialog isOpen={isOpen} onOpenChange={() => setIsOpen(false)}>
           <XDSToastViewport isTopLayer={false}>
             <DialogToastContent onClose={() => setIsOpen(false)} />
           </XDSToastViewport>
@@ -340,7 +336,7 @@ export const ToastOverDialog: StoryObj = {
     docs: {
       description: {
         story:
-          'Dialog with its own `XDSToastViewport` — toasts render inside the dialog\'s top layer context and appear above the dialog overlay.',
+          "Dialog with its own `XDSToastViewport` — toasts render inside the dialog's top layer context and appear above the dialog overlay.",
       },
     },
   },
@@ -351,15 +347,11 @@ function DialogToastContent({onClose}: {onClose: () => void}) {
   return (
     <XDSStack gap={3}>
       <p>
-        This dialog has its own toast viewport. Toasts fired here render
-        inside the dialog — above its overlay.
+        This dialog has its own toast viewport. Toasts fired here render inside
+        the dialog — above its overlay.
       </p>
-      <XDSStack direction="row" gap={2} wrap="wrap">
-        <XDSButton
-          label="Close"
-          variant="secondary"
-          onClick={onClose}
-        />
+      <XDSStack direction="horizontal" gap={2} wrap="wrap">
+        <XDSButton label="Close" variant="secondary" onClick={onClose} />
         <XDSButton
           label="Show toast"
           onClick={() => {

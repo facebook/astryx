@@ -87,7 +87,7 @@ export const Default: Story = {
 
     const resizePlugin = useXDSTableColumnResize<User>({
       columnWidths,
-      columns,
+      columns: columns as XDSTableColumn<Record<string, unknown>>[],
       onColumnResizeEnd: updates => {
         setColumnWidths(prev => ({...prev, ...updates}));
       },
@@ -121,7 +121,7 @@ export const WithMinMaxConstraints: Story = {
       onColumnResizeEnd: updates => {
         setColumnWidths(prev => ({...prev, ...updates}));
       },
-      columns,
+      columns: columns as XDSTableColumn<Record<string, unknown>>[],
       minWidth: 80,
       maxWidth: 300,
     });
@@ -150,7 +150,7 @@ export const PersistingWidths: Story = {
 
     const resizePlugin = useXDSTableColumnResize<User>({
       columnWidths,
-      columns,
+      columns: columns as XDSTableColumn<Record<string, unknown>>[],
       onColumnResizeEnd: updates => {
         setColumnWidths(prev => ({...prev, ...updates}));
       },
@@ -190,7 +190,7 @@ export const KeyboardResize: Story = {
 
     const resizePlugin = useXDSTableColumnResize<User>({
       columnWidths,
-      columns,
+      columns: columns as XDSTableColumn<Record<string, unknown>>[],
       onColumnResizeEnd: updates => {
         setColumnWidths(prev => ({...prev, ...updates}));
       },
@@ -230,7 +230,7 @@ export const WithSelectionAndResize: Story = {
 
     const resizePlugin = useXDSTableColumnResize<User>({
       columnWidths,
-      columns,
+      columns: columns as XDSTableColumn<Record<string, unknown>>[],
       onColumnResizeEnd: updates => {
         setColumnWidths(prev => ({...prev, ...updates}));
       },
@@ -267,7 +267,7 @@ export const AllPixelColumns: Story = {
 
     const resizePlugin = useXDSTableColumnResize<User>({
       columnWidths,
-      columns: pixelColumns,
+      columns: pixelColumns as XDSTableColumn<Record<string, unknown>>[],
       onColumnResizeEnd: updates => {
         setColumnWidths(prev => ({...prev, ...updates}));
       },

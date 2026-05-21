@@ -56,7 +56,7 @@ function LinkifyDemo({
         }}>
         <XDSText type="body">{nodes}</XDSText>
       </div>
-      <XDSText type="detail" color="secondary">
+      <XDSText type="supporting" color="secondary">
         {nodes.length} node{nodes.length !== 1 ? 's' : ''} rendered
       </XDSText>
     </XDSStack>
@@ -169,8 +169,9 @@ export const Interactive: Story = {
     return (
       <XDSStack gap={4}>
         <XDSTextInput
+          label="Enter text to linkify"
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={newValue => setText(newValue)}
         />
         <div
           style={{

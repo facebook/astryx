@@ -1,9 +1,16 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
+import * as stylex from '@stylexjs/stylex';
 import {XDSButton} from '@xds/core/Button';
 import {XDSBadge} from '@xds/core/Badge';
 import {Cog6ToothIcon, TrashIcon} from '@heroicons/react/24/outline';
+
+const buttonStoryStyles = stylex.create({
+  fullWidth: {
+    width: '100%',
+  },
+});
 
 const meta: Meta<typeof XDSButton> = {
   title: 'Core/Buttons/Button',
@@ -332,7 +339,7 @@ export const Truncation: Story = {
             <XDSButton
               label="Submit this extremely long form action"
               variant="primary"
-              xstyle={{width: '100%'}}
+              xstyle={buttonStoryStyles.fullWidth}
             />
           </div>
           <XDSButton label="Cancel" variant="secondary" />

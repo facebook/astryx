@@ -55,7 +55,7 @@ const meta: Meta<typeof XDSNumberInput> = {
       description:
         'Status indicator with type (warning/error/success) and optional message',
     },
-    tooltip: {
+    labelTooltip: {
       control: 'text',
       description:
         'Tooltip text to display in an info icon at the end of the label',
@@ -452,7 +452,7 @@ export const WithTooltip: Story = {
   args: {
     label: 'API Rate Limit',
     placeholder: 'Enter rate limit',
-    tooltip: 'Maximum number of API requests per minute',
+    labelTooltip: 'Maximum number of API requests per minute',
   },
 };
 
@@ -483,7 +483,9 @@ export const WithEventHandlers: Story = {
     return (
       <div style={{maxWidth: '300px'}}>
         <XDSNumberInput
-          {...args}
+          label={args.label}
+          placeholder={args.placeholder}
+          description={args.description}
           value={value}
           onChange={v => {
             setValue(v);

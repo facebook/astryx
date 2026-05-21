@@ -93,7 +93,7 @@ export const SingleSort: Story = {
       defaultSort: [{sortKey: 'name', direction: 'ascending'}],
     });
 
-    const sortablePlugin = useXDSTableSortable(sortConfig);
+    const sortablePlugin = useXDSTableSortable<Employee>(sortConfig);
 
     return (
       <div style={{maxWidth: 700}}>
@@ -120,7 +120,7 @@ export const MultiSort: Story = {
       isMultiSortEnabled: true,
     });
 
-    const sortablePlugin = useXDSTableSortable(sortConfig);
+    const sortablePlugin = useXDSTableSortable<Employee>(sortConfig);
 
     return (
       <div style={{maxWidth: 700}}>
@@ -157,7 +157,7 @@ export const CustomSortKey: Story = {
       },
     });
 
-    const sortablePlugin = useXDSTableSortable(sortConfig);
+    const sortablePlugin = useXDSTableSortable<Employee>(sortConfig);
 
     return (
       <div style={{maxWidth: 700}}>
@@ -184,7 +184,7 @@ export const AllowUnsortedState: Story = {
       allowUnsortedState: true,
     });
 
-    const sortablePlugin = useXDSTableSortable(sortConfig);
+    const sortablePlugin = useXDSTableSortable<Employee>(sortConfig);
 
     return (
       <div style={{maxWidth: 700}}>
@@ -214,7 +214,7 @@ export const WithSelection: Story = {
       defaultSort: [{sortKey: 'name', direction: 'ascending'}],
     });
 
-    const sortablePlugin = useXDSTableSortable(sortConfig);
+    const sortablePlugin = useXDSTableSortable<Employee>(sortConfig);
 
     const {selectionConfig} = useXDSTableSelectionState<Employee>({
       data: sortedData,
@@ -254,7 +254,7 @@ export const Controlled: Story = {
       onSortChange: setSort,
     });
 
-    const sortablePlugin = useXDSTableSortable(sortConfig);
+    const sortablePlugin = useXDSTableSortable<Employee>(sortConfig);
 
     return (
       <div style={{maxWidth: 700}}>

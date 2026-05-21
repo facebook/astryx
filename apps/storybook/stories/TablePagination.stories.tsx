@@ -259,6 +259,7 @@ export const WithSelection: Story = {
   render: () => {
     const [page, setPage] = useState(1);
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+    const pageSize = 10;
 
     const plugin = useXDSTablePagination<User>({
       page,
@@ -300,7 +301,11 @@ export const WithSelection: Story = {
  * Interactive playground — use the controls panel to explore every combination
  * of variant, position, and align.
  */
-export const Playground: Story = {
+export const Playground: StoryObj<{
+  variant: Variant;
+  position: Position;
+  align: Align;
+}> = {
   argTypes: {
     variant: {
       control: 'select',
@@ -323,7 +328,7 @@ export const Playground: Story = {
     position: 'below',
     align: 'center',
   },
-  render: (args: {variant: Variant; position: Position; align: Align}) => (
+  render: args => (
     <div style={{maxWidth: 700}}>
       <PaginatedDemo
         variant={args.variant}

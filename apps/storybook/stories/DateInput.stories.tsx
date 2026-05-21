@@ -325,7 +325,7 @@ export const AllVariations: Story = {
 
 export const Clearable: Story = {
   render: args => {
-    const [value, setValue] = useState<string | undefined>('2026-04-06');
+    const [value, setValue] = useState<ISODateString | undefined>('2026-04-06');
     return (
       <XDSDateInput {...args} value={value} onChange={setValue} hasClear />
     );
@@ -338,7 +338,7 @@ export const Clearable: Story = {
 
 export const ClearableWithStatus: Story = {
   render: args => {
-    const [value, setValue] = useState<string | undefined>('2026-04-06');
+    const [value, setValue] = useState<ISODateString | undefined>('2026-04-06');
     return (
       <XDSDateInput {...args} value={value} onChange={setValue} hasClear />
     );

@@ -59,7 +59,7 @@ export const HorizontalSplit: Story = {
           start={
             <>
               <XDSLayoutPanel width={sidebar.size} hasDivider={false}>
-                <XDSStack gap="space2">
+                <XDSStack gap={2}>
                   <XDSHeading level={4}>Sidebar</XDSHeading>
                   <XDSText>
                     <span {...stylex.props(ps.sz)}>{sidebar.size}px</span>
@@ -79,7 +79,7 @@ export const HorizontalSplit: Story = {
           }
           content={
             <XDSLayoutContent>
-              <XDSStack gap="space2">
+              <XDSStack gap={2}>
                 <XDSHeading level={4}>Content</XDSHeading>
                 <XDSText>Main content area fills remaining space.</XDSText>
               </XDSStack>
@@ -106,7 +106,7 @@ export const VerticalSplit: Story = {
           header={
             <div style={{height: top.size}}>
               <XDSLayoutPanel padding={4} width="100%">
-                <XDSStack gap="space2">
+                <XDSStack gap={2}>
                   <XDSHeading level={4}>Editor</XDSHeading>
                   <XDSText>
                     <span {...stylex.props(ps.sz)}>{top.size}px</span>
@@ -123,7 +123,7 @@ export const VerticalSplit: Story = {
           }
           content={
             <XDSLayoutContent>
-              <XDSStack gap="space2">
+              <XDSStack gap={2}>
                 <XDSHeading level={4}>Terminal</XDSHeading>
                 <XDSText>Bottom panel fills remaining space.</XDSText>
               </XDSStack>
@@ -152,7 +152,7 @@ export const Collapsible: Story = {
             <>
               {!sidebar.isCollapsed && (
                 <XDSLayoutPanel width={sidebar.size} hasDivider={false}>
-                  <XDSStack gap="space2">
+                  <XDSStack gap={2}>
                     <XDSHeading level={4}>Sidebar</XDSHeading>
                     <XDSText>
                       <span {...stylex.props(ps.sz)}>{sidebar.size}px</span>
@@ -173,7 +173,7 @@ export const Collapsible: Story = {
           }
           content={
             <XDSLayoutContent>
-              <XDSStack gap="space2">
+              <XDSStack gap={2}>
                 <XDSHeading level={4}>Content</XDSHeading>
                 <XDSText>
                   Sidebar is {sidebar.isCollapsed ? 'collapsed' : 'expanded'}.
@@ -214,7 +214,7 @@ export const ThreePanelIDE: Story = {
           start={
             <>
               <XDSLayoutPanel width={explorer.size} hasDivider={false}>
-                <XDSStack gap="space2">
+                <XDSStack gap={2}>
                   <XDSHeading level={4}>Explorer</XDSHeading>
                   <XDSText>
                     <span {...stylex.props(ps.sz)}>{explorer.size}px</span>
@@ -238,7 +238,7 @@ export const ThreePanelIDE: Story = {
                   height: '100%',
                 }}>
                 <div style={{flex: 'none', height: editor.size, padding: 16}}>
-                  <XDSStack gap="space2">
+                  <XDSStack gap={2}>
                     <XDSHeading level={4}>Editor</XDSHeading>
                     <XDSText>
                       <span {...stylex.props(ps.sz)}>{editor.size}px</span>
@@ -283,7 +283,7 @@ export const SnapPoints: Story = {
                 {isRail ? (
                   <XDSText>{'\u2630'}</XDSText>
                 ) : (
-                  <XDSStack gap="space2">
+                  <XDSStack gap={2}>
                     <XDSHeading level={4}>Sidebar</XDSHeading>
                     <XDSText>
                       <span {...stylex.props(ps.sz)}>{sidebar.size}px</span>
@@ -328,7 +328,7 @@ export const HiddenPill: Story = {
           start={
             <>
               <XDSLayoutPanel width={sidebar.size} hasDivider={false}>
-                <XDSStack gap="space2">
+                <XDSStack gap={2}>
                   <XDSHeading level={4}>Sidebar</XDSHeading>
                   <XDSText>
                     <span {...stylex.props(ps.sz)}>{sidebar.size}px</span>
@@ -411,7 +411,7 @@ export const WithXDSLayout: Story = {
                   hasDivider={false}
                   role="navigation"
                   label="Sidebar">
-                  <XDSStack gap="space2">
+                  <XDSStack gap={2}>
                     <XDSHeading level={4}>Navigation</XDSHeading>
                     <XDSText>
                       <span {...stylex.props(ps.sz)}>{sidebar.size}px</span>
@@ -432,7 +432,7 @@ export const WithXDSLayout: Story = {
           }
           content={
             <XDSLayoutContent>
-              <XDSStack gap="space3">
+              <XDSStack gap={3}>
                 <XDSHeading level={3}>Main Content</XDSHeading>
                 <XDSText>
                   XDSLayoutPanel with resizable prop + XDSResizeHandle with
@@ -496,7 +496,7 @@ export const WithAppShell: Story = {
           }
           content={
             <XDSLayoutContent>
-              <XDSStack gap="space3">
+              <XDSStack gap={3}>
                 <XDSHeading level={3}>Dashboard</XDSHeading>
                 <XDSText>
                   <span {...stylex.props(ps.sz)}>{nav.size}px</span>

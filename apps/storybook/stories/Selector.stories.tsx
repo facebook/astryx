@@ -81,16 +81,23 @@ type Story = StoryObj<typeof XDSSelector>;
 // Basic with strings
 export const Default: Story = {
   render: args => {
-    const [value, setValue] = useState<string | undefined>(args.value);
+    const {
+      value: argsValue,
+      onChange: _onChange,
+      changeAction: _ca,
+      hasClear: _hc,
+      ...rest
+    } = args;
+    const [value, setValue] = useState(argsValue ?? undefined);
     return (
       <XDSSelector
-        {...args}
+        {...rest}
         label={args.label ?? 'Fruit'}
         options={
           args.options ?? ['Apple', 'Banana', 'Orange', 'Mango', 'Pineapple']
         }
         value={value}
-        onChange={setValue}
+        onChange={v => setValue(v)}
       />
     );
   },
@@ -102,15 +109,22 @@ export const Default: Story = {
 // With hidden label
 export const HiddenLabel: Story = {
   render: args => {
-    const [value, setValue] = useState<string | undefined>(args.value);
+    const {
+      value: argsValue,
+      onChange: _onChange,
+      changeAction: _ca,
+      hasClear: _hc,
+      ...rest
+    } = args;
+    const [value, setValue] = useState(argsValue ?? undefined);
     return (
       <XDSSelector
-        {...args}
+        {...rest}
         label="Fruit"
         isLabelHidden
         options={['Apple', 'Banana', 'Orange', 'Mango', 'Pineapple']}
         value={value}
-        onChange={setValue}
+        onChange={v => setValue(v)}
         placeholder="Select a fruit..."
       />
     );
@@ -120,15 +134,22 @@ export const HiddenLabel: Story = {
 // With description
 export const WithDescription: Story = {
   render: args => {
-    const [value, setValue] = useState<string | undefined>(args.value);
+    const {
+      value: argsValue,
+      onChange: _onChange,
+      changeAction: _ca,
+      hasClear: _hc,
+      ...rest
+    } = args;
+    const [value, setValue] = useState(argsValue ?? undefined);
     return (
       <XDSSelector
-        {...args}
+        {...rest}
         label="Fruit"
         description="Choose your favorite fruit from the list"
         options={['Apple', 'Banana', 'Orange', 'Mango', 'Pineapple']}
         value={value}
-        onChange={setValue}
+        onChange={v => setValue(v)}
         placeholder="Select a fruit..."
       />
     );
@@ -138,10 +159,17 @@ export const WithDescription: Story = {
 // With objects
 export const WithObjects: Story = {
   render: args => {
-    const [value, setValue] = useState<string | undefined>(args.value);
+    const {
+      value: argsValue,
+      onChange: _onChange,
+      changeAction: _ca,
+      hasClear: _hc,
+      ...rest
+    } = args;
+    const [value, setValue] = useState(argsValue ?? undefined);
     return (
       <XDSSelector
-        {...args}
+        {...rest}
         label="Fruit"
         options={[
           {value: 'apple', label: 'Apple'},
@@ -150,7 +178,7 @@ export const WithObjects: Story = {
           {value: 'mango', label: 'Mango'},
         ]}
         value={value}
-        onChange={setValue}
+        onChange={v => setValue(v)}
       />
     );
   },
@@ -162,10 +190,17 @@ export const WithObjects: Story = {
 // With icons
 export const WithIcons: Story = {
   render: args => {
-    const [value, setValue] = useState<string | undefined>(args.value);
+    const {
+      value: argsValue,
+      onChange: _onChange,
+      changeAction: _ca,
+      hasClear: _hc,
+      ...rest
+    } = args;
+    const [value, setValue] = useState(argsValue ?? undefined);
     return (
       <XDSSelector
-        {...args}
+        {...rest}
         label="Settings"
         options={[
           {value: 'profile', label: 'Profile', icon: UserIcon},
@@ -173,7 +208,7 @@ export const WithIcons: Story = {
           {value: 'notifications', label: 'Notifications', icon: BellIcon},
         ]}
         value={value}
-        onChange={setValue}
+        onChange={v => setValue(v)}
       />
     );
   },
@@ -185,10 +220,17 @@ export const WithIcons: Story = {
 // With sections and dividers
 export const WithSections: Story = {
   render: args => {
-    const [value, setValue] = useState<string | undefined>(args.value);
+    const {
+      value: argsValue,
+      onChange: _onChange,
+      changeAction: _ca,
+      hasClear: _hc,
+      ...rest
+    } = args;
+    const [value, setValue] = useState(argsValue ?? undefined);
     return (
       <XDSSelector
-        {...args}
+        {...rest}
         label="Fruit"
         options={[
           {value: 'apple', label: 'Apple'},
@@ -212,7 +254,7 @@ export const WithSections: Story = {
           },
         ]}
         value={value}
-        onChange={setValue}
+        onChange={v => setValue(v)}
       />
     );
   },
@@ -224,7 +266,14 @@ export const WithSections: Story = {
 // Custom render
 export const CustomRender: Story = {
   render: args => {
-    const [value, setValue] = useState<string | undefined>(args.value);
+    const {
+      value: argsValue,
+      onChange: _onChange,
+      changeAction: _ca,
+      hasClear: _hc,
+      ...rest
+    } = args;
+    const [value, setValue] = useState(argsValue ?? undefined);
     const users = [
       {value: 'user1', label: 'Alice Johnson', email: 'alice@example.com'},
       {value: 'user2', label: 'Bob Smith', email: 'bob@example.com'},
@@ -232,11 +281,11 @@ export const CustomRender: Story = {
     ];
     return (
       <XDSSelector
-        {...args}
+        {...rest}
         label="User"
         options={users}
         value={value}
-        onChange={setValue}
+        onChange={v => setValue(v)}
         placeholder="Select a user...">
         {user => (
           <XDSSelectorOption
@@ -379,14 +428,21 @@ export const Disabled: Story = {
 // Pre-selected
 export const PreSelected: Story = {
   render: args => {
+    const {
+      value: _value,
+      onChange: _onChange,
+      changeAction: _ca,
+      hasClear: _hc,
+      ...rest
+    } = args;
     const [value, setValue] = useState('Banana');
     return (
       <XDSSelector
-        {...args}
+        {...rest}
         label="Fruit"
         options={['Apple', 'Banana', 'Orange', 'Mango']}
         value={value}
-        onChange={setValue}
+        onChange={v => setValue(v)}
       />
     );
   },
@@ -449,13 +505,20 @@ export const AllVariations: Story = {
 
 export const Clearable: Story = {
   render: args => {
+    const {
+      value: _value,
+      onChange: _onChange,
+      changeAction: _changeAction,
+      hasClear: _hc,
+      ...rest
+    } = args;
     const [value, setValue] = useState<string | null>('Banana');
     return (
       <XDSSelector
-        {...args}
+        {...rest}
         options={['Apple', 'Banana', 'Cherry', 'Date']}
         value={value}
-        onChange={setValue}
+        onChange={v => setValue(v)}
         hasClear
       />
     );
@@ -468,13 +531,20 @@ export const Clearable: Story = {
 
 export const ClearableWithStatus: Story = {
   render: args => {
+    const {
+      value: _value,
+      onChange: _onChange,
+      changeAction: _changeAction,
+      hasClear: _hc,
+      ...rest
+    } = args;
     const [value, setValue] = useState<string | null>('Banana');
     return (
       <XDSSelector
-        {...args}
+        {...rest}
         options={['Apple', 'Banana', 'Cherry']}
         value={value}
-        onChange={setValue}
+        onChange={v => setValue(v)}
         hasClear
       />
     );

@@ -258,11 +258,8 @@ export const CustomItemRendering: Story = {
         {label: 'Alice Johnson', onClick: () => console.log('Alice')},
         {label: 'Bob Smith', onClick: () => console.log('Bob')},
         {label: 'Carol Williams', onClick: () => console.log('Carol')},
-      ]}>
-      {item => (
-        <XDSDropdownMenuItem label={item.label} description="Team member" />
-      )}
-    </XDSMoreMenu>
+      ]}
+    />
   ),
 };
 

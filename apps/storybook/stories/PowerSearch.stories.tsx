@@ -715,7 +715,7 @@ export const WithOnChangeTracking: Story = {
           {...args}
           config={basicConfig}
           filters={filters}
-          onChange={(newFilters, _changeType, _index) => {
+          onChange={(newFilters, changeType, index) => {
             setFilters([...newFilters]);
             setLog(prev => [
               ...prev,
@@ -1136,7 +1136,7 @@ function StatusToken({
   filter,
   field,
   operator,
-  _maxLength,
+  maxLength: _maxLength,
   onClick,
   onRemove,
   isDisabled,
@@ -1172,12 +1172,12 @@ function StatusToken({
 }
 
 function CustomIntegerEditor({
-  _config,
+  config: _config,
   filter,
-  _mode,
+  mode: _mode,
   onSave,
   onCancel,
-  _saveButtonLabel,
+  saveButtonLabel: _saveButtonLabel,
   isReadOnly,
 }: PowerSearchEditorProps) {
   const current = filter.value?.type === 'integer' ? filter.value.value : 50;

@@ -42,7 +42,7 @@ export const InParagraph: Story = {
 export const InstructionalParagraph: Story = {
   name: 'Instructional text',
   render: () => (
-    <XDSStack gap="md">
+    <XDSStack gap={3}>
       <XDSText type="body">
         Install the package with <XDSCode>npm install @xds/core</XDSCode>, then
         import the component:
@@ -74,7 +74,7 @@ export const MixedInline: Story = {
 export const VariousContent: Story = {
   name: 'Various code content',
   render: () => (
-    <XDSStack gap="sm">
+    <XDSStack gap={2}>
       <XDSText type="body">
         Variable: <XDSCode>const count = 0</XDSCode>
       </XDSText>
@@ -97,14 +97,14 @@ export const VariousContent: Story = {
 export const TextSizes: Story = {
   name: 'Across text sizes',
   render: () => (
-    <XDSStack gap="sm">
-      <XDSText type="heading3">
+    <XDSStack gap={2}>
+      <XDSText type="large">
         Heading with <XDSCode>inline code</XDSCode>
       </XDSText>
       <XDSText type="body">
         Body text with <XDSCode>inline code</XDSCode>
       </XDSText>
-      <XDSText type="detail">
+      <XDSText type="supporting">
         Detail text with <XDSCode>inline code</XDSCode>
       </XDSText>
       <XDSText type="label">

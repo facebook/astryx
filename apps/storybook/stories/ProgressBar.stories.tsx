@@ -25,9 +25,6 @@ const meta: Meta<typeof XDSProgressBar> = {
       options: ['accent', 'success', 'warning', 'error'],
       description: 'Semantic color variant',
     },
-    size: {
-      table: {disable: true},
-    },
     isLabelHidden: {
       control: 'boolean',
       description: 'Visually hide the label',

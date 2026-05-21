@@ -80,13 +80,7 @@ const meta: Meta<typeof XDSVegaChart> = {
   parameters: {
     layout: 'centered',
   },
-  argTypes: {
-    renderer: {
-      control: 'radio',
-      options: ['svg', 'canvas'],
-      description: 'Vega rendering backend',
-    },
-  },
+  argTypes: {},
 };
 
 export default meta;

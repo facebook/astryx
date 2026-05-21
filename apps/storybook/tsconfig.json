@@ -12,6 +12,9 @@
       "@xds/theme/*": [
         "../../packages/theme/src/*/index.ts",
         "../../packages/theme/src/*"
+      ],
+      "@xds/build/vite": [
+        "../../packages/build/src/vite.ts"
       ]
     }
   },
