@@ -1,42 +1,38 @@
 /**
- * @file XDSDateRangePicker.test.tsx
- * @input Uses vitest, @testing-library/react, XDSDateRangePicker component
- * @output Unit tests for XDSDateRangePicker component behavior
- * @position Testing; validates XDSDateRangePicker.tsx implementation
+ * @file XDSDateRangeInput.test.tsx
+ * @input Uses vitest, @testing-library/react, XDSDateRangeInput component
+ * @output Unit tests for XDSDateRangeInput component behavior
+ * @position Testing; validates XDSDateRangeInput.tsx implementation
  *
- * SYNC: When XDSDateRangePicker.tsx changes, update tests to match new behavior
+ * SYNC: When XDSDateRangeInput.tsx changes, update tests to match new behavior
  */
 
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import {XDSDateRangePicker} from './XDSDateRangePicker';
-import type {XDSDateRange} from './XDSDateRangePicker';
+import {XDSDateRangeInput} from './XDSDateRangeInput';
+import type {XDSDateRange} from './XDSDateRangeInput';
 import type {ISODateString} from '../Calendar';
 
-describe('XDSDateRangePicker', () => {
+describe('XDSDateRangeInput', () => {
   it('renders with label', () => {
     render(
-      <XDSDateRangePicker
-        label="Date range"
-        value={null}
-        onChange={() => {}}
-      />,
+      <XDSDateRangeInput label="Date range" value={null} onChange={() => {}} />,
     );
     expect(screen.getByText('Date range')).toBeInTheDocument();
   });
 
   it('renders placeholder when value is null', () => {
     render(
-      <XDSDateRangePicker label="Range" value={null} onChange={() => {}} />,
+      <XDSDateRangeInput label="Range" value={null} onChange={() => {}} />,
     );
     expect(screen.getByText('Select date range')).toBeInTheDocument();
   });
 
   it('renders custom placeholder', () => {
     render(
-      <XDSDateRangePicker
+      <XDSDateRangeInput
         label="Range"
         value={null}
         onChange={() => {}}
@@ -52,7 +48,7 @@ describe('XDSDateRangePicker', () => {
       end: '2026-03-22' as ISODateString,
     };
     render(
-      <XDSDateRangePicker
+      <XDSDateRangeInput
         label="Range"
         value={range}
         onChange={() => {}}
@@ -68,7 +64,7 @@ describe('XDSDateRangePicker', () => {
   it('forwards ref to trigger button', () => {
     const ref = vi.fn();
     render(
-      <XDSDateRangePicker
+      <XDSDateRangeInput
         ref={ref}
         label="Range"
         value={null}
@@ -80,7 +76,7 @@ describe('XDSDateRangePicker', () => {
 
   it('visually hides label when isLabelHidden is true', () => {
     render(
-      <XDSDateRangePicker
+      <XDSDateRangeInput
         label="Range"
         isLabelHidden
         value={null}
@@ -92,7 +88,7 @@ describe('XDSDateRangePicker', () => {
 
   it('sets aria-required when isRequired is true', () => {
     render(
-      <XDSDateRangePicker
+      <XDSDateRangeInput
         label="Range"
         isRequired
         value={null}
@@ -105,7 +101,7 @@ describe('XDSDateRangePicker', () => {
 
   it('does not set aria-required when isRequired is false', () => {
     render(
-      <XDSDateRangePicker label="Range" value={null} onChange={() => {}} />,
+      <XDSDateRangeInput label="Range" value={null} onChange={() => {}} />,
     );
     const trigger = screen.getByRole('button', {name: /Range/});
     expect(trigger).not.toHaveAttribute('aria-required');
@@ -113,7 +109,7 @@ describe('XDSDateRangePicker', () => {
 
   it('disables trigger when isDisabled is true', () => {
     render(
-      <XDSDateRangePicker
+      <XDSDateRangeInput
         label="Range"
         isDisabled
         value={null}
@@ -126,7 +122,7 @@ describe('XDSDateRangePicker', () => {
 
   it('is not disabled by default', () => {
     render(
-      <XDSDateRangePicker label="Range" value={null} onChange={() => {}} />,
+      <XDSDateRangeInput label="Range" value={null} onChange={() => {}} />,
     );
     const trigger = screen.getByRole('button', {name: /Range/});
     expect(trigger).not.toBeDisabled();
@@ -134,7 +130,7 @@ describe('XDSDateRangePicker', () => {
 
   it('trigger has aria-haspopup="dialog"', () => {
     render(
-      <XDSDateRangePicker label="Range" value={null} onChange={() => {}} />,
+      <XDSDateRangeInput label="Range" value={null} onChange={() => {}} />,
     );
     const trigger = screen.getByRole('button', {name: /Range/});
     expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
@@ -142,7 +138,7 @@ describe('XDSDateRangePicker', () => {
 
   it('trigger has aria-expanded=false by default', () => {
     render(
-      <XDSDateRangePicker label="Range" value={null} onChange={() => {}} />,
+      <XDSDateRangeInput label="Range" value={null} onChange={() => {}} />,
     );
     const trigger = screen.getByRole('button', {name: /Range/});
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
@@ -150,7 +146,7 @@ describe('XDSDateRangePicker', () => {
 
   it('renders status icon for error status', () => {
     render(
-      <XDSDateRangePicker
+      <XDSDateRangeInput
         label="Range"
         value={null}
         onChange={() => {}}
@@ -163,7 +159,7 @@ describe('XDSDateRangePicker', () => {
 
   it('does not set aria-invalid for warning status', () => {
     render(
-      <XDSDateRangePicker
+      <XDSDateRangeInput
         label="Range"
         value={null}
         onChange={() => {}}
@@ -176,7 +172,7 @@ describe('XDSDateRangePicker', () => {
 
   it('renders description', () => {
     render(
-      <XDSDateRangePicker
+      <XDSDateRangeInput
         label="Range"
         description="Pick a date range"
         value={null}
@@ -188,7 +184,7 @@ describe('XDSDateRangePicker', () => {
 
   it('links status message via aria-describedby', () => {
     render(
-      <XDSDateRangePicker
+      <XDSDateRangeInput
         label="Range"
         value={null}
         onChange={() => {}}
@@ -207,7 +203,7 @@ describe('XDSDateRangePicker', () => {
 
   it('calendar icon button is present', () => {
     render(
-      <XDSDateRangePicker label="Range" value={null} onChange={() => {}} />,
+      <XDSDateRangeInput label="Range" value={null} onChange={() => {}} />,
     );
     expect(
       screen.getByRole('button', {name: 'Open calendar'}),
@@ -216,7 +212,7 @@ describe('XDSDateRangePicker', () => {
 
   it('calendar icon button is disabled when isDisabled', () => {
     render(
-      <XDSDateRangePicker
+      <XDSDateRangeInput
         label="Range"
         isDisabled
         value={null}
@@ -233,7 +229,7 @@ describe('XDSDateRangePicker', () => {
         end: '2026-03-22' as ISODateString,
       };
       render(
-        <XDSDateRangePicker
+        <XDSDateRangeInput
           label="Range"
           value={range}
           onChange={() => {}}
@@ -247,7 +243,7 @@ describe('XDSDateRangePicker', () => {
 
     it('does not show clear button when value is null', () => {
       render(
-        <XDSDateRangePicker
+        <XDSDateRangeInput
           label="Range"
           value={null}
           onChange={() => {}}
@@ -265,7 +261,7 @@ describe('XDSDateRangePicker', () => {
         end: '2026-03-22' as ISODateString,
       };
       render(
-        <XDSDateRangePicker
+        <XDSDateRangeInput
           label="Range"
           value={range}
           onChange={() => {}}
@@ -283,7 +279,7 @@ describe('XDSDateRangePicker', () => {
         end: '2026-03-22' as ISODateString,
       };
       render(
-        <XDSDateRangePicker
+        <XDSDateRangeInput
           label="Range"
           value={range}
           onChange={() => {}}
@@ -303,7 +299,7 @@ describe('XDSDateRangePicker', () => {
         end: '2026-03-22' as ISODateString,
       };
       render(
-        <XDSDateRangePicker
+        <XDSDateRangeInput
           label="Range"
           value={range}
           onChange={onChange}

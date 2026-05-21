@@ -2,12 +2,12 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSDateTimePicker} from '@xds/core/DateTimePicker';
-import type {ISODateTimeString} from '@xds/core/DateTimePicker';
+import {XDSDateTimeInput} from '@xds/core/DateTimeInput';
+import type {ISODateTimeString} from '@xds/core/DateTimeInput';
 
-const meta: Meta<typeof XDSDateTimePicker> = {
-  title: 'Core/Inputs/DateTimePicker',
-  component: XDSDateTimePicker,
+const meta: Meta<typeof XDSDateTimeInput> = {
+  title: 'Core/Inputs/DateTimeInput',
+  component: XDSDateTimeInput,
   tags: ['autodocs'],
   argTypes: {
     label: {
@@ -72,14 +72,14 @@ const meta: Meta<typeof XDSDateTimePicker> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof XDSDateTimePicker>;
+type Story = StoryObj<typeof XDSDateTimeInput>;
 
 export const Default: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateTimeString | undefined>(
       undefined,
     );
-    return <XDSDateTimePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateTimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Meeting time',
@@ -92,7 +92,7 @@ export const WithValue: Story = {
     const [value, setValue] = useState<ISODateTimeString | undefined>(
       '2026-03-15T14:30' as ISODateTimeString,
     );
-    return <XDSDateTimePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateTimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Event time',
@@ -104,7 +104,7 @@ export const TwentyFourHourFormat: Story = {
     const [value, setValue] = useState<ISODateTimeString | undefined>(
       '2026-03-15T14:30' as ISODateTimeString,
     );
-    return <XDSDateTimePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateTimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Appointment',
@@ -117,7 +117,7 @@ export const WithSeconds: Story = {
     const [value, setValue] = useState<ISODateTimeString | undefined>(
       '2026-03-15T14:30:45' as ISODateTimeString,
     );
-    return <XDSDateTimePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateTimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Log timestamp',
@@ -130,7 +130,7 @@ export const WithDescription: Story = {
     const [value, setValue] = useState<ISODateTimeString | undefined>(
       undefined,
     );
-    return <XDSDateTimePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateTimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Deadline',
@@ -144,7 +144,7 @@ export const WithClearButton: Story = {
     const [value, setValue] = useState<ISODateTimeString | undefined>(
       '2026-03-15T09:00' as ISODateTimeString,
     );
-    return <XDSDateTimePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateTimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Start time',
@@ -157,7 +157,7 @@ export const WithMinMax: Story = {
     const [value, setValue] = useState<ISODateTimeString | undefined>(
       undefined,
     );
-    return <XDSDateTimePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateTimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Appointment',
@@ -172,7 +172,7 @@ export const WithTimeIncrement: Story = {
     const [value, setValue] = useState<ISODateTimeString | undefined>(
       '2026-03-15T09:00' as ISODateTimeString,
     );
-    return <XDSDateTimePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateTimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Time slot',
@@ -186,7 +186,7 @@ export const Optional: Story = {
     const [value, setValue] = useState<ISODateTimeString | undefined>(
       undefined,
     );
-    return <XDSDateTimePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateTimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Preferred time',
@@ -200,7 +200,7 @@ export const Required: Story = {
     const [value, setValue] = useState<ISODateTimeString | undefined>(
       undefined,
     );
-    return <XDSDateTimePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateTimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Start time',
@@ -213,7 +213,7 @@ export const Disabled: Story = {
     const [value, setValue] = useState<ISODateTimeString | undefined>(
       '2026-03-15T10:00' as ISODateTimeString,
     );
-    return <XDSDateTimePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateTimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Locked time',
@@ -226,7 +226,7 @@ export const SmallSize: Story = {
     const [value, setValue] = useState<ISODateTimeString | undefined>(
       undefined,
     );
-    return <XDSDateTimePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateTimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Time',
@@ -239,7 +239,7 @@ export const TwoMonthCalendar: Story = {
     const [value, setValue] = useState<ISODateTimeString | undefined>(
       undefined,
     );
-    return <XDSDateTimePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateTimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Travel departure',
@@ -252,7 +252,7 @@ export const WithErrorStatus: Story = {
     const [value, setValue] = useState<ISODateTimeString | undefined>(
       '2026-03-15T14:30' as ISODateTimeString,
     );
-    return <XDSDateTimePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateTimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Event time',
@@ -268,7 +268,7 @@ export const WithWarningStatus: Story = {
     const [value, setValue] = useState<ISODateTimeString | undefined>(
       '2026-03-15T07:00' as ISODateTimeString,
     );
-    return <XDSDateTimePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateTimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Meeting time',
@@ -284,7 +284,7 @@ export const WithSuccessStatus: Story = {
     const [value, setValue] = useState<ISODateTimeString | undefined>(
       '2026-03-15T10:00' as ISODateTimeString,
     );
-    return <XDSDateTimePicker {...args} value={value} onChange={setValue} />;
+    return <XDSDateTimeInput {...args} value={value} onChange={setValue} />;
   },
   args: {
     label: 'Scheduled time',
@@ -324,36 +324,36 @@ export const AllVariations: Story = {
           gap: '16px',
           maxWidth: '460px',
         }}>
-        <XDSDateTimePicker
+        <XDSDateTimeInput
           label="Default"
           value={value1}
           onChange={setValue1}
           placeholder="Select a date"
         />
-        <XDSDateTimePicker
+        <XDSDateTimeInput
           label="With value (12h)"
           value={value2}
           onChange={setValue2}
         />
-        <XDSDateTimePicker
+        <XDSDateTimeInput
           label="24-hour format"
           value={value3}
           onChange={setValue3}
           hourFormat="24h"
         />
-        <XDSDateTimePicker
+        <XDSDateTimeInput
           label="With description"
           description="Pick your preferred datetime"
           value={value4}
           onChange={setValue4}
         />
-        <XDSDateTimePicker
+        <XDSDateTimeInput
           label="Disabled"
           isDisabled
           value={value5}
           onChange={setValue5}
         />
-        <XDSDateTimePicker
+        <XDSDateTimeInput
           label="With error"
           value={value6}
           onChange={setValue6}
