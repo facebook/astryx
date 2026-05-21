@@ -205,6 +205,7 @@ export interface XDSTokenizerProps<T extends XDSSearchableItem> {
 
 const styles = stylex.create({
   wrapper: {
+    position: 'relative',
     flexWrap: 'wrap',
     gap: spacingVars['--spacing-1'],
     cursor: 'text',
@@ -219,6 +220,11 @@ const styles = stylex.create({
     paddingInline: `calc(${spacingVars['--spacing-1']} - 1px)`,
     // Row gap must match paddingBlock so wrapped rows look evenly spaced.
     rowGap: `calc(${spacingVars['--spacing-1']} - 1px)`,
+  },
+  startIconWithTokens: {
+    // Restore the default 8px inline-start inset when tokens are present,
+    // since wrapperWithTokens reduces padding to 3px for border concentricity.
+    marginInlineStart: `calc(${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px)`,
   },
   token: {
     display: 'flex',
@@ -242,11 +248,20 @@ const styles = stylex.create({
     flexShrink: 0,
   },
   endSection: {
+    position: 'absolute',
+    top: 0,
+    insetInlineEnd: 0,
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
-    marginInlineStart: 'auto',
     flexShrink: 0,
+    paddingInlineEnd: spacingVars['--spacing-2'],
+  },
+  endSectionSm: {
+    height: sizeVars['--size-element-sm'],
+  },
+  endSectionMd: {
+    height: sizeVars['--size-element-md'],
   },
   sizeSm: {
     minHeight: sizeVars['--size-element-sm'],
@@ -684,7 +699,11 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
           status && inputStatusFocusWithinStyles[status.type],
         ),
       )}>
-      {startIcon && renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
+      {startIcon && (
+        <span {...stylex.props(value.length > 0 && styles.startIconWithTokens)}>
+          {renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
+        </span>
+      )}
       {isTruncated ? (
         <XDSOverflowList
           gap={1}
@@ -727,7 +746,11 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
         }
       />
       {(endContent || (hasClear && value.length > 0 && !isDisabled)) && (
-        <div {...stylex.props(styles.endSection)}>
+        <div
+          {...stylex.props(
+            styles.endSection,
+            size === 'sm' ? styles.endSectionSm : styles.endSectionMd,
+          )}>
           {endContent}
           {hasClear && value.length > 0 && !isDisabled && (
             <button
