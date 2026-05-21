@@ -26,7 +26,7 @@ export const docs = {
       required: true,
     },
     {
-      name: 'onChangeAction',
+      name: 'changeAction',
       type: '(files: File | File[] | null) => Promise<void>',
       description:
         'Async change action (React 19 transitions pattern). Use for immediate upload on file selection.',
@@ -130,7 +130,7 @@ export const docs = {
       {guidance: true, description: 'Always specify an accept prop to guide users toward valid file types.'},
       {guidance: true, description: 'Use maxSize and maxFiles to prevent oversized uploads — the component handles validation and error display automatically.'},
       {guidance: true, description: 'Add a description to communicate constraints like file size limits or accepted formats.'},
-      {guidance: true, description: 'Use onChangeAction for immediate upload workflows that benefit from optimistic UI.'},
+      {guidance: true, description: 'Use changeAction for immediate upload workflows that benefit from optimistic UI.'},
       {guidance: false, description: "Don't use FileInput for directory or folder uploads — that is not supported in v1."},
       {guidance: false, description: "Don't avoid dropzone mode unless space is very constrained — drag-and-drop is the expected interaction for file uploads."},
     ],
@@ -281,7 +281,7 @@ export const docsDense = {
     label: 'Accessible label for the file input.',
     value: 'Currently selected file(s). Controlled.',
     onChange: 'Fired when files are selected or removed.',
-    onChangeAction: 'Async action after onChange. For immediate upload.',
+    changeAction: 'Async action after onChange. For immediate upload.',
     accept: 'Accepted file types (HTML accept format).',
     isMultiple: 'Allow multiple file selection.',
     maxSize: 'Max file size in bytes. Rejects oversized files.',

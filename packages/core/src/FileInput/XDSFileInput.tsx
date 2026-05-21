@@ -305,7 +305,7 @@ export interface XDSFileInputProps extends Omit<
    * Async change action (React 19 transitions pattern).
    * Use for immediate upload on file selection.
    */
-  onChangeAction?: (files: File | File[] | null) => Promise<void>;
+  changeAction?: (files: File | File[] | null) => Promise<void>;
   /**
    * Accepted file types. Uses the HTML accept attribute format.
    * Examples: "image/*", ".pdf,.doc,.docx", "image/png,image/jpeg"
@@ -385,7 +385,7 @@ export function XDSFileInput({
   isLabelHidden = false,
   value,
   onChange,
-  onChangeAction,
+  changeAction,
   accept,
   isMultiple = false,
   maxSize,
@@ -474,9 +474,9 @@ export function XDSFileInput({
       const result = isMultiple ? valid : valid[0];
       onChange(result);
 
-      if (onChangeAction) {
+      if (changeAction) {
         startTransition(async () => {
-          await onChangeAction(result);
+          await changeAction(result);
         });
       }
     },
@@ -487,7 +487,7 @@ export function XDSFileInput({
       maxFiles,
       maxSize,
       onChange,
-      onChangeAction,
+      changeAction,
       startTransition,
     ],
   );
