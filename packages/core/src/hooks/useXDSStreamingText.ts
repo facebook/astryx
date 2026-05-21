@@ -121,18 +121,27 @@ export function useXDSStreamingText(
   const rafRef = useRef<number | null>(null);
 
   // Keep target ref in sync
-  useEffect(() => {
-    targetRef.current = targetText;
-  }, [targetText]);
+  targetRef.current = targetText;
 
   // Reset when target clears (new message)
-  const targetLen = targetText.length;
-  useEffect(() => {
-    if (targetLen === 0) {
+  const prevTargetLenRef = useRef(targetText.length);
+  if (targetText.length !== prevTargetLenRef.current) {
+    prevTargetLenRef.current = targetText.length;
+    if (targetText.length === 0 && displayedLen !== 0) {
       displayedLenRef.current = 0;
       setDisplayedLen(0);
     }
-  }, [targetLen]);
+  }
+
+  // Snap to full text when streaming ends
+  const prevIsStreamingRef = useRef(isStreaming);
+  if (isStreaming !== prevIsStreamingRef.current) {
+    prevIsStreamingRef.current = isStreaming;
+    if (!isStreaming && targetText.length > 0) {
+      displayedLenRef.current = targetText.length;
+      setDisplayedLen(targetText.length);
+    }
+  }
 
   // Animation loop
   useEffect(() => {
@@ -166,14 +175,6 @@ export function useXDSStreamingText(
       }
     };
   }, [isStreaming, charsPerTick, tickMs, speed]);
-
-  // Snap to full text when streaming ends
-  useEffect(() => {
-    if (!isStreaming && targetText.length > 0) {
-      displayedLenRef.current = targetText.length;
-      setDisplayedLen(targetText.length);
-    }
-  }, [isStreaming, targetText.length]);
 
   if (!isStreaming || speed === 'instant') {
     return targetText;
