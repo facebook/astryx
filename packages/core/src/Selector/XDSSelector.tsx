@@ -27,7 +27,7 @@ import React, {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useXDSPopover} from '../Popover/useXDSPopover';
-import {XDSIcon} from '../Icon';
+import {XDSIcon, renderIconSlot, type XDSIconType} from '../Icon';
 import type {XDSIconName} from '../Icon';
 import {
   XDSField,
@@ -409,6 +409,11 @@ interface XDSSelectorPropsBase<
   labelTooltip?: string;
 
   /**
+   * Icon displayed at the start of the selector trigger.
+   */
+  startIcon?: ReactNode | XDSIconType;
+
+  /**
    * Custom render function for options.
    * Only called for selectable options (not dividers/sections).
    */
@@ -516,6 +521,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
     size: sizeProp,
     status,
     labelTooltip,
+    startIcon,
     children,
     hasSearch = false,
     searchPlaceholder = 'Search...',
@@ -851,6 +857,8 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
           className,
           style,
         )}>
+        {startIcon &&
+          renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
         <button
           ref={triggerRef}
           id={triggerId}

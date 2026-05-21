@@ -508,6 +508,18 @@ export function XDSDateRangePicker({
           style,
         )}>
         <button
+          type="button"
+          onClick={handleToggle}
+          disabled={isEffectivelyDisabled}
+          aria-label={popover.isOpen ? 'Close calendar' : 'Open calendar'}
+          tabIndex={-1}
+          {...stylex.props(
+            styles.iconButton,
+            isEffectivelyDisabled && styles.iconButtonDisabled,
+          )}>
+          <XDSIcon icon="calendar" size="sm" color="secondary" />
+        </button>
+        <button
           ref={ref}
           id={id}
           type="button"
@@ -537,18 +549,6 @@ export function XDSDateRangePicker({
             <XDSIcon icon="close" size="sm" color="secondary" />
           </button>
         )}
-        <button
-          type="button"
-          onClick={handleToggle}
-          disabled={isEffectivelyDisabled}
-          aria-label={popover.isOpen ? 'Close calendar' : 'Open calendar'}
-          tabIndex={-1}
-          {...stylex.props(
-            styles.iconButton,
-            isEffectivelyDisabled && styles.iconButtonDisabled,
-          )}>
-          <XDSIcon icon="calendar" size="sm" color="secondary" />
-        </button>
         {isBusy && <XDSSpinner size="sm" />}
         {status && (
           <XDSIcon
