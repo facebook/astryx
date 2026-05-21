@@ -339,9 +339,7 @@ export function XDSTopNavMenu({
 
   const setTriggerRef = useCallback(
     (el: HTMLButtonElement | null) => {
-      (
-        triggerButtonRef as React.MutableRefObject<HTMLButtonElement | null>
-      ).current = el;
+      triggerButtonRef.current = el;
       popover.triggerRef(el);
       setTriggerEl(el);
     },

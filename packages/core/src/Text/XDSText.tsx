@@ -247,7 +247,7 @@ export function XDSText({
       // Truncation ref
       truncation.ref(element);
       // Local ref for tooltip anchor
-      (textRef as React.MutableRefObject<HTMLElement | null>).current = element;
+      textRef.current = element;
     },
     [ref, truncation],
   );

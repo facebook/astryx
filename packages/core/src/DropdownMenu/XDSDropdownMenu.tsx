@@ -355,18 +355,14 @@ export function XDSDropdownMenu({
       <XDSButton
         {...button}
         ref={el => {
-          (
-            buttonRef as React.MutableRefObject<HTMLButtonElement | null>
-          ).current = el;
+          buttonRef.current = el;
           popover.triggerRef(el);
           const consumerRef = button.ref;
           if (typeof consumerRef === 'function') {
             consumerRef(el);
           } else if (consumerRef) {
             /* eslint-disable react-compiler/react-compiler -- ref callback: forwarding consumer ref object */
-            (
-              consumerRef as React.MutableRefObject<HTMLButtonElement | null>
-            ).current = el;
+            consumerRef.current = el;
             /* eslint-enable react-compiler/react-compiler */
           }
         }}

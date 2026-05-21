@@ -241,9 +241,7 @@ export function XDSHeading({
       // Truncation ref
       truncation.ref(element);
       // Local ref for tooltip anchor
-      (
-        headingRef as React.MutableRefObject<HTMLHeadingElement | null>
-      ).current = element;
+      headingRef.current = element;
     },
     [ref, truncation],
   );

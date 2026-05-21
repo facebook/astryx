@@ -324,7 +324,7 @@ export function XDSTextInput({
       if (typeof ref === 'function') {
         ref(el);
       } else if (ref) {
-        (ref as React.MutableRefObject<HTMLInputElement | null>).current = el;
+        ref.current = el;
       }
     },
     [ref],

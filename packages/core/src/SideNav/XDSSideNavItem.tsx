@@ -509,8 +509,7 @@ export function XDSSideNavItem({
               if (typeof ref === 'function') {
                 ref(el);
               } else if (ref) {
-                (ref as React.MutableRefObject<HTMLElement | null>).current =
-                  el;
+                ref.current = el;
               }
             }}
             type="button"

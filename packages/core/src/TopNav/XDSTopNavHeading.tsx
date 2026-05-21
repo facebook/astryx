@@ -352,12 +352,12 @@ export function XDSTopNavHeading({
 
   const setRef = useCallback(
     (el: HTMLElement | null) => {
-      (rootRef as React.MutableRefObject<HTMLElement | null>).current = el;
+      rootRef.current = el;
       setTriggerEl(el);
       if (typeof ref === 'function') {
         ref(el);
       } else if (ref) {
-        (ref as React.MutableRefObject<HTMLElement | null>).current = el;
+        ref.current = el;
       }
       if (menu) {
         popover.triggerRef(el);

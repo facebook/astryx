@@ -377,11 +377,11 @@ export function XDSTimestamp({
 
   // Tooltip needs the ref
   const combinedRef = (el: HTMLTimeElement | null) => {
-    (timeRef as React.MutableRefObject<HTMLTimeElement | null>).current = el;
+    timeRef.current = el;
     if (typeof ref === 'function') {
       ref(el);
     } else if (ref) {
-      (ref as React.MutableRefObject<HTMLTimeElement | null>).current = el;
+      ref.current = el;
     }
   };
 

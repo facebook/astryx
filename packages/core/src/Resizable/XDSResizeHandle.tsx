@@ -474,12 +474,11 @@ export function XDSResizeHandle({
   return (
     <div
       ref={node => {
-        (handleRef as React.MutableRefObject<HTMLDivElement | null>).current =
-          node;
+        handleRef.current = node;
         if (typeof ref === 'function') {
           ref(node);
         } else if (ref) {
-          (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+          ref.current = node;
         }
       }}
       role="separator"

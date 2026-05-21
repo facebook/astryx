@@ -17,7 +17,6 @@
  * - /packages/cli/templates/blocks/components/OverflowList/ (showcase blocks)
  */
 
-
 import {type ReactNode, type ReactElement, Children} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import type {SpacingStep} from '../utils/types';
@@ -249,7 +248,7 @@ export function XDSOverflowList({
           if (typeof ref === 'function') {
             ref(el);
           } else if (ref) {
-            (ref as React.MutableRefObject<HTMLDivElement | null>).current = el;
+            ref.current = el;
           }
         }}
         {...mergeProps(
