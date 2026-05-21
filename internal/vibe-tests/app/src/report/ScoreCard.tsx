@@ -17,8 +17,12 @@ interface ScoreCardProps {
 }
 
 function deltaClassName(delta: number): string {
-  if (delta > 0) return 'report-color-positive';
-  if (delta < 0) return 'report-color-negative';
+  if (delta > 0) {
+    return 'report-color-positive';
+  }
+  if (delta < 0) {
+    return 'report-color-negative';
+  }
   return 'report-color-neutral';
 }
 

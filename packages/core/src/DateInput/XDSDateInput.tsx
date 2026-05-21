@@ -377,7 +377,9 @@ export function XDSDateInput({
   // Unified change handler that fires both onChange and changeAction
   const fireChange = useCallback(
     (newValue: ISODateString | undefined) => {
-      if (isBusy) return;
+      if (isBusy) {
+        return;
+      }
       onChange?.(newValue);
       if (changeAction) {
         startTransition(async () => {

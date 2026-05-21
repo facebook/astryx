@@ -205,7 +205,9 @@ export function XDSCommandPaletteInput({
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       onKeyDown?.(e);
-      if (e.defaultPrevented) return;
+      if (e.defaultPrevented) {
+        return;
+      }
       // Delegate to useCombobox's keyboard handler from context
       ctx?.onKeyDown(e);
     },

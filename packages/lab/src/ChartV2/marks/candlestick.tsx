@@ -51,7 +51,9 @@ export function candlestick(options: CandlestickOptions): SeriesDef {
 
     render(resolved, ctx) {
       const {data, xScale, yScale} = ctx;
-      if (!('bandwidth' in xScale)) return null;
+      if (!('bandwidth' in xScale)) {
+        return null;
+      }
       const bw = (xScale as ScaleBand<string>).bandwidth();
       const bodyWidth = bw * 0.6;
 

@@ -350,8 +350,11 @@ describe('useXDSTablePagination', () => {
           getIsItemSelected: item => selectedIds.has(item.id),
           onSelectItem: ({item, isSelected}) => {
             const next = new Set(selectedIds);
-            if (isSelected) next.add(item.id);
-            else next.delete(item.id);
+            if (isSelected) {
+              next.add(item.id);
+            } else {
+              next.delete(item.id);
+            }
             setSelectedIds(next);
           },
           onSelectAll: ({isAllSelected}) => {

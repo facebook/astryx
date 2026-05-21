@@ -55,7 +55,13 @@ export const WithLabel: Story = {
 export const WithRemove: Story = {
   render: () => {
     const [visible, setVisible] = useState(true);
-    if (!visible) return <p style={{color: '#888', fontSize: 12}}>Removed. <button onClick={() => setVisible(true)}>Undo</button></p>;
+    if (!visible) {
+      return (
+        <p style={{color: '#888', fontSize: 12}}>
+          Removed. <button onClick={() => setVisible(true)}>Undo</button>
+        </p>
+      );
+    }
     return (
       <XDSThumbnail
         src={LIGHT_IMAGE}
@@ -70,7 +76,13 @@ export const WithRemove: Story = {
 export const WithCaption: Story = {
   render: () => {
     const [visible, setVisible] = useState(true);
-    if (!visible) return <p style={{color: '#888', fontSize: 12}}>Removed. <button onClick={() => setVisible(true)}>Undo</button></p>;
+    if (!visible) {
+      return (
+        <p style={{color: '#888', fontSize: 12}}>
+          Removed. <button onClick={() => setVisible(true)}>Undo</button>
+        </p>
+      );
+    }
     return (
       <XDSThumbnail
         src={WARM_IMAGE}
@@ -113,12 +125,15 @@ export const Placeholder: Story = {
   name: 'No Image (Placeholder)',
   render: () => {
     const [visible, setVisible] = useState(true);
-    if (!visible) return <p style={{color: '#888', fontSize: 12}}>Removed. <button onClick={() => setVisible(true)}>Undo</button></p>;
+    if (!visible) {
+      return (
+        <p style={{color: '#888', fontSize: 12}}>
+          Removed. <button onClick={() => setVisible(true)}>Undo</button>
+        </p>
+      );
+    }
     return (
-      <XDSThumbnail
-        label="report.pdf"
-        onRemove={() => setVisible(false)}
-      />
+      <XDSThumbnail label="report.pdf" onRemove={() => setVisible(false)} />
     );
   },
 };
@@ -146,7 +161,8 @@ export const MediaModeTest: Story = {
     return (
       <div>
         <p style={{fontSize: 12, color: '#888', marginBottom: 8}}>
-          Remove buttons should adapt: light icon on dark images, dark icon on light images.
+          Remove buttons should adapt: light icon on dark images, dark icon on
+          light images.
         </p>
         <div style={{display: 'flex', gap: 8, alignItems: 'flex-start'}}>
           {items.map(item => (
@@ -155,12 +171,15 @@ export const MediaModeTest: Story = {
               src={item.src}
               alt={item.alt}
               label={item.label}
-              onRemove={() => setItems(prev => prev.filter(i => i.label !== item.label))}
+              onRemove={() =>
+                setItems(prev => prev.filter(i => i.label !== item.label))
+              }
             />
           ))}
           {items.length === 0 && (
             <p style={{color: '#888', fontSize: 12}}>
-              All removed. <button onClick={() => setItems(images)}>Reset</button>
+              All removed.{' '}
+              <button onClick={() => setItems(images)}>Reset</button>
             </p>
           )}
         </div>
@@ -185,12 +204,15 @@ export const Gallery: Story = {
             src={item.src}
             alt={item.label}
             label={item.label}
-            onRemove={() => setItems(prev => prev.filter(i => i.id !== item.id))}
+            onRemove={() =>
+              setItems(prev => prev.filter(i => i.id !== item.id))
+            }
           />
         ))}
         {items.length === 0 && (
           <p style={{color: '#888', fontSize: 12}}>
-            All removed. <button onClick={() => setItems(initial)}>Reset</button>
+            All removed.{' '}
+            <button onClick={() => setItems(initial)}>Reset</button>
           </p>
         )}
       </div>

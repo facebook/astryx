@@ -130,8 +130,9 @@ function analyzePhantomProps(code: string): UniversalFinding[] {
       trimmed.startsWith('//') ||
       trimmed.startsWith('*') ||
       trimmed.startsWith('import ')
-    )
+    ) {
       continue;
+    }
 
     // onPress on any element/component — React Native, not DOM
     if (/\bonPress\s*[={]/.test(line) && !/onPressedChange/.test(line)) {
@@ -313,9 +314,13 @@ function analyzeAccessibility(code: string): DimensionScore {
   const headingLevels: number[] = [];
   for (const line of lines) {
     const h = line.match(/<h([1-6])\b/i);
-    if (h) headingLevels.push(parseInt(h[1]));
+    if (h) {
+      headingLevels.push(parseInt(h[1]));
+    }
     const xh = line.match(/level\s*=\s*\{?\s*(\d)\s*\}?/);
-    if (xh && line.includes('Heading')) headingLevels.push(parseInt(xh[1]));
+    if (xh && line.includes('Heading')) {
+      headingLevels.push(parseInt(xh[1]));
+    }
   }
   for (let i = 1; i < headingLevels.length; i++) {
     if (headingLevels[i] > headingLevels[i - 1] + 1) {
@@ -394,7 +399,9 @@ function analyzeCodeQuality(code: string): DimensionScore {
     }
 
     // Branches
-    if (stripped.match(/^(if|else if|else|case|catch)\b/)) branchCount++;
+    if (stripped.match(/^(if|else if|else|case|catch)\b/)) {
+      branchCount++;
+    }
     branchCount += (line.match(/\?[^?:]/g) || []).length; // ternaries
 
     // TypeScript any
@@ -486,11 +493,21 @@ function analyzeCodeQuality(code: string): DimensionScore {
  * Check if a normalized line is component/prop usage (not real duplication).
  */
 function isComponentUsageLine(normalizedLine: string): boolean {
-  if (/^<\/?[A-Z]\w*/.test(normalizedLine)) return true;
-  if (/^<\/[A-Z]\w*>$/.test(normalizedLine)) return true;
-  if (/^<[A-Z]\w*\s.*\/>$/.test(normalizedLine)) return true;
-  if (/^\w+=/.test(normalizedLine) && normalizedLine.length < 40) return true;
-  if (/^\w+:\s*\w+Vars\[/.test(normalizedLine)) return true;
+  if (/^<\/?[A-Z]\w*/.test(normalizedLine)) {
+    return true;
+  }
+  if (/^<\/[A-Z]\w*>$/.test(normalizedLine)) {
+    return true;
+  }
+  if (/^<[A-Z]\w*\s.*\/>$/.test(normalizedLine)) {
+    return true;
+  }
+  if (/^\w+=/.test(normalizedLine) && normalizedLine.length < 40) {
+    return true;
+  }
+  if (/^\w+:\s*\w+Vars\[/.test(normalizedLine)) {
+    return true;
+  }
   return false;
 }
 
@@ -517,10 +534,13 @@ function countElements(code: string): number {
       ['React', 'Fragment', 'StrictMode', 'Suspense', 'ErrorBoundary'].includes(
         tag,
       )
-    )
+    ) {
       continue;
+    }
     // Skip wrapper/provider tags
-    if (/(Provider|Context|Theme|Wrapper)$/.test(tag)) continue;
+    if (/(Provider|Context|Theme|Wrapper)$/.test(tag)) {
+      continue;
+    }
     elements.add(`${tag}-${m.index}`); // unique by position
   }
   return elements.size;
@@ -611,33 +631,46 @@ function analyzeEfficiency(
       stripped.startsWith('*')
     ) {
       commentLines++;
-      if (stripped.startsWith('/*')) inComment = true;
-      if (stripped.includes('*/')) inComment = false;
+      if (stripped.startsWith('/*')) {
+        inComment = true;
+      }
+      if (stripped.includes('*/')) {
+        inComment = false;
+      }
       continue;
     }
     if (inComment) {
       commentLines++;
-      if (stripped.includes('*/')) inComment = false;
+      if (stripped.includes('*/')) {
+        inComment = false;
+      }
       continue;
     }
     if (stripped.startsWith('import ')) {
       importLines++;
       continue;
     }
-    if (/^(export\s+)?(type|interface)\s/.test(stripped)) inTypeBlock = true;
+    if (/^(export\s+)?(type|interface)\s/.test(stripped)) {
+      inTypeBlock = true;
+    }
     if (inTypeBlock) {
       typeLines++;
-      if (stripped === '}' || stripped === '};') inTypeBlock = false;
+      if (stripped === '}' || stripped === '};') {
+        inTypeBlock = false;
+      }
       continue;
     }
     if (
       (target === 'xds' || target === 'xds-tailwind') &&
       stripped.includes('stylex.create')
-    )
+    ) {
       inStyleBlock = true;
+    }
     if (inStyleBlock) {
       stylingLines++;
-      if (stripped === '});') inStyleBlock = false;
+      if (stripped === '});') {
+        inStyleBlock = false;
+      }
       continue;
     }
     if (
@@ -797,8 +830,9 @@ function countMagicAndSemanticValues(
       line.trim().startsWith('//') ||
       line.trim().startsWith('import') ||
       line.trim().startsWith('*')
-    )
+    ) {
       continue;
+    }
 
     // Hardcoded colors in style contexts
     const colorMatches = line.match(
@@ -877,7 +911,9 @@ function measureStateSpread(code: string): number {
     }
   }
 
-  if (spreads.length === 0) return 0;
+  if (spreads.length === 0) {
+    return 0;
+  }
   return Math.round(spreads.reduce((a, b) => a + b, 0) / spreads.length);
 }
 
@@ -1054,7 +1090,9 @@ export function getAverageScore(score: UniversalScore): number {
  * Returns null if design score is not present.
  */
 export function getFullAverageScore(score: UniversalScore): number | null {
-  if (score.design == null) return null;
+  if (score.design == null) {
+    return null;
+  }
   const dims = getDimensionNames();
   const coreTotal = dims.reduce((sum, d) => sum + (score[d]?.score ?? 0), 0);
   const total = coreTotal + score.design.score;

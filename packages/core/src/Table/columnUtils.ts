@@ -165,7 +165,9 @@ export function pixel(value: number): PixelWidth {
  * Used for auto-generating header text from data keys.
  */
 export function capitalize(str: string): string {
-  if (str.length === 0) return str;
+  if (str.length === 0) {
+    return str;
+  }
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
@@ -177,7 +179,9 @@ export function defaultCellRenderer<T extends Record<string, unknown>>(
   key: string,
 ): ReactNode {
   const value = item[key];
-  if (value == null) return '';
+  if (value == null) {
+    return '';
+  }
   return String(value);
 }
 
@@ -187,9 +191,15 @@ export function defaultCellRenderer<T extends Record<string, unknown>>(
  * complex types return 0 (fall back to equal proportioning for that cell).
  */
 function estimateContentLength(value: unknown): number {
-  if (value == null) return 0;
-  if (typeof value === 'string') return value.length;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value).length;
+  if (value == null) {
+    return 0;
+  }
+  if (typeof value === 'string') {
+    return value.length;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value).length;
+  }
   return 0;
 }
 
@@ -199,14 +209,29 @@ function estimateContentLength(value: unknown): number {
  * Only measures string and number values — complex types return 0.
  */
 function longestWord(value: unknown): number {
-  if (value == null) return 0;
-  if (typeof value !== 'string' && typeof value !== 'number' && typeof value !== 'boolean') return 0;
+  if (value == null) {
+    return 0;
+  }
+  if (
+    typeof value !== 'string' &&
+    typeof value !== 'number' &&
+    typeof value !== 'boolean'
+  ) {
+    return 0;
+  }
   const str = String(value);
   let max = 0;
   let current = 0;
   for (let i = 0; i <= str.length; i++) {
-    if (i === str.length || str[i] === ' ' || str[i] === '\t' || str[i] === '\n') {
-      if (current > max) max = current;
+    if (
+      i === str.length ||
+      str[i] === ' ' ||
+      str[i] === '\t' ||
+      str[i] === '\n'
+    ) {
+      if (current > max) {
+        max = current;
+      }
       current = 0;
     } else {
       current++;
@@ -230,7 +255,9 @@ const PX_PER_CHAR = 8;
 export function generateColumns<T extends Record<string, unknown>>(
   data: T[],
 ): XDSTableColumn<T>[] {
-  if (data.length === 0) return [];
+  if (data.length === 0) {
+    return [];
+  }
   const firstItem = data[0];
   const keys = Object.keys(firstItem);
 
@@ -246,10 +273,14 @@ export function generateColumns<T extends Record<string, unknown>>(
 
     for (const row of sampleRows) {
       const contentLen = estimateContentLength(row[key]);
-      if (contentLen > maxContentLen) maxContentLen = contentLen;
+      if (contentLen > maxContentLen) {
+        maxContentLen = contentLen;
+      }
 
       const wordLen = longestWord(row[key]);
-      if (wordLen > maxWordLen) maxWordLen = wordLen;
+      if (wordLen > maxWordLen) {
+        maxWordLen = wordLen;
+      }
     }
 
     return {key, headerLen, maxContentLen, maxWordLen};
@@ -260,8 +291,7 @@ export function generateColumns<T extends Record<string, unknown>>(
     // 1 = short (≤6 chars: IDs, ages, booleans, status)
     // 2 = medium (7–15 chars: names, dates, short strings)
     // 3 = long (>15 chars: emails, URLs, descriptions)
-    const proportion =
-      m.maxContentLen <= 6 ? 1 : m.maxContentLen <= 15 ? 2 : 3;
+    const proportion = m.maxContentLen <= 6 ? 1 : m.maxContentLen <= 15 ? 2 : 3;
 
     // Min-width: enough to fit header or longest word without wrapping
     const minWidth = Math.max(

@@ -102,7 +102,9 @@ export function useOverflow(
   const calculate = useCallback(() => {
     const container = containerElRef.current;
     const measure = measureElRef.current;
-    if (!container || !measure) return;
+    if (!container || !measure) {
+      return;
+    }
 
     let availableWidth: number;
 

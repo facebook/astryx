@@ -305,7 +305,9 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
 
   const handleSubmit = useCallback(() => {
     const trimmed = currentValue.trim();
-    if (!trimmed || isDisabled) return;
+    if (!trimmed || isDisabled) {
+      return;
+    }
     onSubmit(trimmed);
     updateValue('');
   }, [currentValue, isDisabled, onSubmit, updateValue]);

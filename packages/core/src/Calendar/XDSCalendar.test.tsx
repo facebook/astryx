@@ -372,7 +372,9 @@ describe('XDSCalendar', () => {
     // Click the first outside day
     if (outsideDays[0]) {
       const button = outsideDays[0].querySelector('button');
-      if (button) await user.click(button);
+      if (button) {
+        await user.click(button);
+      }
     }
 
     expect(handleChange).not.toHaveBeenCalled();

@@ -38,10 +38,14 @@ function EfficiencyMetricsCard({
   byPrompt: ReportData['universal']['byPrompt'];
 }) {
   const entries = Object.values(byPrompt);
-  if (entries.length === 0) return null;
+  if (entries.length === 0) {
+    return null;
+  }
 
   const metrics = entries.map(s => s.efficiency.metrics).filter(Boolean);
-  if (metrics.length === 0) return null;
+  if (metrics.length === 0) {
+    return null;
+  }
 
   const avgDecisions =
     metrics.reduce((s, m) => s + (m?.decisionsPerElement ?? 0), 0) /
@@ -89,10 +93,14 @@ function MaintainabilityMetricsCard({
   byPrompt: ReportData['universal']['byPrompt'];
 }) {
   const entries = Object.values(byPrompt);
-  if (entries.length === 0) return null;
+  if (entries.length === 0) {
+    return null;
+  }
 
   const metrics = entries.map(s => s.maintainability.metrics).filter(Boolean);
-  if (metrics.length === 0) return null;
+  if (metrics.length === 0) {
+    return null;
+  }
 
   const avgSemantic =
     metrics.reduce((s, m) => s + (m?.semanticRatio ?? 0), 0) / metrics.length;
@@ -122,7 +130,9 @@ function MaintainabilityMetricsCard({
 }
 
 function CostMetricsCard({cost}: {cost: ReportData['universal']['cost']}) {
-  if (!cost) return null;
+  if (!cost) {
+    return null;
+  }
 
   return (
     <XDSCard>

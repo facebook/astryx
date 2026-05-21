@@ -119,7 +119,9 @@ export function XDSChatMessageMetadata({
 
   const hasContent =
     timestamp != null || footer != null || statusConfig != null;
-  if (!hasContent) return null;
+  if (!hasContent) {
+    return null;
+  }
 
   return (
     <div

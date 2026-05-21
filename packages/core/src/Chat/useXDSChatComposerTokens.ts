@@ -99,12 +99,16 @@ export function useXDSChatComposerTokens({
   const insertToken = useCallback(
     (token: XDSChatComposerToken): string | undefined => {
       const editable = editableRef.current;
-      if (!editable) return;
+      if (!editable) {
+        return;
+      }
 
       // Place a caret at the end of the editable if there's no Range
       // inside it (programmatic focus does not create one).
       const selection = ensureCaretInside(editable);
-      if (!selection || selection.rangeCount === 0) return;
+      if (!selection || selection.rangeCount === 0) {
+        return;
+      }
 
       const range = selection.getRangeAt(0);
 
@@ -141,7 +145,9 @@ export function useXDSChatComposerTokens({
   // --- Backspace near tokens ---
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent): boolean => {
-      if (e.key !== 'Backspace') return false;
+      if (e.key !== 'Backspace') {
+        return false;
+      }
 
       const selection = window.getSelection();
       if (!selection || !selection.isCollapsed || selection.rangeCount === 0) {
@@ -191,10 +197,14 @@ export function useXDSChatComposerTokens({
   const handlePaste = useCallback(
     (e: React.ClipboardEvent): boolean => {
       const editable = editableRef.current;
-      if (!editable) return false;
+      if (!editable) {
+        return false;
+      }
 
       const selection = ensureCaretInside(editable);
-      if (!selection || selection.rangeCount === 0) return false;
+      if (!selection || selection.rangeCount === 0) {
+        return false;
+      }
 
       const range = selection.getRangeAt(0);
 
@@ -231,10 +241,14 @@ export function useXDSChatComposerTokens({
   const expandToken = useCallback(
     (id: string) => {
       const editable = editableRef.current;
-      if (!editable) return;
+      if (!editable) {
+        return;
+      }
 
       const portal = tokenPortals.find(p => p.id === id);
-      if (!portal) return;
+      if (!portal) {
+        return;
+      }
 
       const {span} = portal;
       const value = span.getAttribute('data-xds-token-value') ?? '';

@@ -50,7 +50,9 @@ export function useScrollOverflow() {
 
   const measure = useCallback(() => {
     const el = elRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
 
     const tolerance = 1;
     const {scrollLeft, scrollWidth, clientWidth} = el;

@@ -59,9 +59,7 @@ export interface UseXDSChatPasteAsTokenReturn {
 function defaultToToken(text: string): XDSChatComposerToken {
   const lines = text.split('\n').length;
   const chars = text.length;
-  const label = lines > 1
-    ? `${lines} lines, ${chars} chars`
-    : `${chars} chars`;
+  const label = lines > 1 ? `${lines} lines, ${chars} chars` : `${chars} chars`;
   return {
     value: text,
     label,
@@ -80,7 +78,9 @@ export function useXDSChatPasteAsToken({
 }: UseXDSChatPasteAsTokenOptions): UseXDSChatPasteAsTokenReturn {
   const onPaste = useCallback(
     (_event: ClipboardEvent<HTMLDivElement>, text: string): boolean => {
-      if (text.length <= threshold) return false;
+      if (text.length <= threshold) {
+        return false;
+      }
 
       const token = toToken(text);
       inputRef.current?.insertToken(token);

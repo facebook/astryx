@@ -245,7 +245,9 @@ export function XDSCarousel({
 
   const scrollBy = useCallback((direction: -1 | 1) => {
     const el = scrollElRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     const firstChild = el.firstElementChild as HTMLElement | null;
     const itemWidth = firstChild ? firstChild.offsetWidth : 0;
     const amount = el.clientWidth - itemWidth * 0.5;
@@ -273,10 +275,14 @@ export function XDSCarousel({
   return (
     <div
       ref={(el: HTMLDivElement | null) => {
-        if (typeof ref === 'function') ref(el);
-        else if (ref)
+        if (typeof ref === 'function') {
+          ref(el);
+        } else if (ref) {
           (ref as React.MutableRefObject<HTMLDivElement | null>).current = el;
-        if (layer.ref) layer.ref(el as HTMLElement | null);
+        }
+        if (layer.ref) {
+          layer.ref(el as HTMLElement | null);
+        }
       }}
       data-testid={testId}
       role="region"

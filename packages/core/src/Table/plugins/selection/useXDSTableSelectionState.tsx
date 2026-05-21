@@ -111,7 +111,9 @@ export function useXDSTableSelectionState<T extends Record<string, unknown>>(
   const frozenSelectedIDs = useMemo(() => {
     const frozen = new Set<string>();
     for (const id of selectedKeys) {
-      if (!selectableIDs.has(id)) frozen.add(id);
+      if (!selectableIDs.has(id)) {
+        frozen.add(id);
+      }
     }
     return frozen;
   }, [selectedKeys, selectableIDs]);

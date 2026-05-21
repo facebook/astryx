@@ -53,7 +53,9 @@ export function XDSChartArea({
   const lowerKey = yLower ?? baseline;
 
   const pathD = useMemo(() => {
-    if (!upperKey || !lowerKey) return '';
+    if (!upperKey || !lowerKey) {
+      return '';
+    }
     const generator = area<Record<string, unknown>>()
       .x(d => xPixel(d, xKey, xScale))
       .y0(d => {
@@ -68,7 +70,9 @@ export function XDSChartArea({
     return generator(data) ?? '';
   }, [data, xKey, xScale, yScale, upperKey, lowerKey]);
 
-  if (!pathD) return null;
+  if (!pathD) {
+    return null;
+  }
 
   return (
     <g>

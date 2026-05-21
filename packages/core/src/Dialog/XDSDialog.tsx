@@ -216,7 +216,9 @@ const dynamicStyles = stylex.create({
  * Format position value - numbers become pixels, strings pass through, undefined becomes null
  */
 function formatPosition(value: number | string | undefined): string | null {
-  if (value === undefined) return null;
+  if (value === undefined) {
+    return null;
+  }
   return typeof value === 'number' ? `${value}px` : value;
 }
 
@@ -366,9 +368,13 @@ export function XDSDialog({
 
   // Handle open/close state — skip for inline rendering
   useEffect(() => {
-    if (isInline) return;
+    if (isInline) {
+      return;
+    }
     const dialog = dialogRef.current;
-    if (!dialog) return;
+    if (!dialog) {
+      return;
+    }
 
     if (isOpen) {
       // Capture the currently focused element as the trigger — used for
@@ -413,9 +419,13 @@ export function XDSDialog({
 
   // Handle Escape key — skip for inline rendering
   useEffect(() => {
-    if (isInline) return;
+    if (isInline) {
+      return;
+    }
     const dialog = dialogRef.current;
-    if (!dialog || !isOpen) return;
+    if (!dialog || !isOpen) {
+      return;
+    }
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -495,7 +505,9 @@ export function XDSDialog({
 
   // --- Inline rendering path (for documentation previews) ---
   if (isInline) {
-    if (!isOpen) return null;
+    if (!isOpen) {
+      return null;
+    }
 
     return (
       <div

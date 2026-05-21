@@ -77,14 +77,18 @@ export function XDSChartCandlestick({
 }: XDSChartCandlestickProps) {
   const {data, xKey, xScale, yScale} = useChart();
 
-  if (!isBandScale(xScale)) return null;
+  if (!isBandScale(xScale)) {
+    return null;
+  }
   const bw = xScale.bandwidth();
 
   return (
     <g>
       {data.map((d, i) => {
         const xVal = xScale(String(d[xKey]));
-        if (xVal == null) return null;
+        if (xVal == null) {
+          return null;
+        }
 
         const hVal = typeof d[high] === 'number' ? (d[high] as number) : 0;
         const lVal = typeof d[low] === 'number' ? (d[low] as number) : 0;

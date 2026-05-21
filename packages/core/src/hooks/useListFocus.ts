@@ -110,7 +110,9 @@ export function useListFocus(
    * Get all focusable items in the list.
    */
   const getItems = useCallback((): HTMLElement[] => {
-    if (!listRef.current) return [];
+    if (!listRef.current) {
+      return [];
+    }
     return Array.from(
       listRef.current.querySelectorAll<HTMLElement>(itemSelector),
     );
@@ -133,7 +135,9 @@ export function useListFocus(
   const focusItem = useCallback(
     (index: number) => {
       const items = getItems();
-      if (items.length === 0) return;
+      if (items.length === 0) {
+        return;
+      }
       const clampedIndex = Math.max(0, Math.min(index, items.length - 1));
       items[clampedIndex]?.focus();
     },

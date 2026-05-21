@@ -290,13 +290,17 @@ function clamp(val: number, min: number, max: number): number {
 }
 
 function snapToStep(val: number, min: number, step: number): number {
-  if (step <= 0) return val;
+  if (step <= 0) {
+    return val;
+  }
   const steps = Math.round((val - min) / step);
   return min + steps * step;
 }
 
 function getPercent(val: number, min: number, max: number): number {
-  if (max === min) return 0;
+  if (max === min) {
+    return 0;
+  }
   return ((val - min) / (max - min)) * 100;
 }
 
@@ -357,8 +361,12 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
 
   // Build aria-describedby
   const describedByParts: string[] = [];
-  if (description) describedByParts.push(descriptionID);
-  if (status?.message) describedByParts.push(statusMessageID);
+  if (description) {
+    describedByParts.push(descriptionID);
+  }
+  if (status?.message) {
+    describedByParts.push(statusMessageID);
+  }
   const ariaDescribedBy =
     describedByParts.length > 0 ? describedByParts.join(' ') : undefined;
 
@@ -374,7 +382,9 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
   const getValueFromPosition = useCallback(
     (clientX: number, clientY: number): number => {
       const track = trackRef.current;
-      if (!track) return min;
+      if (!track) {
+        return min;
+      }
       const rect = track.getBoundingClientRect();
 
       let percent: number;
@@ -393,7 +403,9 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
 
   const getClosestThumb = useCallback(
     (newValue: number): number => {
-      if (!isRange) return 0;
+      if (!isRange) {
+        return 0;
+      }
       const [v0, v1] = values;
       const d0 = Math.abs(newValue - v0);
       const d1 = Math.abs(newValue - v1);
@@ -405,7 +417,9 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
 
   const updateValue = useCallback(
     (thumbIndex: number, newVal: number) => {
-      if (isDisabled) return;
+      if (isDisabled) {
+        return;
+      }
       const clamped = clamp(snapToStep(newVal, min, step), min, max);
 
       if (isRange) {
@@ -468,7 +482,9 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
   // Pointer handlers
   const handlePointerDown = useCallback(
     (e: PointerEvent<HTMLDivElement>) => {
-      if (isDisabled) return;
+      if (isDisabled) {
+        return;
+      }
       e.preventDefault();
 
       // If the click originated from a mark element, snap to that mark's value
@@ -503,7 +519,9 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
 
   const handlePointerMove = useCallback(
     (e: PointerEvent<HTMLDivElement>) => {
-      if (draggingThumbRef.current === null || isDisabled) return;
+      if (draggingThumbRef.current === null || isDisabled) {
+        return;
+      }
       const newVal = getValueFromPosition(e.clientX, e.clientY);
       updateValue(draggingThumbRef.current, newVal);
     },
@@ -524,7 +542,9 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
   // Keyboard handler
   const handleKeyDown = useCallback(
     (thumbIndex: number, e: KeyboardEvent<HTMLDivElement>) => {
-      if (isDisabled) return;
+      if (isDisabled) {
+        return;
+      }
       const currentVal = values[thumbIndex];
       let newVal: number;
 
@@ -590,7 +610,9 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
 
   // Format display value
   const displayValue = (val: number): string => {
-    if (formatValue) return formatValue(val);
+    if (formatValue) {
+      return formatValue(val);
+    }
     return String(val);
   };
 

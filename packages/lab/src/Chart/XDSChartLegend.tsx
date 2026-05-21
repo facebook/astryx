@@ -37,8 +37,12 @@ export interface XDSChartLegendProps {
 
 /** Build a CSS linear-gradient from an array of color stops */
 function toGradientCSS(colors: string[]): string {
-  if (colors.length === 0) return 'transparent';
-  if (colors.length === 1) return colors[0];
+  if (colors.length === 0) {
+    return 'transparent';
+  }
+  if (colors.length === 1) {
+    return colors[0];
+  }
   const stops = colors.map(
     (c, i) => `${c} ${(i / (colors.length - 1)) * 100}%`,
   );
@@ -136,7 +140,9 @@ export function XDSChartLegend({
   }
 
   // Discrete mode
-  if (!items || items.length === 0) return null;
+  if (!items || items.length === 0) {
+    return null;
+  }
 
   return (
     <foreignObject

@@ -83,7 +83,9 @@ function applyPlugins<TPlugin, TProps, TArgs extends unknown[]>(
 ): TProps {
   return plugins.reduce<TProps>((acc, plugin, index) => {
     const transform = getter(plugin);
-    if (!transform) return acc;
+    if (!transform) {
+      return acc;
+    }
     try {
       return transform(acc, ...args);
     } catch (error) {
@@ -108,10 +110,16 @@ const EMPTY_PLUGINS: TablePlugin<Record<string, unknown>>[] = [];
  * Used to stabilize the resolved columns array across renders.
  */
 function areArraysShallowEqual<T>(a: T[], b: T[]): boolean {
-  if (a === b) return true;
-  if (a.length !== b.length) return false;
+  if (a === b) {
+    return true;
+  }
+  if (a.length !== b.length) {
+    return false;
+  }
   for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) return false;
+    if (a[i] !== b[i]) {
+      return false;
+    }
   }
   return true;
 }
@@ -233,17 +241,33 @@ function areRowPropsEqual<T extends Record<string, unknown>>(
   prevProps: TableRowProps<T>,
   nextProps: TableRowProps<T>,
 ): boolean {
-  if (prevProps.rowKey !== nextProps.rowKey) return false;
-  if (prevProps.rowIndex !== nextProps.rowIndex) return false;
+  if (prevProps.rowKey !== nextProps.rowKey) {
+    return false;
+  }
+  if (prevProps.rowIndex !== nextProps.rowIndex) {
+    return false;
+  }
 
-  if (prevProps.columns !== nextProps.columns) return false;
-  if (prevProps.plugins !== nextProps.plugins) return false;
-  if (prevProps.textOverflow !== nextProps.textOverflow) return false;
-  if (prevProps.RowComponent !== nextProps.RowComponent) return false;
-  if (prevProps.CellComponent !== nextProps.CellComponent) return false;
+  if (prevProps.columns !== nextProps.columns) {
+    return false;
+  }
+  if (prevProps.plugins !== nextProps.plugins) {
+    return false;
+  }
+  if (prevProps.textOverflow !== nextProps.textOverflow) {
+    return false;
+  }
+  if (prevProps.RowComponent !== nextProps.RowComponent) {
+    return false;
+  }
+  if (prevProps.CellComponent !== nextProps.CellComponent) {
+    return false;
+  }
 
   // Shallow compare the item - if same reference, skip re-render
-  if (prevProps.item === nextProps.item) return true;
+  if (prevProps.item === nextProps.item) {
+    return true;
+  }
 
   // Different object reference - compare values
   const prevItem = prevProps.item;
@@ -251,7 +275,9 @@ function areRowPropsEqual<T extends Record<string, unknown>>(
   const keys = Object.keys(nextItem);
 
   for (const key of keys) {
-    if (prevItem[key] !== nextItem[key]) return false;
+    if (prevItem[key] !== nextItem[key]) {
+      return false;
+    }
   }
 
   return true;

@@ -79,7 +79,9 @@ export interface XDSCollapsibleGroupProps {
 }
 
 function normalizeToArray(value: string | string[] | undefined): string[] {
-  if (value == null) return [];
+  if (value == null) {
+    return [];
+  }
   return Array.isArray(value) ? value : [value];
 }
 

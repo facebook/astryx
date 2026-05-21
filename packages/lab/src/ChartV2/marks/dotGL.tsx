@@ -86,26 +86,39 @@ function DotGLCanvas({
   // Mount canvas outside SVG
   useEffect(() => {
     const marker = markerRef.current;
-    if (!marker) return;
-    if (!canvasRef.current)
+    if (!marker) {
+      return;
+    }
+    if (!canvasRef.current) {
       canvasRef.current = document.createElement('canvas');
+    }
     return mountCanvasOverSVG(marker, canvasRef.current, width, height);
   }, [width, height]);
 
   // Draw
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || width <= 0 || height <= 0) return;
+    if (!canvas || width <= 0 || height <= 0) {
+      return;
+    }
 
     const dpr = sizeCanvas(canvas, width, height);
 
-    if (!glRef.current) glRef.current = getWebGLContext(canvas);
+    if (!glRef.current) {
+      glRef.current = getWebGLContext(canvas);
+    }
     const gl = glRef.current;
-    if (!gl) return;
+    if (!gl) {
+      return;
+    }
 
-    if (!programRef.current) programRef.current = createProgram(gl, VERT, FRAG);
+    if (!programRef.current) {
+      programRef.current = createProgram(gl, VERT, FRAG);
+    }
     const program = programRef.current;
-    if (!program) return;
+    if (!program) {
+      return;
+    }
 
     gl.viewport(0, 0, canvas.width, canvas.height);
     setupGLState(gl);
@@ -129,7 +142,9 @@ function DotGLCanvas({
     gl.deleteBuffer(posBuffer);
   }, [width, height, color, size, opacity, getPositions]);
 
-  if (width <= 0 || height <= 0) return null;
+  if (width <= 0 || height <= 0) {
+    return null;
+  }
   return <g ref={markerRef} />;
 }
 

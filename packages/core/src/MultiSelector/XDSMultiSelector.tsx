@@ -615,7 +615,9 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
 
   // Filter items by search query
   const filteredItems = useMemo(() => {
-    if (!searchQuery) return selectableItems;
+    if (!searchQuery) {
+      return selectableItems;
+    }
     const query = searchQuery.toLowerCase();
     return selectableItems.filter(item =>
       (item.label ?? item.value).toLowerCase().includes(query),
@@ -645,7 +647,9 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
     let pendingFlat: XDSMultiSelectorOptionData[] = [];
 
     const flushFlat = () => {
-      if (pendingFlat.length === 0) return;
+      if (pendingFlat.length === 0) {
+        return;
+      }
       const selected = pendingFlat.filter(item => selectedSet.has(item.value));
       const unselected = pendingFlat.filter(
         item => !selectedSet.has(item.value),
@@ -900,7 +904,9 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
 
   // Render search input
   const renderSearch = useCallback(() => {
-    if (!hasSearch) return null;
+    if (!hasSearch) {
+      return null;
+    }
     return (
       <div {...stylex.props(styles.searchWrapper)}>
         <input

@@ -57,7 +57,9 @@ function fixMissingXDSImports(filePath: string): string[] {
   while ((match = jsxPattern.exec(code)) !== null) {
     usedComponents.add(match[1]);
   }
-  if (usedComponents.size === 0) return [];
+  if (usedComponents.size === 0) {
+    return [];
+  }
   const importedComponents = new Set<string>();
   const importPattern =
     /import\s*\{([^}]+)\}\s*from\s*['"]@xds\/core[^'"]*['"]/g;
@@ -67,11 +69,15 @@ function fixMissingXDSImports(filePath: string): string[] {
         .trim()
         .split(/\s+as\s+/)[0]
         .trim();
-      if (name.startsWith('XDS')) importedComponents.add(name);
+      if (name.startsWith('XDS')) {
+        importedComponents.add(name);
+      }
     }
   }
   const missing = [...usedComponents].filter(c => !importedComponents.has(c));
-  if (missing.length === 0) return [];
+  if (missing.length === 0) {
+    return [];
+  }
   const importLine = `import {${missing.sort().join(', ')}} from '@xds/core';\n`;
   fs.writeFileSync(filePath, importLine + code);
   return missing.sort();
@@ -500,7 +506,9 @@ function buildPreview(
     console.error(`  ✗ Failed to build ${promptId}/${target}: ${msg}`);
     return false;
   } finally {
-    if (fs.existsSync(tmpDir)) fs.rmSync(tmpDir, {recursive: true});
+    if (fs.existsSync(tmpDir)) {
+      fs.rmSync(tmpDir, {recursive: true});
+    }
   }
 }
 
@@ -615,7 +623,9 @@ function runTscCheck(filePath: string, target: string): TscResult {
     };
   } finally {
     // Clean up temp config
-    if (fs.existsSync(tmpConfig)) fs.unlinkSync(tmpConfig);
+    if (fs.existsSync(tmpConfig)) {
+      fs.unlinkSync(tmpConfig);
+    }
   }
 }
 
@@ -637,7 +647,9 @@ function runTscChecks(
 
   for (const file of files) {
     const promptId = path.basename(file, '.tsx');
-    if (promptFilter && !promptFilter.includes(promptId)) continue;
+    if (promptFilter && !promptFilter.includes(promptId)) {
+      continue;
+    }
 
     const filePath = path.resolve(codeDir, file);
     const result = runTscCheck(filePath, target);
@@ -692,7 +704,9 @@ async function main() {
     const target = iterManifest.config?.target ?? 'xds';
     const codeDir = path.join(iterDir, 'results');
 
-    if (!fs.existsSync(codeDir)) continue;
+    if (!fs.existsSync(codeDir)) {
+      continue;
+    }
 
     // Extract .tsx from JSON results if no .tsx files exist yet
     ensureTsxFiles(codeDir);
@@ -710,7 +724,9 @@ async function main() {
 
     for (const file of files) {
       const promptId = path.basename(file, '.tsx');
-      if (prompts && !prompts.includes(promptId)) continue;
+      if (prompts && !prompts.includes(promptId)) {
+        continue;
+      }
 
       const componentPath = path.resolve(codeDir, file);
       const previewFile = `${promptId}/${target}.html`;
@@ -743,7 +759,9 @@ async function main() {
           }
         }
 
-        if (!manifest[promptId]) manifest[promptId] = {};
+        if (!manifest[promptId]) {
+          manifest[promptId] = {};
+        }
         manifest[promptId][target] = `previews/${previewFile}`;
         console.log(`  ✓ ${previewFile}`);
       }
@@ -756,9 +774,13 @@ async function main() {
   if (fs.existsSync(manifestOutPath)) {
     const existing = readJson<PreviewManifest>(manifestOutPath);
     for (const [promptId, targets] of Object.entries(existing)) {
-      if (!manifest[promptId]) manifest[promptId] = {};
+      if (!manifest[promptId]) {
+        manifest[promptId] = {};
+      }
       for (const [target, url] of Object.entries(targets)) {
-        if (!manifest[promptId][target]) manifest[promptId][target] = url;
+        if (!manifest[promptId][target]) {
+          manifest[promptId][target] = url;
+        }
       }
     }
   }

@@ -377,10 +377,14 @@ export function XDSListItem({
   );
 
   const handleContainerClick = (e: React.MouseEvent) => {
-    if (isDisabled) return;
+    if (isDisabled) {
+      return;
+    }
     const target = e.target as HTMLElement;
     // Don't fire onClick if click originated from an interactive child
-    if (target.closest('button, a, input, select, textarea')) return;
+    if (target.closest('button, a, input, select, textarea')) {
+      return;
+    }
     onClick?.(e);
   };
 

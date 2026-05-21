@@ -114,7 +114,9 @@ export function XDSToastViewport({
       if (uniqueID) {
         const existing = prev.find(t => t.options.uniqueID === uniqueID);
         if (existing) {
-          if (collisionBehavior === 'ignore') return prev;
+          if (collisionBehavior === 'ignore') {
+            return prev;
+          }
           return prev.map(t => (t.options.uniqueID === uniqueID ? entry : t));
         }
       }
@@ -125,9 +127,13 @@ export function XDSToastViewport({
   const removeToast = useCallback(
     (id: string, reason: XDSToastDismissReason) => {
       const entry = toastsRef.current.find(t => t.id === id);
-      if (entry) entry.options.onHide?.(reason);
+      if (entry) {
+        entry.options.onHide?.(reason);
+      }
       setExitingIds(prev => {
-        if (prev.has(id)) return prev;
+        if (prev.has(id)) {
+          return prev;
+        }
         return new Set(prev).add(id);
       });
     },
@@ -136,7 +142,9 @@ export function XDSToastViewport({
 
   const handleExited = useCallback((id: string) => {
     setExitingIds(prev => {
-      if (!prev.has(id)) return prev;
+      if (!prev.has(id)) {
+        return prev;
+      }
       const next = new Set(prev);
       next.delete(id);
       return next;
@@ -155,15 +163,25 @@ export function XDSToastViewport({
 
   const visibleToasts = toasts.slice(-maxVisible);
   const insetStyle: React.CSSProperties = {};
-  if (inset?.top) insetStyle.top = inset.top;
-  if (inset?.bottom) insetStyle.bottom = inset.bottom;
-  if (inset?.start) insetStyle.insetInlineStart = inset.start;
-  if (inset?.end) insetStyle.insetInlineEnd = inset.end;
+  if (inset?.top) {
+    insetStyle.top = inset.top;
+  }
+  if (inset?.bottom) {
+    insetStyle.bottom = inset.bottom;
+  }
+  if (inset?.start) {
+    insetStyle.insetInlineStart = inset.start;
+  }
+  if (inset?.end) {
+    insetStyle.insetInlineEnd = inset.end;
+  }
 
   // Show the popover on mount so it enters the top layer
   const viewportRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!isTopLayer) return;
+    if (!isTopLayer) {
+      return;
+    }
     const el = viewportRef.current;
     if (el && typeof el.showPopover === 'function') {
       try {

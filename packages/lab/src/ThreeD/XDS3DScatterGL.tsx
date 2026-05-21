@@ -80,7 +80,9 @@ function compileShader(
   src: string,
 ): WebGLShader | null {
   const s = gl.createShader(type);
-  if (!s) return null;
+  if (!s) {
+    return null;
+  }
   gl.shaderSource(s, src);
   gl.compileShader(s);
   if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
@@ -93,9 +95,13 @@ function compileShader(
 function createProgram(gl: WebGLRenderingContext): WebGLProgram | null {
   const vs = compileShader(gl, gl.VERTEX_SHADER, VERT);
   const fs = compileShader(gl, gl.FRAGMENT_SHADER, FRAG);
-  if (!vs || !fs) return null;
+  if (!vs || !fs) {
+    return null;
+  }
   const p = gl.createProgram();
-  if (!p) return null;
+  if (!p) {
+    return null;
+  }
   gl.attachShader(p, vs);
   gl.attachShader(p, fs);
   gl.linkProgram(p);
@@ -144,11 +150,17 @@ export function XDS3DScatterGL({
   // Mount canvas as sibling to SVG
   useEffect(() => {
     const marker = markerRef.current;
-    if (!marker) return;
+    if (!marker) {
+      return;
+    }
     const svg = marker.ownerSVGElement;
-    if (!svg) return;
+    if (!svg) {
+      return;
+    }
     const parent = svg.parentElement;
-    if (!parent) return;
+    if (!parent) {
+      return;
+    }
 
     // Ensure parent is positioned for absolute child
     if (getComputedStyle(parent).position === 'static') {
@@ -170,14 +182,18 @@ export function XDS3DScatterGL({
     containerRef.current = parent as HTMLDivElement;
 
     return () => {
-      if (canvas.parentElement) canvas.parentElement.removeChild(canvas);
+      if (canvas.parentElement) {
+        canvas.parentElement.removeChild(canvas);
+      }
     };
   }, []);
 
   // Draw
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || width <= 0 || height <= 0) return;
+    if (!canvas || width <= 0 || height <= 0) {
+      return;
+    }
 
     const dpr = (window.devicePixelRatio || 2) * 2; // 2x supersampling + smoothstep for crisp circles // supersampling for crisp circles
     canvas.width = width * dpr;
@@ -193,11 +209,17 @@ export function XDS3DScatterGL({
       });
     }
     const gl = glRef.current;
-    if (!gl) return;
+    if (!gl) {
+      return;
+    }
 
-    if (!programRef.current) programRef.current = createProgram(gl);
+    if (!programRef.current) {
+      programRef.current = createProgram(gl);
+    }
     const program = programRef.current;
-    if (!program) return;
+    if (!program) {
+      return;
+    }
 
     const buf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
@@ -239,7 +261,9 @@ export function XDS3DScatterGL({
     gl.deleteBuffer(buf);
   }, [positions, camera, color, size, opacity, width, height, data.length]);
 
-  if (width <= 0 || height <= 0) return null;
+  if (width <= 0 || height <= 0) {
+    return null;
+  }
 
   // Render an invisible SVG marker — the canvas is mounted imperatively as a sibling
   return <g ref={markerRef} />;

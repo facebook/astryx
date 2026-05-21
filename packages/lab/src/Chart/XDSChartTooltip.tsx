@@ -139,7 +139,9 @@ export function XDSChartTooltip({
   // and x-only distance for categorical/time series (band x).
   const findNearest = useCallback(
     (px: number, py: number): {index: number; point: DataPoint} | null => {
-      if (data.length === 0) return null;
+      if (data.length === 0) {
+        return null;
+      }
 
       let closestIdx = 0;
       let minDist = Infinity;
@@ -163,7 +165,9 @@ export function XDSChartTooltip({
 
         for (const yk of yKeys) {
           const yv = datum[yk];
-          if (typeof yv !== 'number') continue;
+          if (typeof yv !== 'number') {
+            continue;
+          }
           const datumPy = yScale(yv);
           const dy = datumPy - py;
           const dist = dx * dx + dy * dy; // squared euclidean
@@ -188,7 +192,9 @@ export function XDSChartTooltip({
       let bestDist = Infinity;
       for (const yk of yKeys) {
         const yv = datum[yk];
-        if (typeof yv !== 'number') continue;
+        if (typeof yv !== 'number') {
+          continue;
+        }
         const dpy = yScale(yv);
         const dx = dpx - px;
         const dy = dpy - py;
@@ -250,7 +256,9 @@ export function XDSChartTooltip({
   // Mouse: hover to show. Touch: drag to scrub (only if active).
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<SVGRectElement>) => {
-      if (e.pointerType !== 'mouse' && !active.current) return;
+      if (e.pointerType !== 'mouse' && !active.current) {
+        return;
+      }
       updateTooltip(e);
     },
     [updateTooltip],

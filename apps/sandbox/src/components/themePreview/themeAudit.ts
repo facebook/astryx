@@ -67,21 +67,37 @@ const CATEGORY_ORDER: TokenCategory[] = [
 ];
 
 export function categorizeToken(name: string): TokenCategory {
-  if (name.startsWith('--color-syntax-')) return 'syntax';
-  if (name.startsWith('--color-background-')) return 'background';
+  if (name.startsWith('--color-syntax-')) {
+    return 'syntax';
+  }
+  if (name.startsWith('--color-background-')) {
+    return 'background';
+  }
   if (name.startsWith('--color-text-') || name.startsWith('--color-icon-')) {
     return 'text';
   }
-  if (name.startsWith('--color-border-') || name === '--color-border' || name === '--color-border-emphasized') {
+  if (
+    name.startsWith('--color-border-') ||
+    name === '--color-border' ||
+    name === '--color-border-emphasized'
+  ) {
     return 'border';
   }
-  if (name.startsWith('--color-')) return 'color';
-  if (name.startsWith('--shadow-')) return 'shadow';
-  if (name.startsWith('--radius-')) return 'radius';
+  if (name.startsWith('--color-')) {
+    return 'color';
+  }
+  if (name.startsWith('--shadow-')) {
+    return 'shadow';
+  }
+  if (name.startsWith('--radius-')) {
+    return 'radius';
+  }
   if (name.startsWith('--space-') || name.startsWith('--spacing-')) {
     return 'spacing';
   }
-  if (name.startsWith('--size-')) return 'size';
+  if (name.startsWith('--size-')) {
+    return 'size';
+  }
   if (
     name.startsWith('--font-') ||
     name.startsWith('--text-') ||
@@ -157,7 +173,9 @@ export function diffThemeTokens(theme: XDSDefinedTheme): TokenDiff {
     removed: 0,
   };
   const changedByCategory = {} as Record<TokenCategory, number>;
-  for (const c of CATEGORY_ORDER) changedByCategory[c] = 0;
+  for (const c of CATEGORY_ORDER) {
+    changedByCategory[c] = 0;
+  }
 
   for (const name of allKeys) {
     const defaultValue = xdsTokenDefaults[name];
@@ -223,7 +241,8 @@ export function diffThemeTokens(theme: XDSDefinedTheme): TokenDiff {
  * care about the base color for snap detection.
  */
 const LIGHT_DARK_RE = /^light-dark\(\s*([^,]+?)\s*,\s*([^)]+?)\s*\)$/;
-const HEX_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+const HEX_RE =
+  /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 
 export interface TokenColor {
   light: string | null;
@@ -307,7 +326,9 @@ export function parseTokenColor(value: string | undefined): TokenColor {
 function extractAlpha(input: string): number {
   const v = input.trim();
   const hex8 = v.match(/^#([0-9a-fA-F]{6})([0-9a-fA-F]{2})$/);
-  if (hex8) return parseInt(hex8[2], 16) / 255;
+  if (hex8) {
+    return parseInt(hex8[2], 16) / 255;
+  }
   const hex4 = v.match(/^#([0-9a-fA-F]{3})([0-9a-fA-F])$/);
   if (hex4) {
     const aChar = hex4[2];
@@ -318,7 +339,9 @@ function extractAlpha(input: string): number {
   );
   if (rgba) {
     const a = Number(rgba[1]);
-    if (Number.isFinite(a)) return Math.max(0, Math.min(1, a));
+    if (Number.isFinite(a)) {
+      return Math.max(0, Math.min(1, a));
+    }
   }
   return 1;
 }
@@ -339,12 +362,20 @@ function normalizeColorString(input: string): string | null {
     if (v.length === 4) {
       return ('#' + v[1] + v[1] + v[2] + v[2] + v[3] + v[3]).toLowerCase();
     }
-    if (v.length === 9) return v.slice(0, 7).toLowerCase();
+    if (v.length === 9) {
+      return v.slice(0, 7).toLowerCase();
+    }
     return v.toLowerCase();
   }
-  if (v === 'black') return '#000000';
-  if (v === 'white') return '#ffffff';
-  if (v === 'transparent') return null;
+  if (v === 'black') {
+    return '#000000';
+  }
+  if (v === 'white') {
+    return '#ffffff';
+  }
+  if (v === 'transparent') {
+    return null;
+  }
   // rgb()/rgba() - parse the three channels
   const rgbMatch = v.match(
     /^rgba?\(\s*(\d+(?:\.\d+)?)\s*[,\s]\s*(\d+(?:\.\d+)?)\s*[,\s]\s*(\d+(?:\.\d+)?)/,
@@ -409,12 +440,20 @@ export function auditSnapToRamps(
   ];
   for (const [name, value] of Object.entries(theme.tokens)) {
     const category = categorizeToken(name);
-    if (!eligibleCategories.includes(category)) continue;
+    if (!eligibleCategories.includes(category)) {
+      continue;
+    }
     const {light, dark, indirect, alphaLight, alphaDark, hasAlpha} =
       parseTokenColor(value);
-    if (!light && !dark && !indirect) continue;
-    const lightMatch = light ? findClosestRampStep(light, rampSeeds, 'light') : null;
-    const darkMatch = dark ? findClosestRampStep(dark, rampSeeds, 'dark') : null;
+    if (!light && !dark && !indirect) {
+      continue;
+    }
+    const lightMatch = light
+      ? findClosestRampStep(light, rampSeeds, 'light')
+      : null;
+    const darkMatch = dark
+      ? findClosestRampStep(dark, rampSeeds, 'dark')
+      : null;
     out.push({
       name,
       category,
@@ -431,13 +470,19 @@ export function auditSnapToRamps(
   // Sort: worst (off-ramp) first so the noisy rows surface to the top.
   // Within the same verdict, alphabetical for stable ordering.
   const verdictRank = (m: SnapMatch | null) =>
-    m == null
-      ? 99
-      : {off: 0, near: 1, snapped: 2, exact: 3}[m.verdict];
+    m == null ? 99 : {off: 0, near: 1, snapped: 2, exact: 3}[m.verdict];
   out.sort((a, b) => {
-    const aWorst = Math.min(verdictRank(a.lightMatch), verdictRank(a.darkMatch));
-    const bWorst = Math.min(verdictRank(b.lightMatch), verdictRank(b.darkMatch));
-    if (aWorst !== bWorst) return aWorst - bWorst;
+    const aWorst = Math.min(
+      verdictRank(a.lightMatch),
+      verdictRank(a.darkMatch),
+    );
+    const bWorst = Math.min(
+      verdictRank(b.lightMatch),
+      verdictRank(b.darkMatch),
+    );
+    if (aWorst !== bWorst) {
+      return aWorst - bWorst;
+    }
     return a.name.localeCompare(b.name);
   });
   return out;
@@ -507,7 +552,9 @@ export function buildTonalUsageMap(
     usage: TonalUsage,
   ) => {
     const k = `${rampName}::${mode}::${tone}`;
-    if (!map[k]) map[k] = [];
+    if (!map[k]) {
+      map[k] = [];
+    }
     map[k].push(usage);
   };
 
@@ -518,7 +565,11 @@ export function buildTonalUsageMap(
     // markers entirely (they're explicitly off-ramp by definition);
     // off-ramp tokens with no override also get no marker — there's
     // nowhere on the ramp to put one.
-    if (ov?.light?.kind === 'palette' && ov.light.rampName && ov.light.tone != null) {
+    if (
+      ov?.light?.kind === 'palette' &&
+      ov.light.rampName &&
+      ov.light.tone != null
+    ) {
       push(ov.light.rampName, 'light', ov.light.tone, {
         name: e.name,
         mode: 'light',
@@ -533,7 +584,11 @@ export function buildTonalUsageMap(
         deltaE: e.lightMatch.deltaE,
       });
     }
-    if (ov?.dark?.kind === 'palette' && ov.dark.rampName && ov.dark.tone != null) {
+    if (
+      ov?.dark?.kind === 'palette' &&
+      ov.dark.rampName &&
+      ov.dark.tone != null
+    ) {
       push(ov.dark.rampName, 'dark', ov.dark.tone, {
         name: e.name,
         mode: 'dark',

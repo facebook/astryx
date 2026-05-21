@@ -153,7 +153,9 @@ function FontLabel({cssVar, fallback}: {cssVar: string; fallback: string}) {
   const [label, setLabel] = useState(fallback);
 
   useEffect(() => {
-    if (!ref.current) return;
+    if (!ref.current) {
+      return;
+    }
     const computed = getComputedStyle(ref.current)
       .getPropertyValue(cssVar)
       .trim();

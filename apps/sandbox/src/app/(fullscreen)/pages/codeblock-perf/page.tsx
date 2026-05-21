@@ -133,12 +133,16 @@ function usePerfMetrics() {
 
   const runScrollTest = useCallback(() => {
     const el = scrollRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
 
     const scrollContainer =
       el.querySelector<HTMLElement>('[style*="max-height"]') ??
       el.querySelector<HTMLElement>('pre');
-    if (!scrollContainer) return;
+    if (!scrollContainer) {
+      return;
+    }
 
     scrollContainer.scrollTop = 0;
     const s = scrollState.current;
@@ -149,10 +153,14 @@ function usePerfMetrics() {
     s.lastFrameTime = performance.now();
 
     function tick() {
-      if (!s.measuring) return;
+      if (!s.measuring) {
+        return;
+      }
       const now = performance.now();
       s.frames++;
-      if (now - s.lastFrameTime > 20) s.drops++;
+      if (now - s.lastFrameTime > 20) {
+        s.drops++;
+      }
       s.lastFrameTime = now;
       s.rafId = requestAnimationFrame(tick);
     }
@@ -201,14 +209,22 @@ function metricVariant(
   value: number | null,
   thresholds?: {good: number; warn: number},
 ): 'green' | 'orange' | 'red' | 'neutral' {
-  if (value == null || !thresholds) return 'neutral';
-  if (value <= thresholds.good) return 'green';
-  if (value <= thresholds.warn) return 'orange';
+  if (value == null || !thresholds) {
+    return 'neutral';
+  }
+  if (value <= thresholds.good) {
+    return 'green';
+  }
+  if (value <= thresholds.warn) {
+    return 'orange';
+  }
   return 'red';
 }
 
 function formatMetric(value: number | null, unit: string): string {
-  if (value == null) return '\u2014';
+  if (value == null) {
+    return '\u2014';
+  }
   return `${value.toFixed(1)}${unit}`;
 }
 

@@ -47,7 +47,9 @@ export const CoordinatedViews: StoryObj = {
     );
 
     const filteredData = useMemo(() => {
-      if (!brushRange) return allData;
+      if (!brushRange) {
+        return allData;
+      }
       return allData.filter(
         d => d.Horsepower >= brushRange[0] && d.Horsepower <= brushRange[1],
       );
@@ -88,8 +90,9 @@ export const CoordinatedViews: StoryObj = {
       [filteredData],
     );
 
-    if (!allData.length)
+    if (!allData.length) {
       return <XDSText type="supporting">Loading\u2026</XDSText>;
+    }
 
     const c = colors.categorical(3);
 

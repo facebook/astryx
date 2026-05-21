@@ -21,7 +21,9 @@ function stripTitle(markdown: string): string {
 }
 
 function linkifyComponents(markdown: string, names: string[]): string {
-  if (names.length === 0) return markdown;
+  if (names.length === 0) {
+    return markdown;
+  }
 
   const nameToHref = new Map<string, string>();
   for (const name of names) {
@@ -38,7 +40,9 @@ function linkifyComponents(markdown: string, names: string[]): string {
 
   return markdown.replace(pattern, match => {
     const href = nameToHref.get(match);
-    if (!href) return match;
+    if (!href) {
+      return match;
+    }
     return '[' + match + '](' + href + ')';
   });
 }

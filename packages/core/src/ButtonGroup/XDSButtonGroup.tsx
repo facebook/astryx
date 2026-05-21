@@ -139,10 +139,12 @@ export function XDSButtonGroup({
           ref={(node: HTMLDivElement | null) => {
             (listRef as React.MutableRefObject<HTMLElement | null>).current =
               node;
-            if (typeof ref === 'function') ref(node);
-            else if (ref)
+            if (typeof ref === 'function') {
+              ref(node);
+            } else if (ref) {
               (ref as React.MutableRefObject<HTMLDivElement | null>).current =
                 node;
+            }
           }}
           role="group"
           aria-label={label}

@@ -329,7 +329,9 @@ function ItemText({item}: {item: ChangelogItem}) {
       <span>
         {parts.map((part, i) => {
           const boldMatch = part.match(/^\*\*(.+)\*\*$/);
-          if (boldMatch) return <strong key={i}>{boldMatch[1]}</strong>;
+          if (boldMatch) {
+            return <strong key={i}>{boldMatch[1]}</strong>;
+          }
           return <span key={i}>{part}</span>;
         })}
       </span>
@@ -393,7 +395,9 @@ function ChangelogSection({
   items: ChangelogItem[];
   dotVariant: 'error' | 'success' | 'warning' | 'accent';
 }) {
-  if (items.length === 0) return null;
+  if (items.length === 0) {
+    return null;
+  }
   return (
     <XDSStack direction="vertical" gap={0} style={{marginBottom: 20}}>
       <XDSStack
@@ -650,7 +654,9 @@ function DeprecationsPanel() {
     const map = new Map<string, typeof deprecations>();
     for (const d of deprecations) {
       const key = d.file;
-      if (!map.has(key)) map.set(key, []);
+      if (!map.has(key)) {
+        map.set(key, []);
+      }
       map.get(key)!.push(d);
     }
     return Array.from(map.entries());
@@ -1645,7 +1651,9 @@ function TypographyFoundationPage() {
                               : String(scaleRatio)
                           }
                           onChange={(v: string) => {
-                            if (v !== 'custom') setScaleRatio(Number(v));
+                            if (v !== 'custom') {
+                              setScaleRatio(Number(v));
+                            }
                           }}
                         />
                       </div>
@@ -3606,7 +3614,9 @@ function ThemePackagePage({
   onCraft?: () => void;
 }) {
   const theme = THEME_DETAILS[packageKey];
-  if (!theme) return null;
+  if (!theme) {
+    return null;
+  }
   const isDefault = packageKey === 'pkg-theme-default';
   const themeObject = THEME_OBJECTS[packageKey];
 
@@ -4268,9 +4278,15 @@ function PublishingPage() {
 }
 
 function ResourcePage({resourceKey}: {resourceKey: string}) {
-  if (resourceKey === 'res-npm') return <NpmPackagesPage />;
-  if (resourceKey === 'res-agent-docs') return <AgentDocsPage />;
-  if (resourceKey === 'res-publishing') return <PublishingPage />;
+  if (resourceKey === 'res-npm') {
+    return <NpmPackagesPage />;
+  }
+  if (resourceKey === 'res-agent-docs') {
+    return <AgentDocsPage />;
+  }
+  if (resourceKey === 'res-publishing') {
+    return <PublishingPage />;
+  }
   return null;
 }
 
@@ -4741,7 +4757,9 @@ function LibraryOverview({
                         const idx = offering.description.lastIndexOf(
                           offering.descriptionLinkText,
                         );
-                        if (idx === -1) return offering.description;
+                        if (idx === -1) {
+                          return offering.description;
+                        }
                         return (
                           <>
                             {offering.description.slice(0, idx)}

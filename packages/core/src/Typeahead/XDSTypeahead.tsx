@@ -258,7 +258,9 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
 
   // Enter edit mode: remove token visually, populate input with value label
   const handleEnterEditMode = useCallback(() => {
-    if (isDisabled || !value) return;
+    if (isDisabled || !value) {
+      return;
+    }
     setEditingValue(value);
     setIsEditing(true);
     // The base will receive onChangeQuery with the value's label
@@ -284,7 +286,9 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
   const handleBlur = useCallback(
     (e: React.FocusEvent) => {
       // Don't restore if focus is moving within the wrapper (e.g. to dropdown)
-      if (wrapperRef.current?.contains(e.relatedTarget as Node)) return;
+      if (wrapperRef.current?.contains(e.relatedTarget as Node)) {
+        return;
+      }
 
       if (editingValue && isEditing) {
         setIsEditing(false);
@@ -340,7 +344,9 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
 
   // Click wrapper to focus input or enter edit mode
   const handleWrapperClick = useCallback(() => {
-    if (isDisabled) return;
+    if (isDisabled) {
+      return;
+    }
     if (showToken) {
       handleEnterEditMode();
     } else {

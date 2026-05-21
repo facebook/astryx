@@ -26,10 +26,12 @@ const callbacks = new Map<Element, ResizeCallback>();
 
 function getObserver(): ResizeObserver {
   if (!observer) {
-    observer = new ResizeObserver((entries) => {
+    observer = new ResizeObserver(entries => {
       for (const entry of entries) {
         const cb = callbacks.get(entry.target);
-        if (cb) cb(entry);
+        if (cb) {
+          cb(entry);
+        }
       }
     });
   }

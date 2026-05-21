@@ -29,7 +29,9 @@ export function XDSChartSelect({
   const handlePointerUp = useCallback(
     (e: React.PointerEvent<SVGRectElement>) => {
       const svg = e.currentTarget.ownerSVGElement;
-      if (!svg) return;
+      if (!svg) {
+        return;
+      }
       const pt = svg.createSVGPoint();
       pt.x = e.clientX;
       pt.y = e.clientY;
@@ -51,7 +53,9 @@ export function XDSChartSelect({
           closest = i;
         }
       });
-      if (minDist > 30) return;
+      if (minDist > 30) {
+        return;
+      }
       onSelect?.(data[closest], closest);
       if (onSelectionChange) {
         if (e.shiftKey || e.metaKey) {
@@ -80,7 +84,9 @@ export function XDSChartSelect({
         onPointerUp={handlePointerUp}
       />
       {selected.map(idx => {
-        if (idx < 0 || idx >= data.length) return null;
+        if (idx < 0 || idx >= data.length) {
+          return null;
+        }
         const d = data[idx];
         const px = xPixel(d, xKey, xScale);
         const yKey = Object.keys(d).find(

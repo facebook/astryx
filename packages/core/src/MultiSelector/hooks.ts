@@ -74,7 +74,9 @@ export function useMultiCombobox({
   }, [onClose]);
 
   const onTriggerClick = useCallback(() => {
-    if (isDisabled) return;
+    if (isDisabled) {
+      return;
+    }
     if (isOpen) {
       closeAndReset();
     } else {
@@ -96,7 +98,9 @@ export function useMultiCombobox({
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (isDisabled) return;
+      if (isDisabled) {
+        return;
+      }
 
       const enabledIndices = getEnabledIndices();
 

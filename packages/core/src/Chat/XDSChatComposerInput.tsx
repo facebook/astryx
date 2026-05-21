@@ -240,7 +240,9 @@ const styles = stylex.create({
 /** Select all text in a contentEditable element. */
 function selectAll(el: HTMLElement): void {
   const selection = window.getSelection();
-  if (!selection) return;
+  if (!selection) {
+    return;
+  }
   const range = document.createRange();
   range.selectNodeContents(el);
   selection.removeAllRanges();
@@ -337,7 +339,9 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
   const cleanupPortalsRef = useRef<(() => void) | null>(null);
 
   const emitChange = useCallback(() => {
-    if (!editableRef.current) return;
+    if (!editableRef.current) {
+      return;
+    }
     const text = serialize(editableRef.current);
     // Browsers may leave a trailing <br> when all content is deleted,
     // which serializes to "\n". Treat whitespace-only as empty.
@@ -367,7 +371,9 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
 
   const insertText = useCallback((text: string) => {
     const editable = editableRef.current;
-    if (!editable) return;
+    if (!editable) {
+      return;
+    }
     insertTextAtCursor(editable, text);
   }, []);
 
@@ -440,9 +446,13 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
 
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        if (!editableRef.current) return;
+        if (!editableRef.current) {
+          return;
+        }
         const text = serialize(editableRef.current).trim();
-        if (!text) return;
+        if (!text) {
+          return;
+        }
 
         if (hasHistory) {
           historyRef.current.push(text);
@@ -459,10 +469,14 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
 
       // History navigation (only when trigger menu is not active)
       if (hasHistory && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
-        if (!editableRef.current) return;
+        if (!editableRef.current) {
+          return;
+        }
         const text = serialize(editableRef.current);
         const history = historyRef.current;
-        if (history.length === 0) return;
+        if (history.length === 0) {
+          return;
+        }
 
         if (e.key === 'ArrowUp') {
           if (historyIndexRef.current === -1) {
@@ -482,7 +496,9 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
           if (nextIndex >= history.length) {
             historyIndexRef.current = -1;
             editableRef.current.textContent = currentDraftRef.current;
-            if (currentDraftRef.current) selectAll(editableRef.current);
+            if (currentDraftRef.current) {
+              selectAll(editableRef.current);
+            }
           } else {
             historyIndexRef.current = nextIndex;
             editableRef.current.textContent = history[nextIndex];
@@ -499,7 +515,9 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
   const handlePaste = useCallback(
     (e: ClipboardEvent<HTMLDivElement>) => {
       const editable = editableRef.current;
-      if (!editable) return;
+      if (!editable) {
+        return;
+      }
 
       // Place a caret at the end of the editable if the Selection has
       // no Range inside it — programmatic focus alone doesn't create

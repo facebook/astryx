@@ -381,7 +381,9 @@ describe('blockRegistry', () => {
     const showcases = blocks.filter(b => b.isShowcase);
     const seen = new Map<string, string[]>();
     for (const s of showcases) {
-      if (!seen.has(s.exampleFor)) seen.set(s.exampleFor, []);
+      if (!seen.has(s.exampleFor)) {
+        seen.set(s.exampleFor, []);
+      }
       seen.get(s.exampleFor)!.push(s.dirName);
     }
     const dupes = [...seen.entries()].filter(([, v]) => v.length > 1);

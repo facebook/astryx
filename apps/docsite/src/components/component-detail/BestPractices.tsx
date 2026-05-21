@@ -11,7 +11,9 @@ interface BestPracticesProps {
 }
 
 export function BestPractices({practices}: BestPracticesProps) {
-  if (practices.length === 0) return null;
+  if (practices.length === 0) {
+    return null;
+  }
 
   return (
     <XDSSection>

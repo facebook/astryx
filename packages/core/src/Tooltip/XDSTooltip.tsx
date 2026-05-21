@@ -213,10 +213,14 @@ export function XDSTooltip({
 
   // Sibling mode: attach to external anchorRef
   useIsomorphicLayoutEffect(() => {
-    if (!anchorRef) return;
+    if (!anchorRef) {
+      return;
+    }
 
     const el = anchorRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
 
     // Use combined ref for position + interaction
     tooltip.ref(el);
@@ -240,14 +244,22 @@ export function XDSTooltip({
 
   // For element children with display:contents, attach ref to first child
   useIsomorphicLayoutEffect(() => {
-    if (anchorRef) return; // Skip if using anchorRef mode
-    if (textOnly) return; // Skip for text-only (ref is on wrapper)
+    if (anchorRef) {
+      return;
+    } // Skip if using anchorRef mode
+    if (textOnly) {
+      return;
+    } // Skip for text-only (ref is on wrapper)
 
     const wrapper = wrapperRef.current;
-    if (!wrapper) return;
+    if (!wrapper) {
+      return;
+    }
 
     const firstChild = wrapper.firstElementChild as HTMLElement | null;
-    if (!firstChild) return;
+    if (!firstChild) {
+      return;
+    }
 
     // Use combined ref for position + interaction
     tooltip.ref(firstChild);

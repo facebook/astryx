@@ -23,7 +23,10 @@ import type {
   ColumnWidth,
 } from '../../types';
 import {DEFAULT_MIN_COLUMN_WIDTH} from '../../columnUtils';
-import {observeResize, unobserveResize} from '../../../utils/sharedResizeObserver';
+import {
+  observeResize,
+  unobserveResize,
+} from '../../../utils/sharedResizeObserver';
 
 // =============================================================================
 // Config Type
@@ -104,8 +107,12 @@ function resolveColumnMinWidth(
   colWidth: ColumnWidth | undefined,
   globalOverride: number | undefined,
 ): number {
-  if (globalOverride != null) return globalOverride;
-  if (!colWidth) return DEFAULT_MIN_COLUMN_WIDTH;
+  if (globalOverride != null) {
+    return globalOverride;
+  }
+  if (!colWidth) {
+    return DEFAULT_MIN_COLUMN_WIDTH;
+  }
   if (colWidth.type === 'proportional') {
     return colWidth.minWidth ?? DEFAULT_MIN_COLUMN_WIDTH;
   }
@@ -323,13 +330,19 @@ function ResizeHandle({
 
       const handle = e.currentTarget;
       const th = handle.closest('th') as HTMLTableCellElement | null;
-      if (!th) return;
+      if (!th) {
+        return;
+      }
 
       const table = th.closest('table');
-      if (table) tableRef.current = table;
+      if (table) {
+        tableRef.current = table;
+      }
 
       const headerRow = th.parentElement;
-      if (!headerRow) return;
+      if (!headerRow) {
+        return;
+      }
 
       const cols = configRef.current.columns;
       const colsByKey = new Map(cols?.map(c => [c.key, c]));
@@ -345,9 +358,13 @@ function ResizeHandle({
       const snapshots: ColumnSnapshot[] = [];
       for (const cell of allThs) {
         const key = cell.getAttribute('data-column-key');
-        if (!key) continue;
+        if (!key) {
+          continue;
+        }
         const col = colsByKey.get(key);
-        if (col?.resizable === false) continue;
+        if (col?.resizable === false) {
+          continue;
+        }
         const rendered = cell.getBoundingClientRect().width;
         const override = currentWidths[key];
         snapshots.push({
@@ -366,7 +383,9 @@ function ResizeHandle({
       let neighborIdx: number | null = null;
       if (neighborKey) {
         const idx = snapshots.findIndex(s => s.key === neighborKey);
-        if (idx >= 0) neighborIdx = idx;
+        if (idx >= 0) {
+          neighborIdx = idx;
+        }
       }
 
       const drag: DragState = {
@@ -397,7 +416,9 @@ function ResizeHandle({
 
       function onMove(ev: PointerEvent) {
         const d = dragStateRef.current;
-        if (!d || !isDraggingRef.current) return;
+        if (!d || !isDraggingRef.current) {
+          return;
+        }
 
         const rawDelta =
           (ev.clientX - d.startX) *
@@ -415,7 +436,9 @@ function ResizeHandle({
       function onUp(ev: PointerEvent) {
         cleanup();
         const d = dragStateRef.current;
-        if (!d || !isDraggingRef.current) return;
+        if (!d || !isDraggingRef.current) {
+          return;
+        }
 
         handle.removeAttribute('data-resizing');
         handle.style.removeProperty('--indicator-color');
@@ -433,7 +456,9 @@ function ResizeHandle({
         const updates: Record<string, number> = {};
         const lastIndex = d.snapshots.length - 1;
         d.snapshots.forEach((s, i) => {
-          if (i === lastIndex) return;
+          if (i === lastIndex) {
+            return;
+          }
           updates[s.key] = widths[i];
         });
 
@@ -450,7 +475,9 @@ function ResizeHandle({
       function onCancel() {
         cleanup();
         const d = dragStateRef.current;
-        if (!d || !isDraggingRef.current) return;
+        if (!d || !isDraggingRef.current) {
+          return;
+        }
 
         handle.removeAttribute('data-resizing');
         handle.style.removeProperty('--indicator-color');
@@ -500,7 +527,9 @@ function ResizeHandle({
   const buildSnapshotAndResize = useCallback(
     (th: HTMLTableCellElement, delta: number) => {
       const headerRow = th.parentElement;
-      if (!headerRow) return;
+      if (!headerRow) {
+        return;
+      }
 
       const cols = configRef.current.columns;
       const colsByKey = new Map(cols?.map(c => [c.key, c]));
@@ -513,9 +542,13 @@ function ResizeHandle({
       const snapshots: ColumnSnapshot[] = [];
       for (const cell of allThs) {
         const key = cell.getAttribute('data-column-key');
-        if (!key) continue;
+        if (!key) {
+          continue;
+        }
         const col = colsByKey.get(key);
-        if (col?.resizable === false) continue;
+        if (col?.resizable === false) {
+          continue;
+        }
         const rendered = cell.getBoundingClientRect().width;
         const override = currentWidths[key];
         snapshots.push({
@@ -533,7 +566,9 @@ function ResizeHandle({
       let neighborIdx: number | null = null;
       if (neighborKey) {
         const idx = snapshots.findIndex(s => s.key === neighborKey);
-        if (idx >= 0) neighborIdx = idx;
+        if (idx >= 0) {
+          neighborIdx = idx;
+        }
       }
 
       const drag: DragState = {
@@ -559,7 +594,9 @@ function ResizeHandle({
       const updates: Record<string, number> = {};
       const lastIndex = snapshots.length - 1;
       snapshots.forEach((s, i) => {
-        if (i === lastIndex) return;
+        if (i === lastIndex) {
+          return;
+        }
         updates[s.key] = widths[i];
       });
 
@@ -581,10 +618,14 @@ function ResizeHandle({
     (e: React.KeyboardEvent<HTMLDivElement>) => {
       const handle = e.currentTarget;
       const th = handle.closest('th') as HTMLTableCellElement | null;
-      if (!th) return;
+      if (!th) {
+        return;
+      }
 
       const table = th.closest('table');
-      if (table) tableRef.current = table;
+      if (table) {
+        tableRef.current = table;
+      }
 
       const step = e.shiftKey ? KEYBOARD_LARGE_STEP : KEYBOARD_STEP;
       const rtl = getRTLMultiplier(th);
@@ -685,10 +726,14 @@ export function useXDSTableColumnResize<T extends Record<string, unknown>>(
       unobserveResize(observedTableRef.current);
       observedTableRef.current = null;
     }
-    if (!el) return;
+    if (!el) {
+      return;
+    }
 
     const table = el.querySelector('table');
-    if (table) tableRef.current = table;
+    if (table) {
+      tableRef.current = table;
+    }
 
     if (table && typeof ResizeObserver !== 'undefined') {
       observeResize(table, () => {
@@ -722,7 +767,9 @@ export function useXDSTableColumnResize<T extends Record<string, unknown>>(
         column: XDSTableColumn<T>,
       ): HeaderCellRenderProps {
         // Skip columns that opt out of resizing
-        if (column.resizable === false) return props;
+        if (column.resizable === false) {
+          return props;
+        }
 
         const overrideWidth = columnWidths?.[column.key];
 

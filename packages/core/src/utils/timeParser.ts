@@ -30,7 +30,9 @@ export interface ParsedTime {
  */
 export function createISOTimeString(value: string): ISOTimeString | null {
   const parsed = parseISOTime(value);
-  if (!parsed) return null;
+  if (!parsed) {
+    return null;
+  }
   return formatISOTime(parsed, value.split(':').length === 3);
 }
 
@@ -39,10 +41,14 @@ export function createISOTimeString(value: string): ISOTimeString | null {
  * Accepts HH:MM or HH:MM:SS format.
  */
 export function parseISOTime(time: string): ParsedTime | null {
-  if (!time) return null;
+  if (!time) {
+    return null;
+  }
 
   const parts = time.split(':');
-  if (parts.length < 2 || parts.length > 3) return null;
+  if (parts.length < 2 || parts.length > 3) {
+    return null;
+  }
 
   const hour = parseInt(parts[0], 10);
   const minute = parseInt(parts[1], 10);
@@ -91,10 +97,14 @@ export function formatDisplayTime12h(
   time: ISOTimeString | undefined,
   includeSeconds: boolean = false,
 ): string {
-  if (!time) return '';
+  if (!time) {
+    return '';
+  }
 
   const parsed = parseISOTime(time);
-  if (!parsed) return '';
+  if (!parsed) {
+    return '';
+  }
 
   const hour12 =
     parsed.hour === 0 ? 12 : parsed.hour > 12 ? parsed.hour - 12 : parsed.hour;
@@ -117,10 +127,14 @@ export function formatDisplayTime24h(
   time: ISOTimeString | undefined,
   includeSeconds: boolean = false,
 ): string {
-  if (!time) return '';
+  if (!time) {
+    return '';
+  }
 
   const parsed = parseISOTime(time);
-  if (!parsed) return '';
+  if (!parsed) {
+    return '';
+  }
 
   const hh = parsed.hour.toString().padStart(2, '0');
   const mm = parsed.minute.toString().padStart(2, '0');
@@ -144,7 +158,9 @@ export function parseTimeInput(
   input: string,
   includeSeconds: boolean = false,
 ): ISOTimeString | null {
-  if (!input) return null;
+  if (!input) {
+    return null;
+  }
 
   const trimmed = input.trim().toLowerCase();
 
@@ -161,8 +177,12 @@ export function parseTimeInput(
     const hour = parseInt(timeStr, 10);
     if (hour >= 1 && hour <= 12 && hasMeridiem) {
       let hour24 = hour;
-      if (isPM && hour !== 12) hour24 = hour + 12;
-      if (isAM && hour === 12) hour24 = 0;
+      if (isPM && hour !== 12) {
+        hour24 = hour + 12;
+      }
+      if (isAM && hour === 12) {
+        hour24 = 0;
+      }
       return formatISOTime(
         {hour: hour24, minute: 0, second: 0},
         includeSeconds,
@@ -209,16 +229,28 @@ export function parseTimeInput(
     const minute = parseInt(colonParts[1], 10);
     const second = colonParts.length === 3 ? parseInt(colonParts[2], 10) : 0;
 
-    if (isNaN(hour) || isNaN(minute) || isNaN(second)) return null;
-    if (minute < 0 || minute > 59 || second < 0 || second > 59) return null;
+    if (isNaN(hour) || isNaN(minute) || isNaN(second)) {
+      return null;
+    }
+    if (minute < 0 || minute > 59 || second < 0 || second > 59) {
+      return null;
+    }
 
     // Convert 12h to 24h if meridiem present
     if (hasMeridiem) {
-      if (hour < 1 || hour > 12) return null;
-      if (isPM && hour !== 12) hour += 12;
-      if (isAM && hour === 12) hour = 0;
+      if (hour < 1 || hour > 12) {
+        return null;
+      }
+      if (isPM && hour !== 12) {
+        hour += 12;
+      }
+      if (isAM && hour === 12) {
+        hour = 0;
+      }
     } else {
-      if (hour < 0 || hour > 23) return null;
+      if (hour < 0 || hour > 23) {
+        return null;
+      }
     }
 
     return formatISOTime({hour, minute, second}, includeSeconds);
@@ -237,16 +269,28 @@ export function compareTime(
   a: ISOTimeString | undefined,
   b: ISOTimeString | undefined,
 ): number {
-  if (!a && !b) return 0;
-  if (!a) return -1;
-  if (!b) return 1;
+  if (!a && !b) {
+    return 0;
+  }
+  if (!a) {
+    return -1;
+  }
+  if (!b) {
+    return 1;
+  }
 
   const parsedA = parseISOTime(a);
   const parsedB = parseISOTime(b);
 
-  if (!parsedA && !parsedB) return 0;
-  if (!parsedA) return -1;
-  if (!parsedB) return 1;
+  if (!parsedA && !parsedB) {
+    return 0;
+  }
+  if (!parsedA) {
+    return -1;
+  }
+  if (!parsedB) {
+    return 1;
+  }
 
   const totalA = parsedA.hour * 3600 + parsedA.minute * 60 + parsedA.second;
   const totalB = parsedB.hour * 3600 + parsedB.minute * 60 + parsedB.second;
@@ -262,8 +306,12 @@ export function isTimeInRange(
   min?: ISOTimeString,
   max?: ISOTimeString,
 ): boolean {
-  if (min && compareTime(time, min) < 0) return false;
-  if (max && compareTime(time, max) > 0) return false;
+  if (min && compareTime(time, min) < 0) {
+    return false;
+  }
+  if (max && compareTime(time, max) > 0) {
+    return false;
+  }
   return true;
 }
 
@@ -277,15 +325,21 @@ export function clampTime(
   includeSeconds: boolean = false,
 ): ISOTimeString {
   const parsed = parseISOTime(time);
-  if (!parsed) return time;
+  if (!parsed) {
+    return time;
+  }
 
   if (min && compareTime(time, min) < 0) {
     const parsedMin = parseISOTime(min);
-    if (parsedMin) return formatISOTime(parsedMin, includeSeconds);
+    if (parsedMin) {
+      return formatISOTime(parsedMin, includeSeconds);
+    }
   }
   if (max && compareTime(time, max) > 0) {
     const parsedMax = parseISOTime(max);
-    if (parsedMax) return formatISOTime(parsedMax, includeSeconds);
+    if (parsedMax) {
+      return formatISOTime(parsedMax, includeSeconds);
+    }
   }
 
   return time;
@@ -300,12 +354,16 @@ export function adjustTime(
   includeSeconds: boolean = false,
 ): ISOTimeString {
   const parsed = parseISOTime(time);
-  if (!parsed) return time;
+  if (!parsed) {
+    return time;
+  }
 
   let totalMinutes = parsed.hour * 60 + parsed.minute + deltaMinutes;
 
   // Wrap around midnight
-  while (totalMinutes < 0) totalMinutes += 24 * 60;
+  while (totalMinutes < 0) {
+    totalMinutes += 24 * 60;
+  }
   totalMinutes = totalMinutes % (24 * 60);
 
   const newHour = Math.floor(totalMinutes / 60);

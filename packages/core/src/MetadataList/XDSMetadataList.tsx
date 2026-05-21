@@ -222,7 +222,9 @@ export function XDSMetadataList({
 
   // Determine grid style based on columns and label position
   const getGridStyle = () => {
-    if (isHorizontal) return styles.horizontal;
+    if (isHorizontal) {
+      return styles.horizontal;
+    }
     const isStacked = labelConfig.position === 'top';
     if (isStacked) {
       return columns === 'single' || columns === 1

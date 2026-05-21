@@ -284,7 +284,9 @@ export function useXDSTooltip(
 
   // Schedule show with delay (suppressed when isOpen is false)
   const scheduleShow = useCallback(() => {
-    if (!isEnabled || isOpen === false) return;
+    if (!isEnabled || isOpen === false) {
+      return;
+    }
     clearTimeouts();
     showTimeoutRef.current = setTimeout(() => {
       layer.show();
@@ -293,7 +295,9 @@ export function useXDSTooltip(
 
   // Schedule hide with delay (suppressed when isOpen is true)
   const scheduleHide = useCallback(() => {
-    if (isOpen === true) return;
+    if (isOpen === true) {
+      return;
+    }
     clearTimeouts();
     if (hideDelay > 0) {
       hideTimeoutRef.current = setTimeout(() => {
@@ -323,11 +327,15 @@ export function useXDSTooltip(
 
   const handleFocusIn = useCallback(
     (e: Event) => {
-      if (!isEnabled) return;
+      if (!isEnabled) {
+        return;
+      }
       // Only show tooltip for keyboard focus (:focus-visible),
       // not programmatic focus (e.g. dialog auto-focus, touch tap)
       const target = e.target as HTMLElement;
-      if (!target.matches(':focus-visible')) return;
+      if (!target.matches(':focus-visible')) {
+        return;
+      }
       clearTimeouts();
       layer.show();
     },
@@ -402,7 +410,9 @@ export function useXDSTooltip(
 
   // Controlled open state — overrides hover/focus triggers
   useEffect(() => {
-    if (isOpen === undefined) return;
+    if (isOpen === undefined) {
+      return;
+    }
     if (isOpen) {
       clearTimeouts();
       layer.show();

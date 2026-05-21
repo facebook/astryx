@@ -30,7 +30,9 @@ export interface XDSChartBarProps {
 export function XDSChartBar({dataKey, color, radius = 4}: XDSChartBarProps) {
   const {data, xKey, xScale, yScale} = useChart();
 
-  if (!isBandScale(xScale)) return null;
+  if (!isBandScale(xScale)) {
+    return null;
+  }
 
   // Zero line position — bars grow from here
   const zeroY = yScale(0);
@@ -39,7 +41,9 @@ export function XDSChartBar({dataKey, color, radius = 4}: XDSChartBarProps) {
     <g>
       {data.map((d, i) => {
         const xVal = xScale(String(d[xKey]));
-        if (xVal == null) return null;
+        if (xVal == null) {
+          return null;
+        }
 
         const yVal =
           typeof d[dataKey] === 'number' ? (d[dataKey] as number) : 0;

@@ -139,12 +139,16 @@ function clampSize(
 }
 
 function loadPersistedSize(key: string): number | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined') {
+    return null;
+  }
   try {
     const raw = localStorage.getItem(STORAGE_PREFIX + key);
     if (raw != null) {
       const parsed = JSON.parse(raw);
-      if (typeof parsed === 'number') return parsed;
+      if (typeof parsed === 'number') {
+        return parsed;
+      }
     }
   } catch {
     /* ignore */
@@ -153,7 +157,9 @@ function loadPersistedSize(key: string): number | null {
 }
 
 function persistSize(key: string, size: number): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    return;
+  }
   try {
     localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(size));
   } catch {
@@ -162,8 +168,12 @@ function persistSize(key: string, size: number): void {
 }
 
 function resolveDefaultSize(defaultSize: number | string | undefined): number {
-  if (defaultSize == null) return 250;
-  if (typeof defaultSize === 'number') return defaultSize;
+  if (defaultSize == null) {
+    return 250;
+  }
+  if (typeof defaultSize === 'number') {
+    return defaultSize;
+  }
   if (defaultSize.endsWith('%')) {
     const pct = parseFloat(defaultSize);
     if (!isNaN(pct)) {
@@ -213,7 +223,9 @@ function useSingleResizable(
   }, [size, isCollapsed, autoSaveId]);
 
   const collapse = useCallback(() => {
-    if (!collapsible) return;
+    if (!collapsible) {
+      return;
+    }
     preCollapseSizeRef.current = size;
     setIsCollapsed(true);
     setSize(0);

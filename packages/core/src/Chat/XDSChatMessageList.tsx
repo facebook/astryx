@@ -187,7 +187,9 @@ export function XDSChatMessageList({
   // IntersectionObserver for scroll-to-top infinite scroll
   useEffect(() => {
     const scrollContainer = layoutContext?.scrollContainerRef?.current;
-    if (!scrollToTopAction || !sentinelRef.current) return;
+    if (!scrollToTopAction || !sentinelRef.current) {
+      return;
+    }
 
     const observer = new IntersectionObserver(
       entries => {

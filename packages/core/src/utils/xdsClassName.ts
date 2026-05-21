@@ -37,7 +37,9 @@ export function xdsClassName(
 
   if (props) {
     for (const [prop, value] of Object.entries(props)) {
-      if (value == null) continue;
+      if (value == null) {
+        continue;
+      }
       const strValue = String(value);
       // CSS classes can't start with a digit — prefix with prop name
       if (/^\d/.test(strValue)) {

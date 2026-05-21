@@ -44,10 +44,7 @@ const NON_INTERACTIVE_SELECTORS = '[aria-readonly="true"]';
  * If the click target is inside a nested button/link/etc., we should NOT
  * handle it at the container level.
  */
-function hasInteractiveAncestor(
-  el: Element,
-  rootEl: Element,
-): boolean {
+function hasInteractiveAncestor(el: Element, rootEl: Element): boolean {
   let current: Element | null = el;
   while (current != null && current !== rootEl && current !== document.body) {
     if (
@@ -138,16 +135,24 @@ export function useClickableContainer({
 
   const onClick = useCallback(
     (event: MouseEvent<HTMLElement>) => {
-      if (disabled) return;
+      if (disabled) {
+        return;
+      }
 
       const containerEl = containerRef.current;
-      if (!containerEl) return;
+      if (!containerEl) {
+        return;
+      }
 
       // Don't trigger on text selection
-      if (hasTextSelection(containerEl)) return;
+      if (hasTextSelection(containerEl)) {
+        return;
+      }
 
       const eventTarget = event.target;
-      if (!(eventTarget instanceof Element)) return;
+      if (!(eventTarget instanceof Element)) {
+        return;
+      }
 
       // If the click landed on or inside a nested interactive element, bail
       if (
@@ -159,7 +164,9 @@ export function useClickableContainer({
 
       // Fire the click handler
       onClickProp?.(event);
-      if (event.defaultPrevented) return;
+      if (event.defaultPrevented) {
+        return;
+      }
 
       // Navigate if href is provided
       if (href != null) {
@@ -196,13 +203,19 @@ export function useClickableContainer({
 
   const onMouseUp = useCallback(
     (event: MouseEvent<HTMLElement>) => {
-      if (disabled) return;
+      if (disabled) {
+        return;
+      }
 
       const containerEl = containerRef.current;
-      if (!containerEl) return;
+      if (!containerEl) {
+        return;
+      }
 
       const eventTarget = event.target;
-      if (!(eventTarget instanceof Element)) return;
+      if (!(eventTarget instanceof Element)) {
+        return;
+      }
 
       // Middle-click on href opens in new tab
       const isMiddleClick = event.button === 1;

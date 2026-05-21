@@ -55,10 +55,14 @@ export function TemplateCard({
   }, []);
 
   useEffect(() => {
-    if (!slug) return;
+    if (!slug) {
+      return;
+    }
     updateIframeScale();
     const el = iframeWrapperRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
 
     const resizeObs = new ResizeObserver(updateIframeScale);
     resizeObs.observe(el);

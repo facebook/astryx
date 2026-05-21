@@ -62,7 +62,9 @@ export function line(dataKey: string, options: LineOptions = {}): SeriesDef {
     },
 
     render(resolved) {
-      if (resolved.length === 0) return null;
+      if (resolved.length === 0) {
+        return null;
+      }
       const curveFactory = CURVES[curve];
       const pathGen = d3Line<ResolvedPoint>()
         .x(d => d.px)

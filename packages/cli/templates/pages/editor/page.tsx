@@ -690,9 +690,13 @@ export default function EditorPage() {
   const moveBlock = useCallback((id: string, dir: -1 | 1) => {
     setBlocks(prev => {
       const idx = prev.findIndex(b => b.id === id);
-      if (idx < 0) return prev;
+      if (idx < 0) {
+        return prev;
+      }
       const target = idx + dir;
-      if (target < 0 || target >= prev.length) return prev;
+      if (target < 0 || target >= prev.length) {
+        return prev;
+      }
       const next = [...prev];
       [next[idx], next[target]] = [next[target], next[idx]];
       return next;
@@ -702,7 +706,9 @@ export default function EditorPage() {
   const deleteBlock = useCallback(
     (id: string) => {
       setBlocks(prev => prev.filter(b => b.id !== id));
-      if (selectedId === id) setSelectedId(null);
+      if (selectedId === id) {
+        setSelectedId(null);
+      }
     },
     [selectedId],
   );
@@ -846,7 +852,9 @@ export default function EditorPage() {
                       value={pageTitle}
                       onChange={setPageTitle}
                       onKeyDown={(e: React.KeyboardEvent) => {
-                        if (e.key === 'Enter') setIsEditingTitle(false);
+                        if (e.key === 'Enter') {
+                          setIsEditingTitle(false);
+                        }
                       }}
                       hasAutoFocus
                       onBlur={() => setIsEditingTitle(false)}
@@ -859,7 +867,12 @@ export default function EditorPage() {
                   <XDSButton
                     label={isPanelCollapsed ? 'Expand panel' : 'Collapse panel'}
                     icon={
-                      <XDSIcon icon={isPanelCollapsed ? ChevronDownIcon : ChevronUpIcon} size="sm" />
+                      <XDSIcon
+                        icon={
+                          isPanelCollapsed ? ChevronDownIcon : ChevronUpIcon
+                        }
+                        size="sm"
+                      />
                     }
                     variant="ghost"
                     size="sm"

@@ -11,7 +11,9 @@ const cache = new Map<string, unknown[]>();
 /** Minimal CSV parser — handles quoted fields and numeric detection */
 function parseCSV(text: string): Record<string, unknown>[] {
   const lines = text.trim().split('\n');
-  if (lines.length < 2) return [];
+  if (lines.length < 2) {
+    return [];
+  }
   const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
   return lines.slice(1).map(line => {
     const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
@@ -28,7 +30,9 @@ function parseCSV(text: string): Record<string, unknown>[] {
 export async function loadDataset<T = Record<string, unknown>>(
   name: string,
 ): Promise<T[]> {
-  if (cache.has(name)) return cache.get(name) as T[];
+  if (cache.has(name)) {
+    return cache.get(name) as T[];
+  }
 
   const isCSV = name.endsWith('.csv');
   const hasExt = name.endsWith('.json') || isCSV;

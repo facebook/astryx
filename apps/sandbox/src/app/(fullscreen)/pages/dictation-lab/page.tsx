@@ -679,8 +679,9 @@ export default function DictationLabPage() {
                 const pattern = notePatterns.find(
                   p => p.id === selectedPattern,
                 );
-                if (style && pattern)
+                if (style && pattern) {
                   playMixedNotes(pattern.startNotes, style, volume);
+                }
               }}
             />
             <XDSButton
@@ -692,8 +693,9 @@ export default function DictationLabPage() {
                 const pattern = notePatterns.find(
                   p => p.id === selectedPattern,
                 );
-                if (style && pattern)
+                if (style && pattern) {
                   playMixedNotes(pattern.stopNotes, style, volume);
+                }
               }}
             />
           </XDSHStack>

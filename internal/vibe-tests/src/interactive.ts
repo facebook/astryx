@@ -687,7 +687,9 @@ function installHtmlDocs(): void {
   if (fs.existsSync(agentsMdPath)) {
     const stats = fs.statSync(agentsMdPath);
     const ageMs = Date.now() - stats.mtimeMs;
-    if (ageMs < 60 * 60 * 1000) return;
+    if (ageMs < 60 * 60 * 1000) {
+      return;
+    }
   }
 
   const agentsMd = `# AGENTS.md
@@ -1138,11 +1140,15 @@ async function main() {
   console.log(`\n🧪 Interactive Vibe Test Setup`);
   console.log(`================================`);
   console.log(`Iteration: ${iterationId}`);
-  if (label) console.log(`Label: ${label}`);
+  if (label) {
+    console.log(`Label: ${label}`);
+  }
   console.log(`Test set: ${testSetName}`);
   console.log(`Target: ${target.toUpperCase()}`);
   console.log(`Persona: ${persona}`);
-  if (skillDocOverride) console.log(`Skill doc: ${skillDocOverride}`);
+  if (skillDocOverride) {
+    console.log(`Skill doc: ${skillDocOverride}`);
+  }
   console.log(
     `Mode: ${target === 'xds' ? 'AGENTS.md' : target === 'baseline' ? 'AGENTS.baseline.md' : 'AGENTS.html.md'} (retrieval-led)`,
   );

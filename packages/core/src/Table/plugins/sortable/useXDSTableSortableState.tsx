@@ -154,9 +154,15 @@ function defaultCompare<T extends Record<string, unknown>>(
   const bVal = b[sortKey];
 
   // null/undefined sort to the end
-  if (aVal == null && bVal == null) return 0;
-  if (aVal == null) return 1;
-  if (bVal == null) return -1;
+  if (aVal == null && bVal == null) {
+    return 0;
+  }
+  if (aVal == null) {
+    return 1;
+  }
+  if (bVal == null) {
+    return -1;
+  }
 
   // number fast path
   if (typeof aVal === 'number' && typeof bVal === 'number') {
@@ -179,7 +185,9 @@ function sortData<
   sortState: XDSTableSortState<TSortKey>,
   comparators?: Partial<Record<TSortKey, XDSTableSortComparator<T>>>,
 ): T[] {
-  if (sortState.length === 0) return data;
+  if (sortState.length === 0) {
+    return data;
+  }
 
   return [...data].sort((a, b) => {
     for (const entry of sortState) {

@@ -287,7 +287,9 @@ export function useXDSHoverCard(
 
   // Schedule show with delay (suppressed when isOpen is false)
   const scheduleShow = useCallback(() => {
-    if (!isEnabled || isOpen === false) return;
+    if (!isEnabled || isOpen === false) {
+      return;
+    }
     clearTimeouts();
     showTimeoutRef.current = setTimeout(() => {
       layer.show();
@@ -296,7 +298,9 @@ export function useXDSHoverCard(
 
   // Schedule hide with delay (suppressed when isOpen is true)
   const scheduleHide = useCallback(() => {
-    if (isOpen === true) return;
+    if (isOpen === true) {
+      return;
+    }
     clearTimeouts();
     hideTimeoutRef.current = setTimeout(() => {
       // Don't hide if hovering content
@@ -316,7 +320,9 @@ export function useXDSHoverCard(
   }, [scheduleHide]);
 
   const handleFocusIn = useCallback(() => {
-    if (!isEnabled) return;
+    if (!isEnabled) {
+      return;
+    }
     // Skip showing if we're in the middle of an Escape dismiss
     if (isEscapeDismissingRef.current) {
       isEscapeDismissingRef.current = false;
@@ -427,7 +433,9 @@ export function useXDSHoverCard(
 
   // Controlled open state — overrides hover/focus triggers
   useEffect(() => {
-    if (isOpen === undefined) return;
+    if (isOpen === undefined) {
+      return;
+    }
     if (isOpen) {
       clearTimeouts();
       layer.show();

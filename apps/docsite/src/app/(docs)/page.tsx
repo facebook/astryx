@@ -175,8 +175,12 @@ const styles = stylex.create({
 const foundationTopics = docTopics
   .filter(d => d.category === 'foundations')
   .sort((a, b) => {
-    if (a.topic === 'tokens') return -1;
-    if (b.topic === 'tokens') return 1;
+    if (a.topic === 'tokens') {
+      return -1;
+    }
+    if (b.topic === 'tokens') {
+      return 1;
+    }
     return a.title.localeCompare(b.title);
   });
 

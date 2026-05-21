@@ -78,7 +78,9 @@ export function XDSRadialSlice({
 }: XDSRadialSliceProps) {
   const {cx, cy, radius, innerRadius, slices} = useRadial();
 
-  if (!slices || slices.length === 0) return null;
+  if (!slices || slices.length === 0) {
+    return null;
+  }
 
   return (
     <g>

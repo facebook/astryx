@@ -244,14 +244,22 @@ function getPositionArea(
 
   // For above/below, alignment is horizontal
   if (placement === 'above' || placement === 'below') {
-    if (alignment === 'start') return `${cssPlacement} span-right`;
-    if (alignment === 'end') return `${cssPlacement} span-left`;
+    if (alignment === 'start') {
+      return `${cssPlacement} span-right`;
+    }
+    if (alignment === 'end') {
+      return `${cssPlacement} span-left`;
+    }
     return cssPlacement; // center
   }
 
   // For start/end, alignment is vertical
-  if (alignment === 'start') return `${cssPlacement} span-bottom`;
-  if (alignment === 'end') return `${cssPlacement} span-top`;
+  if (alignment === 'start') {
+    return `${cssPlacement} span-bottom`;
+  }
+  if (alignment === 'end') {
+    return `${cssPlacement} span-top`;
+  }
   return `${cssPlacement} center`;
 }
 

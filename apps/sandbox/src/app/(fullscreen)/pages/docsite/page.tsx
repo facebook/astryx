@@ -96,7 +96,9 @@ function SearchableFilterDropdown({
       isOpen={isOpen}
       onOpenChange={open => {
         setIsOpen(open);
-        if (!open) setSearch('');
+        if (!open) {
+          setSearch('');
+        }
       }}
       xstyle={popoverStyles.filterDropdown}
       content={
@@ -496,8 +498,11 @@ function DocsiteLandingTemplate() {
   const handleToggleResultFilter = useCallback((filter: string) => {
     setResultFilters(prev => {
       const next = new Set(prev);
-      if (next.has(filter)) next.delete(filter);
-      else next.add(filter);
+      if (next.has(filter)) {
+        next.delete(filter);
+      } else {
+        next.add(filter);
+      }
       return next;
     });
   }, []);
@@ -509,7 +514,9 @@ function DocsiteLandingTemplate() {
     setIsProfileResults(false);
     setIsCraftResults(false);
     setCraftStatusFilter('all');
-    if (craftLoadingTimer.current) clearTimeout(craftLoadingTimer.current);
+    if (craftLoadingTimer.current) {
+      clearTimeout(craftLoadingTimer.current);
+    }
     craftLoadingTimer.current = setTimeout(() => {
       setCraftTitle(null);
       setCraftLoading(false);
@@ -522,7 +529,9 @@ function DocsiteLandingTemplate() {
     setCraftTitle(label);
     setIsProfileResults(false);
     setCraftLoading(true);
-    if (craftLoadingTimer.current) clearTimeout(craftLoadingTimer.current);
+    if (craftLoadingTimer.current) {
+      clearTimeout(craftLoadingTimer.current);
+    }
     craftLoadingTimer.current = setTimeout(() => {
       setCraftLoading(false);
       craftLoadingTimer.current = null;
@@ -665,7 +674,9 @@ function DocsiteLandingTemplate() {
     }
 
     const qs = params.toString();
-    if (qs === window.location.search.slice(1)) return;
+    if (qs === window.location.search.slice(1)) {
+      return;
+    }
     const url = `${basePath}/pages/docsite/${qs ? '?' + qs : ''}`;
 
     if (isPopstateRef.current) {
@@ -763,7 +774,9 @@ function DocsiteLandingTemplate() {
   const prevViewRef = useRef(activeView);
   const skipViewResetRef = useRef(false);
   useEffect(() => {
-    if (prevViewRef.current === activeView) return;
+    if (prevViewRef.current === activeView) {
+      return;
+    }
     prevViewRef.current = activeView;
     if (skipViewResetRef.current) {
       skipViewResetRef.current = false;
@@ -802,7 +815,9 @@ function DocsiteLandingTemplate() {
 
   useEffect(() => {
     const el = document.getElementById('docsite-scroll');
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     const onScroll = () => setIsHeaderCollapsed(el.scrollTop > 170);
     el.addEventListener('scroll', onScroll, {passive: true});
     return () => el.removeEventListener('scroll', onScroll);
@@ -810,7 +825,9 @@ function DocsiteLandingTemplate() {
 
   const handleMoreLikeThis = useCallback(
     (index: number) => {
-      if (generatingSource !== null) return;
+      if (generatingSource !== null) {
+        return;
+      }
       setGeneratingSource(index);
       setChatOpen(true);
       timerRef.current = setTimeout(() => {
@@ -864,7 +881,9 @@ function DocsiteLandingTemplate() {
 
   const handlePreviewSend = useCallback(
     (prompt?: string) => {
-      if (previewGenerating) return;
+      if (previewGenerating) {
+        return;
+      }
 
       const lower = (prompt ?? '').toLowerCase();
       const matchedKey = Object.keys(layoutVariantMap).find(key =>
@@ -894,9 +913,15 @@ function DocsiteLandingTemplate() {
 
   useEffect(() => {
     return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-      if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
-      if (craftLoadingTimer.current) clearTimeout(craftLoadingTimer.current);
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+      if (previewTimerRef.current) {
+        clearTimeout(previewTimerRef.current);
+      }
+      if (craftLoadingTimer.current) {
+        clearTimeout(craftLoadingTimer.current);
+      }
     };
   }, []);
 
@@ -905,8 +930,12 @@ function DocsiteLandingTemplate() {
   const templateAuthors = useMemo(() => {
     const authors = Array.from(new Set(TEMPLATES.map(t => t.author)));
     return authors.sort((a, b) => {
-      if (a === 'XDS Design') return -1;
-      if (b === 'XDS Design') return 1;
+      if (a === 'XDS Design') {
+        return -1;
+      }
+      if (b === 'XDS Design') {
+        return 1;
+      }
       return a.localeCompare(b);
     });
   }, []);
@@ -914,8 +943,11 @@ function DocsiteLandingTemplate() {
   const handleToggleFilter = useCallback((filter: string) => {
     setActiveFilters(prev => {
       const next = new Set(prev);
-      if (next.has(filter)) next.delete(filter);
-      else next.add(filter);
+      if (next.has(filter)) {
+        next.delete(filter);
+      } else {
+        next.add(filter);
+      }
       return next;
     });
   }, []);
@@ -926,8 +958,12 @@ function DocsiteLandingTemplate() {
 
   const filteredTemplates = useMemo(() => {
     return TEMPLATES.map((t, i) => ({...t, originalIndex: i})).filter(t => {
-      if (templateFilter === 'all') return true;
-      if (templateFilter === 'official') return t.isOfficial;
+      if (templateFilter === 'all') {
+        return true;
+      }
+      if (templateFilter === 'official') {
+        return t.isOfficial;
+      }
       return t.author.toLowerCase().includes(templateFilter.toLowerCase());
     });
   }, [templateFilter]);
@@ -943,7 +979,9 @@ function DocsiteLandingTemplate() {
   );
 
   const filteredCraftItems = useMemo(() => {
-    if (craftStatusFilter === 'all') return PROFILE_CRAFT_ITEMS;
+    if (craftStatusFilter === 'all') {
+      return PROFILE_CRAFT_ITEMS;
+    }
     return PROFILE_CRAFT_ITEMS.filter(
       item => item.status === craftStatusFilter,
     );
@@ -2139,7 +2177,9 @@ function DocsiteLandingTemplate() {
                 ? previewTarget % TEMPLATES.length
                 : 0
             ];
-          if (!t) return null;
+          if (!t) {
+            return null;
+          }
           const isLandingPage = t.name === 'Landing Page';
           const settingsVariants = [
             {
@@ -2285,14 +2325,18 @@ function DocsiteLandingTemplate() {
       {themePreviewKey !== null &&
         (() => {
           const t = THEME_PICKER_ENTRIES.find(e => e.key === themePreviewKey);
-          if (!t) return null;
+          if (!t) {
+            return null;
+          }
           const r = t.preview.radius ?? 8;
           const font = t.preview.font ?? 'system-ui, sans-serif';
           return (
             <XDSDialog
               isOpen={true}
               onOpenChange={open => {
-                if (!open) setThemePreviewKey(null);
+                if (!open) {
+                  setThemePreviewKey(null);
+                }
               }}
               width="90vw"
               maxHeight="90vh"

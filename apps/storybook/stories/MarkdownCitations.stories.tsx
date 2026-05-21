@@ -130,7 +130,9 @@ export const StreamingWithCitations: Story = {
     const [key, setKey] = useState(0);
 
     useEffect(() => {
-      if (!isStreaming) return;
+      if (!isStreaming) {
+        return;
+      }
       if (charIndex >= text.length) {
         setIsStreaming(false);
         return;

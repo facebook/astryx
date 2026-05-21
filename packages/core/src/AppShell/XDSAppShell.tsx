@@ -558,7 +558,9 @@ export function XDSAppShell({
   );
 
   useEffect(() => {
-    if (!isAuto || !headerRef.current || !shellRef.current) return;
+    if (!isAuto || !headerRef.current || !shellRef.current) {
+      return;
+    }
 
     const headerEl = headerRef.current;
     const shellEl = shellRef.current;
@@ -580,7 +582,9 @@ export function XDSAppShell({
   // efficient and does not over-trigger.
   // =========================================================================
   useEffect(() => {
-    if (sideNavBreakpoint === 'none') return;
+    if (sideNavBreakpoint === 'none') {
+      return;
+    }
 
     const breakpointPx = BREAKPOINT_VALUES[sideNavBreakpoint];
     const mql = window.matchMedia(`(max-width: ${breakpointPx}px)`);

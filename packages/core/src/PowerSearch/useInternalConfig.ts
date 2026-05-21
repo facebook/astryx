@@ -58,7 +58,9 @@ export function useInternalConfig(config: PowerSearchConfig): InternalConfig {
 
       getDefaultOperator(fieldKey: string) {
         const field = fieldMap.get(fieldKey);
-        if (!field) return undefined;
+        if (!field) {
+          return undefined;
+        }
         if (field.defaultOperator) {
           return operatorMap.get(fieldKey)?.get(field.defaultOperator);
         }

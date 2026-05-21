@@ -388,11 +388,15 @@ function DefaultMegaMenu({
   }, [clearTimeouts, popover, hideDelay]);
 
   const handleMouseEnter = useCallback(() => {
-    if (!clickLockedRef.current) scheduleShow();
+    if (!clickLockedRef.current) {
+      scheduleShow();
+    }
   }, [scheduleShow]);
 
   const handleMouseLeave = useCallback(() => {
-    if (!clickLockedRef.current) scheduleHide();
+    if (!clickLockedRef.current) {
+      scheduleHide();
+    }
   }, [scheduleHide]);
 
   const handleClick = useCallback(() => {

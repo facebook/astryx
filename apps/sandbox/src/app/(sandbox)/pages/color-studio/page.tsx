@@ -198,7 +198,9 @@ function PaletteEntry({
           value={color.hex}
           onChange={v => {
             const parsed = parseColorInput(v.trim());
-            if (parsed) onChange(color.id, {hex: parsed});
+            if (parsed) {
+              onChange(color.id, {hex: parsed});
+            }
           }}
           size="sm"
         />
@@ -269,7 +271,9 @@ interface CustomChannel {
 }
 
 function generateToneSteps(count: number): number[] {
-  if (count <= 1) return [50];
+  if (count <= 1) {
+    return [50];
+  }
   return Array.from({length: count}, (_, i) =>
     Math.round((i / (count - 1)) * 100),
   );
@@ -291,7 +295,9 @@ function TonalRamps({
   const roleMap = useMemo(() => {
     const map = new Map<ThemeRole, PaletteColor>();
     for (const pc of palette) {
-      if (pc.role) map.set(pc.role, pc);
+      if (pc.role) {
+        map.set(pc.role, pc);
+      }
     }
     return map;
   }, [palette]);

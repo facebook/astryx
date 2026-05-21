@@ -212,7 +212,9 @@ export function XDSTopNav({
   // =========================================================================
   if (renderMode === 'drawer') {
     // Only render if there are collapsible items or extra content
-    if (!hasCollapsibleContent && !mobileContent) return null;
+    if (!hasCollapsibleContent && !mobileContent) {
+      return null;
+    }
 
     return (
       <XDSMobileNav header={heading}>

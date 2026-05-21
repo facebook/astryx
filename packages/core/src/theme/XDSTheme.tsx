@@ -107,10 +107,14 @@ function useThemeStyleInjection(theme: XDSDefinedTheme): void {
 
   useInsertionEffect(() => {
     // Built themes have their CSS in a separate file — skip injection
-    if (theme.__built) return;
+    if (theme.__built) {
+      return;
+    }
 
     const themeKey = `xds-theme-${theme.name}`;
-    if (injectedThemes.has(themeKey)) return;
+    if (injectedThemes.has(themeKey)) {
+      return;
+    }
 
     // One-time perf hint per theme
     if (!warnedThemes.has(theme.name)) {
@@ -126,7 +130,9 @@ function useThemeStyleInjection(theme: XDSDefinedTheme): void {
     }
 
     const {prose, component} = generateThemeCSS(theme);
-    if (!prose && !component) return;
+    if (!prose && !component) {
+      return;
+    }
 
     // Prose defaults go into @layer reset — lowest priority, scoped to
     // the theme region. Any class-based style (StyleX, .xds-*) wins.
@@ -188,8 +194,12 @@ function useRootThemeSync(
   themeName: string,
 ): void {
   useIsomorphicLayoutEffect(() => {
-    if (isNested) return;
-    if (typeof document === 'undefined') return;
+    if (isNested) {
+      return;
+    }
+    if (typeof document === 'undefined') {
+      return;
+    }
 
     if (mode === 'light' || mode === 'dark') {
       document.documentElement.setAttribute('data-theme', mode);

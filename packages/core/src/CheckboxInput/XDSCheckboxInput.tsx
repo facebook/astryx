@@ -359,9 +359,14 @@ export function XDSCheckboxInput({
   // Sync the native indeterminate DOM property (can't be set via JSX attribute)
   const indeterminateRef = useCallback(
     (el: HTMLInputElement | null) => {
-      if (el) el.indeterminate = isIndeterminate;
-      if (typeof ref === 'function') ref(el);
-      else if (ref) ref.current = el;
+      if (el) {
+        el.indeterminate = isIndeterminate;
+      }
+      if (typeof ref === 'function') {
+        ref(el);
+      } else if (ref) {
+        ref.current = el;
+      }
     },
     [isIndeterminate, ref],
   );
@@ -369,8 +374,12 @@ export function XDSCheckboxInput({
   // Build aria-describedby from description and status message
   // Only include descriptionID when the element actually renders
   const describedByParts: string[] = [];
-  if (description && !isLabelHidden) describedByParts.push(descriptionID);
-  if (status?.message) describedByParts.push(statusMessageID);
+  if (description && !isLabelHidden) {
+    describedByParts.push(descriptionID);
+  }
+  if (status?.message) {
+    describedByParts.push(statusMessageID);
+  }
   const ariaDescribedBy =
     describedByParts.length > 0 ? describedByParts.join(' ') : undefined;
 
@@ -398,7 +407,9 @@ export function XDSCheckboxInput({
             readOnly={isReadOnly}
             required={isRequired}
             onChange={e => {
-              if (isBusy || isReadOnly) return;
+              if (isBusy || isReadOnly) {
+                return;
+              }
               const checked = e.target.checked;
               onChange?.(checked, e);
               if (changeAction && !e.defaultPrevented) {

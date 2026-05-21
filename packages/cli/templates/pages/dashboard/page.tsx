@@ -484,7 +484,9 @@ function ChartTooltip({
   payload?: Array<{name: string; value: number; color: string}>;
   label?: number;
 }) {
-  if (!active || !payload?.length) return null;
+  if (!active || !payload?.length) {
+    return null;
+  }
   const point = activeUsersData.find(d => d.hour === label);
   return (
     <XDSCard padding={3}>

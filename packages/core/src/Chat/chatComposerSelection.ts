@@ -38,7 +38,9 @@
  */
 export function ensureCaretInside(editable: HTMLElement): Selection | null {
   const selection = window.getSelection();
-  if (!selection) return null;
+  if (!selection) {
+    return null;
+  }
 
   if (selection.rangeCount > 0) {
     const existing = selection.getRangeAt(0);
@@ -70,7 +72,9 @@ export function insertTextAtCursor(
   text: string,
 ): boolean {
   const selection = ensureCaretInside(editable);
-  if (!selection || selection.rangeCount === 0) return false;
+  if (!selection || selection.rangeCount === 0) {
+    return false;
+  }
 
   const range = selection.getRangeAt(0);
   range.deleteContents();

@@ -19,7 +19,9 @@ export function compileShader(
   src: string,
 ): WebGLShader | null {
   const s = gl.createShader(type);
-  if (!s) return null;
+  if (!s) {
+    return null;
+  }
   gl.shaderSource(s, src);
   gl.compileShader(s);
   if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
@@ -37,9 +39,13 @@ export function createProgram(
 ): WebGLProgram | null {
   const vs = compileShader(gl, gl.VERTEX_SHADER, vertSrc);
   const fs = compileShader(gl, gl.FRAGMENT_SHADER, fragSrc);
-  if (!vs || !fs) return null;
+  if (!vs || !fs) {
+    return null;
+  }
   const p = gl.createProgram();
-  if (!p) return null;
+  if (!p) {
+    return null;
+  }
   gl.attachShader(p, vs);
   gl.attachShader(p, fs);
   gl.linkProgram(p);
@@ -119,9 +125,13 @@ export function mountCanvasOverSVG(
   height: number,
 ): (() => void) | undefined {
   const svg = svgMarker.ownerSVGElement;
-  if (!svg) return;
+  if (!svg) {
+    return;
+  }
   const parent = svg.parentElement;
-  if (!parent) return;
+  if (!parent) {
+    return;
+  }
 
   if (getComputedStyle(parent).position === 'static') {
     parent.style.position = 'relative';

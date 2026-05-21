@@ -306,10 +306,13 @@ function splitDateTime(dt: ISODateTimeString | undefined): {
   date: ISODateString | undefined;
   time: ISOTimeString | undefined;
 } {
-  if (!dt) return {date: undefined, time: undefined};
+  if (!dt) {
+    return {date: undefined, time: undefined};
+  }
   const tIndex = dt.indexOf('T');
-  if (tIndex === -1)
+  if (tIndex === -1) {
     return {date: dt as unknown as ISODateString, time: undefined};
+  }
   return {
     date: dt.slice(0, tIndex) as ISODateString,
     time: dt.slice(tIndex + 1) as ISOTimeString,
@@ -320,7 +323,9 @@ function combineDateTime(
   date: ISODateString | undefined,
   time: ISOTimeString | undefined,
 ): ISODateTimeString | undefined {
-  if (!date || !time) return undefined;
+  if (!date || !time) {
+    return undefined;
+  }
   return `${date}T${time}` as ISODateTimeString;
 }
 
@@ -432,12 +437,16 @@ export function XDSDateTimePicker({
 
   // Time constraints change depending on selected date
   const timeMin = useMemo(() => {
-    if (!minParts.date || !minParts.time || !valueParts.date) return undefined;
+    if (!minParts.date || !minParts.time || !valueParts.date) {
+      return undefined;
+    }
     return valueParts.date === minParts.date ? minParts.time : undefined;
   }, [minParts.date, minParts.time, valueParts.date]);
 
   const timeMax = useMemo(() => {
-    if (!maxParts.date || !maxParts.time || !valueParts.date) return undefined;
+    if (!maxParts.date || !maxParts.time || !valueParts.date) {
+      return undefined;
+    }
     return valueParts.date === maxParts.date ? maxParts.time : undefined;
   }, [maxParts.date, maxParts.time, valueParts.date]);
 
@@ -445,7 +454,9 @@ export function XDSDateTimePicker({
   const [datePendingInput, setDatePendingInput] = useState<string | null>(null);
 
   useEffect(() => {
-    if (valueParts.date === lastFiredDateRef.current) return;
+    if (valueParts.date === lastFiredDateRef.current) {
+      return;
+    }
     lastFiredDateRef.current = undefined;
     setDatePendingInput(null);
   }, [valueParts.date]);
@@ -470,16 +481,22 @@ export function XDSDateTimePicker({
     hourFormat === '12h' ? formatDisplayTime12h : formatDisplayTime24h;
 
   const timeDisplayValue = useMemo(() => {
-    if (timePendingInput !== null) return timePendingInput;
+    if (timePendingInput !== null) {
+      return timePendingInput;
+    }
     return valueParts.time
       ? formatDisplayTime(valueParts.time, hasSeconds)
       : '';
   }, [timePendingInput, valueParts.time, formatDisplayTime, hasSeconds]);
 
   const isTimeInputValid = useMemo(() => {
-    if (timePendingInput === null || !timePendingInput.trim()) return true;
+    if (timePendingInput === null || !timePendingInput.trim()) {
+      return true;
+    }
     const parsed = parseTimeInput(timePendingInput, hasSeconds);
-    if (!parsed) return false;
+    if (!parsed) {
+      return false;
+    }
     return isTimeInRange(parsed, timeMin, timeMax);
   }, [timePendingInput, hasSeconds, timeMin, timeMax]);
 
@@ -493,7 +510,9 @@ export function XDSDateTimePicker({
   // --- Unified change handler ---
   const fireChange = useCallback(
     (newValue: ISODateTimeString | undefined) => {
-      if (isBusy) return;
+      if (isBusy) {
+        return;
+      }
       onChange(newValue);
       if (changeAction) {
         startTransition(async () => {
@@ -577,7 +596,9 @@ export function XDSDateTimePicker({
   );
 
   const commitDatePendingInput = useCallback(() => {
-    if (datePendingInput === null) return;
+    if (datePendingInput === null) {
+      return;
+    }
 
     if (!datePendingInput.trim()) {
       if (value !== undefined) {
@@ -634,7 +655,9 @@ export function XDSDateTimePicker({
       ) {
         if (valueParts.date) {
           const combined = combineDateTime(valueParts.date, parsed);
-          if (combined) fireChange(combined);
+          if (combined) {
+            fireChange(combined);
+          }
         }
       }
     },
@@ -652,7 +675,9 @@ export function XDSDateTimePicker({
 
   const handleTimeBlur = useCallback(() => {
     setIsTimeFocused(false);
-    if (timePendingInput === null) return;
+    if (timePendingInput === null) {
+      return;
+    }
 
     if (!timePendingInput.trim()) {
       // Empty time: revert display to previous value (don't emit partial datetime)
@@ -664,7 +689,9 @@ export function XDSDateTimePicker({
     if (parsed && isTimeInRange(parsed, timeMin, timeMax)) {
       if (parsed !== valueParts.time && valueParts.date) {
         const combined = combineDateTime(valueParts.date, parsed);
-        if (combined) fireChange(combined);
+        if (combined) {
+          fireChange(combined);
+        }
       }
     }
     setTimePendingInput(null);
@@ -693,7 +720,9 @@ export function XDSDateTimePicker({
 
         if (isTimeInRange(newTime, timeMin, timeMax) && valueParts.date) {
           const combined = combineDateTime(valueParts.date, newTime);
-          if (combined) fireChange(combined);
+          if (combined) {
+            fireChange(combined);
+          }
         }
       }
     },

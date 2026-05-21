@@ -87,7 +87,9 @@ export function bar(dataKey: string, options: BarOptions = {}): SeriesDef {
 
     resolve(ctx, stackOffsets, groupInfo) {
       const {data, xKey, xScale, yScale} = ctx;
-      if (!('bandwidth' in xScale)) return [];
+      if (!('bandwidth' in xScale)) {
+        return [];
+      }
 
       const bandScale = xScale as ScaleBand<string>;
       const bw = bandScale.bandwidth();

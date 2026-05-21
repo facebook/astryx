@@ -203,13 +203,19 @@ export function XDSHoverCard({
 
   // For element children with display:contents, attach ref to first child
   useIsomorphicLayoutEffect(() => {
-    if (textOnly) return; // Skip for text-only (ref is on wrapper)
+    if (textOnly) {
+      return;
+    } // Skip for text-only (ref is on wrapper)
 
     const wrapper = wrapperRef.current;
-    if (!wrapper) return;
+    if (!wrapper) {
+      return;
+    }
 
     const firstChild = wrapper.firstElementChild as HTMLElement | null;
-    if (!firstChild) return;
+    if (!firstChild) {
+      return;
+    }
 
     // Use combined ref for position + interaction
     hoverCard.ref(firstChild);

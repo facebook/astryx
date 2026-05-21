@@ -5,12 +5,23 @@
  * @output Area series — fill under line with stacking + gradient support
  */
 
-import {area as d3Area, curveLinear, curveMonotoneX, curveNatural, curveStep} from 'd3-shape';
+import {
+  area as d3Area,
+  curveLinear,
+  curveMonotoneX,
+  curveNatural,
+  curveStep,
+} from 'd3-shape';
 import {line as d3Line} from 'd3-shape';
 import type {SeriesDef, ResolvedPoint} from '../types';
 import type {ScaleBand} from 'd3-scale';
 
-const CURVES = {linear: curveLinear, monotone: curveMonotoneX, natural: curveNatural, step: curveStep} as const;
+const CURVES = {
+  linear: curveLinear,
+  monotone: curveMonotoneX,
+  natural: curveNatural,
+  step: curveStep,
+} as const;
 
 export interface AreaOptions {
   color?: string;
@@ -41,7 +52,9 @@ export function area(dataKey: string, options: AreaOptions = {}): SeriesDef {
         const d = data[i];
         let px: number;
         if ('bandwidth' in xScale) {
-          px = ((xScale as ScaleBand<string>)(String(d[xKey])) ?? 0) + (xScale as ScaleBand<string>).bandwidth() / 2;
+          px =
+            ((xScale as ScaleBand<string>)(String(d[xKey])) ?? 0) +
+            (xScale as ScaleBand<string>).bandwidth() / 2;
         } else {
           px = xScale(d[xKey] as number);
         }
@@ -60,15 +73,22 @@ export function area(dataKey: string, options: AreaOptions = {}): SeriesDef {
     },
 
     render(resolved) {
-      if (resolved.length === 0) return null;
+      if (resolved.length === 0) {
+        return null;
+      }
       const curveFactory = CURVES[curve];
 
       const areaGen = d3Area<ResolvedPoint>()
-        .x(d => d.px).y0(d => d.py0).y1(d => d.py).curve(curveFactory);
+        .x(d => d.px)
+        .y0(d => d.py0)
+        .y1(d => d.py)
+        .curve(curveFactory);
       const pathD = areaGen(resolved) ?? '';
 
       const lineGen = d3Line<ResolvedPoint>()
-        .x(d => d.px).y(d => d.py).curve(curveFactory);
+        .x(d => d.px)
+        .y(d => d.py)
+        .curve(curveFactory);
       const strokeD = lineGen(resolved) ?? '';
 
       const gradientId = `area-grad-${dataKey}`;
@@ -83,9 +103,15 @@ export function area(dataKey: string, options: AreaOptions = {}): SeriesDef {
               </linearGradient>
             </defs>
           )}
-          <path d={pathD} fill={gradient ? `url(#${gradientId})` : color}
-            fillOpacity={gradient ? 1 : opacity} stroke="none" />
-          {stroke && <path d={strokeD} fill="none" stroke={color} strokeWidth={2} />}
+          <path
+            d={pathD}
+            fill={gradient ? `url(#${gradientId})` : color}
+            fillOpacity={gradient ? 1 : opacity}
+            stroke="none"
+          />
+          {stroke && (
+            <path d={strokeD} fill="none" stroke={color} strokeWidth={2} />
+          )}
         </g>
       );
     },

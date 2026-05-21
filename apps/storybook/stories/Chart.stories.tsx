@@ -46,7 +46,9 @@ export const BarChart: StoryObj = {
     const colors = useXDSChartColors();
     const [raw, loading] = useDataset<Barley>('barley.json');
     const data = useMemo(() => {
-      if (!raw.length) return [];
+      if (!raw.length) {
+        return [];
+      }
       const byVariety = new Map<string, {sum: number; count: number}>();
       for (const d of raw) {
         const e = byVariety.get(d.variety) ?? {sum: 0, count: 0};
@@ -62,7 +64,9 @@ export const BarChart: StoryObj = {
         .sort((a, b) => b.avgYield - a.avgYield)
         .slice(0, 10);
     }, [raw]);
-    if (loading) return <XDSText type="supporting">Loading…</XDSText>;
+    if (loading) {
+      return <XDSText type="supporting">Loading…</XDSText>;
+    }
     return (
       <XDSChart data={data} xKey="variety" yKeys={['avgYield']} height={300}>
         <XDSChartGrid horizontal />
@@ -81,7 +85,9 @@ export const LineChart: StoryObj = {
     const colors = useXDSChartColors();
     const [raw, loading] = useDataset<Stock>('stocks.csv');
     const data = useMemo(() => {
-      if (!raw.length) return [];
+      if (!raw.length) {
+        return [];
+      }
       const filtered = raw.filter(
         d => d.symbol === 'AAPL' || d.symbol === 'GOOG',
       );
@@ -95,7 +101,9 @@ export const LineChart: StoryObj = {
         .filter(d => d.AAPL != null && d.GOOG != null)
         .slice(-12);
     }, [raw]);
-    if (loading) return <XDSText type="supporting">Loading…</XDSText>;
+    if (loading) {
+      return <XDSText type="supporting">Loading…</XDSText>;
+    }
     const c = colors.categorical(2);
     return (
       <XDSChart
@@ -131,7 +139,9 @@ export const ScatterPlot: StoryObj = {
         .filter(d => d.Horsepower != null && d.Miles_per_Gallon != null)
         .map(d => ({hp: d.Horsepower, mpg: d.Miles_per_Gallon}));
     }, [raw]);
-    if (loading) return <XDSText type="supporting">Loading…</XDSText>;
+    if (loading) {
+      return <XDSText type="supporting">Loading…</XDSText>;
+    }
     return (
       <XDSChart
         data={data}
@@ -163,8 +173,9 @@ export const WebGLScatter: StoryObj = {
         .filter(d => d.delay != null && d.distance != null)
         .map(d => ({distance: d.distance, delay: d.delay}));
     }, [raw]);
-    if (loading)
+    if (loading) {
       return <XDSText type="supporting">Loading 10k flights…</XDSText>;
+    }
     return (
       <XDSStack direction="vertical" gap={2}>
         <XDSText type="supporting" color="secondary">
@@ -197,7 +208,9 @@ export const ConfidenceBand: StoryObj = {
     const colors = useXDSChartColors();
     const [raw, loading] = useDataset<Weather>('seattle-weather.csv');
     const data = useMemo(() => {
-      if (!raw.length) return [];
+      if (!raw.length) {
+        return [];
+      }
       const byMonth = new Map<
         string,
         {maxSum: number; minSum: number; count: number}
@@ -220,7 +233,9 @@ export const ConfidenceBand: StoryObj = {
         .sort((a, b) => a.month.localeCompare(b.month))
         .slice(-24);
     }, [raw]);
-    if (loading) return <XDSText type="supporting">Loading…</XDSText>;
+    if (loading) {
+      return <XDSText type="supporting">Loading…</XDSText>;
+    }
     return (
       <XDSChart
         data={data}
@@ -250,7 +265,9 @@ export const Heatmap: StoryObj = {
     const colors = useXDSChartColors();
     const [raw, loading] = useDataset<Gapminder>('gapminder.json');
     const data = useMemo(() => {
-      if (!raw.length) return [];
+      if (!raw.length) {
+        return [];
+      }
       const countries = [
         'United States',
         'China',
@@ -274,7 +291,9 @@ export const Heatmap: StoryObj = {
           lifeExp: Math.round(d.life_expect),
         }));
     }, [raw]);
-    if (loading) return <XDSText type="supporting">Loading…</XDSText>;
+    if (loading) {
+      return <XDSText type="supporting">Loading…</XDSText>;
+    }
     return (
       <XDSChart data={data} xKey="year" yKeys={['lifeExp']} height={300}>
         <XDSChartAxis position="bottom" />

@@ -48,8 +48,12 @@ import {xdsClassName, mergeProps} from '../utils';
 import {XDSBaseProps} from '../XDSBaseProps';
 
 function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  }
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
@@ -444,7 +448,9 @@ export function XDSFileInput({
 
   const handleFiles = useCallback(
     (fileList: File[]) => {
-      if (isDisabled) return;
+      if (isDisabled) {
+        return;
+      }
 
       const {valid, errors} = validateFiles(
         fileList,
@@ -559,7 +565,9 @@ export function XDSFileInput({
       e.preventDefault();
       e.stopPropagation();
       setIsDragOver(false);
-      if (isDisabled || mode !== 'dropzone') return;
+      if (isDisabled || mode !== 'dropzone') {
+        return;
+      }
       const fileList = Array.from(e.dataTransfer.files);
       if (fileList.length > 0) {
         handleFiles(fileList);

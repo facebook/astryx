@@ -199,7 +199,9 @@ export function XDSTopNavItem({
   // =========================================================================
   if (renderMode === 'drawer') {
     const handleDrawerClick = (e: React.MouseEvent) => {
-      if (isDisabled) return;
+      if (isDisabled) {
+        return;
+      }
       // Forward the original onClick if present
       (props as {onClick?: (e: React.MouseEvent) => void}).onClick?.(e);
       closeMobileNav();

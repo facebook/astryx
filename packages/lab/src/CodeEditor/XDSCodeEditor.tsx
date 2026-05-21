@@ -214,7 +214,9 @@ export function XDSCodeEditor({
   // Sync textContent with controlled value
   useLayoutEffect(() => {
     const el = editorRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     if (el.textContent !== value) {
       el.textContent = value;
     }
@@ -227,33 +229,51 @@ export function XDSCodeEditor({
 
   // Apply CSS Custom Highlight API ranges — small code
   useLayoutEffect(() => {
-    if (value.length >= SYNC_TOKENIZE_THRESHOLD) return;
-    if (!hasHighlightAPI()) return;
+    if (value.length >= SYNC_TOKENIZE_THRESHOLD) {
+      return;
+    }
+    if (!hasHighlightAPI()) {
+      return;
+    }
 
     const el = editorRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
 
     const tok = customTokenizer ?? tokenize;
     const tokens = tok(value, language);
-    if (tokens.length === 0) return;
+    if (tokens.length === 0) {
+      return;
+    }
 
     return applyHighlightRangesFlat(el, tokens);
   }, [value, language, customTokenizer, instanceId]);
 
   // Apply CSS Custom Highlight API ranges — large code (async)
   useEffect(() => {
-    if (value.length < SYNC_TOKENIZE_THRESHOLD) return;
-    if (!hasHighlightAPI()) return;
+    if (value.length < SYNC_TOKENIZE_THRESHOLD) {
+      return;
+    }
+    if (!hasHighlightAPI()) {
+      return;
+    }
 
     const el = editorRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
 
     const abortController = new AbortController();
     let cleanup: (() => void) | undefined;
 
     tokenizeAsync(value, language, abortController.signal).then(tokens => {
-      if (abortController.signal.aborted) return;
-      if (tokens.length === 0) return;
+      if (abortController.signal.aborted) {
+        return;
+      }
+      if (tokens.length === 0) {
+        return;
+      }
       cleanup = applyHighlightRangesFlat(el, tokens);
     });
 
@@ -264,22 +284,30 @@ export function XDSCodeEditor({
   }, [value, language, customTokenizer, instanceId]);
 
   const handleInput = useCallback(() => {
-    if (isComposingRef.current) return;
+    if (isComposingRef.current) {
+      return;
+    }
     const el = editorRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     const newValue = el.textContent ?? '';
     onChange(newValue);
   }, [onChange]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
-      if (isReadOnly) return;
+      if (isReadOnly) {
+        return;
+      }
 
       // Tab key: insert 2 spaces
       if (e.key === 'Tab') {
         e.preventDefault();
         const sel = window.getSelection();
-        if (!sel || sel.rangeCount === 0) return;
+        if (!sel || sel.rangeCount === 0) {
+          return;
+        }
         const range = sel.getRangeAt(0);
         range.deleteContents();
         const textNode = document.createTextNode('  ');
@@ -289,7 +317,9 @@ export function XDSCodeEditor({
         sel.removeAllRanges();
         sel.addRange(range);
         const el = editorRef.current;
-        if (el) onChange(el.textContent ?? '');
+        if (el) {
+          onChange(el.textContent ?? '');
+        }
         return;
       }
 
@@ -297,10 +327,14 @@ export function XDSCodeEditor({
       if (e.key === 'Enter') {
         e.preventDefault();
         const sel = window.getSelection();
-        if (!sel || sel.rangeCount === 0) return;
+        if (!sel || sel.rangeCount === 0) {
+          return;
+        }
 
         const el = editorRef.current;
-        if (!el) return;
+        if (!el) {
+          return;
+        }
         const fullText = el.textContent ?? '';
 
         // Find cursor offset
@@ -333,11 +367,15 @@ export function XDSCodeEditor({
       const closeChar = AUTO_CLOSE_PAIRS[e.key];
       if (closeChar) {
         const sel = window.getSelection();
-        if (!sel || sel.rangeCount === 0) return;
+        if (!sel || sel.rangeCount === 0) {
+          return;
+        }
         const range = sel.getRangeAt(0);
 
         // Only auto-close if no text is selected
-        if (!range.collapsed) return;
+        if (!range.collapsed) {
+          return;
+        }
 
         e.preventDefault();
         const textNode = document.createTextNode(e.key + closeChar);
@@ -349,7 +387,9 @@ export function XDSCodeEditor({
         sel.removeAllRanges();
         sel.addRange(range);
         const el = editorRef.current;
-        if (el) onChange(el.textContent ?? '');
+        if (el) {
+          onChange(el.textContent ?? '');
+        }
       }
     },
     [isReadOnly, onChange],

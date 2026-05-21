@@ -78,7 +78,9 @@ function createMockMatchMedia(matches: boolean) {
     removeEventListener: vi.fn(
       (_event: string, handler: (e: MediaQueryListEvent) => void) => {
         const idx = listeners.indexOf(handler);
-        if (idx >= 0) listeners.splice(idx, 1);
+        if (idx >= 0) {
+          listeners.splice(idx, 1);
+        }
       },
     ),
     addListener: vi.fn(),

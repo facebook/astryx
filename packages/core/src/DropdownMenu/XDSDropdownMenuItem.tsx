@@ -134,7 +134,9 @@ export function XDSDropdownMenuItem({
   const menuSize = ctx?.menuSize ?? 'md';
 
   const handleClick = useCallback(() => {
-    if (isDisabled || !onClick) return;
+    if (isDisabled || !onClick) {
+      return;
+    }
     onClick();
     ctx?.closeMenu();
   }, [isDisabled, onClick, ctx]);

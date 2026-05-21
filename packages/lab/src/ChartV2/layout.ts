@@ -12,7 +12,12 @@
 
 import {scaleLinear, scaleBand} from 'd3-scale';
 import {stack as d3Stack, stackOrderNone, stackOffsetNone} from 'd3-shape';
-import type {SeriesDef, ChartScale, ResolvedPoint, SeriesContext} from './types';
+import type {
+  SeriesDef,
+  ChartScale,
+  ResolvedPoint,
+  SeriesContext,
+} from './types';
 
 export interface LayoutInput {
   data: Record<string, unknown>[];
@@ -28,25 +33,42 @@ export interface LayoutResult {
   resolved: Map<string, ResolvedPoint[]>;
 }
 
-export function computeLayout({data, xKey, series, width, height}: LayoutInput): LayoutResult {
+export function computeLayout({
+  data,
+  xKey,
+  series,
+  width,
+  height,
+}: LayoutInput): LayoutResult {
   // ─── 1. X scale ──────────────────────────────────────────────────────
   const xValues = data.map(d => d[xKey]);
-  const isNumericX = xValues.length > 0 && xValues.every(v => typeof v === 'number');
+  const isNumericX =
+    xValues.length > 0 && xValues.every(v => typeof v === 'number');
 
   let xScale: ChartScale;
   if (isNumericX) {
     const nums = xValues as number[];
-    xScale = scaleLinear().domain([Math.min(...nums), Math.max(...nums)]).range([0, width]).nice();
+    xScale = scaleLinear()
+      .domain([Math.min(...nums), Math.max(...nums)])
+      .range([0, width])
+      .nice();
   } else {
-    xScale = scaleBand<string>().domain(xValues.map(String)).range([0, width]).padding(0.2);
+    xScale = scaleBand<string>()
+      .domain(xValues.map(String))
+      .range([0, width])
+      .padding(0.2);
   }
 
   // ─── 2. Y domain from all series dataKeys ────────────────────────────
   const allKeys = new Set<string>();
   let includeZero = false;
   for (const s of series) {
-    for (const k of s.dataKeys) allKeys.add(k);
-    if (s.layout.includeZero) includeZero = true;
+    for (const k of s.dataKeys) {
+      allKeys.add(k);
+    }
+    if (s.layout.includeZero) {
+      includeZero = true;
+    }
   }
 
   // Collect which keys are stacked together so we can compute stacked extents
@@ -59,38 +81,57 @@ export function computeLayout({data, xKey, series, width, height}: LayoutInput):
     }
   }
 
-  let yMin = Infinity, yMax = -Infinity;
+  let yMin = Infinity,
+    yMax = -Infinity;
 
   // For stacked series, compute the sum at each data point
   const stackedKeys = new Set<string>();
   for (const [, keys] of stackGroupKeys) {
-    for (const k of keys) stackedKeys.add(k);
+    for (const k of keys) {
+      stackedKeys.add(k);
+    }
     for (const d of data) {
       let sum = 0;
       for (const k of keys) {
         const v = d[k];
-        if (typeof v === 'number') sum += v;
+        if (typeof v === 'number') {
+          sum += v;
+        }
       }
-      if (sum > yMax) yMax = sum;
-      if (sum < yMin) yMin = sum;
+      if (sum > yMax) {
+        yMax = sum;
+      }
+      if (sum < yMin) {
+        yMin = sum;
+      }
     }
   }
 
   // For non-stacked series, use individual values
   for (const d of data) {
     for (const k of allKeys) {
-      if (stackedKeys.has(k)) continue; // already handled above
+      if (stackedKeys.has(k)) {
+        continue;
+      } // already handled above
       const v = d[k];
       if (typeof v === 'number') {
-        if (v < yMin) yMin = v;
-        if (v > yMax) yMax = v;
+        if (v < yMin) {
+          yMin = v;
+        }
+        if (v > yMax) {
+          yMax = v;
+        }
       }
     }
   }
 
   if (includeZero) {
-    if (yMin > 0) yMin = 0;
-    if (yMax < 0) yMax = 0;
+    if (yMin > 0) {
+      yMin = 0;
+    }
+    if (yMax < 0) {
+      yMax = 0;
+    }
   }
   const yScale = scaleLinear().domain([yMin, yMax]).range([height, 0]).nice();
 
@@ -107,10 +148,15 @@ export function computeLayout({data, xKey, series, width, height}: LayoutInput):
   const stackedData = new Map<string, {y0: number; y1: number}[]>();
   for (const [, keys] of stackGroups) {
     const stackGen = d3Stack<Record<string, unknown>>()
-      .keys(keys).order(stackOrderNone).offset(stackOffsetNone);
+      .keys(keys)
+      .order(stackOrderNone)
+      .offset(stackOffsetNone);
     const stacked = stackGen(data);
     for (const layer of stacked) {
-      stackedData.set(layer.key, layer.map(d => ({y0: d[0], y1: d[1]})));
+      stackedData.set(
+        layer.key,
+        layer.map(d => ({y0: d[0], y1: d[1]})),
+      );
     }
   }
 
@@ -126,7 +172,9 @@ export function computeLayout({data, xKey, series, width, height}: LayoutInput):
       // For grouped stacks: use the stack name as the group slot identifier
       // so all series in the same stack share one slot.
       const slotKey = s.layout.stack ?? s.key;
-      if (!group.includes(slotKey)) group.push(slotKey);
+      if (!group.includes(slotKey)) {
+        group.push(slotKey);
+      }
       barGroups.set(s.layout.group, group);
     }
   }
@@ -139,7 +187,9 @@ export function computeLayout({data, xKey, series, width, height}: LayoutInput):
   const stackTopKeys = new Set<string>();
   for (const [, keys] of stackGroups) {
     // Last key in the stack group is rendered on top
-    if (keys.length > 0) stackTopKeys.add(keys[keys.length - 1]);
+    if (keys.length > 0) {
+      stackTopKeys.add(keys[keys.length - 1]);
+    }
   }
 
   for (const s of series) {
@@ -158,7 +208,10 @@ export function computeLayout({data, xKey, series, width, height}: LayoutInput):
       if (groupKeys) {
         // For grouped stacks, the slot key is the stack name
         const slotKey = s.layout.stack ?? s.key;
-        groupInfo = {index: groupKeys.indexOf(slotKey), count: groupKeys.length};
+        groupInfo = {
+          index: groupKeys.indexOf(slotKey),
+          count: groupKeys.length,
+        };
       }
     }
 

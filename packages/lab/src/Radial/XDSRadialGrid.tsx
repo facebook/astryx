@@ -24,7 +24,9 @@ export function XDSRadialGrid({rings = 5}: XDSRadialGridProps) {
   const {cx, cy, radius, innerRadius, axes, angleByAxis, radiusScale} =
     useRadial();
 
-  if (!axes || !angleByAxis || !radiusScale) return null;
+  if (!axes || !angleByAxis || !radiusScale) {
+    return null;
+  }
 
   return (
     <g>

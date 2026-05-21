@@ -42,12 +42,16 @@ import type {
 // =============================================================================
 
 function getIsTouchDevice(): boolean {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === 'undefined') {
+    return false;
+  }
   return window.matchMedia('(hover: none)').matches;
 }
 
 function subscribeToHoverChange(callback: () => void): () => void {
-  if (typeof window === 'undefined') return () => {};
+  if (typeof window === 'undefined') {
+    return () => {};
+  }
   const mql = window.matchMedia('(hover: none)');
   mql.addEventListener('change', callback);
   return () => mql.removeEventListener('change', callback);

@@ -382,9 +382,14 @@ describe('streaming end-to-end: no raw syntax visible', () => {
           }
           break;
         case 'table':
-          for (const h of block.headers) text += extractInlineText(h.children);
-          for (const row of block.rows)
-            for (const cell of row) text += extractInlineText(cell.children);
+          for (const h of block.headers) {
+            text += extractInlineText(h.children);
+          }
+          for (const row of block.rows) {
+            for (const cell of row) {
+              text += extractInlineText(cell.children);
+            }
+          }
           break;
       }
     }

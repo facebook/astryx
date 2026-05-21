@@ -53,7 +53,9 @@ function sampleRamp(
   t: number,
 ): [number, number, number] {
   const c = Math.max(0, Math.min(1, t));
-  if (ramp.length === 1) return ramp[0];
+  if (ramp.length === 1) {
+    return ramp[0];
+  }
   const s = c * (ramp.length - 1);
   const lo = Math.floor(s);
   const hi = Math.min(lo + 1, ramp.length - 1);
@@ -87,14 +89,20 @@ export function XDSChartHeatmapGL({
   }, [data, yKey, height]);
 
   const domain = useMemo((): [number, number] => {
-    if (domainProp) return domainProp;
+    if (domainProp) {
+      return domainProp;
+    }
     let min = Infinity,
       max = -Infinity;
     for (const d of data) {
       const v = d[valueKey];
       if (typeof v === 'number') {
-        if (v < min) min = v;
-        if (v > max) max = v;
+        if (v < min) {
+          min = v;
+        }
+        if (v > max) {
+          max = v;
+        }
       }
     }
     return [min, max];
@@ -103,26 +111,39 @@ export function XDSChartHeatmapGL({
   // Mount canvas
   useEffect(() => {
     const marker = markerRef.current;
-    if (!marker) return;
-    if (!canvasRef.current)
+    if (!marker) {
+      return;
+    }
+    if (!canvasRef.current) {
       canvasRef.current = document.createElement('canvas');
+    }
     return mountCanvasOverSVG(marker, canvasRef.current, width, height);
   }, [width, height]);
 
   // Draw
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || width <= 0 || height <= 0 || !isBandScale(xScale)) return;
+    if (!canvas || width <= 0 || height <= 0 || !isBandScale(xScale)) {
+      return;
+    }
 
     sizeCanvas(canvas, width, height);
 
-    if (!glRef.current) glRef.current = getWebGLContext(canvas);
+    if (!glRef.current) {
+      glRef.current = getWebGLContext(canvas);
+    }
     const gl = glRef.current;
-    if (!gl) return;
+    if (!gl) {
+      return;
+    }
 
-    if (!programRef.current) programRef.current = createProgram(gl, VERT, FRAG);
+    if (!programRef.current) {
+      programRef.current = createProgram(gl, VERT, FRAG);
+    }
     const program = programRef.current;
-    if (!program) return;
+    if (!program) {
+      return;
+    }
 
     gl.viewport(0, 0, canvas.width, canvas.height);
     setupGLState(gl);
@@ -139,7 +160,9 @@ export function XDSChartHeatmapGL({
     for (const d of data) {
       const xVal = xScale(String(d[xKey]));
       const yVal = yBandScale(String(d[yKey]));
-      if (xVal == null || yVal == null) continue;
+      if (xVal == null || yVal == null) {
+        continue;
+      }
 
       const v = typeof d[valueKey] === 'number' ? (d[valueKey] as number) : 0;
       const t = (v - dMin) / range;
@@ -151,7 +174,9 @@ export function XDSChartHeatmapGL({
       const y1 = yVal + yBW - gap / 2;
 
       positions.push(x0, y0, x1, y0, x0, y1, x1, y0, x1, y1, x0, y1);
-      for (let i = 0; i < 6; i++) colors.push(r, g, b);
+      for (let i = 0; i < 6; i++) {
+        colors.push(r, g, b);
+      }
     }
 
     const posBuf = gl.createBuffer();
@@ -187,6 +212,8 @@ export function XDSChartHeatmapGL({
     cellGap,
   ]);
 
-  if (width <= 0 || height <= 0) return null;
+  if (width <= 0 || height <= 0) {
+    return null;
+  }
   return <g ref={markerRef} />;
 }

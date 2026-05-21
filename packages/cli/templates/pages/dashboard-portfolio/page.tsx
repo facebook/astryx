@@ -87,7 +87,9 @@ const portfolioData = (() => {
   const out: Array<{month: number; label: string; value: number}> = [];
   let ai = 0;
   for (let day = 0; day <= totalDays; day++) {
-    while (ai < anchors.length - 2 && day >= anchors[ai + 1][0]) ai++;
+    while (ai < anchors.length - 2 && day >= anchors[ai + 1][0]) {
+      ai++;
+    }
     const [d0, v0] = anchors[ai];
     const [d1, v1] = anchors[ai + 1];
     const t = (day - d0) / (d1 - d0);
@@ -355,7 +357,9 @@ function ChartTooltip({
   payload?: Array<{value: number}>;
   label?: number;
 }) {
-  if (!active || !payload?.length) return null;
+  if (!active || !payload?.length) {
+    return null;
+  }
   return (
     <XDSCard padding={3}>
       <XDSText type="supporting">
@@ -750,9 +754,7 @@ export default function DashboardPortfolioTemplate() {
               <XDSVStack gap={4}>
                 <XDSHStack hAlign="between" vAlign="center">
                   <XDSHeading level={3}>Portfolio Value</XDSHeading>
-                  <XDSLink href="#">
-                    View details
-                  </XDSLink>
+                  <XDSLink href="#">View details</XDSLink>
                 </XDSHStack>
                 <PortfolioChart />
               </XDSVStack>
@@ -763,9 +765,7 @@ export default function DashboardPortfolioTemplate() {
               <XDSVStack gap={4}>
                 <XDSHStack hAlign="between" vAlign="center">
                   <XDSHeading level={3}>Top Assets</XDSHeading>
-                  <XDSLink href="#">
-                    View all
-                  </XDSLink>
+                  <XDSLink href="#">View all</XDSLink>
                 </XDSHStack>
                 <XDSList density="spacious">
                   {topAssets.map(asset => (

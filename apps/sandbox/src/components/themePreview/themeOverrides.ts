@@ -96,7 +96,9 @@ export function overridesReducer(
     }
     case 'clearMode': {
       const prev = state[action.token];
-      if (!prev) return state;
+      if (!prev) {
+        return state;
+      }
       const next: TokenOverride = {...prev};
       delete next[action.mode];
       // Drop the token entry entirely when neither mode is set so the
@@ -134,7 +136,9 @@ export function resolveOverrideHex(
 ): string {
   if (seed.tones) {
     const v = seed.tones[tone];
-    if (typeof v === 'string') return v;
+    if (typeof v === 'string') {
+      return v;
+    }
   }
   const {hue, chroma} = hexToHct(seed.sourceHex);
   return tonalPaletteForMode(hue, chroma, mode)[tone];
@@ -189,7 +193,9 @@ export function buildCustomOverride(input: string): ModeOverride {
 export function normalizeHex(input: string): string {
   const trimmed = input.trim().toLowerCase();
   const m = trimmed.match(/^#?([0-9a-f]{3,8})$/);
-  if (!m) return '#000000';
+  if (!m) {
+    return '#000000';
+  }
   const body = m[1];
   if (body.length === 3) {
     return '#' + body[0] + body[0] + body[1] + body[1] + body[2] + body[2];
@@ -197,15 +203,21 @@ export function normalizeHex(input: string): string {
   if (body.length === 4) {
     return '#' + body[0] + body[0] + body[1] + body[1] + body[2] + body[2];
   }
-  if (body.length === 6) return '#' + body;
-  if (body.length === 8) return '#' + body.slice(0, 6);
+  if (body.length === 6) {
+    return '#' + body;
+  }
+  if (body.length === 8) {
+    return '#' + body.slice(0, 6);
+  }
   return '#000000';
 }
 
 export function isValidHex(input: string): boolean {
   // Accept either a bare hex or the `'#hex N%'` shape used by the
   // alpha-aware Custom-tab input.
-  if (/^#?[0-9a-fA-F]{3,8}$/.test(input.trim())) return true;
+  if (/^#?[0-9a-fA-F]{3,8}$/.test(input.trim())) {
+    return true;
+  }
   return /^#?[0-9a-fA-F]{3,8}\s+\d{1,3}%?$/.test(input.trim());
 }
 
@@ -219,9 +231,15 @@ export function isValidHex(input: string): boolean {
  * specified" in CSS color literals.
  */
 export function clampAlpha(alpha: number | undefined): number {
-  if (alpha == null || !Number.isFinite(alpha)) return 1;
-  if (alpha < 0) return 0;
-  if (alpha > 1) return 1;
+  if (alpha == null || !Number.isFinite(alpha)) {
+    return 1;
+  }
+  if (alpha < 0) {
+    return 0;
+  }
+  if (alpha > 1) {
+    return 1;
+  }
   return alpha;
 }
 
@@ -242,7 +260,9 @@ export function alphaToHex(alpha: number): string {
 export function composeAlphaHex(hex: string, alpha?: number): string {
   const a = clampAlpha(alpha);
   const base = normalizeHex(hex);
-  if (a === 1) return base;
+  if (a === 1) {
+    return base;
+  }
   return base + alphaToHex(a);
 }
 
@@ -254,7 +274,9 @@ export function composeAlphaHex(hex: string, alpha?: number): string {
 export function formatHexWithAlpha(hex: string, alpha?: number): string {
   const a = clampAlpha(alpha);
   const base = normalizeHex(hex);
-  if (a === 1) return base;
+  if (a === 1) {
+    return base;
+  }
   return base + ' ' + Math.round(a * 100) + '%';
 }
 
@@ -317,8 +339,12 @@ export function countModeOverrides(state: OverridesMap): {
   let light = 0;
   let dark = 0;
   for (const t of Object.values(state)) {
-    if (t.light) light++;
-    if (t.dark) dark++;
+    if (t.light) {
+      light++;
+    }
+    if (t.dark) {
+      dark++;
+    }
   }
   return {light, dark};
 }
@@ -343,7 +369,10 @@ export function countModeOverrides(state: OverridesMap): {
 export interface SerializeContext {
   /** Current resolved hex per token per mode — used to fill in the side
    *  the user didn't reassign. */
-  currentTokenValues: Record<string, {light: string | null; dark: string | null}>;
+  currentTokenValues: Record<
+    string,
+    {light: string | null; dark: string | null}
+  >;
 }
 
 export function serializeAsTokensBlock(
@@ -369,8 +398,12 @@ export function serializeAsTokensBlock(
         : `[${formatHex(lightHex)}, ${formatHex(darkHex)}]`;
 
     const annotations: string[] = [];
-    if (ov.light) annotations.push(`light: ${describeOverride(ov.light)}`);
-    if (ov.dark) annotations.push(`dark: ${describeOverride(ov.dark)}`);
+    if (ov.light) {
+      annotations.push(`light: ${describeOverride(ov.light)}`);
+    }
+    if (ov.dark) {
+      annotations.push(`dark: ${describeOverride(ov.dark)}`);
+    }
     const comment = annotations.length ? `  // ${annotations.join(' · ')}` : '';
 
     lines.push(`    '${token}': ${value},${comment}`);
@@ -391,7 +424,9 @@ export function describeOverride(ov: ModeOverride): string {
 }
 
 function formatHex(hex: string | null): string {
-  if (!hex) return `''`;
+  if (!hex) {
+    return `''`;
+  }
   return `'${hex}'`;
 }
 
@@ -429,8 +464,12 @@ export function toApplyPayload(
       lightHex === darkHex ? lightHex : [lightHex, darkHex];
 
     const annotations: string[] = [];
-    if (ov.light) annotations.push(`light: ${describeOverride(ov.light)}`);
-    if (ov.dark) annotations.push(`dark: ${describeOverride(ov.dark)}`);
+    if (ov.light) {
+      annotations.push(`light: ${describeOverride(ov.light)}`);
+    }
+    if (ov.dark) {
+      annotations.push(`dark: ${describeOverride(ov.dark)}`);
+    }
     entries.push({
       token,
       value,
@@ -471,7 +510,9 @@ export function buildOverrideCSSVars(
     const current = ctx.currentTokenValues[token] ?? {light: null, dark: null};
     const lightHex = ov.light?.hex ?? current.light;
     const darkHex = ov.dark?.hex ?? current.dark;
-    if (!lightHex && !darkHex) continue;
+    if (!lightHex && !darkHex) {
+      continue;
+    }
     if (lightHex === darkHex && lightHex) {
       vars[token] = lightHex;
     } else {
@@ -479,7 +520,8 @@ export function buildOverrideCSSVars(
       // unparseable (e.g. var() reference). Fall back to a transparent
       // sentinel rather than emitting `light-dark(null, ...)` which is
       // invalid CSS and would silently break the cascade for that token.
-      vars[token] = `light-dark(${lightHex ?? 'transparent'}, ${darkHex ?? 'transparent'})`;
+      vars[token] =
+        `light-dark(${lightHex ?? 'transparent'}, ${darkHex ?? 'transparent'})`;
     }
   }
   return vars as React.CSSProperties;

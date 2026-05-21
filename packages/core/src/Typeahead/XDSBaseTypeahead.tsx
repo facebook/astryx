@@ -395,7 +395,9 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
       setHasSearched(true);
       try {
         const searchResults = await searchSource.search(searchQuery);
-        if (searchGenRef.current !== gen) return;
+        if (searchGenRef.current !== gen) {
+          return;
+        }
         resultsGenRef.current = gen;
         setResults(searchResults.slice(0, maxMenuItems));
         setHighlightedIndex(searchResults.length > 0 ? 0 : -1);
@@ -403,7 +405,9 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
           showLayer();
         }
       } catch {
-        if (searchGenRef.current !== gen) return;
+        if (searchGenRef.current !== gen) {
+          return;
+        }
         setResults([]);
         setHighlightedIndex(-1);
       } finally {
@@ -421,7 +425,9 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
     setIsLoading(true);
     try {
       const bootstrapResults = await searchSource.bootstrap();
-      if (searchGenRef.current !== gen) return;
+      if (searchGenRef.current !== gen) {
+        return;
+      }
       resultsGenRef.current = gen;
       setResults(bootstrapResults.slice(0, maxMenuItems));
       setHighlightedIndex(bootstrapResults.length > 0 ? 0 : -1);
@@ -429,7 +435,9 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
         showLayer();
       }
     } catch {
-      if (searchGenRef.current !== gen) return;
+      if (searchGenRef.current !== gen) {
+        return;
+      }
       setResults([]);
     } finally {
       if (searchGenRef.current === gen) {
@@ -512,7 +520,9 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
 
   // Handle focus
   const handleFocus = useCallback(() => {
-    if (isDisabled) return;
+    if (isDisabled) {
+      return;
+    }
     if (hasEntriesOnFocus && results.length === 0 && query.length === 0) {
       performBootstrap();
     } else if (
@@ -538,7 +548,9 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       externalOnKeyDown?.(e);
-      if (e.defaultPrevented) return;
+      if (e.defaultPrevented) {
+        return;
+      }
 
       if (!popover.isOpen) {
         if (e.key === 'ArrowDown' && (hasEntriesOnFocus || query.length > 0)) {

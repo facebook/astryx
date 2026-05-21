@@ -180,12 +180,18 @@ export function XDSBreadcrumbItem({
   // non-separator item, set aria-current on our content element.
   // Runs as useEffect (not layout) — only sets an aria attribute, no visual change.
   useEffect(() => {
-    if (!isAutoCandidate) return;
+    if (!isAutoCandidate) {
+      return;
+    }
 
     const li = liRef.current;
-    if (!li) return;
+    if (!li) {
+      return;
+    }
     const ol = li.parentElement;
-    if (!ol) return;
+    if (!ol) {
+      return;
+    }
 
     // All breadcrumb items (li without aria-hidden are items, with aria-hidden are separators — but we no longer have separator lis)
     const items = Array.from(ol.children) as HTMLElement[];

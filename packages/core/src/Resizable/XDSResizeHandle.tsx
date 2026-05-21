@@ -42,7 +42,9 @@ function resolveEffectiveSide(
   isReversed: boolean,
   isCollapsed: boolean,
 ): 'start' | 'end' | 'center' {
-  if (pillPlacement !== 'auto') return pillPlacement;
+  if (pillPlacement !== 'auto') {
+    return pillPlacement;
+  }
   const panelSide: 'start' | 'end' = isReversed ? 'end' : 'start';
   if (isCollapsed) {
     return panelSide === 'start' ? 'end' : 'start';
@@ -55,7 +57,9 @@ function resolveEffectiveSide(
  * shifts ~2:1 toward the pill so users can reach the visible grip easily.
  */
 function hitAreaBias(effectiveSide: 'start' | 'end' | 'center'): string {
-  if (effectiveSide === 'center') return '50%';
+  if (effectiveSide === 'center') {
+    return '50%';
+  }
   return effectiveSide === 'start' ? '66.67%' : '33.33%';
 }
 
@@ -326,7 +330,9 @@ export function XDSResizeHandle({
 
   const getRTLMultiplier = useCallback((): number => {
     const el = handleRef.current;
-    if (!el) return 1;
+    if (!el) {
+      return 1;
+    }
     return getComputedStyle(el).direction === 'rtl' ? -1 : 1;
   }, []);
 
@@ -335,7 +341,9 @@ export function XDSResizeHandle({
   // --- Pointer drag ---
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
-      if (isDisabled || !resizable) return;
+      if (isDisabled || !resizable) {
+        return;
+      }
       e.preventDefault();
       e.stopPropagation();
       setIsDragging(true);
@@ -378,7 +386,9 @@ export function XDSResizeHandle({
   // --- Keyboard ---
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (isDisabled || !resizable) return;
+      if (isDisabled || !resizable) {
+        return;
+      }
       const step = e.shiftKey ? KEYBOARD_LARGE_STEP : KEYBOARD_STEP;
       const rtl = isHorizontal ? getRTLMultiplier() : 1;
 
@@ -433,7 +443,9 @@ export function XDSResizeHandle({
 
   // --- Double-click collapse ---
   const handleDoubleClick = useCallback(() => {
-    if (isDisabled || !resizable || !resizable._collapsible) return;
+    if (isDisabled || !resizable || !resizable._collapsible) {
+      return;
+    }
     resizable._onResizeStart();
     resizable._onResizeMove(
       resizable._isCollapsed ? resizable._minSizePx : -resizable._size,
@@ -464,9 +476,11 @@ export function XDSResizeHandle({
       ref={node => {
         (handleRef as React.MutableRefObject<HTMLDivElement | null>).current =
           node;
-        if (typeof ref === 'function') ref(node);
-        else if (ref)
+        if (typeof ref === 'function') {
+          ref(node);
+        } else if (ref) {
           (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        }
       }}
       role="separator"
       aria-orientation={isHorizontal ? 'vertical' : 'horizontal'}
@@ -517,7 +531,9 @@ export function XDSResizeHandle({
         onPointerDown={handlePointerDown}
         onPointerEnter={() => setIsHovered(true)}
         onPointerLeave={() => {
-          if (!isDragging) setIsHovered(false);
+          if (!isDragging) {
+            setIsHovered(false);
+          }
         }}
         onKeyDown={handleKeyDown}
       />

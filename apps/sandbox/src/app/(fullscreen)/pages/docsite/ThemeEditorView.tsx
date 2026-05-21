@@ -2534,9 +2534,13 @@ function MotionPreview() {
 
   React.useEffect(() => {
     const el = containerRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     const ro = new ResizeObserver(entries => {
-      for (const entry of entries) setContainerWidth(entry.contentRect.width);
+      for (const entry of entries) {
+        setContainerWidth(entry.contentRect.width);
+      }
     });
     ro.observe(el);
     return () => ro.disconnect();
@@ -2741,8 +2745,9 @@ function MotionPreview() {
                   !row ||
                   !row.parentElement ||
                   row.parentElement.tagName === 'THEAD'
-                )
+                ) {
                   return;
+                }
                 const index = Array.from(row.parentElement.children).indexOf(
                   row,
                 );
@@ -2930,7 +2935,9 @@ const CODE_LABEL: React.CSSProperties = {
 
 function TokenScalePreview({tokens}: {tokens: Record<string, string>}) {
   const resolveSize = (raw: string) => {
-    if (!raw) return raw;
+    if (!raw) {
+      return raw;
+    }
     const resolved = raw.startsWith('var(')
       ? tokens[raw.slice(4, -1)] || raw
       : raw;
@@ -2938,8 +2945,9 @@ function TokenScalePreview({tokens}: {tokens: Record<string, string>}) {
   };
   const toPx = (raw: string) => {
     const resolved = resolveSize(raw);
-    if (resolved.endsWith('rem'))
+    if (resolved.endsWith('rem')) {
       return `${Math.round(parseFloat(resolved) * 16)}px`;
+    }
     return resolved;
   };
 
@@ -3171,10 +3179,14 @@ function TemplateIframePreview({
 
   React.useEffect(() => {
     const iframe = iframeRef.current;
-    if (!iframe) return;
+    if (!iframe) {
+      return;
+    }
     const inject = () => {
       const doc = iframe.contentDocument;
-      if (!doc) return;
+      if (!doc) {
+        return;
+      }
       doc.documentElement.setAttribute('data-xds-theme', theme.name);
       doc.documentElement.setAttribute('data-color-scheme', mode);
       doc.documentElement.style.colorScheme = mode;
@@ -3183,7 +3195,9 @@ function TemplateIframePreview({
       const root = doc.body?.firstElementChild as HTMLElement | null;
       if (root) {
         const toolbar = root.firstElementChild as HTMLElement | null;
-        if (toolbar) toolbar.style.display = 'none';
+        if (toolbar) {
+          toolbar.style.display = 'none';
+        }
       }
 
       let styleEl = doc.querySelector<HTMLStyleElement>(
@@ -3273,14 +3287,21 @@ function generateThemeCode(
   > = {};
 
   for (const [key, value] of Object.entries(tokens)) {
-    if (value === defaults[key]) continue;
-    if (hasCustomTypeScale && typeScaleTokenKeys.has(key)) continue;
+    if (value === defaults[key]) {
+      continue;
+    }
+    if (hasCustomTypeScale && typeScaleTokenKeys.has(key)) {
+      continue;
+    }
     const mapping = COMPONENT_VAR_TO_OVERRIDE[key];
     if (mapping) {
       const {component, cssProperty} = mapping;
-      if (!componentOverrides[component]) componentOverrides[component] = {};
-      if (!componentOverrides[component].base)
+      if (!componentOverrides[component]) {
+        componentOverrides[component] = {};
+      }
+      if (!componentOverrides[component].base) {
         componentOverrides[component].base = {};
+      }
       componentOverrides[component].base[cssProperty] = value;
     } else {
       changedTokens[key] = value;
@@ -3317,8 +3338,9 @@ function generateThemeCode(
     const tokenEntries = Object.entries(changedTokens)
       .map(([key, value]) => {
         const parsed = parseLightDark(value);
-        if (parsed)
+        if (parsed) {
           return `    '${key}': ['${parsed.light}', '${parsed.dark}'],`;
+        }
         return `    '${key}': '${value}',`;
       })
       .join('\n');
@@ -3394,8 +3416,12 @@ export function ThemeEditorView({
   }, []);
 
   React.useEffect(() => {
-    if (panelMode === 'editor') setActivePreview('tokens');
-    if (panelMode === 'target') setActivePreview('preview');
+    if (panelMode === 'editor') {
+      setActivePreview('tokens');
+    }
+    if (panelMode === 'target') {
+      setActivePreview('preview');
+    }
   }, [panelMode]);
   const [flashComponent, setFlashComponent] = React.useState<string | null>(
     null,
@@ -3404,7 +3430,9 @@ export function ThemeEditorView({
   const previewRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    if (!flashComponent || !previewRef.current) return;
+    if (!flashComponent || !previewRef.current) {
+      return;
+    }
     const container = previewRef.current;
     const selector = `.xds-${flashComponent}`;
     const elements = container.querySelectorAll<HTMLElement>(selector);
@@ -3554,7 +3582,9 @@ export function ThemeEditorView({
   const applyUnifiedPreset = React.useCallback(
     (presetKey: string) => {
       const p = UNIFIED_PRESETS[presetKey as keyof typeof UNIFIED_PRESETS];
-      if (!p) return;
+      if (!p) {
+        return;
+      }
       setActivePreset(presetKey);
       setTypeScaleBase(p.typeBase);
       setTypeScaleRatio(p.typeRatio);
@@ -3786,7 +3816,9 @@ export function ThemeEditorView({
   );
 
   React.useEffect(() => {
-    if (!initialTheme) return;
+    if (!initialTheme) {
+      return;
+    }
     const fontLabel = initialTheme.font
       ? initialTheme.font.split(',')[0].replace(/["']/g, '').trim()
       : 'System';
@@ -3936,11 +3968,15 @@ export function ThemeEditorView({
         <div style={{display: 'flex', flexDirection: 'column', gap: '4px'}}>
           {Object.entries(COLOR_CATEGORIES).map(([category, tokenNames]) => {
             const uniqueTokens = tokenNames.filter(t => {
-              if (seen.has(t)) return false;
+              if (seen.has(t)) {
+                return false;
+              }
               seen.add(t);
               return true;
             });
-            if (uniqueTokens.length === 0) return null;
+            if (uniqueTokens.length === 0) {
+              return null;
+            }
             return (
               <React.Fragment key={category}>
                 <XDSText
@@ -4005,11 +4041,15 @@ export function ThemeEditorView({
                 ? (categoryValue as string[])
                 : (categoryValue as unknown as {tokens: string[]}).tokens;
               const uniqueTokens = catTokens.filter(t => {
-                if (seen.has(t)) return false;
+                if (seen.has(t)) {
+                  return false;
+                }
                 seen.add(t);
                 return true;
               });
-              if (uniqueTokens.length === 0) return null;
+              if (uniqueTokens.length === 0) {
+                return null;
+              }
               return (
                 <React.Fragment key={category}>
                   <XDSText
@@ -4200,7 +4240,9 @@ export function ThemeEditorView({
                 size="sm"
                 value={activeGroup}
                 onChange={(v: string | null) => {
-                  if (v != null) setActiveGroup(v as TokenGroupKey);
+                  if (v != null) {
+                    setActiveGroup(v as TokenGroupKey);
+                  }
                 }}>
                 {(Object.keys(TOKEN_GROUPS) as TokenGroupKey[]).map(
                   groupKey => {
@@ -4473,8 +4515,9 @@ export function ThemeEditorView({
                           size="sm"
                           value={String(typeScaleBase)}
                           onChange={(v: string | null) => {
-                            if (v != null)
+                            if (v != null) {
                               applyTypeScale(Number(v), typeScaleRatio);
+                            }
                           }}>
                           <XDSToggleButton label="S" value="12">
                             S
@@ -4537,8 +4580,9 @@ export function ThemeEditorView({
                             : String(typeScaleRatio)
                         }
                         onChange={(v: string) => {
-                          if (v !== 'custom')
+                          if (v !== 'custom') {
                             applyTypeScale(typeScaleBase, Number(v));
+                          }
                         }}
                       />
                     </div>
@@ -4573,7 +4617,9 @@ export function ThemeEditorView({
                           size="sm"
                           value={String(radiusBase)}
                           onChange={(v: string | null) => {
-                            if (v != null) applyRadiusScale(Number(v));
+                            if (v != null) {
+                              applyRadiusScale(Number(v));
+                            }
                           }}>
                           <XDSToggleButton label="S" value="2">
                             S
@@ -4623,7 +4669,9 @@ export function ThemeEditorView({
                           size="sm"
                           value={String(spacingBase)}
                           onChange={(v: string | null) => {
-                            if (v != null) applySpacingScale(Number(v));
+                            if (v != null) {
+                              applySpacingScale(Number(v));
+                            }
                           }}>
                           <XDSToggleButton label="S" value="2">
                             S
@@ -4673,7 +4721,9 @@ export function ThemeEditorView({
                           size="sm"
                           value={String(sizeBase)}
                           onChange={(v: string | null) => {
-                            if (v != null) applySizeScale(Number(v));
+                            if (v != null) {
+                              applySizeScale(Number(v));
+                            }
                           }}>
                           <XDSToggleButton label="S" value="28">
                             S
@@ -4727,7 +4777,9 @@ export function ThemeEditorView({
                       size="sm"
                       value={String(durationStep)}
                       onChange={(v: string | null) => {
-                        if (v != null) applyDurationScale(Number(v));
+                        if (v != null) {
+                          applyDurationScale(Number(v));
+                        }
                       }}>
                       <XDSToggleButton label="0.5×" value="0.5">
                         0.5×
@@ -5151,7 +5203,9 @@ export function ThemeEditorView({
               input.accept = 'image/png,image/jpeg,image/webp';
               input.onchange = () => {
                 const file = input.files?.[0];
-                if (file) handleImageUpload(file);
+                if (file) {
+                  handleImageUpload(file);
+                }
               };
               input.click();
             }}

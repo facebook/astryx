@@ -43,7 +43,9 @@ export function SearchPalette({
 
     for (const entries of Object.values(components)) {
       for (const comp of entries) {
-        if (comp.hidden || comp.parentDoc) continue;
+        if (comp.hidden || comp.parentDoc) {
+          continue;
+        }
         items.push({
           id: `/components/${comp.name}`,
           label: comp.name,

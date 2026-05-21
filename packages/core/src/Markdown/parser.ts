@@ -49,17 +49,22 @@ export type TableAlignment = 'left' | 'center' | 'right' | null;
 function findClosingParen(text: string, start: number): number {
   let depth = 1;
   for (let index = start; index < text.length; index++) {
-    if (text[index] === '(') depth++;
-    else if (text[index] === ')') {
+    if (text[index] === '(') {
+      depth++;
+    } else if (text[index] === ')') {
       depth--;
-      if (depth === 0) return index;
+      if (depth === 0) {
+        return index;
+      }
     }
   }
   return -1;
 }
 
 function isWordChar(ch: string | undefined): boolean {
-  if (ch == null) return false;
+  if (ch == null) {
+    return false;
+  }
   return /\w/.test(ch);
 }
 
@@ -76,11 +81,17 @@ function matchFullwidthCitation(
   i: number,
   sourceIds: ReadonlySet<string> | undefined,
 ): {sourceId: string; end: number} | null {
-  if (!sourceIds || text[i] !== '\u3010') return null;
+  if (!sourceIds || text[i] !== '\u3010') {
+    return null;
+  }
   const closeIndex = text.indexOf('\u3011', i + 1);
-  if (closeIndex === -1) return null;
+  if (closeIndex === -1) {
+    return null;
+  }
   const id = text.slice(i + 1, closeIndex);
-  if (id.length === 0 || !sourceIds.has(id)) return null;
+  if (id.length === 0 || !sourceIds.has(id)) {
+    return null;
+  }
   return {sourceId: id, end: closeIndex + 1};
 }
 
@@ -93,12 +104,20 @@ function matchBracketCitation(
   i: number,
   sourceIds: ReadonlySet<string> | undefined,
 ): {sourceId: string; end: number} | null {
-  if (!sourceIds || text[i] !== '[') return null;
+  if (!sourceIds || text[i] !== '[') {
+    return null;
+  }
   const closeIndex = text.indexOf(']', i + 1);
-  if (closeIndex === -1) return null;
-  if (text[closeIndex + 1] === '(') return null;
+  if (closeIndex === -1) {
+    return null;
+  }
+  if (text[closeIndex + 1] === '(') {
+    return null;
+  }
   const id = text.slice(i + 1, closeIndex);
-  if (id.length === 0 || !sourceIds.has(id)) return null;
+  if (id.length === 0 || !sourceIds.has(id)) {
+    return null;
+  }
   return {sourceId: id, end: closeIndex + 1};
 }
 
@@ -275,7 +294,9 @@ export function parseInline(
 
     // --- Plain text (with line-break detection) ---
     let end = i + 1;
-    while (end < text.length && !'*_~`[!\\\n\u3010'.includes(text[end])) end++;
+    while (end < text.length && !'*_~`[!\\\n\u3010'.includes(text[end])) {
+      end++;
+    }
 
     const content = text.slice(i, end);
 
@@ -285,8 +306,11 @@ export function parseInline(
       if (content.length - trimmed.length >= 2) {
         if (trimmed.length > 0) {
           const last = nodes[nodes.length - 1];
-          if (last?.type === 'text') last.content += trimmed;
-          else nodes.push({type: 'text', content: trimmed});
+          if (last?.type === 'text') {
+            last.content += trimmed;
+          } else {
+            nodes.push({type: 'text', content: trimmed});
+          }
         }
         nodes.push({type: 'break'});
         i = end + 1;
@@ -295,8 +319,11 @@ export function parseInline(
     }
 
     const last = nodes[nodes.length - 1];
-    if (last?.type === 'text') last.content += content;
-    else nodes.push({type: 'text', content});
+    if (last?.type === 'text') {
+      last.content += content;
+    } else {
+      nodes.push({type: 'text', content});
+    }
     i = end;
   }
   return nodes;
@@ -308,27 +335,39 @@ export function parseInline(
 
 function getIndent(line: string): number {
   let count = 0;
-  while (count < line.length && line[count] === ' ') count++;
+  while (count < line.length && line[count] === ' ') {
+    count++;
+  }
   return count;
 }
 
 /** HR: 3+ identical markers (-, *, _) optionally separated by spaces. */
 function isHorizontalRule(line: string): boolean {
   const trimmed = line.trim();
-  if (trimmed.length < 3) return false;
+  if (trimmed.length < 3) {
+    return false;
+  }
   const stripped = trimmed.replace(/ /g, '');
-  if (stripped.length < 3) return false;
+  if (stripped.length < 3) {
+    return false;
+  }
   const ch = stripped[0];
-  if (ch !== '-' && ch !== '*' && ch !== '_') return false;
+  if (ch !== '-' && ch !== '*' && ch !== '_') {
+    return false;
+  }
   for (let idx = 1; idx < stripped.length; idx++) {
-    if (stripped[idx] !== ch) return false;
+    if (stripped[idx] !== ch) {
+      return false;
+    }
   }
   return true;
 }
 
 /** GFM separator row: cells contain only dashes/colons. */
 function isTableSeparator(line: string): boolean {
-  if (!line.includes('|')) return false;
+  if (!line.includes('|')) {
+    return false;
+  }
   const cells = line.split('|').map(cell => cell.trim());
   const nonEmpty = cells.filter(cell => cell.length > 0);
   return nonEmpty.length > 0 && nonEmpty.every(cell => /^:?-+:?$/.test(cell));
@@ -340,13 +379,27 @@ function isTableSeparator(line: string): boolean {
  * to avoid ReDoS.
  */
 function isBlockStart(line: string): boolean {
-  if (/^#{1,6} /.test(line)) return true;
-  if (/^(`{3,}|~{3,})/.test(line)) return true;
-  if (isHorizontalRule(line)) return true;
-  if (line.startsWith('> ') || line === '>') return true;
-  if (/^ {0,9}[-*+] /.test(line)) return true;
-  if (/^ {0,9}\d+\. /.test(line)) return true;
-  if (line.includes('|')) return true;
+  if (/^#{1,6} /.test(line)) {
+    return true;
+  }
+  if (/^(`{3,}|~{3,})/.test(line)) {
+    return true;
+  }
+  if (isHorizontalRule(line)) {
+    return true;
+  }
+  if (line.startsWith('> ') || line === '>') {
+    return true;
+  }
+  if (/^ {0,9}[-*+] /.test(line)) {
+    return true;
+  }
+  if (/^ {0,9}\d+\. /.test(line)) {
+    return true;
+  }
+  if (line.includes('|')) {
+    return true;
+  }
   return false;
 }
 
@@ -355,10 +408,16 @@ function splitTableRow(line: string): string[] {
   let end = line.length;
   if (line[0] === '|') {
     start = 1;
-    while (start < end && line[start] === ' ') start++;
+    while (start < end && line[start] === ' ') {
+      start++;
+    }
   }
-  while (end > start && line[end - 1] === ' ') end--;
-  if (end > start && line[end - 1] === '|') end--;
+  while (end > start && line[end - 1] === ' ') {
+    end--;
+  }
+  if (end > start && line[end - 1] === '|') {
+    end--;
+  }
   return line
     .slice(start, end)
     .split('|')
@@ -668,7 +727,9 @@ export function trimStreamingArtifacts(input: string): string {
 
   // Find trailing unclosed backticks
   let end = tail.length;
-  while (end > 0 && tail[end - 1] === '`') end--;
+  while (end > 0 && tail[end - 1] === '`') {
+    end--;
+  }
   if (end < tail.length && end > 0) {
     // There are trailing backticks — check if they opened inline code
     const ticks = tail.length - end;
@@ -682,7 +743,9 @@ export function trimStreamingArtifacts(input: string): string {
   // Find trailing unclosed bold/italic markers (*)
   // First check trailing stars (no content after them yet):
   end = tail.length;
-  while (end > 0 && tail[end - 1] === '*') end--;
+  while (end > 0 && tail[end - 1] === '*') {
+    end--;
+  }
   if (end < tail.length && end > 0) {
     const stars = tail.length - end;
     if (stars <= 3) {
@@ -716,7 +779,9 @@ export function trimStreamingArtifacts(input: string): string {
     const positions: number[] = [];
     while (true) {
       const idx = tail.indexOf('~~', searchFrom);
-      if (idx === -1) break;
+      if (idx === -1) {
+        break;
+      }
       positions.push(idx);
       count++;
       searchFrom = idx + 2;

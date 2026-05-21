@@ -95,9 +95,13 @@ export function useThemeAudit(
     const diff = diffThemeTokens(theme);
     const snap = auditSnapToRamps(theme, rampSeeds);
     const snapByToken: Record<string, SnapAuditEntry> = {};
-    for (const e of snap) snapByToken[e.name] = e;
+    for (const e of snap) {
+      snapByToken[e.name] = e;
+    }
     const diffByToken: Record<string, TokenDiffEntry> = {};
-    for (const e of diff.entries) diffByToken[e.name] = e;
+    for (const e of diff.entries) {
+      diffByToken[e.name] = e;
+    }
     const usage = buildTonalUsageMap(snap);
     return {diff, snap, snapByToken, diffByToken, usage, rampSeeds};
   }, [theme, rampSeeds]);
@@ -448,7 +452,9 @@ export function ThemeAuditDrawer({
   // Pasting into Cursor / Claude / any other coding agent gives the model
   // enough context to apply the edits without further instruction.
   const promptSnippet = useMemo(() => {
-    if (overrideCount === 0) return '';
+    if (overrideCount === 0) {
+      return '';
+    }
     const inner = serializeAsTokensBlock(overrides, serializeCtx);
     const filePath = `packages/themes/${themeName}/src/${themeName}Theme.ts`;
     return [
@@ -466,7 +472,9 @@ export function ThemeAuditDrawer({
   }, [overrides, serializeCtx, themeName, overrideCount]);
 
   const handleCopySnippet = async () => {
-    if (!promptSnippet) return;
+    if (!promptSnippet) {
+      return;
+    }
     try {
       await navigator.clipboard.writeText(promptSnippet);
       setJustCopied(true);
@@ -489,8 +497,12 @@ export function ThemeAuditDrawer({
   // instead of being silently hidden.
   const categorized = useMemo(() => {
     const known = new Set<string>();
-    for (const e of audit.snap) known.add(e.name);
-    for (const e of audit.diff.entries) known.add(e.name);
+    for (const e of audit.snap) {
+      known.add(e.name);
+    }
+    for (const e of audit.diff.entries) {
+      known.add(e.name);
+    }
     return getCategorizedColorTokens(known);
   }, [audit.snap, audit.diff.entries]);
 
@@ -553,7 +565,9 @@ export function ThemeAuditDrawer({
             // (the theme doesn't define any of them) so we don't render
             // empty headers.
             const visibleTokens = tokens.filter(t => audit.snapByToken[t]);
-            if (visibleTokens.length === 0) return null;
+            if (visibleTokens.length === 0) {
+              return null;
+            }
             return (
               <div key={category}>
                 <h3 style={S.categoryHeader}>{category}</h3>
@@ -570,7 +584,9 @@ export function ThemeAuditDrawer({
                       const seed = audit.rampSeeds.find(
                         s => s.name === rampName,
                       );
-                      if (!seed) return;
+                      if (!seed) {
+                        return;
+                      }
                       dispatchOverrides({
                         type: 'set',
                         token: tokenName,
@@ -1057,7 +1073,9 @@ function CustomTab({
   const colorInputRef = useRef<HTMLInputElement | null>(null);
   const openNativePicker = () => {
     const el = colorInputRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     if (typeof el.showPicker === 'function') {
       el.showPicker();
     } else {
@@ -1209,7 +1227,9 @@ function AlphaInput({
     }
     const clamped = Math.max(0, Math.min(100, Math.round(n)));
     setDraft(String(clamped));
-    if (clamped !== alphaPct) setAlphaPct(clamped);
+    if (clamped !== alphaPct) {
+      setAlphaPct(clamped);
+    }
   };
 
   return (

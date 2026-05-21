@@ -12,7 +12,6 @@
  * - /packages/core/src/Calendar/hooks/index.ts
  */
 
-
 import {useState, useMemo, useCallback} from 'react';
 import type {ISODateString} from '../XDSCalendar';
 
@@ -112,8 +111,12 @@ export function useCalendarNavigation(
 
   // Internal focus date state
   const [internalFocusDate, setInternalFocusDate] = useState<Date>(() => {
-    if (focusDateProp) return parseISO(focusDateProp);
-    if (initialValue) return parseISO(initialValue);
+    if (focusDateProp) {
+      return parseISO(focusDateProp);
+    }
+    if (initialValue) {
+      return parseISO(initialValue);
+    }
     return new Date();
   });
 

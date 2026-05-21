@@ -19,7 +19,9 @@ import type {
 import type {InternalConfig} from './useInternalConfig';
 
 function truncate(str: string, maxLength: number): string {
-  if (str.length <= maxLength) return str;
+  if (str.length <= maxLength) {
+    return str;
+  }
   return str.slice(0, maxLength - 1) + '\u2026';
 }
 
@@ -94,33 +96,53 @@ export function formatFilterValue(
 
     case 'string_list': {
       const items = filterValue.value;
-      if (items.length === 0) return '';
-      if (items.length === 1) return truncate(items[0], maxLength);
+      if (items.length === 0) {
+        return '';
+      }
+      if (items.length === 1) {
+        return truncate(items[0], maxLength);
+      }
       const joined = items.join(', ');
-      if (joined.length <= maxLength) return joined;
+      if (joined.length <= maxLength) {
+        return joined;
+      }
       return `${items.length} items`;
     }
 
     case 'enum_list': {
       const items = filterValue.value;
-      if (items.length === 0) return '';
+      if (items.length === 0) {
+        return '';
+      }
       if (operatorValue.type === 'enum_list') {
         const labels = items.map(v => formatEnumLabel(v, operatorValue.values));
-        if (labels.length === 1) return truncate(labels[0], maxLength);
+        if (labels.length === 1) {
+          return truncate(labels[0], maxLength);
+        }
         const joined = labels.join(', ');
-        if (joined.length <= maxLength) return joined;
+        if (joined.length <= maxLength) {
+          return joined;
+        }
         return `${labels.length} items`;
       }
-      if (items.length === 1) return truncate(items[0], maxLength);
+      if (items.length === 1) {
+        return truncate(items[0], maxLength);
+      }
       return `${items.length} items`;
     }
 
     case 'entity_list': {
       const entities = filterValue.value;
-      if (entities.length === 0) return '';
-      if (entities.length === 1) return truncate(entities[0].label, maxLength);
+      if (entities.length === 0) {
+        return '';
+      }
+      if (entities.length === 1) {
+        return truncate(entities[0].label, maxLength);
+      }
       const joined = entities.map(e => e.label).join(', ');
-      if (joined.length <= maxLength) return joined;
+      if (joined.length <= maxLength) {
+        return joined;
+      }
       return `${entities.length} entities`;
     }
 

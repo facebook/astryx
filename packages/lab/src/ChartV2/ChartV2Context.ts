@@ -8,6 +8,8 @@ export const ChartV2Provider = Ctx.Provider;
 
 export function useChartV2(): ChartV2Context {
   const ctx = useContext(Ctx);
-  if (!ctx) throw new Error('Must be used inside <XDSChart>');
+  if (!ctx) {
+    throw new Error('Must be used inside <XDSChart>');
+  }
   return ctx;
 }

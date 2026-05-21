@@ -71,14 +71,21 @@ function extractComponentVars(filePath: string): string[] {
       /^--(color|spacing|radius|shadow|duration|ease|transition|font|text|size)-/.test(
         varName,
       )
-    )
+    ) {
       continue;
+    }
     // Skip structural vars
-    if (STRUCTURAL_VARS.has(varName)) continue;
+    if (STRUCTURAL_VARS.has(varName)) {
+      continue;
+    }
     // Skip vars that start with structural prefixes
-    if (/^--(container-|layout-|edge-|component-)/.test(varName)) continue;
+    if (/^--(container-|layout-|edge-|component-)/.test(varName)) {
+      continue;
+    }
     // Skip private vars (--_ prefix = internal, not themeable)
-    if (varName.startsWith('--_')) continue;
+    if (varName.startsWith('--_')) {
+      continue;
+    }
     vars.add(varName);
   }
   return [...vars];
@@ -120,11 +127,15 @@ function discoverComponents(): ComponentInfo[] {
         allVars.add(v);
       }
     }
-    if (allVars.size === 0) continue;
+    if (allVars.size === 0) {
+      continue;
+    }
 
     // Only check component directories (those with a doc file)
     const docPath = join(dirPath, `${dir}.doc.mjs`);
-    if (!existsSync(docPath)) continue;
+    if (!existsSync(docPath)) {
+      continue;
+    }
 
     let docVars: string[] = [];
     let docDerived: any[] = [];
@@ -213,11 +224,17 @@ describe('component CSS vars are documented and themeable', () => {
 
       const missingDerived = docVars.filter(varName => {
         // Cross-component vars are handled by the owning component
-        if (crossVars.has(varName)) return false;
+        if (crossVars.has(varName)) {
+          return false;
+        }
         // Check if this var is covered by a derived entry
-        if (derivedVarNames.has(varName)) return false;
+        if (derivedVarNames.has(varName)) {
+          return false;
+        }
         // Container expansion covers padding-related vars
-        if (hasContainerExpand && varName.includes('padding')) return false;
+        if (hasContainerExpand && varName.includes('padding')) {
+          return false;
+        }
         return true;
       });
 
@@ -244,7 +261,9 @@ describe('derivedVarRegistry ↔ doc file consistency', () => {
 
   for (const {dir, docDerived} of components) {
     const key = DIR_TO_REGISTRY_KEY[dir];
-    if (!key || docDerived.length === 0) continue;
+    if (!key || docDerived.length === 0) {
+      continue;
+    }
 
     it(`${dir} (${key}): registry matches doc derived`, () => {
       const registryEntries = derivedVarRegistry[key];
@@ -257,7 +276,9 @@ describe('derivedVarRegistry ↔ doc file consistency', () => {
   it('every doc with theming.derived has a registry mapping', () => {
     const missing: string[] = [];
     for (const {dir, docDerived} of components) {
-      if (docDerived.length === 0) continue;
+      if (docDerived.length === 0) {
+        continue;
+      }
       const key = DIR_TO_REGISTRY_KEY[dir];
       if (!key) {
         missing.push(

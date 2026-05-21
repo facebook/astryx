@@ -74,7 +74,9 @@ export function useXDSChatNewMessages({
   // Observe content for height changes
   useEffect(() => {
     const el = contentRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
 
     observeResize(el, () => {
       // Notify scroll hook of any height change
@@ -82,8 +84,7 @@ export function useXDSChatNewMessages({
 
       // Check if a new message was appended
       const messages = el.getElementsByClassName('xds-chat-message');
-      const last =
-        messages.length > 0 ? messages[messages.length - 1] : null;
+      const last = messages.length > 0 ? messages[messages.length - 1] : null;
 
       if (last && last !== lastMessageRef.current) {
         lastMessageRef.current = last;

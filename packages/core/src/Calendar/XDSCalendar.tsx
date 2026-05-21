@@ -226,7 +226,9 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
 
   // Focus date state (which month is visible)
   const [internalFocusDate, setInternalFocusDate] = useState<Date>(() => {
-    if (focusDateProp) return parseISO(focusDateProp);
+    if (focusDateProp) {
+      return parseISO(focusDateProp);
+    }
     if (effectiveValue) {
       if (typeof effectiveValue === 'string') {
         return parseISO(effectiveValue);
@@ -289,7 +291,9 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
 
   // Determine if prev/next navigation is possible based on min/max
   const canNavigatePrevious = useMemo(() => {
-    if (!min) return true;
+    if (!min) {
+      return true;
+    }
     const minDate = parseISO(min);
     // Can't go back if min is in the current focus month
     return (
@@ -300,7 +304,9 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
   }, [min, baseMonth]);
 
   const canNavigateNext = useMemo(() => {
-    if (!max) return true;
+    if (!max) {
+      return true;
+    }
     const maxDate = parseISO(max);
     // Check against the last visible month, not just baseMonth
     const lastVisibleMonth = new Date(baseMonth);
@@ -545,13 +551,19 @@ function MonthGrid({
   // Helper to get the focused date from the currently focused element
   const getFocusedDate = useCallback((): ISODateString | null => {
     const activeElement = document.activeElement as HTMLElement | null;
-    if (!activeElement) return null;
+    if (!activeElement) {
+      return null;
+    }
 
     const ariaLabel = activeElement.getAttribute('aria-label');
-    if (!ariaLabel) return null;
+    if (!ariaLabel) {
+      return null;
+    }
 
     const parsed = new Date(ariaLabel);
-    if (isNaN(parsed.getTime())) return null;
+    if (isNaN(parsed.getTime())) {
+      return null;
+    }
 
     return dateToISO(parsed);
   }, []);
@@ -605,7 +617,9 @@ function MonthGrid({
 
   // Handle pending focus after month navigation
   useEffect(() => {
-    if (!pendingFocus || !gridRef.current) return;
+    if (!pendingFocus || !gridRef.current) {
+      return;
+    }
 
     const buttons = gridRef.current.querySelectorAll<HTMLElement>(
       'button:not([disabled])',

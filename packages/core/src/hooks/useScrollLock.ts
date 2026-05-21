@@ -32,7 +32,9 @@ import {useEffect} from 'react';
  */
 export function useScrollLock(isLocked: boolean): void {
   useEffect(() => {
-    if (!isLocked) return;
+    if (!isLocked) {
+      return;
+    }
 
     const scrollX = window.scrollX;
     const scrollY = window.scrollY;

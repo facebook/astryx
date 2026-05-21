@@ -50,7 +50,9 @@ function estimateBBox(attrs: Record<string, string>, type: string): BBox {
     attrs.d ||
     `${attrs.x1 || 0} ${attrs.y1 || 0} ${attrs.x2 || 0} ${attrs.y2 || 0}`;
   const nums = d.match(/-?[\d.]+/g)?.map(Number) || [];
-  if (nums.length < 2) return {x: 0, y: 0, width: 24, height: 24};
+  if (nums.length < 2) {
+    return {x: 0, y: 0, width: 24, height: 24};
+  }
 
   let minX = Infinity,
     minY = Infinity,
@@ -67,7 +69,9 @@ function estimateBBox(attrs: Record<string, string>, type: string): BBox {
       maxY = Math.max(maxY, y);
     }
   }
-  if (!isFinite(minX)) return {x: 0, y: 0, width: 24, height: 24};
+  if (!isFinite(minX)) {
+    return {x: 0, y: 0, width: 24, height: 24};
+  }
   return {x: minX, y: minY, width: maxX - minX, height: maxY - minY};
 }
 
@@ -93,7 +97,9 @@ function jsxSvgToIconDef(
   name: string,
   element: ReactElement,
 ): SVGIconDef | null {
-  if (!element?.props) return null;
+  if (!element?.props) {
+    return null;
+  }
 
   const elementProps = element.props as Record<string, unknown>;
   const children = Children.toArray(elementProps.children as ReactNode).filter(
@@ -104,12 +110,15 @@ function jsxSvgToIconDef(
   const shapes: Array<IconShape & {bbox: BBox}> = [];
 
   for (const child of children) {
-    if (!isValidElement(child)) continue;
+    if (!isValidElement(child)) {
+      continue;
+    }
     const type = child.type as string;
     if (
       !['path', 'circle', 'rect', 'line', 'polyline', 'polygon'].includes(type)
-    )
+    ) {
       continue;
+    }
 
     const childProps = child.props as Record<string, unknown>;
     const {key: _key, children: _, ...rawAttrs} = childProps;
@@ -163,7 +172,9 @@ function jsxSvgToIconDef(
     shapes.push({type: type as IconShape['type'], attrs, role, bbox});
   }
 
-  if (shapes.length === 0) return null;
+  if (shapes.length === 0) {
+    return null;
+  }
 
   // Layer classification: CONTAINMENT-BASED
   // Only classify as secondary if geometrically contained within a larger shape
@@ -232,7 +243,9 @@ export const DefaultRegistryIcons: StoryObj = {
     const converted: Array<{name: string; def: SVGIconDef}> = [];
     for (const [name, jsx] of Object.entries(defaultIcons)) {
       const def = jsxSvgToIconDef(name, jsx as ReactElement);
-      if (def) converted.push({name, def});
+      if (def) {
+        converted.push({name, def});
+      }
     }
 
     return (

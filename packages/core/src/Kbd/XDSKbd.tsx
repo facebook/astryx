@@ -92,7 +92,9 @@ function getKeyDisplay(key: string, isMac: boolean): string {
  * falls back to navigator.platform (deprecated but universally supported).
  */
 function detectMac(): boolean {
-  if (typeof navigator === 'undefined') return false;
+  if (typeof navigator === 'undefined') {
+    return false;
+  }
   // Prefer User-Agent Client Hints API (not deprecated)
   const uaData = 'userAgentData' in navigator ? navigator.userAgentData : null;
   if (uaData && typeof uaData === 'object' && 'platform' in uaData) {

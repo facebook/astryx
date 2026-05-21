@@ -23,7 +23,9 @@ export default async function TemplatePage({
 }) {
   const {slug} = await params;
   const template = templates.find(t => t.slug === slug);
-  if (!template) notFound();
+  if (!template) {
+    notFound();
+  }
 
   return (
     <XDSSection maxWidth="lg" padding={6}>

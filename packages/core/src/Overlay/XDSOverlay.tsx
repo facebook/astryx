@@ -108,9 +108,13 @@ export function XDSOverlay({
   // Only the component needs this — hook consumers have their own radius.
   useIsomorphicLayoutEffect(() => {
     const el = overlay.containerRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     const firstChild = el.firstElementChild as HTMLElement | null;
-    if (!firstChild) return;
+    if (!firstChild) {
+      return;
+    }
     const radius = getComputedStyle(firstChild).borderRadius;
     if (radius && radius !== '0px') {
       el.style.borderRadius = radius;
@@ -123,9 +127,11 @@ export function XDSOverlay({
         (
           overlay.containerRef as React.MutableRefObject<HTMLElement | null>
         ).current = node;
-        if (typeof ref === 'function') ref(node);
-        else if (ref != null)
+        if (typeof ref === 'function') {
+          ref(node);
+        } else if (ref != null) {
           (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        }
       }}
       {...mergeProps(
         xdsClassName('overlay'),

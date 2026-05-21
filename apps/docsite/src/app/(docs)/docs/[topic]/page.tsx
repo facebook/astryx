@@ -34,7 +34,9 @@ export default async function DocPage({
 }) {
   const {topic: slug} = await params;
   const topic = docTopics.find(d => d.topic === slug);
-  if (!topic) notFound();
+  if (!topic) {
+    notFound();
+  }
 
   const isTokenTopic =
     topic.category === 'foundations' && TOKEN_TOPICS.has(topic.topic);

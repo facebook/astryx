@@ -90,9 +90,15 @@ const SEQUENTIAL_HUES: SequentialHue[] = [
 ];
 
 function pickFromRamp(stops: string[], n: number): string[] {
-  if (n <= 0) return [];
-  if (n >= 5) return stops;
-  if (n === 1) return [stops[2]];
+  if (n <= 0) {
+    return [];
+  }
+  if (n >= 5) {
+    return stops;
+  }
+  if (n === 1) {
+    return [stops[2]];
+  }
   return Array.from(
     {length: n},
     (_, i) => stops[Math.round((i * 4) / (n - 1))],
@@ -103,7 +109,9 @@ function hexAlpha(hex: string, opacity: number): string {
   const match = hex.match(
     /^#?([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})$/,
   );
-  if (!match) return hex;
+  if (!match) {
+    return hex;
+  }
   const r = parseInt(match[1], 16);
   const g = parseInt(match[2], 16);
   const b = parseInt(match[3], 16);
@@ -134,21 +142,29 @@ export function getXDSChartColorsFromResolver(
     n: number,
     midpoint: string = gray1,
   ): string[] {
-    if (n <= 0) return [];
-    if (n === 1) return [midpoint];
+    if (n <= 0) {
+      return [];
+    }
+    if (n === 1) {
+      return [midpoint];
+    }
     const neg = ramp(negHue);
     const pos = ramp(posHue);
     const half = Math.floor(n / 2);
     const hasCenter = n % 2 === 1;
     const negSide = pickFromRamp(neg, half);
     const posSide = pickFromRamp(pos, half).reverse();
-    if (hasCenter) return [...negSide, midpoint, ...posSide];
+    if (hasCenter) {
+      return [...negSide, midpoint, ...posSide];
+    }
     return [...negSide, ...posSide];
   }
 
   return {
     categorical(n: number): string[] {
-      if (n <= 0) return [];
+      if (n <= 0) {
+        return [];
+      }
       return categorical.slice(0, Math.min(n, categorical.length));
     },
 
@@ -156,7 +172,9 @@ export function getXDSChartColorsFromResolver(
       SEQUENTIAL_HUES.map(hue => [
         hue,
         (n: number): string[] => {
-          if (n <= 0) return [];
+          if (n <= 0) {
+            return [];
+          }
           return pickFromRamp(ramp(hue), n);
         },
       ]),
@@ -211,7 +229,9 @@ export function getXDSChartColors(
   const resolve: TokenResolver = (name: string) => {
     // Check theme token overrides first, then fall back to defaults
     const raw = theme.tokens?.[name] ?? '';
-    if (!raw) return '';
+    if (!raw) {
+      return '';
+    }
     // Resolve light-dark() for the given mode
     if (raw.startsWith('light-dark(') && raw.endsWith(')')) {
       const inner = raw.slice(11, -1);

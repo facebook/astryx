@@ -23,7 +23,9 @@ export interface XDSRadialAxisProps {
 export function XDSRadialAxis({labelOffset = 16}: XDSRadialAxisProps) {
   const {cx, cy, radius, axes, angleByAxis} = useRadial();
 
-  if (!axes || !angleByAxis) return null;
+  if (!axes || !angleByAxis) {
+    return null;
+  }
 
   return (
     <g>

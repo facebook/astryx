@@ -164,11 +164,17 @@ const styles = stylex.create({
 
 function getTextBeforeCursor(editable: HTMLDivElement): string | null {
   const selection = window.getSelection();
-  if (!selection || selection.rangeCount === 0) return null;
+  if (!selection || selection.rangeCount === 0) {
+    return null;
+  }
 
   const range = selection.getRangeAt(0);
-  if (!range.collapsed) return null;
-  if (!editable.contains(range.startContainer)) return null;
+  if (!range.collapsed) {
+    return null;
+  }
+  if (!editable.contains(range.startContainer)) {
+    return null;
+  }
 
   const node = range.startContainer;
   if (node.nodeType === Node.TEXT_NODE) {
@@ -212,11 +218,15 @@ function deleteTriggerText(
   triggerStart: number,
 ): void {
   const selection = window.getSelection();
-  if (!selection || selection.rangeCount === 0) return;
+  if (!selection || selection.rangeCount === 0) {
+    return;
+  }
 
   const range = selection.getRangeAt(0);
   const node = range.startContainer;
-  if (node.nodeType !== Node.TEXT_NODE) return;
+  if (node.nodeType !== Node.TEXT_NODE) {
+    return;
+  }
 
   const text = node.textContent ?? '';
   const cursorOffset = range.startOffset;
@@ -317,7 +327,9 @@ export function useTriggerMenu(
   // rect — outside the contentEditable to avoid splitting text nodes.
   const setAnchor = useCallback(() => {
     const editable = editableRef.current;
-    if (!editable) return;
+    if (!editable) {
+      return;
+    }
 
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) {
@@ -418,10 +430,14 @@ export function useTriggerMenu(
   const selectItem = useCallback(
     (item: XDSSearchableItem) => {
       const trigger = state.activeTrigger;
-      if (!trigger) return;
+      if (!trigger) {
+        return;
+      }
 
       const editable = editableRef.current;
-      if (!editable) return;
+      if (!editable) {
+        return;
+      }
 
       // Clean up anchor span before modifying DOM — if the span were
       // inside the editable it would split text nodes and break offsets.
@@ -452,20 +468,28 @@ export function useTriggerMenu(
   );
 
   const handleInput = useCallback(() => {
-    if (!triggers || triggers.length === 0) return;
+    if (!triggers || triggers.length === 0) {
+      return;
+    }
 
     const editable = editableRef.current;
-    if (!editable) return;
+    if (!editable) {
+      return;
+    }
 
     const textBefore = getTextBeforeCursor(editable);
     if (textBefore === null) {
-      if (state.isActive) reset();
+      if (state.isActive) {
+        reset();
+      }
       return;
     }
 
     const found = findActiveTrigger(textBefore, triggers);
     if (!found) {
-      if (state.isActive) reset();
+      if (state.isActive) {
+        reset();
+      }
       return;
     }
 
@@ -501,7 +525,9 @@ export function useTriggerMenu(
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent): boolean => {
-      if (!state.isActive || !popover.isOpen) return false;
+      if (!state.isActive || !popover.isOpen) {
+        return false;
+      }
 
       switch (e.key) {
         case 'ArrowDown': {
@@ -564,7 +590,9 @@ export function useTriggerMenu(
 
   // Scroll highlighted item into view on keyboard navigation
   useEffect(() => {
-    if (!popover.isOpen || state.highlightedIndex < 0) return;
+    if (!popover.isOpen || state.highlightedIndex < 0) {
+      return;
+    }
     const el = document.getElementById(getItemId(state.highlightedIndex));
     el?.scrollIntoView({block: 'nearest'});
   }, [state.highlightedIndex, popover.isOpen, getItemId]);

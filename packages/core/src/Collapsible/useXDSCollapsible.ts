@@ -92,8 +92,12 @@ export function useXDSCollapsible(
 
   // Internal state for uncontrolled mode
   const [internalIsOpen, setInternalIsOpen] = useState(() => {
-    if (isControlledByGroup) return true; // group manages this
-    if (config?.isOpen !== undefined) return config.isOpen;
+    if (isControlledByGroup) {
+      return true;
+    } // group manages this
+    if (config?.isOpen !== undefined) {
+      return config.isOpen;
+    }
     return config?.defaultIsOpen ?? true;
   });
 

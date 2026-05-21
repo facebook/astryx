@@ -322,7 +322,9 @@ const CREATABLE_ID_PREFIX = '__xds_create__';
  *   value={members}
  *   onChange={(items, change) => {
  *     setMembers(items);
- *     if (change.type === 'add') console.log('Added:', change.item.label);
+ *     if (change.type === 'add') {
+ *       console.log('Added:', change.item.label);
+ *     }
  *   }}
  *   placeholder="Search people..."
  * />
@@ -419,12 +421,20 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
   // popover content. We track both to decide when focus has truly left.
   const isFocusInTokenizer = useCallback(
     (target: Node | null): boolean => {
-      if (!target) return false;
-      if (wrapperRef.current?.contains(target)) return true;
-      if (layerContentRef.current?.contains(target)) return true;
+      if (!target) {
+        return false;
+      }
+      if (wrapperRef.current?.contains(target)) {
+        return true;
+      }
+      if (layerContentRef.current?.contains(target)) {
+        return true;
+      }
       // Also check the popover element itself (the layer wrapper)
       const popoverEl = document.getElementById(layer.id);
-      if (popoverEl?.contains(target)) return true;
+      if (popoverEl?.contains(target)) {
+        return true;
+      }
       return false;
     },
     [layer.id],
@@ -517,8 +527,12 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
   // Handle adding an item — detect creatable synthetic items
   const handleAdd = useCallback(
     (item: T | null) => {
-      if (!item) return;
-      if (isAtMax) return;
+      if (!item) {
+        return;
+      }
+      if (isAtMax) {
+        return;
+      }
 
       // Detect "Create: X" synthetic items from the creatable source
       if (
@@ -527,7 +541,9 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
         item.id.startsWith(CREATABLE_ID_PREFIX)
       ) {
         const createdValue = item.id.slice(CREATABLE_ID_PREFIX.length);
-        if (selectedIds.has(createdValue)) return;
+        if (selectedIds.has(createdValue)) {
+          return;
+        }
         const base = {id: createdValue, label: createdValue};
         const realItem = base as T;
         const newItems = [...value, realItem];
@@ -535,7 +551,9 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
         return;
       }
 
-      if (selectedIds.has(item.id)) return;
+      if (selectedIds.has(item.id)) {
+        return;
+      }
       const newItems = [...value, item];
       onChange(newItems, {item, type: 'add'});
     },
@@ -554,7 +572,9 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
 
   // Handle clearing all items
   const handleClearAll = useCallback(() => {
-    if (value.length === 0) return;
+    if (value.length === 0) {
+      return;
+    }
     // Report the last item as removed (convention)
     const lastItem = value[value.length - 1];
     onChange([], {item: lastItem, type: 'remove'});

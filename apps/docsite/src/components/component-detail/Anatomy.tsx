@@ -14,7 +14,9 @@ interface AnatomyProps {
 }
 
 export function Anatomy({elements}: AnatomyProps) {
-  if (elements.length === 0) return null;
+  if (elements.length === 0) {
+    return null;
+  }
 
   const data = elements.map(el => ({
     name: el.name as unknown,

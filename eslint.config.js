@@ -63,6 +63,7 @@ export default tseslint.config(
         caughtErrorsIgnorePattern: "^_",
       }],
       "no-console": ["warn", { allow: ["warn", "error"] }],
+      "curly": "warn",
       "@typescript-eslint/no-non-null-assertion": "warn",
       "@typescript-eslint/consistent-type-assertions": ["warn", {
         assertionStyle: "as",

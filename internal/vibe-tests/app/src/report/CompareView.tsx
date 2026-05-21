@@ -68,14 +68,20 @@ function costWinner(
     ['xds', xdsVal],
     ['baseline', baseVal],
   ];
-  if (htmlVal != null) entries.push(['html', htmlVal]);
-  if (twVal != null) entries.push(['xds-tailwind', twVal]);
+  if (htmlVal != null) {
+    entries.push(['html', htmlVal]);
+  }
+  if (twVal != null) {
+    entries.push(['xds-tailwind', twVal]);
+  }
 
   const best = lowerIsBetter
     ? Math.min(...entries.map(([, v]) => v))
     : Math.max(...entries.map(([, v]) => v));
   const atBest = entries.filter(([, v]) => v === best);
-  if (atBest.length > 1) return 'tie';
+  if (atBest.length > 1) {
+    return 'tie';
+  }
   return atBest[0][0];
 }
 
@@ -112,8 +118,12 @@ function winnerLabel(w: string): string {
 }
 
 function deltaClassName(delta: number): string {
-  if (delta > 0) return 'report-color-positive';
-  if (delta < 0) return 'report-color-negative';
+  if (delta > 0) {
+    return 'report-color-positive';
+  }
+  if (delta < 0) {
+    return 'report-color-negative';
+  }
   return 'report-color-neutral';
 }
 
@@ -252,9 +262,7 @@ function CostComparisonSection({
       xds: String(xdsCost.avgDocsRead),
       baseline: String(baselineCost.avgDocsRead),
       ...(isThreeWay ? {html: String(htmlCost!.avgDocsRead)} : {}),
-      ...(isFourWay
-        ? {xdsTailwind: String(xdsTailwindCost!.avgDocsRead)}
-        : {}),
+      ...(isFourWay ? {xdsTailwind: String(xdsTailwindCost!.avgDocsRead)} : {}),
       winner: 'tie', // not inherently better or worse
     },
   ];
@@ -328,11 +336,17 @@ export function CompareView({comparison}: CompareViewProps) {
   let ties = 0;
   for (const dim of ALL_DIMENSIONS) {
     const w = winners[dim];
-    if (w === 'xds') xdsWins++;
-    else if (w === 'baseline') baselineWins++;
-    else if (w === 'html') htmlWins++;
-    else if (w === 'xds-tailwind') xdsTailwindWins++;
-    else ties++;
+    if (w === 'xds') {
+      xdsWins++;
+    } else if (w === 'baseline') {
+      baselineWins++;
+    } else if (w === 'html') {
+      htmlWins++;
+    } else if (w === 'xds-tailwind') {
+      xdsTailwindWins++;
+    } else {
+      ties++;
+    }
   }
 
   const dimData: DimRow[] = ALL_DIMENSIONS.filter(
@@ -519,8 +533,7 @@ export function CompareView({comparison}: CompareViewProps) {
   ];
 
   // Determine grid class based on number of win cards
-  const winCardCount =
-    2 + (isThreeWay ? 1 : 0) + (isFourWay ? 1 : 0) + 1; // targets + ties
+  const winCardCount = 2 + (isThreeWay ? 1 : 0) + (isFourWay ? 1 : 0) + 1; // targets + ties
   const summaryGridClass =
     winCardCount >= 5
       ? 'report-compare-summaryGrid5'

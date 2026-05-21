@@ -192,7 +192,9 @@ export function useCombobox({
 
   const selectItem = useCallback(
     (item: XDSSelectorOptionData) => {
-      if (item.disabled) return;
+      if (item.disabled) {
+        return;
+      }
       onSelect?.(item.value);
       closeAndReset();
     },
@@ -200,7 +202,9 @@ export function useCombobox({
   );
 
   const onTriggerClick = useCallback(() => {
-    if (isDisabled) return;
+    if (isDisabled) {
+      return;
+    }
     if (isOpen) {
       closeAndReset();
     } else {
@@ -223,7 +227,9 @@ export function useCombobox({
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (isDisabled) return;
+      if (isDisabled) {
+        return;
+      }
 
       const enabledIndices = getEnabledIndices();
 

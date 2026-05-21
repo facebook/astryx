@@ -22,7 +22,9 @@ interface PropsTableProps {
 }
 
 export function PropsTable({props, heading}: PropsTableProps) {
-  if (props.length === 0) return null;
+  if (props.length === 0) {
+    return null;
+  }
 
   const required = props.filter(p => p.required);
   const optional = props.filter(p => !p.required);

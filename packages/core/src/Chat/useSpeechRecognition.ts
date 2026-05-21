@@ -102,7 +102,9 @@ type SpeechRecognitionEvent = {
 type SpeechRecognitionConstructor = new () => SpeechRecognitionInstance;
 
 function getSpeechRecognition(): SpeechRecognitionConstructor | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined') {
+    return null;
+  }
   return (
     (window as unknown as {SpeechRecognition?: SpeechRecognitionConstructor})
       .SpeechRecognition ??
@@ -149,13 +151,17 @@ async function createVolumeAnalyser(
       calibrationSamples++;
       for (let i = 0; i < dataArray.length; i++) {
         const val = dataArray[i] / 255;
-        if (val > noiseFloor[i]) noiseFloor[i] = val;
+        if (val > noiseFloor[i]) {
+          noiseFloor[i] = val;
+        }
       }
     }
 
     function getCleanBin(i: number): number {
       const raw = dataArray[i] / 255;
-      if (calibrationSamples < CALIBRATION_FRAMES) return 0;
+      if (calibrationSamples < CALIBRATION_FRAMES) {
+        return 0;
+      }
       return Math.max(0, raw - noiseFloor[i] * 1.1);
     }
 
@@ -163,23 +169,34 @@ async function createVolumeAnalyser(
       calibrate,
       getVolume: () => {
         analyser.getByteFrequencyData(dataArray);
-        if (calibrationSamples < CALIBRATION_FRAMES) calibrate();
+        if (calibrationSamples < CALIBRATION_FRAMES) {
+          calibrate();
+        }
         let sum = 0;
-        for (let i = 0; i < dataArray.length; i++) sum += getCleanBin(i);
+        for (let i = 0; i < dataArray.length; i++) {
+          sum += getCleanBin(i);
+        }
         return sum / dataArray.length;
       },
       getBands: (count: number) => {
         analyser.getByteFrequencyData(dataArray);
-        if (calibrationSamples < CALIBRATION_FRAMES) calibrate();
+        if (calibrationSamples < CALIBRATION_FRAMES) {
+          calibrate();
+        }
         const bands: number[] = [];
         const binCount = dataArray.length;
         const voiceSplits = [3, 6, 11, 18, binCount];
-        const splits = count <= voiceSplits.length ? voiceSplits.slice(0, count) : voiceSplits;
+        const splits =
+          count <= voiceSplits.length
+            ? voiceSplits.slice(0, count)
+            : voiceSplits;
         let start = 1;
         for (let b = 0; b < splits.length; b++) {
           const end = splits[b];
           let bandSum = 0;
-          for (let i = start; i < end; i++) bandSum += getCleanBin(i);
+          for (let i = start; i < end; i++) {
+            bandSum += getCleanBin(i);
+          }
           bands.push(bandSum / (end - start));
           start = end;
         }
@@ -190,12 +207,17 @@ async function createVolumeAnalyser(
         const bands: number[] = [];
         const binCount = dataArray.length;
         const voiceSplits = [3, 6, 11, 18, binCount];
-        const splits = count <= voiceSplits.length ? voiceSplits.slice(0, count) : voiceSplits;
+        const splits =
+          count <= voiceSplits.length
+            ? voiceSplits.slice(0, count)
+            : voiceSplits;
         let start = 1;
         for (let b = 0; b < splits.length; b++) {
           const end = splits[b];
           let bandSum = 0;
-          for (let i = start; i < end; i++) bandSum += dataArray[i] / 255;
+          for (let i = start; i < end; i++) {
+            bandSum += dataArray[i] / 255;
+          }
           bands.push(bandSum / (end - start));
           start = end;
         }
@@ -203,7 +225,9 @@ async function createVolumeAnalyser(
       },
       cleanup: () => {
         source.disconnect();
-        for (const track of stream.getTracks()) track.stop();
+        for (const track of stream.getTracks()) {
+          track.stop();
+        }
       },
     };
   } catch {
@@ -267,9 +291,21 @@ export function useSpeechRecognition(
   const rafRef = useRef<number>(0);
 
   const callbacksRef = useRef({
-    onTranscript, onResult, onError, onStart, onEnd, transformTranscript,
+    onTranscript,
+    onResult,
+    onError,
+    onStart,
+    onEnd,
+    transformTranscript,
   });
-  callbacksRef.current = {onTranscript, onResult, onError, onStart, onEnd, transformTranscript};
+  callbacksRef.current = {
+    onTranscript,
+    onResult,
+    onError,
+    onStart,
+    onEnd,
+    transformTranscript,
+  };
 
   useEffect(() => {
     const SR = getSpeechRecognition();
@@ -307,7 +343,9 @@ export function useSpeechRecognition(
 
   const start = useCallback(() => {
     const SR = getSpeechRecognition();
-    if (!SR) return;
+    if (!SR) {
+      return;
+    }
     recognitionRef.current?.abort();
     const recognition = new SR();
     recognition.lang = lang ?? navigator.language;
@@ -318,7 +356,10 @@ export function useSpeechRecognition(
       setIsListening(true);
       callbacksRef.current.onStart?.();
       createVolumeAnalyser(getAudioContextRef.current).then(a => {
-        if (a) { analyserRef.current = a; startVolumePolling(); }
+        if (a) {
+          analyserRef.current = a;
+          startVolumePolling();
+        }
       });
     };
 
@@ -330,8 +371,12 @@ export function useSpeechRecognition(
       callbacksRef.current.onEnd?.();
     };
 
-    recognition.onspeechstart = () => { setIsSpeaking(true); };
-    recognition.onspeechend = () => { setIsSpeaking(false); };
+    recognition.onspeechstart = () => {
+      setIsSpeaking(true);
+    };
+    recognition.onspeechend = () => {
+      setIsSpeaking(false);
+    };
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       let interim = '';
@@ -356,18 +401,26 @@ export function useSpeechRecognition(
     };
 
     recognition.onerror = event => {
-      callbacksRef.current.onError?.({ error: event.error, message: event.message });
+      callbacksRef.current.onError?.({
+        error: event.error,
+        message: event.message,
+      });
     };
 
     recognition.onnomatch = () => {
-      callbacksRef.current.onError?.({ error: 'no-speech', message: 'No speech was detected.' });
+      callbacksRef.current.onError?.({
+        error: 'no-speech',
+        message: 'No speech was detected.',
+      });
     };
 
     recognitionRef.current = recognition;
     recognition.start();
   }, [lang, continuous, interimResults, startVolumePolling, stopVolumePolling]);
 
-  const stop = useCallback(() => { recognitionRef.current?.stop(); }, []);
+  const stop = useCallback(() => {
+    recognitionRef.current?.stop();
+  }, []);
 
   const abort = useCallback(() => {
     recognitionRef.current?.abort();
@@ -375,11 +428,24 @@ export function useSpeechRecognition(
   }, [stopVolumePolling]);
 
   const toggle = useCallback(() => {
-    if (isListening) stop(); else start();
+    if (isListening) {
+      stop();
+    } else {
+      start();
+    }
   }, [isListening, start, stop]);
 
   return {
-    isSupported, isListening, isSpeaking, volume, bands, rawBands,
-    interimTranscript, start, stop, abort, toggle,
+    isSupported,
+    isListening,
+    isSpeaking,
+    volume,
+    bands,
+    rawBands,
+    interimTranscript,
+    start,
+    stop,
+    abort,
+    toggle,
   };
 }

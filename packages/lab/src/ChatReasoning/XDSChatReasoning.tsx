@@ -247,7 +247,9 @@ export function XDSChatReasoning(props: XDSChatReasoningProps) {
 
   const toggle = useCallback(() => {
     const next = !isExpanded;
-    if (!isControlled) setInternalExpanded(next);
+    if (!isControlled) {
+      setInternalExpanded(next);
+    }
     onExpandedChange?.(next);
   }, [isExpanded, isControlled, onExpandedChange]);
 

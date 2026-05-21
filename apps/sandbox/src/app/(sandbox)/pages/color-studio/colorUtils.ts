@@ -101,7 +101,9 @@ export function hexToHct(hex: string): HCT {
   );
   const [L, a, bLab] = xyzToLab(x, y, z);
   let hue = (Math.atan2(bLab, a) * 180) / Math.PI;
-  if (hue < 0) hue += 360;
+  if (hue < 0) {
+    hue += 360;
+  }
   return {
     hue,
     chroma: Math.sqrt(a * a + bLab * bLab),
@@ -111,8 +113,12 @@ export function hexToHct(hex: string): HCT {
 
 export function hctToHex(hct: HCT): string {
   const {hue, chroma, tone} = hct;
-  if (tone <= 0) return '#000000';
-  if (tone >= 100) return '#ffffff';
+  if (tone <= 0) {
+    return '#000000';
+  }
+  if (tone >= 100) {
+    return '#ffffff';
+  }
   if (chroma < 0.5) {
     const y = labFInv((tone + 16) / 116);
     const g = linearToSrgb(y);
@@ -155,7 +161,11 @@ export function hctToHex(hct: HCT): string {
 // Perceptually uniform color space where equal chroma looks equally
 // saturated across all hues at the same lightness.
 
-function linearRgbToOklab(r: number, g: number, b: number): [number, number, number] {
+function linearRgbToOklab(
+  r: number,
+  g: number,
+  b: number,
+): [number, number, number] {
   const l_ = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b;
   const m_ = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b;
   const s_ = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b;
@@ -169,7 +179,11 @@ function linearRgbToOklab(r: number, g: number, b: number): [number, number, num
   ];
 }
 
-function oklabToLinearRgb(L: number, a: number, b: number): [number, number, number] {
+function oklabToLinearRgb(
+  L: number,
+  a: number,
+  b: number,
+): [number, number, number] {
   const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
   const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
   const s_ = L - 0.0894841775 * a - 1.291485548 * b;
@@ -184,9 +198,9 @@ function oklabToLinearRgb(L: number, a: number, b: number): [number, number, num
 }
 
 export interface OKLCH {
-  L: number;   // 0–1
-  C: number;   // 0–~0.4
-  H: number;   // 0–360 degrees
+  L: number; // 0–1
+  C: number; // 0–~0.4
+  H: number; // 0–360 degrees
 }
 
 export function hexToOklch(hex: string): OKLCH {
@@ -197,7 +211,9 @@ export function hexToOklch(hex: string): OKLCH {
     srgbToLinear(b),
   );
   let H = (Math.atan2(labB, labA) * 180) / Math.PI;
-  if (H < 0) H += 360;
+  if (H < 0) {
+    H += 360;
+  }
   return {
     L: labL,
     C: Math.sqrt(labA * labA + labB * labB),
@@ -207,8 +223,12 @@ export function hexToOklch(hex: string): OKLCH {
 
 export function oklchToHex(oklch: OKLCH): string {
   const {L, C, H} = oklch;
-  if (L <= 0) return '#000000';
-  if (L >= 1) return '#ffffff';
+  if (L <= 0) {
+    return '#000000';
+  }
+  if (L >= 1) {
+    return '#ffffff';
+  }
   const hRad = (H * Math.PI) / 180;
   const a = C * Math.cos(hRad);
   const b = C * Math.sin(hRad);
@@ -224,18 +244,29 @@ function oklchInGamut(L: number, C: number, H: number): boolean {
   const a = C * Math.cos(hRad);
   const b = C * Math.sin(hRad);
   const [lr, lg, lb] = oklabToLinearRgb(L, a, b);
-  return lr >= -0.001 && lr <= 1.001 &&
-         lg >= -0.001 && lg <= 1.001 &&
-         lb >= -0.001 && lb <= 1.001;
+  return (
+    lr >= -0.001 &&
+    lr <= 1.001 &&
+    lg >= -0.001 &&
+    lg <= 1.001 &&
+    lb >= -0.001 &&
+    lb <= 1.001
+  );
 }
 
 export function oklchClampedHex(L: number, C: number, H: number): string {
-  if (oklchInGamut(L, C, H)) return oklchToHex({L, C, H});
-  let lo = 0, hi = C;
+  if (oklchInGamut(L, C, H)) {
+    return oklchToHex({L, C, H});
+  }
+  let lo = 0,
+    hi = C;
   for (let i = 0; i < 16; i++) {
     const mid = (lo + hi) / 2;
-    if (oklchInGamut(L, mid, H)) lo = mid;
-    else hi = mid;
+    if (oklchInGamut(L, mid, H)) {
+      lo = mid;
+    } else {
+      hi = mid;
+    }
   }
   return oklchToHex({L, C: lo, H});
 }
@@ -248,11 +279,13 @@ export const TONE_STEPS = [
 // CIELab L* (0–100) to OKLAB L (0–1).
 // L* → relative luminance Y, then OKLAB L ≈ Y^(1/3).
 export function toneToOklabL(tone: number): number {
-  if (tone <= 0) return 0;
-  if (tone >= 100) return 1;
-  const Y = tone > 8
-    ? Math.pow((tone + 16) / 116, 3)
-    : tone / 903.3;
+  if (tone <= 0) {
+    return 0;
+  }
+  if (tone >= 100) {
+    return 1;
+  }
+  const Y = tone > 8 ? Math.pow((tone + 16) / 116, 3) : tone / 903.3;
   return Math.cbrt(Y);
 }
 
@@ -269,11 +302,15 @@ export function tonalPalette(
 }
 
 export function maxOklchChroma(hue: number, L: number): number {
-  let lo = 0, hi = 0.4;
+  let lo = 0,
+    hi = 0.4;
   for (let i = 0; i < 20; i++) {
     const mid = (lo + hi) / 2;
-    if (oklchInGamut(L, mid, hue)) lo = mid;
-    else hi = mid;
+    if (oklchInGamut(L, mid, hue)) {
+      lo = mid;
+    } else {
+      hi = mid;
+    }
   }
   return lo;
 }
@@ -284,7 +321,9 @@ const _eqCache = new Map<string, Record<number, number>>();
 export function equalizedChromaSteps(hues: number[]): Record<number, number> {
   const key = hues.map(h => h.toFixed(1)).join(',');
   const cached = _eqCache.get(key);
-  if (cached) return cached;
+  if (cached) {
+    return cached;
+  }
   const result: Record<number, number> = {};
   for (const t of TONE_STEPS) {
     const L = toneToOklabL(t);
@@ -771,7 +810,9 @@ export function generateExpressive(
 
 // === WCAG Contrast ===
 export function luminance(hex: string): number {
-  if (hex.length > 7) hex = hex.substring(0, 7);
+  if (hex.length > 7) {
+    hex = hex.substring(0, 7);
+  }
   const [r, g, b] = hexToRgb(hex).map(c => {
     const s = c / 255;
     return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
@@ -784,9 +825,15 @@ export function contrastRatio(fg: string, bg: string): number {
   return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
 }
 export function wcagGrade(ratio: number): 'AAA' | 'AA' | 'AA18' | 'FAIL' {
-  if (ratio >= 7) return 'AAA';
-  if (ratio >= 4.5) return 'AA';
-  if (ratio >= 3) return 'AA18';
+  if (ratio >= 7) {
+    return 'AAA';
+  }
+  if (ratio >= 4.5) {
+    return 'AA';
+  }
+  if (ratio >= 3) {
+    return 'AA18';
+  }
   return 'FAIL';
 }
 
@@ -797,7 +844,9 @@ export function extractColorsFromImage(
 ): string[] {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
-  if (!ctx) return [];
+  if (!ctx) {
+    return [];
+  }
   const w = 200,
     h = Math.round((img.naturalHeight * 200) / img.naturalWidth);
   canvas.width = w;
@@ -806,12 +855,18 @@ export function extractColorsFromImage(
   const data = ctx.getImageData(0, 0, w, h).data;
   const pixels: [number, number, number][] = [];
   for (let i = 0; i < data.length; i += 4) {
-    if (data[i + 3] < 128) continue;
+    if (data[i + 3] < 128) {
+      continue;
+    }
     const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-    if (lum < 15 || lum > 245) continue;
+    if (lum < 15 || lum > 245) {
+      continue;
+    }
     pixels.push([data[i], data[i + 1], data[i + 2]]);
   }
-  if (!pixels.length) return ['#0064e0'];
+  if (!pixels.length) {
+    return ['#0064e0'];
+  }
   function medianCut(px: [number, number, number][], depth: number): string[] {
     if (depth === 0 || px.length < 2) {
       const avg = px.reduce(
@@ -845,8 +900,9 @@ export function extractColorsFromImage(
           Math.abs(h1.chroma - h2.chroma) < 10
         );
       })
-    )
+    ) {
       unique.push(c);
+    }
   }
   unique.sort((a, b) => hexToHct(b).chroma - hexToHct(a).chroma);
   return unique.slice(0, count);
@@ -856,9 +912,19 @@ export function extractColorsFromImage(
 
 export type ThemeRole =
   | 'accent'
-  | 'success' | 'error' | 'warning'
-  | 'blue' | 'cyan' | 'gray' | 'green' | 'orange'
-  | 'pink' | 'purple' | 'red' | 'teal' | 'yellow';
+  | 'success'
+  | 'error'
+  | 'warning'
+  | 'blue'
+  | 'cyan'
+  | 'gray'
+  | 'green'
+  | 'orange'
+  | 'pink'
+  | 'purple'
+  | 'red'
+  | 'teal'
+  | 'yellow';
 
 export interface PaletteColor {
   id: string;
@@ -889,8 +955,16 @@ export const THEME_ROLES: {value: ThemeRole; label: string; group: string}[] = [
 ];
 
 const CATEGORICAL_ROLES: ThemeRole[] = [
-  'blue', 'cyan', 'gray', 'green', 'orange',
-  'pink', 'purple', 'red', 'teal', 'yellow',
+  'blue',
+  'cyan',
+  'gray',
+  'green',
+  'orange',
+  'pink',
+  'purple',
+  'red',
+  'teal',
+  'yellow',
 ];
 const STATUS_ROLES: ThemeRole[] = ['success', 'error', 'warning'];
 
@@ -916,10 +990,20 @@ export const DEFAULT_OKLCH_CHROMA: Record<string, number> = {
 
 // OKLCH hue defaults for each role
 export const DEFAULT_OKLCH_HUE: Record<string, number> = {
-  red: 25, orange: 55, yellow: 90, green: 145,
-  teal: 175, cyan: 200, blue: 260, purple: 300,
-  pink: 350, gray: 264, success: 145, warning: 85,
-  error: 25, accent: 264,
+  red: 25,
+  orange: 55,
+  yellow: 90,
+  green: 145,
+  teal: 175,
+  cyan: 200,
+  blue: 260,
+  purple: 300,
+  pink: 350,
+  gray: 264,
+  success: 145,
+  warning: 85,
+  error: 25,
+  accent: 264,
 };
 
 export interface ThemeOptions {
@@ -960,18 +1044,24 @@ export function buildThemeTokens(
       aOklch.H,
     );
     tokens['--color-accent'] = [accentHex, accentDark];
-    tokens['--color-accent-muted'] = [hexWithAlpha(accentHex, 0.2), hexWithAlpha(accentDark, 0.25)];
+    tokens['--color-accent-muted'] = [
+      hexWithAlpha(accentHex, 0.2),
+      hexWithAlpha(accentDark, 0.25),
+    ];
   }
 
   const v = options.vibrancy;
 
   for (const pc of palette) {
-    if (!pc.role || pc.role === 'accent') continue;
+    if (!pc.role || pc.role === 'accent') {
+      continue;
+    }
     const oklch = hexToOklch(pc.hex);
     const defaultC = DEFAULT_OKLCH_CHROMA[pc.role] ?? 0.13;
-    const chrm = pc.role === 'gray'
-      ? Math.min(oklch.C, 0.02) * v
-      : Math.max(oklch.C, defaultC) * v;
+    const chrm =
+      pc.role === 'gray'
+        ? Math.min(oklch.C, 0.02) * v
+        : Math.max(oklch.C, defaultC) * v;
 
     // Generate the OKLCH tonal palette — same function the ramps use.
     // Token values are pulled from specific tone stops so components
@@ -1068,9 +1158,13 @@ export function parseColorInput(input: string): string | null {
     const h = s.replace('#', '');
     return '#' + h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
   }
-  if (/^#?[0-9a-f]{6}$/i.test(s)) return '#' + s.replace('#', '');
+  if (/^#?[0-9a-f]{6}$/i.test(s)) {
+    return '#' + s.replace('#', '');
+  }
   const rgbM = s.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
-  if (rgbM) return rgbToHex(+rgbM[1], +rgbM[2], +rgbM[3]);
+  if (rgbM) {
+    return rgbToHex(+rgbM[1], +rgbM[2], +rgbM[3]);
+  }
   const hslM = s.match(/^hsla?\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%/);
   if (hslM) {
     const hh = +hslM[1] / 360,
@@ -1079,11 +1173,21 @@ export function parseColorInput(input: string): string | null {
     const q = ll < 0.5 ? ll * (1 + ss) : ll + ss - ll * ss,
       p = 2 * ll - q;
     const h2r = (pp: number, qq: number, t: number) => {
-      if (t < 0) t += 1;
-      if (t > 1) t -= 1;
-      if (t < 1 / 6) return pp + (qq - pp) * 6 * t;
-      if (t < 1 / 2) return qq;
-      if (t < 2 / 3) return pp + (qq - pp) * (2 / 3 - t) * 6;
+      if (t < 0) {
+        t += 1;
+      }
+      if (t > 1) {
+        t -= 1;
+      }
+      if (t < 1 / 6) {
+        return pp + (qq - pp) * 6 * t;
+      }
+      if (t < 1 / 2) {
+        return qq;
+      }
+      if (t < 2 / 3) {
+        return pp + (qq - pp) * (2 / 3 - t) * 6;
+      }
       return pp;
     };
     return rgbToHex(

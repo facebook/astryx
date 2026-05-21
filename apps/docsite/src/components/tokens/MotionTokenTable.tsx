@@ -82,9 +82,13 @@ function evaluateBezier(
   let g = t;
   for (let i = 0; i < 8; i++) {
     const cur = sampleX(g) - t;
-    if (Math.abs(cur) < 1e-6) break;
+    if (Math.abs(cur) < 1e-6) {
+      break;
+    }
     const d = sampleXDeriv(g);
-    if (Math.abs(d) < 1e-6) break;
+    if (Math.abs(d) < 1e-6) {
+      break;
+    }
     g -= cur / d;
   }
   return sampleY(Math.max(0, Math.min(1, g)));
@@ -99,28 +103,39 @@ function EasingCurve({value}: {value: string}) {
   );
 
   useEffect(() => {
-    if (!match) return;
+    if (!match) {
+      return;
+    }
     let running = true;
     const duration = 1200,
       pause = 800,
       cycle = duration + pause;
     function tick(ts: number) {
-      if (!running) return;
-      if (!startRef.current) startRef.current = ts;
+      if (!running) {
+        return;
+      }
+      if (!startRef.current) {
+        startRef.current = ts;
+      }
       const inCycle = (ts - startRef.current) % cycle;
       setProgress(inCycle < duration ? inCycle / duration : 1);
-      if ((ts - startRef.current) % (cycle * 2) >= cycle * 2 - 16)
+      if ((ts - startRef.current) % (cycle * 2) >= cycle * 2 - 16) {
         startRef.current = ts;
+      }
       animRef.current = requestAnimationFrame(tick);
     }
     animRef.current = requestAnimationFrame(tick);
     return () => {
       running = false;
-      if (animRef.current) cancelAnimationFrame(animRef.current);
+      if (animRef.current) {
+        cancelAnimationFrame(animRef.current);
+      }
     };
   }, [match]);
 
-  if (!match) return null;
+  if (!match) {
+    return null;
+  }
   const [, x1, y1, x2, y2] = match.map(Number);
   const easedY = evaluateBezier(x1, y1, x2, y2, progress);
   const pad = 0.12;

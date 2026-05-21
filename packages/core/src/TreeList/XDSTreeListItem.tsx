@@ -294,9 +294,13 @@ export function XDSTreeListItem({
   const handleClick = useMemo(() => {
     if (onClick != null || (hasChildren && onToggle != null)) {
       return (e: React.MouseEvent) => {
-        if (isDisabled) return;
+        if (isDisabled) {
+          return;
+        }
         const el = e.target as HTMLElement;
-        if (el.closest('button, a, input, select, textarea')) return;
+        if (el.closest('button, a, input, select, textarea')) {
+          return;
+        }
         if (onClick != null) {
           onClick(e);
         } else if (hasChildren && onToggle != null) {

@@ -56,7 +56,9 @@ export function mergeXStyle(
   styles: StyleXStyles[],
   xstyle: StyleXStyles | StyleXStyles[] | undefined,
 ): StyleXStyles[] {
-  if (!xstyle) return styles;
+  if (!xstyle) {
+    return styles;
+  }
   if (Array.isArray(xstyle)) {
     return [...styles, ...xstyle];
   }

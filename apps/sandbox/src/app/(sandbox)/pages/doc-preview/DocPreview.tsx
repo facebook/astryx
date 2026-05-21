@@ -60,7 +60,9 @@ function ThemeTokenSection({
   theme: XDSDefinedTheme;
 }) {
   const Component = TOKEN_TABLE_BY_CATEGORY[category];
-  if (!Component) return null;
+  if (!Component) {
+    return null;
+  }
   return <Component theme={theme} />;
 }
 
@@ -173,10 +175,7 @@ export function DocPreview({
         {doc.tokenCategory && (
           <>
             <XDSDivider />
-            <ThemeTokenSection
-              category={doc.tokenCategory}
-              theme={theme}
-            />
+            <ThemeTokenSection category={doc.tokenCategory} theme={theme} />
           </>
         )}
       </XDSVStack>

@@ -39,7 +39,9 @@ function buildNavTree(currentPath: string): XDSTreeListItemData[] {
   const componentMap = new Map<string, XDSTreeListItemData[]>();
   for (const b of blocks) {
     const group = b.component;
-    if (!componentMap.has(group)) componentMap.set(group, []);
+    if (!componentMap.has(group)) {
+      componentMap.set(group, []);
+    }
     const shortName = b.name.includes('—')
       ? b.name.split('—').slice(1).join('—').trim()
       : b.name;
@@ -269,11 +271,17 @@ type Version = {
 function formatRelativeTime(ts: number): string {
   const diff = Date.now() - ts;
   const seconds = Math.floor(diff / 1000);
-  if (seconds < 60) return 'just now';
+  if (seconds < 60) {
+    return 'just now';
+  }
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes} min ago`;
+  if (minutes < 60) {
+    return `${minutes} min ago`;
+  }
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) {
+    return `${hours}h ago`;
+  }
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
 }
@@ -369,7 +377,9 @@ function VersionDropdown({pathname}: {pathname: string}) {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(getStorageKey(pathname));
-      if (stored) setLocalVersions(JSON.parse(stored));
+      if (stored) {
+        setLocalVersions(JSON.parse(stored));
+      }
     } catch {
       // ignore
     }
@@ -403,7 +413,9 @@ function VersionDropdown({pathname}: {pathname: string}) {
 
   // Click outside to close
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      return;
+    }
     const handler = (e: MouseEvent) => {
       if (
         dropdownRef.current &&
@@ -419,7 +431,9 @@ function VersionDropdown({pathname}: {pathname: string}) {
   const handleSave = () => {
     const nextNum = localVersions.length + 1;
     const name = prompt('Version name:', `Version ${nextNum}`);
-    if (!name) return;
+    if (!name) {
+      return;
+    }
     const newVersion: Version = {
       id: crypto.randomUUID(),
       name,
@@ -627,7 +641,9 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
     typeof window !== 'undefined' ? window.location.search : '',
   );
   const isEmbed = searchParams.get('embed') === '1';
-  if (isEmbed) return <>{children}</>;
+  if (isEmbed) {
+    return <>{children}</>;
+  }
   const [view, setView] = useState<'preview' | 'code'>('preview');
   const [viewport, setViewport] = useState<ViewportSize>('desktop');
   const [copied, setCopied] = useState(false);
@@ -640,15 +656,16 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
   // on initial load. Only recomputes when pathname changes — theme/mode changes
   // are synced to the iframe via postMessage to avoid triggering a reload.
   const iframeSrc = useMemo(
-    () =>
-      `${basePath}${pathname}?embed=1&theme=${themeName}&mode=${mode}`,
+    () => `${basePath}${pathname}?embed=1&theme=${themeName}&mode=${mode}`,
     [pathname], // intentionally excludes themeName/mode — live updates use postMessage
   );
 
   // Broadcast theme/mode changes to the embedded iframe via postMessage
   useEffect(() => {
     const iframe = iframeRef.current;
-    if (!iframe?.contentWindow) return;
+    if (!iframe?.contentWindow) {
+      return;
+    }
     iframe.contentWindow.postMessage(
       {type: 'xds-theme-sync', theme: themeName, mode},
       '*',
@@ -665,7 +682,9 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
 
   useEffect(() => {
     const saved = localStorage.getItem('sandbox-toolbar-hidden');
-    if (saved === 'true') setToolbarHidden(true);
+    if (saved === 'true') {
+      setToolbarHidden(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -689,8 +708,9 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
       for (const page of cat.pages) {
         const normalizedHref = page.href.replace(/\/$/, '');
         const normalizedPath = pathname.replace(/\/$/, '');
-        if (normalizedHref === normalizedPath)
+        if (normalizedHref === normalizedPath) {
           return {page, category: cat.label};
+        }
       }
     }
     return null;
@@ -731,7 +751,9 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
   }, []);
 
   const handleCopy = useCallback(async () => {
-    if (!resolvedSource) return;
+    if (!resolvedSource) {
+      return;
+    }
     await navigator.clipboard.writeText(resolvedSource);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);

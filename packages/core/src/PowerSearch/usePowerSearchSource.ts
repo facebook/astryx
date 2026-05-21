@@ -26,7 +26,9 @@ export function usePowerSearchSource(
     return {
       search(query: string): PowerSearchItem[] {
         const lower = query.toLowerCase().trim();
-        if (lower === '') return allItems;
+        if (lower === '') {
+          return allItems;
+        }
 
         const results: PowerSearchItem[] = [];
         const seen = new Set<string>();
@@ -89,7 +91,9 @@ export function usePowerSearchSource(
         // and "title contains foobar" → Title contains "foobar"
         // and "genre fiction" → Genre is "Fiction"
         for (const field of config.getVisibleFields()) {
-          if (field.isValueMatchAllowed === false) continue;
+          if (field.isValueMatchAllowed === false) {
+            continue;
+          }
 
           const fieldLabel = field.label.toLowerCase();
 

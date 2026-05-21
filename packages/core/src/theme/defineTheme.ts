@@ -404,9 +404,15 @@ function deepMergeComponents(
   base?: XDSComponentStyleMap,
   overrides?: XDSComponentStyleMap,
 ): XDSComponentStyleMap | undefined {
-  if (!base && !overrides) return undefined;
-  if (!base) return overrides;
-  if (!overrides) return base;
+  if (!base && !overrides) {
+    return undefined;
+  }
+  if (!base) {
+    return overrides;
+  }
+  if (!overrides) {
+    return base;
+  }
 
   const result: XDSComponentStyleMap = {};
 
@@ -454,9 +460,13 @@ function buildFontFamily(
   family?: string,
   fallbacks?: string,
 ): string | undefined {
-  if (!family) return undefined;
+  if (!family) {
+    return undefined;
+  }
   const quoted = family.includes(' ') ? `"${family}"` : family;
-  if (fallbacks) return `${quoted}, ${fallbacks}`;
+  if (fallbacks) {
+    return `${quoted}, ${fallbacks}`;
+  }
   return quoted;
 }
 
@@ -490,9 +500,10 @@ export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
     const headingRole = typo.heading;
     if (headingRole?.weights) {
       for (const [level, w] of Object.entries(headingRole.weights)) {
-        if (w)
+        if (w) {
           headingWeights[Number(level) as 1 | 2 | 3 | 4 | 5 | 6] =
             resolveFontWeight(w);
+        }
       }
     }
     // Default heading weight from role
@@ -509,10 +520,12 @@ export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
 
     // Text weight overrides from roles
     const textWeights: Partial<Record<string, string>> = {};
-    if (typo.body?.weight)
+    if (typo.body?.weight) {
       textWeights.body = resolveFontWeight(typo.body.weight);
-    if (typo.code?.weight)
+    }
+    if (typo.code?.weight) {
       textWeights.code = resolveFontWeight(typo.code.weight);
+    }
 
     typeScaleConfig = {
       base: typo.scale.base,
@@ -567,9 +580,15 @@ export function defineTheme(input: XDSDefineThemeInput): XDSDefinedTheme {
       bodyFamily;
     const codeFamily = buildFontFamily(typo.code?.family, typo.code?.fallbacks);
 
-    if (bodyFamily) tokens['--font-family-body'] = bodyFamily;
-    if (headingFamily) tokens['--font-family-heading'] = headingFamily;
-    if (codeFamily) tokens['--font-family-code'] = codeFamily;
+    if (bodyFamily) {
+      tokens['--font-family-body'] = bodyFamily;
+    }
+    if (headingFamily) {
+      tokens['--font-family-heading'] = headingFamily;
+    }
+    if (codeFamily) {
+      tokens['--font-family-code'] = codeFamily;
+    }
   }
 
   // 1e. Apply syntax theme tokens (before explicit overrides)
@@ -1086,7 +1105,9 @@ export function generateOnMediaCSS(theme: XDSDefinedTheme): string {
 
   for (const surface of ['dark', 'light'] as const) {
     const onMedia = surface === 'dark' ? theme.__onDark : theme.__onLight;
-    if (!onMedia) continue;
+    if (!onMedia) {
+      continue;
+    }
 
     // Token overrides
     const tokenEntries = Object.entries(onMedia.tokens);
@@ -1146,7 +1167,9 @@ export function generateOnMediaCSS(theme: XDSDefinedTheme): string {
     }
   }
 
-  if (parts.length === 0) return '';
+  if (parts.length === 0) {
+    return '';
+  }
 
   const inner = parts.join('\n\n');
   return `@scope (${scopeSelector}) to ([data-xds-theme]) {\n${inner}\n}`;
@@ -1188,7 +1211,9 @@ export function generateThemeCSS(theme: XDSDefinedTheme): ThemeCSSOutput {
  */
 export function generateThemeCSSFlat(theme: XDSDefinedTheme): string {
   const rules = generateThemeRules(theme);
-  if (rules.length === 0) return '';
+  if (rules.length === 0) {
+    return '';
+  }
   const scopeSelector = `[data-xds-theme="${theme.name}"]`;
   const inner = rules.join('\n\n');
   return `@scope (${scopeSelector}) to ([data-xds-theme]) {\n${inner}\n}`;

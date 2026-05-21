@@ -44,7 +44,9 @@ const BUTTON_SELECTOR = 'button, [role="button"]';
  * or the first matching descendant.
  */
 function findTriggerButton(el: HTMLElement): HTMLElement | null {
-  if (el.matches(BUTTON_SELECTOR)) return el;
+  if (el.matches(BUTTON_SELECTOR)) {
+    return el;
+  }
   return el.querySelector<HTMLElement>(BUTTON_SELECTOR);
 }
 
@@ -290,10 +292,14 @@ export function XDSPopover({
 
   // Shared handler for click events on the trigger button.
   const handleTriggerClick = useCallback(() => {
-    if (!isEnabled) return;
+    if (!isEnabled) {
+      return;
+    }
     // If the popover was just closed by light dismiss (clicking outside),
     // the trigger click fires in the same event — skip re-opening.
-    if (Date.now() - lastHideTimeRef.current < 50) return;
+    if (Date.now() - lastHideTimeRef.current < 50) {
+      return;
+    }
     popover.toggle();
   }, [isEnabled, popover]);
 
@@ -355,10 +361,14 @@ export function XDSPopover({
 
   // Sibling mode: attach to external anchorRef
   useIsomorphicLayoutEffect(() => {
-    if (!anchorRef) return;
+    if (!anchorRef) {
+      return;
+    }
 
     const el = anchorRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
 
     const button = findTriggerButton(el);
     if (!button) {
@@ -367,7 +377,9 @@ export function XDSPopover({
           'The popover trigger implements the button + dialog ARIA pattern.',
       );
     }
-    if (!button) return;
+    if (!button) {
+      return;
+    }
 
     // Set up anchor positioning on the anchorRef element itself
     popover.triggerRef(el);
@@ -384,10 +396,14 @@ export function XDSPopover({
   // Children mode: use wrapper as CSS anchor, find button inside for
   // ARIA + event handlers.
   useIsomorphicLayoutEffect(() => {
-    if (anchorRef) return; // Skip if using anchorRef mode
+    if (anchorRef) {
+      return;
+    } // Skip if using anchorRef mode
 
     const wrapper = wrapperRef.current;
-    if (!wrapper) return;
+    if (!wrapper) {
+      return;
+    }
 
     // Use the wrapper as the CSS anchor — it doesn't receive pressed-state
     // transforms, so the anchor position stays stable.
@@ -401,7 +417,9 @@ export function XDSPopover({
           'The popover trigger implements the button + dialog ARIA pattern.',
       );
     }
-    if (!button) return;
+    if (!button) {
+      return;
+    }
 
     const detach = attachTrigger(button);
 
@@ -413,7 +431,9 @@ export function XDSPopover({
 
   // Sync controlled state
   useIsomorphicLayoutEffect(() => {
-    if (!isControlled) return;
+    if (!isControlled) {
+      return;
+    }
     if (isOpen && !popover.isOpen) {
       popover.show();
     } else if (!isOpen && popover.isOpen) {
