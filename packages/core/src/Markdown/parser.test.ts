@@ -366,6 +366,22 @@ describe('parseMarkdown', () => {
     }
   });
 
+  // --- Table with escaped pipes ---
+
+  it('handles escaped pipes in table cells', () => {
+    const input =
+      '| Concept | TypeScript |\n| --- | --- |\n| Null safety | `T \\| null` |\n| Union | `A \\| B \\| C` |';
+    const result = parseMarkdown(input);
+    expect(result[0].type).toBe('table');
+    if (result[0].type === 'table') {
+      expect(result[0].headers).toHaveLength(2);
+      expect(result[0].rows).toHaveLength(2);
+      // The cell should contain the escaped pipe as inline content
+      expect(result[0].rows[0]).toHaveLength(2);
+      expect(result[0].rows[1]).toHaveLength(2);
+    }
+  });
+
   // --- HR variants ---
 
   it('parses spaced HR: - - -', () => {
