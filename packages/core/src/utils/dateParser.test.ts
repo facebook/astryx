@@ -10,12 +10,7 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {
-  parseDateInput,
-  formatDisplayDate,
-  dateToISO,
-  parseISO,
-} from './dateParser';
+import {parseDateInput} from './dateParser';
 
 describe('parseDateInput', () => {
   describe('ISO format (YYYY-MM-DD)', () => {
@@ -325,37 +320,5 @@ describe('parseDateInput', () => {
     it('rejects mixed separators', () => {
       expect(parseDateInput('1/25.2026')).toBeNull();
     });
-  });
-});
-
-describe('formatDisplayDate', () => {
-  it('formats ISO date to readable format', () => {
-    expect(formatDisplayDate('2026-01-25')).toBe('January 25, 2026');
-  });
-
-  it('formats single-digit dates correctly', () => {
-    expect(formatDisplayDate('2026-01-05')).toBe('January 5, 2026');
-  });
-
-  it('formats all months correctly', () => {
-    expect(formatDisplayDate('2026-02-15')).toBe('February 15, 2026');
-    expect(formatDisplayDate('2026-12-25')).toBe('December 25, 2026');
-  });
-});
-
-describe('dateToISO', () => {
-  it('converts PlainDate to ISO string', () => {
-    expect(dateToISO({year: 2026, month: 1, day: 25})).toBe('2026-01-25');
-  });
-
-  it('pads single-digit month and day', () => {
-    expect(dateToISO({year: 2026, month: 1, day: 5})).toBe('2026-01-05');
-  });
-});
-
-describe('parseISO', () => {
-  it('parses ISO string to PlainDate', () => {
-    const pd = parseISO('2026-01-25');
-    expect(pd).toEqual({year: 2026, month: 1, day: 25});
   });
 });

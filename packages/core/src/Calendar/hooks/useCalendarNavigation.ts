@@ -18,11 +18,12 @@ import {
   type PlainDate,
   plainDateFromISO,
   plainDateToISO,
-  plainDateToDate,
   plainDateToday,
   plainDateSetFirstOfMonth,
   plainDateAddMonths,
   plainDateAddDays,
+  plainDateFormat,
+  DATE_FORMAT_MONTH_YEAR,
 } from '../../utils/plainDate';
 
 /**
@@ -133,15 +134,11 @@ export function useCalendarNavigation(
 
   // Format month header
   const monthYearLabel = useMemo(() => {
-    const formatter = new Intl.DateTimeFormat(undefined, {
-      year: 'numeric',
-      month: 'long',
-    });
     if (numberOfMonths === 1) {
-      return formatter.format(plainDateToDate(visibleMonths[0]));
+      return plainDateFormat(visibleMonths[0], DATE_FORMAT_MONTH_YEAR);
     }
     return visibleMonths
-      .map(m => formatter.format(plainDateToDate(m)))
+      .map(m => plainDateFormat(m, DATE_FORMAT_MONTH_YEAR))
       .join(' – ');
   }, [visibleMonths, numberOfMonths]);
 

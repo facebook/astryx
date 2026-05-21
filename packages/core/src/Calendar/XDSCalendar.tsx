@@ -56,6 +56,7 @@ import {
   plainDateGetWeekNumber,
   plainDateFormat,
   DATE_FORMAT_WITH_WEEKDAY,
+  DATE_FORMAT_MONTH_YEAR,
 } from '../utils/plainDate';
 import {xdsClassName, mergeProps} from '../utils';
 
@@ -268,15 +269,11 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
 
   // Format month header
   const monthYearLabel = useMemo(() => {
-    const formatter = new Intl.DateTimeFormat(undefined, {
-      year: 'numeric',
-      month: 'long',
-    });
     if (numberOfMonths === 1) {
-      return formatter.format(plainDateToDate(visibleMonths[0]));
+      return plainDateFormat(visibleMonths[0], DATE_FORMAT_MONTH_YEAR);
     }
     return visibleMonths
-      .map(m => formatter.format(plainDateToDate(m)))
+      .map(m => plainDateFormat(m, DATE_FORMAT_MONTH_YEAR))
       .join(' – ');
   }, [visibleMonths, numberOfMonths]);
 
@@ -674,10 +671,7 @@ function MonthGrid({
 
   // Month label for announcements
   const monthLabel = useMemo(() => {
-    return new Intl.DateTimeFormat(undefined, {
-      year: 'numeric',
-      month: 'long',
-    }).format(plainDateToDate(month));
+    return plainDateFormat(month, DATE_FORMAT_MONTH_YEAR);
   }, [month]);
 
   return (

@@ -139,6 +139,25 @@ export const DATE_FORMAT_LONG: Intl.DateTimeFormatOptions = {
   day: 'numeric',
 };
 
+// e.g. "January 2026" (locale-dependent)
+export const DATE_FORMAT_MONTH_YEAR: Intl.DateTimeFormatOptions = {
+  year: 'numeric',
+  month: 'long',
+};
+
+// e.g. "Jan 25" (locale-dependent)
+export const DATE_FORMAT_SHORT: Intl.DateTimeFormatOptions = {
+  month: 'short',
+  day: 'numeric',
+};
+
+// e.g. "Jan 25, 2026" (locale-dependent)
+export const DATE_FORMAT_SHORT_WITH_YEAR: Intl.DateTimeFormatOptions = {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+};
+
 export function plainDateFormat(
   pd: PlainDate,
   options: Intl.DateTimeFormatOptions,

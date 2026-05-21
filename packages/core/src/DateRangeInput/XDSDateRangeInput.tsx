@@ -20,8 +20,10 @@ import {useId, useCallback, useMemo, useOptimistic, useTransition} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   plainDateFromISO,
-  plainDateToDate,
   plainDateToday,
+  plainDateFormat,
+  DATE_FORMAT_SHORT,
+  DATE_FORMAT_SHORT_WITH_YEAR,
 } from '../utils/plainDate';
 import type {XDSIconName} from '../Icon';
 import {
@@ -168,17 +170,6 @@ const sizeStyles = stylex.create({
   },
 });
 
-const shortDateFormatter = new Intl.DateTimeFormat(undefined, {
-  month: 'short',
-  day: 'numeric',
-});
-
-const shortDateWithYearFormatter = new Intl.DateTimeFormat(undefined, {
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
-});
-
 function formatRangeDisplay(range: DateRange | null): string {
   if (!range) {
     return '';
@@ -188,8 +179,8 @@ function formatRangeDisplay(range: DateRange | null): string {
   const currentYear = plainDateToday().year;
   const sameYear = start.year === end.year && start.year === currentYear;
 
-  const fmt = sameYear ? shortDateFormatter : shortDateWithYearFormatter;
-  return `${fmt.format(plainDateToDate(start))} – ${fmt.format(plainDateToDate(end))}`;
+  const fmt = sameYear ? DATE_FORMAT_SHORT : DATE_FORMAT_SHORT_WITH_YEAR;
+  return `${plainDateFormat(start, fmt)} – ${plainDateFormat(end, fmt)}`;
 }
 
 function isRangeEqual(a: DateRange | null, b: DateRange | null): boolean {

@@ -226,11 +226,6 @@ const styles = stylex.create({
     // since wrapperWithTokens reduces padding to 3px for border concentricity.
     marginInlineStart: `calc(${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px)`,
   },
-  startIconWithTokens: {
-    // Restore the default 8px inline-start inset when tokens are present,
-    // since wrapperWithTokens reduces padding to 3px for border concentricity.
-    marginInlineStart: `calc(${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px)`,
-  },
   token: {
     display: 'flex',
     flexShrink: 0,
