@@ -217,6 +217,7 @@ const styles = stylex.create({
     // = 8 - 4 - 1 = 3px.
     paddingBlock: `calc(${spacingVars['--spacing-1']} - 1px)`,
     paddingInline: `calc(${spacingVars['--spacing-1']} - 1px)`,
+    // Row gap must match paddingBlock so wrapped rows look evenly spaced.
     rowGap: `calc(${spacingVars['--spacing-1']} - 1px)`,
   },
   token: {
