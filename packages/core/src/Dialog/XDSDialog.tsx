@@ -357,8 +357,7 @@ export function XDSDialog({
 
   // Merge refs
   const setRefs = (element: HTMLDialogElement | null) => {
-    (dialogRef as React.MutableRefObject<HTMLDialogElement | null>).current =
-      element;
+    dialogRef.current = element;
     if (typeof ref === 'function') {
       ref(element);
     } else if (ref) {

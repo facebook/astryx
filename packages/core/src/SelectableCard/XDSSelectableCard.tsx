@@ -29,7 +29,6 @@
 import {
   type ReactNode,
   type MouseEvent,
-  type MutableRefObject,
   useRef,
   useCallback,
   type Ref,
@@ -321,7 +320,7 @@ export function XDSSelectableCard({
         if (typeof ref === 'function') {
           ref(node);
         } else if (ref != null) {
-          (ref as MutableRefObject<HTMLDivElement | null>).current = node;
+          ref.current = node;
         }
       }}
       width={width}

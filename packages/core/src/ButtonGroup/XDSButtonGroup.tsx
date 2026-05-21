@@ -138,13 +138,11 @@ export function XDSButtonGroup({
         <div
           ref={(node: HTMLDivElement | null) => {
             // eslint-disable-next-line react-compiler/react-compiler -- ref callback: assigning hook-returned ref
-            (listRef as React.MutableRefObject<HTMLElement | null>).current =
-              node;
+            listRef.current = node;
             if (typeof ref === 'function') {
               ref(node);
             } else if (ref) {
-              (ref as React.MutableRefObject<HTMLDivElement | null>).current =
-                node;
+              ref.current = node;
             }
           }}
           role="group"

@@ -139,7 +139,7 @@ function mergeRefs<T>(...refs: (Ref<T> | undefined)[]): React.RefCallback<T> {
       if (typeof ref === 'function') {
         ref(el);
       } else if (ref != null) {
-        (ref as React.MutableRefObject<T | null>).current = el;
+        ref.current = el;
       }
     }
   };

@@ -131,12 +131,11 @@ export function XDSCommandPaletteItem({
   const itemRef = useRef<HTMLDivElement>(null);
 
   const setRefs = (element: HTMLDivElement | null) => {
-    (itemRef as React.MutableRefObject<HTMLDivElement | null>).current =
-      element;
+    itemRef.current = element;
     if (typeof ref === 'function') {
       ref(element);
     } else if (ref) {
-      (ref as React.MutableRefObject<HTMLDivElement | null>).current = element;
+      ref.current = element;
     }
   };
 

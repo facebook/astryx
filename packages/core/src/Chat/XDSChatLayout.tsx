@@ -310,7 +310,7 @@ export function XDSChatLayout({
 
   // --- Content ref callback for message list ---
   const setContentRef = useCallback((el: HTMLElement | null) => {
-    (contentRef as React.MutableRefObject<HTMLElement | null>).current = el;
+    contentRef.current = el;
   }, []);
 
   // --- Layout context ---
@@ -334,11 +334,11 @@ export function XDSChatLayout({
   // --- Merge refs ---
   const setRootRef = useCallback(
     (el: HTMLDivElement | null) => {
-      (rootRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+      rootRef.current = el;
       if (typeof ref === 'function') {
         ref(el);
       } else if (ref) {
-        (ref as React.MutableRefObject<HTMLDivElement | null>).current = el;
+        ref.current = el;
       }
     },
     [ref],

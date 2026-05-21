@@ -278,7 +278,7 @@ export function XDSCarousel({
         if (typeof ref === 'function') {
           ref(el);
         } else if (ref) {
-          (ref as React.MutableRefObject<HTMLDivElement | null>).current = el;
+          ref.current = el;
         }
         if (layer.ref) {
           layer.ref(el as HTMLElement | null);

@@ -125,13 +125,11 @@ export function XDSOverlay({
   return (
     <div
       ref={(node: HTMLDivElement | null) => {
-        (
-          overlay.containerRef as React.MutableRefObject<HTMLElement | null>
-        ).current = node;
+        overlay.containerRef.current = node;
         if (typeof ref === 'function') {
           ref(node);
         } else if (ref != null) {
-          (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+          ref.current = node;
         }
       }}
       {...mergeProps(

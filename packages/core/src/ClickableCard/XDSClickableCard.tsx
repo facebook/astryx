@@ -28,13 +28,7 @@
  * For toggle selection, use XDSSelectableCard.
  */
 
-import {
-  type ReactNode,
-  type MouseEvent,
-  type MutableRefObject,
-  useRef,
-  type Ref,
-} from 'react';
+import {type ReactNode, type MouseEvent, useRef, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
@@ -258,7 +252,7 @@ export function XDSClickableCard({
         if (typeof ref === 'function') {
           ref(node);
         } else if (ref != null) {
-          (ref as MutableRefObject<HTMLDivElement | null>).current = node;
+          ref.current = node;
         }
       }}
       width={width}

@@ -331,8 +331,7 @@ export function XDSTextArea({
       if (typeof ref === 'function') {
         ref(el);
       } else if (ref) {
-        (ref as React.MutableRefObject<HTMLTextAreaElement | null>).current =
-          el;
+        ref.current = el;
       }
     },
     [ref],

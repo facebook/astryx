@@ -182,13 +182,11 @@ export function XDSCommandPaletteInput({
 
   // Merge refs
   const setRefs = (element: HTMLInputElement | null) => {
-    (inputRef as React.MutableRefObject<HTMLInputElement | null>).current =
-      element;
+    inputRef.current = element;
     if (typeof ref === 'function') {
       ref(element);
     } else if (ref) {
-      (ref as React.MutableRefObject<HTMLInputElement | null>).current =
-        element;
+      ref.current = element;
     }
   };
 
