@@ -38,12 +38,36 @@ const tagValues = [
 ];
 
 const users: XDSSearchableItem[] = [
-  {id: 'user-1', label: 'Alice Johnson'},
-  {id: 'user-2', label: 'Bob Smith'},
-  {id: 'user-3', label: 'Charlie Brown'},
-  {id: 'user-4', label: 'Diana Prince'},
-  {id: 'user-5', label: 'Eve Williams'},
-  {id: 'user-6', label: 'Frank Miller'},
+  {
+    id: 'user-1',
+    label: 'Alice Johnson',
+    auxiliaryData: {photo: 'https://i.pravatar.cc/150?u=alice'},
+  },
+  {
+    id: 'user-2',
+    label: 'Bob Smith',
+    auxiliaryData: {photo: 'https://i.pravatar.cc/150?u=bob'},
+  },
+  {
+    id: 'user-3',
+    label: 'Charlie Brown',
+    auxiliaryData: {photo: 'https://i.pravatar.cc/150?u=charlie'},
+  },
+  {
+    id: 'user-4',
+    label: 'Diana Prince',
+    auxiliaryData: {photo: 'https://i.pravatar.cc/150?u=diana'},
+  },
+  {
+    id: 'user-5',
+    label: 'Eve Williams',
+    auxiliaryData: {photo: 'https://i.pravatar.cc/150?u=eve'},
+  },
+  {
+    id: 'user-6',
+    label: 'Frank Miller',
+    auxiliaryData: {photo: 'https://i.pravatar.cc/150?u=frank'},
+  },
 ];
 
 const userSource: XDSSearchSource = {
