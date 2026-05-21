@@ -219,6 +219,7 @@ const styles = stylex.create({
     paddingInline: `calc(${spacingVars['--spacing-1']} - 1px)`,
   },
   token: {
+    display: 'flex',
     flexShrink: 0,
   },
   clearAllButton: {
