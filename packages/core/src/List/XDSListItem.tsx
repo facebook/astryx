@@ -280,15 +280,6 @@ export function XDSListItem({
   const hasMarkers = listStyle !== 'none';
   const isInteractive = onClick != null || href != null;
 
-  const handleContainerClick = (e: React.MouseEvent) => {
-    if (isDisabled) {
-      return;
-    }
-    const target = e.target as HTMLElement;
-    if (target.closest('button, a, input, select, textarea')) return;
-    if (target.closest('.xds-item')) return;
-    onClick?.(e);
-  };
 
   const marker =
     listStyle === 'disc' ? (
@@ -325,8 +316,7 @@ export function XDSListItem({
         ),
         className,
         style,
-      )}
-      onClick={isInteractive ? handleContainerClick : undefined}>
+      )}>
       {marker}
       <XDSItem
         media={startContent}
