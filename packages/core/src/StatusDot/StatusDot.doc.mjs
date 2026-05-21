@@ -26,6 +26,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'tooltip',
+      type: 'string',
+      description:
+        'Tooltip text shown on hover to explain the status meaning.',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -113,6 +119,7 @@ export const docsDense = {
     variant: 'Semantic color variant.',
     label: 'Accessible label via aria-label.',
     isPulsing: 'Pulse animation; respects prefers-reduced-motion: reduce.',
+    tooltip: 'Tooltip text on hover to explain status meaning.',
     xstyle: 'StyleX layout styles; must be stylex.create() value.',
   },
 };

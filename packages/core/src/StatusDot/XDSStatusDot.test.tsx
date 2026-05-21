@@ -75,4 +75,10 @@ describe('XDSStatusDot', () => {
     const dot = screen.getByRole('img', {name: 'Online'});
     expect(dot).toBeInTheDocument();
   });
+
+  it('renders with tooltip', () => {
+    render(<XDSStatusDot variant="success" label="Online" tooltip="Online" />);
+    const dot = screen.getByRole('img', {name: 'Online'});
+    expect(dot).toBeInTheDocument();
+  });
 });

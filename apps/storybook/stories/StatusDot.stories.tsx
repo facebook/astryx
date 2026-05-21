@@ -21,6 +21,10 @@ const meta: Meta<typeof XDSStatusDot> = {
       control: 'boolean',
       description: 'Pulse animation',
     },
+    tooltip: {
+      control: 'text',
+      description: 'Tooltip text on hover',
+    },
   },
 };
 
@@ -75,6 +79,17 @@ export const StatusIndicators: Story = {
         <XDSStatusDot variant="neutral" label="Unknown" />
         <span>Unknown</span>
       </div>
+    </div>
+  ),
+};
+
+export const WithTooltip: Story = {
+  render: () => (
+    <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
+      <XDSStatusDot variant="success" label="Online" tooltip="Online" />
+      <XDSStatusDot variant="warning" label="Away" tooltip="Away" />
+      <XDSStatusDot variant="error" label="Offline" tooltip="Offline" />
+      <XDSStatusDot variant="neutral" label="Unknown" tooltip="Unknown" />
     </div>
   ),
 };
