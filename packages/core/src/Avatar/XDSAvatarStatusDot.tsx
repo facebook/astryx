@@ -15,7 +15,7 @@
  * - /packages/cli/templates/blocks/components/Avatar/ (showcase blocks)
  */
 
-import {use, type ReactNode} from 'react';
+import React, {use, type ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars} from '../theme/tokens.stylex';
@@ -76,7 +76,8 @@ export interface XDSAvatarStatusDotVariantMap {
  */
 export type XDSAvatarStatusDotVariant = keyof XDSAvatarStatusDotVariantMap;
 
-export interface XDSAvatarStatusDotProps extends XDSBaseProps<HTMLSpanElement> {
+export interface XDSAvatarStatusDotProps extends XDSBaseProps<HTMLDivElement> {
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * The semantic color variant of the dot.
    * - `success` — green dot (e.g. online, accepted)
@@ -177,6 +178,7 @@ const variantStyleMap: Partial<
  * ```
  */
 export function XDSAvatarStatusDot({
+  ref,
   variant = 'success',
   label,
   icon,
@@ -190,6 +192,7 @@ export function XDSAvatarStatusDot({
 
   return (
     <div
+      ref={ref}
       {...(label ? {role: 'img', 'aria-label': label} : undefined)}
       {...mergeProps(
         xdsClassName('avatar-status-dot', {variant}),

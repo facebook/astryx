@@ -11,7 +11,7 @@
  * - /packages/cli/templates/blocks/components/Typeahead/ (showcase blocks)
  */
 
-import type {ReactNode} from 'react';
+import React, {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -30,6 +30,7 @@ import {xdsClassName, mergeProps} from '../utils';
 export interface XDSTypeaheadItemProps<
   T extends XDSSearchableItem = XDSSearchableItem,
 > extends XDSBaseProps<HTMLDivElement> {
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * The search result item.
    */
@@ -125,6 +126,7 @@ const styles = stylex.create({
  * ```
  */
 export function XDSTypeaheadItem<T extends XDSSearchableItem>({
+  ref,
   item,
   icon,
   description,
@@ -137,6 +139,7 @@ export function XDSTypeaheadItem<T extends XDSSearchableItem>({
 
   return (
     <div
+      ref={ref}
       {...mergeProps(
         xdsClassName('typeahead-item'),
         stylex.props(styles.container, isDisabled && styles.disabled),

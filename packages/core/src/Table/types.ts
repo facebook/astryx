@@ -11,6 +11,7 @@
  * - /packages/core/src/Table/index.ts (exports if types change)
  */
 
+import type React from 'react';
 import type {
   ComponentType,
   HTMLAttributes,
@@ -365,6 +366,7 @@ export interface TableHeaderCellComponentProps extends ThHTMLAttributes<HTMLTabl
 export interface XDSBaseTableProps<
   T extends Record<string, unknown>,
 > extends XDSBaseProps<HTMLTableElement> {
+  ref?: React.Ref<HTMLTableElement>;
   /** Array of data items to render as rows */
   data?: T[];
   /** Column definitions. If omitted, auto-generated from data keys. */

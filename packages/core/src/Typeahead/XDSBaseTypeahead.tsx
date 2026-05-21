@@ -50,6 +50,7 @@ import type {XDSSearchableItem, XDSSearchSource} from './types';
 export interface XDSBaseTypeaheadProps<
   T extends XDSSearchableItem,
 > extends Omit<XDSBaseProps<HTMLElement>, 'onChange'> {
+  ref?: React.Ref<HTMLInputElement>;
   /**
    * Search source providing items.
    */
@@ -298,7 +299,7 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
   debounceMs = 150,
   size = 'md',
   ref,
-}: XDSBaseTypeaheadProps<T> & {ref?: React.Ref<HTMLInputElement>}) {
+}: XDSBaseTypeaheadProps<T>) {
   const generatedId = useId();
   const inputId = externalInputId ?? generatedId;
   const listboxId = useId();
@@ -737,7 +738,7 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
     </>
   );
 } as <T extends XDSSearchableItem>(
-  props: XDSBaseTypeaheadProps<T> & {ref?: React.Ref<HTMLInputElement>},
+  props: XDSBaseTypeaheadProps<T>,
 ) => React.ReactElement;
 
 (XDSBaseTypeahead as {displayName?: string}).displayName = 'XDSBaseTypeahead';

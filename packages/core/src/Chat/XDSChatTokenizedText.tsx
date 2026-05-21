@@ -17,7 +17,7 @@
  * - /packages/cli/templates/blocks/components/ChatTokenizedText/ (block examples)
  */
 
-import type {ReactNode} from 'react';
+import React, {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSBadge} from '../Badge';
 import type {XDSChatComposerToken} from './XDSChatComposerInput';
@@ -39,6 +39,7 @@ const styles = stylex.create({
 // =============================================================================
 
 export interface XDSChatTokenizedTextProps extends XDSBaseProps<HTMLSpanElement> {
+  ref?: React.Ref<HTMLSpanElement>;
   /** The message text containing serialized token values */
   children: string;
   /**
@@ -86,12 +87,14 @@ function escapeRegExp(str: string): string {
  * so you can share a single token definition between input and display.
  */
 export function XDSChatTokenizedText({
+  ref,
   children,
   tokens,
 }: XDSChatTokenizedTextProps) {
   if (!children || !tokens || tokens.length === 0) {
     return (
       <span
+        ref={ref}
         {...mergeProps(
           xdsClassName('chat-tokenized-text'),
           stylex.props(styles.root),
@@ -104,6 +107,7 @@ export function XDSChatTokenizedText({
   const parts = renderTokens(children, tokens);
   return (
     <span
+      ref={ref}
       {...mergeProps(
         xdsClassName('chat-tokenized-text'),
         stylex.props(styles.root),

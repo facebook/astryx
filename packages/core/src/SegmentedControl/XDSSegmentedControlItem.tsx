@@ -15,7 +15,7 @@
  * - /packages/cli/templates/blocks/components/SegmentedControl/ (showcase blocks)
  */
 
-import {useCallback, type ReactNode} from 'react';
+import React, {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -33,6 +33,7 @@ import {xdsClassName, mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 export interface XDSSegmentedControlItemProps extends XDSBaseProps<HTMLButtonElement> {
+  ref?: React.Ref<HTMLButtonElement>;
   /**
    * Unique value for this segment. Matched against the parent's value.
    */
@@ -160,6 +161,7 @@ const iconSizeStyles = stylex.create({
  * ```
  */
 export function XDSSegmentedControlItem({
+  ref,
   value,
   label,
   isLabelHidden = false,
@@ -185,6 +187,7 @@ export function XDSSegmentedControlItem({
 
   return (
     <button
+      ref={ref}
       type="button"
       role="radio"
       aria-checked={isSelected}

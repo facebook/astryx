@@ -16,7 +16,7 @@
  * - /packages/cli/templates/blocks/components/RadioList/ (showcase blocks)
  */
 
-import {use, useId, type ReactNode} from 'react';
+import React, {use, useId, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {
@@ -191,6 +191,7 @@ const dotSizeStyles = stylex.create({
 });
 
 export interface XDSRadioListItemProps extends XDSBaseProps<HTMLDivElement> {
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * Label text for the radio item.
    */
@@ -232,6 +233,7 @@ export interface XDSRadioListItemProps extends XDSBaseProps<HTMLDivElement> {
  * ```
  */
 export function XDSRadioListItem({
+  ref,
   label,
   value,
   description,
@@ -253,6 +255,7 @@ export function XDSRadioListItem({
 
   return (
     <div
+      ref={ref}
       data-testid={dataTestId}
       {...mergeProps(
         xdsClassName('radio-list-item'),

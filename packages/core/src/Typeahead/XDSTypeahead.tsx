@@ -60,6 +60,7 @@ export interface XDSTypeaheadProps<T extends XDSSearchableItem> extends Omit<
   XDSBaseProps<HTMLDivElement>,
   'onChange'
 > {
+  ref?: React.Ref<HTMLDivElement>;
   /** Accessible label (required). */
   label: string;
   /** Visually hide the label. @default false */
@@ -192,6 +193,7 @@ const styles = stylex.create({
  * ```
  */
 export function XDSTypeahead<T extends XDSSearchableItem>({
+  ref,
   label,
   isLabelHidden = false,
   description,
@@ -346,6 +348,7 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
 
   return (
     <XDSField
+      ref={ref}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}

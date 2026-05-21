@@ -23,7 +23,7 @@ import {xdsClassName, mergeProps} from '../utils';
 
 export interface XDSAspectRatioProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
-  ref?: React.Ref<HTMLElement>;
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * The aspect ratio as width/height (e.g., 16/9 = 1.777..., 4/3 = 1.333..., 1 for square).
    */
@@ -100,7 +100,7 @@ export function XDSAspectRatio({
 }: XDSAspectRatioProps) {
   return (
     <div
-      ref={ref as React.Ref<HTMLDivElement>}
+      ref={ref}
       {...mergeProps(
         xdsClassName('aspect-ratio'),
         stylex.props(styles.container, xstyle),

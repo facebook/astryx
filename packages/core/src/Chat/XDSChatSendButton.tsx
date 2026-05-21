@@ -17,7 +17,7 @@
  * - **Stop** — neutral/secondary, stop icon, calls onStop.
  */
 
-import type {ReactNode} from 'react';
+import React, {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSButton} from '../Button';
 import {getIcon} from '../Icon/globalIconRegistry';
@@ -29,7 +29,8 @@ import type {XDSBaseProps} from '../XDSBaseProps';
 // Types
 // =============================================================================
 
-export interface XDSChatSendButtonProps extends XDSBaseProps<HTMLElement> {
+export interface XDSChatSendButtonProps extends XDSBaseProps<HTMLButtonElement> {
+  ref?: React.Ref<HTMLButtonElement>;
   /** Whether the assistant is currently streaming a response. */
   isStreaming?: boolean;
   /** Whether the send button is disabled. Defaults to `!canSend` from context. */
@@ -84,12 +85,14 @@ export function XDSChatSendButton(props: XDSChatSendButtonProps): ReactNode {
     stopIcon,
     size = 'md',
     xstyle,
+    ref,
   } = props;
 
   const handleSend = onSend ?? (() => context?.onSubmit(''));
 
   return (
     <XDSButton
+      ref={ref}
       label={isStreaming ? 'Stop' : 'Send'}
       variant={isStreaming ? 'secondary' : 'primary'}
       size={size}

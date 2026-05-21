@@ -16,7 +16,7 @@
  * - /packages/cli/templates/blocks/components/RadioList/ (showcase blocks)
  */
 
-import {createContext, useId, useMemo, type ReactNode} from 'react';
+import React, {createContext, useId, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {XDSField} from '../Field/XDSField';
@@ -61,6 +61,7 @@ export interface XDSRadioListProps extends Omit<
   XDSBaseProps<HTMLElement>,
   'onChange'
 > {
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * Label text for the radio group (always rendered for accessibility).
    */
@@ -144,6 +145,7 @@ export interface XDSRadioListProps extends Omit<
  * ```
  */
 export function XDSRadioList({
+  ref,
   label,
   isLabelHidden = false,
   description,
@@ -174,6 +176,7 @@ export function XDSRadioList({
 
   return (
     <XDSField
+      ref={ref}
       data-testid={dataTestId}
       label={label}
       isLabelHidden={isLabelHidden}

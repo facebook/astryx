@@ -18,6 +18,7 @@
  * - /packages/cli/templates/blocks/components/ChatDictationButton/ (block examples)
  */
 
+import React from 'react';
 import type {UseSpeechRecognitionReturn} from './useSpeechRecognition';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars} from '../theme/tokens.stylex';
@@ -31,6 +32,7 @@ import type {XDSBaseProps} from '../XDSBaseProps';
 // =============================================================================
 
 export interface XDSChatDictationButtonProps extends XDSBaseProps<HTMLSpanElement> {
+  ref?: React.Ref<HTMLSpanElement>;
   /** The return value from useXDSChatDictation or useSpeechRecognition. */
   dictation: UseSpeechRecognitionReturn;
   /** Button size. @default "md" */
@@ -95,6 +97,7 @@ const SIZE_CONFIG = {
  * ```
  */
 export function XDSChatDictationButton({
+  ref,
   dictation,
   size = 'md',
   isHiddenWhenUnsupported = true,
@@ -123,7 +126,7 @@ export function XDSChatDictationButton({
   const {barWidth, barGap, barMaxHeight} = SIZE_CONFIG[size];
 
   return (
-    <span {...stylex.props(styles.wrapper, xstyle)}>
+    <span ref={ref} {...stylex.props(styles.wrapper, xstyle)}>
       {isListening && (
         <span
           aria-hidden

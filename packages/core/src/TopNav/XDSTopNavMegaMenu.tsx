@@ -23,7 +23,13 @@
  * - /packages/cli/templates/blocks/components/TopNav/ (showcase blocks)
  */
 
-import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -203,6 +209,7 @@ const styles = stylex.create({
 // =============================================================================
 
 export interface XDSTopNavMegaMenuProps extends XDSBaseProps<HTMLButtonElement> {
+  ref?: React.Ref<HTMLButtonElement>;
   /** The visible label for the nav item trigger. */
   label: string;
   /**
@@ -276,6 +283,7 @@ export interface XDSTopNavMegaMenuProps extends XDSBaseProps<HTMLButtonElement> 
  * ```
  */
 export function XDSTopNavMegaMenu({
+  ref,
   label,
   items,
   featured,
@@ -304,6 +312,7 @@ export function XDSTopNavMegaMenu({
   // =========================================================================
   return (
     <DefaultMegaMenu
+      ref={ref}
       label={label}
       items={items}
       featured={featured}
@@ -321,6 +330,7 @@ XDSTopNavMegaMenu.displayName = 'XDSTopNavMegaMenu';
 // =============================================================================
 
 function DefaultMegaMenu({
+  ref,
   label,
   items,
   featured,
@@ -418,10 +428,22 @@ function DefaultMegaMenu({
     };
   }, [clearTimeouts]);
 
+  const setButtonRef = useCallback(
+    (el: HTMLButtonElement | null) => {
+      triggerButtonRef.current = el;
+      if (typeof ref === 'function') {
+        ref(el);
+      } else if (ref) {
+        (ref as React.MutableRefObject<HTMLButtonElement | null>).current = el;
+      }
+    },
+    [ref],
+  );
+
   return (
     <>
       <button
-        ref={triggerButtonRef}
+        ref={setButtonRef}
         type="button"
         aria-haspopup="true"
         aria-expanded={popover.isOpen}

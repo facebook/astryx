@@ -17,7 +17,7 @@
  * - /packages/cli/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
-import {useCallback, type ReactNode} from 'react';
+import React, {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {durationVars, easeVars} from '../theme/tokens.stylex';
 import {getIcon} from '../Icon/globalIconRegistry';
@@ -48,6 +48,7 @@ const styles = stylex.create({
 // =============================================================================
 
 export interface XDSSideNavCollapseButtonProps extends XDSBaseProps<HTMLButtonElement> {
+  ref?: React.Ref<HTMLButtonElement>;
   /**
    * Ref to the XDSSideNav element. Only needed when the button is
    * rendered outside the sidenav (reads collapse state via ref instead
@@ -93,6 +94,7 @@ export interface XDSSideNavCollapseButtonProps extends XDSBaseProps<HTMLButtonEl
  * ```
  */
 export function XDSSideNavCollapseButton({
+  ref,
   sideNavRef: _sideNavRef,
   label,
   children,
@@ -116,6 +118,7 @@ export function XDSSideNavCollapseButton({
 
   return (
     <XDSButton
+      ref={ref}
       label={label ?? (isCollapsed ? 'Expand sidebar' : 'Collapse sidebar')}
       variant="ghost"
       onClick={handleClick}

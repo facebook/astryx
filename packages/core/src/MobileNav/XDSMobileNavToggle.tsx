@@ -13,7 +13,7 @@
  * Can be placed anywhere in the component tree (TopNav, content area, custom toolbar, etc.).
  */
 
-import {type ReactNode} from 'react';
+import React, {type ReactNode} from 'react';
 import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
 import {useXDSAppShellMobile} from '../AppShell/XDSAppShellMobileContext';
@@ -23,6 +23,7 @@ export interface XDSMobileNavToggleProps extends Pick<
   XDSBaseProps,
   'xstyle' | 'className' | 'style'
 > {
+  ref?: React.Ref<HTMLButtonElement>;
   /**
    * Custom content to render instead of the default hamburger icon.
    */
@@ -57,6 +58,7 @@ export interface XDSMobileNavToggleProps extends Pick<
  * ```
  */
 export function XDSMobileNavToggle({
+  ref,
   children,
   label = 'Open navigation',
   'data-testid': testId,
@@ -74,6 +76,7 @@ export function XDSMobileNavToggle({
 
   return (
     <XDSButton
+      ref={ref}
       variant="ghost"
       label={label}
       icon={children ?? <XDSIcon icon="menu" color="inherit" />}

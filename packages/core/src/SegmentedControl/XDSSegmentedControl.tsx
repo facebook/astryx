@@ -31,6 +31,7 @@ export interface XDSSegmentedControlProps extends Omit<
   XDSBaseProps<HTMLDivElement>,
   'onChange'
 > {
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * The currently selected value (controlled).
    */
@@ -118,6 +119,7 @@ const sizeStyles = stylex.create({
  * ```
  */
 export function XDSSegmentedControl({
+  ref,
   value,
   onChange,
   label,
@@ -131,6 +133,16 @@ export function XDSSegmentedControl({
 }: XDSSegmentedControlProps) {
   const size = useXDSSize(sizeProp, 'md') as XDSSegmentedControlSize;
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Merge refs
+  const setContainerRef = (element: HTMLDivElement | null) => {
+    (containerRef as React.RefObject<HTMLDivElement | null>).current = element;
+    if (typeof ref === 'function') {
+      ref(element);
+    } else if (ref) {
+      (ref as React.RefObject<HTMLDivElement | null>).current = element;
+    }
+  };
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -197,7 +209,7 @@ export function XDSSegmentedControl({
   return (
     <XDSSegmentedControlContext value={contextValue}>
       <div
-        ref={containerRef}
+        ref={setContainerRef}
         role="radiogroup"
         aria-label={label}
         aria-disabled={isDisabled || undefined}

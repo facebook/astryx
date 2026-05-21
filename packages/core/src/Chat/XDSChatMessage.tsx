@@ -37,7 +37,7 @@ import {xdsClassName, mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 export interface XDSChatMessageProps extends XDSBaseProps<HTMLElement> {
-  ref?: React.Ref<HTMLDivElement>;
+  ref?: React.Ref<HTMLElement>;
   sender: XDSChatMessageSender;
   children: ReactNode;
   avatar?: ReactNode;

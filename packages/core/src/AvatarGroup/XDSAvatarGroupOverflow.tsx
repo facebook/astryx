@@ -13,7 +13,7 @@
  * - /packages/cli/templates/blocks/components/AvatarGroup/ (showcase blocks)
  */
 
-import type {ReactNode} from 'react';
+import React, {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -32,6 +32,7 @@ export interface XDSAvatarGroupOverflowProps extends Omit<
   XDSBaseProps<HTMLElement>,
   'onClick'
 > {
+  ref?: React.Ref<HTMLElement>;
   /**
    * The overflow count to display.
    */
@@ -103,6 +104,7 @@ const dynamicStyles = stylex.create({
  * ```
  */
 export function XDSAvatarGroupOverflow({
+  ref,
   count,
   onClick,
   children,
@@ -117,6 +119,7 @@ export function XDSAvatarGroupOverflow({
   if (onClick) {
     return (
       <button
+        ref={ref as React.Ref<HTMLButtonElement>}
         type="button"
         onClick={onClick}
         aria-label={label}
@@ -138,6 +141,7 @@ export function XDSAvatarGroupOverflow({
 
   return (
     <span
+      ref={ref as React.Ref<HTMLSpanElement>}
       aria-label={label}
       {...mergeProps(
         xdsClassName('avatar-group-overflow'),

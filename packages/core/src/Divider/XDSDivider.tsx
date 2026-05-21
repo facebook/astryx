@@ -52,7 +52,7 @@ export type XDSDividerVariant = keyof XDSDividerVariantMap;
 
 export interface XDSDividerProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
-  ref?: React.Ref<HTMLElement>;
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * Orientation of the divider.
    * @default 'horizontal'
@@ -192,7 +192,7 @@ export function XDSDivider({
 
   return (
     <div
-      ref={ref as React.Ref<HTMLDivElement>}
+      ref={ref}
       role="separator"
       aria-orientation={orientation}
       {...mergeProps(

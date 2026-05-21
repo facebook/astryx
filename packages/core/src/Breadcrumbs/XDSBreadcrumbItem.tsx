@@ -16,7 +16,13 @@
  * - /packages/cli/templates/blocks/components/Breadcrumbs/ (showcase blocks)
  */
 
-import {use, useRef, useEffect, type ReactNode, type MouseEvent} from 'react';
+import React, {
+  use,
+  useRef,
+  useEffect,
+  type ReactNode,
+  type MouseEvent,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, typeScaleVars} from '../theme/tokens.stylex';
 import {BreadcrumbContext} from './XDSBreadcrumbs';
@@ -33,6 +39,7 @@ export interface XDSBreadcrumbItemProps extends Omit<
   XDSBaseProps<HTMLLIElement>,
   'onClick'
 > {
+  ref?: React.Ref<HTMLLIElement>;
   /**
    * Custom component to render instead of `<a>` for breadcrumb links.
    * Overrides the provider-level default set by XDSLinkProvider.
@@ -160,6 +167,7 @@ const itemStyles = stylex.create({
  * ```
  */
 export function XDSBreadcrumbItem({
+  ref,
   as,
   children,
   href,
@@ -172,6 +180,16 @@ export function XDSBreadcrumbItem({
   const LinkComponent = useXDSLinkComponent(as);
   const isSupporting = ctx.variant === 'supporting';
   const liRef = useRef<HTMLLIElement>(null);
+
+  // Merge refs
+  const setLiRef = (element: HTMLLIElement | null) => {
+    (liRef as React.RefObject<HTMLLIElement | null>).current = element;
+    if (typeof ref === 'function') {
+      ref(element);
+    } else if (ref) {
+      (ref as React.RefObject<HTMLLIElement | null>).current = element;
+    }
+  };
 
   const isCurrent = isCurrentProp === true;
   const isAutoCandidate = isCurrentProp == null;
@@ -217,7 +235,7 @@ export function XDSBreadcrumbItem({
   if (isCurrent) {
     return (
       <li
-        ref={liRef}
+        ref={setLiRef}
         {...mergeProps(
           xdsClassName('breadcrumb-item'),
           stylex.props(
@@ -248,7 +266,7 @@ export function XDSBreadcrumbItem({
   // The effect handles adding aria-current for auto-last detection.
   return (
     <li
-      ref={liRef}
+      ref={setLiRef}
       {...mergeProps(
         xdsClassName('breadcrumb-item'),
         stylex.props(

@@ -107,7 +107,7 @@ const dynamicStyles = stylex.create({
 });
 
 export interface XDSLayoutPanelProps extends XDSBaseProps<HTMLDivElement> {
-  ref?: React.Ref<HTMLElement>;
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * Content to render inside the panel.
    */
@@ -251,7 +251,7 @@ export function XDSLayoutPanel({
 
   return (
     <div
-      ref={ref as React.Ref<HTMLDivElement>}
+      ref={ref}
       role={role}
       aria-label={label}
       {...mergeProps(
