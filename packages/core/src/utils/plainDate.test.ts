@@ -32,6 +32,26 @@ describe('plainDateCreate', () => {
     });
   });
 
+  it('throws for year < 1', () => {
+    expect(() => plainDateCreate(0, 1, 1)).toThrow(RangeError);
+  });
+
+  it('throws for negative year', () => {
+    expect(() => plainDateCreate(-1, 1, 1)).toThrow(RangeError);
+  });
+
+  it('throws for non-integer year', () => {
+    expect(() => plainDateCreate(2026.5, 1, 1)).toThrow(RangeError);
+  });
+
+  it('throws for non-integer month', () => {
+    expect(() => plainDateCreate(2026, 1.5, 1)).toThrow(RangeError);
+  });
+
+  it('throws for non-integer day', () => {
+    expect(() => plainDateCreate(2026, 1, 1.5)).toThrow(RangeError);
+  });
+
   it('throws for month < 1', () => {
     expect(() => plainDateCreate(2026, 0, 1)).toThrow(RangeError);
   });

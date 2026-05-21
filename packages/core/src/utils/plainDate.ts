@@ -16,11 +16,14 @@ export function plainDateCreate(
   month: number,
   day: number,
 ): PlainDate {
-  if (month < 1 || month > 12) {
+  if (!Number.isInteger(year) || year < 1) {
+    throw new RangeError(`year must be a positive integer, got ${year}`);
+  }
+  if (!Number.isInteger(month) || month < 1 || month > 12) {
     throw new RangeError(`month must be 1–12, got ${month}`);
   }
   const maxDay = getDaysInMonth(year, month);
-  if (day < 1 || day > maxDay) {
+  if (!Number.isInteger(day) || day < 1 || day > maxDay) {
     throw new RangeError(
       `day must be 1–${maxDay} for ${year}-${String(month).padStart(2, '0')}, got ${day}`,
     );
@@ -58,8 +61,8 @@ export function plainDateToday(): PlainDate {
 
 export function getDaysInMonth(year: number, month: number): number {
   if (month === 2) {
-    const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-    return leap ? 29 : 28;
+    const isLeap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+    return isLeap ? 29 : 28;
   }
   return [0, 31, 0, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month];
 }
@@ -69,7 +72,10 @@ export function plainDateDayOfWeek(pd: PlainDate): number {
 }
 
 export function plainDateAddMonths(pd: PlainDate, n: number): PlainDate {
-  const d = new Date(pd.year, pd.month - 1 + n, 1);
+  // Set day to 1 first to avoid Date overflow (e.g. Jan 31 + 1 month → Mar 3)
+  const d = plainDateToDate({...pd, day: 1});
+  d.setMonth(d.getMonth() + n);
+  // Clamp day to target month length (e.g. Jan 31 + 1 month → Feb 28, not Mar 3)
   const maxDay = getDaysInMonth(d.getFullYear(), d.getMonth() + 1);
   return {
     year: d.getFullYear(),
@@ -79,7 +85,8 @@ export function plainDateAddMonths(pd: PlainDate, n: number): PlainDate {
 }
 
 export function plainDateAddDays(pd: PlainDate, n: number): PlainDate {
-  const d = new Date(pd.year, pd.month - 1, pd.day + n);
+  const d = plainDateToDate(pd);
+  d.setDate(d.getDate() + n);
   return plainDateFromDate(d);
 }
 
