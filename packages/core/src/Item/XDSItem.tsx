@@ -447,7 +447,7 @@ export function XDSItem({
 
   return (
     <Component
-      ref={ref}
+      ref={ref as React.Ref<never>}
       aria-selected={isSelected || undefined}
       aria-disabled={isDisabled || undefined}
       {...restProps}
