@@ -13,7 +13,7 @@
  * volume level from the microphone via AudioContext analyser.
  */
 
-import {useState, useCallback, useEffect, useRef} from 'react';
+import {useState, useCallback, useEffect, useMemo, useRef} from 'react';
 
 // =============================================================================
 // Types
@@ -276,7 +276,7 @@ export function useSpeechRecognition(
     [externalAudioContext],
   );
 
-  const [isSupported, setIsSupported] = useState(false);
+  const isSupported = useMemo(() => getSpeechRecognition() != null, []);
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [volume, setVolume] = useState(0);
@@ -308,8 +308,6 @@ export function useSpeechRecognition(
   };
 
   useEffect(() => {
-    const SR = getSpeechRecognition();
-    setIsSupported(SR != null);
     return () => {
       recognitionRef.current?.abort();
       recognitionRef.current = null;
