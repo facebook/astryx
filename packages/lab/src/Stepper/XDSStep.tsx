@@ -213,7 +213,7 @@ const styles = stylex.create({
     color: colorVars['--color-success'],
   },
   iconInProgress: {
-    color: colorVars['--color-accent'],
+    color: colorVars['--color-icon-primary'],
   },
   iconNotStarted: {
     color: colorVars['--color-icon-secondary'],
