@@ -1,16 +1,16 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 # Deploy PR previews to Vercel.
-# Runs on every PR — builds Storybook, deploys to Vercel with no auth checks,
-# and posts a comment with the deployment URL and status.
+# Runs on every PR — builds Storybook, deploys to Vercel, and posts a
+# comment with the deployment URL and status.
 #
 # Required secrets:
 #   VERCEL_TOKEN      — Vercel API token
 #   VERCEL_ORG_ID     — Vercel team/org ID
 #   VERCEL_PROJECT_ID — Vercel project ID
 #
-# The preview URLs have authentication disabled so anyone with the link
-# can view without logging in.
+# To disable authentication on previews, go to Vercel project settings:
+#   Settings → General → "Vercel Authentication" → toggle OFF
 
 name: Vercel Preview
 
@@ -61,11 +61,9 @@ jobs:
           DEPLOY_URL=$(vercel deploy ./apps/storybook/dist \
             --token=${{ secrets.VERCEL_TOKEN }} \
             --yes \
-            --skip-domain-and-project-settings \
             --meta githubPrNumber=${{ github.event.pull_request.number }} \
             --meta githubCommitSha=${{ github.event.pull_request.head.sha }} \
-            --meta githubRepo=${{ github.repository }} \
-            2>&1 | tail -1)
+            --meta githubRepo=${{ github.repository }})
 
           echo "url=${DEPLOY_URL}" >> $GITHUB_OUTPUT
           echo "Deployed to: ${DEPLOY_URL}"
