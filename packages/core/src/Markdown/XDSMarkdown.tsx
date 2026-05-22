@@ -660,78 +660,87 @@ function wrapTextWithFade(
   }
 
   const {boundaries} = cursor;
-  const oldestBoundary = boundaries.length > 0 ? boundaries[0] : 0;
   const endOffset = startOffset + content.length;
 
-  // If this text node ends before the oldest boundary, it's fully settled
+  // No boundaries yet — return plain text
+  if (boundaries.length === 0) {
+    return content;
+  }
+
+  const oldestBoundary = boundaries[0];
+
+  // Entirely before the oldest boundary — fully settled
   if (endOffset <= oldestBoundary) {
     return content;
   }
 
-  // Build segments: split text at each boundary that falls within this node
+  // Build segments. Each boundary defines the START of a span.
+  // That span's content extends from the boundary to the NEXT boundary (or end of text).
+  // The span is keyed by its boundary value — stable for its entire lifetime.
+  // The last boundary's span keeps growing as new text arrives (same key, content updates).
   const segments: React.ReactNode[] = [];
   let pos = startOffset;
 
-  for (let i = 0; i < boundaries.length; i++) {
-    const b = boundaries[i];
-    if (b <= pos) {
-      continue;
-    }
-    if (b >= endOffset) {
-      break;
-    }
-
-    // Text from pos to b: this belongs to the previous segment
-    if (i === 0 && pos < b) {
-      // Before the oldest boundary — plain text, no animation
-      segments.push(
-        <span
-          key={`settled-${key}`}
-          style={{backgroundColor: 'rgba(200,200,200,0.3)'}}>
-          {content.slice(pos - startOffset, b - startOffset)}
-        </span>,
-      );
-    } else if (pos < b) {
-      // Between boundaries[i-1] and boundaries[i] — graduated text, fully visible
-      const spanKey = `fade-${key}-b${boundaries[i - 1]}`;
-      segments.push(
-        <span key={spanKey} style={{backgroundColor: debugColor(spanKey)}}>
-          {content.slice(pos - startOffset, b - startOffset)}
-        </span>,
-      );
-    }
-    pos = b;
-  }
-
-  // Remaining text after the last boundary — newest chunk.
-  // Uses a STABLE key so it never remounts (no flash). Content grows
-  // each tick but the element stays alive with its animation running.
-  if (pos < endOffset) {
-    const tailKey = `fade-${key}-tail`;
+  // Text before the oldest boundary — settled, no animation
+  if (pos < oldestBoundary && oldestBoundary < endOffset) {
     segments.push(
-      <span key={tailKey} style={{backgroundColor: debugColor(tailKey)}}>
-        <span data-fade={tailKey} {...stylex.props(streamingStyles.fadeIn)}>
-          {content.slice(pos - startOffset)}
-        </span>
+      <span
+        key={`settled-${key}`}
+        style={{backgroundColor: 'rgba(200,200,200,0.3)'}}>
+        {content.slice(0, oldestBoundary - startOffset)}
       </span>,
     );
+    pos = oldestBoundary;
   }
 
+  // Each boundary gets a span. The span covers from this boundary to the next
+  // (or to end-of-text for the last boundary).
+  for (let i = 0; i < boundaries.length; i++) {
+    const bStart = boundaries[i];
+    const bEnd = i + 1 < boundaries.length ? boundaries[i + 1] : endOffset;
+
+    // Skip boundaries entirely outside this text node
+    if (bStart >= endOffset || bEnd <= pos) {
+      continue;
+    }
+
+    // Clamp to this text node
+    const clampedStart = Math.max(bStart, pos);
+    const clampedEnd = Math.min(bEnd, endOffset);
+
+    if (clampedStart >= clampedEnd) {
+      continue;
+    }
+
+    const isLast = i === boundaries.length - 1;
+    const spanKey = `fade-${key}-b${bStart}`;
+
+    segments.push(
+      <span key={spanKey} style={{backgroundColor: debugColor(spanKey)}}>
+        {isLast ? (
+          // Last boundary's span — still actively receiving text, animate
+          <span data-fade={spanKey} {...stylex.props(streamingStyles.fadeIn)}>
+            {content.slice(
+              clampedStart - startOffset,
+              clampedEnd - startOffset,
+            )}
+          </span>
+        ) : (
+          // Older boundary's span — graduated, fully visible
+          content.slice(clampedStart - startOffset, clampedEnd - startOffset)
+        )}
+      </span>,
+    );
+    pos = clampedEnd;
+  }
+
+  if (segments.length === 0) {
+    return content;
+  }
   if (segments.length === 1) {
     return segments[0];
   }
   return <Fragment key={`wrap-${key}`}>{segments}</Fragment>;
-}
-
-/**
- * Context for citation rendering, threaded through the inline/block render tree.
- * Tracks which sources have been cited and assigns sequential display numbers.
- */
-interface CitationContext {
-  sources: Record<string, XDSMarkdownSource>;
-  numberMap: Map<string, number>;
-  nextNumber: number;
-  style: 'label' | 'number';
 }
 
 function getCitationNumber(ctx: CitationContext, sourceId: string): number {
