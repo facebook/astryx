@@ -393,11 +393,13 @@ function parseDuration(value: string): number | null {
 const streamingStyles = stylex.create({
   fadeIn: {
     opacity: 1,
-    transitionProperty: 'opacity',
-    transitionDuration: durationVars['--duration-fast-max'],
+    backgroundColor: 'transparent',
+    transitionProperty: 'opacity, background-color',
+    transitionDuration: '800ms',
     transitionTimingFunction: easeVars['--ease-standard'],
     '@starting-style': {
       opacity: 0,
+      backgroundColor: 'rgba(100, 200, 255, 0.4)',
     },
   },
 });
