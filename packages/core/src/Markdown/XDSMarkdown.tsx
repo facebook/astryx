@@ -622,6 +622,18 @@ function wrapTextWithFade(
   if (!cursor.active) {
     return content;
   }
+
+  // DEBUG: log cursor state
+  if (typeof window !== 'undefined') {
+    console.log('[fade]', {
+      startOffset,
+      boundary: cursor.boundary,
+      contentLen: content.length,
+      active: cursor.active,
+      content: content.slice(0, 20),
+    });
+  }
+
   if (startOffset >= cursor.boundary) {
     // Entirely new text
     return (
