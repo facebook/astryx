@@ -20,7 +20,6 @@ import {
   useId,
   useState,
   useCallback,
-  useEffect,
   useRef,
   useMemo,
   useOptimistic,
@@ -457,13 +456,16 @@ export function XDSDateTimeInput({
   // --- Date input state ---
   const [datePendingInput, setDatePendingInput] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (valueParts.date === lastFiredDateRef.current) {
-      return;
+  const prevDateRef = useRef(valueParts.date);
+  if (valueParts.date !== prevDateRef.current) {
+    prevDateRef.current = valueParts.date;
+    if (valueParts.date !== lastFiredDateRef.current) {
+      lastFiredDateRef.current = undefined;
+      if (datePendingInput !== null) {
+        setDatePendingInput(null);
+      }
     }
-    lastFiredDateRef.current = undefined;
-    setDatePendingInput(null);
-  }, [valueParts.date]);
+  }
 
   const dateDisplayValue =
     datePendingInput !== null
