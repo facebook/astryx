@@ -394,7 +394,7 @@ const streamingStyles = stylex.create({
   fadeIn: {
     opacity: 1,
     transitionProperty: 'opacity',
-    transitionDuration: '600ms',
+    transitionDuration: durationVars['--duration-medium'],
     transitionTimingFunction: easeVars['--ease-standard'],
     '@starting-style': {
       opacity: 0,
@@ -628,13 +628,6 @@ function applyInlinePlugins(
  * into [old, <span fade>new</span>]. If entirely new, wraps the whole thing.
  */
 /** Check if a cursor offset is in the "new" (animating) region */
-function isNewContent(cursor: StreamingCursor): boolean {
-  if (!cursor.active || cursor.boundaries.length === 0) {
-    return false;
-  }
-  return cursor.offset >= cursor.boundaries[0];
-}
-
 function wrapTextWithFade(
   content: string,
   cursor: StreamingCursor,
@@ -749,23 +742,11 @@ function renderInline(
                 wrapTextWithFade(seg.content, cursor, `${index}-seg-${i}`),
               );
             } else {
-              // Plugin segment — advance cursor by matchLength, apply fade if new
+              // Plugin segment — advance cursor by matchLength
               cursor.offset += seg.matchLength;
-              if (isNewContent(cursor)) {
-                result.push(
-                  <span
-                    key={`fade-plugin-${index}-${i}`}
-                    {...stylex.props(streamingStyles.fadeIn)}>
-                    {seg.element}
-                  </span>,
-                );
-              } else {
-                result.push(
-                  <Fragment key={`plugin-${index}-${i}`}>
-                    {seg.element}
-                  </Fragment>,
-                );
-              }
+              result.push(
+                <Fragment key={`plugin-${index}-${i}`}>{seg.element}</Fragment>,
+              );
             }
           }
           return <Fragment key={index}>{result}</Fragment>;
@@ -833,15 +814,6 @@ function renderInline(
       ) : (
         <XDSCode key={index}>{node.content}</XDSCode>
       );
-      if (isNewContent(cursor)) {
-        return (
-          <span
-            key={`fade-code-${index}`}
-            {...stylex.props(streamingStyles.fadeIn)}>
-            {codeEl}
-          </span>
-        );
-      }
       return codeEl;
     }
     case 'link': {
@@ -952,7 +924,6 @@ function renderInline(
       const source = citationCtx.sources[node.sourceId] ?? {
         title: node.sourceId,
       };
-      const isNew = isNewContent(cursor);
       const citVariant = citationCtx.style === 'number' ? 'number' : 'label';
       const CitationComp = components?.citation;
       const chip = CitationComp ? (
@@ -971,15 +942,7 @@ function renderInline(
         />
       );
 
-      return isNew ? (
-        <span
-          key={`fade-cite-${index}`}
-          {...stylex.props(streamingStyles.fadeIn)}>
-          {chip}
-        </span>
-      ) : (
-        chip
-      );
+      return chip;
     }
   }
 }
@@ -1285,8 +1248,6 @@ function renderBlock(
                   item.children.length === 1 &&
                   firstChild?.type === 'paragraph';
 
-                const itemIsNew = isNewContent(cursor);
-
                 const label = isInline ? (
                   <>
                     {firstChild.children.map((c, j) =>
@@ -1324,16 +1285,13 @@ function renderBlock(
                   </>
                 );
 
-                const checkboxItem = (
+                return (
                   <XDSCheckboxListItem
-                    key={itemIsNew ? `fade-task-${i}` : i}
+                    key={i}
                     value={`task-${i}`}
                     label={label}
-                    xstyle={itemIsNew ? streamingStyles.fadeIn : undefined}
                   />
                 );
-
-                return checkboxItem;
               })}
             </XDSCheckboxList>
           </div>
@@ -1366,8 +1324,6 @@ function renderBlock(
 
               // Check if this entire list item is "new" — if so, fade the
               // whole item as a block instead of fading individual text spans.
-              const _itemTextLen = countBlockTextLength(item.children);
-              const itemIsNew = isNewContent(cursor);
 
               const label = isInline ? (
                 <>
@@ -1405,16 +1361,6 @@ function renderBlock(
                   )}
                 </>
               );
-
-              if (itemIsNew) {
-                return (
-                  <XDSListItem
-                    key={`fade-li-${i}`}
-                    label={label}
-                    xstyle={streamingStyles.fadeIn}
-                  />
-                );
-              }
 
               return <XDSListItem key={i} label={label} />;
             })}
@@ -1471,7 +1417,6 @@ function renderBlock(
             </XDSTableHeader>
             <XDSTableBody>
               {node.rows.map((row, i) => {
-                const rowIsNew = isNewContent(cursor);
                 const cells = row.map((cell, j) => (
                   <XDSTableCell
                     key={j}
@@ -1493,13 +1438,7 @@ function renderBlock(
                     )}
                   </XDSTableCell>
                 ));
-                return (
-                  <XDSTableRow
-                    key={rowIsNew ? `fade-row-${i}` : i}
-                    {...(rowIsNew ? stylex.props(streamingStyles.fadeIn) : {})}>
-                    {cells}
-                  </XDSTableRow>
-                );
+                return <XDSTableRow key={i}>{cells}</XDSTableRow>;
               })}
             </XDSTableBody>
           </XDSTable>
