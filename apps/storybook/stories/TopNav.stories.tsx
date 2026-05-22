@@ -69,6 +69,18 @@ export const Default: Story = {
   },
 };
 
+export const ChildrenNavigationItems: Story = {
+  render: () => (
+    <XDSTopNav
+      label="Main navigation"
+      heading={<XDSTopNavHeading heading="Children Alias" />}>
+      <XDSTopNavItem label="Home" href="#" isSelected />
+      <XDSTopNavItem label="Products" href="#" />
+      <XDSTopNavItem label="About" href="#" />
+    </XDSTopNav>
+  ),
+};
+
 export const WithLogo: Story = {
   args: {
     label: 'Main navigation',

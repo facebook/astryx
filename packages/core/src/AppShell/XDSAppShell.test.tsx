@@ -22,6 +22,7 @@ import {render, screen, fireEvent} from '@testing-library/react';
 import {XDSAppShell} from './XDSAppShell';
 import {XDSMobileNav} from '../MobileNav';
 import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '../SideNav';
+import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '../TopNav';
 
 // jsdom doesn't implement showModal/close on <dialog>, so we mock them
 beforeAll(() => {
@@ -299,6 +300,34 @@ describe('XDSAppShell', () => {
 
     // Default mobile nav should be rendered when below breakpoint
     expect(screen.getByRole('dialog', {hidden: true})).toBeInTheDocument();
+  });
+
+  it('keeps TopNav children in the combined mobile drawer with sideNav content', () => {
+    mockMql = createMockMatchMedia(true);
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
+
+    render(
+      <XDSAppShell
+        topNav={
+          <XDSTopNav
+            label="Navigation"
+            heading={<XDSTopNavHeading heading="App" />}>
+            <XDSTopNavItem label="Home" href="/" />
+          </XDSTopNav>
+        }
+        sideNav={<TestSideNav>Side item</TestSideNav>}>
+        <div>Content</div>
+      </XDSAppShell>,
+    );
+
+    expect(
+      screen.getByRole('button', {name: /open navigation/i}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByRole('dialog', {hidden: true}).length,
+    ).toBeGreaterThan(0);
+    expect(screen.getByText('Home')).toBeInTheDocument();
+    expect(screen.getAllByText('Side item').length).toBeGreaterThan(0);
   });
 
   it('renders mobile layout on first render when defaultIsMobile is true', () => {

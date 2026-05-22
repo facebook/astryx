@@ -26,7 +26,7 @@ export const docs = {
   components: [
     {
       name: 'XDSTopNav',
-      description: 'Main navigation bar container with slot-based layout.',
+      description: 'Main navigation bar container with slot-based layout. Children are accepted as an alias for startContent.',
       props: [
         {
           name: 'heading',
@@ -41,6 +41,13 @@ export const docs = {
           description:
             'Start content slot for navigation items or breadcrumbs — positioned after the heading, left-aligned.',
           slotElements: [{__element: 'XDSIcon', props: {icon: 'check', size: 'sm'}}],
+        },
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description:
+            'Alias for startContent. Prefer startContent when composing with heading, centerContent, or endContent; children keeps the common React nav-item pattern from silently dropping items.',
+          slotElements: [{__element: 'XDSTopNavItem', props: {label: 'Home', href: '#'}}],
         },
         {
           name: 'centerContent',
@@ -409,7 +416,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSTopNav',
-      description: '采用插槽式布局的主导航栏容器。',
+      description: '采用插槽式布局的主导航栏容器。children 可作为 startContent 的别名。',
       props: [
         {
           name: 'heading',
@@ -422,6 +429,12 @@ export const docsZh = {
           type: 'ReactNode',
           description:
             '起始内容插槽，用于导航项或面包屑 — 位于标题之后，左对齐。',
+        },
+        {
+          name: 'children',
+          type: 'ReactNode',
+          description:
+            'startContent 的别名。与 heading、centerContent 或 endContent 组合时优先使用 startContent；children 可避免常见 React 导航项写法被静默丢弃。',
         },
         {
           name: 'centerContent',
@@ -777,10 +790,11 @@ export const docsDense = {
   components: [
     {
       name: 'XDSTopNav',
-      description: 'Main nav bar container w/ slot-based layout.',
+      description: 'Main nav bar container w/ slot-based layout; children alias startContent.',
       propDescriptions: {
         heading: 'Heading slot (logo, brand) at left edge.',
         startContent: 'Nav items/breadcrumbs after heading, left-aligned.',
+        children: 'Alias for startContent; prefer startContent with other slots.',
         centerContent: 'Center slot (tabs, search); switches to 3-column CSS grid for true centering.',
         endContent: 'Search/icons/profile at right edge.',
         label: 'A11y label for nav landmark, aria-label on <nav>.',
