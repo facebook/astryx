@@ -281,8 +281,6 @@ export function XDSChatLayout({
 }: XDSChatLayoutProps) {
   const rootRef = useRef<HTMLDivElement>(null);
 
-  const contentRef = useRef<HTMLElement>(null);
-
   const scrollContainerRef =
     externalScrollRef ?? (rootRef as React.RefObject<HTMLElement | null>);
   const isSelfScrolling = !externalScrollRef;
@@ -292,7 +290,6 @@ export function XDSChatLayout({
   // --- Default scroll behavior ---
   const scroll = useXDSChatStreamScroll({scrollRef: scrollContainerRef});
   const newMsgs = useXDSChatNewMessages({
-    contentRef,
     isLocked: scroll.isLocked,
     onResize: scroll.scrollIfLocked,
   });
@@ -308,15 +305,10 @@ export function XDSChatLayout({
     />
   );
 
-  // --- Content ref callback for message list ---
-  const setContentRef = useCallback((el: HTMLElement | null) => {
-    contentRef.current = el;
-  }, []);
-
   // --- Layout context ---
   const layoutContext = useMemo(
-    () => ({scrollContainerRef, contentRef: setContentRef}),
-    [scrollContainerRef, setContentRef],
+    () => ({scrollContainerRef, contentRef: newMsgs.contentRef}),
+    [scrollContainerRef, newMsgs.contentRef],
   );
 
   // --- Density observer ---
