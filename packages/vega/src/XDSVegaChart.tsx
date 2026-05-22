@@ -148,7 +148,9 @@ export function XDSVegaChart({
             view?.finalize();
             return;
           }
-          onReadyRef.current?.(view!);
+          if (view) {
+            onReadyRef.current?.(view);
+          }
         })
         .catch(fail);
     } catch (err) {

@@ -262,7 +262,10 @@ export const Streaming: Story = {
           return;
         }
         // Add as running
-        const call = allCalls[i]!;
+        const call = allCalls[i];
+        if (call == null) {
+          return;
+        }
         setCalls(prev => [
           ...prev,
           {...call, status: 'running', duration: undefined},
@@ -273,7 +276,7 @@ export const Streaming: Story = {
         setTimeout(
           () => {
             setCalls(prev =>
-              prev.map((c, j) => (j === idx ? {...allCalls[idx]!} : c)),
+              prev.map((c, j) => (j === idx ? {...(allCalls[idx] ?? c)} : c)),
             );
             // Add next after completion
             setTimeout(addNext, 200);

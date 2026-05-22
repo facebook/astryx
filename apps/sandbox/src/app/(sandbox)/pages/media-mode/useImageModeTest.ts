@@ -74,10 +74,11 @@ export function useImageModeTest(
 
     let cancelled = false;
     const config = ALGO_CONFIG[algorithm];
+    const srcUrl = src;
 
     async function detect() {
       try {
-        const response = await fetch(src!, {mode: 'cors'});
+        const response = await fetch(srcUrl, {mode: 'cors'});
         const blob = await response.blob();
         const bitmap = await createImageBitmap(blob);
 

@@ -69,8 +69,11 @@ function autoColumns(
   });
 
   while (queue.length) {
-    const id = queue.shift()!;
-    const col = colMap.get(id)!;
+    const id = queue.shift();
+    if (id == null) {
+      break;
+    }
+    const col = colMap.get(id) ?? 0;
     for (const tgt of outEdges.get(id) || []) {
       const newCol = col + 1;
       colMap.set(tgt, Math.max(colMap.get(tgt) || 0, newCol));
@@ -183,22 +186,27 @@ export function computeLayout(
     });
   });
 
-  const layoutLinks: SankeyLinkLayout[] = links.map(link => {
-    const src = layoutNodes.get(link.source)!;
-    const tgt = layoutNodes.get(link.target)!;
+  const layoutLinks: SankeyLinkLayout[] = links.flatMap(link => {
+    const src = layoutNodes.get(link.source);
+    const tgt = layoutNodes.get(link.target);
+    if (!src || !tgt) {
+      return [];
+    }
     const lh = link.value * valueScale;
     const sourceY = src.y + src._sourceOffset;
     const targetY = tgt.y + tgt._targetOffset;
     src._sourceOffset += lh;
     tgt._targetOffset += lh;
-    return {
-      source: src,
-      target: tgt,
-      value: link.value,
-      height: lh,
-      sourceY,
-      targetY,
-    };
+    return [
+      {
+        source: src,
+        target: tgt,
+        value: link.value,
+        height: lh,
+        sourceY,
+        targetY,
+      },
+    ];
   });
 
   return {

@@ -339,7 +339,7 @@ export function XDSSVGIcon({
 
   const primarySplit = splitByRole(icon.primary);
   const secondarySplit = hasSecondary
-    ? splitByRole(icon.secondary!)
+    ? splitByRole(icon.secondary ?? [])
     : {fill: [], stroke: []};
 
   const allSecondary = [...secondarySplit.fill, ...secondarySplit.stroke];

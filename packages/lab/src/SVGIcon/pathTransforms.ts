@@ -293,15 +293,23 @@ export function roundCorners(d: string, cornerRounding: number): string {
       }
       if (mIdx >= 0) {
         const mCmd = cmds[mIdx];
-        const mPt = getEndpoint(mCmd)!;
-        const prevPt = getEndpoint(prev)!;
+        const mPt = getEndpoint(mCmd);
+        const prevPt = getEndpoint(prev);
+        if (!mPt || !prevPt) {
+          result.push(curr);
+          continue;
+        }
         // Find the first L after M
         let firstL = mIdx + 1;
         while (firstL < cmds.length && cmds[firstL].type !== 'L') {
           firstL++;
         }
         if (firstL < cmds.length) {
-          const firstLPt = getEndpoint(cmds[firstL])!;
+          const firstLPt = getEndpoint(cmds[firstL]);
+          if (!firstLPt) {
+            result.push(curr);
+            continue;
+          }
 
           const d1 = dist(prevPt, mPt);
           const d2 = dist(mPt, firstLPt);
@@ -339,12 +347,23 @@ export function roundCorners(d: string, cornerRounding: number): string {
       next &&
       (next.type === 'L' || next.type === 'Z')
     ) {
-      const prevPt = getEndpoint(prev)!;
+      const prevPt = getEndpoint(prev);
+      if (!prevPt) {
+        result.push(curr);
+        continue;
+      }
       const cornerPt: Point = {x: curr.x, y: curr.y};
-      const nextPt =
-        next.type === 'Z'
-          ? getEndpoint(cmds.find(c => c.type === 'M')!)!
-          : getEndpoint(next)!;
+      let nextPt: Point | null;
+      if (next.type === 'Z') {
+        const mCmd = cmds.find(c => c.type === 'M');
+        nextPt = mCmd ? getEndpoint(mCmd) : null;
+      } else {
+        nextPt = getEndpoint(next);
+      }
+      if (!nextPt) {
+        result.push(curr);
+        continue;
+      }
 
       const d1 = dist(prevPt, cornerPt);
       const d2 = dist(cornerPt, nextPt);

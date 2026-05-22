@@ -39,13 +39,15 @@ function buildNavTree(currentPath: string): XDSTreeListItemData[] {
   const componentMap = new Map<string, XDSTreeListItemData[]>();
   for (const b of blocks) {
     const group = b.component;
-    if (!componentMap.has(group)) {
-      componentMap.set(group, []);
+    let items = componentMap.get(group);
+    if (items == null) {
+      items = [];
+      componentMap.set(group, items);
     }
     const shortName = b.name.includes('—')
       ? b.name.split('—').slice(1).join('—').trim()
       : b.name;
-    componentMap.get(group)!.push({
+    items.push({
       id: b.href,
       label: shortName,
       href: basePath + b.href,

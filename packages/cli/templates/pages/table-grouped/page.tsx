@@ -623,10 +623,12 @@ function groupTasks(
   const map = new Map<string, TaskRow[]>();
   for (const task of tasks) {
     const key = String(task[groupBy]) || '—';
-    if (!map.has(key)) {
-      map.set(key, []);
+    let group = map.get(key);
+    if (!group) {
+      group = [];
+      map.set(key, group);
     }
-    map.get(key)!.push(task);
+    group.push(task);
   }
   return map;
 }
@@ -1102,8 +1104,8 @@ export default function DataTableTemplate() {
                 ))}
               </colgroup>
               {groupKeys.map(key => {
-                const tasks = grouped.get(key)!;
-                if (tasks.length === 0) {
+                const tasks = grouped.get(key);
+                if (!tasks || tasks.length === 0) {
                   return null;
                 }
                 const isExpanded = expandedGroups.has(key);

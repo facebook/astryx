@@ -30,7 +30,10 @@ export function XDSRadialAxis({labelOffset = 16}: XDSRadialAxisProps) {
   return (
     <g>
       {axes.map(key => {
-        const angle = angleByAxis.get(key)!;
+        const angle = angleByAxis.get(key);
+        if (angle == null) {
+          return null;
+        }
         const x = cx + Math.cos(angle) * (radius + labelOffset);
         const y = cy + Math.sin(angle) * (radius + labelOffset);
 

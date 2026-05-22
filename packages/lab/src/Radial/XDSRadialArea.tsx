@@ -61,8 +61,11 @@ export function XDSRadialArea({
     }
 
     return axes.map(key => {
-      const angle = angleByAxis.get(key)!;
-      const domain = axisDomains.get(key)!;
+      const angle = angleByAxis.get(key);
+      const domain = axisDomains.get(key);
+      if (angle == null || !domain) {
+        return {x: cx, y: cy, key};
+      }
       const raw = typeof datum[key] === 'number' ? (datum[key] as number) : 0;
       const [min, max] = domain;
       const t = max > min ? (raw - min) / (max - min) : 0;

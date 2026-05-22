@@ -387,11 +387,11 @@ async function main() {
     {label: 'XDS', data: xds},
     {label: 'Baseline', data: baseline},
   ];
-  if (isThreeWay) {
-    targets.push({label: 'HTML', data: htmlData!});
+  if (isThreeWay && htmlData != null) {
+    targets.push({label: 'HTML', data: htmlData});
   }
-  if (isFourWay) {
-    targets.push({label: 'XDS+TW', data: twData!});
+  if (isFourWay && twData != null) {
+    targets.push({label: 'XDS+TW', data: twData});
   }
 
   // Use markdown-style table for CLI (simpler than box-drawing for N targets)
@@ -448,7 +448,9 @@ async function main() {
   // Efficiency metrics comparison
   const targetEffMetrics = targets.map(t => ({
     label: t.label,
-    metrics: Object.values(t.data.byPrompt).map(s => s.efficiency.metrics!),
+    metrics: Object.values(t.data.byPrompt)
+      .map(s => s.efficiency.metrics)
+      .filter(<T>(m: T | undefined): m is T => m != null),
   }));
   if (targetEffMetrics.every(t => t.metrics.length > 0)) {
     const avgDpe = targetEffMetrics.map(
@@ -474,9 +476,9 @@ async function main() {
   // Maintainability metrics comparison
   const targetMaintMetrics = targets.map(t => ({
     label: t.label,
-    metrics: Object.values(t.data.byPrompt).map(
-      s => s.maintainability.metrics!,
-    ),
+    metrics: Object.values(t.data.byPrompt)
+      .map(s => s.maintainability.metrics)
+      .filter(<T>(m: T | undefined): m is T => m != null),
   }));
   if (targetMaintMetrics.every(t => t.metrics.length > 0)) {
     const avgSem = targetMaintMetrics.map(
@@ -501,24 +503,28 @@ async function main() {
   if (xds.cost && baseline.cost) {
     console.log(`\n💰 Cost:`);
     const costTargets = targets.filter(t => t.data.cost);
-    const hasDuration = costTargets.some(t => t.data.cost!.avgDurationMs > 0);
+    const hasDuration = costTargets.some(
+      t => (t.data.cost?.avgDurationMs ?? 0) > 0,
+    );
     if (hasDuration) {
       const durParts = costTargets.map(
-        t => `${t.label} ${(t.data.cost!.avgDurationMs / 1000).toFixed(1)}s`,
+        t =>
+          `${t.label} ${((t.data.cost?.avgDurationMs ?? 0) / 1000).toFixed(1)}s`,
       );
       console.log(`   Avg duration:     ${durParts.join(' | ')}`);
     }
     const linesParts = costTargets.map(
-      t => `${t.label} ${t.data.cost!.avgOutputLines}`,
+      t => `${t.label} ${t.data.cost?.avgOutputLines ?? 0}`,
     );
     console.log(`   Avg output lines: ${linesParts.join(' | ')}`);
     const docsParts = costTargets.map(
-      t => `${t.label} ${t.data.cost!.avgDocsRead}`,
+      t => `${t.label} ${t.data.cost?.avgDocsRead ?? 0}`,
     );
     console.log(`   Avg docs read:    ${docsParts.join(' | ')}`);
     const tokenParts = costTargets.map(t => {
       const total =
-        t.data.cost!.estimatedInputTokens + t.data.cost!.estimatedOutputTokens;
+        (t.data.cost?.estimatedInputTokens ?? 0) +
+        (t.data.cost?.estimatedOutputTokens ?? 0);
       return `${t.label} ~${total}`;
     });
     console.log(`   Est. tokens:      ${tokenParts.join(' | ')}`);

@@ -37,9 +37,13 @@ export function XDSRadialGrid({rings = 5}: XDSRadialGridProps) {
         // Draw polygon ring connecting points at this radius
         const points = axes
           .map(key => {
-            const angle = angleByAxis.get(key)!;
+            const angle = angleByAxis.get(key);
+            if (angle == null) {
+              return '';
+            }
             return `${cx + Math.cos(angle) * r},${cy + Math.sin(angle) * r}`;
           })
+          .filter(Boolean)
           .join(' ');
         return (
           <polygon
@@ -55,7 +59,10 @@ export function XDSRadialGrid({rings = 5}: XDSRadialGridProps) {
 
       {/* Axis lines from center to each vertex */}
       {axes.map(key => {
-        const angle = angleByAxis.get(key)!;
+        const angle = angleByAxis.get(key);
+        if (angle == null) {
+          return null;
+        }
         return (
           <line
             key={key}

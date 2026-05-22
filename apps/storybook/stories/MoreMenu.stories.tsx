@@ -2,7 +2,6 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSMoreMenu} from '@xds/core/MoreMenu';
-import {XDSDropdownMenuItem} from '@xds/core/DropdownMenu';
 import {XDSButton} from '@xds/core/Button';
 import {
   PencilIcon,

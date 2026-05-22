@@ -40,7 +40,10 @@ export function stratifiedSample(
       break;
     }
 
-    const categoryPrompts = byCategory.get(category)!;
+    const categoryPrompts = byCategory.get(category);
+    if (categoryPrompts == null) {
+      continue;
+    }
     const randomIndex = Math.floor(Math.random() * categoryPrompts.length);
     const prompt = categoryPrompts[randomIndex];
 
@@ -55,7 +58,12 @@ export function stratifiedSample(
 
   while (result.length < sampleSize && attempts < maxAttempts) {
     const category = categories[categoryIndex % categories.length];
-    const categoryPrompts = byCategory.get(category)!;
+    const categoryPrompts = byCategory.get(category);
+    if (categoryPrompts == null) {
+      categoryIndex++;
+      attempts++;
+      continue;
+    }
     const available = categoryPrompts.filter(p => !selected.has(p.id));
 
     if (available.length > 0) {

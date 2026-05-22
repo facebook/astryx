@@ -3,10 +3,7 @@
 import {scope} from './scope';
 
 interface BabelStandalone {
-  transform(
-    code: string,
-    options: Record<string, unknown>,
-  ): {code: string};
+  transform(code: string, options: Record<string, unknown>): {code: string};
 }
 
 /** Set by the page after loading Babel from CDN */
@@ -31,27 +28,51 @@ type RunResult =
   | {Component: React.ComponentType; error?: undefined}
   | {Component?: undefined; error: string; phase: RunPhase};
 
-const ASSET_RE = /\.(png|jpe?g|gif|svg|webp|ico|bmp|css|scss|less|sass|woff2?|ttf|eot|otf|mp4|webm|ogg|mp3|wav)$/i;
+const ASSET_RE =
+  /\.(png|jpe?g|gif|svg|webp|ico|bmp|css|scss|less|sass|woff2?|ttf|eot|otf|mp4|webm|ogg|mp3|wav)$/i;
 
 const scopeLookup = new Map<string, Record<string, unknown>>();
 for (const [key, value] of Object.entries(scope)) {
   scopeLookup.set(key.toLowerCase(), value as Record<string, unknown>);
 }
 
-function compileCode(code: string): {compiled: string; imports: ParsedImport[]} {
+function compileCode(code: string): {
+  compiled: string;
+  imports: ParsedImport[];
+} {
   const imports: ParsedImport[] = [];
 
-  const importStripper = (): {visitor: Record<string, (path: {node: Record<string, unknown>; remove: () => void}) => void>} => ({
+  const importStripper = (): {
+    visitor: Record<
+      string,
+      (path: {node: Record<string, unknown>; remove: () => void}) => void
+    >;
+  } => ({
     visitor: {
-      ImportDeclaration(path: {node: Record<string, unknown>; remove: () => void}) {
+      ImportDeclaration(path: {
+        node: Record<string, unknown>;
+        remove: () => void;
+      }) {
         const source = (path.node.source as {value: string}).value;
         const specifiers: ParsedImport['specifiers'] = [];
 
-        for (const spec of path.node.specifiers as Array<{type: string; local: {name: string}; imported?: {name: string}}>) {
+        for (const spec of path.node.specifiers as Array<{
+          type: string;
+          local: {name: string};
+          imported?: {name: string};
+        }>) {
           if (spec.type === 'ImportDefaultSpecifier') {
-            specifiers.push({local: spec.local.name, imported: null, type: 'default'});
+            specifiers.push({
+              local: spec.local.name,
+              imported: null,
+              type: 'default',
+            });
           } else if (spec.type === 'ImportNamespaceSpecifier') {
-            specifiers.push({local: spec.local.name, imported: null, type: 'namespace'});
+            specifiers.push({
+              local: spec.local.name,
+              imported: null,
+              type: 'namespace',
+            });
           } else if (spec.type === 'ImportSpecifier') {
             specifiers.push({
               local: spec.local.name,
@@ -64,8 +85,13 @@ function compileCode(code: string): {compiled: string; imports: ParsedImport[]} 
         imports.push({source, specifiers});
         path.remove();
       },
-      ExpressionStatement(path: {node: Record<string, unknown>; remove: () => void}) {
-        const expr = path.node.expression as Record<string, unknown> | undefined;
+      ExpressionStatement(path: {
+        node: Record<string, unknown>;
+        remove: () => void;
+      }) {
+        const expr = path.node.expression as
+          | Record<string, unknown>
+          | undefined;
         if (
           expr &&
           typeof expr === 'object' &&
@@ -78,7 +104,11 @@ function compileCode(code: string): {compiled: string; imports: ParsedImport[]} 
     },
   });
 
-  const result = Babel!.transform(code, {
+  if (Babel == null) {
+    throw new Error('Babel has not been loaded yet — call setBabel() first');
+  }
+
+  const result = Babel.transform(code, {
     filename: 'playground.tsx',
     presets: [
       ['typescript', {isTSX: true, allExtensions: true}],

@@ -42,7 +42,7 @@ function ScoreSummary({label, score}: {label: string; score: UniversalScore}) {
             <ScoreItem
               key={dim}
               label={DIMENSION_LABELS[dim]}
-              score={score[dim]!.score}
+              score={score[dim]?.score ?? 0}
             />
           ))}
           <ScoreItem label="Overall" score={computeOverall(score)} />
@@ -55,7 +55,7 @@ function ScoreSummary({label, score}: {label: string; score: UniversalScore}) {
 function Findings({score}: {score: UniversalScore}) {
   const allFindings = ALL_DIMENSIONS.filter(dim => score[dim] != null).flatMap(
     dim =>
-      (score[dim]!.findings ?? []).map(f => ({
+      (score[dim]?.findings ?? []).map(f => ({
         dimension: DIMENSION_LABELS[dim],
         ...f,
       })),
