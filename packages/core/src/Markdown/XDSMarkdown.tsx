@@ -671,7 +671,11 @@ function wrapTextWithFade(
 
   // Text before the oldest boundary — settled, no animation
   if (pos < oldestBoundary && oldestBoundary < endOffset) {
-    segments.push(content.slice(0, oldestBoundary - startOffset));
+    segments.push(
+      <span key={`settled-${key}`}>
+        {content.slice(0, oldestBoundary - startOffset)}
+      </span>,
+    );
     pos = oldestBoundary;
   }
 
@@ -707,10 +711,7 @@ function wrapTextWithFade(
   if (segments.length === 0) {
     return content;
   }
-  if (segments.length === 1) {
-    return segments[0];
-  }
-  return <Fragment key={`wrap-${key}`}>{segments}</Fragment>;
+  return <span key={`wrap-${key}`}>{segments}</span>;
 }
 
 function getCitationNumber(ctx: CitationContext, sourceId: string): number {
