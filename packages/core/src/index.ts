@@ -67,6 +67,7 @@ export * from './Selector';
 export * from './MultiSelector';
 export * from './Icon';
 export * from './InputGroup';
+export * from './Item';
 export * from './Text';
 export * from './TextInput';
 export * from './TabList';

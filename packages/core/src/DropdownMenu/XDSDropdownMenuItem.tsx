@@ -10,6 +10,10 @@
  * Interactive menu item with role="menuitem". Keyboard navigation
  * is handled by useListFocus on the parent menu container.
  *
+ * Composes XDSItem for the shared media + label + description + trailing layout.
+ * Passes role="menuitem" so XDSItem puts onClick on the root div instead of
+ * creating an invisible button (keyboard access is provided by the parent menu).
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/DropdownMenu/DropdownMenu.doc.mjs
  * - /packages/core/src/DropdownMenu/XDSDropdownMenu.test.tsx
@@ -22,24 +26,22 @@ import {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {renderIconSlot, type XDSIconType} from '../Icon';
-import {XDSText} from '../Text';
+import {XDSItem} from '../Item';
 import {
   colorVars,
   spacingVars,
   typographyVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName} from '../utils';
 import {useXDSDropdownMenuContext} from './XDSDropdownMenuContext';
 
-const styles = stylex.create({
+const menuItemStyles = stylex.create({
   root: {
     boxSizing: 'border-box',
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-2'],
     width: '100%',
-    padding: spacingVars['--spacing-2'],
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-2'],
     borderRadius: `max(0px, calc(var(--_dropdown-menu-radius, ${spacingVars['--spacing-2']}) - var(--_dropdown-menu-padding, ${spacingVars['--spacing-1']})))`,
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-label-size'],
@@ -53,12 +55,6 @@ const styles = stylex.create({
     cursor: 'pointer',
     textAlign: 'left',
     outline: 'none',
-  },
-  content: {
-    display: 'flex',
-    flexDirection: 'column',
-    flex: 1,
-    minWidth: 0,
   },
   disabled: {
     opacity: 0.5,
@@ -144,39 +140,33 @@ export function XDSDropdownMenuItem({
   }, [isDisabled, onClick, ctx]);
 
   return (
-    <div
+    <XDSItem
       role="menuitem"
       tabIndex={isDisabled ? undefined : -1}
-      aria-disabled={isDisabled || undefined}
+      media={
+        icon
+          ? renderIconSlot(icon, {size: 'sm', color: 'secondary'})
+          : undefined
+      }
+      label={label}
+      description={description}
+      trailing={children}
       onClick={handleClick}
-      {...mergeProps(
+      isDisabled={isDisabled}
+      xstyle={[
+        menuItemStyles.root,
+        itemSizeStyles[menuSize],
+        isDisabled && menuItemStyles.disabled,
+        xstyle,
+      ]}
+      className={[
         xdsClassName('dropdown-menu-item', {size: menuSize}),
-        stylex.props(
-          styles.root,
-          itemSizeStyles[menuSize],
-          isDisabled && styles.disabled,
-          xstyle,
-        ),
         className,
-        style,
-      )}>
-      {icon && renderIconSlot(icon, {size: 'sm', color: 'secondary'})}
-      <span {...stylex.props(styles.content)}>
-        {typeof label === 'string' ? (
-          <XDSText type="body" maxLines={1}>
-            {label}
-          </XDSText>
-        ) : (
-          label
-        )}
-        {description && (
-          <XDSText type="supporting" maxLines={1}>
-            {description}
-          </XDSText>
-        )}
-      </span>
-      {children}
-    </div>
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      style={style}
+    />
   );
 }
 

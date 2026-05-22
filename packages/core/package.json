@@ -307,6 +307,12 @@
       "import": "./dist/InputGroup/index.mjs",
       "require": "./dist/InputGroup/index.js"
     },
+    "./Item": {
+      "source": "./src/Item/index.ts",
+      "types": "./dist/Item/index.d.ts",
+      "import": "./dist/Item/index.mjs",
+      "require": "./dist/Item/index.js"
+    },
     "./Kbd": {
       "source": "./src/Kbd/index.ts",
       "types": "./dist/Kbd/index.d.ts",

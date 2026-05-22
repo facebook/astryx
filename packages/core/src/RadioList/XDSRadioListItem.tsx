@@ -8,6 +8,8 @@
  * @output Exports XDSRadioListItem component, XDSRadioListItemProps
  * @position Core implementation; consumed by index.ts, tested by XDSRadioList.test.tsx
  *
+ * Composes XDSItem for the shared media + label + description + trailing layout.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/RadioList/RadioList.doc.mjs
  * - /packages/core/src/RadioList/XDSRadioList.test.tsx
@@ -24,14 +26,12 @@ import {
   spacingVars,
   durationVars,
   easeVars,
-  typographyVars,
-  fontWeightVars,
-  typeScaleVars,
   borderVars,
 } from '../theme/tokens.stylex';
 import {XDSRadioListContext} from './XDSRadioList';
 import {xdsClassName, mergeProps} from '../utils';
 import {radioScope} from './radio.markers.stylex';
+import {XDSItem} from '../Item';
 
 const styles = stylex.create({
   container: {
@@ -120,43 +120,12 @@ const styles = stylex.create({
     borderRadius: '50%',
     backgroundColor: colorVars['--color-on-accent'],
   },
-  labelWrapper: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: spacingVars['--spacing-0-5'],
-  },
-  label: {
-    fontFamily: typographyVars['--font-family-body'],
-    fontSize: typeScaleVars['--text-label-size'],
-    lineHeight: typeScaleVars['--text-label-leading'],
-    fontWeight: fontWeightVars['--font-weight-medium'],
-    color: colorVars['--color-text-primary'],
-    cursor: 'pointer',
-  },
   labelDisabled: {
     color: colorVars['--color-text-disabled'],
     cursor: 'not-allowed',
   },
-  description: {
-    fontFamily: typographyVars['--font-family-body'],
-    fontSize: typeScaleVars['--text-supporting-size'],
-    lineHeight: typeScaleVars['--text-supporting-leading'],
-    color: colorVars['--color-text-secondary'],
-  },
-  startContent: {
-    display: 'flex',
-    alignItems: 'center',
-    flexShrink: 0,
-  },
-  endContent: {
-    display: 'flex',
-    alignItems: 'center',
-    flexShrink: 0,
-    marginInlineStart: 'auto',
-  },
 });
 
-// Size styles matching CheckboxInput dimensions
 const wrapperSizeStyles = stylex.create({
   sm: {
     width: 20,
@@ -187,6 +156,16 @@ const dotSizeStyles = stylex.create({
   md: {
     width: 10,
     height: 10,
+  },
+});
+
+const embeddedStyles = stylex.create({
+  root: {
+    paddingBlock: 0,
+    paddingInline: 0,
+    borderRadius: 0,
+    flex: 1,
+    minWidth: 0,
   },
 });
 
@@ -251,6 +230,67 @@ export function XDSRadioListItem({
   const isChecked = context.value === value;
   const size = context.size;
 
+  const radioCircle = (
+    <div
+      {...stylex.props(
+        styles.radioWrapper,
+        wrapperSizeStyles[size],
+        !isDisabled && styles.radioWrapperFocus,
+      )}>
+      <input
+        id={id}
+        type="radio"
+        name={context.name}
+        value={value}
+        checked={isChecked}
+        disabled={isDisabled}
+        required={context.isRequired}
+        onChange={() => context.onChange(value)}
+        aria-describedby={description ? descriptionID : undefined}
+        {...stylex.props(
+          styles.input,
+          wrapperSizeStyles[size],
+          isDisabled && styles.inputDisabled,
+        )}
+      />
+      <div
+        aria-hidden="true"
+        {...mergeProps(
+          xdsClassName('radio', {
+            size,
+            checked: isChecked ? 'checked' : null,
+            disabled: isDisabled ? 'disabled' : null,
+          }),
+          stylex.props(
+            styles.radio,
+            radioSizeStyles[size],
+            isChecked ? styles.radioChecked : styles.radioUnchecked,
+            isDisabled && styles.radioDisabled,
+            isDisabled && !isChecked && styles.radioDisabledUnchecked,
+          ),
+        )}>
+        {isChecked && (
+          <div
+            {...mergeProps(
+              xdsClassName('radio-dot', {size}),
+              stylex.props(styles.innerDot, dotSizeStyles[size]),
+            )}
+          />
+        )}
+      </div>
+    </div>
+  );
+
+  const mediaContent =
+    startContent != null ? (
+      <>
+        {radioCircle}
+        {startContent}
+      </>
+    ) : (
+      radioCircle
+    );
+
   return (
     <div
       data-testid={dataTestId}
@@ -258,72 +298,23 @@ export function XDSRadioListItem({
         xdsClassName('radio-list-item'),
         stylex.props(styles.container, !isDisabled && radioScope),
       )}>
-      <div
-        {...stylex.props(
-          styles.radioWrapper,
-          wrapperSizeStyles[size],
-          !isDisabled && styles.radioWrapperFocus,
-        )}>
-        <input
-          id={id}
-          type="radio"
-          name={context.name}
-          value={value}
-          checked={isChecked}
-          disabled={isDisabled}
-          required={context.isRequired}
-          onChange={() => context.onChange(value)}
-          aria-describedby={description ? descriptionID : undefined}
-          {...stylex.props(
-            styles.input,
-            wrapperSizeStyles[size],
-            isDisabled && styles.inputDisabled,
-          )}
-        />
-        <div
-          aria-hidden="true"
-          {...mergeProps(
-            xdsClassName('radio', {
-              size,
-              checked: isChecked ? 'checked' : null,
-              disabled: isDisabled ? 'disabled' : null,
-            }),
-            stylex.props(
-              styles.radio,
-              radioSizeStyles[size],
-              isChecked ? styles.radioChecked : styles.radioUnchecked,
-              isDisabled && styles.radioDisabled,
-              isDisabled && !isChecked && styles.radioDisabledUnchecked,
-            ),
-          )}>
-          {isChecked && (
-            <div
-              {...mergeProps(
-                xdsClassName('radio-dot', {size}),
-                stylex.props(styles.innerDot, dotSizeStyles[size]),
-              )}
-            />
-          )}
-        </div>
-      </div>
-      {startContent != null && (
-        <div {...stylex.props(styles.startContent)}>{startContent}</div>
-      )}
-      <div {...stylex.props(styles.labelWrapper)}>
-        <label
-          htmlFor={id}
-          {...stylex.props(styles.label, isDisabled && styles.labelDisabled)}>
-          {label}
-        </label>
-        {description != null && (
-          <span id={descriptionID} {...stylex.props(styles.description)}>
-            {description}
-          </span>
-        )}
-      </div>
-      {endContent != null && (
-        <div {...stylex.props(styles.endContent)}>{endContent}</div>
-      )}
+      <XDSItem
+        media={mediaContent}
+        label={
+          <label
+            htmlFor={id}
+            {...stylex.props(isDisabled && styles.labelDisabled)}>
+            {label}
+          </label>
+        }
+        description={
+          description != null ? (
+            <span id={descriptionID}>{description}</span>
+          ) : undefined
+        }
+        trailing={endContent}
+        xstyle={embeddedStyles.root}
+      />
     </div>
   );
 }
