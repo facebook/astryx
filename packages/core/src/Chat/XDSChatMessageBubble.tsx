@@ -104,8 +104,8 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-container'],
   },
   paddingCompact: {
-    paddingBlock: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-3'],
+    paddingBlock: spacingVars['--spacing-3'],
+    paddingInline: spacingVars['--spacing-4'],
   },
   paddingBalanced: {
     paddingBlock: spacingVars['--spacing-3'],
@@ -120,7 +120,7 @@ const styles = stylex.create({
   },
   // Slot padding — matches bubble's paddingInline per density
   metadataPaddingCompact: {
-    paddingInline: spacingVars['--spacing-3'],
+    paddingInline: spacingVars['--spacing-4'],
   },
   metadataPaddingBalanced: {
     paddingInline: spacingVars['--spacing-4'],
@@ -273,7 +273,7 @@ export function XDSChatMessageBubble({
         ref={ref}
         data-testid={testId}
         {...mergeProps(
-          xdsClassName('chat-message-bubble', {sender, variant}),
+          xdsClassName('chat-message-bubble', {sender, variant, density}),
           stylex.props(
             styles.content,
             density === 'compact' && styles.radiusCompact,

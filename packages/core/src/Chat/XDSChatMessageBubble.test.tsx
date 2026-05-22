@@ -4,6 +4,7 @@ import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {XDSChatMessage} from './XDSChatMessage';
 import {XDSChatMessageBubble} from './XDSChatMessageBubble';
+import {XDSChatMessageList} from './XDSChatMessageList';
 import {XDSChatMessageMetadata} from './XDSChatMessageMetadata';
 
 describe('XDSChatMessageBubble', () => {
@@ -34,6 +35,20 @@ describe('XDSChatMessageBubble', () => {
     );
     const el = screen.getByTestId('bubble');
     expect(el.className).toContain('assistant');
+  });
+
+  it('applies inherited compact density class', () => {
+    render(
+      <XDSChatMessageList density="compact">
+        <XDSChatMessage sender="assistant">
+          <XDSChatMessageBubble data-testid="bubble">
+            Compact
+          </XDSChatMessageBubble>
+        </XDSChatMessage>
+      </XDSChatMessageList>,
+    );
+    const el = screen.getByTestId('bubble');
+    expect(el.className).toContain('compact');
   });
 
   it('applies data-testid', () => {
