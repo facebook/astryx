@@ -5,7 +5,7 @@
 # comment with the deployment URL and status.
 #
 # Required secrets:
-#   VERCEL_TOKEN      — Vercel API token
+#   VERCEL_TOKEN      — Vercel API token (must have team scope)
 #   VERCEL_ORG_ID     — Vercel team/org ID
 #   VERCEL_PROJECT_ID — Vercel project ID
 #
@@ -30,6 +30,9 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -71,9 +74,6 @@ jobs:
 
           echo "url=${DEPLOY_URL}" >> $GITHUB_OUTPUT
           echo "Deployed to: ${DEPLOY_URL}"
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
       - name: Comment deployment URL on PR
         uses: actions/github-script@v9
