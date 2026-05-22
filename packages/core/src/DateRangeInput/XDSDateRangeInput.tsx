@@ -18,6 +18,13 @@
 
 import {useId, useCallback, useMemo, useOptimistic, useTransition} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {
+  plainDateFromISO,
+  plainDateToday,
+  plainDateFormat,
+  DATE_FORMAT_SHORT,
+  DATE_FORMAT_SHORT_WITH_YEAR,
+} from '../utils/plainDate';
 import type {XDSIconName} from '../Icon';
 import {
   colorVars,
@@ -163,35 +170,17 @@ const sizeStyles = stylex.create({
   },
 });
 
-const shortDateFormatter = new Intl.DateTimeFormat(undefined, {
-  month: 'short',
-  day: 'numeric',
-});
-
-const shortDateWithYearFormatter = new Intl.DateTimeFormat(undefined, {
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
-});
-
-function parseISO(iso: ISODateString): Date {
-  const [year, month, day] = iso.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
-
 function formatRangeDisplay(range: DateRange | null): string {
   if (!range) {
     return '';
   }
-  const startDate = parseISO(range.start);
-  const endDate = parseISO(range.end);
-  const currentYear = new Date().getFullYear();
-  const sameYear =
-    startDate.getFullYear() === endDate.getFullYear() &&
-    startDate.getFullYear() === currentYear;
+  const start = plainDateFromISO(range.start);
+  const end = plainDateFromISO(range.end);
+  const currentYear = plainDateToday().year;
+  const sameYear = start.year === end.year && start.year === currentYear;
 
-  const fmt = sameYear ? shortDateFormatter : shortDateWithYearFormatter;
-  return `${fmt.format(startDate)} – ${fmt.format(endDate)}`;
+  const fmt = sameYear ? DATE_FORMAT_SHORT : DATE_FORMAT_SHORT_WITH_YEAR;
+  return `${plainDateFormat(start, fmt)} – ${plainDateFormat(end, fmt)}`;
 }
 
 function isRangeEqual(a: DateRange | null, b: DateRange | null): boolean {

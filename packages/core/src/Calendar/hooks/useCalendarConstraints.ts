@@ -4,7 +4,7 @@
 
 /**
  * @file useCalendarConstraints.ts
- * @input Uses React useCallback, useMemo
+ * @input Uses React useCallback, useMemo, PlainDate utilities
  * @output Exports useCalendarConstraints hook for date validation
  * @position Calendar-specific hook; used by XDSCalendar
  *
@@ -13,7 +13,14 @@
  */
 
 import {useCallback, useMemo} from 'react';
-import type {ISODateString} from '../XDSCalendar';
+import type {ISODateString} from '../../utils/dateTypes';
+import {
+  type PlainDate,
+  plainDateFromISO,
+  plainDateToDate,
+  plainDateIsBefore,
+  plainDateIsAfter,
+} from '../../utils/plainDate';
 
 /**
  * Configuration for date constraints
@@ -34,20 +41,12 @@ export interface UseCalendarConstraintsOptions {
  * Return type for useCalendarConstraints hook
  */
 export interface UseCalendarConstraintsReturn {
-  /** Check if a date is disabled */
-  isDateDisabled: (date: Date) => boolean;
+  /** Check if a PlainDate is disabled */
+  isDateDisabled: (date: PlainDate) => boolean;
   /** Parsed min date (or null) */
-  minDate: Date | null;
+  minDate: PlainDate | null;
   /** Parsed max date (or null) */
-  maxDate: Date | null;
-}
-
-/**
- * Parse ISO date string to Date object.
- */
-function parseISO(str: ISODateString): Date {
-  const [year, month, day] = str.split('-').map(Number);
-  return new Date(year, month - 1, day);
+  maxDate: PlainDate | null;
 }
 
 /**
@@ -62,12 +61,12 @@ function parseISO(str: ISODateString): Date {
  *   min: '2026-01-01',
  *   max: '2026-12-31',
  *   dateConstraints: [
- *     (date) => date.getDay() !== 0, // No Sundays
+ *     (date) => date.getDay() !== 0, // No Sundays (receives native Date)
  *   ],
  * });
  *
- * // Check if a date can be selected
- * if (isDateDisabled(someDate)) {
+ * // Check if a PlainDate can be selected
+ * if (isDateDisabled({year: 2026, month: 6, day: 15})) {
  *   console.log('This date is not selectable');
  * }
  * ```
@@ -78,26 +77,26 @@ export function useCalendarConstraints(
   const {min, max, dateConstraints} = options;
 
   // Parse min/max dates
-  const minDate = useMemo(() => (min ? parseISO(min) : null), [min]);
-  const maxDate = useMemo(() => (max ? parseISO(max) : null), [max]);
+  const minDate = useMemo(() => (min ? plainDateFromISO(min) : null), [min]);
+  const maxDate = useMemo(() => (max ? plainDateFromISO(max) : null), [max]);
 
   // Check if a date is disabled
   const isDateDisabled = useCallback(
-    (date: Date): boolean => {
+    (date: PlainDate): boolean => {
       // Check min bound
-      if (minDate && date < minDate) {
+      if (minDate && plainDateIsBefore(date, minDate)) {
         return true;
       }
 
       // Check max bound
-      if (maxDate && date > maxDate) {
+      if (maxDate && plainDateIsAfter(date, maxDate)) {
         return true;
       }
 
-      // Check custom constraints
+      // Check custom constraints (convert to Date for public API compatibility)
       if (dateConstraints) {
         for (const constraint of dateConstraints) {
-          if (!constraint(date)) {
+          if (!constraint(plainDateToDate(date))) {
             return true;
           }
         }

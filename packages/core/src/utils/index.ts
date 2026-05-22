@@ -9,13 +9,39 @@
 
 export type {SizeValue} from './types';
 
+export type {ISODateString, DayOfWeek, PlainDate, DateRange} from './dateTypes';
+
 export {
   parseDateInput,
-  formatDisplayDate,
   dateToISO,
   parseISO,
   isLocaleDayFirst,
 } from './dateParser';
+
+export {
+  plainDateCreate,
+  plainDateFromISO,
+  plainDateToISO,
+  plainDateToDate,
+  plainDateFromDate,
+  plainDateToday,
+  getDaysInMonth,
+  plainDateDayOfWeek,
+  plainDateAddMonths,
+  plainDateAddDays,
+  plainDateIsBefore,
+  plainDateIsAfter,
+  plainDateIsEqual,
+  plainDateIsInRange,
+  plainDateSetFirstOfMonth,
+  plainDateGetWeekNumber,
+  plainDateFormat,
+  DATE_FORMAT_WITH_WEEKDAY,
+  DATE_FORMAT_LONG,
+  DATE_FORMAT_MONTH_YEAR,
+  DATE_FORMAT_SHORT,
+  DATE_FORMAT_SHORT_WITH_YEAR,
+} from './plainDate';
 
 export {
   parseISOTime,

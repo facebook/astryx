@@ -30,7 +30,7 @@ import {XDSPopover} from '../../../Popover';
 import {XDSTextInput} from '../../../TextInput';
 import {XDSNumberInput} from '../../../NumberInput';
 import {XDSDateInput} from '../../../DateInput';
-import type {ISODateString} from '../../../Calendar';
+import type {ISODateString} from '../../../utils/dateTypes';
 import {XDSTimeInput} from '../../../TimeInput';
 import type {ISOTimeString} from '../../../utils/timeParser';
 import {XDSSelector} from '../../../Selector';

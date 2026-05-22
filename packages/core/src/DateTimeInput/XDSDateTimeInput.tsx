@@ -60,8 +60,6 @@ import {useInputContainer} from '../hooks/useInputContainer';
 import {
   type ISOTimeString,
   parseDateInput,
-  formatDisplayDate,
-  parseISO,
   parseTimeInput,
   formatDisplayTime12h,
   formatDisplayTime24h,
@@ -71,6 +69,12 @@ import {
   xdsClassName,
   mergeProps,
 } from '../utils';
+import {
+  plainDateFromISO,
+  plainDateToISO,
+  plainDateFormat,
+  DATE_FORMAT_LONG,
+} from '../utils/plainDate';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
@@ -465,7 +469,7 @@ export function XDSDateTimeInput({
     datePendingInput !== null
       ? datePendingInput
       : valueParts.date && /^\d{4}-\d{2}-\d{2}$/.test(valueParts.date)
-        ? formatDisplayDate(valueParts.date)
+        ? plainDateFormat(plainDateFromISO(valueParts.date), DATE_FORMAT_LONG)
         : '';
 
   const isDateInputValid =
@@ -584,12 +588,13 @@ export function XDSDateTimeInput({
       const parsed = parseDateInput(text);
       if (
         parsed &&
-        parsed !== valueParts.date &&
-        !isDateDisabled(parseISO(parsed))
+        plainDateToISO(parsed) !== valueParts.date &&
+        !isDateDisabled(parsed)
       ) {
-        lastFiredDateRef.current = parsed;
-        handleDateChange(parsed, 'input');
-        calendarRef.current?.navigateTo(parsed);
+        const parsedISO = plainDateToISO(parsed);
+        lastFiredDateRef.current = parsedISO;
+        handleDateChange(parsedISO, 'input');
+        calendarRef.current?.navigateTo(parsedISO);
       }
     },
     [valueParts.date, isDateDisabled, handleDateChange],
@@ -609,9 +614,10 @@ export function XDSDateTimeInput({
     }
 
     const parsed = parseDateInput(datePendingInput);
-    if (parsed && !isDateDisabled(parseISO(parsed))) {
-      if (parsed !== valueParts.date) {
-        handleDateChange(parsed, 'input');
+    if (parsed && !isDateDisabled(parsed)) {
+      const parsedISO = plainDateToISO(parsed);
+      if (parsedISO !== valueParts.date) {
+        handleDateChange(parsedISO, 'input');
       }
     }
     setDatePendingInput(null);

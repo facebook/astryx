@@ -4,7 +4,7 @@
 
 /**
  * @file useCalendarDays.ts
- * @input Uses React useMemo
+ * @input Uses React useMemo, PlainDate utilities
  * @output Exports useCalendarDays hook for generating calendar day grids
  * @position Calendar-specific hook; used by XDSCalendar
  *
@@ -13,14 +13,21 @@
  */
 
 import {useMemo} from 'react';
-import type {DayOfWeek, ISODateString} from '../XDSCalendar';
+import type {DayOfWeek, ISODateString} from '../../utils/dateTypes';
+import {
+  type PlainDate,
+  plainDateToISO,
+  getDaysInMonth,
+  plainDateDayOfWeek,
+  plainDateAddDays,
+} from '../../utils/plainDate';
 
 /**
  * Represents a single day in the calendar grid.
  */
 export interface CalendarDay {
-  /** The date object for this day */
-  date: Date;
+  /** The PlainDate for this day */
+  date: PlainDate;
   /** ISO date string (YYYY-MM-DD) */
   iso: ISODateString;
   /** Whether this day is outside the current month */
@@ -35,7 +42,7 @@ export interface CalendarDay {
 export interface UseCalendarDaysOptions {
   /** The year to generate days for */
   year: number;
-  /** The month index (0-11) */
+  /** The month (1-based: 1 = January, 12 = December) */
   month: number;
   /** First day of week (0=Sunday through 6=Saturday) */
   weekStartsOn?: DayOfWeek;
@@ -58,16 +65,6 @@ export interface UseCalendarDaysReturn {
 }
 
 /**
- * Convert a Date to ISO date string format.
- */
-function dateToISO(date: Date): ISODateString {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}` as ISODateString;
-}
-
-/**
  * Hook for generating calendar day grids.
  *
  * Calculates all the days to display for a given month, including
@@ -77,9 +74,10 @@ function dateToISO(date: Date): ISODateString {
  * ```
  * const {days, weeks, dayNames} = useCalendarDays({
  *   year: 2026,
- *   month: 0, // January
+ *   month: 1, // January (1-based)
  *   weekStartsOn: 0, // Sunday
  * });
+ * // days[i].date is a PlainDate { year, month (1-based), day }
  * ```
  */
 export function useCalendarDays(
@@ -89,23 +87,22 @@ export function useCalendarDays(
 
   // Calculate grid structure
   const gridInfo = useMemo(() => {
-    const firstDayOfMonth = new Date(year, month, 1);
-    const lastDayOfMonth = new Date(year, month + 1, 0);
-    const daysInMonth = lastDayOfMonth.getDate();
+    const totalDaysInMonth = getDaysInMonth(year, month);
 
     // Calculate starting offset based on weekStartsOn
-    let startingDayOfWeek = firstDayOfMonth.getDay() - weekStartsOn;
+    let startingDayOfWeek =
+      plainDateDayOfWeek({year, month, day: 1}) - weekStartsOn;
     if (startingDayOfWeek < 0) {
       startingDayOfWeek += 7;
     }
 
     // Calculate total cells
-    const totalDays = daysInMonth + startingDayOfWeek;
+    const totalDays = totalDaysInMonth + startingDayOfWeek;
     const totalRows = hasVariableRowCount ? Math.ceil(totalDays / 7) : 6;
     const totalCells = totalRows * 7;
 
     return {
-      daysInMonth,
+      daysInMonth: totalDaysInMonth,
       startingDayOfWeek,
       totalCells,
     };
@@ -123,19 +120,26 @@ export function useCalendarDays(
 
   // Generate days array
   const days = useMemo(() => {
-    const {daysInMonth, startingDayOfWeek, totalCells} = gridInfo;
+    const {
+      daysInMonth: totalDaysInMonth,
+      startingDayOfWeek,
+      totalCells,
+    } = gridInfo;
+    const firstOfMonth: PlainDate = {year, month, day: 1};
     const result: CalendarDay[] = [];
 
     for (let i = 0; i < totalCells; i++) {
       const dayOffset = i - startingDayOfWeek + 1;
-      const date = new Date(year, month, dayOffset);
-      const isOutside = dayOffset < 1 || dayOffset > daysInMonth;
+      const isOutside = dayOffset < 1 || dayOffset > totalDaysInMonth;
+      const pd: PlainDate = isOutside
+        ? plainDateAddDays(firstOfMonth, dayOffset - 1)
+        : {year, month, day: dayOffset};
 
       result.push({
-        date,
-        iso: dateToISO(date),
+        date: pd,
+        iso: plainDateToISO(pd),
         isOutside,
-        dayNumber: date.getDate(),
+        dayNumber: pd.day,
       });
     }
 

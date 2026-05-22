@@ -53,7 +53,13 @@ import {
 } from '../Calendar';
 import {useCalendarConstraints} from '../Calendar/hooks';
 import {useXDSPopover} from '../Popover';
-import {parseDateInput, formatDisplayDate, parseISO} from '../utils';
+import {parseDateInput} from '../utils';
+import {
+  plainDateFromISO,
+  plainDateToISO,
+  plainDateFormat,
+  DATE_FORMAT_LONG,
+} from '../utils/plainDate';
 
 const styles = stylex.create({
   iconButton: {
@@ -341,7 +347,7 @@ export function XDSDateInput({
     pendingInput !== null
       ? pendingInput
       : optimisticValue && /^\d{4}-\d{2}-\d{2}$/.test(optimisticValue)
-        ? formatDisplayDate(optimisticValue)
+        ? plainDateFormat(plainDateFromISO(optimisticValue), DATE_FORMAT_LONG)
         : '';
 
   // Check if current input is valid (for styling purposes)
@@ -415,11 +421,16 @@ export function XDSDateInput({
 
       // If the input is valid and passes constraints, update immediately
       const parsed = parseDateInput(newValue);
-      if (parsed && parsed !== value && !isDateDisabled(parseISO(parsed))) {
-        lastFiredValueRef.current = parsed;
-        fireChange(parsed);
+      if (
+        parsed &&
+        plainDateToISO(parsed) !== value &&
+        !isDateDisabled(parsed)
+      ) {
+        const parsedISO = plainDateToISO(parsed);
+        lastFiredValueRef.current = parsedISO;
+        fireChange(parsedISO);
         // Navigate calendar to show the parsed date's month
-        calendarRef.current?.navigateTo(parsed);
+        calendarRef.current?.navigateTo(parsedISO);
       }
     },
     [value, fireChange, isDateDisabled],
@@ -440,9 +451,10 @@ export function XDSDateInput({
     }
 
     const parsed = parseDateInput(pendingInput);
-    if (parsed && !isDateDisabled(parseISO(parsed))) {
-      if (parsed !== value) {
-        fireChange(parsed);
+    if (parsed && !isDateDisabled(parsed)) {
+      const parsedISO = plainDateToISO(parsed);
+      if (parsedISO !== value) {
+        fireChange(parsedISO);
       }
     }
     setPendingInput(null);
