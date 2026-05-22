@@ -1,7 +1,7 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 # Deploy PR previews to Vercel.
-# Runs on every PR — builds Storybook, deploys to Vercel, and posts a
+# Runs on every PR — triggers a Vercel preview deployment and posts a
 # comment with the deployment URL and status.
 #
 # Required secrets:
@@ -37,42 +37,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 22
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build core package
-        run: pnpm build
-
-      - name: Build Storybook
-        run: pnpm -F @xds/storybook build
-
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
+
+      - name: Pull Vercel environment
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build with Vercel
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy to Vercel
         id: deploy
         run: |
-          # Prepare Vercel output structure for prebuilt deploy
-          mkdir -p .vercel/output/static
-          cp -r apps/storybook/dist/* .vercel/output/static/
-          echo '{"version":3}' > .vercel/output/config.json
-
-          # Write project link
-          echo "{\"projectId\":\"${VERCEL_PROJECT_ID}\",\"orgId\":\"${VERCEL_ORG_ID}\"}" > .vercel/project.json
-
-          # Deploy prebuilt output (skips Vercel's build step entirely)
           DEPLOY_URL=$(vercel deploy --prebuilt \
             --token=${{ secrets.VERCEL_TOKEN }} \
-            --yes \
             --meta githubPrNumber=${{ github.event.pull_request.number }} \
             --meta githubCommitSha=${{ github.event.pull_request.head.sha }} \
             --meta githubRepo=${{ github.repository }})
