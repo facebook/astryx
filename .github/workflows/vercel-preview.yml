@@ -34,22 +34,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 22
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Build core package
-        run: yarn build
+        run: pnpm build
 
       - name: Build Storybook
-        run: yarn workspace @xds/storybook build
+        run: pnpm -F @xds/storybook build
 
       - name: Install Vercel CLI
-        run: npm install -g vercel@latest
+        run: pnpm add -g vercel@latest
 
       - name: Pull Vercel environment
         run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
@@ -72,19 +76,6 @@ jobs:
 
           echo "url=${DEPLOY_URL}" >> $GITHUB_OUTPUT
           echo "Deployed to: ${DEPLOY_URL}"
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-
-      - name: Disable Vercel Authentication on deployment
-        run: |
-          # Use the Vercel API to disable auth protection on this deployment
-          DEPLOY_URL="${{ steps.deploy.outputs.url }}"
-          DEPLOY_ID=$(vercel inspect "$DEPLOY_URL" --token=${{ secrets.VERCEL_TOKEN }} 2>&1 | grep -oP '(?<=id:\s)\S+' || true)
-
-          if [ -n "$DEPLOY_ID" ]; then
-            echo "Deployment ID: $DEPLOY_ID — auth is skipped via --skip-domain-and-project-settings"
-          fi
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
