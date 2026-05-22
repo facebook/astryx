@@ -4,13 +4,13 @@
 
 /**
  * @file XDSChatMessageList.tsx
- * @input Uses React, StyleX, XDSChatListContext, theme tokens
+ * @input Uses React, StyleX, XDSChatListContext, theme tokens, spacing step utilities
  * @output Exports XDSChatMessageList component and XDSChatMessageListProps
  * @position Presentational message container — holds XDSChatMessage children
  *
  * Renders a container with role="log" for chat message histories.
- * Handles density context, empty state, a spacer that pushes messages
- * to the bottom, and an infinite scroll sentinel.
+ * Handles density context, configurable message gap, empty state,
+ * a spacer that pushes messages to the bottom, and an infinite scroll sentinel.
  *
  * Auto-scroll and the scroll-to-bottom button are owned by
  * XDSChatLayout. When used standalone (without a layout), the list
@@ -33,6 +33,7 @@ import {
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSSpinner} from '../Spinner';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import type {SpacingStep} from '../utils/types';
 
 export interface XDSChatMessageListProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
@@ -62,6 +63,14 @@ export interface XDSChatMessageListProps extends XDSBaseProps<HTMLDivElement> {
    * @default 'balanced'
    */
   density?: XDSChatDensity;
+
+  /**
+   * Gap between top-level message rows, using the spacing scale.
+   * Defaults to the selected density's message gap. Override this when each
+   * row is independent (for example, LLM event streams where messages cannot
+   * be grouped) and row spacing should be tuned separately from density.
+   */
+  messageGap?: SpacingStep;
 }
 
 // =============================================================================
@@ -114,6 +123,42 @@ const styles = stylex.create({
   },
 });
 
+const messageGapStyles = stylex.create({
+  0: {
+    gap: spacingVars['--spacing-0'],
+  },
+  0.5: {
+    gap: spacingVars['--spacing-0-5'],
+  },
+  1: {
+    gap: spacingVars['--spacing-1'],
+  },
+  1.5: {
+    gap: spacingVars['--spacing-1-5'],
+  },
+  2: {
+    gap: spacingVars['--spacing-2'],
+  },
+  3: {
+    gap: spacingVars['--spacing-3'],
+  },
+  4: {
+    gap: spacingVars['--spacing-4'],
+  },
+  5: {
+    gap: spacingVars['--spacing-5'],
+  },
+  6: {
+    gap: spacingVars['--spacing-6'],
+  },
+  8: {
+    gap: spacingVars['--spacing-8'],
+  },
+  10: {
+    gap: spacingVars['--spacing-10'],
+  },
+});
+
 // =============================================================================
 // Component
 // =============================================================================
@@ -122,6 +167,7 @@ const styles = stylex.create({
  * Presentational container for chat messages.
  *
  * Renders messages in a flex column with density-based spacing.
+ * Override messageGap to tune row spacing separately from density.
  * A spacer pushes content to the bottom when the list isn't full.
  * Supports loading older messages via `scrollToTopAction`.
  *
@@ -142,6 +188,7 @@ export function XDSChatMessageList({
   emptyState,
   scrollToTopAction,
   density = 'balanced',
+  messageGap,
   xstyle,
   className,
   style,
@@ -196,6 +243,8 @@ export function XDSChatMessageList({
       : density === 'spacious'
         ? styles.gapSpacious
         : styles.gapBalanced;
+  const messageGapStyle =
+    messageGap == null ? null : messageGapStyles[messageGap];
 
   return (
     <XDSChatListContext value={contextValue}>
@@ -211,7 +260,9 @@ export function XDSChatMessageList({
           className,
           style,
         )}>
-        <div ref={innerRef} {...stylex.props(styles.inner, gapStyle)}>
+        <div
+          ref={innerRef}
+          {...stylex.props(styles.inner, gapStyle, messageGapStyle)}>
           {/* Sentinel for infinite scroll */}
           {scrollToTopAction && <div ref={sentinelRef} aria-hidden />}
 

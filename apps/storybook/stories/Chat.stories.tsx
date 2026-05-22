@@ -34,7 +34,9 @@ export const Default: StoryObj = {
           <XDSChatMessageBubble
             metadata={
               <XDSChatMessageMetadata
-                timestamp={<XDSTimestamp value="2026-03-15T14:30:00" format="time" />}
+                timestamp={
+                  <XDSTimestamp value="2026-03-15T14:30:00" format="time" />
+                }
                 status="read"
               />
             }>
@@ -52,7 +54,9 @@ For **server state**, use a library like **TanStack Query** or **SWR** — they 
 
 Avoid global state managers unless you have a genuine need for cross-cutting state. Most apps are over-engineered in this area.`}</XDSMarkdown>
           <XDSChatMessageMetadata
-            timestamp={<XDSTimestamp value="2026-03-15T14:30:30" format="time" />}
+            timestamp={
+              <XDSTimestamp value="2026-03-15T14:30:30" format="time" />
+            }
             footer={
               <>
                 <span>Claude Opus 4.6</span>
@@ -73,7 +77,9 @@ Avoid global state managers unless you have a genuine need for cross-cutting sta
                 />
                 <XDSButton
                   label="Copy"
-                  icon={<ClipboardDocumentIcon style={{width: 14, height: 14}} />}
+                  icon={
+                    <ClipboardDocumentIcon style={{width: 14, height: 14}} />
+                  }
                   variant="ghost"
                   size="sm"
                   isIconOnly
@@ -86,7 +92,9 @@ Avoid global state managers unless you have a genuine need for cross-cutting sta
           <XDSChatMessageBubble
             metadata={
               <XDSChatMessageMetadata
-                timestamp={<XDSTimestamp value="2026-03-15T14:31:00" format="time" />}
+                timestamp={
+                  <XDSTimestamp value="2026-03-15T14:31:00" format="time" />
+                }
                 status="read"
               />
             }>
@@ -94,7 +102,9 @@ Avoid global state managers unless you have a genuine need for cross-cutting sta
           </XDSChatMessageBubble>
         </XDSChatMessage>
         <XDSChatMessage sender="assistant">
-          <XDSMarkdown density="compact">Here's a common pattern for form state:</XDSMarkdown>
+          <XDSMarkdown density="compact">
+            Here's a common pattern for form state:
+          </XDSMarkdown>
           <XDSCodeBlock
             code={`const reducer = (state, action) => {
   switch (action.type) {
@@ -120,7 +130,9 @@ const [state, dispatch] = useReducer(reducer, initialState);`}
 | \`useSyncExternalStore\` | External stores | On snapshot change | High | Redux, Zustand, signals |
 | \`useRef\` | Mutable values | Never | Low | DOM refs, timers, previous values |`}</XDSMarkdown>
           <XDSChatMessageMetadata
-            timestamp={<XDSTimestamp value="2026-03-15T14:31:30" format="time" />}
+            timestamp={
+              <XDSTimestamp value="2026-03-15T14:31:30" format="time" />
+            }
             footer={
               <>
                 <span>Claude Opus 4.6</span>
@@ -141,7 +153,9 @@ const [state, dispatch] = useReducer(reducer, initialState);`}
                 />
                 <XDSButton
                   label="Copy"
-                  icon={<ClipboardDocumentIcon style={{width: 14, height: 14}} />}
+                  icon={
+                    <ClipboardDocumentIcon style={{width: 14, height: 14}} />
+                  }
                   variant="ghost"
                   size="sm"
                   isIconOnly
@@ -245,7 +259,9 @@ export const ChatConversation: StoryObj = {
               name={<span style={nameStyle}>Navi</span>}
               metadata={
                 <XDSChatMessageMetadata
-                  timestamp={<XDSTimestamp value="2026-03-15T14:30:00" format="time" />}
+                  timestamp={
+                    <XDSTimestamp value="2026-03-15T14:30:00" format="time" />
+                  }
                 />
               }>
               Hey! I looked at the PR and left a few comments on the density
@@ -265,7 +281,9 @@ export const ChatConversation: StoryObj = {
               group="last"
               metadata={
                 <XDSChatMessageMetadata
-                  timestamp={<XDSTimestamp value="2026-03-15T14:31:00" format="time" />}
+                  timestamp={
+                    <XDSTimestamp value="2026-03-15T14:31:00" format="time" />
+                  }
                   status="read"
                 />
               }>
@@ -280,7 +298,9 @@ export const ChatConversation: StoryObj = {
               name={<span style={nameStyle}>Navi</span>}
               metadata={
                 <XDSChatMessageMetadata
-                  timestamp={<XDSTimestamp value="2026-03-15T14:32:00" format="time" />}
+                  timestamp={
+                    <XDSTimestamp value="2026-03-15T14:32:00" format="time" />
+                  }
                 />
               }>
               Sounds good. The main thing is the compact radius — it should use
@@ -295,7 +315,9 @@ export const ChatConversation: StoryObj = {
               name={<span style={nameStyle}>Cindy</span>}
               metadata={
                 <XDSChatMessageMetadata
-                  timestamp={<XDSTimestamp value="2026-03-15T14:33:00" format="time" />}
+                  timestamp={
+                    <XDSTimestamp value="2026-03-15T14:33:00" format="time" />
+                  }
                   status="delivered"
                 />
               }>
@@ -357,9 +379,11 @@ export const DensityComparison: StoryObj = {
               avatar={<XDSAvatar name="Navi" size={avatarSize[density]} />}>
               <XDSMarkdown density="compact">{`Density controls **spacing** at every level:
 
-- **Gap** between messages
+- **Default gap** between messages
 - **Padding** inside bubbles
 - **Gap** between child elements
+
+Use messageGap when top-level rows need different spacing from density.
 
 This is the **${density}** density. ${density === 'compact' ? 'Great for sidebars and panels where space is limited.' : density === 'spacious' ? 'Ideal for long-form reading where breathing room helps comprehension.' : 'The default — works well for most full-page chat interfaces.'}`}</XDSMarkdown>
             </XDSChatMessage>
@@ -379,6 +403,36 @@ This is the **${density}** density. ${density === 'compact' ? 'Great for sidebar
       </div>
     );
   },
+};
+export const MessageGapOverride: StoryObj = {
+  name: 'Message Gap Override',
+  render: () => (
+    <div style={{height: 420, display: 'flex', flexDirection: 'column'}}>
+      <XDSChatMessageList density="compact" messageGap={5}>
+        <XDSChatMessage sender="assistant">
+          <XDSChatMessageBubble name="Clio">
+            Starting the requested change.
+          </XDSChatMessageBubble>
+        </XDSChatMessage>
+        <XDSChatMessage sender="assistant">
+          <XDSChatMessageBubble variant="ghost">
+            Reading repository context and relevant files...
+          </XDSChatMessageBubble>
+        </XDSChatMessage>
+        <XDSChatMessage sender="assistant">
+          <XDSChatMessageBubble variant="ghost">
+            Running tests for the updated package.
+          </XDSChatMessageBubble>
+        </XDSChatMessage>
+        <XDSChatMessage sender="assistant">
+          <XDSChatMessageBubble
+            metadata={<XDSChatMessageMetadata footer="Done" />}>
+            The patch is ready for review.
+          </XDSChatMessageBubble>
+        </XDSChatMessage>
+      </XDSChatMessageList>
+    </div>
+  ),
 };
 export const SystemMessages: StoryObj = {
   name: 'System Messages',

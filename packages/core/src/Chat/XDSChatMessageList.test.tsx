@@ -47,6 +47,16 @@ describe('XDSChatMessageList', () => {
     expect(el.className).toContain('compact');
   });
 
+  it('accepts messageGap independently from density', () => {
+    render(
+      <XDSChatMessageList density="compact" messageGap={6} data-testid="list">
+        <div>msg</div>
+      </XDSChatMessageList>,
+    );
+    const el = screen.getByTestId('list');
+    expect(el.className).toContain('compact');
+  });
+
   it('applies data-testid', () => {
     render(
       <XDSChatMessageList data-testid="chat-list">
@@ -55,5 +65,4 @@ describe('XDSChatMessageList', () => {
     );
     expect(screen.getByTestId('chat-list')).toBeTruthy();
   });
-
 });
