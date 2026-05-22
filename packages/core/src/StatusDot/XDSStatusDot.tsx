@@ -19,6 +19,7 @@
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import {XDSBaseProps} from '../XDSBaseProps';
+import {XDSTooltip} from '../Tooltip/XDSTooltip';
 import {xdsClassName, mergeProps} from '../utils';
 
 /**
@@ -71,7 +72,7 @@ const variants = stylex.create({
     backgroundColor: colorVars['--color-accent'],
   },
   neutral: {
-    backgroundColor: colorVars['--color-neutral'],
+    backgroundColor: colorVars['--color-icon-secondary'],
   },
 });
 
@@ -119,6 +120,11 @@ export interface XDSStatusDotProps extends XDSBaseProps<HTMLSpanElement> {
    * @default false
    */
   isPulsing?: boolean;
+  /**
+   * Tooltip text shown on hover to explain the status meaning.
+   * When omitted, no tooltip is rendered.
+   */
+  tooltip?: string;
 }
 
 /**
@@ -133,19 +139,21 @@ export interface XDSStatusDotProps extends XDSBaseProps<HTMLSpanElement> {
  * <XDSStatusDot variant="success" label="Online" />
  * <XDSStatusDot variant="error" label="Offline" />
  * <XDSStatusDot variant="success" label="Live" isPulsing />
+ * <XDSStatusDot variant="success" label="Online" tooltip="Online" />
  * ```
  */
 export function XDSStatusDot({
   variant,
   label,
   isPulsing = false,
+  tooltip,
   xstyle,
   className,
   style,
   ref,
   ...props
 }: XDSStatusDotProps) {
-  return (
+  const dot = (
     <span
       ref={ref}
       role="img"
@@ -165,6 +173,12 @@ export function XDSStatusDot({
       {...props}
     />
   );
+
+  if (tooltip) {
+    return <XDSTooltip content={tooltip}>{dot}</XDSTooltip>;
+  }
+
+  return dot;
 }
 
 XDSStatusDot.displayName = 'XDSStatusDot';
