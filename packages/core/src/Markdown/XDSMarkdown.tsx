@@ -12,8 +12,8 @@
 import {useMemo, useRef} from 'react';
 import type React from 'react';
 import {Fragment} from 'react';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import * as stylex from '@stylexjs/stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
@@ -39,6 +39,7 @@ import {XDSTableHeader} from '../Table/XDSTableHeader';
 import {XDSTableBody} from '../Table/XDSTableBody';
 import {xdsClassName, mergeProps} from '../utils';
 import {useXDSStreamingText} from '../hooks/useXDSStreamingText';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSCitation} from '../Citation/XDSCitation';
 import type {XDSCitationSource} from '../Citation/XDSCitation';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
@@ -106,7 +107,7 @@ export interface XDSMarkdownComponents {
   hr?: React.ComponentType<object>;
 }
 
-export interface XDSMarkdownProps {
+export interface XDSMarkdownProps extends XDSBaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
   children: string;
   density?: 'default' | 'compact';
@@ -162,20 +163,6 @@ export interface XDSMarkdownProps {
    * for overlapping ranges.
    */
   inlinePlugins?: MarkdownInlinePlugin[];
-  /**
-   * StyleX styles for layout customization (margins, positioning, sizing).
-   * Must be a `stylex.create()` value — not an inline style object.
-   *
-   * @example
-   * ```
-   * const styles = stylex.create({ wrapper: { marginTop: 8 } });
-   * <XDSMarkdown xstyle={styles.wrapper} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  className?: string;
-  style?: React.CSSProperties;
-  'data-testid'?: string;
 }
 
 // ---------------------------------------------------------------------------

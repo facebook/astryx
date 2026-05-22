@@ -22,7 +22,7 @@ import React, {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {
   XDSTokenizer,
   type XDSTokenizerHandle,
@@ -325,7 +325,10 @@ function PowerSearchTokenValue({
 // Types
 // =============================================================================
 
-export interface XDSPowerSearchProps {
+export interface XDSPowerSearchProps extends Omit<
+  XDSBaseProps<HTMLElement>,
+  'onChange'
+> {
   /** PowerSearch configuration defining available fields and operators. */
   config: PowerSearchConfig;
   /** Currently active filters. */
@@ -389,17 +392,6 @@ export interface XDSPowerSearchProps {
   resultCount?: number | string;
   /** Imperative handle ref. */
   ref?: React.Ref<XDSPowerSearchHandle>;
-  /** Test ID. */
-  'data-testid'?: string;
-  /**
-   * StyleX styles for layout customization (margins, positioning, sizing).
-   * Must be a `stylex.create()` value — not an inline style object.
-   */
-  xstyle?: StyleXStyles;
-  /** CSS class name. */
-  className?: string;
-  /** Inline styles. */
-  style?: React.CSSProperties;
   /**
    * Per-type component overrides for token and editor rendering.
    * Keys are operator value types (e.g. 'string', 'enum', 'date_absolute').

@@ -22,6 +22,7 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSBadge} from '../Badge';
 import type {XDSChatComposerToken} from './XDSChatComposerInput';
 import {mergeProps, xdsClassName} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 // =============================================================================
 // Styles
@@ -37,7 +38,7 @@ const styles = stylex.create({
 // Types
 // =============================================================================
 
-export interface XDSChatTokenizedTextProps {
+export interface XDSChatTokenizedTextProps extends XDSBaseProps<HTMLSpanElement> {
   /** The message text containing serialized token values */
   children: string;
   /**

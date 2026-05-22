@@ -24,7 +24,6 @@
 
 import {type ReactNode, useEffect, useMemo, useRef, useTransition} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {
   XDSChatListContext,
@@ -33,8 +32,9 @@ import {
 } from './XDSChatContext';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSSpinner} from '../Spinner';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
-export interface XDSChatMessageListProps {
+export interface XDSChatMessageListProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
 
@@ -62,24 +62,6 @@ export interface XDSChatMessageListProps {
    * @default 'balanced'
    */
   density?: XDSChatDensity;
-
-  /**
-   * StyleX styles for layout customization (margins, positioning, sizing).
-   * Must be a `stylex.create()` value — not an inline style object.
-   *
-   * @example
-   * ```
-   * const styles = stylex.create({ wrapper: { marginTop: 8 } });
-   * <XDSChatMessageList xstyle={styles.wrapper} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /** CSS class name(s) appended to the root element. */
-  className?: string;
-  /** Inline styles. */
-  style?: React.CSSProperties;
-  /** Test ID. */
-  'data-testid'?: string;
 }
 
 // =============================================================================

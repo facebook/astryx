@@ -4,7 +4,6 @@
 
 import {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {renderIconSlot, type XDSIconType} from '../Icon';
 import {XDSText} from '../Text';
 import {
@@ -15,6 +14,7 @@ import {
   radiusVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSNavHeadingMenuContext} from './XDSNavMenuContext';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 
@@ -67,7 +67,10 @@ const sizeStyles = stylex.create({
   },
 });
 
-export interface XDSNavHeadingMenuItemProps {
+export interface XDSNavHeadingMenuItemProps extends Omit<
+  XDSBaseProps<HTMLElement>,
+  'onClick'
+> {
   /** Icon to display before the label. */
   icon?: ReactNode | XDSIconType;
   /** Primary label text. */
@@ -80,17 +83,6 @@ export interface XDSNavHeadingMenuItemProps {
   onClick?: () => void;
   /** Whether the item is disabled. @default false */
   isDisabled?: boolean;
-  /**
-   * StyleX styles for layout customization.
-   * Must be a `stylex.create()` value.
-   */
-  xstyle?: StyleXStyles;
-  /** CSS class name(s) appended to the root element. */
-  className?: string;
-  /** Inline styles applied to the root element. */
-  style?: React.CSSProperties;
-  /** Test ID for testing frameworks. */
-  'data-testid'?: string;
 }
 
 /**

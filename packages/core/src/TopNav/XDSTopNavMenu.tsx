@@ -21,6 +21,7 @@ import {useXDSPopover} from '../Popover/useXDSPopover';
 import {useXDSMenuHover} from '../hooks/useXDSMenuHover';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useTopNavSlot} from './TopNavContext';
 import {useXDSTopNavRenderMode} from './XDSTopNavRenderContext';
@@ -244,7 +245,7 @@ export interface XDSTopNavMenuItemData {
   onClick?: () => void;
 }
 
-export interface XDSTopNavMenuProps {
+export interface XDSTopNavMenuProps extends XDSBaseProps<HTMLButtonElement> {
   /**
    * The visible label for the nav item trigger.
    */

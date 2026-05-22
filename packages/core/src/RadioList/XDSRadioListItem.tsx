@@ -18,6 +18,7 @@
 
 import {use, useId, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {
   colorVars,
   spacingVars,
@@ -189,7 +190,7 @@ const dotSizeStyles = stylex.create({
   },
 });
 
-export interface XDSRadioListItemProps {
+export interface XDSRadioListItemProps extends XDSBaseProps<HTMLDivElement> {
   /**
    * Label text for the radio item.
    */
@@ -215,10 +216,6 @@ export interface XDSRadioListItemProps {
    * Content to render after the label.
    */
   endContent?: ReactNode;
-  /**
-   * Test ID for the radio item container.
-   */
-  'data-testid'?: string;
 }
 
 /**

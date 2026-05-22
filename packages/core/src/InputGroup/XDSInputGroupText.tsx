@@ -16,7 +16,7 @@
 
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {
   colorVars,
   spacingVars,
@@ -65,27 +65,12 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSInputGroupTextProps {
+export interface XDSInputGroupTextProps extends XDSBaseProps<HTMLDivElement> {
   /**
    * Content to render in the text slot.
    * Can be text or an icon.
    */
   children: ReactNode;
-
-  /**
-   * StyleX styles for customization.
-   */
-  xstyle?: StyleXStyles;
-
-  /**
-   * CSS class name(s).
-   */
-  className?: string;
-
-  /**
-   * Inline styles.
-   */
-  style?: React.CSSProperties;
 }
 
 /**

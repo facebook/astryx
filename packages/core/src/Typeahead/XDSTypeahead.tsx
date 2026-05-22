@@ -26,7 +26,6 @@ import React, {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {XDSBaseTypeahead} from './XDSBaseTypeahead';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {
@@ -47,6 +46,7 @@ import {
   sizeVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import type {XDSSearchableItem, XDSSearchSource} from './types';
 
 export type {
@@ -56,7 +56,10 @@ export type {
 
 export type XDSTypeaheadSize = 'sm' | 'md';
 
-export interface XDSTypeaheadProps<T extends XDSSearchableItem> {
+export interface XDSTypeaheadProps<T extends XDSSearchableItem> extends Omit<
+  XDSBaseProps<HTMLDivElement>,
+  'onChange'
+> {
   /** Accessible label (required). */
   label: string;
   /** Visually hide the label. @default false */
@@ -110,29 +113,6 @@ export interface XDSTypeaheadProps<T extends XDSSearchableItem> {
   onChangeQuery?: (query: string) => void;
   /** Callback when dropdown opens/closes. */
   onOpenChange?: (isOpen: boolean) => void;
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
-  /** Test ID. */
-  'data-testid'?: string;
 }
 
 // =============================================================================

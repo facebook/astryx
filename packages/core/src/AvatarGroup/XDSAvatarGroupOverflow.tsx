@@ -23,11 +23,15 @@ import {
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {useXDSAvatarGroup} from './XDSAvatarGroupContext';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 const BORDER_WIDTH = 2;
 const OVERFLOW_FONT_RATIO = 0.35;
 
-export interface XDSAvatarGroupOverflowProps {
+export interface XDSAvatarGroupOverflowProps extends Omit<
+  XDSBaseProps<HTMLElement>,
+  'onClick'
+> {
   /**
    * The overflow count to display.
    */

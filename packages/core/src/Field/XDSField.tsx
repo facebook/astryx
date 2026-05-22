@@ -16,9 +16,9 @@
  * - /packages/cli/templates/blocks/components/Field/ (showcase blocks)
  */
 
-import {type HTMLAttributes, type ReactNode, use} from 'react';
+import {type ReactNode, use} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSFieldLabel} from './XDSFieldLabel';
 import {XDSFieldStatus} from './XDSFieldStatus';
 import {spacingVars, borderVars} from '../theme/tokens.stylex';
@@ -69,7 +69,7 @@ export interface XDSFieldStatus {
 }
 
 export interface XDSFieldProps extends Omit<
-  HTMLAttributes<HTMLDivElement>,
+  XDSBaseProps<HTMLDivElement>,
   'children'
 > {
   /** Ref forwarded to the root element */
@@ -131,27 +131,6 @@ export interface XDSFieldProps extends Omit<
    * @default 'attached'
    */
   statusVariant?: 'attached' | 'detached';
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
   /**
    * The input or control to render inside the field.
    */

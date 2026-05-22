@@ -22,6 +22,7 @@ import * as stylex from '@stylexjs/stylex';
 import {durationVars, easeVars} from '../theme/tokens.stylex';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {XDSButton} from '../Button';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSSideNavCollapse} from './XDSSideNavCollapseContext';
 import {useXDSAppShellMobile} from '../AppShell/XDSAppShellMobileContext';
 
@@ -46,7 +47,7 @@ const styles = stylex.create({
 // Types
 // =============================================================================
 
-export interface XDSSideNavCollapseButtonProps {
+export interface XDSSideNavCollapseButtonProps extends XDSBaseProps<HTMLButtonElement> {
   /**
    * Ref to the XDSSideNav element. Only needed when the button is
    * rendered outside the sidenav (reads collapse state via ref instead

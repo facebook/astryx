@@ -20,6 +20,7 @@ import type {
   ReactNode,
 } from 'react';
 import type {StyleXStyles} from '../theme/types';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import type {XDSTableFilterFieldRef} from './plugins/filtering/useXDSTableFiltering';
 
 // =============================================================================
@@ -361,7 +362,9 @@ export interface TableHeaderCellComponentProps extends ThHTMLAttributes<HTMLTabl
  *
  * @template T - The row data type
  */
-export interface XDSBaseTableProps<T extends Record<string, unknown>> {
+export interface XDSBaseTableProps<
+  T extends Record<string, unknown>,
+> extends XDSBaseProps<HTMLTableElement> {
   /** Array of data items to render as rows */
   data?: T[];
   /** Column definitions. If omitted, auto-generated from data keys. */

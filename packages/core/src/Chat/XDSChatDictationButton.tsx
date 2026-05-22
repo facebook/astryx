@@ -20,17 +20,17 @@
 
 import type {UseSpeechRecognitionReturn} from './useSpeechRecognition';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars, radiusVars} from '../theme/tokens.stylex';
 import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
 import {mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 // =============================================================================
 // Types
 // =============================================================================
 
-export interface XDSChatDictationButtonProps {
+export interface XDSChatDictationButtonProps extends XDSBaseProps<HTMLSpanElement> {
   /** The return value from useXDSChatDictation or useSpeechRecognition. */
   dictation: UseSpeechRecognitionReturn;
   /** Button size. @default "md" */
@@ -39,17 +39,6 @@ export interface XDSChatDictationButtonProps {
   isHiddenWhenUnsupported?: boolean;
   /** Accessible label override. */
   label?: string;
-  /**
-   * StyleX styles for layout customization (margins, positioning, sizing).
-   * Must be a `stylex.create()` value — not an inline style object.
-   *
-   * @example
-   * ```
-   * const styles = stylex.create({ wrapper: { marginTop: 8 } });
-   * <XDSChatDictationButton xstyle={styles.wrapper} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
 }
 
 // =============================================================================

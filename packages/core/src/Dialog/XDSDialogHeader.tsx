@@ -24,6 +24,7 @@ import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
 import {XDSHeading} from '../Text/XDSHeading';
 import {XDSText} from '../Text/XDSText';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 const styles = stylex.create({
   container: {
@@ -57,7 +58,7 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSDialogHeaderProps {
+export interface XDSDialogHeaderProps extends XDSBaseProps<HTMLElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLElement>;
   /**

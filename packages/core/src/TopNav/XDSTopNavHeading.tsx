@@ -22,7 +22,6 @@
 
 import {useCallback, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
@@ -36,6 +35,7 @@ import {getIcon} from '../Icon/globalIconRegistry';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {xdsClassName, mergeProps} from '../utils';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSMenuHover} from '../hooks/useXDSMenuHover';
 import {XDSNavHeadingCloseContext} from '../NavMenu/XDSNavMenuContext';
 
@@ -205,7 +205,7 @@ const styles = stylex.create({
 // Types
 // =============================================================================
 
-export interface XDSTopNavHeadingProps {
+export interface XDSTopNavHeadingProps extends XDSBaseProps<HTMLElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLElement>;
   /**
@@ -261,22 +261,6 @@ export interface XDSTopNavHeadingProps {
    * Must accept href, className, style, and children props.
    */
   as?: XDSLinkComponentType;
-  /**
-   * StyleX styles created via `stylex.create()`.
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element.
-   */
-  style?: React.CSSProperties;
-  /**
-   * Test ID for the root element.
-   */
-  'data-testid'?: string;
 }
 
 // =============================================================================

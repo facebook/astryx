@@ -27,6 +27,7 @@ import type {StyleXStyles} from '@stylexjs/stylex';
 import {xdsClassName} from '../utils';
 import {XDSButton, type XDSButtonSize} from '../Button';
 import {useXDSToggleButtonGroup} from './XDSToggleButtonGroup';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 // =============================================================================
 // Styles
@@ -67,7 +68,7 @@ const labelStyles = stylex.create({
 // Props
 // =============================================================================
 
-export interface XDSToggleButtonProps {
+export interface XDSToggleButtonProps extends XDSBaseProps<HTMLButtonElement> {
   /**
    * Accessible label for the button (required).
    * Used as visible text, or as aria-label for icon-only buttons.
@@ -168,25 +169,6 @@ export interface XDSToggleButtonProps {
    * Required when used in a group.
    */
   value?: string;
-
-  /** Test ID for testing frameworks. */
-  'data-testid'?: string;
-
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
 }
 
 // =============================================================================

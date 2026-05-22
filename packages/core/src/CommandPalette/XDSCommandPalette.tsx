@@ -40,10 +40,11 @@ import {XDSCommandPaletteGroup} from './XDSCommandPaletteGroup';
 import {XDSCommandPaletteInput} from './XDSCommandPaletteInput';
 import {XDSCommandPaletteFooter} from './XDSCommandPaletteFooter';
 import {XDSCommandPaletteEmpty} from './XDSCommandPaletteEmpty';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 export interface XDSCommandPaletteProps<
   T extends XDSSearchableItem = XDSSearchableItem,
-> {
+> extends Omit<XDSBaseProps<HTMLElement>, 'onChange'> {
   /** Whether the command palette is open. */
   isOpen: boolean;
 

@@ -15,6 +15,7 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps} from '../utils';
 import {
   colorVars,
@@ -86,7 +87,7 @@ export interface XDSFieldStatusVariantMap {
  */
 export type XDSFieldStatusVariant = keyof XDSFieldStatusVariantMap;
 
-export interface XDSFieldStatusProps {
+export interface XDSFieldStatusProps extends XDSBaseProps<HTMLDivElement> {
   /**
    * The type of status to display.
    */
@@ -95,10 +96,6 @@ export interface XDSFieldStatusProps {
    * The status message to display.
    */
   message: string;
-  /**
-   * ID for the status message element (use for aria-describedby on the input).
-   */
-  id?: string;
   /**
    * Visual variant of the status message.
    * - 'attached': Overlaps with input above (used in XDSField)

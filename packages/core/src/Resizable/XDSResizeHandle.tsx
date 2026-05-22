@@ -20,8 +20,9 @@
  */
 
 import {useCallback, useEffect, useRef, useState} from 'react';
-import type {HTMLAttributes, ReactNode} from 'react';
+import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {
   colorVars,
   durationVars,
@@ -210,7 +211,7 @@ const dynamicStyles = stylex.create({
 });
 
 export interface XDSResizeHandleProps extends Omit<
-  HTMLAttributes<HTMLDivElement>,
+  XDSBaseProps<HTMLDivElement>,
   'style' | 'className'
 > {
   ref?: React.Ref<HTMLDivElement>;
@@ -280,9 +281,6 @@ export interface XDSResizeHandleProps extends Omit<
 
   /** Custom handle content. Overrides the default pill. */
   children?: ReactNode;
-
-  /** StyleX styles override. */
-  xstyle?: stylex.StyleXStyles;
 }
 
 /**

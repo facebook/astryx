@@ -27,8 +27,8 @@ import {
   useState,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps} from '../utils';
 import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
 import {useXDSChatStreamScroll} from './useXDSChatStreamScroll';
@@ -53,7 +53,7 @@ export interface XDSChatLayoutHandle {
   scrollToLastMessage: () => void;
 }
 
-export interface XDSChatLayoutProps {
+export interface XDSChatLayoutProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element. */
   ref?: React.Ref<HTMLDivElement>;
 
@@ -94,24 +94,6 @@ export interface XDSChatLayoutProps {
    * When omitted, the layout root itself is the scroll container.
    */
   scrollRef?: React.RefObject<HTMLElement | null>;
-
-  /**
-   * StyleX styles for layout customization (margins, positioning, sizing).
-   * Must be a `stylex.create()` value — not an inline style object.
-   *
-   * @example
-   * ```
-   * const styles = stylex.create({ wrapper: { marginTop: 8 } });
-   * <XDSChatLayout xstyle={styles.wrapper} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /** CSS class name(s) appended to the root element. */
-  className?: string;
-  /** Inline styles. */
-  style?: React.CSSProperties;
-  /** Test ID. */
-  'data-testid'?: string;
 }
 
 // =============================================================================
