@@ -40,6 +40,7 @@ import {XDSTableBody} from '../Table/XDSTableBody';
 import {xdsClassName, mergeProps} from '../utils';
 import {useXDSStreamingText} from '../hooks/useXDSStreamingText';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {useXDSTheme} from '../theme/useXDSTheme';
 import {XDSCitation} from '../Citation/XDSCitation';
 import type {XDSCitationSource} from '../Citation/XDSCitation';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
@@ -373,6 +374,16 @@ const styles = stylex.create({
 
 // ---------------------------------------------------------------------------
 // Streaming fade-in animation
+
+// Parse a CSS duration string (e.g. "175ms", "0.15s") to milliseconds.
+function parseDuration(value: string): number | null {
+  const ms = value.match(/^([\d.]+)ms$/);
+  if (ms) {return parseFloat(ms[1]);}
+  const s = value.match(/^([\d.]+)s$/);
+  if (s) {return parseFloat(s[1]) * 1000;}
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 
 const fadeInKeyframes = stylex.keyframes({
@@ -644,8 +655,12 @@ function wrapTextWithFade(
 
   for (let i = 0; i < boundaries.length; i++) {
     const b = boundaries[i];
-    if (b <= pos) {continue;}
-    if (b >= endOffset) {break;}
+    if (b <= pos) {
+      continue;
+    }
+    if (b >= endOffset) {
+      break;
+    }
 
     // Text from pos to b: this belongs to the previous segment
     if (i === 0 && pos < b) {
@@ -1618,9 +1633,19 @@ export function XDSMarkdown({
   }, [smoothedText, children, isStreaming, sourceIds]);
 
   // Track recent boundaries for stacked fade-in animation.
-  // Each time smoothedText grows, we push the previous rendered text length
-  // onto the ring buffer (max 3). This gives us up to 3 concurrently-animating
-  // spans, each independently fading from opacity 0→1.
+  // The number of spans needed = ceil(animationDuration / tickInterval).
+  // useXDSStreamingText ticks every ~tickMs, and the fade runs for
+  // --duration-fast-max. We compute the span count dynamically so the
+  // oldest span has just finished animating when it gets evicted.
+  const {token} = useXDSTheme();
+  const maxSpans = useMemo(() => {
+    const duration = parseDuration(token('--duration-fast-max')) ?? 230;
+    const tick = parseDuration(token('--duration-fast-min'));
+    // Tick interval mirrors useXDSStreamingText's timing: base / 10
+    const tickMs = tick != null ? Math.max(4, Math.round(tick / 10)) : 50;
+    return Math.min(Math.ceil(duration / tickMs), 12);
+  }, [token]);
+
   const prevBlocksRef = useRef<BlockNode[]>([]);
   const boundariesRef = useRef<number[]>([]);
   const smoothedLen = smoothedText.length;
@@ -1631,15 +1656,15 @@ export function XDSMarkdown({
     // Only push if the boundary actually advanced
     if (prev.length === 0 || prevLen > prev[prev.length - 1]) {
       const next = [...prev, prevLen];
-      // Keep at most 3 boundaries
-      if (next.length > 3) {
+      // Evict oldest when we exceed the computed max
+      while (next.length > maxSpans) {
         next.shift();
       }
       boundariesRef.current = next;
       return next;
     }
     return prev;
-  }, [smoothedLen]);
+  }, [smoothedLen, maxSpans]);
 
   const cursor: StreamingCursor = {
     offset: 0,
