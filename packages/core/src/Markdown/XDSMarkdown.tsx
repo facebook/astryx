@@ -703,29 +703,18 @@ function wrapTextWithFade(
     pos = b;
   }
 
-  // Remaining text after the last boundary — newest chunk
+  // Remaining text after the last boundary — newest chunk.
+  // Uses a STABLE key so it never remounts (no flash). Content grows
+  // each tick but the element stays alive with its animation running.
   if (pos < endOffset) {
-    if (boundaries.length === 0) {
-      // No boundaries at all — everything is new
-      const fadeKey0 = `fade-${key}-b0`;
-      segments.push(
-        <span key={fadeKey0} style={{backgroundColor: debugColor(fadeKey0)}}>
-          <span data-fade={fadeKey0} {...stylex.props(streamingStyles.fadeIn)}>
-            {content.slice(pos - startOffset)}
-          </span>
-        </span>,
-      );
-    } else {
-      const lastB = boundaries[boundaries.length - 1];
-      const spanKey = `fade-${key}-b${lastB}`;
-      segments.push(
-        <span key={spanKey} style={{backgroundColor: debugColor(spanKey)}}>
-          <span data-fade={spanKey} {...stylex.props(streamingStyles.fadeIn)}>
-            {content.slice(pos - startOffset)}
-          </span>
-        </span>,
-      );
-    }
+    const tailKey = `fade-${key}-tail`;
+    segments.push(
+      <span key={tailKey} style={{backgroundColor: debugColor(tailKey)}}>
+        <span data-fade={tailKey} {...stylex.props(streamingStyles.fadeIn)}>
+          {content.slice(pos - startOffset)}
+        </span>
+      </span>,
+    );
   }
 
   if (segments.length === 1) {
