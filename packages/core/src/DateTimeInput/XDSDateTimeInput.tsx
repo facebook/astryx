@@ -67,6 +67,7 @@ import {
   adjustTime,
   xdsClassName,
   mergeProps,
+  mergeRefs,
 } from '../utils';
 import {
   plainDateFromISO,
@@ -743,19 +744,6 @@ export function XDSDateTimeInput({
     dateInputRef.current?.focus();
   }, [fireChange]);
 
-  // --- Refs ---
-  const setDateRefs = useCallback(
-    (el: HTMLInputElement | null) => {
-      dateInputRef.current = el;
-      if (typeof ref === 'function') {
-        ref(el);
-      } else if (ref) {
-        ref.current = el;
-      }
-    },
-    [ref],
-  );
-
   // Focus time input when clicking wrapper padding/icon
   const {onClick: handleTimeWrapperClick, onMouseUp: handleTimeWrapperMouseUp} =
     useInputContainer({
@@ -820,7 +808,7 @@ export function XDSDateTimeInput({
             <XDSIcon icon="calendar" size="sm" color="secondary" />
           </button>
           <input
-            ref={setDateRefs}
+            ref={mergeRefs(ref, dateInputRef)}
             id={dateInputId}
             type="text"
             role="combobox"

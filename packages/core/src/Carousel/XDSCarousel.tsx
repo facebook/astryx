@@ -31,7 +31,7 @@ import {XDSIcon} from '../Icon';
 import {useXDSLayer} from '../Layer';
 import {useScrollOverflow} from '../hooks/useScrollOverflow';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 
 export interface XDSCarouselProps extends XDSBaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
@@ -274,16 +274,7 @@ export function XDSCarousel({
 
   return (
     <div
-      ref={(el: HTMLDivElement | null) => {
-        if (typeof ref === 'function') {
-          ref(el);
-        } else if (ref) {
-          ref.current = el;
-        }
-        if (layer.ref) {
-          layer.ref(el as HTMLElement | null);
-        }
-      }}
+      ref={mergeRefs(ref, layer.ref as React.Ref<HTMLDivElement>)}
       data-testid={testId}
       role="region"
       aria-label={ariaLabel}

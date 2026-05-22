@@ -35,7 +35,7 @@ interface UseXDSMenuHoverOptions {
   hideDelay?: number;
 }
 
-interface UseXDSMenuHoverReturn {
+interface UseXDSMenuHoverReturn<T extends HTMLElement = HTMLElement> {
   triggerProps: {
     onClick: () => void;
     onMouseEnter: () => void;
@@ -46,14 +46,14 @@ interface UseXDSMenuHoverReturn {
     onMouseLeave: () => void;
     onKeyDown: (e: React.KeyboardEvent) => void;
   };
-  menuRef: React.RefObject<HTMLElement | null>;
+  menuRef: React.RefObject<T | null>;
   focusFirst: () => void;
   setTriggerEl: (el: HTMLElement | null) => void;
 }
 
-export function useXDSMenuHover(
+export function useXDSMenuHover<T extends HTMLElement = HTMLElement>(
   options: UseXDSMenuHoverOptions,
-): UseXDSMenuHoverReturn {
+): UseXDSMenuHoverReturn<T> {
   const {
     show,
     hide,
@@ -95,7 +95,7 @@ export function useXDSMenuHover(
     listRef: menuRef,
     handleKeyDown: handleListKeyDown,
     focusFirst,
-  } = useListFocus({
+  } = useListFocus<T>({
     onEscape: () => {
       clearTimeouts();
       hide();

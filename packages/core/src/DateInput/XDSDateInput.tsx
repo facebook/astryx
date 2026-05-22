@@ -132,7 +132,7 @@ export type {
   XDSInputStatus as XDSDateInputStatus,
   XDSInputStatusType as XDSDateInputStatusType,
 } from '../Field';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import {XDSBaseProps} from '../XDSBaseProps';
 
 export interface XDSDateInputProps extends Omit<
@@ -482,19 +482,6 @@ export function XDSDateInput({
     [popover, commitPendingInput],
   );
 
-  // Combine refs
-  const setRefs = useCallback(
-    (el: HTMLInputElement | null) => {
-      inputRef.current = el;
-      if (typeof ref === 'function') {
-        ref(el);
-      } else if (ref) {
-        ref.current = el;
-      }
-    },
-    [ref],
-  );
-
   return (
     <XDSField
       label={label}
@@ -544,7 +531,7 @@ export function XDSDateInput({
           <XDSIcon icon="calendar" size="sm" color="secondary" />
         </button>
         <input
-          ref={setRefs}
+          ref={mergeRefs(ref, inputRef)}
           id={id}
           type="text"
           role="combobox"

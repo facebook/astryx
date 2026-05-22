@@ -46,7 +46,7 @@ import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
 import {XDSHeading} from '../Text/XDSHeading';
 import {useXDSAppShellMobile} from '../AppShell/XDSAppShellMobileContext';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import {XDSBaseProps} from '../XDSBaseProps';
 
 // =============================================================================
@@ -310,19 +310,6 @@ export function XDSMobileNav({
     side === 'auto' ? 'end' : side,
   );
 
-  // Merge refs
-  const setRefs = useCallback(
-    (element: HTMLDialogElement | null) => {
-      dialogRef.current = element;
-      if (typeof ref === 'function') {
-        ref(element);
-      } else if (ref) {
-        ref.current = element;
-      }
-    },
-    [ref],
-  );
-
   // Open/close the dialog via showModal()/close()
   // close() is delayed so the slide-out transition can play.
   useEffect(() => {
@@ -403,7 +390,7 @@ export function XDSMobileNav({
 
   return (
     <dialog
-      ref={setRefs}
+      ref={mergeRefs(ref, dialogRef)}
       data-testid={testId}
       aria-label={label ?? (typeof header === 'string' ? header : 'Navigation')}
       onClick={handleDialogClick}

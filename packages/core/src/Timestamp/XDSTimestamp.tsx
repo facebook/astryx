@@ -25,7 +25,7 @@ import type {
   XDSTextColor,
   XDSTextWeight,
 } from '../theme/types';
-import {xdsClassName} from '../utils';
+import {xdsClassName, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 const LazyXDSTooltip = lazy(() =>
@@ -375,16 +375,6 @@ export function XDSTimestamp({
     return () => clearInterval(timer);
   }, [isLive, effectiveFormat, diffSeconds]);
 
-  // Tooltip needs the ref
-  const combinedRef = (el: HTMLTimeElement | null) => {
-    timeRef.current = el;
-    if (typeof ref === 'function') {
-      ref(el);
-    } else if (ref) {
-      ref.current = el;
-    }
-  };
-
   const showTooltip = hasTooltip && effectiveFormat === 'relative';
 
   const timestampClass = xdsClassName('timestamp', {format: effectiveFormat});
@@ -399,7 +389,7 @@ export function XDSTimestamp({
       className={[timestampClass, className].filter(Boolean).join(' ')}
       style={style}>
       <time
-        ref={combinedRef}
+        ref={mergeRefs(ref, timeRef)}
         dateTime={isoString}
         aria-label={
           effectiveFormat === 'relative' ? fullAbsoluteText : undefined

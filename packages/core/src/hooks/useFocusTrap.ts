@@ -90,11 +90,11 @@ export interface UseFocusTrapOptions {
 /**
  * Return type for useFocusTrap hook
  */
-export interface UseFocusTrapReturn {
+export interface UseFocusTrapReturn<T extends HTMLElement = HTMLElement> {
   /**
    * Ref to attach to the container element that should trap focus.
    */
-  containerRef: React.RefObject<HTMLElement | null>;
+  containerRef: React.RefObject<T | null>;
 
   /**
    * Focus the first focusable element in the container.
@@ -129,10 +129,12 @@ export interface UseFocusTrapReturn {
  * </div>
  * ```
  */
-export function useFocusTrap(options: UseFocusTrapOptions): UseFocusTrapReturn {
+export function useFocusTrap<T extends HTMLElement = HTMLElement>(
+  options: UseFocusTrapOptions,
+): UseFocusTrapReturn<T> {
   const {isActive, onEscape} = options;
 
-  const containerRef = useRef<HTMLElement | null>(null);
+  const containerRef = useRef<T | null>(null);
   const lastFocusRef = useRef<Element | null>(null);
   // Track if focus change was triggered by keyboard (Tab key)
   const isKeyboardNavigationRef = useRef(false);

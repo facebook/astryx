@@ -162,7 +162,7 @@ export interface UseXDSPopoverReturn {
    * You typically don't need to use this directly - the render function
    * automatically wraps content in a focus trap container.
    */
-  contentRef: React.RefObject<HTMLElement | null>;
+  contentRef: React.RefObject<HTMLDivElement | null>;
 
   /**
    * The CSS anchor name to use for positioning.
@@ -291,7 +291,7 @@ export function useXDSPopover(
   });
 
   // Focus trap for the popover content
-  const {containerRef: contentRef, focusFirst} = useFocusTrap({
+  const {containerRef: contentRef, focusFirst} = useFocusTrap<HTMLDivElement>({
     isActive: layer.isOpen,
     onEscape: layer.hide,
   });
@@ -349,7 +349,7 @@ export function useXDSPopover(
     (children: ReactNode, props?: ContextRenderProps) => {
       return layer.render(
         <div
-          ref={contentRef as React.RefObject<HTMLDivElement | null>}
+          ref={contentRef}
           role="dialog"
           aria-modal="true"
           aria-label={dialogLabel}

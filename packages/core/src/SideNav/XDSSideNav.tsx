@@ -26,7 +26,7 @@ import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {borderVars, colorVars, spacingVars} from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import {XDSSideNavCollapseContext} from './XDSSideNavCollapseContext';
 import {XDSSideNavCollapseButton} from './XDSSideNavCollapseButton';
 import {useXDSSideNavRenderMode} from './XDSSideNavRenderContext';
@@ -454,14 +454,7 @@ export function XDSSideNav({
 
   const navElement = (
     <nav
-      ref={node => {
-        navRef.current = node;
-        if (typeof ref === 'function') {
-          ref(node);
-        } else if (ref) {
-          ref.current = node;
-        }
-      }}
+      ref={mergeRefs(ref, navRef)}
       role="navigation"
       aria-label="Side navigation"
       data-testid={testId}

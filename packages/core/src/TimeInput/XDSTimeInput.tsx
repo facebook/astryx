@@ -58,6 +58,7 @@ import {
   isTimeInRange,
   xdsClassName,
   mergeProps,
+  mergeRefs,
 } from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
@@ -492,19 +493,6 @@ export function XDSTimeInput({
     inputRef.current?.focus();
   }, [fireChange]);
 
-  // Combine refs
-  const setRefs = useCallback(
-    (el: HTMLInputElement | null) => {
-      inputRef.current = el;
-      if (typeof ref === 'function') {
-        ref(el);
-      } else if (ref) {
-        ref.current = el;
-      }
-    },
-    [ref],
-  );
-
   // Focus input when clicking anywhere on the wrapper (icons, padding, etc.)
   const {onClick: handleWrapperClick, onMouseUp: handleWrapperMouseUp} =
     useInputContainer({
@@ -555,7 +543,7 @@ export function XDSTimeInput({
           <XDSIcon icon="clock" size="sm" color="secondary" />
         </div>
         <input
-          ref={setRefs}
+          ref={mergeRefs(ref, inputRef)}
           id={id}
           type="text"
           value={displayValue}

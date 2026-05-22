@@ -42,7 +42,7 @@ import {renderIconSlot, type XDSIconType} from '../Icon';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
 import {useXDSPopover} from '../Popover/useXDSPopover';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSTooltip} from '../Tooltip';
 import {navItemStyles, type NavItemSize} from '../NavItem/navItemStyles.stylex';
@@ -501,14 +501,7 @@ export function XDSSideNavItem({
       return (
         <div {...stylex.props(styles.root)}>
           <button
-            ref={el => {
-              popover.triggerRef(el);
-              if (typeof ref === 'function') {
-                ref(el);
-              } else if (ref) {
-                ref.current = el;
-              }
-            }}
+            ref={mergeRefs(ref, popover.triggerRef)}
             type="button"
             onClick={popover.toggle}
             onMouseEnter={handlePopoverMouseEnter}

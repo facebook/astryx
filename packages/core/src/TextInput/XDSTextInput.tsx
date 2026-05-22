@@ -113,7 +113,7 @@ export type {
   XDSInputStatus as XDSTextInputStatus,
   XDSInputStatusType as XDSTextInputStatusType,
 } from '../Field';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useXDSInputGroup} from '../InputGroup/XDSInputGroupContext';
@@ -317,19 +317,6 @@ export function XDSTextInput({
     inputRef.current?.focus();
   }, [onChange]);
 
-  // Combine refs
-  const setRefs = useCallback(
-    (el: HTMLInputElement | null) => {
-      inputRef.current = el;
-      if (typeof ref === 'function') {
-        ref(el);
-      } else if (ref) {
-        ref.current = el;
-      }
-    },
-    [ref],
-  );
-
   // Focus input when clicking anywhere on the wrapper (icons, padding, etc.)
   const {onClick: handleWrapperClick, onMouseUp: handleWrapperMouseUp} =
     useInputContainer({
@@ -361,7 +348,7 @@ export function XDSTextInput({
       {startIcon && renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
       <input
         {...rest}
-        ref={setRefs}
+        ref={mergeRefs(ref, inputRef)}
         id={id}
         name={htmlName}
         type={type}

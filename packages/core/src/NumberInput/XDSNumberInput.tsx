@@ -128,7 +128,7 @@ export type {
   XDSInputStatus as XDSNumberInputStatus,
   XDSInputStatusType as XDSNumberInputStatusType,
 } from '../Field';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import {XDSBaseProps} from '../XDSBaseProps';
 
 interface XDSNumberInputPropsBase extends Omit<
@@ -494,19 +494,6 @@ export function XDSNumberInput({
     ],
   );
 
-  // Combine refs
-  const setRefs = useCallback(
-    (el: HTMLInputElement | null) => {
-      inputRef.current = el;
-      if (typeof ref === 'function') {
-        ref(el);
-      } else if (ref) {
-        ref.current = el;
-      }
-    },
-    [ref],
-  );
-
   // Handle clear button click
   const handleClear = useCallback(() => {
     if (hasClear) {
@@ -548,7 +535,7 @@ export function XDSNumberInput({
       {startIcon && renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
       <input
         {...rest}
-        ref={setRefs}
+        ref={mergeRefs(ref, inputRef)}
         id={id}
         name={htmlName}
         type="number"

@@ -16,7 +16,7 @@
  * - /packages/cli/templates/blocks/components/Text/ (showcase blocks)
  */
 
-import {lazy, Suspense, useCallback, useRef, type ReactNode} from 'react';
+import {lazy, Suspense, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {
   XDSTextType,
@@ -44,7 +44,7 @@ import {
 } from './text.stylex';
 import {useTruncation} from './useTruncation';
 import type {LayerPlacement} from '../Layer';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 const LazyXDSTooltip = lazy(() =>
@@ -235,30 +235,13 @@ export function XDSText({
   // Ref for the text element (used as tooltip anchor)
   const textRef = useRef<HTMLElement>(null);
 
-  // Merge refs: ref, truncation.ref, textRef
-  const mergedRef = useCallback(
-    (element: HTMLElement | null) => {
-      // Forward ref
-      if (typeof ref === 'function') {
-        ref(element);
-      } else if (ref) {
-        ref.current = element;
-      }
-      // Truncation ref
-      truncation.ref(element);
-      // Local ref for tooltip anchor
-      textRef.current = element;
-    },
-    [ref, truncation],
-  );
-
   // Build inline style for -webkit-line-clamp (dynamic value)
   const inlineStyle = maxLines > 1 ? {WebkitLineClamp: maxLines} : undefined;
 
   return (
     <>
       <Component
-        ref={mergedRef}
+        ref={mergeRefs(ref, truncation.ref, textRef)}
         {...mergeProps(
           xdsClassName('text', {type, color: resolvedColor}),
           stylex.props(

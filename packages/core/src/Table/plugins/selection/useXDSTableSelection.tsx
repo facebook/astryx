@@ -40,11 +40,11 @@ import {
   useMemo,
   useSyncExternalStore,
   type ReactNode,
-  type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../../../theme/tokens.stylex';
 import {XDSCheckboxInput} from '../../../CheckboxInput';
+import {mergeRefs} from '../../../utils';
 import type {
   TablePlugin,
   XDSTableColumn,
@@ -123,26 +123,6 @@ function applyRowSelectionStyle(
     el.removeAttribute('aria-selected');
     el.style.backgroundColor = '';
   }
-}
-
-// =============================================================================
-// Ref Merging Utility
-// =============================================================================
-
-/**
- * Compose multiple refs into a single callback ref.
- * Used when multiple plugins need to attach refs to the same row.
- */
-function mergeRefs<T>(...refs: (Ref<T> | undefined)[]): React.RefCallback<T> {
-  return (el: T | null) => {
-    for (const ref of refs) {
-      if (typeof ref === 'function') {
-        ref(el);
-      } else if (ref != null) {
-        ref.current = el;
-      }
-    }
-  };
 }
 
 // =============================================================================

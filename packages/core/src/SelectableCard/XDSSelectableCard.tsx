@@ -37,7 +37,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import type {SizeValue, SpacingStep} from '../utils/types';
-import {xdsClassName} from '../utils';
+import {xdsClassName, mergeRefs} from '../utils';
 import {XDSCard} from '../Card/XDSCard';
 import type {XDSCardVariant} from '../Card/XDSCard';
 import {useClickableContainer} from '../hooks/useClickableContainer';
@@ -315,14 +315,7 @@ export function XDSSelectableCard({
 
   return (
     <XDSCard
-      ref={(node: HTMLDivElement | null) => {
-        containerRef.current = node;
-        if (typeof ref === 'function') {
-          ref(node);
-        } else if (ref != null) {
-          ref.current = node;
-        }
-      }}
+      ref={mergeRefs(ref, containerRef)}
       width={width}
       height={height}
       maxWidth={maxWidth}

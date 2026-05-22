@@ -50,7 +50,7 @@ import {useXDSSlotPresence} from './useXDSSlotPresence';
 import type {XDSAppShellMobileContextValue} from './XDSAppShellMobileContext';
 import type {SpacingStep} from '../utils/types';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import {useMediaQuery} from '../hooks/useMediaQuery';
 import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
 
@@ -546,19 +546,6 @@ export function XDSAppShell({
   const headerRef = useRef<HTMLDivElement>(null);
   const shellRef = useRef<HTMLDivElement>(null);
 
-  // Merge forwarded ref with internal shell ref
-  const setShellRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      (shellRef as React.RefObject<HTMLDivElement | null>).current = node;
-      if (typeof ref === 'function') {
-        ref(node);
-      } else if (ref) {
-        (ref as React.RefObject<HTMLDivElement | null>).current = node;
-      }
-    },
-    [ref],
-  );
-
   useEffect(() => {
     if (!isAuto || !headerRef.current || !shellRef.current) {
       return;
@@ -777,7 +764,7 @@ export function XDSAppShell({
   return (
     <XDSAppShellMobileContext value={mobileContextValue}>
       <div
-        ref={setShellRef}
+        ref={mergeRefs(ref, shellRef)}
         data-testid={dataTestId}
         {...mergeProps(
           xdsClassName('app-shell', {variant}),

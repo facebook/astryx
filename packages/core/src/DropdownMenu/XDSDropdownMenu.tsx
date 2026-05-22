@@ -264,7 +264,7 @@ export function XDSDropdownMenu({
     listRef,
     handleKeyDown: listNavKeyDown,
     focusFirst,
-  } = useListFocus({
+  } = useListFocus<HTMLDivElement>({
     itemSelector: '[role="menuitem"]:not([aria-disabled="true"])',
     wrap: false,
     onEscape: closeMenu,
@@ -396,7 +396,7 @@ export function XDSDropdownMenu({
 
       {popover.render(
         <div
-          ref={listRef as React.RefObject<HTMLDivElement>}
+          ref={listRef}
           id={menuId}
           role="menu"
           onKeyDown={listKeyDown}
@@ -413,7 +413,11 @@ export function XDSDropdownMenu({
         {
           placement: 'below',
           alignment: 'start',
-          xstyle: [popoverXstyle, popoverOverlayStyles[menuSize], layerAnimations.below],
+          xstyle: [
+            popoverXstyle,
+            popoverOverlayStyles[menuSize],
+            layerAnimations.below,
+          ],
         },
       )}
     </>
