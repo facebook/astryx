@@ -395,7 +395,7 @@ const streamingStyles = stylex.create({
     opacity: 1,
     backgroundColor: 'transparent',
     transitionProperty: 'opacity, background-color',
-    transitionDuration: '800ms',
+    transitionDuration: '1500ms',
     transitionTimingFunction: easeVars['--ease-standard'],
     '@starting-style': {
       opacity: 0,
