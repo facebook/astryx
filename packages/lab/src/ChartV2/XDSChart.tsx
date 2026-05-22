@@ -30,6 +30,7 @@ import {XDSVStack, XDSHStack} from '@xds/core';
 import * as stylex from '@stylexjs/stylex';
 import {XDSChartLegend, type XDSChartLegendProps} from './XDSChartLegend';
 import {deriveLegendItems} from './legend';
+import {XDSChartTooltip, type XDSChartTooltipProps} from './XDSChartTooltip';
 
 export interface XDSChartProps {
   data: Record<string, unknown>[];
@@ -39,17 +40,15 @@ export interface XDSChartProps {
   margin?: Partial<ChartMargin>;
   grid?: ReactNode;
   axes?: ReactNode;
-  /** Legend configuration. Pass `true` for defaults, or a config object. */
   legend?: boolean | XDSChartLegendProps;
+  tooltip?: boolean | Omit<XDSChartTooltipProps, 'series'>;
   interactions?: ReactNode;
   children?: ReactNode;
-  /** Chart title displayed above the visualization */
   title?: string;
-  /** Subtitle displayed below the title */
   subtitle?: string;
 }
 
-const DEFAULT_MARGIN: ChartMargin = {top: 16, right: 16, bottom: 32, left: 48};
+const DEFAULT_MARGIN: ChartMargin = {top: 24, right: 24, bottom: 32, left: 48};
 
 const styles = stylex.create({
   container: {
@@ -74,6 +73,7 @@ export function XDSChart({
   grid,
   axes,
   legend,
+  tooltip,
   interactions,
   children,
   title,
@@ -163,15 +163,14 @@ export function XDSChart({
       }
       const cursor = point.matrixTransform(ctm);
 
+      // Find nearest point by x-distance only (full vertical column is the hover zone)
       let nearest: ChartPointerEvent['nearest'] = null;
-      let bestDist = 40 * 40;
+      let bestXDist = Infinity;
       for (const [seriesKey, points] of layout.resolved) {
         for (const p of points) {
-          const dx = p.px - cursor.x;
-          const dy = p.py - cursor.y;
-          const dist = dx * dx + dy * dy;
-          if (dist < bestDist) {
-            bestDist = dist;
+          const xDist = Math.abs(p.px - cursor.x);
+          if (xDist < bestXDist) {
+            bestXDist = xDist;
             nearest = {...p, seriesKey};
           }
         }
@@ -331,7 +330,16 @@ export function XDSChart({
           />
           {interactions}
 
-          {/* 5. Escape hatch */}
+          {/* 5. Tooltip — declarative shortcut. For full control, render
+              <XDSChartTooltip> directly via the `children` slot. */}
+          {tooltip && (
+            <XDSChartTooltip
+              series={series}
+              {...(tooltip === true ? {} : tooltip)}
+            />
+          )}
+
+          {/* 6. Escape hatch */}
           {children}
         </g>
       </svg>

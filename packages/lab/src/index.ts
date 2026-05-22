@@ -108,6 +108,11 @@ export {
   type XDSChartColorsAPI,
   type SequentialHue,
   type TokenResolver,
+  compactNumber,
+  currency,
+  percent,
+  shortDate,
+  monthYear,
 } from './Chart';
 
 // Radial charts — spider, pie, donut
@@ -201,6 +206,10 @@ export {
   swatchVariantForType as xdsChartV2SwatchVariantForType,
   type XDSChartSwatchProps as XDSChartV2SwatchProps,
   type XDSChartSwatchVariant as XDSChartV2SwatchVariant,
+  XDSChartTooltip as XDSChartV2Tooltip,
+  type XDSChartTooltipProps as XDSChartV2TooltipProps,
+  type XDSChartTooltipPlacement as XDSChartV2TooltipPlacement,
+  type TooltipSeriesValue as XDSChartV2TooltipSeriesValue,
   bar,
   line,
   dot,

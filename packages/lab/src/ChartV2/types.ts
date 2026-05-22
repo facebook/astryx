@@ -60,7 +60,7 @@ export interface SeriesDef {
   readonly color?: string;
   /** Human-readable label for legend. Falls back to key if not provided. */
   readonly label?: string;
- /** Layout hints the chart root uses for cross-series coordination */
+  /** Layout hints the chart root uses for cross-series coordination */
   readonly layout: {
     /** Stack group — series with same stack accumulate */
     stack?: string;
@@ -110,4 +110,20 @@ export interface ChartV2Context {
   resolved: Map<string, ResolvedPoint[]>;
   onPointer: (handler: (e: ChartPointerEvent) => void) => () => void;
   svgRef: React.RefObject<SVGSVGElement | null>;
+}
+
+/**
+ * Series mark types that are utility / annotation marks rather than primary
+ * data. They're skipped from chrome surfaces (legend, tooltip rows) since
+ * they don't represent values the user is comparing.
+ */
+export const UTILITY_MARK_TYPES: ReadonlySet<string> = new Set([
+  'referenceLine',
+  'errorBar',
+  'band',
+]);
+
+/** True if the series type is a utility / annotation mark. */
+export function isUtilityMarkType(type: string): boolean {
+  return UTILITY_MARK_TYPES.has(type);
 }

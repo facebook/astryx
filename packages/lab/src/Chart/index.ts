@@ -2,6 +2,13 @@
 
 export {XDSChart, type XDSChartProps, type YBaseline} from './XDSChart';
 export {XDSChartAxis, type XDSChartAxisProps} from './XDSChartAxis';
+export {
+  compactNumber,
+  currency,
+  percent,
+  shortDate,
+  monthYear,
+} from './formatters';
 export {XDSChartGrid, type XDSChartGridProps} from './XDSChartGrid';
 export {XDSChartBar, type XDSChartBarProps} from './XDSChartBar';
 export {XDSChartLine, type XDSChartLineProps} from './XDSChartLine';
@@ -71,7 +78,11 @@ export {
   type BrushMode,
   type BrushRange,
 } from './XDSChartBrush';
-export {XDSChartZoom, type XDSChartZoomProps, type ZoomToolbarPosition} from './XDSChartZoom';
+export {
+  XDSChartZoom,
+  type XDSChartZoomProps,
+  type ZoomToolbarPosition,
+} from './XDSChartZoom';
 export {XDSChartSelect, type XDSChartSelectProps} from './XDSChartSelect';
 export {
   XDSChartReferenceLine,
