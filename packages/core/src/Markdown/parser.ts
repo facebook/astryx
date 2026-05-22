@@ -774,6 +774,62 @@ export function trimStreamingArtifacts(input: string): string {
     }
   }
 
+  // Check for unclosed bold/italic mid-line: e.g. "Hello **bold" or "Hello *ital"
+  // Instead of trimming (hiding content), auto-close the markers so the text
+  // renders with formatting immediately as it streams in.
+  {
+    let searchFrom = 0;
+    const markers: Array<{pos: number; len: number}> = [];
+    while (searchFrom < tail.length) {
+      const idx = tail.indexOf('*', searchFrom);
+      if (idx === -1) {
+        break;
+      }
+      // Determine marker length (* or ** or ***)
+      let markerLen = 1;
+      while (idx + markerLen < tail.length && tail[idx + markerLen] === '*') {
+        markerLen++;
+      }
+      if (markerLen > 3) {
+        // 4+ stars — not standard markdown emphasis, skip
+        searchFrom = idx + markerLen;
+        continue;
+      }
+      markers.push({pos: idx, len: markerLen});
+      searchFrom = idx + markerLen;
+    }
+    // Pair markers greedily. Unpaired openers get auto-closed.
+    const paired = new Set<number>();
+    for (let i = 0; i < markers.length; i++) {
+      if (paired.has(i)) {
+        continue;
+      }
+      for (let j = i + 1; j < markers.length; j++) {
+        if (paired.has(j)) {
+          continue;
+        }
+        if (markers[j].len === markers[i].len) {
+          paired.add(i);
+          paired.add(j);
+          break;
+        }
+      }
+    }
+    // Append closing markers for each unpaired opener (in reverse order)
+    for (let i = markers.length - 1; i >= 0; i--) {
+      if (!paired.has(i)) {
+        const marker = markers[i];
+        // Only close if there's actual content after the opener
+        if (marker.pos + marker.len < tail.length) {
+          tail = tail + '*'.repeat(marker.len);
+        } else {
+          // Trailing marker with no content — trim it
+          tail = tail.slice(0, marker.pos);
+        }
+      }
+    }
+  }
+
   // Find trailing unclosed strikethrough (~~)
   if (tail.length >= 2 && tail.endsWith('~~')) {
     // Check if there's an opener before these closing ~~

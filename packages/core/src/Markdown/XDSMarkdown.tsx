@@ -39,7 +39,9 @@ import {XDSTableHeader} from '../Table/XDSTableHeader';
 import {XDSTableBody} from '../Table/XDSTableBody';
 import {xdsClassName, mergeProps} from '../utils';
 import {useXDSStreamingText} from '../hooks/useXDSStreamingText';
+import {computeBoundaries, computeSegments} from './streaming';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {useXDSTheme} from '../theme/useXDSTheme';
 import {XDSCitation} from '../Citation/XDSCitation';
 import type {XDSCitationSource} from '../Citation/XDSCitation';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
@@ -373,16 +375,27 @@ const styles = stylex.create({
 
 // ---------------------------------------------------------------------------
 // Streaming fade-in animation
+
+// Parse a CSS duration string (e.g. "175ms", "0.15s") to milliseconds.
+function parseDuration(value: string): number | null {
+  const ms = value.match(/^([\d.]+)ms$/);
+  if (ms) {
+    return parseFloat(ms[1]);
+  }
+  const s = value.match(/^([\d.]+)s$/);
+  if (s) {
+    return parseFloat(s[1]) * 1000;
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 
 const streamingStyles = stylex.create({
   fadeIn: {
-    // Resting state is fully visible — safe fallback if animation doesn't fire.
-    // @starting-style declares the entry state (opacity: 0) so the browser
-    // transitions from invisible to visible when the element first mounts.
     opacity: 1,
     transitionProperty: 'opacity',
-    transitionDuration: durationVars['--duration-fast-max'],
+    transitionDuration: durationVars['--duration-medium'],
     transitionTimingFunction: easeVars['--ease-standard'],
     '@starting-style': {
       opacity: 0,
@@ -398,8 +411,11 @@ const streamingStyles = stylex.create({
 interface StreamingCursor {
   /** Characters visited so far in this render pass */
   offset: number;
-  /** Character position where "new" content begins */
-  boundary: number;
+  /** Recent boundary positions (up to 3), oldest first.
+   *  Text before boundaries[0] is fully visible (no animation).
+   *  Text between boundaries[i] and boundaries[i+1] gets its own fade span.
+   *  Text after the last boundary is the newest chunk. */
+  boundaries: number[];
   /** Whether streaming fade is active */
   active: boolean;
 }
@@ -612,6 +628,7 @@ function applyInlinePlugins(
  * If the entire string is old, returns it as-is. If partially new, splits
  * into [old, <span fade>new</span>]. If entirely new, wraps the whole thing.
  */
+/** Check if a cursor offset is in the "new" (animating) region */
 function wrapTextWithFade(
   content: string,
   cursor: StreamingCursor,
@@ -623,30 +640,29 @@ function wrapTextWithFade(
   if (!cursor.active) {
     return content;
   }
-  if (startOffset >= cursor.boundary) {
-    // Entirely new text
-    return (
-      <span
-        key={`fade-${key}-${startOffset}`}
-        {...stylex.props(streamingStyles.fadeIn)}>
-        {content}
-      </span>
-    );
-  }
-  if (startOffset + content.length <= cursor.boundary) {
-    // Entirely old text
+
+  const segments = computeSegments(
+    content,
+    startOffset,
+    cursor.boundaries,
+    key,
+  );
+
+  if (segments == null) {
     return content;
   }
-  // Split: some old, some new
-  const splitAt = cursor.boundary - startOffset;
-  return (
-    <Fragment key={`fade-${key}-split`}>
-      {content.slice(0, splitAt)}
-      <span {...stylex.props(streamingStyles.fadeIn)}>
-        {content.slice(splitAt)}
+
+  const nodes = segments.map(seg =>
+    seg.fading ? (
+      <span key={seg.key} {...stylex.props(streamingStyles.fadeIn)}>
+        {seg.text}
       </span>
-    </Fragment>
+    ) : (
+      <span key={seg.key}>{seg.text}</span>
+    ),
   );
+
+  return <span key={`wrap-${key}`}>{nodes}</span>;
 }
 
 /**
@@ -695,24 +711,11 @@ function renderInline(
                 wrapTextWithFade(seg.content, cursor, `${index}-seg-${i}`),
               );
             } else {
-              // Plugin segment — advance cursor by matchLength, apply fade if new
-              const startOffset = cursor.offset;
+              // Plugin segment — advance cursor by matchLength
               cursor.offset += seg.matchLength;
-              if (cursor.active && startOffset >= cursor.boundary) {
-                result.push(
-                  <span
-                    key={`fade-plugin-${index}-${i}-${startOffset}`}
-                    {...stylex.props(streamingStyles.fadeIn)}>
-                    {seg.element}
-                  </span>,
-                );
-              } else {
-                result.push(
-                  <Fragment key={`plugin-${index}-${i}`}>
-                    {seg.element}
-                  </Fragment>,
-                );
-              }
+              result.push(
+                <Fragment key={`plugin-${index}-${i}`}>{seg.element}</Fragment>,
+              );
             }
           }
           return <Fragment key={index}>{result}</Fragment>;
@@ -773,7 +776,6 @@ function renderInline(
       );
     case 'code': {
       // Track code content length for cursor but don't split inside code
-      const startOffset = cursor.offset;
       cursor.offset += node.content.length;
       const InlineCodeComp = components?.inlineCode;
       const codeEl = InlineCodeComp ? (
@@ -781,15 +783,6 @@ function renderInline(
       ) : (
         <XDSCode key={index}>{node.content}</XDSCode>
       );
-      if (cursor.active && startOffset >= cursor.boundary) {
-        return (
-          <span
-            key={`fade-code-${index}-${startOffset}`}
-            {...stylex.props(streamingStyles.fadeIn)}>
-            {codeEl}
-          </span>
-        );
-      }
       return codeEl;
     }
     case 'link': {
@@ -900,7 +893,6 @@ function renderInline(
       const source = citationCtx.sources[node.sourceId] ?? {
         title: node.sourceId,
       };
-      const isNew = cursor.active && cursor.offset >= cursor.boundary;
       const citVariant = citationCtx.style === 'number' ? 'number' : 'label';
       const CitationComp = components?.citation;
       const chip = CitationComp ? (
@@ -919,15 +911,7 @@ function renderInline(
         />
       );
 
-      return isNew ? (
-        <span
-          key={`fade-cite-${index}`}
-          {...stylex.props(streamingStyles.fadeIn)}>
-          {chip}
-        </span>
-      ) : (
-        chip
-      );
+      return chip;
     }
   }
 }
@@ -1233,9 +1217,6 @@ function renderBlock(
                   item.children.length === 1 &&
                   firstChild?.type === 'paragraph';
 
-                const itemIsNew =
-                  cursor.active && cursor.offset >= cursor.boundary;
-
                 const label = isInline ? (
                   <>
                     {firstChild.children.map((c, j) =>
@@ -1273,16 +1254,13 @@ function renderBlock(
                   </>
                 );
 
-                const checkboxItem = (
+                return (
                   <XDSCheckboxListItem
-                    key={itemIsNew ? `fade-task-${i}` : i}
+                    key={i}
                     value={`task-${i}`}
                     label={label}
-                    xstyle={itemIsNew ? streamingStyles.fadeIn : undefined}
                   />
                 );
-
-                return checkboxItem;
               })}
             </XDSCheckboxList>
           </div>
@@ -1315,9 +1293,6 @@ function renderBlock(
 
               // Check if this entire list item is "new" — if so, fade the
               // whole item as a block instead of fading individual text spans.
-              const itemTextLen = countBlockTextLength(item.children);
-              const itemIsNew =
-                cursor.active && cursor.offset >= cursor.boundary;
 
               const label = isInline ? (
                 <>
@@ -1355,16 +1330,6 @@ function renderBlock(
                   )}
                 </>
               );
-
-              if (itemIsNew) {
-                return (
-                  <XDSListItem
-                    key={`fade-li-${i}-${cursor.offset - itemTextLen}`}
-                    label={label}
-                    xstyle={streamingStyles.fadeIn}
-                  />
-                );
-              }
 
               return <XDSListItem key={i} label={label} />;
             })}
@@ -1421,8 +1386,6 @@ function renderBlock(
             </XDSTableHeader>
             <XDSTableBody>
               {node.rows.map((row, i) => {
-                const rowIsNew =
-                  cursor.active && cursor.offset >= cursor.boundary;
                 const cells = row.map((cell, j) => (
                   <XDSTableCell
                     key={j}
@@ -1444,13 +1407,7 @@ function renderBlock(
                     )}
                   </XDSTableCell>
                 ));
-                return (
-                  <XDSTableRow
-                    key={rowIsNew ? `fade-row-${i}` : i}
-                    {...(rowIsNew ? stylex.props(streamingStyles.fadeIn) : {})}>
-                    {cells}
-                  </XDSTableRow>
-                );
+                return <XDSTableRow key={i}>{cells}</XDSTableRow>;
               })}
             </XDSTableBody>
           </XDSTable>
@@ -1551,15 +1508,11 @@ export function XDSMarkdown({
   const incrementalStateRef = useRef<IncrementalState>(
     createIncrementalState(),
   );
-  // Track how much text content was rendered on the previous pass.
-  // Everything beyond this boundary is "new" and gets the fade-in animation.
-  const prevTextLenRef = useRef(0);
 
   const blocks = useMemo(() => {
     if (isStreaming) {
       if (smoothedText === '') {
         incrementalStateRef.current = createIncrementalState();
-        prevTextLenRef.current = 0;
         return [];
       }
       const input = trimStreamingArtifacts(smoothedText);
@@ -1572,11 +1525,34 @@ export function XDSMarkdown({
     return parseMarkdown(children, sourceIds);
   }, [smoothedText, children, isStreaming, sourceIds]);
 
-  // Build the streaming cursor for this render pass.
-  // The boundary is where "old" text ends and "new" text begins.
+  // Track recent boundaries for stacked fade-in animation.
+  // The number of spans needed = ceil(animationDuration / tickInterval).
+  // useXDSStreamingText ticks every ~tickMs, and the fade runs for
+  // --duration-fast-max. We compute the span count dynamically so the
+  // oldest span has just finished animating when it gets evicted.
+  const {token} = useXDSTheme();
+  const maxSpans = useMemo(() => {
+    const duration = parseDuration(token('--duration-fast-max')) ?? 230;
+    const tick = parseDuration(token('--duration-fast-min'));
+    // Tick interval mirrors useXDSStreamingText's timing: base / 10
+    const tickMs = tick != null ? Math.max(4, Math.round(tick / 10)) : 50;
+    return Math.min(Math.ceil(duration / tickMs), 12);
+  }, [token]);
+
+  const prevBlocksRef = useRef<BlockNode[]>([]);
+  const boundariesRef = useRef<number[]>([]);
+  const smoothedLen = smoothedText.length;
+  const boundaries = useMemo(() => {
+    void smoothedLen; // dep trigger
+    const prevLen = countBlockTextLength(prevBlocksRef.current);
+    const next = computeBoundaries(boundariesRef.current, prevLen, maxSpans);
+    boundariesRef.current = next;
+    return next;
+  }, [smoothedLen, maxSpans]);
+
   const cursor: StreamingCursor = {
     offset: 0,
-    boundary: prevTextLenRef.current,
+    boundaries,
     active: isStreaming,
   };
 
@@ -1621,9 +1597,10 @@ export function XDSMarkdown({
     </div>
   );
 
-  // After rendering, update the boundary for the next pass.
-  // cursor.offset now holds the total character count of the rendered tree.
-  prevTextLenRef.current = cursor.offset;
+  // Store current blocks for next render's boundary calculation.
+  // This ref write is safe under StrictMode: both invocations produce the same
+  // blocks (same smoothedText → same useMemo result), so both write the same value.
+  prevBlocksRef.current = blocks;
 
   return rendered;
 }

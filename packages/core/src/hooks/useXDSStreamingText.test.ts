@@ -13,7 +13,7 @@ describe('useXDSStreamingText', () => {
     rafCallbacks = [];
     originalRAF = globalThis.requestAnimationFrame;
     originalCAF = globalThis.cancelAnimationFrame;
-    globalThis.requestAnimationFrame = vi.fn((cb) => {
+    globalThis.requestAnimationFrame = vi.fn(cb => {
       rafCallbacks.push(cb);
       return rafCallbacks.length;
     }) as unknown as typeof requestAnimationFrame;
@@ -57,9 +57,7 @@ describe('useXDSStreamingText', () => {
   });
 
   it('starts with empty string when streaming', () => {
-    const {result} = renderHook(() =>
-      useXDSStreamingText('Hello world', true),
-    );
+    const {result} = renderHook(() => useXDSStreamingText('Hello world', true));
     expect(result.current).toBe('');
   });
 
@@ -111,10 +109,9 @@ describe('useXDSStreamingText', () => {
   });
 
   it('advances monotonically without stalls or backwards jumps', () => {
-    const targetText = 'Hello **world**, this is `code` and [a link](http://example.com).';
-    const {result} = renderHook(() =>
-      useXDSStreamingText(targetText, true),
-    );
+    const targetText =
+      'Hello **world**, this is `code` and [a link](http://example.com).';
+    const {result} = renderHook(() => useXDSStreamingText(targetText, true));
 
     expect(result.current).toBe('');
 
@@ -141,10 +138,9 @@ describe('useXDSStreamingText', () => {
 
   it('does not stall on markdown syntax characters', () => {
     // Text with lots of markdown syntax that previously caused stalls
-    const targetText = '- **bold** and *italic* with `code` and [link](url) and ~~strike~~';
-    const {result} = renderHook(() =>
-      useXDSStreamingText(targetText, true),
-    );
+    const targetText =
+      '- **bold** and *italic* with `code` and [link](url) and ~~strike~~';
+    const {result} = renderHook(() => useXDSStreamingText(targetText, true));
 
     // Fire enough frames to drain the entire text
     for (let i = 0; i < 100; i++) {
@@ -158,5 +154,4 @@ describe('useXDSStreamingText', () => {
     // (or close to it — the hook drains charsPerTick per tickMs)
     expect(result.current.length).toBeGreaterThan(targetText.length * 0.5);
   });
-
 });
