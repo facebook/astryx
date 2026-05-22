@@ -428,10 +428,12 @@ export const WithContentSlot: Story = {
                 <XDSTextInput
                   label="Project name"
                   placeholder="My awesome project"
+                  value=""
                 />
                 <XDSTextInput
                   label="Repository URL"
                   placeholder="https://github.com/..."
+                  value=""
                 />
                 <div>
                   <XDSButton
@@ -446,10 +448,11 @@ export const WithContentSlot: Story = {
           <XDSStep step={1} label="Environment" indicator="number">
             {active === 1 && (
               <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
-                <XDSTextInput label="Node version" placeholder="20" />
+                <XDSTextInput label="Node version" placeholder="20" value="" />
                 <XDSTextInput
                   label="Build command"
                   placeholder="npm run build"
+                  value=""
                 />
                 <div style={{display: 'flex', gap: 8}}>
                   <XDSButton
