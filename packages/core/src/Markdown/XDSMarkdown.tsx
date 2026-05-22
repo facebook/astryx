@@ -692,13 +692,11 @@ function wrapTextWithFade(
         </span>,
       );
     } else if (pos < b) {
-      // Between boundaries[i-1] and boundaries[i] — a fading span
+      // Between boundaries[i-1] and boundaries[i] — graduated text, fully visible
       const spanKey = `fade-${key}-b${boundaries[i - 1]}`;
       segments.push(
         <span key={spanKey} style={{backgroundColor: debugColor(spanKey)}}>
-          <span data-fade={spanKey} {...stylex.props(streamingStyles.fadeIn)}>
-            {content.slice(pos - startOffset, b - startOffset)}
-          </span>
+          {content.slice(pos - startOffset, b - startOffset)}
         </span>,
       );
     }
