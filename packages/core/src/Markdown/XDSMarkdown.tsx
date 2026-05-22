@@ -665,6 +665,17 @@ function wrapTextWithFade(
   return <span key={`wrap-${key}`}>{nodes}</span>;
 }
 
+/**
+ * Context for citation rendering, threaded through the inline/block render tree.
+ * Tracks which sources have been cited and assigns sequential display numbers.
+ */
+interface CitationContext {
+  sources: Record<string, XDSMarkdownSource>;
+  numberMap: Map<string, number>;
+  nextNumber: number;
+  style: 'label' | 'number';
+}
+
 function getCitationNumber(ctx: CitationContext, sourceId: string): number {
   let num = ctx.numberMap.get(sourceId);
   if (num == null) {
