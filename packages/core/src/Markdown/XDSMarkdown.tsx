@@ -394,7 +394,7 @@ const streamingStyles = stylex.create({
   fadeIn: {
     opacity: 1,
     transitionProperty: 'opacity',
-    transitionDuration: '1500ms',
+    transitionDuration: durationVars['--duration-fast-max'],
     transitionTimingFunction: easeVars['--ease-standard'],
     '@starting-style': {
       opacity: 0,
@@ -635,16 +635,6 @@ function isNewContent(cursor: StreamingCursor): boolean {
   return cursor.offset >= cursor.boundaries[0];
 }
 
-// DEBUG: generate a distinct background color from a key string
-function debugColor(str: string): string {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const h = Math.abs(hash) % 360;
-  return `hsla(${h}, 80%, 80%, 0.5)`;
-}
-
 function wrapTextWithFade(
   content: string,
   cursor: StreamingCursor,
@@ -681,13 +671,7 @@ function wrapTextWithFade(
 
   // Text before the oldest boundary — settled, no animation
   if (pos < oldestBoundary && oldestBoundary < endOffset) {
-    segments.push(
-      <span
-        key={`settled-${key}`}
-        style={{backgroundColor: 'rgba(200,200,200,0.3)'}}>
-        {content.slice(0, oldestBoundary - startOffset)}
-      </span>,
-    );
+    segments.push(content.slice(0, oldestBoundary - startOffset));
     pos = oldestBoundary;
   }
 
@@ -713,10 +697,7 @@ function wrapTextWithFade(
     const spanKey = `fade-${key}-b${bStart}`;
 
     segments.push(
-      <span
-        key={spanKey}
-        data-fade={spanKey}
-        {...stylex.props(streamingStyles.fadeIn)}>
+      <span key={spanKey} {...stylex.props(streamingStyles.fadeIn)}>
         {content.slice(clampedStart - startOffset, clampedEnd - startOffset)}
       </span>,
     );
