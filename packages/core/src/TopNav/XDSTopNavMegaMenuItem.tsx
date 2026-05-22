@@ -15,7 +15,7 @@
  * - /packages/cli/templates/blocks/components/TopNav/ (showcase blocks)
  */
 
-import {type ReactNode} from 'react';
+import React, {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -143,6 +143,7 @@ export interface XDSTopNavMegaMenuItemProps extends Omit<
   XDSBaseProps<HTMLElement>,
   'onClick'
 > {
+  ref?: React.Ref<HTMLElement>;
   /** Display title for the menu item. */
   title: string;
   /** Optional description text displayed below the title. */
@@ -189,6 +190,7 @@ export interface XDSTopNavMegaMenuItemProps extends Omit<
  * ```
  */
 export function XDSTopNavMegaMenuItem({
+  ref,
   title,
   description,
   icon,
@@ -213,6 +215,7 @@ export function XDSTopNavMegaMenuItem({
     };
     return (
       <Element
+        ref={ref}
         href={href}
         onClick={handleDrawerClick}
         {...elementProps}
@@ -239,6 +242,7 @@ export function XDSTopNavMegaMenuItem({
   const Element = href ? LinkComponent : 'div';
   return (
     <Element
+      ref={ref}
       href={href}
       onClick={onClick}
       tabIndex={tabIndex}

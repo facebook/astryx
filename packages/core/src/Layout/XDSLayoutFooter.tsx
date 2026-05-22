@@ -76,7 +76,7 @@ const dynamicStyles = stylex.create({
 });
 
 export interface XDSLayoutFooterProps extends XDSBaseProps<HTMLDivElement> {
-  ref?: React.Ref<HTMLElement>;
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * Content to render inside the footer.
    */
@@ -153,7 +153,7 @@ export function XDSLayoutFooter({
 
   return (
     <div
-      ref={ref as React.Ref<HTMLDivElement>}
+      ref={ref}
       role={role}
       aria-label={label}
       data-divider={resolvedHasDivider || undefined}

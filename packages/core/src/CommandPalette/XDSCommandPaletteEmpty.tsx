@@ -12,7 +12,7 @@
 
 'use client';
 
-import type {ReactNode} from 'react';
+import React, {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -38,6 +38,7 @@ const styles = stylex.create({
 });
 
 export interface XDSCommandPaletteEmptyProps extends XDSBaseProps<HTMLDivElement> {
+  ref?: React.Ref<HTMLDivElement>;
   /** The message or content to display. */
   children: ReactNode;
 }
@@ -61,9 +62,14 @@ export interface XDSCommandPaletteEmptyProps extends XDSBaseProps<HTMLDivElement
  * ```
  */
 export function XDSCommandPaletteEmpty({
+  ref,
   children,
 }: XDSCommandPaletteEmptyProps) {
-  return <div {...stylex.props(styles.empty)}>{children}</div>;
+  return (
+    <div ref={ref} {...stylex.props(styles.empty)}>
+      {children}
+    </div>
+  );
 }
 
 XDSCommandPaletteEmpty.displayName = 'XDSCommandPaletteEmpty';

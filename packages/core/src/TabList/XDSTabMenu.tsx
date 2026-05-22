@@ -50,6 +50,7 @@ export interface XDSTabMenuProps extends Pick<
   XDSBaseProps<HTMLButtonElement>,
   'xstyle' | 'className' | 'style'
 > {
+  ref?: React.Ref<HTMLButtonElement>;
   /**
    * Label for the trigger button and dropdown heading.
    * Displayed as trigger text when no option is selected.
@@ -250,6 +251,7 @@ const hoverSizeStyles = stylex.create({
  * ```
  */
 export function XDSTabMenu({
+  ref,
   label,
   options,
   xstyle,
@@ -291,10 +293,22 @@ export function XDSTabMenu({
     [tabListCtx, popover],
   );
 
+  const setButtonRef = useCallback(
+    (el: HTMLButtonElement | null) => {
+      popover.triggerRef(el);
+      if (typeof ref === 'function') {
+        ref(el);
+      } else if (ref) {
+        (ref as React.MutableRefObject<HTMLButtonElement | null>).current = el;
+      }
+    },
+    [popover, ref],
+  );
+
   return (
     <>
       <button
-        ref={popover.triggerRef}
+        ref={setButtonRef}
         type="button"
         aria-haspopup="menu"
         aria-expanded={popover.isOpen}

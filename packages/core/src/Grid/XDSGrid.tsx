@@ -52,7 +52,7 @@ export type XDSGridColumns =
 
 export interface XDSGridProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
-  ref?: React.Ref<HTMLElement>;
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * Column configuration.
    * - `number` — fixed equal-width columns
@@ -443,7 +443,7 @@ export function XDSGrid({
 
   return (
     <div
-      ref={ref as React.Ref<HTMLDivElement>}
+      ref={ref}
       {...mergeProps(
         xdsClassName('grid', {columns: columnsVariant, gap, align, justify}),
         stylex.props(

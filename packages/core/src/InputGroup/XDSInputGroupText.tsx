@@ -14,7 +14,7 @@
  * - /packages/cli/templates/blocks/components/InputGroup/
  */
 
-import type {ReactNode} from 'react';
+import React, {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {
@@ -66,6 +66,7 @@ const styles = stylex.create({
 });
 
 export interface XDSInputGroupTextProps extends XDSBaseProps<HTMLDivElement> {
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * Content to render in the text slot.
    * Can be text or an icon.
@@ -85,6 +86,7 @@ export interface XDSInputGroupTextProps extends XDSBaseProps<HTMLDivElement> {
  * ```
  */
 export function XDSInputGroupText({
+  ref,
   children,
   xstyle,
   className,
@@ -92,6 +94,7 @@ export function XDSInputGroupText({
 }: XDSInputGroupTextProps) {
   return (
     <div
+      ref={ref}
       {...mergeProps(
         xdsClassName('input-group-text'),
         stylex.props(styles.text, xstyle),

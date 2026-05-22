@@ -14,6 +14,7 @@
 
 'use client';
 
+import React from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps} from '../utils';
@@ -88,6 +89,7 @@ export interface XDSFieldStatusVariantMap {
 export type XDSFieldStatusVariant = keyof XDSFieldStatusVariantMap;
 
 export interface XDSFieldStatusProps extends XDSBaseProps<HTMLDivElement> {
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * The type of status to display.
    */
@@ -122,6 +124,7 @@ export interface XDSFieldStatusProps extends XDSBaseProps<HTMLDivElement> {
  * ```
  */
 export function XDSFieldStatus({
+  ref,
   type,
   message,
   id,
@@ -131,6 +134,7 @@ export function XDSFieldStatus({
 
   return (
     <div
+      ref={ref}
       id={id}
       role={type === 'error' ? 'alert' : 'status'}
       aria-live={type === 'error' ? 'assertive' : 'polite'}

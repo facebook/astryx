@@ -42,7 +42,7 @@ export type XDSStackAlignment = StackMainAlignment | StackCrossAlignment;
 /** @deprecated Use `XDSStackAlignment` instead. */
 export type StackAlignment = XDSStackAlignment;
 
-export interface XDSStackProps extends XDSBaseProps<HTMLDivElement> {
+export interface XDSStackProps extends XDSBaseProps<HTMLElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLElement>;
   /**

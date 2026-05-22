@@ -58,9 +58,9 @@ const styles = stylex.create({
   },
 });
 
-export interface XDSDialogHeaderProps extends XDSBaseProps<HTMLElement> {
+export interface XDSDialogHeaderProps extends XDSBaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
-  ref?: React.Ref<HTMLElement>;
+  ref?: React.Ref<HTMLDivElement>;
   /**
    * The title of the dialog.
    * This title receives focus when the dialog opens for screen reader accessibility.

@@ -44,7 +44,8 @@ import type {XDSBaseProps} from '../XDSBaseProps';
 
 export interface XDSCommandPaletteProps<
   T extends XDSSearchableItem = XDSSearchableItem,
-> extends Omit<XDSBaseProps<HTMLElement>, 'onChange'> {
+> extends Omit<XDSBaseProps<HTMLDialogElement>, 'onChange'> {
+  ref?: React.Ref<HTMLDialogElement>;
   /** Whether the command palette is open. */
   isOpen: boolean;
 
@@ -259,6 +260,7 @@ function ItemRenderer<T extends XDSSearchableItem>({
 export function XDSCommandPalette<
   T extends XDSSearchableItem = XDSSearchableItem,
 >({
+  ref,
   isOpen,
   isInline,
   onOpenChange,
@@ -512,6 +514,7 @@ export function XDSCommandPalette<
 
   return (
     <XDSDialog
+      ref={ref}
       isOpen={isOpen}
       isInline={isInline}
       onOpenChange={open => {

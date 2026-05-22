@@ -15,7 +15,7 @@
  * - /packages/cli/templates/blocks/components/TabList/ (showcase blocks)
  */
 
-import {useMemo, type ReactNode} from 'react';
+import React, {useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {borderVars, colorVars, spacingVars} from '../theme/tokens.stylex';
 import {XDSBaseProps} from '../XDSBaseProps';
@@ -29,6 +29,7 @@ export interface XDSTabListProps extends Omit<
   XDSBaseProps<HTMLElement>,
   'onChange'
 > {
+  ref?: React.Ref<HTMLElement>;
   /**
    * The currently selected tab value.
    */
@@ -96,6 +97,7 @@ const styles = stylex.create({
  * ```
  */
 export function XDSTabList({
+  ref,
   value,
   onChange,
   size: sizeProp,
@@ -117,6 +119,7 @@ export function XDSTabList({
   return (
     <XDSTabListContext value={contextValue}>
       <nav
+        ref={ref}
         aria-label="Tabs"
         {...{[EDGE_COMP_ATTR]: ''}}
         {...restProps}

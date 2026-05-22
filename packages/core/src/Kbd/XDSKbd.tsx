@@ -13,7 +13,7 @@
  * - /packages/cli/templates/blocks/components/Kbd/ (showcase blocks)
  */
 
-import {useState} from 'react';
+import React, {useState} from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
 import {xdsClassName, mergeProps} from '../utils';
@@ -105,6 +105,7 @@ function detectMac(): boolean {
 }
 
 export interface XDSKbdProps extends XDSBaseProps<HTMLSpanElement> {
+  ref?: React.Ref<HTMLSpanElement>;
   /**
    * Keyboard shortcut string. Use "+" to separate keys.
    * Special keys: mod (Cmd on Mac), ctrl, alt, shift, enter, backspace, escape.
@@ -135,7 +136,14 @@ export interface XDSKbdProps extends XDSBaseProps<HTMLSpanElement> {
  * <XDSKbd keys="mod+k" />
  * ```
  */
-export function XDSKbd({keys, xstyle, className, style, ...rest}: XDSKbdProps) {
+export function XDSKbd({
+  keys,
+  ref,
+  xstyle,
+  className,
+  style,
+  ...rest
+}: XDSKbdProps) {
   const [isMac, setIsMac] = useState(false);
 
   useIsomorphicLayoutEffect(() => {
@@ -146,6 +154,7 @@ export function XDSKbd({keys, xstyle, className, style, ...rest}: XDSKbdProps) {
 
   return (
     <span
+      ref={ref}
       {...rest}
       {...mergeProps(
         xdsClassName('kbd'),

@@ -2,7 +2,7 @@
 
 'use client';
 
-import {useCallback, type ReactNode} from 'react';
+import React, {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {renderIconSlot, type XDSIconType} from '../Icon';
 import {XDSText} from '../Text';
@@ -71,6 +71,7 @@ export interface XDSNavHeadingMenuItemProps extends Omit<
   XDSBaseProps<HTMLElement>,
   'onClick'
 > {
+  ref?: React.Ref<HTMLElement>;
   /** Icon to display before the label. */
   icon?: ReactNode | XDSIconType;
   /** Primary label text. */
@@ -101,6 +102,7 @@ export interface XDSNavHeadingMenuItemProps extends Omit<
  * ```
  */
 export function XDSNavHeadingMenuItem({
+  ref,
   icon,
   label,
   description,
@@ -128,6 +130,7 @@ export function XDSNavHeadingMenuItem({
 
   return (
     <Element
+      ref={ref}
       role="menuitem"
       tabIndex={isDisabled ? undefined : -1}
       aria-disabled={isDisabled || undefined}

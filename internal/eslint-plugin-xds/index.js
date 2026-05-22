@@ -25,6 +25,7 @@ import noBorderShorthandRule from './no-border-shorthand.js';
 import noReactNamespaceHooksRule from './no-react-namespace-hooks.js';
 import copyrightHeaderRule from './copyright-header.js';
 import requireBasePropsRule from './require-base-props.js';
+import requireRefPropRule from './require-ref-prop.js';
 
 // =============================================================================
 // Rule: no-hardcoded-styles
@@ -235,6 +236,7 @@ const plugin = {
     'no-border-shorthand': noBorderShorthandRule,
     'no-react-namespace-hooks': noReactNamespaceHooksRule,
     'require-base-props': requireBasePropsRule,
+    'require-ref-prop': requireRefPropRule,
     'copyright-header': copyrightHeaderRule,
   },
   configs: {},
@@ -257,6 +259,7 @@ plugin.configs.strict = {
     '@xds/no-border-shorthand': 'error',
     '@xds/no-react-namespace-hooks': 'error',
     '@xds/require-base-props': 'error',
+    '@xds/require-ref-prop': 'error',
     '@xds/copyright-header': 'error',
   },
 };
@@ -278,6 +281,7 @@ plugin.configs.recommended = {
     '@xds/no-border-shorthand': 'warn',
     '@xds/no-react-namespace-hooks': 'error',
     '@xds/require-base-props': 'warn',
+    '@xds/require-ref-prop': 'warn',
     '@xds/copyright-header': 'error',
   },
 };

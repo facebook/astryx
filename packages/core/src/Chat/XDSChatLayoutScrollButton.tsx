@@ -16,6 +16,7 @@
  * - /packages/cli/templates/blocks/components/ChatLayoutScrollButton/ (block examples)
  */
 
+import React from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -37,6 +38,7 @@ export interface XDSChatLayoutScrollButtonProps extends Omit<
   XDSBaseProps<HTMLDivElement>,
   'onClick'
 > {
+  ref?: React.Ref<HTMLDivElement>;
   /** Whether the button is visible. */
   isVisible: boolean;
   /** Optional label — expands the button (e.g. "New messages"). */
@@ -102,12 +104,13 @@ const styles = stylex.create({
  * ```
  */
 export function XDSChatLayoutScrollButton({
+  ref,
   isVisible,
   label,
   onClick,
 }: XDSChatLayoutScrollButtonProps) {
   return (
-    <div {...stylex.props(styles.wrapper)}>
+    <div ref={ref} {...stylex.props(styles.wrapper)}>
       <div
         {...stylex.props(
           styles.container,

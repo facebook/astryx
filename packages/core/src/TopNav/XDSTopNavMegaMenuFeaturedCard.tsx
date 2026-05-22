@@ -18,7 +18,7 @@
  * - /packages/cli/templates/blocks/components/TopNav/ (showcase blocks)
  */
 
-import {type ReactNode} from 'react';
+import React, {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -76,6 +76,7 @@ const styles = stylex.create({
 // =============================================================================
 
 export interface XDSTopNavMegaMenuFeaturedCardProps extends XDSBaseProps<HTMLDivElement> {
+  ref?: React.Ref<HTMLDivElement>;
   /** Card title. */
   title: string;
   /** Description text below the title. */
@@ -122,6 +123,7 @@ export interface XDSTopNavMegaMenuFeaturedCardProps extends XDSBaseProps<HTMLDiv
  * ```
  */
 export function XDSTopNavMegaMenuFeaturedCard({
+  ref,
   title,
   description,
   image,
@@ -133,6 +135,7 @@ export function XDSTopNavMegaMenuFeaturedCard({
   const LinkComponent = useXDSLinkComponent();
   return (
     <div
+      ref={ref}
       {...mergeProps(
         xdsClassName('top-nav-mega-menu-featured-card'),
         stylex.props(styles.root),

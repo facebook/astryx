@@ -15,7 +15,13 @@
  * - /packages/cli/templates/blocks/components/TopNav/ (showcase blocks)
  */
 
-import {useCallback, useId, useRef, useState, type ReactNode} from 'react';
+import React, {
+  useCallback,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useXDSPopover} from '../Popover/useXDSPopover';
 import {useXDSMenuHover} from '../hooks/useXDSMenuHover';
@@ -246,6 +252,7 @@ export interface XDSTopNavMenuItemData {
 }
 
 export interface XDSTopNavMenuProps extends XDSBaseProps<HTMLButtonElement> {
+  ref?: React.Ref<HTMLButtonElement>;
   /**
    * The visible label for the nav item trigger.
    */
@@ -310,6 +317,7 @@ export interface XDSTopNavMenuProps extends XDSBaseProps<HTMLButtonElement> {
  */
 
 export function XDSTopNavMenu({
+  ref,
   label,
   items,
   delay = 150,
@@ -343,8 +351,13 @@ export function XDSTopNavMenu({
       triggerButtonRef.current = el;
       popover.triggerRef(el);
       setTriggerEl(el);
+      if (typeof ref === 'function') {
+        ref(el);
+      } else if (ref) {
+        (ref as React.MutableRefObject<HTMLButtonElement | null>).current = el;
+      }
     },
-    [popover, setTriggerEl],
+    [popover, setTriggerEl, ref],
   );
 
   // Mobile bar: hide menus entirely
