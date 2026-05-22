@@ -22,7 +22,7 @@ const meta: Meta<typeof XDSProgressBar> = {
     },
     variant: {
       control: 'select',
-      options: ['accent', 'success', 'warning', 'error'],
+      options: ['accent', 'success', 'warning', 'error', 'neutral'],
       description: 'Semantic color variant',
     },
     isLabelHidden: {
@@ -32,6 +32,10 @@ const meta: Meta<typeof XDSProgressBar> = {
     hasValueLabel: {
       control: 'boolean',
       description: 'Show formatted value',
+    },
+    isDisabled: {
+      control: 'boolean',
+      description: 'Disabled state (grayed out)',
     },
   },
 };
@@ -81,7 +85,7 @@ export const Variants: Story = {
       />
       <XDSProgressBar
         value={80}
-        label="Positive"
+        label="Success"
         variant="success"
         hasValueLabel
       />
@@ -91,18 +95,33 @@ export const Variants: Story = {
         variant="warning"
         hasValueLabel
       />
-      <XDSProgressBar
-        value={92}
-        label="Negative"
-        variant="error"
-        hasValueLabel
-      />
+      <XDSProgressBar value={92} label="Error" variant="error" hasValueLabel />
       <XDSProgressBar
         value={35}
         label="Neutral"
         variant="neutral"
         hasValueLabel
       />
+    </div>
+  ),
+};
+
+export const Disabled: Story = {
+  render: () => (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
+        width: '300px',
+      }}>
+      <XDSProgressBar
+        value={30}
+        label="Upload canceled"
+        isDisabled
+        hasValueLabel
+      />
+      <XDSProgressBar isIndeterminate label="Processing disabled" isDisabled />
     </div>
   ),
 };
@@ -188,9 +207,9 @@ export const IndeterminateVariants: Story = {
         width: '300px',
       }}>
       <XDSProgressBar isIndeterminate label="Accent" variant="accent" />
-      <XDSProgressBar isIndeterminate label="Positive" variant="success" />
+      <XDSProgressBar isIndeterminate label="Success" variant="success" />
       <XDSProgressBar isIndeterminate label="Warning" variant="warning" />
-      <XDSProgressBar isIndeterminate label="Negative" variant="error" />
+      <XDSProgressBar isIndeterminate label="Error" variant="error" />
       <XDSProgressBar isIndeterminate label="Neutral" variant="neutral" />
     </div>
   ),

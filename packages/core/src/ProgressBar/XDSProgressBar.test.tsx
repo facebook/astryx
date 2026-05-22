@@ -21,10 +21,8 @@ describe('XDSProgressBar', () => {
 
   it('hides label visually when isLabelHidden is true', () => {
     render(<XDSProgressBar value={50} label="Hidden label" isLabelHidden />);
-    // Label should still be in the DOM for a11y
     const label = screen.getByText('Hidden label');
     expect(label).toBeInTheDocument();
-    // The meter should still be labelled
     const meter = screen.getByRole('meter');
     expect(meter).toHaveAttribute('aria-labelledby');
   });
@@ -88,7 +86,13 @@ describe('XDSProgressBar', () => {
   });
 
   it('renders with all variant options', () => {
-    const variants = ['accent', 'success', 'warning', 'error'] as const;
+    const variants = [
+      'accent',
+      'success',
+      'warning',
+      'error',
+      'neutral',
+    ] as const;
     for (const variant of variants) {
       const {unmount} = render(
         <XDSProgressBar value={50} label={variant} variant={variant} />,
@@ -108,7 +112,6 @@ describe('XDSProgressBar', () => {
       <XDSProgressBar value={60} label="Hidden" isLabelHidden hasValueLabel />,
     );
     expect(screen.getByText('60%')).toBeInTheDocument();
-    // Label is still in DOM for a11y
     expect(screen.getByText('Hidden')).toBeInTheDocument();
   });
 
@@ -117,6 +120,22 @@ describe('XDSProgressBar', () => {
     const meter = screen.getByRole('meter');
     expect(meter).toHaveAttribute('aria-valuenow', '0');
     expect(meter).toHaveAttribute('aria-valuemax', '0');
+  });
+
+  // Disabled state
+  describe('disabled state', () => {
+    it('renders with isDisabled', () => {
+      render(
+        <XDSProgressBar value={50} label="Canceled" isDisabled hasValueLabel />,
+      );
+      expect(screen.getByRole('meter')).toBeInTheDocument();
+      expect(screen.getByText('50%')).toBeInTheDocument();
+    });
+
+    it('still renders label when disabled', () => {
+      render(<XDSProgressBar value={50} label="Canceled upload" isDisabled />);
+      expect(screen.getByText('Canceled upload')).toBeInTheDocument();
+    });
   });
 
   // Indeterminate mode tests
@@ -160,7 +179,13 @@ describe('XDSProgressBar', () => {
     });
 
     it('renders with all variants in indeterminate mode', () => {
-      const variants = ['accent', 'success', 'warning', 'error'] as const;
+      const variants = [
+        'accent',
+        'success',
+        'warning',
+        'error',
+        'neutral',
+      ] as const;
       for (const variant of variants) {
         const {unmount} = render(
           <XDSProgressBar isIndeterminate label={variant} variant={variant} />,

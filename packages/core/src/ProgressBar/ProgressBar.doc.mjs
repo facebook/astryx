@@ -44,7 +44,7 @@ export const docs = {
     },
     {
       name: 'variant',
-      type: "'accent' | 'success' | 'warning' | 'error'",
+      type: "'accent' | 'success' | 'warning' | 'error' | 'neutral'",
       description: 'Semantic color variant.',
       default: "'accent'",
     },
@@ -52,6 +52,12 @@ export const docs = {
       name: 'isIndeterminate',
       type: 'boolean',
       description: 'Animated loading indicator for unknown progress.',
+      default: 'false',
+    },
+    {
+      name: 'isDisabled',
+      type: 'boolean',
+      description: 'Visually disabled state — grays out the fill and text. Use for canceled or inactive operations.',
       default: 'false',
     },
     {
@@ -123,7 +129,7 @@ export const docsZh = {
     },
     {
       name: 'variant',
-      type: "'accent' | 'success' | 'warning' | 'error'",
+      type: "'accent' | 'success' | 'warning' | 'error' | 'neutral'",
       description: '语义颜色变体。',
       default: "'accent'",
     },
@@ -131,6 +137,12 @@ export const docsZh = {
       name: 'isIndeterminate',
       type: 'boolean',
       description: '用于未知进度的动画加载指示器。',
+      default: 'false',
+    },
+    {
+      name: 'isDisabled',
+      type: 'boolean',
+      description: '视觉禁用状态——使填充条和文本变灰。用于已取消或不活跃的操作。',
       default: 'false',
     },
     {
@@ -185,6 +197,7 @@ export const docsDense = {
     formatValueLabel: 'Custom value label formatter; defaults to percentage string.',
     variant: 'Semantic color variant.',
     isIndeterminate: 'Animated loading indicator for unknown progress.',
+    isDisabled: 'Visually disabled — grays out fill and text.',
     xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
   },
 };

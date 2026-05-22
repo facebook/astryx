@@ -106,6 +106,12 @@ export interface XDSProgressBarProps extends XDSBaseProps<HTMLDivElement> {
    */
   isIndeterminate?: boolean;
   /**
+   * When true, the progress bar is visually disabled — the fill bar and
+   * text use disabled colors. Use for canceled or inactive operations.
+   * @default false
+   */
+  isDisabled?: boolean;
+  /**
    * Test ID for testing utilities.
    */
   'data-testid'?: string;
@@ -147,11 +153,17 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-primary'],
   },
+  labelDisabled: {
+    color: colorVars['--color-text-disabled'],
+  },
   valueLabel: {
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
+  },
+  valueLabelDisabled: {
+    color: colorVars['--color-text-disabled'],
   },
   visuallyHidden: {
     position: 'absolute',
@@ -208,6 +220,9 @@ const variantStyles = stylex.create({
   neutral: {
     backgroundColor: colorVars['--color-text-disabled'],
   },
+  disabled: {
+    backgroundColor: colorVars['--color-text-disabled'],
+  },
 });
 
 function defaultFormatValueLabel(value: number, max: number): string {
@@ -221,12 +236,12 @@ function defaultFormatValueLabel(value: number, max: number): string {
  * disk usage, etc). In indeterminate mode, shows an animated loading indicator
  * for unknown progress.
  *
- * Styles use XDS theme tokens via StyleX.
- * Wrap your app in <Theme> to apply a theme.
- *
  * ProgressBar is intentionally minimal — compose additional labels, status
  * icons, and descriptions alongside the bar using layout components rather
  * than adding props to ProgressBar itself.
+ *
+ * Styles use XDS theme tokens via StyleX.
+ * Wrap your app in <Theme> to apply a theme.
  *
  * @example
  * ```
@@ -234,6 +249,7 @@ function defaultFormatValueLabel(value: number, max: number): string {
  * <XDSProgressBar isIndeterminate label="Loading..." />
  * <XDSProgressBar value={3.2} max={5} label="Disk usage" hasValueLabel
  *   formatValueLabel={(v, m) => `${v} GB / ${m} GB`} />
+ * <XDSProgressBar value={30} label="Canceled" isDisabled hasValueLabel />
  * ```
  */
 export function XDSProgressBar({
@@ -245,6 +261,7 @@ export function XDSProgressBar({
   formatValueLabel = defaultFormatValueLabel,
   variant = 'accent',
   isIndeterminate = false,
+  isDisabled = false,
   xstyle,
   className,
   style,
@@ -257,8 +274,9 @@ export function XDSProgressBar({
   const percentage = max > 0 ? (clampedValue / max) * 100 : 0;
   const valueText = formatValueLabel(clampedValue, max);
 
-  // In indeterminate mode, don't show value label
   const showValueLabel = hasValueLabel && !isIndeterminate;
+
+  const fillVariant = isDisabled ? 'disabled' : variant;
 
   return (
     <div
@@ -279,11 +297,18 @@ export function XDSProgressBar({
             {...stylex.props(
               styles.label,
               isLabelHidden && styles.visuallyHidden,
+              isDisabled && styles.labelDisabled,
             )}>
             {label}
           </span>
           {showValueLabel && (
-            <span {...stylex.props(styles.valueLabel)}>{valueText}</span>
+            <span
+              {...stylex.props(
+                styles.valueLabel,
+                isDisabled && styles.valueLabelDisabled,
+              )}>
+              {valueText}
+            </span>
           )}
         </div>
       ) : (
@@ -307,15 +332,18 @@ export function XDSProgressBar({
         {isIndeterminate ? (
           <div
             {...mergeProps(
-              xdsClassName('progressbar-fill', {variant}),
-              stylex.props(styles.indeterminateFill, variantStyles[variant]),
+              xdsClassName('progressbar-fill', {variant: fillVariant}),
+              stylex.props(
+                styles.indeterminateFill,
+                variantStyles[fillVariant],
+              ),
             )}
           />
         ) : (
           <div
             {...mergeProps(
-              xdsClassName('progressbar-fill', {variant}),
-              stylex.props(styles.fill, variantStyles[variant]),
+              xdsClassName('progressbar-fill', {variant: fillVariant}),
+              stylex.props(styles.fill, variantStyles[fillVariant]),
             )}
             style={{width: `${percentage}%`}}
           />
