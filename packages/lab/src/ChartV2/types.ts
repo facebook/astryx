@@ -56,7 +56,11 @@ export interface SeriesDef {
   readonly dataKeys: string[];
   /** Whether this series is the topmost in its stack (set during layout) */
   _isTopOfStack?: boolean;
-  /** Layout hints the chart root uses for cross-series coordination */
+  /** Static color for legend display. Undefined if color is dynamic (accessor function). */
+  readonly color?: string;
+  /** Human-readable label for legend. Falls back to key if not provided. */
+  readonly label?: string;
+ /** Layout hints the chart root uses for cross-series coordination */
   readonly layout: {
     /** Stack group — series with same stack accumulate */
     stack?: string;

@@ -15,6 +15,7 @@ export interface DotOptions {
   radius?: number;
   opacity?: number;
   dodge?: boolean;
+  label?: string;
 }
 
 export function dot(dataKey: string, options: DotOptions = {}): SeriesDef {
@@ -26,6 +27,8 @@ export function dot(dataKey: string, options: DotOptions = {}): SeriesDef {
     type: 'dot',
     key: dataKey,
     dataKeys: [dataKey],
+    color: typeof color === 'string' ? color : undefined,
+    label: options.label ?? dataKey,
     layout: {},
 
     resolve(ctx) {

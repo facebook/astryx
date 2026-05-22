@@ -19,6 +19,7 @@ export interface BarOptions {
   radius?: number;
   stack?: string;
   group?: string;
+  label?: string;
 }
 
 /**
@@ -79,6 +80,8 @@ export function bar(dataKey: string, options: BarOptions = {}): SeriesDef {
     type: 'bar',
     key: dataKey,
     dataKeys: [dataKey],
+    color: typeof color === 'string' ? color : undefined,
+    label: options.label ?? dataKey,
     layout: {
       stack: options.stack,
       group: options.group,

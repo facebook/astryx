@@ -28,6 +28,7 @@ export interface LineOptions {
   curve?: CurveType;
   strokeWidth?: number;
   dots?: boolean;
+  label?: string;
 }
 
 export function line(dataKey: string, options: LineOptions = {}): SeriesDef {
@@ -40,6 +41,8 @@ export function line(dataKey: string, options: LineOptions = {}): SeriesDef {
     type: 'line',
     key: dataKey,
     dataKeys: [dataKey],
+    color,
+    label: options.label ?? dataKey,
     layout: {},
 
     resolve(ctx) {

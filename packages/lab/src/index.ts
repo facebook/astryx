@@ -194,6 +194,13 @@ export {
 export {
   XDSChart as XDSChartV2,
   type XDSChartProps as XDSChartV2Props,
+  XDSChartLegend as XDSChartV2Legend,
+  type XDSChartLegendProps as XDSChartV2LegendProps,
+  type LegendItem as XDSChartV2LegendItem,
+  XDSChartSwatch as XDSChartV2Swatch,
+  swatchVariantForType as xdsChartV2SwatchVariantForType,
+  type XDSChartSwatchProps as XDSChartV2SwatchProps,
+  type XDSChartSwatchVariant as XDSChartV2SwatchVariant,
   bar,
   line,
   dot,
