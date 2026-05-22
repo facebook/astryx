@@ -390,17 +390,15 @@ function parseDuration(value: string): number | null {
 
 // ---------------------------------------------------------------------------
 
-const fadeInKeyframes = stylex.keyframes({
-  from: {opacity: 0},
-  to: {opacity: 1},
-});
-
 const streamingStyles = stylex.create({
   fadeIn: {
-    animationName: fadeInKeyframes,
-    animationDuration: durationVars['--duration-fast-max'],
-    animationTimingFunction: easeVars['--ease-standard'],
-    animationFillMode: 'backwards',
+    opacity: 1,
+    transitionProperty: 'opacity',
+    transitionDuration: durationVars['--duration-fast-max'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+    '@starting-style': {
+      opacity: 0,
+    },
   },
 });
 
