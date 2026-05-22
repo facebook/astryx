@@ -400,8 +400,11 @@ const streamingStyles = stylex.create({
 interface StreamingCursor {
   /** Characters visited so far in this render pass */
   offset: number;
-  /** Character position where "new" content begins */
-  boundary: number;
+  /** Recent boundary positions (up to 3), oldest first.
+   *  Text before boundaries[0] is fully visible (no animation).
+   *  Text between boundaries[i] and boundaries[i+1] gets its own fade span.
+   *  Text after the last boundary is the newest chunk. */
+  boundaries: number[];
   /** Whether streaming fade is active */
   active: boolean;
 }
@@ -626,30 +629,73 @@ function wrapTextWithFade(
     return content;
   }
 
-  if (startOffset + content.length <= cursor.boundary) {
-    // Entirely old text — render without wrapper
+  const {boundaries} = cursor;
+  const oldestBoundary = boundaries.length > 0 ? boundaries[0] : 0;
+  const endOffset = startOffset + content.length;
+
+  // If this text node ends before the oldest boundary, it's fully settled
+  if (endOffset <= oldestBoundary) {
     return content;
   }
 
-  // There's new content to animate. Compute old/new split.
-  const splitAt = Math.max(0, cursor.boundary - startOffset);
-  const oldText = splitAt > 0 ? content.slice(0, splitAt) : null;
-  const newText = content.slice(splitAt);
+  // Build segments: split text at each boundary that falls within this node
+  const segments: React.ReactNode[] = [];
+  let pos = startOffset;
 
-  // Key the fade span by boundary — each tick boundary advances, React
-  // mounts a fresh span, the keyframe animation replays.
-  const fadeKey = `fade-${key}-b${cursor.boundary}`;
-  return (
-    <Fragment key={`wrap-${key}`}>
-      {oldText}
-      <span
-        key={fadeKey}
-        data-fade={fadeKey}
-        {...stylex.props(streamingStyles.fadeIn)}>
-        {newText}
-      </span>
-    </Fragment>
-  );
+  for (let i = 0; i < boundaries.length; i++) {
+    const b = boundaries[i];
+    if (b <= pos) {continue;}
+    if (b >= endOffset) {break;}
+
+    // Text from pos to b: this belongs to the previous segment
+    if (i === 0 && pos < b) {
+      // Before the oldest boundary — plain text, no animation
+      segments.push(content.slice(pos - startOffset, b - startOffset));
+    } else if (pos < b) {
+      // Between boundaries[i-1] and boundaries[i] — a fading span
+      const spanKey = `fade-${key}-b${boundaries[i - 1]}`;
+      segments.push(
+        <span
+          key={spanKey}
+          data-fade={spanKey}
+          {...stylex.props(streamingStyles.fadeIn)}>
+          {content.slice(pos - startOffset, b - startOffset)}
+        </span>,
+      );
+    }
+    pos = b;
+  }
+
+  // Remaining text after the last boundary — newest chunk
+  if (pos < endOffset) {
+    if (boundaries.length === 0) {
+      // No boundaries at all — everything is new
+      segments.push(
+        <span
+          key={`fade-${key}-b0`}
+          data-fade={`fade-${key}-b0`}
+          {...stylex.props(streamingStyles.fadeIn)}>
+          {content.slice(pos - startOffset)}
+        </span>,
+      );
+    } else {
+      const lastB = boundaries[boundaries.length - 1];
+      const spanKey = `fade-${key}-b${lastB}`;
+      segments.push(
+        <span
+          key={spanKey}
+          data-fade={spanKey}
+          {...stylex.props(streamingStyles.fadeIn)}>
+          {content.slice(pos - startOffset)}
+        </span>,
+      );
+    }
+  }
+
+  if (segments.length === 1) {
+    return segments[0];
+  }
+  return <Fragment key={`wrap-${key}`}>{segments}</Fragment>;
 }
 
 /**
@@ -704,7 +750,7 @@ function renderInline(
               if (cursor.active && startOffset >= cursor.boundary) {
                 result.push(
                   <span
-                    key={`fade-plugin-${index}-${i}-${startOffset}`}
+                    key={`fade-plugin-${index}-${i}`}
                     {...stylex.props(streamingStyles.fadeIn)}>
                     {seg.element}
                   </span>,
@@ -787,7 +833,7 @@ function renderInline(
       if (cursor.active && startOffset >= cursor.boundary) {
         return (
           <span
-            key={`fade-code-${index}-${startOffset}`}
+            key={`fade-code-${index}`}
             {...stylex.props(streamingStyles.fadeIn)}>
             {codeEl}
           </span>
@@ -1362,7 +1408,7 @@ function renderBlock(
               if (itemIsNew) {
                 return (
                   <XDSListItem
-                    key={`fade-li-${i}-${cursor.offset - itemTextLen}`}
+                    key={`fade-li-${i}`}
                     label={label}
                     xstyle={streamingStyles.fadeIn}
                   />
@@ -1571,21 +1617,33 @@ export function XDSMarkdown({
     return parseMarkdown(children, sourceIds);
   }, [smoothedText, children, isStreaming, sourceIds]);
 
-  // Track fade boundary: the rendered text length from the previous
-  // smoothedText value. Store prev in a ref; useMemo recomputes only when
-  // smoothedText changes (the memoized blocks array is a proxy for this).
+  // Track recent boundaries for stacked fade-in animation.
+  // Each time smoothedText grows, we push the previous rendered text length
+  // onto the ring buffer (max 3). This gives us up to 3 concurrently-animating
+  // spans, each independently fading from opacity 0→1.
   const prevBlocksRef = useRef<BlockNode[]>([]);
-  // Recompute boundary when smoothedText length changes (proxy for new blocks).
-  // We reference smoothedLen inside to satisfy exhaustive-deps.
+  const boundariesRef = useRef<number[]>([]);
   const smoothedLen = smoothedText.length;
-  const boundary = useMemo(() => {
-    void smoothedLen; // dep trigger — recompute when text grows
-    return countBlockTextLength(prevBlocksRef.current);
+  const boundaries = useMemo(() => {
+    void smoothedLen; // dep trigger
+    const prevLen = countBlockTextLength(prevBlocksRef.current);
+    const prev = boundariesRef.current;
+    // Only push if the boundary actually advanced
+    if (prev.length === 0 || prevLen > prev[prev.length - 1]) {
+      const next = [...prev, prevLen];
+      // Keep at most 3 boundaries
+      if (next.length > 3) {
+        next.shift();
+      }
+      boundariesRef.current = next;
+      return next;
+    }
+    return prev;
   }, [smoothedLen]);
 
   const cursor: StreamingCursor = {
     offset: 0,
-    boundary,
+    boundaries,
     active: isStreaming,
   };
 
