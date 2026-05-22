@@ -378,9 +378,13 @@ const styles = stylex.create({
 // Parse a CSS duration string (e.g. "175ms", "0.15s") to milliseconds.
 function parseDuration(value: string): number | null {
   const ms = value.match(/^([\d.]+)ms$/);
-  if (ms) {return parseFloat(ms[1]);}
+  if (ms) {
+    return parseFloat(ms[1]);
+  }
   const s = value.match(/^([\d.]+)s$/);
-  if (s) {return parseFloat(s[1]) * 1000;}
+  if (s) {
+    return parseFloat(s[1]) * 1000;
+  }
   return null;
 }
 
@@ -628,6 +632,12 @@ function applyInlinePlugins(
  * If the entire string is old, returns it as-is. If partially new, splits
  * into [old, <span fade>new</span>]. If entirely new, wraps the whole thing.
  */
+/** Check if a cursor offset is in the "new" (animating) region */
+function isNewContent(cursor: StreamingCursor): boolean {
+  if (!cursor.active || cursor.boundaries.length === 0) {return false;}
+  return cursor.offset >= cursor.boundaries[0];
+}
+
 function wrapTextWithFade(
   content: string,
   cursor: StreamingCursor,
@@ -762,7 +772,7 @@ function renderInline(
               // Plugin segment — advance cursor by matchLength, apply fade if new
               const startOffset = cursor.offset;
               cursor.offset += seg.matchLength;
-              if (cursor.active && startOffset >= cursor.boundary) {
+              if (isNewContent(cursor)) {
                 result.push(
                   <span
                     key={`fade-plugin-${index}-${i}`}
@@ -845,7 +855,7 @@ function renderInline(
       ) : (
         <XDSCode key={index}>{node.content}</XDSCode>
       );
-      if (cursor.active && startOffset >= cursor.boundary) {
+      if (isNewContent(cursor)) {
         return (
           <span
             key={`fade-code-${index}`}
@@ -964,7 +974,7 @@ function renderInline(
       const source = citationCtx.sources[node.sourceId] ?? {
         title: node.sourceId,
       };
-      const isNew = cursor.active && cursor.offset >= cursor.boundary;
+      const isNew = isNewContent(cursor);
       const citVariant = citationCtx.style === 'number' ? 'number' : 'label';
       const CitationComp = components?.citation;
       const chip = CitationComp ? (
@@ -1297,8 +1307,7 @@ function renderBlock(
                   item.children.length === 1 &&
                   firstChild?.type === 'paragraph';
 
-                const itemIsNew =
-                  cursor.active && cursor.offset >= cursor.boundary;
+                const itemIsNew = isNewContent(cursor);
 
                 const label = isInline ? (
                   <>
@@ -1380,8 +1389,7 @@ function renderBlock(
               // Check if this entire list item is "new" — if so, fade the
               // whole item as a block instead of fading individual text spans.
               const itemTextLen = countBlockTextLength(item.children);
-              const itemIsNew =
-                cursor.active && cursor.offset >= cursor.boundary;
+              const itemIsNew = isNewContent(cursor);
 
               const label = isInline ? (
                 <>
@@ -1485,8 +1493,7 @@ function renderBlock(
             </XDSTableHeader>
             <XDSTableBody>
               {node.rows.map((row, i) => {
-                const rowIsNew =
-                  cursor.active && cursor.offset >= cursor.boundary;
+                const rowIsNew = isNewContent(cursor);
                 const cells = row.map((cell, j) => (
                   <XDSTableCell
                     key={j}
