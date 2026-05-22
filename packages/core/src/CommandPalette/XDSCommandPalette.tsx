@@ -399,12 +399,16 @@ export function XDSCommandPalette<
     ],
   );
 
-  // Bootstrap on open — the only remaining effect.
+  // Bootstrap on open. We use a ref to avoid re-triggering when
+  // runSearch's identity changes (it depends on searchResults).
+  const runSearchRef = useRef(runSearch);
+  runSearchRef.current = runSearch;
+
   useEffect(() => {
     if (isOpen) {
-      runSearch('');
+      runSearchRef.current('');
     }
-  }, [isOpen, runSearch]);
+  }, [isOpen]);
 
   // Wrap combobox's onKeyDown to intercept Escape (close palette) and
   // Enter on highlight (select + close), since we're not using combobox's
