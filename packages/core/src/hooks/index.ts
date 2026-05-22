@@ -35,7 +35,6 @@ export type {EntryAnimationPreset} from './useEntryAnimation';
 
 export {useXDSStreamingText} from './useXDSStreamingText';
 export type {
-  StreamingTextResult,
   StreamingTextSpeed,
   UseStreamingTextOptions,
 } from './useXDSStreamingText';

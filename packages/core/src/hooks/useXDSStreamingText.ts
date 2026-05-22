@@ -88,21 +88,11 @@ const CHARS_PER_TICK = {
  * const displayed = useXDSStreamingText(rawText, isStreaming, { speed: 'fast' });
  * ```
  */
-export interface StreamingTextResult {
-  /** The text to display (steadily growing toward targetText) */
-  text: string;
-  /** Character index where "new" content begins in the displayed text.
-   *  Text before this index was already visible on the previous render;
-   *  text at or after this index is freshly revealed and should get the
-   *  fade-in animation. */
-  boundary: number;
-}
-
 export function useXDSStreamingText(
   targetText: string,
   isStreaming: boolean,
   options?: UseStreamingTextOptions,
-): StreamingTextResult {
+): string {
   const speed = options?.speed ?? 'natural';
   const charsPerTick = CHARS_PER_TICK[speed];
 
@@ -127,7 +117,6 @@ export function useXDSStreamingText(
   const [displayedLen, setDisplayedLen] = useState(0);
   const targetRef = useRef(targetText);
   const displayedLenRef = useRef(0);
-  const boundaryRef = useRef(0);
   const lastTickRef = useRef(0);
   const rafRef = useRef<number | null>(null);
 
@@ -140,7 +129,6 @@ export function useXDSStreamingText(
     prevTargetLenRef.current = targetText.length;
     if (targetText.length === 0 && displayedLen !== 0) {
       displayedLenRef.current = 0;
-      boundaryRef.current = 0;
       setDisplayedLen(0);
     }
   }
@@ -189,13 +177,8 @@ export function useXDSStreamingText(
   }, [isStreaming, charsPerTick, tickMs, speed]);
 
   if (!isStreaming || speed === 'instant') {
-    return {text: targetText, boundary: targetText.length};
+    return targetText;
   }
 
-  // boundary = what was displayed on the previous render.
-  // Read it first, then update for the next render.
-  const boundary = boundaryRef.current;
-  boundaryRef.current = displayedLen;
-
-  return {text: targetText.slice(0, displayedLen), boundary};
+  return targetText.slice(0, displayedLen);
 }

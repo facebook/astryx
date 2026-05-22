@@ -46,19 +46,19 @@ describe('useXDSStreamingText', () => {
     const {result} = renderHook(() =>
       useXDSStreamingText('Hello world', false),
     );
-    expect(result.current.text).toBe('Hello world');
+    expect(result.current).toBe('Hello world');
   });
 
   it('returns full text with instant speed', () => {
     const {result} = renderHook(() =>
       useXDSStreamingText('Hello world', true, {speed: 'instant'}),
     );
-    expect(result.current.text).toBe('Hello world');
+    expect(result.current).toBe('Hello world');
   });
 
   it('starts with empty string when streaming', () => {
     const {result} = renderHook(() => useXDSStreamingText('Hello world', true));
-    expect(result.current.text).toBe('');
+    expect(result.current).toBe('');
   });
 
   it('snaps to full text when streaming ends', () => {
@@ -67,11 +67,11 @@ describe('useXDSStreamingText', () => {
       {initialProps: {text: 'Hello world', streaming: true}},
     );
 
-    expect(result.current.text).toBe('');
+    expect(result.current).toBe('');
 
     // Stop streaming
     rerender({text: 'Hello world', streaming: false});
-    expect(result.current.text).toBe('Hello world');
+    expect(result.current).toBe('Hello world');
   });
 
   it('resets when target text clears', () => {
@@ -80,11 +80,11 @@ describe('useXDSStreamingText', () => {
       {initialProps: {text: 'Hello', streaming: false}},
     );
 
-    expect(result.current.text).toBe('Hello');
+    expect(result.current).toBe('Hello');
 
     // Clear text (new message)
     rerender({text: '', streaming: true});
-    expect(result.current.text).toBe('');
+    expect(result.current).toBe('');
   });
 
   it('progressively reveals text through animation frames', () => {
@@ -92,7 +92,7 @@ describe('useXDSStreamingText', () => {
       useXDSStreamingText('Hello, world! This is a test.', true),
     );
 
-    expect(result.current.text).toBe('');
+    expect(result.current).toBe('');
 
     // Fire animation frames
     let lastLen = 0;
@@ -101,11 +101,11 @@ describe('useXDSStreamingText', () => {
         const cb = rafCallbacks.pop()!;
         act(() => cb(performance.now() + i * 20));
       }
-      expect(result.current.text.length).toBeGreaterThanOrEqual(lastLen);
-      lastLen = result.current.text.length;
+      expect(result.current.length).toBeGreaterThanOrEqual(lastLen);
+      lastLen = result.current.length;
     }
 
-    expect(result.current.text.length).toBeGreaterThan(0);
+    expect(result.current.length).toBeGreaterThan(0);
   });
 
   it('advances monotonically without stalls or backwards jumps', () => {
@@ -113,7 +113,7 @@ describe('useXDSStreamingText', () => {
       'Hello **world**, this is `code` and [a link](http://example.com).';
     const {result} = renderHook(() => useXDSStreamingText(targetText, true));
 
-    expect(result.current.text).toBe('');
+    expect(result.current).toBe('');
 
     // Fire many animation frames — the revealed length should only increase
     const lengths: number[] = [0];
@@ -122,7 +122,7 @@ describe('useXDSStreamingText', () => {
         const cb = rafCallbacks.pop()!;
         act(() => cb(performance.now() + i * 20));
       }
-      const len = result.current.text.length;
+      const len = result.current.length;
       expect(len).toBeGreaterThanOrEqual(lengths[lengths.length - 1]);
       lengths.push(len);
     }
@@ -152,42 +152,6 @@ describe('useXDSStreamingText', () => {
 
     // With enough frames and time elapsed, should have revealed everything
     // (or close to it — the hook drains charsPerTick per tickMs)
-    expect(result.current.text.length).toBeGreaterThan(targetText.length * 0.5);
-  });
-
-  it('returns boundary that lags behind displayed text', () => {
-    const {result} = renderHook(() =>
-      useXDSStreamingText('Hello, world! This is a test.', true),
-    );
-
-    expect(result.current.text).toBe('');
-    expect(result.current.boundary).toBe(0);
-
-    // Fire animation frames — boundary should always be < text.length
-    // (meaning there IS new content to animate) until text stops growing.
-    let sawNewContent = false;
-    for (let i = 0; i < 20; i++) {
-      if (rafCallbacks.length > 0) {
-        const cb = rafCallbacks.pop()!;
-        act(() => cb(performance.now() + i * 60));
-      }
-      const {text, boundary} = result.current;
-      // Boundary must never exceed text length
-      expect(boundary).toBeLessThanOrEqual(text.length);
-      // Boundary must be >= 0
-      expect(boundary).toBeGreaterThanOrEqual(0);
-      if (text.length > 0 && boundary < text.length) {
-        sawNewContent = true;
-      }
-    }
-    // At some point we should have seen boundary < text (new content exists)
-    expect(sawNewContent).toBe(true);
-  });
-
-  it('boundary equals text length when not streaming', () => {
-    const {result} = renderHook(() =>
-      useXDSStreamingText('Hello world', false),
-    );
-    expect(result.current.boundary).toBe(result.current.text.length);
+    expect(result.current.length).toBeGreaterThan(targetText.length * 0.5);
   });
 });

@@ -9,7 +9,7 @@
  * @position Core implementation; renders markdown as XDS components
  */
 
-import {useMemo, useRef} from 'react';
+import {useEffect, useMemo, useRef} from 'react';
 import type React from 'react';
 import {Fragment} from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -1546,12 +1546,7 @@ export function XDSMarkdown({
 
   // Smooth bursty streamed chunks into a steady character-by-character reveal.
   // When not streaming, the hook returns children unchanged (no-op).
-  // The hook also returns a boundary index — text before it was already visible,
-  // text at/after it is freshly revealed and gets the fade-in animation.
-  const {text: smoothedText, boundary: streamingBoundary} = useXDSStreamingText(
-    children,
-    isStreaming,
-  );
+  const smoothedText = useXDSStreamingText(children, isStreaming);
 
   const incrementalStateRef = useRef<IncrementalState>(
     createIncrementalState(),
@@ -1573,13 +1568,15 @@ export function XDSMarkdown({
     return parseMarkdown(children, sourceIds);
   }, [smoothedText, children, isStreaming, sourceIds]);
 
+  // Track how much text was rendered on the previous committed pass.
+  // We use a ref updated in useEffect (post-commit) so StrictMode
+  // double-invocations don't corrupt it.
+  const prevTextLenRef = useRef(0);
+
   // Build the streaming cursor for this render pass.
-  // The boundary comes directly from useXDSStreamingText — it's the character
-  // count that was already visible on the previous tick. Text after this
-  // boundary is freshly revealed and gets the fade-in animation.
   const cursor: StreamingCursor = {
     offset: 0,
-    boundary: streamingBoundary,
+    boundary: prevTextLenRef.current,
     active: isStreaming,
   };
 
@@ -1623,6 +1620,13 @@ export function XDSMarkdown({
       )}
     </div>
   );
+
+  // Update boundary after commit. useEffect guarantees this only runs once
+  // per committed render (not during StrictMode double-invocations).
+  const textLenThisRender = cursor.offset;
+  useEffect(() => {
+    prevTextLenRef.current = textLenThisRender;
+  });
 
   return rendered;
 }
