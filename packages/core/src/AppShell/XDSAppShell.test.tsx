@@ -18,7 +18,7 @@ import {
   beforeEach,
   afterEach,
 } from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {XDSAppShell} from './XDSAppShell';
 import {XDSMobileNav} from '../MobileNav';
 import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '../SideNav';
@@ -328,6 +328,52 @@ describe('XDSAppShell', () => {
     ).toBeGreaterThan(0);
     expect(screen.getByText('Home')).toBeInTheDocument();
     expect(screen.getAllByText('Side item').length).toBeGreaterThan(0);
+  });
+
+  it('does not show an auto mobile nav toggle when sideNav renders null', async () => {
+    mockMql = createMockMatchMedia(true);
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
+
+    function EmptySideNav() {
+      return null;
+    }
+
+    render(
+      <XDSAppShell sideNav={<EmptySideNav />} mobileNav={{breakpoint: 'md'}}>
+        <div>Content</div>
+      </XDSAppShell>,
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('mobile-nav-toggle')).not.toBeInTheDocument();
+    });
+  });
+
+  it('keeps the auto mobile nav toggle after closing a heading-only TopNav drawer', () => {
+    mockMql = createMockMatchMedia(true);
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(mockMql));
+
+    render(
+      <XDSAppShell
+        topNav={
+          <XDSTopNav
+            label="Main navigation"
+            heading={<XDSTopNavHeading heading="My App" />}
+          />
+        }
+        sideNav={<TestSideNav />}
+        mobileNav={{breakpoint: 'md'}}>
+        <div>Content</div>
+      </XDSAppShell>,
+    );
+
+    const toggle = screen.getByTestId('mobile-nav-toggle');
+    expect(toggle).toBeInTheDocument();
+
+    fireEvent.click(toggle);
+    fireEvent.click(screen.getByRole('button', {name: /close navigation/i}));
+
+    expect(screen.getByTestId('mobile-nav-toggle')).toBeInTheDocument();
   });
 
   it('renders mobile layout on first render when defaultIsMobile is true', () => {

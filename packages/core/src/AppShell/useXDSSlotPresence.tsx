@@ -14,8 +14,9 @@
  *
  * AppShell wraps each slot render in a `display:contents` div with a ref from
  * this hook. The hook checks `childNodes` to determine whether the slot actually
- * produced DOM output. Multiple elements can share the same ref (via callback
- * ref) — only one mounts at a time, and the hook observes whichever is active.
+ * produced DOM output. When a slot temporarily unmounts because React Activity
+ * hides it, the last measured presence is preserved until the slot prop is
+ * removed or another mounted wrapper proves the slot is empty.
  */
 
 import {useCallback, useEffect, useRef, useState} from 'react';
@@ -52,6 +53,12 @@ export function useXDSSlotPresence(initialValue = false) {
   const observerRef = useRef<MutationObserver | null>(null);
   const elementRef = useRef<HTMLDivElement | null>(null);
 
+  useEffect(() => {
+    if (!initialValue) {
+      setHasContent(false);
+    }
+  }, [initialValue]);
+
   // Callback ref — called when elements mount/unmount
   const ref = useCallback((node: HTMLDivElement | null) => {
     // Clean up previous observer
@@ -63,21 +70,18 @@ export function useXDSSlotPresence(initialValue = false) {
     elementRef.current = node;
 
     if (!node) {
-      setHasContent(false);
       return;
     }
 
-    if (node) {
-      // Check immediately
-      setHasContent(hasChildContent(node));
+    // Check immediately
+    setHasContent(hasChildContent(node));
 
-      // Observe for changes
-      const observer = new MutationObserver(() => {
-        setHasContent(hasChildContent(node));
-      });
-      observer.observe(node, {childList: true, subtree: true});
-      observerRef.current = observer;
-    }
+    // Observe for changes
+    const observer = new MutationObserver(() => {
+      setHasContent(hasChildContent(node));
+    });
+    observer.observe(node, {childList: true, subtree: true});
+    observerRef.current = observer;
   }, []);
 
   // Clean up on unmount
