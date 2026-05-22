@@ -407,7 +407,11 @@ export function XDSBanner({
     <div
       ref={ref}
       role={role}
-      {...mergeProps(stylex.props(styles.root))}
+      {...mergeProps(
+        stylex.props(styles.root, xstyle),
+        className,
+        style,
+      )}
       {...rest}>
       {/* Header: colored status background — primary theme target ('banner') */}
       <div
@@ -421,10 +425,7 @@ export function XDSBanner({
               (showContent
                 ? styles.headerCardWithContent
                 : styles.headerCardStandalone),
-            xstyle,
           ),
-          className,
-          style,
         )}>
         <div
           {...mergeProps(
