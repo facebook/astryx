@@ -250,11 +250,11 @@ const styles = stylex.create({
   },
   numberCompleted: {
     backgroundColor: colorVars['--color-icon-primary'],
-    color: colorVars['--color-on-dark'],
+    color: colorVars['--color-background-surface'],
   },
   numberInProgress: {
     backgroundColor: colorVars['--color-icon-primary'],
-    color: colorVars['--color-on-dark'],
+    color: colorVars['--color-background-surface'],
   },
   numberNotStarted: {
     backgroundColor: colorVars['--color-background-muted'],
