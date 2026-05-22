@@ -18,18 +18,11 @@
  * - /packages/cli/templates/blocks/components/ChatLayout/ (block examples)
  */
 
-import {
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
 import {useXDSChatStreamScroll} from './useXDSChatStreamScroll';
 import {useXDSChatNewMessages} from './useXDSChatNewMessages';
@@ -263,8 +256,7 @@ export function XDSChatLayout({
 }: XDSChatLayoutProps) {
   const rootRef = useRef<HTMLDivElement>(null);
 
-  const scrollContainerRef =
-    externalScrollRef ?? (rootRef as React.RefObject<HTMLElement | null>);
+  const scrollContainerRef = externalScrollRef ?? rootRef;
   const isSelfScrolling = !externalScrollRef;
 
   const [density, setDensity] = useState<Density>('balanced');
@@ -305,19 +297,6 @@ export function XDSChatLayout({
     return () => unobserveResize(root);
   }, []);
 
-  // --- Merge refs ---
-  const setRootRef = useCallback(
-    (el: HTMLDivElement | null) => {
-      rootRef.current = el;
-      if (typeof ref === 'function') {
-        ref(el);
-      } else if (ref) {
-        ref.current = el;
-      }
-    },
-    [ref],
-  );
-
   // --- Derived styles ---
   const showEmpty = !hasVisibleContent(children);
 
@@ -352,7 +331,7 @@ export function XDSChatLayout({
   return (
     <XDSChatLayoutContext value={layoutContext}>
       <div
-        ref={setRootRef}
+        ref={mergeRefs(ref, rootRef)}
         data-testid={testId}
         data-density={density}
         {...mergeProps(

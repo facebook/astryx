@@ -16,7 +16,7 @@ import {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSIcon} from '../Icon';
 import {XDSSpinner} from '../Spinner';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import {
   colorVars,
   typeScaleVars,
@@ -165,16 +165,6 @@ export function XDSCommandPaletteInput({
   // to avoid stealing focus from the surrounding page.
   const effectiveAutoFocus = hasAutoFocus && !(ctx?.isInline ?? false);
 
-  // Merge refs
-  const setRefs = (element: HTMLInputElement | null) => {
-    inputRef.current = element;
-    if (typeof ref === 'function') {
-      ref(element);
-    } else if (ref) {
-      ref.current = element;
-    }
-  };
-
   // Auto-focus on mount
   useEffect(() => {
     if (effectiveAutoFocus && inputRef.current) {
@@ -207,7 +197,7 @@ export function XDSCommandPaletteInput({
         <XDSIcon icon="search" size="sm" color="inherit" />
       </span>
       <input
-        ref={setRefs}
+        ref={mergeRefs(ref, inputRef)}
         type="text"
         role="combobox"
         aria-expanded={ctx?.isOpen ?? true}

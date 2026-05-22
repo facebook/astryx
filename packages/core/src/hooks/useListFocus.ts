@@ -46,11 +46,11 @@ export interface UseListFocusOptions {
 /**
  * Return type for useListFocus hook
  */
-export interface UseListFocusReturn {
+export interface UseListFocusReturn<T extends HTMLElement = HTMLElement> {
   /**
    * Ref to attach to the list container element.
    */
-  listRef: React.RefObject<HTMLElement | null>;
+  listRef: React.RefObject<T | null>;
 
   /**
    * Key down handler to attach to the list container.
@@ -94,9 +94,9 @@ export interface UseListFocusReturn {
  * </div>
  * ```
  */
-export function useListFocus(
+export function useListFocus<T extends HTMLElement = HTMLElement>(
   options: UseListFocusOptions = {},
-): UseListFocusReturn {
+): UseListFocusReturn<T> {
   const {
     itemSelector = '[role="menuitem"]',
     wrap = true,
@@ -104,7 +104,7 @@ export function useListFocus(
     orientation = 'vertical',
   } = options;
 
-  const listRef = useRef<HTMLElement>(null);
+  const listRef = useRef<T>(null);
 
   /**
    * Get all focusable items in the list.

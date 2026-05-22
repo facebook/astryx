@@ -20,7 +20,6 @@ import {
   useId,
   useOptimistic,
   useTransition,
-  useCallback,
   useRef,
   type ChangeEvent,
   type ClipboardEvent,
@@ -44,7 +43,7 @@ import {
 } from '../Field';
 import {XDSIcon, renderIconSlot, type XDSIconType} from '../Icon';
 import {XDSSpinner} from '../Spinner';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useInputContainer} from '../hooks/useInputContainer';
 
@@ -324,19 +323,6 @@ export function XDSTextArea({
 
   const effectivelyDisabled = isDisabled || isBusy;
 
-  // Combine refs
-  const setRefs = useCallback(
-    (el: HTMLTextAreaElement | null) => {
-      textareaRef.current = el;
-      if (typeof ref === 'function') {
-        ref(el);
-      } else if (ref) {
-        ref.current = el;
-      }
-    },
-    [ref],
-  );
-
   // Focus textarea when clicking anywhere on the wrapper (icons, padding, etc.)
   const {onClick: handleWrapperClick, onMouseUp: handleWrapperMouseUp} =
     useInputContainer({
@@ -387,7 +373,7 @@ export function XDSTextArea({
           renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
         <textarea
           {...rest}
-          ref={setRefs}
+          ref={mergeRefs(ref, textareaRef)}
           id={id}
           name={htmlName}
           value={String(optimisticValue)}

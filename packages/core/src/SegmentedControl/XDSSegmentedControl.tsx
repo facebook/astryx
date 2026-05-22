@@ -23,7 +23,7 @@ import type {
   XDSSegmentedControlSize,
   XDSSegmentedControlLayout,
 } from './XDSSegmentedControlContext';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
@@ -134,16 +134,6 @@ export function XDSSegmentedControl({
   const size = useXDSSize(sizeProp, 'md') as XDSSegmentedControlSize;
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Merge refs
-  const setContainerRef = (element: HTMLDivElement | null) => {
-    (containerRef as React.RefObject<HTMLDivElement | null>).current = element;
-    if (typeof ref === 'function') {
-      ref(element);
-    } else if (ref) {
-      (ref as React.RefObject<HTMLDivElement | null>).current = element;
-    }
-  };
-
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (isDisabled) {
@@ -209,7 +199,7 @@ export function XDSSegmentedControl({
   return (
     <XDSSegmentedControlContext value={contextValue}>
       <div
-        ref={setContainerRef}
+        ref={mergeRefs(ref, containerRef)}
         role="radiogroup"
         aria-label={label}
         aria-disabled={isDisabled || undefined}

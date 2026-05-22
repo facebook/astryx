@@ -182,7 +182,7 @@ export function XDSTooltip({
   isOpen,
   isDefaultOpen,
 }: XDSTooltipProps): ReactElement {
-  const wrapperRef = useRef<HTMLElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const textOnly = children != null ? isTextOnly(children) : false;
 
   // Determine if hover indication should be shown
@@ -308,9 +308,7 @@ export function XDSTooltip({
   // For element children: use display:contents, ref on first child
   return (
     <>
-      <div
-        ref={wrapperRef as React.RefObject<HTMLDivElement | null>}
-        {...stylex.props(styles.wrapperContents)}>
+      <div ref={wrapperRef} {...stylex.props(styles.wrapperContents)}>
         {children}
       </div>
       {tooltip.renderTooltip(content)}

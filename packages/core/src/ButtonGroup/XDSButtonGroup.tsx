@@ -25,7 +25,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {XDSButtonSize} from '../Button';
 import {XDSSizeProvider, useXDSSize} from '../SizeContext/XDSSizeContext';
 import {useListFocus} from '../hooks/useListFocus';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSButtonGroupContext} from './XDSButtonGroupContext';
 import type {XDSButtonGroupOrientation} from './XDSButtonGroupContext';
@@ -122,7 +122,7 @@ export function XDSButtonGroup({
 }: XDSButtonGroupProps): ReactNode {
   const size = useXDSSize(sizeProp, 'md');
 
-  const {listRef, handleKeyDown} = useListFocus({
+  const {listRef, handleKeyDown} = useListFocus<HTMLDivElement>({
     itemSelector: 'button, [tabindex="0"]',
     orientation,
   });
@@ -136,15 +136,7 @@ export function XDSButtonGroup({
     <XDSButtonGroupContext value={contextValue}>
       <XDSSizeProvider value={size}>
         <div
-          ref={(node: HTMLDivElement | null) => {
-            // eslint-disable-next-line react-compiler/react-compiler -- ref callback: assigning hook-returned ref
-            listRef.current = node;
-            if (typeof ref === 'function') {
-              ref(node);
-            } else if (ref) {
-              ref.current = node;
-            }
-          }}
+          ref={mergeRefs(ref, listRef)}
           role="group"
           aria-label={label}
           onKeyDown={handleKeyDown}

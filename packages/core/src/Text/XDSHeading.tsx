@@ -16,7 +16,7 @@
  * - /packages/cli/templates/blocks/components/Text/ (showcase blocks)
  */
 
-import {lazy, Suspense, useCallback, useRef, type ReactNode} from 'react';
+import {lazy, Suspense, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {
   XDSTextColor,
@@ -39,7 +39,7 @@ import {
 } from './text.stylex';
 import {useTruncation} from './useTruncation';
 import type {LayerPlacement} from '../Layer';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 const LazyXDSTooltip = lazy(() =>
@@ -229,30 +229,13 @@ export function XDSHeading({
   // Ref for the heading element (used as tooltip anchor)
   const headingRef = useRef<HTMLHeadingElement>(null);
 
-  // Merge refs: ref, truncation.ref, headingRef
-  const mergedRef = useCallback(
-    (element: HTMLHeadingElement | null) => {
-      // Forward ref
-      if (typeof ref === 'function') {
-        ref(element);
-      } else if (ref) {
-        ref.current = element;
-      }
-      // Truncation ref
-      truncation.ref(element);
-      // Local ref for tooltip anchor
-      headingRef.current = element;
-    },
-    [ref, truncation],
-  );
-
   // Build inline style for -webkit-line-clamp (dynamic value)
   const inlineStyle = maxLines > 1 ? {WebkitLineClamp: maxLines} : undefined;
 
   return (
     <>
       <Component
-        ref={mergedRef}
+        ref={mergeRefs(ref, truncation.ref, headingRef)}
         {...mergeProps(
           xdsClassName('heading', {level, color, ...(type && {type})}),
           stylex.props(

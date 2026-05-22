@@ -20,7 +20,7 @@
  * - /packages/cli/templates/blocks/components/TopNav/ (showcase blocks)
  */
 
-import {useCallback, useMemo, useRef, type ReactNode} from 'react';
+import {useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -34,7 +34,7 @@ import {XDSLink} from '../Link';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSMenuHover} from '../hooks/useXDSMenuHover';
 import {XDSNavHeadingCloseContext} from '../NavMenu/XDSNavMenuContext';
@@ -326,28 +326,20 @@ export function XDSTopNavHeading({
     [popover.hide],
   );
 
-  const {triggerProps, contentProps, menuRef, setTriggerEl} = useXDSMenuHover({
-    show: popover.show,
-    hide: popover.hide,
-    isOpen: popover.isOpen,
-    isEnabled: !!menu,
-    showDelay: 0,
-  });
+  const {triggerProps, contentProps, menuRef, setTriggerEl} =
+    useXDSMenuHover<HTMLDivElement>({
+      show: popover.show,
+      hide: popover.hide,
+      isOpen: popover.isOpen,
+      isEnabled: !!menu,
+      showDelay: 0,
+    });
 
-  const setRef = useCallback(
-    (el: HTMLElement | null) => {
-      rootRef.current = el;
-      setTriggerEl(el);
-      if (typeof ref === 'function') {
-        ref(el);
-      } else if (ref) {
-        ref.current = el;
-      }
-      if (menu) {
-        popover.triggerRef(el);
-      }
-    },
-    [ref, popover, menu, setTriggerEl],
+  const setRef = mergeRefs<HTMLElement>(
+    rootRef,
+    setTriggerEl as React.Ref<HTMLElement>,
+    ref,
+    menu ? (popover.triggerRef as React.Ref<HTMLElement>) : undefined,
   );
 
   const showChevron = !!menu;
@@ -503,7 +495,7 @@ export function XDSTopNavHeading({
         </div>
         {popover.render(
           <div
-            ref={menuRef as React.RefObject<HTMLDivElement>}
+            ref={menuRef}
             role="menu"
             {...stylex.props(styles.popoverContent)}
             {...contentProps}>
@@ -566,7 +558,7 @@ export function XDSTopNavHeading({
         </div>
         {popover.render(
           <div
-            ref={menuRef as React.RefObject<HTMLDivElement>}
+            ref={menuRef}
             role="menu"
             {...stylex.props(styles.popoverContent)}
             {...contentProps}>

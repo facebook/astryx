@@ -595,14 +595,15 @@ function MonthGrid({
   }, [getFocusedDate, onNavigateNext]);
 
   // Grid focus navigation
-  const {gridRef, handleKeyDown: handleGridKeyDown} = useGridFocus({
-    columns: 7,
-    cellSelector: 'button:not([disabled])',
-    onNavigateBefore: handleNavigatePrevious,
-    onNavigateAfter: handleNavigateNext,
-    onPageUp: handlePageUp,
-    onPageDown: handlePageDown,
-  });
+  const {gridRef, handleKeyDown: handleGridKeyDown} =
+    useGridFocus<HTMLDivElement>({
+      columns: 7,
+      cellSelector: 'button:not([disabled])',
+      onNavigateBefore: handleNavigatePrevious,
+      onNavigateAfter: handleNavigateNext,
+      onPageUp: handlePageUp,
+      onPageDown: handlePageDown,
+    });
 
   // Handle pending focus after month navigation
   useEffect(() => {
@@ -702,7 +703,7 @@ function MonthGrid({
 
       {/* Days grid */}
       <div
-        ref={gridRef as React.RefObject<HTMLDivElement | null>}
+        ref={gridRef}
         role="grid"
         aria-label={monthLabel}
         onKeyDown={handleGridKeyDown}

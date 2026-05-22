@@ -15,18 +15,12 @@
  * - /packages/cli/templates/blocks/components/TopNav/ (showcase blocks)
  */
 
-import React, {
-  useCallback,
-  useId,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import React, {useId, useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useXDSPopover} from '../Popover/useXDSPopover';
 import {useXDSMenuHover} from '../hooks/useXDSMenuHover';
 import {getIcon} from '../Icon/globalIconRegistry';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useTopNavSlot} from './TopNavContext';
@@ -337,27 +331,21 @@ export function XDSTopNavMenu({
     xstyle: styles.menuOffset,
   });
 
-  const {triggerProps, contentProps, menuRef, setTriggerEl} = useXDSMenuHover({
-    show: popover.show,
-    hide: popover.hide,
-    isOpen: popover.isOpen,
-    isEnabled: true,
-    showDelay: delay,
-    hideDelay,
-  });
+  const {triggerProps, contentProps, menuRef, setTriggerEl} =
+    useXDSMenuHover<HTMLDivElement>({
+      show: popover.show,
+      hide: popover.hide,
+      isOpen: popover.isOpen,
+      isEnabled: true,
+      showDelay: delay,
+      hideDelay,
+    });
 
-  const setTriggerRef = useCallback(
-    (el: HTMLButtonElement | null) => {
-      triggerButtonRef.current = el;
-      popover.triggerRef(el);
-      setTriggerEl(el);
-      if (typeof ref === 'function') {
-        ref(el);
-      } else if (ref) {
-        (ref as React.MutableRefObject<HTMLButtonElement | null>).current = el;
-      }
-    },
-    [popover, setTriggerEl, ref],
+  const setTriggerRef = mergeRefs<HTMLButtonElement>(
+    triggerButtonRef,
+    popover.triggerRef as React.Ref<HTMLButtonElement>,
+    setTriggerEl as React.Ref<HTMLButtonElement>,
+    ref,
   );
 
   // Mobile bar: hide menus entirely
@@ -444,7 +432,7 @@ export function XDSTopNavMenu({
       </button>
       {popover.render(
         <div
-          ref={menuRef as React.RefObject<HTMLDivElement>}
+          ref={menuRef}
           role="menu"
           aria-label={label}
           {...contentProps}

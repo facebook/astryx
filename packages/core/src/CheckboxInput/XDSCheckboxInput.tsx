@@ -43,7 +43,7 @@ import {XDSFieldStatus} from '../Field/XDSFieldStatus';
 import type {XDSIconType} from '../Icon';
 import type {XDSInputStatus} from '../Field/types';
 import {XDSSpinner} from '../Spinner';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import {checkboxScope} from './checkbox.markers.stylex';
 
 const styles = stylex.create({
@@ -362,13 +362,8 @@ export function XDSCheckboxInput({
       if (el) {
         el.indeterminate = isIndeterminate;
       }
-      if (typeof ref === 'function') {
-        ref(el);
-      } else if (ref) {
-        ref.current = el;
-      }
     },
-    [isIndeterminate, ref],
+    [isIndeterminate],
   );
 
   // Build aria-describedby from description and status message
@@ -399,7 +394,7 @@ export function XDSCheckboxInput({
         )}>
         <div {...stylex.props(styles.checkboxWrapper, wrapperSizeStyles[size])}>
           <input
-            ref={indeterminateRef}
+            ref={mergeRefs(ref, indeterminateRef)}
             id={id}
             type="checkbox"
             checked={isChecked}

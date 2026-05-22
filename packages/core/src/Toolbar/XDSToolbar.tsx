@@ -234,7 +234,7 @@ export function XDSToolbar({
 
   const gapVar = spacingVars[spacingStepToVar[gap]] as string;
 
-  const {listRef, handleKeyDown} = useListFocus({
+  const {listRef, handleKeyDown} = useListFocus<HTMLDivElement>({
     itemSelector: 'button, input, [tabindex="0"]',
     orientation,
   });
@@ -250,7 +250,7 @@ export function XDSToolbar({
         className={className}
         style={style}>
         <div
-          ref={listRef as React.RefObject<HTMLDivElement>}
+          ref={listRef}
           role="toolbar"
           aria-label={label}
           aria-orientation={orientation}

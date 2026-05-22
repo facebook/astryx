@@ -61,11 +61,11 @@ export interface UseGridFocusOptions {
 /**
  * Return type for useGridFocus hook
  */
-export interface UseGridFocusReturn {
+export interface UseGridFocusReturn<T extends HTMLElement = HTMLElement> {
   /**
    * Ref to attach to the grid container element.
    */
-  gridRef: React.RefObject<HTMLElement | null>;
+  gridRef: React.RefObject<T | null>;
 
   /**
    * Key down handler to attach to the grid container.
@@ -112,7 +112,9 @@ export interface UseGridFocusReturn {
  * </div>
  * ```
  */
-export function useGridFocus(options: UseGridFocusOptions): UseGridFocusReturn {
+export function useGridFocus<T extends HTMLElement = HTMLElement>(
+  options: UseGridFocusOptions,
+): UseGridFocusReturn<T> {
   const {
     columns,
     cellSelector = 'button:not([disabled]), [tabindex]:not([tabindex="-1"])',
@@ -122,7 +124,7 @@ export function useGridFocus(options: UseGridFocusOptions): UseGridFocusReturn {
     onPageDown,
   } = options;
 
-  const gridRef = useRef<HTMLElement>(null);
+  const gridRef = useRef<T>(null);
 
   /**
    * Get all focusable cells in the grid.

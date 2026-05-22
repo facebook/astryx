@@ -34,7 +34,7 @@ import {useListFocus} from '../hooks/useListFocus';
 import {useXDSTabListContext} from './XDSTabListContext';
 import type {XDSTabListSize} from './XDSTabListContext';
 import {tabScope} from './tab.markers.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 export interface XDSTabMenuOption {
@@ -267,9 +267,10 @@ export function XDSTabMenu({
     hasAutoFocus: false,
   });
 
-  const {listRef, handleKeyDown: handleListKeyDown} = useListFocus({
-    onEscape: () => popover.hide(),
-  });
+  const {listRef, handleKeyDown: handleListKeyDown} =
+    useListFocus<HTMLDivElement>({
+      onEscape: () => popover.hide(),
+    });
 
   const handleToggle = useCallback(() => {
     if (popover.isOpen) {
@@ -293,16 +294,9 @@ export function XDSTabMenu({
     [tabListCtx, popover],
   );
 
-  const setButtonRef = useCallback(
-    (el: HTMLButtonElement | null) => {
-      popover.triggerRef(el);
-      if (typeof ref === 'function') {
-        ref(el);
-      } else if (ref) {
-        (ref as React.MutableRefObject<HTMLButtonElement | null>).current = el;
-      }
-    },
-    [popover, ref],
+  const setButtonRef = mergeRefs<HTMLButtonElement>(
+    popover.triggerRef as React.Ref<HTMLButtonElement>,
+    ref,
   );
 
   return (
@@ -355,7 +349,7 @@ export function XDSTabMenu({
       </button>
       {popover.render(
         <div
-          ref={listRef as React.RefObject<HTMLDivElement | null>}
+          ref={listRef}
           id={menuId}
           role="menu"
           aria-label={label}
