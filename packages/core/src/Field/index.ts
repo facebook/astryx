@@ -37,3 +37,6 @@ export {
   inputStatusFocusWithinStyles,
   inputStatusFocusStyles,
 } from './inputStyles.stylex';
+
+// Shared input components
+export {XDSInputClearButton} from './XDSInputClearButton';

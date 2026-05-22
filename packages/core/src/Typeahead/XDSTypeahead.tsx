@@ -30,6 +30,7 @@ import {XDSBaseTypeahead} from './XDSBaseTypeahead';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {
   XDSField,
+  XDSInputClearButton,
   type XDSInputStatus,
   inputWrapperStyles,
   inputStatusBorderStyles,
@@ -37,14 +38,8 @@ import {
   inputStatusFocusWithinStyles,
 } from '../Field';
 import {XDSToken} from '../Token';
-import {XDSIcon} from '../Icon';
 import {renderIconSlot, type XDSIconType} from '../Icon';
-import {
-  colorVars,
-  spacingVars,
-  radiusVars,
-  sizeVars,
-} from '../theme/tokens.stylex';
+import {spacingVars, sizeVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import type {XDSSearchableItem, XDSSearchSource} from './types';
@@ -122,6 +117,7 @@ export interface XDSTypeaheadProps<T extends XDSSearchableItem> extends Omit<
 
 const styles = stylex.create({
   wrapper: {
+    position: 'relative',
     flexWrap: 'wrap',
     gap: spacingVars['--spacing-1'],
     // Standard padding minus border width to prevent height jump
@@ -136,20 +132,14 @@ const styles = stylex.create({
     margin: `calc(-1 * (${spacingVars['--spacing-2']} - ${spacingVars['--spacing-1']} + 1px))`,
   },
   clearButton: {
-    all: 'unset',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    padding: spacingVars['--spacing-1'],
-    borderRadius: radiusVars['--radius-full'],
-    color: colorVars['--color-text-secondary'],
-    opacity: {
-      default: 0.7,
-      ':hover': {
-        '@media (hover: hover)': 1,
-      },
-    },
+    position: 'absolute',
+    top: `calc((${sizeVars['--size-element-md']} - 20px) / 2 - 1px)`,
+    insetInlineEnd: `calc((${sizeVars['--size-element-md']} - 20px) / 2 - 1px)`,
+    height: '20px',
+  },
+  clearButtonSm: {
+    top: `calc((${sizeVars['--size-element-sm']} - 20px) / 2 - 1px)`,
+    insetInlineEnd: `calc((${sizeVars['--size-element-sm']} - 20px) / 2 - 1px)`,
   },
   sizeSmWrapper: {
     minHeight: sizeVars['--size-element-sm'],
@@ -395,7 +385,6 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
             label={value.label}
             size={size}
             onClick={handleEnterEditMode}
-            onRemove={hasClear && !isDisabled ? handleClear : undefined}
             isDisabled={isDisabled}
             xstyle={styles.token}
           />
@@ -422,17 +411,15 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
           inputXStyle={showToken ? styles.inputHidden : undefined}
           size={size}
         />
-        {hasClear && value && !isDisabled && isEditing && (
-          <button
-            type="button"
-            aria-label="Clear selection"
+        {hasClear && value && !isDisabled && (
+          <XDSInputClearButton
+            label="Clear selection"
             onClick={e => {
               e.stopPropagation();
               handleClear();
             }}
-            {...stylex.props(styles.clearButton)}>
-            <XDSIcon icon="close" size="sm" />
-          </button>
+            xstyle={[styles.clearButton, size === 'sm' && styles.clearButtonSm]}
+          />
         )}
       </div>
     </XDSField>
