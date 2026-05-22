@@ -210,6 +210,7 @@ export function XDSCommandPaletteInput({
         }
         placeholder={placeholder}
         value={value}
+        data-autofocus={effectiveAutoFocus || undefined}
         onChange={e => {
           handleValueChange?.(e.target.value);
           onChange?.(e);

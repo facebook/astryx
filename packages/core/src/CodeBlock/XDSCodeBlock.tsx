@@ -24,7 +24,6 @@ import {
   colorVars,
   spacingVars,
   radiusVars,
-  textSizeVars,
   typographyVars,
   fontWeightVars,
   typeScaleVars,
@@ -104,7 +103,7 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
-    fontSize: textSizeVars['--font-size-sm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
     fontFamily: typographyVars['--font-family-code'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: 'var(--color-syntax-comment)',
@@ -201,13 +200,13 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-4'],
   },
   sizeSm: {
-    fontSize: textSizeVars['--font-size-sm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
   },
   sizeMd: {
     fontSize: typeScaleVars['--text-code-size'],
   },
   gutterSm: {
-    fontSize: textSizeVars['--font-size-sm'],
+    fontSize: typeScaleVars['--text-supporting-size'],
   },
   gutterMd: {
     fontSize: typeScaleVars['--text-code-size'],
