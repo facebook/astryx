@@ -9,7 +9,7 @@
  * @position Core implementation; renders markdown as XDS components
  */
 
-import {useEffect, useMemo, useRef} from 'react';
+import {useMemo, useRef} from 'react';
 import type React from 'react';
 import {Fragment} from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -383,7 +383,7 @@ const fadeInKeyframes = stylex.keyframes({
 const streamingStyles = stylex.create({
   fadeIn: {
     animationName: fadeInKeyframes,
-    animationDuration: '800ms',
+    animationDuration: durationVars['--duration-fast-max'],
     animationTimingFunction: easeVars['--ease-standard'],
     animationFillMode: 'backwards',
   },
@@ -618,17 +618,6 @@ function wrapTextWithFade(
 ): React.ReactNode {
   const startOffset = cursor.offset;
   cursor.offset += content.length;
-
-  // DEBUG: log cursor state BEFORE any early return
-  if (typeof window !== 'undefined') {
-    console.log('[fade]', {
-      startOffset,
-      boundary: cursor.boundary,
-      contentLen: content.length,
-      active: cursor.active,
-      content: content.slice(0, 20),
-    });
-  }
 
   if (!cursor.active) {
     return content;
@@ -1580,15 +1569,19 @@ export function XDSMarkdown({
     return parseMarkdown(children, sourceIds);
   }, [smoothedText, children, isStreaming, sourceIds]);
 
-  // Track how much text was rendered on the previous committed pass.
-  // We use a ref updated in useEffect (post-commit) so StrictMode
-  // double-invocations don't corrupt it.
-  const prevTextLenRef = useRef(0);
+  // Track fade boundary: the rendered text length from the previous
+  // smoothedText value. Store prev in a ref; useMemo recomputes only when
+  // smoothedText changes (the memoized blocks array is a proxy for this).
+  const prevBlocksRef = useRef<BlockNode[]>([]);
+  // Use smoothedText.length as a stable dep that changes exactly when blocks does.
+  const smoothedLen = smoothedText.length;
+  const boundary = useMemo(() => {
+    return countBlockTextLength(prevBlocksRef.current);
+  }, [smoothedLen]);
 
-  // Build the streaming cursor for this render pass.
   const cursor: StreamingCursor = {
     offset: 0,
-    boundary: prevTextLenRef.current,
+    boundary,
     active: isStreaming,
   };
 
@@ -1633,12 +1626,10 @@ export function XDSMarkdown({
     </div>
   );
 
-  // Update boundary after commit. useEffect guarantees this only runs once
-  // per committed render (not during StrictMode double-invocations).
-  const textLenThisRender = cursor.offset;
-  useEffect(() => {
-    prevTextLenRef.current = textLenThisRender;
-  });
+  // Store current blocks for next render's boundary calculation.
+  // This ref write is safe under StrictMode: both invocations produce the same
+  // blocks (same smoothedText → same useMemo result), so both write the same value.
+  prevBlocksRef.current = blocks;
 
   return rendered;
 }
