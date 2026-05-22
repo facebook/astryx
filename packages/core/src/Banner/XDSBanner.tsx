@@ -9,9 +9,11 @@
  * @position Core implementation; consumed by index.ts, tested by XDSBanner.test.tsx
  *
  * Visual structure:
- * - Header area: colored status background with icon, title, description, actions, dismiss
- * - Content area (optional): collapsible card background below the header for additional content (children)
+ * - Root container: layout-only wrapper (flex column), no visual styling, no theme target
+ * - Header area (xdsClassName 'banner'): colored status background with icon, title, description, actions, dismiss
+ * - Content area (xdsClassName 'banner-content'): collapsible card background for additional content (children)
  * - No left border accent — color is expressed through the full header background
+ * - Each visual area owns its own border-radius (no overflow:clip on the container)
  * - When children are provided, a collapse/expand toggle button appears in the end area
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -196,25 +198,30 @@ const statusIconColor = {
 // =============================================================================
 
 const styles = stylex.create({
-  // Root wrapper — handles border-radius clipping and overall shape
+  // Root container — layout only, no visual styling
   root: {
+    display: 'flex',
+    flexDirection: 'column',
     fontFamily: 'inherit',
-    overflow: 'clip',
-  },
-  card: {
-    '--_banner-radius': radiusVars['--radius-container'],
-    borderRadius: 'var(--_banner-radius)',
-  },
-  section: {
-    borderRadius: '0',
   },
   // Header area — colored status background with icon, title, description, actions
+  // This is the primary theme target ('banner')
   header: {
     display: 'flex',
     alignItems: 'flex-start',
     gap: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-4'],
+  },
+  // Border-radius for card container: all corners when standalone, top-only when content is visible
+  headerCardStandalone: {
+    borderRadius: radiusVars['--radius-container'],
+  },
+  headerCardWithContent: {
+    borderTopLeftRadius: radiusVars['--radius-container'],
+    borderTopRightRadius: radiusVars['--radius-container'],
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
   },
   // When there's only a title (no description) and actions, center everything vertically
   headerCentered: {
@@ -257,6 +264,7 @@ const styles = stylex.create({
     marginInlineStart: 'auto',
     marginBlock: `calc(-1 * (${spacingVars['--spacing-3']} - ${spacingVars['--spacing-2']}))`,
   },
+  // Content area — theme target ('banner-content')
   contentArea: {
     backgroundColor: colorVars['--color-background-card'],
     paddingBlock: spacingVars['--spacing-3'],
@@ -272,8 +280,8 @@ const styles = stylex.create({
     borderBottomColor: colorVars['--color-border'],
   },
   contentAreaCard: {
-    borderBottomLeftRadius: 'var(--_banner-radius)',
-    borderBottomRightRadius: 'var(--_banner-radius)',
+    borderBottomLeftRadius: radiusVars['--radius-container'],
+    borderBottomRightRadius: radiusVars['--radius-container'],
   },
   chevron: {
     display: 'inline-flex',
@@ -392,28 +400,32 @@ export function XDSBanner({
   const hasActions = endContent != null || isDismissable;
   const isSingleLine = description == null && hasActions;
 
+  const showContent = hasChildren && isExpanded;
+  const isCard = container === 'card';
+
   return (
     <div
       ref={ref}
       role={role}
       {...mergeProps(
-        xdsClassName('banner', {container, status}),
-        stylex.props(
-          styles.root,
-          container === 'card' && styles.card,
-          container === 'section' && styles.section,
-          xstyle,
-        ),
+        stylex.props(styles.root, xstyle),
         className,
         style,
       )}
       {...rest}>
-      {/* Header: colored status background */}
+      {/* Header: colored status background — primary theme target ('banner') */}
       <div
-        {...stylex.props(
-          styles.header,
-          isSingleLine && styles.headerCentered,
-          statusStyles[status],
+        {...mergeProps(
+          xdsClassName('banner', {container, status}),
+          stylex.props(
+            styles.header,
+            isSingleLine && styles.headerCentered,
+            statusStyles[status],
+            isCard &&
+              (showContent
+                ? styles.headerCardWithContent
+                : styles.headerCardStandalone),
+          ),
         )}>
         <div
           {...mergeProps(
@@ -474,12 +486,12 @@ export function XDSBanner({
           </div>
         )}
       </div>
-      {/* Content area: collapsible card background for additional content */}
-      {hasChildren && isExpanded && (
+      {/* Content area: collapsible card background — theme target ('banner-content') */}
+      {showContent && (
         <div
-          {...stylex.props(
-            styles.contentArea,
-            container === 'card' && styles.contentAreaCard,
+          {...mergeProps(
+            xdsClassName('banner-content', {container, status}),
+            stylex.props(styles.contentArea, isCard && styles.contentAreaCard),
           )}>
           {children}
         </div>
