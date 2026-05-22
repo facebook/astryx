@@ -61,11 +61,16 @@ jobs:
       - name: Deploy to Vercel
         id: deploy
         run: |
-          cd apps/storybook/dist
-          mkdir -p .vercel
+          # Prepare Vercel output structure for prebuilt deploy
+          mkdir -p .vercel/output/static
+          cp -r apps/storybook/dist/* .vercel/output/static/
+          echo '{"version":3}' > .vercel/output/config.json
+
+          # Write project link
           echo "{\"projectId\":\"${VERCEL_PROJECT_ID}\",\"orgId\":\"${VERCEL_ORG_ID}\"}" > .vercel/project.json
 
-          DEPLOY_URL=$(vercel deploy . \
+          # Deploy prebuilt output (skips Vercel's build step entirely)
+          DEPLOY_URL=$(vercel deploy --prebuilt \
             --token=${{ secrets.VERCEL_TOKEN }} \
             --yes \
             --meta githubPrNumber=${{ github.event.pull_request.number }} \
