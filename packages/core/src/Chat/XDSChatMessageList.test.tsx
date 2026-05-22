@@ -47,9 +47,9 @@ describe('XDSChatMessageList', () => {
     expect(el.className).toContain('compact');
   });
 
-  it('accepts messageGap independently from density', () => {
+  it('accepts gap independently from density', () => {
     render(
-      <XDSChatMessageList density="compact" messageGap={6} data-testid="list">
+      <XDSChatMessageList density="compact" gap={6} data-testid="list">
         <div>msg</div>
       </XDSChatMessageList>,
     );

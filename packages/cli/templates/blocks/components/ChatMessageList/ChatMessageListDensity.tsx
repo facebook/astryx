@@ -53,8 +53,8 @@ export default function ChatMessageListDensity() {
                   }>
                   <XDSChatMessageBubble>
                     Density provides default spacing at every level — message
-                    gap, bubble padding, and gap between child elements. Use
-                    messageGap to tune row spacing independently.
+                    gap, bubble padding, and gap between child elements. Use gap
+                    to tune row spacing independently.
                   </XDSChatMessageBubble>
                 </XDSChatMessage>
               </XDSChatMessageList>

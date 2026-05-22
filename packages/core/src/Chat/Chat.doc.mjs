@@ -46,7 +46,7 @@ export const docs = {
         },
         {name: 'scrollToTopAction', type: '() => Promise<void>', description: 'Async action fired when user scrolls to top. Use for loading older messages. Wrapped in useTransition — shows a spinner at the top while pending.'},
         {name: 'density', type: "'compact' | 'balanced' | 'spacious'", description: 'Visual density — flows to child messages via context.', default: "'balanced'"},
-        {name: 'messageGap', type: 'SpacingStep', description: 'Gap between top-level message rows. Defaults to the selected density; override for LLM event streams or independent rows that need different spacing from density.'},
+        {name: 'gap', type: 'SpacingStep', description: 'Gap between top-level message rows. Defaults to the selected density; override for LLM event streams or independent rows that need different spacing from density.'},
       ],
     },
     {
@@ -220,7 +220,7 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Compose messages using MessageList > Message > Bubble for consistent sender-aware styling and density.' },
       { guidance: true, description: 'Set the density prop to control spacing globally — compact for sidebars, balanced for most views, spacious for long-form reading. Individual messages can override.' },
-      { guidance: true, description: 'Use messageGap when top-level rows are independent (for example, LLM tool events or streamed blocks) and list spacing needs to be tuned separately from density.' },
+      { guidance: true, description: 'Use gap when top-level rows are independent (for example, LLM tool events or streamed blocks) and list spacing needs to be tuned separately from density.' },
       { guidance: true, description: 'Use the group prop on bubbles (first, middle, last) when a single sender sends multiple consecutive messages — it tightens corner radius to visually connect them.' },
       { guidance: true, description: 'Use XDSChatSystemMessage with variant="divider" for date separators and default for inline status notices like joins, leaves, or topic changes.' },
       { guidance: true, description: 'Put name on the first bubble and metadata on the last bubble in a message so they align with the bubble\'s inline padding.' },
@@ -312,7 +312,7 @@ export const docsZh = {
         emptyState: '列表无消息时显示的内容。',
         scrollToTopAction: '用户滚动到顶部时触发的异步操作。用于加载更早的消息。',
         density: '视觉密度，通过上下文传递给子消息。',
-        messageGap: '顶层消息行之间的间距。默认跟随密度；当 LLM 事件流等独立行需要不同间距时可覆盖。',
+        gap: '顶层消息行之间的间距。默认跟随密度；当 LLM 事件流等独立行需要不同间距时可覆盖。',
       },
     },
     {
@@ -462,7 +462,7 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'MessageList > Message > Bubble for sender-aware styling.' },
       { guidance: true, description: 'Density prop controls global spacing — compact for sidebars, balanced default, spacious for reading.' },
-      { guidance: true, description: 'messageGap tunes top-level row spacing separately from density for independent LLM/tool-event rows.' },
+      { guidance: true, description: 'gap tunes top-level row spacing separately from density for independent LLM/tool-event rows.' },
       { guidance: true, description: 'Group prop on bubbles (first/middle/last) for consecutive same-sender messages — tightens corner radius.' },
       { guidance: true, description: 'SystemMessage: divider variant for date breaks, default for status notices.' },
       { guidance: true, description: 'Name on first bubble, metadata on last — aligns with bubble inline padding.' },
@@ -485,7 +485,7 @@ export const docsDense = {
         emptyState: 'content when no msgs',
         scrollToTopAction: 'async action at scroll top; load older msgs',
         density: 'visual density; flows to children via context',
-        messageGap: 'top-level row gap; defaults to density spacing; override for independent LLM/tool rows',
+        gap: 'top-level row gap; defaults to density spacing; override for independent LLM/tool rows',
       },
     },
     {
