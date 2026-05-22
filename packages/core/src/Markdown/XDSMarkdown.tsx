@@ -392,26 +392,15 @@ function parseDuration(value: string): number | null {
 
 const streamingStyles = stylex.create({
   fadeIn: {
-    // Kept for non-inline-text fade cases (code blocks, citations, etc.)
-    opacity: {
-      default: 1,
-      '@starting-style': 0,
-    },
+    opacity: 1,
     transitionProperty: 'opacity',
     transitionDuration: '1500ms',
     transitionTimingFunction: easeVars['--ease-standard'],
+    '@starting-style': {
+      opacity: 0,
+    },
   },
 });
-
-// Inline fade CSS — injected via <style> tag to guarantee @starting-style works
-// regardless of stylex compilation mode.
-const FADE_CSS = `
-.xds-streaming-fade {
-  @starting-style {
-    opacity: 0 !important;
-  }
-}
-`;
 
 /**
  * Mutable cursor threaded through the render tree during streaming.
@@ -721,19 +710,13 @@ function wrapTextWithFade(
       continue;
     }
 
-    const isLast = i === boundaries.length - 1;
     const spanKey = `fade-${key}-b${bStart}`;
 
     segments.push(
       <span
         key={spanKey}
         data-fade={spanKey}
-        className="xds-streaming-fade"
-        style={{
-          backgroundColor: debugColor(spanKey),
-          opacity: 1,
-          transition: 'opacity 1500ms ease',
-        }}>
+        {...stylex.props(streamingStyles.fadeIn)}>
         {content.slice(clampedStart - startOffset, clampedEnd - startOffset)}
       </span>,
     );
@@ -1709,7 +1692,6 @@ export function XDSMarkdown({
         className,
         style,
       )}>
-      <style dangerouslySetInnerHTML={{__html: FADE_CSS}} />
       {blocks.map((block, i) =>
         renderBlock(
           block,
