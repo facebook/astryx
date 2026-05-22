@@ -39,7 +39,7 @@ import {
   fontWeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import type {XDSSearchableItem, XDSSearchSource} from './types';
 
@@ -367,19 +367,7 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
   }, [popover]);
 
   // Merge refs: forward ref + internal ref + fallback anchor ref
-  const setInputRef = useCallback(
-    (el: HTMLInputElement | null) => {
-      (inputRef as React.RefObject<HTMLInputElement | null>).current = el;
-      (fallbackAnchorRef as React.RefObject<HTMLInputElement | null>).current =
-        el;
-      if (typeof ref === 'function') {
-        ref(el);
-      } else if (ref) {
-        (ref as React.RefObject<HTMLInputElement | null>).current = el;
-      }
-    },
-    [ref],
-  );
+  const setInputRef = mergeRefs(ref, inputRef, fallbackAnchorRef);
 
   // Set up anchor on the provided anchorRef or fall back to the input itself
   useEffect(() => {

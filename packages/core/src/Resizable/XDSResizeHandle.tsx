@@ -30,7 +30,7 @@ import {
   radiusVars,
   spacingVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import type {ResizableProps} from './useXDSResizable';
 
 const KEYBOARD_STEP = 10;
@@ -471,14 +471,7 @@ export function XDSResizeHandle({
 
   return (
     <div
-      ref={node => {
-        handleRef.current = node;
-        if (typeof ref === 'function') {
-          ref(node);
-        } else if (ref) {
-          ref.current = node;
-        }
-      }}
+      ref={mergeRefs(ref, handleRef)}
       role="separator"
       aria-orientation={isHorizontal ? 'vertical' : 'horizontal'}
       aria-valuenow={ariaValueNow}

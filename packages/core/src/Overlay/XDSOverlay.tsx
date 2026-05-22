@@ -18,7 +18,7 @@
 import {type ReactNode, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import {useXDSOverlay} from './useXDSOverlay';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {overlayScope, overlayContainerStyles} from './overlay.markers.stylex';
@@ -124,14 +124,7 @@ export function XDSOverlay({
 
   return (
     <div
-      ref={(node: HTMLDivElement | null) => {
-        overlay.containerRef.current = node;
-        if (typeof ref === 'function') {
-          ref(node);
-        } else if (ref != null) {
-          ref.current = node;
-        }
-      }}
+      ref={mergeRefs(ref, overlay.containerRef)}
       {...mergeProps(
         xdsClassName('overlay'),
         stylex.props(overlayScope, overlayContainerStyles.root, xstyle),

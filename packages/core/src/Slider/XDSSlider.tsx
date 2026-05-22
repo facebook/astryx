@@ -38,7 +38,7 @@ import {
 import {XDSField} from '../Field/XDSField';
 import {XDSTooltip} from '../Tooltip/XDSTooltip';
 import type {XDSInputStatus} from '../Field/types';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 // =============================================================================
@@ -747,15 +747,7 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
           stylex.props(styles.sliderRow),
         )}>
         <div
-          ref={node => {
-            // Merge refs
-            trackRef.current = node;
-            if (typeof ref === 'function') {
-              ref(node);
-            } else if (ref) {
-              ref.current = node;
-            }
-          }}
+          ref={mergeRefs(ref, trackRef)}
           {...(isRange ? {role: 'group', 'aria-label': label} : undefined)}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}

@@ -37,7 +37,7 @@ import {
   spacingStepToToken,
 } from '../Layout/padding.stylex';
 import type {SpacingStep} from '../utils/types';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 
 /**
  * Calculate a directional translate offset for dialog entry animation.
@@ -356,14 +356,7 @@ export function XDSDialog({
   const allowBackdropClick = purpose === 'info';
 
   // Merge refs
-  const setRefs = (element: HTMLDialogElement | null) => {
-    dialogRef.current = element;
-    if (typeof ref === 'function') {
-      ref(element);
-    } else if (ref) {
-      ref.current = element;
-    }
-  };
+  const setRefs = mergeRefs(ref, dialogRef);
 
   // Handle open/close state — skip for inline rendering
   useEffect(() => {

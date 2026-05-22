@@ -34,7 +34,7 @@ import {useListFocus} from '../hooks/useListFocus';
 import {useXDSTabListContext} from './XDSTabListContext';
 import type {XDSTabListSize} from './XDSTabListContext';
 import {tabScope} from './tab.markers.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 export interface XDSTabMenuOption {
@@ -293,16 +293,9 @@ export function XDSTabMenu({
     [tabListCtx, popover],
   );
 
-  const setButtonRef = useCallback(
-    (el: HTMLButtonElement | null) => {
-      popover.triggerRef(el);
-      if (typeof ref === 'function') {
-        ref(el);
-      } else if (ref) {
-        (ref as React.MutableRefObject<HTMLButtonElement | null>).current = el;
-      }
-    },
-    [popover, ref],
+  const setButtonRef = mergeRefs<HTMLButtonElement>(
+    popover.triggerRef as React.Ref<HTMLButtonElement>,
+    ref,
   );
 
   return (

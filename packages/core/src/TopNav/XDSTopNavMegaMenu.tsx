@@ -45,7 +45,7 @@ import {
 import {useXDSPopover} from '../Popover/useXDSPopover';
 import {XDSGrid} from '../Grid/XDSGrid';
 import {getIcon} from '../Icon/globalIconRegistry';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useTopNavSlot} from './TopNavContext';
@@ -428,17 +428,7 @@ function DefaultMegaMenu({
     };
   }, [clearTimeouts]);
 
-  const setButtonRef = useCallback(
-    (el: HTMLButtonElement | null) => {
-      triggerButtonRef.current = el;
-      if (typeof ref === 'function') {
-        ref(el);
-      } else if (ref) {
-        (ref as React.MutableRefObject<HTMLButtonElement | null>).current = el;
-      }
-    },
-    [ref],
-  );
+  const setButtonRef = mergeRefs(triggerButtonRef, ref);
 
   return (
     <>

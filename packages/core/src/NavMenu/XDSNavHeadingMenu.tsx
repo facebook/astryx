@@ -2,10 +2,10 @@
 
 'use client';
 
-import React, {useMemo, useCallback, type ReactNode} from 'react';
+import React, {useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useListFocus} from '../hooks/useListFocus';
 import {
@@ -91,17 +91,7 @@ export function XDSNavHeadingMenu({
     onEscape: closeMenu,
   });
 
-  const mergedRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      (listRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
-      if (typeof ref === 'function') {
-        ref(node);
-      } else if (ref != null) {
-        (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
-      }
-    },
-    [ref, listRef],
-  );
+  const mergedRef = mergeRefs(ref, listRef);
 
   const ctx = useMemo(
     () => ({

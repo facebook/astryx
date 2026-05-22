@@ -28,7 +28,7 @@ import {colorVars, spacingVars, typeScaleVars} from '../theme/tokens.stylex';
 import {BreadcrumbContext} from './XDSBreadcrumbs';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 // =============================================================================
@@ -182,14 +182,7 @@ export function XDSBreadcrumbItem({
   const liRef = useRef<HTMLLIElement>(null);
 
   // Merge refs
-  const setLiRef = (element: HTMLLIElement | null) => {
-    (liRef as React.RefObject<HTMLLIElement | null>).current = element;
-    if (typeof ref === 'function') {
-      ref(element);
-    } else if (ref) {
-      (ref as React.RefObject<HTMLLIElement | null>).current = element;
-    }
-  };
+  const setLiRef = mergeRefs(ref, liRef);
 
   const isCurrent = isCurrentProp === true;
   const isAutoCandidate = isCurrentProp == null;

@@ -18,18 +18,11 @@
  * - /packages/cli/templates/blocks/components/ChatLayout/ (block examples)
  */
 
-import {
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
 import {useXDSChatStreamScroll} from './useXDSChatStreamScroll';
 import {useXDSChatNewMessages} from './useXDSChatNewMessages';
@@ -306,17 +299,7 @@ export function XDSChatLayout({
   }, []);
 
   // --- Merge refs ---
-  const setRootRef = useCallback(
-    (el: HTMLDivElement | null) => {
-      rootRef.current = el;
-      if (typeof ref === 'function') {
-        ref(el);
-      } else if (ref) {
-        ref.current = el;
-      }
-    },
-    [ref],
-  );
+  const setRootRef = mergeRefs(ref, rootRef);
 
   // --- Derived styles ---
   const showEmpty = !hasVisibleContent(children);

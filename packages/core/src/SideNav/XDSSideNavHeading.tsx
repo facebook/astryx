@@ -19,7 +19,7 @@
  * - /packages/cli/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
-import {useCallback, useMemo, useRef, type ReactNode} from 'react';
+import {useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -39,7 +39,7 @@ import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useXDSSideNavCollapse} from './XDSSideNavCollapseContext';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 import type {XDSLinkComponentType} from '../Link/types';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSMenuHover} from '../hooks/useXDSMenuHover';
 import {XDSNavHeadingCloseContext} from '../NavMenu/XDSNavMenuContext';
@@ -364,20 +364,11 @@ export function XDSSideNavHeading({
     showDelay: 0,
   });
 
-  const setRef = useCallback(
-    (el: HTMLDivElement | null) => {
-      (rootRef as React.RefObject<HTMLDivElement | null>).current = el;
-      setTriggerEl(el);
-      if (typeof ref === 'function') {
-        ref(el);
-      } else if (ref) {
-        (ref as React.RefObject<HTMLDivElement | null>).current = el;
-      }
-      if (menu) {
-        popover.triggerRef(el);
-      }
-    },
-    [ref, popover, menu, setTriggerEl],
+  const setRef = mergeRefs<HTMLDivElement>(
+    rootRef,
+    setTriggerEl as React.Ref<HTMLDivElement>,
+    ref,
+    menu ? (popover.triggerRef as React.Ref<HTMLDivElement>) : undefined,
   );
 
   // In collapsed mode: hide if no icon, show icon-only if has icon
@@ -387,15 +378,10 @@ export function XDSSideNavHeading({
   if (isCollapsed && icon) {
     const collapsedIcon = <span {...stylex.props(styles.icon)}>{icon}</span>;
 
-    const collapsedSetRef = (el: HTMLElement | null) => {
-      (collapsedItemRef as React.RefObject<HTMLElement | null>).current = el;
-      if (typeof ref === 'function') {
-        ref(el as HTMLDivElement | null);
-      } else if (ref) {
-        (ref as React.RefObject<HTMLDivElement | null>).current =
-          el as HTMLDivElement | null;
-      }
-    };
+    const collapsedSetRef = mergeRefs<HTMLElement>(
+      collapsedItemRef,
+      ref as React.Ref<HTMLElement>,
+    );
 
     let collapsedElement: ReactNode;
 

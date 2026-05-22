@@ -16,7 +16,7 @@ import {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSIcon} from '../Icon';
 import {XDSSpinner} from '../Spinner';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import {
   colorVars,
   typeScaleVars,
@@ -166,14 +166,7 @@ export function XDSCommandPaletteInput({
   const effectiveAutoFocus = hasAutoFocus && !(ctx?.isInline ?? false);
 
   // Merge refs
-  const setRefs = (element: HTMLInputElement | null) => {
-    inputRef.current = element;
-    if (typeof ref === 'function') {
-      ref(element);
-    } else if (ref) {
-      ref.current = element;
-    }
-  };
+  const setRefs = mergeRefs(ref, inputRef);
 
   // Auto-focus on mount
   useEffect(() => {

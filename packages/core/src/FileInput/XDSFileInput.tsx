@@ -44,7 +44,7 @@ export type {
   XDSInputStatus as XDSFileInputStatus,
   XDSInputStatusType as XDSFileInputStatusType,
 } from '../Field';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import {XDSBaseProps} from '../XDSBaseProps';
 
 function formatFileSize(bytes: number): string {
@@ -576,18 +576,6 @@ export function XDSFileInput({
     [isDisabled, mode, handleFiles],
   );
 
-  const setRefs = useCallback(
-    (el: HTMLInputElement | null) => {
-      inputRef.current = el;
-      if (typeof ref === 'function') {
-        ref(el);
-      } else if (ref) {
-        ref.current = el;
-      }
-    },
-    [ref],
-  );
-
   const hasFiles =
     value != null && (Array.isArray(value) ? value.length > 0 : true);
   const fileNames = hasFiles
@@ -704,7 +692,7 @@ export function XDSFileInput({
         )}>
         <input
           {...rest}
-          ref={setRefs}
+          ref={mergeRefs(ref, inputRef)}
           id={id}
           type="file"
           accept={accept}
