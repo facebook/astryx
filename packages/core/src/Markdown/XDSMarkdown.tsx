@@ -39,6 +39,7 @@ import {XDSTableHeader} from '../Table/XDSTableHeader';
 import {XDSTableBody} from '../Table/XDSTableBody';
 import {xdsClassName, mergeProps} from '../utils';
 import {useXDSStreamingText} from '../hooks/useXDSStreamingText';
+import {computeBoundaries, computeSegments} from './streaming';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSTheme} from '../theme/useXDSTheme';
 import {XDSCitation} from '../Citation/XDSCitation';
@@ -640,71 +641,28 @@ function wrapTextWithFade(
     return content;
   }
 
-  const {boundaries} = cursor;
-  const endOffset = startOffset + content.length;
+  const segments = computeSegments(
+    content,
+    startOffset,
+    cursor.boundaries,
+    key,
+  );
 
-  // No boundaries yet — return plain text
-  if (boundaries.length === 0) {
+  if (segments == null) {
     return content;
   }
 
-  const oldestBoundary = boundaries[0];
+  const nodes = segments.map(seg =>
+    seg.fading ? (
+      <span key={seg.key} {...stylex.props(streamingStyles.fadeIn)}>
+        {seg.text}
+      </span>
+    ) : (
+      <span key={seg.key}>{seg.text}</span>
+    ),
+  );
 
-  // Entirely before the oldest boundary — fully settled
-  if (endOffset <= oldestBoundary) {
-    return content;
-  }
-
-  // Build segments. Each boundary defines the START of a span.
-  // That span's content extends from the boundary to the NEXT boundary (or end of text).
-  // The span is keyed by its boundary value — stable for its entire lifetime.
-  // The last boundary's span keeps growing as new text arrives (same key, content updates).
-  const segments: React.ReactNode[] = [];
-  let pos = startOffset;
-
-  // Text before the oldest boundary — settled, no animation
-  if (pos < oldestBoundary && oldestBoundary < endOffset) {
-    segments.push(
-      <span key={`settled-${key}`}>
-        {content.slice(0, oldestBoundary - startOffset)}
-      </span>,
-    );
-    pos = oldestBoundary;
-  }
-
-  // Each boundary gets a span. The span covers from this boundary to the next
-  // (or to end-of-text for the last boundary).
-  for (let i = 0; i < boundaries.length; i++) {
-    const bStart = boundaries[i];
-    const bEnd = i + 1 < boundaries.length ? boundaries[i + 1] : endOffset;
-
-    // Skip boundaries entirely outside this text node
-    if (bStart >= endOffset || bEnd <= pos) {
-      continue;
-    }
-
-    // Clamp to this text node
-    const clampedStart = Math.max(bStart, pos);
-    const clampedEnd = Math.min(bEnd, endOffset);
-
-    if (clampedStart >= clampedEnd) {
-      continue;
-    }
-
-    const spanKey = `fade-${key}-b${bStart}`;
-
-    segments.push(
-      <span key={spanKey} {...stylex.props(streamingStyles.fadeIn)}>
-        {content.slice(clampedStart - startOffset, clampedEnd - startOffset)}
-      </span>,
-    );
-    pos = clampedEnd;
-  }
-
-  if (segments.length === 0) {
-    return content;
-  }
-  return <span key={`wrap-${key}`}>{segments}</span>;
+  return <span key={`wrap-${key}`}>{nodes}</span>;
 }
 
 function getCitationNumber(ctx: CitationContext, sourceId: string): number {
@@ -1576,18 +1534,9 @@ export function XDSMarkdown({
   const boundaries = useMemo(() => {
     void smoothedLen; // dep trigger
     const prevLen = countBlockTextLength(prevBlocksRef.current);
-    const prev = boundariesRef.current;
-    // Only push if the boundary actually advanced
-    if (prev.length === 0 || prevLen > prev[prev.length - 1]) {
-      const next = [...prev, prevLen];
-      // Evict oldest when we exceed the computed max
-      while (next.length > maxSpans) {
-        next.shift();
-      }
-      boundariesRef.current = next;
-      return next;
-    }
-    return prev;
+    const next = computeBoundaries(boundariesRef.current, prevLen, maxSpans);
+    boundariesRef.current = next;
+    return next;
   }, [smoothedLen, maxSpans]);
 
   const cursor: StreamingCursor = {
