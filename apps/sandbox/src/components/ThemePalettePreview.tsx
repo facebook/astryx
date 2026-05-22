@@ -360,11 +360,11 @@ const S = {
     color: 'var(--color-text-primary)',
     fontFamily: 'var(--font-family-body)',
     padding: '40px 32px',
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   inner: {
     maxWidth: 1280,
     margin: '0 auto',
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   title: {
     fontSize: 32,
     fontWeight: 700,
@@ -372,29 +372,28 @@ const S = {
     margin: 0,
     marginBottom: 8,
     fontFamily: 'var(--font-family-heading)',
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   subtitle: {
     fontSize: 14,
     color: 'var(--color-text-secondary)',
     margin: 0,
     marginBottom: 32,
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   twoCol: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
     gap: 24,
-  } as React.CSSProperties,
-  modeCol: (bg: string, fg: string) =>
-    ({
-      background: bg,
-      color: fg,
-      border: '1px solid var(--color-border)',
-      borderRadius: 16,
-      padding: 24,
-      display: 'flex',
-      flexDirection: 'column' as const,
-      gap: 28,
-    }) as React.CSSProperties,
+  } satisfies React.CSSProperties,
+  modeCol: (bg: string, fg: string): React.CSSProperties => ({
+    background: bg,
+    color: fg,
+    border: '1px solid var(--color-border)',
+    borderRadius: 16,
+    padding: 24,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 28,
+  }),
   modeLabel: {
     fontSize: 11,
     fontWeight: 600,
@@ -403,93 +402,89 @@ const S = {
     margin: 0,
     marginBottom: 16,
     opacity: 0.6,
-  } as React.CSSProperties,
-  section: {} as React.CSSProperties,
+  } satisfies React.CSSProperties,
+  section: {} satisfies React.CSSProperties,
   sectionTitle: {
     fontSize: 13,
     fontWeight: 600,
     margin: 0,
     marginBottom: 12,
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   coreRow: {
     display: 'grid',
     gridTemplateColumns: 'repeat(5, 1fr)',
     gap: 10,
-  } as React.CSSProperties,
-  coreSwatch: (bg: string) =>
-    ({
-      background: bg,
-      borderRadius: 10,
-      border: '1px solid light-dark(rgba(0,0,0,0.08), rgba(255,255,255,0.15))',
-      height: 88,
-    }) as React.CSSProperties,
+  } satisfies React.CSSProperties,
+  coreSwatch: (bg: string): React.CSSProperties => ({
+    background: bg,
+    borderRadius: 10,
+    border: '1px solid light-dark(rgba(0,0,0,0.08), rgba(255,255,255,0.15))',
+    height: 88,
+  }),
   coreMeta: {
     marginTop: 6,
     fontFamily: MONO,
     fontSize: 10,
     lineHeight: 1.4,
     opacity: 0.7,
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   surfacesGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(5, 1fr)',
     gap: 8,
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   surfaceCell: {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: 4,
-  } as React.CSSProperties,
-  surfaceSwatch: (bg: string, ring: string) =>
-    ({
-      height: 56,
-      background: bg,
-      borderRadius: 8,
-      border: `1px solid ${ring}`,
-    }) as React.CSSProperties,
+  } satisfies React.CSSProperties,
+  surfaceSwatch: (bg: string, ring: string): React.CSSProperties => ({
+    height: 56,
+    background: bg,
+    borderRadius: 8,
+    border: `1px solid ${ring}`,
+  }),
   surfaceMeta: {
     fontFamily: MONO,
     fontSize: 9.5,
     lineHeight: 1.3,
     opacity: 0.7,
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   tonalRow: {
     display: 'flex',
     alignItems: 'center',
     gap: 8,
     marginBottom: 4,
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   tonalLabel: {
     width: 80,
     flexShrink: 0,
     fontSize: 10,
     fontFamily: MONO,
     opacity: 0.7,
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   tonalStrip: {
     display: 'flex',
     flex: 1,
     borderRadius: 6,
     overflow: 'hidden',
     border: '1px solid rgba(0,0,0,0.06)',
-  } as React.CSSProperties,
-  tonalCell: (bg: string) =>
-    ({
-      flex: 1,
-      height: 36,
-      background: bg,
-      display: 'flex',
-      alignItems: 'flex-end',
-      justifyContent: 'center',
-      paddingBottom: 2,
-    }) as React.CSSProperties,
-  tonalNum: (tone: number) =>
-    ({
-      fontSize: 7,
-      fontFamily: MONO,
-      color: tone >= 50 ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.5)',
-      pointerEvents: 'none' as const,
-    }) as React.CSSProperties,
+  } satisfies React.CSSProperties,
+  tonalCell: (bg: string): React.CSSProperties => ({
+    flex: 1,
+    height: 36,
+    background: bg,
+    display: 'flex',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    paddingBottom: 2,
+  }),
+  tonalNum: (tone: number): React.CSSProperties => ({
+    fontSize: 7,
+    fontFamily: MONO,
+    color: tone >= 50 ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.5)',
+    pointerEvents: 'none' as const,
+  }),
   tonalHct: {
     width: 60,
     flexShrink: 0,
@@ -497,34 +492,32 @@ const S = {
     fontFamily: MONO,
     opacity: 0.5,
     textAlign: 'right' as const,
-  } as React.CSSProperties,
-  markerDot: (tone: number) =>
-    ({
-      position: 'absolute' as const,
-      top: 2,
-      left: '50%',
-      transform: 'translateX(-50%)',
-      minWidth: 8,
-      height: 8,
-      paddingInline: 2,
-      borderRadius: 999,
-      border: `1.5px solid ${tone >= 50 ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.85)'}`,
-      background: tone >= 50 ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      lineHeight: 1,
-    }) as React.CSSProperties,
+  } satisfies React.CSSProperties,
+  markerDot: (tone: number): React.CSSProperties => ({
+    position: 'absolute' as const,
+    top: 2,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    minWidth: 8,
+    height: 8,
+    paddingInline: 2,
+    borderRadius: 999,
+    border: `1.5px solid ${tone >= 50 ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.85)'}`,
+    background: tone >= 50 ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    lineHeight: 1,
+  }),
   // Pill shows the token count when more than one token snaps to the same
   // tone step. Stays inside the marker dot so the strip layout is unchanged.
-  markerCount: (tone: number) =>
-    ({
-      fontSize: 7.5,
-      fontWeight: 700,
-      fontFamily: MONO,
-      color: tone >= 50 ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.95)',
-      pointerEvents: 'none' as const,
-    }) as React.CSSProperties,
+  markerCount: (tone: number): React.CSSProperties => ({
+    fontSize: 7.5,
+    fontWeight: 700,
+    fontFamily: MONO,
+    color: tone >= 50 ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.95)',
+    pointerEvents: 'none' as const,
+  }),
 };
 
 // =============================================================================
@@ -1260,9 +1253,10 @@ export function ThemePalettePreview({
   // so we can also feed it into a CSS-variable injection at the page
   // root — that way every component on the page (mode columns + tonal
   // strip) re-renders live as you reassign tokens in the drawer.
+  const emptyOverrides = {};
   const [overrides, dispatchOverrides] = useReducer(
     overridesReducer,
-    {} as OverridesMap,
+    emptyOverrides as OverridesMap,
   );
 
   // Map of `--token: light-dark(#L, #D)` for every pending override.

@@ -10,7 +10,7 @@
  * the initial domains captured on mount.
  */
 
-import {useCallback, useRef, useEffect} from 'react';
+import {type CSSProperties, useCallback, useRef, useEffect} from 'react';
 import {createPortal} from 'react-dom';
 import {XDSIconButton} from '@xds/core/IconButton';
 import {useChart} from './ChartContext';
@@ -323,7 +323,7 @@ export function XDSChartZoom({
   const toolbarPositionStyle = (
     pos: ZoomToolbarPosition,
   ): React.CSSProperties => {
-    const base: React.CSSProperties = {
+    const base: CSSProperties = {
       position: 'absolute',
       display: 'flex',
       flexDirection: 'column',
@@ -342,6 +342,12 @@ export function XDSChartZoom({
     }
   };
 
+  const zoomRectStyle: CSSProperties = {
+    cursor: 'grab',
+    touchAction: 'none',
+    userSelect: 'none',
+  };
+
   return (
     <>
       <g>
@@ -351,13 +357,7 @@ export function XDSChartZoom({
           width={width}
           height={height}
           fill="transparent"
-          style={
-            {
-              cursor: 'grab',
-              touchAction: 'none',
-              userSelect: 'none',
-            } as React.CSSProperties
-          }
+          style={zoomRectStyle}
           onWheel={handleWheel}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}

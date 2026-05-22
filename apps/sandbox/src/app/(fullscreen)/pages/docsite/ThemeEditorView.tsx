@@ -4967,15 +4967,16 @@ export function ThemeEditorView({
                       (t: {slug: string; name: string}) =>
                         t.slug === activePreview.slice(9),
                     )?.name ?? 'Template')
-                  : ((
-                      {
+                  : (() => {
+                      const previewLabels: Record<string, string> = {
                         preview: 'Component Preview',
                         landing: 'Landing Page',
                         dashboard: 'Dashboard',
                         tokens: 'Token Preview',
                         table: 'Table Page',
-                      } as Record<string, string>
-                    )[activePreview] ?? activePreview),
+                      };
+                      return previewLabels[activePreview] ?? activePreview;
+                    })(),
                 variant: 'ghost',
                 size: 'md',
               }}

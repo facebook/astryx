@@ -463,46 +463,47 @@ export function ChatPanel({
             ))}
           </div>
 
-          <div
-            style={
-              {
-                padding: 12,
-                // Override shadow tokens so the composer body inherits none
-                '--shadow-low': 'none',
-                '--shadow-med': 'none',
-              } as React.CSSProperties
-            }>
-            <XDSChatComposer
-              onSubmit={() => {
-                if (!prompt.trim()) {
-                  return;
-                }
-                setMessages(prev => [
-                  ...prev,
-                  {role: 'user', text: prompt.trim()},
-                ]);
-                onSend?.(prompt);
-                setPrompt('');
-              }}
-              value={prompt}
-              onChange={setPrompt}
-              placeholder="Ask for changes"
-              input={<XDSChatComposerInput placeholder="Ask for changes" />}
-              xstyle={composerStyles.border}
-              style={
-                {
-                  '--shadow-low': 'none',
-                  '--shadow-med': 'none',
-                  '--_chat-composer-radius': 'var(--radius-container)',
-                  '--_button-radius': 'var(--radius-full)',
-                } as React.CSSProperties
-              }
-            />
-          </div>
+          {(() => {
+            const wrapperStyle: React.CSSProperties &
+              Record<`--${string}`, string> = {
+              padding: 12,
+              // Override shadow tokens so the composer body inherits none
+              '--shadow-low': 'none',
+              '--shadow-med': 'none',
+            };
+            const composerStyle: React.CSSProperties &
+              Record<`--${string}`, string> = {
+              '--shadow-low': 'none',
+              '--shadow-med': 'none',
+              '--_chat-composer-radius': 'var(--radius-container)',
+              '--_button-radius': 'var(--radius-full)',
+            };
+            return (
+              <div style={wrapperStyle}>
+                <XDSChatComposer
+                  onSubmit={() => {
+                    if (!prompt.trim()) {
+                      return;
+                    }
+                    setMessages(prev => [
+                      ...prev,
+                      {role: 'user', text: prompt.trim()},
+                    ]);
+                    onSend?.(prompt);
+                    setPrompt('');
+                  }}
+                  value={prompt}
+                  onChange={setPrompt}
+                  placeholder="Ask for changes"
+                  input={<XDSChatComposerInput placeholder="Ask for changes" />}
+                  xstyle={composerStyles.border}
+                  style={composerStyle}
+                />
+              </div>
+            );
+          })()}
         </>
       )}
-
-      {/* Properties tab */}
       {templateName && onTabChange && tab === 'properties' && (
         <div
           style={{

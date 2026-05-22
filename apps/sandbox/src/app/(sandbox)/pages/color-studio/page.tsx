@@ -43,7 +43,7 @@ const S = {
     height: '100vh',
     overflow: 'hidden',
     backgroundColor: 'var(--color-background-surface, #fff)',
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   sidebar: {
     width: 320,
     flexShrink: 0,
@@ -51,7 +51,7 @@ const S = {
     display: 'flex',
     flexDirection: 'column' as const,
     overflow: 'hidden',
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   sidebarPanel: {
     flex: 1,
     backgroundColor: 'var(--color-background-card, #fff)',
@@ -61,37 +61,36 @@ const S = {
     display: 'flex',
     flexDirection: 'column' as const,
     margin: 8,
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   sidebarHeader: {
     padding: '14px 16px',
     borderBottom: '1px solid var(--color-border)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   sidebarScroll: {
     flex: 1,
     overflow: 'auto',
     padding: 16,
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   main: {
     flex: 1,
     overflowY: 'auto' as const,
     height: '100vh',
     padding: 24,
-  } as React.CSSProperties,
-  swatch: (bg: string) =>
-    ({
-      width: 28,
-      height: 28,
-      borderRadius: 4,
-      background: bg,
-      border: '1px solid rgba(0,0,0,0.08)',
-      flexShrink: 0,
-      position: 'relative' as const,
-      overflow: 'hidden',
-      cursor: 'pointer',
-    }) as React.CSSProperties,
+  } satisfies React.CSSProperties,
+  swatch: (bg: string): React.CSSProperties => ({
+    width: 28,
+    height: 28,
+    borderRadius: 4,
+    background: bg,
+    border: '1px solid rgba(0,0,0,0.08)',
+    flexShrink: 0,
+    position: 'relative' as const,
+    overflow: 'hidden',
+    cursor: 'pointer',
+  }),
   colorInput: {
     position: 'absolute' as const,
     inset: -8,
@@ -100,13 +99,13 @@ const S = {
     border: 'none',
     cursor: 'pointer',
     opacity: 0,
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   tonalRow: {
     display: 'flex',
     alignItems: 'center',
     gap: 6,
     marginBottom: 3,
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   tonalLabel: {
     width: 70,
     flexShrink: 0,
@@ -116,19 +115,18 @@ const S = {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap' as const,
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   tonalStrip: {
     display: 'flex',
     flex: 1,
     overflow: 'hidden',
     border: '1px solid rgba(0,0,0,0.08)',
-  } as React.CSSProperties,
-  tonalCell: (bg: string) =>
-    ({
-      flex: 1,
-      height: 28,
-      background: bg,
-    }) as React.CSSProperties,
+  } satisfies React.CSSProperties,
+  tonalCell: (bg: string): React.CSSProperties => ({
+    flex: 1,
+    height: 28,
+    background: bg,
+  }),
   tonalHct: {
     width: 55,
     flexShrink: 0,
@@ -136,7 +134,7 @@ const S = {
     fontFamily: MONO,
     color: '#52525b',
     textAlign: 'right' as const,
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
 };
 
 // =============================================================================
