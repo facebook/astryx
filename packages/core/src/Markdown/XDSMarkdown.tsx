@@ -9,7 +9,7 @@
  * @position Core implementation; renders markdown as XDS components
  */
 
-import {useEffect, useMemo, useRef} from 'react';
+import {useMemo, useRef} from 'react';
 import type React from 'react';
 import {Fragment} from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -1546,20 +1546,21 @@ export function XDSMarkdown({
 
   // Smooth bursty streamed chunks into a steady character-by-character reveal.
   // When not streaming, the hook returns children unchanged (no-op).
-  const smoothedText = useXDSStreamingText(children, isStreaming);
+  // The hook also returns a boundary index — text before it was already visible,
+  // text at/after it is freshly revealed and gets the fade-in animation.
+  const {text: smoothedText, boundary: streamingBoundary} = useXDSStreamingText(
+    children,
+    isStreaming,
+  );
 
   const incrementalStateRef = useRef<IncrementalState>(
     createIncrementalState(),
   );
-  // Track how much text content was rendered on the previous pass.
-  // Everything beyond this boundary is "new" and gets the fade-in animation.
-  const prevTextLenRef = useRef(0);
 
   const blocks = useMemo(() => {
     if (isStreaming) {
       if (smoothedText === '') {
         incrementalStateRef.current = createIncrementalState();
-        prevTextLenRef.current = 0;
         return [];
       }
       const input = trimStreamingArtifacts(smoothedText);
@@ -1573,10 +1574,12 @@ export function XDSMarkdown({
   }, [smoothedText, children, isStreaming, sourceIds]);
 
   // Build the streaming cursor for this render pass.
-  // The boundary is where "old" text ends and "new" text begins.
+  // The boundary comes directly from useXDSStreamingText — it's the character
+  // count that was already visible on the previous tick. Text after this
+  // boundary is freshly revealed and gets the fade-in animation.
   const cursor: StreamingCursor = {
     offset: 0,
-    boundary: prevTextLenRef.current,
+    boundary: streamingBoundary,
     active: isStreaming,
   };
 
@@ -1620,15 +1623,6 @@ export function XDSMarkdown({
       )}
     </div>
   );
-
-  // After commit, update the boundary for the next pass.
-  // This MUST be in useEffect (not during render) to be safe under
-  // React 18 StrictMode and concurrent rendering — render functions can
-  // be invoked multiple times before commit.
-  const renderedTextLen = cursor.offset;
-  useEffect(() => {
-    prevTextLenRef.current = renderedTextLen;
-  });
 
   return rendered;
 }

@@ -25,7 +25,7 @@ function StreamingDemo({
   const indexRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const displayed = useXDSStreamingText(target, isStreaming, {speed});
+  const {text: displayed} = useXDSStreamingText(target, isStreaming, {speed});
 
   const start = useCallback(() => {
     if (timerRef.current) {
