@@ -635,6 +635,16 @@ function isNewContent(cursor: StreamingCursor): boolean {
   return cursor.offset >= cursor.boundaries[0];
 }
 
+// DEBUG: generate a distinct background color from a key string
+function debugColor(str: string): string {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const h = Math.abs(hash) % 360;
+  return `hsla(${h}, 80%, 80%, 0.5)`;
+}
+
 function wrapTextWithFade(
   content: string,
   cursor: StreamingCursor,
@@ -672,16 +682,21 @@ function wrapTextWithFade(
     // Text from pos to b: this belongs to the previous segment
     if (i === 0 && pos < b) {
       // Before the oldest boundary — plain text, no animation
-      segments.push(content.slice(pos - startOffset, b - startOffset));
+      segments.push(
+        <span
+          key={`settled-${key}`}
+          style={{backgroundColor: 'rgba(200,200,200,0.3)'}}>
+          {content.slice(pos - startOffset, b - startOffset)}
+        </span>,
+      );
     } else if (pos < b) {
       // Between boundaries[i-1] and boundaries[i] — a fading span
       const spanKey = `fade-${key}-b${boundaries[i - 1]}`;
       segments.push(
-        <span
-          key={spanKey}
-          data-fade={spanKey}
-          {...stylex.props(streamingStyles.fadeIn)}>
-          {content.slice(pos - startOffset, b - startOffset)}
+        <span key={spanKey} style={{backgroundColor: debugColor(spanKey)}}>
+          <span data-fade={spanKey} {...stylex.props(streamingStyles.fadeIn)}>
+            {content.slice(pos - startOffset, b - startOffset)}
+          </span>
         </span>,
       );
     }
@@ -692,23 +707,22 @@ function wrapTextWithFade(
   if (pos < endOffset) {
     if (boundaries.length === 0) {
       // No boundaries at all — everything is new
+      const fadeKey0 = `fade-${key}-b0`;
       segments.push(
-        <span
-          key={`fade-${key}-b0`}
-          data-fade={`fade-${key}-b0`}
-          {...stylex.props(streamingStyles.fadeIn)}>
-          {content.slice(pos - startOffset)}
+        <span key={fadeKey0} style={{backgroundColor: debugColor(fadeKey0)}}>
+          <span data-fade={fadeKey0} {...stylex.props(streamingStyles.fadeIn)}>
+            {content.slice(pos - startOffset)}
+          </span>
         </span>,
       );
     } else {
       const lastB = boundaries[boundaries.length - 1];
       const spanKey = `fade-${key}-b${lastB}`;
       segments.push(
-        <span
-          key={spanKey}
-          data-fade={spanKey}
-          {...stylex.props(streamingStyles.fadeIn)}>
-          {content.slice(pos - startOffset)}
+        <span key={spanKey} style={{backgroundColor: debugColor(spanKey)}}>
+          <span data-fade={spanKey} {...stylex.props(streamingStyles.fadeIn)}>
+            {content.slice(pos - startOffset)}
+          </span>
         </span>,
       );
     }
