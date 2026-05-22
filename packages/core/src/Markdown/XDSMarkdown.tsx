@@ -394,7 +394,7 @@ const streamingStyles = stylex.create({
   fadeIn: {
     opacity: 1,
     transitionProperty: 'opacity',
-    transitionDuration: durationVars['--duration-fast-max'],
+    transitionDuration: '600ms',
     transitionTimingFunction: easeVars['--ease-standard'],
     '@starting-style': {
       opacity: 0,
