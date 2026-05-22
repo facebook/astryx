@@ -60,6 +60,29 @@ describe('XDSTopNav', () => {
     expect(screen.getByTestId('start-content')).toBeInTheDocument();
   });
 
+  it('renders children as startContent', () => {
+    render(
+      <XDSTopNav>
+        <XDSTopNavItem label="Home" href="/" />
+        <XDSTopNavItem label="About" href="/about" />
+      </XDSTopNav>,
+    );
+
+    expect(screen.getByRole('link', {name: 'Home'})).toBeInTheDocument();
+    expect(screen.getByRole('link', {name: 'About'})).toBeInTheDocument();
+  });
+
+  it('prefers startContent when both startContent and children are provided', () => {
+    render(
+      <XDSTopNav startContent={<XDSTopNavItem label="Start" href="/start" />}>
+        <XDSTopNavItem label="Child" href="/child" />
+      </XDSTopNav>,
+    );
+
+    expect(screen.getByRole('link', {name: 'Start'})).toBeInTheDocument();
+    expect(screen.queryByRole('link', {name: 'Child'})).not.toBeInTheDocument();
+  });
+
   it('renders endContent slot', () => {
     render(
       <XDSTopNav endContent={<span data-testid="end-content">Actions</span>} />,

@@ -4,7 +4,7 @@
 
 /**
  * @file XDSTopNav.tsx
- * @input Uses React, HTMLAttributes, ReactNode
+ * @input Uses React, ReactNode
  * @output Exports XDSTopNav component and XDSTopNavProps
  * @position Core implementation; consumed by index.ts
  *
@@ -124,6 +124,14 @@ export interface XDSTopNavProps extends XDSBaseProps<HTMLElement> {
    */
   startContent?: ReactNode;
   /**
+   * Alias for startContent. Prefer startContent when composing with other slots.
+   *
+   * This keeps the common React children pattern from silently dropping
+   * navigation items. If both children and startContent are provided,
+   * startContent takes precedence and children are ignored.
+   */
+  children?: ReactNode;
+  /**
    * Center content slot - typically tabs, search bar, or primary navigation.
    * Positioned at the horizontal center of the nav bar.
    * When provided, the layout switches to a three-column CSS grid to ensure
@@ -146,8 +154,10 @@ export interface XDSTopNavProps extends XDSBaseProps<HTMLElement> {
  * Top navigation bar for application headers.
  *
  * Slot-based layout with `heading`, `startContent`, `centerContent`, and
- * `endContent`. When `centerContent` is provided, the layout switches to a
- * three-column CSS grid to keep center content horizontally centered.
+ * `endContent`. `children` are accepted as an alias for `startContent`
+ * so navigation items do not silently disappear when using the common
+ * React children pattern. When `centerContent` is provided, the layout switches
+ * to a three-column CSS grid to keep center content horizontally centered.
  *
  * @example
  * ```
@@ -162,6 +172,7 @@ export interface XDSTopNavProps extends XDSBaseProps<HTMLElement> {
 export function XDSTopNav({
   heading,
   startContent,
+  children,
   centerContent,
   endContent,
   label,
@@ -174,8 +185,10 @@ export function XDSTopNav({
   const renderMode = useXDSTopNavRenderMode();
   const mobileContent = useXDSTopNavMobileContent();
   const {hasAutoToggle} = useXDSAppShellMobile();
+  const resolvedStartContent = startContent ?? children;
   const hasCenterContent = centerContent != null;
-  const hasCollapsibleContent = startContent != null || centerContent != null;
+  const hasCollapsibleContent =
+    resolvedStartContent != null || centerContent != null;
   // Show mobile toggle when there's ANY drawer content — own items OR SideNav via context
   const hasMobileDrawerContent = hasCollapsibleContent || mobileContent != null;
 
@@ -220,7 +233,7 @@ export function XDSTopNav({
       <XDSMobileNav header={heading}>
         {hasCollapsibleContent && (
           <div {...stylex.props(styles.drawerItems)}>
-            {startContent}
+            {resolvedStartContent}
             {centerContent}
           </div>
         )}
@@ -260,9 +273,11 @@ export function XDSTopNav({
       {...props}>
       <div {...stylex.props(styles.leftSection)}>
         {heading && <div {...stylex.props(styles.heading)}>{heading}</div>}
-        {startContent && (
+        {resolvedStartContent && (
           <XDSTopNavSlotContext value="start">
-            <div {...stylex.props(styles.startContent)}>{startContent}</div>
+            <div {...stylex.props(styles.startContent)}>
+              {resolvedStartContent}
+            </div>
           </XDSTopNavSlotContext>
         )}
       </div>
