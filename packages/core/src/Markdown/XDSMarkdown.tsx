@@ -383,9 +383,12 @@ const fadeInKeyframes = stylex.keyframes({
 const streamingStyles = stylex.create({
   fadeIn: {
     animationName: fadeInKeyframes,
-    animationDuration: durationVars['--duration-fast-max'],
+    animationDuration: '800ms',
     animationTimingFunction: easeVars['--ease-standard'],
     animationFillMode: 'backwards',
+    // DEBUG: visible indicator for fade spans
+    outline: '2px solid rgba(255, 0, 0, 0.4)',
+    backgroundColor: 'rgba(255, 200, 200, 0.3)',
   },
 });
 
@@ -623,31 +626,27 @@ function wrapTextWithFade(
     return content;
   }
 
-  if (startOffset >= cursor.boundary) {
-    // Entirely new text — wrap in a fade span.
-    // Key uses boundary so a NEW span mounts each time boundary advances
-    // (old span unmounts, new span mounts → animation replays).
-    return (
-      <span
-        key={`fade-${key}-b${cursor.boundary}`}
-        data-fade="new"
-        {...stylex.props(streamingStyles.fadeIn)}>
-        {content}
-      </span>
-    );
-  }
   if (startOffset + content.length <= cursor.boundary) {
     // Entirely old text — render without wrapper
     return content;
   }
-  // Split: old portion is plain text, new portion gets a fade span.
-  // Key uses boundary so the span remounts (and re-animates) each tick.
-  const splitAt = cursor.boundary - startOffset;
+
+  // There's new content to animate. Compute old/new split.
+  const splitAt = Math.max(0, cursor.boundary - startOffset);
+  const oldText = splitAt > 0 ? content.slice(0, splitAt) : null;
+  const newText = content.slice(splitAt);
+
+  // Key the fade span by boundary — each tick boundary advances, React
+  // mounts a fresh span, the keyframe animation replays.
+  const fadeKey = `fade-${key}-b${cursor.boundary}`;
   return (
-    <Fragment key={`fade-${key}-b${cursor.boundary}`}>
-      {content.slice(0, splitAt)}
-      <span data-fade="split" {...stylex.props(streamingStyles.fadeIn)}>
-        {content.slice(splitAt)}
+    <Fragment key={`wrap-${key}`}>
+      {oldText}
+      <span
+        key={fadeKey}
+        data-fade={fadeKey}
+        {...stylex.props(streamingStyles.fadeIn)}>
+        {newText}
       </span>
     </Fragment>
   );
@@ -1576,9 +1575,11 @@ export function XDSMarkdown({
   // smoothedText value. Store prev in a ref; useMemo recomputes only when
   // smoothedText changes (the memoized blocks array is a proxy for this).
   const prevBlocksRef = useRef<BlockNode[]>([]);
-  // Use smoothedText.length as a stable dep that changes exactly when blocks does.
+  // Recompute boundary when smoothedText length changes (proxy for new blocks).
+  // We reference smoothedLen inside to satisfy exhaustive-deps.
   const smoothedLen = smoothedText.length;
   const boundary = useMemo(() => {
+    void smoothedLen; // dep trigger — recompute when text grows
     return countBlockTextLength(prevBlocksRef.current);
   }, [smoothedLen]);
 
