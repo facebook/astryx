@@ -383,7 +383,7 @@ const fadeInKeyframes = stylex.keyframes({
 const streamingStyles = stylex.create({
   fadeIn: {
     animationName: fadeInKeyframes,
-    animationDuration: durationVars['--duration-fast-max'],
+    animationDuration: '800ms',
     animationTimingFunction: easeVars['--ease-standard'],
     animationFillMode: 'backwards',
   },
