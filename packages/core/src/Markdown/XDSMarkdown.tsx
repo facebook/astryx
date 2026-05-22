@@ -624,10 +624,12 @@ function wrapTextWithFade(
   }
 
   if (startOffset >= cursor.boundary) {
-    // Entirely new text
+    // Entirely new text — wrap in a fade span.
+    // Key uses boundary so a NEW span mounts each time boundary advances
+    // (old span unmounts, new span mounts → animation replays).
     return (
       <span
-        key={`fade-${key}-${startOffset}`}
+        key={`fade-${key}-b${cursor.boundary}`}
         data-fade="new"
         {...stylex.props(streamingStyles.fadeIn)}>
         {content}
@@ -635,13 +637,14 @@ function wrapTextWithFade(
     );
   }
   if (startOffset + content.length <= cursor.boundary) {
-    // Entirely old text
+    // Entirely old text — render without wrapper
     return content;
   }
-  // Split: some old, some new
+  // Split: old portion is plain text, new portion gets a fade span.
+  // Key uses boundary so the span remounts (and re-animates) each tick.
   const splitAt = cursor.boundary - startOffset;
   return (
-    <Fragment key={`fade-${key}-split`}>
+    <Fragment key={`fade-${key}-b${cursor.boundary}`}>
       {content.slice(0, splitAt)}
       <span data-fade="split" {...stylex.props(streamingStyles.fadeIn)}>
         {content.slice(splitAt)}
