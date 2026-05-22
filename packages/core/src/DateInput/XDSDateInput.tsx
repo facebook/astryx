@@ -4,7 +4,7 @@
 
 /**
  * @file XDSDateInput.tsx
- * @input Uses React, useId, useState, useEffect, useCallback, useRef, XDSField, XDSIcon, XDSCalendar, useXDSPopover
+ * @input Uses React, useId, useState, useCallback, useRef, XDSField, XDSIcon, XDSCalendar, useXDSPopover
  * @output Exports XDSDateInput component, XDSDateInputProps
  * @position Core implementation; consumed by index.ts, tested by XDSDateInput.test.tsx
  *
@@ -20,7 +20,6 @@ import {
   useId,
   useState,
   useCallback,
-  useEffect,
   useRef,
   useOptimistic,
   useTransition,
@@ -333,14 +332,18 @@ export function XDSDateInput({
   // Pending input while user is typing (null = show formatted value)
   const [pendingInput, setPendingInput] = useState<string | null>(null);
 
-  // Clear pending input when value changes externally
-  useEffect(() => {
-    if (value === lastFiredValueRef.current) {
-      return;
+  // Clear pending input when value changes externally (computed during render
+  // via prev-value ref instead of useEffect to avoid an extra render cycle)
+  const prevValueRef = useRef(value);
+  if (value !== prevValueRef.current) {
+    prevValueRef.current = value;
+    if (value !== lastFiredValueRef.current) {
+      lastFiredValueRef.current = undefined;
+      if (pendingInput !== null) {
+        setPendingInput(null);
+      }
     }
-    lastFiredValueRef.current = undefined;
-    setPendingInput(null);
-  }, [value]);
+  }
 
   // Display value: pending input if typing, otherwise formatted value
   const displayValue =

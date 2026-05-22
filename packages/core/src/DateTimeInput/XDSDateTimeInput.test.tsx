@@ -370,4 +370,36 @@ describe('XDSDateTimeInput', () => {
       expect(onChange).toHaveBeenCalledWith(undefined);
     });
   });
+
+  describe('external value changes', () => {
+    it('clears pending date input when value changes externally', () => {
+      const onChange = vi.fn();
+      const {rerender} = render(
+        <XDSDateTimeInput
+          label="Meeting"
+          value={'2026-01-15T10:00' as ISODateTimeString}
+          onChange={onChange}
+        />,
+      );
+
+      const dateInput = screen.getByRole('combobox');
+      expect(dateInput).toHaveValue('January 15, 2026');
+
+      // User starts typing a new date
+      fireEvent.change(dateInput, {target: {value: 'Feb'}});
+      expect(dateInput).toHaveValue('Feb');
+
+      // Value changes externally
+      rerender(
+        <XDSDateTimeInput
+          label="Meeting"
+          value={'2026-03-20T10:00' as ISODateTimeString}
+          onChange={onChange}
+        />,
+      );
+
+      // Pending input should be cleared, showing the new formatted date
+      expect(dateInput).toHaveValue('March 20, 2026');
+    });
+  });
 });
