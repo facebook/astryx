@@ -71,7 +71,9 @@ const itemSizeStyles = stylex.create({
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-2'],
   },
-  md: {},
+  md: {
+    paddingBlock: spacingVars['--spacing-1-5'],
+  },
   lg: {},
 });
 

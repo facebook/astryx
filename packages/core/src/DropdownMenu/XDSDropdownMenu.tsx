@@ -46,6 +46,7 @@ import {useListFocus} from '../hooks/useListFocus';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {
   spacingVars,
+  sizeVars,
   radiusVars,
   durationVars,
   easeVars,
@@ -80,6 +81,23 @@ const styles = stylex.create({
   popoverCustomWidth: (width: string | number) => ({
     minWidth: typeof width === 'number' ? `${width}px` : width,
   }),
+});
+
+/**
+ * Overlay offset styles: shift the popover up so the first item's text
+ * aligns with the trigger button's text.
+ * Formula: -(container_padding + trigger_height)
+ */
+const popoverOverlayStyles = stylex.create({
+  sm: {
+    marginBlockStart: `calc(-1 * (${spacingVars['--spacing-1']} + ${sizeVars['--size-element-sm']}))`,
+  },
+  md: {
+    marginBlockStart: `calc(-1 * (${spacingVars['--spacing-1']} + ${sizeVars['--size-element-md']}))`,
+  },
+  lg: {
+    marginBlockStart: `calc(-1 * (${spacingVars['--spacing-1']} + ${sizeVars['--size-element-lg']}))`,
+  },
 });
 
 // =============================================================================
@@ -395,7 +413,7 @@ export function XDSDropdownMenu({
         {
           placement: 'below',
           alignment: 'start',
-          xstyle: [popoverXstyle, styles.popoverGap, layerAnimations.below],
+          xstyle: [popoverXstyle, popoverOverlayStyles[menuSize], layerAnimations.below],
         },
       )}
     </>
