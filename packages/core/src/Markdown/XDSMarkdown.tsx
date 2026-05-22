@@ -398,12 +398,9 @@ const fadeInKeyframes = stylex.keyframes({
 const streamingStyles = stylex.create({
   fadeIn: {
     animationName: fadeInKeyframes,
-    animationDuration: '800ms',
+    animationDuration: durationVars['--duration-fast-max'],
     animationTimingFunction: easeVars['--ease-standard'],
     animationFillMode: 'backwards',
-    // DEBUG: visible indicator for fade spans
-    outline: '2px solid rgba(255, 0, 0, 0.4)',
-    backgroundColor: 'rgba(255, 200, 200, 0.3)',
   },
 });
 
@@ -634,7 +631,9 @@ function applyInlinePlugins(
  */
 /** Check if a cursor offset is in the "new" (animating) region */
 function isNewContent(cursor: StreamingCursor): boolean {
-  if (!cursor.active || cursor.boundaries.length === 0) {return false;}
+  if (!cursor.active || cursor.boundaries.length === 0) {
+    return false;
+  }
   return cursor.offset >= cursor.boundaries[0];
 }
 
@@ -770,7 +769,6 @@ function renderInline(
               );
             } else {
               // Plugin segment — advance cursor by matchLength, apply fade if new
-              const startOffset = cursor.offset;
               cursor.offset += seg.matchLength;
               if (isNewContent(cursor)) {
                 result.push(
@@ -847,7 +845,6 @@ function renderInline(
       );
     case 'code': {
       // Track code content length for cursor but don't split inside code
-      const startOffset = cursor.offset;
       cursor.offset += node.content.length;
       const InlineCodeComp = components?.inlineCode;
       const codeEl = InlineCodeComp ? (
@@ -1388,7 +1385,7 @@ function renderBlock(
 
               // Check if this entire list item is "new" — if so, fade the
               // whole item as a block instead of fading individual text spans.
-              const itemTextLen = countBlockTextLength(item.children);
+              const _itemTextLen = countBlockTextLength(item.children);
               const itemIsNew = isNewContent(cursor);
 
               const label = isInline ? (
