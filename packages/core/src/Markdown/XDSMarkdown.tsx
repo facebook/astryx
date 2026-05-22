@@ -627,6 +627,7 @@ function wrapTextWithFade(
     return (
       <span
         key={`fade-${key}-${startOffset}`}
+        data-fade="new"
         {...stylex.props(streamingStyles.fadeIn)}>
         {content}
       </span>
@@ -641,7 +642,7 @@ function wrapTextWithFade(
   return (
     <Fragment key={`fade-${key}-split`}>
       {content.slice(0, splitAt)}
-      <span {...stylex.props(streamingStyles.fadeIn)}>
+      <span data-fade="split" {...stylex.props(streamingStyles.fadeIn)}>
         {content.slice(splitAt)}
       </span>
     </Fragment>

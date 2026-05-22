@@ -775,13 +775,16 @@ export function trimStreamingArtifacts(input: string): string {
   }
 
   // Check for unclosed bold/italic mid-line: e.g. "Hello **bold" or "Hello *ital"
-  // Scan for * sequences and try to pair them. If an opener has no closer, trim from it.
+  // Instead of trimming (hiding content), auto-close the markers so the text
+  // renders with formatting immediately as it streams in.
   {
     let searchFrom = 0;
-    const openers: Array<{pos: number; len: number}> = [];
+    const markers: Array<{pos: number; len: number}> = [];
     while (searchFrom < tail.length) {
       const idx = tail.indexOf('*', searchFrom);
-      if (idx === -1) {break;}
+      if (idx === -1) {
+        break;
+      }
       // Determine marker length (* or ** or ***)
       let markerLen = 1;
       while (idx + markerLen < tail.length && tail[idx + markerLen] === '*') {
@@ -792,29 +795,37 @@ export function trimStreamingArtifacts(input: string): string {
         searchFrom = idx + markerLen;
         continue;
       }
-      openers.push({pos: idx, len: markerLen});
+      markers.push({pos: idx, len: markerLen});
       searchFrom = idx + markerLen;
     }
-    // Walk openers and try to pair them greedily.
+    // Pair markers greedily. Unpaired openers get auto-closed.
     const paired = new Set<number>();
-    for (let i = 0; i < openers.length; i++) {
-      if (paired.has(i)) {continue;}
-      const open = openers[i];
-      // Look for a matching closer of the same length after it
-      for (let j = i + 1; j < openers.length; j++) {
-        if (paired.has(j)) {continue;}
-        if (openers[j].len === open.len) {
+    for (let i = 0; i < markers.length; i++) {
+      if (paired.has(i)) {
+        continue;
+      }
+      for (let j = i + 1; j < markers.length; j++) {
+        if (paired.has(j)) {
+          continue;
+        }
+        if (markers[j].len === markers[i].len) {
           paired.add(i);
           paired.add(j);
           break;
         }
       }
     }
-    // Find the first unpaired opener — trim from it
-    for (let i = 0; i < openers.length; i++) {
+    // Append closing markers for each unpaired opener (in reverse order)
+    for (let i = markers.length - 1; i >= 0; i--) {
       if (!paired.has(i)) {
-        tail = tail.slice(0, openers[i].pos);
-        break;
+        const marker = markers[i];
+        // Only close if there's actual content after the opener
+        if (marker.pos + marker.len < tail.length) {
+          tail = tail + '*'.repeat(marker.len);
+        } else {
+          // Trailing marker with no content — trim it
+          tail = tail.slice(0, marker.pos);
+        }
       }
     }
   }

@@ -177,17 +177,17 @@ describe('trimStreamingArtifacts', () => {
     expect(trimStreamingArtifacts('Hello ***')).toBe('Hello ');
   });
 
-  it('trims unclosed mid-line bold to hide partial syntax', () => {
-    // Mid-line ** with content after but no closer → trim from the opener
-    // to prevent flashing raw ** during streaming
-    expect(trimStreamingArtifacts('Hello **bold')).toBe('Hello ');
-    expect(trimStreamingArtifacts('Hello **bo')).toBe('Hello ');
+  it('auto-closes unclosed mid-line bold', () => {
+    // Mid-line ** with content after but no closer → append closing **
+    // so text renders bold immediately during streaming
+    expect(trimStreamingArtifacts('Hello **bold')).toBe('Hello **bold**');
+    expect(trimStreamingArtifacts('Hello **bo')).toBe('Hello **bo**');
     // Trailing ** with no content → still trimmed
     expect(trimStreamingArtifacts('Hello **')).toBe('Hello ');
   });
 
-  it('trims unclosed mid-line italic to hide partial syntax', () => {
-    expect(trimStreamingArtifacts('Hello *ital')).toBe('Hello ');
+  it('auto-closes unclosed mid-line italic', () => {
+    expect(trimStreamingArtifacts('Hello *ital')).toBe('Hello *ital*');
     expect(trimStreamingArtifacts('Hello *')).toBe('Hello ');
   });
 
@@ -197,9 +197,9 @@ describe('trimStreamingArtifacts', () => {
     );
   });
 
-  it('trims unclosed bold after closed bold', () => {
+  it('auto-closes unclosed bold after closed bold', () => {
     expect(trimStreamingArtifacts('Hello **done** and **open')).toBe(
-      'Hello **done** and ',
+      'Hello **done** and **open**',
     );
   });
 
