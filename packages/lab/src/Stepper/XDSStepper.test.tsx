@@ -5,6 +5,7 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {XDSStepper} from './XDSStepper';
 import {XDSStep} from './XDSStep';
+import {XDSStepStatus} from './XDSStepStatus';
 
 describe('XDSStepper', () => {
   it('renders a navigation landmark with steps', () => {
@@ -26,8 +27,8 @@ describe('XDSStepper', () => {
   it('renders step numbers', () => {
     render(
       <XDSStepper activeStep={0}>
-        <XDSStep step={0} label="First" />
-        <XDSStep step={1} label="Second" />
+        <XDSStep step={0} label="First" indicator="number" />
+        <XDSStep step={1} label="Second" indicator="number" />
       </XDSStepper>,
     );
     expect(screen.getByText('1')).toBeInTheDocument();
@@ -154,11 +155,11 @@ describe('XDSStepper', () => {
     expect(screen.queryAllByRole('button')).toHaveLength(0);
   });
 
-  it('supports isCompleted override', () => {
+  it('supports status override', () => {
     render(
       <XDSStepper activeStep={0}>
         <XDSStep step={0} label="Step 1" data-testid="step-0" />
-        <XDSStep step={1} label="Step 2" isCompleted data-testid="step-1" />
+        <XDSStep step={1} label="Step 2" status={XDSStepStatus.Completed} data-testid="step-1" />
       </XDSStepper>,
     );
     const step1 = screen.getByTestId('step-1');

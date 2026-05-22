@@ -57,7 +57,7 @@ export interface XDSStepProps extends XDSBaseProps<HTMLDivElement> {
    */
   indicator?: XDSStepIndicator;
   /** @deprecated Use indicator="none" instead */
-  hideIcon?: boolean;
+  hasHiddenIcon?: boolean;
   /**
    * Controls vertical padding of the step.
    * - 'compact': minimal padding (4px block)
@@ -157,7 +157,7 @@ const styles = stylex.create({
     flexDirection: 'row',
     alignItems: 'stretch',
     position: 'relative',
-    gap: '2px',
+    gap: spacingVars['--spacing-0-5'],
   },
 
   // 4px progress bar segment
@@ -244,6 +244,7 @@ const styles = stylex.create({
      
     paddingBlockEnd: '1px',
     fontWeight: fontWeightVars['--font-weight-semibold'],
+    // eslint-disable-next-line @xds/no-hardcoded-styles
     lineHeight: 1,
     flexShrink: 0,
     textAlign: 'center',
@@ -278,7 +279,7 @@ const styles = stylex.create({
   label: {
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
-    fontWeight: fontWeightVars['--font-weight-regular'],
+    fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-primary'],
   },
   labelInProgress: {
@@ -391,7 +392,7 @@ export function XDSStep({
   isOptional = false,
   endContent,
   indicator: indicatorProp,
-  hideIcon = false,
+  hasHiddenIcon = false,
   density: densityProp,
   xstyle,
   className,
@@ -405,9 +406,9 @@ export function XDSStep({
 
   const density = densityProp ?? ctxDensity;
 
-  // Resolve indicator prop (hideIcon is deprecated compat)
+  // Resolve indicator prop (hasHiddenIcon is deprecated compat)
   const indicator: XDSStepIndicator =
-    indicatorProp ?? (hideIcon ? 'none' : 'auto');
+    indicatorProp ?? (hasHiddenIcon ? 'none' : 'auto');
 
   // Auto-derive status
   const status: XDSStepStatus =
@@ -420,7 +421,10 @@ export function XDSStep({
 
   const isVertical = orientation === 'vertical';
   const isSelected = status === XDSStepStatus.InProgress;
-  const isClickable = !isDisabled;
+  const isClickable =
+    !isDisabled &&
+    onStepClick != null &&
+    (status === XDSStepStatus.Completed || status === XDSStepStatus.InProgress);
 
   const handleClick = () => {
     if (isClickable && onStepClick) {
@@ -593,7 +597,7 @@ export function XDSStep({
             <button
               type="button"
               onClick={handleClick}
-              aria-label={`Step ${step + 1}: ${label}`}
+              aria-label={`Go to step ${step + 1}: ${label}`}
               aria-selected={isSelected}
               {...stylex.props(
                 styles.buttonReset,
@@ -640,7 +644,7 @@ export function XDSStep({
         <button
           type="button"
           onClick={handleClick}
-          aria-label={`Step ${step + 1}: ${label}`}
+          aria-label={`Go to step ${step + 1}: ${label}`}
           aria-selected={isSelected}
           {...stylex.props(
             styles.buttonReset,
