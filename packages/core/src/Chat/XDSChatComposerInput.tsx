@@ -11,7 +11,7 @@
  * ContentEditable-based rich input for the chat composer.
  * Supports trigger menus (@ mentions, / commands) via XDSSearchSource,
  * inline token rendering, serialization, Enter/Shift+Enter, message
- * history, paste/drop file handling.
+ * history, paste/drop file handling, and mobile-safe touch typography.
  *
  *
  * SYNC: When modified, update:
@@ -207,7 +207,10 @@ const styles = stylex.create({
     whiteSpace: 'pre-wrap',
     wordBreak: 'break-word',
     overflowY: 'auto',
-    fontSize: typeScaleVars['--text-body-size'],
+    fontSize: {
+      default: typeScaleVars['--text-body-size'],
+      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+    },
     lineHeight: `${LINE_HEIGHT_PX}px`,
     fontFamily: typographyVars['--font-family-body'],
     color: colorVars['--color-text-primary'],
@@ -221,7 +224,10 @@ const styles = stylex.create({
     right: 0,
     pointerEvents: 'none',
     color: colorVars['--color-text-secondary'],
-    fontSize: typeScaleVars['--text-body-size'],
+    fontSize: {
+      default: typeScaleVars['--text-body-size'],
+      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+    },
     lineHeight: `${LINE_HEIGHT_PX}px`,
     fontFamily: typographyVars['--font-family-body'],
     userSelect: 'none',
