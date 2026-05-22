@@ -383,7 +383,7 @@ export const DensityComparison: StoryObj = {
 - **Padding** inside bubbles
 - **Gap** between child elements
 
-Use messageGap when top-level rows need different spacing from density.
+Use gap when top-level rows need different spacing from density.
 
 This is the **${density}** density. ${density === 'compact' ? 'Great for sidebars and panels where space is limited.' : density === 'spacious' ? 'Ideal for long-form reading where breathing room helps comprehension.' : 'The default — works well for most full-page chat interfaces.'}`}</XDSMarkdown>
             </XDSChatMessage>
@@ -404,11 +404,11 @@ This is the **${density}** density. ${density === 'compact' ? 'Great for sidebar
     );
   },
 };
-export const MessageGapOverride: StoryObj = {
+export const GapOverride: StoryObj = {
   name: 'Message Gap Override',
   render: () => (
     <div style={{height: 420, display: 'flex', flexDirection: 'column'}}>
-      <XDSChatMessageList density="compact" messageGap={5}>
+      <XDSChatMessageList density="compact" gap={5}>
         <XDSChatMessage sender="assistant">
           <XDSChatMessageBubble name="Clio">
             Starting the requested change.

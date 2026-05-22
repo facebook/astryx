@@ -9,7 +9,7 @@
  * @position Presentational message container — holds XDSChatMessage children
  *
  * Renders a container with role="log" for chat message histories.
- * Handles density context, configurable message gap, empty state,
+ * Handles density context, configurable gap, empty state,
  * a spacer that pushes messages to the bottom, and an infinite scroll sentinel.
  *
  * Auto-scroll and the scroll-to-bottom button are owned by
@@ -66,11 +66,11 @@ export interface XDSChatMessageListProps extends XDSBaseProps<HTMLDivElement> {
 
   /**
    * Gap between top-level message rows, using the spacing scale.
-   * Defaults to the selected density's message gap. Override this when each
+   * Defaults to the selected density's gap. Override this when each
    * row is independent (for example, LLM event streams where messages cannot
    * be grouped) and row spacing should be tuned separately from density.
    */
-  messageGap?: SpacingStep;
+  gap?: SpacingStep;
 }
 
 // =============================================================================
@@ -123,7 +123,7 @@ const styles = stylex.create({
   },
 });
 
-const messageGapStyles = stylex.create({
+const gapStyles = stylex.create({
   0: {
     gap: spacingVars['--spacing-0'],
   },
@@ -167,7 +167,7 @@ const messageGapStyles = stylex.create({
  * Presentational container for chat messages.
  *
  * Renders messages in a flex column with density-based spacing.
- * Override messageGap to tune row spacing separately from density.
+ * Override gap to tune row spacing separately from density.
  * A spacer pushes content to the bottom when the list isn't full.
  * Supports loading older messages via `scrollToTopAction`.
  *
@@ -188,7 +188,7 @@ export function XDSChatMessageList({
   emptyState,
   scrollToTopAction,
   density = 'balanced',
-  messageGap,
+  gap,
   xstyle,
   className,
   style,
@@ -237,14 +237,13 @@ export function XDSChatMessageList({
 
   const contextValue = useMemo(() => ({density}), [density]);
 
-  const gapStyle =
+  const densityGapStyle =
     density === 'compact'
       ? styles.gapCompact
       : density === 'spacious'
         ? styles.gapSpacious
         : styles.gapBalanced;
-  const messageGapStyle =
-    messageGap == null ? null : messageGapStyles[messageGap];
+  const gapOverrideStyle = gap == null ? null : gapStyles[gap];
 
   return (
     <XDSChatListContext value={contextValue}>
@@ -262,7 +261,7 @@ export function XDSChatMessageList({
         )}>
         <div
           ref={innerRef}
-          {...stylex.props(styles.inner, gapStyle, messageGapStyle)}>
+          {...stylex.props(styles.inner, densityGapStyle, gapOverrideStyle)}>
           {/* Sentinel for infinite scroll */}
           {scrollToTopAction && <div ref={sentinelRef} aria-hidden />}
 
