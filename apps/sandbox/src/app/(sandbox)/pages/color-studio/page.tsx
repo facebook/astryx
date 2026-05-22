@@ -493,7 +493,10 @@ export default function ColorStudioPage() {
   );
 
   const usedRoles = useMemo(
-    () => new Set(palette.filter(c => c.role).map(c => c.role!)),
+    () =>
+      new Set(
+        palette.map(c => c.role).filter((r): r is ThemeRole => r != null),
+      ),
     [palette],
   );
 

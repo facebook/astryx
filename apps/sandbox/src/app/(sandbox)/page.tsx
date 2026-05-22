@@ -67,14 +67,16 @@ export default function Home() {
     }
     const map = new Map<string, typeof allPages>();
     for (const page of filtered) {
-      if (!map.has(page.category)) {
-        map.set(page.category, []);
+      let items = map.get(page.category);
+      if (items == null) {
+        items = [];
+        map.set(page.category, items);
       }
-      map.get(page.category)!.push(page);
+      items.push(page);
     }
     return categories
       .filter(c => map.has(c.label))
-      .map(c => ({category: c.label, pages: map.get(c.label)!}));
+      .map(c => ({category: c.label, pages: map.get(c.label) ?? []}));
   }, [activeTab, filtered]);
 
   return (

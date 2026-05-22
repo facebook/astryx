@@ -87,10 +87,14 @@ export function XDS3DSurface({
           continue;
         }
 
-        const projected = corners.map(d => {
-          const nx = normalize(d![xKey] as number, xDomain);
-          const ny = normalize(d![yKey] as number, yDomain);
-          const nz = normalize(d![zKey] as number, zDomain);
+        const validCorners = corners.filter(
+          (c): c is Record<string, unknown> => c != null,
+        );
+
+        const projected = validCorners.map(d => {
+          const nx = normalize(d[xKey] as number, xDomain);
+          const ny = normalize(d[yKey] as number, yDomain);
+          const nz = normalize(d[zKey] as number, zDomain);
           return {...project(nx, ny, nz), ny};
         });
 

@@ -59,7 +59,7 @@ const buildErrorsCache = new Map<string, BuildErrors | null>();
  */
 export function loadBuildErrors(iterDir: string): BuildErrors | null {
   if (buildErrorsCache.has(iterDir)) {
-    return buildErrorsCache.get(iterDir)!;
+    return buildErrorsCache.get(iterDir) ?? null;
   }
 
   const errorsPath = _path.join(iterDir, 'build-errors.json');

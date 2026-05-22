@@ -268,7 +268,7 @@ async function main() {
   if (hasDesignScores) {
     const designScores = Object.values(byPrompt)
       .filter(s => s.design != null)
-      .map(s => s.design!.score);
+      .map(s => s.design?.score ?? 0);
     if (designScores.length > 0) {
       averages.design = Math.round(
         designScores.reduce((a, b) => a + b, 0) / designScores.length,
@@ -368,7 +368,9 @@ async function main() {
   console.log(`\n🌙 Dark Mode: ${darkModeRate}%`);
 
   // Efficiency metrics summary
-  const allEfficiency = Object.values(byPrompt).map(s => s.efficiency.metrics!);
+  const allEfficiency = Object.values(byPrompt)
+    .map(s => s.efficiency.metrics)
+    .filter(<T>(m: T | undefined): m is T => m != null);
   if (allEfficiency.length > 0) {
     const avgDecisions =
       allEfficiency.reduce((s, m) => s + m.decisionsPerElement, 0) /
@@ -381,7 +383,9 @@ async function main() {
   }
 
   // Maintainability metrics summary
-  const allMaint = Object.values(byPrompt).map(s => s.maintainability.metrics!);
+  const allMaint = Object.values(byPrompt)
+    .map(s => s.maintainability.metrics)
+    .filter(<T>(m: T | undefined): m is T => m != null);
   if (allMaint.length > 0) {
     const avgSemantic =
       allMaint.reduce((s, m) => s + m.semanticRatio, 0) / allMaint.length;

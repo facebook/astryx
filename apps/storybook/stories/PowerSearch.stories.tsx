@@ -1217,9 +1217,12 @@ function CustomIntegerEditor({
           max={1000}
           value={current}
           onChange={e => {
+            if (filter.operator == null) {
+              return;
+            }
             onSave({
               field: filter.field,
-              operator: filter.operator!,
+              operator: filter.operator,
               value: {type: 'integer', value: Number(e.target.value)},
             });
           }}

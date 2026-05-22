@@ -143,6 +143,8 @@ function usePerfMetrics() {
     if (!scrollContainer) {
       return;
     }
+    // Capture narrowed reference for use in nested function closures
+    const container: HTMLElement = scrollContainer;
 
     scrollContainer.scrollTop = 0;
     const s = scrollState.current;
@@ -175,7 +177,7 @@ function usePerfMetrics() {
       const elapsed = performance.now() - start;
       const progress = Math.min(elapsed / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
-      scrollContainer!.scrollTop = totalScroll * eased;
+      container.scrollTop = totalScroll * eased;
 
       if (progress < 1) {
         requestAnimationFrame(step);

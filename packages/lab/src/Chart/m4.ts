@@ -89,10 +89,10 @@ export function m4Reduce(
       bucket.max = point;
     } else {
       bucket.last = point;
-      if (point.y < bucket.min!.y) {
+      if (bucket.min && point.y < bucket.min.y) {
         bucket.min = point;
       }
-      if (point.y > bucket.max!.y) {
+      if (bucket.max && point.y > bucket.max.y) {
         bucket.max = point;
       }
     }
@@ -103,11 +103,11 @@ export function m4Reduce(
   const result: M4Point[] = [];
 
   for (const bucket of buckets) {
-    if (!bucket.first) {
+    if (!bucket.first || !bucket.min || !bucket.max || !bucket.last) {
       continue;
     }
 
-    const points = [bucket.first, bucket.min!, bucket.max!, bucket.last!];
+    const points = [bucket.first, bucket.min, bucket.max, bucket.last];
 
     // Deduplicate (some may be the same point)
     const seen = new Set<M4Point>();

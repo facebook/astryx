@@ -654,10 +654,12 @@ function DeprecationsPanel() {
     const map = new Map<string, typeof deprecations>();
     for (const d of deprecations) {
       const key = d.file;
-      if (!map.has(key)) {
-        map.set(key, []);
+      let items = map.get(key);
+      if (items == null) {
+        items = [];
+        map.set(key, items);
       }
-      map.get(key)!.push(d);
+      items.push(d);
     }
     return Array.from(map.entries());
   }, []);
@@ -3163,7 +3165,10 @@ function PackageGridPage({
   onSelectComponent: (key: string) => void;
 }) {
   const [hoveredComponent, setHoveredComponent] = useState<string | null>(null);
-  const pkg = LIBRARY_PACKAGES.find(p => p.key === packageKey)!;
+  const pkg = LIBRARY_PACKAGES.find(p => p.key === packageKey);
+  if (pkg == null) {
+    return null;
+  }
   const totalComponents = components.reduce(
     (sum, cat) => sum + cat.items.length,
     0,

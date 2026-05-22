@@ -370,9 +370,12 @@ async function main() {
   const previewManifestPath = path.join(iterDir, 'previews', 'manifest.json');
   let previews: Record<string, Record<string, string>> | undefined;
   if (fs.existsSync(previewManifestPath)) {
-    previews = JSON.parse(fs.readFileSync(previewManifestPath, 'utf-8'));
+    const parsed: Record<string, Record<string, string>> = JSON.parse(
+      fs.readFileSync(previewManifestPath, 'utf-8'),
+    );
+    previews = parsed;
     console.log(
-      `  ✓ Preview manifest loaded (${Object.keys(previews!).length} prompts)`,
+      `  ✓ Preview manifest loaded (${Object.keys(parsed).length} prompts)`,
     );
   }
 

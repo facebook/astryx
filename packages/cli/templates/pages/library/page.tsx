@@ -476,14 +476,16 @@ export default function LibraryPage() {
     const order = CATEGORIES.filter(c => c !== 'All');
     const map = new Map<string, LibraryItem[]>();
     for (const item of filtered) {
-      if (!map.has(item.category)) {
-        map.set(item.category, []);
+      let group = map.get(item.category);
+      if (!group) {
+        group = [];
+        map.set(item.category, group);
       }
-      map.get(item.category)!.push(item);
+      group.push(item);
     }
     return order
       .filter(cat => map.has(cat))
-      .map(cat => ({category: cat, items: map.get(cat)!}));
+      .map(cat => ({category: cat, items: map.get(cat) ?? []}));
   }, [activeTab, filtered]);
 
   return (

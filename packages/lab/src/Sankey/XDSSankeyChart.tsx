@@ -84,8 +84,11 @@ function resolveColumnCount(
     }
   });
   while (queue.length) {
-    const id = queue.shift()!;
-    const col = colMap.get(id)!;
+    const id = queue.shift();
+    if (id == null) {
+      break;
+    }
+    const col = colMap.get(id) ?? 0;
     for (const tgt of outEdges.get(id) || []) {
       colMap.set(tgt, Math.max(colMap.get(tgt) || 0, col + 1));
       inDegree.set(tgt, (inDegree.get(tgt) || 0) - 1);

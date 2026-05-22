@@ -436,8 +436,8 @@ export default function AIChatTemplate() {
     input.focus();
     // Select all existing content so insertText replaces it
     const sel = window.getSelection();
-    if (sel) {
-      sel.selectAllChildren(document.activeElement!);
+    if (sel && document.activeElement) {
+      sel.selectAllChildren(document.activeElement);
     }
     input.insertText(prompt);
     // Dispatch input event to trigger emitChange and clear placeholder

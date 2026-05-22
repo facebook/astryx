@@ -140,7 +140,10 @@ export function stratifiedSample(
 
   // First pass: one from each category
   for (const category of categories) {
-    const categoryPrompts = byCategory.get(category)!;
+    const categoryPrompts = byCategory.get(category);
+    if (categoryPrompts == null) {
+      continue;
+    }
     const randomIndex = Math.floor(Math.random() * categoryPrompts.length);
     result.push(categoryPrompts[randomIndex]);
 
@@ -153,7 +156,11 @@ export function stratifiedSample(
   let categoryIndex = 0;
   while (result.length < sampleSize) {
     const category = categories[categoryIndex % categories.length];
-    const categoryPrompts = byCategory.get(category)!;
+    const categoryPrompts = byCategory.get(category);
+    if (categoryPrompts == null) {
+      categoryIndex++;
+      continue;
+    }
     const available = categoryPrompts.filter(p => !result.includes(p));
 
     if (available.length > 0) {
@@ -227,9 +234,9 @@ export function ensureTsxFiles(codeDir: string): string[] {
     const jsonPath = path.join(codeDir, jsonFile);
 
     try {
-      const data = JSON.parse(
-        fs.readFileSync(jsonPath, 'utf-8'),
-      ) as JsonResultEntry | JsonResultEntry[];
+      const data = JSON.parse(fs.readFileSync(jsonPath, 'utf-8')) as
+        | JsonResultEntry
+        | JsonResultEntry[];
 
       // Find the depth-0 entry (initial generation, before follow-ups)
       const entries = Array.isArray(data) ? data : [data];

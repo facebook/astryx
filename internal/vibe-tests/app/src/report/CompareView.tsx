@@ -152,11 +152,11 @@ function CostComparisonSection({
             xds: `${(xdsCost.avgDurationMs / 1000).toFixed(1)}s`,
             baseline: `${(baselineCost.avgDurationMs / 1000).toFixed(1)}s`,
             ...(isThreeWay
-              ? {html: `${(htmlCost!.avgDurationMs / 1000).toFixed(1)}s`}
+              ? {html: `${((htmlCost?.avgDurationMs ?? 0) / 1000).toFixed(1)}s`}
               : {}),
             ...(isFourWay
               ? {
-                  xdsTailwind: `${(xdsTailwindCost!.avgDurationMs / 1000).toFixed(1)}s`,
+                  xdsTailwind: `${((xdsTailwindCost?.avgDurationMs ?? 0) / 1000).toFixed(1)}s`,
                 }
               : {}),
             winner: costWinner(
@@ -175,11 +175,11 @@ function CostComparisonSection({
       xds: `~${xdsCost.estimatedInputTokens.toLocaleString()}`,
       baseline: `~${baselineCost.estimatedInputTokens.toLocaleString()}`,
       ...(isThreeWay
-        ? {html: `~${htmlCost!.estimatedInputTokens.toLocaleString()}`}
+        ? {html: `~${htmlCost?.estimatedInputTokens.toLocaleString()}`}
         : {}),
       ...(isFourWay
         ? {
-            xdsTailwind: `~${xdsTailwindCost!.estimatedInputTokens.toLocaleString()}`,
+            xdsTailwind: `~${xdsTailwindCost?.estimatedInputTokens.toLocaleString()}`,
           }
         : {}),
       winner: costWinner(
@@ -196,11 +196,11 @@ function CostComparisonSection({
       xds: `~${xdsCost.estimatedOutputTokens.toLocaleString()}`,
       baseline: `~${baselineCost.estimatedOutputTokens.toLocaleString()}`,
       ...(isThreeWay
-        ? {html: `~${htmlCost!.estimatedOutputTokens.toLocaleString()}`}
+        ? {html: `~${htmlCost?.estimatedOutputTokens.toLocaleString()}`}
         : {}),
       ...(isFourWay
         ? {
-            xdsTailwind: `~${xdsTailwindCost!.estimatedOutputTokens.toLocaleString()}`,
+            xdsTailwind: `~${xdsTailwindCost?.estimatedOutputTokens.toLocaleString()}`,
           }
         : {}),
       winner: costWinner(
@@ -218,12 +218,12 @@ function CostComparisonSection({
       baseline: `~${(baselineCost.estimatedInputTokens + baselineCost.estimatedOutputTokens).toLocaleString()}`,
       ...(isThreeWay
         ? {
-            html: `~${(htmlCost!.estimatedInputTokens + htmlCost!.estimatedOutputTokens).toLocaleString()}`,
+            html: `~${((htmlCost?.estimatedInputTokens ?? 0) + (htmlCost?.estimatedOutputTokens ?? 0)).toLocaleString()}`,
           }
         : {}),
       ...(isFourWay
         ? {
-            xdsTailwind: `~${(xdsTailwindCost!.estimatedInputTokens + xdsTailwindCost!.estimatedOutputTokens).toLocaleString()}`,
+            xdsTailwind: `~${((xdsTailwindCost?.estimatedInputTokens ?? 0) + (xdsTailwindCost?.estimatedOutputTokens ?? 0)).toLocaleString()}`,
           }
         : {}),
       winner: costWinner(
@@ -244,9 +244,9 @@ function CostComparisonSection({
       metric: 'Avg Output Lines',
       xds: String(xdsCost.avgOutputLines),
       baseline: String(baselineCost.avgOutputLines),
-      ...(isThreeWay ? {html: String(htmlCost!.avgOutputLines)} : {}),
+      ...(isThreeWay ? {html: String(htmlCost?.avgOutputLines)} : {}),
       ...(isFourWay
-        ? {xdsTailwind: String(xdsTailwindCost!.avgOutputLines)}
+        ? {xdsTailwind: String(xdsTailwindCost?.avgOutputLines)}
         : {}),
       winner: costWinner(
         xdsCost.avgOutputLines,
@@ -261,8 +261,8 @@ function CostComparisonSection({
       metric: 'Avg Docs Read',
       xds: String(xdsCost.avgDocsRead),
       baseline: String(baselineCost.avgDocsRead),
-      ...(isThreeWay ? {html: String(htmlCost!.avgDocsRead)} : {}),
-      ...(isFourWay ? {xdsTailwind: String(xdsTailwindCost!.avgDocsRead)} : {}),
+      ...(isThreeWay ? {html: String(htmlCost?.avgDocsRead)} : {}),
+      ...(isFourWay ? {xdsTailwind: String(xdsTailwindCost?.avgDocsRead)} : {}),
       winner: 'tie', // not inherently better or worse
     },
   ];
@@ -356,8 +356,8 @@ export function CompareView({comparison}: CompareViewProps) {
     dimension: DIMENSION_LABELS[dim],
     xdsScore: xds.averages[dim] ?? 0,
     baselineScore: baseline.averages[dim] ?? 0,
-    ...(isThreeWay ? {htmlScore: html!.averages[dim] ?? 0} : {}),
-    ...(isFourWay ? {xdsTailwindScore: xdsTailwind!.averages[dim] ?? 0} : {}),
+    ...(isThreeWay ? {htmlScore: html?.averages[dim] ?? 0} : {}),
+    ...(isFourWay ? {xdsTailwindScore: xdsTailwind?.averages[dim] ?? 0} : {}),
     delta: (xds.averages[dim] ?? 0) - (baseline.averages[dim] ?? 0),
     winner: winners[dim],
   }));

@@ -105,10 +105,13 @@ function getShowcaseComponent(
   dirName: string,
 ): React.LazyExoticComponent<React.ComponentType> {
   const key = `${category}/${dirName}`;
-  if (!componentCache.has(key)) {
-    componentCache.set(key, lazyShowcase(category, dirName));
+  const cached = componentCache.get(key);
+  if (cached != null) {
+    return cached;
   }
-  return componentCache.get(key)!;
+  const component = lazyShowcase(category, dirName);
+  componentCache.set(key, component);
+  return component;
 }
 
 export function ShowcaseThumbnail({

@@ -20,6 +20,7 @@ const Report = lazy(() =>
   import('./report/Report').then(m => ({default: m.Report})),
 );
 
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- root element must exist in index.html
 const root = createRoot(document.getElementById('root')!);
 root.render(
   <Suspense fallback={<div>Loading report...</div>}>
