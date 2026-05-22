@@ -16,12 +16,14 @@
 import {createContext, use} from 'react';
 
 export type XDSStepperOrientation = 'horizontal' | 'vertical';
+export type XDSStepperDensity = 'compact' | 'balanced' | 'spacious';
 
 export interface XDSStepperContextValue {
   activeStep: number;
   orientation: XDSStepperOrientation;
   isNonLinear: boolean;
   onStepClick: ((index: number) => void) | null;
+  density: XDSStepperDensity;
 }
 
 export const XDSStepperContext = createContext<XDSStepperContextValue | null>(

@@ -2,23 +2,15 @@
 
 'use client';
 
-/**
- * @file XDSStepper.tsx
- * @input Uses React, stylex, theme tokens, XDSStepperContext
- * @output Exports XDSStepper component and XDSStepperProps
- * @position Core container component; consumed by index.ts
- *
- * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Stepper/Stepper.doc.mjs (props table, features, implementation notes)
- * - /packages/core/src/Stepper/XDSStepper.test.tsx (tests for new/changed behavior)
- * - /packages/core/src/Stepper/index.ts (exports if types change)
- * - /apps/storybook/stories/Stepper.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Stepper/ (showcase blocks)
- */
-
-import {useMemo, type ReactNode} from 'react';
+import {useMemo, Children, type ReactNode, type ReactElement} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
+import {
+  colorVars,
+  radiusVars,
+  durationVars,
+  easeVars,
+} from '@xds/core/theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '@xds/core/utils';
 import type {XDSBaseProps} from '@xds/core';
 import {
@@ -26,75 +18,87 @@ import {
   type XDSStepperOrientation,
   type XDSStepperContextValue,
 } from './XDSStepperContext';
+import {XDSStepStatus} from './XDSStepStatus';
 
 export interface XDSStepperProps extends XDSBaseProps<HTMLDivElement> {
-  /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
-  /**
-   * Zero-based index of the active step.
-   */
   activeStep: number;
-  /**
-   * XDSStep elements to render.
-   */
   children: ReactNode;
-  /**
-   * Layout direction of the stepper.
-   * @default 'horizontal'
-   */
   orientation?: XDSStepperOrientation;
-  /**
-   * Called when a step indicator is clicked. Enables non-linear navigation.
-   * When provided, completed and current steps become clickable.
-   */
   onStepClick?: (index: number) => void;
-  /**
-   * Accessible label for the stepper navigation landmark.
-   * @default 'Progress'
-   */
   label?: string;
+  /**
+   * Controls density (padding) of all steps.
+   * @default 'balanced'
+   */
+  density?: 'compact' | 'balanced' | 'spacious';
 }
+
+const BAR_GAP = '2px';
+const BAR_HEIGHT = '4px';
+const STEP_GAP = '2px';
 
 const styles = stylex.create({
   root: {
     display: 'flex',
     width: '100%',
-    listStyleType: 'none',
     margin: 0,
     padding: 0,
   },
   horizontal: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: 'column',
   },
   vertical: {
     flexDirection: 'column',
   },
+  // Horizontal bar row
+  horizontalBarRow: {
+    display: 'flex',
+    flexDirection: 'row',
+    gap: BAR_GAP,
+    marginBlockEnd: '2px',
+  },
+  horizontalBarSegment: {
+    flex: 1,
+    height: BAR_HEIGHT,
+    borderRadius: radiusVars['--radius-full'],
+    transitionProperty: 'background-color',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  barCompleted: {
+    backgroundColor: colorVars['--color-icon-primary'],
+  },
+  barIncomplete: {
+    backgroundColor: colorVars['--color-border'],
+  },
+  // Horizontal steps row
+  horizontalStepsRow: {
+    display: 'flex',
+    flexDirection: 'row',
+    gap: STEP_GAP,
+    listStyleType: 'none',
+    margin: 0,
+    padding: 0,
+  },
+  // Vertical steps list — 8px gap between steps
+  verticalStepsList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: STEP_GAP,
+    listStyleType: 'none',
+    margin: 0,
+    padding: 0,
+  },
 });
 
-/**
- * A stepper component for multi-step workflows. Displays numbered steps
- * with visual indicators for completed, active, and upcoming states.
- *
- * Each XDSStep child must provide a `step` prop (zero-based index) so it
- * can derive its state from the parent's activeStep. CSS :last-child
- * handles connector hiding — no child introspection needed.
- *
- * @example
- * ```
- * <XDSStepper activeStep={1}>
- *   <XDSStep step={0} label="Account" />
- *   <XDSStep step={1} label="Profile" />
- *   <XDSStep step={2} label="Review" />
- * </XDSStepper>
- * ```
- */
 export function XDSStepper({
   activeStep,
   children,
   orientation = 'horizontal',
   onStepClick,
   label = 'Progress',
+  density = 'balanced',
   xstyle,
   className,
   style,
@@ -107,23 +111,69 @@ export function XDSStepper({
       orientation,
       isNonLinear: onStepClick != null,
       onStepClick: onStepClick ?? null,
+      density,
     }),
-    [activeStep, orientation, onStepClick],
+    [activeStep, orientation, onStepClick, density],
   );
 
+  // eslint-disable-next-line @xds/no-react-introspection
+  const childArray = Children.toArray(children) as ReactElement[];
+
+  if (orientation === 'horizontal') {
+    return (
+      <XDSStepperContext value={ctxValue}>
+        <nav ref={ref} aria-label={label} {...rest}>
+          <div
+            {...mergeProps(
+              xdsClassName('stepper', {orientation}),
+              stylex.props(styles.root, styles.horizontal, xstyle),
+              className,
+              style,
+            )}>
+            {/* Segmented progress bar */}
+            <div {...stylex.props(styles.horizontalBarRow)} aria-hidden="true">
+              {childArray.map((child, idx) => {
+                const stepProp =
+                  (
+                    child as React.ReactElement<{
+                      step?: number;
+                      status?: string;
+                    }>
+                  ).props?.step ?? idx;
+                const statusProp = (
+                  child as React.ReactElement<{step?: number; status?: string}>
+                ).props?.status;
+                const isFilled = statusProp
+                  ? statusProp === XDSStepStatus.Completed ||
+                    statusProp === XDSStepStatus.InProgress
+                  : stepProp <= activeStep;
+                return (
+                  <div
+                    key={idx}
+                    {...stylex.props(
+                      styles.horizontalBarSegment,
+                      isFilled ? styles.barCompleted : styles.barIncomplete,
+                    )}
+                  />
+                );
+              })}
+            </div>
+            {/* Steps row */}
+            <ol {...stylex.props(styles.horizontalStepsRow)}>{children}</ol>
+          </div>
+        </nav>
+      </XDSStepperContext>
+    );
+  }
+
+  // Vertical
   return (
     <XDSStepperContext value={ctxValue}>
       <nav ref={ref} aria-label={label} {...rest}>
         <ol
           {...mergeProps(
             xdsClassName('stepper', {orientation}),
-            stylex.props(
-              styles.root,
-              orientation === 'horizontal'
-                ? styles.horizontal
-                : styles.vertical,
-              xstyle,
-            ),
+            stylex.props(styles.verticalStepsList, xstyle),
             className,
             style,
           )}>
