@@ -320,6 +320,18 @@ export function PlaygroundClient() {
     return () => mq.removeEventListener('change', update);
   }, []);
 
+  // Re-read code from hash on hashchange (e.g. SPA navigation with new code)
+  useEffect(() => {
+    const onHashChange = () => {
+      const newCode = getInitialCode();
+      if (newCode !== DEFAULT_CODE) {
+        setCode(newCode);
+      }
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
   const send = useCallback((c: string) => {
     const win = iframeRef.current?.contentWindow;
     if (!win) {

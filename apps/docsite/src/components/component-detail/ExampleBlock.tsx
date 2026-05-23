@@ -89,7 +89,9 @@ export function ExampleBlock({entry}: ExampleBlockProps) {
               label="Open in Playground"
               variant="ghost"
               size="sm"
-              href={buildPlaygroundHref(entry.source)}
+              onClick={() => {
+                window.location.href = buildPlaygroundHref(entry.source);
+              }}
             />
           )}
         </XDSHStack>

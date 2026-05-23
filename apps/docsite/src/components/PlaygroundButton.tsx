@@ -14,12 +14,16 @@ export function PlaygroundButton({
   source,
   label = 'Open in Playground',
 }: PlaygroundButtonProps) {
+  const href = buildPlaygroundHref(source);
+
   return (
     <XDSButton
       label={label}
       variant="secondary"
       size="sm"
-      href={buildPlaygroundHref(source)}
+      onClick={() => {
+        window.location.href = href;
+      }}
     />
   );
 }

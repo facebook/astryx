@@ -109,7 +109,11 @@ export default function TemplatesPage() {
                             label="Open in Playground"
                             variant="secondary"
                             size="sm"
-                            href={buildPlaygroundHref(item.source)}
+                            onClick={() => {
+                              window.location.href = buildPlaygroundHref(
+                                item.source,
+                              );
+                            }}
                           />
                         )}
                       </XDSHStack>
