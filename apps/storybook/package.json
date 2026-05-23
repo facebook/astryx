@@ -16,7 +16,7 @@
     "@xds/vega": "*",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "unplugin": "^2.3.11",
+    "unplugin": "^3.0.0",
     "vega": "^6.2.0",
     "vega-datasets": "^3.2.1",
     "vega-lite": "^6.4.3"

@@ -351,12 +351,12 @@ importers:
         specifier: ^19.2.6
         version: 19.2.6(react@19.2.6)
       unplugin:
-        specifier: ^2.3.11
-        version: 2.3.11
+        specifier: ^3.0.0
+        version: 3.0.0
     devDependencies:
       '@stylexjs/unplugin':
         specifier: ^0.18.3
-        version: 0.18.3(unplugin@2.3.11)
+        version: 0.18.3(unplugin@3.0.0)
       '@types/react':
         specifier: ^19.2.14
         version: 19.2.14
@@ -531,8 +531,8 @@ importers:
         specifier: ^19.2.6
         version: 19.2.6(react@19.2.6)
       unplugin:
-        specifier: ^2.3.11
-        version: 2.3.11
+        specifier: ^3.0.0
+        version: 3.0.0
       vega:
         specifier: ^6.2.0
         version: 6.2.0
@@ -557,7 +557,7 @@ importers:
         version: 10.4.0(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(esbuild@0.28.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(rollup@4.60.4)(storybook@10.4.0(@emnapi/core@1.9.2)(@emnapi/runtime@1.10.0)(@testing-library/dom@10.4.1)(@types/react@19.2.15)(prettier@3.8.3)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(typescript@6.0.3)(vite@6.4.2(@types/node@25.9.0)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.3))
       '@stylexjs/unplugin':
         specifier: ^0.18.3
-        version: 0.18.3(unplugin@2.3.11)
+        version: 0.18.3(unplugin@3.0.0)
       '@xds/build':
         specifier: '*'
         version: link:../../packages/build
@@ -678,7 +678,7 @@ importers:
         version: 0.18.3
       '@stylexjs/unplugin':
         specifier: '>=0.18.0'
-        version: 0.18.3(unplugin@2.3.11)
+        version: 0.18.3(unplugin@3.0.0)
       fast-glob:
         specifier: ^3.3.0
         version: 3.3.3
@@ -5622,6 +5622,10 @@ packages:
     resolution: {integrity: sha512-5uKD0nqiYVzlmCRs01Fhs2BdkEgBS3SAVP6ndrBsuK42iC2+JHyxM05Rm9G8+5mkmRtzMZGY8Ct5+mliZxU/Ww==}
     engines: {node: '>=18.12.0'}
 
+  unplugin@3.0.0:
+    resolution: {integrity: sha512-0Mqk3AT2TZCXWKdcoaufeXNukv2mTrEZExeXlHIOZXdqYoHHr4n51pymnwV8x2BOVxwXbK2HLlI7usrqMpycdg==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+
   update-browserslist-db@1.2.3:
     resolution: {integrity: sha512-Js0m9cx+qOgDxo0eMiFGEueWztz+d4+M3rGlmKPT+T4IS/jP4ylw3Nwpu6cpTTP8R1MAC1kF4VbdLt3ARf209w==}
     hasBin: true
@@ -8132,7 +8136,7 @@ snapshots:
       invariant: 2.2.4
       styleq: 0.2.1
 
-  '@stylexjs/unplugin@0.18.3(unplugin@2.3.11)':
+  '@stylexjs/unplugin@0.18.3(unplugin@3.0.0)':
     dependencies:
       '@babel/core': 7.29.0
       '@babel/plugin-syntax-flow': 7.28.6(@babel/core@7.29.0)
@@ -8141,7 +8145,7 @@ snapshots:
       '@stylexjs/babel-plugin': 0.18.3
       browserslist: 4.28.2
       lightningcss: 1.32.0
-      unplugin: 2.3.11
+      unplugin: 3.0.0
     transitivePeerDependencies:
       - supports-color
 
@@ -10515,6 +10519,12 @@ snapshots:
     dependencies:
       '@jridgewell/remapping': 2.3.5
       acorn: 8.16.0
+      picomatch: 4.0.4
+      webpack-virtual-modules: 0.6.2
+
+  unplugin@3.0.0:
+    dependencies:
+      '@jridgewell/remapping': 2.3.5
       picomatch: 4.0.4
       webpack-virtual-modules: 0.6.2
 
