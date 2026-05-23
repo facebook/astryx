@@ -46,6 +46,7 @@ import {XDSSpinner} from '../Spinner';
 import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {useInputContainer} from '../hooks/useInputContainer';
+import {useXDSSize} from '../SizeContext/XDSSizeContext';
 
 const COUNTER_WARNING_THRESHOLD = 0.8;
 
@@ -115,7 +116,17 @@ const styles = stylex.create({
   },
 });
 
+const textareaSizeStyles = stylex.create({
+  sm: {},
+  md: {},
+  lg: {
+    paddingBlock: spacingVars['--spacing-2'],
+  },
+});
+
 export type XDSTextAreaStatusType = 'warning' | 'error' | 'success';
+
+export type XDSTextAreaSize = 'sm' | 'md' | 'lg';
 
 export interface XDSTextAreaStatus {
   /**
@@ -223,6 +234,12 @@ export interface XDSTextAreaProps extends Omit<
    */
   hasAutoFocus?: boolean;
   /**
+   * The size of the textarea, affecting internal padding.
+   * Height is controlled by `rows`, not size.
+   * @default 'md'
+   */
+  size?: XDSTextAreaSize;
+  /**
    * The HTML name attribute for the textarea.
    * Useful for form submissions.
    */
@@ -266,6 +283,7 @@ export function XDSTextArea({
   onPaste,
   maxLength,
   hasAutoFocus = false,
+  size: sizeProp,
   htmlName,
   onFocus,
   onBlur,
@@ -275,6 +293,7 @@ export function XDSTextArea({
   ref,
   ...rest
 }: XDSTextAreaProps) {
+  const size = useXDSSize(sizeProp, 'md') as XDSTextAreaSize;
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -356,10 +375,11 @@ export function XDSTextArea({
         onClick={handleWrapperClick}
         onMouseUp={handleWrapperMouseUp}
         {...mergeProps(
-          xdsClassName('textarea', {status: status?.type ?? null}),
+          xdsClassName('textarea', {size, status: status?.type ?? null}),
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,
+            textareaSizeStyles[size],
             effectivelyDisabled && inputWrapperStyles.disabled,
             status && inputStatusBorderStyles[status.type],
             status && inputStatusHoverShadowStyles[status.type],

@@ -343,6 +343,14 @@ describe('XDSToken text overflow', () => {
   });
 });
 
+describe('XDSToken size', () => {
+  it('renders with size="lg"', () => {
+    render(<XDSToken label="Tag" size="lg" data-testid="lg-token" />);
+    expect(screen.getByTestId('lg-token')).toBeInTheDocument();
+    expect(screen.getByText('Tag')).toBeInTheDocument();
+  });
+});
+
 describe('XDSToken focus outline', () => {
   it('invisible button does not show its own focus outline', async () => {
     const user = userEvent.setup();

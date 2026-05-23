@@ -43,8 +43,7 @@ const meta: Meta<typeof XDSDateTimeInput> = {
     },
     size: {
       control: 'radio',
-      options: ['sm', 'md'],
-      description: 'Size of the input',
+      options: ['sm', 'md', 'lg'],
     },
     hourFormat: {
       control: 'radio',
@@ -221,16 +220,42 @@ export const Disabled: Story = {
   },
 };
 
-export const SmallSize: Story = {
-  render: args => {
-    const [value, setValue] = useState<ISODateTimeString | undefined>(
-      undefined,
+export const SizeVariants: Story = {
+  render: () => {
+    const [sm, setSm] = useState<ISODateTimeString | undefined>(undefined);
+    const [md, setMd] = useState<ISODateTimeString | undefined>(undefined);
+    const [lg, setLg] = useState<ISODateTimeString | undefined>(undefined);
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+          maxWidth: '460px',
+        }}>
+        <XDSDateTimeInput
+          label="Small (28px)"
+          value={sm}
+          onChange={setSm}
+          placeholder="Small size"
+          size="sm"
+        />
+        <XDSDateTimeInput
+          label="Medium (32px)"
+          value={md}
+          onChange={setMd}
+          placeholder="Medium size (default)"
+          size="md"
+        />
+        <XDSDateTimeInput
+          label="Large (36px)"
+          value={lg}
+          onChange={setLg}
+          placeholder="Large size"
+          size="lg"
+        />
+      </div>
     );
-    return <XDSDateTimeInput {...args} value={value} onChange={setValue} />;
-  },
-  args: {
-    label: 'Time',
-    size: 'sm',
   },
 };
 

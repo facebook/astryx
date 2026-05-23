@@ -306,6 +306,13 @@ describe('XDSDateTimeInput', () => {
     expect(onChange).toHaveBeenCalledWith('2026-03-15T15:45');
   });
 
+  it('renders with size="lg"', () => {
+    render(
+      <XDSDateTimeInput label="Meeting time" onChange={() => {}} size="lg" />,
+    );
+    expect(screen.getByLabelText('Meeting time')).toBeInTheDocument();
+  });
+
   describe('hasClear', () => {
     it('shows clear button when hasClear is true and value exists', () => {
       render(

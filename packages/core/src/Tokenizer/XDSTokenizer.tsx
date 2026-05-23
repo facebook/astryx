@@ -68,7 +68,7 @@ export type XDSTokenizerChange<T extends XDSSearchableItem> =
   | {item: T; type: 'remove'}
   | {type: 'reorder'};
 
-export type XDSTokenizerSize = 'sm' | 'md';
+export type XDSTokenizerSize = 'sm' | 'md' | 'lg';
 
 /**
  * Controls overflow behavior when tokens exceed the available width.
@@ -211,26 +211,11 @@ const styles = stylex.create({
   },
   endSection: {
     position: 'absolute',
-    // -1px to account for the wrapper's 1px border
-    top: '-1px',
-    // Match the wrapperWithTokens inline padding for consistent inset
     insetInlineEnd: `calc(${spacingVars['--spacing-1']} - 1px)`,
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
     flexShrink: 0,
-  },
-  endSectionSm: {
-    height: sizeVars['--size-element-sm'],
-  },
-  endSectionMd: {
-    height: sizeVars['--size-element-md'],
-  },
-  sizeSm: {
-    minHeight: sizeVars['--size-element-sm'],
-  },
-  sizeMd: {
-    minHeight: sizeVars['--size-element-md'],
   },
   inputAtMax: {
     width: 0,
@@ -252,18 +237,6 @@ const styles = stylex.create({
     flexWrap: 'nowrap',
     overflow: 'hidden',
   },
-  truncatedSm: {
-    height: sizeVars['--size-element-sm'],
-  },
-  truncatedMd: {
-    height: sizeVars['--size-element-md'],
-  },
-  layerPlaceholderSm: {
-    height: sizeVars['--size-element-sm'],
-  },
-  layerPlaceholderMd: {
-    height: sizeVars['--size-element-md'],
-  },
   layerPopover: {
     // Top-layer popover: match the anchor width exactly so the expanded
     // tokenizer looks like an in-place expansion, overlapping the
@@ -277,6 +250,30 @@ const styles = stylex.create({
     color: colorVars['--color-text-secondary'],
     paddingInline: spacingVars['--spacing-1'],
   },
+});
+
+const sizeStyles = stylex.create({
+  sm: {minHeight: sizeVars['--size-element-sm']},
+  md: {minHeight: sizeVars['--size-element-md']},
+  lg: {minHeight: sizeVars['--size-element-lg']},
+});
+
+const endSectionSizeStyles = stylex.create({
+  sm: {top: `calc(${sizeVars['--size-element-sm']} / 2 - 1px)`, transform: 'translateY(-50%)'},
+  md: {top: `calc(${sizeVars['--size-element-md']} / 2 - 1px)`, transform: 'translateY(-50%)'},
+  lg: {top: `calc(${sizeVars['--size-element-lg']} / 2 - 1px)`, transform: 'translateY(-50%)'},
+});
+
+const truncatedSizeStyles = stylex.create({
+  sm: {height: sizeVars['--size-element-sm']},
+  md: {height: sizeVars['--size-element-md']},
+  lg: {height: sizeVars['--size-element-lg']},
+});
+
+const layerPlaceholderSizeStyles = stylex.create({
+  sm: {height: sizeVars['--size-element-sm']},
+  md: {height: sizeVars['--size-element-md']},
+  lg: {height: sizeVars['--size-element-lg']},
 });
 
 // =============================================================================
@@ -602,7 +599,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
       .filter(Boolean)
       .join(' ') || undefined;
 
-  const sizeStyle = size === 'sm' ? styles.sizeSm : styles.sizeMd;
+  const sizeStyle = sizeStyles[size];
 
   // Render tokens
   const tokens = value.map(item => {
@@ -651,9 +648,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
           styles.wrapper,
           value.length > 0 && styles.wrapperWithTokens,
           isTruncated
-            ? size === 'sm'
-              ? styles.truncatedSm
-              : styles.truncatedMd
+            ? truncatedSizeStyles[size]
             : sizeStyle,
           isTruncated && styles.truncatedWrapper,
           isDisabled && inputWrapperStyles.disabled,
@@ -712,7 +707,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
         <div
           {...stylex.props(
             styles.endSection,
-            size === 'sm' ? styles.endSectionSm : styles.endSectionMd,
+            endSectionSizeStyles[size],
           )}>
           {endContent}
           {hasClear && value.length > 0 && !isDisabled && (
@@ -731,8 +726,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
 
   let tokenizerContent: ReactNode;
   if (isLayerMode) {
-    const placeholderSizeStyle =
-      size === 'sm' ? styles.layerPlaceholderSm : styles.layerPlaceholderMd;
+    const placeholderSizeStyle = layerPlaceholderSizeStyles[size];
     tokenizerContent = (
       <>
         <div

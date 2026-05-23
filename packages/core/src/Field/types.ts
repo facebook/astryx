@@ -37,4 +37,4 @@ export interface XDSInputStatus {
 /**
  * Standard size options for input components.
  */
-export type XDSInputSize = 'sm' | 'md';
+export type XDSInputSize = 'sm' | 'md' | 'lg';

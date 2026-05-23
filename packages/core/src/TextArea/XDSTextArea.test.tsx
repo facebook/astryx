@@ -338,6 +338,18 @@ describe('XDSTextArea', () => {
     expect(document.querySelector('svg')).not.toBeInTheDocument();
   });
 
+  it('renders with size="lg"', () => {
+    render(
+      <XDSTextArea
+        label="Description"
+        value=""
+        onChange={() => {}}
+        size="lg"
+      />,
+    );
+    expect(screen.getByLabelText('Description')).toBeInTheDocument();
+  });
+
   describe('hasSpellCheck prop', () => {
     it('enables spellcheck by default', () => {
       render(<XDSTextArea label="Description" value="" onChange={() => {}} />);

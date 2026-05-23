@@ -12,7 +12,7 @@
  */
 
 export {XDSPowerSearch} from './XDSPowerSearch';
-export type {XDSPowerSearchProps} from './XDSPowerSearch';
+export type {XDSPowerSearchProps, XDSPowerSearchSize} from './XDSPowerSearch';
 
 export {XDSPowerSearchToken} from './XDSPowerSearchToken';
 export {XDSPowerSearchFilterEditor} from './XDSPowerSearchFilterEditor';

@@ -3,6 +3,7 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSTextArea} from '@xds/core/TextArea';
+import {XDSTextInput} from '@xds/core/TextInput';
 import {
   DocumentTextIcon,
   ChatBubbleLeftIcon,
@@ -71,6 +72,11 @@ const meta: Meta<typeof XDSTextArea> = {
       control: 'number',
       description:
         'Maximum number of characters allowed. Displays a counter when set.',
+    },
+    size: {
+      control: 'radio',
+      options: ['sm', 'md', 'lg'],
+      description: 'Textarea size (affects padding, not height)',
     },
   },
 };
@@ -474,6 +480,61 @@ export const CombinedFeatures: Story = {
                 : undefined
           }
         />
+      </div>
+    );
+  },
+};
+
+export const SizeVariants: Story = {
+  render: () => {
+    const [smArea, setSmArea] = useState('');
+    const [mdArea, setMdArea] = useState('');
+    const [lgArea, setLgArea] = useState('');
+    const [smInput, setSmInput] = useState('');
+    const [mdInput, setMdInput] = useState('');
+    const [lgInput, setLgInput] = useState('');
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+        }}>
+        {(['sm', 'md', 'lg'] as const).map((sz, i) => {
+          const label = {sm: 'Small (28px)', md: 'Medium (32px)', lg: 'Large (36px)'}[sz];
+          const [area, setArea] = [
+            [smArea, setSmArea],
+            [mdArea, setMdArea],
+            [lgArea, setLgArea],
+          ][i] as [string, (v: string) => void];
+          const [input, setInput] = [
+            [smInput, setSmInput],
+            [mdInput, setMdInput],
+            [lgInput, setLgInput],
+          ][i] as [string, (v: string) => void];
+          return (
+            <div key={sz} style={{display: 'flex', gap: '16px'}}>
+              <div style={{flex: 1}}>
+                <XDSTextArea
+                  label={label}
+                  value={area}
+                  onChange={setArea}
+                  placeholder="TextArea"
+                  size={sz}
+                />
+              </div>
+              <div style={{flex: 1}}>
+                <XDSTextInput
+                  label={label}
+                  value={input}
+                  onChange={setInput}
+                  placeholder="TextInput"
+                  size={sz}
+                />
+              </div>
+            </div>
+          );
+        })}
       </div>
     );
   },

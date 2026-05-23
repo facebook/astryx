@@ -312,6 +312,11 @@ const meta: Meta<typeof XDSPowerSearch> = {
     hasClear: {control: 'boolean'},
     maxTokenLength: {control: 'number'},
     popoverSaveButtonLabel: {control: 'text'},
+    size: {
+      control: 'radio',
+      options: ['sm', 'md', 'lg'],
+      description: 'Search input size',
+    },
   },
 };
 
@@ -1000,6 +1005,48 @@ export const WithContentSearchFieldKey: Story = {
   name: 'Content Search Field Key',
 };
 
+export const SizeVariants: Story = {
+  render: () => {
+    const [smFilters, setSmFilters] = useState<PowerSearchFilter[]>([
+      {field: 'status', operator: 'is', value: {type: 'enum', value: 'open'}},
+    ]);
+    const [mdFilters, setMdFilters] = useState<PowerSearchFilter[]>([
+      {field: 'status', operator: 'is', value: {type: 'enum', value: 'open'}},
+    ]);
+    const [lgFilters, setLgFilters] = useState<PowerSearchFilter[]>([
+      {field: 'status', operator: 'is', value: {type: 'enum', value: 'open'}},
+    ]);
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+        <XDSPowerSearch
+          label="Small (28px)"
+          config={basicConfig}
+          filters={smFilters}
+          onChange={newFilters => setSmFilters([...newFilters])}
+          placeholder="Small size"
+          size="sm"
+        />
+        <XDSPowerSearch
+          label="Medium (32px)"
+          config={basicConfig}
+          filters={mdFilters}
+          onChange={newFilters => setMdFilters([...newFilters])}
+          placeholder="Medium size (default)"
+          size="md"
+        />
+        <XDSPowerSearch
+          label="Large (36px)"
+          config={basicConfig}
+          filters={lgFilters}
+          onChange={newFilters => setLgFilters([...newFilters])}
+          placeholder="Large size"
+          size="lg"
+        />
+      </div>
+    );
+  },
+};
+
 export const WithStartIcon: Story = {
   render: args => {
     const [filters, setFilters] = useState<PowerSearchFilter[]>([]);
@@ -1070,6 +1117,7 @@ export const WithEndContentPowerSearch: Story = {
     label: 'Search',
     isLabelHidden: true,
     placeholder: 'Search...',
+    size: 'lg',
   },
   name: 'With End Content and Result Count',
 };

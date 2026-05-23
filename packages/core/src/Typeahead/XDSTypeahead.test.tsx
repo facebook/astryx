@@ -272,6 +272,21 @@ describe('XDSTypeahead', () => {
   });
 });
 
+describe('XDSTypeahead size', () => {
+  it('renders with size="lg"', () => {
+    render(
+      <XDSTypeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        size="lg"
+      />,
+    );
+    expect(screen.getByLabelText('Fruit')).toBeInTheDocument();
+  });
+});
+
 describe('XDSBaseTypeahead hasEntriesOnFocus', () => {
   it('shows bootstrap results on mouse click', async () => {
     render(

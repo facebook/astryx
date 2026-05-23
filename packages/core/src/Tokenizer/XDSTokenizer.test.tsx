@@ -329,6 +329,20 @@ describe('XDSTokenizer', () => {
     expect(tokenElements.length).toBeGreaterThanOrEqual(2);
   });
 
+  it('renders with size="lg"', () => {
+    render(
+      <XDSTokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        size="lg"
+      />,
+    );
+    expect(screen.getByText('Members')).toBeInTheDocument();
+    expect(screen.getByRole('combobox')).toBeInTheDocument();
+  });
+
   describe('tokenOverflowBehavior', () => {
     it('none: renders all tokens directly without XDSOverflowList', () => {
       const {container} = render(

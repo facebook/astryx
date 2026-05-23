@@ -14,7 +14,7 @@ export const docs = {
     },
     {
       name: 'size',
-      type: "'sm' | 'md'",
+      type: "'sm' | 'md' | 'lg'",
       description: 'The size of the token.',
       default: "'md'",
     },
@@ -122,7 +122,7 @@ export const docsZh = {
     },
     {
       name: 'size',
-      type: "'sm' | 'md'",
+      type: "'sm' | 'md' | 'lg'",
       description: '标记的大小。',
       default: "'md'",
     },
@@ -216,7 +216,7 @@ export const docsZh = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'compact chip/tag for inline metadata, filters, selections. 11 colors, 2 sizes, removable, clickable, linkable.',
+  description: 'compact chip/tag for inline metadata, filters, selections. 11 colors, 3 sizes, removable, clickable, linkable.',
   usage: {
     description:
       'Token is a small, inline element for representing discrete pieces of associated data — like tags, categories, or selections. Use for labeling content, showing active filters, or representing removable items.',
@@ -232,7 +232,7 @@ export const docsDense = {
   },
   propDescriptions: {
     label: 'Text label inside token.',
-    size: "Token size; 'sm' or 'md'.",
+    size: "Token size; 'sm', 'md', or 'lg'.",
     color: 'Color variant of token.',
     icon: 'Optional icon before label.',
     isDisabled: 'Reduces opacity, blocks interactions.',

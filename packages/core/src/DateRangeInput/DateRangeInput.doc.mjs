@@ -22,7 +22,7 @@ export const docs = {
     { name: 'presets', type: 'Array<XDSDateRangePreset>', description: 'Preset ranges shown as quick-select options beside the calendar.' },
     { name: 'hasClear', type: 'boolean', description: 'Shows a clear button when a range is selected.', default: 'true' },
     { name: 'placeholder', type: 'string', description: 'Placeholder text when no range is selected.', default: "'Select date range'" },
-    { name: 'size', type: "'sm' | 'md'", description: 'Size of the trigger.', default: "'md'" },
+    { name: 'size', type: "'sm' | 'md' | 'lg'", description: 'Size of the trigger.', default: "'md'" },
     { name: 'status', type: 'XDSInputStatus', description: 'Status indicator for error, warning, or success states.' },
     { name: 'labelTooltip', type: 'string', description: 'Tooltip text via info icon at label end.' },
     { name: 'numberOfMonths', type: '1 | 2', description: 'Number of months in the calendar.', default: '2' },

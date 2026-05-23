@@ -16,4 +16,5 @@ export type {
   XDSTextAreaProps,
   XDSTextAreaStatus,
   XDSTextAreaStatusType,
+  XDSTextAreaSize,
 } from './XDSTextArea';
