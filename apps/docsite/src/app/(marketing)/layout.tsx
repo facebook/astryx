@@ -3,8 +3,9 @@
 import {headers} from 'next/headers';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {SharedTopNav} from '../../components/SharedTopNav';
+import {SiteFooter} from '../../components/SiteFooter';
 
-export default async function CraftLayout({
+export default async function MarketingLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -20,6 +21,7 @@ export default async function CraftLayout({
       mobileNav={{defaultIsMobile}}
       topNav={<SharedTopNav />}>
       {children}
+      <SiteFooter />
     </XDSAppShell>
   );
 }
