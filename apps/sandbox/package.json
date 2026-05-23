@@ -27,7 +27,7 @@
     "next": "^15.5.16",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "recharts": "^2.15.3",
+    "recharts": "^3.8.1",
     "@xds/theme-stone": "*",
     "@xds/theme-gothic": "*",
     "@xds/theme-chocolate": "*",
