@@ -8,7 +8,7 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
 
 const meta: Meta<typeof XDSStepper> = {
-  title: 'Core/Navigation/Stepper',
+  title: 'Lab/Stepper',
   component: XDSStepper,
   tags: ['autodocs'],
   argTypes: {

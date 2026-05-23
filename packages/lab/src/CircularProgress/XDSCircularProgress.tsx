@@ -26,9 +26,9 @@ import {
   fontWeightVars,
   spacingVars,
   typeScaleVars,
-} from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
-import type {XDSBaseProps} from '../XDSBaseProps';
+} from '@xds/core/theme/tokens.stylex';
+import {xdsClassName, mergeProps} from '@xds/core/utils';
+import type {XDSBaseProps} from '@xds/core';
 
 /**
  * Extensible variant map for XDSCircularProgress.

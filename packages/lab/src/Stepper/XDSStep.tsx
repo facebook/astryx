@@ -30,7 +30,7 @@ import {
 } from '@xds/core/theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '@xds/core/utils';
 import {XDSIcon} from '@xds/core/Icon';
-import type {XDSBaseProps} from '@xds/core/XDSBaseProps';
+import type {XDSBaseProps} from '@xds/core';
 import {useXDSStepperContext} from './XDSStepperContext';
 
 export interface XDSStepProps extends XDSBaseProps<HTMLDivElement> {

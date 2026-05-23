@@ -20,7 +20,7 @@ import {useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 import {xdsClassName, mergeProps} from '@xds/core/utils';
-import type {XDSBaseProps} from '@xds/core/XDSBaseProps';
+import type {XDSBaseProps} from '@xds/core';
 import {
   XDSStepperContext,
   type XDSStepperOrientation,
