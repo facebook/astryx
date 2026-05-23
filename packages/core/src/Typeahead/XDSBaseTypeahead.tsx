@@ -708,7 +708,7 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
                   )}
                 </span>
                 {value?.id === item.id && (
-                  <XDSIcon icon="check" size="sm" color="accent" />
+                  <XDSIcon icon="check" size="sm" color="primary" />
                 )}
               </div>
             ))

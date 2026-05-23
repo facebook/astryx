@@ -1055,7 +1055,14 @@ export const WithEndContentPowerSearch: Story = {
         filters={filters}
         onChange={newFilters => setFilters([...newFilters])}
         resultCount={42}
-        endContent={<XDSButton label="Save" variant="primary" size="sm" />}
+        endContent={
+          <XDSButton
+            label="Save"
+            variant="primary"
+            size="sm"
+            style={{height: '20px'}}
+          />
+        }
       />
     );
   },

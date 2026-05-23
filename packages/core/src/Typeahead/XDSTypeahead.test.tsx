@@ -201,7 +201,7 @@ describe('XDSTypeahead', () => {
     expect(screen.getByText('Selection required')).toBeInTheDocument();
   });
 
-  it('shows selected value as a token with remove button', () => {
+  it('shows selected value as a token', () => {
     render(
       <XDSTypeahead
         label="Fruit"
@@ -210,12 +210,40 @@ describe('XDSTypeahead', () => {
         onChange={() => {}}
       />,
     );
+    expect(screen.getByText(fruits[0].label)).toBeInTheDocument();
+  });
+
+  it('shows clear button when hasClear and value is selected', () => {
+    render(
+      <XDSTypeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+        hasClear
+      />,
+    );
     expect(
-      screen.getByRole('button', {name: `Remove ${fruits[0].label}`}),
+      screen.getByRole('button', {name: 'Clear selection'}),
     ).toBeInTheDocument();
   });
 
-  it('calls onChange with null when token remove is clicked', () => {
+  it('does not show clear button when hasClear is false', () => {
+    render(
+      <XDSTypeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+        hasClear={false}
+      />,
+    );
+    expect(
+      screen.queryByRole('button', {name: 'Clear selection'}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('calls onChange with null when clear button is clicked', () => {
     const onChange = vi.fn();
     render(
       <XDSTypeahead
@@ -223,11 +251,10 @@ describe('XDSTypeahead', () => {
         searchSource={fruitSource}
         value={fruits[0]}
         onChange={onChange}
+        hasClear
       />,
     );
-    fireEvent.click(
-      screen.getByRole('button', {name: `Remove ${fruits[0].label}`}),
-    );
+    fireEvent.click(screen.getByRole('button', {name: 'Clear selection'}));
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
@@ -427,11 +454,9 @@ describe('XDSTypeahead edit mode', () => {
     );
     screen.getByRole('combobox');
 
-    // Click the token area to enter edit mode
-    const removeButton = screen.getByRole('button', {
-      name: `Remove ${fruits[0].label}`,
-    });
-    const tokenContainer = removeButton.closest('div')!;
+    // Click the token text to enter edit mode
+    const tokenText = screen.getByText(fruits[0].label);
+    const tokenContainer = tokenText.closest('div')!;
     fireEvent.click(tokenContainer);
 
     // onChange should NOT have been called (value is preserved for restore)
@@ -451,10 +476,8 @@ describe('XDSTypeahead edit mode', () => {
     const input = screen.getByRole('combobox');
 
     // Enter edit mode
-    const removeButton = screen.getByRole('button', {
-      name: `Remove ${fruits[0].label}`,
-    });
-    fireEvent.click(removeButton.closest('div')!);
+    const tokenText = screen.getByText(fruits[0].label);
+    fireEvent.click(tokenText.closest('div')!);
 
     // Blur without selecting anything
     fireEvent.blur(input);

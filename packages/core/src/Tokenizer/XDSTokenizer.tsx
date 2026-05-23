@@ -29,6 +29,7 @@ import {XDSBaseTypeahead} from '../Typeahead/XDSBaseTypeahead';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {
   XDSField,
+  XDSInputClearButton,
   type XDSInputStatus,
   inputWrapperStyles,
   inputStatusBorderStyles,
@@ -36,14 +37,12 @@ import {
   inputStatusFocusWithinStyles,
 } from '../Field';
 import {XDSToken} from '../Token';
-import {XDSIcon} from '../Icon';
 import {renderIconSlot, type XDSIconType} from '../Icon';
 import {XDSOverflowList} from '../OverflowList';
 import {useXDSLayer} from '../Layer/useXDSLayer';
 import {
   colorVars,
   spacingVars,
-  radiusVars,
   sizeVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
@@ -210,32 +209,16 @@ const styles = stylex.create({
     display: 'flex',
     flexShrink: 0,
   },
-  clearAllButton: {
-    all: 'unset',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    padding: spacingVars['--spacing-1'],
-    borderRadius: radiusVars['--radius-full'],
-    color: colorVars['--color-text-secondary'],
-    opacity: {
-      default: 0.7,
-      ':hover': {
-        '@media (hover: hover)': 1,
-      },
-    },
-    flexShrink: 0,
-  },
   endSection: {
     position: 'absolute',
-    top: 0,
-    insetInlineEnd: 0,
+    // -1px to account for the wrapper's 1px border
+    top: '-1px',
+    // Match the wrapperWithTokens inline padding for consistent inset
+    insetInlineEnd: `calc(${spacingVars['--spacing-1']} - 1px)`,
     display: 'flex',
     alignItems: 'center',
-    gap: spacingVars['--spacing-1'],
+    gap: spacingVars['--spacing-2'],
     flexShrink: 0,
-    paddingInlineEnd: spacingVars['--spacing-2'],
   },
   endSectionSm: {
     height: sizeVars['--size-element-sm'],
@@ -733,16 +716,13 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
           )}>
           {endContent}
           {hasClear && value.length > 0 && !isDisabled && (
-            <button
-              type="button"
-              aria-label="Clear all"
+            <XDSInputClearButton
+              label="Clear all"
               onClick={e => {
                 e.stopPropagation();
                 handleClearAll();
               }}
-              {...stylex.props(styles.clearAllButton)}>
-              <XDSIcon icon="close" size="sm" />
-            </button>
+            />
           )}
         </div>
       )}
