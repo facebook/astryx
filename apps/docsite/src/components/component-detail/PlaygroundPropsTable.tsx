@@ -162,10 +162,12 @@ function SlotListControl({
       typeof tweaked.children === 'string'
         ? `${tweaked.children} ${n}`
         : tweaked.children;
-    const newEl = resolveElementDescriptor({
-      ...tweaked,
-      children,
-    } as import('../../generated/componentRegistry').ElementDescriptor);
+    const descriptor: import('../../generated/componentRegistry').ElementDescriptor =
+      {
+        ...tweaked,
+        children,
+      };
+    const newEl = resolveElementDescriptor(descriptor);
     onChange([...items, newEl]);
   };
 

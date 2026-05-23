@@ -1217,7 +1217,7 @@ function DocsiteLandingTemplate() {
     <XDSAppShell
       variant="surface"
       height="fill"
-      style={{} as React.CSSProperties}
+      style={{} satisfies React.CSSProperties}
       topNav={
         <AppTopNav
           activeView={activeView}
@@ -2347,7 +2347,7 @@ function DocsiteLandingTemplate() {
                   overflow: 'visible',
                   maxWidth: 900,
                   '--xds-dialog-padding': '0px',
-                } as React.CSSProperties
+                } satisfies React.CSSProperties
               }>
               <div
                 style={{position: 'absolute', top: 0, right: -40, zIndex: 1}}>

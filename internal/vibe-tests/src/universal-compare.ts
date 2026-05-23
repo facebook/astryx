@@ -288,7 +288,8 @@ async function main() {
   const isFourWay = !!twData;
 
   // Build comparison
-  const winners = {} as Record<UniversalDimension, WinnerType>;
+  const winnersInit = {};
+  const winners = winnersInit as Record<UniversalDimension, WinnerType>;
   for (const d of dimensions) {
     winners[d] = winner(
       xds.averages[d],

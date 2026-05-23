@@ -172,7 +172,11 @@ export function diffThemeTokens(theme: XDSDefinedTheme): TokenDiff {
     new: 0,
     removed: 0,
   };
-  const changedByCategory = {} as Record<TokenCategory, number>;
+  const changedByCategoryInit = {};
+  const changedByCategory = changedByCategoryInit as Record<
+    TokenCategory,
+    number
+  >;
   for (const c of CATEGORY_ORDER) {
     changedByCategory[c] = 0;
   }

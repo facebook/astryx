@@ -477,7 +477,7 @@ function PreviewDialogShell({
           overflow: 'visible',
           maxWidth: 1600,
           '--xds-dialog-padding': '0px',
-        } as React.CSSProperties
+        } satisfies React.CSSProperties
       }>
       {isOpen && (
         <>
@@ -1735,7 +1735,7 @@ export function ProfileView({
             overflow: 'visible',
             maxWidth: 1200,
             '--xds-dialog-padding': '0px',
-          } as React.CSSProperties
+          } satisfies React.CSSProperties
         }>
         {componentDrawerKey &&
           (() => {

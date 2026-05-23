@@ -180,7 +180,7 @@ export function TemplatePreviewModal({
           overflow: 'visible',
           maxWidth: 1600,
           '--xds-dialog-padding': '0px',
-        } as React.CSSProperties
+        } satisfies React.CSSProperties
       }>
       <div style={{position: 'absolute', top: 0, right: -40, zIndex: 1}}>
         <XDSCard padding={0} style={{borderRadius: '50%'}}>

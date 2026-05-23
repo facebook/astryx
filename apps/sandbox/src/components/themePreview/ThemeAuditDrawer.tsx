@@ -175,25 +175,25 @@ const S = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: 6,
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   headerTopRow: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   title: {
     margin: 0,
     fontSize: 14,
     fontWeight: 700,
     fontFamily: 'var(--font-family-heading)',
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   subtitle: {
     margin: 0,
     fontSize: 11,
     color: 'var(--color-text-secondary)',
     lineHeight: 1.5,
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   modeRow: {
     display: 'flex',
     gap: 4,
@@ -201,7 +201,7 @@ const S = {
     borderBottom: '1px solid var(--color-border)',
     background: 'var(--color-background-surface)',
     alignItems: 'center',
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   modeButton: (active: boolean): React.CSSProperties => ({
     appearance: 'none',
     border: '1px solid transparent',
@@ -218,7 +218,7 @@ const S = {
     flex: 1,
     overflowY: 'auto' as const,
     padding: '4px 20px 24px',
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   // Category header — small uppercase secondary text, intentionally
   // restrained so the rows beneath read as the primary content (matches
   // the docsite editor exactly).
@@ -230,7 +230,7 @@ const S = {
     color: 'var(--color-text-secondary)',
     margin: 0,
     padding: '14px 0 4px',
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   // Each row is a 3-column grid: label · status · editor cluster. We use
   // a CSS grid (not flex) with `minmax(0, 1fr)` on the label column so
   // long token labels truncate cleanly when the drawer is narrow.
@@ -241,13 +241,13 @@ const S = {
     alignItems: 'center',
     padding: '8px 0',
     borderBottom: '1px solid var(--color-border)',
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   labelCell: {
     minWidth: 0,
     display: 'flex',
     flexDirection: 'column' as const,
     gap: 2,
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   labelText: {
     fontSize: 12,
     fontWeight: 500,
@@ -255,7 +255,7 @@ const S = {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap' as const,
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   tokenName: {
     fontSize: 10,
     fontFamily: MONO,
@@ -263,7 +263,7 @@ const S = {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap' as const,
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   // Right-side editor cluster — fixed grid so the original swatch
   // column, trigger button, and reset link always land in the same
   // horizontal positions across every row regardless of label length
@@ -276,7 +276,7 @@ const S = {
     alignItems: 'center',
     width: 240,
     flexShrink: 0,
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   // Combined swatch + value-label button. The swatch sits flush with
   // the button's left edge (no inset padding) so it visually aligns
   // with the standalone original swatch on its left. Vertical padding
@@ -299,7 +299,7 @@ const S = {
     minWidth: 0,
     width: '100%',
     height: 30,
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   triggerButtonEdited: {
     appearance: 'none' as const,
     display: 'flex',
@@ -317,7 +317,7 @@ const S = {
     minWidth: 0,
     width: '100%',
     height: 30,
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   // Inline swatch sits flush against the trigger button's left edge.
   // Same 28×28 footprint as the standalone original swatch on the
   // outside, with the same radius matched to the button's inner radius
@@ -329,7 +329,7 @@ const S = {
     borderBottomLeftRadius: 5,
     borderRight: '1px solid var(--color-border)',
     flexShrink: 0,
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   triggerLabel: {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
@@ -338,7 +338,7 @@ const S = {
     flex: 1,
     textAlign: 'left' as const,
     paddingLeft: 8,
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   // "Original" swatch rendered to the left of the active swatch. Always
   // present (even when default === current) so the row geometry is
   // consistent and you can sanity-check the original value at a glance.
@@ -373,12 +373,12 @@ const S = {
     borderRadius: 4,
     cursor: 'pointer',
     maxWidth: 90,
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   indirectNote: {
     fontSize: 9.5,
     color: 'var(--color-text-secondary)',
     fontStyle: 'italic' as const,
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
   applyFooter: {
     borderTop: '1px solid var(--color-border)',
     padding: '12px 20px',
@@ -387,7 +387,7 @@ const S = {
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
-  } as React.CSSProperties,
+  } satisfies React.CSSProperties,
 };
 
 // =============================================================================
@@ -426,9 +426,10 @@ export function ThemeAuditDrawer({
   const [mode, setMode] = useState<Mode>('light');
   // Controlled or uncontrolled: if the parent passed both `overrides` and
   // `dispatchOverrides`, use them; otherwise keep our own reducer.
+  const emptyOverrides = {};
   const [internalOverrides, dispatchInternal] = useReducer(
     overridesReducer,
-    {} as OverridesMap,
+    emptyOverrides as OverridesMap,
   );
   const overrides = overridesProp ?? internalOverrides;
   const dispatchOverrides = dispatchProp ?? dispatchInternal;

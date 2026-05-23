@@ -6,10 +6,27 @@ import React, {useState, useCallback, useMemo, useEffect, useRef} from 'react';
 
 const stylexMock = {
   create: <T extends Record<string, unknown>>(styles: T): T => styles,
-  props: (..._styles: unknown[]) => ({className: '', style: {} as Record<string, string>}),
+  props: (..._styles: unknown[]) => {
+    const style: Record<string, string> = {};
+    return {className: '', style};
+  },
   defineVars: <T extends Record<string, unknown>>(tokens: T): T => tokens,
   keyframes: (kf: Record<string, Record<string, string>>) => kf,
-  types: {angle: (v: string) => v, color: (v: string) => v, image: (v: string) => v, integer: (v: string) => v, length: (v: string) => v, lengthPercentage: (v: string) => v, number: (v: string) => v, percentage: (v: string) => v, resolution: (v: string) => v, time: (v: string) => v, transformFunction: (v: string) => v, transformList: (v: string) => v, url: (v: string) => v},
+  types: {
+    angle: (v: string) => v,
+    color: (v: string) => v,
+    image: (v: string) => v,
+    integer: (v: string) => v,
+    length: (v: string) => v,
+    lengthPercentage: (v: string) => v,
+    number: (v: string) => v,
+    percentage: (v: string) => v,
+    resolution: (v: string) => v,
+    time: (v: string) => v,
+    transformFunction: (v: string) => v,
+    transformList: (v: string) => v,
+    url: (v: string) => v,
+  },
 };
 
 import * as AlertDialog from '@xds/core/AlertDialog';
@@ -116,19 +133,29 @@ const SCOPE_THEMES: Record<string, XDSDefinedTheme> = {
 };
 
 const ControlledXDSTheme = (props: ComponentProps<typeof XDSTheme>) => {
-  const win = typeof window !== 'undefined'
-    ? (window as unknown as Record<string, unknown>)
-    : null;
-  const mode = (win?.__xds_preview_mode__ as 'light' | 'dark' | 'system') || 'system';
+  const win =
+    typeof window !== 'undefined'
+      ? (window as unknown as Record<string, unknown>)
+      : null;
+  const mode =
+    (win?.__xds_preview_mode__ as 'light' | 'dark' | 'system') || 'system';
   const themeName = (win?.__xds_preview_theme__ as string) || 'default';
   const theme = SCOPE_THEMES[themeName] ?? defaultTheme;
   return createElement(XDSTheme, {...props, theme, mode});
 };
 
 export const scope: Record<string, Record<string, unknown>> = {
-  'react': {default: React, ...React, useState, useCallback, useMemo, useEffect, useRef},
+  react: {
+    default: React,
+    ...React,
+    useState,
+    useCallback,
+    useMemo,
+    useEffect,
+    useRef,
+  },
   '@stylexjs/stylex': {default: stylexMock, ...stylexMock},
-  'stylex': {default: stylexMock, ...stylexMock},
+  stylex: {default: stylexMock, ...stylexMock},
   '@xds/theme-default': {default: defaultTheme, defaultTheme},
   '@xds/theme-default/built': {default: defaultTheme, defaultTheme},
   '@xds/theme-neutral': {default: neutralTheme, neutralTheme},
@@ -219,10 +246,94 @@ export const scope: Record<string, Record<string, unknown>> = {
   '@xds/core/TopNav': TopNav,
   '@xds/core/TreeList': TreeList,
   '@xds/core/Typeahead': Typeahead,
-  '@xds/core': {...AlertDialog, ...AppShell, ...AspectRatio, ...Avatar, ...Badge, ...Banner, ...Breadcrumbs, ...Button, ...Calendar, ...Card, ...Carousel, ...Center, ...Chat, ...CheckboxInput, ...CheckboxList, ...ClickableCard, ...CodeBlock, ...Collapsible, ...CommandPalette, ...DateInput, ...Dialog, ...Divider, ...DropdownMenu, ...EmptyState, ...Field, ...FormLayout, ...Grid, ...HoverCard, ...Icon, ...IconButton, ...Kbd, ...Layer, ...Layout, ...Link, ...List, ...Markdown, ...MetadataList, ...MobileNav, ...MoreMenu, ...MultiSelector, ...NavIcon, ...NavMenu, ...NumberInput, ...OverflowList, ...Overlay, ...Pagination, ...Popover, ...PowerSearch, ...ProgressBar, ...RadioList, ...Resizable, ...Section, ...SegmentedControl, ...SelectableCard, ...Selector, ...SideNav, ...SizeContext, ...Skeleton, ...Slider, ...Spinner, ...Stack, ...StatusDot, ...Switch, ...TabList, ...Table, ...Text, ...TextArea, ...TextInput, ...Thumbnail, ...TimeInput, ...Timestamp, ...Toast, ...ToggleButton, ...Token, ...Tokenizer, ...Toolbar, ...Tooltip, ...TopNav, ...TreeList, ...Typeahead},
+  '@xds/core': {
+    ...AlertDialog,
+    ...AppShell,
+    ...AspectRatio,
+    ...Avatar,
+    ...Badge,
+    ...Banner,
+    ...Breadcrumbs,
+    ...Button,
+    ...Calendar,
+    ...Card,
+    ...Carousel,
+    ...Center,
+    ...Chat,
+    ...CheckboxInput,
+    ...CheckboxList,
+    ...ClickableCard,
+    ...CodeBlock,
+    ...Collapsible,
+    ...CommandPalette,
+    ...DateInput,
+    ...Dialog,
+    ...Divider,
+    ...DropdownMenu,
+    ...EmptyState,
+    ...Field,
+    ...FormLayout,
+    ...Grid,
+    ...HoverCard,
+    ...Icon,
+    ...IconButton,
+    ...Kbd,
+    ...Layer,
+    ...Layout,
+    ...Link,
+    ...List,
+    ...Markdown,
+    ...MetadataList,
+    ...MobileNav,
+    ...MoreMenu,
+    ...MultiSelector,
+    ...NavIcon,
+    ...NavMenu,
+    ...NumberInput,
+    ...OverflowList,
+    ...Overlay,
+    ...Pagination,
+    ...Popover,
+    ...PowerSearch,
+    ...ProgressBar,
+    ...RadioList,
+    ...Resizable,
+    ...Section,
+    ...SegmentedControl,
+    ...SelectableCard,
+    ...Selector,
+    ...SideNav,
+    ...SizeContext,
+    ...Skeleton,
+    ...Slider,
+    ...Spinner,
+    ...Stack,
+    ...StatusDot,
+    ...Switch,
+    ...TabList,
+    ...Table,
+    ...Text,
+    ...TextArea,
+    ...TextInput,
+    ...Thumbnail,
+    ...TimeInput,
+    ...Timestamp,
+    ...Toast,
+    ...ToggleButton,
+    ...Token,
+    ...Tokenizer,
+    ...Toolbar,
+    ...Tooltip,
+    ...TopNav,
+    ...TreeList,
+    ...Typeahead,
+  },
   '@heroicons/react/16/solid': Heroicons16Solid,
   '@heroicons/react/20/solid': Heroicons20Solid,
   '@heroicons/react/24/outline': Heroicons24Outline,
   '@heroicons/react/24/solid': Heroicons24Solid,
-  'next/image': {default: (props: Record<string, unknown>) => React.createElement('img', props)},
+  'next/image': {
+    default: (props: Record<string, unknown>) =>
+      React.createElement('img', props),
+  },
 };

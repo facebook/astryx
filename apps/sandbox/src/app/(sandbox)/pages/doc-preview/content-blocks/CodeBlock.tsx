@@ -35,10 +35,12 @@ export function CodeBlock({
           code={code}
           language={lang}
           hasCopyButton
-          style={{
-            '--color-syntax-background': 'transparent',
-            width: '100%',
-          } as React.CSSProperties}
+          style={
+            {
+              '--color-syntax-background': 'transparent',
+              width: '100%',
+            } satisfies React.CSSProperties
+          }
         />
       </XDSCard>
     </XDSVStack>

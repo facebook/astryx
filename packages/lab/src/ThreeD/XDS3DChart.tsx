@@ -7,6 +7,7 @@
  */
 
 import {
+  type CSSProperties,
   type ReactNode,
   useMemo,
   useRef,
@@ -219,16 +220,14 @@ export function XDS3DChart({
     ],
   );
 
+  const containerStyle: CSSProperties = {
+    width: '100%',
+    touchAction: interactive ? 'none' : undefined,
+    userSelect: interactive ? 'none' : undefined,
+  };
+
   return (
-    <div
-      ref={containerRef}
-      style={
-        {
-          width: '100%',
-          touchAction: interactive ? 'none' : undefined,
-          userSelect: interactive ? 'none' : undefined,
-        } as React.CSSProperties
-      }>
+    <div ref={containerRef} style={containerStyle}>
       {containerWidth > 0 && (
         <svg
           width={containerWidth}

@@ -27,22 +27,25 @@
  * )} />
  * ```
  */
+
+type StyleObject = React.CSSProperties;
+
 export function mergeProps(
-  xdsClassOrStylexResult: string | {className?: string; style?: object},
+  xdsClassOrStylexResult: string | {className?: string; style?: StyleObject},
   stylexResultOrClassName?:
-    | {className?: string; style?: object}
+    | {className?: string; style?: StyleObject}
     | string
     | undefined,
   classNameOrStyle?: string | React.CSSProperties,
   style?: React.CSSProperties,
-): {className: string; style?: object} {
+): {className: string; style?: StyleObject} {
   // Disambiguate: first arg is string → (xdsClass, stylexResult, className?, style?)
   // first arg is object → (stylexResult, overrides?, ...)
   if (typeof xdsClassOrStylexResult === 'string') {
     const xdsClass = xdsClassOrStylexResult;
     const stylexResult = (stylexResultOrClassName as {
       className?: string;
-      style?: object;
+      style?: StyleObject;
     }) ?? {className: ''};
     const className = classNameOrStyle as string | undefined;
 
@@ -63,10 +66,11 @@ export function mergeProps(
 
   // Object form: mergeProps(stylex.props(...), { style, className })
   const base = xdsClassOrStylexResult;
-  const overrides = (stylexResultOrClassName as {
-    className?: string;
-    style?: object;
-  }) ?? {};
+  const overrides =
+    (stylexResultOrClassName as {
+      className?: string;
+      style?: StyleObject;
+    }) ?? {};
 
   let cls = base.className ?? '';
   if (overrides.className) {

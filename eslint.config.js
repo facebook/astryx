@@ -44,6 +44,7 @@ export default tseslint.config(
       "apps/docsite/*.js",
       "apps/docsite/scripts/**",
       "apps/sandbox/*.js",
+      "apps/sandbox/out/**",
       "packages/build/**",
     ],
   },
@@ -180,6 +181,19 @@ export default tseslint.config(
       "@typescript-eslint/no-non-null-assertion": "off",
       "@typescript-eslint/consistent-type-assertions": "off",
       "react-compiler/react-compiler": "off",
+    },
+  },
+  // Non-production code — allow console.log for demos, tools, and examples
+  {
+    files: [
+      "apps/storybook/stories/**/*.{ts,tsx}",
+      "apps/sandbox/**/*.{ts,tsx}",
+      "apps/example-*/**/*.{ts,tsx}",
+      "internal/**/*.{ts,tsx}",
+      "packages/cli/templates/**/*.{ts,tsx}",
+    ],
+    rules: {
+      "no-console": "off",
     },
   },
 );

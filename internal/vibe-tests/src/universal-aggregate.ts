@@ -132,7 +132,11 @@ async function main() {
 
     const category = promptMap.get(promptId) ?? 'unknown';
     if (!categoryScores[category]) {
-      categoryScores[category] = {} as Record<UniversalDimension, number[]>;
+      const catInit = {};
+      categoryScores[category] = catInit as Record<
+        UniversalDimension,
+        number[]
+      >;
       for (const dim of dimensions) {
         categoryScores[category][dim] = [];
       }
@@ -254,7 +258,8 @@ async function main() {
 
   // Compute averages
   const promptCount = Object.keys(byPrompt).length;
-  const averages = {} as Record<UniversalDimension, number>;
+  const averagesInit = {};
+  const averages = averagesInit as Record<UniversalDimension, number>;
   for (const dim of dimensions) {
     const scores = Object.values(byPrompt)
       .map(s => s[dim]?.score)
@@ -288,7 +293,8 @@ async function main() {
   // Category averages
   const byCategory: Record<string, Record<UniversalDimension, number>> = {};
   for (const [cat, dimScores] of Object.entries(categoryScores)) {
-    byCategory[cat] = {} as Record<UniversalDimension, number>;
+    const byCatInit = {};
+    byCategory[cat] = byCatInit as Record<UniversalDimension, number>;
     for (const dim of dimensions) {
       const scores = dimScores[dim];
       byCategory[cat][dim] = Math.round(

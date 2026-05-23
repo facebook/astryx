@@ -197,6 +197,12 @@ export function XDSChartBrush({
   const rectW = brush ? brush.x1 - brush.x0 : 0;
   const rectH = brush ? brush.y1 - brush.y0 : 0;
 
+  const brushRectStyle: React.CSSProperties = {
+    cursor: 'crosshair',
+    touchAction: 'none',
+    userSelect: 'none',
+  };
+
   return (
     <g>
       <rect
@@ -205,13 +211,7 @@ export function XDSChartBrush({
         width={width}
         height={height}
         fill="transparent"
-        style={
-          {
-            cursor: 'crosshair',
-            touchAction: 'none',
-            userSelect: 'none',
-          } as React.CSSProperties
-        }
+        style={brushRectStyle}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}

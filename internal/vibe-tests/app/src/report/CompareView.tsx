@@ -438,11 +438,13 @@ export function CompareView({comparison}: CompareViewProps) {
   const catData: CatRow[] = [...allCategories].map(cat => {
     const xdsCat = xds.byCategory[cat] ?? {};
     const baseCat = baseline.byCategory[cat] ?? {};
+    const htmlInit = {};
     const htmlCat =
-      html?.byCategory[cat] ?? ({} as Record<UniversalDimension, number>);
+      html?.byCategory[cat] ?? (htmlInit as Record<UniversalDimension, number>);
+    const twInit = {};
     const twCat =
       xdsTailwind?.byCategory[cat] ??
-      ({} as Record<UniversalDimension, number>);
+      (twInit as Record<UniversalDimension, number>);
     const xdsAvg =
       CODE_DIMENSIONS.reduce(
         (s, d) => s + ((xdsCat[d as UniversalDimension] as number) ?? 0),

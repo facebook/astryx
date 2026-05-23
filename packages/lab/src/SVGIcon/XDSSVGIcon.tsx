@@ -352,13 +352,13 @@ export function XDSSVGIcon({
     '$1',
   );
 
+  const strokeWidthOverride: Record<string, string> = {
+    [strokeWidthProp]: String(strokeWidth),
+  };
+
   const overrideStyle: CSSProperties = {
     ...(style as CSSProperties),
-    ...(strokeWidth != null
-      ? ({
-          [strokeWidthProp]: String(strokeWidth),
-        } as Record<string, string>)
-      : undefined),
+    ...(strokeWidth != null ? strokeWidthOverride : undefined),
   };
 
   return (
