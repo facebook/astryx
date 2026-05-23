@@ -2,6 +2,7 @@
 
 import {headers} from 'next/headers';
 import {DocsShell} from '../../components/DocsShell';
+import {SiteFooter} from '../../components/SiteFooter';
 import {components} from '../../generated/componentRegistry';
 import {packages} from '../../generated/packageRegistry';
 import {docTopics} from '../../generated/docsRegistry';
@@ -24,6 +25,7 @@ export default async function DocsLayout({
       templates={templates}
       defaultIsMobile={defaultIsMobile}>
       {children}
+      <SiteFooter />
     </DocsShell>
   );
 }

@@ -4,10 +4,8 @@
 
 import {usePathname} from 'next/navigation';
 import {XDSAppShell} from '@xds/core/AppShell';
-import {XDSCenter} from '@xds/core/Center';
 import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
 import {SharedTopNav} from './SharedTopNav';
-import {XDSLink} from '@xds/core/Link';
 import type {ComponentEntry} from '../generated/componentRegistry';
 import type {PackageMeta} from '../generated/packageRegistry';
 import type {DocTopic} from '../generated/docsRegistry';
@@ -103,18 +101,7 @@ export function DocsShell({
       mobileNav={{defaultIsMobile}}
       topNav={<SharedTopNav />}
       sideNav={
-        <XDSSideNav
-          footer={
-            <XDSCenter>
-              <XDSLink
-                color="secondary"
-                label="GitHub Pages"
-                href="https://studious-broccoli-o7e61n3.pages.github.io/"
-                isExternalLink>
-                GitHub Pages
-              </XDSLink>
-            </XDSCenter>
-          }>
+        <XDSSideNav>
           {/* Documentation */}
           <XDSSideNavSection title="Documentation" isHeaderHidden>
             <XDSSideNavItem

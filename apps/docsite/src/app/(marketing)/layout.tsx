@@ -3,6 +3,7 @@
 import {headers} from 'next/headers';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {SharedTopNav} from '../../components/SharedTopNav';
+import {SiteFooter} from '../../components/SiteFooter';
 
 export default async function MarketingLayout({
   children,
@@ -20,6 +21,7 @@ export default async function MarketingLayout({
       mobileNav={{defaultIsMobile}}
       topNav={<SharedTopNav />}>
       {children}
+      <SiteFooter />
     </XDSAppShell>
   );
 }
