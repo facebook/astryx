@@ -33,7 +33,7 @@ export default function ChatComposerStreaming() {
             setIsStreaming(true);
             setTimeout(() => setIsStreaming(false), 5000);
           }}
-          isStreaming={isStreaming}
+          isStopShown={isStreaming}
           onStop={() => {
             console.log('Stopped');
             setIsStreaming(false);

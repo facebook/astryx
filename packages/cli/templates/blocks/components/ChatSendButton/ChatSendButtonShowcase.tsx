@@ -16,7 +16,7 @@ export default function ChatSendButtonShowcase() {
         onSend={() => {}}
         sendIcon={<XDSIcon icon={SparklesIcon} size="sm" />}
       />
-      <XDSChatSendButton isStreaming onStop={() => {}} />
+      <XDSChatSendButton isStopShown onStop={() => {}} />
     </XDSStack>
   );
 }

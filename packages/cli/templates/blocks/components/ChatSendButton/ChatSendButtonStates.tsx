@@ -15,7 +15,7 @@ export default function ChatSendButtonStates() {
       <XDSStack direction="horizontal" gap={3} vAlign="center">
         <XDSChatSendButton isDisabled onSend={() => {}} />
         <XDSChatSendButton isDisabled={false} onSend={() => {}} />
-        <XDSChatSendButton isStreaming onStop={() => {}} />
+        <XDSChatSendButton isStopShown onStop={() => {}} />
       </XDSStack>
     </XDSStack>
   );

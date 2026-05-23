@@ -499,7 +499,7 @@ export default function AIChatTemplate() {
     <XDSChatComposer
       onSubmit={handleSubmit}
       onStop={handleStop}
-      isStreaming={isStreaming}
+      isStopShown={isStreaming}
       placeholder="Ask anything"
       input={
         <XDSChatComposerInput

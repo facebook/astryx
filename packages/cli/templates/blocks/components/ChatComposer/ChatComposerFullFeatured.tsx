@@ -40,7 +40,7 @@ export default function ChatComposerFullFeatured() {
           setIsStreaming(true);
           setTimeout(() => setIsStreaming(false), 3000);
         }}
-        isStreaming={isStreaming}
+        isStopShown={isStreaming}
         onStop={() => setIsStreaming(false)}
         placeholder="Ask me anything..."
         input={<XDSChatComposerInput style={{minHeight: 44}} />}
