@@ -53,10 +53,21 @@ jobs:
         run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Build with Vercel
-        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+        id: build
+        run: |
+          if vercel build --token=${{ secrets.VERCEL_TOKEN }} 2>&1 | tee /tmp/vercel-build.log; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+            echo "error<<EOF" >> $GITHUB_OUTPUT
+            tail -20 /tmp/vercel-build.log >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+            exit 1
+          fi
 
       - name: Deploy to Vercel
         id: deploy
+        if: steps.build.outputs.status == 'success'
         run: |
           DEPLOY_URL=$(vercel deploy --prebuilt \
             --token=${{ secrets.VERCEL_TOKEN }} \
@@ -67,27 +78,44 @@ jobs:
           echo "url=${DEPLOY_URL}" >> $GITHUB_OUTPUT
           echo "Deployed to: ${DEPLOY_URL}"
 
-      - name: Comment deployment URL on PR
+      - name: Comment on PR
+        if: always()
         uses: actions/github-script@v9
         with:
           script: |
             const deployUrl = '${{ steps.deploy.outputs.url }}';
+            const buildStatus = '${{ steps.build.outputs.status }}' || 'failure';
             const sha = '${{ github.event.pull_request.head.sha }}'.slice(0, 7);
             const prNumber = ${{ github.event.pull_request.number }};
             const runUrl = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}';
 
-            const body = [
-              '## 🚀 Vercel Preview Deployment',
-              '',
-              '| | |',
-              '|---|---|',
-              `| **Status** | ✅ Deployed |`,
-              `| **Preview** | [Open Preview](${deployUrl}) |`,
-              `| **Commit** | \`${sha}\` |`,
-              `| **Workflow** | [View Logs](${runUrl}) |`,
-              '',
-              '> No authentication required — anyone with the link can view the preview.',
-            ].join('\n');
+            let body;
+            if (deployUrl && deployUrl.startsWith('https://')) {
+              body = [
+                '## 🚀 Vercel Preview Deployment',
+                '',
+                '| | |',
+                '|---|---|',
+                `| **Status** | ✅ Deployed |`,
+                `| **Preview** | [Open Preview](${deployUrl}) |`,
+                `| **Commit** | \`${sha}\` |`,
+                `| **Workflow** | [View Logs](${runUrl}) |`,
+                '',
+                '> No authentication required — anyone with the link can view the preview.',
+              ].join('\n');
+            } else {
+              body = [
+                '## 🚀 Vercel Preview Deployment',
+                '',
+                '| | |',
+                '|---|---|',
+                `| **Status** | ❌ Failed |`,
+                `| **Commit** | \`${sha}\` |`,
+                `| **Logs** | [View Error Logs](${runUrl}) |`,
+                '',
+                '> The preview deployment failed. Check the workflow logs for details.',
+              ].join('\n');
+            }
 
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
