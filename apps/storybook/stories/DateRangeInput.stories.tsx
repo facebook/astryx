@@ -57,8 +57,7 @@ const meta: Meta<typeof XDSDateRangeInput> = {
     isDisabled: {control: 'boolean', description: 'Disable the picker'},
     size: {
       control: 'radio',
-      options: ['sm', 'md'],
-      description: 'Trigger size',
+      options: ['sm', 'md', 'lg'],
     },
     hasClear: {control: 'boolean', description: 'Show clear button'},
     numberOfMonths: {
@@ -180,14 +179,39 @@ export const Disabled: Story = {
   },
 };
 
-export const SmallSize: Story = {
-  render: args => {
-    const [value, setValue] = useState<XDSDateRange | null>(null);
-    return <XDSDateRangeInput {...args} value={value} onChange={setValue} />;
-  },
-  args: {
-    label: 'Date range',
-    size: 'sm',
+export const SizeVariants: Story = {
+  render: () => {
+    const [sm, setSm] = useState<XDSDateRange | null>(null);
+    const [md, setMd] = useState<XDSDateRange | null>(null);
+    const [lg, setLg] = useState<XDSDateRange | null>(null);
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+          maxWidth: '340px',
+        }}>
+        <XDSDateRangeInput
+          label="Small (28px)"
+          value={sm}
+          onChange={setSm}
+          size="sm"
+        />
+        <XDSDateRangeInput
+          label="Medium (32px)"
+          value={md}
+          onChange={setMd}
+          size="md"
+        />
+        <XDSDateRangeInput
+          label="Large (36px)"
+          value={lg}
+          onChange={setLg}
+          size="lg"
+        />
+      </div>
+    );
   },
 };
 

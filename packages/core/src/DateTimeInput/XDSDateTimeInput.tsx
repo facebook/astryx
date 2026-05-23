@@ -77,6 +77,7 @@ import {
 } from '../utils/plainDate';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {useXDSSize} from '../SizeContext/XDSSizeContext';
 
 export type ISODateTimeString = string & {
   readonly __brand: 'ISODateTimeString';
@@ -84,7 +85,7 @@ export type ISODateTimeString = string & {
 
 export type XDSDateTimeInputHourFormat = '12h' | '24h';
 
-export type XDSDateTimeInputSize = 'sm' | 'md';
+export type XDSDateTimeInputSize = 'sm' | 'md' | 'lg';
 
 export type {
   XDSInputStatus as XDSDateTimeInputStatus,
@@ -164,6 +165,9 @@ const sizeStyles = stylex.create({
   },
   md: {
     height: sizeVars['--size-element-md'],
+  },
+  lg: {
+    height: sizeVars['--size-element-lg'],
   },
 });
 
@@ -374,7 +378,7 @@ export function XDSDateTimeInput({
   timeIncrement = 1,
   hasClear = false,
   placeholder = 'Select a date',
-  size = 'md',
+  size: sizeProp,
   status,
   labelTooltip,
   numberOfMonths = 1,
@@ -384,6 +388,7 @@ export function XDSDateTimeInput({
   ref,
   ...rest
 }: XDSDateTimeInputProps) {
+  const size = useXDSSize(sizeProp, 'md') as XDSDateTimeInputSize;
   const dateInputId = useId();
   const timeInputId = useId();
   const descriptionID = useId();

@@ -51,6 +51,7 @@ import {useXDSPopover} from '../Popover';
 import {xdsClassName, mergeProps} from '../utils';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
+import {useXDSSize} from '../SizeContext/XDSSizeContext';
 
 export type {DateRange as XDSDateRange} from '../Calendar';
 
@@ -59,7 +60,7 @@ export interface XDSDateRangePreset {
   getRange: () => DateRange;
 }
 
-export type XDSDateRangeInputSize = 'sm' | 'md';
+export type XDSDateRangeInputSize = 'sm' | 'md' | 'lg';
 
 export type {
   XDSInputStatus as XDSDateRangeInputStatus,
@@ -166,6 +167,10 @@ const sizeStyles = stylex.create({
   },
   md: {
     height: sizeVars['--size-element-md'],
+    minWidth: 180,
+  },
+  lg: {
+    height: sizeVars['--size-element-lg'],
     minWidth: 180,
   },
 });
@@ -350,7 +355,7 @@ export function XDSDateRangeInput({
   presets,
   hasClear = true,
   placeholder = 'Select date range',
-  size = 'md',
+  size: sizeProp,
   status,
   labelTooltip,
   numberOfMonths = 2,
@@ -360,6 +365,7 @@ export function XDSDateRangeInput({
   ref,
   ...rest
 }: XDSDateRangeInputProps) {
+  const size = useXDSSize(sizeProp, 'md') as XDSDateRangeInputSize;
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();

@@ -37,6 +37,11 @@ const meta: Meta<typeof XDSTokenizer> = {
     isOptional: {control: 'boolean'},
     hasClear: {control: 'boolean'},
     maxEntries: {control: 'number'},
+    size: {
+      control: 'radio',
+      options: ['sm', 'md', 'lg'],
+      description: 'Input size',
+    },
   },
   decorators: [
     Story => (
@@ -328,6 +333,45 @@ export const Creatable: Story = {
     label: 'Tags',
   },
   name: 'Creatable (Free Text)',
+};
+
+export const SizeVariants: Story = {
+  render: () => {
+    const [sm, setSm] = useState<XDSSearchableItem[]>([]);
+    const [md, setMd] = useState<XDSSearchableItem[]>([users[0], users[2]]);
+    const [lg, setLg] = useState<XDSSearchableItem[]>([]);
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+        <XDSTokenizer
+          label="Small (28px)"
+          searchSource={userSource}
+          value={sm}
+          onChange={items => setSm(items)}
+          placeholder="Small size"
+          size="sm"
+          hasClear
+        />
+        <XDSTokenizer
+          label="Medium (32px)"
+          searchSource={userSource}
+          value={md}
+          onChange={items => setMd(items)}
+          placeholder="Medium size (default)"
+          size="md"
+          hasClear
+        />
+        <XDSTokenizer
+          label="Large (36px)"
+          searchSource={userSource}
+          value={lg}
+          onChange={items => setLg(items)}
+          placeholder="Large size"
+          size="lg"
+          hasClear
+        />
+      </div>
+    );
+  },
 };
 
 export const CreatableWithSearch: Story = {

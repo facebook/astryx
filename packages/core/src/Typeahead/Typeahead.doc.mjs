@@ -121,7 +121,7 @@ export const docs = {
         },
         {
           name: 'size',
-          type: "'sm' | 'md'",
+          type: "'sm' | 'md' | 'lg'",
           description: 'Input and token size.',
           default: "'md'",
         },
@@ -434,7 +434,7 @@ export const docsZh = {
         },
         {
           name: 'size',
-          type: "'sm' | 'md'",
+          type: "'sm' | 'md' | 'lg'",
           description: '输入框和标记的尺寸。',
           default: "'md'",
         },

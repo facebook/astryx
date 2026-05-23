@@ -222,6 +222,18 @@ describe('XDSDateRangeInput', () => {
     expect(screen.getByRole('button', {name: 'Open calendar'})).toBeDisabled();
   });
 
+  it('renders with size="lg"', () => {
+    render(
+      <XDSDateRangeInput
+        label="Date range"
+        value={null}
+        onChange={() => {}}
+        size="lg"
+      />,
+    );
+    expect(screen.getByText('Date range')).toBeInTheDocument();
+  });
+
   describe('hasClear', () => {
     it('shows clear button when hasClear is true and value exists', () => {
       const range: XDSDateRange = {

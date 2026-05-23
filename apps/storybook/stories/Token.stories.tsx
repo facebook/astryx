@@ -25,6 +25,11 @@ const meta: Meta<typeof XDSToken> = {
       ],
       description: 'Color variant',
     },
+    size: {
+      control: 'radio',
+      options: ['sm', 'md', 'lg'],
+      description: 'Token size',
+    },
     label: {
       control: 'text',
       description: 'Token label text',
@@ -202,6 +207,37 @@ export const Disabled: Story = {
         isDisabled
       />
       <XDSToken label="Disabled link" href="#" isDisabled />
+    </div>
+  ),
+};
+
+export const SizeVariants: Story = {
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+      <div>
+        <h4 style={{margin: '0 0 8px'}}>Small (20px)</h4>
+        <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+          <XDSToken label="Small" size="sm" />
+          <XDSToken label="Removable" size="sm" onRemove={() => {}} />
+          <XDSToken label="Clickable" size="sm" onClick={() => {}} />
+        </div>
+      </div>
+      <div>
+        <h4 style={{margin: '0 0 8px'}}>Medium (24px, default)</h4>
+        <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+          <XDSToken label="Medium" size="md" />
+          <XDSToken label="Removable" size="md" onRemove={() => {}} />
+          <XDSToken label="Clickable" size="md" onClick={() => {}} />
+        </div>
+      </div>
+      <div>
+        <h4 style={{margin: '0 0 8px'}}>Large (28px)</h4>
+        <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+          <XDSToken label="Large" size="lg" />
+          <XDSToken label="Removable" size="lg" onRemove={() => {}} />
+          <XDSToken label="Clickable" size="lg" onClick={() => {}} />
+        </div>
+      </div>
     </div>
   ),
 };

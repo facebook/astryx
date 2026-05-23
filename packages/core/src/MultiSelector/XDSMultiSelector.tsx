@@ -66,6 +66,7 @@ import {
 import {useMultiCombobox} from './hooks';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSBaseProps} from '../XDSBaseProps';
+import {useXDSSize} from '../SizeContext/XDSSizeContext';
 
 // Sentinel value for the select-all item in keyboard navigation
 const SELECT_ALL_VALUE = '__xds_select_all__';
@@ -542,7 +543,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
   changeAction,
   isLoading = false,
   placeholder = 'Select...',
-  size = 'md',
+  size: sizeProp,
   status,
   labelTooltip,
   startIcon,
@@ -560,6 +561,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
   className,
   style,
 }: XDSMultiSelectorProps<T>) {
+  const size = useXDSSize(sizeProp, 'md') as XDSMultiSelectorSize;
   const triggerId = useId();
   const listboxId = useId();
   const descriptionId = useId();

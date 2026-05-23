@@ -156,7 +156,7 @@ export interface XDSBaseTypeaheadProps<
    * When 'sm', items get compact padding to match the trigger size.
    * @default 'md'
    */
-  size?: 'sm' | 'md';
+  size?: 'sm' | 'md' | 'lg';
 }
 
 // =============================================================================
@@ -250,6 +250,9 @@ const itemSizeStyles = stylex.create({
   },
   md: {
     paddingBlock: spacingVars['--spacing-1-5'],
+  },
+  lg: {
+    paddingBlock: spacingVars['--spacing-2'],
   },
 });
 

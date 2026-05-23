@@ -49,7 +49,7 @@ export type {
   XDSInputStatusType as XDSTypeaheadStatusType,
 } from '../Field';
 
-export type XDSTypeaheadSize = 'sm' | 'md';
+export type XDSTypeaheadSize = 'sm' | 'md' | 'lg';
 
 export interface XDSTypeaheadProps<T extends XDSSearchableItem> extends Omit<
   XDSBaseProps<HTMLDivElement>,
@@ -141,12 +141,6 @@ const styles = stylex.create({
     top: `calc((${sizeVars['--size-element-sm']} - 20px) / 2 - 1px)`,
     insetInlineEnd: `calc((${sizeVars['--size-element-sm']} - 20px) / 2 - 1px)`,
   },
-  sizeSmWrapper: {
-    minHeight: sizeVars['--size-element-sm'],
-  },
-  sizeMdWrapper: {
-    minHeight: sizeVars['--size-element-md'],
-  },
   inputHidden: {
     width: 0,
     minWidth: 0,
@@ -155,6 +149,12 @@ const styles = stylex.create({
     opacity: 0,
     position: 'absolute' as const,
   },
+});
+
+const wrapperSizeStyles = stylex.create({
+  sm: {minHeight: sizeVars['--size-element-sm']},
+  md: {minHeight: sizeVars['--size-element-md']},
+  lg: {minHeight: sizeVars['--size-element-lg']},
 });
 
 // =============================================================================
@@ -334,7 +334,7 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
       .filter(Boolean)
       .join(' ') || undefined;
 
-  const sizeStyle = size === 'sm' ? styles.sizeSmWrapper : styles.sizeMdWrapper;
+  const sizeStyle = wrapperSizeStyles[size];
 
   return (
     <XDSField

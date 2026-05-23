@@ -27,6 +27,7 @@ import {
   XDSTokenizer,
   type XDSTokenizerHandle,
   type XDSTokenizerOverflowBehavior,
+  type XDSTokenizerSize,
 } from '../Tokenizer';
 import {XDSTypeaheadItem} from '../Typeahead/XDSTypeaheadItem';
 import {XDSToken} from '../Token';
@@ -44,6 +45,7 @@ import {
   fontWeightVars,
 } from '../theme/tokens.stylex';
 import {xdsClassName} from '../utils';
+import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {useInternalConfig} from './useInternalConfig';
 import {usePowerSearchSource} from './usePowerSearchSource';
 import {formatFilterValue} from './formatFilterValue';
@@ -325,6 +327,8 @@ function PowerSearchTokenValue({
 // Types
 // =============================================================================
 
+export type XDSPowerSearchSize = 'sm' | 'md' | 'lg';
+
 export interface XDSPowerSearchProps extends Omit<
   XDSBaseProps<HTMLElement>,
   'onChange'
@@ -392,6 +396,11 @@ export interface XDSPowerSearchProps extends Omit<
   resultCount?: number | string;
   /** Imperative handle ref. */
   ref?: React.Ref<XDSPowerSearchHandle>;
+  /**
+   * Size of the search input.
+   * @default 'md'
+   */
+  size?: XDSPowerSearchSize;
   /**
    * Per-type component overrides for token and editor rendering.
    * Keys are operator value types (e.g. 'string', 'enum', 'date_absolute').
@@ -507,12 +516,14 @@ export function XDSPowerSearch({
   endContent,
   resultCount,
   ref,
+  size: sizeProp,
   'data-testid': testId,
   xstyle,
   className,
   style,
   components: componentOverrides,
 }: XDSPowerSearchProps) {
+  const size = useXDSSize(sizeProp, 'md') as XDSPowerSearchSize;
   const config = useInternalConfig(configProp);
   const searchSource = usePowerSearchSource(config);
   const tokenizerRef = useRef<XDSTokenizerHandle>(null);
@@ -788,6 +799,7 @@ export function XDSPowerSearch({
       return (
         <XDSToken
           label={tokenLabel}
+          size={size}
           icon={tokenIcon}
           endContent={valueContent}
           onClick={
@@ -808,6 +820,7 @@ export function XDSPowerSearch({
       config,
       configProp,
       maxTokenLength,
+      size,
       isReadOnly,
       isDisabled,
       handleTokenClick,
@@ -963,6 +976,7 @@ export function XDSPowerSearch({
           startIcon={startIcon}
           endContent={combinedEndContent}
           isDisabled={isDisabled}
+          size={size}
           tokenOverflowBehavior={tokenOverflowBehavior}
           hasEntriesOnFocus
           debounceMs={0}

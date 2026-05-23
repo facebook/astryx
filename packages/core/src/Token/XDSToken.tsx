@@ -53,7 +53,7 @@ export type XDSTokenColor =
   | 'pink'
   | 'gray';
 
-export type XDSTokenSize = 'sm' | 'md';
+export type XDSTokenSize = 'sm' | 'md' | 'lg';
 
 export interface XDSTokenProps extends XDSBaseProps<HTMLElement> {
   /** Ref forwarded to the root element */
@@ -227,6 +227,10 @@ const sizeStyles = stylex.create({
   },
   md: {
     height: `calc(${sizeVars['--size-element-md']} - 8px)`,
+    paddingInline: spacingVars['--spacing-2'],
+  },
+  lg: {
+    height: `calc(${sizeVars['--size-element-lg']} - 8px)`,
     paddingInline: spacingVars['--spacing-2'],
   },
 });

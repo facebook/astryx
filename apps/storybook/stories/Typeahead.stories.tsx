@@ -37,6 +37,11 @@ const meta: Meta<typeof XDSTypeahead> = {
     hasEntriesOnFocus: {control: 'boolean'},
     hasClear: {control: 'boolean'},
     maxMenuItems: {control: 'number'},
+    size: {
+      control: 'radio',
+      options: ['sm', 'md', 'lg'],
+      description: 'Input size',
+    },
   },
   decorators: [
     Story => (
@@ -150,6 +155,42 @@ export const LimitedResults: Story = {
     maxMenuItems: 3,
   },
   name: 'Max 3 Results',
+};
+
+export const SizeVariants: Story = {
+  render: () => {
+    const [sm, setSm] = useState<XDSSearchableItem | null>(null);
+    const [md, setMd] = useState<XDSSearchableItem | null>(null);
+    const [lg, setLg] = useState<XDSSearchableItem | null>(null);
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+        <XDSTypeahead
+          label="Small (28px)"
+          searchSource={fruitSource}
+          value={sm}
+          onChange={setSm}
+          placeholder="Small size"
+          size="sm"
+        />
+        <XDSTypeahead
+          label="Medium (32px)"
+          searchSource={fruitSource}
+          value={md}
+          onChange={setMd}
+          placeholder="Medium size (default)"
+          size="md"
+        />
+        <XDSTypeahead
+          label="Large (36px)"
+          searchSource={fruitSource}
+          value={lg}
+          onChange={setLg}
+          placeholder="Large size"
+          size="lg"
+        />
+      </div>
+    );
+  },
 };
 
 export const WithStartIcon: Story = {

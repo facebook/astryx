@@ -115,6 +115,12 @@ export const docs = {
         'Number of results matching the current filters. When a number, formatted as "N results". When a string, displayed as-is.',
     },
     {
+      name: 'size',
+      type: "'sm' | 'md' | 'lg'",
+      description: 'Size of the search input and tokens.',
+      default: "'md'",
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -242,6 +248,12 @@ export const docsZh = {
         '匹配当前过滤器的结果数量。数字类型时格式化为"N results"。字符串类型时按原样显示。',
     },
     {
+      name: 'size',
+      type: "'sm' | 'md' | 'lg'",
+      description: '搜索输入框和标记的尺寸。',
+      default: "'md'",
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description: '用于布局自定义的 StyleX 样式。必须是 stylex.create() 值。',
@@ -289,6 +301,7 @@ export const docsDense = {
     ref: 'Imperative handle w/ focusTypeahead() + blurTypeahead() methods.',
     endContent: 'Content at end of input row. Useful for action buttons or controls.',
     resultCount: 'Result count matching current filters. Number formatted as "N results"; string displayed as-is.',
+    size: 'Search input+token size.',
     xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
   },
 };

@@ -128,7 +128,7 @@ export const docs = {
     },
     {
       name: 'size',
-      type: "'sm' | 'md'",
+      type: "'sm' | 'md' | 'lg'",
       description: 'Input and token size.',
       default: "'md'",
     },
@@ -322,7 +322,7 @@ export const docsZh = {
     },
     {
       name: 'size',
-      type: "'sm' | 'md'",
+      type: "'sm' | 'md' | 'lg'",
       description: '\u8f93\u5165\u6846\u548c\u6807\u8bb0\u7684\u5c3a\u5bf8\u3002',
       default: "'md'",
     },

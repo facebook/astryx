@@ -123,6 +123,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'size',
+      type: "'sm' | 'md' | 'lg'",
+      description: 'Size of the textarea, affecting internal padding. Height is controlled by rows, not size.',
+      default: "'md'",
+    },
+    {
       name: 'onPaste',
       type: '(e: ClipboardEvent<HTMLTextAreaElement>) => void',
       description: 'Callback fired when content is pasted into the textarea.',
@@ -152,7 +158,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-textarea', visualProps: ['status']},
+      {className: 'xds-textarea', visualProps: ['size', 'status']},
     ],
   },
   usage: {
@@ -280,6 +286,12 @@ export const docsZh = {
       default: 'false',
     },
     {
+      name: 'size',
+      type: "'sm' | 'md' | 'lg'",
+      description: '文本域的尺寸，影响内部填充。高度由 rows 控制，而非 size。',
+      default: "'md'",
+    },
+    {
       name: 'onPaste',
       type: '(e: ClipboardEvent<HTMLTextAreaElement>) => void',
       description: '内容粘贴到文本域时触发的回调。',
@@ -307,7 +319,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-textarea', visualProps: ['status']},
+      {className: 'xds-textarea', visualProps: ['size', 'status']},
     ],
   },
   usage: {
@@ -361,6 +373,7 @@ export const docsDense = {
     startIcon: 'Icon inside leading edge of textarea wrapper.',
     hasSpellCheck: 'Enables/disables browser spell checking.',
     hasAutoFocus: 'Auto-focus textarea on mount.',
+    size: 'Textarea size; affects internal padding. Height controlled by rows.',
     onPaste: 'Fired on paste into textarea.',
     htmlName: 'HTML name attr for form submissions.',
     onFocus: 'Callback on focus.',
