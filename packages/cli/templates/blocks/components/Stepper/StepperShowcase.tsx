@@ -2,7 +2,7 @@
 
 'use client';
 
-import {XDSStepper, XDSStep} from '@xds/core/Stepper';
+import {XDSStepper, XDSStep} from '@xds/lab/Stepper';
 
 export default function StepperShowcase() {
   return (
