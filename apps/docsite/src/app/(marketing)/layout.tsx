@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {headers} from 'next/headers';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {SharedTopNav} from '../../components/SharedTopNav';

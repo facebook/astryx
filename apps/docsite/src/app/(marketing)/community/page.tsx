@@ -1,9 +1,11 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * Community page — contribution guidance + live GitHub contributors.
  */
 
 import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSVStack} from '@xds/core/Layout';
 import {XDSSection} from '@xds/core/Section';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSCard} from '@xds/core/Card';
@@ -47,7 +49,9 @@ async function fetchContributors(): Promise<Contributor[]> {
       'https://api.github.com/repos/facebookexperimental/xds/contributors?per_page=50',
       {next: {revalidate: 3600}},
     );
-    if (!res.ok) return [];
+    if (!res.ok) {
+      return [];
+    }
     return res.json();
   } catch {
     return [];

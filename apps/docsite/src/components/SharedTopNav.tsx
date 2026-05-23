@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 'use client';
 
 import {useState} from 'react';
@@ -42,12 +44,21 @@ export function SharedTopNav() {
       pathname.startsWith('/docs/') ||
       pathname.startsWith('/packages/') ||
       pathname.startsWith('/changelog')
-    )
+    ) {
       return 'docs';
-    if (pathname.startsWith('/templates')) return 'templates';
-    if (pathname.startsWith('/themes')) return 'themes';
-    if (pathname.startsWith('/components')) return 'components';
-    if (pathname.startsWith('/playground')) return 'playground';
+    }
+    if (pathname.startsWith('/templates')) {
+      return 'templates';
+    }
+    if (pathname.startsWith('/themes')) {
+      return 'themes';
+    }
+    if (pathname.startsWith('/components')) {
+      return 'components';
+    }
+    if (pathname.startsWith('/playground')) {
+      return 'playground';
+    }
     return undefined;
   };
 

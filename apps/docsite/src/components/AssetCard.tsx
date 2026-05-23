@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 'use client';
 
 /**
@@ -11,7 +13,13 @@ import * as stylex from '@stylexjs/stylex';
 import type {ReactNode} from 'react';
 
 // M3 shape definitions
-type M3Shape = 'rounded-sm' | 'rounded-md' | 'rounded-lg' | 'rounded-xl' | 'pill' | 'circle';
+type M3Shape =
+  | 'rounded-sm'
+  | 'rounded-md'
+  | 'rounded-lg'
+  | 'rounded-xl'
+  | 'pill'
+  | 'circle';
 
 const shapeRadius: Record<M3Shape, string> = {
   'rounded-sm': '8px',

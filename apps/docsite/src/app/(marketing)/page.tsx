@@ -1,8 +1,9 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import * as stylex from '@stylexjs/stylex';
 import {XDSText} from '@xds/core/Text';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
-import {XDSSection} from '@xds/core/Section';
 import {XDSMediaTheme} from '@xds/core/theme';
 
 const styles = stylex.create({

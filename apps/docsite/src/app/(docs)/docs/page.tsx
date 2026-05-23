@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * Page type: overview
  * Documentation home — hero, libraries, foundations.
@@ -63,12 +65,18 @@ const PACKAGE_ICONS: Record<string, React.ReactNode> = {
   '@xds/core': <CodeIcon />,
 };
 
-const PACKAGE_GRADIENTS: Record<string, 'primary' | 'secondary' | 'tertiary' | 'warm' | 'cool' | 'neutral'> = {
+const PACKAGE_GRADIENTS: Record<
+  string,
+  'primary' | 'secondary' | 'tertiary' | 'warm' | 'cool' | 'neutral'
+> = {
   '@xds/cli': 'warm',
   '@xds/core': 'primary',
 };
 
-const FOUNDATION_GRADIENTS: Record<string, 'primary' | 'secondary' | 'tertiary' | 'warm' | 'cool' | 'neutral'> = {
+const FOUNDATION_GRADIENTS: Record<
+  string,
+  'primary' | 'secondary' | 'tertiary' | 'warm' | 'cool' | 'neutral'
+> = {
   color: 'primary',
   icons: 'cool',
   shape: 'tertiary',
@@ -156,8 +164,12 @@ const styles = stylex.create({
 const foundationTopics = docTopics
   .filter(d => d.category === 'foundations')
   .sort((a, b) => {
-    if (a.topic === 'tokens') return -1;
-    if (b.topic === 'tokens') return 1;
+    if (a.topic === 'tokens') {
+      return -1;
+    }
+    if (b.topic === 'tokens') {
+      return 1;
+    }
     return a.title.localeCompare(b.title);
   });
 
