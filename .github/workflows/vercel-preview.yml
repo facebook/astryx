@@ -59,62 +59,90 @@ jobs:
             echo "status=success" >> $GITHUB_OUTPUT
           else
             echo "status=failure" >> $GITHUB_OUTPUT
-            echo "error<<EOF" >> $GITHUB_OUTPUT
-            tail -20 /tmp/vercel-build.log >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-            exit 1
+            # Capture last 30 lines of build output for the error summary
+            echo "error_log<<ERREOF" >> $GITHUB_OUTPUT
+            tail -30 /tmp/vercel-build.log >> $GITHUB_OUTPUT
+            echo "ERREOF" >> $GITHUB_OUTPUT
           fi
 
       - name: Deploy to Vercel
         id: deploy
         if: steps.build.outputs.status == 'success'
         run: |
-          DEPLOY_URL=$(vercel deploy --prebuilt \
+          DEPLOY_OUTPUT=$(vercel deploy --prebuilt \
             --token=${{ secrets.VERCEL_TOKEN }} \
             --meta githubPrNumber=${{ github.event.pull_request.number }} \
             --meta githubCommitSha=${{ github.event.pull_request.head.sha }} \
-            --meta githubRepo=${{ github.repository }})
+            --meta githubRepo=${{ github.repository }} 2>&1 | tee /tmp/vercel-deploy.log)
+
+          DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | grep -oE 'https://[^ ]+\.vercel\.app' | tail -1)
+          INSPECT_URL=$(echo "$DEPLOY_OUTPUT" | grep -oE 'https://vercel\.com/[^ ]+' | head -1)
 
           echo "url=${DEPLOY_URL}" >> $GITHUB_OUTPUT
+          echo "inspect_url=${INSPECT_URL}" >> $GITHUB_OUTPUT
           echo "Deployed to: ${DEPLOY_URL}"
+          echo "Inspect at: ${INSPECT_URL}"
 
       - name: Comment on PR
         if: always()
         uses: actions/github-script@v9
+        env:
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+          INSPECT_URL: ${{ steps.deploy.outputs.inspect_url }}
+          BUILD_STATUS: ${{ steps.build.outputs.status }}
+          BUILD_ERROR: ${{ steps.build.outputs.error_log }}
         with:
           script: |
-            const deployUrl = '${{ steps.deploy.outputs.url }}';
-            const buildStatus = '${{ steps.build.outputs.status }}' || 'failure';
+            const deployUrl = process.env.DEPLOY_URL || '';
+            const inspectUrl = process.env.INSPECT_URL || '';
+            const buildStatus = process.env.BUILD_STATUS || 'failure';
+            const buildError = process.env.BUILD_ERROR || '';
             const sha = '${{ github.event.pull_request.head.sha }}'.slice(0, 7);
             const prNumber = ${{ github.event.pull_request.number }};
             const runUrl = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}';
 
             let body;
             if (deployUrl && deployUrl.startsWith('https://')) {
+              const rows = [
+                `| **Status** | ✅ Deployed |`,
+                `| **Preview** | [Open Preview](${deployUrl}) |`,
+                `| **Commit** | \`${sha}\` |`,
+              ];
+              if (inspectUrl) {
+                rows.push(`| **Inspect** | [Vercel Dashboard](${inspectUrl}) |`);
+              }
+              rows.push(`| **Workflow** | [View Logs](${runUrl}) |`);
+
               body = [
                 '## 🚀 Vercel Preview Deployment',
                 '',
                 '| | |',
                 '|---|---|',
-                `| **Status** | ✅ Deployed |`,
-                `| **Preview** | [Open Preview](${deployUrl}) |`,
-                `| **Commit** | \`${sha}\` |`,
-                `| **Workflow** | [View Logs](${runUrl}) |`,
+                ...rows,
                 '',
                 '> No authentication required — anyone with the link can view the preview.',
               ].join('\n');
             } else {
+              const rows = [
+                `| **Status** | ❌ Failed |`,
+                `| **Commit** | \`${sha}\` |`,
+                `| **Workflow** | [View Logs](${runUrl}) |`,
+              ];
+              if (inspectUrl) {
+                rows.push(`| **Vercel** | [View Build Logs](${inspectUrl}) |`);
+              }
+
               body = [
                 '## 🚀 Vercel Preview Deployment',
                 '',
                 '| | |',
                 '|---|---|',
-                `| **Status** | ❌ Failed |`,
-                `| **Commit** | \`${sha}\` |`,
-                `| **Logs** | [View Error Logs](${runUrl}) |`,
-                '',
-                '> The preview deployment failed. Check the workflow logs for details.',
+                ...rows,
               ].join('\n');
+
+              if (buildError) {
+                body += '\n\n<details><summary>Build Error</summary>\n\n```\n' + buildError + '\n```\n\n</details>';
+              }
             }
 
             const { data: comments } = await github.rest.issues.listComments({
