@@ -26,6 +26,9 @@ export function SiteFooter() {
       <XDSDivider xstyle={styles.divider} />
       <footer {...stylex.props(styles.footer)}>
         <XDSText type="supporting" color="secondary">
+          Copyright © Meta Platforms, Inc.
+        </XDSText>
+        <XDSText type="supporting" color="secondary">
           <XDSLink
             color="secondary"
             label="GitHub Pages"
