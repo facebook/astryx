@@ -14,7 +14,7 @@
     "@xds/theme-default": "*",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "unplugin": "^2.3.11"
+    "unplugin": "^3.0.0"
   },
   "devDependencies": {
     "@stylexjs/unplugin": "^0.18.3",
