@@ -505,12 +505,6 @@
       "import": "./dist/StatusDot/index.mjs",
       "require": "./dist/StatusDot/index.js"
     },
-    "./Stepper": {
-      "source": "./src/Stepper/index.ts",
-      "types": "./dist/Stepper/index.d.ts",
-      "import": "./dist/Stepper/index.mjs",
-      "require": "./dist/Stepper/index.js"
-    },
     "./Switch": {
       "source": "./src/Switch/index.ts",
       "types": "./dist/Switch/index.d.ts",

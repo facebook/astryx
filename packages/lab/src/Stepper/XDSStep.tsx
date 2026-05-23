@@ -27,10 +27,10 @@ import {
   typeScaleVars,
   durationVars,
   easeVars,
-} from '../theme/tokens.stylex';
-import {xdsClassName, mergeProps} from '../utils';
-import {XDSIcon} from '../Icon';
-import type {XDSBaseProps} from '../XDSBaseProps';
+} from '@xds/core/theme/tokens.stylex';
+import {xdsClassName, mergeProps} from '@xds/core/utils';
+import {XDSIcon} from '@xds/core/Icon';
+import type {XDSBaseProps} from '@xds/core/XDSBaseProps';
 import {useXDSStepperContext} from './XDSStepperContext';
 
 export interface XDSStepProps extends XDSBaseProps<HTMLDivElement> {
