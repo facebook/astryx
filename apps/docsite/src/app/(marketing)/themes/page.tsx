@@ -2,6 +2,8 @@
  * Themes gallery — extracted from craft.
  */
 
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
@@ -91,7 +93,7 @@ export default function ThemesPage() {
                             label="Customize"
                             variant="secondary"
                             size="sm"
-                            href="/craft/theme"
+                            href="/themes/editor"
                           />
                         </XDSHStack>
                       </XDSVStack>
