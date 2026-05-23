@@ -22,12 +22,12 @@
     "vega-lite": "^6.4.3"
   },
   "devDependencies": {
-    "@storybook/addon-docs": "^10.4.0",
-    "@storybook/addon-links": "^10.4.0",
-    "@storybook/react": "^10.4.0",
-    "@storybook/react-vite": "^10.4.0",
+    "@storybook/addon-docs": "^10.4.1",
+    "@storybook/addon-links": "^10.4.1",
+    "@storybook/react": "^10.4.1",
+    "@storybook/react-vite": "^10.4.1",
     "@stylexjs/unplugin": "^0.18.3",
     "@xds/build": "*",
-    "storybook": "^10.4.0"
+    "storybook": "^10.4.1"
   }
 }
