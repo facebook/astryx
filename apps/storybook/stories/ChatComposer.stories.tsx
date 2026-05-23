@@ -103,7 +103,7 @@ export const WithStreaming: Story = {
           console.log('Submit:', value);
           setIsStreaming(true);
         }}
-        isStreaming={isStreaming}
+        isStopShown={isStreaming}
         onStop={() => {
           console.log('Stopped');
           setIsStreaming(false);
@@ -170,7 +170,7 @@ export const FullFeatured: Story = {
           setIsStreaming(true);
           setTimeout(() => setIsStreaming(false), 3000);
         }}
-        isStreaming={isStreaming}
+        isStopShown={isStreaming}
         onStop={() => setIsStreaming(false)}
         placeholder="Ask me anything..."
         drawer={
@@ -325,7 +325,7 @@ export const SendStopToggle: Story = {
           setIsStreaming(true);
           setTimeout(() => setIsStreaming(false), 5000);
         }}
-        isStreaming={isStreaming}
+        isStopShown={isStreaming}
         onStop={() => {
           console.log('Stopped');
           setIsStreaming(false);

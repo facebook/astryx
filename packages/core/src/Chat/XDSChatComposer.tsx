@@ -67,10 +67,10 @@ export interface XDSChatComposerProps extends Omit<
   ref?: React.Ref<HTMLDivElement>;
   /** Called when the user submits the message */
   onSubmit: (value: string) => void;
-  /** Called when the user clicks stop during streaming */
+  /** Called when the user clicks the stop button */
   onStop?: () => void;
-  /** Whether the assistant is currently streaming a response */
-  isStreaming?: boolean;
+  /** Whether the stop button is shown instead of the send button. @default false */
+  isStopShown?: boolean;
   /** Controlled value of the input */
   value?: string;
   /** Called when the input value changes */
@@ -269,7 +269,7 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
     ref,
     onSubmit,
     onStop,
-    isStreaming = false,
+    isStopShown = false,
     value: controlledValue,
     onChange,
     placeholder = 'Type a message\u2026',
@@ -360,7 +360,7 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
       onSubmit: handleSubmit,
       placeholder,
       isDisabled,
-      isStreaming,
+      isStopShown,
       canSend,
       onStop,
     }),
@@ -370,7 +370,7 @@ export function XDSChatComposer(props: XDSChatComposerProps) {
       handleSubmit,
       placeholder,
       isDisabled,
-      isStreaming,
+      isStopShown,
       canSend,
       onStop,
     ],

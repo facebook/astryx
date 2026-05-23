@@ -10,10 +10,19 @@ import renameDatePickerToInput, {
   meta as renameDatePickerToInputMeta,
 } from './rename-date-picker-to-input.mjs';
 
+import renameIsStreamingToIsStopShown, {
+  meta as renameIsStreamingToIsStopShownMeta,
+} from './rename-isStreaming-to-isStopShown.mjs';
+
 export default [
   {
     name: 'rename-date-picker-to-input',
     transform: renameDatePickerToInput,
     meta: renameDatePickerToInputMeta,
+  },
+  {
+    name: 'rename-isStreaming-to-isStopShown',
+    transform: renameIsStreamingToIsStopShown,
+    meta: renameIsStreamingToIsStopShownMeta,
   },
 ];

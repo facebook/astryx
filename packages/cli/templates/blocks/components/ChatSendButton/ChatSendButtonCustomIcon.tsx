@@ -36,7 +36,7 @@ export default function ChatSendButtonCustomIcon() {
           sendIcon={<XDSIcon icon={SparklesIcon} size="sm" />}
         />
         <XDSChatSendButton
-          isStreaming
+          isStopShown
           onStop={() => {}}
           stopIcon={<XDSIcon icon={XCircleIcon} size="sm" />}
         />

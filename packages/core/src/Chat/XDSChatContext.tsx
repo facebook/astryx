@@ -50,7 +50,7 @@ export interface XDSChatComposerContextValue {
   onSubmit: (value: string) => void;
   placeholder: string;
   isDisabled: boolean;
-  isStreaming: boolean;
+  isStopShown: boolean;
   canSend: boolean;
   onStop?: () => void;
 }

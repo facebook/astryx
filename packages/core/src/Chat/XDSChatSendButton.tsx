@@ -31,17 +31,17 @@ import type {XDSBaseProps} from '../XDSBaseProps';
 
 export interface XDSChatSendButtonProps extends XDSBaseProps<HTMLButtonElement> {
   ref?: React.Ref<HTMLButtonElement>;
-  /** Whether the assistant is currently streaming a response. */
-  isStreaming?: boolean;
+  /** Whether the stop button is shown instead of the send button. @default false */
+  isStopShown?: boolean;
   /** Whether the send button is disabled. Defaults to `!canSend` from context. */
   isDisabled?: boolean;
   /** Called when the user clicks the send button. Defaults to context onSubmit. */
   onSend?: () => void;
-  /** Called when the user clicks the stop button during streaming. */
+  /** Called when the user clicks the stop button. */
   onStop?: () => void;
   /** Icon for the send state. Resolves from icon registry by default. */
   sendIcon?: ReactNode;
-  /** Icon for the stop/streaming state. Resolves from icon registry by default. */
+  /** Icon for the stop state. Resolves from icon registry by default. */
   stopIcon?: ReactNode;
   /** Button size. @default 'md' */
   size?: 'sm' | 'md';
@@ -77,7 +77,7 @@ export function XDSChatSendButton(props: XDSChatSendButtonProps): ReactNode {
   const context = useXDSChatComposerContext();
 
   const {
-    isStreaming = context?.isStreaming ?? false,
+    isStopShown = context?.isStopShown ?? false,
     isDisabled = !(context?.canSend ?? false),
     onSend,
     onStop = context?.onStop,
@@ -93,17 +93,17 @@ export function XDSChatSendButton(props: XDSChatSendButtonProps): ReactNode {
   return (
     <XDSButton
       ref={ref}
-      label={isStreaming ? 'Stop' : 'Send'}
-      variant={isStreaming ? 'secondary' : 'primary'}
+      label={isStopShown ? 'Stop' : 'Send'}
+      variant={isStopShown ? 'secondary' : 'primary'}
       size={size}
       icon={
-        isStreaming
+        isStopShown
           ? (stopIcon ?? getIcon('stop'))
           : (sendIcon ?? getIcon('arrowUp'))
       }
       isIconOnly
-      isDisabled={!isStreaming && isDisabled}
-      onClick={isStreaming ? onStop : handleSend}
+      isDisabled={!isStopShown && isDisabled}
+      onClick={isStopShown ? onStop : handleSend}
       className={xdsClassName('chat-send-button')}
       xstyle={[styles.root, xstyle]}
     />

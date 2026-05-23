@@ -108,7 +108,7 @@ export const docs = {
       props: [
         {name: 'onSubmit', type: '(value: string) => void', description: 'Called when the user submits a message.', required: true},
         {name: 'onStop', type: '() => void', description: 'Called when the user requests to stop generation.'},
-        {name: 'isStreaming', type: 'boolean', description: 'Whether the assistant is currently streaming.', default: 'false'},
+        {name: 'isStopShown', type: 'boolean', description: 'Whether the stop button is shown instead of the send button.', default: 'false'},
         {name: 'value', type: 'string', description: 'Controlled input value.'},
         {name: 'onChange', type: '(value: string) => void', description: 'Change handler for controlled mode.'},
         {name: 'placeholder', type: 'string', description: 'Placeholder text shown when the input is empty.', default: "'Type a message\u2026'"},
@@ -174,7 +174,7 @@ export const docs = {
       name: 'XDSChatSendButton',
       description: 'Circular send/stop toggle button for the chat composer. Place it inside XDSChatComposer where it reads context automatically — no wiring needed. When streaming starts, the button switches from a primary send icon to a secondary stop icon. Override any context value via props for standalone or custom usage.',
       props: [
-        {name: 'isStreaming', type: 'boolean', description: 'Whether the assistant is currently streaming. Defaults to context value.'},
+        {name: 'isStopShown', type: 'boolean', description: 'Whether the stop button is shown. Defaults to context value.'},
         {name: 'isDisabled', type: 'boolean', description: 'Whether the send button is disabled. Defaults to !canSend from context.'},
         {name: 'onSend', type: '() => void', description: 'Called when the user clicks send. Defaults to context onSubmit.'},
         {name: 'onStop', type: '() => void', description: 'Called when the user clicks stop during streaming. Defaults to context onStop.'},
@@ -354,7 +354,7 @@ export const docsZh = {
       propDescriptions: {
         onSubmit: '用户提交消息时调用。',
         onStop: '用户请求停止生成时调用。',
-        isStreaming: '助手是否正在流式输出。',
+        isStopShown: '是否显示停止按钮。',
         value: '受控输入值。',
         onChange: '受控模式的输入值变更时调用。序列化字符串包含标记占位符。',
         placeholder: '输入为空时显示的占位文本。',
@@ -401,7 +401,7 @@ export const docsZh = {
       description:
         '编写器的圆形发送/停止切换按钮。默认从 XDSChatComposerContext 读取状态，在 XDSChatComposer 内自动工作。所有上下文值均可通过 props 覆盖以用于独立使用。',
       propDescriptions: {
-        isStreaming: '助手是否正在流式响应。默认使用上下文值。',
+        isStopShown: '是否显示停止按钮。默认使用上下文值。',
         isDisabled: '发送按钮是否禁用。默认使用上下文的 !canSend。',
         onSend: '用户点击发送时调用。默认使用上下文的 onSubmit。',
         onStop: '流式响应期间用户点击停止时调用。默认使用上下文的 onStop。',
@@ -535,7 +535,7 @@ export const docsDense = {
       propDescriptions: {
         onSubmit: 'submit msg handler',
         onStop: 'stop generation handler',
-        isStreaming: 'assistant streaming state',
+        isStopShown: 'whether the stop button is shown',
         value: 'controlled input value',
         onChange: 'controlled change handler',
         placeholder: 'placeholder when empty',
@@ -587,7 +587,7 @@ export const docsDense = {
       name: 'XDSChatSendButton',
       description: 'circular send/stop toggle btn for composer; reads XDSChatComposerContext; all context vals overridable via props',
       propDescriptions: {
-        isStreaming: 'streaming state; defaults to context',
+        isStopShown: 'stop button visibility; defaults to context',
         isDisabled: 'disabled; defaults to !canSend from context',
         onSend: 'send click handler; defaults to context onSubmit',
         onStop: 'stop click handler; defaults to context onStop',

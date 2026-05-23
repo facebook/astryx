@@ -412,7 +412,7 @@ export const FullAIChat: StoryObj = {
       <XDSChatComposer
         onSubmit={handleSubmit}
         onStop={handleStop}
-        isStreaming={isStreaming}
+        isStopShown={isStreaming}
         drawer={
           files.length > 0 ? (
             <XDSChatComposerDrawer>
@@ -720,7 +720,7 @@ export const PanelView: StoryObj = {
       <XDSChatComposer
         onSubmit={handleSubmit}
         onStop={handleStop}
-        isStreaming={isStreaming}
+        isStopShown={isStreaming}
         drawer={
           files.length > 0 ? (
             <XDSChatComposerDrawer>

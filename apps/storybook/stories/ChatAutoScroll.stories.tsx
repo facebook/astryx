@@ -390,14 +390,13 @@ export const ScrollBehaviorComparison: StoryObj = {
             />
           </div>
         </div>
-
         {/* Chat area */}
         <XDSChatLayout
           composer={
             <XDSChatComposer
               onSubmit={() => {}}
               placeholder="Observe auto-scroll behavior above..."
-              isStreaming={isStreaming}
+              isStopShown={isStreaming}
             />
           }>
           <XDSChatMessageList>
