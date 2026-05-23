@@ -1,13 +1,11 @@
-// Copyright (c) Meta Platforms, Inc. and affiliates.
-
 'use client';
 
 import {useState} from 'react';
-import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
-import {XDSNavHeadingMenu, XDSNavHeadingMenuItem} from '@xds/core/NavMenu';
+import {usePathname} from 'next/navigation';
+import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 import {XDSButton} from '@xds/core/Button';
 import {XDSHStack} from '@xds/core/Layout';
-import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
+import {MagnifyingGlassIcon, HeartIcon} from '@heroicons/react/24/outline';
 import {GITHUB_REPO} from '../constants';
 import {XDS_WORDMARK} from './XDSWordmark';
 import {SearchPalette} from './SearchPalette';
@@ -35,23 +33,57 @@ const GitHubIcon = ({
 
 export function SharedTopNav() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const pathname = usePathname();
+
+  // Determine active nav item
+  const getActiveItem = () => {
+    if (
+      pathname === '/docs' ||
+      pathname.startsWith('/docs/') ||
+      pathname.startsWith('/packages/') ||
+      pathname.startsWith('/changelog')
+    )
+      return 'docs';
+    if (pathname.startsWith('/templates')) return 'templates';
+    if (pathname.startsWith('/themes')) return 'themes';
+    if (pathname.startsWith('/components')) return 'components';
+    if (pathname.startsWith('/playground')) return 'playground';
+    return undefined;
+  };
 
   return (
     <>
       <XDSTopNav
         label="XDS navigation"
-        heading={
-          <XDSTopNavHeading
-            logo={XDS_WORDMARK}
-            headingHref="/"
-            menu={
-              <XDSNavHeadingMenu size="lg">
-                <XDSNavHeadingMenuItem label="Craft" href="/craft" />
-                <XDSNavHeadingMenuItem label="Docs" href="/" />
-                <XDSNavHeadingMenuItem label="Playground" href="/playground" />
-              </XDSNavHeadingMenu>
-            }
-          />
+        heading={<XDSTopNavHeading logo={XDS_WORDMARK} headingHref="/" />}
+        centerContent={
+          <>
+            <XDSTopNavItem
+              label="Docs"
+              href="/docs"
+              isSelected={getActiveItem() === 'docs'}
+            />
+            <XDSTopNavItem
+              label="Templates"
+              href="/templates"
+              isSelected={getActiveItem() === 'templates'}
+            />
+            <XDSTopNavItem
+              label="Themes"
+              href="/themes"
+              isSelected={getActiveItem() === 'themes'}
+            />
+            <XDSTopNavItem
+              label="Components"
+              href="/components"
+              isSelected={getActiveItem() === 'components'}
+            />
+            <XDSTopNavItem
+              label="Playground"
+              href="/playground"
+              isSelected={getActiveItem() === 'playground'}
+            />
+          </>
         }
         endContent={
           <XDSHStack gap={0.5}>
@@ -63,11 +95,24 @@ export function SharedTopNav() {
               onClick={() => setIsSearchOpen(true)}
             />
             <XDSButton
+              label="Community"
+              variant="ghost"
+              isIconOnly
+              icon={<HeartIcon width={20} height={20} />}
+              href="/community"
+            />
+            <XDSButton
               label="GitHub"
               variant="ghost"
               isIconOnly
               icon={<GitHubIcon />}
               href={GITHUB_REPO}
+            />
+            <XDSButton
+              label="Get started"
+              variant="primary"
+              size="sm"
+              href="/docs/getting-started"
             />
           </XDSHStack>
         }

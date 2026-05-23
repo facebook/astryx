@@ -115,12 +115,12 @@ export function DocsShell({
               </XDSLink>
             </XDSCenter>
           }>
-          {/* Home */}
-          <XDSSideNavSection title="Home" isHeaderHidden>
+          {/* Documentation */}
+          <XDSSideNavSection title="Documentation" isHeaderHidden>
             <XDSSideNavItem
-              label="Home"
-              href="/"
-              isSelected={pathname === '/'}
+              label="Documentation"
+              href="/docs"
+              isSelected={pathname === '/docs'}
             />
           </XDSSideNavSection>
 

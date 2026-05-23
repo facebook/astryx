@@ -1,9 +1,7 @@
-// Copyright (c) Meta Platforms, Inc. and affiliates.
-
 /**
  * Page type: overview
- * Home page — hero, libraries, foundations.
- * All data from pipeline registries.
+ * Documentation home — hero, libraries, foundations.
+ * Uses AssetCard for consistent visual treatment instead of individual images.
  */
 
 import * as stylex from '@stylexjs/stylex';
@@ -17,11 +15,12 @@ import {XDSTheme, XDSMediaTheme} from '@xds/core/theme';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSLink} from '@xds/core/Link';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
-import {packages} from '../../generated/packageRegistry';
-import {componentCount} from '../../generated/componentRegistry';
-import {docTopics} from '../../generated/docsRegistry';
-import {ThemeShowcaseTile} from '../../components/ThemeShowcaseTile';
-import {themeObjects} from '../../generated/themeRegistry';
+import {packages} from '../../../generated/packageRegistry';
+import {componentCount} from '../../../generated/componentRegistry';
+import {docTopics} from '../../../generated/docsRegistry';
+import {ThemeShowcaseTile} from '../../../components/ThemeShowcaseTile';
+import {AssetCard} from '../../../components/AssetCard';
+import {themeObjects} from '../../../generated/themeRegistry';
 
 const TerminalIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -64,17 +63,18 @@ const PACKAGE_ICONS: Record<string, React.ReactNode> = {
   '@xds/core': <CodeIcon />,
 };
 
-const PACKAGE_IMAGES: Record<string, string> = {
-  '@xds/cli': '/LibrariesCli.png',
-  '@xds/core': '/LibrariesCore.png',
+const PACKAGE_GRADIENTS: Record<string, 'primary' | 'secondary' | 'tertiary' | 'warm' | 'cool' | 'neutral'> = {
+  '@xds/cli': 'warm',
+  '@xds/core': 'primary',
 };
 
-const foundationImages: Record<string, string> = {
-  color: '/FoundationsColors.png',
-  icons: '/FoundationsIcons.png',
-  shape: '/FoundationsShape.png',
-  spacing: '/FoundationsSpacing.png',
-  typography: '/FoundationsTypogrpahy.png',
+const FOUNDATION_GRADIENTS: Record<string, 'primary' | 'secondary' | 'tertiary' | 'warm' | 'cool' | 'neutral'> = {
+  color: 'primary',
+  icons: 'cool',
+  shape: 'tertiary',
+  spacing: 'secondary',
+  typography: 'warm',
+  tokens: 'neutral',
 };
 
 const styles = stylex.create({
@@ -123,30 +123,11 @@ const styles = stylex.create({
   heroButtons: {
     marginTop: 24,
   },
-  foundationImage: {
-    display: 'block',
-    width: '100%',
-    aspectRatio: '2/1',
-    objectFit: 'cover' as const,
-    borderRadius: 12,
-    marginBottom: 12,
-    backgroundColor: 'var(--color-background-card)',
-  },
   packageImageWrapper: {
-    aspectRatio: '2/1',
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    borderRadius: 12,
-    position: 'relative' as const,
     marginBottom: 12,
-    backgroundColor: 'var(--color-background-card)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   packageIconOverlay: {
-    color: '#484233',
-    opacity: 0.8,
+    color: 'rgba(255, 255, 255, 0.9)',
   },
   monoText: {
     fontFamily: 'monospace',
@@ -175,16 +156,12 @@ const styles = stylex.create({
 const foundationTopics = docTopics
   .filter(d => d.category === 'foundations')
   .sort((a, b) => {
-    if (a.topic === 'tokens') {
-      return -1;
-    }
-    if (b.topic === 'tokens') {
-      return 1;
-    }
+    if (a.topic === 'tokens') return -1;
+    if (b.topic === 'tokens') return 1;
     return a.title.localeCompare(b.title);
   });
 
-export default function HomePage() {
+export default function DocsHomePage() {
   const coreCount = componentCount;
 
   return (
@@ -231,7 +208,7 @@ export default function HomePage() {
                 <XDSButton
                   variant="secondary"
                   label="Browse components"
-                  href="/packages/core"
+                  href="/components"
                 />
               </XDSHStack>
             </XDSMediaTheme>
@@ -252,31 +229,31 @@ export default function HomePage() {
               rowGap={8}>
               {packages.map(pkg => {
                 const theme = themeObjects[pkg.name];
-                const image = PACKAGE_IMAGES[pkg.name] ?? '/LibrariesCore.png';
                 const icon = PACKAGE_ICONS[pkg.name] ?? null;
+                const gradient = PACKAGE_GRADIENTS[pkg.name] ?? 'neutral';
 
                 return (
                   <Link
                     key={pkg.name}
                     href={`/packages/${pkg.name.replace('@xds/', '')}`}
                     {...stylex.props(styles.linkReset)}>
-                    {theme ? (
-                      <XDSTheme theme={theme}>
-                        <div {...stylex.props(styles.packageImageWrapper)}>
-                          <ThemeShowcaseTile label={pkg.displayName} />
-                        </div>
-                      </XDSTheme>
-                    ) : (
-                      <div
-                        {...stylex.props(styles.packageImageWrapper)}
-                        style={{backgroundImage: `url(${image})`}}>
-                        {icon && (
-                          <div {...stylex.props(styles.packageIconOverlay)}>
-                            {icon}
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    <div {...stylex.props(styles.packageImageWrapper)}>
+                      {theme ? (
+                        <XDSTheme theme={theme}>
+                          <AssetCard gradient={gradient} shape="rounded-lg">
+                            <ThemeShowcaseTile label={pkg.displayName} />
+                          </AssetCard>
+                        </XDSTheme>
+                      ) : (
+                        <AssetCard gradient={gradient} shape="rounded-lg">
+                          {icon && (
+                            <div {...stylex.props(styles.packageIconOverlay)}>
+                              {icon}
+                            </div>
+                          )}
+                        </AssetCard>
+                      )}
+                    </div>
                     <XDSVStack gap={0.5}>
                       <span {...stylex.props(styles.monoText)}>
                         <XDSText type="body" weight="bold">
@@ -311,30 +288,29 @@ export default function HomePage() {
               columns={{minWidth: 300, repeat: 'fit'}}
               gap={4}
               rowGap={8}>
-              {foundationTopics.map(topic => (
-                <Link
-                  key={topic.topic}
-                  href={`/docs/${topic.topic}`}
-                  {...stylex.props(styles.linkReset)}>
-                  {foundationImages[topic.topic] ? (
-                    <img
-                      src={foundationImages[topic.topic]}
-                      alt={topic.title}
-                      {...stylex.props(styles.foundationImage)}
+              {foundationTopics.map(topic => {
+                const gradient = FOUNDATION_GRADIENTS[topic.topic] ?? 'neutral';
+                return (
+                  <Link
+                    key={topic.topic}
+                    href={`/docs/${topic.topic}`}
+                    {...stylex.props(styles.linkReset)}>
+                    <AssetCard
+                      gradient={gradient}
+                      shape="rounded-lg"
+                      aspectRatio="2/1"
                     />
-                  ) : (
-                    <div {...stylex.props(styles.foundationImage)} />
-                  )}
-                  <XDSVStack gap={1}>
-                    <XDSText type="body" weight="bold">
-                      {topic.title}
-                    </XDSText>
-                    <XDSText type="supporting" color="secondary">
-                      {topic.description}
-                    </XDSText>
-                  </XDSVStack>
-                </Link>
-              ))}
+                    <XDSVStack gap={1} style={{marginTop: 12}}>
+                      <XDSText type="body" weight="bold">
+                        {topic.title}
+                      </XDSText>
+                      <XDSText type="supporting" color="secondary">
+                        {topic.description}
+                      </XDSText>
+                    </XDSVStack>
+                  </Link>
+                );
+              })}
             </XDSGrid>
           </XDSVStack>
         </XDSVStack>
