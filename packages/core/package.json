@@ -391,6 +391,12 @@
       "import": "./dist/NumberInput/index.mjs",
       "require": "./dist/NumberInput/index.js"
     },
+    "./Outline": {
+      "source": "./src/Outline/index.ts",
+      "types": "./dist/Outline/index.d.ts",
+      "import": "./dist/Outline/index.mjs",
+      "require": "./dist/Outline/index.js"
+    },
     "./OverflowList": {
       "source": "./src/OverflowList/index.ts",
       "types": "./dist/OverflowList/index.d.ts",
