@@ -172,7 +172,9 @@ export function XDSChartTooltip({
     (e: ChartPointerEvent) => {
       const card = cardRef.current;
       const svg = svgRef.current;
-      if (!card) return;
+      if (!card) {
+        return;
+      }
       if (!svg || !e.nearest) {
         card.style.display = 'none';
         return;
@@ -240,13 +242,19 @@ export function XDSChartTooltip({
 
   // Hover dots — read from the resolved map at the hovered index.
   const dots = useMemo(() => {
-    if (!showHoverDots || hoveredIndex == null) return null;
+    if (!showHoverDots || hoveredIndex == null) {
+      return null;
+    }
     const elements: ReactNode[] = [];
     for (const s of series) {
-      if (!shouldRenderHoverDot(s.type)) continue;
+      if (!shouldRenderHoverDot(s.type)) {
+        continue;
+      }
       const points = resolved.get(s.key);
       const point = points?.find(p => p.dataIndex === hoveredIndex);
-      if (!point) continue;
+      if (!point) {
+        continue;
+      }
       elements.push(
         <circle
           key={s.key}
@@ -265,10 +273,16 @@ export function XDSChartTooltip({
 
   // Band highlight — only on band scales (categorical x-axis).
   const bandHighlight = useMemo(() => {
-    if (!highlightBand || hoveredIndex == null) return null;
-    if (!('bandwidth' in xScale)) return null;
+    if (!highlightBand || hoveredIndex == null) {
+      return null;
+    }
+    if (!('bandwidth' in xScale)) {
+      return null;
+    }
     const xv = data[hoveredIndex]?.[xKey];
-    if (xv == null) return null;
+    if (xv == null) {
+      return null;
+    }
     const bandScale = xScale as ScaleBand<string>;
     const x = bandScale(String(xv)) ?? 0;
     const bw = bandScale.bandwidth();
