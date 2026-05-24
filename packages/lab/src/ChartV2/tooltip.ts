@@ -38,11 +38,17 @@ export function deriveTooltipSeriesValues(
   datum: Record<string, unknown> | undefined,
   resolvedKeys: ReadonlySet<string>,
 ): TooltipSeriesValue[] {
-  if (!datum) return [];
+  if (!datum) {
+    return [];
+  }
   const out: TooltipSeriesValue[] = [];
   for (const s of series) {
-    if (isUtilityMarkType(s.type)) continue;
-    if (!resolvedKeys.has(s.key)) continue;
+    if (isUtilityMarkType(s.type)) {
+      continue;
+    }
+    if (!resolvedKeys.has(s.key)) {
+      continue;
+    }
     out.push({
       key: s.key,
       label: s.label ?? s.key,

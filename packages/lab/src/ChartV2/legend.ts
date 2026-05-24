@@ -15,12 +15,18 @@ export interface LegendItem {
   type?: string;
 }
 
+function hasLegendColor(
+  series: SeriesDef,
+): series is SeriesDef & {readonly color: string} {
+  return !isUtilityMarkType(series.type) && series.color != null;
+}
+
 /**
  * Derive legend items from series definitions.
  * Skips utility marks and series without a color.
  */
 export function deriveLegendItems(series: readonly SeriesDef[]): LegendItem[] {
   return series
-    .filter(s => !isUtilityMarkType(s.type) && s.color)
-    .map(s => ({label: s.label ?? s.key, color: s.color!, type: s.type}));
+    .filter(hasLegendColor)
+    .map(s => ({label: s.label ?? s.key, color: s.color, type: s.type}));
 }

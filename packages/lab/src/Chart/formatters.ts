@@ -11,10 +11,18 @@
 
 export function compactNumber(value: unknown): string {
   const n = Number(value);
-  if (isNaN(n)) return String(value);
-  if (Math.abs(n) >= 1_000_000_000) return `${strip(n / 1_000_000_000)}B`;
-  if (Math.abs(n) >= 1_000_000) return `${strip(n / 1_000_000)}M`;
-  if (Math.abs(n) >= 1_000) return `${strip(n / 1_000)}K`;
+  if (isNaN(n)) {
+    return String(value);
+  }
+  if (Math.abs(n) >= 1_000_000_000) {
+    return `${strip(n / 1_000_000_000)}B`;
+  }
+  if (Math.abs(n) >= 1_000_000) {
+    return `${strip(n / 1_000_000)}M`;
+  }
+  if (Math.abs(n) >= 1_000) {
+    return `${strip(n / 1_000)}K`;
+  }
   return n.toString();
 }
 
@@ -31,11 +39,18 @@ export function compactNumber(value: unknown): string {
 export function currency(symbol = '$'): (value: unknown) => string {
   return (value: unknown) => {
     const n = Number(value);
-    if (isNaN(n)) return String(value);
-    if (Math.abs(n) >= 1_000_000_000)
+    if (isNaN(n)) {
+      return String(value);
+    }
+    if (Math.abs(n) >= 1_000_000_000) {
       return `${symbol}${strip(n / 1_000_000_000)}B`;
-    if (Math.abs(n) >= 1_000_000) return `${symbol}${strip(n / 1_000_000)}M`;
-    if (Math.abs(n) >= 1_000) return `${symbol}${strip(n / 1_000)}K`;
+    }
+    if (Math.abs(n) >= 1_000_000) {
+      return `${symbol}${strip(n / 1_000_000)}M`;
+    }
+    if (Math.abs(n) >= 1_000) {
+      return `${symbol}${strip(n / 1_000)}K`;
+    }
     return `${symbol}${n.toLocaleString()}`;
   };
 }
@@ -51,7 +66,9 @@ function strip(n: number): string {
  */
 export function percent(value: unknown): string {
   const n = Number(value);
-  if (isNaN(n)) return String(value);
+  if (isNaN(n)) {
+    return String(value);
+  }
   return `${Math.round(n * 100)}%`;
 }
 
@@ -60,7 +77,9 @@ export function percent(value: unknown): string {
  */
 export function shortDate(value: unknown): string {
   const d = value instanceof Date ? value : new Date(Number(value));
-  if (isNaN(d.getTime())) return String(value);
+  if (isNaN(d.getTime())) {
+    return String(value);
+  }
   return d.toLocaleDateString(undefined, {month: 'short', day: 'numeric'});
 }
 
@@ -69,6 +88,8 @@ export function shortDate(value: unknown): string {
  */
 export function monthYear(value: unknown): string {
   const d = value instanceof Date ? value : new Date(Number(value));
-  if (isNaN(d.getTime())) return String(value);
+  if (isNaN(d.getTime())) {
+    return String(value);
+  }
   return d.toLocaleDateString(undefined, {month: 'short', year: 'numeric'});
 }

@@ -32,6 +32,7 @@ export default tseslint.config(
     ignores: [
       "**/dist/**",
       "**/node_modules/**",
+      ".claude/**",
       "**/internal/eslint-plugin-xds/**",
       ".github/scripts/**",
       "scripts/**",
@@ -187,6 +188,7 @@ export default tseslint.config(
   {
     files: [
       "apps/storybook/stories/**/*.{ts,tsx}",
+      "apps/docsite/src/generated/**/*.{ts,tsx}",
       "apps/sandbox/**/*.{ts,tsx}",
       "apps/example-*/**/*.{ts,tsx}",
       "internal/**/*.{ts,tsx}",

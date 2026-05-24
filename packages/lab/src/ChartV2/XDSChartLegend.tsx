@@ -37,7 +37,9 @@ export function XDSChartLegend({
   position = 'bottom',
   alignment = 'start',
 }: XDSChartLegendProps) {
-  if (items.length === 0) return null;
+  if (items.length === 0) {
+    return null;
+  }
 
   const isVertical = position === 'start' || position === 'end';
 
