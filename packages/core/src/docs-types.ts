@@ -193,6 +193,18 @@ export interface ComponentEntry {
   description: string;
   /** All public props for this component. */
   props: PropDoc[];
+  /** Short code examples rendered by the CLI after the props table. */
+  examples?: ExampleDoc[];
+}
+
+/**
+ * Code example for a component or sub-component.
+ */
+export interface ExampleDoc {
+  /** Optional heading shown above the code block. */
+  label?: string;
+  /** TSX source for the example. */
+  code: string;
 }
 
 /**
@@ -414,6 +426,8 @@ interface BaseDoc {
   /** Component usage documentation — concise summary, best practices,
    *  and optional visual anatomy. */
   usage: UsageDoc;
+  /** Short code examples rendered by the CLI after the props table. */
+  examples?: ExampleDoc[];
 
   /** Playground configuration. Controls how the interactive preview
    *  renders this component with sensible defaults and slot content. */

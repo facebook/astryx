@@ -75,6 +75,12 @@ export const docs = {
       default: "'start'",
     },
     {
+      name: 'inlinePlugins',
+      type: 'MarkdownInlinePlugin[]',
+      description:
+        'Transforms regex matches in parsed text nodes into custom inline React elements. Use for issue refs, diff refs, mentions, and other shorthand patterns. Inline code and fenced code blocks are unaffected.',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -114,9 +120,33 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Set headingLevelStart to match the page hierarchy — e.g. start at 3 if the markdown sits inside an h2 section.' },
       { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },
+      { guidance: true, description: 'Use inlinePlugins for custom shorthand patterns like issue refs, diff refs, and mentions instead of preprocessing the markdown string.' },
       { guidance: false, description: 'Use Markdown for hand-authored layouts — use XDSText and XDSHeading directly when you control the content.' },
     ],
   },
+  examples: [
+    {
+      label: 'Inline Plugins',
+      code: `
+import {XDSLink} from '@xds/core/Link';
+
+const issuePlugins = [
+  {
+    pattern: /\\b([A-Z][A-Z0-9]+-\\d+)\\b/g,
+    render: (match, key) => (
+      <XDSLink key={key} href={\`/issues/\${match[1]}\`}>
+        {match[0]}
+      </XDSLink>
+    ),
+  },
+];
+
+<XDSMarkdown inlinePlugins={issuePlugins}>
+  {'Fixed PROJ-123. Inline code stays plain: \`PROJ-999\`.'}
+</XDSMarkdown>;
+`,
+    },
+  ],
 };
 
 export const docsZh = {
@@ -180,6 +210,12 @@ export const docsZh = {
       default: "'start'",
     },
     {
+      name: 'inlinePlugins',
+      type: 'MarkdownInlinePlugin[]',
+      description:
+        '将已解析文本节点中的正则匹配转换为自定义内联 React 元素。适用于 issue 引用、diff 引用、用户提及等简写模式。内联代码和围栏代码块不受影响。',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -212,6 +248,7 @@ export const docsZh = {
     bestPractices: [
       { guidance: true, description: 'Set headingLevelStart to match the page hierarchy — e.g. start at 3 if the markdown sits inside an h2 section.' },
       { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },
+      { guidance: true, description: 'Use inlinePlugins for custom shorthand patterns like issue refs, diff refs, and mentions instead of preprocessing the markdown string.' },
       { guidance: false, description: 'Use Markdown for hand-authored layouts — use XDSText and XDSHeading directly when you control the content.' },
     ],
   },
@@ -240,6 +277,7 @@ export const docsDense = {
     citationStyle: "'label'|'number'. label=chip w/ title+icon, number=compact badge. Default: 'label'.",
     contentWidth: 'number|string. Max width for prose (headings, paragraphs, lists). Tables/code unconstrained.',
     contentAlign: "'start'|'center'. Prose alignment when contentWidth < container. Default: 'start'.",
+    inlinePlugins: 'MarkdownInlinePlugin[]. Regex matches in text nodes -> custom inline React elements. Skips inline/fenced code.',
     xstyle: 'stylex.create() for layout (margins, sizing).',
     className: 'CSS class. Prefer xstyle.',
     style: 'Inline styles. Prefer xstyle.',
@@ -248,5 +286,6 @@ export const docsDense = {
   ex: [
     '<XDSMarkdown>{\'# Hello\\\\n\\\\nThis is **bold** text.\'}</XDSMarkdown>',
     '<XDSMarkdown isStreaming={isStreaming}>{streamedText}</XDSMarkdown>',
+    '<XDSMarkdown inlinePlugins={issuePlugins}>{\'Fixed PROJ-123; `PROJ-999` stays plain.\'}</XDSMarkdown>',
   ],
 };
