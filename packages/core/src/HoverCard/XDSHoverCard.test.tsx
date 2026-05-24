@@ -55,6 +55,24 @@ describe('XDSHoverCard', () => {
     expect(screen.getByRole('button', {name: 'Trigger'})).toBeInTheDocument();
   });
 
+  it('wraps element children in an inline-safe span', () => {
+    const {container} = render(
+      <p>
+        Before{' '}
+        <XDSHoverCard content={<span>Card content</span>}>
+          <a href="#trigger">Trigger</a>
+        </XDSHoverCard>{' '}
+        after
+      </p>,
+    );
+
+    const trigger = screen.getByRole('link', {name: 'Trigger'});
+    const paragraph = container.querySelector('p');
+
+    expect(trigger.parentElement?.tagName).toBe('SPAN');
+    expect(paragraph?.querySelector('div')).toBeNull();
+  });
+
   it('does not show content initially', () => {
     render(
       <XDSHoverCard content={<span>Card content</span>}>
