@@ -13,13 +13,17 @@ import React from 'react';
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, act, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type {ReactNode} from 'react';
+import {useRef, useState, type ReactNode} from 'react';
 import {XDSSideNav} from './XDSSideNav';
+import {XDSSideNavCollapseButton} from './XDSSideNavCollapseButton';
 import {XDSSideNavHeading} from './XDSSideNavHeading';
 import {XDSSideNavItem} from './XDSSideNavItem';
 import {XDSSideNavSection} from './XDSSideNavSection';
 import {XDSLinkProvider} from '../Link/XDSLinkProvider';
-import {XDSSideNavCollapseContext} from './XDSSideNavCollapseContext';
+import {
+  XDSSideNavCollapseContext,
+  type XDSSideNavImperativeCollapseHandle,
+} from './XDSSideNavCollapseContext';
 
 function CustomLink({
   children,
@@ -122,6 +126,41 @@ describe('XDSSideNav', () => {
   it('passes data-testid to root', () => {
     render(<XDSSideNav data-testid="page-nav">Content</XDSSideNav>);
     expect(screen.getByTestId('page-nav')).toBeInTheDocument();
+  });
+
+  it('renders and toggles from outside SideNav when handleRef is provided', async () => {
+    const user = userEvent.setup();
+
+    function Example() {
+      const [isCollapsed, setIsCollapsed] = useState(false);
+      const handleRef = useRef<XDSSideNavImperativeCollapseHandle>(null);
+
+      return (
+        <>
+          <XDSSideNavCollapseButton handleRef={handleRef} />
+          <XDSSideNav
+            handleRef={handleRef}
+            collapsible={{
+              isCollapsed,
+              onCollapsedChange: setIsCollapsed,
+              hasButton: false,
+            }}>
+            <XDSSideNavSection title="Main">
+              <XDSSideNavItem label="Dashboard" icon={StubIcon} />
+            </XDSSideNavSection>
+          </XDSSideNav>
+        </>
+      );
+    }
+
+    render(<Example />);
+
+    const button = screen.getByRole('button', {name: 'Collapse sidebar'});
+    await user.click(button);
+
+    expect(
+      screen.getByRole('button', {name: 'Expand sidebar'}),
+    ).toBeInTheDocument();
   });
 });
 

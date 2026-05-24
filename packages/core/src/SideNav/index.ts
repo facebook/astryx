@@ -27,7 +27,10 @@ export {XDSSideNavCollapseButton} from './XDSSideNavCollapseButton';
 export type {XDSSideNavCollapseButtonProps} from './XDSSideNavCollapseButton';
 
 export {useXDSSideNavCollapse} from './XDSSideNavCollapseContext';
-export type {XDSSideNavCollapseState} from './XDSSideNavCollapseContext';
+export type {
+  XDSSideNavCollapseState,
+  XDSSideNavImperativeCollapseHandle,
+} from './XDSSideNavCollapseContext';
 
 export {
   XDSSideNavRenderContext,

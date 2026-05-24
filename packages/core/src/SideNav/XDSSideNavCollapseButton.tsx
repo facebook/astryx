@@ -9,7 +9,7 @@
  * @position Composable toggle button for sidenav collapse
  *
  * Place inside XDSSideNav (reads context automatically) or outside
- * (pass sideNavRef to connect). Customizable via label/children.
+ * (pass handleRef to connect). Customizable via label/children.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/SideNav/SideNav.doc.mjs
@@ -17,13 +17,17 @@
  * - /packages/cli/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
-import React, {useCallback, type ReactNode} from 'react';
+import React, {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {durationVars, easeVars} from '../theme/tokens.stylex';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {XDSButton} from '../Button';
 import type {XDSBaseProps} from '../XDSBaseProps';
-import {useXDSSideNavCollapse} from './XDSSideNavCollapseContext';
+import {
+  useXDSSideNavCollapse,
+  type XDSSideNavCollapseState,
+  type XDSSideNavImperativeCollapseHandle,
+} from './XDSSideNavCollapseContext';
 import {useXDSAppShellMobile} from '../AppShell/XDSAppShellMobileContext';
 
 // =============================================================================
@@ -50,11 +54,10 @@ const styles = stylex.create({
 export interface XDSSideNavCollapseButtonProps extends XDSBaseProps<HTMLButtonElement> {
   ref?: React.Ref<HTMLButtonElement>;
   /**
-   * Ref to the XDSSideNav element. Only needed when the button is
-   * rendered outside the sidenav (reads collapse state via ref instead
-   * of context).
+   * Imperative handle from XDSSideNav. Only needed when the button is rendered
+   * outside the sidenav, where collapse context is unavailable.
    */
-  sideNavRef?: React.RefObject<HTMLElement | null>;
+  handleRef?: React.RefObject<XDSSideNavImperativeCollapseHandle | null>;
 
   /**
    * Custom button label text. When provided, renders as a text button
@@ -77,7 +80,7 @@ export interface XDSSideNavCollapseButtonProps extends XDSBaseProps<HTMLButtonEl
  *
  * Place anywhere inside XDSSideNav (header, topContent, footer, footerIcons)
  * and it reads collapse state from context automatically. For placement
- * outside the sidenav (e.g. in TopNav or content area), pass sideNavRef.
+ * outside the sidenav (e.g. in TopNav or content area), pass handleRef.
  *
  * @example
  * ```
@@ -89,26 +92,20 @@ export interface XDSSideNavCollapseButtonProps extends XDSBaseProps<HTMLButtonEl
  * @example
  * ```
  * const ref = useRef(null);
- * <XDSTopNav endContent={<XDSSideNavCollapseButton sideNavRef={ref} />} />
- * <XDSSideNav ref={ref} isCollapsible>...</XDSSideNav>
+ * <XDSTopNav endContent={<XDSSideNavCollapseButton handleRef={ref} />} />
+ * <XDSSideNav handleRef={ref} collapsible>...</XDSSideNav>
  * ```
  */
 export function XDSSideNavCollapseButton({
   ref,
-  sideNavRef: _sideNavRef,
+  handleRef,
   label,
   children,
+  ...props
 }: XDSSideNavCollapseButtonProps) {
-  const {isCollapsed, toggle, isCollapsible} = useXDSSideNavCollapse();
+  const {isCollapsed, toggle, isCollapsible} =
+    useXDSSideNavCollapseState(handleRef);
   const {isMobile} = useXDSAppShellMobile();
-
-  const handleClick = useCallback(() => {
-    toggle();
-  }, [toggle]);
-
-  // TODO: sideNavRef-based wiring for outside-sidenav usage
-  // For now, the button only works via context (inside sidenav or
-  // when AppShell provides the context at the shell level).
 
   // Hide when not collapsible, or when in mobile mode (sidenav is in
   // the mobile drawer — collapse doesn't apply there)
@@ -121,7 +118,8 @@ export function XDSSideNavCollapseButton({
       ref={ref}
       label={label ?? (isCollapsed ? 'Expand sidebar' : 'Collapse sidebar')}
       variant="ghost"
-      onClick={handleClick}
+      {...props}
+      onClick={toggle}
       icon={
         children ?? (
           <span
@@ -139,3 +137,25 @@ export function XDSSideNavCollapseButton({
 }
 
 XDSSideNavCollapseButton.displayName = 'XDSSideNavCollapseButton';
+
+function useXDSSideNavCollapseState(
+  handleRef:
+    | React.RefObject<XDSSideNavImperativeCollapseHandle | null>
+    | undefined,
+): XDSSideNavCollapseState {
+  const contextCollapseState = useXDSSideNavCollapse();
+
+  if (handleRef == null) {
+    return contextCollapseState;
+  }
+
+  const externalCollapseState = handleRef.current?.getCollapseState() ?? null;
+
+  return {
+    isCollapsed: externalCollapseState?.isCollapsed ?? false,
+    toggle: () => {
+      handleRef.current?.getCollapseState()?.toggle();
+    },
+    isCollapsible: externalCollapseState?.isCollapsible ?? true,
+  };
+}

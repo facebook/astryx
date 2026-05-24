@@ -30,7 +30,7 @@ import {XDSIcon} from '../Icon';
 import {XDSIconButton} from '../IconButton';
 import {useScrollLock} from '../hooks/useScrollLock';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
-import {xdsClassName, mergeProps} from '../utils';
+import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
 /**
@@ -281,7 +281,7 @@ export function XDSLightbox({
 
   // Index state (controlled + uncontrolled)
   const isControlled = controlledIndex !== undefined;
-  const [uncontrolledIndex, setUncontrolledIndex] = useState(defaultIndex);
+  const [uncontrolledIndex, setUncontrolledIndex] = seState(defaultIndex);
   const index = isControlled ? controlledIndex : uncontrolledIndex;
 
   const setIndex = useCallback(
@@ -314,7 +314,10 @@ export function XDSLightbox({
 
   // Reset zoom on image change
   useEffect(() => {
+    // Reset image view state when the active media item changes.
+    // eslint-disable-next-line @eslint-react/set-state-in-effect
     setZoom(1);
+    // eslint-disable-next-line @eslint-react/set-state-in-effect
     setPan({x: 0, y: 0});
   }, [index, currentItem.src]);
 
@@ -443,21 +446,6 @@ export function XDSLightbox({
     };
   }, [isDragging]);
 
-  // Merge refs
-  const setRef = useCallback(
-    (node: HTMLDialogElement | null) => {
-      (dialogRef as React.MutableRefObject<HTMLDialogElement | null>).current =
-        node;
-      if (typeof ref === 'function') {
-        ref(node);
-      } else if (ref) {
-        (ref as React.MutableRefObject<HTMLDialogElement | null>).current =
-          node;
-      }
-    },
-    [ref],
-  );
-
   const isZoomed = zoom > 1;
   const imageTransform =
     zoom === 1
@@ -466,7 +454,7 @@ export function XDSLightbox({
 
   return (
     <dialog
-      ref={setRef}
+      ref={mergeRefs(ref, dialogRef)}
       onCancel={handleCancel}
       onClick={handleBackdropClick}
       onKeyDown={handleKeyDown}

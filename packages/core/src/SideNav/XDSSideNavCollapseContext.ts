@@ -10,6 +10,8 @@
  *
  * Provides collapse state to XDSSideNavCollapseButton and other
  * sidenav children. Set by XDSSideNav when isCollapsible is true.
+ * Also provides a small imperative handle for ref-based collapse buttons
+ * rendered outside the XDSSideNav tree.
  */
 
 import {createContext, use} from 'react';
@@ -27,6 +29,10 @@ export interface XDSSideNavCollapseState {
  * @deprecated Use XDSSideNavCollapseState instead.
  */
 export type SideNavCollapseState = XDSSideNavCollapseState;
+
+export interface XDSSideNavImperativeCollapseHandle {
+  getCollapseState: () => XDSSideNavCollapseState | null;
+}
 
 export const XDSSideNavCollapseContext = createContext<XDSSideNavCollapseState>(
   {

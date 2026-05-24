@@ -21,13 +21,23 @@
  * - /packages/cli/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
-import {useCallback, useRef, useState, type ReactNode} from 'react';
+import {
+  useCallback,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {borderVars, colorVars, spacingVars} from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps, mergeRefs} from '../utils';
-import {XDSSideNavCollapseContext} from './XDSSideNavCollapseContext';
+import {
+  XDSSideNavCollapseContext,
+  type XDSSideNavCollapseState,
+  type XDSSideNavImperativeCollapseHandle,
+} from './XDSSideNavCollapseContext';
 import {XDSSideNavCollapseButton} from './XDSSideNavCollapseButton';
 import {useXDSSideNavRenderMode} from './XDSSideNavRenderContext';
 import {XDSMobileNav} from '../MobileNav/XDSMobileNav';
@@ -186,6 +196,14 @@ const styles = stylex.create({
 export interface XDSSideNavProps extends XDSBaseProps<HTMLElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLElement>;
+
+  /**
+   * Imperative collapse handle for XDSSideNavCollapseButton instances rendered
+   * outside this SideNav. This intentionally stays separate from `ref`, which
+   * continues to expose the root HTMLElement.
+   */
+  handleRef?: React.Ref<XDSSideNavImperativeCollapseHandle>;
+
   /**
    * Header area — typically XDSSideNavHeading. Sticky at top.
    */
@@ -308,6 +326,7 @@ export function XDSSideNav({
   style,
   'data-testid': testId,
   ref,
+  handleRef,
   ...props
 }: XDSSideNavProps) {
   // Parse collapsible prop
@@ -327,6 +346,12 @@ export function XDSSideNav({
   const [uncontrolledCollapsed, setUncontrolledCollapsed] =
     useState(defaultIsCollapsed);
   const collapsed = isControlled ? controlledCollapsed : uncontrolledCollapsed;
+  const navRef = useRef<HTMLElement>(null);
+  const collapseStateRef = useRef<XDSSideNavCollapseState>({
+    isCollapsed: collapsed,
+    toggle: () => {},
+    isCollapsible,
+  });
 
   const setCollapsedState = useCallback(
     (value: boolean) => {
@@ -352,6 +377,12 @@ export function XDSSideNav({
 
   const toggle = useCallback(() => {
     const next = !collapsed;
+
+    collapseStateRef.current = {
+      ...collapseStateRef.current,
+      isCollapsed: next,
+    };
+
     setCollapsedState(next);
     if (isResizable) {
       if (next) {
@@ -364,13 +395,25 @@ export function XDSSideNav({
 
   const showResizeHandle = isResizable && !collapsed;
 
+  collapseStateRef.current = {
+    isCollapsed: collapsed,
+    toggle,
+    isCollapsible,
+  };
+
   const collapseContext = {
     isCollapsed: collapsed,
     toggle,
     isCollapsible,
   };
 
-  const navRef = useRef<HTMLElement>(null);
+  useImperativeHandle(
+    handleRef,
+    () => ({
+      getCollapseState: () => collapseStateRef.current,
+    }),
+    [],
+  );
 
   // Render mode — when inside AppShell mobile layout, render subsets
   const renderMode = useXDSSideNavRenderMode();
