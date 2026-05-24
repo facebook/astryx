@@ -7,7 +7,8 @@
  * @input Uses React, StyleX, useScrollOverflow, useXDSLayer, XDSButton, XDSIcon, theme tokens
  * @output Exports XDSCarousel component
  * @position Horizontal scroll container with fade-edge overflow indication,
- *   optional prev/next buttons on the top layer, and scroll-snap.
+ *   optional prev/next buttons on the top layer, scroll-snap, and a small
+ *   visual bleed allowance for child focus/selection indicators.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Carousel/index.ts (exports)
@@ -85,13 +86,16 @@ const styles = stylex.create({
     alignItems: 'center',
     minWidth: 0,
     maxWidth: '100%',
-    overflowX: 'hidden',
+    overflow: 'clip',
+    overflowClipMargin: spacingVars['--spacing-0-5'],
   },
   scroller: {
     display: 'flex',
     alignItems: 'center',
     overflowX: 'auto',
     overflowY: 'hidden',
+    paddingBottom: spacingVars['--spacing-0-5'],
+    marginBottom: `calc(-1 * ${spacingVars['--spacing-0-5']})`,
     overscrollBehaviorX: 'contain',
     scrollBehavior: {
       default: 'smooth',

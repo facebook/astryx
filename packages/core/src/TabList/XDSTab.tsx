@@ -6,7 +6,8 @@
  * @file XDSTab.tsx
  * @input Uses React, StyleX, XDSTabListContext
  * @output Exports XDSTab component and XDSTabProps type
- * @position Core tab item; renders as button or anchor in navigation
+ * @position Core tab item; renders as button or anchor in navigation with a
+ *   divider-overlay selected indicator
  *
  * SYNC: When modified, update:
  * - /packages/core/src/TabList/TabList.doc.mjs
