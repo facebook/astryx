@@ -4,9 +4,9 @@
 
 /**
  * @file XDSHoverCard.tsx
- * @input Uses React, useXDSHoverCard hook
+ * @input Uses React, ReactDOM createPortal, useXDSHoverCard hook
  * @output Exports XDSHoverCard component for hover/focus triggered layers
- * @position Layer component; uses display:contents wrapper to avoid cloneElement
+ * @position Layer component; uses inline-safe trigger wrapper and portals floating layer
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/HoverCard/XDSHoverCard.test.tsx
@@ -21,6 +21,7 @@ import React, {
   type ReactElement,
   type ReactNode,
 } from 'react';
+import {createPortal} from 'react-dom';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
 import {useXDSHoverCard, type HoverCardFocusTrigger} from './useXDSHoverCard';
@@ -172,7 +173,7 @@ export function XDSHoverCard({
   isOpen,
   isDefaultOpen,
 }: XDSHoverCardProps): ReactElement {
-  const wrapperRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLSpanElement>(null);
   const textOnly = isTextOnly(children);
 
   // Determine if hover indication should be shown
@@ -237,6 +238,11 @@ export function XDSHoverCard({
     };
   }, [textOnly, hoverCard.ref, hoverCard.describedBy]);
 
+  const renderedHoverCard =
+    typeof document !== 'undefined'
+      ? createPortal(hoverCard.renderHoverCard(content), document.body)
+      : null;
+
   // For text-only children: use inline span with ref on wrapper
   if (textOnly) {
     return (
@@ -251,18 +257,18 @@ export function XDSHoverCard({
           )}>
           {children}
         </span>
-        {hoverCard.renderHoverCard(content)}
+        {renderedHoverCard}
       </>
     );
   }
 
-  // For element children: use display:contents, ref on first child
+  // For element children: use inline-safe display:contents, ref on first child
   return (
     <>
-      <div ref={wrapperRef} {...stylex.props(styles.wrapperContents)}>
+      <span ref={wrapperRef} {...stylex.props(styles.wrapperContents)}>
         {children}
-      </div>
-      {hoverCard.renderHoverCard(content)}
+      </span>
+      {renderedHoverCard}
     </>
   );
 }
