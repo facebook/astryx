@@ -27,7 +27,6 @@ import {
   XDSTokenizer,
   type XDSTokenizerHandle,
   type XDSTokenizerOverflowBehavior,
-  type XDSTokenizerSize,
 } from '../Tokenizer';
 import {XDSTypeaheadItem} from '../Typeahead/XDSTypeaheadItem';
 import {XDSToken} from '../Token';
