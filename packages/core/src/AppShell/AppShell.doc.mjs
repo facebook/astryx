@@ -13,6 +13,7 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Choose the right height — use "fill" for dashboards with internal scrolling and "auto" for pages that grow with content.'},
       {guidance: true, description: 'Set `contentPadding` based on content type — 4 for forms and settings, 0 for tables and dashboards.'},
+      {guidance: true, description: 'Pair a heading-only TopNav with sideNav when TopNav should provide identity and SideNav should provide all page navigation.'},
       {guidance: false, description: "Nest one AppShell inside another — it's the outermost layout frame."},
       {guidance: false, description: 'Use for sub-page layouts — use Layout for content areas within AppShell.'},
     ],
@@ -140,6 +141,7 @@ export const docsZh = {
     bestPractices: [
       {guidance: true, description: 'Choose the right height — use "fill" for dashboards with internal scrolling and "auto" for pages that grow with content.'},
       {guidance: true, description: 'Set `contentPadding` based on content type — 4 for forms and settings, 0 for tables and dashboards.'},
+      {guidance: true, description: 'Pair a heading-only TopNav with sideNav when TopNav should provide identity and SideNav should provide all page navigation.'},
       {guidance: false, description: "Nest one AppShell inside another — it's the outermost layout frame."},
       {guidance: false, description: 'Use for sub-page layouts — use Layout for content areas within AppShell.'},
     ],
@@ -212,6 +214,7 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Choose the right height — use "fill" for dashboards with internal scrolling and "auto" for pages that grow with content.'},
       {guidance: true, description: 'Set `contentPadding` based on content type — 4 for forms and settings, 0 for tables and dashboards.'},
+      {guidance: true, description: 'Pair a heading-only TopNav with sideNav when TopNav should provide identity and SideNav should provide all page navigation.'},
       {guidance: false, description: "Nest one AppShell inside another — it's the outermost layout frame."},
       {guidance: false, description: 'Use for sub-page layouts — use Layout for content areas within AppShell.'},
     ],

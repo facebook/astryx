@@ -308,6 +308,27 @@ export const TopNavWithSideNav: Story = {
 };
 
 /**
+ * Heading-only TopNav with SideNav. On mobile, AppShell should still show the
+ * auto hamburger toggle and open a drawer containing the SideNav items.
+ */
+export const HeadingOnlyTopNavWithSideNav: Story = {
+  render: () => (
+    <XDSAppShell
+      contentPadding={6}
+      mobileNav={{breakpoint: 'md'}}
+      topNav={
+        <XDSTopNav
+          label="Main navigation"
+          heading={<XDSTopNavHeading heading="Acme App" />}
+        />
+      }
+      sideNav={<SideNavWithoutHeader />}>
+      <MockContent />
+    </XDSAppShell>
+  ),
+};
+
+/**
  * SideNav with its own heading (icon + heading) and no TopNav.
  * Use this layout for simpler apps where a full top bar isn't needed.
  * The SideNav header provides the app identity instead.

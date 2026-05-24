@@ -609,7 +609,7 @@ export function XDSAppShell({
   // Wrap with mobile content context so TopNav knows there's SideNav content
   // in the drawer and shows the toggle even without its own collapsible items.
   const mobileContentValue =
-    hasSideNavContent && mobileNavHasToggle ? (
+    hasSideNav && mobileNavHasToggle ? (
       // eslint-disable-next-line @eslint-react/no-unstable-context-value -- context transports ReactNode; instability is inherent
       <XDSSideNavRenderContext value="drawer-content">
         <div ref={sideNavRef} style={{display: 'contents'}}>
@@ -618,7 +618,7 @@ export function XDSAppShell({
       </XDSSideNavRenderContext>
     ) : null;
 
-  const drawerMobileContentValue = hasSideNavContent ? (
+  const drawerMobileContentValue = hasSideNav ? (
     // eslint-disable-next-line @eslint-react/no-unstable-context-value -- context transports ReactNode; instability is inherent
     <XDSSideNavRenderContext value="drawer-content">
       {sideNav}
@@ -813,13 +813,11 @@ export function XDSAppShell({
           mobileNavReactNode == null &&
           !mobileNavConfigContent && (
             <ActivityWrapper mode={isMobileNavOpen ? 'visible' : 'hidden'}>
-              {/* SideNav drawer — always mounted so presence detection works.
-                Hidden when TopNav owns the drawer (combined mode passes
-                sideNav via TopNav's mobile content context instead). */}
-              {hasSideNav && (
-                <div
-                  ref={sideNavRef}
-                  style={{display: hasTopNavContent ? 'none' : 'contents'}}>
+              {/* SideNav drawer for side-nav-only layouts. When TopNav owns
+                the combined drawer, sideNav is passed through mobile content
+                context instead so only one drawer instance controls state. */}
+              {hasSideNav && !hasTopNavContent && (
+                <div ref={sideNavRef} style={{display: 'contents'}}>
                   <XDSSideNavRenderContext value="drawer">
                     {sideNav}
                   </XDSSideNavRenderContext>
