@@ -246,7 +246,7 @@ export function getDefaultAudioContext(): AudioContext {
     _sharedAudioCtx = new AudioContext();
   }
   if (_sharedAudioCtx.state === 'suspended') {
-    _sharedAudioCtx.resume();
+    void _sharedAudioCtx.resume();
   }
   return _sharedAudioCtx;
 }
@@ -353,7 +353,7 @@ export function useSpeechRecognition(
     recognition.onstart = () => {
       setIsListening(true);
       callbacksRef.current.onStart?.();
-      createVolumeAnalyser(getAudioContextRef.current).then(a => {
+      void createVolumeAnalyser(getAudioContextRef.current).then(a => {
         if (a) {
           analyserRef.current = a;
           startVolumePolling();

@@ -181,6 +181,20 @@ describe('XDSItem', () => {
     );
     const anchor = container.querySelector('a');
     expect(anchor).toHaveAttribute('target', '_blank');
+    expect(anchor).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
+  it('preserves existing rel tokens when target is blank', () => {
+    const {container} = render(
+      <XDSItem
+        label="External"
+        href="https://example.com"
+        target="_blank"
+        rel="sponsored noopener"
+      />,
+    );
+    const anchor = container.querySelector('a');
+    expect(anchor).toHaveAttribute('rel', 'sponsored noopener noreferrer');
   });
 
   it('does not render button or anchor for static items', () => {

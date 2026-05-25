@@ -366,7 +366,7 @@ function DefaultMegaMenu({
   useEffect(() => {
     const nav = triggerButtonRef.current?.closest('nav');
     if (nav) {
-      popover.triggerRef(nav as HTMLElement);
+      popover.triggerRef(nav);
     }
     return () => {
       popover.triggerRef(null);

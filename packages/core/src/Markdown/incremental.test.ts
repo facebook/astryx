@@ -391,6 +391,11 @@ describe('streaming end-to-end: no raw syntax visible', () => {
             }
           }
           break;
+        case 'hr':
+          break;
+        case 'image':
+          text += block.alt;
+          break;
       }
     }
     return text;
@@ -414,6 +419,9 @@ describe('streaming end-to-end: no raw syntax visible', () => {
           break;
         case 'image':
           text += node.alt;
+          break;
+        case 'citation':
+          text += node.sourceId;
           break;
         case 'break':
           text += '\n';

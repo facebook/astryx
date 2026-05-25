@@ -137,6 +137,7 @@ export function XDSChatDictationButton({
             const scale = BAR_MIN_SCALE + level * (1 - BAR_MIN_SCALE);
             return (
               <span
+                // eslint-disable-next-line @eslint-react/no-array-index-key -- equalizer bars are fixed positional slots
                 key={i}
                 {...mergeProps(stylex.props(styles.bar), {
                   style: {

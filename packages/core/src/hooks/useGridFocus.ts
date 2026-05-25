@@ -144,9 +144,7 @@ export function useGridFocus<T extends HTMLElement = HTMLElement>(
   const getCurrentIndex = useCallback((): number => {
     const cells = getCells();
     const active = document.activeElement;
-    return cells.findIndex(
-      cell => cell === active || cell.contains(active as Node),
-    );
+    return cells.findIndex(cell => cell === active || cell.contains(active));
   }, [getCells]);
 
   /**

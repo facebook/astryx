@@ -23,7 +23,6 @@
 import React, {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, fontWeightVars} from '../theme/tokens.stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {xdsClassName} from '../utils';
 import {XDSButton, type XDSButtonSize} from '../Button';
 import {useXDSToggleButtonGroup} from './XDSToggleButtonGroup';
@@ -244,7 +243,7 @@ export function XDSToggleButton({
       const newState = !isPressed;
       onPressedChangeProp(newState);
       if (pressedChangeAction) {
-        pressedChangeAction(newState);
+        void pressedChangeAction(newState);
       }
     }
   }, [
@@ -297,12 +296,7 @@ export function XDSToggleButton({
       className={xdsClassName('toggle-button', {
         isPressed: isPressed ? 'true' : 'false',
       })}
-      xstyle={
-        [
-          isPressed ? pressedStyles.background : undefined,
-          xstyle,
-        ] as unknown as StyleXStyles
-      }
+      xstyle={[isPressed ? pressedStyles.background : undefined, xstyle]}
       style={style}
       onClick={handleClick}
       {...props}>

@@ -20,7 +20,7 @@ import {type ReactNode, use} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSFieldLabel} from './XDSFieldLabel';
-import {XDSFieldStatus} from './XDSFieldStatus';
+import {XDSFieldStatus as XDSFieldStatusComponent} from './XDSFieldStatus';
 import {spacingVars, borderVars} from '../theme/tokens.stylex';
 import type {XDSIconType} from '../Icon';
 import {xdsClassName, mergeProps} from '../utils';
@@ -199,7 +199,7 @@ export function XDSField({
   );
 
   const statusNode = status?.message ? (
-    <XDSFieldStatus
+    <XDSFieldStatusComponent
       type={status.type}
       message={status.message}
       id={resolvedMessageID}

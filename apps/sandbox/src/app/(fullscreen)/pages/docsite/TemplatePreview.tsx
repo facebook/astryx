@@ -406,6 +406,7 @@ export function TemplatePreview({
             {slug ? (
               <iframe
                 src={`${basePath}/templates/${slug}/?embed=1`}
+                sandbox="allow-scripts allow-same-origin"
                 title={templateName}
                 style={{
                   display: 'block',

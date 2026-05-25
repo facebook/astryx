@@ -367,9 +367,9 @@ export function XDSSideNavHeading({
 
   const setRef = mergeRefs<HTMLDivElement>(
     rootRef,
-    setTriggerEl as React.Ref<HTMLDivElement>,
+    setTriggerEl,
     ref,
-    menu ? (popover.triggerRef as React.Ref<HTMLDivElement>) : undefined,
+    menu ? popover.triggerRef : undefined,
   );
 
   // In collapsed mode: hide if no icon, show icon-only if has icon
@@ -379,10 +379,7 @@ export function XDSSideNavHeading({
   if (isCollapsed && icon) {
     const collapsedIcon = <span {...stylex.props(styles.icon)}>{icon}</span>;
 
-    const collapsedSetRef = mergeRefs<HTMLElement>(
-      collapsedItemRef,
-      ref as React.Ref<HTMLElement>,
-    );
+    const collapsedSetRef = mergeRefs<HTMLElement>(collapsedItemRef, ref);
 
     let collapsedElement: ReactNode;
 
@@ -406,7 +403,7 @@ export function XDSSideNavHeading({
       collapsedElement = (
         <>
           <button
-            ref={collapsedSetRef as React.Ref<HTMLButtonElement>}
+            ref={collapsedSetRef}
             type="button"
             aria-label={heading}
             data-testid={testId}

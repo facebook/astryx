@@ -141,7 +141,7 @@ export function XDSAvatarGroupOverflow({
 
   return (
     <span
-      ref={ref as React.Ref<HTMLSpanElement>}
+      ref={ref}
       aria-label={label}
       {...mergeProps(
         xdsClassName('avatar-group-overflow'),

@@ -379,9 +379,7 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
     // With table-layout: fixed, header cell sizing controls column widths.
     const widthStyle = resolvedWidths.columns.get(col.key)?.style ?? {};
 
-    const existingStyle = cellRenderProps.htmlProps.style as
-      | React.CSSProperties
-      | undefined;
+    const existingStyle = cellRenderProps.htmlProps.style;
     const mergedHtmlProps = {
       ...cellRenderProps.htmlProps,
       style: existingStyle ? {...widthStyle, ...existingStyle} : widthStyle,
@@ -441,7 +439,7 @@ function XDSBaseTableInner<T extends Record<string, unknown>>({
   const hasColumns = resolvedColumns.length > 0;
 
   const tableStyle: React.CSSProperties = {
-    ...(tableRenderProps.htmlProps.style as React.CSSProperties | undefined),
+    ...tableRenderProps.htmlProps.style,
     minWidth:
       resolvedWidths.tableMinWidth > 0
         ? `${resolvedWidths.tableMinWidth}px`

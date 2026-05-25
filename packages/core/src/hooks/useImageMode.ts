@@ -175,7 +175,7 @@ export function useImageMode(
       }
     }
 
-    detect();
+    void detect();
 
     return () => {
       cancelled = true;

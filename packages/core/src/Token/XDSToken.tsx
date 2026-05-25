@@ -389,7 +389,7 @@ export function XDSToken({
 
     return (
       <span
-        ref={ref as React.Ref<HTMLSpanElement>}
+        ref={ref}
         onClick={isDisabled ? undefined : handleContainerClick}
         {...sharedProps}
         {...mergeProps(
@@ -440,7 +440,7 @@ export function XDSToken({
 
   return (
     <span
-      ref={ref as React.Ref<HTMLSpanElement>}
+      ref={ref}
       {...sharedProps}
       {...mergeProps(
         xdsClassName('token', {color, size}),

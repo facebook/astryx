@@ -212,7 +212,7 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
   style,
   'data-testid': testId,
 }: XDSTypeaheadProps<T>) {
-  const size = useXDSSize(sizeProp, 'md') as XDSTypeaheadSize;
+  const size = useXDSSize(sizeProp, 'md');
   const inputId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
@@ -258,7 +258,7 @@ export function XDSTypeahead<T extends XDSSearchableItem>({
   const handleBlur = useCallback(
     (e: React.FocusEvent) => {
       // Don't restore if focus is moving within the wrapper (e.g. to dropdown)
-      if (wrapperRef.current?.contains(e.relatedTarget as Node)) {
+      if (wrapperRef.current?.contains(e.relatedTarget)) {
         return;
       }
 

@@ -372,7 +372,7 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
 
   // Value helpers
   const values: number[] = useMemo(
-    () => (isRange ? (value as [number, number]) : [value as number]),
+    () => (isRange ? value : [value]),
     [isRange, value],
   );
 

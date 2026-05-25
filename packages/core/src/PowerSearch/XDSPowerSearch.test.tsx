@@ -30,8 +30,7 @@ class MockResizeObserver {
 }
 
 beforeAll(() => {
-  globalThis.ResizeObserver =
-    MockResizeObserver as unknown as typeof ResizeObserver;
+  globalThis.ResizeObserver = MockResizeObserver;
   HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
     popoverOpenState.set(this, true);
     const event = new Event('toggle');

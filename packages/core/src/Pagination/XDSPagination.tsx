@@ -428,9 +428,11 @@ export function XDSPagination({
           <>
             {pageRange.map((item, index) => {
               if (item === '...') {
+                const previousPage = pageRange[index - 1];
+                const nextPage = pageRange[index + 1];
                 return (
                   <span
-                    key={`ellipsis-${index}`}
+                    key={`ellipsis-${previousPage}-${nextPage}`}
                     aria-hidden="true"
                     {...stylex.props(
                       styles.ellipsis,

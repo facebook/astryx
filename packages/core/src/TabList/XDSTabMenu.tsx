@@ -294,10 +294,7 @@ export function XDSTabMenu({
     [tabListCtx, popover],
   );
 
-  const setButtonRef = mergeRefs<HTMLButtonElement>(
-    popover.triggerRef as React.Ref<HTMLButtonElement>,
-    ref,
-  );
+  const setButtonRef = mergeRefs<HTMLButtonElement>(popover.triggerRef, ref);
 
   return (
     <>

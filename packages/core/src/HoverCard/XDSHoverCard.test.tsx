@@ -310,7 +310,7 @@ describe('XDSHoverCard', () => {
 
       // Focus the content button
       const contentButton = screen.getByText('Interactive button');
-      (contentButton as HTMLElement).focus();
+      contentButton.focus();
 
       // Press Escape - should refocus trigger
       fireEvent.keyDown(contentButton, {key: 'Escape'});
@@ -342,7 +342,7 @@ describe('XDSHoverCard', () => {
 
       // Focus the content button
       const contentButton = screen.getByText('Interactive button');
-      (contentButton as HTMLElement).focus();
+      contentButton.focus();
 
       // Clear the mock to track new calls
       onOpenChange.mockClear();

@@ -1,7 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-// Copyright (c) Meta Platforms, Inc. and affiliates.
-
 /**
  * @file icons.tsx
  * @input Uses @heroicons/react outline and solid icon components, XDSIconRegistry type

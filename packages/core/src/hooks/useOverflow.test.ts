@@ -31,7 +31,7 @@ class FakeResizeObserver {
     this.callback = cb;
   }
   observe = vi.fn(() => {
-    this.callback([], this as unknown as ResizeObserver);
+    this.callback([], this);
   });
   unobserve = vi.fn();
   disconnect = vi.fn();

@@ -964,6 +964,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
               <iframe
                 ref={iframeRef}
                 src={iframeSrc}
+                sandbox="allow-scripts allow-same-origin"
                 title={`${pageName} — ${viewport}`}
                 style={{
                   width: '100%',
@@ -985,6 +986,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
               <iframe
                 ref={iframeRef}
                 src={iframeSrc}
+                sandbox="allow-scripts allow-same-origin"
                 title={`${pageName} — ${viewport}`}
                 style={{
                   width: viewportWidths[viewport],

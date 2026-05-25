@@ -169,7 +169,7 @@ const defaultColorByType: Record<string, XDSTextColor> = {
  */
 function resolveStyleType(type: XDSTextType): XDSBuiltinTextType {
   if (type in sizeByTypeStyles) {
-    return type as XDSBuiltinTextType;
+    return type;
   }
   return 'body';
 }

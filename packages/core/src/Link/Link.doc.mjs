@@ -52,13 +52,21 @@ export const docs = {
         {
           name: 'isExternalLink',
           type: 'boolean',
-          description: 'Opens in new tab with external icon',
+          description:
+            'Opens in new tab with external icon and safe rel tokens',
           default: 'false',
         },
         {
           name: 'target',
           type: 'string',
-          description: 'Where to open linked document',
+          description:
+            'Where to open linked document. target="_blank" automatically adds noopener noreferrer.',
+        },
+        {
+          name: 'rel',
+          type: 'string',
+          description:
+            'Link relationship tokens. noopener noreferrer are merged automatically for target="_blank".',
         },
         {
           name: 'onClick',
@@ -167,13 +175,20 @@ export const docsZh = {
         {
           name: 'isExternalLink',
           type: 'boolean',
-          description: '在新标签页中打开，带外部图标',
+          description: '在新标签页中打开，带外部图标和安全 rel 标记',
           default: 'false',
         },
         {
           name: 'target',
           type: 'string',
-          description: '链接文档的打开位置',
+          description:
+            '链接文档的打开位置。target="_blank" 会自动添加 noopener noreferrer。',
+        },
+        {
+          name: 'rel',
+          type: 'string',
+          description:
+            '链接关系标记。target="_blank" 会自动合并 noopener noreferrer。',
         },
         {
           name: 'onClick',
@@ -270,8 +285,10 @@ export const docsDense = {
         href: 'Link destination URL',
         hasUnderline: 'Always show underline',
         isDisabled: 'Disables link',
-        isExternalLink: 'Opens new tab w/ external icon',
-        target: 'Where to open linked document',
+        isExternalLink: 'Opens new tab w/ external icon and safe rel tokens',
+        target:
+          'Where to open linked document. target="_blank" auto-adds noopener noreferrer.',
+        rel: 'Link relationship tokens. noopener noreferrer are merged for target="_blank".',
         onClick: 'Click event handler',
         tooltip: 'Tooltip text on hover',
         isStandalone: 'Applies base font sizing',

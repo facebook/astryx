@@ -84,7 +84,7 @@ describe('plainDateCreate', () => {
 
 describe('plainDateFromISO', () => {
   it('parses a standard ISO date', () => {
-    expect(plainDateFromISO('2026-01-25' as ISODateString)).toEqual({
+    expect(plainDateFromISO('2026-01-25')).toEqual({
       year: 2026,
       month: 1,
       day: 25,
@@ -92,12 +92,12 @@ describe('plainDateFromISO', () => {
   });
 
   it('parses date with 1-based month', () => {
-    const dec = plainDateFromISO('2026-12-31' as ISODateString);
+    const dec = plainDateFromISO('2026-12-31');
     expect(dec.month).toBe(12);
   });
 
   it('handles single-digit month/day when padded', () => {
-    expect(plainDateFromISO('2026-03-05' as ISODateString)).toEqual({
+    expect(plainDateFromISO('2026-03-05')).toEqual({
       year: 2026,
       month: 3,
       day: 5,

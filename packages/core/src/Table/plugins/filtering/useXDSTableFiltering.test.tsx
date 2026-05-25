@@ -130,13 +130,11 @@ function FilterTable({
     filters,
     onFilterChange: (key: string, value: XDSTableFilterValue | null) => {
       setFilters(prev => {
-        const next = {...prev};
         if (value == null) {
-          delete next[key];
-        } else {
-          next[key] = value;
+          const {[key]: _removed, ...next} = prev;
+          return next;
         }
-        return next;
+        return {...prev, [key]: value};
       });
     },
     variant,

@@ -523,7 +523,7 @@ function MonthGrid({
   // Parse selected date for roving tabindex priority
   const selectedDateForTabindex = useMemo(() => {
     if (mode === 'single' && value && typeof value === 'string') {
-      return plainDateFromISO(value as ISODateString);
+      return plainDateFromISO(value);
     }
     return null;
   }, [mode, value]);
@@ -640,9 +640,9 @@ function MonthGrid({
   let rangeEnd: PlainDate | null = null;
 
   if (mode === 'single' && value && typeof value === 'string') {
-    selectedDate = plainDateFromISO(value as ISODateString);
+    selectedDate = plainDateFromISO(value);
   } else if (mode === 'range' && value && typeof value === 'object') {
-    const range = value as DateRange;
+    const range = value;
     rangeStart = plainDateFromISO(range.start);
     rangeEnd = plainDateFromISO(range.end);
   }
@@ -691,9 +691,9 @@ function MonthGrid({
             )}
           />
         )}
-        {dayNames.map((name, i) => (
+        {dayNames.map(name => (
           <div
-            key={i}
+            key={name}
             role="columnheader"
             {...stylex.props(monthGridStyles.dayName)}>
             {name}
@@ -711,13 +711,13 @@ function MonthGrid({
           monthGridStyles.daysGrid,
           hasWeekNumbers && monthGridStyles.daysGridWithNumbers,
         )}>
-        {weeks.map((week, weekIndex) => {
+        {weeks.map(week => {
           const weekDate = week.find(d => !d.isOutside)?.date || week[0].date;
           const weekNum = plainDateGetWeekNumber(weekDate);
 
           return (
             <div
-              key={weekIndex}
+              key={plainDateToISO(weekDate)}
               role="row"
               {...stylex.props(monthGridStyles.weekRow)}>
               {hasWeekNumbers && (
@@ -727,7 +727,7 @@ function MonthGrid({
               )}
               {week.map((day, dayIndex) => (
                 <DayCell
-                  key={dayIndex}
+                  key={day.iso}
                   day={day}
                   dayIndex={dayIndex}
                   mode={mode}

@@ -86,6 +86,12 @@ export interface XDSListItemProps extends XDSBaseProps<HTMLLIElement> {
   target?: string;
 
   /**
+   * Link relationship. Automatically includes noopener noreferrer when
+   * target is "_blank".
+   */
+  rel?: string;
+
+  /**
    * Whether the item is disabled.
    * @default false
    */
@@ -183,7 +189,7 @@ const embeddedStyles = stylex.create({
  * ```
  * <XDSListItem label="Settings" description="Manage your preferences" />
  * <XDSListItem label="Profile" onClick={() => navigate('/profile')} />
- * <XDSListItem label="Docs" href="/docs" target="_blank" />
+ * <XDSListItem label="Docs" href="/docs" target="_blank" rel="noreferrer" />
  * ```
  */
 export function XDSListItem({
@@ -194,6 +200,7 @@ export function XDSListItem({
   onClick,
   href,
   target,
+  rel,
   isDisabled = false,
   isSelected = false,
   xstyle,
@@ -235,6 +242,7 @@ export function XDSListItem({
       onClick={onClick}
       href={href}
       target={target as '_blank' | '_self'}
+      rel={rel}
       isDisabled={isDisabled}
       isSelected={isSelected}
       density={itemDensity}

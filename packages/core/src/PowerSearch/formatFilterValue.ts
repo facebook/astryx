@@ -10,12 +10,7 @@
  * - /packages/core/src/PowerSearch/index.ts
  */
 
-import type {
-  OperatorValue,
-  FilterValue,
-  EnumItem,
-  CustomOperatorValue,
-} from './types';
+import type {OperatorValue, FilterValue, EnumItem} from './types';
 import type {InternalConfig} from './useInternalConfig';
 
 function truncate(str: string, maxLength: number): string {
@@ -163,10 +158,7 @@ export function formatFilterValue(
 
     case 'custom':
       if (operatorValue.type === 'custom') {
-        return truncate(
-          (operatorValue as CustomOperatorValue).getString(filterValue.value),
-          maxLength,
-        );
+        return truncate(operatorValue.getString(filterValue.value), maxLength);
       }
       return filterValue.value;
 

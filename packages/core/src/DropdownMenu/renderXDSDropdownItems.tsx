@@ -16,7 +16,11 @@ import {
   typeScaleVars,
   colorVars,
 } from '../theme/tokens.stylex';
-import type {XDSDropdownMenuOption} from './XDSDropdownMenu';
+import type {
+  XDSDropdownMenuItemData,
+  XDSDropdownMenuOption,
+  XDSDropdownMenuSection,
+} from './XDSDropdownMenu';
 
 const styles = stylex.create({
   sectionHeading: {
@@ -32,6 +36,14 @@ const styles = stylex.create({
     marginBlock: spacingVars['--spacing-1'],
   },
 });
+
+function getItemKey(item: XDSDropdownMenuItemData): string {
+  return `item-${item.label}`;
+}
+
+function getSectionKey(section: XDSDropdownMenuSection, index: number): string {
+  return `section-${section.title ?? index}`;
+}
 
 /**
  * Converts data-driven items into XDSDropdownMenuItem components,
@@ -51,15 +63,18 @@ export function renderXDSDropdownItems(
       );
     } else if ('type' in option && option.type === 'section') {
       elements.push(
-        <div key={`section-${i}`} role="group" aria-label={option.title}>
+        <div
+          key={getSectionKey(option, i)}
+          role="group"
+          aria-label={option.title}>
           {option.title && (
             <div {...stylex.props(styles.sectionHeading)} aria-hidden="true">
               {option.title}
             </div>
           )}
-          {option.items.map((item, j) => (
+          {option.items.map(item => (
             <XDSDropdownMenuItem
-              key={`${item.label}-${j}`}
+              key={getItemKey(item)}
               icon={item.icon}
               label={item.label}
               onClick={item.onClick}
@@ -71,7 +86,7 @@ export function renderXDSDropdownItems(
     } else if (!('type' in option)) {
       elements.push(
         <XDSDropdownMenuItem
-          key={`${option.label}-${i}`}
+          key={getItemKey(option)}
           icon={option.icon}
           label={option.label}
           onClick={option.onClick}

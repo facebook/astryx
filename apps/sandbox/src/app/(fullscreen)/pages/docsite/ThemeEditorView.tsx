@@ -3219,6 +3219,8 @@ function TemplateIframePreview({
     <iframe
       ref={iframeRef}
       src={href}
+      sandbox="allow-scripts allow-same-origin"
+      title="Theme preview"
       style={{
         width: '100%',
         height: '100%',
