@@ -1,5 +1,11 @@
 # Contributing to XDS
 
+For the full contribution process — what we accept, how to propose new components, and how API decisions are made — read the **[Contributing wiki](https://github.com/facebookexperimental/xds/wiki/Contributing)**.
+
+This file covers local development setup.
+
+---
+
 ## Prerequisites
 
 ### Node.js
