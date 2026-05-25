@@ -10,7 +10,10 @@ import {XDSText} from '@xds/core/Text';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSSpinner} from '@xds/core/Spinner';
+import {XDSButton} from '@xds/core/Button';
+import {XDSHStack} from '@xds/core/Layout';
 import type {ExampleEntry} from '../../generated/exampleRegistry';
+import {buildPlaygroundHref} from '../playgroundLink';
 
 function LivePreview({entry}: {entry: ExampleEntry}) {
   const [Component, setComponent] = useState<ComponentType | null>(null);
@@ -74,10 +77,24 @@ export function ExampleBlock({entry}: ExampleBlockProps) {
       <LivePreview entry={entry} />
 
       <XDSSection variant="muted" padding={1} dividers={['top']}>
-        <XDSTabList value={tab} onChange={setTab} size="sm">
-          <XDSTab value="description" label="Description" />
-          <XDSTab value="code" label="Code" />
-        </XDSTabList>
+        <XDSHStack
+          gap={1}
+          style={{justifyContent: 'space-between', alignItems: 'center'}}>
+          <XDSTabList value={tab} onChange={setTab} size="sm">
+            <XDSTab value="description" label="Description" />
+            <XDSTab value="code" label="Code" />
+          </XDSTabList>
+          {entry.source && (
+            <XDSButton
+              label="Open in Playground"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                window.location.href = buildPlaygroundHref(entry.source);
+              }}
+            />
+          )}
+        </XDSHStack>
       </XDSSection>
       <XDSSection variant="muted">
         {tab === 'description' ? (

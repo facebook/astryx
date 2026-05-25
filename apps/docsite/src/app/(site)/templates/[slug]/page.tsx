@@ -3,14 +3,15 @@
 /**
  * Page type: template viewer
  * Preview a template + view its source code.
- * TODO: render template in iframe, show source from pipeline.
  */
 
 import {notFound} from 'next/navigation';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSSection} from '@xds/core/Section';
+import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {templates} from '../../../../generated/templateRegistry';
+import {PlaygroundButton} from '../../../../components/PlaygroundButton';
 
 export function generateStaticParams() {
   return templates.map(t => ({slug: t.slug}));
@@ -34,7 +35,12 @@ export default async function TemplatePage({
         <XDSText type="body" color="secondary">
           {template.description}
         </XDSText>
-        {/* TODO: template preview iframe + source code viewer */}
+        {template.source && (
+          <>
+            <PlaygroundButton source={template.source} />
+            <XDSCodeBlock code={template.source} language="tsx" hasCopyButton />
+          </>
+        )}
       </XDSVStack>
     </XDSSection>
   );

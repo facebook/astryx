@@ -18,6 +18,7 @@ import {XDSOverlay} from '@xds/core/Overlay';
 import {XDSBadge} from '@xds/core/Badge';
 import {templates} from '../../../generated/templateRegistry';
 import {TemplateThumbnail} from '../../../components/TemplateThumbnail';
+import {buildPlaygroundHref} from '../../../components/playgroundLink';
 
 const styles = stylex.create({
   heroTitle: {
@@ -56,6 +57,7 @@ export default function TemplatesPage() {
         slug: t.slug,
         href: `/templates/${t.slug}`,
         isReady: t.isReady,
+        source: t.source,
       })),
     [],
   );
@@ -102,12 +104,18 @@ export default function TemplatesPage() {
                           size="sm"
                           href={item.href}
                         />
-                        <XDSButton
-                          label="Use"
-                          variant="secondary"
-                          size="sm"
-                          href={item.href}
-                        />
+                        {item.source && (
+                          <XDSButton
+                            label="Open in Playground"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => {
+                              window.location.href = buildPlaygroundHref(
+                                item.source,
+                              );
+                            }}
+                          />
+                        )}
                       </XDSHStack>
                     </XDSVStack>
                   </div>

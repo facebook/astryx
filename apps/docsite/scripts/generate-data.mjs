@@ -691,11 +691,15 @@ async function generateTemplateRegistry() {
     // Skip scaffolds — these are starter templates, not showcases
     if (doc.scaffold) continue;
 
+    let source = '';
+    try { source = fs.readFileSync(pagePath, 'utf-8'); } catch { /* ignore */ }
+
     templates.push({
       slug: dir.name,
       name: doc.name || dir.name,
       description: doc.description || '',
       isReady: doc.isReady ?? true,
+      source,
     });
   }
 
@@ -708,6 +712,7 @@ export interface TemplateEntry {
   name: string;
   description: string;
   isReady: boolean;
+  source: string;
 }
 
 export const templates: TemplateEntry[] = ${JSON.stringify(templates, null, 2)};
