@@ -104,7 +104,13 @@ export const docs = {
           name: 'target',
           type: 'string',
           description:
-            'Link target attribute, only applicable when href is provided.',
+            'Link target attribute, only applicable when href is provided. target="_blank" automatically adds noopener noreferrer.',
+        },
+        {
+          name: 'rel',
+          type: 'string',
+          description:
+            'Link relationship tokens. noopener noreferrer are merged automatically for target="_blank".',
         },
         {
           name: 'isDisabled',
@@ -235,7 +241,13 @@ export const docsZh = {
           name: 'target',
           type: 'string',
           description:
-            '链接 target 属性，仅在提供 href 时适用。',
+            '链接 target 属性，仅在提供 href 时适用。target="_blank" 会自动添加 noopener noreferrer。',
+        },
+        {
+          name: 'rel',
+          type: 'string',
+          description:
+            '链接关系标记。target="_blank" 会自动合并 noopener noreferrer。',
         },
         {
           name: 'isDisabled',
@@ -318,7 +330,9 @@ export const docsDense = {
         endContent: 'Content after label area (e.g. badge, chevron).',
         onClick: 'Click handler; enables invisible button pattern.',
         href: 'Link URL; enables invisible anchor pattern.',
-        target: 'Link target attribute, only when href provided.',
+        target:
+          'Link target attribute, only when href provided. target="_blank" auto-adds noopener noreferrer.',
+        rel: 'Link relationship tokens. noopener noreferrer are merged for target="_blank".',
         isDisabled: 'Disabled state; sets aria-disabled.',
         isSelected: 'Selected state; sets aria-selected.',
       },

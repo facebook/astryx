@@ -131,7 +131,7 @@ export function XDSSegmentedControl({
   className,
   style,
 }: XDSSegmentedControlProps) {
-  const size = useXDSSize(sizeProp, 'md') as XDSSegmentedControlSize;
+  const size = useXDSSize(sizeProp, 'md');
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleKeyDown = useCallback(

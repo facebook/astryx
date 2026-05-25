@@ -406,7 +406,7 @@ function isBlockStart(line: string): boolean {
 function splitTableRow(line: string): string[] {
   let start = 0;
   let end = line.length;
-  if (line[0] === '|') {
+  if (line.startsWith('|')) {
     start = 1;
     while (start < end && line[start] === ' ') {
       start++;
@@ -701,7 +701,7 @@ function findSettledBoundary(lines: string[]): number {
         inFence = true;
         fenceMarker = fenceMatch[1];
       } else if (
-        fenceMatch[1][0] === fenceMarker[0] &&
+        fenceMatch[1].startsWith(fenceMarker[0]) &&
         fenceMatch[1].length >= fenceMarker.length
       ) {
         inFence = false;

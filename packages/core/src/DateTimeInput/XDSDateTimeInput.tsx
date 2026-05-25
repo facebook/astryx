@@ -388,7 +388,7 @@ export function XDSDateTimeInput({
   ref,
   ...rest
 }: XDSDateTimeInputProps) {
-  const size = useXDSSize(sizeProp, 'md') as XDSDateTimeInputSize;
+  const size = useXDSSize(sizeProp, 'md');
   const dateInputId = useId();
   const timeInputId = useId();
   const descriptionID = useId();

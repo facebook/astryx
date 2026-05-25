@@ -192,25 +192,25 @@ export function XDSToggleButtonGroup(
 
   const selectedValues = useMemo(() => {
     if (isMultiple) {
-      return new Set(props.value as string[]);
+      return new Set(props.value);
     }
-    const singleValue = props.value as string | null;
+    const singleValue = props.value;
     return singleValue != null ? new Set([singleValue]) : new Set<string>();
   }, [isMultiple, props.value]);
 
   const toggle = useCallback(
     (itemValue: string) => {
       if (isMultiple) {
-        const current = props.value as string[];
-        const onChange = props.onChange as (value: string[]) => void;
+        const current = props.value;
+        const onChange = props.onChange;
         if (current.includes(itemValue)) {
           onChange(current.filter(v => v !== itemValue));
         } else {
           onChange([...current, itemValue]);
         }
       } else {
-        const current = props.value as string | null;
-        const onChange = props.onChange as (value: string | null) => void;
+        const current = props.value;
+        const onChange = props.onChange;
         // Allow deselection: clicking active → null
         onChange(current === itemValue ? null : itemValue);
       }

@@ -245,6 +245,10 @@ export interface XDSTopNavMenuItemData {
   onClick?: () => void;
 }
 
+function getMenuItemKey(item: XDSTopNavMenuItemData): string {
+  return item.title;
+}
+
 export interface XDSTopNavMenuProps extends XDSBaseProps<HTMLButtonElement> {
   ref?: React.Ref<HTMLButtonElement>;
   /**
@@ -343,8 +347,8 @@ export function XDSTopNavMenu({
 
   const setTriggerRef = mergeRefs<HTMLButtonElement>(
     triggerButtonRef,
-    popover.triggerRef as React.Ref<HTMLButtonElement>,
-    setTriggerEl as React.Ref<HTMLButtonElement>,
+    popover.triggerRef,
+    setTriggerEl,
     ref,
   );
 
@@ -379,9 +383,9 @@ export function XDSTopNavMenu({
             drawerExpanded && drawerStyles.itemsExpanded,
           )}>
           <div {...stylex.props(drawerStyles.itemsInner)}>
-            {items.map((item, i) => (
+            {items.map(item => (
               <LinkComponent
-                key={i}
+                key={getMenuItemKey(item)}
                 href={item.href}
                 onClick={(_e: React.MouseEvent) => {
                   item.onClick?.();
@@ -437,11 +441,11 @@ export function XDSTopNavMenu({
           aria-label={label}
           {...contentProps}
           {...stylex.props(styles.menuContainer)}>
-          {items.map((item, index) => {
+          {items.map(item => {
             const Element = item.href ? 'a' : 'div';
             return (
               <Element
-                key={index}
+                key={getMenuItemKey(item)}
                 role="menuitem"
                 tabIndex={popover.isOpen ? 0 : -1}
                 href={item.href}

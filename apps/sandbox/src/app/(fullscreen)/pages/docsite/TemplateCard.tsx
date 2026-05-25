@@ -128,6 +128,7 @@ export function TemplateCard({
             {loadIframe && (
               <iframe
                 src={`${basePath}/templates/${slug}/?embed=1`}
+                sandbox="allow-scripts allow-same-origin"
                 title={name}
                 loading="lazy"
                 style={{

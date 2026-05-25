@@ -182,7 +182,18 @@ export function defaultCellRenderer<T extends Record<string, unknown>>(
   if (value == null) {
     return '';
   }
-  return String(value);
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean' ||
+    typeof value === 'bigint'
+  ) {
+    return String(value);
+  }
+  return '';
 }
 
 /**

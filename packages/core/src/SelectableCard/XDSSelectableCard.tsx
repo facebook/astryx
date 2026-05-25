@@ -148,6 +148,10 @@ const styles = stylex.create({
 
 const selectedStyleForVariant = (variant: XDSCardVariant) => {
   switch (variant) {
+    case 'default':
+    case 'transparent':
+    case 'muted':
+      return styles.selected;
     case 'blue':
       return styles.selectedBlue;
     case 'cyan':
@@ -168,8 +172,6 @@ const selectedStyleForVariant = (variant: XDSCardVariant) => {
       return styles.selectedTeal;
     case 'yellow':
       return styles.selectedYellow;
-    default:
-      return styles.selected;
   }
 };
 

@@ -522,7 +522,7 @@ export function XDSPowerSearch({
   style,
   components: componentOverrides,
 }: XDSPowerSearchProps) {
-  const size = useXDSSize(sizeProp, 'md') as XDSPowerSearchSize;
+  const size = useXDSSize(sizeProp, 'md');
   const config = useInternalConfig(configProp);
   const searchSource = usePowerSearchSource(config);
   const tokenizerRef = useRef<XDSTokenizerHandle>(null);
@@ -729,7 +729,7 @@ export function XDSPowerSearch({
   // Custom token renderer
   const renderToken = useCallback(
     (item: PowerSearchItem, onRemove: () => void) => {
-      const auxData = item.auxiliaryData as PowerSearchAuxData | undefined;
+      const auxData = item.auxiliaryData;
       const filterIndex = auxData?.filterIndex ?? -1;
       const filter = filterIndex >= 0 ? filters[filterIndex] : undefined;
 
@@ -830,7 +830,7 @@ export function XDSPowerSearch({
   // Custom typeahead item renderer — adds field icon and description
   const renderItem = useCallback(
     (item: PowerSearchItem) => {
-      const auxData = item.auxiliaryData as PowerSearchAuxData | undefined;
+      const auxData = item.auxiliaryData;
       if (!auxData) {
         return <XDSTypeaheadItem item={item} />;
       }

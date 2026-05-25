@@ -176,7 +176,7 @@ export interface XDSChatComposerInputProps extends Omit<
   onPaste?: (
     event: ClipboardEvent<HTMLDivElement>,
     text: string,
-  ) => boolean | void;
+  ) => boolean | void; // eslint-disable-line @typescript-eslint/no-invalid-void-type
   /**
    * Paste-as-token behavior. Defaults to converting pastes over 200 chars
    * into token chips. Pass a custom useXDSChatPasteAsToken result to override,

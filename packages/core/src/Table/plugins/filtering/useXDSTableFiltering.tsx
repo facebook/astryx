@@ -215,7 +215,7 @@ function tableValueToFilterValue(
       return typeof value === 'string' ? {type: 'enum', value} : undefined;
     case 'enum_list':
       return Array.isArray(value)
-        ? {type: 'enum_list', value: value as string[]}
+        ? {type: 'enum_list', value: value}
         : undefined;
     case 'date_absolute':
       return typeof value === 'string'
@@ -228,16 +228,20 @@ function tableValueToFilterValue(
       return typeof value === 'string' ? {type: 'time', value} : undefined;
     case 'string_list':
       return Array.isArray(value)
-        ? {type: 'string_list', value: value as string[]}
+        ? {type: 'string_list', value: value}
         : undefined;
     case 'entity_list':
       return Array.isArray(value)
         ? {
             type: 'entity_list',
-            value: (value as string[]).map(id => ({id, label: id})),
+            value: value.map(id => ({id, label: id})),
           }
         : undefined;
-    default:
+    case 'nested':
+    case 'empty':
+    case 'date_relative':
+    case 'date_range':
+    case 'custom':
       return undefined;
   }
 }
@@ -491,7 +495,7 @@ function NumberFilterControl({
       label={`Filter ${header}`}
       isLabelHidden
       value={numValue}
-      onChange={handleChange as (value: number) => void}
+      onChange={handleChange}
       placeholder={`Filter ${header}`}
       min={operatorValue.minValue ?? null}
       max={operatorValue.maxValue ?? null}
@@ -557,7 +561,7 @@ function SelectorFilterControl({
       isLabelHidden
       options={options}
       value={strValue}
-      onChange={handleChange as (value: string) => void}
+      onChange={handleChange}
       placeholder="All"
       size={size}
     />
@@ -795,7 +799,11 @@ function FilterControl({
           hasClear={hasClear}
         />
       );
-    default:
+    case 'nested':
+    case 'empty':
+    case 'date_relative':
+    case 'date_range':
+    case 'custom':
       return null;
   }
 }

@@ -259,9 +259,18 @@ const sizeStyles = stylex.create({
 });
 
 const endSectionSizeStyles = stylex.create({
-  sm: {top: `calc(${sizeVars['--size-element-sm']} / 2 - 1px)`, transform: 'translateY(-50%)'},
-  md: {top: `calc(${sizeVars['--size-element-md']} / 2 - 1px)`, transform: 'translateY(-50%)'},
-  lg: {top: `calc(${sizeVars['--size-element-lg']} / 2 - 1px)`, transform: 'translateY(-50%)'},
+  sm: {
+    top: `calc(${sizeVars['--size-element-sm']} / 2 - 1px)`,
+    transform: 'translateY(-50%)',
+  },
+  md: {
+    top: `calc(${sizeVars['--size-element-md']} / 2 - 1px)`,
+    transform: 'translateY(-50%)',
+  },
+  lg: {
+    top: `calc(${sizeVars['--size-element-lg']} / 2 - 1px)`,
+    transform: 'translateY(-50%)',
+  },
 });
 
 const truncatedSizeStyles = stylex.create({
@@ -358,7 +367,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
   'data-testid': testId,
   ref,
 }: XDSTokenizerProps<T>) {
-  const size = useXDSSize(sizeProp, 'md') as XDSTokenizerSize;
+  const size = useXDSSize(sizeProp, 'md');
   const inputId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
@@ -420,7 +429,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
 
   const handleFocusCapture = useCallback(
     (e: React.FocusEvent) => {
-      const comingFromOutside = !isFocusInTokenizer(e.relatedTarget as Node);
+      const comingFromOutside = !isFocusInTokenizer(e.relatedTarget);
       setIsFocusedWithin(true);
       if (isLayerMode) {
         layer.show();
@@ -439,7 +448,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
 
   const handleBlurCapture = useCallback(
     (e: React.FocusEvent) => {
-      if (!isFocusInTokenizer(e.relatedTarget as Node)) {
+      if (!isFocusInTokenizer(e.relatedTarget)) {
         setIsFocusedWithin(false);
         onBlur?.(e);
         if (isLayerMode) {
@@ -647,9 +656,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
           inputWrapperStyles.base,
           styles.wrapper,
           value.length > 0 && styles.wrapperWithTokens,
-          isTruncated
-            ? truncatedSizeStyles[size]
-            : sizeStyle,
+          isTruncated ? truncatedSizeStyles[size] : sizeStyle,
           isTruncated && styles.truncatedWrapper,
           isDisabled && inputWrapperStyles.disabled,
           status && inputStatusBorderStyles[status.type],
@@ -704,11 +711,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
         }
       />
       {(endContent || (hasClear && value.length > 0 && !isDisabled)) && (
-        <div
-          {...stylex.props(
-            styles.endSection,
-            endSectionSizeStyles[size],
-          )}>
+        <div {...stylex.props(styles.endSection, endSectionSizeStyles[size])}>
           {endContent}
           {hasClear && value.length > 0 && !isDisabled && (
             <XDSInputClearButton

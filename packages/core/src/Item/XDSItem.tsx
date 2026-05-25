@@ -28,6 +28,7 @@ import {
 } from '../theme/tokens.stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import {xdsClassName, mergeProps} from '../utils';
+import {computeTargetAndRel} from '../Link/computeTargetAndRel';
 import {useXDSLinkComponent} from '../Link/useXDSLinkComponent';
 
 // =============================================================================
@@ -114,6 +115,12 @@ export interface XDSItemProps extends XDSBaseProps<HTMLElement> {
    * Link target (e.g., '_blank'). Only used with href.
    */
   target?: '_blank' | '_self';
+
+  /**
+   * Link relationship. Automatically includes noopener noreferrer when
+   * target is "_blank".
+   */
+  rel?: string;
 
   /**
    * Highlighted state (hover/keyboard focus appearance).
@@ -314,7 +321,8 @@ export function XDSItem({
   descriptionLines,
   onClick,
   href,
-  target,
+  target: targetFromProps,
+  rel: relFromProps,
   isHighlighted = false,
   isSelected = false,
   isDisabled = false,
@@ -327,6 +335,7 @@ export function XDSItem({
 }: XDSItemProps) {
   const LinkComponent = useXDSLinkComponent();
   const isInteractive = onClick != null || href != null;
+  const {target, rel} = computeTargetAndRel(targetFromProps, relFromProps);
   // When a semantic role is provided (e.g. "menuitem"), a parent component
   // handles keyboard access. Skip the invisible button/anchor and put
   // onClick directly on the root element instead.
@@ -381,9 +390,13 @@ export function XDSItem({
   );
 
   const handleContainerClick = (e: React.MouseEvent) => {
-    if (isDisabled) {return;}
+    if (isDisabled) {
+      return;
+    }
     const target = e.target as HTMLElement;
-    if (target.closest('button, a, input, select, textarea')) {return;}
+    if (target.closest('button, a, input, select, textarea')) {
+      return;
+    }
     onClick?.(e);
   };
 
@@ -404,6 +417,7 @@ export function XDSItem({
         <LinkComponent
           href={href}
           target={target}
+          rel={rel}
           aria-disabled={isDisabled || undefined}
           tabIndex={isDisabled ? -1 : undefined}
           {...stylex.props(

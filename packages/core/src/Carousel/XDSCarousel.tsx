@@ -168,7 +168,7 @@ const styles = stylex.create({
     opacity: 0,
     pointerEvents: 'none' as const,
   },
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- CSS custom property requires type widening for StyleX
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/consistent-type-assertions -- CSS custom property requires type widening for StyleX
   buttonRadiusOverride: {
     '--_button-radius': radiusVars['--radius-full'],
   } as Record<string, string>,

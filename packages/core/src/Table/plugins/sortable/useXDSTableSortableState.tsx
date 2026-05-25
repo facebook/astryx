@@ -35,6 +35,21 @@ import type {
  */
 export type XDSTableSortComparator<T> = (a: T, b: T) => number;
 
+function toSortableString(value: unknown): string {
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean' ||
+    typeof value === 'bigint'
+  ) {
+    return String(value);
+  }
+  return '';
+}
+
 // =============================================================================
 // Hook Config
 // =============================================================================
@@ -170,7 +185,13 @@ function defaultCompare<T extends Record<string, unknown>>(
   }
 
   // string comparison with numeric collation
-  return String(aVal).localeCompare(String(bVal), undefined, {numeric: true});
+  return toSortableString(aVal).localeCompare(
+    toSortableString(bVal),
+    undefined,
+    {
+      numeric: true,
+    },
+  );
 }
 
 // =============================================================================
@@ -233,7 +254,7 @@ export function useXDSTableSortableState<
 ): UseXDSTableSortableStateResult<T, TSortKey> {
   const {
     data,
-    defaultSort = [] as unknown as XDSTableSortState<TSortKey>,
+    defaultSort = [],
     sort: controlledSort,
     onSortChange: controlledOnSortChange,
     comparators,

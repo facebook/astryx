@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSInputGroup.test.tsx
  * @input Uses vitest, @testing-library/react, InputGroup and TextInput components
@@ -6,8 +8,6 @@
  *
  * SYNC: When InputGroup component changes, update tests to match new behavior
  */
-
-// Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';

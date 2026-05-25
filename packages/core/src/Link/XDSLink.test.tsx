@@ -130,6 +130,27 @@ describe('XDSLink', () => {
     expect(link).toHaveAttribute('target', '_parent');
   });
 
+  it('adds safe rel tokens for explicit target="_blank"', () => {
+    render(
+      <XDSLink href="/test" target="_blank">
+        Blank Link
+      </XDSLink>,
+    );
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
+  it('preserves existing rel tokens for explicit target="_blank"', () => {
+    render(
+      <XDSLink href="/test" target="_blank" rel="sponsored noopener">
+        Blank Link
+      </XDSLink>,
+    );
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('rel', 'sponsored noopener noreferrer');
+  });
+
   it('handles click events', async () => {
     const user = userEvent.setup();
     const handleClick = vi.fn(e => e.preventDefault());

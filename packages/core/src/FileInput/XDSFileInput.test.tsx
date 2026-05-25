@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSFileInput.test.tsx
  * @input Uses vitest, @testing-library/react, XDSFileInput component
@@ -6,8 +8,6 @@
  *
  * SYNC: When XDSFileInput.tsx changes, update tests to match new behavior
  */
-
-// Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';

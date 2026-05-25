@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file formatters.ts
  * @output Built-in tick format utilities for common data types
@@ -7,8 +9,6 @@
 /**
  * Compact number formatter (e.g. 1200 → "1.2K", 1500000 → "1.5M")
  */
-// Copyright (c) Meta Platforms, Inc. and affiliates.
-
 export function compactNumber(value: unknown): string {
   const n = Number(value);
   if (isNaN(n)) {

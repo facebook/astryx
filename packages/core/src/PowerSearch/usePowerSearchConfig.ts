@@ -344,6 +344,10 @@ function toUnixSeconds(value: Date | number): number {
   return value;
 }
 
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every(item => typeof item === 'string');
+}
+
 function resolveRangePart(part: DateTimeRangePart): number {
   switch (part.type) {
     case 'NOW':
@@ -385,7 +389,10 @@ function matchesFilter(
     }
 
     case 'string': {
-      const s = String(fieldValue ?? '').toLowerCase();
+      if (typeof fieldValue !== 'string') {
+        return false;
+      }
+      const s = fieldValue.toLowerCase();
       const target = filterValue.value.toLowerCase();
       if (operator in stringOpHandlers) {
         return stringOpHandlers[operator as keyof typeof stringOpHandlers](
@@ -398,7 +405,10 @@ function matchesFilter(
 
     case 'integer':
     case 'float': {
-      const n = Number(fieldValue);
+      if (typeof fieldValue !== 'number') {
+        return false;
+      }
+      const n = fieldValue;
       const target = filterValue.value;
       if (operator in numberOpHandlers) {
         return numberOpHandlers[operator as keyof typeof numberOpHandlers](
@@ -410,7 +420,10 @@ function matchesFilter(
     }
 
     case 'date_absolute': {
-      const ts = toUnixSeconds(fieldValue as Date | number);
+      if (!(fieldValue instanceof Date) && typeof fieldValue !== 'number') {
+        return false;
+      }
+      const ts = toUnixSeconds(fieldValue);
       if (operator === DateOps.BEFORE) {
         return ts < filterValue.unixSeconds;
       }
@@ -421,7 +434,10 @@ function matchesFilter(
     }
 
     case 'date_range': {
-      const ts = toUnixSeconds(fieldValue as Date | number);
+      if (!(fieldValue instanceof Date) && typeof fieldValue !== 'number') {
+        return false;
+      }
+      const ts = toUnixSeconds(fieldValue);
       if (operator === DateOps.BETWEEN) {
         const start = resolveRangePart(filterValue.value.start);
         const end = resolveRangePart(filterValue.value.end);
@@ -431,40 +447,49 @@ function matchesFilter(
     }
 
     case 'enum': {
+      if (typeof fieldValue !== 'string') {
+        return false;
+      }
       if (operator === EnumOps.IS) {
-        return String(fieldValue) === filterValue.value;
+        return fieldValue === filterValue.value;
       }
       if (operator === EnumOps.IS_NOT) {
-        return String(fieldValue) !== filterValue.value;
+        return fieldValue !== filterValue.value;
       }
       return true;
     }
 
     case 'enum_list': {
-      const sv = String(fieldValue);
+      if (typeof fieldValue !== 'string') {
+        return false;
+      }
       if (operator === EnumListOps.IS_ANY_OF) {
-        return filterValue.value.includes(sv);
+        return filterValue.value.includes(fieldValue);
       }
       if (operator === EnumListOps.IS_NONE_OF) {
-        return !filterValue.value.includes(sv);
+        return !filterValue.value.includes(fieldValue);
       }
       return true;
     }
 
     case 'string_list': {
-      const arr = Array.isArray(fieldValue)
-        ? (fieldValue as string[])
-        : [String(fieldValue)];
+      if (!isStringArray(fieldValue)) {
+        return false;
+      }
       if (operator === StringListOps.IS_ANY_OF) {
-        return arr.some(v => filterValue.value.includes(v));
+        return fieldValue.some(v => filterValue.value.includes(v));
       }
       if (operator === StringListOps.IS_NONE_OF) {
-        return arr.every(v => !filterValue.value.includes(v));
+        return fieldValue.every(v => !filterValue.value.includes(v));
       }
       return true;
     }
 
-    default:
+    case 'time':
+    case 'date_relative':
+    case 'entity_list':
+    case 'custom':
+    case 'nested':
       return true;
   }
 }

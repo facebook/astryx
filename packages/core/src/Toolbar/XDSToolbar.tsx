@@ -119,9 +119,9 @@ const defaultBlockPaddingForSize: Record<XDSElementSize, SpacingStep> = {
 };
 
 const blockPaddingVarForSize: Record<XDSElementSize, string> = {
-  sm: spacingVars['--spacing-2'] as string,
-  md: spacingVars['--spacing-2'] as string,
-  lg: spacingVars['--spacing-2'] as string,
+  sm: spacingVars['--spacing-2'],
+  md: spacingVars['--spacing-2'],
+  lg: spacingVars['--spacing-2'],
 };
 
 /**

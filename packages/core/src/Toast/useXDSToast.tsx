@@ -75,7 +75,7 @@ function getFallbackContext(): XDSToastContextValue {
         fallbackContext.addToast(entry);
       } else {
         pending.push(entry);
-        ctxReady.then(ctx => {
+        void ctxReady.then(ctx => {
           for (const e of pending) {
             ctx.addToast(e);
           }

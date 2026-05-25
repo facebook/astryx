@@ -337,9 +337,9 @@ export function XDSTopNavHeading({
 
   const setRef = mergeRefs<HTMLElement>(
     rootRef,
-    setTriggerEl as React.Ref<HTMLElement>,
+    setTriggerEl,
     ref,
-    menu ? (popover.triggerRef as React.Ref<HTMLElement>) : undefined,
+    menu ? popover.triggerRef : undefined,
   );
 
   const showChevron = !!menu;

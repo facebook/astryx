@@ -222,6 +222,7 @@ export function TemplatePreviewModal({
               {item.slug ? (
                 <iframe
                   src={`${basePath}/templates/${item.slug}/?embed=1`}
+                  sandbox="allow-scripts allow-same-origin"
                   title={item.name}
                   onLoad={() => setPreviewLoaded(true)}
                   style={{
@@ -687,6 +688,7 @@ export function TemplatePreviewModal({
                   {mlItem.slug ? (
                     <iframe
                       src={`${basePath}/templates/${mlItem.slug}/?embed=1`}
+                      sandbox="allow-scripts allow-same-origin"
                       title={mlItem.name}
                       loading="lazy"
                       style={{

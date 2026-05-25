@@ -536,7 +536,7 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
     ...rest
   } = props as XDSSelectorPropsClearable<T>;
   const hasClear = hasClearProp === true;
-  const size = useXDSSize(sizeProp, 'md') as XDSSelectorSize;
+  const size = useXDSSize(sizeProp, 'md');
 
   // Normalize null to undefined for internal use (null is the clear sentinel)
   const normalizedValue = value === null ? undefined : value;
@@ -672,13 +672,11 @@ export function XDSSelector<T extends XDSSelectorOptionType>(
   const handleClear = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation(); // Don't open dropdown
-      (onChange as ((value: string | null) => void) | undefined)?.(null);
+      onChange?.(null);
       if (changeAction) {
         startTransition(async () => {
-          setOptimisticValue(undefined as unknown as string);
-          await (
-            changeAction as (value: string | null) => void | Promise<void>
-          )(null);
+          setOptimisticValue(undefined);
+          await changeAction(null);
         });
       }
     },

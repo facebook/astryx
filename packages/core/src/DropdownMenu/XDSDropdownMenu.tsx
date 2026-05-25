@@ -204,7 +204,7 @@ export function XDSDropdownMenu({
   ...props
 }: XDSDropdownMenuProps) {
   const items = ('items' in props ? props.items : undefined) ?? [];
-  const children = props.children as ReactNode;
+  const children = props.children;
 
   const menuId = useId();
   const menuSize = button?.size ?? 'md';

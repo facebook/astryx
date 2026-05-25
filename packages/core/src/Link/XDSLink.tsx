@@ -40,6 +40,7 @@ import type {
 import {useXDSLinkComponent} from './useXDSLinkComponent';
 import type {XDSLinkComponentType} from './types';
 import {xdsClassName, mergeProps} from '../utils';
+import {computeTargetAndRel} from './computeTargetAndRel';
 
 /**
  * Base link styles
@@ -237,7 +238,7 @@ export function XDSLink({
   hasUnderline = false,
   isDisabled = false,
   isExternalLink = false,
-  target,
+  target: targetFromProps,
   onClick,
   tooltip,
   isStandalone = false,
@@ -248,7 +249,7 @@ export function XDSLink({
   display = 'inline',
   maxLines = 0,
   children,
-  rel,
+  rel: relFromProps,
   xstyle,
   className,
   style,
@@ -257,19 +258,17 @@ export function XDSLink({
 }: XDSLinkProps) {
   const LinkComponent = useXDSLinkComponent(as);
   // Determine target and rel based on isExternalLink
-  const computedTarget = isExternalLink ? '_blank' : target;
-  const computedRel = isExternalLink
-    ? rel
-      ? `${rel} noopener noreferrer`
-      : 'noopener noreferrer'
-    : rel;
+  const {target, rel} = computeTargetAndRel(
+    isExternalLink ? '_blank' : targetFromProps,
+    relFromProps,
+  );
 
   const linkElement = (
     <LinkComponent
       ref={ref}
       href={href}
-      target={computedTarget}
-      rel={computedRel}
+      target={target}
+      rel={rel}
       onClick={onClick}
       aria-label={label || undefined}
       aria-disabled={isDisabled || undefined}
