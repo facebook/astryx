@@ -1,3 +1,5 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 name: "RFC: Component or Feature Proposal"
 description: Propose a new component, feature, or significant API change for XDS.
 title: "[RFC] "
