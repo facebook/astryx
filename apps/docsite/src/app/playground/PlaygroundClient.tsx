@@ -360,7 +360,9 @@ export function PlaygroundClient() {
         setPreviewError(null);
       }
       if (e.data?.type === 'preview-error') {
-        setPreviewError(e.data.error ?? e.data.message ?? 'Unknown error');
+        const msg = e.data.error ?? e.data.message ?? 'Unknown error';
+        console.error('[Playground Preview Error]', e.data.phase, msg);
+        setPreviewError(`[${e.data.phase ?? 'unknown'}] ${msg}`);
       }
     };
     window.addEventListener('message', handler);

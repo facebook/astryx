@@ -135,13 +135,16 @@ export default function PreviewPage() {
 
   const handleCode = useCallback(
     (code: string) => {
+      console.log('[Preview] Running code, length:', code.length);
       const result = runCode(code);
       if (result.Component) {
+        console.log('[Preview] Component rendered successfully');
         setComponent(() => result.Component);
         setError(null);
         setResetKey(k => k + 1);
         postToParent({type: 'preview-rendered'});
       } else {
+        console.error('[Preview] Error:', result.phase, result.error);
         setComponent(null);
         setError(`[${result.phase}] ${result.error}`);
         postToParent({
