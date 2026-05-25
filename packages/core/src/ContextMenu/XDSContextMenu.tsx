@@ -281,7 +281,11 @@ export function XDSContextMenu({
 
   return (
     <>
-      <div ref={ref} onContextMenu={handleContextMenu} data-testid={testId}>
+      <div
+        ref={ref}
+        onContextMenu={handleContextMenu}
+        aria-haspopup="menu"
+        data-testid={testId}>
         {children}
       </div>
 
