@@ -98,12 +98,6 @@ export default function TemplatesPage() {
                         </XDSText>
                       </XDSVStack>
                       <XDSHStack gap={2}>
-                        <XDSButton
-                          label="Preview"
-                          variant="secondary"
-                          size="sm"
-                          href={item.href}
-                        />
                         {item.source && (
                           <XDSButton
                             label="Open in Playground"

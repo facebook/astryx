@@ -6,9 +6,27 @@ import React, {useState, useCallback, useMemo, useEffect, useRef} from 'react';
 
 const stylexMock = {
   create: <T extends Record<string, unknown>>(styles: T): T => styles,
-  props: (..._styles: unknown[]) => {
-    const style: Record<string, string> = {};
-    return {className: '', style};
+  props: (...styles: unknown[]) => {
+    const merged: Record<string, unknown> = {};
+    for (const s of styles) {
+      if (s && typeof s === 'object') {
+        for (const [key, value] of Object.entries(
+          s as Record<string, unknown>,
+        )) {
+          // Skip pseudo-selectors and media queries (can't be inlined)
+          if (typeof value === 'object' && value !== null) {
+            // Check if it's a responsive/pseudo object like { default: '...', ':hover': '...' }
+            const inner = value as Record<string, unknown>;
+            if ('default' in inner) {
+              merged[key] = inner.default;
+            }
+          } else if (value != null) {
+            merged[key] = value;
+          }
+        }
+      }
+    }
+    return {style: merged};
   },
   defineVars: <T extends Record<string, unknown>>(tokens: T): T => tokens,
   keyframes: (kf: Record<string, Record<string, string>>) => kf,
