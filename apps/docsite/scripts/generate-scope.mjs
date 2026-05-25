@@ -134,9 +134,9 @@ for (const name of components) {
 // Barrel export — all components spread
 lines.push(`  '@xds/core': {${components.map((n) => `...${n}`).join(', ')}},`);
 
-// Heroicons
+// Heroicons — use spread to prevent tree-shaking from removing unused icons
 for (const h of HEROICON_VARIANTS) {
-  lines.push(`  '@heroicons/react/${h.path}': ${h.alias},`);
+  lines.push(`  '@heroicons/react/${h.path}': {...${h.alias}},`);
 }
 
 // next/image stub

@@ -328,10 +328,10 @@ export const scope: Record<string, Record<string, unknown>> = {
     ...TreeList,
     ...Typeahead,
   },
-  '@heroicons/react/16/solid': Heroicons16Solid,
-  '@heroicons/react/20/solid': Heroicons20Solid,
-  '@heroicons/react/24/outline': Heroicons24Outline,
-  '@heroicons/react/24/solid': Heroicons24Solid,
+  '@heroicons/react/16/solid': {...Heroicons16Solid},
+  '@heroicons/react/20/solid': {...Heroicons20Solid},
+  '@heroicons/react/24/outline': {...Heroicons24Outline},
+  '@heroicons/react/24/solid': {...Heroicons24Solid},
   'next/image': {
     default: (props: Record<string, unknown>) =>
       React.createElement('img', props),
