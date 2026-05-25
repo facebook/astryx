@@ -125,7 +125,7 @@ export interface XDSMarkdownProps extends XDSBaseProps<HTMLDivElement> {
   onLinkClick?: (
     href: string,
     event: React.MouseEvent<HTMLAnchorElement>,
-  ) => void | false;
+  ) => void | false; // eslint-disable-line @typescript-eslint/no-invalid-void-type
   /**
    * Citation sources keyed by ID. When provided, `[id]` and `【id】` markers
    * in the markdown that match a key are rendered as citation chips.
@@ -434,6 +434,9 @@ function countInlineTextLength(nodes: InlineNode[]): number {
       case 'code':
         len += node.content.length;
         break;
+      case 'image':
+        len += node.alt.length;
+        break;
       case 'bold':
       case 'italic':
       case 'strikethrough':
@@ -482,6 +485,11 @@ function countBlockTextLength(nodes: BlockNode[]): number {
             len += countInlineTextLength(cell.children);
           }
         }
+        break;
+      case 'hr':
+        break;
+      case 'image':
+        len += node.alt.length;
         break;
     }
   }
@@ -1256,6 +1264,7 @@ function renderBlock(
 
                 return (
                   <XDSCheckboxListItem
+                    // eslint-disable-next-line @eslint-react/no-array-index-key -- markdown task items are rendered from positional AST nodes
                     key={i}
                     value={`task-${i}`}
                     label={label}
@@ -1331,7 +1340,13 @@ function renderBlock(
                 </>
               );
 
-              return <XDSListItem key={i} label={label} />;
+              return (
+                <XDSListItem
+                  // eslint-disable-next-line @eslint-react/no-array-index-key -- markdown list items are rendered from positional AST nodes
+                  key={i}
+                  label={label}
+                />
+              );
             })}
           </XDSList>
         </div>
@@ -1350,9 +1365,7 @@ function renderBlock(
               ? dynamicStyles.blockWidth(contentWidthValue)
               : null,
             BLOCK_ALIGN_MARGIN[contentAlign] != null
-              ? dynamicStyles.blockAlign(
-                  BLOCK_ALIGN_MARGIN[contentAlign] as string,
-                )
+              ? dynamicStyles.blockAlign(BLOCK_ALIGN_MARGIN[contentAlign])
               : null,
             isFirst && styles.noMarginBlockStart,
             isLast && styles.noMarginBlockEnd,
@@ -1362,6 +1375,7 @@ function renderBlock(
               <XDSTableRow>
                 {node.headers.map((h, i) => (
                   <XDSTableHeaderCell
+                    // eslint-disable-next-line @eslint-react/no-array-index-key -- markdown table columns are positional by definition
                     key={i}
                     xstyle={[
                       dynamicStyles.cellMinWidth(`${colMinWidths[i]}px`),
@@ -1388,6 +1402,7 @@ function renderBlock(
               {node.rows.map((row, i) => {
                 const cells = row.map((cell, j) => (
                   <XDSTableCell
+                    // eslint-disable-next-line @eslint-react/no-array-index-key -- markdown table cells are positional by row and column
                     key={j}
                     xstyle={[
                       node.alignments[j] === 'center' && cellAlignStyles.center,
@@ -1407,7 +1422,13 @@ function renderBlock(
                     )}
                   </XDSTableCell>
                 ));
-                return <XDSTableRow key={i}>{cells}</XDSTableRow>;
+                return (
+                  <XDSTableRow
+                    // eslint-disable-next-line @eslint-react/no-array-index-key -- markdown table rows are rendered from positional AST nodes
+                    key={i}>
+                    {cells}
+                  </XDSTableRow>
+                );
               })}
             </XDSTableBody>
           </XDSTable>

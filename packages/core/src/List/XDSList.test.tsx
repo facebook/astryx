@@ -193,8 +193,8 @@ describe('XDSList', () => {
     const header = screen.getByText('Group');
     const wrapper = header.parentElement?.parentElement;
     const ul = container.querySelector('ul');
-    expect(wrapper).toContainElement(header.parentElement!);
-    expect(wrapper).toContainElement(ul!);
+    expect(wrapper).toContainElement(header.parentElement);
+    expect(wrapper).toContainElement(ul);
   });
 
   it('does not add a wrapper div when header is absent', () => {
@@ -416,6 +416,7 @@ describe('XDSList', () => {
     );
     const anchor = container.querySelector('a');
     expect(anchor).toHaveAttribute('target', '_blank');
+    expect(anchor).toHaveAttribute('rel', 'noopener noreferrer');
   });
 
   it('does not render button or anchor for static items', () => {

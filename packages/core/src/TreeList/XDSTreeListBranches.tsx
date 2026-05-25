@@ -73,26 +73,29 @@ export function XDSTreeListBranches({
 }: XDSTreeListBranchesProps) {
   return (
     <>
-      {ancestorsIsLast.map(
-        (ancestorIsLast, level) =>
+      {ancestorsIsLast.map((ancestorIsLast, level) => {
+        const branchOffset = `calc(${BRANCH_MARGIN} + ${level} * ${LEVEL_INDENT})`;
+        return (
           // Skip the level that the current-item connector occupies
           // (nestedLevel - 1), since that position is rendered below
           // with the correct terminus/continuation style.
           !ancestorIsLast &&
           level !== nestedLevel - 1 && (
             <div
+              // eslint-disable-next-line @eslint-react/no-array-index-key -- tree branch levels are fixed positional connectors
               key={level}
               {...mergeProps(stylex.props(styles.container), {
                 style: {
-                  left: `calc(${BRANCH_MARGIN} + ${level} * ${LEVEL_INDENT})`,
+                  left: branchOffset,
                 },
               })}>
               <div
                 {...stylex.props(styles.verticalLine, styles.verticalFull)}
               />
             </div>
-          ),
-      )}
+          )
+        );
+      })}
       {nestedLevel > 0 && (
         <div
           {...mergeProps(stylex.props(styles.container), {

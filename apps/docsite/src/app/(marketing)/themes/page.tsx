@@ -4,8 +4,6 @@
  * Themes gallery — extracted from craft.
  */
 
-// Copyright (c) Meta Platforms, Inc. and affiliates.
-
 'use client';
 
 import * as stylex from '@stylexjs/stylex';

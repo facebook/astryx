@@ -383,7 +383,7 @@ function isSafari(): boolean {
     return false;
   }
   const ua = navigator.userAgent;
-  return /AppleWebKit/.test(ua) && !/Chrome/.test(ua);
+  return ua.includes('AppleWebKit') && !ua.includes('Chrome');
 }
 
 /**
@@ -414,19 +414,28 @@ function useTokenLines(
     const abortController = new AbortController();
 
     if (customTokenizer) {
-      Promise.resolve().then(() => {
-        if (abortController.signal.aborted) {
-          return;
-        }
-        const flat = customTokenizer(code, language);
-        setAsyncTokens(flatTokensToLines(flat, code));
-      });
-    } else {
-      tokenizeAsync(code, language, abortController.signal).then(tokens => {
+      try {
         if (!abortController.signal.aborted) {
-          setAsyncTokens(tokens);
+          const flat = customTokenizer(code, language);
+          setAsyncTokens(flatTokensToLines(flat, code));
         }
-      });
+      } catch {
+        if (!abortController.signal.aborted) {
+          setAsyncTokens(null);
+        }
+      }
+    } else {
+      void tokenizeAsync(code, language, abortController.signal)
+        .then(tokens => {
+          if (!abortController.signal.aborted) {
+            setAsyncTokens(tokens);
+          }
+        })
+        .catch(() => {
+          if (!abortController.signal.aborted) {
+            setAsyncTokens(null);
+          }
+        });
     }
 
     return () => {
@@ -618,12 +627,15 @@ export function XDSCodeBlock({
     [highlightLines],
   );
 
-  const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(code).then(() => {
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(code);
       setCopied(true);
       onCopy?.();
       setTimeout(() => setCopied(false), 2000);
-    });
+    } catch {
+      // Clipboard failures leave the copied state unchanged.
+    }
   }, [code, onCopy]);
 
   const sizeStyle = size === 'sm' ? styles.sizeSm : styles.sizeMd;
@@ -670,7 +682,9 @@ export function XDSCodeBlock({
   const copyButtonEl = hasCopyButton ? (
     <button
       type="button"
-      onClick={handleCopy}
+      onClick={() => {
+        void handleCopy();
+      }}
       aria-label={copied ? 'Copied' : 'Copy code'}
       {...stylex.props(
         styles.copyButton,
@@ -735,6 +749,7 @@ export function XDSCodeBlock({
             {...stylex.props(styles.gutter, gutterSizeStyle)}
             aria-hidden="true">
             {lines.map((_, i) => (
+              // eslint-disable-next-line @eslint-react/no-array-index-key -- gutter line numbers are positional by definition
               <div key={i} {...stylex.props(styles.gutterLine)}>
                 {i + 1}
               </div>

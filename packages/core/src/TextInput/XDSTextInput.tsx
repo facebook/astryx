@@ -250,7 +250,7 @@ export function XDSTextInput({
   onChange,
   changeAction,
   isLoading = false,
-  value = '',
+  value,
   placeholder,
   labelTooltip,
   hasClear = false,
@@ -352,7 +352,7 @@ export function XDSTextInput({
         id={id}
         name={htmlName}
         type={type}
-        value={String(optimisticValue)}
+        value={optimisticValue}
         onChange={handleChange}
         onKeyDown={
           onEnter || onKeyDown

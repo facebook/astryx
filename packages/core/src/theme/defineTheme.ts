@@ -852,7 +852,7 @@ export function generateThemeRules(theme: XDSDefinedTheme): string[] {
 
           for (const [prop, value] of entries) {
             if (prop.startsWith(':') && typeof value === 'object') {
-              pseudos.push([prop, value as Record<string, string>]);
+              pseudos.push([prop, value]);
             } else {
               props.push([prop, value as string]);
             }
@@ -1137,7 +1137,7 @@ export function generateOnMediaCSS(theme: XDSDefinedTheme): string {
 
             for (const [prop, value] of entries) {
               if (prop.startsWith(':') && typeof value === 'object') {
-                pseudos.push([prop, value as Record<string, string>]);
+                pseudos.push([prop, value]);
               } else {
                 props.push([prop, value as string]);
               }

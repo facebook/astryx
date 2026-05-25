@@ -194,15 +194,9 @@ export function XDSStack({
 }: XDSStackProps) {
   // Resolve align/justify aliases based on direction
   const resolvedHAlign =
-    hAlign ??
-    (direction === 'horizontal'
-      ? (justify as XDSStackAlignment | undefined)
-      : (align as XDSStackAlignment | undefined));
+    hAlign ?? (direction === 'horizontal' ? justify : align);
   const resolvedVAlign =
-    vAlign ??
-    (direction === 'horizontal'
-      ? (align as XDSStackAlignment | undefined)
-      : (justify as XDSStackAlignment | undefined));
+    vAlign ?? (direction === 'horizontal' ? align : justify);
 
   // Map hAlign/vAlign to mainAlign/crossAlign based on direction
   const mainAlign =

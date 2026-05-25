@@ -150,7 +150,7 @@ export function XDSTableCell({
           xdsClassName('table-cell'),
           stylex.props(xstyle),
           incomingClassName,
-          incomingStyle as React.CSSProperties,
+          incomingStyle,
         )}>
         {children}
       </td>
@@ -173,7 +173,7 @@ export function XDSTableCell({
         xdsClassName('table-cell'),
         stylex.props(...mergeXStyle(cellStyles, xstyle)),
         incomingClassName,
-        incomingStyle as React.CSSProperties,
+        incomingStyle,
       )}>
       {children}
     </td>

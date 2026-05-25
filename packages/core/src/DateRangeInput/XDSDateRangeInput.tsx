@@ -365,7 +365,7 @@ export function XDSDateRangeInput({
   ref,
   ...rest
 }: XDSDateRangeInputProps) {
-  const size = useXDSSize(sizeProp, 'md') as XDSDateRangeInputSize;
+  const size = useXDSSize(sizeProp, 'md');
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -560,12 +560,12 @@ export function XDSDateRangeInput({
               role="listbox"
               aria-label="Preset date ranges"
               {...stylex.props(styles.presetSidebar)}>
-              {presets.map((preset, i) => {
+              {presets.map(preset => {
                 const presetRange = preset.getRange();
                 const isActive = isRangeEqual(value, presetRange);
                 return (
                   <button
-                    key={i}
+                    key={preset.label}
                     type="button"
                     role="option"
                     aria-selected={isActive}

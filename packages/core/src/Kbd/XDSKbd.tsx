@@ -163,8 +163,8 @@ export function XDSKbd({
         style,
       )}
       aria-hidden="true">
-      {parts.map((key, i) => (
-        <kbd key={i} {...stylex.props(styles.kbd)}>
+      {parts.map(key => (
+        <kbd key={key} {...stylex.props(styles.kbd)}>
           {getKeyDisplay(key, isMac)}
         </kbd>
       ))}

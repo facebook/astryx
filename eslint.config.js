@@ -74,6 +74,41 @@ export default tseslint.config(
       }],
     },
   },
+  // Type-aware linting for core. Keep this scoped: projectService has a
+  // measurable startup cost, but catches async correctness issues syntax-only
+  // lint cannot see.
+  {
+    files: ["packages/core/src/**/*.{ts,tsx}"],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+      },
+    },
+    rules: {
+      "@typescript-eslint/await-thenable": reactSeverity,
+      "@typescript-eslint/no-array-delete": reactSeverity,
+      "@typescript-eslint/no-base-to-string": reactSeverity,
+      "@typescript-eslint/no-duplicate-type-constituents": reactSeverity,
+      "@typescript-eslint/no-dynamic-delete": reactSeverity,
+      "@typescript-eslint/no-floating-promises": reactSeverity,
+      "@typescript-eslint/no-for-in-array": reactSeverity,
+      "@typescript-eslint/no-implied-eval": reactSeverity,
+      "@typescript-eslint/no-invalid-void-type": reactSeverity,
+      "@typescript-eslint/no-misused-promises": reactSeverity,
+      "@typescript-eslint/no-unnecessary-type-conversion": reactSeverity,
+      "@typescript-eslint/no-unnecessary-type-assertion": reactSeverity,
+      "@typescript-eslint/no-useless-default-assignment": reactSeverity,
+      "@typescript-eslint/no-redeclare": reactSeverity,
+      "@typescript-eslint/only-throw-error": reactSeverity,
+      "@typescript-eslint/prefer-includes": reactSeverity,
+      "@typescript-eslint/prefer-string-starts-ends-with": reactSeverity,
+      "@typescript-eslint/require-array-sort-compare": reactSeverity,
+      "@typescript-eslint/restrict-plus-operands": reactSeverity,
+      "@typescript-eslint/restrict-template-expressions": reactSeverity,
+      "@typescript-eslint/return-await": reactSeverity,
+      "@typescript-eslint/switch-exhaustiveness-check": reactSeverity,
+    },
+  },
   // Copyright header — all source files must have the Meta copyright notice
   {
     files: ["**/*.{ts,tsx}"],
@@ -137,6 +172,7 @@ export default tseslint.config(
 
       // DOM correctness
       '@eslint-react/dom-no-missing-button-type': reactSeverity,
+      '@eslint-react/dom-no-missing-iframe-sandbox': reactSeverity,
       '@eslint-react/dom-no-void-elements-with-children': reactSeverity,
       '@eslint-react/dom-no-dangerously-set-innerhtml': reactSeverity,
       '@eslint-react/dom-no-dangerously-set-innerhtml-with-children': reactSeverity,
@@ -144,10 +180,12 @@ export default tseslint.config(
       '@eslint-react/dom-no-flush-sync': reactSeverity,
       '@eslint-react/dom-no-script-url': reactSeverity,
       '@eslint-react/dom-no-string-style-prop': reactSeverity,
+      '@eslint-react/dom-no-unsafe-target-blank': reactSeverity,
       '@eslint-react/dom-no-unknown-property': reactSeverity,
 
       // JSX correctness
       '@eslint-react/no-missing-key': reactSeverity,
+      '@eslint-react/no-array-index-key': reactSeverity,
       '@eslint-react/jsx-no-comment-textnodes': reactSeverity,
       '@eslint-react/jsx-no-leaked-dollar': reactSeverity,
       '@eslint-react/jsx-no-children-prop': reactSeverity,
@@ -171,6 +209,30 @@ export default tseslint.config(
       '@eslint-react/web-api-no-leaked-timeout': reactSeverity,
       '@eslint-react/web-api-no-leaked-resize-observer': reactSeverity,
       '@eslint-react/web-api-no-leaked-fetch': reactSeverity,
+    },
+  },
+  // App preview surfaces may embed local pages, but every iframe must be sandboxed.
+  {
+    files: ["apps/docsite/**/*.{ts,tsx}", "apps/sandbox/**/*.{ts,tsx}"],
+    plugins: {
+      ...eslintReact.configs.recommended.plugins,
+    },
+    rules: {
+      '@eslint-react/dom-no-missing-iframe-sandbox': reactSeverity,
+    },
+  },
+  // Browser documentation/demo surfaces should avoid unsafe new-tab links.
+  {
+    files: [
+      "apps/docsite/**/*.{ts,tsx}",
+      "apps/sandbox/**/*.{ts,tsx}",
+      "apps/storybook/**/*.{ts,tsx}",
+    ],
+    plugins: {
+      ...eslintReact.configs.recommended.plugins,
+    },
+    rules: {
+      '@eslint-react/dom-no-unsafe-target-blank': reactSeverity,
     },
   },
   // Test files — relax rules for test ergonomics (must be after React rules

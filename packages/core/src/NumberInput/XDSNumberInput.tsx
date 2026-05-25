@@ -497,7 +497,7 @@ export function XDSNumberInput({
   // Handle clear button click
   const handleClear = useCallback(() => {
     if (hasClear) {
-      (onChange as (value: number | null) => void)(null);
+      onChange(null);
     }
     setPendingInput(null);
     inputRef.current?.focus();

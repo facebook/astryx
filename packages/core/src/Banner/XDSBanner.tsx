@@ -407,11 +407,7 @@ export function XDSBanner({
     <div
       ref={ref}
       role={role}
-      {...mergeProps(
-        stylex.props(styles.root, xstyle),
-        className,
-        style,
-      )}
+      {...mergeProps(stylex.props(styles.root, xstyle), className, style)}
       {...rest}>
       {/* Header: colored status background — primary theme target ('banner') */}
       <div
@@ -449,7 +445,7 @@ export function XDSBanner({
           <div
             {...stylex.props(
               styles.endArea,
-              edgeCompSlot.inset(spacingVars['--spacing-2'] as string),
+              edgeCompSlot.inset(spacingVars['--spacing-2']),
             )}>
             {endContent}
             {hasChildren && (

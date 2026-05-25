@@ -461,9 +461,9 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
 
       const triggerSearch = () => {
         if (newQuery.length > 0) {
-          performSearch(newQuery);
+          void performSearch(newQuery);
         } else if (hasEntriesOnFocus) {
-          performBootstrap();
+          void performBootstrap();
         }
       };
 
@@ -518,7 +518,7 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
       return;
     }
     if (hasEntriesOnFocus && results.length === 0 && query.length === 0) {
-      performBootstrap();
+      void performBootstrap();
     } else if (
       results.length > 0 &&
       (query.length > 0 || hasEntriesOnFocus) &&
@@ -553,7 +553,7 @@ export const XDSBaseTypeahead = function XDSBaseTypeahead<
             popover.show();
             setHighlightedIndex(0);
           } else if (hasEntriesOnFocus) {
-            performBootstrap();
+            void performBootstrap();
           }
         }
         return;

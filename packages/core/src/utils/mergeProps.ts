@@ -32,10 +32,7 @@ type StyleObject = React.CSSProperties;
 
 export function mergeProps(
   xdsClassOrStylexResult: string | {className?: string; style?: StyleObject},
-  stylexResultOrClassName?:
-    | {className?: string; style?: StyleObject}
-    | string
-    | undefined,
+  stylexResultOrClassName?: {className?: string; style?: StyleObject} | string,
   classNameOrStyle?: string | React.CSSProperties,
   style?: React.CSSProperties,
 ): {className: string; style?: StyleObject} {

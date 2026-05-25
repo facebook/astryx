@@ -109,7 +109,7 @@ export function XDSTabList({
   children,
   ...restProps
 }: XDSTabListProps) {
-  const size = useXDSSize(sizeProp, 'md') as XDSTabListSize;
+  const size = useXDSSize(sizeProp, 'md');
 
   const contextValue = useMemo(
     () => ({value, onChange, size, layout}),

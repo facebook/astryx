@@ -202,7 +202,7 @@ function getDefaultAudioContext(): AudioContext {
     _sharedAudioCtx = new AudioContext();
   }
   if (_sharedAudioCtx.state === 'suspended') {
-    _sharedAudioCtx.resume();
+    void _sharedAudioCtx.resume();
   }
   return _sharedAudioCtx;
 }
@@ -439,7 +439,7 @@ export function useXDSChatDictation(
       if (hasSounds) {
         playStartSound(getAudioContextRef.current);
       }
-      createVolumeAnalyser(getAudioContextRef.current).then(analyser => {
+      void createVolumeAnalyser(getAudioContextRef.current).then(analyser => {
         if (analyser) {
           analyserRef.current = analyser;
           startVolumePolling();

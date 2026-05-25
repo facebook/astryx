@@ -124,9 +124,7 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
   const getCurrentIndex = useCallback((): number => {
     const items = getItems();
     const active = document.activeElement;
-    return items.findIndex(
-      item => item === active || item.contains(active as Node),
-    );
+    return items.findIndex(item => item === active || item.contains(active));
   }, [getItems]);
 
   /**

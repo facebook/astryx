@@ -330,7 +330,7 @@ function ResizeHandle({
       e.stopPropagation();
 
       const handle = e.currentTarget;
-      const th = handle.closest('th') as HTMLTableCellElement | null;
+      const th = handle.closest('th');
       if (!th) {
         return;
       }
@@ -618,7 +618,7 @@ function ResizeHandle({
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
       const handle = e.currentTarget;
-      const th = handle.closest('th') as HTMLTableCellElement | null;
+      const th = handle.closest('th');
       if (!th) {
         return;
       }
@@ -820,9 +820,7 @@ export function useXDSTableColumnResize<T extends Record<string, unknown>>(
               }
             : undefined;
 
-        const existingStyle = props.htmlProps.style as
-          | React.CSSProperties
-          | undefined;
+        const existingStyle = props.htmlProps.style;
         const mergedStyle = widthStyle
           ? existingStyle
             ? {...existingStyle, ...widthStyle}

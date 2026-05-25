@@ -561,7 +561,7 @@ export function XDSMultiSelector<T extends XDSMultiSelectorOptionType>({
   className,
   style,
 }: XDSMultiSelectorProps<T>) {
-  const size = useXDSSize(sizeProp, 'md') as XDSMultiSelectorSize;
+  const size = useXDSSize(sizeProp, 'md');
   const triggerId = useId();
   const listboxId = useId();
   const descriptionId = useId();

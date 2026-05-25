@@ -272,7 +272,7 @@ export function XDSTextArea({
   onChange,
   changeAction,
   isLoading = false,
-  value = '',
+  value,
   placeholder,
   rows = 3,
   isDisabled = false,
@@ -293,7 +293,7 @@ export function XDSTextArea({
   ref,
   ...rest
 }: XDSTextAreaProps) {
-  const size = useXDSSize(sizeProp, 'md') as XDSTextAreaSize;
+  const size = useXDSSize(sizeProp, 'md');
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -396,7 +396,7 @@ export function XDSTextArea({
           ref={mergeRefs(ref, textareaRef)}
           id={id}
           name={htmlName}
-          value={String(optimisticValue)}
+          value={optimisticValue}
           onChange={handleChange}
           onPaste={onPaste}
           onFocus={onFocus}

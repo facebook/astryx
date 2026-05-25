@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * @file XDSDateRangeInput.test.tsx
  * @input Uses vitest, @testing-library/react, XDSDateRangeInput component
@@ -7,13 +9,10 @@
  * SYNC: When XDSDateRangeInput.tsx changes, update tests to match new behavior
  */
 
-// Copyright (c) Meta Platforms, Inc. and affiliates.
-
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {XDSDateRangeInput} from './XDSDateRangeInput';
 import type {XDSDateRange} from './XDSDateRangeInput';
-import type {ISODateString} from '../Calendar';
 
 describe('XDSDateRangeInput', () => {
   it('renders with label', () => {
@@ -44,8 +43,8 @@ describe('XDSDateRangeInput', () => {
 
   it('displays formatted range when value is set', () => {
     const range: XDSDateRange = {
-      start: '2026-03-15' as ISODateString,
-      end: '2026-03-22' as ISODateString,
+      start: '2026-03-15',
+      end: '2026-03-22',
     };
     render(
       <XDSDateRangeInput
@@ -237,8 +236,8 @@ describe('XDSDateRangeInput', () => {
   describe('hasClear', () => {
     it('shows clear button when hasClear is true and value exists', () => {
       const range: XDSDateRange = {
-        start: '2026-03-15' as ISODateString,
-        end: '2026-03-22' as ISODateString,
+        start: '2026-03-15',
+        end: '2026-03-22',
       };
       render(
         <XDSDateRangeInput
@@ -269,8 +268,8 @@ describe('XDSDateRangeInput', () => {
 
     it('does not show clear button when hasClear is false', () => {
       const range: XDSDateRange = {
-        start: '2026-03-15' as ISODateString,
-        end: '2026-03-22' as ISODateString,
+        start: '2026-03-15',
+        end: '2026-03-22',
       };
       render(
         <XDSDateRangeInput
@@ -287,8 +286,8 @@ describe('XDSDateRangeInput', () => {
 
     it('does not show clear button when disabled', () => {
       const range: XDSDateRange = {
-        start: '2026-03-15' as ISODateString,
-        end: '2026-03-22' as ISODateString,
+        start: '2026-03-15',
+        end: '2026-03-22',
       };
       render(
         <XDSDateRangeInput
@@ -307,8 +306,8 @@ describe('XDSDateRangeInput', () => {
     it('calls onChange with null when clear is clicked', () => {
       const onChange = vi.fn();
       const range: XDSDateRange = {
-        start: '2026-03-15' as ISODateString,
-        end: '2026-03-22' as ISODateString,
+        start: '2026-03-15',
+        end: '2026-03-22',
       };
       render(
         <XDSDateRangeInput
