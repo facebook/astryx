@@ -174,6 +174,9 @@ export function XDSBreadcrumbItem({
   onClick,
   isCurrent: isCurrentProp,
   startIcon,
+  xstyle,
+  className,
+  style,
   'data-testid': testId,
 }: XDSBreadcrumbItemProps) {
   const ctx = use(BreadcrumbContext);
@@ -231,7 +234,10 @@ export function XDSBreadcrumbItem({
           stylex.props(
             itemStyles.root,
             isSupporting ? itemStyles.supportingSize : itemStyles.defaultSize,
+            xstyle,
           ),
+          className,
+          style,
         )}
         data-testid={testId}>
         <span aria-hidden="true" {...stylex.props(itemStyles.separator)}>
@@ -262,7 +268,10 @@ export function XDSBreadcrumbItem({
         stylex.props(
           itemStyles.root,
           isSupporting ? itemStyles.supportingSize : itemStyles.defaultSize,
+          xstyle,
         ),
+        className,
+        style,
       )}
       data-testid={testId}>
       <span aria-hidden="true" {...stylex.props(itemStyles.separator)}>

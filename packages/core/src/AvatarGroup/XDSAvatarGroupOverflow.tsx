@@ -108,6 +108,9 @@ export function XDSAvatarGroupOverflow({
   count,
   onClick,
   children,
+  xstyle,
+  className,
+  style,
 }: XDSAvatarGroupOverflowProps): ReactNode {
   const group = useXDSAvatarGroup();
   const numericSize = group?.numericSize ?? 36;
@@ -132,7 +135,10 @@ export function XDSAvatarGroupOverflow({
             dynamicStyles.size(numericSize),
             dynamicStyles.fontSize(numericSize),
             dynamicStyles.overlap(-overlap),
+            xstyle,
           ),
+          className,
+          style,
         )}>
         {content}
       </button>
@@ -151,7 +157,10 @@ export function XDSAvatarGroupOverflow({
           dynamicStyles.size(numericSize),
           dynamicStyles.fontSize(numericSize),
           dynamicStyles.overlap(-overlap),
+          xstyle,
         ),
+        className,
+        style,
       )}>
       {content}
     </span>
