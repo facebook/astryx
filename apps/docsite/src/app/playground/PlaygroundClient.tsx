@@ -360,7 +360,7 @@ export function PlaygroundClient() {
         setPreviewError(null);
       }
       if (e.data?.type === 'preview-error') {
-        setPreviewError(e.data.message ?? 'Unknown error');
+        setPreviewError(e.data.error ?? e.data.message ?? 'Unknown error');
       }
     };
     window.addEventListener('message', handler);
