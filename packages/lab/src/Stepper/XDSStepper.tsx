@@ -19,8 +19,8 @@
 import {useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
-import {xdsClassName, mergeProps} from '../utils';
-import type {XDSBaseProps} from '../XDSBaseProps';
+import {xdsClassName, mergeProps} from '@xds/core/utils';
+import type {XDSBaseProps} from '@xds/core';
 import {
   XDSStepperContext,
   type XDSStepperOrientation,

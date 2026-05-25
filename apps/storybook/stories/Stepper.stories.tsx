@@ -2,13 +2,13 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSStepper, XDSStep} from '@xds/core/Stepper';
+import {XDSStepper, XDSStep} from '@xds/lab/Stepper';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSButton} from '@xds/core/Button';
 import {XDSText} from '@xds/core/Text';
 
 const meta: Meta<typeof XDSStepper> = {
-  title: 'Core/Navigation/Stepper',
+  title: 'Lab/Stepper',
   component: XDSStepper,
   tags: ['autodocs'],
   argTypes: {

@@ -1,11 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {XDSCircularProgress} from '@xds/core/CircularProgress';
+import {XDSCircularProgress} from '@xds/lab/CircularProgress';
 import {XDSText} from '@xds/core/Text';
 
 const meta: Meta<typeof XDSCircularProgress> = {
-  title: 'Core/CircularProgress',
+  title: 'Lab/CircularProgress',
   component: XDSCircularProgress,
   tags: ['autodocs'],
   argTypes: {

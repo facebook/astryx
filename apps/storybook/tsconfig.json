@@ -13,6 +13,13 @@
         "../../packages/theme/src/*/index.ts",
         "../../packages/theme/src/*"
       ],
+      "@xds/lab": [
+        "../../packages/lab/src/index.ts"
+      ],
+      "@xds/lab/*": [
+        "../../packages/lab/src/*/index.ts",
+        "../../packages/lab/src/*"
+      ],
       "@xds/build/vite": [
         "../../packages/build/src/vite.ts"
       ]

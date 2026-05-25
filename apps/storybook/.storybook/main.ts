@@ -68,6 +68,8 @@ const config: StorybookConfig = {
             aliases: {
               '@xds/core/*': [path.join(rootDir, 'packages/core/src/*')],
               '@xds/core': [path.join(rootDir, 'packages/core/src')],
+              '@xds/lab/*': [path.join(rootDir, 'packages/lab/src/*')],
+              '@xds/lab': [path.join(rootDir, 'packages/lab/src')],
               '@xds/theme-default/*': [
                 path.join(rootDir, 'packages/themes/default/src/*'),
               ],
@@ -94,6 +96,7 @@ const config: StorybookConfig = {
         alias: {
           ...config.resolve?.alias,
           '@xds/core': path.resolve(rootDir, 'packages/core/src'),
+          '@xds/lab': path.resolve(rootDir, 'packages/lab/src'),
           '@xds/theme-default': path.resolve(
             rootDir,
             'packages/themes/default/src/source.ts',

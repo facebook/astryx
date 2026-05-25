@@ -38,7 +38,6 @@ export * from './Markdown';
 export * from './Citation';
 export * from './CheckboxInput';
 export * from './CheckboxList';
-export * from './CircularProgress';
 export * from './Collapsible';
 export * from './RadioList';
 export * from './Resizable';
@@ -97,7 +96,6 @@ export * from './SideNav';
 export * from './MobileNav';
 export * from './Pagination';
 export * from './ProgressBar';
-export * from './Stepper';
 
 // Layout utilities and components (includes XDSHStack, XDSVStack)
 export * from './Layout';

@@ -237,3 +237,5 @@ export {
   type StreamGLOptions,
   type StreamGLHandle,
 } from './ChartV2';
+export * from './Stepper';
+export * from './CircularProgress';

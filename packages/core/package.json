@@ -175,12 +175,6 @@
       "import": "./dist/CheckboxList/index.mjs",
       "require": "./dist/CheckboxList/index.js"
     },
-    "./CircularProgress": {
-      "source": "./src/CircularProgress/index.ts",
-      "types": "./dist/CircularProgress/index.d.ts",
-      "import": "./dist/CircularProgress/index.mjs",
-      "require": "./dist/CircularProgress/index.js"
-    },
     "./Citation": {
       "source": "./src/Citation/index.ts",
       "types": "./dist/Citation/index.d.ts",
@@ -504,12 +498,6 @@
       "types": "./dist/StatusDot/index.d.ts",
       "import": "./dist/StatusDot/index.mjs",
       "require": "./dist/StatusDot/index.js"
-    },
-    "./Stepper": {
-      "source": "./src/Stepper/index.ts",
-      "types": "./dist/Stepper/index.d.ts",
-      "import": "./dist/Stepper/index.mjs",
-      "require": "./dist/Stepper/index.js"
     },
     "./Switch": {
       "source": "./src/Switch/index.ts",
