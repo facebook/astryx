@@ -4,6 +4,7 @@ import {useState, useEffect, useCallback} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {XDSMarkdown} from '@xds/core/Markdown';
 import {XDSButton} from '@xds/core/Button';
+import {XDSLink} from '@xds/core/Link';
 
 const meta: Meta<typeof XDSMarkdown> = {
   title: 'Core/Markdown',
@@ -341,32 +342,26 @@ export const InlinePlugins: Story = {
         // JIRA-style ticket references: PROJ-123, BUG-456, etc.
         pattern: /\b([A-Z][A-Z0-9]+-\d+)\b/g,
         render: (match: RegExpMatchArray, key: string) => (
-          <a
+          <XDSLink
             key={key}
             href={`https://issues.example.com/browse/${match[1]}`}
-            style={{
-              color: 'var(--color-text-accent, #0066FF)',
-              textDecoration: 'none',
-              fontWeight: 600,
-            }}>
+            isExternalLink
+            weight="semibold">
             {match[0]}
-          </a>
+          </XDSLink>
         ),
       },
       {
         // GitHub-style issue references: #123, #456, etc.
         pattern: /#(\d+)/g,
         render: (match: RegExpMatchArray, key: string) => (
-          <a
+          <XDSLink
             key={key}
             href={`https://github.com/org/repo/issues/${match[1]}`}
-            style={{
-              color: 'var(--color-text-accent, #0066FF)',
-              textDecoration: 'none',
-              fontWeight: 600,
-            }}>
+            isExternalLink
+            weight="semibold">
             {match[0]}
-          </a>
+          </XDSLink>
         ),
       },
     ];
