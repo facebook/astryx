@@ -183,10 +183,9 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-large-size'],
     lineHeight: typeScaleVars['--text-large-leading'],
     textAlign: 'center',
-    paddingTop: spacingVars['--spacing-2'],
-    paddingBottom: 0,
-    paddingLeft: spacingVars['--spacing-3'],
-    paddingRight: spacingVars['--spacing-3'],
+    paddingBlockStart: spacingVars['--spacing-2'],
+    paddingBlockEnd: 0,
+    paddingInline: spacingVars['--spacing-3'],
     maxWidth: '600px',
     flexShrink: 0,
   },
@@ -273,6 +272,8 @@ export function XDSLightbox({
   className,
   style,
   ref,
+  onClick: onClickProp,
+  onKeyDown: onKeyDownProp,
   ...props
 }: XDSLightboxProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -456,8 +457,14 @@ export function XDSLightbox({
     <dialog
       ref={mergeRefs(ref, dialogRef)}
       onCancel={handleCancel}
-      onClick={handleBackdropClick}
-      onKeyDown={handleKeyDown}
+      onClick={e => {
+        handleBackdropClick(e);
+        onClickProp?.(e);
+      }}
+      onKeyDown={e => {
+        handleKeyDown(e);
+        onKeyDownProp?.(e);
+      }}
       aria-label={currentItem.alt || 'Media viewer'}
       {...mergeProps(
         xdsClassName('lightbox'),

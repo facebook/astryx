@@ -3,7 +3,10 @@
 'use client';
 
 /**
- * @file Lightbox component barrel export
+ * @file index.ts
+ * @input Imports XDSLightbox component, useXDSLightbox hook, and types
+ * @output Exports XDSLightbox, useXDSLightbox, and all related types
+ * @position Component entry point; re-exported by /packages/core/src/index.ts
  */
 
 export {XDSLightbox} from './XDSLightbox';
