@@ -141,21 +141,18 @@ describe('XDSOutline', () => {
     const onActiveIdChange = vi.fn();
     render(<XDSOutline items={items} onActiveIdChange={onActiveIdChange} />);
 
+    const entry: IntersectionObserverEntry = {
+      target: api,
+      isIntersecting: true,
+      boundingClientRect: {top: 12} as DOMRectReadOnly,
+      intersectionRatio: 1,
+      intersectionRect: {} as DOMRectReadOnly,
+      rootBounds: null,
+      time: 0,
+    };
+
     act(() => {
-      observerCallback?.(
-        [
-          {
-            target: api,
-            isIntersecting: true,
-            boundingClientRect: {top: 12} as DOMRectReadOnly,
-            intersectionRatio: 1,
-            intersectionRect: {} as DOMRectReadOnly,
-            rootBounds: null,
-            time: 0,
-          } as unknown as IntersectionObserverEntry,
-        ],
-        {} as IntersectionObserver,
-      );
+      observerCallback?.([entry], {} as IntersectionObserver);
     });
 
     expect(screen.getByRole('link', {name: 'API'})).toHaveAttribute(
