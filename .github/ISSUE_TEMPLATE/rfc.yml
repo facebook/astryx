@@ -10,9 +10,11 @@ body:
       value: |
         ## Before you submit
 
-        An RFC is a **problem statement and demand signal** — not a design proposal we evaluate as-written. Our team issues a design brief in response. Read the [contributing guide](https://github.com/facebookexperimental/xds/wiki/Contributing) before submitting.
+        An RFC is a **problem statement and demand signal** — not a design proposal we evaluate as-written. Read the [contributing guide](https://github.com/facebookexperimental/xds/wiki/Contributing) before submitting.
 
-        **Response time:** We aim to respond to RFCs within 1 week — either with a design brief, a request for more information, or a decline with rationale.
+        After acceptance, either of us drives the [specification protocol](https://github.com/facebookexperimental/xds/wiki/Component-Specification-Protocol) — you can front-load research and API exploration in this RFC at your own risk if we haven't responded yet.
+
+        **Response time:** We aim to respond within 1 week — either accepting, requesting more information, or declining with rationale.
 
   - type: textarea
     id: problem

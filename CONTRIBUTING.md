@@ -2,6 +2,12 @@
 
 For the full contribution process — what we accept, how to propose new components, and how API decisions are made — read the **[Contributing wiki](https://github.com/facebookexperimental/xds/wiki/Contributing)**.
 
+Key pages:
+- **[API Conventions](https://github.com/facebookexperimental/xds/wiki/API-Conventions)** — naming, prop patterns, composition rules (read before submitting an RFC)
+- **[Specification Protocol](https://github.com/facebookexperimental/xds/wiki/Component-Specification-Protocol)** — the 9-phase process for new components
+- **[API Arbitration](https://github.com/facebookexperimental/xds/wiki/API-Arbitration)** — how we resolve API design questions
+- **[Contributing with AI](https://github.com/facebookexperimental/xds/wiki/Contributing-with-AI-Assistants)** — safe zones, spec protocol, and working with AI tools
+
 This file covers local development setup.
 
 ---

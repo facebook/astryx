@@ -86,7 +86,7 @@ export default async function CommunityPage() {
                 </XDSText>
                 <XDSText type="supporting" color="secondary">
                   Describe the problem and evidence of demand. We respond within
-                  1 week with a design brief or decline.
+                  1 week with acceptance or decline.
                 </XDSText>
                 <XDSLink
                   label="Submit an RFC"
@@ -99,22 +99,28 @@ export default async function CommunityPage() {
             <XDSCard padding={4}>
               <XDSVStack gap={1}>
                 <XDSText type="body" weight="bold">
-                  2. Implement to Brief
+                  2. Drive the Spec Protocol
                 </XDSText>
                 <XDSText type="supporting" color="secondary">
-                  We issue a design brief with the canonical API shape. You
-                  implement to spec — or choose not to proceed.
+                  Either of us drives research, use case enumeration, and API
+                  exploration. Contributors can front-load this work.
                 </XDSText>
+                <XDSLink
+                  label="Spec protocol"
+                  href={`${WIKI_BASE}/Component-Specification-Protocol`}
+                  isExternalLink>
+                  Spec protocol
+                </XDSLink>
               </XDSVStack>
             </XDSCard>
             <XDSCard padding={4}>
               <XDSVStack gap={1}>
                 <XDSText type="body" weight="bold">
-                  3. Land in Lab
+                  3. Implement &amp; Land in Lab
                 </XDSText>
                 <XDSText type="supporting" color="secondary">
-                  Contributions land in lab for testing. Graduation to core
-                  happens when the component is battle-tested and hardened.
+                  Build to the design brief. Contributions land in lab for
+                  testing. Graduation to core when battle-tested and hardened.
                 </XDSText>
               </XDSVStack>
             </XDSCard>
@@ -242,6 +248,23 @@ export default async function CommunityPage() {
                   href={`${WIKI_BASE}/API-Conventions`}
                   isExternalLink>
                   Conventions
+                </XDSLink>
+              </XDSVStack>
+            </XDSCard>
+            <XDSCard padding={4}>
+              <XDSVStack gap={1}>
+                <XDSText type="body" weight="bold">
+                  API Arbitration
+                </XDSText>
+                <XDSText type="supporting" color="secondary">
+                  How we resolve API design disputes with vibe testing. Includes
+                  a sample prompt for running your own.
+                </XDSText>
+                <XDSLink
+                  label="Arbitration process"
+                  href={`${WIKI_BASE}/API-Arbitration`}
+                  isExternalLink>
+                  Arbitration process
                 </XDSLink>
               </XDSVStack>
             </XDSCard>
