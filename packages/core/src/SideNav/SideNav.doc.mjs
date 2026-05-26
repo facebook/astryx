@@ -67,6 +67,12 @@ export const docs = {
           default: 'false',
         },
         {
+          name: 'handleRef',
+          type: 'Ref<XDSSideNavImperativeCollapseHandle>',
+          description:
+            'Imperative collapse handle for XDSSideNavCollapseButton instances rendered outside this SideNav. Separate from `ref`, which continues to expose the root HTMLElement.',
+        },
+        {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
@@ -250,13 +256,13 @@ export const docs = {
     {
       name: 'XDSSideNavCollapseButton',
       description:
-        'Toggle button for sidenav collapse. Place inside XDSSideNav (reads context automatically) or outside (pass sideNavRef). Renders as an icon-only ghost button by default.',
+        'Toggle button for sidenav collapse. Place inside XDSSideNav (reads context automatically) or outside (pass handleRef). Renders as an icon-only ghost button by default.',
       props: [
         {
-          name: 'sideNavRef',
-          type: 'RefObject<HTMLElement | null>',
+          name: 'handleRef',
+          type: 'RefObject<XDSSideNavImperativeCollapseHandle | null>',
           description:
-            'Ref to the XDSSideNav element. Only needed when the button is rendered outside the sidenav.',
+            'Imperative collapse handle from XDSSideNav. Only needed when the button is rendered outside the sidenav.',
         },
         {
           name: 'label',
@@ -338,6 +344,12 @@ export const docsZh = {
           description:
             '启用折叠行为。true 表示非受控模式并带默认切换按钮，或传入对象进行受控模式和高级配置（defaultIsCollapsed、isCollapsed + onCollapsedChange、hasButton、buttonLabel）。',
           default: 'false',
+        },
+        {
+          name: 'handleRef',
+          type: 'Ref<XDSSideNavImperativeCollapseHandle>',
+          description:
+            '供渲染在 SideNav 外部的 XDSSideNavCollapseButton 使用的命令式折叠句柄。与 `ref` 分离，`ref` 仍然指向根 HTMLElement。',
         },
         {
           name: 'xstyle',
@@ -505,13 +517,13 @@ export const docsZh = {
     {
       name: 'XDSSideNavCollapseButton',
       description:
-        '侧边栏折叠切换按钮。放置在 XDSSideNav 内部（自动读取上下文）或外部（传入 sideNavRef）。默认渲染为仅图标的 ghost 按钮。',
+        '侧边栏折叠切换按钮。放置在 XDSSideNav 内部（自动读取上下文）或外部（传入 handleRef）。默认渲染为仅图标的 ghost 按钮。',
       props: [
         {
-          name: 'sideNavRef',
-          type: 'RefObject<HTMLElement | null>',
+          name: 'handleRef',
+          type: 'RefObject<XDSSideNavImperativeCollapseHandle | null>',
           description:
-            'XDSSideNav 元素的引用。仅在按钮渲染在侧边栏外部时需要。',
+            '来自 XDSSideNav 的命令式折叠句柄。仅在按钮渲染在侧边栏外部时需要。',
         },
         {
           name: 'label',
@@ -574,6 +586,7 @@ export const docsDense = {
         footer: 'Footer area above icon bar.',
         footerIcons: 'Footer icon bar.',
         collapsible: 'Enables collapse behavior. true for uncontrolled w/ default toggle, or object for controlled mode (defaultIsCollapsed, isCollapsed+onCollapsedChange, hasButton, buttonLabel).',
+        handleRef: 'Imperative collapse handle for XDSSideNavCollapseButton outside this SideNav. `ref` still exposes the root HTMLElement.',
         xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
       },
     },
@@ -627,9 +640,9 @@ export const docsDense = {
     {
       name: 'XDSSideNavCollapseButton',
       description:
-        'Toggle button for sidenav collapse. Place inside XDSSideNav (reads context) or outside (pass sideNavRef). Icon-only ghost button by default.',
+        'Toggle button for sidenav collapse. Place inside XDSSideNav (reads context) or outside (pass handleRef). Icon-only ghost button by default.',
       propDescriptions: {
-        sideNavRef: 'Ref to XDSSideNav element. Only needed when button rendered outside sidenav.',
+        handleRef: 'Imperative collapse handle from XDSSideNav. Only needed when button rendered outside sidenav.',
         label: 'Custom label. Text button w/ chevron when provided, icon-only when omitted.',
         children: 'Custom content. Overrides default chevron icon + label.',
       },
