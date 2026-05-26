@@ -14,6 +14,8 @@ import {XDSDivider} from '@xds/core/Divider';
 import * as stylex from '@stylexjs/stylex';
 import {GITHUB_REPO} from '../../../constants';
 
+const WIKI_BASE = `${GITHUB_REPO}/wiki`;
+
 const styles = stylex.create({
   avatar: {
     width: 48,
@@ -25,14 +27,6 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: 12,
-  },
-  badge: {
-    fontSize: 12,
-    fontWeight: 600,
-    backgroundColor: 'var(--color-background-muted)',
-    borderRadius: 12,
-    paddingInline: 8,
-    paddingBlock: 2,
   },
 });
 
@@ -66,32 +60,228 @@ export default async function CommunityPage() {
       <XDSVStack gap={8}>
         {/* Welcome */}
         <XDSVStack gap={3}>
-          <XDSHeading level={1}>Community</XDSHeading>
+          <XDSHeading level={1}>Contributing</XDSHeading>
           <XDSText type="large" color="secondary">
-            XDS is built in the open. We welcome contributions of all
-            kinds—whether it&apos;s fixing a typo, proposing a new component, or
-            improving documentation.
+            XDS has a high bar for what goes in and a clear process for getting
+            there. We accept bug fixes, templates, themes, and new components
+            via RFC.
           </XDSText>
         </XDSVStack>
 
-        {/* Links */}
+        {/* Process overview */}
         <XDSVStack gap={3}>
-          <XDSHeading level={2}>Get Involved</XDSHeading>
+          <XDSHeading level={2}>How It Works</XDSHeading>
+          <XDSText type="body">
+            Contributing to XDS means contributing to the system — not to a
+            single component. Once something is in, it belongs to the
+            system&apos;s coherence. API decisions are resolved through vibe
+            testing and documented conventions, making them objective and
+            reproducible.
+          </XDSText>
           <XDSGrid columns={{minWidth: 250, repeat: 'fill'}} gap={3}>
             <XDSCard padding={4}>
               <XDSVStack gap={1}>
                 <XDSText type="body" weight="bold">
-                  Contribution Guide
+                  1. Propose via RFC
                 </XDSText>
                 <XDSText type="supporting" color="secondary">
-                  Learn how to set up the repo, write components, and submit
-                  pull requests.
+                  Describe the problem and evidence of demand. We respond within
+                  1 week with acceptance or decline.
+                </XDSText>
+                <XDSLink
+                  label="Submit an RFC"
+                  href={`${GITHUB_REPO}/issues/new?template=rfc.yml`}
+                  isExternalLink>
+                  Submit an RFC
+                </XDSLink>
+              </XDSVStack>
+            </XDSCard>
+            <XDSCard padding={4}>
+              <XDSVStack gap={1}>
+                <XDSText type="body" weight="bold">
+                  2. Drive the Spec Protocol
+                </XDSText>
+                <XDSText type="supporting" color="secondary">
+                  Either of us drives research, use case enumeration, and API
+                  exploration. Contributors can front-load this work.
+                </XDSText>
+                <XDSLink
+                  label="Spec protocol"
+                  href={`${WIKI_BASE}/Component-Specification-Protocol`}
+                  isExternalLink>
+                  Spec protocol
+                </XDSLink>
+              </XDSVStack>
+            </XDSCard>
+            <XDSCard padding={4}>
+              <XDSVStack gap={1}>
+                <XDSText type="body" weight="bold">
+                  3. Implement &amp; Land in Lab
+                </XDSText>
+                <XDSText type="supporting" color="secondary">
+                  Build to the design brief. Contributions land in lab for
+                  testing. Graduation to core when battle-tested and hardened.
+                </XDSText>
+              </XDSVStack>
+            </XDSCard>
+          </XDSGrid>
+        </XDSVStack>
+
+        {/* Safe zones */}
+        <XDSVStack gap={3}>
+          <XDSHeading level={2}>Start Here (No RFC Needed)</XDSHeading>
+          <XDSText type="body" color="secondary">
+            These areas are open for direct contributions and don&apos;t require
+            the full RFC process:
+          </XDSText>
+          <XDSGrid columns={{minWidth: 250, repeat: 'fill'}} gap={3}>
+            <XDSCard padding={4}>
+              <XDSVStack gap={1}>
+                <XDSText type="body" weight="bold">
+                  Bug Fixes
+                </XDSText>
+                <XDSText type="supporting" color="secondary">
+                  Open an issue to confirm the behaviour is a bug, then submit a
+                  PR with a test or reproduction case.
+                </XDSText>
+                <XDSLink
+                  label="Report a bug"
+                  href={`${GITHUB_REPO}/issues/new?template=bug.yml`}
+                  isExternalLink>
+                  Report a bug
+                </XDSLink>
+              </XDSVStack>
+            </XDSCard>
+            <XDSCard padding={4}>
+              <XDSVStack gap={1}>
+                <XDSText type="body" weight="bold">
+                  Templates &amp; Stories
+                </XDSText>
+                <XDSText type="supporting" color="secondary">
+                  Show components in realistic context. Templates are training
+                  signal for both humans and LLMs.
+                </XDSText>
+                <XDSLink
+                  label="Template guide"
+                  href={`${WIKI_BASE}/Contributing-Templates`}
+                  isExternalLink>
+                  Template guide
+                </XDSLink>
+              </XDSVStack>
+            </XDSCard>
+            <XDSCard padding={4}>
+              <XDSVStack gap={1}>
+                <XDSText type="body" weight="bold">
+                  Themes
+                </XDSText>
+                <XDSText type="supporting" color="secondary">
+                  Full visual control through defineTheme(). Token values,
+                  component overrides, and mode switching.
+                </XDSText>
+              </XDSVStack>
+            </XDSCard>
+            <XDSCard padding={4}>
+              <XDSVStack gap={1}>
+                <XDSText type="body" weight="bold">
+                  Documentation
+                </XDSText>
+                <XDSText type="supporting" color="secondary">
+                  Fix typos, improve examples, fill gaps. Reviewed for
+                  correctness — precision over comprehensiveness.
+                </XDSText>
+              </XDSVStack>
+            </XDSCard>
+          </XDSGrid>
+        </XDSVStack>
+
+        <XDSDivider />
+
+        {/* Resources */}
+        <XDSVStack gap={3}>
+          <XDSHeading level={2}>Resources</XDSHeading>
+          <XDSGrid columns={{minWidth: 250, repeat: 'fill'}} gap={3}>
+            <XDSCard padding={4}>
+              <XDSVStack gap={1}>
+                <XDSText type="body" weight="bold">
+                  Contributing Guide
+                </XDSText>
+                <XDSText type="supporting" color="secondary">
+                  The full process — what we accept, how API review works, and
+                  what to expect.
                 </XDSText>
                 <XDSLink
                   label="Read the guide"
-                  href={`${GITHUB_REPO}/blob/main/CONTRIBUTING.md`}
+                  href={`${WIKI_BASE}/Contributing`}
                   isExternalLink>
                   Read the guide
+                </XDSLink>
+              </XDSVStack>
+            </XDSCard>
+            <XDSCard padding={4}>
+              <XDSVStack gap={1}>
+                <XDSText type="body" weight="bold">
+                  Contributing with AI
+                </XDSText>
+                <XDSText type="supporting" color="secondary">
+                  Using AI assistants effectively within XDS conventions. Safe
+                  zones, spec protocol, and common pitfalls.
+                </XDSText>
+                <XDSLink
+                  label="AI guide"
+                  href={`${WIKI_BASE}/Contributing-with-AI-Assistants`}
+                  isExternalLink>
+                  AI guide
+                </XDSLink>
+              </XDSVStack>
+            </XDSCard>
+            <XDSCard padding={4}>
+              <XDSVStack gap={1}>
+                <XDSText type="body" weight="bold">
+                  API Conventions
+                </XDSText>
+                <XDSText type="supporting" color="secondary">
+                  Naming rules, prop patterns, composition model. Read before
+                  submitting an RFC.
+                </XDSText>
+                <XDSLink
+                  label="Conventions"
+                  href={`${WIKI_BASE}/API-Conventions`}
+                  isExternalLink>
+                  Conventions
+                </XDSLink>
+              </XDSVStack>
+            </XDSCard>
+            <XDSCard padding={4}>
+              <XDSVStack gap={1}>
+                <XDSText type="body" weight="bold">
+                  API Arbitration
+                </XDSText>
+                <XDSText type="supporting" color="secondary">
+                  How we resolve API design disputes with vibe testing. Includes
+                  a sample prompt for running your own.
+                </XDSText>
+                <XDSLink
+                  label="Arbitration process"
+                  href={`${WIKI_BASE}/API-Arbitration`}
+                  isExternalLink>
+                  Arbitration process
+                </XDSLink>
+              </XDSVStack>
+            </XDSCard>
+            <XDSCard padding={4}>
+              <XDSVStack gap={1}>
+                <XDSText type="body" weight="bold">
+                  Dev Setup
+                </XDSText>
+                <XDSText type="supporting" color="secondary">
+                  Clone, install, build, and run Storybook. Everything you need
+                  to start developing.
+                </XDSText>
+                <XDSLink
+                  label="Setup guide"
+                  href={`${GITHUB_REPO}/blob/main/CONTRIBUTING.md`}
+                  isExternalLink>
+                  Setup guide
                 </XDSLink>
               </XDSVStack>
             </XDSCard>
@@ -101,8 +291,7 @@ export default async function CommunityPage() {
                   Code of Conduct
                 </XDSText>
                 <XDSText type="supporting" color="secondary">
-                  Our community standards and expectations for respectful
-                  collaboration.
+                  Community standards for respectful collaboration.
                 </XDSText>
                 <XDSLink
                   label="View code of conduct"
@@ -125,22 +314,6 @@ export default async function CommunityPage() {
                   href={`${GITHUB_REPO}/blob/main/LICENSE`}
                   isExternalLink>
                   View license
-                </XDSLink>
-              </XDSVStack>
-            </XDSCard>
-            <XDSCard padding={4}>
-              <XDSVStack gap={1}>
-                <XDSText type="body" weight="bold">
-                  Issues &amp; Discussions
-                </XDSText>
-                <XDSText type="supporting" color="secondary">
-                  Report bugs, request features, or ask questions on GitHub.
-                </XDSText>
-                <XDSLink
-                  label="Open an issue"
-                  href={`${GITHUB_REPO}/issues`}
-                  isExternalLink>
-                  Open an issue
                 </XDSLink>
               </XDSVStack>
             </XDSCard>
