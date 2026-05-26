@@ -133,7 +133,7 @@ describe('integration with XDSTable', () => {
     const state = useXDSTableColumnSettingsState({
       columns: columnOptions,
       activeColumnKeys: activeKeys,
-      onChangeActiveColumnKeys: (keys: readonly string[]) =>
+      onChangeActiveColumnKeys: (keys: ReadonlyArray<string>) =>
         setActiveKeys([...keys]),
     });
 

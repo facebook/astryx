@@ -18,7 +18,7 @@
 
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
-import {XDSBaseProps} from '../XDSBaseProps';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSTooltip} from '../Tooltip/XDSTooltip';
 import {xdsClassName, mergeProps} from '../utils';
 

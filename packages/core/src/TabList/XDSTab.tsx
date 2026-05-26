@@ -27,7 +27,7 @@ import {
   fontWeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {XDSBaseProps} from '../XDSBaseProps';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSTabListContext} from './XDSTabListContext';
 import type {XDSTabListSize} from './XDSTabListContext';
 import {tabScope} from './tab.markers.stylex';

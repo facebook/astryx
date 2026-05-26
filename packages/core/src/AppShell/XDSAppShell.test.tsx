@@ -66,7 +66,7 @@ function TestSideNav({children}: {children?: React.ReactNode}) {
 
 // Mock matchMedia
 function createMockMatchMedia(matches: boolean) {
-  const listeners: Array<(e: MediaQueryListEvent) => void> = [];
+  const listeners: ((e: MediaQueryListEvent) => void)[] = [];
   const mql = {
     matches,
     media: '',

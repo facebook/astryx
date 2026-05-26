@@ -346,7 +346,7 @@ export function useXDSPopover(
 
   // Wrapped render function that includes surface styles and optional hidden close button
   const render = useCallback(
-    (children: ReactNode, props?: ContextRenderProps) => {
+    (children: ReactNode, props?: ContextRenderProps): ReactNode => {
       return layer.render(
         <div
           ref={contentRef}

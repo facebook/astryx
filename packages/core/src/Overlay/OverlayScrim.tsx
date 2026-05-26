@@ -12,7 +12,7 @@
  * useXDSOverlay (hook), both of which render this internally.
  */
 
-import {type ReactNode} from 'react';
+import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,

@@ -125,7 +125,9 @@ describe('columnUtils', () => {
       const cols = generateColumns(users);
       for (const col of cols) {
         // Min-width should be at least the floor
-        expect((col.width as ProportionalWidth).minWidth).toBeGreaterThanOrEqual(60);
+        expect(
+          (col.width as ProportionalWidth).minWidth,
+        ).toBeGreaterThanOrEqual(60);
       }
     });
 
@@ -177,7 +179,11 @@ describe('columnUtils', () => {
       // This test verifies the contract: explicit widths pass through unchanged.
       const explicit: XDSTableColumn<User>[] = [
         {key: 'name', header: 'Name', width: pixel(200)},
-        {key: 'email', header: 'Email', width: proportional(3, {minWidth: 300})},
+        {
+          key: 'email',
+          header: 'Email',
+          width: proportional(3, {minWidth: 300}),
+        },
       ];
       // resolveColumnWidths should use the explicit values, not re-derive
       const resolved = resolveColumnWidths(explicit);
@@ -424,7 +430,7 @@ describe('XDSBaseTable', () => {
     });
 
     it('applies transformBodyCell plugin with column and item context', () => {
-      const calls: Array<{col: string; name: string}> = [];
+      const calls: {col: string; name: string}[] = [];
       const plugin: TablePlugin<User> = {
         transformBodyCell: (props, column, item) => {
           calls.push({col: column.key, name: item.name});
@@ -624,7 +630,9 @@ describe('XDSTable', () => {
     const {container} = render(
       <XDSTable dividers="rows">
         <tbody>
-          <tr><td>Content</td></tr>
+          <tr>
+            <td>Content</td>
+          </tr>
         </tbody>
       </XDSTable>,
     );
@@ -633,13 +641,10 @@ describe('XDSTable', () => {
   });
 
   it('uses table-layout: fixed in data-driven mode', () => {
-    const {container} = render(
-      <XDSTable data={users} columns={columns} />,
-    );
+    const {container} = render(<XDSTable data={users} columns={columns} />);
     const table = container.querySelector('table');
     expect(table).toHaveStyle({tableLayout: 'fixed'});
   });
-
 
   it('renders all data values', () => {
     render(<XDSTable data={users} columns={columns} />);

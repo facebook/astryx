@@ -16,7 +16,7 @@
  * - /packages/cli/templates/blocks/components/Badge/ (showcase blocks)
  */
 
-import {type ReactNode} from 'react';
+import type {ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {

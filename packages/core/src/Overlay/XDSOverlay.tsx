@@ -15,7 +15,7 @@
  * use the useXDSOverlay hook directly.
  */
 
-import {type ReactNode, type Ref} from 'react';
+import type {ReactNode, Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {xdsClassName, mergeProps, mergeRefs} from '../utils';

@@ -129,7 +129,7 @@ export type {
   XDSInputStatusType as XDSNumberInputStatusType,
 } from '../Field';
 import {xdsClassName, mergeProps, mergeRefs} from '../utils';
-import {XDSBaseProps} from '../XDSBaseProps';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 interface XDSNumberInputPropsBase extends Omit<
   XDSBaseProps,

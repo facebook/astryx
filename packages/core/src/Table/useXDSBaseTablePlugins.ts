@@ -43,7 +43,7 @@ import type {TablePlugin} from './types';
  * Plugins are sorted by their position in this array.
  * Unknown names are appended after the known set.
  */
-const PLUGIN_ORDER: readonly string[] = [
+const PLUGIN_ORDER: ReadonlyArray<string> = [
   'columnSettings',
   'sort',
   'selection',

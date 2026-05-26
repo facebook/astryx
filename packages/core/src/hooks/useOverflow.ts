@@ -132,6 +132,7 @@ export function useOverflow(
       : 0;
 
     if (children.length === 0) {
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- overflow count is derived from measured DOM widths
       setVisibleCount(0);
       return;
     }
@@ -168,6 +169,7 @@ export function useOverflow(
       count++;
     }
 
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- overflow count is derived from measured DOM widths
     setVisibleCount(Math.max(Math.min(count, itemCount), minVisibleItems));
   }, [itemCount, gap, minVisibleItems, collapseFrom, observeParent]);
 

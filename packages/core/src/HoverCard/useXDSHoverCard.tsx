@@ -447,7 +447,7 @@ export function useXDSHoverCard(
 
   // Render function that wraps layer.render with hover card behavior
   const renderHoverCard = useCallback(
-    (children: ReactNode, props?: ContextRenderProps) => {
+    (children: ReactNode, props?: ContextRenderProps): ReactNode => {
       const renderPlacement = props?.placement ?? placement;
       const renderProps = {
         placement: renderPlacement,

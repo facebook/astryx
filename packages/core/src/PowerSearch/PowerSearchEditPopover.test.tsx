@@ -28,7 +28,7 @@ class MockResizeObserver {
   disconnect() {}
 }
 
-let rafCallbacks: Array<FrameRequestCallback> = [];
+let rafCallbacks: FrameRequestCallback[] = [];
 let rafId = 0;
 
 beforeAll(() => {

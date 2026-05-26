@@ -12,7 +12,7 @@
  */
 
 import {createElement, type ElementType, type ReactNode, type Ref} from 'react';
-import {XDSBaseProps} from '../XDSBaseProps';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {

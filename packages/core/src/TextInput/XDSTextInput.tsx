@@ -117,7 +117,7 @@ import {xdsClassName, mergeProps, mergeRefs} from '../utils';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useXDSInputGroup} from '../InputGroup/XDSInputGroupContext';
-import {XDSBaseProps} from '../XDSBaseProps';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 export type XDSTextInputType = 'text' | 'password' | 'email';
 

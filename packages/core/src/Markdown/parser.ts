@@ -779,7 +779,7 @@ export function trimStreamingArtifacts(input: string): string {
   // renders with formatting immediately as it streams in.
   {
     let searchFrom = 0;
-    const markers: Array<{pos: number; len: number}> = [];
+    const markers: {pos: number; len: number}[] = [];
     while (searchFrom < tail.length) {
       const idx = tail.indexOf('*', searchFrom);
       if (idx === -1) {

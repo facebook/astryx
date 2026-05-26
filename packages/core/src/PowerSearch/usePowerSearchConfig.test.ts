@@ -47,7 +47,7 @@ const defs = [
 
 const {config, applyFilters} = createPowerSearchConfig(defs, 'TestConfig');
 
-const data: Array<InferData<typeof defs>> = [
+const data: InferData<typeof defs>[] = [
   {
     name: 'Alice Johnson',
     age: 30,
@@ -480,7 +480,7 @@ describe('applyFilters', () => {
 
   describe('date: works with Date objects', () => {
     it('converts Date to unix seconds', () => {
-      const dateData: Array<InferData<typeof defs>> = [
+      const dateData: InferData<typeof defs>[] = [
         {
           name: 'Test',
           age: 1,
@@ -786,7 +786,7 @@ describe('applyFilters', () => {
     });
 
     it('handles string_list field with scalar value (non-array)', () => {
-      const scalarData: Array<InferData<typeof defs>> = [
+      const scalarData: InferData<typeof defs>[] = [
         {
           name: 'Test',
           age: 1,

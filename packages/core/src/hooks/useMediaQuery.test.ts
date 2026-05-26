@@ -15,7 +15,7 @@ import {useMediaQuery} from './useMediaQuery';
 
 // Mock matchMedia
 function createMockMatchMedia(matches: boolean) {
-  const listeners: Array<(e: MediaQueryListEvent) => void> = [];
+  const listeners: ((e: MediaQueryListEvent) => void)[] = [];
   return {
     matches,
     media: '',

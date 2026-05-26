@@ -30,7 +30,7 @@ export type TokenLine = Token[];
 // ---------------------------------------------------------------------------
 
 type LangDef = {
-  patterns: Array<{type: string; regex: RegExp; anchored: RegExp}>;
+  patterns: {type: string; regex: RegExp; anchored: RegExp}[];
   /** Token type that matches the element's default text color (skipped in output). */
   defaultType: string;
 };
@@ -80,10 +80,8 @@ function buildLanguageUncached(lang: string): LangDef | null {
   };
 }
 
-function buildLanguagePatterns(
-  lang: string,
-): {
-  patterns: Array<{type: string; regex: RegExp}>;
+function buildLanguagePatterns(lang: string): {
+  patterns: {type: string; regex: RegExp}[];
   defaultType: string;
 } | null {
   switch (lang) {
@@ -329,7 +327,7 @@ const ASYNC_CHUNK_SIZE = 800;
  * Yield to the main thread. Uses `scheduler.yield()` when available,
  * falling back to `setTimeout(resolve, 0)`.
  */
-function yieldToMain(): Promise<void> {
+async function yieldToMain(): Promise<void> {
   if (
     typeof scheduler !== 'undefined' &&
     typeof scheduler.yield === 'function'
@@ -502,7 +500,7 @@ export async function tokenizeStreaming(
  * tokenizers that return the old format.
  */
 export function flatTokensToLines(
-  tokens: Array<{type: string; start: number; end: number}>,
+  tokens: {type: string; start: number; end: number}[],
   code: string,
 ): TokenLine[] {
   const lineStarts: number[] = [0];

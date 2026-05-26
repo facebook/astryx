@@ -478,14 +478,14 @@ export interface TranslationDoc {
     anatomy?: AnatomyElement[];
   };
   /** Sub-component translations. Must match docs.components length and order (if present). */
-  components?: Array<{
+  components?: {
     /** Exact name from docs.components[n].name */
     name: string;
     /** Compressed/translated sub-component description. */
     description: string;
     /** Prop descriptions keyed by prop name. */
     propDescriptions?: Record<string, string>;
-  }>;
+  }[];
 }
 
 // =============================================================================

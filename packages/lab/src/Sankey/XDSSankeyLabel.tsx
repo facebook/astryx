@@ -14,6 +14,7 @@
  */
 
 import {useSankey} from './SankeyContext';
+import type {SankeyNodeLayout} from './types';
 
 export interface XDSSankeyLabelProps {
   /** Show percentage below the node (default: true) */
@@ -118,7 +119,7 @@ function RotatedLabel({
   showPercent,
   height,
 }: {
-  node: import('./types').SankeyNodeLayout;
+  node: SankeyNodeLayout;
   nodeWidth: number;
   nodeColor?: string;
   text: string;
@@ -174,7 +175,7 @@ function BesideLabel({
   height,
   isLastColumn,
 }: {
-  node: import('./types').SankeyNodeLayout;
+  node: SankeyNodeLayout;
   nodeWidth: number;
   text: string;
   pctStr: string;

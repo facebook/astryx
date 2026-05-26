@@ -50,7 +50,7 @@ import {
   typeScaleVars,
   borderVars,
 } from '../theme/tokens.stylex';
-import {type XDSSelectorOptionType, type XDSSelectorOptionData} from './types';
+import type {XDSSelectorOptionType, XDSSelectorOptionData} from './types';
 import {
   isOptionData,
   isDivider,
@@ -62,7 +62,7 @@ import {useCombobox, useSelectedItemOffset} from './hooks';
 import {XDSSelectorOption} from './XDSSelectorOption';
 import {xdsClassName, mergeProps} from '../utils';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
-import {XDSBaseProps} from '../XDSBaseProps';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 const styles = stylex.create({
   // Trigger container — the enhanced click target wrapping the combobox button and clear button as siblings

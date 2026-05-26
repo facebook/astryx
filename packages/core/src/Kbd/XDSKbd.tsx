@@ -13,8 +13,7 @@
  * - /packages/cli/templates/blocks/components/Kbd/ (showcase blocks)
  */
 
-import React, {useState} from 'react';
-import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
+import React, {useSyncExternalStore} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
@@ -86,6 +85,14 @@ function getKeyDisplay(key: string, isMac: boolean): string {
   return KEY_DISPLAY[key] ?? key.toUpperCase();
 }
 
+function subscribeToPlatformChanges(): () => void {
+  return () => {};
+}
+
+function getServerPlatformSnapshot(): boolean {
+  return false;
+}
+
 /**
  * Detects whether the current platform is macOS/iOS.
  * Prefers the User-Agent Client Hints API when available (modern Chrome/Edge),
@@ -127,9 +134,8 @@ export interface XDSKbdProps extends XDSBaseProps<HTMLSpanElement> {
  * anywhere in the system — tooltips, menus, documentation, etc.
  *
  * Platform-aware: `mod` renders as ⌘ on macOS and Ctrl elsewhere.
- * SSR-safe — defers platform detection to a layout effect to avoid
- * hydration mismatches. Uses useIsomorphicLayoutEffect so the platform-correct
- * symbol is set before the browser paints (no visible flicker).
+ * SSR-safe — defers platform detection through useSyncExternalStore to avoid
+ * hydration mismatches.
  *
  * @example
  * ```
@@ -144,11 +150,11 @@ export function XDSKbd({
   style,
   ...rest
 }: XDSKbdProps) {
-  const [isMac, setIsMac] = useState(false);
-
-  useIsomorphicLayoutEffect(() => {
-    setIsMac(detectMac());
-  }, []);
+  const isMac = useSyncExternalStore(
+    subscribeToPlatformChanges,
+    detectMac,
+    getServerPlatformSnapshot,
+  );
 
   const parts = keys.split('+').map(key => key.trim().toLowerCase());
 

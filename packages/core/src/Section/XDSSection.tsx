@@ -15,7 +15,7 @@
  * - /packages/cli/templates/blocks/components/Section/ (showcase blocks)
  */
 
-import {type ReactNode} from 'react';
+import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import type {XDSBaseProps} from '../XDSBaseProps';
@@ -186,7 +186,7 @@ export interface XDSSectionProps extends XDSBaseProps<HTMLElement> {
    * dividers={['top', 'bottom']}
    * ```
    */
-  dividers?: Array<'top' | 'bottom' | 'start' | 'end'>;
+  dividers?: ('top' | 'bottom' | 'start' | 'end')[];
 
   /**
    * Internal padding of the section using the spacing scale.

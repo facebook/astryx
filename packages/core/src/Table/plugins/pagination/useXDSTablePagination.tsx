@@ -236,7 +236,7 @@ export function useXDSTablePagination<T extends Record<string, unknown>>(
   // Stable plugin object \u2014 created once, reads config via ref.
   return useMemo(
     (): TablePlugin<T> => ({
-      transformTableContext(children: ReactNode) {
+      transformTableContext(children: ReactNode): ReactNode {
         const {
           position: pos,
           paginationProps: props,

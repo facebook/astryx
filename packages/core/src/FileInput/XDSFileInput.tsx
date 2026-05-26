@@ -45,7 +45,7 @@ export type {
   XDSInputStatusType as XDSFileInputStatusType,
 } from '../Field';
 import {xdsClassName, mergeProps, mergeRefs} from '../utils';
-import {XDSBaseProps} from '../XDSBaseProps';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) {

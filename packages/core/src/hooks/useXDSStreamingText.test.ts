@@ -5,7 +5,7 @@ import {renderHook, act} from '@testing-library/react';
 import {useXDSStreamingText} from './useXDSStreamingText';
 
 describe('useXDSStreamingText', () => {
-  let rafCallbacks: Array<(time: number) => void>;
+  let rafCallbacks: ((time: number) => void)[];
   let originalRAF: typeof requestAnimationFrame;
   let originalCAF: typeof cancelAnimationFrame;
 

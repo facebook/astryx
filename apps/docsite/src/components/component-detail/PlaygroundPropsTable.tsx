@@ -18,7 +18,10 @@ import {useMediaQuery} from '@xds/core/hooks';
 import type {PropControlDescriptor} from './parsePropType';
 import type {KnobProp} from './InteractivePreview';
 import {resolveElementDescriptor} from './resolveElements';
-import type {PropDoc} from '../../generated/componentRegistry';
+import type {
+  ElementDescriptor,
+  PropDoc,
+} from '../../generated/componentRegistry';
 
 function formatType(type: string, defaultValue?: string): React.ReactNode {
   const parts = type.split(/\s*\|\s*/);
@@ -62,9 +65,7 @@ function resolveSlotElement(
   if (slotElements) {
     const match = slotElements.find(el => el.__element === componentName);
     if (match) {
-      return resolveElementDescriptor(
-        match as import('../../generated/componentRegistry').ElementDescriptor,
-      );
+      return resolveElementDescriptor(match as ElementDescriptor);
     }
   }
   // Fallback for common components without slotElements declared
@@ -162,11 +163,10 @@ function SlotListControl({
       typeof tweaked.children === 'string'
         ? `${tweaked.children} ${n}`
         : tweaked.children;
-    const descriptor: import('../../generated/componentRegistry').ElementDescriptor =
-      {
-        ...tweaked,
-        children,
-      };
+    const descriptor: ElementDescriptor = {
+      ...tweaked,
+      children,
+    };
     const newEl = resolveElementDescriptor(descriptor);
     onChange([...items, newEl]);
   };

@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-require-imports */
+/* eslint-disable @typescript-eslint/no-require-imports */
 /**
  * @file Validates derivedVarRegistry stays in sync with component doc files,
  * AND detects undocumented component CSS custom properties in source files.
@@ -18,6 +18,21 @@ import {readdirSync, readFileSync, existsSync} from 'fs';
 import {join} from 'path';
 
 const SRC_DIR = join(__dirname, '..');
+
+type ComponentDocModule = {
+  docs?: {
+    theming?: {
+      vars?: {name: string}[];
+      derived?: DerivedDocEntry[];
+    };
+  };
+};
+
+type DerivedDocEntry = {
+  property: string;
+  vars?: string[];
+  expand?: string;
+};
 
 // ---------------------------------------------------------------------------
 // Source scanning: find CSS custom property declarations in component files
@@ -99,7 +114,7 @@ interface ComponentInfo {
   dir: string;
   sourceVars: string[];
   docVars: string[];
-  docDerived: Array<{property: string; vars?: string[]; expand?: string}>;
+  docDerived: {property: string; vars?: string[]; expand?: string}[];
 }
 
 function discoverComponents(): ComponentInfo[] {
@@ -138,10 +153,10 @@ function discoverComponents(): ComponentInfo[] {
     }
 
     let docVars: string[] = [];
-    let docDerived: any[] = [];
+    let docDerived: DerivedDocEntry[] = [];
     try {
-      const mod = require(docPath);
-      docVars = (mod.docs?.theming?.vars || []).map((v: any) => v.name);
+      const mod = require(docPath) as ComponentDocModule;
+      docVars = (mod.docs?.theming?.vars || []).map(v => v.name);
       docDerived = mod.docs?.theming?.derived || [];
     } catch {
       /* skip */
@@ -214,12 +229,10 @@ describe('component CSS vars are documented and themeable', () => {
     it(`${dir}: documented vars have derived entries for theming`, () => {
       // Every var that maps to a standard CSS property should have a
       // derived entry so theme authors can write standard CSS.
-      const derivedVarNames = new Set(
-        docDerived.flatMap((d: any) => d.vars || []),
-      );
+      const derivedVarNames = new Set(docDerived.flatMap(d => d.vars || []));
       const derivedExpands = docDerived
-        .filter((d: any) => d.expand)
-        .map((d: any) => d.expand);
+        .filter(d => d.expand)
+        .map(d => d.expand);
       const hasContainerExpand = derivedExpands.includes('container');
 
       const missingDerived = docVars.filter(varName => {

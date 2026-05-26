@@ -1,7 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect} from 'vitest';
-import {tokenize, tokenizeAsync, tokenizeStreaming, flatTokensToLines} from './tokenizer';
+import {
+  tokenize,
+  tokenizeAsync,
+  tokenizeStreaming,
+  flatTokensToLines,
+} from './tokenizer';
 import type {TokenLine} from './tokenizer';
 
 describe('tokenize', () => {
@@ -109,7 +114,9 @@ describe('tokenizeAsync', () => {
 
     const result = await tokenizeAsync(code, 'typescript', controller.signal);
     // Should return partial/empty result
-    expect(result.length).toBeLessThanOrEqual(tokenize(code, 'typescript').length);
+    expect(result.length).toBeLessThanOrEqual(
+      tokenize(code, 'typescript').length,
+    );
   });
 });
 
@@ -117,7 +124,7 @@ describe('tokenizeStreaming', () => {
   it('calls onBatch with progressive results', async () => {
     const lines = Array.from({length: 50}, (_, i) => `const x${i} = ${i};`);
     const code = lines.join('\n');
-    const batches: Array<{lines: TokenLine[]; startLine: number}> = [];
+    const batches: {lines: TokenLine[]; startLine: number}[] = [];
 
     await tokenizeStreaming(code, 'typescript', (batchLines, startLine) => {
       batches.push({lines: batchLines, startLine});
@@ -140,10 +147,10 @@ describe('flatTokensToLines', () => {
   it('converts absolute offsets to line-relative', () => {
     const code = 'const x = 1;\nlet y = 2;';
     const flatTokens = [
-      {type: 'keyword', start: 0, end: 5},   // "const" in line 0
-      {type: 'number', start: 10, end: 11},   // "1" in line 0
-      {type: 'keyword', start: 13, end: 16},  // "let" in line 1
-      {type: 'number', start: 21, end: 22},   // "2" in line 1
+      {type: 'keyword', start: 0, end: 5}, // "const" in line 0
+      {type: 'number', start: 10, end: 11}, // "1" in line 0
+      {type: 'keyword', start: 13, end: 16}, // "let" in line 1
+      {type: 'number', start: 21, end: 22}, // "2" in line 1
     ];
 
     const result = flatTokensToLines(flatTokens, code);

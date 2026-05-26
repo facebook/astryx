@@ -6,7 +6,7 @@
  * @position Utility; used by XDSDropdownMenu to unify data-driven and compound paths
  */
 
-import {type ReactNode} from 'react';
+import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSDivider} from '../Divider';
 import {XDSDropdownMenuItem} from './XDSDropdownMenuItem';

@@ -65,7 +65,7 @@ import {
 } from '../Selector/utils';
 import {useMultiCombobox} from './hooks';
 import {xdsClassName, mergeProps} from '../utils';
-import {XDSBaseProps} from '../XDSBaseProps';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 
 // Sentinel value for the select-all item in keyboard navigation

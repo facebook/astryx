@@ -15,7 +15,7 @@
  * - /packages/cli/templates/blocks/components/Card/ (showcase blocks)
  */
 
-import {type ReactNode} from 'react';
+import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {borderVars, colorVars, radiusVars} from '../theme/tokens.stylex';
 import {container} from '../Layout/container.stylex';
