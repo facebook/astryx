@@ -8,7 +8,9 @@ import {
   useOutlineFromMarkdown,
 } from '@xds/core/Outline';
 import type {OutlineItem} from '@xds/core/Outline';
+import {XDSBadge} from '@xds/core/Badge';
 import {XDSMarkdown} from '@xds/core/Markdown';
+import {XDSHeading, XDSText} from '@xds/core/Text';
 
 const meta: Meta<typeof XDSOutline> = {
   title: 'Core/Outline',
@@ -200,20 +202,44 @@ export const ExtractFromHTML: Story = {
         }}>
         <article ref={contentRef} style={{display: 'grid', gap: 24}}>
           <section>
-            <h2 id="account-settings">Account settings</h2>
-            <p>Manage profile, authentication, and workspace preferences.</p>
+            <XDSHeading id="account-settings" level={2}>
+              Account settings
+            </XDSHeading>
+            <XDSText type="body">
+              Manage profile, authentication, and workspace preferences.
+            </XDSText>
+            <div style={{display: 'flex', gap: 8, marginTop: 12}}>
+              <XDSBadge variant="success" label="Active" />
+              <XDSBadge variant="neutral" label="Workspace" />
+            </div>
           </section>
           <section>
-            <h2 id="notifications">Notifications</h2>
-            <p>Choose which product events should notify the team.</p>
-            <h3 id="email-alerts">Email alerts</h3>
-            <p>Use email for low-frequency summaries and approvals.</p>
-            <h3 id="push-alerts">Push alerts</h3>
-            <p>Use push for time-sensitive updates and incidents.</p>
+            <XDSHeading id="notifications" level={2}>
+              Notifications
+            </XDSHeading>
+            <XDSText type="body">
+              Choose which product events should notify the team.
+            </XDSText>
+            <XDSHeading id="email-alerts" level={3}>
+              Email alerts
+            </XDSHeading>
+            <XDSText type="body">
+              Use email for low-frequency summaries and approvals.
+            </XDSText>
+            <XDSHeading id="push-alerts" level={3}>
+              Push alerts
+            </XDSHeading>
+            <XDSText type="body">
+              Use push for time-sensitive updates and incidents.
+            </XDSText>
           </section>
           <section>
-            <h2 id="billing">Billing</h2>
-            <p>Review invoices, payment methods, and usage limits.</p>
+            <XDSHeading id="billing" level={2}>
+              Billing
+            </XDSHeading>
+            <XDSText type="body">
+              Review invoices, payment methods, and usage limits.
+            </XDSText>
           </section>
         </article>
         <aside style={{position: 'sticky', top: 24, alignSelf: 'start'}}>
