@@ -153,6 +153,7 @@ export * from './Timestamp';
 
 // Overlay
 export * from './Overlay';
+export * from './Outline';
 
 // Overflow list
 export * from './OverflowList';
