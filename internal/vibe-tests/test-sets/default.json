@@ -927,6 +927,45 @@
         "Add a tooltip on the status dot showing the uptime percentage",
         "Add a \"Refresh\" button that rechecks all service statuses"
       ]
+    },
+    {
+      "id": "fwc-12",
+      "category": "feature-with-constraint",
+      "prompt": "Build an image thumbnail grid. When a user clicks a thumbnail, open a fullscreen lightbox showing the image with a caption and a close button.",
+      "expectedComponents": [
+        "XDSLightbox"
+      ],
+      "complexity": "simple",
+      "followUps": [
+        "Add zoom support so users can double-click to zoom in on details",
+        "Add a download button that saves the full-resolution image"
+      ]
+    },
+    {
+      "id": "fwc-13",
+      "category": "feature-with-constraint",
+      "prompt": "Create a photo gallery for a product page. Show 4 product images as thumbnails. Clicking any thumbnail opens a lightbox gallery where users can navigate between all images with prev/next arrows and keyboard. Show a counter like '2 of 4'.",
+      "expectedComponents": [
+        "XDSLightbox"
+      ],
+      "complexity": "moderate",
+      "followUps": [
+        "Highlight the currently-viewed thumbnail while the lightbox is open",
+        "Add captions to each image that display below the photo in the lightbox"
+      ]
+    },
+    {
+      "id": "fwc-14",
+      "category": "feature-with-constraint",
+      "prompt": "Build a media gallery that mixes images and videos. Clicking any item opens a lightbox viewer. Videos should show native playback controls. Images should support zoom on double-click.",
+      "expectedComponents": [
+        "XDSLightbox"
+      ],
+      "complexity": "moderate",
+      "followUps": [
+        "Add autoplay for videos when they become the active item in the gallery",
+        "Add a filmstrip thumbnail bar at the bottom of the lightbox for quick navigation"
+      ]
     }
   ],
   "holdout": [

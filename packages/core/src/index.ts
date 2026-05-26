@@ -43,6 +43,7 @@ export * from './RadioList';
 export * from './Resizable';
 export * from './Divider';
 export * from './EmptyState';
+export * from './Lightbox';
 export * from './Link';
 export * from './List';
 export * from './MetadataList';
