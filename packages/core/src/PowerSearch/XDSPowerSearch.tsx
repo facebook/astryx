@@ -6,7 +6,8 @@
  * @file XDSPowerSearch.tsx
  * @input PowerSearchConfig, filters, onChange
  * @output Structured filter bar with token-based filter management
- * @position Main component; composed from XDSTokenizer + edit popover
+ * @position Main component; forwards DOM ref and exposes tokenizer control via
+ *   handleRef
  *
  * SYNC: When modified, update:
  * - /packages/core/src/PowerSearch/index.ts
@@ -43,7 +44,7 @@ import {
   typeScaleVars,
   fontWeightVars,
 } from '../theme/tokens.stylex';
-import {xdsClassName} from '../utils';
+import {xdsClassName, mergeRefs} from '../utils';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';
 import {useInternalConfig} from './useInternalConfig';
 import {usePowerSearchSource} from './usePowerSearchSource';
@@ -393,8 +394,10 @@ export interface XDSPowerSearchProps extends Omit<
    * When a number, formatted as "N results". When a string, displayed as-is.
    */
   resultCount?: number | string;
+  /** Ref forwarded to the root element. */
+  ref?: React.Ref<HTMLDivElement>;
   /** Imperative handle ref. */
-  ref?: React.Ref<XDSPowerSearchHandle>;
+  handleRef?: React.Ref<XDSPowerSearchHandle>;
   /**
    * Size of the search input.
    * @default 'md'
@@ -515,6 +518,7 @@ export function XDSPowerSearch({
   endContent,
   resultCount,
   ref,
+  handleRef,
   size: sizeProp,
   'data-testid': testId,
   xstyle,
@@ -563,7 +567,7 @@ export function XDSPowerSearch({
   );
 
   // Expose imperative handle
-  useImperativeHandle(ref, () => ({
+  useImperativeHandle(handleRef, () => ({
     focusTypeahead() {
       tokenizerRef.current?.focus();
     },
@@ -959,9 +963,11 @@ export function XDSPowerSearch({
 
   return (
     <>
-      <div ref={popover.triggerRef} className={xdsClassName('power-search')}>
+      <div
+        ref={mergeRefs(ref, popover.triggerRef as React.Ref<HTMLDivElement>)}
+        className={xdsClassName('power-search')}>
         <XDSTokenizer
-          ref={tokenizerRef}
+          handleRef={tokenizerRef}
           label={label}
           isLabelHidden={isLabelHidden}
           searchSource={searchSource}

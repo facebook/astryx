@@ -162,6 +162,11 @@ export const docs = {
       ],
     },
     {
+      name: 'handleRef',
+      type: 'React.Ref<XDSTokenizerHandle>',
+      description: 'Imperative handle for focus() and blur() control.',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -345,6 +350,11 @@ export const docsZh = {
         '\u5728\u8f93\u5165\u884c\u672b\u5c3e\u663e\u793a\u7684\u5185\u5bb9\u3002\u9002\u7528\u4e8e\u6309\u94ae\u3001\u7ed3\u679c\u8ba1\u6570\u6216\u5176\u4ed6\u63a7\u4ef6\u3002',
     },
     {
+      name: 'handleRef',
+      type: 'React.Ref<XDSTokenizerHandle>',
+      description: '用于 focus() 和 blur() 控制的命令式句柄。',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -421,6 +431,7 @@ export const docsDense = {
     debounceMs: 'Search debounce delay ms. 0 for sync sources.',
     onChangeQuery: 'Fired on search query text change.',
     endContent: 'Content at input row end. For buttons, counts, controls.',
+    handleRef: 'Imperative handle for focus() and blur() control.',
     xstyle: 'StyleX layout styles (margins, positioning). Must be stylex.create() value.',
   },
 };

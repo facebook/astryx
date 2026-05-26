@@ -94,7 +94,7 @@ export const XDomainUpdateCost: StoryObj = {
           <XDSChartAxis position="bottom" />
           <XDSChartAxis position="left" />
           <XDSChartStreamGL
-            ref={streamRef}
+            handleRef={streamRef}
             color={colors.categorical(1)[0]}
             bufferSize={300}
             lineWidth={1.5}
@@ -184,7 +184,7 @@ export const ThrottledXDomain: StoryObj = {
           <XDSChartAxis position="bottom" />
           <XDSChartAxis position="left" />
           <XDSChartStreamGL
-            ref={streamRef}
+            handleRef={streamRef}
             color={colors.categorical(1)[0]}
             bufferSize={300}
             lineWidth={1.5}
@@ -277,21 +277,21 @@ export const StressTest: StoryObj = {
           <XDSChartAxis position="bottom" />
           <XDSChartAxis position="left" />
           <XDSChartStreamGL
-            ref={s1}
+            handleRef={s1}
             color={c[0]}
             bufferSize={400}
             lineWidth={1.5}
             opacity={0.8}
           />
           <XDSChartStreamGL
-            ref={s2}
+            handleRef={s2}
             color={c[1]}
             bufferSize={400}
             lineWidth={1.5}
             opacity={0.8}
           />
           <XDSChartStreamGL
-            ref={s3}
+            handleRef={s3}
             color={c[2]}
             bufferSize={400}
             lineWidth={1.5}

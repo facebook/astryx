@@ -10,9 +10,10 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {act, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {XDSCalendar} from './XDSCalendar';
+import type {XDSCalendarHandle} from './XDSCalendar';
 
 /**
  * Helper to find a day button by its day number.
@@ -26,6 +27,34 @@ function getDayButton(day: number, month = 'January', year = 2026) {
 
 describe('XDSCalendar', () => {
   // ─── Basic Rendering ─────────────────────────────────────────
+  it('forwards ref to the calendar root element', () => {
+    let root: HTMLDivElement | null = null;
+    render(
+      <XDSCalendar
+        ref={el => {
+          root = el;
+        }}
+      />,
+    );
+    expect(root).toBeInstanceOf(HTMLDivElement);
+  });
+
+  it('exposes navigation through handleRef', () => {
+    let handle: XDSCalendarHandle | null = null;
+    render(
+      <XDSCalendar
+        handleRef={h => {
+          handle = h;
+        }}
+      />,
+    );
+
+    act(() => {
+      handle?.navigateTo('2026-03-01');
+    });
+
+    expect(screen.getByText('March 2026')).toBeInTheDocument();
+  });
 
   it('renders current month by default', () => {
     render(<XDSCalendar />);

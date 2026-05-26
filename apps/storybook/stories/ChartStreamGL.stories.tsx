@@ -73,7 +73,7 @@ export const StockPrice: StoryObj = {
           <XDSChartAxis position="bottom" />
           <XDSChartAxis position="left" />
           <XDSChartStreamGL
-            ref={streamRef}
+            handleRef={streamRef}
             color={colors.categorical(1)[0]}
             bufferSize={400}
             lineWidth={1.5}
@@ -192,7 +192,7 @@ export const ServerDashboard: StoryObj = {
             <XDSChartAxis position="bottom" />
             <XDSChartAxis position="left" />
             <XDSChartStreamGL
-              ref={cpuRef}
+              handleRef={cpuRef}
               color={colors.categorical(3)[0]}
               bufferSize={300}
               lineWidth={1.5}
@@ -206,7 +206,7 @@ export const ServerDashboard: StoryObj = {
             <XDSChartAxis position="bottom" />
             <XDSChartAxis position="left" />
             <XDSChartStreamGL
-              ref={memRef}
+              handleRef={memRef}
               color={colors.categorical(3)[1]}
               bufferSize={300}
               lineWidth={1.5}
@@ -220,7 +220,7 @@ export const ServerDashboard: StoryObj = {
             <XDSChartAxis position="bottom" />
             <XDSChartAxis position="left" />
             <XDSChartStreamGL
-              ref={netRef}
+              handleRef={netRef}
               color={colors.categorical(3)[2]}
               bufferSize={300}
               lineWidth={1.5}
@@ -292,7 +292,7 @@ export const SeismographDemo: StoryObj = {
           <XDSChartAxis position="bottom" />
           <XDSChartAxis position="left" />
           <XDSChartStreamGL
-            ref={streamRef}
+            handleRef={streamRef}
             color={colors.categorical(5)[3]}
             bufferSize={600}
             lineWidth={1}
@@ -368,21 +368,21 @@ export const MultiSensorOverlay: StoryObj = {
           <XDSChartAxis position="bottom" />
           <XDSChartAxis position="left" />
           <XDSChartStreamGL
-            ref={s1Ref}
+            handleRef={s1Ref}
             color={colors.categorical(3)[0]}
             bufferSize={400}
             lineWidth={1.5}
             opacity={0.8}
           />
           <XDSChartStreamGL
-            ref={s2Ref}
+            handleRef={s2Ref}
             color={colors.categorical(3)[1]}
             bufferSize={400}
             lineWidth={1.5}
             opacity={0.8}
           />
           <XDSChartStreamGL
-            ref={s3Ref}
+            handleRef={s3Ref}
             color={colors.categorical(3)[2]}
             bufferSize={400}
             lineWidth={1.5}

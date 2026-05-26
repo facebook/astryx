@@ -201,7 +201,7 @@ describe('XDSChatComposerInput', () => {
       let handle: XDSChatComposerInputHandle | null = null;
       render(
         <XDSChatComposerInput
-          ref={h => {
+          handleRef={h => {
             handle = h;
           }}
         />,
@@ -224,7 +224,7 @@ describe('XDSChatComposerInput', () => {
       let handle: XDSChatComposerInputHandle | null = null;
       render(
         <XDSChatComposerInput
-          ref={h => {
+          handleRef={h => {
             handle = h;
           }}
         />,
@@ -333,10 +333,23 @@ describe('XDSChatComposerInput', () => {
     });
   });
 
-  describe('ref (imperative handle)', () => {
-    it('exposes imperative handle via ref', () => {
+  describe('refs', () => {
+    it('forwards ref to the root element', () => {
+      let root: HTMLDivElement | null = null;
+      render(
+        <XDSChatComposerInput
+          ref={el => {
+            root = el;
+          }}
+        />,
+      );
+      expect(root).toBeInstanceOf(HTMLDivElement);
+      expect(root).toHaveClass('xds-chat-composer-input');
+    });
+
+    it('exposes imperative handle via handleRef', () => {
       const ref = vi.fn();
-      render(<XDSChatComposerInput ref={ref} />);
+      render(<XDSChatComposerInput handleRef={ref} />);
       expect(ref).toHaveBeenCalledWith(
         expect.objectContaining({
           insertToken: expect.any(Function),
@@ -351,7 +364,7 @@ describe('XDSChatComposerInput', () => {
       let handle: XDSChatComposerInputHandle | null = null;
       render(
         <XDSChatComposerInput
-          ref={h => {
+          handleRef={h => {
             handle = h;
           }}
         />,
@@ -366,7 +379,7 @@ describe('XDSChatComposerInput', () => {
       const onChange = vi.fn();
       render(
         <XDSChatComposerInput
-          ref={h => {
+          handleRef={h => {
             handle = h;
           }}
           onChange={onChange}
@@ -418,7 +431,7 @@ describe('XDSChatComposerInput', () => {
       const onChange = vi.fn();
       render(
         <XDSChatComposerInput
-          ref={h => {
+          handleRef={h => {
             handle = h;
           }}
           onChange={onChange}
@@ -573,7 +586,7 @@ describe('XDSChatComposerInput', () => {
       const onChange = vi.fn();
       render(
         <XDSChatComposerInput
-          ref={h => {
+          handleRef={h => {
             handle = h;
           }}
           triggers={triggers}

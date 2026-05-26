@@ -483,7 +483,7 @@ export default function DictationLabPage() {
 
           <XDSChatComposer
             onSubmit={handleSubmit}
-            input={<XDSChatComposerInput ref={inputRef} />}
+            input={<XDSChatComposerInput handleRef={inputRef} />}
             sendActions={<XDSChatDictationButton dictation={dictation} />}
           />
 

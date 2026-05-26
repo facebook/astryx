@@ -6,7 +6,8 @@
  * @file XDSChatComposerInput.tsx
  * @input Uses React, StyleX, useTriggerMenu, XDSSearchSource
  * @output Exports XDSChatComposerInput rich input + trigger types
- * @position Core implementation; consumed by index.ts, XDSChatComposer
+ * @position Core implementation; consumed by index.ts, XDSChatComposer;
+ *   forwards DOM ref and exposes editor control via handleRef
  *
  * ContentEditable-based rich input for the chat composer.
  * Supports trigger menus (@ mentions, / commands) via XDSSearchSource,
@@ -59,7 +60,7 @@ import {useXDSChatComposerContext} from './XDSChatContext';
 // Types
 // =============================================================================
 
-/** Imperative handle exposed by XDSChatComposerInput via ref */
+/** Imperative handle exposed by XDSChatComposerInput via handleRef */
 export interface XDSChatComposerInputHandle {
   /** Insert a token (badge chip) at the current cursor position */
   insertToken: (token: XDSChatComposerToken) => string | undefined;
@@ -148,8 +149,10 @@ export interface XDSChatComposerInputProps extends Omit<
   XDSBaseProps<HTMLDivElement>,
   'onChange' | 'onPaste' | 'onSubmit'
 > {
-  /** Imperative handle ref for programmatic control */
-  ref?: React.Ref<XDSChatComposerInputHandle>;
+  /** Ref forwarded to the root element. */
+  ref?: React.Ref<HTMLDivElement>;
+  /** Imperative handle ref for programmatic control. */
+  handleRef?: React.Ref<XDSChatComposerInputHandle>;
   /** Controlled value */
   value?: string;
   /** Change handler */
@@ -282,6 +285,7 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
 
   const {
     ref,
+    handleRef,
     value: controlledValue = composerCtx?.value,
     onChange = composerCtx?.onChange,
     placeholder = composerCtx?.placeholder ?? 'Type a message\u2026',
@@ -330,7 +334,7 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
       serialize(editableRef.current ?? document.createElement('div')),
   };
   selfRef.current = handle;
-  useImperativeHandle(ref, () => handle);
+  useImperativeHandle(handleRef, () => handle);
 
   useEffect(() => {
     if (controlledValue !== undefined && editableRef.current) {
@@ -568,6 +572,7 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
 
   return (
     <div
+      ref={ref}
       {...mergeProps(
         xdsClassName('chat-composer-input'),
         stylex.props(styles.root, isDisabled && styles.disabled, xstyle),

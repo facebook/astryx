@@ -898,7 +898,7 @@ export function XDSDateTimeInput({
 
       {popover.render(
         <XDSCalendar
-          ref={calendarRef}
+          handleRef={calendarRef}
           mode="single"
           value={valueParts.date}
           onChange={(d: ISODateString) => handleDateChange(d, 'calendar')}
