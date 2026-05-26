@@ -281,7 +281,7 @@ export function XDSLightbox({
 
   // Index state (controlled + uncontrolled)
   const isControlled = controlledIndex !== undefined;
-  const [uncontrolledIndex, setUncontrolledIndex] = seState(defaultIndex);
+  const [uncontrolledIndex, setUncontrolledIndex] = useState(defaultIndex);
   const index = isControlled ? controlledIndex : uncontrolledIndex;
 
   const setIndex = useCallback(
@@ -291,7 +291,7 @@ export function XDSLightbox({
       }
       onIndexChange?.(value);
     },
-    [isControlled, onIndexChange],
+    [isControlled, onIndexChange, setUncontrolledIndex],
   );
 
   // Zoom/pan state
