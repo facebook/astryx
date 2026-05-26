@@ -93,7 +93,7 @@ export const docs = {
       description: 'Timezone ID for date formatting (e.g. "America/New_York").',
     },
     {
-      name: 'ref',
+      name: 'handleRef',
       type: 'Ref<XDSPowerSearchHandle>',
       description:
         'Imperative handle with focusTypeahead() and blurTypeahead() methods.',
@@ -232,7 +232,7 @@ export const docsZh = {
       description: '用于日期格式化的时区 ID（例如 "America/New_York"）。',
     },
     {
-      name: 'ref',
+      name: 'handleRef',
       type: 'Ref<XDSPowerSearchHandle>',
       description: '提供 focusTypeahead() 和 blurTypeahead() 方法的命令式句柄。',
     },
@@ -298,7 +298,7 @@ export const docsDense = {
     maxTokenLength: 'Max char length for filter value display in tokens.',
     popoverSaveButtonLabel: 'Label for save button in edit popover.',
     timezoneID: 'Timezone ID for date formatting (e.g. "America/New_York").',
-    ref: 'Imperative handle w/ focusTypeahead() + blurTypeahead() methods.',
+    handleRef: 'Imperative handle w/ focusTypeahead() + blurTypeahead() methods.',
     endContent: 'Content at end of input row. Useful for action buttons or controls.',
     resultCount: 'Result count matching current filters. Number formatted as "N results"; string displayed as-is.',
     size: 'Search input+token size.',

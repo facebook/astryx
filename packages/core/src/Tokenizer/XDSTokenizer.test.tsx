@@ -75,6 +75,44 @@ const userSource: XDSSearchSource = {
 };
 
 describe('XDSTokenizer', () => {
+  it('forwards ref to the root field element', () => {
+    let root: HTMLDivElement | null = null;
+    render(
+      <XDSTokenizer
+        ref={el => {
+          root = el;
+        }}
+        label="Members"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    expect(root).toBeInstanceOf(HTMLDivElement);
+    expect(root).toHaveClass('xds-field');
+  });
+
+  it('exposes focus control through handleRef', () => {
+    let handle: {focus: () => void; blur: () => void} | null = null;
+    render(
+      <XDSTokenizer
+        handleRef={h => {
+          handle = h;
+        }}
+        label="Members"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+
+    act(() => {
+      handle?.focus();
+    });
+
+    expect(screen.getByRole('combobox')).toHaveFocus();
+  });
+
   it('renders with label', () => {
     render(
       <XDSTokenizer

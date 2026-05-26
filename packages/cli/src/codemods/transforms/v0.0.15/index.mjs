@@ -14,6 +14,10 @@ import renameIsStreamingToIsStopShown, {
   meta as renameIsStreamingToIsStopShownMeta,
 } from './rename-isStreaming-to-isStopShown.mjs';
 
+import renameImperativeRefToHandleRef, {
+  meta as renameImperativeRefToHandleRefMeta,
+} from './rename-imperative-ref-to-handleRef.mjs';
+
 export default [
   {
     name: 'rename-date-picker-to-input',
@@ -24,5 +28,10 @@ export default [
     name: 'rename-isStreaming-to-isStopShown',
     transform: renameIsStreamingToIsStopShown,
     meta: renameIsStreamingToIsStopShownMeta,
+  },
+  {
+    name: 'rename-imperative-ref-to-handleRef',
+    transform: renameImperativeRefToHandleRef,
+    meta: renameImperativeRefToHandleRefMeta,
   },
 ];

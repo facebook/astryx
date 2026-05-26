@@ -6,7 +6,8 @@
  * @file XDSCalendar.tsx
  * @input Uses React useState, useMemo, useCallback, hooks
  * @output Exports XDSCalendar component and related types
- * @position Core implementation; consumed by index.ts, tested by XDSCalendar.test.tsx
+ * @position Core implementation; forwards DOM ref and exposes navigation via
+ *   handleRef
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Calendar/Calendar.doc.mjs (props table, features, implementation notes)
@@ -67,7 +68,7 @@ import {xdsClassName, mergeProps} from '../utils';
 export type {ISODateString, DayOfWeek, DateRange} from '../utils/dateTypes';
 import type {ISODateString, DayOfWeek, DateRange} from '../utils/dateTypes';
 
-/** Imperative handle for XDSCalendar ref */
+/** Imperative handle for XDSCalendar handleRef */
 
 export interface XDSCalendarHandle {
   /** Navigate the calendar to show the month containing the given date */
@@ -80,8 +81,10 @@ interface XDSCalendarBaseProps extends Omit<
   XDSBaseProps<HTMLDivElement>,
   'onChange' | 'defaultValue'
 > {
-  /** Ref forwarded to the calendar (imperative handle) */
-  ref?: React.Ref<XDSCalendarHandle>;
+  /** Ref forwarded to the calendar root element. */
+  ref?: React.Ref<HTMLDivElement>;
+  /** Imperative handle ref for calendar navigation. */
+  handleRef?: React.Ref<XDSCalendarHandle>;
   /** Number of months to display (default: 1) */
   numberOfMonths?: 1 | 2;
 
@@ -177,6 +180,7 @@ export type XDSCalendarProps = XDSCalendarSingleProps | XDSCalendarRangeProps;
  */
 export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
   const {
+    handleRef,
     mode = 'single',
     value,
     defaultValue,
@@ -242,7 +246,7 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
 
   // Expose imperative handle for external navigation
   useImperativeHandle(
-    ref,
+    handleRef,
     () => ({
       navigateTo: (date: ISODateString) => {
         if (isControlledFocus) {
@@ -386,6 +390,7 @@ export function XDSCalendar({ref, ...props}: XDSCalendarProps) {
 
   return (
     <div
+      ref={ref}
       {...mergeProps(
         xdsClassName('calendar', {mode}),
         stylex.props(calendarStyles.calendar, xstyle),

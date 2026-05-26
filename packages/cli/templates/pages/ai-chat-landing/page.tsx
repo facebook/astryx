@@ -503,7 +503,7 @@ export default function AIChatTemplate() {
       placeholder="Ask anything"
       input={
         <XDSChatComposerInput
-          ref={composerInputRef}
+          handleRef={composerInputRef}
           triggers={composerTriggers}
           style={{minHeight: inputMinHeight}}
         />

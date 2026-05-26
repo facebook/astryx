@@ -577,7 +577,7 @@ export function XDSDateInput({
       </div>
       {popover.render(
         <XDSCalendar
-          ref={calendarRef}
+          handleRef={calendarRef}
           mode="single"
           value={optimisticValue}
           onChange={handleDateSelect}

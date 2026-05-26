@@ -467,7 +467,7 @@ export const FullAIChat: StoryObj = {
         }
         input={
           <XDSChatComposerInput
-            ref={inputRef}
+            handleRef={inputRef}
             triggers={triggers}
             placeholder="Ask about the codebase..."
           />
@@ -761,7 +761,7 @@ export const PanelView: StoryObj = {
         }
         input={
           <XDSChatComposerInput
-            ref={inputRef}
+            handleRef={inputRef}
             triggers={triggers}
             placeholder="Ask something..."
           />

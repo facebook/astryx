@@ -77,6 +77,11 @@ export const docs = {
       description: 'Navigation callback.',
     },
     {
+      name: 'handleRef',
+      type: 'React.Ref<XDSCalendarHandle>',
+      description: 'Imperative handle for calendar navigation, including navigateTo().',
+    },
+    {
       name: 'hasOutsideDays',
       type: 'boolean',
       description: 'Show days from adjacent months.',
@@ -135,6 +140,7 @@ export const docsZh = {
     {name: 'dateConstraints', type: 'Array<(date: Date) => boolean>', description: '自定义约束函数。'},
     {name: 'focusDate', type: 'ISODateString', description: '受控可见月份。'},
     {name: 'onFocusDateChange', type: '(focusDate: ISODateString) => void', description: '导航回调函数。'},
+    {name: 'handleRef', type: 'React.Ref<XDSCalendarHandle>', description: '日历导航的命令式句柄，包括 navigateTo()。'},
     {name: 'hasOutsideDays', type: 'boolean', description: '显示相邻月份的日期。', default: 'true'},
     {name: 'hasWeekNumbers', type: 'boolean', description: '显示 ISO 周数。', default: 'false'},
     {name: 'hasVariableRowCount', type: 'boolean', description: '可变行数与固定 6 行网格。', default: 'false'},
@@ -185,6 +191,7 @@ export const docsDense = {
     dateConstraints: 'custom constraint fns',
     focusDate: 'controlled visible month',
     onFocusDateChange: 'navigation callback',
+    handleRef: 'imperative navigation handle',
     hasOutsideDays: 'show days from adjacent months',
     hasWeekNumbers: 'show ISO week numbers',
     hasVariableRowCount: 'variable vs fixed 6-row grid',

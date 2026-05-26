@@ -62,7 +62,7 @@ export interface UseXDSChartRangeReturn {
  * const {xDomain, yDomain, push} = useXDSChartRange({xWindow: 300, yPadding: 0.1});
  *
  * <XDSChart xDomain={xDomain} yDomain={yDomain} ...>
- *   <XDSChartStreamGL ref={streamRef} ... />
+ *   <XDSChartStreamGL handleRef={streamRef} ... />
  * </XDSChart>
  * ```
  */

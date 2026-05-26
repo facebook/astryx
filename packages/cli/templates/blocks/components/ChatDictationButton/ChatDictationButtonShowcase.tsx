@@ -33,7 +33,7 @@ export default function ChatDictationButtonShowcase() {
 
       <XDSChatComposer
         onSubmit={(v) => console.log('Submit:', v)}
-        input={<XDSChatComposerInput ref={inputRef} />}
+        input={<XDSChatComposerInput handleRef={inputRef} />}
         sendActions={<XDSChatDictationButton dictation={dictation} />}
       />
 

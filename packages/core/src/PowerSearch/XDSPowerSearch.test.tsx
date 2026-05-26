@@ -113,6 +113,43 @@ function PowerSearchWrapper(props: {config: PowerSearchConfig}) {
 // =============================================================================
 
 describe('XDSPowerSearch', () => {
+  it('forwards ref to the root element', () => {
+    let root: HTMLDivElement | null = null;
+    render(
+      <XDSPowerSearch
+        ref={el => {
+          root = el;
+        }}
+        config={config}
+        filters={[]}
+        onChange={() => {}}
+      />,
+    );
+    expect(root).toBeInstanceOf(HTMLDivElement);
+    expect(root).toHaveClass('xds-power-search');
+  });
+
+  it('exposes typeahead focus through handleRef', () => {
+    let handle: {focusTypeahead: () => void; blurTypeahead: () => void} | null =
+      null;
+    render(
+      <XDSPowerSearch
+        handleRef={h => {
+          handle = h;
+        }}
+        config={config}
+        filters={[]}
+        onChange={() => {}}
+      />,
+    );
+
+    act(() => {
+      handle?.focusTypeahead();
+    });
+
+    expect(screen.getByRole('combobox')).toHaveFocus();
+  });
+
   describe('paste behavior', () => {
     it('pasting a field name shows matching field suggestions', async () => {
       const user = userEvent.setup();
