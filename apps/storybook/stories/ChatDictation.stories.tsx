@@ -179,7 +179,7 @@ export const Interactive: Story = {
           onSubmit={v => {
             console.log('Submit:', v);
           }}
-          input={<XDSChatComposerInput ref={inputRef} />}
+          input={<XDSChatComposerInput handleRef={inputRef} />}
           sendActions={<XDSChatDictationButton dictation={dictation} />}
         />
         {dictation.isListening && (

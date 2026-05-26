@@ -59,7 +59,7 @@ export const KnownRange: StoryObj = {
           <XDSChartAxis position="bottom" />
           <XDSChartAxis position="left" />
           <XDSChartStreamGL
-            ref={streamRef}
+            handleRef={streamRef}
             color={colors.categorical(1)[0]}
             bufferSize={300}
             lineWidth={1.5}
@@ -110,7 +110,7 @@ export const UnknownRange: StoryObj = {
           <XDSChartAxis position="bottom" />
           <XDSChartAxis position="left" />
           <XDSChartStreamGL
-            ref={streamRef}
+            handleRef={streamRef}
             color={colors.categorical(2)[1]}
             bufferSize={300}
             lineWidth={1.5}
@@ -175,7 +175,7 @@ export const ZeroCentered: StoryObj = {
           <XDSChartAxis position="bottom" />
           <XDSChartAxis position="left" />
           <XDSChartStreamGL
-            ref={streamRef}
+            handleRef={streamRef}
             color={colors.categorical(5)[3]}
             bufferSize={600}
             lineWidth={1}

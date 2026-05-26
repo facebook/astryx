@@ -9,13 +9,9 @@
  * For streaming, the parent should update xDomain as new data arrives.
  */
 
-import {
-  useRef,
-  useEffect,
-  useImperativeHandle,
-  forwardRef,
-  useCallback,
-} from 'react';
+import {useRef, useEffect, useImperativeHandle, useCallback} from 'react';
+import type {Ref} from 'react';
+import {mergeRefs} from '@xds/core/utils';
 import {useChart} from './ChartContext';
 import {
   hexToGL,
@@ -27,6 +23,10 @@ import {
 } from './webgl';
 
 export interface XDSChartStreamGLProps {
+  /** Ref forwarded to the SVG marker element used to position the canvas. */
+  ref?: Ref<SVGGElement>;
+  /** Imperative handle ref for streaming data control. */
+  handleRef?: Ref<XDSChartStreamGLHandle>;
   color: string;
   bufferSize?: number;
   lineWidth?: number;
@@ -57,13 +57,14 @@ const FRAG = `
   }
 `;
 
-export const XDSChartStreamGL = forwardRef<
-  XDSChartStreamGLHandle,
-  XDSChartStreamGLProps
->(function XDSChartStreamGL(
-  {color, bufferSize = 500, lineWidth = 2, opacity = 1},
+export function XDSChartStreamGL({
   ref,
-) {
+  handleRef,
+  color,
+  bufferSize = 500,
+  lineWidth = 2,
+  opacity = 1,
+}: XDSChartStreamGLProps) {
   const {width, height, xScale, yScale} = useChart();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const glRef = useRef<WebGLRenderingContext | null>(null);
@@ -157,7 +158,7 @@ export const XDSChartStreamGL = forwardRef<
   }, [width, height, color, lineWidth, opacity, bufferSize, xScale, yScale]);
 
   useImperativeHandle(
-    ref,
+    handleRef,
     () => ({
       push(x: number, y: number) {
         const r = ring.current;
@@ -184,5 +185,5 @@ export const XDSChartStreamGL = forwardRef<
   if (width <= 0 || height <= 0) {
     return null;
   }
-  return <g ref={markerRef} />;
-});
+  return <g ref={mergeRefs(markerRef, ref)} />;
+}

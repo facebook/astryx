@@ -6,7 +6,8 @@
  * @file XDSTokenizer.tsx
  * @input Uses React, XDSBaseTypeahead, XDSField, XDSToken
  * @output Exports XDSTokenizer multi-select typeahead component
- * @position Composed component; uses XDSBaseTypeahead for search + XDSToken for chips
+ * @position Composed component; forwards DOM ref and exposes focus control via
+ *   handleRef
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Tokenizer/index.ts
@@ -82,7 +83,7 @@ export type XDSTokenizerOverflowBehavior =
   | 'unfocusedLayer';
 
 /**
- * Imperative handle for XDSTokenizer.
+ * Imperative handle for XDSTokenizer handleRef.
  */
 export interface XDSTokenizerHandle {
   /** Focus the typeahead input. */
@@ -174,8 +175,10 @@ export interface XDSTokenizerProps<T extends XDSSearchableItem> extends Omit<
   onFocus?: (e: React.FocusEvent) => void;
   /** Fires when focus leaves the tokenizer entirely. */
   onBlur?: (e: React.FocusEvent) => void;
+  /** Ref forwarded to the root field element. */
+  ref?: React.Ref<HTMLDivElement>;
   /** Imperative handle ref for focus/blur control. */
-  ref?: React.Ref<XDSTokenizerHandle>;
+  handleRef?: React.Ref<XDSTokenizerHandle>;
 }
 
 // =============================================================================
@@ -366,6 +369,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
   style,
   'data-testid': testId,
   ref,
+  handleRef,
 }: XDSTokenizerProps<T>) {
   const size = useXDSSize(sizeProp, 'md');
   const inputId = useId();
@@ -374,7 +378,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  useImperativeHandle(ref, () => ({
+  useImperativeHandle(handleRef, () => ({
     focus() {
       inputRef.current?.focus();
     },
@@ -791,6 +795,7 @@ export function XDSTokenizer<T extends XDSSearchableItem>({
 
   return (
     <XDSField
+      ref={ref}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
