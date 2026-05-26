@@ -7,7 +7,7 @@ import {
   createIncrementalState,
   trimStreamingArtifacts,
 } from './parser';
-import type {BlockNode} from './parser';
+import type {BlockNode, InlineNode} from './parser';
 
 function simulateStreaming(fullText: string, chunkSize = 10) {
   const state = createIncrementalState();
@@ -401,7 +401,7 @@ describe('streaming end-to-end: no raw syntax visible', () => {
     return text;
   }
 
-  function extractInlineText(nodes: import('./parser').InlineNode[]): string {
+  function extractInlineText(nodes: InlineNode[]): string {
     let text = '';
     for (const node of nodes) {
       switch (node.type) {

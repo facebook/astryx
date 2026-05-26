@@ -165,7 +165,9 @@ export function XDSDialogHeader({
                 label="Close"
                 tooltip="Close"
                 icon={<XDSIcon icon="close" color="inherit" />}
-                onClick={() => onOpenChange?.(false)}
+                onClick={() => {
+                  onOpenChange?.(false);
+                }}
                 isIconOnly
               />
             )}

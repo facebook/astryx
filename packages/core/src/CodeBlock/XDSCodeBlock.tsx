@@ -357,7 +357,7 @@ export interface XDSCodeBlockProps extends XDSBaseProps<HTMLPreElement> {
   tokenizer?: (
     code: string,
     language: string,
-  ) => Array<{type: string; start: number; end: number}>;
+  ) => {type: string; start: number; end: number}[];
   highlightMode?: 'auto' | 'ranges' | 'spans';
 }
 
@@ -394,57 +394,65 @@ function useTokenLines(
   language: string,
   customTokenizer?: XDSCodeBlockProps['tokenizer'],
 ): TokenLine[] {
-  const [asyncTokens, setAsyncTokens] = useState<TokenLine[] | null>(null);
+  const [asyncTokenResult, setAsyncTokenResult] = useState<{
+    code: string;
+    language: string;
+    tokens: TokenLine[];
+  } | null>(null);
 
   const syncTokens = useMemo(() => {
-    if (code.length >= SYNC_TOKENIZE_THRESHOLD) {
-      return null;
-    }
     if (customTokenizer) {
       return flatTokensToLines(customTokenizer(code, language), code);
+    }
+    if (code.length >= SYNC_TOKENIZE_THRESHOLD) {
+      return null;
     }
     return tokenize(code, language);
   }, [code, language, customTokenizer]);
 
   useEffect(() => {
-    if (code.length < SYNC_TOKENIZE_THRESHOLD) {
+    if (code.length < SYNC_TOKENIZE_THRESHOLD || customTokenizer) {
       return;
     }
 
     const abortController = new AbortController();
 
-    if (customTokenizer) {
+    async function tokenizeLargeCode() {
       try {
+        const tokens = await tokenizeAsync(
+          code,
+          language,
+          abortController.signal,
+        );
         if (!abortController.signal.aborted) {
-          const flat = customTokenizer(code, language);
-          setAsyncTokens(flatTokensToLines(flat, code));
+          setAsyncTokenResult({code, language, tokens});
         }
       } catch {
         if (!abortController.signal.aborted) {
-          setAsyncTokens(null);
+          setAsyncTokenResult({code, language, tokens: []});
         }
       }
-    } else {
-      void tokenizeAsync(code, language, abortController.signal)
-        .then(tokens => {
-          if (!abortController.signal.aborted) {
-            setAsyncTokens(tokens);
-          }
-        })
-        .catch(() => {
-          if (!abortController.signal.aborted) {
-            setAsyncTokens(null);
-          }
-        });
     }
+
+    void tokenizeLargeCode();
 
     return () => {
       abortController.abort();
-      setAsyncTokens(null);
     };
   }, [code, language, customTokenizer]);
 
-  return syncTokens ?? asyncTokens ?? [];
+  if (syncTokens != null) {
+    return syncTokens;
+  }
+
+  if (
+    asyncTokenResult?.code === code &&
+    asyncTokenResult.language === language
+  ) {
+    return asyncTokenResult.tokens;
+  }
+
+  return [];
 }
 
 // ---------------------------------------------------------------------------

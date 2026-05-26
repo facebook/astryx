@@ -14,7 +14,7 @@
  * - /packages/cli/templates/blocks/components/NavIcon/NavIconShowcase.tsx
  */
 
-import {type ReactNode} from 'react';
+import type {ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, sizeVars} from '../theme/tokens.stylex';

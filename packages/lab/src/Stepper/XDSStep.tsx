@@ -16,7 +16,7 @@
  * - /packages/cli/templates/blocks/components/Stepper/ (showcase blocks)
  */
 
-import {type ReactNode} from 'react';
+import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 import {

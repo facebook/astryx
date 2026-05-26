@@ -259,7 +259,7 @@ export function generatePageRange(
   currentPage: number,
   totalPages: number,
   siblingCount: number,
-): Array<number | '...'> {
+): (number | '...')[] {
   // Total page number slots (excluding ellipses):
   // first + last + current + 2*siblings = 3 + 2*siblings
   // With 2 potential ellipsis slots: 5 + 2*siblings
@@ -279,7 +279,7 @@ export function generatePageRange(
   if (!showLeftEllipsis && showRightEllipsis) {
     // Near the start: show more pages on the left
     const leftRange = 3 + 2 * siblingCount;
-    const pages: Array<number | '...'> = Array.from(
+    const pages: (number | '...')[] = Array.from(
       {length: leftRange},
       (_, i) => i + 1,
     );
@@ -290,7 +290,7 @@ export function generatePageRange(
   if (showLeftEllipsis && !showRightEllipsis) {
     // Near the end: show more pages on the right
     const rightRange = 3 + 2 * siblingCount;
-    const pages: Array<number | '...'> = [1, '...'];
+    const pages: (number | '...')[] = [1, '...'];
     for (let i = totalPages - rightRange + 1; i <= totalPages; i++) {
       pages.push(i);
     }
@@ -298,7 +298,7 @@ export function generatePageRange(
   }
 
   // In the middle: show ellipsis on both sides
-  const pages: Array<number | '...'> = [1, '...'];
+  const pages: (number | '...')[] = [1, '...'];
   for (let i = leftSiblingIndex; i <= rightSiblingIndex; i++) {
     pages.push(i);
   }

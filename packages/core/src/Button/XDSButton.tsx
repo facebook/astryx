@@ -288,7 +288,7 @@ export interface XDSButtonProps extends XDSBaseProps<HTMLButtonElement> {
   /** HTML name attribute for form submission. */
   name?: string;
   /** HTML value attribute for form submission. */
-  value?: string | number | readonly string[];
+  value?: string | number | ReadonlyArray<string>;
   /** Associates the button with a form element by ID. */
   form?: string;
   /**

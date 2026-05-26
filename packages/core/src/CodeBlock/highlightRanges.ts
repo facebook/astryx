@@ -381,7 +381,7 @@ export function applyHighlightRangesFlat(
 
   // Collect text nodes with absolute offsets
   const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-  const textNodes: Array<{node: Text; start: number; length: number}> = [];
+  const textNodes: {node: Text; start: number; length: number}[] = [];
   let totalOffset = 0;
   let current = walker.nextNode();
   while (current) {
@@ -435,7 +435,7 @@ export function applyHighlightRangesFlat(
 }
 
 function resolveOffset(
-  textNodes: Array<{node: Text; start: number; length: number}>,
+  textNodes: {node: Text; start: number; length: number}[],
   absOffset: number,
 ): {node: Text; offset: number} | null {
   for (const entry of textNodes) {

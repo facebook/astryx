@@ -50,16 +50,25 @@ export function useSelectedItemOffset({
   const [offset, setOffset] = useState(0);
   const [isPositioned, setIsPositioned] = useState(false);
 
+  const commitPosition = useCallback(
+    (nextOffset: number, nextIsPositioned: boolean) => {
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- selector popover position is derived from DOM layout
+      setOffset(nextOffset);
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- selector popover position is derived from DOM layout
+      setIsPositioned(nextIsPositioned);
+    },
+    [],
+  );
+
   useIsomorphicLayoutEffect(() => {
     if (!isOpen) {
       // Reset offset when closed
-      setOffset(0);
-      setIsPositioned(false);
+      commitPosition(0, false);
       return;
     }
 
     if (!listboxRef.current || !triggerRef.current) {
-      setIsPositioned(true);
+      commitPosition(0, true);
       return;
     }
 
@@ -70,8 +79,7 @@ export function useSelectedItemOffset({
     const targetItem = document.getElementById(targetItemId);
 
     if (!targetItem) {
-      setOffset(0);
-      setIsPositioned(true);
+      commitPosition(0, true);
       return;
     }
 
@@ -117,9 +125,15 @@ export function useSelectedItemOffset({
       clampedOffset = 0;
     }
 
-    setOffset(clampedOffset);
-    setIsPositioned(true);
-  }, [isOpen, selectedItemIndex, listboxId, listboxRef, triggerRef]);
+    commitPosition(clampedOffset, true);
+  }, [
+    isOpen,
+    selectedItemIndex,
+    listboxId,
+    listboxRef,
+    triggerRef,
+    commitPosition,
+  ]);
 
   return {offset, isPositioned};
 }

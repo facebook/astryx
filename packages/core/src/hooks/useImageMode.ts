@@ -102,11 +102,13 @@ export function useImageMode(
   options: UseImageModeOptions = {},
 ): 'dark' | 'light' | null {
   const {region, threshold = 0.5, fallback = null} = options;
-  const [mode, setMode] = useState<'dark' | 'light' | null>(fallback);
+  const [detectedResult, setDetectedResult] = useState<{
+    src: string;
+    mode: 'dark' | 'light' | null;
+  } | null>(null);
 
   useEffect(() => {
     if (!src) {
-      setMode(fallback);
       return;
     }
 
@@ -166,11 +168,14 @@ export function useImageMode(
         }
 
         const lightness = perceptualLightness(r, g, b);
-        setMode(lightness > threshold ? 'light' : 'dark');
+        setDetectedResult({
+          src: srcUrl,
+          mode: lightness > threshold ? 'light' : 'dark',
+        });
       } catch {
         // CORS error, network error, etc. — keep fallback
         if (!cancelled) {
-          setMode(fallback);
+          setDetectedResult({src: srcUrl, mode: fallback});
         }
       }
     }
@@ -182,5 +187,9 @@ export function useImageMode(
     };
   }, [src, region, threshold, fallback]);
 
-  return mode;
+  if (!src || detectedResult?.src !== src) {
+    return fallback;
+  }
+
+  return detectedResult.mode;
 }

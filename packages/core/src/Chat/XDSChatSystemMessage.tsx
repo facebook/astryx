@@ -19,7 +19,7 @@
  * - /packages/cli/templates/blocks/components/ChatSystemMessage/ (block examples)
  */
 
-import {type ReactNode} from 'react';
+import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,

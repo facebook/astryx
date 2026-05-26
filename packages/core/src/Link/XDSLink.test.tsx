@@ -153,7 +153,9 @@ describe('XDSLink', () => {
 
   it('handles click events', async () => {
     const user = userEvent.setup();
-    const handleClick = vi.fn(e => e.preventDefault());
+    const handleClick = vi.fn((e: React.MouseEvent<HTMLAnchorElement>) => {
+      e.preventDefault();
+    });
     render(
       <XDSLink href="/test" onClick={handleClick}>
         Click me

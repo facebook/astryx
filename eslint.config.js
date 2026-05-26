@@ -72,6 +72,10 @@ export default tseslint.config(
         assertionStyle: "as",
         objectLiteralTypeAssertions: "never",
       }],
+      "@typescript-eslint/consistent-type-imports": [
+        "warn",
+        {fixStyle: "inline-type-imports"},
+      ],
     },
   },
   // Type-aware linting for core. Keep this scoped: projectService has a
@@ -85,6 +89,10 @@ export default tseslint.config(
       },
     },
     rules: {
+      "@typescript-eslint/array-type": [
+        reactSeverity,
+        {default: "array", readonly: "generic"},
+      ],
       "@typescript-eslint/await-thenable": reactSeverity,
       "@typescript-eslint/no-array-delete": reactSeverity,
       "@typescript-eslint/no-base-to-string": reactSeverity,
@@ -93,6 +101,7 @@ export default tseslint.config(
       "@typescript-eslint/no-floating-promises": reactSeverity,
       "@typescript-eslint/no-for-in-array": reactSeverity,
       "@typescript-eslint/no-implied-eval": reactSeverity,
+      "@typescript-eslint/no-import-type-side-effects": reactSeverity,
       "@typescript-eslint/no-invalid-void-type": reactSeverity,
       "@typescript-eslint/no-misused-promises": reactSeverity,
       "@typescript-eslint/no-unnecessary-type-conversion": reactSeverity,
@@ -102,6 +111,10 @@ export default tseslint.config(
       "@typescript-eslint/only-throw-error": reactSeverity,
       "@typescript-eslint/prefer-includes": reactSeverity,
       "@typescript-eslint/prefer-string-starts-ends-with": reactSeverity,
+      "@typescript-eslint/promise-function-async": [
+        reactSeverity,
+        {allowAny: false},
+      ],
       "@typescript-eslint/require-array-sort-compare": reactSeverity,
       "@typescript-eslint/restrict-plus-operands": reactSeverity,
       "@typescript-eslint/restrict-template-expressions": reactSeverity,
@@ -160,6 +173,7 @@ export default tseslint.config(
       '@eslint-react/no-nested-lazy-component-declarations': reactSeverity,
       '@eslint-react/no-unstable-default-props': reactSeverity,
       '@eslint-react/no-unstable-context-value': reactSeverity,
+      '@eslint-react/set-state-in-effect': reactSeverity,
       '@eslint-react/set-state-in-render': reactSeverity,
       '@eslint-react/no-missing-component-display-name': reactSeverity,
 

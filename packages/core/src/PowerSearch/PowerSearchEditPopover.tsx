@@ -352,7 +352,7 @@ function NestedSubFilterRow({
 interface NestedEditorProps {
   config: InternalConfig;
   partialFilter: PartialFilter;
-  operatorOptions: Array<{value: string; label: string}>;
+  operatorOptions: {value: string; label: string}[];
   onOperatorChange: (operatorKey: string) => void;
   onPartialFilterChange: (filter: PartialFilter) => void;
   isReadOnly: boolean;

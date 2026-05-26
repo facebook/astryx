@@ -61,11 +61,11 @@ export function resolveColumnWidths<T extends Record<string, unknown>>(
   // --- Pass 1: Categorize columns and compute totals ---
   let totalProportion = 0;
   let pixelTotal = 0;
-  const proportionalCols: Array<{
+  const proportionalCols: {
     key: string;
     proportion: number;
     minWidth: number;
-  }> = [];
+  }[] = [];
 
   for (const col of columns) {
     const w = col.width;

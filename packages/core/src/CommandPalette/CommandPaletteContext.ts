@@ -29,7 +29,7 @@ export interface CommandPaletteContextValue {
   /** Get the DOM id for an item by its flat index. */
   getItemId: (index: number) => string;
   /** Flat list of selectable items in DOM order (after grouping/filtering). */
-  selectableItems: Array<{value: string; label?: string; disabled?: boolean}>;
+  selectableItems: {value: string; label?: string; disabled?: boolean}[];
   /** The search result items (typed). */
   searchResults: XDSSearchableItem[];
   /** Select an item by value and close. */

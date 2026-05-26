@@ -16,7 +16,7 @@
  * - /packages/cli/templates/blocks/components/Toolbar/ (showcase blocks)
  */
 
-import {type ReactNode} from 'react';
+import type {ReactNode} from 'react';
 import type {XDSBaseProps} from '../XDSBaseProps';
 import type {XDSSectionVariant} from '../Section/XDSSection';
 import type {SpacingStep} from '../utils/types';
@@ -193,7 +193,7 @@ export interface XDSToolbarProps extends XDSBaseProps<HTMLDivElement> {
    * dividers={['bottom']}
    * ```
    */
-  dividers?: Array<'top' | 'bottom' | 'start' | 'end'>;
+  dividers?: ('top' | 'bottom' | 'start' | 'end')[];
 }
 
 /**

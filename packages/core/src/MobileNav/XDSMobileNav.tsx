@@ -47,7 +47,7 @@ import {XDSIcon} from '../Icon';
 import {XDSHeading} from '../Text/XDSHeading';
 import {useXDSAppShellMobile} from '../AppShell/XDSAppShellMobileContext';
 import {xdsClassName, mergeProps, mergeRefs} from '../utils';
-import {XDSBaseProps} from '../XDSBaseProps';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 // =============================================================================
 // Styles
@@ -330,11 +330,13 @@ export function XDSMobileNav({
         if (trigger && trigger !== document.body) {
           const rect = trigger.getBoundingClientRect();
           const triggerCenter = rect.left + rect.width / 2;
+          // eslint-disable-next-line @eslint-react/set-state-in-effect -- side is resolved from trigger layout immediately before showModal()
           setResolvedSide(
             triggerCenter < window.innerWidth / 2 ? 'start' : 'end',
           );
         }
       } else {
+        // eslint-disable-next-line @eslint-react/set-state-in-effect -- side prop changes must update the open dialog placement
         setResolvedSide(side);
       }
 

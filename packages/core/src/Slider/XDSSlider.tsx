@@ -80,7 +80,7 @@ export interface XDSSliderBaseProps extends Omit<
   /** How the current value is displayed. @default "tooltip" */
   valueDisplay?: 'tooltip' | 'text' | 'none';
   /** Tick marks at specified positions with optional labels. */
-  marks?: Array<{value: number; label?: string}>;
+  marks?: {value: number; label?: string}[];
   /** Test ID for the root element. */
   'data-testid'?: string;
 }

@@ -13,6 +13,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import type {chromium as PlaywrightChromium} from 'playwright';
 import {getResultsDir, readJson, ensureDir} from './utils.js';
 
 const VIEWPORTS = {
@@ -130,7 +131,7 @@ async function main() {
   }
 
   // Try to import playwright
-  let chromium: typeof import('playwright').chromium;
+  let chromium: typeof PlaywrightChromium;
   try {
     const pw = await import('playwright');
     chromium = pw.chromium;

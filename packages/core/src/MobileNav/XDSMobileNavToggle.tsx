@@ -17,7 +17,7 @@ import React, {type ReactNode} from 'react';
 import {XDSButton} from '../Button';
 import {XDSIcon} from '../Icon';
 import {useXDSAppShellMobile} from '../AppShell/XDSAppShellMobileContext';
-import {XDSBaseProps} from '../XDSBaseProps';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 export interface XDSMobileNavToggleProps extends Pick<
   XDSBaseProps,

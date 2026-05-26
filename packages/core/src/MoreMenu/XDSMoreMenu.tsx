@@ -18,7 +18,7 @@
  * - /packages/cli/templates/blocks/components/MoreMenu/ (showcase blocks)
  */
 
-import {type ReactNode} from 'react';
+import type {ReactNode} from 'react';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {XDSDropdownMenu} from '../DropdownMenu/XDSDropdownMenu';
 import {useXDSSize} from '../SizeContext/XDSSizeContext';

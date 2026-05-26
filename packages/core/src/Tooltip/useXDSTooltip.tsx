@@ -424,7 +424,7 @@ export function useXDSTooltip(
 
   // Render function that wraps layer.render with tooltip styling
   const renderTooltip = useCallback(
-    (children: ReactNode, props?: ContextRenderProps) => {
+    (children: ReactNode, props?: ContextRenderProps): ReactNode => {
       const renderPlacement = props?.placement ?? placement;
       const renderProps = {
         placement: renderPlacement,

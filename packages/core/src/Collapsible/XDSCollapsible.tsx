@@ -21,7 +21,7 @@
  * - /packages/cli/templates/blocks/components/Collapsible/ (showcase blocks)
  */
 
-import {type ReactNode} from 'react';
+import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,

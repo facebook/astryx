@@ -25,7 +25,7 @@ import {XDSLayoutDividerContext} from './XDSLayoutDividerContext';
 import {stack} from '../Stack/stack.stylex';
 import {stackItem} from '../Stack/stackItem.stylex';
 import {xdsClassName, mergeProps} from '../utils';
-import {XDSBaseProps} from '../XDSBaseProps';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import type {SpacingStep} from '../utils/types';
 import {
   layoutPaddingOuterXVarStyles,

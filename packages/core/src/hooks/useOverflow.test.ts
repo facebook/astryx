@@ -15,7 +15,7 @@ function mockMeasure(
   itemWidths: number[],
   indicatorWidth?: number,
 ): HTMLElement {
-  const children: Array<{offsetWidth: number}> = itemWidths.map(w => ({
+  const children: {offsetWidth: number}[] = itemWidths.map(w => ({
     offsetWidth: w,
   }));
   if (indicatorWidth != null) {

@@ -309,7 +309,7 @@ function DateRelativeEditor({
     filterValue?.type === 'date_relative' ? filterValue.value : undefined;
 
   const options = useMemo(() => {
-    const result: Array<{value: string; label: string}> = [];
+    const result: {value: string; label: string}[] = [];
     const units = [
       {unit: 'day', plural: 'days'},
       {unit: 'week', plural: 'weeks'},

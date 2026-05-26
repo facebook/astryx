@@ -929,7 +929,7 @@ export function XDSPowerSearch({
   ]);
 
   // Build combined endContent from resultCount + endContent props
-  const combinedEndContent = useMemo(() => {
+  const combinedEndContent = useMemo((): React.ReactNode => {
     let resultCountNode: React.ReactNode = null;
     if (resultCount != null) {
       if (typeof resultCount === 'number') {

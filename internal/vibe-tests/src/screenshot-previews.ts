@@ -20,6 +20,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as http from 'node:http';
+import type {chromium as PlaywrightChromium, Page} from 'playwright';
 import {getResultsDir, ensureDir, writeJson} from './utils.js';
 
 const VIEWPORTS = {
@@ -109,10 +110,7 @@ function serveStatic(
  * For self-contained HTML previews, we inject prefers-color-scheme
  * emulation via Playwright's CDP.
  */
-async function setTheme(
-  page: import('playwright').Page,
-  theme: 'light' | 'dark',
-) {
+async function setTheme(page: Page, theme: 'light' | 'dark') {
   await page.emulateMedia({colorScheme: theme});
 }
 
@@ -121,7 +119,7 @@ async function main() {
   const resultsDir = getResultsDir();
 
   // Import playwright
-  let chromium: typeof import('playwright').chromium;
+  let chromium: typeof PlaywrightChromium;
   try {
     const pw = await import('playwright');
     chromium = pw.chromium;

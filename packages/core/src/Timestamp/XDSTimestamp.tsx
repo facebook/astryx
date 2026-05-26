@@ -28,7 +28,7 @@ import type {
 import {xdsClassName, mergeRefs} from '../utils';
 import type {XDSBaseProps} from '../XDSBaseProps';
 
-const LazyXDSTooltip = lazy(() =>
+const LazyXDSTooltip = lazy(async () =>
   import('../Tooltip/XDSTooltip').then(mod => ({default: mod.XDSTooltip})),
 );
 

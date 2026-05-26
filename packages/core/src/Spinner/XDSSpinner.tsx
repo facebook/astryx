@@ -20,7 +20,7 @@ import {useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {durationVars, spacingVars} from '../theme/tokens.stylex';
 import {useXDSTheme} from '../theme/useXDSTheme';
-import {XDSBaseProps} from '../XDSBaseProps';
+import type {XDSBaseProps} from '../XDSBaseProps';
 import {XDSText} from '../Text/XDSText';
 import {xdsClassName, mergeProps} from '../utils';
 

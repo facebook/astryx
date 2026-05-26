@@ -555,7 +555,7 @@ export function createPowerSearchConfig<
   applyFilters: <T extends InferData<D>>(
     filters: ReadonlyArray<PowerSearchFilter>,
     data: ReadonlyArray<T>,
-  ) => Array<T>;
+  ) => T[];
 } {
   const fields = definitions.map(buildField);
 
@@ -567,7 +567,7 @@ export function createPowerSearchConfig<
   function applyFilters<T extends InferData<D>>(
     filters: ReadonlyArray<PowerSearchFilter>,
     data: ReadonlyArray<T>,
-  ): Array<T> {
+  ): T[] {
     if (filters.length === 0) {
       return [...data];
     }
@@ -609,7 +609,7 @@ export function usePowerSearchConfig<
   applyFilters: <T extends InferData<D>>(
     filters: ReadonlyArray<PowerSearchFilter>,
     data: ReadonlyArray<T>,
-  ) => Array<T>;
+  ) => T[];
 } {
   return useMemo(
     () => createPowerSearchConfig(definitions, configName),

@@ -54,6 +54,8 @@ import {
 } from './parser';
 import type {BlockNode, InlineNode, IncrementalState} from './parser';
 
+type SyncReactNode = Exclude<React.ReactNode, Promise<unknown>>;
+
 // ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
@@ -641,7 +643,7 @@ function wrapTextWithFade(
   content: string,
   cursor: StreamingCursor,
   key: string | number,
-): React.ReactNode {
+): SyncReactNode {
   const startOffset = cursor.offset;
   cursor.offset += content.length;
 
@@ -702,7 +704,7 @@ function renderInline(
   linkComponent: XDSLinkComponentType = 'a',
   inlinePlugins?: MarkdownInlinePlugin[],
   components?: Partial<XDSMarkdownComponents>,
-): React.ReactNode {
+): SyncReactNode {
   switch (node.type) {
     case 'text': {
       if (inlinePlugins && inlinePlugins.length > 0) {
@@ -1005,7 +1007,7 @@ function renderBlock(
   linkComponent: XDSLinkComponentType = 'a',
   inlinePlugins?: MarkdownInlinePlugin[],
   components?: Partial<XDSMarkdownComponents>,
-): React.ReactNode {
+): SyncReactNode {
   const blockAlignMargin = BLOCK_ALIGN_MARGIN[contentAlign];
   const blockAlignStyle =
     blockAlignMargin != null

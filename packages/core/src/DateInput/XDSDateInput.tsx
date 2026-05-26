@@ -133,7 +133,7 @@ export type {
   XDSInputStatusType as XDSDateInputStatusType,
 } from '../Field';
 import {xdsClassName, mergeProps, mergeRefs} from '../utils';
-import {XDSBaseProps} from '../XDSBaseProps';
+import type {XDSBaseProps} from '../XDSBaseProps';
 
 export interface XDSDateInputProps extends Omit<
   XDSBaseProps,
