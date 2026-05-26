@@ -469,6 +469,12 @@
       "import": "./dist/Selector/index.mjs",
       "require": "./dist/Selector/index.js"
     },
+    "./ServerDialog": {
+      "source": "./src/ServerDialog/index.ts",
+      "types": "./dist/ServerDialog/index.d.ts",
+      "import": "./dist/ServerDialog/index.mjs",
+      "require": "./dist/ServerDialog/index.js"
+    },
     "./SideNav": {
       "source": "./src/SideNav/index.ts",
       "types": "./dist/SideNav/index.d.ts",

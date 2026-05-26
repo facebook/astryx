@@ -1000,6 +1000,14 @@ function generateShowcaseRegistry() {
     const destFile = `${basename}.tsx`;
     fs.copyFileSync(tsxSrc, path.join(SHOWCASE_OUT, destFile));
 
+    // Copy sibling .tsx files (e.g. server actions) excluding the showcase and doc
+    const dir = path.dirname(docPath);
+    for (const sibling of fs.readdirSync(dir)) {
+      if (sibling.endsWith('.tsx') && sibling !== basename + '.tsx') {
+        fs.copyFileSync(path.join(dir, sibling), path.join(SHOWCASE_OUT, sibling));
+      }
+    }
+
     entries.push({exampleFor, basename, destFile});
   }
 
