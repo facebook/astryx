@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'FormLayout',
   name: 'FormLayout',
+  displayName: 'Form Layout',
   isReady: true,
   aspectRatio: 1,
   isShowcase: true,

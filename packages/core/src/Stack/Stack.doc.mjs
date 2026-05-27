@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Stack',
+  displayName: 'Stack',
   group: 'Layout',
   keywords: ["stack","hstack","vstack","flexbox","flex","spacing","gap","horizontal","vertical","row","column"],
   theming: {
@@ -15,6 +16,7 @@ export const docs = {
   components: [
     {
       name: 'XDSHStack',
+      displayName: 'XDSH Stack',
       description:
         'Horizontal stack for arranging items left-to-right. Supports polymorphic rendering.',
       props: [
@@ -81,6 +83,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSVStack',
+      displayName: 'XDSV Stack',
       description:
         'Vertical stack for arranging items top-to-bottom. Supports polymorphic rendering.',
       props: [
@@ -142,6 +145,7 @@ export const docs = {
     },
     {
       name: 'XDSStackItem',
+      displayName: 'XDS Stack Item',
       description:
         'Stack item for controlling individual item behavior within a stack. Supports polymorphic rendering.',
       props: [
@@ -186,6 +190,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Stack',
+  displayName: 'Stack',
   group: 'Layout',
   theming: {
     targets: [
@@ -196,6 +201,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSHStack',
+      displayName: 'XDSH Stack',
       description:
         '水平堆叠组件，将元素从左到右排列。支持多态渲染。',
       props: [
@@ -263,6 +269,7 @@ export const docsZh = {
     },
     {
       name: 'XDSVStack',
+      displayName: 'XDSV Stack',
       description:
         '垂直堆叠组件，将元素从上到下排列。支持多态渲染。',
       props: [
@@ -324,6 +331,7 @@ export const docsZh = {
     },
     {
       name: 'XDSStackItem',
+      displayName: 'XDS Stack Item',
       description:
         '堆叠子元素，用于控制堆叠中单个元素的行为。支持多态渲染。',
       props: [
@@ -380,6 +388,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSHStack',
+      displayName: 'XDSH Stack',
       description: 'Horizontal stack; left-to-right, polymorphic rendering.',
       propDescriptions: {
         gap: 'Numeric spacing step for gap: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
@@ -397,6 +406,7 @@ export const docsDense = {
     },
     {
       name: 'XDSVStack',
+      displayName: 'XDSV Stack',
       description: 'Vertical stack; top-to-bottom, polymorphic rendering.',
       propDescriptions: {
         gap: 'Numeric spacing step for gap: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.',
@@ -413,6 +423,7 @@ export const docsDense = {
     },
     {
       name: 'XDSStackItem',
+      displayName: 'XDS Stack Item',
       description: 'Controls individual item behavior in stack; polymorphic rendering.',
       propDescriptions: {
         size: 'Flex grow: static=natural size, fill=expand to remaining space.',

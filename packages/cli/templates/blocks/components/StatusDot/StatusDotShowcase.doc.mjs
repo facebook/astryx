@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'StatusDot',
   name: 'StatusDot',
+  displayName: 'Status Dot',
   isReady: true,
   aspectRatio: 1,
   isShowcase: true,

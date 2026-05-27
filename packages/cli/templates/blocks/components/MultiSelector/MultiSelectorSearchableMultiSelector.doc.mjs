@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'MultiSelector',
   name: 'MultiSelector — Searchable',
+  displayName: 'MultiSelector — Searchable',
   description:
     'Multi-select with search filtering and select-all.',
   isReady: true,

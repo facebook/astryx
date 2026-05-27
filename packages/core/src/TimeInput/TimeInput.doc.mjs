@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'TimeInput',
+  displayName: 'Time Input',
   keywords: ["timeinput","timepicker","time","clock","hour","minute","ampm","timeselect","timefield","schedule"],
 
   usage: {
@@ -172,6 +173,7 @@ export const docs = {
 export const docsZh = {
   name: 'TimeInput',
 
+  displayName: 'Time Input',
   props: [
     {name: 'label', type: 'string', description: '输入框的标签文本（无障碍性所必需）。', required: true},
     {name: 'isLabelHidden', type: 'boolean', description: '视觉上隐藏标签，同时保持屏幕阅读器的无障碍性。', default: 'false'},

@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'List',
   name: 'List — Message List',
+  displayName: 'List — Message List',
   description:
     'Chat-style message list with avatars, preview text, and unread badges.',
   isReady: true,

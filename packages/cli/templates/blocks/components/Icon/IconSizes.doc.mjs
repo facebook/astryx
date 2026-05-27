@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Icon',
   name: 'Icon — Size Variants',
+  displayName: 'Icon — Size Variants',
   description:
     'All icon sizes from extra-small to large.',
   isReady: true,

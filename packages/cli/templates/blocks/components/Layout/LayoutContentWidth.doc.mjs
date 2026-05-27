@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Layout',
   name: 'Layout — Content Width',
+  displayName: 'Layout — Content Width',
   description:
     'A layout using contentWidth to constrain and center content while keeping dividers full-bleed.',
   isReady: true,

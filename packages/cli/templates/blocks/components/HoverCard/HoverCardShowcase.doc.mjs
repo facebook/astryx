@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'HoverCard',
   name: 'HoverCard',
+  displayName: 'Hover Card',
   description:
     'A hover card that shows a user profile preview when hovering over a trigger button. Starts open for preview.',
   isReady: true,

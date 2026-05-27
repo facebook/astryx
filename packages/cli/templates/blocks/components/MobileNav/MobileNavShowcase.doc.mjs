@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'MobileNav',
   name: 'MobileNav',
+  displayName: 'Mobile Nav',
   isReady: true,
   aspectRatio: 1,
   isShowcase: true,

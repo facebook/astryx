@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'SideNav',
   name: 'SideNav — Header with Menu',
+  displayName: 'SideNav — Header with Menu',
   description:
     'Side navigation with an account switcher dropdown in the header for multi-account apps.',
   isReady: true,

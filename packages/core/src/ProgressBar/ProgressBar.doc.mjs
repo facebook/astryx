@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'ProgressBar',
+  displayName: 'Progress Bar',
   keywords: ["progressbar","progress","loader","loading","linear","determinate","indeterminate","meter"],
   props: [
     {
@@ -90,6 +91,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'ProgressBar',
+  displayName: 'Progress Bar',
   props: [
     {
       name: 'label',

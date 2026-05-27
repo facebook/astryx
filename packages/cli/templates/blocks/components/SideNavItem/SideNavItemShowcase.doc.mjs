@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'SideNavItem',
   name: 'SideNavItem',
+  displayName: 'Side Nav Item',
   description: 'Demonstrates XDSSideNavItem with selected, icon, disabled, and nested states.',
   isReady: true,
   isShowcase: true,

@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'IconButton',
   name: 'IconButton',
+  displayName: 'Icon Button',
   isReady: true,
   aspectRatio: 1,
   isShowcase: true,

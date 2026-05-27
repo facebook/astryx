@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'HoverCard',
+  displayName: 'Hover Card',
   group: 'HoverCard',
   keywords: ["hovercard","hover card","popover","tooltip","preview card","flyout","overlay","hover popup"],
   playground: {
@@ -26,6 +27,7 @@ export const docs = {
   components: [
     {
       name: 'XDSHoverCard',
+      displayName: 'XDS Hover Card',
       description:
         'Component wrapper for hover card display — a richer, larger overlay triggered on hover or focus.',      props: [
         {
@@ -118,6 +120,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'HoverCard',
+  displayName: 'Hover Card',
   theming: {
     targets: [
       {className: 'xds-hovercard'},
@@ -132,6 +135,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSHoverCard',
+      displayName: 'XDS Hover Card',
       description:
         '悬浮卡片显示的组件包装器，在悬停或聚焦时触发更丰富、更大的浮层。',
       props: [
@@ -229,6 +233,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSHoverCard',
+      displayName: 'XDS Hover Card',
       description: 'Component wrapper for hover card overlay; richer overlay triggered on hover/focus.',
       propDescriptions: {
         children: 'Trigger element; must accept ref.',

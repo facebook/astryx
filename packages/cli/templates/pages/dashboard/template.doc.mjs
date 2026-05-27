@@ -4,6 +4,7 @@
 export const doc = {
   type: 'page',
   name: 'Dashboard',
+  displayName: 'Dashboard',
   description: 'Analytics dashboard with KPI cards, charts, and data tables',
   isReady: true,
 };

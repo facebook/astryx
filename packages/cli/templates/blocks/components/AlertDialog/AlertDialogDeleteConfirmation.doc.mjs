@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'AlertDialog',
   name: 'AlertDialog — Delete',
+  displayName: 'AlertDialog — Delete',
   description:
     'A delete button that asks the user to confirm before deleting.',
   isReady: true,

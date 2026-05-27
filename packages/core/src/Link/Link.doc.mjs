@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Link',
+  displayName: 'Link',
   keywords: ["link","anchor","href","hyperlink","navigation","url","external","textlink"],
   playground: {
     defaults: {
@@ -19,6 +20,7 @@ export const docs = {
   components: [
     {
       name: 'XDSLink',
+      displayName: 'XDS Link',
       description:
         'Styled anchor link with variants, external link support, and polymorphic rendering.',
       props: [
@@ -93,6 +95,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSLinkProvider',
+      displayName: 'XDS Link Provider',
       description:
         'Provider that sets the default link component for all XDS link-rendering components in the subtree. ' +
         'Wrap your app root to replace native <a> elements with your framework router (Next.js Link, React Router Link, etc.).',
@@ -134,6 +137,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Link',
+  displayName: 'Link',
   theming: {
     targets: [
       {className: 'xds-link', visualProps: ['color']},
@@ -142,6 +146,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSLink',
+      displayName: 'XDS Link',
       description:
         '带有变体、外部链接支持和多态渲染的样式化锚点链接。',
       props: [
@@ -216,6 +221,7 @@ export const docsZh = {
     },
     {
       name: 'XDSLinkProvider',
+      displayName: 'XDS Link Provider',
       description:
         '为子树中所有 XDS 链接组件设置默认链接组件的 Provider。',
       props: [
@@ -277,6 +283,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSLink',
+      displayName: 'XDS Link',
       description:
         'Styled anchor link w/ variants, external link support, polymorphic rendering.',
       propDescriptions: {
@@ -297,6 +304,7 @@ export const docsDense = {
     },
     {
       name: 'XDSLinkProvider',
+      displayName: 'XDS Link Provider',
       description:
         'Provider setting default link component for all XDS links in subtree.',
       propDescriptions: {

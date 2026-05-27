@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'AppShell',
   name: 'AppShell',
+  displayName: 'App Shell',
   isReady: true,
   aspectRatio: 4 / 3,
   isShowcase: true,

@@ -6,6 +6,7 @@
 
 export const docs = {
   name: 'Divider',
+  displayName: 'Divider',
   keywords: ["divider","separator","hr","rule","line","border","spacer","horizontal rule"],
   props: [
     {
@@ -57,6 +58,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Divider',
+  displayName: 'Divider',
   props: [
     {
       name: 'orientation',

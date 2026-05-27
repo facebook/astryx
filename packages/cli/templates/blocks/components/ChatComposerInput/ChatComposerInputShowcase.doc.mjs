@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'ChatComposerInput',
   name: 'ChatComposerInput',
+  displayName: 'Chat Composer Input',
   isReady: true,
   aspectRatio: 16 / 9,
   isShowcase: true,

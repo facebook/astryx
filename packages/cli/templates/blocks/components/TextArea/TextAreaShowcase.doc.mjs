@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'TextArea',
   name: 'TextArea',
+  displayName: 'Text Area',
   isReady: true,
   aspectRatio: 1,
   isShowcase: true,

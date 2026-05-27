@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Switch',
   name: 'Switch — With Status',
+  displayName: 'Switch — With Status',
   description:
     'Switches with error, warning, and success validation states.',
   isReady: true,

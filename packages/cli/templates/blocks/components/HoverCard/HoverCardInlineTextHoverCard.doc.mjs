@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'HoverCard',
   name: 'HoverCard — Definition',
+  displayName: 'HoverCard — Definition',
   description:
     'Shows a term definition on hover within a paragraph. Use for technical terms, jargon, or concepts that some readers may not know — like a glossary built into the text.',
   isReady: true,

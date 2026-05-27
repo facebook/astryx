@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'DateInput',
+  displayName: 'Date Input',
   keywords: ["dateinput","datepicker","datefield","calendar","dateselect","dateentry","datechooser"],
   props: [
     {
@@ -152,6 +153,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'DateInput',
+  displayName: 'Date Input',
   usage: {
     description: 'DateInput lets the user type or pick a date from a calendar popover. Use it for scheduling, deadlines, booking dates, or any form field that needs a specific calendar date.',
     bestPractices: [

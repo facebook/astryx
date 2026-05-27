@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'AlertDialog',
+  displayName: 'Alert Dialog',
   group: 'Dialog',
   keywords: [
     'alert',
@@ -38,6 +39,7 @@ export const docs = {
   components: [
     {
       name: 'XDSAlertDialog',
+      displayName: 'XDS Alert Dialog',
       description: 'A modal dialog that asks the user to confirm a destructive action.',
       props: [
         {name: 'isOpen', type: 'boolean', required: true, description: 'Whether the dialog is open.'},
@@ -55,6 +57,7 @@ export const docs = {
     },
     {
       name: 'useXDSImperativeAlertDialog',
+      displayName: 'useXDSImperativeAlertDialog',
       description: 'Hook for showing an alert dialog without managing open state. Call alert.show(options) to open and alert.hide() to close. Render alert.element in your JSX tree.',
       props: [
         {name: 'show', type: '(options: AlertDialogOptions) => void', description: 'Show the alert dialog with the given options. Options are the same as XDSAlertDialog props minus isOpen/onOpenChange.'},

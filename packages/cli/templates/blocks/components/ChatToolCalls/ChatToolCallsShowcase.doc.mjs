@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'ChatToolCalls',
   name: 'ChatToolCalls',
+  displayName: 'Chat Tool Calls',
   isReady: true,
   aspectRatio: 16 / 9,
   isShowcase: true,

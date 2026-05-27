@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'ProgressBar',
   name: 'ProgressBar',
+  displayName: 'Progress Bar',
   isReady: true,
   aspectRatio: 1,
   isShowcase: true,

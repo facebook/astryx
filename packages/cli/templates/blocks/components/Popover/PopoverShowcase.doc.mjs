@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Popover',
   name: 'Popover',
+  displayName: 'Popover',
   isReady: true,
   aspectRatio: 1,
   isShowcase: true,

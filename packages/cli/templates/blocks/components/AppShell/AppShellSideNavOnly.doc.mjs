@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'AppShell',
   name: 'AppShell — Side Nav Only',
+  displayName: 'AppShell — Side Nav Only',
   description:
     'App shell with SideNav header providing app identity, no TopNav needed.',
   isReady: true,

@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Typeahead',
   name: 'Typeahead — Limited Results',
+  displayName: 'Typeahead — Limited Results',
   description:
     'Typeahead with a capped dropdown showing at most three results.',
   isReady: true,

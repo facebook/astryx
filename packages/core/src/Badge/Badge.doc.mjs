@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Badge',
+  displayName: 'Badge',
   keywords: ["badge","tag","chip","label","status","indicator","count","counter","pill","notification","marker"],
   props: [
     {
@@ -55,6 +56,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Badge',
+  displayName: 'Badge',
   usage: {
     description:
       'Badge shows a short label like a status, count, or category. Use it in table rows, list items, navigation, and anywhere you need to call out a state or group at a glance.',

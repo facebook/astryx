@@ -4,6 +4,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'FileInput',
   name: 'FileInput',
+  displayName: 'File Input',
   isReady: true,
   aspectRatio: 16 / 9,
   isShowcase: true,

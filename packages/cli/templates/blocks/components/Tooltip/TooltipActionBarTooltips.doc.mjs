@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Tooltip',
   name: 'Tooltip — Action Bar',
+  displayName: 'Tooltip — Action Bar',
   description:
     'Tooltips on an action button bar with contextual descriptions.',
   isReady: true,

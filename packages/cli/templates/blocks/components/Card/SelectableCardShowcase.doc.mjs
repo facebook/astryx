@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Card',
   name: 'SelectableCard',
+  displayName: 'Selectable Card',
   description:
     'A plan picker with single-select radio behavior. Cards show an accent border when selected.',
   isReady: true,

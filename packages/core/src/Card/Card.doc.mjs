@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Card',
+  displayName: 'Card',
   group: 'Card',
   keywords: ["card","surface","panel","container","elevated","shadow","box","paper","tile","well"],
   usage: {
@@ -93,6 +94,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Card',
+  displayName: 'Card',
   usage: {
     description:
       'Card groups related content into a visually distinct container with a border and background. Use it for profile cards, settings panels, data summaries, or any content that needs to stand out from the page.',

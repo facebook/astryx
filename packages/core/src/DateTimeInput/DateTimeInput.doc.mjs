@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'DateTimeInput',
+  displayName: 'Date Time Input',
   keywords: ["datetimepicker","datetime","datepicker","timepicker","calendar","schedule","event","deadline","timestamp"],
   props: [
     {
@@ -168,6 +169,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'DateTimeInput',
+  displayName: 'Date Time Input',
   usage: {
     description: 'DateTimeInput combines a calendar popover with a time input for selecting both a date and time in a single interaction flow. Use it for scheduling, event creation, deadline setting, or any form field that needs a specific datetime.',
     bestPractices: [

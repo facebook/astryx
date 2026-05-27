@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'RadioList',
   name: 'RadioList — Horizontal Layout',
+  displayName: 'RadioList — Horizontal Layout',
   description:
     'Radio list with horizontal orientation for compact selections.',
   isReady: true,

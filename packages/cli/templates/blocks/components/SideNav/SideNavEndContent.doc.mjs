@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'SideNav',
   name: 'SideNav — End Content',
+  displayName: 'SideNav — End Content',
   description:
     'Side navigation items with badges, counts, and context menus as trailing content.',
   isReady: true,

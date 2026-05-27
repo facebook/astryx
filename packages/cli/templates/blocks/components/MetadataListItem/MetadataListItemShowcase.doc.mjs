@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'MetadataListItem',
   name: 'MetadataListItem',
+  displayName: 'Metadata List Item',
   description:
     'Metadata list items displaying labeled values in various formats including text, badges, and links.',
   isReady: true,

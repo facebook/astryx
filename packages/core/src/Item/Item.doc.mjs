@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Item',
+  displayName: 'Item',
   group: 'Item',
   keywords: ["item","list-item","media-object","row","cell","entity","contact","notification","preview"],
   playground: {
@@ -20,6 +21,7 @@ export const docs = {
   components: [
     {
       name: 'XDSItem',
+      displayName: 'XDS Item',
       description: 'A universal item primitive that unifies the "media + label + description + trailing content" layout pattern. Use as a building block for list items, menu items, contact rows, notifications, and more.',
       props: [
         {name: 'label', type: 'ReactNode', description: 'Primary text identifying this item. Accepts string (auto-truncated) or ReactNode (for rich content).', required: true},
@@ -71,6 +73,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSItem',
+      displayName: 'XDS Item',
       description: '通用项目原语，统一 "媒体 + 标签 + 描述 + 尾部内容" 布局模式。用作列表项、菜单项、联系人行、通知等的构建块。',
       propDescriptions: {
         label: '标识此项目的主要文本。接受字符串（自动截断）或 ReactNode（用于富内容）。',
@@ -136,6 +139,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSItem',
+      displayName: 'XDS Item',
       description: 'universal item primitive w/ media+label+description+trailing layout',
       propDescriptions: {
         label: 'Primary text. String auto-truncates; ReactNode for rich content.',

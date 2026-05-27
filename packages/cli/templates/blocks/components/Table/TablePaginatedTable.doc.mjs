@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Table',
   name: 'Table — Paginated Data',
+  displayName: 'Table — Paginated Data',
   description:
     'Paginated data table navigating through a larger dataset page by page.',
   isReady: true,

@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Heading',
   name: 'Heading — Truncation',
+  displayName: 'Heading — Truncation',
   description:
     'Single-line and multi-line heading truncation with ellipsis for constrained layouts',
   isReady: true,

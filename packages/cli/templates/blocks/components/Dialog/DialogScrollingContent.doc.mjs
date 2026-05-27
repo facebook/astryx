@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Dialog',
   name: 'Dialog — Scrollable',
+  displayName: 'Dialog — Scrollable',
   description:
     'Constrains the dialog height and scrolls the body when content overflows. Use for terms and conditions, license agreements, changelogs, or any long-form content the user needs to review before accepting.',
   isReady: true,

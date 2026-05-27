@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'TypeaheadItem',
   name: 'TypeaheadItem',
+  displayName: 'Typeahead Item',
   description:
     'Typeahead with custom item rendering using XDSTypeaheadItem for avatars and descriptions.',
   isReady: true,

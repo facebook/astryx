@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'DropdownMenuItem',
   name: 'DropdownMenuItem',
+  displayName: 'Dropdown Menu Item',
   description:
     'Dropdown menu with custom-rendered items using XDSDropdownMenuItem for icons and descriptions.',
   isReady: true,

@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'SyntaxTheme',
   name: 'SyntaxTheme — Presets',
+  displayName: 'SyntaxTheme — Presets',
   description:
     'The same code block rendered with three different syntax themes — GitHub Light, One Dark Pro, and Dracula — showing how XDSSyntaxTheme changes code highlighting colors.',
   isReady: true,

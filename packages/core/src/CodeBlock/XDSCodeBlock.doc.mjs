@@ -3,6 +3,7 @@
 /** @type {import('../docs-types').ComponentDoc} */
 export const docs = {
   name: 'CodeBlock',
+  displayName: 'Code Block',
   keywords: [
     'code', 'syntax', 'highlight', 'snippet', 'prism', 'shiki',
     'pre', 'monospace', 'codeblock', 'inline',
@@ -10,6 +11,7 @@ export const docs = {
   components: [
     {
       name: 'XDSCodeBlock',
+      displayName: 'XDS Code Block',
       description: 'Fenced code block with syntax highlighting. Use for multi-line code snippets.',
       props: [
         {name: 'code', type: 'string', description: 'The code string to display.', required: true},
@@ -36,6 +38,7 @@ export const docs = {
     },
     {
       name: 'XDSCode',
+      displayName: 'XDS Code',
       description: 'Inline code element. Renders a styled <code> with monospace font and muted background. For fenced blocks, use XDSCodeBlock.',
       props: [
         {name: 'children', type: 'ReactNode', description: 'Code content.', required: true},
@@ -92,6 +95,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSCodeBlock',
+      displayName: 'XDS Code Block',
       description: '带语法高亮的围栏代码块。用于多行代码片段。',
       propDescriptions: {
         code: '要显示的代码字符串。',
@@ -118,6 +122,7 @@ export const docsZh = {
     },
     {
       name: 'XDSCode',
+      displayName: 'XDS Code',
       description: '内联代码元素。渲染带等宽字体和低调背景的 <code>。如需围栏代码块，请使用 XDSCodeBlock。',
       propDescriptions: {
         children: '代码内容。',
@@ -146,6 +151,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSCodeBlock',
+      displayName: 'XDS Code Block',
       description: 'fenced code block w/ syntax highlighting; for multi-line snippets',
       propDescriptions: {
         code: 'code string to display',
@@ -172,6 +178,7 @@ export const docsDense = {
     },
     {
       name: 'XDSCode',
+      displayName: 'XDS Code',
       description: 'inline code element; styled <code> w/ monospace+muted bg; for prose',
       propDescriptions: {
         children: 'code content',

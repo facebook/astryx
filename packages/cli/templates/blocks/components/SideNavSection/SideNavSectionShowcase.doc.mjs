@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'SideNavSection',
   name: 'SideNavSection',
+  displayName: 'Side Nav Section',
   description: 'Demonstrates XDSSideNavSection with titled groups of navigation items.',
   isReady: true,
   isShowcase: true,

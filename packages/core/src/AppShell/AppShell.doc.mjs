@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'AppShell',
+  displayName: 'App Shell',
   keywords: ["appshell","layout","scaffold","sidebar","sidenav","topnav","header","navigation","dashboard","shell","page","frame"],
   usage: {
     description:
@@ -131,6 +132,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'AppShell',
+  displayName: 'App Shell',
   usage: {
     description:
       'The outermost layout for an application. Provides slots for top navigation, side navigation, banners, and main content. Use it as the root wrapper for every page — it handles responsive collapse, skip-to-content, and mobile navigation automatically.',

@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Grid',
   name: 'Grid',
+  displayName: 'Grid',
   isReady: true,
   aspectRatio: 1,
   isShowcase: true,

@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'TextInput',
+  displayName: 'Text Input',
   keywords: ["textinput","textfield","input","search","clearable","prefix","suffix","adornment","validation"],
   props: [
     {
@@ -158,6 +159,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'TextInput',
+  displayName: 'Text Input',
   props: [
     {
       name: 'type',

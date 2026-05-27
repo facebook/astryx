@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Table',
   name: 'Table — In Card',
+  displayName: 'Table — In Card',
   description:
     'Table composed inside a card with a heading, demonstrating container bleed alignment.',
   isReady: true,

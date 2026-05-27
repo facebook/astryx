@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'MultiSelector',
   name: 'MultiSelector — Sectioned Permissions',
+  displayName: 'MultiSelector — Sectioned Permissions',
   description:
     'Multi-select with options grouped into labeled sections.',
   isReady: true,

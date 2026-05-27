@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Spinner',
   name: 'Spinner — On Media Shade',
+  displayName: 'Spinner — On Media Shade',
   description:
     'Default and onMedia shade spinners for light and dark backgrounds.',
   isReady: true,

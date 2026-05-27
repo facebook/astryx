@@ -4,6 +4,7 @@
 export const doc = {
   type: 'page',
   name: 'Login',
+  displayName: 'Login',
   description: 'Auth form with email and password inputs',
   isReady: true,
 };

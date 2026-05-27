@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Center',
+  displayName: 'Center',
   group: 'Layout',
   keywords: ["center","centered","centering","align","alignment","justify","flexbox","middle"],
   props: [
@@ -66,6 +67,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Center',
+  displayName: 'Center',
   usage: {
     description:
       'Center aligns content to the middle of its container. Use it for empty states, loading screens, login forms, or any content that should sit in the center of the available space.',
