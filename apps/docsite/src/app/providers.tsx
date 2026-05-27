@@ -5,7 +5,7 @@
 import Link from 'next/link';
 import {XDSTheme} from '@xds/core/theme';
 import {XDSLinkProvider} from '@xds/core/Link';
-import {astryxTheme} from '@xds/theme-astryx/built';
+import {astryxTheme} from '../themes/astryx';
 
 export function Providers({children}: {children: React.ReactNode}) {
   return (

@@ -3,7 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "generate": "node scripts/generate-data.mjs && node scripts/generate-playground-types.mjs",
+    "build:theme": "xds theme build src/themes/astryxTheme.ts --out src/themes/astryx.css",
+    "generate": "pnpm build:theme && node scripts/generate-data.mjs && node scripts/generate-playground-types.mjs",
     "dev": "pnpm generate && next dev",
     "build": "pnpm generate && next build",
     "start": "next start",
@@ -17,7 +18,6 @@
     "@stylexjs/stylex": "^0.18.3",
     "@xds/cli": "*",
     "@xds/core": "*",
-    "@xds/theme-astryx": "*",
     "@xds/theme-chocolate": "*",
     "@xds/theme-daily": "*",
     "@xds/theme-default": "*",
