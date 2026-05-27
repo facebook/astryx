@@ -29,7 +29,7 @@ const links = [
     href: 'https://opensource.fb.com/legal/privacy',
   },
   {
-    label: 'GitHub',
+    label: 'GitHub Pages',
     href: 'https://studious-broccoli-o7e61n3.pages.github.io/',
   },
 ];

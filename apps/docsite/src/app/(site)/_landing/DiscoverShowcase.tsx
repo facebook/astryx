@@ -10,6 +10,17 @@ import {XDSCard} from '@xds/core/Card';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
+import {components} from '../../../generated/componentRegistry';
+
+// Count of public @xds/core components (excluding hooks and hidden entries),
+// rounded down to the nearest 10 for marketing copy. Sourced from the
+// generated registry so the number stays accurate as the library grows.
+const CORE_COMPONENT_COUNT_ROUNDED =
+  Math.floor(
+    (components['@xds/core'] ?? []).filter(
+      c => !c.hidden && !c.name.startsWith('use'),
+    ).length / 10,
+  ) * 10;
 
 const styles = stylex.create({
   section: {
@@ -210,8 +221,9 @@ export function DiscoverShowcase() {
               </span>
             </XDSHeading>
             <XDSText type="body" color="secondary">
-              Browse 82 components, explore production-ready templates, and tune
-              themes to match your brand — pick a starting point and go.
+              Browse {CORE_COMPONENT_COUNT_ROUNDED}+ components, explore
+              production-ready templates, and tune themes to match your brand —
+              pick a starting point and go.
             </XDSText>
             <XDSGrid columns={2} gap={3} xstyle={styles.buttons}>
               <XDSButton

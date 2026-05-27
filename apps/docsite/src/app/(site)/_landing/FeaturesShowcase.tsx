@@ -5,12 +5,25 @@
 import * as stylex from '@stylexjs/stylex';
 import {XDSCard} from '@xds/core/Card';
 import {XDSVStack} from '@xds/core/Layout';
+import {XDSGrid} from '@xds/core/Grid';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSLink} from '@xds/core/Link';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSTheme} from '@xds/core/theme';
 import {neutralTheme} from '@xds/theme-neutral/built';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
+import {components} from '../../../generated/componentRegistry';
+
+// Count of public @xds/core components (excluding hooks and hidden entries).
+// Sourced from the generated registry so the number stays accurate as the
+// library grows.
+const CORE_COMPONENT_COUNT = (components['@xds/core'] ?? []).filter(
+  c => !c.hidden && !c.name.startsWith('use'),
+).length;
+// Round down to the nearest 10 for marketing copy ("Over X components"
+// reads better than "Over 87 components" and avoids the displayed number
+// going stale every time a single component lands.
+const CORE_COMPONENT_COUNT_ROUNDED = Math.floor(CORE_COMPONENT_COUNT / 10) * 10;
 
 const styles = stylex.create({
   section: {
@@ -31,16 +44,14 @@ const styles = stylex.create({
   fillWidth: {
     width: '100%',
   },
-  grid: {
+  // Layout glue for the XDSGrid: cap at 1200px and force every row to the
+  // same height so the tall first card and the regular cards line up.
+  // XDSGrid doesn't expose gridAutoRows or maxWidth as props, so we pass
+  // them through xstyle.
+  gridLayout: {
     width: '100%',
     maxWidth: 1200,
-    display: 'grid',
-    gridTemplateColumns: {
-      default: '1fr',
-      '@media (min-width: 720px)': 'repeat(3, 1fr)',
-    },
     gridAutoRows: '1fr',
-    gap: spacingVars['--spacing-4'],
   },
   cardTall: {
     height: '100%',
@@ -68,7 +79,7 @@ const features: Feature[] = [
     href: '/docs',
   },
   {
-    title: 'Over 82 components',
+    title: `Over ${CORE_COMPONENT_COUNT_ROUNDED} components`,
     description:
       'Accessible and themeable React components with built-in spacing, dark mode, and StyleX styling.',
     href: '/components',
@@ -149,7 +160,10 @@ export function FeaturesShowcase() {
     <section {...stylex.props(styles.section)}>
       <FeaturesHeading />
       <XDSTheme theme={neutralTheme} mode="light">
-        <div {...stylex.props(styles.grid)}>
+        <XDSGrid
+          columns={{minWidth: 280, repeat: 'fit'}}
+          gap={4}
+          xstyle={styles.gridLayout}>
           {features.map((feature, i) => (
             <FeatureCard
               key={feature.title}
@@ -157,7 +171,7 @@ export function FeaturesShowcase() {
               isTall={i === 0}
             />
           ))}
-        </div>
+        </XDSGrid>
       </XDSTheme>
     </section>
   );
