@@ -21,16 +21,16 @@ const styles = stylex.create({
 
 const links = [
   {
-    label: 'GitHub Pages',
-    href: 'https://studious-broccoli-o7e61n3.pages.github.io/',
-  },
-  {
     label: 'Terms of Use',
     href: 'https://opensource.fb.com/legal/terms',
   },
   {
     label: 'Privacy Policy',
     href: 'https://opensource.fb.com/legal/privacy',
+  },
+  {
+    label: 'GitHub',
+    href: 'https://studious-broccoli-o7e61n3.pages.github.io/',
   },
 ];
 

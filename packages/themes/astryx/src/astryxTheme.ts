@@ -29,6 +29,13 @@ export const astryxTheme = defineTheme({
     '--text-display-1-weight': 'var(--font-weight-semibold)',
     '--text-display-2-weight': 'var(--font-weight-semibold)',
     '--text-display-3-weight': 'var(--font-weight-semibold)',
+    // Bump each radius scale step by +4px for slightly softer corners across
+    // the whole UI (inputs, cards, panels, page containers). --radius-none
+    // and --radius-full stay fixed.
+    '--radius-inner': '8px',
+    '--radius-element': '12px',
+    '--radius-container': '16px',
+    '--radius-page': '32px',
   },
 
   typography: {

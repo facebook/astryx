@@ -7,52 +7,53 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSLink} from '@xds/core/Link';
 import {XDSVStack} from '@xds/core/Layout';
+import {XDSGrid} from '@xds/core/Grid';
 import {XDSButton} from '@xds/core/Button';
 import {XDSMediaTheme} from '@xds/core/theme';
+import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import {ThemingShowcase} from './_landing/ThemingShowcase';
 import {FeaturesShowcase} from './_landing/FeaturesShowcase';
 import {AboutShowcase} from './_landing/AboutShowcase';
+import {DiscoverShowcase} from './_landing/DiscoverShowcase';
 
 const styles = stylex.create({
   hero: {
     position: 'sticky',
     top: 'var(--appshell-header-height, 0px)',
-    zIndex: 0,
     backgroundColor: 'var(--color-background-body)',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     textAlign: 'center',
-    paddingBlock: 96,
-    paddingInline: 48,
+    // 96px / 48px — beyond --spacing-12 (48px), so expressed as 2x tokens.
+    paddingBlock: `calc(${spacingVars['--spacing-12']} * 2)`,
+    paddingInline: spacingVars['--spacing-12'],
   },
   showcaseOverlay: {
     position: 'relative',
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
+    borderTopLeftRadius: 'var(--radius-page)',
+    borderTopRightRadius: 'var(--radius-page)',
     overflow: 'hidden',
     backgroundColor: 'var(--color-background-surface)',
-    marginTop: -32,
+    // Pulls the rounded overlay up so it visually lifts onto the hero.
+    marginTop: `calc(${spacingVars['--spacing-8']} * -1)`,
   },
   wordmark: {
     display: 'block',
     height: 42,
     width: 'auto',
-    marginBottom: 16,
+    marginBottom: spacingVars['--spacing-4'],
   },
   headline: {
     maxWidth: 680,
   },
   caption: {
-    marginTop: 8,
+    marginTop: spacingVars['--spacing-2'],
     maxWidth: 560,
   },
   buttons: {
-    marginTop: 32,
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 12,
+    marginTop: spacingVars['--spacing-8'],
     width: '100%',
     maxWidth: 360,
   },
@@ -140,7 +141,7 @@ export default function HomePage() {
                 StyleX
               </XDSLink>
             </XDSText>
-            <div {...stylex.props(styles.buttons)}>
+            <XDSGrid columns={2} gap={3} xstyle={styles.buttons}>
               <XDSButton
                 variant="primary"
                 size="lg"
@@ -153,7 +154,7 @@ export default function HomePage() {
                 label="Browse components"
                 href="/components"
               />
-            </div>
+            </XDSGrid>
           </XDSVStack>
         </XDSMediaTheme>
       </div>
@@ -162,6 +163,7 @@ export default function HomePage() {
           <ThemingShowcase />
           <FeaturesShowcase />
           <AboutShowcase />
+          <DiscoverShowcase />
         </XDSMediaTheme>
       </div>
     </>

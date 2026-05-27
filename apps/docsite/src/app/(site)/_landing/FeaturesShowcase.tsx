@@ -36,7 +36,7 @@ const styles = stylex.create({
       '@media (min-width: 720px)': 'repeat(3, 1fr)',
     },
     gridAutoRows: '1fr',
-    gap: 16,
+    gap: spacingVars['--spacing-4'],
   },
   cardTall: {
     height: '100%',
