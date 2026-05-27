@@ -50,13 +50,15 @@ export default function ComponentsGalleryPage() {
 
   const filteredItems = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) {return items;}
+    if (!q) {
+      return items;
+    }
     return items.filter(item => item.name.toLowerCase().includes(q));
   }, [items, query]);
 
   return (
     <XDSSection maxWidth="xl" padding={6}>
-      <XDSVStack gap={6}>
+      <XDSVStack gap={8}>
         <XDSVStack gap={2} style={{alignItems: 'center'}}>
           <XDSText type="display-2" xstyle={styles.heroTitle}>
             Components
