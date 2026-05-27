@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'TreeList',
   name: 'TreeList',
+  displayName: 'Tree List',
   isReady: true,
   aspectRatio: 1,
   isShowcase: true,

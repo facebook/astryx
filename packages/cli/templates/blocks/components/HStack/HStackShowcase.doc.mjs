@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'HStack',
   name: 'HStack',
+  displayName: 'H Stack',
   description: 'Demonstrates XDSHStack arranging items horizontally with different gaps and alignments.',
   isReady: true,
   isShowcase: true,

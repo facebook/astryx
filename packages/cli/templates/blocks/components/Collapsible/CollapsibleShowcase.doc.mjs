@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Collapsible',
   name: 'Collapsible',
+  displayName: 'Collapsible',
   description:
     'An accordion group with three collapsible sections in single mode — opening one closes the others.',
   isReady: true,

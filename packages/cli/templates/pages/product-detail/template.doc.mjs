@@ -4,6 +4,7 @@
 export const doc = {
   type: 'page',
   name: 'Product Detail',
+  displayName: 'Product Detail',
   description: 'Product page with image gallery and collapsible sections',
   isReady: true,
 };

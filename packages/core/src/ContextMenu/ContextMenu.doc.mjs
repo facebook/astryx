@@ -3,6 +3,7 @@
 
 export const docs = {
   name: 'ContextMenu',
+  displayName: 'Context Menu',
   group: 'ContextMenu',
   keywords: ["contextmenu","right-click","menu","popover","actions","context"],
   theming: {
@@ -21,6 +22,7 @@ export const docs = {
   components: [
     {
       name: 'XDSContextMenu',
+      displayName: 'XDS Context Menu',
       description:
         'A context menu that appears on right-click at the cursor position. Wraps trigger content as children.',
       props: [
@@ -71,6 +73,7 @@ export const docs = {
     },
     {
       name: 'XDSContextMenuItem',
+      displayName: 'XDS Context Menu Item',
       description:
         'Menu item component for compound mode. Re-exported from XDSDropdownMenuItem for discoverability.',
       props: [
@@ -118,6 +121,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'ContextMenu',
+  displayName: 'Context Menu',
   theming: {
     targets: [
       {className: 'xds-context-menu'},
@@ -134,6 +138,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSContextMenu',
+      displayName: 'XDS Context Menu',
       description:
         '右键点击时在光标位置出现的上下文菜单。将触发内容作为子元素包裹。',
       props: [
@@ -183,6 +188,7 @@ export const docsZh = {
     },
     {
       name: 'XDSContextMenuItem',
+      displayName: 'XDS Context Menu Item',
       description:
         '复合模式的菜单项组件。从 XDSDropdownMenuItem 重新导出以便发现。',
       props: [
@@ -242,6 +248,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSContextMenu',
+      displayName: 'XDS Context Menu',
       description: 'right-click trigger + fixed-position popup menu',
       propDescriptions: {
         children: 'trigger area — right-click to open menu',
@@ -255,6 +262,7 @@ export const docsDense = {
     },
     {
       name: 'XDSContextMenuItem',
+      displayName: 'XDS Context Menu Item',
       description: 're-exported XDSDropdownMenuItem for compound mode',
       propDescriptions: {
         icon: 'icon before label',

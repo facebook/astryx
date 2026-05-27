@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'RadioList',
   name: 'RadioList',
+  displayName: 'Radio List',
   isReady: true,
   aspectRatio: 1,
   isShowcase: true,

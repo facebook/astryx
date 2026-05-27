@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'RadioList',
   name: 'RadioList — With Descriptions',
+  displayName: 'RadioList — With Descriptions',
   description:
     'Radio list with descriptions on the group and each item.',
   isReady: true,

@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'InputGroup',
+  displayName: 'Input Group',
   group: 'Field',
   keywords: ["inputgroup","addon","prefix","suffix","connected","grouped","input"],
   theming: {
@@ -14,6 +15,7 @@ export const docs = {
   components: [
     {
       name: 'XDSInputGroup',
+      displayName: 'XDS Input Group',
       description: 'Groups an input with prefix/suffix addons in a visually connected container with shared border and focus ring.',
       props: [
         {name: 'children', type: 'ReactNode', description: 'Input and XDSInputGroupText children.', required: true},
@@ -32,6 +34,7 @@ export const docs = {
     },
     {
       name: 'XDSInputGroupText',
+      displayName: 'XDS Input Group Text',
       description: 'A prefix or suffix text element rendered inside XDSInputGroup. Displays text or icons.',
       props: [
         {name: 'children', type: 'ReactNode', description: 'Text or icon content.', required: true},
@@ -74,6 +77,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSInputGroup',
+      displayName: 'XDS Input Group',
       description: 'connected input+addon container w/ shared border, focus ring',
       propDescriptions: {
         children: 'input + addon children',
@@ -92,6 +96,7 @@ export const docsDense = {
     },
     {
       name: 'XDSInputGroupText',
+      displayName: 'XDS Input Group Text',
       description: 'prefix/suffix text/icon element',
       propDescriptions: {
         children: 'text or icon content',

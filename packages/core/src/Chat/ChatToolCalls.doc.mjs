@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'ChatToolCalls',
+  displayName: 'Chat Tool Calls',
   group: 'Chat',
 
   keywords: ['tool', 'function', 'call', 'invocation', 'llm', 'agent', 'bash', 'edit', 'read', 'search', 'status', 'running', 'error', 'complete', 'diff', 'stats'],

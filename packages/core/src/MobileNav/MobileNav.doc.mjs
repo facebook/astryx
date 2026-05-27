@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'MobileNav',
+  displayName: 'Mobile Nav',
   group: 'MobileNav',
   keywords: ["mobilenav","drawer","sidebar","navigation","hamburger","menu","offcanvas","slideout","navdrawer"],
   props: [
@@ -65,6 +66,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'MobileNav',
+  displayName: 'Mobile Nav',
   props: [
     {
       name: 'isOpen',

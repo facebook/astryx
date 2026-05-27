@@ -3,6 +3,7 @@
 /** @type {import('../docs-types').ComponentDoc} */
 export const docs = {
   name: 'ClickableCard',
+  displayName: 'Clickable Card',
   keywords: ['card', 'clickable', 'interactive', 'navigation', 'action', 'link'],
   usage: {
     description: 'An interactive card for navigation or action targets. Nested interactive elements work independently.',

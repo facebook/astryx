@@ -4,6 +4,7 @@
 export const doc = {
   type: 'page',
   name: 'Table Page (Matcha Store)',
+  displayName: 'Table Page (Matcha Store)',
   description:
     'Matcha store sales data table with a revenue area chart and product thumbnails.',
   isReady: true,

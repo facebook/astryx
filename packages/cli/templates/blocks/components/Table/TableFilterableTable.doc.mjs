@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Table',
   name: 'Table — Popover Filters',
+  displayName: 'Table — Popover Filters',
   description:
     'Table with popover filter controls triggered by icons in column headers.',
   isReady: true,

@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'FieldLabel',
   name: 'FieldLabel',
+  displayName: 'Field Label',
   description:
     'Standalone field labels demonstrating required, optional, tooltip, and icon variations.',
   isReady: true,

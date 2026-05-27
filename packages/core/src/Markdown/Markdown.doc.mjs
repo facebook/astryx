@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Markdown',
+  displayName: 'Markdown',
   keywords: [
     'markdown',
     'rich text',
@@ -151,6 +152,7 @@ const issuePlugins = [
 
 export const docsZh = {
   name: 'Markdown',
+  displayName: 'Markdown',
   props: [
     {
       name: 'children',

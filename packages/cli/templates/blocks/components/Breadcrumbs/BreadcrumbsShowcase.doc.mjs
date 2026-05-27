@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Breadcrumbs',
   name: 'Breadcrumbs',
+  displayName: 'Breadcrumbs',
   description:
     'A breadcrumb trail showing page hierarchy with linked ancestors and a current page.',
   isReady: true,

@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'CommandPaletteFooter',
   name: 'CommandPaletteFooter',
+  displayName: 'Command Palette Footer',
   description: 'Command palette footer with custom tip content.',
   isReady: true,
   isShowcase: true,

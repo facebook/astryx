@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'CheckboxInput',
+  displayName: 'Checkbox Input',
   group: 'Checkbox',
   keywords: ["checkbox","check","toggle","tick","indeterminate","boolean","tristate"],
   props: [
@@ -128,6 +129,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'CheckboxInput',
+  displayName: 'Checkbox Input',
   usage: {
     description: 'CheckboxInput toggles a single on/off value. Use it for settings like "Enable notifications", terms acceptance, or opt-in choices. For multiple checkboxes in a group, use CheckboxList instead.',
     bestPractices: [

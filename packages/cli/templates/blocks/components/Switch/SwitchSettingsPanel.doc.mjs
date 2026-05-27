@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Switch',
   name: 'Switch — Settings Panel',
+  displayName: 'Switch — Settings Panel',
   description:
     'Settings panel with spread-spaced switches in a card.',
   isReady: true,

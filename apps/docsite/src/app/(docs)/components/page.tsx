@@ -39,7 +39,7 @@ export default function ComponentsGalleryPage() {
   const items = useMemo(
     () =>
       showcases.map(b => ({
-        name: b.name,
+        name: b.displayName,
         description: b.description,
         slug: b.dirName,
         category: b.category,
@@ -61,10 +61,11 @@ export default function ComponentsGalleryPage() {
       <XDSVStack gap={8}>
         <XDSVStack gap={2} style={{alignItems: 'center'}}>
           <XDSText type="display-2" xstyle={styles.heroTitle}>
-            Components
+            Browse the library
           </XDSText>
           <XDSText type="body" color="secondary" xstyle={styles.heroTitle}>
-            Explore real-world component showcases and examples.
+            Every component, with copy-ready examples for every variant, state,
+            and pattern.
           </XDSText>
         </XDSVStack>
 

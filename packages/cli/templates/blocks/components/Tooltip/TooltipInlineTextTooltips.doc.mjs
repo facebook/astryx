@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Tooltip',
   name: 'Tooltip — Inline Text',
+  displayName: 'Tooltip — Inline Text',
   description:
     'Tooltips on inline text terms for definitions.',
   isReady: true,

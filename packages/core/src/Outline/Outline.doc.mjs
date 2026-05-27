@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Outline',
+  displayName: 'Outline',
   group: 'Outline',
   keywords: [
     'outline',
@@ -33,6 +34,7 @@ export const docs = {
   components: [
     {
       name: 'XDSOutline',
+      displayName: 'XDS Outline',
       description:
         'Document outline navigation. Renders a flat heading list as anchor links and manages scroll-spy active state when uncontrolled.',
       props: [
@@ -86,6 +88,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Outline',
+  displayName: 'Outline',
   group: 'Outline',
   theming: {
     targets: [
@@ -96,6 +99,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSOutline',
+      displayName: 'XDS Outline',
       description:
         '文档大纲导航。将扁平标题列表渲染为锚点链接，并在非受控模式下管理滚动监听的激活状态。',
       props: [
@@ -169,6 +173,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSOutline',
+      displayName: 'XDS Outline',
       description:
         'Document outline nav. Renders heading anchors and manages scroll-spy active state when uncontrolled.',
       propDescriptions: {

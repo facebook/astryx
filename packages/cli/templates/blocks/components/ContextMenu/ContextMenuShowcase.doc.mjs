@@ -4,6 +4,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'ContextMenu',
   name: 'ContextMenu',
+  displayName: 'Context Menu',
   description:
     'A right-click area that opens a context menu with action items.',
   isReady: true,

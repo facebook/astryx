@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'MoreMenu',
+  displayName: 'More Menu',
   keywords: ["moremenu","overflow","kebab","dotmenu","threedot","ellipsis","dropdown","contextmenu","actionmenu"],
   props: [
     {
@@ -91,6 +92,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'MoreMenu',
+  displayName: 'More Menu',
   props: [
     {
       name: 'items',

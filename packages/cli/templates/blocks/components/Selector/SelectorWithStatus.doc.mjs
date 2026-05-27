@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Selector',
   name: 'Selector — Validation States',
+  displayName: 'Selector — Validation States',
   description:
     'Selector showing error, warning, and success validation states.',
   isReady: true,

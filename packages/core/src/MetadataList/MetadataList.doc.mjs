@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'MetadataList',
+  displayName: 'Metadata List',
   group: 'MetadataList',
   keywords: ["metadata","description","definition","keyvalue","properties","details","attributes","summary"],
   theming: {
@@ -18,6 +19,7 @@ export const docs = {
   components: [
     {
       name: 'XDSMetadataList',
+      displayName: 'XDS Metadata List',
       description:
         'Container for metadata items with column layout, orientation, and collapse support.',      props: [
         {
@@ -68,6 +70,7 @@ export const docs = {
     },
     {
       name: 'XDSMetadataListItem',
+      displayName: 'XDS Metadata List Item',
       description: 'A single labeled metadata value within an XDSMetadataList.',
       props: [
         {
@@ -114,6 +117,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSMetadataList',
+      displayName: 'XDS Metadata List',
       description: '带列布局、方向和折叠支持的元数据项容器。',
       propDescriptions: {
         children: '元数据项（XDSMetadataListItem 组件）。',
@@ -127,6 +131,7 @@ export const docsZh = {
     },
     {
       name: 'XDSMetadataListItem',
+      displayName: 'XDS Metadata List Item',
       description: 'XDSMetadataList 中的单个带标签元数据值。',
       propDescriptions: {
         children: '此元数据项的内容值。',
@@ -175,6 +180,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSMetadataList',
+      displayName: 'XDS Metadata List',
       description: 'metadata container w/ column layout+collapse',
       propDescriptions: {
         children: 'XDSMetadataListItem children',
@@ -188,6 +194,7 @@ export const docsDense = {
     },
     {
       name: 'XDSMetadataListItem',
+      displayName: 'XDS Metadata List Item',
       description: 'single labeled value in XDSMetadataList',
       propDescriptions: {
         children: 'value content',

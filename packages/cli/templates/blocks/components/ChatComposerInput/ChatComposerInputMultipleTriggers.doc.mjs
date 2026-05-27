@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'ChatComposerInput',
   name: 'ChatComposerInput — Multiple Triggers',
+  displayName: 'ChatComposerInput — Multiple Triggers',
   description:
     'Chat input with both @ mentions and / commands. Each trigger type renders tokens in a distinct color so users can tell them apart at a glance.',
   isReady: true,

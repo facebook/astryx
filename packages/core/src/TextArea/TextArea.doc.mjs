@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'TextArea',
+  displayName: 'Text Area',
   keywords: ["textarea","textfield","multiline","comment","message","autoresize","autosize","charlimit"],
   props: [
     {
@@ -179,6 +180,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'TextArea',
+  displayName: 'Text Area',
   props: [
     {
       name: 'ref',

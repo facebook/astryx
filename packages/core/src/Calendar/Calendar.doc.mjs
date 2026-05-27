@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Calendar',
+  displayName: 'Calendar',
   keywords: ["calendar","datepicker","date picker","rangepicker","date range","monthview","daypicker"],
   usage: {
     description:
@@ -117,6 +118,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Calendar',
+  displayName: 'Calendar',
   usage: {
     description:
       'Calendar lets the user pick a date or date range from a month grid. Use it in booking flows, scheduling UIs, date filters, or anywhere the user needs to see surrounding dates for context.',

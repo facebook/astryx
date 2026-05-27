@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Spinner',
   name: 'Spinner — With Label',
+  displayName: 'Spinner — With Label',
   description:
     'Spinners with text and rich multi-line labels.',
   isReady: true,

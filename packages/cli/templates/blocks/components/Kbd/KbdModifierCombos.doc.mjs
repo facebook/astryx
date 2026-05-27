@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Kbd',
   name: 'Kbd — Modifier Combinations',
+  displayName: 'Kbd — Modifier Combinations',
   description: 'Modifier combinations and special keys rendered as shortcut badges',
   isReady: true,
   aspectRatio: 4 / 3,

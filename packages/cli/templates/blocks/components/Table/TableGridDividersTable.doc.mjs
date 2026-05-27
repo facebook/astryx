@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Table',
   name: 'Table — Grid Dividers',
+  displayName: 'Table — Grid Dividers',
   description:
     'Compact table with grid dividers showing both row and column borders, suited for dense numeric data.',
   isReady: true,

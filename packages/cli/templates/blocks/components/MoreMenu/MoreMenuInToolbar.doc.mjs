@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'MoreMenu',
   name: 'MoreMenu — In Toolbar',
+  displayName: 'MoreMenu — In Toolbar',
   description:
     'A three-dot menu alongside icon buttons in a card header toolbar.',
   isReady: true,

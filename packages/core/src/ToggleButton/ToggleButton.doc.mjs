@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'ToggleButton',
+  displayName: 'Toggle Button',
   group: 'Button',
   keywords: ["toggle","togglebutton","pressed","toolbar","formatting","segmented","button-group","exclusive","multi-select"],
   playground: {
@@ -20,6 +21,7 @@ export const docs = {
   components: [
     {
       name: 'XDSToggleButton',
+      displayName: 'XDS Toggle Button',
       description: 'A button that toggles between pressed and unpressed states. Thin wrapper over XDSButton with controlled toggle pattern, icon swap, and font weight emphasis.',
       props: [
         {name: 'label', type: 'string', description: 'Accessible label for the button. Used as visible text, or as aria-label for icon-only buttons.', required: true},
@@ -42,6 +44,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSToggleButtonGroup',
+      displayName: 'XDS Toggle Button Group',
       description: 'Groups toggle buttons for exclusive (single) or multi-select behavior. Uses discriminated union on type for type-safe value/onChange.',
       props: [
         {name: 'children', type: 'ReactNode', description: 'XDSToggleButton children.', required: true, slotElements: [{__element: 'XDSToggleButton', props: {label: 'Option', value: 'option'}}]},
@@ -82,6 +85,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSToggleButton',
+      displayName: 'XDS Toggle Button',
       description: '在按下和未按下状态之间切换的按钮。XDSButton 的轻量封装，添加受控切换模式、图标切换和字重加粗。',
       propDescriptions: {
         label: '按钮的无障碍标签。作为可见文本或仅图标按钮的 aria-label。',
@@ -101,6 +105,7 @@ export const docsZh = {
     },
     {
       name: 'XDSToggleButtonGroup',
+      displayName: 'XDS Toggle Button Group',
       description: '将切换按钮分组，支持单选或多选行为。通过 type 判别联合类型实现类型安全。',
       propDescriptions: {
         children: 'XDSToggleButton 子元素。',
@@ -154,6 +159,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSToggleButton',
+      displayName: 'XDS Toggle Button',
       description: 'toggle btn w/ controlled pattern, icon swap, font weight emphasis; wraps XDSButton',
       propDescriptions: {
         label: 'a11y label; visible text or aria-label for icon-only',
@@ -173,6 +179,7 @@ export const docsDense = {
     },
     {
       name: 'XDSToggleButtonGroup',
+      displayName: 'XDS Toggle Button Group',
       description: 'groups toggle btns for exclusive/multi-select; discriminated union on type',
       propDescriptions: {
         children: 'XDSToggleButton children',

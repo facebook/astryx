@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'CheckboxList',
   name: 'CheckboxList',
+  displayName: 'Checkbox List',
   isReady: true,
   aspectRatio: 1,
   isShowcase: true,

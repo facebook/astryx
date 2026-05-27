@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'MoreMenu',
   name: 'MoreMenu — With Dividers',
+  displayName: 'MoreMenu — With Dividers',
   description:
     'A three-dot menu with a divider separating destructive actions from safe ones.',
   isReady: true,

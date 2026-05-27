@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Code',
   name: 'Code — Content Types',
+  displayName: 'Code — Content Types',
   description:
     'Inline code used for variables, terminal commands, CSS properties, file paths, and keyboard shortcuts. Shows how XDSCode adapts to different kinds of technical content.',
   isReady: true,

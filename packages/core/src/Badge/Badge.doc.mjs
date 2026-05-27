@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Badge',
+  displayName: 'Badge',
   keywords: ["badge","tag","chip","label","status","indicator","count","counter","pill","notification","marker"],
   props: [
     {
@@ -61,6 +62,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Badge',
+  displayName: 'Badge',
   usage: {
     description:
       'Badge highlights a status or category at a glance. Use it sparingly — only when a value represents a distinct state (Active, Failed) or a grouping tag (Engineering, Design). Most metadata (dates, durations, counts, descriptions) should be plain description text, not badges.',

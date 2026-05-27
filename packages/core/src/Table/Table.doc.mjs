@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Table',
+  displayName: 'Table',
   group: 'Table',
   keywords: ["table","datatable","datagrid","spreadsheet","sorting","virtualized","columns","rows","selection","pinning"],
   playground: {
@@ -31,6 +32,7 @@ export const docs = {
   components: [
     {
       name: 'XDSTable',
+      displayName: 'XDS Table',
       description:
         'Styled, data-driven table with density, dividers, hover highlight, striped rows, and named plugin support.',
       props: [
@@ -97,6 +99,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSBaseTable',
+      displayName: 'XDS Base Table',
       description:
         'Unstyled structural table component with a plugin transform pipeline and a components prop for swapping in custom row/cell renderers.',
       props: [
@@ -145,6 +148,7 @@ export const docs = {
     },
     {
       name: 'XDSTableRow',
+      displayName: 'XDS Table Row',
       description:
         '<tr> wrapper that reads XDSTableContext to apply striped, hover, and divider styles when used inside XDSTable.',
       props: [
@@ -158,6 +162,7 @@ export const docs = {
     },
     {
       name: 'XDSTableCell',
+      displayName: 'XDS Table Cell',
       description:
         '<td> wrapper that reads XDSTableContext to apply density padding, font size, and divider borders when used inside XDSTable.',
       props: [
@@ -170,6 +175,7 @@ export const docs = {
     },
     {
       name: 'XDSTableHeaderCell',
+      displayName: 'XDS Table Header Cell',
       description:
         '<th> wrapper that reads XDSTableContext to apply density padding, semibold weight, secondary text color, and divider borders when used inside XDSTable.',
       props: [
@@ -182,6 +188,7 @@ export const docs = {
     },
     {
       name: 'useXDSTableSelection',
+      displayName: 'useXDSTableSelection',
       description:
         'Hook that returns a TablePlugin implementing row selection with checkboxes, select-all, and aria-selected. Uses React Context for independent checkbox re-renders.',
       props: [
@@ -235,6 +242,7 @@ export const docs = {
     },
     {
       name: 'useXDSTableSelectionState',
+      displayName: 'useXDSTableSelectionState',
       description:
         'State management companion for useXDSTableSelection. Handles disabled/selectable row filtering for select-all automatically — disabled rows are frozen (preserved across select-all/deselect-all), non-selectable rows are excluded.',
       props: [
@@ -281,6 +289,7 @@ export const docs = {
     },
     {
       name: 'useXDSTableSortable',
+      displayName: 'useXDSTableSortable',
       description:
         'Headless multi-sort plugin for XDSTable. The consumer owns sort state and provides a callback. Shift+click enables secondary sort columns. Sort indicators render in header cells automatically.',
       props: [
@@ -316,6 +325,7 @@ export const docs = {
     },
     {
       name: 'useXDSTablePagination',
+      displayName: 'useXDSTablePagination',
       description:
         'Headless pagination plugin for XDSTable. Supports client-side slicing, server-side pagination, and cursor-based pagination. Renders XDSPagination controls automatically above, below, or both.',
       props: [
@@ -391,6 +401,7 @@ export const docs = {
     },
     {
       name: 'useXDSTableColumnSettings',
+      displayName: 'useXDSTableColumnSettings',
       description:
         'Headless column visibility and ordering management for XDSTable. Provides filtered columns, toggle helpers, and pre-built XDSMultiSelector options for a column picker UI.',
       props: [
@@ -449,6 +460,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Table',
+  displayName: 'Table',
   group: 'Table',
   theming: {
     targets: [
@@ -461,6 +473,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSTable',
+      displayName: 'XDS Table',
       description:
         '带样式的数据驱动表格，支持密度、分隔线、悬停高亮、条纹行和命名插件。',
       props: [
@@ -528,6 +541,7 @@ export const docsZh = {
     },
     {
       name: 'XDSBaseTable',
+      displayName: 'XDS Base Table',
       description:
         '无样式的结构表格组件，配有插件转换管道和 components 属性，用于替换自定义行/单元格渲染器。',
       props: [
@@ -576,6 +590,7 @@ export const docsZh = {
     },
     {
       name: 'XDSTableRow',
+      displayName: 'XDS Table Row',
       description:
         '<tr> 包装器，读取 XDSTableContext 以在 XDSTable 内部使用时应用条纹、悬停和分隔线样式。',
       props: [
@@ -589,6 +604,7 @@ export const docsZh = {
     },
     {
       name: 'XDSTableCell',
+      displayName: 'XDS Table Cell',
       description:
         '<td> 包装器，读取 XDSTableContext 以在 XDSTable 内部使用时应用密度内边距、字体大小和分隔线边框。',
       props: [
@@ -601,6 +617,7 @@ export const docsZh = {
     },
     {
       name: 'XDSTableHeaderCell',
+      displayName: 'XDS Table Header Cell',
       description:
         '<th> 包装器，读取 XDSTableContext 以在 XDSTable 内部使用时应用密度内边距、半粗字重、次要文本颜色和分隔线边框。',
       props: [
@@ -613,6 +630,7 @@ export const docsZh = {
     },
     {
       name: 'useXDSTableSelection',
+      displayName: 'useXDSTableSelection',
       description:
         '返回 TablePlugin 的 Hook，实现带复选框、全选和 aria-selected 的行选择功能。使用 React Context 实现独立的复选框重新渲染。',
       props: [
@@ -666,6 +684,7 @@ export const docsZh = {
     },
     {
       name: 'useXDSTableSortable',
+      displayName: 'useXDSTableSortable',
       description:
         '无头多列排序插件。用户拥有排序状态并提供回调。Shift+点击启用二级排序列。排序指示器自动渲染在表头单元格中。',
       props: [
@@ -701,6 +720,7 @@ export const docsZh = {
     },
     {
       name: 'useXDSTablePagination',
+      displayName: 'useXDSTablePagination',
       description:
         '无头分页插件。支持客户端切片、服务器端分页和游标分页。自动渲染 XDSPagination 控件。',
       props: [
@@ -744,6 +764,7 @@ export const docsZh = {
     },
     {
       name: 'useXDSTableColumnSettings',
+      displayName: 'useXDSTableColumnSettings',
       description:
         '无头列可见性和排序管理。提供筛选后的列、切换帮助方法和 XDSMultiSelector 选项。',
       props: [
@@ -814,6 +835,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSTable',
+      displayName: 'XDS Table',
       description: 'Styled data-driven table w/ density, dividers, hover, striped rows, named plugin support.',
       propDescriptions: {
         data: 'Array of data items to render as rows.',
@@ -830,6 +852,7 @@ export const docsDense = {
     },
     {
       name: 'XDSBaseTable',
+      displayName: 'XDS Base Table',
       description: 'Unstyled structural table w/ plugin transform pipeline + components prop for custom row/cell renderers.',
       propDescriptions: {
         data: 'Array of data items to render as rows.',
@@ -843,6 +866,7 @@ export const docsDense = {
     },
     {
       name: 'XDSTableRow',
+      displayName: 'XDS Table Row',
       description: '<tr> wrapper; reads XDSTableContext for striped/hover/divider styles.',
       propDescriptions: {
         children: 'Row cell elements.',
@@ -850,6 +874,7 @@ export const docsDense = {
     },
     {
       name: 'XDSTableCell',
+      displayName: 'XDS Table Cell',
       description: '<td> wrapper; reads XDSTableContext for density padding, font size, divider borders.',
       propDescriptions: {
         children: 'Cell content.',
@@ -857,6 +882,7 @@ export const docsDense = {
     },
     {
       name: 'XDSTableHeaderCell',
+      displayName: 'XDS Table Header Cell',
       description: '<th> wrapper; reads XDSTableContext for density padding, semibold weight, secondary color, dividers.',
       propDescriptions: {
         children: 'Header cell content.',
@@ -864,6 +890,7 @@ export const docsDense = {
     },
     {
       name: 'useXDSTableSelection',
+      displayName: 'useXDSTableSelection',
       description: 'Hook returning TablePlugin for row selection w/ checkboxes, select-all, aria-selected. Uses React Context for independent checkbox re-renders.',
       propDescriptions: {
         getIsItemSelected: 'Returns whether item is selected.',
@@ -877,6 +904,7 @@ export const docsDense = {
     },
     {
       name: 'useXDSTableSortable',
+      displayName: 'useXDSTableSortable',
       description: 'Headless multi-sort plugin. Consumer owns sort state + callback. Shift+click for secondary sort. Sort indicators auto-render in header cells.',
       propDescriptions: {
         sort: 'Current sort state; ordered array of {sortKey, direction} entries.',
@@ -887,6 +915,7 @@ export const docsDense = {
     },
     {
       name: 'useXDSTablePagination',
+      displayName: 'useXDSTablePagination',
       description: 'Headless pagination plugin. Client-side slicing, server-side, or cursor-based. Auto-renders XDSPagination above/below/both.',
       propDescriptions: {
         page: 'Current page (1-based).',
@@ -899,6 +928,7 @@ export const docsDense = {
     },
     {
       name: 'useXDSTableColumnSettings',
+      displayName: 'useXDSTableColumnSettings',
       description: 'Headless column visibility/ordering. Provides filtered columns, toggle helpers, XDSMultiSelector options.',
       propDescriptions: {
         columns: 'All available columns w/ metadata (key, label, isAlwaysVisible, group).',

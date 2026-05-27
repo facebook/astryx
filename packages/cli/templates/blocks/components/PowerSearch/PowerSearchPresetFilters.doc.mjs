@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'PowerSearch',
   name: 'PowerSearch — Preset Filters',
+  displayName: 'PowerSearch — Preset Filters',
   description:
     'Power search initialized with pre-set filter tokens for status and priority.',
   isReady: true,

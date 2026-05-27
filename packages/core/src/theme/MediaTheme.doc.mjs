@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'MediaTheme',
+  displayName: 'Media Theme',
   group: 'Utilities',
   keywords: ['theme', 'dark-mode', 'light-mode', 'media', 'inverted', 'overlay', 'scrim', 'toast', 'tooltip'],
   usage: {

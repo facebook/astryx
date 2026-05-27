@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Slider',
   name: 'Slider',
+  displayName: 'Slider',
   isReady: true,
   aspectRatio: 1,
   isShowcase: true,

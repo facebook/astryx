@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'PowerSearch',
+  displayName: 'Power Search',
   keywords: ["powersearch","search","searchbar","filter","filterbar","faceted","querybuilder","structured","omnibar"],
   props: [
     {
@@ -147,6 +148,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'PowerSearch',
+  displayName: 'Power Search',
   props: [
     {
       name: 'config',

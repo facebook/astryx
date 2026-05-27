@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Slider',
   name: 'Slider — Range',
+  displayName: 'Slider — Range',
   description:
     'Range slider for selecting a value range like price bounds.',
   isReady: true,

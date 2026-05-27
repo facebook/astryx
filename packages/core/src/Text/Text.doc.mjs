@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Text',
+  displayName: 'Text',
   keywords: ["text","typography","label","paragraph","heading","caption","font","body","subtitle"],
   playground: {
     defaults: {
@@ -20,6 +21,7 @@ export const docs = {
   components: [
     {
       name: 'XDSText',
+      displayName: 'XDS Text',
       description:
         'Semantic body text component that renders text with type-based styling from the theme, with optional truncation, decoration, and layout props.',      props: [
         {
@@ -125,6 +127,7 @@ export const docs = {
     },
     {
       name: 'XDSHeading',
+      displayName: 'XDS Heading',
       description:
         'Semantic heading component that renders h1–h6 elements with themed styling, themed sizing via type scale tokens, and line-clamp truncation.',
       props: [
@@ -230,6 +233,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Text',
+  displayName: 'Text',
   theming: {
     targets: [
       {className: 'xds-heading', visualProps: ['level', 'color']},
@@ -239,6 +243,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSText',
+      displayName: 'XDS Text',
       description:
         '语义化正文文本组件，使用来自主题的基于类型的样式渲染文本，支持可选的截断、装饰和布局属性。',
       props: [
@@ -345,6 +350,7 @@ export const docsZh = {
     },
     {
       name: 'XDSHeading',
+      displayName: 'XDS Heading',
       description:
         '语义化标题组件，渲染带主题样式的 h1–h6 元素，支持可选的编辑风格比例和行截断。',
       props: [
@@ -466,6 +472,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSText',
+      displayName: 'XDS Text',
       description: 'Semantic body text w/ type-based theme styling, optional truncation, decoration, layout props.',
       propDescriptions: {
         type: 'Semantic text type; determines size, weight, line-height from theme.',
@@ -488,6 +495,7 @@ export const docsDense = {
     },
     {
       name: 'XDSHeading',
+      displayName: 'XDS Heading',
       description: 'Semantic h1\u20136 w/ themed styling, themed sizing via type scale tokens, line-clamp truncation.',
       propDescriptions: {
         level: 'Heading level; determines HTML element + styling from theme (unless type is set).',

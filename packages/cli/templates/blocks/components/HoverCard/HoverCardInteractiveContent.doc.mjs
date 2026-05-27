@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'HoverCard',
   name: 'HoverCard — Link Preview',
+  displayName: 'HoverCard — Link Preview',
   description:
     'Shows a page summary when hovering a link — title, description, and URL. Use for documentation links, article references, or any URL where a preview helps the user decide whether to click.',
   isReady: true,

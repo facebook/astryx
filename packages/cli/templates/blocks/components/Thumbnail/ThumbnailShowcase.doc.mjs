@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Thumbnail',
   name: 'Thumbnail',
+  displayName: 'Thumbnail',
   isReady: true,
   aspectRatio: 16 / 9,
   isShowcase: true,

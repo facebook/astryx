@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Slider',
+  displayName: 'Slider',
   keywords: ["slider","range","slidebar","trackbar","scrubber","knob","thumb","rangeslider"],
   props: [
     {
@@ -146,6 +147,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Slider',
+  displayName: 'Slider',
   props: [
     {
       name: 'label',

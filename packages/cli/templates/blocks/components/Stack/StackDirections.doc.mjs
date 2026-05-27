@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Stack',
   name: 'Stack — Directions',
+  displayName: 'Stack — Directions',
   description:
     'Badges arranged horizontally and vertically in side-by-side cards.',
   isReady: true,

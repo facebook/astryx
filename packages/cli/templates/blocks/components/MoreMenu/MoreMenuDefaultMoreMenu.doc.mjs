@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'MoreMenu',
   name: 'MoreMenu — Default',
+  displayName: 'MoreMenu — Default',
   description:
     'Basic three-dot overflow menu with simple text-only action items.',
   isReady: true,

@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Skeleton',
   name: 'Skeleton — Staggered List',
+  displayName: 'Skeleton — Staggered List',
   description:
     'Staggered skeleton lines with varying widths.',
   isReady: true,

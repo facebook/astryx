@@ -42,11 +42,31 @@ function writeRegistry(filename, content) {
   console.log(`  wrote ${path.relative(REPO_ROOT, outPath)}`);
 }
 
+/**
+ * Validates that a doc file declared an explicit `displayName`. Display
+ * names are authored by hand rather than derived at build time so
+ * authors stay in control of how each component reads in the gallery
+ * and sidebar UI (see PR #2376 review thread). Use the
+ * apps/docsite/scripts/backfill-display-name.mjs codemod to backfill
+ * the field on any doc file that's missing it.
+ */
+function requireDisplayName(displayName, where) {
+  if (!displayName) {
+    throw new Error(
+      `Missing \`displayName\` on doc entry: ${where}\n` +
+        'Every .doc.mjs file must declare an explicit `displayName` field.\n' +
+        'Run `node apps/docsite/scripts/backfill-display-name.mjs` to backfill it.',
+    );
+  }
+  return displayName;
+}
+
 /** Extract group/description/hidden from .doc.mjs via regex (no dynamic import) */
 const GROUP_RE = /(?:^|\n) {0,4}group:\s*['"]([^'"]+)['"]/;
 const DESC_RE = /description:\s*\n?\s*['"`]([^'"`]{0,200})['"`]/;
 const HIDDEN_RE = /(?:^|\n) {0,4}hidden:\s*true/;
 const NAME_RE = /(?:^|\n) {0,4}name:\s*['"]([^'"]+)['"]/;
+const DISPLAY_NAME_RE = /(?:^|\n) {0,4}displayName:\s*['"]([^'"]+)['"]/;
 const KEYWORDS_RE = /keywords:\s*\[([^\]]*)\]/;
 
 function readDocMeta(docPath) {
@@ -55,6 +75,7 @@ function readDocMeta(docPath) {
     const groupMatch = GROUP_RE.exec(content);
     const descMatch = DESC_RE.exec(content);
     const nameMatch = NAME_RE.exec(content);
+    const displayNameMatch = DISPLAY_NAME_RE.exec(content);
     const hidden = HIDDEN_RE.test(content);
     const kwMatch = KEYWORDS_RE.exec(content);
     const keywords = kwMatch
@@ -64,11 +85,12 @@ function readDocMeta(docPath) {
       group: groupMatch?.[1] ?? null,
       description: descMatch?.[1] ?? '',
       name: nameMatch?.[1] ?? null,
+      displayName: displayNameMatch?.[1] ?? null,
       hidden,
       keywords,
     };
   } catch {
-    return {group: null, description: '', name: null, hidden: false, keywords: []};
+    return {group: null, description: '', name: null, displayName: null, hidden: false, keywords: []};
   }
 }
 
@@ -268,6 +290,10 @@ async function generateComponentRegistry() {
             if (!subName) continue;
             pendingSubComponents.push({
               name: subName,
+              displayName: requireDisplayName(
+                sub.displayName,
+                `${pkg.name}: subcomponent ${sub.name || subName} (parent ${doc.name})`,
+              ),
               moduleName: sub.name || subName,
               directory: entry.name,
               group,
@@ -291,6 +317,10 @@ async function generateComponentRegistry() {
           standaloneNames.add(name);
           components.push({
             name,
+            displayName: requireDisplayName(
+              doc.displayName,
+              `${pkg.name}: hook ${name}`,
+            ),
             moduleName: name,
             directory: entry.name,
             group,
@@ -313,6 +343,10 @@ async function generateComponentRegistry() {
           standaloneNames.add(name);
           components.push({
             name,
+            displayName: requireDisplayName(
+              doc.displayName,
+              `${pkg.name}: component ${name}`,
+            ),
             moduleName: name.startsWith('use') ? name : `XDS${name}`,
             directory: entry.name,
             group,
@@ -421,7 +455,15 @@ export interface HookReturnDoc {
 }
 
 export interface ComponentEntry {
+  /** Identifier name — matches the React component import name, e.g. \`AppShell\`. */
   name: string;
+  /**
+   * Human-readable display name with spaces between words, e.g.
+   * \`Aspect Ratio\` for the \`AspectRatio\` component. Derived from
+   * \`name\` by inserting spaces between PascalCase / camelCase words
+   * while preserving capitalization.
+   */
+  displayName: string;
   moduleName: string;
   directory: string;
   group: string | null;
@@ -477,19 +519,22 @@ function generateGroupedComponentRegistry(allComponents) {
     for (const entry of entries) {
       if (entry.hidden) continue;
       const isHook = entry.name.startsWith('use');
+      // entry.displayName is required upstream (see ComponentEntry generation
+      // — requireDisplayName throws if missing), so no fallback is needed.
+      const {displayName} = entry;
 
       if (
         entry.group === 'Utilities' ||
         (isHook && !entry.parentDoc && entry.directory === 'hooks')
       ) {
-        utilities.push({name: entry.name, href: `/components/${entry.name}`});
+        utilities.push({name: entry.name, displayName, href: `/components/${entry.name}`});
         continue;
       }
       if (entry.group) {
         if (!groups.has(entry.group)) groups.set(entry.group, []);
         groups
           .get(entry.group)
-          .push({name: entry.name, href: `/components/${entry.name}`, description: entry.description});
+          .push({name: entry.name, displayName, href: `/components/${entry.name}`, description: entry.description});
         continue;
       }
       if (isHook && !entry.parentDoc && entry.directory !== 'hooks') {
@@ -497,7 +542,7 @@ function generateGroupedComponentRegistry(allComponents) {
         if (!groups.has(dir)) groups.set(dir, []);
         groups
           .get(dir)
-          .push({name: entry.name, href: `/components/${entry.name}`, description: entry.description});
+          .push({name: entry.name, displayName, href: `/components/${entry.name}`, description: entry.description});
         continue;
       }
       if (
@@ -509,28 +554,30 @@ function generateGroupedComponentRegistry(allComponents) {
         if (!groups.has(parent)) groups.set(parent, []);
         groups
           .get(parent)
-          .push({name: entry.name, href: `/components/${entry.name}`, description: entry.description});
+          .push({name: entry.name, displayName, href: `/components/${entry.name}`, description: entry.description});
         continue;
       }
       if (isHook) {
-        utilities.push({name: entry.name, href: `/components/${entry.name}`});
+        utilities.push({name: entry.name, displayName, href: `/components/${entry.name}`});
         continue;
       }
-      ungrouped.push({name: entry.name, href: `/components/${entry.name}`, description: entry.description});
+      ungrouped.push({name: entry.name, displayName, href: `/components/${entry.name}`, description: entry.description});
     }
 
     const items = [];
     for (const [label, members] of groups) {
       members.sort((a, b) => a.name.localeCompare(b.name));
       if (members.length === 1) {
-        items.push({sortKey: members[0].name, item: {type: 'entry', name: members[0].name, href: members[0].href, description: members[0].description}});
+        items.push({sortKey: members[0].name, item: {type: 'entry', name: members[0].name, displayName: members[0].displayName, href: members[0].href, description: members[0].description}});
       } else {
         const canonical = members.find(m => m.name === label) || members[0];
-        items.push({sortKey: label, item: {type: 'group', label, description: canonical.description, entries: members.map(m => ({name: m.name, href: m.href}))}});
+        // Use the canonical member's already-required displayName as the
+        // group label. Falls back to the raw label only as a safety net.
+        items.push({sortKey: label, item: {type: 'group', label, displayName: canonical.displayName || label, description: canonical.description, entries: members.map(m => ({name: m.name, displayName: m.displayName, href: m.href}))}});
       }
     }
     for (const entry of ungrouped) {
-      items.push({sortKey: entry.name, item: {type: 'entry', name: entry.name, href: entry.href, description: entry.description}});
+      items.push({sortKey: entry.name, item: {type: 'entry', name: entry.name, displayName: entry.displayName, href: entry.href, description: entry.description}});
     }
     items.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 
@@ -544,23 +591,29 @@ function generateGroupedComponentRegistry(allComponents) {
 
 export interface GroupedEntry {
   type: 'entry';
+  /** Identifier name — matches the React component import name. */
   name: string;
+  /** Human-readable display name with spaces between camelCased words. */
+  displayName: string;
   href: string;
   description: string;
 }
 
 export interface GroupedGroup {
   type: 'group';
+  /** Raw group label (the component name acting as parent). */
   label: string;
+  /** Human-readable version of \`label\` with spaces between camelCased words. */
+  displayName: string;
   description: string;
-  entries: Array<{name: string; href: string}>;
+  entries: Array<{name: string; displayName: string; href: string}>;
 }
 
 export type ComponentItem = GroupedEntry | GroupedGroup;
 
 export interface GroupedComponents {
   items: ComponentItem[];
-  utilities: Array<{name: string; href: string}>;
+  utilities: Array<{name: string; displayName: string; href: string}>;
 }
 
 export const groupedComponents: Record<string, GroupedComponents> = ${JSON.stringify(results, null, 2)};
@@ -616,9 +669,18 @@ async function generateBlockRegistry() {
       source = fs.readFileSync(tsxPath, 'utf-8');
     } catch { /* ignore */ }
 
+    const resolvedName = meta.name || basename;
     blocks.push({
       dirName: basename,
-      name: meta.name || basename,
+      name: resolvedName,
+      // Human-readable display name for gallery + sidebar UI. Required —
+      // every doc file must declare an explicit `displayName` so authors
+      // stay in control of how each component reads in the UI (rather
+      // than relying on a build-time regex derivation).
+      displayName: requireDisplayName(
+        meta.displayName,
+        `block ${path.relative(REPO_ROOT, docPath)}`,
+      ),
       description: meta.description,
       exampleFor,
       isShowcase,
@@ -637,7 +699,15 @@ async function generateBlockRegistry() {
 
 export interface BlockEntry {
   dirName: string;
+  /** Identifier name — matches the React component import name (PascalCase). */
   name: string;
+  /**
+   * Human-readable display name with spaces between words, e.g.
+   * "Chat Message Metadata" for the "ChatMessageMetadata" component.
+   * Falls back to a prettified version of \`name\` when no explicit
+   * displayName is declared on the doc file.
+   */
+  displayName: string;
   description: string;
   /** The component this block is an example of (e.g. 'Button', 'Dialog') */
   exampleFor: string;

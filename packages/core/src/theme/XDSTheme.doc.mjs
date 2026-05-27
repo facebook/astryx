@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Theme',
+  displayName: 'Theme',
   group: 'Utilities',
   keywords: ['theme', 'theming', 'provider', 'color-scheme'],
   usage: {

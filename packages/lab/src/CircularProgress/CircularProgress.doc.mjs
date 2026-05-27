@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'CircularProgress',
+  displayName: 'Circular Progress',
   keywords: ["circular","progress","radial","ring","arc","determinate","indeterminate","gauge","meter","donut"],
   props: [
     {
@@ -76,6 +77,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'CircularProgress',
+  displayName: 'Circular Progress',
   props: [
     {
       name: 'value',

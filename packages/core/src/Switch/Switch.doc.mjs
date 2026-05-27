@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Switch',
+  displayName: 'Switch',
   keywords: ["switch","toggle","onoff","flipswitch","boolean","toggleswitch"],
   props: [
     {
@@ -138,6 +139,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Switch',
+  displayName: 'Switch',
   props: [
     {
       name: 'ref',
