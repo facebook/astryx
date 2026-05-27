@@ -134,6 +134,22 @@ export function DocsShell({
             </XDSSideNavItem>
           </XDSSideNavSection>
 
+          {/* Foundations */}
+          <XDSSideNavSection title="Foundations" isHeaderHidden>
+            <XDSSideNavItem
+              label="Foundations"
+              collapsible={{defaultIsCollapsed: !isInFoundations}}>
+              {foundationTopics.map(d => (
+                <XDSSideNavItem
+                  key={d.topic}
+                  label={d.title}
+                  href={`/docs/${d.topic}`}
+                  isSelected={pathname === `/docs/${d.topic}`}
+                />
+              ))}
+            </XDSSideNavItem>
+          </XDSSideNavSection>
+
           {/* Libraries */}
           <XDSSideNavSection title="Libraries" isHeaderHidden>
             <XDSSideNavItem
@@ -147,22 +163,6 @@ export function DocsShell({
                   isSelected={
                     pathname === `/packages/${p.name.replace('@xds/', '')}`
                   }
-                />
-              ))}
-            </XDSSideNavItem>
-          </XDSSideNavSection>
-
-          {/* Foundations */}
-          <XDSSideNavSection title="Foundations" isHeaderHidden>
-            <XDSSideNavItem
-              label="Foundations"
-              collapsible={{defaultIsCollapsed: !isInFoundations}}>
-              {foundationTopics.map(d => (
-                <XDSSideNavItem
-                  key={d.topic}
-                  label={d.title}
-                  href={`/docs/${d.topic}`}
-                  isSelected={pathname === `/docs/${d.topic}`}
                 />
               ))}
             </XDSSideNavItem>
@@ -204,24 +204,6 @@ export function DocsShell({
             </XDSSideNavItem>
           </XDSSideNavSection>
 
-          {/* Themes */}
-          <XDSSideNavSection title="Themes" isHeaderHidden>
-            <XDSSideNavItem
-              label="Themes"
-              collapsible={{defaultIsCollapsed: !isInThemes}}>
-              {themePackages.map(p => (
-                <XDSSideNavItem
-                  key={p.name}
-                  label={p.displayName}
-                  href={`/packages/${p.name.replace('@xds/', '')}`}
-                  isSelected={
-                    pathname === `/packages/${p.name.replace('@xds/', '')}`
-                  }
-                />
-              ))}
-            </XDSSideNavItem>
-          </XDSSideNavSection>
-
           {/* Utilities */}
           {utilities.length > 0 && (
             <XDSSideNavSection title="Utilities" isHeaderHidden>
@@ -239,6 +221,24 @@ export function DocsShell({
               </XDSSideNavItem>
             </XDSSideNavSection>
           )}
+
+          {/* Themes */}
+          <XDSSideNavSection title="Themes" isHeaderHidden>
+            <XDSSideNavItem
+              label="Themes"
+              collapsible={{defaultIsCollapsed: !isInThemes}}>
+              {themePackages.map(p => (
+                <XDSSideNavItem
+                  key={p.name}
+                  label={p.displayName}
+                  href={`/packages/${p.name.replace('@xds/', '')}`}
+                  isSelected={
+                    pathname === `/packages/${p.name.replace('@xds/', '')}`
+                  }
+                />
+              ))}
+            </XDSSideNavItem>
+          </XDSSideNavSection>
         </XDSSideNav>
       }>
       {children}
