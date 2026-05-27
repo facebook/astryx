@@ -15,6 +15,7 @@ import {XDSSkeleton} from '@xds/core/Skeleton';
 import {XDSText} from '@xds/core/Text';
 import {XDSTheme} from '@xds/core/theme';
 import {neutralTheme} from '@xds/theme-neutral/built';
+import {useThemeMode} from '../app/providers';
 
 const FIXED_SCALE = 0.5;
 
@@ -123,6 +124,7 @@ export function ShowcaseThumbnail({
   dirName: string;
   category: string;
 }) {
+  const {mode} = useThemeMode();
   const containerRef = useRef<HTMLDivElement>(null);
   const [renderWidth, setRenderWidth] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
@@ -172,7 +174,7 @@ export function ShowcaseThumbnail({
                   <XDSSkeleton width="100%" height="100%" />
                 </div>
               }>
-              <XDSTheme theme={neutralTheme}>
+              <XDSTheme theme={neutralTheme} mode={mode}>
                 <Component />
               </XDSTheme>
             </Suspense>
