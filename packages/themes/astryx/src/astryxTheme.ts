@@ -58,5 +58,19 @@ export const astryxTheme = defineTheme({
         borderRadius: 'var(--radius-full)',
       },
     },
+    // TopNav items: remove the "pill" background on the selected state and
+    // rely on weight + primary text color for emphasis. Hover/active still
+    // get the neutral overlay from the base styles.
+    'top-nav-item': {
+      selected: {
+        backgroundColor: 'transparent',
+        ':hover': {
+          backgroundColor: 'var(--color-overlay-hover)',
+        },
+        ':active': {
+          backgroundColor: 'var(--color-overlay-pressed)',
+        },
+      },
+    },
   },
 });
