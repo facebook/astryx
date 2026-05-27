@@ -75,10 +75,10 @@ export function DocsShell({
     .filter(d => d.category === 'foundations')
     .sort(foundationsSort);
 
-  // Active state detection
-  const isInGuide =
-    guideTopics.some(d => pathname === `/docs/${d.topic}`) ||
-    foundationTopics.some(d => pathname === `/docs/${d.topic}`);
+  // Active state detection. Foundations is its own top-level sidebar
+  // section (split from Guide on main), so isInGuide no longer counts
+  // foundation topics.
+  const isInGuide = guideTopics.some(d => pathname === `/docs/${d.topic}`);
   const isInFoundations = foundationTopics.some(
     d => pathname === `/docs/${d.topic}`,
   );
@@ -91,8 +91,7 @@ export function DocsShell({
   // True for the /components index AND every /components/[name] detail page.
   // On these routes we hide every non-Components section so the sidebar is
   // focused on the component library — the top nav handles cross-area
-  // navigation. Components index page is included so the sidebar stays
-  // consistent across the gallery.
+  // navigation.
   const isOnComponentsRoute = pathname.startsWith('/components');
 
   return (
@@ -136,18 +135,22 @@ export function DocsShell({
                       isSelected={pathname === `/docs/${d.topic}`}
                     />
                   ))}
-                  <XDSSideNavItem
-                    label="Foundations"
-                    collapsible={{defaultIsCollapsed: !isInFoundations}}>
-                    {foundationTopics.map(d => (
-                      <XDSSideNavItem
-                        key={d.topic}
-                        label={d.title}
-                        href={`/docs/${d.topic}`}
-                        isSelected={pathname === `/docs/${d.topic}`}
-                      />
-                    ))}
-                  </XDSSideNavItem>
+                </XDSSideNavItem>
+              </XDSSideNavSection>
+
+              {/* Foundations */}
+              <XDSSideNavSection title="Foundations" isHeaderHidden>
+                <XDSSideNavItem
+                  label="Foundations"
+                  collapsible={{defaultIsCollapsed: !isInFoundations}}>
+                  {foundationTopics.map(d => (
+                    <XDSSideNavItem
+                      key={d.topic}
+                      label={d.title}
+                      href={`/docs/${d.topic}`}
+                      isSelected={pathname === `/docs/${d.topic}`}
+                    />
+                  ))}
                 </XDSSideNavItem>
               </XDSSideNavSection>
 

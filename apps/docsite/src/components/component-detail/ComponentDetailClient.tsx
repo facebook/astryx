@@ -141,7 +141,7 @@ function ComponentDetailInner({
           <>
             <XDSTabList value={tab} onChange={setTab} hasDivider>
               <XDSTab value="overview" label="Overview" />
-              <XDSTab value="playground" label="Playground" />
+              <XDSTab value="properties" label="Properties" />
             </XDSTabList>
 
             {tab === 'overview' && (
@@ -154,7 +154,7 @@ function ComponentDetailInner({
               />
             )}
 
-            {tab === 'playground' && (
+            {tab === 'properties' && (
               <XDSVStack gap={4}>
                 <div
                   style={{

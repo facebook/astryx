@@ -73,6 +73,8 @@ const styles = stylex.create({
       '@media (prefers-reduced-motion: reduce)': '0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  pressable: {
     transform: {
       default: 'scale(1)',
       ':active': 'scale(0.98)',
@@ -572,6 +574,7 @@ export function XDSButton({
     useAriaDisabled && styles.ariaDisabled,
     isLoadingState && loadingStyles.loading,
     renderAsLink && styles.link,
+    !buttonGroup && styles.pressable,
     buttonGroup &&
       (buttonGroup.orientation === 'horizontal'
         ? groupStyles.horizontal
