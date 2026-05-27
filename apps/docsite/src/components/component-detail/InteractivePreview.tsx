@@ -18,6 +18,8 @@ import {XDSCenter} from '@xds/core/Center';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
+import {XDSTheme} from '@xds/core/theme';
+import {neutralTheme} from '@xds/theme-neutral/built';
 import {CodeBracketIcon} from '@heroicons/react/24/outline';
 import {
   coerceDefault,
@@ -291,16 +293,18 @@ export function InteractivePreviewStage({
           <XDSCodeBlock code={code} language="tsx" hasCopyButton />
         </div>
       ) : (
-        <XDSCenter
-          style={{
-            minHeight: 200,
-            width: '100%',
-            padding: 'var(--spacing-4)',
-          }}>
-          <PreviewErrorBoundary resetKeys={[Component, state]}>
-            {createElement(Component, state)}
-          </PreviewErrorBoundary>
-        </XDSCenter>
+        <XDSTheme theme={neutralTheme}>
+          <XDSCenter
+            style={{
+              minHeight: 200,
+              width: '100%',
+              padding: 'var(--spacing-4)',
+            }}>
+            <PreviewErrorBoundary resetKeys={[Component, state]}>
+              {createElement(Component, state)}
+            </PreviewErrorBoundary>
+          </XDSCenter>
+        </XDSTheme>
       )}
     </XDSCard>
   );

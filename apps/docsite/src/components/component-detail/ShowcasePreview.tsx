@@ -6,7 +6,9 @@ import {useEffect, useState, type ComponentType} from 'react';
 import {XDSCenter} from '@xds/core/Center';
 import {XDSText} from '@xds/core/Text';
 import {XDSSpinner} from '@xds/core/Spinner';
+import {XDSTheme} from '@xds/core/theme';
 import {useMediaQuery} from '@xds/core/hooks';
+import {neutralTheme} from '@xds/theme-neutral/built';
 import {showcaseRegistry} from '../../generated/showcaseRegistry';
 
 interface ShowcasePreviewProps {
@@ -53,33 +55,37 @@ export function ShowcasePreview({name}: ShowcasePreviewProps) {
 
   if (isSmall) {
     return (
-      <div
-        style={{
-          width: '100%',
-          overflow: 'auto',
-          minHeight: 160,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-        <div style={{minWidth: 'fit-content'}}>
-          <Component />
+      <XDSTheme theme={neutralTheme}>
+        <div
+          style={{
+            width: '100%',
+            overflow: 'auto',
+            minHeight: 160,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+          <div style={{minWidth: 'fit-content'}}>
+            <Component />
+          </div>
         </div>
-      </div>
+      </XDSTheme>
     );
   }
 
   return (
-    <div
-      style={{
-        width: '100%',
-        aspectRatio: '16 / 9',
-        overflow: 'auto',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>
-      <Component />
-    </div>
+    <XDSTheme theme={neutralTheme}>
+      <div
+        style={{
+          width: '100%',
+          aspectRatio: '16 / 9',
+          overflow: 'auto',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+        <Component />
+      </div>
+    </XDSTheme>
   );
 }
