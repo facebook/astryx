@@ -43,29 +43,22 @@ function writeRegistry(filename, content) {
 }
 
 /**
- * Turn a PascalCase / camelCase identifier into a human-readable display
- * name with spaces between words, preserving the original capitalization
- * of each word so the result still matches the import name visually.
- *
- *   prettifyName('ChatMessageMetadata') === 'Chat Message Metadata'
- *   prettifyName('AppShell')            === 'App Shell'
- *   prettifyName('AspectRatio')         === 'Aspect Ratio'
- *
- * Acronym runs are kept together but get a space before the next word:
- *   prettifyName('XDSButton')           === 'XDS Button'
- *   prettifyName('URLInput')            === 'URL Input'
- *
- * Single-word names pass through unchanged.
+ * Validates that a doc file declared an explicit `displayName`. Display
+ * names are authored by hand rather than derived at build time so
+ * authors stay in control of how each component reads in the gallery
+ * and sidebar UI (see PR #2376 review thread). Use the
+ * apps/docsite/scripts/backfill-display-name.mjs codemod to backfill
+ * the field on any doc file that's missing it.
  */
-function prettifyName(name) {
-  if (!name) return name;
-  return name
-    // Insert a space between a lowercase/digit and an uppercase letter:
-    // "chatMessage"  -> "chat Message"
-    .replace(/([a-z\d])([A-Z])/g, '$1 $2')
-    // Insert a space between an acronym run and the next capitalized word:
-    // "XDSButton"    -> "XDS Button"
-    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2');
+function requireDisplayName(displayName, where) {
+  if (!displayName) {
+    throw new Error(
+      `Missing \`displayName\` on doc entry: ${where}\n` +
+        'Every .doc.mjs file must declare an explicit `displayName` field.\n' +
+        'Run `node apps/docsite/scripts/backfill-display-name.mjs` to backfill it.',
+    );
+  }
+  return displayName;
 }
 
 /** Extract group/description/hidden from .doc.mjs via regex (no dynamic import) */
@@ -297,7 +290,10 @@ async function generateComponentRegistry() {
             if (!subName) continue;
             pendingSubComponents.push({
               name: subName,
-              displayName: prettifyName(subName),
+              displayName: requireDisplayName(
+                sub.displayName,
+                `${pkg.name}: subcomponent ${sub.name || subName} (parent ${doc.name})`,
+              ),
               moduleName: sub.name || subName,
               directory: entry.name,
               group,
@@ -321,7 +317,10 @@ async function generateComponentRegistry() {
           standaloneNames.add(name);
           components.push({
             name,
-            displayName: prettifyName(name),
+            displayName: requireDisplayName(
+              doc.displayName,
+              `${pkg.name}: hook ${name}`,
+            ),
             moduleName: name,
             directory: entry.name,
             group,
@@ -344,7 +343,10 @@ async function generateComponentRegistry() {
           standaloneNames.add(name);
           components.push({
             name,
-            displayName: prettifyName(name),
+            displayName: requireDisplayName(
+              doc.displayName,
+              `${pkg.name}: component ${name}`,
+            ),
             moduleName: name.startsWith('use') ? name : `XDS${name}`,
             directory: entry.name,
             group,
@@ -517,7 +519,9 @@ function generateGroupedComponentRegistry(allComponents) {
     for (const entry of entries) {
       if (entry.hidden) continue;
       const isHook = entry.name.startsWith('use');
-      const displayName = entry.displayName || prettifyName(entry.name);
+      // entry.displayName is required upstream (see ComponentEntry generation
+      // — requireDisplayName throws if missing), so no fallback is needed.
+      const {displayName} = entry;
 
       if (
         entry.group === 'Utilities' ||
@@ -567,7 +571,9 @@ function generateGroupedComponentRegistry(allComponents) {
         items.push({sortKey: members[0].name, item: {type: 'entry', name: members[0].name, displayName: members[0].displayName, href: members[0].href, description: members[0].description}});
       } else {
         const canonical = members.find(m => m.name === label) || members[0];
-        items.push({sortKey: label, item: {type: 'group', label, displayName: prettifyName(label), description: canonical.description, entries: members.map(m => ({name: m.name, displayName: m.displayName, href: m.href}))}});
+        // Use the canonical member's already-required displayName as the
+        // group label. Falls back to the raw label only as a safety net.
+        items.push({sortKey: label, item: {type: 'group', label, displayName: canonical.displayName || label, description: canonical.description, entries: members.map(m => ({name: m.name, displayName: m.displayName, href: m.href}))}});
       }
     }
     for (const entry of ungrouped) {
@@ -667,13 +673,14 @@ async function generateBlockRegistry() {
     blocks.push({
       dirName: basename,
       name: resolvedName,
-      // Human-readable display name for gallery + sidebar UI. Prefer the
-      // doc file's explicit `displayName` field when present; otherwise
-      // derive it by inserting spaces between PascalCase / camelCase
-      // words while preserving capitalization (so "ChatMessageMetadata"
-      // renders as "Chat Message Metadata" but still visually matches
-      // the import name).
-      displayName: meta.displayName || prettifyName(resolvedName),
+      // Human-readable display name for gallery + sidebar UI. Required —
+      // every doc file must declare an explicit `displayName` so authors
+      // stay in control of how each component reads in the UI (rather
+      // than relying on a build-time regex derivation).
+      displayName: requireDisplayName(
+        meta.displayName,
+        `block ${path.relative(REPO_ROOT, docPath)}`,
+      ),
       description: meta.description,
       exampleFor,
       isShowcase,
