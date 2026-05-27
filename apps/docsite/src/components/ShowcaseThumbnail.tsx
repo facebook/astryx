@@ -13,6 +13,8 @@ import React, {
 import * as stylex from '@stylexjs/stylex';
 import {XDSSkeleton} from '@xds/core/Skeleton';
 import {XDSText} from '@xds/core/Text';
+import {XDSTheme} from '@xds/core/theme';
+import {neutralTheme} from '@xds/theme-neutral/built';
 
 const FIXED_SCALE = 0.5;
 
@@ -170,7 +172,9 @@ export function ShowcaseThumbnail({
                   <XDSSkeleton width="100%" height="100%" />
                 </div>
               }>
-              <Component />
+              <XDSTheme theme={neutralTheme}>
+                <Component />
+              </XDSTheme>
             </Suspense>
           </ShowcaseErrorBoundary>
         </div>

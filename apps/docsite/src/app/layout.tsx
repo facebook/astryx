@@ -4,9 +4,9 @@ import type {Metadata} from 'next';
 import './globals.css';
 import {Providers} from './providers';
 
-// Note: @xds/theme-astryx is Figtree-first. We can't use next/font/google
-// here (it requires SWC, but this app pins a custom babel.config.js for
-// StyleX — they're mutually exclusive per
+// Note: the Astryx theme (src/themes/astryxTheme.ts) is Figtree-first.
+// We can't use next/font/google here (it requires SWC, but this app pins
+// a custom babel.config.js for StyleX — they're mutually exclusive per
 // https://nextjs.org/docs/messages/babel-font-loader-conflict). Figtree
 // loads via the shared Google Fonts <link> in <head> below, which is the
 // "Good" path from the theming wiki §Font Declarations.

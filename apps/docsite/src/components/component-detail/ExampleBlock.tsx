@@ -12,6 +12,8 @@ import {XDSTabList, XDSTab} from '@xds/core/TabList';
 import {XDSSpinner} from '@xds/core/Spinner';
 import {XDSButton} from '@xds/core/Button';
 import {XDSHStack} from '@xds/core/Layout';
+import {XDSTheme} from '@xds/core/theme';
+import {neutralTheme} from '@xds/theme-neutral/built';
 import type {ExampleEntry} from '../../generated/exampleRegistry';
 import {buildPlaygroundHref} from '../playgroundLink';
 
@@ -45,19 +47,21 @@ function LivePreview({entry}: {entry: ExampleEntry}) {
   }
 
   return (
-    <div
-      style={{
-        width: '100%',
-        overflow: 'auto',
-        minHeight: 200,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>
-      <div style={{minWidth: 'fit-content', padding: 'var(--spacing-4)'}}>
-        <Component />
+    <XDSTheme theme={neutralTheme}>
+      <div
+        style={{
+          width: '100%',
+          overflow: 'auto',
+          minHeight: 200,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+        <div style={{minWidth: 'fit-content', padding: 'var(--spacing-4)'}}>
+          <Component />
+        </div>
       </div>
-    </div>
+    </XDSTheme>
   );
 }
 

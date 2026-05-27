@@ -14,7 +14,7 @@ import {
   MoonIcon,
 } from '@heroicons/react/24/outline';
 import {GITHUB_REPO} from '../constants';
-import {XDS_WORDMARK} from './XDSWordmark';
+import {XDS_BRAND_ICON} from './XDSWordmark';
 import {SearchPalette} from './SearchPalette';
 import {components} from '../generated/componentRegistry';
 import {packages} from '../generated/packageRegistry';
@@ -73,7 +73,7 @@ export function SharedTopNav() {
     <>
       <XDSTopNav
         label="XDS navigation"
-        heading={<XDSTopNavHeading logo={XDS_WORDMARK} headingHref="/" />}
+        heading={<XDSTopNavHeading logo={XDS_BRAND_ICON} headingHref="/" />}
         centerContent={
           <>
             <XDSTopNavItem
