@@ -57,7 +57,8 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radiusVars['--radius-full'],
-    backgroundColor: colorVars['--color-neutral'],
+    // Use opaque background to prevent avatar bleed-through
+    backgroundColor: colorVars['--color-background-surface'],
     color: colorVars['--color-text-secondary'],
     fontFamily: typographyVars['--font-family-body'],
     fontWeight: fontWeightVars['--font-weight-medium'],
@@ -66,10 +67,29 @@ const styles = stylex.create({
     borderStyle: 'solid',
     borderColor: colorVars['--color-background-surface'],
     boxSizing: 'content-box',
+    // Neutral tint layer (preserves opaque base underneath)
+    backgroundImage: `linear-gradient(${colorVars['--color-neutral']}, ${colorVars['--color-neutral']})`,
   },
   button: {
     cursor: 'pointer',
     padding: 0,
+    // Interactive overlay states layered on top via backgroundImage
+    backgroundImage: {
+      default: `linear-gradient(${colorVars['--color-neutral']}, ${colorVars['--color-neutral']})`,
+      ':hover': {
+        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']}), linear-gradient(${colorVars['--color-neutral']}, ${colorVars['--color-neutral']})`,
+      },
+      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']}), linear-gradient(${colorVars['--color-neutral']}, ${colorVars['--color-neutral']})`,
+    },
+    // Focus ring via focus-visible
+    outline: {
+      default: 'none',
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: {
+      default: null,
+      ':focus-visible': '2px',
+    },
   },
   overlap: {
     marginInlineStart: 'var(--_avatar-group-overlap)',
