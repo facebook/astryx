@@ -159,7 +159,7 @@ function ShowcaseHeading() {
         type="display-2"
         color="primary"
         xstyle={styles.fillWidth}>
-        Every product deserves to look like itself
+        Every app deserves to look like itself
       </XDSHeading>
       <XDSText type="body" color="secondary" xstyle={styles.fillWidth}>
         Astryx makes it effortless. Customize color, typography, radius, and

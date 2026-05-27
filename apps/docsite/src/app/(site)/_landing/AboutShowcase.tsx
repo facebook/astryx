@@ -155,10 +155,10 @@ function AboutHeading() {
         type="display-2"
         color="primary"
         xstyle={styles.fillWidth}>
-        Astryx powers over 13,000 tools
+        Astryx powers over 13,000 apps
       </XDSHeading>
       <XDSText type="body" color="secondary" xstyle={styles.subhead}>
-        Astryx has grown inside Meta over the last nine years, shaped by the
+        Astryx has grown inside Meta over the last eight years, shaped by the
         engineers, designers, and product teams who depend on it every day.
       </XDSText>
     </XDSVStack>
