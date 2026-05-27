@@ -75,6 +75,11 @@ export function SharedTopNav() {
               isSelected={getActiveItem() === 'docs'}
             />
             <XDSTopNavItem
+              label="Components"
+              href="/components"
+              isSelected={getActiveItem() === 'components'}
+            />
+            <XDSTopNavItem
               label="Templates"
               href="/templates"
               isSelected={getActiveItem() === 'templates'}
@@ -83,11 +88,6 @@ export function SharedTopNav() {
               label="Themes"
               href="/themes"
               isSelected={getActiveItem() === 'themes'}
-            />
-            <XDSTopNavItem
-              label="Components"
-              href="/components"
-              isSelected={getActiveItem() === 'components'}
             />
             <XDSTopNavItem
               label="Playground"
