@@ -162,8 +162,9 @@ function ShowcaseHeading() {
         Every product deserves to look like itself
       </XDSHeading>
       <XDSText type="body" color="secondary" xstyle={styles.fillWidth}>
-        Astryx makes it effortless. Swap colors, typography, radius, and motion
-        from a single set of tokens.
+        Astryx makes it effortless. Customize color, typography, radius, and
+        motion at the token level
+        <br />— your brand, no fork required.
       </XDSText>
     </XDSVStack>
   );

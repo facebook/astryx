@@ -116,7 +116,7 @@ export default function HomePage() {
               type="display-1"
               color="primary"
               xstyle={styles.headline}>
-              A open source design system
+              An open source design system
               <br />
               built for collaboration, made for teams, crafted with care
             </XDSHeading>
