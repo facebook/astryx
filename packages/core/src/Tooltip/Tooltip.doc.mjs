@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Tooltip',
+  displayName: 'Tooltip',
   group: 'Tooltip',
   playground: {
     defaults: {
@@ -15,6 +16,7 @@ export const docs = {
   components: [
     {
       name: 'XDSTooltip',
+      displayName: 'XDS Tooltip',
       description:
         'Component wrapper for tooltip display triggered on hover or focus.',      props: [
         {
@@ -109,9 +111,11 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Tooltip',
+  displayName: 'Tooltip',
   components: [
     {
       name: 'XDSTooltip',
+      displayName: 'XDS Tooltip',
       description:
         '工具提示显示的组件包装器，通过悬停或聚焦触发。',
       props: [
@@ -219,6 +223,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSTooltip',
+      displayName: 'XDS Tooltip',
       description: 'Component wrapper for tooltip display on hover/focus.',
       propDescriptions: {
         children: 'Trigger element(s) that activate tooltip.',

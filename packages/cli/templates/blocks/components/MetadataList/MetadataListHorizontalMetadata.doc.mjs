@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'MetadataList',
   name: 'MetadataList — Horizontal',
+  displayName: 'MetadataList — Horizontal',
   description:
     'Horizontal metadata items for compact inline display.',
   isReady: true,

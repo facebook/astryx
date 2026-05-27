@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'TopNavMenu',
   name: 'TopNavMenu',
+  displayName: 'Top Nav Menu',
   description: 'Demonstrates XDSTopNavMenu with a hover-triggered dropdown containing items with icons and descriptions.',
   isReady: true,
   isShowcase: true,

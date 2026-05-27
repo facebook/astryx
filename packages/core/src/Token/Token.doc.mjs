@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Token',
+  displayName: 'Token',
   keywords: ["token","chip","tag","pill","label","removable","dismissible","filter chip","closable"],
   props: [
     {
@@ -113,6 +114,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Token',
+  displayName: 'Token',
   props: [
     {
       name: 'label',

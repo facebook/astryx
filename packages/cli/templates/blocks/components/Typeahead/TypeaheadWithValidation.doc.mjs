@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Typeahead',
   name: 'Typeahead — With Validation',
+  displayName: 'Typeahead — With Validation',
   description:
     'Typeahead with an error validation message.',
   isReady: true,

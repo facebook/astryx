@@ -4,6 +4,7 @@
 export const doc = {
   type: 'page',
   name: 'Setup Guide',
+  displayName: 'Setup Guide',
   description: 'Getting started guide with install steps, AI assistance prompt card, theming setup, and next steps.',
   isReady: true,
 };

@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'EmptyState',
+  displayName: 'Empty State',
   keywords: ["emptystate","empty","placeholder","nodata","blank","noresults","illustration","blankslate"],
   props: [
     {
@@ -88,6 +89,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'EmptyState',
+  displayName: 'Empty State',
   props: [
     {
       name: 'title',

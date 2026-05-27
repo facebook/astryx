@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'MultiSelector',
+  displayName: 'Multi Selector',
   group: 'Selector',
   keywords: ['multiselect', 'checkbox', 'dropdown', 'multi', 'picker', 'checklist', 'facet', 'filter', 'select'],
   theming: {
@@ -14,6 +15,7 @@ export const docs = {
   components: [
     {
       name: 'XDSMultiSelector',
+      displayName: 'XDS Multi Selector',
       description:
         'Multi-select dropdown with checkboxes for choosing multiple items.',
       props: [
@@ -160,6 +162,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSMultiSelector',
+      displayName: 'XDS Multi Selector',
       description: '带复选框的多选下拉框，用于从列表中选择多项。',
       propDescriptions: {
         label: '无障碍标签文本。',
@@ -217,6 +220,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSMultiSelector',
+      displayName: 'XDS Multi Selector',
       description: 'checkbox multi-select dropdown',
       propDescriptions: {
         label: 'a11y label',

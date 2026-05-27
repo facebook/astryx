@@ -3,6 +3,7 @@
 /** @type {import('../docs-types').HookDoc} */
 export const docs = {
   name: 'useOverflow',
+  displayName: 'useOverflow',
   keywords: ['overflow', 'truncate', 'responsive', 'collapse', 'resize', 'measure', 'hidden', 'more', 'breadcrumb'],
   params: [
     {

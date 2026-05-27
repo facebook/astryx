@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Button',
+  displayName: 'Button',
   group: 'Button',
 
   keywords: ["button","btn","cta","submit","action","loading","primary","secondary","ghost","destructive","danger"],
@@ -155,6 +156,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Button',
+  displayName: 'Button',
   usage: {
     description:
       'Button triggers an action when clicked. Use it for form submissions, confirmations, navigation, or any interaction that needs a clear call to action.',
@@ -255,6 +257,7 @@ export const docsDense = {
     size: 'size variant',
     type: 'HTML button type; defaults to "button"',
     name: 'HTML name for form submission',
+    displayName: 'HTML name for form submission',
     value: 'HTML value for form submission',
     form: 'associates button with form element by ID',
     isLoading: 'shows spinner+disables interaction; announces via live region',

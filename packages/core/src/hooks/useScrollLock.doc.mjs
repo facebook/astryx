@@ -3,6 +3,7 @@
 /** @type {import('../docs-types').HookDoc} */
 export const docs = {
   name: 'useScrollLock',
+  displayName: 'useScrollLock',
   keywords: ['scroll', 'lock', 'modal', 'dialog', 'body', 'prevent', 'background', 'ios', 'safari', 'fixed'],
   params: [
     {

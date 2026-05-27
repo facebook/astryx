@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'DropdownMenu',
+  displayName: 'Dropdown Menu',
   group: 'DropdownMenu',
   keywords: ["dropdown","menu","popover","select","actions","contextmenu","overflow","kebab","menubutton"],
   theming: {
@@ -23,6 +24,7 @@ export const docs = {
   components: [
     {
       name: 'XDSDropdownMenu',
+      displayName: 'XDS Dropdown Menu',
       description:
         'Main dropdown menu component with a trigger button and popup item list.',
       props: [
@@ -81,6 +83,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSDropdownMenuItem',
+      displayName: 'XDS Dropdown Menu Item',
       description:
         'Helper component for custom item rendering with consistent styling.',
       props: [
@@ -127,6 +130,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'DropdownMenu',
+  displayName: 'Dropdown Menu',
   theming: {
     targets: [
       {className: 'xds-dropdown-menu'},
@@ -144,6 +148,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSDropdownMenu',
+      displayName: 'XDS Dropdown Menu',
       description:
         '主下拉菜单组件，包含触发按钮和弹出项列表。',
       props: [
@@ -203,6 +208,7 @@ export const docsZh = {
     },
     {
       name: 'XDSDropdownMenuItem',
+      displayName: 'XDS Dropdown Menu Item',
       description:
         '用于自定义项渲染的辅助组件，提供一致的样式。',
       props: [
@@ -261,6 +267,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSDropdownMenu',
+      displayName: 'XDS Dropdown Menu',
       description: 'trigger button + popup item list',
       propDescriptions: {
         button: 'trigger button props (XDSButton props except onClick)',
@@ -276,6 +283,7 @@ export const docsDense = {
     },
     {
       name: 'XDSDropdownMenuItem',
+      displayName: 'XDS Dropdown Menu Item',
       description: 'helper for custom item rendering w/ consistent styling',
       propDescriptions: {
         icon: 'icon before label',

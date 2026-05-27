@@ -4,11 +4,13 @@
 
 export const docs = {
   name: 'Popover',
+  displayName: 'Popover',
   group: 'Popover',
   keywords: ["popover","popup","dropdown","tooltip","overlay","flyout","callout","popper","anchor","floating","bubble"],
   components: [
     {
       name: 'XDSPopover',
+      displayName: 'XDS Popover',
       description:
         'A click-triggered popover for displaying interactive content anchored to a trigger element.',      props: [
         {
@@ -133,9 +135,11 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Popover',
+  displayName: 'Popover',
   components: [
     {
       name: 'XDSPopover',
+      displayName: 'XDS Popover',
       description:
         '一个点击触发的弹出框，用于显示锚定到触发元素的交互式内容。',
       props: [
@@ -269,6 +273,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSPopover',
+      displayName: 'XDS Popover',
       description:
         'Click-triggered popover for interactive content anchored to trigger element.',
       propDescriptions: {

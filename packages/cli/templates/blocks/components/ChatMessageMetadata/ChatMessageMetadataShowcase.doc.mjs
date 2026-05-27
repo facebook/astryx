@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'ChatMessageMetadata',
   name: 'ChatMessageMetadata',
+  displayName: 'Chat Message Metadata',
   description: 'Three-message conversation showcasing error status with retry, delivery status, and full footer actions with model label.',
   isReady: true,
   isShowcase: true,

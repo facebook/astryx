@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Stack',
   name: 'Stack — Alignment',
+  displayName: 'Stack — Alignment',
   description:
     'Buttons positioned at the start, center, and end of a row.',
   isReady: true,

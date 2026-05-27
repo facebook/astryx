@@ -3,6 +3,7 @@
 /** @type {import('../docs-types').HookDoc} */
 export const docs = {
   name: 'useListFocus',
+  displayName: 'useListFocus',
   keywords: ['list', 'focus', 'keyboard', 'navigation', 'menu', 'toolbar', 'roving', 'tabindex', 'a11y', 'arrow', 'wai-aria'],
   params: [
     {

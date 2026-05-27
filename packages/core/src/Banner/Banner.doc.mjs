@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Banner',
+  displayName: 'Banner',
   keywords: ["banner","alert","notification","callout","notice","status","message","info","warning","error","success","toast"],
   usage: {
     description:
@@ -117,6 +118,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Banner',
+  displayName: 'Banner',
   usage: {
     description:
       'Banner shows a persistent message at the top of a page or section. Use it for form errors, system updates, maintenance notices, or success confirmations that the user needs to see until they act on it.',

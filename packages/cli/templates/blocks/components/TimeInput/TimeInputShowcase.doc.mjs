@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'TimeInput',
   name: 'TimeInput',
+  displayName: 'Time Input',
   isReady: true,
   aspectRatio: 16 / 9,
   isShowcase: true,

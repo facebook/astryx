@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'MobileNavToggle',
   name: 'MobileNavToggle',
+  displayName: 'Mobile Nav Toggle',
   description: 'Demonstrates XDSMobileNavToggle as a standalone hamburger button for opening the mobile navigation drawer.',
   isReady: true,
   isShowcase: true,

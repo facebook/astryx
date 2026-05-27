@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'FileInput',
+  displayName: 'File Input',
   keywords: ["fileinput","file","upload","drag","drop","dropzone","attachment","browse"],
   props: [
     {
@@ -151,6 +152,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'FileInput',
+  displayName: 'File Input',
   props: [
     {
       name: 'label',

@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Kbd',
+  displayName: 'Kbd',
   keywords: ["kbd","keyboard","shortcut","hotkey","keybinding","keystroke","keycombo","modifier","accelerator"],
   props: [
     {
@@ -48,6 +49,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Kbd',
+  displayName: 'Kbd',
   props: [
     {
       name: 'keys',

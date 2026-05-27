@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Lightbox',
+  displayName: 'Lightbox',
   keywords: ["lightbox","image","video","viewer","gallery","zoom","fullscreen","media","photo","preview"],
   props: [
     {
@@ -68,6 +69,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Lightbox',
+  displayName: 'Lightbox',
   props: [
     {
       name: 'isOpen',

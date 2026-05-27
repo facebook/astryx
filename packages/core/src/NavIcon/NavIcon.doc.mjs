@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'NavIcon',
+  displayName: 'Nav Icon',
   hidden: false,
   keywords: ["navicon","iconbutton","toolbar icon","appbar icon","nav button"],
   props: [
@@ -35,6 +36,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'NavIcon',
+  displayName: 'Nav Icon',
   props: [
     {
       name: 'icon',

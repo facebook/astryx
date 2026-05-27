@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Spinner',
+  displayName: 'Spinner',
   keywords: ["spinner","loader","loading","circular","progress","spin","activity","busy","indeterminate"],
   props: [
     {
@@ -57,6 +58,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Spinner',
+  displayName: 'Spinner',
   props: [
     {
       name: 'size',

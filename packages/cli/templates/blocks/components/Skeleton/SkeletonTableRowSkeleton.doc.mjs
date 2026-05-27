@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Skeleton',
   name: 'Skeleton — Table Rows',
+  displayName: 'Skeleton — Table Rows',
   description:
     'Table skeleton with staggered column widths.',
   isReady: true,

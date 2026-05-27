@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Calendar',
   name: 'Calendar',
+  displayName: 'Calendar',
   description:
     'An interactive single-date calendar with a selected date. Click any day to change the selection.',
   isReady: true,

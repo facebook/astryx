@@ -3,6 +3,7 @@
 /** @type {import('../docs-types').HookDoc} */
 export const docs = {
   name: 'useXDSToast',
+  displayName: 'useXDSToast',
   group: 'Toast',
   keywords: ['toast', 'notification', 'snackbar', 'alert', 'message', 'feedback', 'flash'],
   params: [

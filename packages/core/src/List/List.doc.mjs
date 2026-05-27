@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'List',
+  displayName: 'List',
   group: 'List',
   keywords: ["list","listitem","listbox","menu","collection","items","ul","navlist"],
   theming: {
@@ -15,6 +16,7 @@ export const docs = {
   components: [
     {
       name: 'XDSList',
+      displayName: 'XDS List',
       description: 'List container with density, dividers, and header support.',      props: [
         {
           name: 'children',
@@ -58,6 +60,7 @@ export const docs = {
     },
     {
       name: 'XDSListItem',
+      displayName: 'XDS List Item',
       description:
         'List item with label, description, start/end content slots, and interactive patterns.',
       props: [
@@ -148,6 +151,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'List',
+  displayName: 'List',
   group: 'List',
   theming: {
     targets: [
@@ -158,6 +162,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSList',
+      displayName: 'XDS List',
       description: '列表容器，支持密度、分割线和标题。',
       props: [
         {
@@ -200,6 +205,7 @@ export const docsZh = {
     },
     {
       name: 'XDSListItem',
+      displayName: 'XDS List Item',
       description:
         '列表项，包含标签、描述、起始/结束内容插槽和交互模式。',
       props: [
@@ -307,6 +313,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSList',
+      displayName: 'XDS List',
       description: 'List container w/ density, dividers, header support.',
       propDescriptions: {
         children: 'List items (XDSListItem components).',
@@ -321,6 +328,7 @@ export const docsDense = {
     },
     {
       name: 'XDSListItem',
+      displayName: 'XDS List Item',
       description:
         'List item w/ label, description, start/end content slots, interactive patterns.',
       propDescriptions: {

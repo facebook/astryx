@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'ButtonGroup',
   name: 'ButtonGroup',
+  displayName: 'Button Group',
   isReady: true,
   aspectRatio: 16 / 9,
   isShowcase: true,

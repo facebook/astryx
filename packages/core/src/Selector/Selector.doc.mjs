@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Selector',
+  displayName: 'Selector',
   group: 'Selector',
   keywords: ["selector","select","dropdown","combobox","picker","listbox","chooser","autocomplete","option","selectmenu"],
   theming: {
@@ -15,6 +16,7 @@ export const docs = {
   components: [
     {
       name: 'XDSSelector',
+      displayName: 'XDS Selector',
       description: 'Dropdown selector for choosing from a list of options.',
       props: [
         {
@@ -116,6 +118,7 @@ export const docs = {
     },
     {
       name: 'XDSSelectorOption',
+      displayName: 'XDS Selector Option',
       description:
         'Helper component for custom item rendering inside an XDSSelector children render prop.',
       props: [
@@ -165,6 +168,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Selector',
+  displayName: 'Selector',
   theming: {
     targets: [
       {className: 'xds-selector', visualProps: ['size', 'status']},
@@ -174,6 +178,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSSelector',
+      displayName: 'XDS Selector',
       description: '用于从选项列表中进行选择的下拉选择器。',
       props: [
         {
@@ -274,6 +279,7 @@ export const docsZh = {
     },
     {
       name: 'XDSSelectorOption',
+      displayName: 'XDS Selector Option',
       description:
         '用于在 XDSSelector 的 children 渲染函数中自定义选项渲染的辅助组件。',
       props: [
@@ -347,6 +353,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSSelector',
+      displayName: 'XDS Selector',
       description: 'Dropdown selector for choosing from list of options.',
       propDescriptions: {
         label: 'Label text for accessibility.',
@@ -370,6 +377,7 @@ export const docsDense = {
     },
     {
       name: 'XDSSelectorOption',
+      displayName: 'XDS Selector Option',
       description:
         'Helper component for custom item rendering inside XDSSelector children render prop.',
       propDescriptions: {

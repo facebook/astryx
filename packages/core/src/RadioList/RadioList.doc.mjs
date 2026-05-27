@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'RadioList',
+  displayName: 'Radio List',
   group: 'Radio',
   keywords: ["radiolist","radio","radiogroup","radiobutton","optionlist","singlechoice","choicelist"],
   theming: {
@@ -17,6 +18,7 @@ export const docs = {
   components: [
     {
       name: 'XDSRadioList',
+      displayName: 'XDS Radio List',
       description:
         'Radio group container with field integration for label, description, and status.',      props: [
         {
@@ -107,6 +109,7 @@ export const docs = {
     },
     {
       name: 'XDSRadioListItem',
+      displayName: 'XDS Radio List Item',
       description:
         'Individual radio item with label, description, and content slots.',
       props: [
@@ -173,6 +176,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'RadioList',
+  displayName: 'Radio List',
   theming: {
     targets: [
       {className: 'xds-radio-list', visualProps: ['orientation', 'size']},
@@ -184,6 +188,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSRadioList',
+      displayName: 'XDS Radio List',
       description:
         '单选按钮组容器，集成字段功能，支持标签、描述和状态。',
       props: [
@@ -274,6 +279,7 @@ export const docsZh = {
     },
     {
       name: 'XDSRadioListItem',
+      displayName: 'XDS Radio List Item',
       description:
         '单个单选选项，包含标签、描述和内容插槽。',
       props: [
@@ -356,6 +362,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSRadioList',
+      displayName: 'XDS Radio List',
       description:
         'Radio group container w/ field integration for label, description, status.',
       propDescriptions: {
@@ -377,6 +384,7 @@ export const docsDense = {
     },
     {
       name: 'XDSRadioListItem',
+      displayName: 'XDS Radio List Item',
       description:
         'Individual radio item w/ label, description, content slots.',
       propDescriptions: {

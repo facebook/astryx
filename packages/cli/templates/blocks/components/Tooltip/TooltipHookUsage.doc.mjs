@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Tooltip',
   name: 'Tooltip — Hook Usage',
+  displayName: 'Tooltip — Hook Usage',
   description:
     'Tooltip using the useXDSTooltip hook for programmatic control.',
   isReady: true,

@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Icon',
+  displayName: 'Icon',
   keywords: ["icon","svg","glyph","symbol","pictogram","graphic","vector"],
   props: [
     {
@@ -48,6 +49,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Icon',
+  displayName: 'Icon',
   props: [
     {
       name: 'icon',

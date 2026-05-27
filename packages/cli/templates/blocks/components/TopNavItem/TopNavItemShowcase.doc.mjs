@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'TopNavItem',
   name: 'TopNavItem',
+  displayName: 'Top Nav Item',
   description: 'Demonstrates XDSTopNavItem with selected, icon, disabled, and default states.',
   isReady: true,
   isShowcase: true,

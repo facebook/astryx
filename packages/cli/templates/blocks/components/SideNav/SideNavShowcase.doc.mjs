@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'SideNav',
   name: 'SideNav',
+  displayName: 'Side Nav',
   isReady: true,
   aspectRatio: 1,
   isShowcase: true,

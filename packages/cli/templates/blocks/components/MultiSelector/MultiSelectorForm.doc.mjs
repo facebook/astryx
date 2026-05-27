@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'MultiSelector',
   name: 'MultiSelector — Form Composition',
+  displayName: 'MultiSelector — Form Composition',
   description:
     'Two multi-selectors in a form with required/optional states.',
   isReady: true,

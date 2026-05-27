@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'LayoutContent',
   name: 'LayoutContent',
+  displayName: 'Layout Content',
   description:
     'LayoutContent is the scrollable main content area within a Layout, providing automatic padding and scroll containment between the header and footer.',
   isReady: true,

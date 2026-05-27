@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Pagination',
+  displayName: 'Pagination',
   keywords: ["pagination","pager","paginator","pagenavigation","paging","paginate","pages","pagecontrol"],
   props: [
     {
@@ -124,6 +125,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Pagination',
+  displayName: 'Pagination',
   props: [
     {
       name: 'page',

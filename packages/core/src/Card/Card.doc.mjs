@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Card',
+  displayName: 'Card',
   group: 'Card',
   keywords: ["card","surface","panel","container","elevated","shadow","box","paper","tile","well"],
   usage: {
@@ -97,6 +98,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Card',
+  displayName: 'Card',
   usage: {
     description:
       'Card is a bordered, elevated container for discrete, self-contained items — things you could reorder, remove, or interact with independently. Cards are NOT the default layout tool. Most content groups don\'t need a container at all — spacing and alignment create visual grouping naturally. Only reach for a Card when items need clear interaction boundaries or visual comparison in a grid.',

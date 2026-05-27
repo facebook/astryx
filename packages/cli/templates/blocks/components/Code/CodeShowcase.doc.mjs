@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Code',
   name: 'Code',
+  displayName: 'Code',
   description:
     'Inline code snippets inside a sentence showing how Code renders alongside body text.',
   isReady: true,

@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Toolbar',
   name: 'Toolbar — Table Filter',
+  displayName: 'Toolbar — Table Filter',
   description:
     'A compact toolbar with a search input, filter buttons, and an overflow menu. Use above a data table to let users search, filter, and access view options.',
   isReady: true,

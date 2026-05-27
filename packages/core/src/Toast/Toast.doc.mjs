@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Toast',
+  displayName: 'Toast',
   group: 'Toast',
   hiddenComponents: ['ToastViewport'],
   keywords: ["toast","notification","snackbar","alert","message","feedback","status"],

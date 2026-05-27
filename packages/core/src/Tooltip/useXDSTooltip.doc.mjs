@@ -3,6 +3,7 @@
 /** @type {import('../docs-types').HookDoc} */
 export const docs = {
   name: 'useXDSTooltip',
+  displayName: 'useXDSTooltip',
   group: 'Tooltip',
   keywords: ['tooltip', 'hint', 'label', 'hover', 'info', 'title', 'floating'],
   params: [

@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'TabList',
   name: 'TabList — With Overflow Menu',
+  displayName: 'TabList — With Overflow Menu',
   description:
     'Tab list with a dropdown menu for additional items that do not fit inline.',
   isReady: true,

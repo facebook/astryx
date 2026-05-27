@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Table',
   name: 'Table — Sortable Columns',
+  displayName: 'Table — Sortable Columns',
   description:
     'Table with sortable columns, click headers to sort ascending or descending.',
   isReady: true,

@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'CommandPalette',
   name: 'CommandPalette — Grouped',
+  displayName: 'CommandPalette — Grouped',
   description:
     'Command palette with items grouped via auxiliaryData.group.',
   isReady: true,

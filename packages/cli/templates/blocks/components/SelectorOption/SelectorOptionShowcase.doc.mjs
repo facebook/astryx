@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'SelectorOption',
   name: 'SelectorOption',
+  displayName: 'Selector Option',
   description:
     'Selector with custom-rendered options using XDSSelectorOption for icons and descriptions.',
   isReady: true,

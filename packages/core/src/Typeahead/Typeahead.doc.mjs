@@ -4,11 +4,13 @@
 
 export const docs = {
   name: 'Typeahead',
+  displayName: 'Typeahead',
   group: 'Typeahead',
   keywords: ["typeahead","autocomplete","combobox","searchbox","autosuggest","select","dropdown","lookup","searchable","suggestion","picker"],
   components: [
     {
       name: 'XDSTypeahead',
+      displayName: 'XDS Typeahead',
       description:
         'Styled typeahead with label, description, validation, and all field features. Wraps XDSBaseTypeahead with XDSField for the primary use case.',
       props: [
@@ -151,6 +153,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSBaseTypeahead',
+      displayName: 'XDS Base Typeahead',
       description:
         'Unstyled combobox engine providing input, search, keyboard navigation, and dropdown. No wrapper div, no border styling, no token rendering. Used by XDSTypeahead and XDSTokenizer for custom compositions.',
       props: [
@@ -261,6 +264,7 @@ export const docs = {
     },
     {
       name: 'XDSTypeaheadItem',
+      displayName: 'XDS Typeahead Item',
       description:
         'Default dropdown item renderer for typeahead results. Shows label with optional icon, description, and avatar. Exported for use in custom renderItem implementations.',
       props: [
@@ -319,9 +323,11 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Typeahead',
+  displayName: 'Typeahead',
   components: [
     {
       name: 'XDSTypeahead',
+      displayName: 'XDS Typeahead',
       description:
         '带有标签、描述、验证和所有字段功能的样式化预输入组件。使用 XDSField 包裹 XDSBaseTypeahead，适用于主要用例。',
       props: [
@@ -465,6 +471,7 @@ export const docsZh = {
     },
     {
       name: 'XDSBaseTypeahead',
+      displayName: 'XDS Base Typeahead',
       description:
         '无样式的组合框引擎，提供输入、搜索、键盘导航和下拉列表。无包装 div，无边框样式，无标记渲染。由 XDSTypeahead 和 XDSTokenizer 用于自定义组合。',
       props: [
@@ -575,6 +582,7 @@ export const docsZh = {
     },
     {
       name: 'XDSTypeaheadItem',
+      displayName: 'XDS Typeahead Item',
       description:
         '预输入结果的默认下拉项渲染器。显示标签以及可选的图标、描述和头像。导出供自定义 renderItem 实现使用。',
       props: [
@@ -647,6 +655,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSTypeahead',
+      displayName: 'XDS Typeahead',
       description: 'Styled typeahead w/ label, description, validation. Wraps XDSBaseTypeahead+XDSField.',
       propDescriptions: {
         label: 'Accessible label for input.',
@@ -676,6 +685,7 @@ export const docsDense = {
     },
     {
       name: 'XDSBaseTypeahead',
+      displayName: 'XDS Base Typeahead',
       description: 'Unstyled combobox engine; input+search+keyboard nav+dropdown. No wrapper/border/token. Used by XDSTypeahead+XDSTokenizer.',
       propDescriptions: {
         searchSource: 'Data source w/ search+bootstrap methods.',
@@ -700,6 +710,7 @@ export const docsDense = {
     },
     {
       name: 'XDSTypeaheadItem',
+      displayName: 'XDS Typeahead Item',
       description: 'Default dropdown item renderer. Label w/ optional icon, description, avatar. Exported for custom renderItem.',
       propDescriptions: {
         item: 'Search result item to render.',

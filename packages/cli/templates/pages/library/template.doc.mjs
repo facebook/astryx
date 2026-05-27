@@ -4,6 +4,7 @@
 export const doc = {
   type: 'page',
   name: 'Library',
+  displayName: 'Library',
   description: 'Browsable grid of XDS components organized by category with tabs and filters',
   isReady: true,
 };

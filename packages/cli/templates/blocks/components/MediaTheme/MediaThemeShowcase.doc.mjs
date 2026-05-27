@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'MediaTheme',
   name: 'MediaTheme — Inverted Surfaces',
+  displayName: 'MediaTheme — Inverted Surfaces',
   description:
     'Content rendered over inverted surfaces — dark backgrounds (media, overlays, toasts) and light scrims. XDSMediaTheme provides the correct token overrides so text and controls remain legible.',
   isReady: true,

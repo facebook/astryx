@@ -4,6 +4,7 @@
 export const doc = {
   type: 'page',
   name: 'Detail Page',
+  displayName: 'Detail Page',
   description: 'Order detail page with timeline and line items',
   isReady: true,
 };

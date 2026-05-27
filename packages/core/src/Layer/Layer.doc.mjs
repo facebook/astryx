@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'useXDSLayer',
+  displayName: 'useXDSLayer',
   group: 'Utilities',
   keywords: ["layer","overlay","popover","positioning","anchor","floating","dropdown","popper","popup","portal"],
   props: [

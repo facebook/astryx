@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Section',
+  displayName: 'Section',
   group: 'Layout',
   keywords: ["section","panel","container","group","fieldset","region","block"],
   props: [
@@ -82,6 +83,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Section',
+  displayName: 'Section',
   props: [
     {
       name: 'variant',

@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Selector',
   name: 'Selector — Grouped Sections',
+  displayName: 'Selector — Grouped Sections',
   description:
     'Selector with options grouped into labeled sections.',
   isReady: true,

@@ -3,6 +3,7 @@
 /** @type {import('../docs-types').HookDoc} */
 export const docs = {
   name: 'useGridFocus',
+  displayName: 'useGridFocus',
   keywords: ['grid', 'focus', 'keyboard', 'navigation', 'arrow', 'calendar', 'a11y', 'wai-aria', 'cells'],
   params: [
     {

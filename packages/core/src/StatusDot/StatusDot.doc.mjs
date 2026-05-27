@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'StatusDot',
+  displayName: 'Status Dot',
   keywords: ["statusdot","dot","indicator","status","signal","presence","availability","online","pip"],
   props: [
     {
@@ -58,6 +59,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'StatusDot',
+  displayName: 'Status Dot',
   props: [
     {
       name: 'variant',

@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Timestamp',
   name: 'Timestamp',
+  displayName: 'Timestamp',
   isReady: true,
   aspectRatio: 16 / 9,
   isShowcase: true,

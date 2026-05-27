@@ -4,6 +4,7 @@
 export const doc = {
   type: 'page',
   name: 'Settings',
+  displayName: 'Settings',
   description: 'Account settings page with profile, password, and advanced configuration sections',
   isReady: true,
 };

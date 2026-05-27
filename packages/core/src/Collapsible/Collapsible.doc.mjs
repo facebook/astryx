@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Collapsible',
+  displayName: 'Collapsible',
   group: 'Collapsible',
   keywords: ["accordion","collapse","expandable","disclosure","toggle","panel","foldable","expander","expand"],
   playground: {
@@ -20,6 +21,7 @@ export const docs = {
   components: [
     {
       name: 'XDSCollapsible',
+      displayName: 'XDS Collapsible',
       description:
         'A primitive that makes any content collapsible — a trigger button toggles visibility of the content area, managing its own state or deferring to a parent XDSCollapsibleGroup.',
       props: [
@@ -60,6 +62,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSCollapsibleGroup',
+      displayName: 'XDS Collapsible Group',
       description:
         'Coordinates multiple XDSCollapsible instances so only one (single mode) or any number (multiple mode) can be open at a time. Renders no wrapper DOM element.',
       props: [
@@ -117,6 +120,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Collapsible',
+  displayName: 'Collapsible',
   group: 'Collapsible',
   usage: {
     description: 'Collapsible hides and reveals content behind a trigger button. Use it in settings panels, FAQ pages, or detail views to keep the page scannable while letting users drill into sections they care about. Wrap multiple collapsibles in XDSCollapsibleGroup for accordion behavior.',
@@ -138,6 +142,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSCollapsible',
+      displayName: 'XDS Collapsible',
       description:
         '使任何内容可折叠的原语——触发按钮切换内容区域的可见性，自行管理状态或委托给父级 XDSCollapsibleGroup。',
       props: [
@@ -151,6 +156,7 @@ export const docsZh = {
     },
     {
       name: 'XDSCollapsibleGroup',
+      displayName: 'XDS Collapsible Group',
       description:
         '协调多个 XDSCollapsible 实例，使同一时间只有一个（single 模式）或任意数量（multiple 模式）可以展开。不渲染包裹 DOM 元素。',
       props: [
@@ -180,6 +186,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSCollapsible',
+      displayName: 'XDS Collapsible',
       description: 'makes content collapsible; trigger toggles visibility, manages own state or defers to parent group',
       propDescriptions: {
         trigger: 'content in trigger area (always visible)',
@@ -192,6 +199,7 @@ export const docsDense = {
     },
     {
       name: 'XDSCollapsibleGroup',
+      displayName: 'XDS Collapsible Group',
       description: 'coordinates multiple XDSCollapsible instances; single or multiple open. no wrapper DOM.',
       propDescriptions: {
         type: 'one or many items open simultaneously',

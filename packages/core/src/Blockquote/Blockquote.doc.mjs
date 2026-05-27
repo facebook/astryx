@@ -6,6 +6,7 @@
 
 export const docs = {
   name: 'Blockquote',
+  displayName: 'Blockquote',
   keywords: ["blockquote","quote","citation","pullquote","quotation","cite","excerpt"],
   props: [
     {
@@ -44,6 +45,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Blockquote',
+  displayName: 'Blockquote',
   props: [
     {
       name: 'children',

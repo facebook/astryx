@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'ChatTokenizedText',
   name: 'ChatTokenizedText',
+  displayName: 'Chat Tokenized Text',
   isReady: true,
   aspectRatio: 16 / 9,
   isShowcase: true,

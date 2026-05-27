@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Field',
   name: 'Field',
+  displayName: 'Field',
   description:
     'A form field wrapping a text input with a label, description, and validation status.',
   isReady: true,

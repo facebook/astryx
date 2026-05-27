@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'TopNav',
+  displayName: 'Top Nav',
   group: 'TopNav',
   keywords: ["topnav","navbar","appbar","header","toolbar","navigation","menubar","topbar"],
   playground: {
@@ -26,6 +27,7 @@ export const docs = {
   components: [
     {
       name: 'XDSTopNav',
+      displayName: 'XDS Top Nav',
       description: 'Main navigation bar container with slot-based layout. Children are accepted as an alias for startContent.',
       props: [
         {
@@ -81,6 +83,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSTopNavHeading',
+      displayName: 'XDS Top Nav Heading',
       description:
         'Product/suite/account heading for the XDSTopNav heading slot. Supports smart interaction boundary logic: logo, heading text, superheading/subheading with independent links, and an optional menu popover with automatic chevron indicator.',
       props: [
@@ -162,6 +165,7 @@ export const docs = {
     },
     {
       name: 'XDSTopNavItem',
+      displayName: 'XDS Top Nav Item',
       description:
         'Navigation link item for use in XDSTopNav startContent — renders as an anchor with hover and selected states.',
       props: [
@@ -221,6 +225,7 @@ export const docs = {
     },
     {
       name: 'XDSTopNavMenu',
+      displayName: 'XDS Top Nav Menu',
       description:
         'Navigation item that displays a hover-triggered popover menu with rich items containing an icon, title, and optional description.',
       props: [
@@ -254,6 +259,7 @@ export const docs = {
     },
     {
       name: 'XDSTopNavMegaMenu',
+      displayName: 'XDS Top Nav Mega Menu',
       description:
         'Navigation item that displays a full-width mega menu panel on hover. Uses a slots API with items and featured props. XDSTopNavMegaMenuItem renders itself in both desktop and mobile drawer modes. Supports inline collapsible drawer via render mode context.',
       props: [
@@ -299,6 +305,7 @@ export const docs = {
     },
     {
       name: 'XDSTopNavMegaMenuItem',
+      displayName: 'XDS Top Nav Mega Menu Item',
       description:
         'An individual item inside an XDSTopNavMegaMenu. Renders itself in both desktop (popover grid) and mobile drawer modes via render mode context.',
       props: [
@@ -339,6 +346,7 @@ export const docs = {
     },
     {
       name: 'XDSTopNavMegaMenuFeaturedCard',
+      displayName: 'XDS Top Nav Mega Menu Featured Card',
       description:
         'Standard featured card for the XDSTopNavMegaMenu featured slot. Provides a consistent card with optional image, title, description, and CTA link.',
       props: [
@@ -402,6 +410,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'TopNav',
+  displayName: 'Top Nav',
   theming: {
     targets: [
       {className: 'xds-top-nav', states: ['mode']},
@@ -416,6 +425,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSTopNav',
+      displayName: 'XDS Top Nav',
       description: '采用插槽式布局的主导航栏容器。children 可作为 startContent 的别名。',
       props: [
         {
@@ -464,6 +474,7 @@ export const docsZh = {
     },
     {
       name: 'XDSTopNavHeading',
+      displayName: 'XDS Top Nav Heading',
       description:
         'XDSTopNav 标题插槽的产品/套件/账户标题组件。支持智能交互边界逻辑：标志、标题文本、独立链接的上标题/下标题，以及带自动箭头指示器的可选菜单弹出层。',
       props: [
@@ -542,6 +553,7 @@ export const docsZh = {
     },
     {
       name: 'XDSTopNavItem',
+      displayName: 'XDS Top Nav Item',
       description:
         '用于 XDSTopNav startContent 的导航链接项 — 渲染为具有悬停和选中状态的锚点。',
       props: [
@@ -593,6 +605,7 @@ export const docsZh = {
     },
     {
       name: 'XDSTopNavMenu',
+      displayName: 'XDS Top Nav Menu',
       description:
         '导航项，在悬停时显示弹出菜单，包含带图标、标题和可选描述的丰富菜单项。',
       props: [
@@ -626,6 +639,7 @@ export const docsZh = {
     },
     {
       name: 'XDSTopNavMegaMenu',
+      displayName: 'XDS Top Nav Mega Menu',
       description:
         '导航项，在悬停时显示全宽超级菜单面板。使用插槽 API（items 和 featured）。XDSTopNavMegaMenuItem 在桌面和移动抽屉模式中自行渲染。',
       props: [
@@ -669,6 +683,7 @@ export const docsZh = {
     },
     {
       name: 'XDSTopNavMegaMenuItem',
+      displayName: 'XDS Top Nav Mega Menu Item',
       description:
         '超级菜单中的单个项目。在桌面端（弹出层网格）和移动抽屉模式中都会自行渲染。',
       props: [
@@ -708,6 +723,7 @@ export const docsZh = {
     },
     {
       name: 'XDSTopNavMegaMenuFeaturedCard',
+      displayName: 'XDS Top Nav Mega Menu Featured Card',
       description:
         '超级菜单 featured 插槽的标准特色卡片。提供带可选图片、标题、描述和 CTA 链接的一致卡片。',
       props: [
@@ -790,6 +806,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSTopNav',
+      displayName: 'XDS Top Nav',
       description: 'Main nav bar container w/ slot-based layout; children alias startContent.',
       propDescriptions: {
         heading: 'Heading slot (logo, brand) at left edge.',
@@ -803,6 +820,7 @@ export const docsDense = {
     },
     {
       name: 'XDSTopNavHeading',
+      displayName: 'XDS Top Nav Heading',
       description: 'Product/suite heading for XDSTopNav; logo+heading text w/ smart interaction boundaries, optional menu popover, superheading/subheading w/ independent links.',
       propDescriptions: {
         logo: 'Logo before heading text. Image, XDSNavIcon, or ReactNode.',
@@ -821,6 +839,7 @@ export const docsDense = {
     },
     {
       name: 'XDSTopNavItem',
+      displayName: 'XDS Top Nav Item',
       description: 'Nav link for XDSTopNav startContent; renders as anchor w/ hover+selected states.',
       propDescriptions: {
         label: 'Visible text or aria-label when isIconOnly is true.',
@@ -834,6 +853,7 @@ export const docsDense = {
     },
     {
       name: 'XDSTopNavMenu',
+      displayName: 'XDS Top Nav Menu',
       description: 'Nav item w/ hover-triggered popover menu containing rich items w/ icon, title, optional description.',
       propDescriptions: {
         label: 'Trigger button visible label.',
@@ -844,6 +864,7 @@ export const docsDense = {
     },
     {
       name: 'XDSTopNavMegaMenu',
+      displayName: 'XDS Top Nav Mega Menu',
       description: 'Nav item w/ full-width mega menu panel on hover. Slots API w/ items+featured ReactNode props. Mobile drawer inline collapsible.',
       propDescriptions: {
         label: 'Trigger button visible label.',
@@ -856,6 +877,7 @@ export const docsDense = {
     },
     {
       name: 'XDSTopNavMegaMenuItem',
+      displayName: 'XDS Top Nav Mega Menu Item',
       description: 'Individual mega menu item. Renders in desktop popover grid + mobile drawer modes via context.',
       propDescriptions: {
         title: 'Display title.',
@@ -868,6 +890,7 @@ export const docsDense = {
     },
     {
       name: 'XDSTopNavMegaMenuFeaturedCard',
+      displayName: 'XDS Top Nav Mega Menu Featured Card',
       description: 'Standard featured card for mega menu featured slot. Optional image, title, description, CTA link.',
       propDescriptions: {
         title: 'Card title.',

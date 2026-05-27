@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'TreeListBranches',
   name: 'TreeListBranches',
+  displayName: 'Tree List Branches',
   description: 'Tree with expandable branches at multiple nesting levels.',
   isReady: true,
   isShowcase: true,

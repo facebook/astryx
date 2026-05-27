@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'ChatLayoutScrollButton',
   name: 'ChatLayoutScrollButton',
+  displayName: 'Chat Layout Scroll Button',
   description: 'Scroll button in hidden, visible, and expanded (with label) states. The button fades in when the user scrolls up and expands when new messages arrive.',
   isReady: true,
   isShowcase: true,

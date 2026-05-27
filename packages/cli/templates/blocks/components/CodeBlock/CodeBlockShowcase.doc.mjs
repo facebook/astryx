@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'CodeBlock',
   name: 'CodeBlock',
+  displayName: 'Code Block',
   description:
     'A syntax-highlighted TypeScript code block with line numbers, a title bar, and a copy button.',
   isReady: true,

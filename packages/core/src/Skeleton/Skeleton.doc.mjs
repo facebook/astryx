@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Skeleton',
+  displayName: 'Skeleton',
   keywords: ["skeleton","placeholder","loading","shimmer","pulse","loader","bone","ghost","preloader"],
   props: [
     {
@@ -52,6 +53,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Skeleton',
+  displayName: 'Skeleton',
   props: [
     {
       name: 'width',

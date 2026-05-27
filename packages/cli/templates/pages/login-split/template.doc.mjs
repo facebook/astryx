@@ -4,6 +4,7 @@
 export const doc = {
   type: 'page',
   name: 'Login (Split)',
+  displayName: 'Login (Split)',
   description: 'Split-screen login with form and cover image',
   isReady: true,
 };
