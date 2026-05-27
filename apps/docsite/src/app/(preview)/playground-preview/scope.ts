@@ -112,7 +112,6 @@ import * as Typeahead from '@xds/core/Typeahead';
 
 import {defaultTheme} from '@xds/theme-default/built';
 import {neutralTheme} from '@xds/theme-neutral/built';
-import {dailyTheme} from '@xds/theme-daily/built';
 import {matchaTheme} from '@xds/theme-matcha/built';
 
 import {XDSTheme} from '@xds/core/theme';
@@ -128,7 +127,6 @@ import * as Heroicons24Solid from '@heroicons/react/24/solid';
 const SCOPE_THEMES: Record<string, XDSDefinedTheme> = {
   default: defaultTheme,
   neutral: neutralTheme,
-  daily: dailyTheme,
   matcha: matchaTheme,
 };
 
@@ -160,8 +158,6 @@ export const scope: Record<string, Record<string, unknown>> = {
   '@xds/theme-default/built': {default: defaultTheme, defaultTheme},
   '@xds/theme-neutral': {default: neutralTheme, neutralTheme},
   '@xds/theme-neutral/built': {default: neutralTheme, neutralTheme},
-  '@xds/theme-daily': {default: dailyTheme, dailyTheme},
-  '@xds/theme-daily/built': {default: dailyTheme, dailyTheme},
   '@xds/theme-matcha': {default: matchaTheme, matchaTheme},
   '@xds/theme-matcha/built': {default: matchaTheme, matchaTheme},
   '@xds/core/theme': {XDSTheme: ControlledXDSTheme},

@@ -118,7 +118,6 @@ function updateURL(code: string) {
 const THEME_OPTIONS = [
   {value: 'default', label: 'Default'},
   {value: 'neutral', label: 'Neutral'},
-  {value: 'daily', label: 'Daily'},
   {value: 'matcha', label: 'Matcha'},
 ];
 
