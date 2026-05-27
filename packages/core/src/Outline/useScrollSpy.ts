@@ -164,6 +164,7 @@ export function useScrollSpy(options: UseScrollSpyOptions): UseScrollSpyReturn {
 
       const newId = computeActiveId();
       if (newId != null) {
+        // eslint-disable-next-line @eslint-react/set-state-in-effect -- called from async IntersectionObserver/scroll callbacks, not synchronously in the effect body
         setUncontrolledActiveId(prev => {
           if (prev !== newId) {
             onActiveChangeRef.current?.(newId);

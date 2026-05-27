@@ -323,6 +323,7 @@ export function XDSOutline({
   // Update indicator position when active item changes.
   useLayoutEffect(() => {
     if (!activeId) {
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- useLayoutEffect is the correct place to sync DOM measurements to state before paint
       setIndicatorStyle(null);
       return;
     }
@@ -337,6 +338,7 @@ export function XDSOutline({
     const listRect = listEl.getBoundingClientRect();
     const itemRect = itemEl.getBoundingClientRect();
 
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- useLayoutEffect is the correct place to sync DOM measurements to state before paint
     setIndicatorStyle({
       top: itemRect.top - listRect.top,
       height: itemRect.height,
