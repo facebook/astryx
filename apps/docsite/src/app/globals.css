@@ -31,6 +31,15 @@
   padding-top: var(--appshell-header-height, 64px);
 }
 
+/* The home page is excluded from the padding rule above — its sticky hero
+   (data-home-page) is already positioned flush under the nav by its own
+   `top: var(--appshell-header-height, 0px)` rule, and the extra padding
+   here would introduce a visible cream-colored gap between the nav and
+   the hero. scroll-padding-top is kept for anchor-link scrolling. */
+body:has([data-home-page]) #xds-app-shell-main {
+  padding-top: 0;
+}
+
 /* Translucent top nav — frosted glass effect */
 .xds-layout-header,
 :has(> .xds-layout-header) {
