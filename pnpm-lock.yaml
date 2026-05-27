@@ -108,6 +108,9 @@ importers:
       '@xds/core':
         specifier: '*'
         version: link:../../packages/core
+      '@xds/theme-astryx':
+        specifier: '*'
+        version: link:../../packages/themes/astryx
       '@xds/theme-chocolate':
         specifier: '*'
         version: link:../../packages/themes/chocolate
@@ -430,6 +433,9 @@ importers:
       '@xds/lab':
         specifier: '*'
         version: link:../../packages/lab
+      '@xds/theme-astryx':
+        specifier: '*'
+        version: link:../../packages/themes/astryx
       '@xds/theme-brutalist':
         specifier: '*'
         version: link:../../packages/themes/brutalist
@@ -794,6 +800,19 @@ importers:
       '@types/d3-shape':
         specifier: ^3.1.8
         version: 3.1.8
+
+  packages/themes/astryx:
+    dependencies:
+      '@xds/core':
+        specifier: 0.0.14
+        version: link:../../core
+      react:
+        specifier: '>=19'
+        version: 19.2.6
+    devDependencies:
+      '@xds/cli':
+        specifier: 0.0.14
+        version: link:../../cli
 
   packages/themes/brutalist:
     dependencies:

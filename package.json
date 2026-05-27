@@ -4,7 +4,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "build": "pnpm -F @xds/build build && pnpm -F @xds/core build && pnpm -F @xds/vega build && pnpm -F @xds/theme-default build && pnpm -F @xds/theme-neutral build && pnpm -F @xds/theme-brutalist build && pnpm -F @xds/theme-daily build && pnpm -F @xds/theme-matcha build && pnpm -F @xds/theme-stone build && pnpm -F @xds/theme-gothic build && pnpm -F @xds/theme-chocolate build && pnpm -F @xds/theme-y2k build && pnpm -F @xds/theme-butter build",
+    "build": "pnpm -F @xds/build build && pnpm -F @xds/core build && pnpm -F @xds/vega build && pnpm -F @xds/theme-default build && pnpm -F @xds/theme-neutral build && pnpm -F @xds/theme-brutalist build && pnpm -F @xds/theme-daily build && pnpm -F @xds/theme-matcha build && pnpm -F @xds/theme-stone build && pnpm -F @xds/theme-gothic build && pnpm -F @xds/theme-chocolate build && pnpm -F @xds/theme-y2k build && pnpm -F @xds/theme-butter build && pnpm -F @xds/theme-astryx build",
     "dev": "pnpm -F @xds/storybook dev",
     "test": "vitest run",
     "test:watch": "vitest",

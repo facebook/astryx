@@ -5,11 +5,11 @@
 import Link from 'next/link';
 import {XDSTheme} from '@xds/core/theme';
 import {XDSLinkProvider} from '@xds/core/Link';
-import {defaultTheme} from '@xds/theme-default/built';
+import {astryxTheme} from '@xds/theme-astryx/built';
 
 export function Providers({children}: {children: React.ReactNode}) {
   return (
-    <XDSTheme theme={defaultTheme}>
+    <XDSTheme theme={astryxTheme}>
       <XDSLinkProvider component={Link}>{children}</XDSLinkProvider>
     </XDSTheme>
   );

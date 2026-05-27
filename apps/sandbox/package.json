@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "build:deps": "pnpm -F @xds/theme-default build && pnpm -F @xds/theme-neutral build && pnpm -F @xds/theme-brutalist build && pnpm -F @xds/theme-matcha build && pnpm -F @xds/theme-daily build && pnpm -F @xds/theme-stone build && pnpm -F @xds/theme-gothic build && pnpm -F @xds/theme-chocolate build && pnpm -F @xds/theme-y2k build && pnpm -F @xds/theme-butter build",
+    "build:deps": "pnpm -F @xds/theme-default build && pnpm -F @xds/theme-neutral build && pnpm -F @xds/theme-brutalist build && pnpm -F @xds/theme-matcha build && pnpm -F @xds/theme-daily build && pnpm -F @xds/theme-stone build && pnpm -F @xds/theme-gothic build && pnpm -F @xds/theme-chocolate build && pnpm -F @xds/theme-y2k build && pnpm -F @xds/theme-butter build && pnpm -F @xds/theme-astryx build",
     "generate:versions": "node scripts/generate-versions.js",
     "generate:changelog": "node scripts/generate-changelog.js",
     "generate:cli": "node scripts/generate-cli-registry.mjs",
@@ -32,7 +32,8 @@
     "@xds/theme-gothic": "*",
     "@xds/theme-chocolate": "*",
     "@xds/theme-y2k": "*",
-    "@xds/theme-butter": "*"
+    "@xds/theme-butter": "*",
+    "@xds/theme-astryx": "*"
   },
   "devDependencies": {
     "@babel/preset-react": "^7.25.0",
