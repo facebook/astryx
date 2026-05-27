@@ -7,7 +7,12 @@ import {usePathname} from 'next/navigation';
 import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 import {XDSButton} from '@xds/core/Button';
 import {XDSHStack} from '@xds/core/Layout';
-import {MagnifyingGlassIcon, HeartIcon} from '@heroicons/react/24/outline';
+import {
+  MagnifyingGlassIcon,
+  HeartIcon,
+  SunIcon,
+  MoonIcon,
+} from '@heroicons/react/24/outline';
 import {GITHUB_REPO} from '../constants';
 import {XDS_BRAND_ICON} from './XDSWordmark';
 import {SearchPalette} from './SearchPalette';
@@ -15,6 +20,7 @@ import {components} from '../generated/componentRegistry';
 import {packages} from '../generated/packageRegistry';
 import {docTopics} from '../generated/docsRegistry';
 import {templates} from '../generated/templateRegistry';
+import {useThemeMode} from '../app/providers';
 
 const GitHubIcon = ({
   width = 20,
@@ -36,6 +42,7 @@ const GitHubIcon = ({
 export function SharedTopNav() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const pathname = usePathname();
+  const {mode, toggleMode} = useThemeMode();
 
   // Determine active nav item
   const getActiveItem = () => {
@@ -97,32 +104,50 @@ export function SharedTopNav() {
           </>
         }
         endContent={
-          <XDSHStack gap={0.5}>
-            <XDSButton
-              label="Search"
-              variant="ghost"
-              isIconOnly
-              icon={<MagnifyingGlassIcon width={20} height={20} />}
-              onClick={() => setIsSearchOpen(true)}
-            />
-            <XDSButton
-              label="Community"
-              variant="ghost"
-              isIconOnly
-              icon={<HeartIcon width={20} height={20} />}
-              href="/community"
-            />
-            <XDSButton
-              label="GitHub"
-              variant="ghost"
-              isIconOnly
-              icon={<GitHubIcon />}
-              href={GITHUB_REPO}
-            />
+          <XDSHStack gap={2}>
+            <XDSHStack gap={0.5}>
+              <XDSButton
+                label="Search"
+                variant="ghost"
+                isIconOnly
+                icon={<MagnifyingGlassIcon width={20} height={20} />}
+                onClick={() => setIsSearchOpen(true)}
+              />
+              <XDSButton
+                label={
+                  mode === 'light'
+                    ? 'Switch to dark mode'
+                    : 'Switch to light mode'
+                }
+                variant="ghost"
+                isIconOnly
+                icon={
+                  mode === 'light' ? (
+                    <MoonIcon width={20} height={20} />
+                  ) : (
+                    <SunIcon width={20} height={20} />
+                  )
+                }
+                onClick={toggleMode}
+              />
+              <XDSButton
+                label="Community"
+                variant="ghost"
+                isIconOnly
+                icon={<HeartIcon width={20} height={20} />}
+                href="/community"
+              />
+              <XDSButton
+                label="GitHub"
+                variant="ghost"
+                isIconOnly
+                icon={<GitHubIcon />}
+                href={GITHUB_REPO}
+              />
+            </XDSHStack>
             <XDSButton
               label="Get started"
               variant="primary"
-              size="sm"
               href="/docs/getting-started"
             />
           </XDSHStack>
