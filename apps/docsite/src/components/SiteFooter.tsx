@@ -4,29 +4,18 @@ import {Fragment} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSText} from '@xds/core/Text';
 import {XDSLink} from '@xds/core/Link';
+import {XDSHStack} from '@xds/core/Stack';
+import {XDSDivider} from '@xds/core/Divider';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
-
-// Cream background to match the brand footer treatment in the design.
-// Not a token yet — kept inline here until a brand surface token lands.
-const CREAM_BACKGROUND = '#F7F2EA';
 
 const styles = stylex.create({
   footer: {
-    backgroundColor: CREAM_BACKGROUND,
-    paddingBlockStart: spacingVars['--spacing-6'],
-    paddingBlockEnd: spacingVars['--spacing-6'],
-    paddingInlineStart: spacingVars['--spacing-4'],
-    paddingInlineEnd: spacingVars['--spacing-4'],
-    display: 'flex',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    justifyContent: 'center',
-    columnGap: spacingVars['--spacing-3'],
-    rowGap: spacingVars['--spacing-2'],
+    paddingBlock: spacingVars['--spacing-6'],
+    paddingInline: spacingVars['--spacing-4'],
   },
-  separator: {
-    userSelect: 'none',
+  verticalDivider: {
+    alignSelf: 'stretch',
+    height: '1em',
   },
 });
 
@@ -50,25 +39,27 @@ export function SiteFooter() {
 
   return (
     <footer {...stylex.props(styles.footer)}>
-      <XDSText type="supporting" color="primary">
-        Copyright © {year} Meta Platforms Inc.
-      </XDSText>
-      {links.map(link => (
-        <Fragment key={link.href}>
-          <XDSText
-            type="supporting"
-            color="disabled"
-            xstyle={styles.separator}
-            aria-hidden="true">
-            |
-          </XDSText>
-          <XDSText type="supporting" color="primary">
-            <XDSLink color="primary" label={link.label} href={link.href}>
+      <XDSHStack gap={3} wrap="wrap" justify="center" align="center">
+        <XDSText type="supporting" color="primary">
+          Copyright © {year} Meta Platforms Inc.
+        </XDSText>
+        {links.map(link => (
+          <Fragment key={link.href}>
+            <XDSDivider
+              orientation="vertical"
+              variant="subtle"
+              xstyle={styles.verticalDivider}
+            />
+            <XDSLink
+              type="supporting"
+              color="primary"
+              label={link.label}
+              href={link.href}>
               {link.label}
             </XDSLink>
-          </XDSText>
-        </Fragment>
-      ))}
+          </Fragment>
+        ))}
+      </XDSHStack>
     </footer>
   );
 }
