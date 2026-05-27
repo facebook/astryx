@@ -17,6 +17,14 @@ import {AboutShowcase} from './_landing/AboutShowcase';
 import {DiscoverShowcase} from './_landing/DiscoverShowcase';
 
 const styles = stylex.create({
+  // Wraps hero + showcase together so the sticky hero (position: sticky)
+  // bounds its sticky range to this container. Without the wrapper, the
+  // hero would stay pinned through the footer (a sibling further down
+  // the AppShell main content), which on mobile shows up as the hero
+  // bleeding underneath the footer at the bottom of the page.
+  heroScope: {
+    position: 'relative',
+  },
   hero: {
     position: 'sticky',
     top: 'var(--appshell-header-height, 0px)',
@@ -102,7 +110,7 @@ export default function HomePage() {
   }, []);
 
   return (
-    <>
+    <div {...stylex.props(styles.heroScope)}>
       <div {...stylex.props(styles.hero)} data-home-page="true">
         <XDSMediaTheme mode="light">
           <XDSVStack gap={2} style={{alignItems: 'center'}}>
@@ -171,6 +179,6 @@ export default function HomePage() {
           <DiscoverShowcase />
         </XDSMediaTheme>
       </div>
-    </>
+    </div>
   );
 }
