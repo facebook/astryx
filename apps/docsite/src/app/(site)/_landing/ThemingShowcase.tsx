@@ -42,7 +42,6 @@ const styles = stylex.create({
   outerCard: {
     width: '100%',
     maxWidth: 1200,
-    borderRadius: 28,
   },
   subTile: {
     width: '100%',
@@ -514,7 +513,7 @@ export function ThemingShowcase() {
 
       <XDSTheme theme={neutralTheme} mode="light">
         <XDSVStack gap={5} align="center" xstyle={styles.outerCard}>
-          <XDSCard variant="default" padding={5} xstyle={styles.outerCard}>
+          <div {...stylex.props(styles.outerCard)}>
             <XDSGrid columns={{minWidth: 320, repeat: 'fit'}} gap={3}>
               {/* Column 1 */}
               <XDSVStack gap={3} xstyle={styles.subTile}>
@@ -536,7 +535,7 @@ export function ThemingShowcase() {
                 <LifestylePhotoTile />
               </XDSVStack>
             </XDSGrid>
-          </XDSCard>
+          </div>
 
           <ShowcaseDots />
         </XDSVStack>

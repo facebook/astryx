@@ -10,6 +10,8 @@ import {XDSVStack} from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSMediaTheme} from '@xds/core/theme';
 import {ThemingShowcase} from './_landing/ThemingShowcase';
+import {FeaturesShowcase} from './_landing/FeaturesShowcase';
+import {AboutShowcase} from './_landing/AboutShowcase';
 
 const styles = stylex.create({
   hero: {
@@ -158,6 +160,8 @@ export default function HomePage() {
       <div ref={showcaseRef} {...stylex.props(styles.showcaseOverlay)}>
         <XDSMediaTheme mode="light">
           <ThemingShowcase />
+          <FeaturesShowcase />
+          <AboutShowcase />
         </XDSMediaTheme>
       </div>
     </>
