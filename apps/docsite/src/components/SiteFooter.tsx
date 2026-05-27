@@ -1,59 +1,74 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {Fragment} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSText} from '@xds/core/Text';
 import {XDSLink} from '@xds/core/Link';
-import {XDSDivider} from '@xds/core/Divider';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
 
+// Cream background to match the brand footer treatment in the design.
+// Not a token yet — kept inline here until a brand surface token lands.
+const CREAM_BACKGROUND = '#F7F2EA';
+
 const styles = stylex.create({
-  divider: {
-    paddingBlockStart: spacingVars['--spacing-12'],
-  },
   footer: {
-    paddingBlockStart: spacingVars['--spacing-12'],
-    paddingBlockEnd: spacingVars['--spacing-12'],
+    backgroundColor: CREAM_BACKGROUND,
+    paddingBlockStart: spacingVars['--spacing-6'],
+    paddingBlockEnd: spacingVars['--spacing-6'],
+    paddingInlineStart: spacingVars['--spacing-4'],
+    paddingInlineEnd: spacingVars['--spacing-4'],
     display: 'flex',
-    flexDirection: 'column',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
-    gap: spacingVars['--spacing-2'],
+    justifyContent: 'center',
+    columnGap: spacingVars['--spacing-3'],
+    rowGap: spacingVars['--spacing-2'],
+  },
+  separator: {
+    userSelect: 'none',
   },
 });
 
+const links = [
+  {
+    label: 'GitHub Pages',
+    href: 'https://studious-broccoli-o7e61n3.pages.github.io/',
+  },
+  {
+    label: 'Terms of Use',
+    href: 'https://opensource.fb.com/legal/terms',
+  },
+  {
+    label: 'Privacy Policy',
+    href: 'https://opensource.fb.com/legal/privacy',
+  },
+];
+
 export function SiteFooter() {
+  const year = new Date().getFullYear();
+
   return (
-    <>
-      <XDSDivider xstyle={styles.divider} />
-      <footer {...stylex.props(styles.footer)}>
-        <XDSText type="supporting" color="secondary">
-          Copyright © Meta Platforms, Inc.
-        </XDSText>
-        <XDSText type="supporting" color="secondary">
-          <XDSLink
-            color="secondary"
-            label="GitHub Pages"
-            href="https://studious-broccoli-o7e61n3.pages.github.io/"
-            isExternalLink>
-            GitHub Pages
-          </XDSLink>
-          {' | '}
-          <XDSLink
-            color="secondary"
-            label="Terms of Use"
-            href="https://opensource.fb.com/legal/terms"
-            isExternalLink>
-            Terms of Use
-          </XDSLink>
-          {' | '}
-          <XDSLink
-            color="secondary"
-            label="Privacy Policy"
-            href="https://opensource.fb.com/legal/privacy"
-            isExternalLink>
-            Privacy Policy
-          </XDSLink>
-        </XDSText>
-      </footer>
-    </>
+    <footer {...stylex.props(styles.footer)}>
+      <XDSText type="supporting" color="primary">
+        Copyright © {year} Meta Platforms Inc.
+      </XDSText>
+      {links.map(link => (
+        <Fragment key={link.href}>
+          <XDSText
+            type="supporting"
+            color="disabled"
+            xstyle={styles.separator}
+            aria-hidden="true">
+            |
+          </XDSText>
+          <XDSText type="supporting" color="primary">
+            <XDSLink color="primary" label={link.label} href={link.href}>
+              {link.label}
+            </XDSLink>
+          </XDSText>
+        </Fragment>
+      ))}
+    </footer>
   );
 }
