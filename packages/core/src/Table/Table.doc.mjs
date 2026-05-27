@@ -32,7 +32,7 @@ export const docs = {
   components: [
     {
       name: 'XDSTable',
-      displayName: 'XDS Table',
+      displayName: 'Table',
       description:
         'Styled, data-driven table with density, dividers, hover highlight, striped rows, and named plugin support.',
       props: [
@@ -99,7 +99,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSBaseTable',
-      displayName: 'XDS Base Table',
+      displayName: 'Base Table',
       description:
         'Unstyled structural table component with a plugin transform pipeline and a components prop for swapping in custom row/cell renderers.',
       props: [
@@ -148,7 +148,7 @@ export const docs = {
     },
     {
       name: 'XDSTableRow',
-      displayName: 'XDS Table Row',
+      displayName: 'Table Row',
       description:
         '<tr> wrapper that reads XDSTableContext to apply striped, hover, and divider styles when used inside XDSTable.',
       props: [
@@ -162,7 +162,7 @@ export const docs = {
     },
     {
       name: 'XDSTableCell',
-      displayName: 'XDS Table Cell',
+      displayName: 'Table Cell',
       description:
         '<td> wrapper that reads XDSTableContext to apply density padding, font size, and divider borders when used inside XDSTable.',
       props: [
@@ -175,7 +175,7 @@ export const docs = {
     },
     {
       name: 'XDSTableHeaderCell',
-      displayName: 'XDS Table Header Cell',
+      displayName: 'Table Header Cell',
       description:
         '<th> wrapper that reads XDSTableContext to apply density padding, semibold weight, secondary text color, and divider borders when used inside XDSTable.',
       props: [
@@ -473,7 +473,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSTable',
-      displayName: 'XDS Table',
+      displayName: 'Table',
       description:
         '带样式的数据驱动表格，支持密度、分隔线、悬停高亮、条纹行和命名插件。',
       props: [
@@ -541,7 +541,7 @@ export const docsZh = {
     },
     {
       name: 'XDSBaseTable',
-      displayName: 'XDS Base Table',
+      displayName: 'Base Table',
       description:
         '无样式的结构表格组件，配有插件转换管道和 components 属性，用于替换自定义行/单元格渲染器。',
       props: [
@@ -590,7 +590,7 @@ export const docsZh = {
     },
     {
       name: 'XDSTableRow',
-      displayName: 'XDS Table Row',
+      displayName: 'Table Row',
       description:
         '<tr> 包装器，读取 XDSTableContext 以在 XDSTable 内部使用时应用条纹、悬停和分隔线样式。',
       props: [
@@ -604,7 +604,7 @@ export const docsZh = {
     },
     {
       name: 'XDSTableCell',
-      displayName: 'XDS Table Cell',
+      displayName: 'Table Cell',
       description:
         '<td> 包装器，读取 XDSTableContext 以在 XDSTable 内部使用时应用密度内边距、字体大小和分隔线边框。',
       props: [
@@ -617,7 +617,7 @@ export const docsZh = {
     },
     {
       name: 'XDSTableHeaderCell',
-      displayName: 'XDS Table Header Cell',
+      displayName: 'Table Header Cell',
       description:
         '<th> 包装器，读取 XDSTableContext 以在 XDSTable 内部使用时应用密度内边距、半粗字重、次要文本颜色和分隔线边框。',
       props: [
@@ -835,7 +835,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSTable',
-      displayName: 'XDS Table',
+      displayName: 'Table',
       description: 'Styled data-driven table w/ density, dividers, hover, striped rows, named plugin support.',
       propDescriptions: {
         data: 'Array of data items to render as rows.',
@@ -852,7 +852,7 @@ export const docsDense = {
     },
     {
       name: 'XDSBaseTable',
-      displayName: 'XDS Base Table',
+      displayName: 'Base Table',
       description: 'Unstyled structural table w/ plugin transform pipeline + components prop for custom row/cell renderers.',
       propDescriptions: {
         data: 'Array of data items to render as rows.',
@@ -866,7 +866,7 @@ export const docsDense = {
     },
     {
       name: 'XDSTableRow',
-      displayName: 'XDS Table Row',
+      displayName: 'Table Row',
       description: '<tr> wrapper; reads XDSTableContext for striped/hover/divider styles.',
       propDescriptions: {
         children: 'Row cell elements.',
@@ -874,7 +874,7 @@ export const docsDense = {
     },
     {
       name: 'XDSTableCell',
-      displayName: 'XDS Table Cell',
+      displayName: 'Table Cell',
       description: '<td> wrapper; reads XDSTableContext for density padding, font size, divider borders.',
       propDescriptions: {
         children: 'Cell content.',
@@ -882,7 +882,7 @@ export const docsDense = {
     },
     {
       name: 'XDSTableHeaderCell',
-      displayName: 'XDS Table Header Cell',
+      displayName: 'Table Header Cell',
       description: '<th> wrapper; reads XDSTableContext for density padding, semibold weight, secondary color, dividers.',
       propDescriptions: {
         children: 'Header cell content.',

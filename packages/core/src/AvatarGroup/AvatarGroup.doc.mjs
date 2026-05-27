@@ -28,7 +28,7 @@ export const docs = {
   components: [
     {
       name: 'XDSAvatarGroup',
-      displayName: 'XDS Avatar Group',
+      displayName: 'Avatar Group',
       description: 'Stacked avatar display with overlapping layout and optional overflow indicator. Children are XDSAvatar elements.',
       props: [
         {name: 'children', type: 'ReactNode', description: 'XDSAvatar children, optionally followed by one XDSAvatarGroupOverflow. Consumers handle slicing to the desired visible count.', required: true, slotElements: [{__element: 'XDSAvatar', props: {name: 'User'}}]},
@@ -40,7 +40,7 @@ export const docs = {
     },
     {
       name: 'XDSAvatarGroupOverflow',
-      displayName: 'XDS Avatar Group Overflow',
+      displayName: 'Avatar Group Overflow',
       description: 'Slot for custom overflow content inside XDSAvatarGroup. Replaces the default "+N" indicator when present.',
       props: [
         {name: 'children', type: 'ReactNode', description: 'Custom overflow content (button, popover trigger, etc.).', required: true},
@@ -64,7 +64,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSAvatarGroup',
-      displayName: 'XDS Avatar Group',
+      displayName: 'Avatar Group',
       description: '重叠布局的堆叠头像显示，带可选溢出指示器。子元素为 XDSAvatar。',
       propDescriptions: {
         children: 'XDSAvatar 子元素，可选地后跟一个 XDSAvatarGroupOverflow。',
@@ -77,7 +77,7 @@ export const docsZh = {
     },
     {
       name: 'XDSAvatarGroupOverflow',
-      displayName: 'XDS Avatar Group Overflow',
+      displayName: 'Avatar Group Overflow',
       description: 'XDSAvatarGroup 内的自定义溢出内容插槽。存在时替换默认的 "+N" 指示器。',
       propDescriptions: {
         children: '自定义溢出内容（按钮、弹出触发器等）。',
@@ -102,7 +102,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSAvatarGroup',
-      displayName: 'XDS Avatar Group',
+      displayName: 'Avatar Group',
       description: 'overlapping avatar row w/ max truncation',
       propDescriptions: {
         children: 'XDSAvatar children + optional XDSAvatarGroupOverflow',
@@ -115,7 +115,7 @@ export const docsDense = {
     },
     {
       name: 'XDSAvatarGroupOverflow',
-      displayName: 'XDS Avatar Group Overflow',
+      displayName: 'Avatar Group Overflow',
       description: 'custom overflow slot, replaces default +N',
       propDescriptions: {
         children: 'custom overflow content',

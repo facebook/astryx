@@ -20,7 +20,7 @@ export const docs = {
   components: [
     {
       name: 'XDSButtonGroup',
-      displayName: 'XDS Button Group',
+      displayName: 'Button Group',
       description: 'Groups multiple buttons together with connected styling — shared borders, proper border-radius handling (only on outer edges), and horizontal or vertical orientation.',
       props: [
         {name: 'children', type: 'ReactNode', description: 'XDSButton or XDSIconButton children.', required: true, slotElements: [{__element: 'XDSButton', props: {label: 'Action'}}]},
@@ -57,7 +57,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSButtonGroup',
-      displayName: 'XDS Button Group',
+      displayName: 'Button Group',
       description: '将多个按钮组合在一起，带有连接样式 — 共享边框、正确的圆角处理（仅外边缘），以及水平或垂直方向。',
       propDescriptions: {
         children: 'XDSButton 或 XDSIconButton 子元素。',
@@ -107,7 +107,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSButtonGroup',
-      displayName: 'XDS Button Group',
+      displayName: 'Button Group',
       description: 'connected button group w/ shared borders, outer-only radius',
       propDescriptions: {
         children: 'XDSButton or XDSIconButton children',

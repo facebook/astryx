@@ -39,7 +39,7 @@ export const docs = {
   components: [
     {
       name: 'XDSAlertDialog',
-      displayName: 'XDS Alert Dialog',
+      displayName: 'Alert Dialog',
       description: 'A modal dialog that asks the user to confirm a destructive action.',
       props: [
         {name: 'isOpen', type: 'boolean', required: true, description: 'Whether the dialog is open.'},

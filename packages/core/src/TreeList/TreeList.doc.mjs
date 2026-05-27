@@ -30,7 +30,7 @@ export const docs = {
   components: [
     {
       name: 'XDSTreeList',
-      displayName: 'XDS Tree List',
+      displayName: 'Tree List',
       description:
         'Tree list container. Accepts items data and rendering configuration. Expansion state is managed internally.',      props: [
         {
@@ -94,7 +94,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSTreeList',
-      displayName: 'XDS Tree List',
+      displayName: 'Tree List',
       description:
         '树列表容器。接受 items 数据和渲染配置。展开状态在内部管理。',
       props: [
@@ -161,7 +161,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSTreeList',
-      displayName: 'XDS Tree List',
+      displayName: 'Tree List',
       description: 'Tree list container. Accepts items data + rendering config. Expansion managed internally.',
       propDescriptions: {
         items: 'Recursive tree item data w/ id, label, optional children + isExpanded.',

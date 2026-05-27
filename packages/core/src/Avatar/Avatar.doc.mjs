@@ -33,7 +33,7 @@ export const docs = {
   components: [
     {
       name: 'XDSAvatar',
-      displayName: 'XDS Avatar',
+      displayName: 'Avatar',
       description:
         'Displays a user avatar with image, initials fallback, and optional status indicator.',
       props: [
@@ -72,7 +72,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSAvatarStatusDot',
-      displayName: 'XDS Avatar Status Dot',
+      displayName: 'Avatar Status Dot',
       description:
         'Size-aware status indicator dot that reads avatar size from context and scales proportionally.',
       props: [
@@ -132,7 +132,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSAvatar',
-      displayName: 'XDS Avatar',
+      displayName: 'Avatar',
       description: '显示用户头像，支持图片、首字母回退和可选的状态指示器。',
       props: [
         {name: 'src', type: 'string', description: '主图片源 URL。'},
@@ -145,7 +145,7 @@ export const docsZh = {
     },
     {
       name: 'XDSAvatarStatusDot',
-      displayName: 'XDS Avatar Status Dot',
+      displayName: 'Avatar Status Dot',
       description: '尺寸感知的状态指示点，从上下文中读取头像尺寸并等比缩放。',
       props: [
         {name: 'variant', type: "'success' | 'neutral' | 'error'", description: '状态点的语义颜色变体。', default: "'success'"},
@@ -173,7 +173,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSAvatar',
-      displayName: 'XDS Avatar',
+      displayName: 'Avatar',
       description: 'user avatar w/ image, initials fallback, optional status indicator',
       propDescriptions: {
         src: 'primary image URL',
@@ -187,7 +187,7 @@ export const docsDense = {
     },
     {
       name: 'XDSAvatarStatusDot',
-      displayName: 'XDS Avatar Status Dot',
+      displayName: 'Avatar Status Dot',
       description: 'size-aware status dot, reads avatar size from context + scales proportionally',
       propDescriptions: {
         variant: 'semantic color variant',

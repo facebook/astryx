@@ -39,7 +39,7 @@ export const docs = {
   components: [
     {
       name: 'XDSChatMessageList',
-      displayName: 'XDS Chat Message List',
+      displayName: 'Chat Message List',
       description: 'Presentational message container with density context and infinite scroll support. Provides role="log" with aria-live="polite" for accessibility. A flex spacer pushes messages to the bottom when the list isn\'t full.',
       props: [
         {name: 'children', type: 'ReactNode', description: 'Message elements — typically XDSChatMessage or XDSChatSystemMessage.', required: true},
@@ -53,7 +53,7 @@ export const docs = {
     },
     {
       name: 'XDSChatMessage',
-      displayName: 'XDS Chat Message',
+      displayName: 'Chat Message',
       description: 'Sender context wrapper — handles avatar, name, metadata, and alignment based on sender role.',
       props: [
         {name: 'sender', type: "'user' | 'assistant' | 'system'", description: 'Who sent this message — controls alignment and layout.', required: true},
@@ -70,7 +70,7 @@ export const docs = {
     },
     {
       name: 'XDSChatMessageBubble',
-      displayName: 'XDS Chat Message Bubble',
+      displayName: 'Chat Message Bubble',
       description: 'Styled content container — the chat “bubble.” Reads sender from parent XDSChatMessage context to auto-style the background. Use filled for standard messages and ghost when content needs alignment without a visible boundary. Supports name/metadata slots aligned with bubble padding, and multi-bubble grouping via the group prop for consecutive messages from the same sender.',
       props: [
         {name: 'children', type: 'ReactNode', description: 'Bubble content — text, XDSMarkdown, or any ReactNode.', required: true},
@@ -84,7 +84,7 @@ export const docs = {
     },
     {
       name: 'XDSChatMessageMetadata',
-      displayName: 'XDS Chat Message Metadata',
+      displayName: 'Chat Message Metadata',
       description: 'Composable metadata row for chat messages. Renders timestamp, footer content, and delivery status in a single row. Direction reverses for user sender. Renders nothing if all props are empty.',
       props: [
         {name: 'timestamp', type: 'ReactNode', description: 'Timestamp content — a string or XDSTimestamp component.',
@@ -98,7 +98,7 @@ export const docs = {
     },
     {
       name: 'XDSChatSystemMessage',
-      displayName: 'XDS Chat System Message',
+      displayName: 'Chat System Message',
       description: 'Centered system message for non-sender content like date separators, membership changes, and status notices. It is not a chat bubble — it has no avatar, no alignment, and no sender context. Use the divider variant for temporal breaks and default for inline status updates.',
       props: [
         {name: 'children', type: 'ReactNode', description: 'System message content — a short, factual string like a date, a join/leave notice, or a status change.', required: true},
@@ -110,7 +110,7 @@ export const docs = {
     },
     {
       name: 'XDSChatComposer',
-      displayName: 'XDS Chat Composer',
+      displayName: 'Chat Composer',
       description: 'Layout shell for a chat composer. Arranges named slots (drawer, header, input, footer, send) with page-radius container, hover/focus shadows, and concentric inner radius for child elements.',
       props: [
         {name: 'onSubmit', type: '(value: string) => void', description: 'Called when the user submits a message.', required: true},
@@ -148,7 +148,7 @@ export const docs = {
     },
     {
       name: 'XDSChatComposerInput',
-      displayName: 'XDS Chat Composer Input',
+      displayName: 'Chat Composer Input',
       description: 'Rich text input for the chat composer. Supports trigger menus (type @ or / to open a typeahead), inline tokens rendered as badges, message history recall with ArrowUp/Down, paste/drop file handling, and a 16px touch-device font-size floor to prevent iOS input zoom. Pass it to XDSChatComposer\'s input slot when you need more than a plain textarea.',
       props: [
         {name: 'handleRef', type: 'React.Ref<XDSChatComposerInputHandle>', description: 'Imperative handle for programmatic control — insertToken, insertText, focus, and getValue.'},
@@ -168,7 +168,7 @@ export const docs = {
     },
     {
       name: 'XDSChatComposerDrawer',
-      displayName: 'XDS Chat Composer Drawer',
+      displayName: 'Chat Composer Drawer',
       description: 'Collapsible drawer panel that sits above the chat input inside XDSChatComposer. Pass it to the composer\'s `drawer` slot to show attachments, context chips, or any supplementary content. When `count` is provided the drawer gains a collapse toggle — collapsed state shows a badge and label, expanded state shows all children.',
       props: [
         {name: 'children', type: 'ReactNode', description: 'Content to render inside the drawer — tokens, chips, previews, or any React elements.', required: true},
@@ -181,7 +181,7 @@ export const docs = {
     },
     {
       name: 'XDSChatSendButton',
-      displayName: 'XDS Chat Send Button',
+      displayName: 'Chat Send Button',
       description: 'Circular send/stop toggle button for the chat composer. Place it inside XDSChatComposer where it reads context automatically — no wiring needed. When streaming starts, the button switches from a primary send icon to a secondary stop icon. Override any context value via props for standalone or custom usage.',
       props: [
         {name: 'isStopShown', type: 'boolean', description: 'Whether the stop button is shown. Defaults to context value.'},
@@ -200,7 +200,7 @@ export const docs = {
     },
     {
       name: 'XDSChatToolCalls',
-      displayName: 'XDS Chat Tool Calls',
+      displayName: 'Chat Tool Calls',
       description: 'Displays tool/function call invocations from an LLM response. Accepts a `calls` array matching the shape LLM APIs return. Single call renders inline; multiple calls get a collapsible summary with the latest call visible at the surface.',
       props: [
         {name: 'calls', type: 'XDSChatToolCallItem[]', description: 'Array of tool call data. Each item has name, status, target, duration, node, additions, deletions, stats, resultDetail.', required: true},
@@ -212,7 +212,7 @@ export const docs = {
     },
     {
       name: 'XDSChatTokenizedText',
-      displayName: 'XDS Chat Tokenized Text',
+      displayName: 'Chat Tokenized Text',
       description: 'Renders a text string with token patterns replaced by inline XDSBadge components. Wrap any message body inside XDSChatMessageBubble to turn raw @mentions, #tags, or /commands into styled badges. When no tokens match or none are provided, the text renders as-is — so you can use ChatTokenizedText unconditionally on every message.',
       props: [
         {name: 'children', type: 'string', description: 'The plain text message containing serialized token values. Patterns matching a token\'s value are replaced with badge components inline.', required: true},
@@ -221,7 +221,7 @@ export const docs = {
     },
     {
       name: 'XDSChatComposerTokenElement',
-      displayName: 'XDS Chat Composer Token Element',
+      displayName: 'Chat Composer Token Element',
       description: 'Renders a single token chip outside the contentEditable input. Wraps a badge config or custom render function in the correct data-xds-token span so the token serializes properly and stays visually consistent with tokens inside the composer.',
       props: [
         {name: 'token', type: 'XDSChatComposerToken', description: 'The token to render. Pass a badge config ({ value, label, variant?, icon? }) for the common case, or a custom render ({ value, render }) for full control.', required: true},
@@ -263,7 +263,7 @@ export const docs = {
 // Append XDSChatLayout and XDSChatLayoutScrollButton to all doc variants
 const chatLayoutComponent = {
   name: 'XDSChatLayout',
-  displayName: 'XDS Chat Layout',
+  displayName: 'Chat Layout',
   description: 'Layout shell for full chat interfaces. Messages flow in normal page flow, composer is fixed to the bottom with a frosted glass dock. Adapts density (compact/balanced/spacious) automatically via container width observation. Includes built-in auto-scroll, a "New messages" scroll-to-bottom button, and a frosted glass blur layer behind the composer. By default the layout root is the scroll container; pass scrollRef to delegate scrolling to a parent element or the document body.',
   props: [
     {name: 'children', type: 'ReactNode', description: 'Message content — typically XDSChatMessageList. Flows naturally in the page and scrolls with the container.', required: true},
@@ -281,7 +281,7 @@ docs.components.push(chatLayoutComponent);
 
 const chatLayoutScrollButtonComponent = {
   name: 'XDSChatLayoutScrollButton',
-  displayName: 'XDS Chat Layout Scroll Button',
+  displayName: 'Chat Layout Scroll Button',
   description: 'Floating scroll-to-bottom button that appears when the user scrolls away from the latest messages. It fades in as a compact icon button and expands to show a label when new messages arrive. XDSChatLayout renders this by default — pass a custom element to the scrollButton prop to override, or null to hide it entirely.',
   props: [
     {name: 'isVisible', type: 'boolean', description: 'Whether the button is visible. Bind to a scroll-position check so the button only appears when the user has scrolled up.', required: true},
@@ -321,7 +321,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSChatMessageList',
-      displayName: 'XDS Chat Message List',
+      displayName: 'Chat Message List',
       description: '消息展示容器，支持密度上下文和无限滚动。自动滚动由 XDSChatLayout 管理。',
       propDescriptions: {
         children: '消息元素，通常是 XDSChatMessage 或 XDSChatSystemMessage。',
@@ -333,7 +333,7 @@ export const docsZh = {
     },
     {
       name: 'XDSChatMessage',
-      displayName: 'XDS Chat Message',
+      displayName: 'Chat Message',
       description: '发送者上下文包装器，根据发送者角色处理头像、名称、元数据和对齐方式。',
       propDescriptions: {
         sender: '消息发送者，控制对齐和布局。',
@@ -346,7 +346,7 @@ export const docsZh = {
     },
     {
       name: 'XDSChatMessageBubble',
-      displayName: 'XDS Chat Message Bubble',
+      displayName: 'Chat Message Bubble',
       description: '样式化的气泡容器，从父上下文读取发送者信息进行自动样式化。支持 name/metadata 插槽、多气泡分组和透明变体。',
       propDescriptions: {
         children: '气泡内容：文本、XDSMarkdown 或任何 ReactNode。',
@@ -358,19 +358,19 @@ export const docsZh = {
     },
     {
       name: 'XDSChatMessageMetadata',
-      displayName: 'XDS Chat Message Metadata',
+      displayName: 'Chat Message Metadata',
       description: '可组合的消息元数据行。渲染时间戳、页脚内容和发送状态。用户消息方向反转。',
       propDescriptions: {timestamp: '时间戳内容 — 字符串或 XDSTimestamp 组件。', footer: '页脚内容 — 模型信息、反应按钮、复制按钮。', status: '消息发送状态。显示图标和标签。'},
     },
     {
       name: 'XDSChatSystemMessage',
-      displayName: 'XDS Chat System Message',
+      displayName: 'Chat System Message',
       description: '居中的系统消息，用于日期分隔、成员变更和状态通知等非发送者内容。没有头像、对齐或气泡。使用 divider 变体做时间分隔，default 做内联状态更新。',
       propDescriptions: {children: '系统消息内容 — 简短的事实性文本，如日期、加入/离开通知或状态变更。', variant: "视觉变体。'default' 渲染居中文本。'divider' 通过 XDSDivider 在两侧添加水平线 — 用于日期分隔和段落分隔。", icon: '增强消息类型辨识度的前置图标。使用 XDSIcon 包裹以获得一致的尺寸。'},
     },
     {
       name: 'XDSChatComposer',
-      displayName: 'XDS Chat Composer',
+      displayName: 'Chat Composer',
       description: '聊天编写器布局外壳。排列命名插槽（附件、标题栏、输入、页脚、发送），带有页面圆角容器和同心内圆角。',
       propDescriptions: {
         onSubmit: '用户提交消息时调用。',
@@ -394,7 +394,7 @@ export const docsZh = {
     },
     {
       name: 'XDSChatComposerInput',
-      displayName: 'XDS Chat Composer Input',
+      displayName: 'Chat Composer Input',
       description:
         '聊天编写器的富文本输入。支持触发菜单（输入 @ 或 / 打开 typeahead）、内联标记徽章、ArrowUp/Down 消息历史回溯、粘贴/拖放文件处理，并在触控设备上将字体大小保持至少 16px 以避免 iOS 输入缩放。当需要普通文本区域以外的功能时，传入 XDSChatComposer 的 input 插槽。',
       propDescriptions: {
@@ -415,13 +415,13 @@ export const docsZh = {
     },
     {
       name: 'XDSChatComposerDrawer',
-      displayName: 'XDS Chat Composer Drawer',
+      displayName: 'Chat Composer Drawer',
       description: '位于聊天输入上方的可折叠抽屉面板。传入 XDSChatComposer 的 `drawer` 插槽，用于显示附件、上下文标签或预览内容。提供 `count` 时启用折叠切换。',
       propDescriptions: {children: '抽屉内渲染的内容——标记、标签、预览或任何 React 元素。', count: '折叠徽章中显示的总数。提供时，抽屉获得折叠/展开切换。', label: '折叠状态下显示在数量旁边的标签。', isCollapsed: '受控折叠状态。与 onCollapsedChange 一起使用。', defaultIsCollapsed: '非受控模式的初始折叠状态。', onCollapsedChange: '用户切换抽屉时触发的回调。'},
     },
     {
       name: 'XDSChatSendButton',
-      displayName: 'XDS Chat Send Button',
+      displayName: 'Chat Send Button',
       description:
         '编写器的圆形发送/停止切换按钮。默认从 XDSChatComposerContext 读取状态，在 XDSChatComposer 内自动工作。所有上下文值均可通过 props 覆盖以用于独立使用。',
       propDescriptions: {
@@ -437,7 +437,7 @@ export const docsZh = {
     },
     {
       name: 'XDSChatToolCalls',
-      displayName: 'XDS Chat Tool Calls',
+      displayName: 'Chat Tool Calls',
       description:
         '显示 LLM 响应中的工具/函数调用。接受与 LLM API 返回形状匹配的 calls 数组。单个调用内联渲染；多个调用显示可折叠摘要。',
       propDescriptions: {
@@ -451,20 +451,20 @@ export const docsZh = {
     },
     {
       name: 'XDSChatTokenizedText',
-      displayName: 'XDS Chat Tokenized Text',
+      displayName: 'Chat Tokenized Text',
       description:
         '渲染带有标记模式的文本，将匹配的模式替换为内联 XDSBadge 组件。在 XDSChatMessageBubble 内使用，将 @提及、#标签或 /命令显示为样式化徽章。未提供标记时以纯文本渲染，因此可以无条件使用。',
       propDescriptions: {children: '包含序列化标记值的纯文本消息。匹配标记值的模式将被替换为内联徽章组件。', tokens: '标记定义 — 与触发器 onSelect 返回的类型相同。每个包含 value（匹配字符串）、label（显示文本）以及可选的 variant 和 icon。'},
     },
     {
       name: 'XDSChatComposerTokenElement',
-      displayName: 'XDS Chat Composer Token Element',
+      displayName: 'Chat Composer Token Element',
       description: '在 contentEditable 外部渲染标记芯片。',
       propDescriptions: {token: '徽章配置或自定义渲染。'},
     },
     {
       name: 'XDSChatLayout',
-      displayName: 'XDS Chat Layout',
+      displayName: 'Chat Layout',
       description: '完整聊天界面的布局外壳。消息在页面中自然流动，编写器固定在底部，带有毛玻璃效果。通过容器宽度自动适配密度。',
       propDescriptions: {
         children: '消息内容 — 通常是 XDSChatMessageList。在页面中自然流动。',
@@ -476,7 +476,7 @@ export const docsZh = {
     },
     {
       name: 'XDSChatLayoutScrollButton',
-      displayName: 'XDS Chat Layout Scroll Button',
+      displayName: 'Chat Layout Scroll Button',
       description: '可组合的滚动到底部按钮。可见时淡入，提供标签时展开。',
       propDescriptions: {isVisible: '按钮是否可见。', label: '可选标签 — 展开按钮（如"新消息"）。', onClick: '点击处理器。'},
     },
@@ -508,7 +508,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSChatMessageList',
-      displayName: 'XDS Chat Message List',
+      displayName: 'Chat Message List',
       description: 'presentational msg container w/ density context + infinite scroll; auto-scroll owned by XDSChatLayout',
       propDescriptions: {
         children: 'msg elements (XDSChatMessage or XDSChatSystemMessage)',
@@ -520,7 +520,7 @@ export const docsDense = {
     },
     {
       name: 'XDSChatMessage',
-      displayName: 'XDS Chat Message',
+      displayName: 'Chat Message',
       description: 'sender context wrapper; handles avatar+name+metadata+alignment by sender role',
       propDescriptions: {
         sender: 'who sent; controls alignment+layout',
@@ -534,7 +534,7 @@ export const docsDense = {
     },
     {
       name: 'XDSChatMessageBubble',
-      displayName: 'XDS Chat Message Bubble',
+      displayName: 'Chat Message Bubble',
       description: 'styled bubble container; reads sender from context; supports name/metadata slots, group corners, ghost variant',
       propDescriptions: {
         children: 'bubble content: text, XDSMarkdown, any ReactNode',
@@ -547,7 +547,7 @@ export const docsDense = {
     },
     {
       name: 'XDSChatMessageMetadata',
-      displayName: 'XDS Chat Message Metadata',
+      displayName: 'Chat Message Metadata',
       description: 'composable metadata row; renders timestamp · footer · status; reverses for user sender',
       propDescriptions: {
         timestamp: 'timestamp content; string or XDSTimestamp',
@@ -557,7 +557,7 @@ export const docsDense = {
     },
     {
       name: 'XDSChatSystemMessage',
-      displayName: 'XDS Chat System Message',
+      displayName: 'Chat System Message',
       description: 'centered non-sender msg; divider variant for date breaks, default for status notices; supports leading icon',
       propDescriptions: {
         children: 'short factual text: date, join/leave, status change',
@@ -567,7 +567,7 @@ export const docsDense = {
     },
     {
       name: 'XDSChatComposer',
-      displayName: 'XDS Chat Composer',
+      displayName: 'Chat Composer',
       description: 'composer layout shell; named slots (drawer/header/input/footer/send) w/ page-radius + concentric inner radius',
       propDescriptions: {
         onSubmit: 'submit msg handler',
@@ -591,7 +591,7 @@ export const docsDense = {
     },
     {
       name: 'XDSChatComposerInput',
-      displayName: 'XDS Chat Composer Input',
+      displayName: 'Chat Composer Input',
       description: 'rich input for composer; trigger menus (@/commands), inline tokens, msg history, paste/drop files, 16px touch font-size floor to prevent iOS zoom. Use in XDSChatComposer input slot when you need more than plain textarea.',
       propDescriptions: {
         handleRef: 'imperative handle (insertToken/insertText/focus/getValue)',
@@ -611,7 +611,7 @@ export const docsDense = {
     },
     {
       name: 'XDSChatComposerDrawer',
-      displayName: 'XDS Chat Composer Drawer',
+      displayName: 'Chat Composer Drawer',
       description: 'collapsible drawer above chat input; pass to composer `drawer` slot for attachments, context chips, previews. `count` enables collapse toggle',
       propDescriptions: {
         children: 'drawer content — tokens, chips, previews, any React elements',
@@ -624,7 +624,7 @@ export const docsDense = {
     },
     {
       name: 'XDSChatSendButton',
-      displayName: 'XDS Chat Send Button',
+      displayName: 'Chat Send Button',
       description: 'circular send/stop toggle btn for composer; reads XDSChatComposerContext; all context vals overridable via props',
       propDescriptions: {
         isStopShown: 'stop button visibility; defaults to context',
@@ -639,7 +639,7 @@ export const docsDense = {
     },
     {
       name: 'XDSChatToolCalls',
-      displayName: 'XDS Chat Tool Calls',
+      displayName: 'Chat Tool Calls',
       description: 'tool/function call display from LLM response; single=inline, multiple=collapsible summary',
       propDescriptions: {
         calls: 'tool call data array; name+status+target+duration+node+additions+deletions+resultDetail',
@@ -651,7 +651,7 @@ export const docsDense = {
     },
     {
       name: 'XDSChatTokenizedText',
-      displayName: 'XDS Chat Tokenized Text',
+      displayName: 'Chat Tokenized Text',
       description: 'renders text w/ token patterns replaced by inline badges; use in bubble for @mentions, #tags, /commands; degrades to plain text when no tokens match',
       propDescriptions: {
         children: 'plain text msg w/ serialized token values; matching patterns become inline badges',
@@ -660,13 +660,13 @@ export const docsDense = {
     },
     {
       name: 'XDSChatComposerTokenElement',
-      displayName: 'XDS Chat Composer Token Element',
+      displayName: 'Chat Composer Token Element',
       description: 'token chip outside contentEditable; badge config or custom render in data-xds-token span',
       propDescriptions: {token: 'badge config or custom render'},
     },
     {
       name: 'XDSChatLayout',
-      displayName: 'XDS Chat Layout',
+      displayName: 'Chat Layout',
       description: 'layout shell for full chat; msgs in page flow, composer fixed bottom w/ frosted glass dock; auto density via container width; scrollRef delegates to parent/body',
       propDescriptions: {
         children: 'msg content; typically XDSChatMessageList',
@@ -678,7 +678,7 @@ export const docsDense = {
     },
     {
       name: 'XDSChatLayoutScrollButton',
-      displayName: 'XDS Chat Layout Scroll Button',
+      displayName: 'Chat Layout Scroll Button',
       description: 'floating scroll-to-bottom btn; fades in when scrolled up, expands w/ label for new msgs. Default in XDSChatLayout; override via scrollButton prop.',
       propDescriptions: {
         isVisible: 'btn visibility — bind to scroll-position check',

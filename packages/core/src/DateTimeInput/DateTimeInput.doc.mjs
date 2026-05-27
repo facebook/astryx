@@ -5,6 +5,7 @@
 export const docs = {
   name: 'DateTimeInput',
   displayName: 'Date Time Input',
+  group: 'DateInput',
   keywords: ["datetimepicker","datetime","datepicker","timepicker","calendar","schedule","event","deadline","timestamp"],
   props: [
     {
