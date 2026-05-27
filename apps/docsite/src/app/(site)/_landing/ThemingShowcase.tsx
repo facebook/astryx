@@ -29,7 +29,7 @@ const styles = stylex.create({
     width: '100%',
     paddingBlock: spacingVars['--spacing-12'],
     paddingInline: spacingVars['--spacing-6'],
-    backgroundColor: 'var(--color-background-body)',
+    backgroundColor: 'var(--color-background-surface)',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
@@ -148,14 +148,14 @@ const styles = stylex.create({
 function ShowcaseHeading() {
   return (
     <XDSVStack
-      gap={3}
+      gap={1}
       align="center"
       xstyle={styles.headingBlock}
       style={{textAlign: 'center'}}>
       <XDSHeading level={2} type="display-2" color="primary">
-        Theming to customize
+        Customize to your brand
         <br />
-        to your brand
+        using theming
       </XDSHeading>
       <XDSText type="body" color="secondary">
         A design system that adapts to your workflow, not the other way around.

@@ -24,4 +24,19 @@
 .xds-top-nav {
   background: color-mix(in srgb, var(--color-background-surface) 80%, transparent);
   backdrop-filter: blur(12px);
+  transition: background 300ms ease;
+}
+
+/* On the home page only, blend the top nav with the cream body background.
+   Use the solid body color (not a color-mix) so it matches perfectly even
+   without anything scrolled behind it. The backdrop-filter blur from the
+   .xds-top-nav rule above is preserved. */
+body:has([data-home-page]) .xds-top-nav {
+  background: var(--color-background-body);
+}
+
+/* When the home page IntersectionObserver detects the theming showcase has
+   reached the top, switch the nav back to a surface-tinted frosted bar. */
+body[data-nav-mode='surface'] .xds-top-nav {
+  background: color-mix(in srgb, var(--color-background-surface) 80%, transparent);
 }

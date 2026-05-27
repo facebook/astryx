@@ -1,5 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+'use client';
+
+import {useEffect, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSLink} from '@xds/core/Link';
@@ -10,14 +13,25 @@ import {ThemingShowcase} from './_landing/ThemingShowcase';
 
 const styles = stylex.create({
   hero: {
-    minHeight: 'calc(100vh - 64px)',
+    position: 'sticky',
+    top: 'var(--appshell-header-height, 0px)',
+    zIndex: 0,
     backgroundColor: 'var(--color-background-body)',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     textAlign: 'center',
-    padding: 48,
+    paddingBlock: 96,
+    paddingInline: 48,
+  },
+  showcaseOverlay: {
+    position: 'relative',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    overflow: 'hidden',
+    backgroundColor: 'var(--color-background-surface)',
+    marginTop: -32,
   },
   wordmark: {
     display: 'block',
@@ -29,7 +43,7 @@ const styles = stylex.create({
     maxWidth: 680,
   },
   caption: {
-    marginTop: 24,
+    marginTop: 8,
     maxWidth: 560,
   },
   buttons: {
@@ -43,6 +57,42 @@ const styles = stylex.create({
 });
 
 export default function HomePage() {
+  const showcaseRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const el = showcaseRef.current;
+    if (!el) {return;}
+
+    function readNavHeight() {
+      const raw = getComputedStyle(document.documentElement).getPropertyValue(
+        '--appshell-header-height',
+      );
+      return parseFloat(raw) || 64;
+    }
+
+    function update() {
+      if (!el) {return;}
+      const navHeight = readNavHeight();
+      const top = el.getBoundingClientRect().top;
+      const reached = top <= navHeight;
+      if (reached) {
+        document.body.setAttribute('data-nav-mode', 'surface');
+      } else {
+        document.body.removeAttribute('data-nav-mode');
+      }
+    }
+
+    update();
+    window.addEventListener('scroll', update, {passive: true});
+    window.addEventListener('resize', update, {passive: true});
+
+    return () => {
+      window.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+      document.body.removeAttribute('data-nav-mode');
+    };
+  }, []);
+
   return (
     <>
       <div {...stylex.props(styles.hero)} data-home-page="true">
@@ -105,9 +155,11 @@ export default function HomePage() {
           </XDSVStack>
         </XDSMediaTheme>
       </div>
-      <XDSMediaTheme mode="light">
-        <ThemingShowcase />
-      </XDSMediaTheme>
+      <div ref={showcaseRef} {...stylex.props(styles.showcaseOverlay)}>
+        <XDSMediaTheme mode="light">
+          <ThemingShowcase />
+        </XDSMediaTheme>
+      </div>
     </>
   );
 }
