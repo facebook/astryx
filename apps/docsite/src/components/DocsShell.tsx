@@ -39,7 +39,7 @@ type SidebarItem = ComponentItem;
 
 function buildComponentSidebar(): {
   componentItems: SidebarItem[];
-  utilities: Array<{name: string; href: string}>;
+  utilities: Array<{name: string; displayName: string; href: string}>;
 } {
   const grouped = groupedComponents['@xds/core'];
   if (!grouped) {
@@ -189,9 +189,50 @@ export function DocsShell({
             </>
           )}
 
-          {/* Utilities — listed before Components so the smaller, more
-              opinionated list reads first in the sidebar. Always starts
-              collapsed; users can expand on demand. */}
+          {/* Components — rendered as a flat list directly under the section
+              (no redundant "Components" parent wrapper). The first item is
+              an Overview link back to the /components gallery so users on
+              a detail page can return to the index. Sub-grouped items like
+              Avatar / Button keep their own collapsible behavior for their
+              nested entries. */}
+          <XDSSideNavSection title="Components" isHeaderHidden>
+            <XDSSideNavItem
+              label="Overview"
+              href="/components"
+              isSelected={pathname === '/components'}
+            />
+            {componentItems.map(item =>
+              item.type === 'entry' ? (
+                <XDSSideNavItem
+                  key={item.name}
+                  label={item.displayName}
+                  href={item.href}
+                  isSelected={pathname === item.href}
+                />
+              ) : (
+                <XDSSideNavItem
+                  key={item.label}
+                  label={item.displayName}
+                  collapsible={{
+                    defaultIsCollapsed: !item.entries.some(
+                      e => pathname === e.href,
+                    ),
+                  }}>
+                  {item.entries.map(entry => (
+                    <XDSSideNavItem
+                      key={entry.name}
+                      label={entry.displayName}
+                      href={entry.href}
+                      isSelected={pathname === entry.href}
+                    />
+                  ))}
+                </XDSSideNavItem>
+              ),
+            )}
+          </XDSSideNavSection>
+
+          {/* Utilities — secondary list rendered below the main Components
+              section. Always starts collapsed; users can expand on demand. */}
           {utilities.length > 0 && (
             <XDSSideNavSection title="Utilities" isHeaderHidden>
               <XDSSideNavItem
@@ -200,7 +241,7 @@ export function DocsShell({
                 {utilities.map(comp => (
                   <XDSSideNavItem
                     key={comp.name}
-                    label={comp.name}
+                    label={comp.displayName}
                     href={comp.href}
                     isSelected={pathname === comp.href}
                   />
@@ -208,43 +249,6 @@ export function DocsShell({
               </XDSSideNavItem>
             </XDSSideNavSection>
           )}
-
-          {/* Components — always expanded so the full library is visible at
-              a glance. Subcategories inside still collapse independently. */}
-          <XDSSideNavSection title="Components" isHeaderHidden>
-            <XDSSideNavItem
-              label="Components"
-              collapsible={{defaultIsCollapsed: false}}>
-              {componentItems.map(item =>
-                item.type === 'entry' ? (
-                  <XDSSideNavItem
-                    key={item.name}
-                    label={item.name}
-                    href={item.href}
-                    isSelected={pathname === item.href}
-                  />
-                ) : (
-                  <XDSSideNavItem
-                    key={item.label}
-                    label={item.label}
-                    collapsible={{
-                      defaultIsCollapsed: !item.entries.some(
-                        e => pathname === e.href,
-                      ),
-                    }}>
-                    {item.entries.map(entry => (
-                      <XDSSideNavItem
-                        key={entry.name}
-                        label={entry.name}
-                        href={entry.href}
-                        isSelected={pathname === entry.href}
-                      />
-                    ))}
-                  </XDSSideNavItem>
-                ),
-              )}
-            </XDSSideNavItem>
-          </XDSSideNavSection>
         </XDSSideNav>
       }>
       {children}

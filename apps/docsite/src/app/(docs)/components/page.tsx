@@ -9,11 +9,10 @@
 import {useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSText} from '@xds/core/Text';
-import {XDSVStack, XDSHStack} from '@xds/core/Layout';
+import {XDSVStack} from '@xds/core/Layout';
 import {XDSSection} from '@xds/core/Section';
 import {XDSGrid} from '@xds/core/Grid';
-import {XDSCard} from '@xds/core/Card';
-import {XDSButton} from '@xds/core/Button';
+import {XDSClickableCard} from '@xds/core/ClickableCard';
 import {XDSOverlay} from '@xds/core/Overlay';
 import {blocks} from '../../../generated/blockRegistry';
 import {ShowcaseThumbnail} from '../../../components/ShowcaseThumbnail';
@@ -46,7 +45,7 @@ export default function ComponentsGalleryPage() {
   const items = useMemo(
     () =>
       showcases.map(b => ({
-        name: b.name,
+        name: b.displayName,
         description: b.description,
         slug: b.dirName,
         category: b.category,
@@ -68,37 +67,32 @@ export default function ComponentsGalleryPage() {
           </XDSText>
         </XDSVStack>
 
-        <XDSGrid columns={{minWidth: 300, repeat: 'fill'}} gap={4} rowGap={6}>
+        <XDSGrid columns={{minWidth: 300, repeat: 'fill'}} gap={4}>
           {items.map(item => (
-            <XDSCard key={item.slug} padding={0}>
+            <XDSClickableCard
+              key={item.slug}
+              label={item.name}
+              href={item.href}
+              variant="transparent"
+              padding={0}>
               <XDSOverlay
                 showOn="hover"
                 scrim="dark"
                 content={
                   <div {...stylex.props(styles.overlayInner)}>
-                    <XDSVStack gap={2}>
-                      <XDSVStack gap={0.5}>
-                        <XDSText
-                          type="body"
-                          weight="bold"
-                          style={{color: '#fff'}}>
-                          {item.name}
-                        </XDSText>
-                        <XDSText
-                          type="supporting"
-                          style={{color: 'rgba(255,255,255,0.7)'}}>
-                          {item.description.slice(0, 80)}
-                          {item.description.length > 80 ? '\u2026' : ''}
-                        </XDSText>
-                      </XDSVStack>
-                      <XDSHStack gap={2}>
-                        <XDSButton
-                          label="View"
-                          variant="secondary"
-                          size="sm"
-                          href={item.href}
-                        />
-                      </XDSHStack>
+                    <XDSVStack gap={0.5}>
+                      <XDSText
+                        type="body"
+                        weight="bold"
+                        style={{color: '#fff'}}>
+                        {item.name}
+                      </XDSText>
+                      <XDSText
+                        type="supporting"
+                        style={{color: 'rgba(255,255,255,0.7)'}}>
+                        {item.description.slice(0, 80)}
+                        {item.description.length > 80 ? '\u2026' : ''}
+                      </XDSText>
                     </XDSVStack>
                   </div>
                 }>
@@ -111,7 +105,7 @@ export default function ComponentsGalleryPage() {
                   <div {...stylex.props(styles.cardImage)} />
                 )}
               </XDSOverlay>
-            </XDSCard>
+            </XDSClickableCard>
           ))}
         </XDSGrid>
       </XDSVStack>
