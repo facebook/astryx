@@ -60,10 +60,11 @@ export default function ComponentsGalleryPage() {
       <XDSVStack gap={6}>
         <XDSVStack gap={2} style={{alignItems: 'center'}}>
           <XDSText type="display-2" xstyle={styles.heroTitle}>
-            Components
+            Browse the library
           </XDSText>
           <XDSText type="body" color="secondary" xstyle={styles.heroTitle}>
-            Explore real-world component showcases and examples.
+            Every Astryx component, with copy-ready examples for every variant,
+            state, and pattern.
           </XDSText>
         </XDSVStack>
 

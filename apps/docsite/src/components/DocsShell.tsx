@@ -76,9 +76,6 @@ export function DocsShell({
     .sort(foundationsSort);
 
   // Active state detection
-  const allComponentHrefs = componentItems.flatMap(item =>
-    item.type === 'entry' ? [item.href] : item.entries.map(e => e.href),
-  );
   const isInGuide =
     guideTopics.some(d => pathname === `/docs/${d.topic}`) ||
     foundationTopics.some(d => pathname === `/docs/${d.topic}`);
@@ -91,8 +88,12 @@ export function DocsShell({
   const isInThemes = themePackages.some(
     p => pathname === `/packages/${p.name.replace('@xds/', '')}`,
   );
-  const isInComponents = allComponentHrefs.includes(pathname);
-  const isInUtilities = utilities.some(u => pathname === u.href);
+  // True for the /components index AND every /components/[name] detail page.
+  // On these routes we hide every non-Components section so the sidebar is
+  // focused on the component library — the top nav handles cross-area
+  // navigation. Components index page is included so the sidebar stays
+  // consistent across the gallery.
+  const isOnComponentsRoute = pathname.startsWith('/components');
 
   return (
     <XDSAppShell
@@ -102,93 +103,118 @@ export function DocsShell({
       topNav={<SharedTopNav />}
       sideNav={
         <XDSSideNav>
-          {/* Documentation */}
-          <XDSSideNavSection title="Documentation" isHeaderHidden>
-            <XDSSideNavItem
-              label="Documentation"
-              href="/docs"
-              isSelected={pathname === '/docs'}
-            />
-          </XDSSideNavSection>
-
-          {/* What's New */}
-          <XDSSideNavSection title="Changelog" isHeaderHidden>
-            <XDSSideNavItem
-              label="What's New"
-              href="/changelog"
-              isSelected={pathname === '/changelog'}
-            />
-          </XDSSideNavSection>
-
-          {/* Guide */}
-          <XDSSideNavSection title="Guide" isHeaderHidden>
-            <XDSSideNavItem
-              label="Guide"
-              collapsible={{defaultIsCollapsed: !isInGuide}}>
-              {guideTopics.map(d => (
+          {!isOnComponentsRoute && (
+            <>
+              {/* Documentation */}
+              <XDSSideNavSection title="Documentation" isHeaderHidden>
                 <XDSSideNavItem
-                  key={d.topic}
-                  label={d.title}
-                  href={`/docs/${d.topic}`}
-                  isSelected={pathname === `/docs/${d.topic}`}
+                  label="Documentation"
+                  href="/docs"
+                  isSelected={pathname === '/docs'}
                 />
-              ))}
-              <XDSSideNavItem
-                label="Foundations"
-                collapsible={{defaultIsCollapsed: !isInFoundations}}>
-                {foundationTopics.map(d => (
+              </XDSSideNavSection>
+
+              {/* What's New */}
+              <XDSSideNavSection title="Changelog" isHeaderHidden>
+                <XDSSideNavItem
+                  label="What's New"
+                  href="/changelog"
+                  isSelected={pathname === '/changelog'}
+                />
+              </XDSSideNavSection>
+
+              {/* Guide */}
+              <XDSSideNavSection title="Guide" isHeaderHidden>
+                <XDSSideNavItem
+                  label="Guide"
+                  collapsible={{defaultIsCollapsed: !isInGuide}}>
+                  {guideTopics.map(d => (
+                    <XDSSideNavItem
+                      key={d.topic}
+                      label={d.title}
+                      href={`/docs/${d.topic}`}
+                      isSelected={pathname === `/docs/${d.topic}`}
+                    />
+                  ))}
                   <XDSSideNavItem
-                    key={d.topic}
-                    label={d.title}
-                    href={`/docs/${d.topic}`}
-                    isSelected={pathname === `/docs/${d.topic}`}
+                    label="Foundations"
+                    collapsible={{defaultIsCollapsed: !isInFoundations}}>
+                    {foundationTopics.map(d => (
+                      <XDSSideNavItem
+                        key={d.topic}
+                        label={d.title}
+                        href={`/docs/${d.topic}`}
+                        isSelected={pathname === `/docs/${d.topic}`}
+                      />
+                    ))}
+                  </XDSSideNavItem>
+                </XDSSideNavItem>
+              </XDSSideNavSection>
+
+              {/* Libraries */}
+              <XDSSideNavSection title="Libraries" isHeaderHidden>
+                <XDSSideNavItem
+                  label="Libraries"
+                  collapsible={{defaultIsCollapsed: !isInLibraries}}>
+                  {libraryPackages.map(p => (
+                    <XDSSideNavItem
+                      key={p.name}
+                      label={p.name}
+                      href={`/packages/${p.name.replace('@xds/', '')}`}
+                      isSelected={
+                        pathname === `/packages/${p.name.replace('@xds/', '')}`
+                      }
+                    />
+                  ))}
+                </XDSSideNavItem>
+              </XDSSideNavSection>
+
+              {/* Themes */}
+              <XDSSideNavSection title="Themes" isHeaderHidden>
+                <XDSSideNavItem
+                  label="Themes"
+                  collapsible={{defaultIsCollapsed: !isInThemes}}>
+                  {themePackages.map(p => (
+                    <XDSSideNavItem
+                      key={p.name}
+                      label={p.displayName}
+                      href={`/packages/${p.name.replace('@xds/', '')}`}
+                      isSelected={
+                        pathname === `/packages/${p.name.replace('@xds/', '')}`
+                      }
+                    />
+                  ))}
+                </XDSSideNavItem>
+              </XDSSideNavSection>
+            </>
+          )}
+
+          {/* Utilities — listed before Components so the smaller, more
+              opinionated list reads first in the sidebar. Always starts
+              collapsed; users can expand on demand. */}
+          {utilities.length > 0 && (
+            <XDSSideNavSection title="Utilities" isHeaderHidden>
+              <XDSSideNavItem
+                label="Utilities"
+                collapsible={{defaultIsCollapsed: true}}>
+                {utilities.map(comp => (
+                  <XDSSideNavItem
+                    key={comp.name}
+                    label={comp.name}
+                    href={comp.href}
+                    isSelected={pathname === comp.href}
                   />
                 ))}
               </XDSSideNavItem>
-            </XDSSideNavItem>
-          </XDSSideNavSection>
+            </XDSSideNavSection>
+          )}
 
-          {/* Libraries */}
-          <XDSSideNavSection title="Libraries" isHeaderHidden>
-            <XDSSideNavItem
-              label="Libraries"
-              collapsible={{defaultIsCollapsed: !isInLibraries}}>
-              {libraryPackages.map(p => (
-                <XDSSideNavItem
-                  key={p.name}
-                  label={p.name}
-                  href={`/packages/${p.name.replace('@xds/', '')}`}
-                  isSelected={
-                    pathname === `/packages/${p.name.replace('@xds/', '')}`
-                  }
-                />
-              ))}
-            </XDSSideNavItem>
-          </XDSSideNavSection>
-
-          {/* Themes */}
-          <XDSSideNavSection title="Themes" isHeaderHidden>
-            <XDSSideNavItem
-              label="Themes"
-              collapsible={{defaultIsCollapsed: !isInThemes}}>
-              {themePackages.map(p => (
-                <XDSSideNavItem
-                  key={p.name}
-                  label={p.displayName}
-                  href={`/packages/${p.name.replace('@xds/', '')}`}
-                  isSelected={
-                    pathname === `/packages/${p.name.replace('@xds/', '')}`
-                  }
-                />
-              ))}
-            </XDSSideNavItem>
-          </XDSSideNavSection>
-
-          {/* Components */}
+          {/* Components — always expanded so the full library is visible at
+              a glance. Subcategories inside still collapse independently. */}
           <XDSSideNavSection title="Components" isHeaderHidden>
             <XDSSideNavItem
               label="Components"
-              collapsible={{defaultIsCollapsed: !isInComponents}}>
+              collapsible={{defaultIsCollapsed: false}}>
               {componentItems.map(item =>
                 item.type === 'entry' ? (
                   <XDSSideNavItem
@@ -219,24 +245,6 @@ export function DocsShell({
               )}
             </XDSSideNavItem>
           </XDSSideNavSection>
-
-          {/* Utilities */}
-          {utilities.length > 0 && (
-            <XDSSideNavSection title="Utilities" isHeaderHidden>
-              <XDSSideNavItem
-                label="Utilities"
-                collapsible={{defaultIsCollapsed: !isInUtilities}}>
-                {utilities.map(comp => (
-                  <XDSSideNavItem
-                    key={comp.name}
-                    label={comp.name}
-                    href={comp.href}
-                    isSelected={pathname === comp.href}
-                  />
-                ))}
-              </XDSSideNavItem>
-            </XDSSideNavSection>
-          )}
         </XDSSideNav>
       }>
       {children}
