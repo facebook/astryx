@@ -62,8 +62,8 @@ export default function ComponentsGalleryPage() {
             Browse the library
           </XDSText>
           <XDSText type="body" color="secondary" xstyle={styles.heroTitle}>
-            Every Astryx component, with copy-ready examples for every variant,
-            state, and pattern.
+            Every component, with copy-ready examples for every variant, state,
+            and pattern.
           </XDSText>
         </XDSVStack>
 
