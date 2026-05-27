@@ -8,12 +8,14 @@ export const docs = {
   keywords: ["card","surface","panel","container","elevated","shadow","box","paper","tile","well"],
   usage: {
     description:
-      'Card groups related content into a visually distinct container with a border and background. Use it for profile cards, settings panels, data summaries, or any content that needs to stand out from the page.',
+      'Card is a bordered, elevated container for discrete, self-contained items — things you could reorder, remove, or interact with independently. Do NOT use cards to create page sections or group form fields. For page layout, use XDSSection or just a heading with a vertical stack.',
     bestPractices: [
-      {guidance: true, description: 'Try a section first — only use a card when you need the visual separation of a border and elevated background.'},
+      {guidance: true, description: 'Use cards for discrete items: a single user profile, a single notification, a single metric, a product in a grid. Each card should represent one "thing" you could act on independently.'},
+      {guidance: true, description: 'For page sections (e.g. "General Settings", "Notification Preferences"), use a heading + XDSStack or XDSSection instead — page sections are not cards.'},
       {guidance: true, description: 'Keep padding consistent across sibling cards so they align visually in a grid or list.'},
       {guidance: true, description: 'Use the muted variant for secondary content like tips, callouts, or background information.'},
       {guidance: true, description: 'Pair a card with XDSLayout when you need a structured header, scrollable content, and footer with actions.'},
+      {guidance: false, description: 'Wrap every group of content in a Card. If the content is a section of a page (settings group, form section, sidebar area), use a heading + stack or XDSSection with dividers — not a card.'},
       {guidance: false, description: 'Nest cards inside other cards — flatten the hierarchy or use a section instead.'},
       {guidance: false, description: 'Use color variants for status — use Banner or Badge for that. Color cards are for categorization.'},
     ],
@@ -95,12 +97,14 @@ export const docsZh = {
   name: 'Card',
   usage: {
     description:
-      'Card groups related content into a visually distinct container with a border and background. Use it for profile cards, settings panels, data summaries, or any content that needs to stand out from the page.',
+      'Card is a bordered, elevated container for discrete, self-contained items — things you could reorder, remove, or interact with independently. Do NOT use cards to create page sections or group form fields. For page layout, use XDSSection or just a heading with a vertical stack.',
     bestPractices: [
-      {guidance: true, description: 'Try a section first — only use a card when you need the visual separation of a border and elevated background.'},
+      {guidance: true, description: 'Use cards for discrete items: a single user profile, a single notification, a single metric, a product in a grid. Each card should represent one "thing" you could act on independently.'},
+      {guidance: true, description: 'For page sections (e.g. "General Settings", "Notification Preferences"), use a heading + XDSStack or XDSSection instead — page sections are not cards.'},
       {guidance: true, description: 'Keep padding consistent across sibling cards so they align visually in a grid or list.'},
       {guidance: true, description: 'Use the muted variant for secondary content like tips, callouts, or background information.'},
       {guidance: true, description: 'Pair a card with XDSLayout when you need a structured header, scrollable content, and footer with actions.'},
+      {guidance: false, description: 'Wrap every group of content in a Card. If the content is a section of a page (settings group, form section, sidebar area), use a heading + stack or XDSSection with dividers — not a card.'},
       {guidance: false, description: 'Nest cards inside other cards — flatten the hierarchy or use a section instead.'},
       {guidance: false, description: 'Use color variants for status — use Banner or Badge for that. Color cards are for categorization.'},
     ],
@@ -134,12 +138,15 @@ export const docsZh = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'bordered container for grouping related content',
+  description: 'bordered container for DISCRETE items (profiles, notifications, metrics) — NOT for page sections',
   usage: {
     description:
-      'Card groups related content with a border and background. Use for profile cards, settings panels, data summaries.',
+      'Card is for discrete, self-contained items you could reorder or remove independently. NOT for page sections — use heading + XDSStack or XDSSection for that.',
     bestPractices: [
-      {guidance: true, description: 'Try a section first. Use muted variant for secondary content. Pair with XDSLayout for header/content/footer.'},
+      {guidance: true, description: 'Use cards for discrete items: one profile, one notification, one metric, one product. Things you could reorder or act on independently.'},
+      {guidance: true, description: 'For page sections (settings groups, form areas), use a heading + XDSStack or XDSSection with dividers — not a card.'},
+      {guidance: true, description: 'Use muted variant for secondary content. Pair with XDSLayout for header/content/footer.'},
+      {guidance: false, description: 'Wrap page sections in cards. "General Settings" or "Preferences" are not cards — use XDSSection or heading + stack.'},
       {guidance: false, description: 'Nest cards. Use color variants for status — use Banner or Badge instead.'},
     ],
   },
