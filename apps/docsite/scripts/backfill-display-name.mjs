@@ -166,7 +166,13 @@ for (const root of SCAN_ROOTS) {
       if (DISPLAY_NAME_LINE_RE.test(nextLine)) continue;
 
       const displayName = deriveDisplayName(name);
-      const escapedDisplayName = displayName.replace(/'/g, "\\'");
+      // Escape backslashes first, then single quotes, so a name like
+      // `O\Brien` becomes `O\\Brien` (one source backslash → two-char
+      // escape) and `it's` becomes `it\'s`. Doing this in the other
+      // order would double-escape any backslash the second pass adds.
+      const escapedDisplayName = displayName
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'");
       inserts.push({
         after: afterIdx,
         text: `\n${indent}displayName: '${escapedDisplayName}',`,
