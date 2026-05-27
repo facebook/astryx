@@ -5132,23 +5132,10 @@ export function DocsView({
                     setActiveNav('whats-new');
                   }}
                 />
-                <XDSSideNavItem label="Foundations" collapsible>
-                  {FOUNDATION_ITEMS.map(item => (
-                    <XDSSideNavItem
-                      key={item.key}
-                      label={item.title}
-                      isSelected={
-                        selectedComponent !== null && activeNav === item.key
-                      }
-                      onClick={() => {
-                        onComponentChange(item.key);
-                        setActiveNav(item.key);
-                      }}
-                    />
-                  ))}
-                </XDSSideNavItem>
                 <XDSSideNavItem label="Libraries" collapsible>
-                  {LIBRARY_PACKAGES.filter(pkg => !pkg.href).map(pkg => (
+                  {LIBRARY_PACKAGES.filter(
+                    pkg => !pkg.href && !pkg.key.startsWith('pkg-theme'),
+                  ).map(pkg => (
                     <XDSSideNavItem
                       key={pkg.key}
                       label={pkg.name}
@@ -5163,6 +5150,22 @@ export function DocsView({
                   ))}
                 </XDSSideNavItem>
               </XDSSideNavItem>
+            </XDSSideNavSection>
+
+            <XDSSideNavSection title="Foundations">
+              {FOUNDATION_ITEMS.map(item => (
+                <XDSSideNavItem
+                  key={item.key}
+                  label={item.title}
+                  isSelected={
+                    selectedComponent !== null && activeNav === item.key
+                  }
+                  onClick={() => {
+                    onComponentChange(item.key);
+                    setActiveNav(item.key);
+                  }}
+                />
+              ))}
             </XDSSideNavSection>
 
             {COMPONENT_CATEGORIES.map(category => (
@@ -5182,6 +5185,24 @@ export function DocsView({
                 ))}
               </XDSSideNavSection>
             ))}
+
+            <XDSSideNavSection title="Themes">
+              {LIBRARY_PACKAGES.filter(pkg =>
+                pkg.key.startsWith('pkg-theme'),
+              ).map(pkg => (
+                <XDSSideNavItem
+                  key={pkg.key}
+                  label={pkg.name}
+                  isSelected={
+                    selectedComponent !== null && activeNav === pkg.key
+                  }
+                  onClick={() => {
+                    onComponentChange(pkg.key);
+                    setActiveNav(pkg.key);
+                  }}
+                />
+              ))}
+            </XDSSideNavSection>
           </XDSSideNav>
         }>
         {/* MAIN CONTENT */}
