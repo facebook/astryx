@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   title: 'XDS — Design System',
   description:
     'Open-source design system for building internal tools and products.',
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({children}: {children: React.ReactNode}) {
