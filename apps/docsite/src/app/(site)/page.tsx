@@ -4,7 +4,6 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSText} from '@xds/core/Text';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
-import {XDSMediaTheme} from '@xds/core/theme';
 
 const styles = stylex.create({
   hero: {
@@ -30,27 +29,25 @@ const styles = stylex.create({
 export default function HomePage() {
   return (
     <div {...stylex.props(styles.hero)}>
-      <XDSMediaTheme mode="light">
-        <XDSVStack gap={2} style={{alignItems: 'center'}}>
-          <XDSText type="display-1">XDS Open Source</XDSText>
-          <XDSText type="large" color="secondary" xstyle={styles.subtitle}>
-            An open design system for building internal tools with AI-powered
-            development.
-          </XDSText>
-          <div {...stylex.props(styles.buttons)}>
-            <XDSButton
-              variant="primary"
-              label="Get started"
-              href="/docs/getting-started"
-            />
-            <XDSButton
-              variant="secondary"
-              label="Browse components"
-              href="/components"
-            />
-          </div>
-        </XDSVStack>
-      </XDSMediaTheme>
+      <XDSVStack gap={2} style={{alignItems: 'center'}}>
+        <XDSText type="display-1">XDS Open Source</XDSText>
+        <XDSText type="large" color="secondary" xstyle={styles.subtitle}>
+          An open design system for building internal tools with AI-powered
+          development.
+        </XDSText>
+        <div {...stylex.props(styles.buttons)}>
+          <XDSButton
+            variant="primary"
+            label="Get started"
+            href="/docs/getting-started"
+          />
+          <XDSButton
+            variant="secondary"
+            label="Browse components"
+            href="/components"
+          />
+        </div>
+      </XDSVStack>
     </div>
   );
 }
