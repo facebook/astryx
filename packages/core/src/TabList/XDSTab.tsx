@@ -140,7 +140,7 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   indicatorSelected: {
-    backgroundColor: colorVars['--color-icon-primary'],
+    backgroundColor: colorVars['--color-border-active'],
     opacity: 1,
   },
   indicatorUnselected: {

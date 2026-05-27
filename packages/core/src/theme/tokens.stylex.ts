@@ -68,6 +68,7 @@ export const colorDefaults = {
   // Border
   '--color-border': 'light-dark(#05365919, #F2F4F619)',
   '--color-border-emphasized': 'light-dark(#CCD3DB, #494D53)',
+  '--color-border-active': 'light-dark(#0064E0, #2694FE)', // Active position indicator (tabs, stepper, outline)
 
   // Effects
   '--color-skeleton': 'light-dark(#CCD3DB, #5A5E66)',
