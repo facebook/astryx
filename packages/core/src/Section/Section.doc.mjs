@@ -68,10 +68,13 @@ export const docs = {
   },
   usage: {
     description:
-      'Section is a container that is used to create visual separation. Use the default variant for standard content (white), muted to emphasize or group related content (gray), and transparent for no background while still using Section\'s padding and dividers.',
+      'Section is the correct way to create page regions and group related content on a page. Use it for settings groups, form sections, sidebar areas, or any time you need visual separation between parts of a page. If you are tempted to use a Card for a page section — use XDSSection instead.',
     bestPractices: [
+      { guidance: true, description: 'Use Section for page-level grouping: settings panels, form groups, sidebar regions. These are sections of a page, not discrete items.' },
       { guidance: true, description: 'Start with the default variant. Use muted only to call attention to a specific region.' },
       { guidance: true, description: 'Add dividers between same-background sections that need separation.' },
+      { guidance: true, description: 'Combine with a heading + XDSStack for a typical page section pattern.' },
+      { guidance: false, description: 'Use Card when you mean Section. Cards are for discrete items (one notification, one profile). Sections are for page regions.' },
     ],
   },
 };
@@ -141,10 +144,13 @@ export const docsZh = {
   },
   usage: {
     description:
-      'Section is a container that is used to create visual separation. Use the default variant for standard content (white), muted to emphasize or group related content (gray), and transparent for no background while still using Section\'s padding and dividers.',
+      'Section is the correct way to create page regions and group related content on a page. Use it for settings groups, form sections, sidebar areas, or any time you need visual separation between parts of a page. If you are tempted to use a Card for a page section — use XDSSection instead.',
     bestPractices: [
+      { guidance: true, description: 'Use Section for page-level grouping: settings panels, form groups, sidebar regions. These are sections of a page, not discrete items.' },
       { guidance: true, description: 'Start with the default variant. Use muted only to call attention to a specific region.' },
       { guidance: true, description: 'Add dividers between same-background sections that need separation.' },
+      { guidance: true, description: 'Combine with a heading + XDSStack for a typical page section pattern.' },
+      { guidance: false, description: 'Use Card when you mean Section. Cards are for discrete items (one notification, one profile). Sections are for page regions.' },
     ],
   },
 };
@@ -152,13 +158,14 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description:
-    'Container w/ background variants for creating visually distinct regions; auto-escapes parent container padding for edge-to-edge fills.',
+    'Page-level container for grouping content into regions. Use INSTEAD of Card for settings panels, form groups, and page sections.',
   usage: {
     description:
-      'Section is a container that is used to create visual separation. Use the default variant for standard content (white), muted to emphasize or group related content (gray), and transparent for no background while still using Section\'s padding and dividers.',
+      'Section creates page regions. Use for settings groups, form sections, sidebar areas. If you want to visually separate a part of a page, use Section — not Card. Cards are for discrete items (one profile, one notification).',
     bestPractices: [
-      { guidance: true, description: 'Start with the default variant. Use muted only to call attention to a specific region.' },
-      { guidance: true, description: 'Add dividers between same-background sections that need separation.' },
+      { guidance: true, description: 'Use Section for page-level grouping (settings, forms, sidebars). Use heading + XDSStack inside for content.' },
+      { guidance: true, description: 'Default variant = white surface. Muted = gray for emphasis. Add dividers for separation.' },
+      { guidance: false, description: 'Use Card for page sections. Cards = discrete items. Sections = page regions.' },
     ],
   },
   propDescriptions: {
