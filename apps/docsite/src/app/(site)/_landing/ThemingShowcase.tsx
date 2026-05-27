@@ -77,7 +77,7 @@ const styles = stylex.create({
   },
   swatchPairWrap: {
     aspectRatio: '1 / 1',
-    borderRadius: 16,
+    borderRadius: 'var(--radius-container)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -86,11 +86,11 @@ const styles = stylex.create({
   swatchPairInner: {
     width: '62%',
     height: '62%',
-    borderRadius: 12,
+    borderRadius: 'var(--radius-element)',
   },
   bigAaWrap: {
     aspectRatio: '1 / 1',
-    borderRadius: 16,
+    borderRadius: 'var(--radius-container)',
     backgroundColor: 'var(--color-background-muted)',
     display: 'flex',
     alignItems: 'center',
@@ -100,24 +100,23 @@ const styles = stylex.create({
     fontWeight: 600,
     color: 'var(--color-text-primary)',
   },
-  bigAaSerif: {
-    fontFamily:
-      'Fraunces, "PT Serif", Georgia, "Times New Roman", Times, serif',
+  // Both Aa tiles read their font from the active theme's typography
+  // tokens so the sample stays accurate as themes are swapped instead
+  // of hardcoding a specific font name.
+  bigAaHeading: {
+    fontFamily: 'var(--font-family-heading)',
   },
-  bigAaSans: {
-    fontFamily: 'var(--font-figtree, Figtree), system-ui, sans-serif',
+  bigAaBody: {
+    fontFamily: 'var(--font-family-body)',
   },
   radiusBlock: {
     width: 44,
     height: 44,
     backgroundColor: 'var(--color-text-primary)',
   },
-  radiusBlockFull: {
-    borderRadius: '50%',
-  },
   photoCell: {
     aspectRatio: '4 / 5',
-    borderRadius: 12,
+    borderRadius: 'var(--radius-element)',
     overflow: 'hidden',
     backgroundColor: 'var(--color-background-muted)',
   },
@@ -416,14 +415,17 @@ function PaletteGridTile() {
   );
 }
 
-const RADIUS_SAMPLES: ReadonlyArray<{label: string; radius: number | 'full'}> =
-  [
-    {label: '4px', radius: 4},
-    {label: '8px', radius: 8},
-    {label: '12px', radius: 12},
-    {label: '16px', radius: 16},
-    {label: 'Rounded', radius: 'full'},
-  ];
+// Sample swatches for the radius row — each one references an XDS radius
+// token so the rendered shapes track the active theme (Astryx overrides
+// the default scale by +4, so what's labelled `--radius-element` here
+// resolves to 12px under Astryx vs 8px under the default theme).
+const RADIUS_SAMPLES: ReadonlyArray<{label: string; radiusVar: string}> = [
+  {label: '--radius-inner', radiusVar: 'var(--radius-inner)'},
+  {label: '--radius-element', radiusVar: 'var(--radius-element)'},
+  {label: '--radius-container', radiusVar: 'var(--radius-container)'},
+  {label: '--radius-page', radiusVar: 'var(--radius-page)'},
+  {label: '--radius-full', radiusVar: 'var(--radius-full)'},
+];
 
 function TypographyRadiusTile() {
   return (
@@ -431,28 +433,27 @@ function TypographyRadiusTile() {
       <XDSVStack gap={4}>
         <XDSGrid columns={2} gap={3}>
           <XDSVStack gap={2} align="center">
-            <div {...stylex.props(styles.bigAaWrap, styles.bigAaSerif)}>Aa</div>
+            <div {...stylex.props(styles.bigAaWrap, styles.bigAaHeading)}>
+              Aa
+            </div>
             <XDSText type="supporting" color="secondary">
-              Montserrat
+              --font-family-heading
             </XDSText>
           </XDSVStack>
           <XDSVStack gap={2} align="center">
-            <div {...stylex.props(styles.bigAaWrap, styles.bigAaSans)}>Aa</div>
+            <div {...stylex.props(styles.bigAaWrap, styles.bigAaBody)}>Aa</div>
             <XDSText type="supporting" color="secondary">
-              Figtree
+              --font-family-body
             </XDSText>
           </XDSVStack>
         </XDSGrid>
 
         <XDSHStack gap={2} justify="between" align="center">
-          {RADIUS_SAMPLES.map(({label, radius}) => (
+          {RADIUS_SAMPLES.map(({label, radiusVar}) => (
             <XDSVStack key={label} gap={1} align="center">
               <div
-                {...stylex.props(
-                  styles.radiusBlock,
-                  radius === 'full' && styles.radiusBlockFull,
-                )}
-                style={radius === 'full' ? undefined : {borderRadius: radius}}
+                {...stylex.props(styles.radiusBlock)}
+                style={{borderRadius: radiusVar}}
               />
               <XDSText type="supporting" color="secondary">
                 {label}
