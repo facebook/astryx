@@ -37,7 +37,11 @@ const styles = stylex.create({
   },
   headingBlock: {
     textAlign: 'center',
-    maxWidth: 720,
+    width: '100%',
+    maxWidth: 680,
+  },
+  fillWidth: {
+    width: '100%',
   },
   outerCard: {
     width: '100%',
@@ -151,15 +155,16 @@ function ShowcaseHeading() {
       align="center"
       xstyle={styles.headingBlock}
       style={{textAlign: 'center'}}>
-      <XDSHeading level={2} type="display-2" color="primary">
-        Customize to your brand
-        <br />
-        using theming
+      <XDSHeading
+        level={2}
+        type="display-2"
+        color="primary"
+        xstyle={styles.fillWidth}>
+        Every product deserves to look like itself
       </XDSHeading>
-      <XDSText type="body" color="secondary">
-        A design system that adapts to your workflow, not the other way around.
-        <br />
-        Built for speed, clarity, and creative freedom.
+      <XDSText type="body" color="secondary" xstyle={styles.fillWidth}>
+        Astryx makes it effortless. Swap colors, typography, radius, and motion
+        from a single set of tokens.
       </XDSText>
     </XDSVStack>
   );

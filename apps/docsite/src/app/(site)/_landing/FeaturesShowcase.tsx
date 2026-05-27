@@ -25,7 +25,11 @@ const styles = stylex.create({
   },
   headingBlock: {
     textAlign: 'center',
-    maxWidth: 720,
+    width: '100%',
+    maxWidth: 680,
+  },
+  fillWidth: {
+    width: '100%',
   },
   grid: {
     width: '100%',
@@ -64,19 +68,19 @@ const features: Feature[] = [
     href: '/docs',
   },
   {
-    title: 'Over 82 Components',
+    title: 'Over 82 components',
     description:
       'Accessible and themeable React components with built-in spacing, dark mode, and StyleX styling.',
     href: '/components',
   },
   {
-    title: 'Themes That Fit Your Brand',
+    title: 'Themes that fit your brand',
     description:
       'Fully customizable themes ready for use. Make it yours without starting from scratch.',
     href: '/themes',
   },
   {
-    title: 'Ready to Ship Templates',
+    title: 'Ready to ship templates',
     description:
       'Production-ready templates for common pages, just plug in your content.',
     href: '/templates',
@@ -122,12 +126,16 @@ function FeaturesHeading() {
       xstyle={styles.headingBlock}
       style={{textAlign: 'center'}}>
       <XDSBadge variant="blue" label="Key features" />
-      <XDSHeading level={2} type="display-2" color="primary">
-        Start anywhere, change
+      <XDSHeading
+        level={2}
+        type="display-2"
+        color="primary"
+        xstyle={styles.fillWidth}>
+        Start anywhere.
         <br />
-        anything, ship faster.
+        Change anything. Ship faster.
       </XDSHeading>
-      <XDSText type="body" color="secondary">
+      <XDSText type="body" color="secondary" xstyle={styles.fillWidth}>
         A design system that adapts to your workflow, not the other way around.
         <br />
         Built for speed, clarity, and creative freedom.

@@ -26,9 +26,10 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     textAlign: 'center',
-    // 96px / 48px — beyond --spacing-12 (48px), so expressed as 2x tokens.
+    // 96px vertical (beyond --spacing-12, expressed as 2x). Horizontal gutter
+    // matches the showcase sections below (--spacing-6 = 24px) for consistency.
     paddingBlock: `calc(${spacingVars['--spacing-12']} * 2)`,
-    paddingInline: spacingVars['--spacing-12'],
+    paddingInline: spacingVars['--spacing-6'],
   },
   showcaseOverlay: {
     position: 'relative',
@@ -64,7 +65,9 @@ export default function HomePage() {
 
   useEffect(() => {
     const el = showcaseRef.current;
-    if (!el) {return;}
+    if (!el) {
+      return;
+    }
 
     function readNavHeight() {
       const raw = getComputedStyle(document.documentElement).getPropertyValue(
@@ -74,7 +77,9 @@ export default function HomePage() {
     }
 
     function update() {
-      if (!el) {return;}
+      if (!el) {
+        return;
+      }
       const navHeight = readNavHeight();
       const top = el.getBoundingClientRect().top;
       const reached = top <= navHeight;

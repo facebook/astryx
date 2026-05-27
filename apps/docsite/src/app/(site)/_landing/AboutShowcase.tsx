@@ -25,10 +25,15 @@ const styles = stylex.create({
   },
   headingBlock: {
     textAlign: 'center',
-    maxWidth: 760,
+    width: '100%',
+    maxWidth: 680,
   },
   subhead: {
-    maxWidth: 720,
+    width: '100%',
+    maxWidth: 680,
+  },
+  fillWidth: {
+    width: '100%',
   },
   grid: {
     width: '100%',
@@ -132,7 +137,7 @@ const items: AboutItem[] = [
   {
     title: 'Designed for speed',
     description:
-      "Speed isn't a feature, it's the foundation. Astryx exists so makers can focus on what they're building, not how to build it.",
+      'Foundations you can trust, speed you can feel. The system is built so teams stop reinventing the basics and start shipping the ideas that matter.',
     icon: <DiamondIcon />,
   },
 ];
@@ -145,16 +150,16 @@ function AboutHeading() {
       xstyle={styles.headingBlock}
       style={{textAlign: 'center'}}>
       <XDSBadge variant="orange" label="About us" />
-      <XDSHeading level={2} type="display-2" color="primary">
-        astryx is used
-        <br />
-        to build over 13,000 tools
+      <XDSHeading
+        level={2}
+        type="display-2"
+        color="primary"
+        xstyle={styles.fillWidth}>
+        Astryx powers over 13,000 tools
       </XDSHeading>
       <XDSText type="body" color="secondary" xstyle={styles.subhead}>
-        We want to help builders like us to create better things as fast as
-        possible. We value ease for builders and cohesive experiences for
-        consumers. We also believe in collaborating to build a system that works
-        for us, together.
+        Astryx has grown inside Meta over the last nine years, shaped by the
+        engineers, designers, and product teams who depend on it every day.
       </XDSText>
     </XDSVStack>
   );

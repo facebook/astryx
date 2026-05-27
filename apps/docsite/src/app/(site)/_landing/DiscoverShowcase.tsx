@@ -20,7 +20,7 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: spacingVars['--spacing-8'],
+    gap: spacingVars['--spacing-10'],
     overflowX: 'clip',
   },
   stage: {
@@ -105,7 +105,7 @@ const styles = stylex.create({
   },
   content: {
     textAlign: 'center',
-    maxWidth: 760,
+    maxWidth: 680,
   },
   headlineRow: {
     display: 'flex',
@@ -134,7 +134,9 @@ export function DiscoverShowcase() {
 
   useEffect(() => {
     const el = stageRef.current;
-    if (!el) {return;}
+    if (!el) {
+      return;
+    }
     const observer = new IntersectionObserver(
       entries => {
         for (const entry of entries) {
@@ -208,10 +210,8 @@ export function DiscoverShowcase() {
               </span>
             </XDSHeading>
             <XDSText type="body" color="secondary">
-              Explore the full design system and find everything you need to
-              start your next project, whether you're starting from scratch or
-              picking up where a template left off. Definitely needs to be
-              better content than this, but im tired.
+              Browse 82 components, explore production-ready templates, and tune
+              themes to match your brand — pick a starting point and go.
             </XDSText>
             <XDSGrid columns={2} gap={3} xstyle={styles.buttons}>
               <XDSButton
