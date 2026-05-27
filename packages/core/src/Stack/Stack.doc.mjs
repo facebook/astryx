@@ -145,7 +145,7 @@ export const docs = {
     },
     {
       name: 'XDSStackItem',
-      displayName: 'XDS Stack Item',
+      displayName: 'Stack Item',
       description:
         'Stack item for controlling individual item behavior within a stack. Supports polymorphic rendering.',
       props: [
@@ -331,7 +331,7 @@ export const docsZh = {
     },
     {
       name: 'XDSStackItem',
-      displayName: 'XDS Stack Item',
+      displayName: 'Stack Item',
       description:
         '堆叠子元素，用于控制堆叠中单个元素的行为。支持多态渲染。',
       props: [
@@ -423,7 +423,7 @@ export const docsDense = {
     },
     {
       name: 'XDSStackItem',
-      displayName: 'XDS Stack Item',
+      displayName: 'Stack Item',
       description: 'Controls individual item behavior in stack; polymorphic rendering.',
       propDescriptions: {
         size: 'Flex grow: static=natural size, fill=expand to remaining space.',

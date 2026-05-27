@@ -29,7 +29,7 @@ export const docs = {
   components: [
     {
       name: 'XDSSegmentedControl',
-      displayName: 'XDS Segmented Control',
+      displayName: 'Segmented Control',
       description:
         'Container wrapper providing context (value, onChange, size, isDisabled) to XDSSegmentedControlItem children.',
       props: [
@@ -85,7 +85,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSSegmentedControlItem',
-      displayName: 'XDS Segmented Control Item',
+      displayName: 'Segmented Control Item',
       description:
         'Individual segment item rendering as a radio button within the segmented control.',
       props: [
@@ -142,7 +142,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSSegmentedControl',
-      displayName: 'XDS Segmented Control',
+      displayName: 'Segmented Control',
       description:
         '容器包装组件，通过上下文向 XDSSegmentedControlItem 子组件提供 value、onChange、size、isDisabled。',
       propDescriptions: {
@@ -158,7 +158,7 @@ export const docsZh = {
     },
     {
       name: 'XDSSegmentedControlItem',
-      displayName: 'XDS Segmented Control Item',
+      displayName: 'Segmented Control Item',
       description:
         '单个分段项，在分段控件中渲染为单选按钮。',
       propDescriptions: {
@@ -207,7 +207,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSSegmentedControl',
-      displayName: 'XDS Segmented Control',
+      displayName: 'Segmented Control',
       description: 'container; provides context (value/onChange/size/layout/isDisabled) to children',
       propDescriptions: {
         value: 'selected value (controlled)',
@@ -222,7 +222,7 @@ export const docsDense = {
     },
     {
       name: 'XDSSegmentedControlItem',
-      displayName: 'XDS Segmented Control Item',
+      displayName: 'Segmented Control Item',
       description: 'individual segment; renders as radio button in control',
       propDescriptions: {
         value: 'unique segment value; matched against parent',

@@ -26,7 +26,7 @@ export const docs = {
   components: [
     {
       name: 'XDSLayout',
-      displayName: 'XDS Layout',
+      displayName: 'Layout',
       description:
         'Page shell with header, sidebar(s), content, and footer slots for building full app layouts.',
       props: [
@@ -70,7 +70,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSLayoutHeader',
-      displayName: 'XDS Layout Header',
+      displayName: 'Layout Header',
       description: 'Top bar for page titles, app bars, and toolbars.',
       props: [
         {
@@ -103,7 +103,7 @@ export const docs = {
     },
     {
       name: 'XDSLayoutContent',
-      displayName: 'XDS Layout Content',
+      displayName: 'Layout Content',
       description: 'Scrollable main content area.',
       props: [
         {
@@ -131,7 +131,7 @@ export const docs = {
     },
     {
       name: 'XDSLayoutFooter',
-      displayName: 'XDS Layout Footer',
+      displayName: 'Layout Footer',
       description: 'Bottom bar for action bars, pagination, and status bars.',
       props: [
         {
@@ -164,7 +164,7 @@ export const docs = {
     },
     {
       name: 'XDSLayoutPanel',
-      displayName: 'XDS Layout Panel',
+      displayName: 'Layout Panel',
       description: 'Sidebar for navigation, settings, or inspector panels.',
       props: [
         {
@@ -198,40 +198,40 @@ export const docs = {
     },
     {
       name: 'XDSLayoutContainer',
-      displayName: 'XDS Layout Container',
+      displayName: 'Layout Container',
       description:
         'Primitive component that sets CSS variables for padding, used as the base for XDSCard and XDSSection.',
       props: [],
     },
     {
       name: 'XDSCard',
-      displayName: 'XDS Card',
+      displayName: 'Card',
       description:
         'Card with shadow and themed styling, built on XDSLayoutContainer.',
       props: [],
     },
     {
       name: 'XDSSection',
-      displayName: 'XDS Section',
+      displayName: 'Section',
       description:
         'Section with background variants (section, transparent, muted), built on XDSLayoutContainer.',
       props: [],
     },
     {
       name: 'XDSHStack',
-      displayName: 'XDSH Stack',
+      displayName: 'H Stack',
       description: 'Horizontal stack that arranges children left-to-right.',
       props: [],
     },
     {
       name: 'XDSVStack',
-      displayName: 'XDSV Stack',
+      displayName: 'V Stack',
       description: 'Vertical stack that arranges children top-to-bottom.',
       props: [],
     },
     {
       name: 'XDSStackItem',
-      displayName: 'XDS Stack Item',
+      displayName: 'Stack Item',
       description:
         'Stack item with fill and alignment control for use inside XDSHStack or XDSVStack.',
       props: [],
@@ -265,7 +265,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSLayout',
-      displayName: 'XDS Layout',
+      displayName: 'Layout',
       description:
         '带有页眉、侧边栏、内容和页脚插槽的页面外壳，用于构建完整的应用布局。',
       props: [
@@ -305,7 +305,7 @@ export const docsZh = {
     },
     {
       name: 'XDSLayoutHeader',
-      displayName: 'XDS Layout Header',
+      displayName: 'Layout Header',
       description: '用于页面标题、应用栏和工具栏的顶部栏。',
       props: [
         {
@@ -338,7 +338,7 @@ export const docsZh = {
     },
     {
       name: 'XDSLayoutContent',
-      displayName: 'XDS Layout Content',
+      displayName: 'Layout Content',
       description: '可滚动的主内容区域。',
       props: [
         {
@@ -366,7 +366,7 @@ export const docsZh = {
     },
     {
       name: 'XDSLayoutFooter',
-      displayName: 'XDS Layout Footer',
+      displayName: 'Layout Footer',
       description: '用于操作栏、分页和状态栏的底部栏。',
       props: [
         {
@@ -399,7 +399,7 @@ export const docsZh = {
     },
     {
       name: 'XDSLayoutPanel',
-      displayName: 'XDS Layout Panel',
+      displayName: 'Layout Panel',
       description: '用于导航、设置或检查器面板的侧边栏。',
       props: [
         {
@@ -433,40 +433,40 @@ export const docsZh = {
     },
     {
       name: 'XDSLayoutContainer',
-      displayName: 'XDS Layout Container',
+      displayName: 'Layout Container',
       description:
         '设置内边距 CSS 变量的基础组件，作为 XDSCard 和 XDSSection 的基础。',
       props: [],
     },
     {
       name: 'XDSCard',
-      displayName: 'XDS Card',
+      displayName: 'Card',
       description:
         '基于 XDSLayoutContainer 构建的带有阴影和主题样式的卡片。',
       props: [],
     },
     {
       name: 'XDSSection',
-      displayName: 'XDS Section',
+      displayName: 'Section',
       description:
         '基于 XDSLayoutContainer 构建的带有背景变体（section、transparent、muted）的区块。',
       props: [],
     },
     {
       name: 'XDSHStack',
-      displayName: 'XDSH Stack',
+      displayName: 'H Stack',
       description: '将子元素从左到右排列的水平堆叠。',
       props: [],
     },
     {
       name: 'XDSVStack',
-      displayName: 'XDSV Stack',
+      displayName: 'V Stack',
       description: '将子元素从上到下排列的垂直堆叠。',
       props: [],
     },
     {
       name: 'XDSStackItem',
-      displayName: 'XDS Stack Item',
+      displayName: 'Stack Item',
       description:
         '用于 XDSHStack 或 XDSVStack 内部的堆叠项，支持填充和对齐控制。',
       props: [],
@@ -501,7 +501,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSLayout',
-      displayName: 'XDS Layout',
+      displayName: 'Layout',
       description:
         'Page shell w/ header, sidebar(s), content, footer slots for full app layouts.',
       propDescriptions: {
@@ -515,7 +515,7 @@ export const docsDense = {
     },
     {
       name: 'XDSLayoutHeader',
-      displayName: 'XDS Layout Header',
+      displayName: 'Layout Header',
       description: 'Top bar for page titles, app bars, toolbars.',
       propDescriptions: {
         children: 'Header content.',
@@ -527,7 +527,7 @@ export const docsDense = {
     },
     {
       name: 'XDSLayoutContent',
-      displayName: 'XDS Layout Content',
+      displayName: 'Layout Content',
       description: 'Scrollable main content area.',
       propDescriptions: {
         children: 'Content.',
@@ -538,7 +538,7 @@ export const docsDense = {
     },
     {
       name: 'XDSLayoutFooter',
-      displayName: 'XDS Layout Footer',
+      displayName: 'Layout Footer',
       description: 'Bottom bar for action bars, pagination, status bars.',
       propDescriptions: {
         children: 'Footer content.',
@@ -550,7 +550,7 @@ export const docsDense = {
     },
     {
       name: 'XDSLayoutPanel',
-      displayName: 'XDS Layout Panel',
+      displayName: 'Layout Panel',
       description: 'Sidebar for navigation, settings, inspector panels.',
       propDescriptions: {
         children: 'Panel content.',
@@ -562,35 +562,35 @@ export const docsDense = {
     },
     {
       name: 'XDSLayoutContainer',
-      displayName: 'XDS Layout Container',
+      displayName: 'Layout Container',
       description:
         'Primitive setting CSS padding vars; base for XDSCard + XDSSection.',
     },
     {
       name: 'XDSCard',
-      displayName: 'XDS Card',
+      displayName: 'Card',
       description:
         'Card w/ shadow + themed styling, built on XDSLayoutContainer.',
     },
     {
       name: 'XDSSection',
-      displayName: 'XDS Section',
+      displayName: 'Section',
       description:
         'Section w/ background variants (section, transparent, muted), built on XDSLayoutContainer.',
     },
     {
       name: 'XDSHStack',
-      displayName: 'XDSH Stack',
+      displayName: 'H Stack',
       description: 'Horizontal stack arranging children left-to-right.',
     },
     {
       name: 'XDSVStack',
-      displayName: 'XDSV Stack',
+      displayName: 'V Stack',
       description: 'Vertical stack arranging children top-to-bottom.',
     },
     {
       name: 'XDSStackItem',
-      displayName: 'XDS Stack Item',
+      displayName: 'Stack Item',
       description:
         'Stack item w/ fill + alignment control inside XDSHStack or XDSVStack.',
     },

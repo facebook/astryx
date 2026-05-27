@@ -27,7 +27,7 @@ export const docs = {
   components: [
     {
       name: 'XDSSideNav',
-      displayName: 'XDS Side Nav',
+      displayName: 'Side Nav',
       description:
         'Container with five zones: header, topContent, children (scrollable), footer, and footerIcons. Supports collapsible mode.',
       props: [
@@ -83,7 +83,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSSideNavHeading',
-      displayName: 'XDS Side Nav Heading',
+      displayName: 'Side Nav Heading',
       description:
         'Product/suite/account heading with smart interaction boundary logic for links and a menu popover.',
       props: [
@@ -140,7 +140,7 @@ export const docs = {
     },
     {
       name: 'XDSSideNavItem',
-      displayName: 'XDS Side Nav Item',
+      displayName: 'Side Nav Item',
       description:
         'Navigation item with icon, selected state, optional end content, and nesting support via children.',
       props: [
@@ -213,7 +213,7 @@ export const docs = {
     },
     {
       name: 'XDSSideNavSection',
-      displayName: 'XDS Side Nav Section',
+      displayName: 'Side Nav Section',
       description:
         'Section grouping with an optional title, subtitle, and end content.',
       props: [
@@ -260,7 +260,7 @@ export const docs = {
     },
     {
       name: 'XDSSideNavCollapseButton',
-      displayName: 'XDS Side Nav Collapse Button',
+      displayName: 'Side Nav Collapse Button',
       description:
         'Toggle button for sidenav collapse. Place inside XDSSideNav (reads context automatically) or outside (pass handleRef). Renders as an icon-only ghost button by default.',
       props: [
@@ -317,7 +317,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSSideNav',
-      displayName: 'XDS Side Nav',
+      displayName: 'Side Nav',
       description:
         '包含五个区域的容器：header、topContent、children（可滚动）、footer 和 footerIcons。',
       props: [
@@ -369,7 +369,7 @@ export const docsZh = {
     },
     {
       name: 'XDSSideNavHeading',
-      displayName: 'XDS Side Nav Heading',
+      displayName: 'Side Nav Heading',
       description:
         '产品/套件/账户头部，具有智能交互边界逻辑，支持链接和菜单弹出框。',
       props: [
@@ -423,7 +423,7 @@ export const docsZh = {
     },
     {
       name: 'XDSSideNavItem',
-      displayName: 'XDS Side Nav Item',
+      displayName: 'Side Nav Item',
       description:
         '导航项，支持图标、选中状态、可选尾部内容，以及通过 children 实现嵌套。',
       props: [
@@ -491,7 +491,7 @@ export const docsZh = {
     },
     {
       name: 'XDSSideNavSection',
-      displayName: 'XDS Side Nav Section',
+      displayName: 'Side Nav Section',
       description:
         '分组，支持可选的标题、副标题和尾部内容。',
       props: [
@@ -527,7 +527,7 @@ export const docsZh = {
     },
     {
       name: 'XDSSideNavCollapseButton',
-      displayName: 'XDS Side Nav Collapse Button',
+      displayName: 'Side Nav Collapse Button',
       description:
         '侧边栏折叠切换按钮。放置在 XDSSideNav 内部（自动读取上下文）或外部（传入 handleRef）。默认渲染为仅图标的 ghost 按钮。',
       props: [
@@ -589,7 +589,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSSideNav',
-      displayName: 'XDS Side Nav',
+      displayName: 'Side Nav',
       description:
         'Container w/ five zones: header, topContent, children (scrollable), footer, footerIcons. Supports collapsible mode.',
       propDescriptions: {
@@ -605,7 +605,7 @@ export const docsDense = {
     },
     {
       name: 'XDSSideNavHeading',
-      displayName: 'XDS Side Nav Heading',
+      displayName: 'Side Nav Heading',
       description:
         'Product/suite/account heading w/ smart interaction boundary logic for links + menu popover.',
       propDescriptions: {
@@ -622,7 +622,7 @@ export const docsDense = {
     },
     {
       name: 'XDSSideNavItem',
-      displayName: 'XDS Side Nav Item',
+      displayName: 'Side Nav Item',
       description:
         'Navigation item w/ icon, selected state, optional end content, nesting via children.',
       propDescriptions: {
@@ -641,7 +641,7 @@ export const docsDense = {
     },
     {
       name: 'XDSSideNavSection',
-      displayName: 'XDS Side Nav Section',
+      displayName: 'Side Nav Section',
       description:
         'Section grouping w/ optional title, subtitle, end content.',
       propDescriptions: {
@@ -655,7 +655,7 @@ export const docsDense = {
     },
     {
       name: 'XDSSideNavCollapseButton',
-      displayName: 'XDS Side Nav Collapse Button',
+      displayName: 'Side Nav Collapse Button',
       description:
         'Toggle button for sidenav collapse. Place inside XDSSideNav (reads context) or outside (pass handleRef). Icon-only ghost button by default.',
       propDescriptions: {

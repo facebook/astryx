@@ -35,7 +35,7 @@ export const docs = {
   components: [
     {
       name: 'XDSBreadcrumbs',
-      displayName: 'XDS Breadcrumbs',
+      displayName: 'Breadcrumbs',
       description:
         'Navigation container that renders a <nav> with an ordered list of breadcrumb items.',
       props: [
@@ -76,7 +76,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSBreadcrumbItem',
-      displayName: 'XDS Breadcrumb Item',
+      displayName: 'Breadcrumb Item',
       description:
         'Individual breadcrumb item that renders as a link when href is provided, or as plain text for the current page.',
       props: [
@@ -153,7 +153,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSBreadcrumbs',
-      displayName: 'XDS Breadcrumbs',
+      displayName: 'Breadcrumbs',
       description: '导航容器，渲染包含有序面包屑项列表的 <nav> 元素。',
       props: [
         {name: 'children', type: 'ReactNode', description: '在面包屑路径内渲染的 XDSBreadcrumbItem 元素。', required: true},
@@ -170,7 +170,7 @@ export const docsZh = {
     },
     {
       name: 'XDSBreadcrumbItem',
-      displayName: 'XDS Breadcrumb Item',
+      displayName: 'Breadcrumb Item',
       description: '单个面包屑项，提供 href 时渲染为链接，当前页面渲染为纯文本。',
       props: [
         {name: 'children', type: 'ReactNode', description: '面包屑项的标签内容。', required: true},
@@ -202,7 +202,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSBreadcrumbs',
-      displayName: 'XDS Breadcrumbs',
+      displayName: 'Breadcrumbs',
       description: 'nav container rendering <nav> w/ ordered breadcrumb list',
       propDescriptions: {
         children: 'XDSBreadcrumbItem elements in breadcrumb trail',
@@ -214,7 +214,7 @@ export const docsDense = {
     },
     {
       name: 'XDSBreadcrumbItem',
-      displayName: 'XDS Breadcrumb Item',
+      displayName: 'Breadcrumb Item',
       description: 'individual breadcrumb; link w/ href, plain text for current page',
       propDescriptions: {
         children: 'label content',

@@ -25,7 +25,7 @@ export const docs = {
   components: [
     {
       name: 'XDSTabList',
-      displayName: 'XDS Tab List',
+      displayName: 'Tab List',
       description:
         'Nav wrapper that provides XDSTabListContext (value, onChange, size) to XDSTab and XDSTabMenu children.',
       props: [
@@ -70,7 +70,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSTab',
-      displayName: 'XDS Tab',
+      displayName: 'Tab',
       description:
         'Individual tab item that renders as a button or an anchor link, with selected-state styling and optional icons.',
       props: [
@@ -132,7 +132,7 @@ export const docs = {
     },
     {
       name: 'XDSTabMenu',
-      displayName: 'XDS Tab Menu',
+      displayName: 'Tab Menu',
       description:
         "Overflow menu trigger that opens a dropdown of additional tab options, showing the selected option's label as the trigger text.",
       props: [
@@ -189,7 +189,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSTabList',
-      displayName: 'XDS Tab List',
+      displayName: 'Tab List',
       description:
         '导航容器，为 XDSTab 和 XDSTabMenu 子组件提供 XDSTabListContext（value、onChange、size）。',
       props: [
@@ -234,7 +234,7 @@ export const docsZh = {
     },
     {
       name: 'XDSTab',
-      displayName: 'XDS Tab',
+      displayName: 'Tab',
       description:
         '单个标签项，渲染为按钮或锚点链接，具有选中状态样式和可选图标。',
       props: [
@@ -290,7 +290,7 @@ export const docsZh = {
     },
     {
       name: 'XDSTabMenu',
-      displayName: 'XDS Tab Menu',
+      displayName: 'Tab Menu',
       description:
         '溢出菜单触发器，打开包含额外标签选项的下拉菜单，将选中选项的标签显示为触发器文本。',
       props: [
@@ -352,7 +352,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSTabList',
-      displayName: 'XDS Tab List',
+      displayName: 'Tab List',
       description: 'Nav wrapper providing XDSTabListContext (value, onChange, size) to children.',
       propDescriptions: {
         value: 'Currently selected tab value.',
@@ -365,7 +365,7 @@ export const docsDense = {
     },
     {
       name: 'XDSTab',
-      displayName: 'XDS Tab',
+      displayName: 'Tab',
       description: 'Individual tab; renders as button or anchor w/ selected-state styling + optional icons.',
       propDescriptions: {
         value: 'Unique value matched against XDSTabListContext.value.',
@@ -380,7 +380,7 @@ export const docsDense = {
     },
     {
       name: 'XDSTabMenu',
-      displayName: 'XDS Tab Menu',
+      displayName: 'Tab Menu',
       description: "Overflow menu trigger; dropdown of extra tab options, shows selected option's label as trigger text.",
       propDescriptions: {
         label: 'Trigger text (when no option selected) + dropdown heading.',
