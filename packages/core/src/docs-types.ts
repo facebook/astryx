@@ -188,6 +188,10 @@ export interface ComponentEntry {
   /** Full export name including XDS prefix. e.g. `"XDSTableRow"`,
    *  `"XDSDialogHeader"`, `"useXDSTableSelection"` */
   name: string;
+  /** Human-readable display name for this subcomponent. Matches the import
+   *  name visually with spaces between PascalCase / camelCase words
+   *  (e.g. `"XDSTableRow"` → `"XDS Table Row"`). See `BaseDoc.displayName`. */
+  displayName: string;
   /** One-sentence description of what this specific component does.
    *  For sub-components, explain the role within the parent composition. */
   description: string;
@@ -378,6 +382,14 @@ interface BaseDoc {
   /** Directory name without the XDS prefix, PascalCase.
    *  e.g. `"Button"`, `"Table"`, `"TextInput"`, `"AppShell"` */
   name: string;
+  /** Human-readable display name with spaces between words, used by the
+   *  docsite gallery and sidebar. Matches the import name visually (so
+   *  `"AppShell"` → `"App Shell"`, `"ChatMessageMetadata"` → `"Chat
+   *  Message Metadata"`). Required so authors stay in control of how
+   *  each component reads in the UI rather than relying on a build-time
+   *  regex derivation. Backfill with
+   *  `apps/docsite/scripts/backfill-display-name.mjs`. */
+  displayName: string;
   /** Search keywords for CLI discovery. Terms a developer might type when
    *  looking for this component: synonyms, related UI concepts, and common
    *  names from other design systems (MUI, Chakra, Radix, shadcn).
@@ -495,6 +507,12 @@ export interface TranslationDoc {
   components?: {
     /** Exact name from docs.components[n].name */
     name: string;
+    /** Optional translated displayName for the sub-component. Allowed so
+     *  the displayName backfill codemod (which adds `displayName` next
+     *  to every `name:` field) does not break translation overlays.
+     *  Translation overlays render via the canonical docs, so this
+     *  field is ignored at render time. */
+    displayName?: string;
     /** Compressed/translated sub-component description. */
     description: string;
     /** Prop descriptions keyed by prop name. */
@@ -650,9 +668,18 @@ export interface ReferenceTranslationDoc {
  * The CLI and sandbox import these for discovery and display.
  */
 interface BaseTemplateDoc {
-  /** Display name shown in the sandbox gallery and CLI.
-   *  e.g. "Dashboard", "Login (Card)", "Settings (Sidebar)" */
+  /** Identifier name for the template. For block templates this matches
+   *  the React component import name (e.g. `"ChatMessageMetadata"`); for
+   *  page templates it's a human-readable label that doubles as the
+   *  display value (e.g. `"Dashboard"`). */
   name: string;
+  /** Human-readable display name for the gallery / CLI. Matches `name`
+   *  for already-spaced template names (e.g. `"Blank Page"`); for block
+   *  templates that mirror a PascalCase component, spaces it out
+   *  (`"ChatMessageMetadata"` → `"Chat Message Metadata"`). Required so
+   *  authors stay in control of the visible label rather than relying
+   *  on a build-time regex derivation. */
+  displayName: string;
 
   /** One-sentence description of what the template provides. */
   description?: string;
@@ -774,6 +801,10 @@ export interface HookReturnDoc {
 export interface HookDoc {
   /** Hook name exactly as exported, e.g. 'useMediaQuery', 'useFocusTrap'. */
   name: string;
+  /** Human-readable display name for the hook. Hooks read better as the
+   *  raw identifier ('useMediaQuery') than spaced ('use Media Query'), so
+   *  the codemod keeps the identifier verbatim. See `BaseDoc.displayName`. */
+  displayName: string;
   /** Optional group for sidebar/docs organization — same as ComponentDoc.group. */
   group?: string;
   /** Search keywords for CLI discovery. */

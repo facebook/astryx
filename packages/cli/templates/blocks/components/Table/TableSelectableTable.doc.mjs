@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Table',
   name: 'Table — Row Selection',
+  displayName: 'Table — Row Selection',
   description:
     'Table with row selection checkboxes and a select-all header checkbox.',
   isReady: true,

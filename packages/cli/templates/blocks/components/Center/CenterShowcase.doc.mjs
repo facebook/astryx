@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Center',
   name: 'Center',
+  displayName: 'Center',
   description:
     'Content centered horizontally and vertically inside a fixed-height container.',
   isReady: true,

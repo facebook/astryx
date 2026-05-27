@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'ProgressBar',
   name: 'ProgressBar — Semantic Variants',
+  displayName: 'ProgressBar — Semantic Variants',
   description:
     'All semantic color variants stacked vertically.',
   isReady: true,

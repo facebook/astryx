@@ -4,6 +4,7 @@
 export const doc = {
   type: 'page',
   name: 'Settings (Dialog)',
+  displayName: 'Settings (Dialog)',
   description:
     'Account settings in a modal dialog with sidebar navigation and multi-section content',
   isReady: true,

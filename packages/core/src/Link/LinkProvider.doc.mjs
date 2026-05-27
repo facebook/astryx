@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'LinkProvider',
+  displayName: 'Link Provider',
   group: 'Utilities',
   keywords: ['link', 'provider', 'router', 'nextjs', 'client-side-routing'],
   usage: {

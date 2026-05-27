@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Tokenizer',
+  displayName: 'Tokenizer',
   keywords: ["tokenizer","multiselect","multi-select","chips","tags","combobox","autocomplete","taginput","chipinput"],
   props: [
     {
@@ -204,6 +205,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Tokenizer',
+  displayName: 'Tokenizer',
   props: [
     {
       name: 'label',

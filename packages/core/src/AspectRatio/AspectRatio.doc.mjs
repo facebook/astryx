@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'AspectRatio',
+  displayName: 'Aspect Ratio',
   keywords: ["aspect-ratio","ratio","proportion","responsive","embed","container","widescreen","thumbnail","letterbox","crop"],
   usage: {
     description:
@@ -51,6 +52,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'AspectRatio',
+  displayName: 'Aspect Ratio',
   usage: {
     description:
       'Maintains a fixed width-to-height ratio for its children, regardless of screen size. Use it for media containers like videos, images, thumbnails, or any content that needs consistent proportions.',

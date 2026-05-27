@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Code',
   name: 'Code — Inline',
+  displayName: 'Code — Inline',
   description:
     'Inline code references mixed within a paragraph of body text. Use XDSCode to mark up function names, hooks, or API terms so they stand out from surrounding prose.',
   isReady: true,

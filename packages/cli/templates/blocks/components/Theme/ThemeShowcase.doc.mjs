@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Theme',
   name: 'Theme — Side by Side',
+  displayName: 'Theme — Side by Side',
   description:
     'Two theme providers wrapping identical content to show how XDSTheme changes the visual treatment of all child components.',
   isReady: true,

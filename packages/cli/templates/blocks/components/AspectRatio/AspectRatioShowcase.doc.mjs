@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'AspectRatio',
   name: 'AspectRatio',
+  displayName: 'Aspect Ratio',
   isReady: true,
   aspectRatio: 4 / 3,
   isShowcase: true,

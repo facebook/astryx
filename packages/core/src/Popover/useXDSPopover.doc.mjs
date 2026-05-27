@@ -3,6 +3,7 @@
 /** @type {import('../docs-types').HookDoc} */
 export const docs = {
   name: 'useXDSPopover',
+  displayName: 'useXDSPopover',
   group: 'Popover',
   keywords: ['popover', 'popup', 'dropdown', 'floating', 'anchor', 'dialog', 'overlay', 'flyout'],
   params: [

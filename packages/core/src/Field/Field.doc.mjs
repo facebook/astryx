@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Field',
+  displayName: 'Field',
   group: 'Field',
   keywords: ["field","formfield","formgroup","formcontrol","label","input","required","optional","helpertext","hint"],
   playground: {
@@ -28,6 +29,7 @@ export const docs = {
   components: [
     {
       name: 'XDSField',
+      displayName: 'XDS Field',
       description:
         'Form field wrapper that provides label, description, and optional/required indicators.',      props: [
         {
@@ -141,6 +143,7 @@ export const docs = {
     },
     {
       name: 'XDSFieldLabel',
+      displayName: 'XDS Field Label',
       description:
         'Standalone label component with optional/required indicators and tooltip support.',
       props: [
@@ -194,6 +197,7 @@ export const docs = {
     },
     {
       name: 'XDSFieldStatus',
+      displayName: 'XDS Field Status',
       description:
         'Status message component for form field validation feedback.',
       props: [
@@ -248,6 +252,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Field',
+  displayName: 'Field',
   theming: {
     targets: [
       {className: 'xds-field'},
@@ -264,6 +269,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSField',
+      displayName: 'XDS Field',
       description:
         '表单字段包装器，提供标签、描述以及可选/必填指示器。',
       props: [
@@ -378,6 +384,7 @@ export const docsZh = {
     },
     {
       name: 'XDSFieldLabel',
+      displayName: 'XDS Field Label',
       description:
         '独立的标签组件，支持可选/必填指示器和工具提示。',
       props: [
@@ -431,6 +438,7 @@ export const docsZh = {
     },
     {
       name: 'XDSFieldStatus',
+      displayName: 'XDS Field Status',
       description:
         '用于表单字段验证反馈的状态消息组件。',
       props: [
@@ -488,6 +496,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSField',
+      displayName: 'XDS Field',
       description: 'Form field wrapper w/ label, description + optional/required indicators.',
       propDescriptions: {
         label: 'Label text for field (always rendered for a11y).',
@@ -511,6 +520,7 @@ export const docsDense = {
     },
     {
       name: 'XDSFieldLabel',
+      displayName: 'XDS Field Label',
       description: 'Standalone label w/ optional/required indicators + tooltip support.',
       propDescriptions: {
         label: 'Label text.',
@@ -525,6 +535,7 @@ export const docsDense = {
     },
     {
       name: 'XDSFieldStatus',
+      displayName: 'XDS Field Status',
       description: 'Status message for form field validation feedback.',
       propDescriptions: {
         type: 'Status type.',

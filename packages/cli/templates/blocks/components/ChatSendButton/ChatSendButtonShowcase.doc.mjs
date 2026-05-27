@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'ChatSendButton',
   name: 'ChatSendButton',
+  displayName: 'Chat Send Button',
   description: 'Ready, custom icon, and streaming states of the send button.',
   isReady: true,
   isShowcase: true,

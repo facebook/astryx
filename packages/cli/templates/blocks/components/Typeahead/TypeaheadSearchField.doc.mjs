@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Typeahead',
   name: 'Typeahead — Search Field',
+  displayName: 'Typeahead — Search Field',
   description:
     'Search input with icon and suggestions on focus.',
   isReady: true,

@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'ProgressBar',
   name: 'ProgressBar — Indeterminate',
+  displayName: 'ProgressBar — Indeterminate',
   description:
     'Indeterminate progress bar for operations with unknown duration.',
   isReady: true,

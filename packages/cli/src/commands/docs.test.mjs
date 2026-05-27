@@ -78,3 +78,24 @@ describe('hyphenated doc filenames', () => {
     expect(result.data.description).toBeDefined();
   });
 });
+
+describe('migration docs', () => {
+  it('lists the migration topic', async () => {
+    const program = createProgram();
+    await program.parseAsync(['node', 'xds', 'docs']);
+
+    const output = console.log.mock.calls.map(c => c[0]).join('\n');
+    expect(output).toContain('migration');
+    expect(output).toContain('Tailwind');
+  });
+
+  it('loads migration docs by topic name', async () => {
+    const program = createProgram();
+    await program.parseAsync(['node', 'xds', 'docs', 'migration']);
+
+    const output = console.log.mock.calls.map(c => c[0]).join('\n');
+    expect(output).toContain('Migration Guide');
+    expect(output).toContain('Recommended Order');
+    expect(output).toContain('Map shadcn and Radix Primitives');
+  });
+});

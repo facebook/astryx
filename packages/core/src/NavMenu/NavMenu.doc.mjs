@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'NavHeadingMenu',
+  displayName: 'Nav Heading Menu',
   hidden: false,
   keywords: ['nav', 'menu', 'navigation', 'heading', 'menu-item', 'popover'],
   usage: {

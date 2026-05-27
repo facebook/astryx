@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'OverflowList',
+  displayName: 'Overflow List',
   keywords: [
     'overflow',
     'truncate',
@@ -81,6 +82,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'OverflowList',
+  displayName: 'Overflow List',
   props: [
     {
       name: 'children',

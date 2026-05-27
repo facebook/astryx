@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'CommandPalette',
   name: 'CommandPalette — Picker Mode',
+  displayName: 'CommandPalette — Picker Mode',
   description:
     'Single-value picker with persistent selection and check indicator.',
   isReady: true,

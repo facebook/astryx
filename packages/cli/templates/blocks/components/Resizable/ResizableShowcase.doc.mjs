@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Resizable',
   name: 'Resizable',
+  displayName: 'Resizable',
   description:
     'Horizontal resizable split with a draggable handle between two panels.',
   isReady: true,

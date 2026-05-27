@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'ChatComposerInput',
   name: 'ChatComposerInput — Mentions',
+  displayName: 'ChatComposerInput — Mentions',
   description:
     'Chat input with an @ trigger that opens a typeahead menu for mentioning users. Selected names appear as inline tokens.',
   isReady: true,

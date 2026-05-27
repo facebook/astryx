@@ -4,6 +4,7 @@
 export const doc = {
   type: 'page',
   name: 'Table Page (Heatmap Status)',
+  displayName: 'Table Page (Heatmap Status)',
   description:
     'Product status page with an outage heatmap and incident log table.',
   isReady: true,

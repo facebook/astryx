@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Lightbox',
   name: 'Lightbox',
+  displayName: 'Lightbox',
   isReady: true,
   aspectRatio: 1,
   isShowcase: true,

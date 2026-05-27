@@ -220,7 +220,7 @@ export function XDSChatMessage({
         aria-label={!hasName ? `Message from ${sender}` : undefined}
         aria-labelledby={hasName ? nameId : undefined}
         {...mergeProps(
-          xdsClassName('chat-message', {sender}),
+          xdsClassName('chat-message', {sender, density}),
           stylex.props(
             styles.root,
             rootAlignment,

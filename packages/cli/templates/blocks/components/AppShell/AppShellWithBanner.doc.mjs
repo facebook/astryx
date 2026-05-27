@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'AppShell',
   name: 'AppShell — With Banner',
+  displayName: 'AppShell — With Banner',
   description:
     'Full layout with TopNav, SideNav, and a dismissable info banner between the nav and content.',
   isReady: true,

@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Spinner',
   name: 'Spinner',
+  displayName: 'Spinner',
   isReady: true,
   aspectRatio: 1,
   isShowcase: true,

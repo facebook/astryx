@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Collapsible',
   name: 'Collapsible — Multiple Mode',
+  displayName: 'Collapsible — Multiple Mode',
   description: 'Several sections open at once. Use when users need to compare content across sections, like feature lists or pricing tiers.',
   isReady: true,
   aspectRatio: 4 / 3,

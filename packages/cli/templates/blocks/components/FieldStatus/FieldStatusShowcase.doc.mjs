@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'FieldStatus',
   name: 'FieldStatus',
+  displayName: 'Field Status',
   description:
     'Field status messages in error, warning, and success states with attached and detached variants.',
   isReady: true,

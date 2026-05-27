@@ -149,3 +149,66 @@ describe('XDSAvatarGroupOverflow', () => {
     expect(screen.getByText('+44')).toBeInTheDocument();
   });
 });
+
+describe('XDSAvatarGroupOverflow — hardening', () => {
+  it('forwards ref to the span element', () => {
+    const ref = {current: null} as React.RefObject<HTMLElement | null>;
+
+    render(
+      <XDSAvatarGroup>
+        <XDSAvatar name="Alice" />
+        <XDSAvatarGroupOverflow count={3} ref={ref} />
+      </XDSAvatarGroup>,
+    );
+
+    expect(ref.current).toBeInstanceOf(HTMLSpanElement);
+  });
+
+  it('forwards ref to the button element when onClick provided', () => {
+    const ref = {current: null} as React.RefObject<HTMLElement | null>;
+
+    render(
+      <XDSAvatarGroup>
+        <XDSAvatar name="Alice" />
+        <XDSAvatarGroupOverflow count={3} onClick={() => {}} ref={ref} />
+      </XDSAvatarGroup>,
+    );
+
+    expect(ref.current).toBeInstanceOf(HTMLButtonElement);
+  });
+
+  it('applies className prop', () => {
+    render(
+      <XDSAvatarGroup>
+        <XDSAvatar name="Alice" />
+        <XDSAvatarGroupOverflow count={3} className="custom-class" />
+      </XDSAvatarGroup>,
+    );
+
+    const overflow = screen.getByLabelText('3 more');
+    expect(overflow.className).toContain('custom-class');
+  });
+
+  it('handles count of zero gracefully', () => {
+    render(
+      <XDSAvatarGroup>
+        <XDSAvatar name="Alice" />
+        <XDSAvatarGroupOverflow count={0} />
+      </XDSAvatarGroup>,
+    );
+
+    expect(screen.getByText('+0')).toBeInTheDocument();
+    expect(screen.getByLabelText('0 more')).toBeInTheDocument();
+  });
+
+  it('handles very large count', () => {
+    render(
+      <XDSAvatarGroup>
+        <XDSAvatar name="Alice" />
+        <XDSAvatarGroupOverflow count={999} />
+      </XDSAvatarGroup>,
+    );
+
+    expect(screen.getByText('+999')).toBeInTheDocument();
+  });
+});

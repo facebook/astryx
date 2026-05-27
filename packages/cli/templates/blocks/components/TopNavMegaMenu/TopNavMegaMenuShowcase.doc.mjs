@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'TopNavMegaMenu',
   name: 'TopNavMegaMenu',
+  displayName: 'Top Nav Mega Menu',
   description: 'Demonstrates XDSTopNavMegaMenu with items and a featured card in the mega menu panel.',
   isReady: true,
   isShowcase: true,

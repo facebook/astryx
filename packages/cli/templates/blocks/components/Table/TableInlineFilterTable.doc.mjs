@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Table',
   name: 'Table — Inline Filters',
+  displayName: 'Table — Inline Filters',
   description:
     'Table with inline filter controls rendered directly below each column header.',
   isReady: true,

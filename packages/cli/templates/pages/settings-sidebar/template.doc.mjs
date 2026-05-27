@@ -4,6 +4,7 @@
 export const doc = {
   type: 'page',
   name: 'Settings (Sidebar)',
+  displayName: 'Settings (Sidebar)',
   description:
     'Account settings with sidebar navigation, inline editing, and multi-section privacy controls',
   isReady: true,

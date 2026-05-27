@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Code',
   name: 'Code — Text Sizes',
+  displayName: 'Code — Text Sizes',
   description:
     'Inline code rendered inside heading, body, supporting, and label text. XDSCode automatically matches the font size of its parent text element.',
   isReady: true,

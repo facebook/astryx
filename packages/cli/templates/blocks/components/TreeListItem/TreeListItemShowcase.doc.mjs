@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'TreeListItem',
   name: 'TreeListItem',
+  displayName: 'Tree List Item',
   description: 'Tree items with descriptions, icons, badges, selection, disabled state, and nested expand/collapse. TreeList is data-driven — no composed children API.',
   isReady: true,
   isShowcase: true,

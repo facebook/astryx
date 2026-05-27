@@ -3,6 +3,7 @@
 /** @type {import('../docs-types').ComponentDoc} */
 export const docs = {
   name: 'Resizable',
+  displayName: 'Resizable',
   group: 'Resizable',
   keywords: [
     'resize',
@@ -51,6 +52,7 @@ export const docs = {
   components: [
     {
       name: 'useXDSResizable',
+      displayName: 'useXDSResizable',
       description:
         'Hook that manages resize state for one or more panel regions. ' +
         'Returns size, isCollapsed, collapse/expand/resize methods, and props to pass to handles.',
@@ -107,6 +109,7 @@ export const docs = {
     },
     {
       name: 'XDSResizeHandle',
+      displayName: 'XDS Resize Handle',
       description:
         'Draggable separator between panels. Pill-grip design: invisible at rest, ' +
         'visible on hover (0.6 opacity), fully opaque during drag (1.0). Keyboard-accessible.',

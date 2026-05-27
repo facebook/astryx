@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'PowerSearch',
   name: 'PowerSearch',
+  displayName: 'Power Search',
   description:
     'Token-based filter bar with enum and text fields, pre-populated with sample filters.',
   isReady: true,

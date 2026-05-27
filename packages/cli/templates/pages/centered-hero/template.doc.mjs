@@ -4,6 +4,7 @@
 export const doc = {
   type: 'page',
   name: 'Centered Hero',
+  displayName: 'Centered Hero',
   description:
     'Centered headline, description, and CTA buttons above a full-width image.',
   isReady: false,

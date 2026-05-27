@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Popover',
   name: 'Popover — Filter Panel',
+  displayName: 'Popover — Filter Panel',
   description:
     'Popover with checkbox filters and apply/reset actions.',
   isReady: true,

@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'AspectRatio',
   name: 'AspectRatio — Loading Skeleton',
+  displayName: 'AspectRatio — Loading Skeleton',
   description: 'Aspect ratio container with a skeleton loading placeholder.',
   isReady: true,
   aspectRatio: 4 / 3,

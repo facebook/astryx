@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Card',
   name: 'ClickableCard',
+  displayName: 'Clickable Card',
   description:
     'A clickable card that navigates on click. Nested interactive elements work independently.',
   isReady: true,

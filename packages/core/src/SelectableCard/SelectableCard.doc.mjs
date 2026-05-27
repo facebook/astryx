@@ -3,6 +3,7 @@
 /** @type {import('../docs-types').ComponentDoc} */
 export const docs = {
   name: 'SelectableCard',
+  displayName: 'Selectable Card',
   keywords: ['card', 'selectable', 'toggle', 'checkbox', 'radio', 'selection'],
   usage: {
     description: 'A card that toggles between selected and unselected states with an accent border. For navigation use ClickableCard.',

@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'ChatDictationButton',
+  displayName: 'Chat Dictation Button',
   group: 'Chat',
   hidden: false,
 

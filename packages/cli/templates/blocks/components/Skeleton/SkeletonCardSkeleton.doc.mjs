@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Skeleton',
   name: 'Skeleton — Card Loading',
+  displayName: 'Skeleton — Card Loading',
   description:
     'Card skeleton with avatar, name, and content lines.',
   isReady: true,

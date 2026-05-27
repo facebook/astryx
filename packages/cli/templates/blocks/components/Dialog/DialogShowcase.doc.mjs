@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Dialog',
   name: 'Dialog',
+  displayName: 'Dialog',
   description:
     'Modal dialog with a header, body content, and close button.',
   isReady: true,

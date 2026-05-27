@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Grid',
+  displayName: 'Grid',
   group: 'Layout',
   keywords: ["grid","columns","responsive","auto-fill","auto-fit","masonry","tiles","row","col","simplegrid","responsive grid","card grid"],
   usage: {
@@ -26,6 +27,7 @@ export const docs = {
   components: [
     {
       name: 'XDSGrid',
+      displayName: 'XDS Grid',
       description: 'Grid container with fixed or responsive columns.',
       props: [
         {
@@ -92,6 +94,7 @@ export const docs = {
     },
     {
       name: 'XDSGridSpan',
+      displayName: 'XDS Grid Span',
       description: 'Grid item that spans multiple columns or rows.',
       props: [
         {
@@ -117,6 +120,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Grid',
+  displayName: 'Grid',
   group: 'Layout',
   theming: {
     targets: [
@@ -127,6 +131,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSGrid',
+      displayName: 'XDS Grid',
       description: '支持固定列或响应式列的网格容器。',
       props: [
         {
@@ -192,6 +197,7 @@ export const docsZh = {
     },
     {
       name: 'XDSGridSpan',
+      displayName: 'XDS Grid Span',
       description: '可跨越多列或多行的网格项。',
       props: [
         {
@@ -243,6 +249,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSGrid',
+      displayName: 'XDS Grid',
       description: 'Grid container w/ fixed or responsive columns.',
       propDescriptions: {
         columns: "Column config. Number for fixed cols. Object {minWidth, max?, repeat?} for responsive. repeat: 'fill' (default, consistent widths) or 'fit' (stretch).",
@@ -260,6 +267,7 @@ export const docsDense = {
     },
     {
       name: 'XDSGridSpan',
+      displayName: 'XDS Grid Span',
       description: 'Grid item spanning multiple columns/rows.',
       propDescriptions: {
         columns: "Columns to span; 'full' spans entire row.",

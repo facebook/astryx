@@ -149,3 +149,69 @@ export const InitialsFallback: Story = {
     </XDSAvatarGroup>
   ),
 };
+
+/** Single avatar — no overlap applied. */
+export const SingleAvatar: Story = {
+  render: () => (
+    <XDSAvatarGroup size="medium">
+      <XDSAvatar src="https://i.pravatar.cc/150?img=1" name="Alice Johnson" />
+    </XDSAvatarGroup>
+  ),
+};
+
+/** Large overflow count (99+). */
+export const LargeOverflowCount: Story = {
+  render: () => (
+    <XDSAvatarGroup size="medium">
+      {USERS.slice(0, 3).map(u => (
+        <XDSAvatar key={u.key} src={u.src} name={u.name} />
+      ))}
+      <XDSAvatarGroupOverflow count={999} />
+    </XDSAvatarGroup>
+  ),
+};
+
+/** Zero overflow count edge case. */
+export const ZeroOverflow: Story = {
+  render: () => (
+    <XDSAvatarGroup size="medium">
+      {USERS.slice(0, 3).map(u => (
+        <XDSAvatar key={u.key} src={u.src} name={u.name} />
+      ))}
+      <XDSAvatarGroupOverflow count={0} />
+    </XDSAvatarGroup>
+  ),
+};
+
+/** Narrow container — tests overflow behavior in constrained width. */
+export const NarrowContainer: Story = {
+  render: () => (
+    <div style={{width: 120, border: '1px dashed grey', padding: 8}}>
+      <XDSAvatarGroup size="medium">
+        {USERS.slice(0, 5).map(u => (
+          <XDSAvatar key={u.key} src={u.src} name={u.name} />
+        ))}
+        <XDSAvatarGroupOverflow count={10} />
+      </XDSAvatarGroup>
+    </div>
+  ),
+};
+
+/** Many avatars — 10+ items to verify overlap stacking. */
+export const ManyAvatars: Story = {
+  render: () => {
+    const manyUsers = Array.from({length: 10}, (_, i) => ({
+      key: `user-${i}`,
+      name: `User ${i + 1}`,
+      src: `https://i.pravatar.cc/150?img=${(i % 70) + 1}`,
+    }));
+    return (
+      <XDSAvatarGroup size="small">
+        {manyUsers.map(u => (
+          <XDSAvatar key={u.key} src={u.src} name={u.name} />
+        ))}
+        <XDSAvatarGroupOverflow count={37} />
+      </XDSAvatarGroup>
+    );
+  },
+};

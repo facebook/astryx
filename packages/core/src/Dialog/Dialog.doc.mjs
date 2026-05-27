@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Dialog',
+  displayName: 'Dialog',
   group: 'Dialog',
   keywords: ["dialog","modal","popup","overlay","lightbox","alert","confirm","prompt","backdrop","focus trap","imperative"],
   playground: {
@@ -36,6 +37,7 @@ export const docs = {
   components: [
     {
       name: 'XDSDialog',
+      displayName: 'XDS Dialog',
       description: 'Modal dialog using the native <dialog> element.',
       props: [
         {
@@ -98,6 +100,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSDialogHeader',
+      displayName: 'XDS Dialog Header',
       description:
         'Header for dialogs with a title, optional subtitle, close button, and start/end content slots.',
       props: [
@@ -144,6 +147,7 @@ export const docs = {
     },
     {
       name: 'useXDSImperativeDialog',
+      displayName: 'useXDSImperativeDialog',
       description: 'Hook for showing a dialog without managing open state. Call dialog.show(content, options) to open and dialog.hide() to close. Render dialog.element in your JSX tree.',
       props: [
         {name: 'show', type: '(content: ReactNode, options?: DialogOptions) => void', description: 'Show the dialog with the given content. Options are the same as XDSDialog props minus isOpen/onOpenChange/children.'},
@@ -176,6 +180,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Dialog',
+  displayName: 'Dialog',
   theming: {
     container: true,
     targets: [
@@ -192,6 +197,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSDialog',
+      displayName: 'XDS Dialog',
       description: '使用原生 <dialog> 元素的模态对话框。',
       props: [
         {
@@ -248,6 +254,7 @@ export const docsZh = {
     },
     {
       name: 'XDSDialogHeader',
+      displayName: 'XDS Dialog Header',
       description:
         '对话框头部，包含标题、可选副标题、关闭按钮以及首尾内容插槽。',
       props: [
@@ -323,6 +330,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSDialog',
+      displayName: 'XDS Dialog',
       description: 'modal dialog using native <dialog>',
       propDescriptions: {
         isOpen: 'dialog open state',
@@ -337,6 +345,7 @@ export const docsDense = {
     },
     {
       name: 'XDSDialogHeader',
+      displayName: 'XDS Dialog Header',
       description: 'dialog header w/ title, optional subtitle, close button, start/end content slots',
       propDescriptions: {
         title: 'dialog title (receives focus on open)',

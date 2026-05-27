@@ -4,6 +4,7 @@
 export const doc = {
   type: 'page',
   name: 'Dashboard (Portfolio)',
+  displayName: 'Dashboard (Portfolio)',
   description: 'Investment portfolio dashboard with KPI metrics, area chart, and top asset holdings',
   isReady: true,
 };

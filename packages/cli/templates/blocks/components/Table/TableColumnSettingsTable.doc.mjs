@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'Table',
   name: 'Table — Column Settings',
+  displayName: 'Table — Column Settings',
   description:
     'Table with a column visibility picker in the toolbar. Toggle columns on and off.',
   isReady: true,

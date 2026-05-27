@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'FormLayout',
+  displayName: 'Form Layout',
   group: 'Layout',
   keywords: ["formlayout","form","fieldset","formgroup","formcontainer","fields","vertical","horizontal"],
   props: [
@@ -53,6 +54,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'FormLayout',
+  displayName: 'Form Layout',
   props: [
     {
       name: 'direction',

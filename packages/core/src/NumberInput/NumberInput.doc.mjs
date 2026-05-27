@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'NumberInput',
+  displayName: 'Number Input',
   keywords: ["numberinput","numberfield","stepper","spinner","counter","increment","decrement","quantity","numberpicker"],
   props: [
     {
@@ -178,6 +179,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'NumberInput',
+  displayName: 'Number Input',
   props: [
     {
       name: 'label',

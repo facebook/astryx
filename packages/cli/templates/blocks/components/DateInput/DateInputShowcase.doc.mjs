@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'DateInput',
   name: 'DateInput',
+  displayName: 'Date Input',
   description:
     'A date input field with a calendar popover. Type a date or click the calendar icon to pick one.',
   isReady: true,

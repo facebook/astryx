@@ -4,6 +4,7 @@
 export const doc = {
   type: 'page',
   name: 'AI Chat (Landing Page)',
+  displayName: 'AI Chat (Landing Page)',
   description: 'AI assistant landing page with chat composer, greeting, and category toggles',
   isReady: true,
 };

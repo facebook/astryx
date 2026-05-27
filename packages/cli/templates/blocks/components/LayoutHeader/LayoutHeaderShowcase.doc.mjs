@@ -5,6 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'LayoutHeader',
   name: 'LayoutHeader',
+  displayName: 'Layout Header',
   description:
     'LayoutHeader is a fixed header slot within a Layout, pinned to the top for titles, navigation, and action buttons.',
   isReady: true,

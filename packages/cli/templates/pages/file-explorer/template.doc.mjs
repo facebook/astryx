@@ -4,6 +4,7 @@
 export const doc = {
   type: 'page',
   name: 'File Explorer',
+  displayName: 'File Explorer',
   description: 'Column-based file browser inspired by macOS Finder',
   isReady: true,
 };
