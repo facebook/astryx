@@ -33,11 +33,11 @@ import {ensureJscodeshift} from '../codemods/ensure-jscodeshift.mjs';
 import {
   getTransformsBetween,
   latestVersion,
-  versions,
 } from '../codemods/registry.mjs';
 import {runCodemods} from '../codemods/runner.mjs';
 import {installAgentDocs, discoverAgentDocs} from './agent-docs.mjs';
 import {detectPackageManager, getRunPrefix} from '../utils/package-manager.mjs';
+import {isValidSemver, semverGte} from '../utils/semver.mjs';
 import {jsonOut, jsonError} from '../lib/json.mjs';
 
 /**
@@ -125,12 +125,13 @@ function getInstallCommand(force = false) {
  * List all available codemods across all versions.
  */
 async function listCodemods() {
-  for (const version of versions) {
-    const manifests = await getTransformsBetween('0.0.0', version);
-    for (const {transforms} of manifests) {
-      for (const {name, meta} of transforms) {
-        p.log.info(`  ${name} — ${meta.title} (${meta.pr})`);
-      }
+  // Walk the full registry once. The previous implementation called
+  // getTransformsBetween('0.0.0', v) for every v in versions, so a codemod
+  // introduced at 0.0.2 was reprinted for every version >= 0.0.2.
+  const manifests = await getTransformsBetween('0.0.0', latestVersion);
+  for (const {transforms} of manifests) {
+    for (const {name, meta} of transforms) {
+      p.log.info(`  ${name} — ${meta.title} (${meta.pr})`);
     }
   }
 }
@@ -154,14 +155,35 @@ export function registerUpgrade(program) {
       const json = program.opts().json || false;
       if (!json) p.intro('XDS Upgrade');
 
+      // Validate --to / --from upfront so callers don't silently accept
+      // typos like `--to bogus` (which used to flow through getTransformsBetween
+      // and just emit "no codemods available").
+      if (options.to !== undefined && !isValidSemver(options.to)) {
+        const msg = `Invalid --to value: "${options.to}". Expected a semver string like 0.0.10.`;
+        if (json) return jsonError(msg);
+        p.log.error(msg);
+        p.outro('Aborted');
+        process.exitCode = 1;
+        return;
+      }
+      if (options.from !== undefined && !isValidSemver(options.from)) {
+        const msg = `Invalid --from value: "${options.from}". Expected a semver string like 0.0.5.`;
+        if (json) return jsonError(msg);
+        p.log.error(msg);
+        p.outro('Aborted');
+        process.exitCode = 1;
+        return;
+      }
       if (options.list) {
         const codemods = [];
-        for (const version of versions) {
-          const manifests = await getTransformsBetween('0.0.0', version);
-          for (const {transforms} of manifests) {
-            for (const {name, meta, optional} of transforms) {
-              codemods.push({name, title: meta.title, version, pr: meta.pr, optional: !!optional});
-            }
+        // Walk the registry once from 0.0.0 → latest. Earlier this looped
+        // over every version and re-walked getTransformsBetween('0.0.0', v),
+        // so each codemod was printed once per release that included it
+        // (31 unique × 9 ≈ 201 lines on the current registry).
+        const manifests = await getTransformsBetween('0.0.0', latestVersion);
+        for (const {version, transforms} of manifests) {
+          for (const {name, meta, optional} of transforms) {
+            codemods.push({name, title: meta.title, version, pr: meta.pr, optional: !!optional});
           }
         }
         if (json) return jsonOut('upgrade.list', codemods.map(({name, title, version, optional}) => ({name, title, version, optional})));
@@ -201,7 +223,7 @@ export function registerUpgrade(program) {
           p.log.info(`Target version:  ${targetVersion}`);
         }
 
-        if (!options.force && currentVersion >= targetVersion) {
+        if (!options.force && semverGte(currentVersion, targetVersion)) {
           if (!json) {
             p.log.success('Already up to date — no codemods to run.');
             p.log.info('Use --force to run codemods anyway, or --from <version> to specify the previous version.');
