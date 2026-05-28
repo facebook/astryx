@@ -106,6 +106,7 @@ jobs:
         run: pnpm -F @xds/sandbox build
         env:
           SANDBOX_BASE_PATH: /sandbox
+          NODE_OPTIONS: '--max-old-space-size=4096'
 
       - name: Preserve PR previews and reports from gh-pages
         run: |

@@ -21,7 +21,7 @@ export const docs = {
   components: [
     {
       name: 'XDSCommandPalette',
-      displayName: 'XDS Command Palette',
+      displayName: 'Command Palette',
       description:
         'Root component. Manages open state, search, keyboard navigation, and composition slots.',
       props: [
@@ -117,7 +117,7 @@ export const docs = {
     },
     {
       name: 'XDSCommandPaletteInput',
-      displayName: 'XDS Command Palette Input',
+      displayName: 'Command Palette Input',
       description:
         'Search input slot. Auto-focuses on mount. Wires to command palette context when used inside XDSCommandPalette.',
       props: [
@@ -165,7 +165,7 @@ export const docs = {
     },
     {
       name: 'XDSCommandPaletteList',
-      displayName: 'XDS Command Palette List',
+      displayName: 'Command Palette List',
       description:
         'Scrollable results container. Renders as a listbox for ARIA. Contains XDSCommandPaletteItem and XDSCommandPaletteGroup children.',
       props: [
@@ -191,7 +191,7 @@ export const docs = {
     },
     {
       name: 'XDSCommandPaletteItem',
-      displayName: 'XDS Command Palette Item',
+      displayName: 'Command Palette Item',
       description:
         'A selectable item. Accepts arbitrary children for full rendering control. Registers with context for keyboard navigation when inside XDSCommandPalette.',
       props: [
@@ -242,7 +242,7 @@ export const docs = {
     },
     {
       name: 'XDSCommandPaletteGroup',
-      displayName: 'XDS Command Palette Group',
+      displayName: 'Command Palette Group',
       description: 'Visual grouping with a heading label. Place inside XDSCommandPaletteList.',
       props: [
         {
@@ -267,7 +267,7 @@ export const docs = {
     },
     {
       name: 'XDSCommandPaletteFooter',
-      displayName: 'XDS Command Palette Footer',
+      displayName: 'Command Palette Footer',
       description:
         'Footer showing keyboard navigation hints. Renders default arrow/Enter/Escape hints when no children are provided.',
       props: [
@@ -287,7 +287,7 @@ export const docs = {
     },
     {
       name: 'XDSCommandPaletteEmpty',
-      displayName: 'XDS Command Palette Empty',
+      displayName: 'Command Palette Empty',
       description:
         'Empty state display for the results area. Rendered automatically by XDSCommandPalette for no-results and no-query states.',
       props: [
@@ -334,7 +334,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSCommandPalette',
-      displayName: 'XDS Command Palette',
+      displayName: 'Command Palette',
       description: '根组件。管理打开状态、搜索、键盘导航和组合插槽。',
       propDescriptions: {
         isOpen: '命令面板对话框是否可见。',
@@ -355,7 +355,7 @@ export const docsZh = {
     },
     {
       name: 'XDSCommandPaletteInput',
-      displayName: 'XDS Command Palette Input',
+      displayName: 'Command Palette Input',
       description: '搜索输入插槽。挂载时自动聚焦。在 XDSCommandPalette 内使用时连接到上下文。',
       propDescriptions: {
         placeholder: '输入框的占位文本。',
@@ -368,13 +368,13 @@ export const docsZh = {
     },
     {
       name: 'XDSCommandPaletteList',
-      displayName: 'XDS Command Palette List',
+      displayName: 'Command Palette List',
       description: '可滚动的结果容器。作为 listbox 渲染以符合 ARIA 规范。',
       propDescriptions: {children: '条目、分组和空状态。', label: 'listbox 的无障碍标签。', xstyle: 'StyleX 布局自定义样式。必须是 stylex.create() 的值。'},
     },
     {
       name: 'XDSCommandPaletteItem',
-      displayName: 'XDS Command Palette Item',
+      displayName: 'Command Palette Item',
       description: '可选择的条目。接受任意子元素以实现完整的渲染控制。',
       propDescriptions: {
         value: '用于标识和选择的唯一值。',
@@ -388,19 +388,19 @@ export const docsZh = {
     },
     {
       name: 'XDSCommandPaletteGroup',
-      displayName: 'XDS Command Palette Group',
+      displayName: 'Command Palette Group',
       description: '带标题标签的视觉分组。放置在 XDSCommandPaletteList 内。',
       propDescriptions: {heading: '分组标题文本。', children: 'XDSCommandPaletteItem 子元素。', xstyle: 'StyleX 布局自定义样式。必须是 stylex.create() 的值。'},
     },
     {
       name: 'XDSCommandPaletteFooter',
-      displayName: 'XDS Command Palette Footer',
+      displayName: 'Command Palette Footer',
       description: '显示键盘导航提示的页脚。未提供子元素时渲染默认方向键/Enter/Escape 提示。',
       propDescriptions: {children: '自定义页脚内容。省略时通过 XDSKbd 渲染默认键盘提示。', xstyle: 'StyleX 布局自定义样式。必须是 stylex.create() 的值。'},
     },
     {
       name: 'XDSCommandPaletteEmpty',
-      displayName: 'XDS Command Palette Empty',
+      displayName: 'Command Palette Empty',
       description: '结果区域的空状态展示。由 XDSCommandPalette 在无结果和无查询状态下自动渲染。',
       propDescriptions: {children: '要显示的消息或内容。'},
     },
@@ -423,7 +423,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSCommandPalette',
-      displayName: 'XDS Command Palette',
+      displayName: 'Command Palette',
       description: 'root; manages open state, search, keyboard nav, composition slots',
       propDescriptions: {
         isOpen: 'dialog visible',
@@ -444,7 +444,7 @@ export const docsDense = {
     },
     {
       name: 'XDSCommandPaletteInput',
-      displayName: 'XDS Command Palette Input',
+      displayName: 'Command Palette Input',
       description: 'search input; auto-focus on mount; wires to context inside XDSCommandPalette',
       propDescriptions: {
         placeholder: 'input placeholder text',
@@ -457,7 +457,7 @@ export const docsDense = {
     },
     {
       name: 'XDSCommandPaletteList',
-      displayName: 'XDS Command Palette List',
+      displayName: 'Command Palette List',
       description: 'scrollable results container; role=listbox',
       propDescriptions: {
         children: 'items, groups, empty states',
@@ -467,7 +467,7 @@ export const docsDense = {
     },
     {
       name: 'XDSCommandPaletteItem',
-      displayName: 'XDS Command Palette Item',
+      displayName: 'Command Palette Item',
       description: 'selectable item; arbitrary children; registers w/ context for kbd nav',
       propDescriptions: {
         value: 'unique id for selection',
@@ -481,7 +481,7 @@ export const docsDense = {
     },
     {
       name: 'XDSCommandPaletteGroup',
-      displayName: 'XDS Command Palette Group',
+      displayName: 'Command Palette Group',
       description: 'group w/ heading label; inside XDSCommandPaletteList',
       propDescriptions: {
         heading: 'group heading text',
@@ -491,7 +491,7 @@ export const docsDense = {
     },
     {
       name: 'XDSCommandPaletteFooter',
-      displayName: 'XDS Command Palette Footer',
+      displayName: 'Command Palette Footer',
       description: 'footer w/ kbd hints; default=arrow/Enter/Escape hints via XDSKbd',
       propDescriptions: {
         children: 'custom content; default renders kbd hints',
@@ -500,7 +500,7 @@ export const docsDense = {
     },
     {
       name: 'XDSCommandPaletteEmpty',
-      displayName: 'XDS Command Palette Empty',
+      displayName: 'Command Palette Empty',
       description: 'empty state; auto-rendered by palette for no-results+no-query states',
       propDescriptions: {
         children: 'message or content to display',

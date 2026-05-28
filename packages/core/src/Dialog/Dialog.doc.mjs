@@ -37,7 +37,7 @@ export const docs = {
   components: [
     {
       name: 'XDSDialog',
-      displayName: 'XDS Dialog',
+      displayName: 'Dialog',
       description: 'Modal dialog using the native <dialog> element.',
       props: [
         {
@@ -100,7 +100,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSDialogHeader',
-      displayName: 'XDS Dialog Header',
+      displayName: 'Dialog Header',
       description:
         'Header for dialogs with a title, optional subtitle, close button, and start/end content slots.',
       props: [
@@ -197,7 +197,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSDialog',
-      displayName: 'XDS Dialog',
+      displayName: 'Dialog',
       description: '使用原生 <dialog> 元素的模态对话框。',
       props: [
         {
@@ -254,7 +254,7 @@ export const docsZh = {
     },
     {
       name: 'XDSDialogHeader',
-      displayName: 'XDS Dialog Header',
+      displayName: 'Dialog Header',
       description:
         '对话框头部，包含标题、可选副标题、关闭按钮以及首尾内容插槽。',
       props: [
@@ -330,7 +330,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSDialog',
-      displayName: 'XDS Dialog',
+      displayName: 'Dialog',
       description: 'modal dialog using native <dialog>',
       propDescriptions: {
         isOpen: 'dialog open state',
@@ -345,7 +345,7 @@ export const docsDense = {
     },
     {
       name: 'XDSDialogHeader',
-      displayName: 'XDS Dialog Header',
+      displayName: 'Dialog Header',
       description: 'dialog header w/ title, optional subtitle, close button, start/end content slots',
       propDescriptions: {
         title: 'dialog title (receives focus on open)',

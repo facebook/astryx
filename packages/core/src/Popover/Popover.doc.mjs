@@ -10,7 +10,7 @@ export const docs = {
   components: [
     {
       name: 'XDSPopover',
-      displayName: 'XDS Popover',
+      displayName: 'Popover',
       description:
         'A click-triggered popover for displaying interactive content anchored to a trigger element.',      props: [
         {
@@ -139,7 +139,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSPopover',
-      displayName: 'XDS Popover',
+      displayName: 'Popover',
       description:
         '一个点击触发的弹出框，用于显示锚定到触发元素的交互式内容。',
       props: [
@@ -273,7 +273,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSPopover',
-      displayName: 'XDS Popover',
+      displayName: 'Popover',
       description:
         'Click-triggered popover for interactive content anchored to trigger element.',
       propDescriptions: {

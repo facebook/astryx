@@ -109,7 +109,7 @@ export const docs = {
     },
     {
       name: 'XDSResizeHandle',
-      displayName: 'XDS Resize Handle',
+      displayName: 'Resize Handle',
       description:
         'Draggable separator between panels. Pill-grip design: invisible at rest, ' +
         'visible on hover (0.6 opacity), fully opaque during drag (1.0). Keyboard-accessible.',

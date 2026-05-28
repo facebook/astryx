@@ -27,7 +27,7 @@ export const docs = {
   components: [
     {
       name: 'XDSHoverCard',
-      displayName: 'XDS Hover Card',
+      displayName: 'Hover Card',
       description:
         'Component wrapper for hover card display — a richer, larger overlay triggered on hover or focus.',      props: [
         {
@@ -135,7 +135,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSHoverCard',
-      displayName: 'XDS Hover Card',
+      displayName: 'Hover Card',
       description:
         '悬浮卡片显示的组件包装器，在悬停或聚焦时触发更丰富、更大的浮层。',
       props: [
@@ -233,7 +233,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSHoverCard',
-      displayName: 'XDS Hover Card',
+      displayName: 'Hover Card',
       description: 'Component wrapper for hover card overlay; richer overlay triggered on hover/focus.',
       propDescriptions: {
         children: 'Trigger element; must accept ref.',

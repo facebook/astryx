@@ -35,7 +35,7 @@ export const docs = {
   components: [
     {
       name: 'XDSStepper',
-      displayName: 'XDS Stepper',
+      displayName: 'Stepper',
       description:
         'Container component that manages step state and renders steps in horizontal or vertical orientation.',
       props: [
@@ -77,7 +77,7 @@ export const docs = {
     },
     {
       name: 'XDSStep',
-      displayName: 'XDS Step',
+      displayName: 'Step',
       description:
         'Individual step within a stepper. Renders a numbered indicator, connector line, and label with optional description.',
       props: [
@@ -151,7 +151,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSStepper',
-      displayName: 'XDS Stepper',
+      displayName: 'Stepper',
       description: 'container managing step state w/ horizontal/vertical layout',
       propDescriptions: {
         activeStep: 'zero-based active step index',
@@ -164,7 +164,7 @@ export const docsDense = {
     },
     {
       name: 'XDSStep',
-      displayName: 'XDS Step',
+      displayName: 'Step',
       description: 'individual step w/ indicator, connector, label',
       propDescriptions: {
         step: 'zero-based step index',
@@ -206,7 +206,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSStepper',
-      displayName: 'XDS Stepper',
+      displayName: 'Stepper',
       description: '容器组件，管理步骤状态并以水平或垂直方向渲染步骤。',
       props: [
         {name: 'activeStep', type: 'number', description: '当前活动步骤的从零开始的索引。', required: true},
@@ -219,7 +219,7 @@ export const docsZh = {
     },
     {
       name: 'XDSStep',
-      displayName: 'XDS Step',
+      displayName: 'Step',
       description: '步骤器中的单个步骤。渲染编号指示器、连接线和带可选描述的标签。',
       props: [
         {name: 'step', type: 'number', description: '此步骤的从零开始的索引。', required: true},

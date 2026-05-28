@@ -14,7 +14,7 @@ export const docs = {
   components: [
     {
       name: 'XDSToolbar',
-      displayName: 'XDS Toolbar',
+      displayName: 'Toolbar',
       description:
         'General-purpose toolbar container with three content slots and roving tabindex.',
       props: [
@@ -99,7 +99,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSToolbar',
-      displayName: 'XDS Toolbar',
+      displayName: 'Toolbar',
       description: '通用工具栏容器，提供三个内容插槽和循环 Tab。',
       propDescriptions: {
         label: '工具栏的无障碍标签，作为 aria-label 应用。',
@@ -148,7 +148,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSToolbar',
-      displayName: 'XDS Toolbar',
+      displayName: 'Toolbar',
       description: 'Toolbar container w/ 3 content slots + roving tabindex.',
       propDescriptions: {
         label: 'A11y label, aria-label on toolbar.',
