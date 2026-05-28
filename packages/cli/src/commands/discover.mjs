@@ -42,7 +42,20 @@ export function registerDiscover(program) {
         process.exit(1);
       }
 
-      if (json) return jsonOut(result.type, result.data);
+      if (json) {
+        // Forward optional meta (e.g. configured flag for discover.list).
+        // Use jsonOut directly when there is no meta to keep the existing
+        // {type, data} contract; only emit a richer shape when meta exists.
+        if (result.meta) {
+          process.__xdsJsonHandled = true;
+          // Embed meta inside data for backwards compatibility with consumers
+          // that only inspect data; data shape for discover.list is an array,
+          // so attach as a sibling instead.
+          console.log(JSON.stringify({type: result.type, data: result.data, meta: result.meta}, null, 2));
+          return;
+        }
+        return jsonOut(result.type, result.data);
+      }
 
       switch (result.type) {
         case 'discover.list': {
