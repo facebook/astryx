@@ -26,6 +26,9 @@ export {
   type XDSChatReasoningProps,
 } from './ChatReasoning/XDSChatReasoning';
 
+// Schedule — experimental full-calendar views
+export * from './Schedule';
+
 // SVG Icon system — CSS-variable-driven multi-variation icons
 export {
   XDSSVGIcon,
