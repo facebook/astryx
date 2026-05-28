@@ -591,4 +591,256 @@ describe('citation parsing', () => {
       }
     });
   });
+
+  describe('autolink (gfm)', () => {
+    it('is opt-in: bare URLs stay literal by default', () => {
+      const result = parseInline('see https://example.com for info');
+      expect(result).toEqual([
+        {type: 'text', content: 'see https://example.com for info'},
+      ]);
+    });
+
+    it('links a bare https URL when enabled', () => {
+      const result = parseInline('see https://example.com for info', {
+        autolink: 'gfm',
+      });
+      expect(result).toEqual([
+        {type: 'text', content: 'see '},
+        {
+          type: 'link',
+          href: 'https://example.com',
+          children: [{type: 'text', content: 'https://example.com'}],
+        },
+        {type: 'text', content: ' for info'},
+      ]);
+    });
+
+    it('links a bare http URL', () => {
+      const result = parseInline('go to http://example.com', {
+        autolink: 'gfm',
+      });
+      expect(result[1]).toEqual({
+        type: 'link',
+        href: 'http://example.com',
+        children: [{type: 'text', content: 'http://example.com'}],
+      });
+    });
+
+    it('links a bare www. URL with http:// prefix on href', () => {
+      const result = parseInline('go www.example.com', {autolink: 'gfm'});
+      expect(result[1]).toEqual({
+        type: 'link',
+        href: 'http://www.example.com',
+        children: [{type: 'text', content: 'www.example.com'}],
+      });
+    });
+
+    it('links a bare email', () => {
+      const result = parseInline('ping user@example.com please', {
+        autolink: 'gfm',
+      });
+      expect(result[1]).toEqual({
+        type: 'link',
+        href: 'mailto:user@example.com',
+        children: [{type: 'text', content: 'user@example.com'}],
+      });
+    });
+
+    it('allows + and % in the email local part', () => {
+      const result = parseInline('mail user+tag%suffix@example.com here', {
+        autolink: 'gfm',
+      });
+      expect(result[1].type).toBe('link');
+      if (result[1].type === 'link') {
+        expect(result[1].href).toBe('mailto:user+tag%suffix@example.com');
+      }
+    });
+
+    it('parses <scheme:url> angle-bracket autolinks', () => {
+      const result = parseInline('see <https://example.com> ok', {
+        autolink: 'gfm',
+      });
+      expect(result[1]).toEqual({
+        type: 'link',
+        href: 'https://example.com',
+        children: [{type: 'text', content: 'https://example.com'}],
+      });
+    });
+
+    it('parses <email> angle-bracket autolinks', () => {
+      const result = parseInline('mail <user@example.com> please', {
+        autolink: 'gfm',
+      });
+      expect(result[1]).toEqual({
+        type: 'link',
+        href: 'mailto:user@example.com',
+        children: [{type: 'text', content: 'user@example.com'}],
+      });
+    });
+
+    it('peels trailing sentence punctuation off bare URLs', () => {
+      const result = parseInline('see https://example.com.', {
+        autolink: 'gfm',
+      });
+      expect(result).toEqual([
+        {type: 'text', content: 'see '},
+        {
+          type: 'link',
+          href: 'https://example.com',
+          children: [{type: 'text', content: 'https://example.com'}],
+        },
+        {type: 'text', content: '.'},
+      ]);
+    });
+
+    it('peels unbalanced trailing close-parens', () => {
+      const result = parseInline('(see https://example.com/foo) here', {
+        autolink: 'gfm',
+      });
+      expect(result).toEqual([
+        {type: 'text', content: '(see '},
+        {
+          type: 'link',
+          href: 'https://example.com/foo',
+          children: [{type: 'text', content: 'https://example.com/foo'}],
+        },
+        {type: 'text', content: ') here'},
+      ]);
+    });
+
+    it('keeps balanced parens inside the URL', () => {
+      const result = parseInline('go https://example.com/Foo_(bar) ok', {
+        autolink: 'gfm',
+      });
+      expect(result[1]).toEqual({
+        type: 'link',
+        href: 'https://example.com/Foo_(bar)',
+        children: [{type: 'text', content: 'https://example.com/Foo_(bar)'}],
+      });
+    });
+
+    it('does not autolink URLs inside inline code', () => {
+      const result = parseInline('try `https://example.com` here', {
+        autolink: 'gfm',
+      });
+      expect(result).toEqual([
+        {type: 'text', content: 'try '},
+        {type: 'code', content: 'https://example.com'},
+        {type: 'text', content: ' here'},
+      ]);
+    });
+
+    it('does not nest links: skips URLs inside an existing link', () => {
+      const result = parseInline(
+        '[my site https://other.com](https://example.com)',
+        {autolink: 'gfm'},
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0].type).toBe('link');
+      if (result[0].type === 'link') {
+        expect(result[0].href).toBe('https://example.com');
+        // The label still has the URL as plain text, not a nested link.
+        expect(result[0].children).toEqual([
+          {type: 'text', content: 'my site https://other.com'},
+        ]);
+      }
+    });
+
+    it('does not autolink the destination of a markdown link', () => {
+      const result = parseInline('see [docs](https://example.com)', {
+        autolink: 'gfm',
+      });
+      expect(result).toHaveLength(2);
+      expect(result[1].type).toBe('link');
+      if (result[1].type === 'link') {
+        expect(result[1].href).toBe('https://example.com');
+      }
+    });
+
+    it('autolinks inside emphasis containers', () => {
+      const result = parseInline('see **https://example.com** ok', {
+        autolink: 'gfm',
+      });
+      expect(result[1].type).toBe('bold');
+      if (result[1].type === 'bold') {
+        expect(result[1].children).toEqual([
+          {
+            type: 'link',
+            href: 'https://example.com',
+            children: [{type: 'text', content: 'https://example.com'}],
+          },
+        ]);
+      }
+    });
+
+    it('does not match when preceded by an alphanumeric char', () => {
+      const result = parseInline('xhttps://example.com', {autolink: 'gfm'});
+      expect(result).toEqual([{type: 'text', content: 'xhttps://example.com'}]);
+    });
+
+    it('handles multiple autolinks in one block', () => {
+      const result = parseInline(
+        'see https://a.com or https://b.com or me@x.com',
+        {autolink: 'gfm'},
+      );
+      const linkHrefs = result
+        .filter(n => n.type === 'link')
+        .map(n => (n.type === 'link' ? n.href : ''));
+      expect(linkHrefs).toEqual([
+        'https://a.com',
+        'https://b.com',
+        'mailto:me@x.com',
+      ]);
+    });
+
+    it('does not autolink inside fenced code blocks', () => {
+      const md = '```\nhttps://example.com\n```';
+      const blocks = parseMarkdown(md, {autolink: 'gfm'});
+      expect(blocks).toHaveLength(1);
+      expect(blocks[0]).toEqual({
+        type: 'codeblock',
+        language: 'plaintext',
+        content: 'https://example.com',
+      });
+    });
+
+    it('passes through parseMarkdown for headings and paragraphs', () => {
+      const md = '# https://heading.com\n\nsee https://para.com here';
+      const blocks = parseMarkdown(md, {autolink: 'gfm'});
+      expect(blocks).toHaveLength(2);
+      if (blocks[0].type === 'heading') {
+        expect(blocks[0].children[0]).toEqual({
+          type: 'link',
+          href: 'https://heading.com',
+          children: [{type: 'text', content: 'https://heading.com'}],
+        });
+      }
+      if (blocks[1].type === 'paragraph') {
+        expect(blocks[1].children.some(n => n.type === 'link')).toBe(true);
+      }
+    });
+
+    it('still accepts ReadonlySet<string> sourceIds via legacy signature', () => {
+      // Default behavior — no autolink, sourceIds passed positionally
+      const sources = new Set(['abc1']);
+      const result = parseInline('see [abc1] for https://example.com', sources);
+      expect(result.some(n => n.type === 'citation')).toBe(true);
+      // Bare URL remains literal text because autolink is unset
+      expect(
+        result.some(
+          n => n.type === 'text' && n.content.includes('https://example.com'),
+        ),
+      ).toBe(true);
+    });
+
+    it('combines sourceIds + autolink in the options bag', () => {
+      const sources = new Set(['abc1']);
+      const result = parseInline('see [abc1] for https://example.com', {
+        sourceIds: sources,
+        autolink: 'gfm',
+      });
+      expect(result.some(n => n.type === 'citation')).toBe(true);
+      expect(result.some(n => n.type === 'link')).toBe(true);
+    });
+  });
 });

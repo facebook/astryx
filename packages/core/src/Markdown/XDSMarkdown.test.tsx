@@ -449,4 +449,68 @@ describe('inlinePlugins', () => {
     expect(link!.textContent).toBe('PROJ-123');
     expect(link!.closest('strong')).toBeInTheDocument();
   });
+
+  describe('autolink prop', () => {
+    it('renders bare URLs as plain text by default', () => {
+      const {container} = render(
+        <XDSMarkdown>{'see https://example.com here'}</XDSMarkdown>,
+      );
+      expect(container.querySelector('a')).toBeNull();
+      expect(container.textContent).toContain('https://example.com');
+    });
+
+    it('renders bare https URLs as links when autolink="gfm"', () => {
+      const {container} = render(
+        <XDSMarkdown autolink="gfm">
+          {'see https://example.com here'}
+        </XDSMarkdown>,
+      );
+      const link = container.querySelector('a');
+      expect(link).not.toBeNull();
+      expect(link!.getAttribute('href')).toBe('https://example.com');
+      expect(link!.textContent).toBe('https://example.com');
+    });
+
+    it('renders bare www URLs with http:// prefix', () => {
+      const {container} = render(
+        <XDSMarkdown autolink="gfm">{'go www.example.com'}</XDSMarkdown>,
+      );
+      const link = container.querySelector('a');
+      expect(link).not.toBeNull();
+      expect(link!.getAttribute('href')).toBe('http://www.example.com');
+      expect(link!.textContent).toBe('www.example.com');
+    });
+
+    it('renders bare emails with mailto: href', () => {
+      const {container} = render(
+        <XDSMarkdown autolink="gfm">
+          {'ping user@example.com please'}
+        </XDSMarkdown>,
+      );
+      const link = container.querySelector('a');
+      expect(link).not.toBeNull();
+      expect(link!.getAttribute('href')).toBe('mailto:user@example.com');
+      expect(link!.textContent).toBe('user@example.com');
+    });
+
+    it('does not autolink URLs inside code spans', () => {
+      const {container} = render(
+        <XDSMarkdown autolink="gfm">
+          {'try `https://example.com` here'}
+        </XDSMarkdown>,
+      );
+      expect(container.querySelector('a')).toBeNull();
+      expect(container.querySelector('code')).not.toBeNull();
+    });
+
+    it('does not autolink URLs inside code blocks', () => {
+      const {container} = render(
+        <XDSMarkdown autolink="gfm">
+          {'```\nhttps://example.com\n```'}
+        </XDSMarkdown>,
+      );
+      expect(container.querySelector('a')).toBeNull();
+      expect(container.querySelector('pre')).not.toBeNull();
+    });
+  });
 });
