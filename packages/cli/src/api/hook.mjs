@@ -42,6 +42,11 @@ export async function hook(name, options = {}) {
   }
 
   // ── List mode ──────────────────────────────────────────────────
+  //
+  // Detail levels (length: brief < compact < full):
+  //   brief   → just hook names grouped by category (`hook.list`)
+  //   compact → names + short description (`hook.compact-list`)
+  //   full    → rich entries with description + import path (`hook.detailed-list`)
 
   if (category || list || !name) {
     const hooks = discoverHooks(coreDir);
@@ -57,56 +62,62 @@ export async function hook(name, options = {}) {
         );
       }
 
-      if (detail === 'brief') {
+      if (detail === 'compact' || detail === 'full') {
         const entries = [];
         for (const hookName of match[1]) {
           const docPath = findHookDoc(coreDir, hookName);
+          let description = '';
+          let importPath = '@xds/core/hooks';
           if (docPath) {
             try {
               const docs = await loadDocs(docPath, {zh, lang});
-              entries.push({
-                name: hookName,
-                description: docs.usage?.description || '',
-                import: docs.importPath || '@xds/core/hooks',
-              });
+              description = docs.usage?.description || '';
+              importPath = docs.importPath || importPath;
             } catch {
-              entries.push({name: hookName, description: '', import: '@xds/core/hooks'});
+              // ignore
             }
+          }
+          if (detail === 'full') {
+            entries.push({name: hookName, description, import: importPath});
           } else {
-            entries.push({name: hookName, description: '', import: '@xds/core/hooks'});
+            entries.push({name: hookName, description});
           }
         }
-        return {type: 'hook.brief', data: {[match[0]]: entries}};
+        const type = detail === 'full' ? 'hook.detailed-list' : 'hook.compact-list';
+        return {type, data: {[match[0]]: entries}};
       }
 
       return {type: 'hook.list', data: {[match[0]]: match[1]}};
     }
 
     // All hooks
-    if (detail === 'brief') {
-      /** @type {Record<string, Array<{name: string, description: string, import: string}>>} */
+    if (detail === 'compact' || detail === 'full') {
+      /** @type {Record<string, Array<{name: string, description: string, import?: string}>>} */
       const result = {};
       for (const [cat, hookNames] of Object.entries(hooks)) {
         result[cat] = [];
         for (const hookName of hookNames) {
           const docPath = findHookDoc(coreDir, hookName);
+          let description = '';
+          let importPath = '@xds/core/hooks';
           if (docPath) {
             try {
               const docs = await loadDocs(docPath, {zh, lang});
-              result[cat].push({
-                name: hookName,
-                description: docs.usage?.description || '',
-                import: docs.importPath || '@xds/core/hooks',
-              });
+              description = docs.usage?.description || '';
+              importPath = docs.importPath || importPath;
             } catch {
-              result[cat].push({name: hookName, description: '', import: '@xds/core/hooks'});
+              // ignore
             }
+          }
+          if (detail === 'full') {
+            result[cat].push({name: hookName, description, import: importPath});
           } else {
-            result[cat].push({name: hookName, description: '', import: '@xds/core/hooks'});
+            result[cat].push({name: hookName, description});
           }
         }
       }
-      return {type: 'hook.brief', data: result};
+      const type = detail === 'full' ? 'hook.detailed-list' : 'hook.compact-list';
+      return {type, data: result};
     }
 
     return {type: 'hook.list', data: hooks};

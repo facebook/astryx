@@ -18,11 +18,13 @@ import {
 } from '../../lib/hook-format.mjs';
 import {getRunPrefix} from '../../utils/package-manager.mjs';
 import {jsonOut, jsonError} from '../../lib/json.mjs';
+import {validateLang} from '../../lib/lang.mjs';
+import {addCommonHelp} from '../../utils/help.mjs';
 import {hook as hookApi} from '../../api/hook.mjs';
 import {findRelatedBlocks} from '../../api/template.mjs';
 
 export function registerHook(program) {
-  program
+  const cmd = program
     .command('hook [name]')
     .description('List hooks or print hook docs')
     .option('--list', 'List all hooks grouped by category')
@@ -31,9 +33,18 @@ export function registerHook(program) {
     .action(async (name, options) => {
       const run = getRunPrefix();
       const zh = program.opts().zh || false;
-      const lang = program.opts().lang || null;
-      const detail = program.opts().detail || 'full';
+      // For list views, default to `brief` (just names) when the user didn't
+      // explicitly pass --detail. Single-hook views still default to `full`.
+      const detailSource = program.getOptionValueSource('detail');
+      const isListMode = options.list || options.category || !name;
+      const detail = (isListMode && detailSource === 'default')
+        ? 'brief'
+        : (program.opts().detail || 'full');
       const json = program.opts().json || false;
+      const {lang} = validateLang({
+        lang: program.opts().lang,
+        zh, dense: false, json,
+      });
 
       const validDetails = ['full', 'compact', 'brief'];
       if (!validDetails.includes(detail)) {
@@ -90,12 +101,26 @@ export function registerHook(program) {
           break;
         }
 
-        case 'hook.brief': {
-          if (options.category || options.list || !name) {
-            console.log(await formatHookBriefAll(coreDir));
-          } else {
-            console.log(formatHookBrief(result.data));
+        case 'hook.compact-list': {
+          console.log('');
+          for (const [cat, entries] of Object.entries(result.data)) {
+            console.log(cat);
+            for (const e of entries) {
+              const desc = e.description
+                ? (e.description.length > 80 ? e.description.slice(0, 77) + '...' : e.description)
+                : '';
+              console.log(desc ? `  ${e.name} — ${desc}` : `  ${e.name}`);
+            }
           }
+          console.log('');
+          console.log(`Usage: ${run} xds hook <name>`);
+          console.log('');
+          break;
+        }
+
+        case 'hook.detailed-list': {
+          // Full list view: per-hook brief docs (signature, params, examples).
+          console.log(await formatHookBriefAll(coreDir));
           break;
         }
 
@@ -136,6 +161,14 @@ export function registerHook(program) {
         }
       }
     });
+
+  addCommonHelp(cmd, [
+    'xds hook                              List all hooks',
+    'xds hook --list --detail compact      Names + short descriptions',
+    'xds hook useFocusTrap                 Print full useFocusTrap docs',
+    'xds hook useFocusTrap --params        Print only the parameters table',
+    'xds hook useFocusTrap --json          JSON output for scripting',
+  ]);
 }
 
 // Re-export lib functions for external consumers

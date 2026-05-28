@@ -37,6 +37,7 @@ import {
 } from '../codemods/registry.mjs';
 import {runCodemods} from '../codemods/runner.mjs';
 import {installAgentDocs, discoverAgentDocs} from './agent-docs.mjs';
+import {addCommonHelp} from '../utils/help.mjs';
 import {detectPackageManager, getRunPrefix} from '../utils/package-manager.mjs';
 import {jsonOut, jsonError} from '../lib/json.mjs';
 
@@ -136,7 +137,7 @@ async function listCodemods() {
 }
 
 export function registerUpgrade(program) {
-  program
+  const cmd = program
     .command('upgrade')
     .description('Run codemods to migrate between XDS versions')
     .option('--apply', 'Write changes to disk (default: dry-run)', false)
@@ -321,4 +322,11 @@ export function registerUpgrade(program) {
       if (json) return jsonOut('upgrade.run', receipt);
       p.outro(options.apply ? 'Upgrade complete' : 'Dry run complete');
     });
+
+  addCommonHelp(cmd, [
+    'xds upgrade --list                 List available codemods',
+    'xds upgrade                        Dry-run upgrade to latest',
+    'xds upgrade --apply                Apply codemods + bump deps',
+    'xds upgrade --to 0.0.15 --apply    Upgrade to a specific version',
+  ]);
 }

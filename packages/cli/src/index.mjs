@@ -35,6 +35,19 @@ program
     program.help();
   });
 
+// `--version --json` should emit a JSON envelope instead of plain text.
+// Commander handles --version by exiting before any subcommand action runs,
+// so we have to intercept argv before parsing.
+if (process.argv.includes('--version') || process.argv.includes('-V')) {
+  if (process.argv.includes('--json')) {
+    console.log(JSON.stringify({
+      type: 'version',
+      data: {version: pkg.version},
+    }, null, 2));
+    process.exit(0);
+  }
+}
+
 /**
  * Fallback hook: if --json was requested but the command didn't call
  * jsonOut/jsonError, return a structured "not supported" error.

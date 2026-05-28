@@ -18,6 +18,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import {CLI_ROOT} from '../utils/paths.mjs';
 import {getRunPrefix} from '../utils/package-manager.mjs';
+import {addCommonHelp} from '../utils/help.mjs';
 import {installAgentDocs, removeAgentDocs} from './agent-docs.mjs';
 import {listTemplates} from './template.mjs';
 
@@ -135,7 +136,7 @@ async function runTemplate(targetDir, {interactive = true, templateName} = {}) {
 // ─── Command ─────────────────────────────────────────────────────────────────
 
 export function registerInit(program) {
-  program
+  const cmd = program
     .command('init')
     .description('Initialize XDS in your project')
     .option('--features <list>', 'Comma-separated features to install (agents, theme, template)')
@@ -225,4 +226,11 @@ export function registerInit(program) {
       console.log(`    3. ${run} xds --help for all commands`);
       console.log('');
     });
+
+  addCommonHelp(cmd, [
+    'xds init                          Interactive setup',
+    'xds init --all                    Install all features, no prompts',
+    'xds init --features agents        Just install AI agent docs',
+    'xds init --remove-agents          Remove AI agent docs',
+  ]);
 }

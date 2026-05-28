@@ -15,17 +15,22 @@ import {scanAllPackages} from '../lib/package-scanner.mjs';
 import {formatFull, formatBrief, formatCompact} from '../lib/component-format.mjs';
 import {jsonOut, jsonError} from '../lib/json.mjs';
 import {discover as discoverApi} from '../api/discover.mjs';
+import {addCommonHelp} from '../utils/help.mjs';
+import {validateLang} from '../lib/lang.mjs';
 
 export function registerDiscover(program) {
-  program
+  const cmd = program
     .command('discover [query]')
     .description('Discover external XDS packages and components')
     .option('--components', 'List components only')
     .action(async (query, options) => {
       const detail = program.opts().detail || 'full';
       const json = program.opts().json || false;
-      const lang = program.opts().lang || null;
       const zh = program.opts().zh || false;
+      const {lang} = validateLang({
+        lang: program.opts().lang,
+        zh, dense: program.opts().dense || false, json,
+      });
 
       let result;
       try {
@@ -142,4 +147,11 @@ export function registerDiscover(program) {
         }
       }
     });
+
+  addCommonHelp(cmd, [
+    'xds discover                          List all installed XDS packages',
+    'xds discover --components             List all components across packages',
+    'xds discover button                   Search for components matching "button"',
+    'xds discover --json                   JSON output for scripting',
+  ]);
 }

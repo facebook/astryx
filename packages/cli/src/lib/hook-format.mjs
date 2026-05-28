@@ -85,6 +85,13 @@ export function formatHookFull(docs) {
   const desc = docs.usage?.description || '';
   if (desc) sections.push(desc + '\n');
 
+  // Import block (compact has it; full should be a superset)
+  const imp = docs.importPath;
+  if (imp) {
+    sections.push('## Import\n');
+    sections.push(`\`\`\`tsx\nimport { ${docs.name} } from '${imp}';\n\`\`\`\n`);
+  }
+
   // Best Practices (same position as component format)
   if (docs.usage?.bestPractices?.length) {
     sections.push('## Best Practices\n');
@@ -105,6 +112,32 @@ export function formatHookFull(docs) {
   if (docs.returns?.length) {
     sections.push('## Returns\n');
     sections.push(formatReturnsTable(docs.returns) + '\n');
+  }
+
+  // Examples (full should include examples; compact and brief skip them)
+  if (docs.examples?.length) {
+    sections.push('## Examples\n');
+    for (const ex of docs.examples) {
+      if (ex.title) sections.push(`### ${ex.title}\n`);
+      if (ex.description) sections.push(ex.description + '\n');
+      if (ex.code) {
+        sections.push('```tsx\n' + ex.code.trimEnd() + '\n```\n');
+      }
+    }
+  }
+
+  // Related (compact has it; full should too)
+  const relatedParts = [];
+  if (docs.relatedComponents?.length) {
+    relatedParts.push(`Components: ${docs.relatedComponents.join(', ')}`);
+  }
+  if (docs.relatedHooks?.length) {
+    relatedParts.push(`Hooks: ${docs.relatedHooks.join(', ')}`);
+  }
+  if (relatedParts.length) {
+    sections.push('## Related\n');
+    for (const part of relatedParts) sections.push(part);
+    sections.push('');
   }
 
   return sections.join('\n');

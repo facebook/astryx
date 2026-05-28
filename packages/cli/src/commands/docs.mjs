@@ -14,6 +14,8 @@
 
 import {getRunPrefix} from '../utils/package-manager.mjs';
 import {jsonOut, jsonError} from '../lib/json.mjs';
+import {validateLang} from '../lib/lang.mjs';
+import {addCommonHelp} from '../utils/help.mjs';
 import {docs as docsApi} from '../api/docs.mjs';
 
 // ─── Formatting ──────────────────────────────────────────────────────────────
@@ -98,16 +100,19 @@ function formatReferenceFull(docs, detail) {
 // ─── Command ─────────────────────────────────────────────────────────────────
 
 export function registerDocs(program) {
-  program
+  const cmd = program
     .command('docs [topic] [section]')
     .description('Print XDS reference docs')
     .action(async (topic, section) => {
       const run = getRunPrefix();
-      const lang = program.opts().lang || null;
       const zh = program.opts().zh || false;
       const dense = program.opts().dense || false;
       const detail = program.opts().detail || 'full';
       const json = program.opts().json || false;
+      const {lang} = validateLang({
+        lang: program.opts().lang,
+        zh, dense, json,
+      });
 
       let result;
       try {
@@ -145,4 +150,11 @@ export function registerDocs(program) {
         }
       }
     });
+
+  addCommonHelp(cmd, [
+    'xds docs                       List available reference topics',
+    'xds docs theming               Print the theming reference',
+    'xds docs theming variables     Print just the variables section',
+    'xds docs --json                JSON output for scripting',
+  ]);
 }

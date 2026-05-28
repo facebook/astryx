@@ -16,6 +16,7 @@ import * as path from 'node:path';
 import * as p from '@clack/prompts';
 import {findCoreDir, listComponents} from '../utils/paths.mjs';
 import {jsonOut, jsonError} from '../lib/json.mjs';
+import {addCommonHelp} from '../utils/help.mjs';
 import {
   checkGhCli,
   createGapReport,
@@ -56,7 +57,7 @@ function isCancel(value) {
 }
 
 export function registerSwizzle(program) {
-  program
+  const cmd = program
     .command('swizzle [component]')
     .description('Copy component source for customization')
     .option('--output <dir>', 'Output directory', './components/xds')
@@ -228,4 +229,10 @@ export function registerSwizzle(program) {
         console.error(`Warning: Could not file gap report: ${err.message}`);
       }
     });
+
+  addCommonHelp(cmd, [
+    'xds swizzle --list                List available components to swizzle',
+    'xds swizzle XDSButton             Copy Button source into ./components/xds',
+    'xds swizzle XDSButton --output ./src/ui',
+  ]);
 }

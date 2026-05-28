@@ -73,6 +73,11 @@ export async function component(name, options = {}) {
   }
 
   // ── List mode ──────────────────────────────────────────────────
+  //
+  // Detail levels (length: brief < compact < full):
+  //   brief   → just component names grouped by category (`component.list`)
+  //   compact → names + short description (`component.compact-list`)
+  //   full    → rich entries with description + import path (`component.detailed-list`)
 
   if (category || list || !name) {
     const components = discoverComponents(coreDir);
@@ -88,48 +93,58 @@ export async function component(name, options = {}) {
         );
       }
 
-      if (detail === 'brief') {
+      if (detail === 'compact' || detail === 'full') {
         const entries = [];
         for (const comp of match[1]) {
           const readme = findComponentReadme(coreDir, comp);
+          let description = '';
           if (readme && readme.endsWith('.doc.mjs')) {
             try {
               const docs = await loadDocs(readme, {zh, lang});
-              entries.push({name: comp, description: docs.usage?.description || docs.description || '', import: resolveImportPath(coreDir, comp)});
+              description = docs.usage?.description || docs.description || '';
             } catch {
-              entries.push({name: comp, description: '', import: resolveImportPath(coreDir, comp)});
+              // ignore — leave description blank
             }
+          }
+          if (detail === 'full') {
+            entries.push({name: comp, description, import: resolveImportPath(coreDir, comp)});
           } else {
-            entries.push({name: comp, description: '', import: resolveImportPath(coreDir, comp)});
+            entries.push({name: comp, description});
           }
         }
-        return {type: 'component.brief', data: {[match[0]]: entries}};
+        const type = detail === 'full' ? 'component.detailed-list' : 'component.compact-list';
+        return {type, data: {[match[0]]: entries}};
       }
 
       return {type: 'component.list', data: {[match[0]]: match[1]}};
     }
 
     // All components — merge core + external packages with grouped subcategories
-    if (detail === 'brief') {
-      /** @type {Record<string, Array<import('../types/component').ComponentBriefEntry>>} */
+    if (detail === 'compact' || detail === 'full') {
+      /** @type {Record<string, Array<{name: string, description: string, import?: string}>>} */
       const result = {};
       for (const [cat, comps] of Object.entries(components)) {
         result[cat] = [];
         for (const comp of comps) {
           const readme = findComponentReadme(coreDir, comp);
+          let description = '';
           if (readme && readme.endsWith('.doc.mjs')) {
             try {
               const docs = await loadDocs(readme, {zh, lang});
-              result[cat].push({name: comp, description: docs.usage?.description || docs.description || '', import: resolveImportPath(coreDir, comp)});
+              description = docs.usage?.description || docs.description || '';
             } catch {
-              result[cat].push({name: comp, description: '', import: resolveImportPath(coreDir, comp)});
+              // ignore
             }
+          }
+          if (detail === 'full') {
+            result[cat].push({name: comp, description, import: resolveImportPath(coreDir, comp)});
           } else {
-            result[cat].push({name: comp, description: '', import: resolveImportPath(coreDir, comp)});
+            result[cat].push({name: comp, description});
           }
         }
       }
-      return {type: 'component.brief', data: result};
+      const type = detail === 'full' ? 'component.detailed-list' : 'component.compact-list';
+      return {type, data: result};
     }
 
     const externals = discoverExternalPackages(cwd);

@@ -24,11 +24,13 @@ import {
 import {resolveTheme} from '../../lib/resolve-theme.mjs';
 import {getRunPrefix} from '../../utils/package-manager.mjs';
 import {jsonOut, jsonError} from '../../lib/json.mjs';
+import {validateLang} from '../../lib/lang.mjs';
+import {addCommonHelp} from '../../utils/help.mjs';
 import {component as componentApi} from '../../api/component.mjs';
 import {findRelatedBlocks} from '../../api/template.mjs';
 
 export function registerComponent(program) {
-  program
+  const cmd = program
     .command('component [name]')
     .description('List components or print component docs')
     .option('--list', 'List all components grouped by category')
@@ -42,9 +44,20 @@ export function registerComponent(program) {
       const run = getRunPrefix();
       const zh = program.opts().zh || false;
       const dense = program.opts().dense || false;
-      const lang = program.opts().lang || null;
-      const detail = program.opts().detail || 'full';
+      // For list views, default to `brief` (just names) when the user didn't
+      // explicitly pass --detail. This keeps `xds component` and
+      // `xds component --list` short by default while still letting agents
+      // ask for more with `--detail compact` or `--detail full`.
+      const detailSource = program.getOptionValueSource('detail');
+      const isListMode = options.list || options.category || !name;
+      const detail = (isListMode && detailSource === 'default')
+        ? 'brief'
+        : (program.opts().detail || 'full');
       const json = program.opts().json || false;
+      const {lang} = validateLang({
+        lang: program.opts().lang,
+        zh, dense, json,
+      });
 
       const validDetails = ['full', 'compact', 'brief'];
       if (!validDetails.includes(detail)) {
@@ -111,14 +124,26 @@ export function registerComponent(program) {
           break;
         }
 
-        case 'component.brief': {
-          if (options.category || options.list || !name) {
-            console.log(await formatBriefAll(coreDir, {zh, lang, themeData}));
-          } else {
-            const resolvedName = (name || '').replace(/^XDS/, '');
-            const importHint = resolveImportPath(coreDir, resolvedName);
-            console.log(formatBrief(result.data, resolvedName, importHint, {themeData}));
+        case 'component.compact-list': {
+          console.log('');
+          for (const [cat, entries] of Object.entries(result.data)) {
+            console.log(cat);
+            for (const e of entries) {
+              const desc = e.description
+                ? (e.description.length > 80 ? e.description.slice(0, 77) + '...' : e.description)
+                : '';
+              console.log(desc ? `  ${e.name} — ${desc}` : `  ${e.name}`);
+            }
           }
+          console.log('');
+          console.log(`Usage: ${run} xds component <name>`);
+          console.log('');
+          break;
+        }
+
+        case 'component.detailed-list': {
+          // Full list view: per-component brief docs (signature, vars, examples).
+          console.log(await formatBriefAll(coreDir, {zh, lang, themeData}));
           break;
         }
 
@@ -190,6 +215,15 @@ export function registerComponent(program) {
         }
       }
     });
+
+  addCommonHelp(cmd, [
+    'xds component                          List all components',
+    'xds component --list --detail compact  Names + short descriptions',
+    'xds component Button                   Print full Button docs',
+    'xds component Button --props           Print only the props table',
+    'xds component Button --json            JSON output for scripting',
+    'xds component --category Form          List Form components',
+  ]);
 }
 
 

@@ -3,35 +3,52 @@
 /**
  * Component command JSON responses.
  *
- * Invocation                                 -> type discriminator
+ * Invocation                                       -> type discriminator
  * ------------------------------------------------------------------
- * xds --json component                      -> component.list
- * xds --json component --list               -> component.list
- * xds --json component --category Form      -> component.list (filtered)
- * xds --json component --detail brief       -> component.brief
- * xds --json component Button               -> component.detail
- * xds --json component Button --props       -> component.detail.props
- * xds --json component Button --source      -> component.detail.source
- * xds --json component Button --showcase    -> component.detail.showcase
- * xds --json component Button --blocks      -> component.detail.blocks
- * (not found)                               -> CLIError
+ * xds --json component                            -> component.list
+ * xds --json component --list                     -> component.list
+ * xds --json component --category Form            -> component.list (filtered)
+ * xds --json component --list --detail compact    -> component.compact-list
+ * xds --json component --list --detail full       -> component.detailed-list
+ * xds --json component Button                     -> component.detail
+ * xds --json component Button --props             -> component.detail.props
+ * xds --json component Button --source            -> component.detail.source
+ * xds --json component Button --showcase          -> component.detail.showcase
+ * xds --json component Button --blocks            -> component.detail.blocks
+ * (not found)                                     -> CLIError
+ *
+ * Detail levels (length: brief < compact < full):
+ *   brief   -> just names                         -> component.list
+ *   compact -> names + short description          -> component.compact-list
+ *   full    -> names + description + import path  -> component.detailed-list
  */
 
 import type {ComponentDoc, PropDoc} from '../../../core/src/docs-types';
 
-/** xds --json component [--list] [--category X] */
+/** xds --json component [--list] [--category X] (default detail: brief) */
 export interface ComponentListResponse {
   type: 'component.list';
   data: Record<string, string[]>;
 }
 
-/** xds --json component --detail brief [--category X] */
-export interface ComponentBriefResponse {
-  type: 'component.brief';
-  data: Record<string, ComponentBriefEntry[]>;
+/** xds --json component --list --detail compact */
+export interface ComponentCompactListResponse {
+  type: 'component.compact-list';
+  data: Record<string, ComponentCompactEntry[]>;
 }
 
-export interface ComponentBriefEntry {
+export interface ComponentCompactEntry {
+  name: string;
+  description: string;
+}
+
+/** xds --json component --list --detail full */
+export interface ComponentDetailedListResponse {
+  type: 'component.detailed-list';
+  data: Record<string, ComponentDetailedEntry[]>;
+}
+
+export interface ComponentDetailedEntry {
   name: string;
   description: string;
   import: string;
