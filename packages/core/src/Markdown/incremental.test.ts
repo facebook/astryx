@@ -28,6 +28,19 @@ describe('parseMarkdownIncremental', () => {
     expect(final).toEqual(full);
   });
 
+  it('joins loose ordered list across streamed chunks', () => {
+    // The boundary detector settles each pre-blank-line segment separately;
+    // without the merge step this would land as three separate <ol>s.
+    const text = '1. apple\n\n1. banana\n\n1. cherry\n';
+    const {final} = simulateStreaming(text, 5);
+    expect(final).toHaveLength(1);
+    expect(final[0].type).toBe('list');
+    if (final[0].type === 'list') {
+      expect(final[0].items).toHaveLength(3);
+      expect(final[0].loose).toBe(true);
+    }
+  });
+
   it('handles empty input', () => {
     const state = createIncrementalState();
     const result = parseMarkdownIncremental('', state);

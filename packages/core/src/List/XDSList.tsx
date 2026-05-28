@@ -166,6 +166,7 @@ export function XDSList({
       ref={ref as React.Ref<HTMLUListElement & HTMLOListElement>}
       data-testid={testId}
       aria-labelledby={header != null ? headerId : undefined}
+      {...(isOrdered && start != null && start !== 1 ? {start} : {})}
       {...(listStyle === 'none' && !isOrdered ? {role: 'list'} : {})}
       {...mergeProps(
         xdsClassName('list', {density, listStyle}),

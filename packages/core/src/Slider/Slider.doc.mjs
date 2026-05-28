@@ -6,6 +6,12 @@ export const docs = {
   name: 'Slider',
   displayName: 'Slider',
   keywords: ["slider","range","slidebar","trackbar","scrubber","knob","thumb","rangeslider"],
+  playground: {
+    defaults: {
+      label: 'Volume',
+      value: 50,
+    },
+  },
   props: [
     {
       name: 'label',

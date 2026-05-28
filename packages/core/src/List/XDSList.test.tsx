@@ -96,6 +96,28 @@ describe('XDSList', () => {
     expect(ol.className).toContain('counterStart');
   });
 
+  it('emits the start HTML attribute on <ol> when start is non-default', () => {
+    // Browsers and assistive tech read the start attribute directly; the CSS
+    // counter alone is invisible to AT and copy-paste.
+    const {container} = render(
+      <XDSList listStyle="decimal" start={5}>
+        <XDSListItem label="Fifth" />
+      </XDSList>,
+    );
+    const ol = container.querySelector('ol')!;
+    expect(ol.getAttribute('start')).toBe('5');
+  });
+
+  it('does not emit the start HTML attribute for the default (start=1)', () => {
+    const {container} = render(
+      <XDSList listStyle="decimal">
+        <XDSListItem label="First" />
+      </XDSList>,
+    );
+    const ol = container.querySelector('ol')!;
+    expect(ol.hasAttribute('start')).toBe(false);
+  });
+
   it('renders as <ul> when listStyle is disc', () => {
     const {container} = render(
       <XDSList listStyle="disc">

@@ -20,6 +20,7 @@ import {XDSVStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import {XDSTheme} from '@xds/core/theme';
 import {neutralTheme} from '@xds/theme-neutral/built';
+import {useThemeMode} from '../../app/providers';
 import {CodeBracketIcon} from '@heroicons/react/24/outline';
 import {
   coerceDefault,
@@ -233,6 +234,7 @@ export function InteractivePreviewStage({
   name: string;
   state: Record<string, unknown>;
 }) {
+  const {mode} = useThemeMode();
   const [showCode, setShowCode] = useState(false);
   const Component = getXDSComponent(name);
 
@@ -293,7 +295,7 @@ export function InteractivePreviewStage({
           <XDSCodeBlock code={code} language="tsx" hasCopyButton />
         </div>
       ) : (
-        <XDSTheme theme={neutralTheme}>
+        <XDSTheme theme={neutralTheme} mode={mode}>
           <XDSCenter
             style={{
               minHeight: 200,
