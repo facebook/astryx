@@ -973,7 +973,14 @@ function validatePrivateVars(themeDef) {
 export function registerTheme(program) {
   const theme = program
     .command('theme')
-    .description('Theme tools — build, export, and manage XDS themes');
+    .description('Theme tools — build, export, and manage XDS themes')
+    .action(() => {
+      // Parent group has no default behaviour. When invoked without a
+      // subcommand, the preAction hook (in index.mjs) will reject --json
+      // because 'theme' (parent) is not on the JSON_SUPPORTED allowlist —
+      // only 'theme build' is. For the human path, fall through to help.
+      theme.help();
+    });
 
   theme
     .command('build <file>')

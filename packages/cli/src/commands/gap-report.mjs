@@ -195,6 +195,11 @@ export function registerGapReport(program) {
       }
 
       if (!config.command && !checkGhCli()) {
+        if (json) {
+          return jsonError(
+            'GitHub CLI (gh) is not installed or not authenticated. Install from https://cli.github.com and run `gh auth login`, or run `xds gap-report setup` to configure a custom command.',
+          );
+        }
         console.error(
           'Error: GitHub CLI (gh) is not installed or not authenticated.\n' +
             'Install it from https://cli.github.com and run `gh auth login`.\n\n' +
@@ -246,6 +251,15 @@ export function registerGapReport(program) {
           process.exit(1);
         }
         return;
+      }
+
+      // --json without --component/--category/--reason can't go interactive —
+      // emit a structured error explaining the required flags.
+      if (json) {
+        return jsonError(
+          'gap-report --json requires --component, --category, and --reason. ' +
+            'Run with --list-categories to see valid categories.',
+        );
       }
 
       // Interactive mode
