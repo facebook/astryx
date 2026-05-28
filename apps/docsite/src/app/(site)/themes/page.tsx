@@ -93,7 +93,10 @@ export default function ThemesPage() {
                             label="Customize"
                             variant="secondary"
                             size="sm"
-                            href="/themes/editor"
+                            href={`/themes/playground/${pkg.name.replace(
+                              '@xds/theme-',
+                              '',
+                            )}`}
                           />
                         </XDSHStack>
                       </XDSVStack>
