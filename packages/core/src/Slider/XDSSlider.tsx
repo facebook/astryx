@@ -370,10 +370,14 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
   const ariaDescribedBy =
     describedByParts.length > 0 ? describedByParts.join(' ') : undefined;
 
-  // Value helpers
+  // Value helpers — guard against undefined value (e.g. playground previews
+  // that render the component without providing a value prop).
   const values: number[] = useMemo(
-    () => (isRange ? value : [value]),
-    [isRange, value],
+    () =>
+      isRange
+        ? (value)
+        : [value != null ? (value) : min],
+    [isRange, value, min],
   );
 
   const valuesRef = useRef(values);
