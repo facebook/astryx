@@ -360,31 +360,31 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
       return;
     }
     const editable = editableRef.current;
-    const current = serialize(editable);
-    if (current === controlledValue) {
+    if (serialize(editable) !== controlledValue) {
+      // Genuine external override — invalidate any stale pending
+      // echo before we rewrite the DOM.
       pendingEchoValueRef.current = undefined;
-      return;
-    }
-    // This is a genuine external override — invalidate any stale
-    // pending echo before we rewrite the DOM.
-    pendingEchoValueRef.current = undefined;
-    const wasFocused = document.activeElement === editable;
-    editable.textContent = controlledValue;
-    setIsEmpty(controlledValue.length === 0);
-    // Setting `textContent` tears down the existing text node, which
-    // collapses any Selection inside this editable to offset 0. If the
-    // user was focused (e.g. a programmatic insert from a slash-menu
-    // pick), restore the caret to the end of the new content so the
-    // next keystroke appends rather than prepends.
-    if (wasFocused) {
-      const selection = window.getSelection();
-      if (selection) {
-        const range = document.createRange();
-        range.selectNodeContents(editable);
-        range.collapse(false);
-        selection.removeAllRanges();
-        selection.addRange(range);
+      const wasFocused = document.activeElement === editable;
+      editable.textContent = controlledValue;
+      // Setting `textContent` tears down the existing text node,
+      // which collapses any Selection inside this editable to
+      // offset 0. If the user was focused (e.g. a programmatic
+      // insert from a slash-menu pick), restore the caret to the
+      // end of the new content so the next keystroke appends rather
+      // than prepends.
+      if (wasFocused) {
+        const selection = window.getSelection();
+        if (selection) {
+          const range = document.createRange();
+          range.selectNodeContents(editable);
+          range.collapse(false);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
       }
+      setIsEmpty(controlledValue.length === 0);
+    } else {
+      pendingEchoValueRef.current = undefined;
     }
   }, [controlledValue]);
 
