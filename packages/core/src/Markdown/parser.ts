@@ -462,8 +462,11 @@ function peelTrailingPunctAndParens(url: string): string {
       let open = 0;
       let close = 0;
       for (let idx = 0; idx < s.length; idx++) {
-        if (s[idx] === '(') open++;
-        else if (s[idx] === ')') close++;
+        if (s[idx] === '(') {
+          open++;
+        } else if (s[idx] === ')') {
+          close++;
+        }
       }
       if (close > open) {
         s = s.slice(0, -1);
@@ -526,10 +529,16 @@ function scanAutolinksInText(text: string): AutolinkMatch[] {
     let m: RegExpExecArray | null;
     while ((m = re.exec(text)) !== null) {
       const prev = text[m.index - 1];
-      if (!isUrlBoundaryChar(prev)) continue;
-      if (text.slice(m.index - 2, m.index) === '](') continue;
+      if (!isUrlBoundaryChar(prev)) {
+        continue;
+      }
+      if (text.slice(m.index - 2, m.index) === '](') {
+        continue;
+      }
       const cleaned = peelTrailingPunctAndParens(m[0]);
-      if (cleaned.length === 0) continue;
+      if (cleaned.length === 0) {
+        continue;
+      }
       matches.push({
         start: m.index,
         end: m.index + cleaned.length,
@@ -545,11 +554,17 @@ function scanAutolinksInText(text: string): AutolinkMatch[] {
     let m: RegExpExecArray | null;
     while ((m = re.exec(text)) !== null) {
       const prev = text[m.index - 1];
-      if (!isUrlBoundaryChar(prev)) continue;
+      if (!isUrlBoundaryChar(prev)) {
+        continue;
+      }
       // Don't match inside an https://www… capture from the previous pattern
-      if (text.slice(m.index - 3, m.index) === '://') continue;
+      if (text.slice(m.index - 3, m.index) === '://') {
+        continue;
+      }
       const cleaned = peelTrailingPunctAndParens(m[0]);
-      if (cleaned.length === 0) continue;
+      if (cleaned.length === 0) {
+        continue;
+      }
       matches.push({
         start: m.index,
         end: m.index + cleaned.length,
@@ -568,7 +583,9 @@ function scanAutolinksInText(text: string): AutolinkMatch[] {
       // Reject if previous char could be part of the local part or sits in
       // a position that would make this match continuation of something
       // bigger (`name@x.y@host`, `foo+bar@x`, `mailto:user@host`).
-      if (prev != null && /[A-Za-z0-9._%+\-@]/.test(prev)) continue;
+      if (prev != null && /[A-Za-z0-9._%+\-@]/.test(prev)) {
+        continue;
+      }
       if (text.slice(Math.max(0, m.index - 7), m.index) === 'mailto:') {
         continue;
       }
@@ -636,12 +653,12 @@ function transformAutolinks(nodes: InlineNode[]): InlineNode[] {
   for (const node of nodes) {
     if (node.type === 'text') {
       const split = splitTextOnAutolinks(node.content);
-      for (const child of split) {
+      for (const seg of split) {
         const last = out[out.length - 1];
-        if (child.type === 'text' && last?.type === 'text') {
-          last.content += child.content;
+        if (seg.type === 'text' && last?.type === 'text') {
+          last.content += seg.content;
         } else {
-          out.push(child);
+          out.push(seg);
         }
       }
     } else if (
