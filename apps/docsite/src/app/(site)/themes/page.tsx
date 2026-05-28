@@ -15,6 +15,7 @@ import {XDSCard} from '@xds/core/Card';
 import {XDSButton} from '@xds/core/Button';
 import {XDSOverlay} from '@xds/core/Overlay';
 import {XDSTheme} from '@xds/core/theme';
+import {useThemeMode} from '../../providers';
 import {packages} from '../../../generated/packageRegistry';
 import {themeObjects} from '../../../generated/themeRegistry';
 import {ThemeShowcaseTile} from '../../../components/ThemeShowcaseTile';
@@ -44,6 +45,7 @@ const styles = stylex.create({
 });
 
 export default function ThemesPage() {
+  const {mode} = useThemeMode();
   return (
     <XDSSection maxWidth="xl" padding={6}>
       <XDSVStack gap={6}>
@@ -101,7 +103,7 @@ export default function ThemesPage() {
                   }>
                   <div style={{aspectRatio: '16/10'}} inert>
                     {theme ? (
-                      <XDSTheme theme={theme}>
+                      <XDSTheme theme={theme} mode={mode}>
                         <ThemeShowcaseTile label={label} />
                       </XDSTheme>
                     ) : (
