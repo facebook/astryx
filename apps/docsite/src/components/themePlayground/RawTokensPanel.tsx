@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import {XDSText} from '@xds/core/Text';
-import {XDSVStack, XDSHStack} from '@xds/core/Stack';
+import {XDSVStack} from '@xds/core/Stack';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
 import {
@@ -30,8 +30,8 @@ import {
   easeDefaults,
 } from '@xds/core/theme';
 import {ColorSwatch} from './ColorSwatch';
+import {TokenRow} from './TokenRow';
 import {COLOR_CATEGORIES, TYPOGRAPHY_CATEGORIES} from './constants';
-import {getTokenLabel} from './helpers';
 
 const TOKEN_GROUPS = {
   colors: {label: 'Colors', tokens: colorDefaults},
@@ -71,41 +71,31 @@ function SpacingEditor({
 }) {
   const numValue = parseInt(value, 10);
   return (
-    <XDSHStack
-      gap={3}
-      vAlign="center"
-      style={{
-        padding: '8px 12px',
-        borderRadius: 8,
-        backgroundColor: 'var(--color-background-body)',
-      }}>
-      <div
-        style={{
-          width: Math.min(numValue, 48),
-          height: 24,
-          backgroundColor: 'var(--color-accent)',
-          borderRadius: 4,
-          flexShrink: 0,
-        }}
-      />
-      <XDSVStack gap={0} style={{flex: 1, minWidth: 0}}>
-        <XDSText type="supporting" color="primary" maxLines={1}>
-          {getTokenLabel(tokenName)}
-        </XDSText>
-        <XDSText type="supporting" color="secondary" maxLines={1}>
-          {tokenName}
-        </XDSText>
-      </XDSVStack>
-      <div style={{width: 80}}>
-        <XDSTextInput
-          label="Value"
-          isLabelHidden
-          value={value}
-          onChange={val => onChange(tokenName, val)}
-          size="sm"
+    <TokenRow
+      tokenName={tokenName}
+      preview={
+        <div
+          style={{
+            width: Math.min(numValue, 48),
+            height: 24,
+            backgroundColor: 'var(--color-accent)',
+            borderRadius: 4,
+            flexShrink: 0,
+          }}
         />
-      </div>
-    </XDSHStack>
+      }
+      input={
+        <div style={{width: 80}}>
+          <XDSTextInput
+            label="Value"
+            isLabelHidden
+            value={value}
+            onChange={val => onChange(tokenName, val)}
+            size="sm"
+          />
+        </div>
+      }
+    />
   );
 }
 
@@ -119,41 +109,31 @@ function RadiusEditor({
   onChange: (name: string, value: string) => void;
 }) {
   return (
-    <XDSHStack
-      gap={3}
-      vAlign="center"
-      style={{
-        padding: '8px 12px',
-        borderRadius: 8,
-        backgroundColor: 'var(--color-background-body)',
-      }}>
-      <div
-        style={{
-          width: 32,
-          height: 32,
-          backgroundColor: 'var(--color-accent)',
-          borderRadius: value,
-          flexShrink: 0,
-        }}
-      />
-      <XDSVStack gap={0} style={{flex: 1, minWidth: 0}}>
-        <XDSText type="supporting" color="primary" maxLines={1}>
-          {getTokenLabel(tokenName)}
-        </XDSText>
-        <XDSText type="supporting" color="secondary" maxLines={1}>
-          {tokenName}
-        </XDSText>
-      </XDSVStack>
-      <div style={{width: 80}}>
-        <XDSTextInput
-          label="Value"
-          isLabelHidden
-          value={value}
-          onChange={val => onChange(tokenName, val)}
-          size="sm"
+    <TokenRow
+      tokenName={tokenName}
+      preview={
+        <div
+          style={{
+            width: 32,
+            height: 32,
+            backgroundColor: 'var(--color-accent)',
+            borderRadius: value,
+            flexShrink: 0,
+          }}
         />
-      </div>
-    </XDSHStack>
+      }
+      input={
+        <div style={{width: 80}}>
+          <XDSTextInput
+            label="Value"
+            isLabelHidden
+            value={value}
+            onChange={val => onChange(tokenName, val)}
+            size="sm"
+          />
+        </div>
+      }
+    />
   );
 }
 
@@ -171,47 +151,37 @@ function TypographyEditor({
   const isWeight = tokenName.includes('weight');
 
   return (
-    <XDSHStack
-      gap={3}
-      vAlign="center"
-      style={{
-        padding: '8px 12px',
-        borderRadius: 8,
-        backgroundColor: 'var(--color-background-body)',
-      }}>
-      <div
-        style={{
-          width: 48,
-          height: 32,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: isSize ? value : '14px',
-          fontWeight: isWeight ? value : 400,
-          fontFamily: isFont ? value : 'inherit',
-          color: 'var(--color-text-primary)',
-          flexShrink: 0,
-        }}>
-        Aa
-      </div>
-      <XDSVStack gap={0} style={{flex: 1, minWidth: 0}}>
-        <XDSText type="supporting" color="primary" maxLines={1}>
-          {getTokenLabel(tokenName)}
-        </XDSText>
-        <XDSText type="supporting" color="secondary" maxLines={1}>
-          {tokenName}
-        </XDSText>
-      </XDSVStack>
-      <div style={{width: 200}}>
-        <XDSTextInput
-          label="Value"
-          isLabelHidden
-          value={value}
-          onChange={val => onChange(tokenName, val)}
-          size="sm"
-        />
-      </div>
-    </XDSHStack>
+    <TokenRow
+      tokenName={tokenName}
+      preview={
+        <div
+          style={{
+            width: 48,
+            height: 32,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: isSize ? value : '14px',
+            fontWeight: isWeight ? value : 400,
+            fontFamily: isFont ? value : 'inherit',
+            color: 'var(--color-text-primary)',
+            flexShrink: 0,
+          }}>
+          Aa
+        </div>
+      }
+      input={
+        <div style={{width: 200}}>
+          <XDSTextInput
+            label="Value"
+            isLabelHidden
+            value={value}
+            onChange={val => onChange(tokenName, val)}
+            size="sm"
+          />
+        </div>
+      }
+    />
   );
 }
 
@@ -225,32 +195,20 @@ function GenericEditor({
   onChange: (name: string, value: string) => void;
 }) {
   return (
-    <XDSHStack
-      gap={3}
-      vAlign="center"
-      style={{
-        padding: '8px 12px',
-        borderRadius: 8,
-        backgroundColor: 'var(--color-background-body)',
-      }}>
-      <XDSVStack gap={0} style={{flex: 1, minWidth: 0}}>
-        <XDSText type="supporting" color="primary" maxLines={1}>
-          {getTokenLabel(tokenName)}
-        </XDSText>
-        <XDSText type="supporting" color="secondary" maxLines={1}>
-          {tokenName}
-        </XDSText>
-      </XDSVStack>
-      <div style={{width: 200}}>
-        <XDSTextInput
-          label="Value"
-          isLabelHidden
-          value={value}
-          onChange={val => onChange(tokenName, val)}
-          size="sm"
-        />
-      </div>
-    </XDSHStack>
+    <TokenRow
+      tokenName={tokenName}
+      input={
+        <div style={{width: 200}}>
+          <XDSTextInput
+            label="Value"
+            isLabelHidden
+            value={value}
+            onChange={val => onChange(tokenName, val)}
+            size="sm"
+          />
+        </div>
+      }
+    />
   );
 }
 
@@ -276,7 +234,9 @@ export function RawTokensPanel({
           size="sm"
           value={activeGroup}
           onChange={(v: string | null) => {
-            if (v != null) {setActiveGroup(v as TokenGroupKey);}
+            if (v != null) {
+              setActiveGroup(v as TokenGroupKey);
+            }
           }}>
           {(Object.keys(TOKEN_GROUPS) as TokenGroupKey[]).map(groupKey => (
             <XDSToggleButton
@@ -308,7 +268,9 @@ export function RawTokensPanel({
                 </XDSText>
                 {tokenNames
                   .filter(t => {
-                    if (seen.has(t)) {return false;}
+                    if (seen.has(t)) {
+                      return false;
+                    }
                     seen.add(t);
                     return true;
                   })

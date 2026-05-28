@@ -2,13 +2,12 @@
 
 'use client';
 
-import {XDSText} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
+import {TokenRow} from './TokenRow';
 import {
   parseLightDark,
   parseColorWithAlpha,
   colorWithAlphaToString,
-  getTokenLabel,
 } from './helpers';
 
 export function ColorSwatch({
@@ -44,29 +43,9 @@ export function ColorSwatch({
   };
 
   return (
-    <div
-      style={{
-        padding: '10px 0',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 12,
-      }}>
-      <XDSText
-        type="label"
-        color="secondary"
-        maxLines={1}
-        style={{flexShrink: 0}}>
-        {getTokenLabel(tokenName)}
-      </XDSText>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          flexShrink: 0,
-          justifyContent: 'flex-end',
-        }}>
+    <TokenRow
+      tokenName={tokenName}
+      preview={
         <div
           style={{
             width: 28,
@@ -106,6 +85,8 @@ export function ColorSwatch({
             />
           )}
         </div>
+      }
+      input={
         <XDSTextInput
           label={tokenName}
           isLabelHidden
@@ -136,7 +117,7 @@ export function ColorSwatch({
           }}
           style={{width: 120}}
         />
-      </div>
-    </div>
+      }
+    />
   );
 }
