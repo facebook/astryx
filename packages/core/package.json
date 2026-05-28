@@ -67,6 +67,10 @@
     },
     "./docs.mjs": "./docs.mjs",
     "./groups.doc.mjs": "./groups.doc.mjs",
+    "./XDSBaseProps": {
+      "source": "./src/XDSBaseProps.ts",
+      "types": "./dist/XDSBaseProps.d.ts"
+    },
     "./AlertDialog": {
       "source": "./src/AlertDialog/index.ts",
       "types": "./dist/AlertDialog/index.d.ts",

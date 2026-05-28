@@ -77,6 +77,14 @@ const STATIC_EXPORTS = {
   },
   './docs.mjs': './docs.mjs',
   './groups.doc.mjs': './groups.doc.mjs',
+  // Foundational base props type, used by every swizzled component
+  // and by external authors who extend XDS components. Exposed as a
+  // top-level subpath so that swizzled output continues to type-check
+  // without needing to inline the type.
+  './XDSBaseProps': {
+    source: './src/XDSBaseProps.ts',
+    types: './dist/XDSBaseProps.d.ts',
+  },
 };
 
 /**

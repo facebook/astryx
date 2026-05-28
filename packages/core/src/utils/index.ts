@@ -7,7 +7,7 @@
  * @position Package entry point for utils
  */
 
-export type {SizeValue} from './types';
+export type {SizeValue, SpacingStep} from './types';
 
 export type {ISODateString, DayOfWeek, PlainDate, DateRange} from './dateTypes';
 
