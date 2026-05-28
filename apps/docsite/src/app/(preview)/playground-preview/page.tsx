@@ -15,14 +15,12 @@ import type {XDSDefinedTheme} from '@xds/core/theme';
 import type {ThemeMode} from '@xds/core/theme';
 import {defaultTheme} from '@xds/theme-default/built';
 import {neutralTheme} from '@xds/theme-neutral/built';
-import {dailyTheme} from '@xds/theme-daily/built';
 import {matchaTheme} from '@xds/theme-matcha/built';
 import {runCode, setBabel} from './runner';
 
 const THEME_MAP: Record<string, XDSDefinedTheme> = {
   default: defaultTheme,
   neutral: neutralTheme,
-  daily: dailyTheme,
   matcha: matchaTheme,
 };
 

@@ -18,8 +18,6 @@
     "@stylexjs/stylex": "^0.18.3",
     "@xds/cli": "*",
     "@xds/core": "*",
-    "@xds/theme-chocolate": "*",
-    "@xds/theme-daily": "*",
     "@xds/theme-default": "*",
     "@xds/theme-gothic": "*",
     "@xds/theme-matcha": "*",

@@ -38,7 +38,6 @@ const components = exportKeys
 const SCOPE_THEMES = [
   {pkg: '@xds/theme-default', name: 'defaultTheme', subpath: '/built'},
   {pkg: '@xds/theme-neutral', name: 'neutralTheme', subpath: '/built'},
-  {pkg: '@xds/theme-daily', name: 'dailyTheme', subpath: '/built'},
   {pkg: '@xds/theme-matcha', name: 'matchaTheme', subpath: '/built'},
 ];
 

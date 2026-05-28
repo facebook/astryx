@@ -108,12 +108,6 @@ importers:
       '@xds/core':
         specifier: '*'
         version: link:../../packages/core
-      '@xds/theme-chocolate':
-        specifier: '*'
-        version: link:../../packages/themes/chocolate
-      '@xds/theme-daily':
-        specifier: '*'
-        version: link:../../packages/themes/daily
       '@xds/theme-default':
         specifier: '*'
         version: link:../../packages/themes/default
