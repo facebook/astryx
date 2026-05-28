@@ -164,7 +164,7 @@ function ShowcaseHeading() {
       <XDSText type="body" color="secondary" xstyle={styles.fillWidth}>
         Astryx makes it effortless. Customize color, typography, radius, and
         motion at the token level
-        <br />— your brand, no fork required.
+        <br />— your brand, no rewrites needed.
       </XDSText>
     </XDSVStack>
   );

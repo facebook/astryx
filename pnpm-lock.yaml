@@ -108,6 +108,9 @@ importers:
       '@xds/core':
         specifier: '*'
         version: link:../../packages/core
+      '@xds/theme-butter':
+        specifier: '*'
+        version: link:../../packages/themes/butter
       '@xds/theme-default':
         specifier: '*'
         version: link:../../packages/themes/default
@@ -123,6 +126,9 @@ importers:
       '@xds/theme-stone':
         specifier: '*'
         version: link:../../packages/themes/stone
+      '@xds/theme-y2k':
+        specifier: '*'
+        version: link:../../packages/themes/y2k
       lz-string:
         specifier: ^1.5.0
         version: 1.5.0
