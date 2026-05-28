@@ -14,10 +14,12 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSHStack} from '@xds/core/Layout';
 import {XDSTheme} from '@xds/core/theme';
 import {neutralTheme} from '@xds/theme-neutral/built';
+import {useThemeMode} from '../../app/providers';
 import type {ExampleEntry} from '../../generated/exampleRegistry';
 import {buildPlaygroundHref} from '../playgroundLink';
 
 function LivePreview({entry}: {entry: ExampleEntry}) {
+  const {mode} = useThemeMode();
   const [Component, setComponent] = useState<ComponentType | null>(null);
   const [error, setError] = useState(false);
 
@@ -47,7 +49,7 @@ function LivePreview({entry}: {entry: ExampleEntry}) {
   }
 
   return (
-    <XDSTheme theme={neutralTheme}>
+    <XDSTheme theme={neutralTheme} mode={mode}>
       <div
         style={{
           width: '100%',
