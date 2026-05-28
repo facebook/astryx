@@ -41,6 +41,7 @@ import {useXDSLinkComponent} from './useXDSLinkComponent';
 import type {XDSLinkComponentType} from './types';
 import {xdsClassName, mergeProps} from '../utils';
 import {computeTargetAndRel} from './computeTargetAndRel';
+import {useXDSInteractiveRole} from '../hooks/useXDSInteractiveRole';
 
 /**
  * Base link styles
@@ -274,14 +275,16 @@ export function XDSLink({
   ...props
 }: XDSLinkProps) {
   const LinkComponent = useXDSLinkComponent(as);
+  const role = useXDSInteractiveRole({href, onClick, isDisabled});
   // Determine target and rel based on isExternalLink
   const {target, rel} = computeTargetAndRel(
     isExternalLink ? '_blank' : targetFromProps,
     relFromProps,
   );
 
-  // When href is undefined, render as a <button> for semantic correctness
-  const renderAsButton = href == null;
+  // When role resolves to 'button' (no href, or context-provided),
+  // render as a <button> with link styling for semantic correctness.
+  const renderAsButton = role === 'button' || (role === 'inert' && href == null);
 
   const sharedContent = (
     <>
@@ -307,9 +310,7 @@ export function XDSLink({
       <button
         ref={ref as React.Ref<HTMLButtonElement>}
         type="button"
-        onClick={
-          onClick
-        }
+        onClick={onClick}
         aria-label={label || undefined}
         aria-disabled={isDisabled || undefined}
         tabIndex={isDisabled ? -1 : undefined}
@@ -328,7 +329,7 @@ export function XDSLink({
           className,
           style,
         )}
-        {...(props)}>
+        {...props}>
         {sharedContent}
       </button>
     );
@@ -339,9 +340,7 @@ export function XDSLink({
         href={href}
         target={target}
         rel={rel}
-        onClick={
-          onClick
-        }
+        onClick={onClick}
         aria-label={label || undefined}
         aria-disabled={isDisabled || undefined}
         tabIndex={isDisabled ? -1 : undefined}

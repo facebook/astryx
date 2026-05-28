@@ -258,6 +258,11 @@
       "types": "./dist/InputGroup/index.d.ts",
       "default": "./dist/InputGroup/index.js"
     },
+    "./InteractiveRoleContext": {
+      "source": "./src/InteractiveRoleContext/index.ts",
+      "types": "./dist/InteractiveRoleContext/index.d.ts",
+      "default": "./dist/InteractiveRoleContext/index.js"
+    },
     "./Item": {
       "source": "./src/Item/index.ts",
       "types": "./dist/Item/index.d.ts",
