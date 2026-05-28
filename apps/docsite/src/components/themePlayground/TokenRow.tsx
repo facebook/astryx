@@ -7,10 +7,9 @@ import {XDSText} from '@xds/core/Text';
 import {getTokenLabel} from './helpers';
 
 /**
- * Standard token-editor row. Left: readable token name (body/primary) with the
- * raw CSS variable below (code, 12px, secondary). Right: optional visual
- * preview followed by the input. No row background — the only fills are the
- * preview swatches themselves.
+ * Standard token-editor row. Left: readable token name (body/primary). Right:
+ * optional visual preview followed by the input. No row background — the only
+ * fills are the preview swatches themselves.
  */
 export function TokenRow({
   tokenName,
@@ -33,9 +32,6 @@ export function TokenRow({
       <div style={{flex: 1, minWidth: 0}}>
         <XDSText type="body" color="primary" maxLines={1}>
           {getTokenLabel(tokenName)}
-        </XDSText>
-        <XDSText type="code" size="sm" color="secondary" maxLines={1}>
-          {tokenName}
         </XDSText>
       </div>
       <div
