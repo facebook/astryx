@@ -252,6 +252,62 @@ describe('parseMarkdown', () => {
     }
   });
 
+  it('parses an ordered list with a custom start number', () => {
+    const result = parseMarkdown('5. five\n6. six\n7. seven');
+    expect(result[0].type).toBe('list');
+    if (result[0].type === 'list') {
+      expect(result[0].ordered).toBe(true);
+      expect(result[0].start).toBe(5);
+      expect(result[0].items).toHaveLength(3);
+    }
+  });
+
+  it('joins blank-line-separated same-style items into one loose list', () => {
+    // CommonMark §5.3 loose-list: blank lines between items of the same
+    // style/indent still form a single list. LLM output very commonly uses
+    // the 1./1./1. shape — each item must be treated as a continuation.
+    const result = parseMarkdown('1. apple\n\n1. banana\n\n1. cherry');
+    expect(result).toHaveLength(1);
+    expect(result[0].type).toBe('list');
+    if (result[0].type === 'list') {
+      expect(result[0].ordered).toBe(true);
+      expect(result[0].loose).toBe(true);
+      expect(result[0].items).toHaveLength(3);
+      expect(result[0].start).toBe(1);
+    }
+  });
+
+  it('joins blank-line-separated unordered items into one loose list', () => {
+    const result = parseMarkdown('- a\n\n- b\n\n- c');
+    expect(result).toHaveLength(1);
+    expect(result[0].type).toBe('list');
+    if (result[0].type === 'list') {
+      expect(result[0].ordered).toBe(false);
+      expect(result[0].loose).toBe(true);
+      expect(result[0].items).toHaveLength(3);
+    }
+  });
+
+  it('does not join lists of different styles across a blank line', () => {
+    // Bulleted then numbered — these are two distinct lists.
+    const result = parseMarkdown('- a\n\n1. b');
+    expect(result).toHaveLength(2);
+    expect(result[0].type).toBe('list');
+    expect(result[1].type).toBe('list');
+    if (result[0].type === 'list' && result[1].type === 'list') {
+      expect(result[0].ordered).toBe(false);
+      expect(result[1].ordered).toBe(true);
+    }
+  });
+
+  it('treats a tight list with no blank lines as not loose', () => {
+    const result = parseMarkdown('1. a\n2. b\n3. c');
+    expect(result[0].type).toBe('list');
+    if (result[0].type === 'list') {
+      expect(result[0].loose).toBeUndefined();
+    }
+  });
+
   it('parses task lists', () => {
     const input = '- [ ] Unchecked\n- [x] Checked';
     const result = parseMarkdown(input);

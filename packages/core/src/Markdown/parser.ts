@@ -27,7 +27,13 @@ export type BlockNode =
   | {type: 'paragraph'; children: InlineNode[]}
   | {type: 'codeblock'; language: string; content: string}
   | {type: 'blockquote'; children: BlockNode[]}
-  | {type: 'list'; ordered: boolean; start?: number; items: ListItemNode[]}
+  | {
+      type: 'list';
+      ordered: boolean;
+      start?: number;
+      loose?: boolean;
+      items: ListItemNode[];
+    }
   | {
       type: 'table';
       headers: TableCellNode[];
@@ -499,6 +505,7 @@ function parseList(
   const startMatch = ordered ? lines[startIndex].match(/^ *(\d+)\./) : null;
   const start = startMatch ? parseInt(startMatch[1], 10) : undefined;
 
+  let loose = false;
   let index = startIndex;
   while (index < lines.length && itemPattern.test(lines[index])) {
     const content = ordered
@@ -537,8 +544,27 @@ function parseList(
     }
 
     items.push({checked, children: parseMarkdown(itemText, sourceIds)});
+
+    // CommonMark loose list: blank line(s) between items of the same style
+    // and indent still form one list. Skip the blanks and continue if the
+    // next non-blank line matches the same item pattern.
+    let lookahead = index;
+    while (lookahead < lines.length && lines[lookahead].trim() === '') {
+      lookahead++;
+    }
+    if (
+      lookahead > index &&
+      lookahead < lines.length &&
+      itemPattern.test(lines[lookahead])
+    ) {
+      loose = true;
+      index = lookahead;
+    }
   }
-  return {node: {type: 'list', ordered, start, items}, nextIndex: index};
+  return {
+    node: {type: 'list', ordered, start, loose: loose || undefined, items},
+    nextIndex: index,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -938,6 +964,39 @@ function trimUnsettledStructural(text: string): string {
   return lines.join('\n');
 }
 
+/**
+ * Concatenate freshly-parsed delta blocks with previously-settled blocks,
+ * merging adjacent same-style lists into a single loose list. The boundary
+ * detector settles each pre-blank segment independently, so without this
+ * merge an incrementally-streamed `1.\n\n1.\n\n1.` would land as N separate
+ * lists even though the full-text parser joins them per CommonMark §5.3.
+ */
+function mergeSettledBlocks(
+  prev: BlockNode[],
+  delta: BlockNode[],
+): BlockNode[] {
+  if (prev.length === 0 || delta.length === 0) {
+    return [...prev, ...delta];
+  }
+  const prevLast = prev[prev.length - 1];
+  const deltaFirst = delta[0];
+  if (
+    prevLast.type === 'list' &&
+    deltaFirst.type === 'list' &&
+    prevLast.ordered === deltaFirst.ordered
+  ) {
+    const merged: BlockNode = {
+      type: 'list',
+      ordered: prevLast.ordered,
+      start: prevLast.start,
+      loose: true,
+      items: [...prevLast.items, ...deltaFirst.items],
+    };
+    return [...prev.slice(0, -1), merged, ...delta.slice(1)];
+  }
+  return [...prev, ...delta];
+}
+
 export function parseMarkdownIncremental(
   input: string,
   state: IncrementalState,
@@ -976,7 +1035,7 @@ export function parseMarkdownIncremental(
     // Settled portion grew — parse only the new delta
     const delta = settledText.slice(state.settledText.length);
     const deltaBlocks = parseMarkdown(delta, sourceIds);
-    settledBlocks = [...state.settledBlocks, ...deltaBlocks];
+    settledBlocks = mergeSettledBlocks(state.settledBlocks, deltaBlocks);
   } else {
     // Content before the boundary changed — full re-parse of settled portion
     settledBlocks = parseMarkdown(settledText, sourceIds);
@@ -991,5 +1050,5 @@ export function parseMarkdownIncremental(
   state.settledUpTo = boundary;
   state.prevInput = input;
 
-  return [...settledBlocks, ...unsettledBlocks];
+  return mergeSettledBlocks(settledBlocks, unsettledBlocks);
 }

@@ -132,6 +132,21 @@ describe('XDSMarkdown', () => {
     expect(ol.className).toContain('withCounter');
   });
 
+  it('joins blank-line-separated 1./1./1. into a single ordered list', () => {
+    // Regression: LLM-style loose ordered lists (1.\n\n1.\n\n1.) used to
+    // render as three separate <ol>s each restarting at 1.
+    render(<XDSMarkdown>{'1. apple\n\n1. banana\n\n1. cherry'}</XDSMarkdown>);
+    const ols = document.querySelectorAll('ol');
+    expect(ols).toHaveLength(1);
+    expect(ols[0].querySelectorAll('li')).toHaveLength(3);
+  });
+
+  it('forwards a non-default start onto the <ol> element', () => {
+    render(<XDSMarkdown>{'5. five\n6. six\n7. seven'}</XDSMarkdown>);
+    const ol = document.querySelector('ol')!;
+    expect(ol.getAttribute('start')).toBe('5');
+  });
+
   it('renders task lists with checkboxes', () => {
     render(<XDSMarkdown>{'- [x] Done\n- [ ] Todo'}</XDSMarkdown>);
     const checkboxes = document.querySelectorAll('input[type="checkbox"]');
