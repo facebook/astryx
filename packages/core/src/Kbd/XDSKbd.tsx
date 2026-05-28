@@ -72,6 +72,7 @@ const KEY_DISPLAY: Record<string, string> = {
   down: '\u2193',
   left: '\u2190',
   right: '\u2192',
+  plus: '+',
 };
 
 /**
@@ -109,11 +110,13 @@ export interface XDSKbdProps extends XDSBaseProps<HTMLSpanElement> {
   /**
    * Keyboard shortcut string. Use "+" to separate keys.
    * Special keys: mod (Cmd on Mac), ctrl, alt, shift, enter, backspace, escape.
+   * Use "plus" to render a literal "+" key (e.g. "shift+plus").
    *
    * @example
    * ```
    * "mod+k"
    * "mod+shift+p"
+   * "shift+plus"
    * "enter"
    * ```
    */
