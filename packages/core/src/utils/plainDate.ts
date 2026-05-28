@@ -83,6 +83,79 @@ export function plainDateAddDays(pd: PlainDate, n: number): PlainDate {
   return plainDateFromDate(d);
 }
 
+function getTimeZoneParts(
+  instant: number,
+  timezoneID: string,
+): {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+} {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezoneID,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date(instant));
+
+  const lookup = Object.fromEntries(
+    parts
+      .filter(part => part.type !== 'literal')
+      .map(part => [part.type, Number(part.value)]),
+  );
+
+  return {
+    year: lookup.year,
+    month: lookup.month,
+    day: lookup.day,
+    hour: lookup.hour,
+    minute: lookup.minute,
+    second: lookup.second,
+  };
+}
+
+function getTimezoneOffsetMS(timezoneID: string, instant: number): number {
+  const parts = getTimeZoneParts(instant, timezoneID);
+  return (
+    Date.UTC(
+      parts.year,
+      parts.month - 1,
+      parts.day,
+      parts.hour,
+      parts.minute,
+      parts.second,
+    ) - instant
+  );
+}
+
+export function plainDateToInstant(
+  date: PlainDate,
+  timezoneID: string,
+  hour = 0,
+  minute = 0,
+): number {
+  const utcGuess = Date.UTC(date.year, date.month - 1, date.day, hour, minute);
+  const firstOffset = getTimezoneOffsetMS(timezoneID, utcGuess);
+  const firstInstant = utcGuess - firstOffset;
+  const secondOffset = getTimezoneOffsetMS(timezoneID, firstInstant);
+  return utcGuess - secondOffset;
+}
+
+export function plainDateFromInstant(
+  instant: number,
+  timezoneID: string,
+): PlainDate {
+  const parts = getTimeZoneParts(instant, timezoneID);
+  return plainDateCreate(parts.year, parts.month, parts.day);
+}
+
 function compare(a: PlainDate, b: PlainDate): number {
   if (a.year !== b.year) {
     return a.year - b.year;
@@ -105,6 +178,14 @@ export function plainDateIsEqual(a: PlainDate, b: PlainDate): boolean {
   return compare(a, b) === 0;
 }
 
+export function plainDateMax(a: PlainDate, b: PlainDate): PlainDate {
+  return compare(a, b) >= 0 ? a : b;
+}
+
+export function plainDateMin(a: PlainDate, b: PlainDate): PlainDate {
+  return compare(a, b) <= 0 ? a : b;
+}
+
 export function plainDateIsInRange(
   pd: PlainDate,
   range: [PlainDate, PlainDate],
@@ -114,6 +195,22 @@ export function plainDateIsInRange(
 
 export function plainDateSetFirstOfMonth(pd: PlainDate): PlainDate {
   return {year: pd.year, month: pd.month, day: 1};
+}
+
+export function plainDateSetStartOfWeek(
+  pd: PlainDate,
+  weekStartsOn: number,
+): PlainDate {
+  const day = plainDateDayOfWeek(pd);
+  const delta = (day - weekStartsOn + 7) % 7;
+  return plainDateAddDays(pd, -delta);
+}
+
+export function plainDateSetEndOfWeekExclusive(
+  pd: PlainDate,
+  weekStartsOn: number,
+): PlainDate {
+  return plainDateAddDays(plainDateSetStartOfWeek(pd, weekStartsOn), 7);
 }
 
 export function plainDateGetWeekNumber(pd: PlainDate): number {
