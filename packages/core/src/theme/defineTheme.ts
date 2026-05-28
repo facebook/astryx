@@ -1026,10 +1026,15 @@ export interface ThemeRulesSplit {
  *
  * Component rules (tokens, .xds-* overrides) are intentional theme overrides
  * that need to beat StyleX — they stay in xds-theme (above StyleX layers).
+ *
+ * Pass `{prose: false}` to skip prose rules entirely. The returned `prose`
+ * array will be empty in that case.
  */
 export function generateThemeRulesSplit(
   theme: XDSDefinedTheme,
+  options: {prose?: boolean} = {},
 ): ThemeRulesSplit {
+  const {prose: includeProse = true} = options;
   const allRules = generateThemeRules(theme);
 
   const prose: string[] = [];
@@ -1037,7 +1042,7 @@ export function generateThemeRulesSplit(
 
   for (const rule of allRules) {
     if (rule.trimStart().startsWith(':where(')) {
-      prose.push(rule);
+      if (includeProse) {prose.push(rule);}
     } else {
       component.push(rule);
     }

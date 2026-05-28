@@ -983,6 +983,8 @@ export function registerTheme(program) {
     .action(async (file, options) => {
       const filePath = path.resolve(process.cwd(), file);
       const json = program.opts().json || false;
+      // Commander sets options.prose = false when --no-prose is passed.
+      const includeProse = options.prose !== false;
 
       if (!fs.existsSync(filePath)) {
         if (json) return jsonError('File not found: ' + filePath);
@@ -1049,7 +1051,12 @@ export function registerTheme(program) {
         const scopeTo = `[data-xds-theme]`;
 
         if (_generateThemeRulesSplit) {
-          const {component, prose} = _generateThemeRulesSplit(resolvedTheme);
+          // Pass {prose} so core can omit prose rules at the source when
+          // supported. Older core builds ignore the second arg — we also
+          // drop the prose array below as a belt-and-braces guarantee.
+          const split = _generateThemeRulesSplit(resolvedTheme, {prose: includeProse});
+          const component = split.component;
+          const prose = includeProse ? split.prose : [];
           const cssParts = [];
           if (prose.length > 0) {
             const proseInner = prose.join('\n\n');
@@ -1092,9 +1099,11 @@ export function registerTheme(program) {
       } else {
         // Legacy fallback when core isn't built yet
         const scopeBlocks = [];
-        const proseCss = generateProseCSS(themeDef);
-        if (proseCss) scopeBlocks.push(proseCss);
-        const mainCss = generateCSS(themeDef);
+        if (includeProse) {
+          const proseCss = generateProseCSS(themeDef);
+          if (proseCss) scopeBlocks.push(proseCss);
+        }
+        const mainCss = generateCSS(themeDef, {prose: includeProse});
         if (mainCss) scopeBlocks.push(mainCss);
         if (scopeBlocks.length === 0) {
           if (!json) console.log('No overrides found — nothing to build.');

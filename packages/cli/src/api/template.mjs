@@ -13,10 +13,112 @@ import {loadConfig} from '../lib/config.mjs';
 const TEMPLATES_DIR = path.join(CLI_ROOT, 'templates');
 const PAGES_DIR = path.join(TEMPLATES_DIR, 'pages');
 const BLOCKS_DIR = path.join(TEMPLATES_DIR, 'blocks');
+/**
+ * Add template dependencies to the user's package.json. Only writes packages
+ * that aren't already declared in `dependencies` or `devDependencies`. Returns
+ * the list of newly added package names (with `latest` as the version range).
+ *
+ * If no package.json exists in `cwd`, returns the dependency list unchanged
+ * so the caller can surface it in install instructions.
+ *
+ * @param {string[]} deps
+ * @param {string} cwd
+ * @returns {{added: string[], skipped: string[], packageJsonPath: string|null}}
+ */
+export function applyTemplateDependencies(deps, cwd) {
+  if (!deps || deps.length === 0) {
+    return {added: [], skipped: [], packageJsonPath: null};
+  }
+  const pkgPath = path.join(cwd, 'package.json');
+  if (!fs.existsSync(pkgPath)) {
+    return {added: [], skipped: deps, packageJsonPath: null};
+  }
+  let pkg;
+  try {
+    pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+  } catch {
+    return {added: [], skipped: deps, packageJsonPath: pkgPath};
+  }
+  const existing = new Set([
+    ...Object.keys(pkg.dependencies || {}),
+    ...Object.keys(pkg.devDependencies || {}),
+    ...Object.keys(pkg.peerDependencies || {}),
+  ]);
+  const added = [];
+  const skipped = [];
+  pkg.dependencies = pkg.dependencies || {};
+  for (const dep of deps) {
+    if (existing.has(dep)) {
+      skipped.push(dep);
+      continue;
+    }
+    pkg.dependencies[dep] = 'latest';
+    added.push(dep);
+  }
+  if (added.length > 0) {
+    // Sort dependencies alphabetically for stable output
+    const sorted = {};
+    for (const k of Object.keys(pkg.dependencies).sort()) {
+      sorted[k] = pkg.dependencies[k];
+    }
+    pkg.dependencies = sorted;
+    fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
+  }
+  return {added, skipped, packageJsonPath: pkgPath};
+}
+
 async function loadDocModule(docPath) {
   if (!fs.existsSync(docPath)) return null;
   const docModule = await import(`file://${docPath}`);
   return docModule.doc;
+}
+
+/**
+ * Auto-detect npm package dependencies from a template's source file by
+ * scanning its import statements. Filters out:
+ *   - relative imports (./foo)
+ *   - @xds/* (provided by the design system itself)
+ *   - react / react-dom (assumed present in any React app)
+ *
+ * Returns the bare-package portion of each import (e.g. `@heroicons/react`,
+ * not `@heroicons/react/24/outline`).
+ *
+ * @param {string} filePath
+ * @returns {string[]}
+ */
+function detectDependenciesFromSource(filePath) {
+  if (!fs.existsSync(filePath)) return [];
+  const src = fs.readFileSync(filePath, 'utf-8');
+  const deps = new Set();
+  // Matches both `import X from 'pkg'` and `} from 'pkg'`
+  const re = /from\s+['"]([^'"]+)['"]/g;
+  let m;
+  while ((m = re.exec(src)) !== null) {
+    const spec = m[1];
+    if (spec.startsWith('.') || spec.startsWith('/')) continue;
+    if (spec.startsWith('@xds/')) continue;
+    if (spec === 'react' || spec === 'react-dom') continue;
+    if (spec.endsWith('.png') || spec.endsWith('.jpg') || spec.endsWith('.svg')) continue;
+    // Bare-package portion: '@scope/name' or 'name'
+    const parts = spec.split('/');
+    const bare = spec.startsWith('@') ? parts.slice(0, 2).join('/') : parts[0];
+    deps.add(bare);
+  }
+  return [...deps].sort();
+}
+
+/**
+ * Resolve the full dependency list for a template. Combines explicit
+ * `dependencies` from the doc manifest (if present) with auto-detected
+ * imports from the source file. Manifest entries win on duplicates.
+ *
+ * @param {{filePath: string, dependencies?: string[]}} template
+ * @returns {string[]}
+ */
+export function resolveTemplateDependencies(template) {
+  const detected = detectDependenciesFromSource(template.filePath);
+  const declared = Array.isArray(template.dependencies) ? template.dependencies : [];
+  return [...new Set([...declared, ...detected])].sort();
 }
 
 export {discoverAll as discoverTemplates};
@@ -61,6 +163,7 @@ async function discoverPages() {
       description: doc?.description || '',
       isReady: doc?.isReady ?? true,
       scaffold: doc?.scaffold ?? false,
+      dependencies: doc?.dependencies,
       filePath: path.join(dirPath, 'page.tsx'),
       docPath: path.join(dirPath, 'template.doc.mjs'),
     });
@@ -86,6 +189,7 @@ async function discoverBlocks() {
       aspectRatio: doc?.aspectRatio ?? 1,
       componentsUsed: doc?.componentsUsed ?? [],
       isShowcase: doc?.isShowcase ?? false,
+      dependencies: doc?.dependencies,
       filePath: tsxPath,
       docPath,
       category: relPath,
@@ -258,13 +362,72 @@ function extractSkeleton(source) {
       }
 
       const props = [];
-      const propRegex = /\b(padding|contentPadding|gap|rowGap|columnGap|columns|minChildWidth|hasDivider|defaultHasDividers|variant|density|role|height|width|maxWidth)\s*[=]\s*\{?\s*['"]?([^}'"\s,/>]+)/g;
-      let m;
-      while ((m = propRegex.exec(tagText)) !== null) {
-        const val = m[2];
-        if (val === 'true') props.push(m[1]);
-        else if (/^\d+$/.test(val)) props.push(`${m[1]}={${val}}`);
-        else props.push(`${m[1]}="${val}"`);
+      const PROP_NAMES = ['padding', 'contentPadding', 'gap', 'rowGap', 'columnGap', 'columns', 'minChildWidth', 'hasDivider', 'defaultHasDividers', 'variant', 'density', 'role', 'height', 'width', 'maxWidth'];
+      const propNamePattern = `\\b(${PROP_NAMES.join('|')})\\s*=`;
+      const propNameRe = new RegExp(propNamePattern, 'g');
+      let nameMatch;
+      while ((nameMatch = propNameRe.exec(tagText)) !== null) {
+        const propName = nameMatch[1];
+        let i = nameMatch.index + nameMatch[0].length;
+        // Skip whitespace
+        while (i < tagText.length && /\s/.test(tagText[i])) i++;
+        if (i >= tagText.length) continue;
+
+        const ch = tagText[i];
+        let val;
+        if (ch === '"' || ch === "'") {
+          // Quoted string: foo="bar"
+          const close = tagText.indexOf(ch, i + 1);
+          if (close === -1) continue;
+          val = tagText.slice(i + 1, close);
+          if (val === 'true') props.push(propName);
+          else if (/^\d+$/.test(val)) props.push(`${propName}={${val}}`);
+          else props.push(`${propName}="${val}"`);
+        } else if (ch === '{') {
+          // Brace expression: foo={...} — match balanced braces
+          let depth = 0;
+          let end = i;
+          for (; end < tagText.length; end++) {
+            if (tagText[end] === '{') depth++;
+            else if (tagText[end] === '}') {
+              depth--;
+              if (depth === 0) { end++; break; }
+            }
+          }
+          const inner = tagText.slice(i + 1, end - 1).trim();
+          // Simple values: foo={42}, foo={true}, foo={'bar'}
+          if (/^\d+$/.test(inner)) {
+            props.push(`${propName}={${inner}}`);
+          } else if (inner === 'true') {
+            props.push(propName);
+          } else if (inner === 'false') {
+            // Skip false-valued boolean props in skeleton
+          } else if (/^['"][^'"]*['"]$/.test(inner)) {
+            props.push(`${propName}=${inner.replace(/^['"]|['"]$/g, '"')}`);
+          } else if (inner.startsWith('{') && inner.endsWith('}')) {
+            // Object literal — try to extract a useful summary key
+            const minWidthMatch = inner.match(/minWidth\s*:\s*(\d+)/);
+            if (minWidthMatch) {
+              props.push(`${propName}={{minWidth: ${minWidthMatch[1]}}}`);
+            } else {
+              props.push(`${propName}={{...}}`);
+            }
+          } else {
+            // Variable reference or expression — show as expression
+            // Truncate long expressions
+            const summary = inner.length > 24 ? inner.slice(0, 21) + '...' : inner;
+            props.push(`${propName}={${summary}}`);
+          }
+        } else {
+          // No quotes/braces — bare token (rare in JSX)
+          const tokenMatch = tagText.slice(i).match(/^([^\s,/>]+)/);
+          if (tokenMatch) {
+            const val2 = tokenMatch[1];
+            if (val2 === 'true') props.push(propName);
+            else if (/^\d+$/.test(val2)) props.push(`${propName}={${val2}}`);
+            else props.push(`${propName}="${val2}"`);
+          }
+        }
       }
 
       const hasSpatialProps = props.length > 0;
@@ -455,7 +618,40 @@ export async function template(name, options = {}) {
     };
   }
 
-  const outputDir = path.resolve(cwd, targetPath);
+  // If the target path looks like a file (has a .tsx/.jsx/.ts/.js extension),
+  // and isn't an existing directory, write the template directly to that path
+  // instead of treating it as a directory and creating <path>/page.tsx.
+  const resolved = path.resolve(cwd, targetPath);
+  const looksLikeFile = /\.(tsx|jsx|ts|js)$/.test(targetPath);
+  const existsAsDir = fs.existsSync(resolved) && fs.statSync(resolved).isDirectory();
+
+  const dependencies = resolveTemplateDependencies(match);
+  const depsResult = applyTemplateDependencies(dependencies, cwd);
+
+  if (looksLikeFile && !existsAsDir) {
+    const outFilePath = resolved;
+    fs.mkdirSync(path.dirname(outFilePath), {recursive: true});
+    fs.copyFileSync(match.filePath, outFilePath);
+    const relOutput = path.relative(cwd, outFilePath);
+    return {
+      type: 'template.copy',
+      data: {
+        template: name,
+        outputDir: path.relative(cwd, path.dirname(outFilePath)) || '.',
+        fileName: path.basename(outFilePath),
+        outputPath: relOutput,
+        filesCopied: 1,
+        dependencies,
+        dependenciesAdded: depsResult.added,
+        dependenciesSkipped: depsResult.skipped,
+        packageJsonPath: depsResult.packageJsonPath
+          ? path.relative(cwd, depsResult.packageJsonPath)
+          : null,
+      },
+    };
+  }
+
+  const outputDir = resolved;
   const outputFileName = match.type === 'block'
     ? path.basename(match.filePath)
     : 'page.tsx';
@@ -465,6 +661,17 @@ export async function template(name, options = {}) {
   const relOutput = path.relative(cwd, outputDir);
   return {
     type: 'template.copy',
-    data: {template: name, outputDir: relOutput, fileName: outputFileName, filesCopied: 1},
+    data: {
+      template: name,
+      outputDir: relOutput,
+      fileName: outputFileName,
+      filesCopied: 1,
+      dependencies,
+      dependenciesAdded: depsResult.added,
+      dependenciesSkipped: depsResult.skipped,
+      packageJsonPath: depsResult.packageJsonPath
+        ? path.relative(cwd, depsResult.packageJsonPath)
+        : null,
+    },
   };
 }

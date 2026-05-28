@@ -83,7 +83,22 @@ export function registerTemplate(program) {
         }
 
         case 'template.copy': {
-          console.log(`\n✓ Copied template to ${result.data.outputDir}/${result.data.fileName}\n`);
+          const display = result.data.outputPath
+            || `${result.data.outputDir}/${result.data.fileName}`;
+          console.log(`\n✓ Copied template to ${display}`);
+          const {dependencies, dependenciesAdded, packageJsonPath} = result.data;
+          if (dependenciesAdded && dependenciesAdded.length > 0) {
+            console.log(
+              `\n  Added to ${packageJsonPath || 'package.json'}: ${dependenciesAdded.join(', ')}`,
+            );
+            console.log(`  Run your package manager's install command to fetch them.`);
+          } else if (dependencies && dependencies.length > 0 && !packageJsonPath) {
+            console.log(
+              `\n  This template needs: ${dependencies.join(', ')}`,
+            );
+            console.log(`  Add them to your package.json before importing.`);
+          }
+          console.log('');
           break;
         }
       }

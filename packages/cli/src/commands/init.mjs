@@ -14,12 +14,10 @@
  */
 
 import * as p from '@clack/prompts';
-import * as path from 'node:path';
-import * as fs from 'node:fs';
-import {CLI_ROOT} from '../utils/paths.mjs';
 import {getRunPrefix} from '../utils/package-manager.mjs';
 import {installAgentDocs, removeAgentDocs} from './agent-docs.mjs';
 import {listTemplates} from './template.mjs';
+import {template as templateApi} from '../api/template.mjs';
 
 const VALID_FEATURES = ['agents', 'theme', 'template'];
 const run = getRunPrefix();
@@ -91,11 +89,16 @@ async function runTemplate(targetDir, {interactive = true, templateName} = {}) {
       return;
     }
 
-    const outputDir = path.resolve(targetDir, `./src/pages/${templateName}`);
-    const srcPath = path.join(CLI_ROOT, 'templates', 'pages', templateName, 'page.tsx');
-    fs.mkdirSync(outputDir, {recursive: true});
-    fs.copyFileSync(srcPath, path.join(outputDir, 'page.tsx'));
-    console.log(`✓ Template created at ${path.relative(targetDir, outputDir)}/page.tsx`);
+    const outputRel = `./src/pages/${templateName}`;
+    const result = await templateApi(templateName, {targetPath: outputRel, cwd: targetDir});
+    const outputPath = result.data.outputPath
+      || `${result.data.outputDir}/${result.data.fileName}`;
+    console.log(`✓ Template created at ${outputPath}`);
+    if (result.data.dependenciesAdded && result.data.dependenciesAdded.length > 0) {
+      console.log(`  Added to package.json: ${result.data.dependenciesAdded.join(', ')}`);
+    } else if (result.data.dependencies && result.data.dependencies.length > 0 && !result.data.packageJsonPath) {
+      console.log(`  This template needs: ${result.data.dependencies.join(', ')}`);
+    }
     return;
   }
 
@@ -123,13 +126,15 @@ async function runTemplate(targetDir, {interactive = true, templateName} = {}) {
     }),
   );
 
-  const outputDir = path.resolve(targetDir, targetPath);
-  const srcPath = path.join(CLI_ROOT, 'templates', 'pages', templateChoice, 'page.tsx');
-
-  fs.mkdirSync(outputDir, {recursive: true});
-  fs.copyFileSync(srcPath, path.join(outputDir, 'page.tsx'));
-
-  p.log.success(`Template created at ${path.relative(targetDir, outputDir)}/page.tsx`);
+  const result = await templateApi(templateChoice, {targetPath, cwd: targetDir});
+  const outputPath = result.data.outputPath
+    || `${result.data.outputDir}/${result.data.fileName}`;
+  p.log.success(`Template created at ${outputPath}`);
+  if (result.data.dependenciesAdded && result.data.dependenciesAdded.length > 0) {
+    p.log.info(`Added to package.json: ${result.data.dependenciesAdded.join(', ')}`);
+  } else if (result.data.dependencies && result.data.dependencies.length > 0 && !result.data.packageJsonPath) {
+    p.log.warning(`This template needs: ${result.data.dependencies.join(', ')}`);
+  }
 }
 
 // ─── Command ─────────────────────────────────────────────────────────────────
