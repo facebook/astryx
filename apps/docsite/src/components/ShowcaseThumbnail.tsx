@@ -25,7 +25,6 @@ const styles = stylex.create({
     aspectRatio: '16/10',
     overflow: 'hidden',
     position: 'relative' as const,
-    borderRadius: 'var(--radius-container)',
     backgroundColor: 'var(--color-background-muted)',
     contentVisibility: 'auto',
     containIntrinsicSize: 'auto 300px 187px',
