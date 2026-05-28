@@ -96,9 +96,17 @@ const styles = stylex.create({
   // Outer tile: 2-column flex by default (left card + right column
   // side-by-side). Below 640px viewport, switches to a vertical
   // stack so neither column gets cramped on small screens.
+  //
+  // A 16px gap sits between the two columns. Each column carries
+  // its own outer-edge padding (top/bottom + the outer horizontal
+  // edge) so the tile's overall inset matches what each column
+  // contributes — and the middle channel is exactly one 16px gap
+  // rather than the doubled 32px gutter we'd get from symmetric
+  // padding on both columns.
   tile: {
     display: 'flex',
     flexDirection: 'row',
+    gap: spacingVars['--spacing-4'],
     [TILE_STACK_BREAKPOINT]: {
       flexDirection: 'column',
     },
@@ -112,23 +120,27 @@ const styles = stylex.create({
 
   // Left column wraps the theme card. Sized to share the tile width
   // 50/50 with the right column. The XDSCard inside carries the
-  // actual surface styling (border, background, radius); 16px
-  // padding mirrors the right column so the left card's edges sit
-  // the same distance from the tile edges as the right column's
-  // content does.
+  // actual surface styling (border, background, radius). 16px of
+  // padding on the top / bottom / left (outer tile edges); 0 on
+  // the right so the inside edges of the two columns share a
+  // single gap instead of doubling up (which produced a visible
+  // 32px channel down the middle of every card).
   //
-  // When the tile stacks (narrow viewport), flex-basis switches from
-  // 0 to auto so the column sizes to its content height (instead of
-  // squishing both columns to equal heights in a column-direction
-  // flex parent).
+  // When the tile stacks (narrow viewport), the bottom padding
+  // collapses since the right column sits flush underneath
+  // (handled by its top padding instead).
   leftColumn: {
     flex: '1 1 0',
     [TILE_STACK_BREAKPOINT]: {
       flex: '0 0 auto',
+      paddingBottom: 0,
+      paddingRight: spacingVars['--spacing-4'],
     },
     minWidth: 0,
     display: 'flex',
-    padding: spacingVars['--spacing-4'],
+    paddingBlock: spacingVars['--spacing-4'],
+    paddingInlineStart: spacingVars['--spacing-4'],
+    paddingInlineEnd: 0,
   },
 
   // Make XDSCard fill the left column's full width *and* height
@@ -220,15 +232,22 @@ const styles = stylex.create({
   // controls / banners) so the visual hierarchy reads cleanly.
   // Each group inside uses XDSVStack/XDSHStack with a tighter gap.
   // flex-basis flips to auto when stacked (see leftColumn note above).
+  //
+  // Padding mirrors leftColumn — 16px on top / bottom / right
+  // (outer tile edges); 0 on the left so the inside edge between
+  // the two columns has a single 16px gap rather than 32px.
   rightColumn: {
     flex: '1 1 0',
     [TILE_STACK_BREAKPOINT]: {
       flex: '0 0 auto',
+      paddingLeft: spacingVars['--spacing-4'],
     },
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-6'],
-    padding: spacingVars['--spacing-4'],
+    paddingBlock: spacingVars['--spacing-4'],
+    paddingInlineEnd: spacingVars['--spacing-4'],
+    paddingInlineStart: 0,
     minWidth: 0,
   },
 });
@@ -261,12 +280,16 @@ const styles = stylex.create({
 // themes can produce colors in formats like `oklch(...)` or
 // `light-dark(...)` via getComputedStyle resolution.
 function parseRgb(color: string): [number, number, number] | null {
-  if (typeof document === 'undefined') {return null;}
+  if (typeof document === 'undefined') {
+    return null;
+  }
   const canvas = document.createElement('canvas');
   canvas.width = 1;
   canvas.height = 1;
   const ctx = canvas.getContext('2d');
-  if (!ctx) {return null;}
+  if (!ctx) {
+    return null;
+  }
   ctx.fillStyle = '#000'; // baseline so invalid `color` doesn't carry over
   ctx.fillStyle = color;
   // If the canvas couldn't parse the color, fillStyle stays at the
@@ -315,7 +338,9 @@ function ContrastSwatch({
 
   useEffect(() => {
     const el = ref.current;
-    if (!el) {return;}
+    if (!el) {
+      return;
+    }
     const swatchRgb = parseRgb(getComputedStyle(el).backgroundColor);
     // Walk up to find the nearest styled ancestor to read the
     // resolved surface color from. Reading the CSS custom property
