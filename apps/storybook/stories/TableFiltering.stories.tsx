@@ -93,7 +93,7 @@ const fieldDefs = [
 ] as const;
 
 const meta: Meta = {
-  title: 'Core/Table/Filtering',
+  title: 'Core/TableFiltering',
   tags: ['autodocs'],
 };
 

@@ -11,7 +11,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSTextArea> = {
-  title: 'Core/Inputs/TextArea',
+  title: 'Core/TextArea',
   component: XDSTextArea,
   tags: ['autodocs'],
   argTypes: {

@@ -57,7 +57,7 @@ function xifToSvgIconDef(xif: XIFIcon): SVGIconDef {
 // =============================================================================
 
 const meta: Meta = {
-  title: 'Lab/XDSSVGIcon/XIF Spec',
+  title: 'Lab/XIFSpec',
 };
 export default meta;
 

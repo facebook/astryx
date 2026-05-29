@@ -18,7 +18,7 @@ import {
 import {XDSChartGrid, XDSChartAxis} from '@xds/lab';
 
 const meta: Meta<typeof XDSChart> = {
-  title: 'Lab/XDSChart v2/Advanced',
+  title: 'Lab/ChartV2Advanced',
   component: XDSChart,
 };
 export default meta;

@@ -6,7 +6,7 @@ import {XDSNumberInput} from '@xds/core/NumberInput';
 import {HashtagIcon, CurrencyDollarIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSNumberInput> = {
-  title: 'Core/Inputs/NumberInput',
+  title: 'Core/NumberInput',
   component: XDSNumberInput,
   tags: ['autodocs'],
   argTypes: {

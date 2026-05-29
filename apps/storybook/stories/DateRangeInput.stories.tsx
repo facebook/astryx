@@ -41,7 +41,7 @@ const defaultPresets = [
 ];
 
 const meta: Meta<typeof XDSDateRangeInput> = {
-  title: 'Core/Inputs/DateRangeInput',
+  title: 'Core/DateRangeInput',
   component: XDSDateRangeInput,
   tags: ['autodocs'],
   argTypes: {

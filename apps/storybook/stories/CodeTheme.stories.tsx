@@ -64,7 +64,7 @@ const sampleCode = [
 ].join('\n');
 
 const meta: Meta = {
-  title: 'Core/Theme/SyntaxTheme',
+  title: 'Core/CodeTheme',
   tags: ['autodocs'],
   parameters: {
     docs: {
