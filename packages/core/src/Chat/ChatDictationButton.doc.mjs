@@ -7,7 +7,7 @@ export const docs = {
   displayName: 'Chat Dictation Button',
   group: 'Chat',
   category: 'Communications',
-  subComponentOf: 'Chat',
+  isHiddenFromOverview: true,
   hidden: false,
 
   keywords: ['dictation', 'microphone', 'voice', 'speech', 'recording', 'stt', 'speech-to-text', 'voice-input', 'mic'],

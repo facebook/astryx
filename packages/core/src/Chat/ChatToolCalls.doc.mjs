@@ -7,7 +7,7 @@ export const docs = {
   displayName: 'Chat Tool Calls',
   group: 'Chat',
   category: 'Communications',
-  subComponentOf: 'Chat',
+  isHiddenFromOverview: true,
 
   keywords: ['tool', 'function', 'call', 'invocation', 'llm', 'agent', 'bash', 'edit', 'read', 'search', 'status', 'running', 'error', 'complete', 'diff', 'stats'],
 

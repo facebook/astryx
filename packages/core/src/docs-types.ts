@@ -435,11 +435,11 @@ interface BaseDoc {
     | 'Lists'
     | 'Navigation'
     | 'Performance';
-  /** When set, marks this component as a sub-component that is only used
-   *  within the context of its parent. The value is the parent component's
-   *  `name` (e.g. `'Chat'` for ChatToolCalls). Sub-components are excluded
-   *  from the categorized overview page but remain in the sidebar. */
-  subComponentOf?: string;
+  /** When true, this component is excluded from the categorized overview
+   *  page but remains in the sidebar and CLI. Use for sub-components that
+   *  only make sense within a parent (e.g. BreadcrumbItem, DialogHeader)
+   *  or internal primitives that shouldn't appear in the gallery. */
+  isHiddenFromOverview?: boolean;
   /** Theming configuration. Documents the stable CSS class names
    *  rendered by this component that themes can target via `@scope`
    *  selectors in `defineTheme`. */

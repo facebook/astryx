@@ -69,7 +69,7 @@ const NAME_RE = /(?:^|\n) {0,4}name:\s*['"]([^'"]+)['"]/;
 const DISPLAY_NAME_RE = /(?:^|\n) {0,4}displayName:\s*['"]([^'"]+)['"]/;
 const KEYWORDS_RE = /keywords:\s*\[([^\]]*)\]/;
 const CATEGORY_RE = /(?:^|\n) {0,4}category:\s*['"]([^'"]+)['"]/;
-const SUB_COMPONENT_OF_RE = /(?:^|\n) {0,4}subComponentOf:\s*['"]([^'"]+)['"]/;
+const IS_HIDDEN_FROM_OVERVIEW_RE = /(?:^|\n) {0,4}isHiddenFromOverview:\s*true/;
 
 function readDocMeta(docPath) {
   try {
@@ -84,7 +84,7 @@ function readDocMeta(docPath) {
       ? [...kwMatch[1].matchAll(/['"]([^'"]+)['"]/g)].map(m => m[1])
       : [];
     const categoryMatch = CATEGORY_RE.exec(content);
-    const subComponentOfMatch = SUB_COMPONENT_OF_RE.exec(content);
+    const isHiddenFromOverview = IS_HIDDEN_FROM_OVERVIEW_RE.test(content);
     return {
       group: groupMatch?.[1] ?? null,
       description: descMatch?.[1] ?? '',
@@ -93,10 +93,10 @@ function readDocMeta(docPath) {
       hidden,
       keywords,
       category: categoryMatch?.[1] ?? null,
-      subComponentOf: subComponentOfMatch?.[1] ?? null,
+      isHiddenFromOverview,
     };
   } catch {
-    return {group: null, description: '', name: null, displayName: null, hidden: false, keywords: [], category: null, subComponentOf: null};
+    return {group: null, description: '', name: null, displayName: null, hidden: false, keywords: [], category: null, isHiddenFromOverview: false};
   }
 }
 
@@ -284,7 +284,7 @@ async function generateComponentRegistry() {
 
         const group = doc.group || null;
         const category = doc.category || null;
-        const subComponentOf = doc.subComponentOf || null;
+        const isHiddenFromOverview = doc.isHiddenFromOverview ?? false;
         const keywords = doc.keywords || [];
         const hidden = doc.hidden ?? false;
         const topDescription = doc.usage?.description || doc.description || '';
@@ -296,11 +296,9 @@ async function generateComponentRegistry() {
           for (const sub of doc.components) {
             const subName = (sub.name || '').replace(/^XDS/, '');
             if (!subName) continue;
-            // Determine subComponentOf: if explicitly set on the doc, use that.
-            // Otherwise, sub-entries whose name differs from the doc name are
-            // sub-components of the doc's primary component.
+            // Sub-entries whose name differs from the doc name are
+            // sub-components — hide them from the overview page.
             const isSubEntry = subName !== doc.name;
-            const resolvedSubComponentOf = subComponentOf || (isSubEntry ? doc.name : null);
             pendingSubComponents.push({
               name: subName,
               displayName: requireDisplayName(
@@ -311,7 +309,7 @@ async function generateComponentRegistry() {
               directory: entry.name,
               group,
               category,
-              subComponentOf: resolvedSubComponentOf,
+              isHiddenFromOverview: isHiddenFromOverview || isSubEntry,
               description: sub.description || topDescription,
               keywords,
               hidden,
@@ -340,7 +338,7 @@ async function generateComponentRegistry() {
             directory: entry.name,
             group,
             category,
-            subComponentOf,
+            isHiddenFromOverview,
             description: topDescription,
             keywords,
             hidden,
@@ -368,7 +366,7 @@ async function generateComponentRegistry() {
             directory: entry.name,
             group,
             category,
-            subComponentOf,
+            isHiddenFromOverview,
             description: topDescription,
             keywords,
             hidden,
@@ -488,8 +486,8 @@ export interface ComponentEntry {
   group: string | null;
   /** Functional category for the overview gallery (Actions, Inputs, etc.) */
   category: string | null;
-  /** Parent component name if this is a sub-component. */
-  subComponentOf: string | null;
+  /** Whether this component is hidden from the overview page. */
+  isHiddenFromOverview: boolean;
   description: string;
   keywords: string[];
   hidden: boolean;
