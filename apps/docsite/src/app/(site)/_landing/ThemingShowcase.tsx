@@ -161,11 +161,24 @@ function ShowcaseHeading() {
         xstyle={styles.fillWidth}>
         Every app deserves to look like itself
       </XDSHeading>
-      <XDSText type="body" color="secondary" xstyle={styles.fillWidth}>
-        Astryx makes it effortless. Customize color, typography, radius, and
-        motion at the token level
-        <br />— your brand, no fork required.
-      </XDSText>
+      <XDSVStack gap={1} align="center" xstyle={styles.fillWidth}>
+        <XDSText type="body" color="secondary" xstyle={styles.fillWidth}>
+          Astryx makes it effortless. Customize color, typography, radius, and
+          motion at the token level
+          <br />— your brand, no fork required.
+        </XDSText>
+        <XDSHStack gap={2} align="center">
+          <XDSLink type="body" href="/themes" hasUnderline>
+            Explore all themes
+          </XDSLink>
+          <XDSText type="body" color="secondary" aria-hidden="true">
+            ·
+          </XDSText>
+          <XDSLink type="body" href="/docs/theme" hasUnderline>
+            Create a custom theme
+          </XDSLink>
+        </XDSHStack>
+      </XDSVStack>
     </XDSVStack>
   );
 }
