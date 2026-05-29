@@ -6,6 +6,7 @@ export const docs = {
   name: 'RadioList',
   displayName: 'Radio List',
   group: 'Radio',
+  category: 'Inputs',
   keywords: ["radiolist","radio","radiogroup","radiobutton","optionlist","singlechoice","choicelist"],
   theming: {
     targets: [

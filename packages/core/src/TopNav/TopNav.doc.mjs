@@ -6,6 +6,7 @@ export const docs = {
   name: 'TopNav',
   displayName: 'Top Nav',
   group: 'TopNav',
+  category: 'Navigation',
   keywords: ["topnav","navbar","appbar","header","toolbar","navigation","menubar","topbar"],
   playground: {
     defaults: {

@@ -5,6 +5,7 @@
 export const docs = {
   name: 'AspectRatio',
   displayName: 'Aspect Ratio',
+  category: 'Layout',
   keywords: ["aspect-ratio","ratio","proportion","responsive","embed","container","widescreen","thumbnail","letterbox","crop"],
   usage: {
     description:

@@ -5,6 +5,7 @@
 export const docs = {
   name: 'Skeleton',
   displayName: 'Skeleton',
+  category: 'Performance',
   keywords: ["skeleton","placeholder","loading","shimmer","pulse","loader","bone","ghost","preloader"],
   props: [
     {

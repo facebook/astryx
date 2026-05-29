@@ -63,3 +63,13 @@ body[data-nav-mode='surface'] .xds-top-nav {
   background: color-mix(in srgb, var(--color-background-surface) 80%, transparent);
 }
 
+/* The /themes/<name> dedicated page renders a faux app top nav INSIDE
+   its preview surface. The global `.xds-top-nav` rule above gives it a
+   surface-tinted frosted background, which leaks through and makes the
+   preview's nav look distinct from its themed body. Scope it back to
+   the theme's body color so the preview reads as one continuous app
+   surface. */
+[data-theme-preview='true'] .xds-top-nav {
+  background: var(--color-background-body);
+  backdrop-filter: none;
+}

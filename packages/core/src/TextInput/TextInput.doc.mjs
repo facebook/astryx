@@ -5,6 +5,7 @@
 export const docs = {
   name: 'TextInput',
   displayName: 'Text Input',
+  category: 'Inputs',
   keywords: ["textinput","textfield","input","search","clearable","prefix","suffix","adornment","validation"],
   props: [
     {

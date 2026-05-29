@@ -18,7 +18,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSButtonGroup> = {
-  title: 'Core/Buttons/ButtonGroup',
+  title: 'Core/ButtonGroup',
   component: XDSButtonGroup,
   tags: ['autodocs'],
   argTypes: {

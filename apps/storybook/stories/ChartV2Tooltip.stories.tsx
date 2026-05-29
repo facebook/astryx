@@ -5,7 +5,7 @@ import {XDSChartV2 as XDSChart, bar, line} from '@xds/lab';
 import {XDSChartGrid, XDSChartAxis, currency} from '@xds/lab';
 
 const meta: Meta = {
-  title: 'Lab/XDSChart v2/Primitives/Tooltip',
+  title: 'Lab/ChartV2Tooltip',
 };
 export default meta;
 
