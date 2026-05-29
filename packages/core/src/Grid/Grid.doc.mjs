@@ -6,6 +6,7 @@ export const docs = {
   name: 'Grid',
   displayName: 'Grid',
   group: 'Layout',
+  category: 'Layout',
   keywords: ["grid","columns","responsive","auto-fill","auto-fit","masonry","tiles","row","col","simplegrid","responsive grid","card grid"],
   usage: {
     description:

@@ -6,6 +6,7 @@ export const docs = {
   name: 'Collapsible',
   displayName: 'Collapsible',
   group: 'Collapsible',
+  category: 'Containers',
   keywords: ["accordion","collapse","expandable","disclosure","toggle","panel","foldable","expander","expand"],
   playground: {
     defaults: {

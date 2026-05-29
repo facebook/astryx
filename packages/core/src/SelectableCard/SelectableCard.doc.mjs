@@ -5,6 +5,7 @@ export const docs = {
   name: 'SelectableCard',
   displayName: 'Selectable Card',
   group: 'Card',
+  category: 'Actions',
   keywords: ['card', 'selectable', 'toggle', 'checkbox', 'radio', 'selection'],
   usage: {
     description: 'A card that toggles between selected and unselected states with an accent border. For navigation use ClickableCard.',

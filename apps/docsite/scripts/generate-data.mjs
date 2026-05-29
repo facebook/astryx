@@ -68,6 +68,8 @@ const HIDDEN_RE = /(?:^|\n) {0,4}hidden:\s*true/;
 const NAME_RE = /(?:^|\n) {0,4}name:\s*['"]([^'"]+)['"]/;
 const DISPLAY_NAME_RE = /(?:^|\n) {0,4}displayName:\s*['"]([^'"]+)['"]/;
 const KEYWORDS_RE = /keywords:\s*\[([^\]]*)\]/;
+const CATEGORY_RE = /(?:^|\n) {0,4}category:\s*['"]([^'"]+)['"]/;
+const SUB_COMPONENT_OF_RE = /(?:^|\n) {0,4}subComponentOf:\s*['"]([^'"]+)['"]/;
 
 function readDocMeta(docPath) {
   try {
@@ -81,6 +83,8 @@ function readDocMeta(docPath) {
     const keywords = kwMatch
       ? [...kwMatch[1].matchAll(/['"]([^'"]+)['"]/g)].map(m => m[1])
       : [];
+    const categoryMatch = CATEGORY_RE.exec(content);
+    const subComponentOfMatch = SUB_COMPONENT_OF_RE.exec(content);
     return {
       group: groupMatch?.[1] ?? null,
       description: descMatch?.[1] ?? '',
@@ -88,9 +92,11 @@ function readDocMeta(docPath) {
       displayName: displayNameMatch?.[1] ?? null,
       hidden,
       keywords,
+      category: categoryMatch?.[1] ?? null,
+      subComponentOf: subComponentOfMatch?.[1] ?? null,
     };
   } catch {
-    return {group: null, description: '', name: null, displayName: null, hidden: false, keywords: []};
+    return {group: null, description: '', name: null, displayName: null, hidden: false, keywords: [], category: null, subComponentOf: null};
   }
 }
 
@@ -277,6 +283,8 @@ async function generateComponentRegistry() {
         }
 
         const group = doc.group || null;
+        const category = doc.category || null;
+        const subComponentOf = doc.subComponentOf || null;
         const keywords = doc.keywords || [];
         const hidden = doc.hidden ?? false;
         const topDescription = doc.usage?.description || doc.description || '';
@@ -288,6 +296,11 @@ async function generateComponentRegistry() {
           for (const sub of doc.components) {
             const subName = (sub.name || '').replace(/^XDS/, '');
             if (!subName) continue;
+            // Determine subComponentOf: if explicitly set on the doc, use that.
+            // Otherwise, sub-entries whose name differs from the doc name are
+            // sub-components of the doc's primary component.
+            const isSubEntry = subName !== doc.name;
+            const resolvedSubComponentOf = subComponentOf || (isSubEntry ? doc.name : null);
             pendingSubComponents.push({
               name: subName,
               displayName: requireDisplayName(
@@ -297,6 +310,8 @@ async function generateComponentRegistry() {
               moduleName: sub.name || subName,
               directory: entry.name,
               group,
+              category,
+              subComponentOf: resolvedSubComponentOf,
               description: sub.description || topDescription,
               keywords,
               hidden,
@@ -324,6 +339,8 @@ async function generateComponentRegistry() {
             moduleName: name,
             directory: entry.name,
             group,
+            category,
+            subComponentOf,
             description: topDescription,
             keywords,
             hidden,
@@ -350,6 +367,8 @@ async function generateComponentRegistry() {
             moduleName: name.startsWith('use') ? name : `XDS${name}`,
             directory: entry.name,
             group,
+            category,
+            subComponentOf,
             description: topDescription,
             keywords,
             hidden,
@@ -467,6 +486,10 @@ export interface ComponentEntry {
   moduleName: string;
   directory: string;
   group: string | null;
+  /** Functional category for the overview gallery (Actions, Inputs, etc.) */
+  category: string | null;
+  /** Parent component name if this is a sub-component. */
+  subComponentOf: string | null;
   description: string;
   keywords: string[];
   hidden: boolean;

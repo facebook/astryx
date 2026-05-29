@@ -6,6 +6,7 @@ export const docs = {
   name: 'Stack',
   displayName: 'Stack',
   group: 'Layout',
+  category: 'Layout',
   keywords: ["stack","hstack","vstack","flexbox","flex","spacing","gap","horizontal","vertical","row","column"],
   theming: {
     targets: [

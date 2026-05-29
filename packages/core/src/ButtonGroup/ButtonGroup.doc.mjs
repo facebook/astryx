@@ -6,6 +6,7 @@ export const docs = {
   name: 'ButtonGroup',
   displayName: 'Button Group',
   group: 'Button',
+  category: 'Actions',
   keywords: ["button-group","connected","split","toolbar","actions","grouped","buttons"],
   playground: {
     defaults: {

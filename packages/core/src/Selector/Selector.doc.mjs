@@ -6,6 +6,7 @@ export const docs = {
   name: 'Selector',
   displayName: 'Selector',
   group: 'Selector',
+  category: 'Inputs',
   keywords: ["selector","select","dropdown","combobox","picker","listbox","chooser","autocomplete","option","selectmenu"],
   theming: {
     targets: [

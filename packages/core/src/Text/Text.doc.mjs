@@ -5,6 +5,7 @@
 export const docs = {
   name: 'Text',
   displayName: 'Text',
+  category: 'Communications',
   keywords: ["text","typography","label","paragraph","heading","caption","font","body","subtitle"],
   playground: {
     defaults: {

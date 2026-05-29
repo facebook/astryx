@@ -5,6 +5,7 @@
 export const docs = {
   name: 'CircularProgress',
   displayName: 'Circular Progress',
+  category: 'Performance',
   keywords: ["circular","progress","radial","ring","arc","determinate","indeterminate","gauge","meter","donut"],
   props: [
     {

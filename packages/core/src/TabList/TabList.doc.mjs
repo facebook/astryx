@@ -6,6 +6,7 @@ export const docs = {
   name: 'TabList',
   displayName: 'Tab List',
   group: 'Tabs',
+  category: 'Navigation',
   keywords: ["tabs","tabbar","tabstrip","navigation","tabpanel","tabgroup","segmented","navtabs","tab"],
   playground: {
     defaults: {
