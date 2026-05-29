@@ -103,9 +103,24 @@ describe('migrate-gap-to-numeric', () => {
     expect(output).toContain('gap="custom"');
   });
 
-  it('converts gap on any component with gap prop', async () => {
+  it('does not modify gap on non-XDS components (false positive guard)', async () => {
     const input = '<CustomComponent gap="space3" />';
     const output = await applyTransform(input);
-    expect(output).toContain('gap={3}');
+    // Should leave third-party components untouched.
+    expect(output).toContain('gap="space3"');
+    expect(output).not.toContain('gap={3}');
+  });
+
+  it('does not modify gap on native HTML elements', async () => {
+    const input = '<div gap="space4">child</div>';
+    const output = await applyTransform(input);
+    expect(output).toContain('gap="space4"');
+    expect(output).not.toContain('gap={4}');
+  });
+
+  it('does not modify gap on a similarly-named non-XDS component', async () => {
+    const input = '<MyStack gap="space4">x</MyStack>';
+    const output = await applyTransform(input);
+    expect(output).toContain('gap="space4"');
   });
 });
