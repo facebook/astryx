@@ -165,16 +165,28 @@ const styles = stylex.create({
     height: '100%',
   },
 
-  // Image wrapper inside the left card. Flex-grows to fill any
-  // vertical space left over after heading + description + type
-  // samples + swatches lay out, while HERO_IMAGE_HEIGHT acts as a
-  // floor so short tiles still get a real hero band. Combined
-  // with `objectFit: cover` on the <img> below, the image just
-  // crops to whatever final height it ends up at.
+  // Image wrapper at the bottom of the left card. Flex-grows to
+  // fill any vertical space left over after heading + description
+  // + type samples + swatches lay out, while HERO_IMAGE_HEIGHT
+  // acts as a floor so short tiles still get a real hero band.
+  // Combined with `objectFit: cover` on the <img> below, the
+  // image just crops to whatever final height it ends up at.
+  // Lives at the bottom of the card (not the top) so the card
+  // opens with the theme name + description as the dominant
+  // identity element, with the hero image as a closing brand
+  // signature.
+  //
+  // `flex: '1 1 0'` (basis = 0, NOT auto) is load-bearing: with
+  // basis `auto`, the flex algorithm uses the <img>'s natural
+  // pixel size as the wrapper's preferred height — which for
+  // stock-photo assets is 800px+, blowing out the whole left
+  // card to match. Basis `0` makes the wrapper start at zero
+  // and grow by exactly the leftover space, capped by the right
+  // column's natural height.
   imageWrapper: {
     position: 'relative',
     overflow: 'hidden',
-    flex: '1 1 auto',
+    flex: '1 1 0',
     minHeight: HERO_IMAGE_HEIGHT,
     borderRadius: radiusVars['--radius-element'],
     backgroundColor: colorVars['--color-background-muted'],
@@ -245,18 +257,6 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
-  },
-
-  // Identity group (image + name + description) flex-grows inside
-  // the outer left-card stack so any leftover vertical space
-  // beneath the token-group (typography + swatches) flows up into
-  // this stack — where the imageWrapper picks it up via its own
-  // flex: 1 + objectFit:cover. End result: the hero image
-  // stretches to fill the card on tall tiles (Butter, Y2K)
-  // instead of leaving an empty band at the bottom of the card.
-  identityGroup: {
-    flex: '1 1 auto',
-    minHeight: 0,
   },
 
   // Right column: stacked groups of components. Uses a larger
@@ -450,43 +450,22 @@ export function ThemeShowcaseTile({
       <div {...stylex.props(styles.leftColumn)}>
         <XDSCard padding={4} xstyle={styles.leftCard}>
           <XDSVStack gap={6} width="100%" height="100%">
-            {/* Group 1 — identity: hero image, name, description.
-                The three identity elements cluster together at the
-                tighter intra-group gap. Inert so the tile reads as
-                a passive demo (only the Preview/Install action row
-                below is interactive). identityGroup flex-grows so
-                the hero image expands to fill leftover card
-                height (see imageWrapper for the matching grow
-                rule). */}
-            <XDSVStack gap={4} inert xstyle={styles.identityGroup}>
-              {/* Raw <img> intentionally: XDS provides XDSThumbnail
-                  but it's purpose-built for file-attachment UX (square
-                  64px default, remove/click affordances, upload-style
-                  skeleton). This is a decorative hero image at the
-                  top of the card with a tinted gradient fallback for
-                  themes whose preview asset isn't ready yet. */}
-              <div {...stylex.props(styles.imageWrapper)}>
-                {showImage ? (
-                  <img
-                    src={imageSrc}
-                    alt=""
-                    {...stylex.props(styles.image)}
-                    onError={() => setCandidateIndex(i => i + 1)}
-                  />
-                ) : (
-                  <div {...stylex.props(styles.imageFallback)} />
-                )}
-              </div>
-              <XDSVStack gap={1}>
-                <XDSHeading level={2} color="primary">
-                  {label}
-                </XDSHeading>
-                {description && (
-                  <XDSText as="span" type="body" color="secondary">
-                    {description}
-                  </XDSText>
-                )}
-              </XDSVStack>
+            {/* Group 1 — identity: name + description. The hero
+                image used to live in this group at the top of the
+                card; it now sits at the bottom of the card (after
+                Group 2) as a closing brand signature so the card
+                opens with the most identifying information rather
+                than a decorative photo. Inert so the tile reads
+                as a passive demo. */}
+            <XDSVStack gap={1} inert>
+              <XDSHeading level={2} color="primary">
+                {label}
+              </XDSHeading>
+              {description && (
+                <XDSText as="span" type="body" color="secondary">
+                  {description}
+                </XDSText>
+              )}
             </XDSVStack>
 
             {/* Group 2 — design tokens: typography samples + color
@@ -579,6 +558,30 @@ export function ThemeShowcaseTile({
               </XDSVStack>
             </XDSVStack>
             {/* end Group 2 */}
+
+            {/* Hero image — closing brand signature at the bottom
+                of the left card. Flex-grows to fill any leftover
+                vertical space so tall tiles (Butter, Y2K) don't
+                leave an empty band at the bottom; falls back to a
+                170px floor on short tiles. Raw <img> intentionally:
+                XDS provides XDSThumbnail but it's purpose-built
+                for file-attachment UX (square 64px default,
+                remove/click affordances, upload-style skeleton).
+                Tinted gradient fallback covers themes whose
+                preview asset isn't ready yet. Inert so the tile
+                reads as a passive demo. */}
+            <div {...stylex.props(styles.imageWrapper)} inert>
+              {showImage ? (
+                <img
+                  src={imageSrc}
+                  alt=""
+                  {...stylex.props(styles.image)}
+                  onError={() => setCandidateIndex(i => i + 1)}
+                />
+              ) : (
+                <div {...stylex.props(styles.imageFallback)} />
+              )}
+            </div>
           </XDSVStack>
         </XDSCard>
       </div>
