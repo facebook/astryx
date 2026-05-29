@@ -156,7 +156,8 @@ describe('injectAgentsMd', () => {
     injectAgentsMd(tmpDir, '1.0.0');
 
     const content = fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
-    expect(content).toContain('# AGENTS.md');
+    expect(content).toContain("# AGENTS");
+    expect(content).not.toContain("# AGENTS.md");
     expect(content).toContain('<!-- XDS:START -->');
     expect(content).toContain('XDS v1.0.0');
     expect(content).toContain('<!-- XDS:END -->');

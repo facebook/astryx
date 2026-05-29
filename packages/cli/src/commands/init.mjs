@@ -18,10 +18,11 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import {CLI_ROOT} from '../utils/paths.mjs';
 import {getRunPrefix} from '../utils/package-manager.mjs';
-import {installAgentDocs, removeAgentDocs} from './agent-docs.mjs';
+import {installAgentDocs, removeAgentDocs, InvalidAgentError} from './agent-docs.mjs';
 import {listTemplates} from './template.mjs';
 
 const VALID_FEATURES = ['agents', 'theme', 'template'];
+const VALID_AGENTS = ['claude', 'cursor', 'codex', 'all'];
 const run = getRunPrefix();
 
 function isCancel(value) {
@@ -48,7 +49,11 @@ function runAgents(targetDir, {interactive = true, agent, agentDocsPath} = {}) {
     } else {
       console.log(`✓ AI agent docs installed → ${summary}`);
     }
-  } catch {
+  } catch (err) {
+    if (err instanceof InvalidAgentError) {
+      console.error(`Error: ${err.message}`);
+      process.exit(1);
+    }
     const msg = `Could not install agent docs. Try again with \`${run} xds init --features agents\`.`;
     if (interactive) {
       p.log.warning(msg);
@@ -148,16 +153,34 @@ export function registerInit(program) {
 
       // Remove mode
       if (options.removeAgents) {
-        removeAgentDocs(targetDir);
-        console.log('✓ AI agent docs removed.');
+        const {removed} = removeAgentDocs(targetDir);
+        if (removed.length === 0) {
+          console.log('ℹ️  No agent docs found.');
+        } else {
+          console.log('✓ AI agent docs removed.');
+        }
         return;
       }
 
-      // Non-interactive: --features or --all
-      if (options.features || options.all) {
+      // Validate --agent up front for both --features and implicit modes.
+      if (options.agent && !VALID_AGENTS.includes(options.agent)) {
+        console.error(`Error: Unknown agent: ${options.agent}`);
+        console.error(`Valid agents: ${VALID_AGENTS.join(', ')}`);
+        process.exit(1);
+      }
+
+      // If --agent or --agent-docs-path is passed without --features/--all,
+      // implicitly enable the `agents` feature instead of silently ignoring them.
+      const agentFlagsImplyAgents =
+        !options.features && !options.all && (options.agent || options.agentDocsPath);
+
+      // Non-interactive: --features, --all, or implied --features=agents
+      if (options.features || options.all || agentFlagsImplyAgents) {
         const features = options.all
           ? VALID_FEATURES
-          : options.features.split(',').map(f => f.trim().toLowerCase());
+          : agentFlagsImplyAgents
+            ? ['agents']
+            : options.features.split(',').map(f => f.trim().toLowerCase());
 
         const invalid = features.filter(f => !VALID_FEATURES.includes(f));
         if (invalid.length > 0) {
@@ -189,7 +212,7 @@ export function registerInit(program) {
       // Feature: agents
       const shouldInstallAgents = isCancel(
         await p.confirm({
-          message: 'Install AI agent support? (adds XDS cheat sheet to AGENTS.md)',
+          message: 'Install AI agent support? (adds XDS cheat sheet to .claude/CLAUDE.md, AGENTS.md, etc.)',
           initialValue: true,
         }),
       );
