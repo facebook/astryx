@@ -128,6 +128,12 @@ const styles = stylex.create({
     //    rounded corners XDSClickableCard sets via its radius.
     backgroundColor: colorVars['--color-background-body'],
     overflow: 'hidden',
+    // Drop the XDSCard default variant's --color-border-emphasized
+    // border so the tile reads as a continuous themed surface
+    // rather than a bordered card-on-card. The hover/focus
+    // affordance comes from XDSClickableCard's ::after overlay
+    // and focus-visible outline, not from a static border.
+    borderColor: 'transparent',
     width: '100%',
     height: '100%',
     boxSizing: 'border-box',
