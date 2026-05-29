@@ -32,7 +32,7 @@ import {XDSEmptyState} from '@xds/core/EmptyState';
 import {useState, useCallback, useRef} from 'react';
 
 const meta: Meta<typeof XDSChatLayout> = {
-  title: 'Core/Chat/Layout',
+  title: 'Core/ChatLayout',
   component: XDSChatLayout,
   tags: ['autodocs'],
   parameters: {layout: 'fullscreen'},

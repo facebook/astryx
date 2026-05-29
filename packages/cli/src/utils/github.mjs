@@ -159,17 +159,20 @@ function runCustomCommand(command, report) {
 }
 
 /**
- * Create a gap report — either via GitHub issue or custom command.
+ * Build the report payload + rendered title/body for a gap report.
+ * Pure function — no side effects, never calls `gh` or external scripts.
  *
- * @param {object} opts
- * @param {string} opts.component  Component name (e.g. "Button")
- * @param {string} opts.category   One of GAP_CATEGORIES values
- * @param {string} opts.intention  What the user was trying to achieve
- * @param {string} [opts.detail]   Additional context
- * @param {string} [opts.source]   Who filed it: "interactive", "llm-auto", "cli"
- * @returns {string|null} URL of the created issue (or custom command output), null if disabled
+ * @returns {{
+ *   enabled: boolean,
+ *   mode: 'disabled' | 'custom' | 'github',
+ *   command?: string,
+ *   report: object,
+ *   title: string,
+ *   body: string,
+ *   repo: string,
+ * }}
  */
-export function createGapReport({
+export function buildGapReportPreview({
   component,
   category,
   intention,
@@ -177,11 +180,6 @@ export function createGapReport({
   source = 'cli',
 }) {
   const config = loadGapReportConfig();
-
-  if (!config.enabled) {
-    return null;
-  }
-
   const categoryLabel =
     GAP_CATEGORIES.find(c => c.value === category)?.label ?? category;
 
@@ -195,16 +193,7 @@ export function createGapReport({
     timestamp: new Date().toISOString(),
   };
 
-  // Custom command mode — pipe JSON to the script
-  if (config.command) {
-    return runCustomCommand(config.command, report);
-  }
-
-  // Default mode — create GitHub issue
-  ensureGapReportLabel();
-
   const title = `[gap] ${component}: ${intention.slice(0, 70)}`;
-
   const body = [
     '| Field | Value |',
     '|-------|-------|',
@@ -216,10 +205,53 @@ export function createGapReport({
     '## User Intention',
     '',
     intention,
-    ...(detail
-      ? ['', '## Additional Context', '', detail]
-      : []),
+    ...(detail ? ['', '## Additional Context', '', detail] : []),
   ].join('\n');
+
+  let mode = 'github';
+  if (!config.enabled) mode = 'disabled';
+  else if (config.command) mode = 'custom';
+
+  return {
+    enabled: config.enabled,
+    mode,
+    command: config.command,
+    report,
+    title,
+    body,
+    repo: DEFAULT_REPO,
+  };
+}
+
+/**
+ * Create a gap report — either via GitHub issue or custom command.
+ *
+ * SAFETY: This actually invokes `gh issue create` (or runs the custom command).
+ * Callers MUST gate this behind explicit user confirmation or a `--commit`-style
+ * flag in non-interactive contexts. Use `buildGapReportPreview` for dry-run.
+ *
+ * @param {object} opts
+ * @param {string} opts.component  Component name (e.g. "Button")
+ * @param {string} opts.category   One of GAP_CATEGORIES values
+ * @param {string} opts.intention  What the user was trying to achieve
+ * @param {string} [opts.detail]   Additional context
+ * @param {string} [opts.source]   Who filed it: "interactive", "llm-auto", "cli"
+ * @returns {string|null} URL of the created issue (or custom command output), null if disabled
+ */
+export function createGapReport(opts) {
+  const preview = buildGapReportPreview(opts);
+
+  if (!preview.enabled) {
+    return null;
+  }
+
+  // Custom command mode — pipe JSON to the script
+  if (preview.mode === 'custom') {
+    return runCustomCommand(preview.command, preview.report);
+  }
+
+  // Default mode — create GitHub issue
+  ensureGapReportLabel();
 
   const result = execFileSync(
     'gh',
@@ -227,11 +259,11 @@ export function createGapReport({
       'issue',
       'create',
       '--repo',
-      DEFAULT_REPO,
+      preview.repo,
       '--title',
-      title,
+      preview.title,
       '--body',
-      body,
+      preview.body,
       '--label',
       'gap-report',
     ],

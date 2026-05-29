@@ -33,7 +33,7 @@ import {useState, useCallback, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 const meta: Meta = {
-  title: 'Core/Chat/AutoScroll',
+  title: 'Core/ChatAutoScroll',
   tags: ['autodocs'],
   parameters: {layout: 'fullscreen'},
 };
