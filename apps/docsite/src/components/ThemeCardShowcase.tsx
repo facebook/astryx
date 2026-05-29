@@ -914,7 +914,13 @@ function LatestActivityCard() {
 
 type TagSpec = {label: string; variant: 'blue' | 'green' | 'orange' | 'yellow'};
 
-interface InventoryRow {
+// `extends Record<string, unknown>` is load-bearing: XDSTable's
+// generic constraint requires it, and Next.js's production build
+// enforces it strictly (dev builds let it slide). Without it the
+// Vercel preview fails to compile at `<XDSTable<InventoryRow>>`
+// below. The `unknown` value type is broad enough to accept
+// `tags: TagSpec[]` and any other field shape we add later.
+interface InventoryRow extends Record<string, unknown> {
   id: string;
   name: string;
   meta: string;
