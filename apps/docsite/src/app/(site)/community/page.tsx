@@ -112,6 +112,12 @@ const styles = stylex.create({
     },
     gap: 'var(--spacing-6)',
     alignItems: 'flex-start',
+    // Generous internal vertical padding so the contributing
+    // section reads as its own deliberate chapter — matches the
+    // breathing room around the end block at the bottom of the
+    // page.
+    paddingBlockStart: 'var(--spacing-12)',
+    paddingBlockEnd: 'var(--spacing-12)',
   },
   // Left column: process list. flex 1 ratio combined with right
   // column's flex 2 yields the 1:2 split.
