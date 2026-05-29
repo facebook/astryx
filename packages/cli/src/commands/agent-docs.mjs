@@ -31,6 +31,39 @@ const CLAUDE_DIR_MD = path.join('.claude', 'CLAUDE.md');
 const XDS_MARKER_START = '<!-- XDS:START -->';
 const XDS_MARKER_END = '<!-- XDS:END -->';
 
+const VALID_AGENTS = ['claude', 'cursor', 'codex', 'all'];
+
+/**
+ * Thrown when an invalid `--agent` value is passed to installAgentDocs.
+ * Callers (init, agent-docs commands) should catch this and print a
+ * stable error message + exit non-zero.
+ */
+export class InvalidAgentError extends Error {
+  constructor(value) {
+    super(`Unknown agent "${value}". Valid: ${VALID_AGENTS.join(', ')}`);
+    this.name = 'InvalidAgentError';
+    this.value = value;
+    this.validAgents = VALID_AGENTS;
+  }
+}
+
+/**
+ * Build a consistent header for newly-created agent doc files.
+ * Uses the file basename with extension stripped, so:
+ *   .claude/CLAUDE.md -> "# CLAUDE"
+ *   AGENTS.md         -> "# AGENTS"
+ *   ./a.md            -> "# a"
+ *
+ * All code paths that create a file from scratch should use this so we
+ * never produce two different headers ("# CLAUDE.md" vs "# CLAUDE") for
+ * the same file.
+ */
+function makeAgentDocHeader(relativePath) {
+  const base = path.basename(relativePath, path.extname(relativePath));
+  return `# ${base}\n\nProject-specific guidance for AI coding agents.`;
+}
+
+
 /**
  * Agent tool presets — maps tool names to their file search paths.
  * Order matters: first existing file wins, last entry is the default (created if none exist).
@@ -244,7 +277,7 @@ export function injectAgentsMd(targetDir, version, {zh = false, lang} = {}) {
   const compressedIndex = generateCompressedIndex(version, {coreDir: findCoreDir(targetDir)});
   injectXdsBlock(agentsPath, compressedIndex, {
     createIfMissing: true,
-    header: `# AGENTS.md\n\nProject-specific guidance for AI coding agents.`,
+    header: makeAgentDocHeader(AGENTS_MD),
   });
 }
 
@@ -293,15 +326,20 @@ export function removeXdsBlock(filePath, {deleteIfEmpty = false} = {}) {
 
 /**
  * Remove XDS section from all known agent doc files.
+ *
+ * @returns {{removed: string[]}} List of files we cleaned (removed section
+ *   from, or deleted entirely). Empty when nothing was found.
  */
 export function removeAgentDocs(targetDir) {
   const allPaths = discoverAgentDocs(targetDir);
+  const removed = [];
 
   for (const p of allPaths) {
     const filePath = path.join(targetDir, p);
     // Delete if empty for files we created (AGENTS.md, .claude/CLAUDE.md)
     const deleteIfEmpty = p === AGENTS_MD || p === CLAUDE_DIR_MD;
     if (removeXdsBlock(filePath, {deleteIfEmpty})) {
+      removed.push(p);
       if (!fs.existsSync(filePath)) {
         console.log(`✓ Removed empty ${p}`);
       } else {
@@ -309,6 +347,21 @@ export function removeAgentDocs(targetDir) {
       }
     }
   }
+
+  // Clean up an orphaned, now-empty .claude/ directory we may have created.
+  const claudeDir = path.join(targetDir, '.claude');
+  if (fs.existsSync(claudeDir)) {
+    try {
+      const entries = fs.readdirSync(claudeDir);
+      if (entries.length === 0) {
+        fs.rmdirSync(claudeDir);
+      }
+    } catch {
+      // best-effort cleanup
+    }
+  }
+
+  return {removed};
 }
 
 /**
@@ -345,7 +398,7 @@ export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onl
       }
       injectXdsBlock(filePath, compressedIndex, {
         createIfMissing: true,
-        header: `# ${path.basename(p, path.extname(p))}\n\nProject-specific guidance for AI coding agents.`,
+        header: makeAgentDocHeader(p),
       });
       written.push(p);
     }
@@ -354,6 +407,9 @@ export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onl
 
   // Agent preset
   if (agent) {
+    if (!VALID_AGENTS.includes(agent)) {
+      throw new InvalidAgentError(agent);
+    }
     const {inject, create} = resolveAgentPaths(targetDir, agent);
     for (const p of inject) {
       injectXdsBlock(path.join(targetDir, p), compressedIndex);
@@ -367,7 +423,7 @@ export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onl
       }
       injectXdsBlock(filePath, compressedIndex, {
         createIfMissing: true,
-        header: `# ${path.basename(p, path.extname(p))}\n\nProject-specific guidance for AI coding agents.`,
+        header: makeAgentDocHeader(p),
       });
       written.push(p);
     }
@@ -392,13 +448,11 @@ export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onl
   fs.mkdirSync(path.join(targetDir, '.claude'), {recursive: true});
   injectXdsBlock(path.join(targetDir, defaultPath), compressedIndex, {
     createIfMissing: true,
-    header: `# CLAUDE.md\n\nProject-specific guidance for AI coding agents.`,
+    header: makeAgentDocHeader(defaultPath),
   });
   written.push(defaultPath);
   return written;
 }
-
-const VALID_AGENTS = ['claude', 'cursor', 'codex', 'all'];
 
 export function registerAgentDocs(program) {
   program
@@ -416,8 +470,12 @@ export function registerAgentDocs(program) {
 
       if (options.remove) {
         console.log('\n🗑️  Removing XDS agent docs...\n');
-        removeAgentDocs(targetDir);
-        console.log('\n✅ XDS agent docs removed.\n');
+        const {removed} = removeAgentDocs(targetDir);
+        if (removed.length === 0) {
+          console.log('\nℹ️  No agent docs found.\n');
+        } else {
+          console.log('\n✅ XDS agent docs removed.\n');
+        }
         return;
       }
 
