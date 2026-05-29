@@ -165,21 +165,21 @@ export default function ThemesPage() {
               </XDSText>
             </XDSVStack>
             {/* Hero CTAs — two paths into theming. The primary
-                "Create your own theme" sends users to the live
+                "Build a custom theme" sends users to the live
                 playground editor where they can fork any theme
                 and tweak tokens with instant visual feedback;
-                the secondary "Learn about the Theme System"
-                sends users to the docs for the defineTheme +
-                CLI wizard walkthrough. */}
+                the secondary "How theming works" sends users to
+                the docs for the defineTheme + CLI wizard
+                walkthrough. */}
             <XDSHStack gap={2} hAlign="center" wrap="wrap">
               <XDSButton
                 variant="primary"
-                label="Create your own theme"
+                label="Build a custom theme"
                 href="/playground"
               />
               <XDSButton
                 variant="secondary"
-                label="Learn about the Theme System"
+                label="How theming works"
                 href="/docs/theme"
               />
             </XDSHStack>
