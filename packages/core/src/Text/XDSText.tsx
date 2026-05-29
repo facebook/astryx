@@ -120,8 +120,9 @@ export interface XDSTextProps extends Omit<XDSBaseProps, 'children'> {
   textWrap?: XDSTextWrap;
 
   /**
-   * Text alignment (justification).
-   * @default 'left'
+   * Text alignment (justification). Uses logical values (start/end)
+   * for i18n/RTL compatibility.
+   * @default 'start'
    */
   justify?: XDSTextJustify;
 
@@ -207,7 +208,7 @@ export function XDSText({
   hasTruncateTooltip = true,
   wordBreak,
   textWrap,
-  justify = 'left',
+  justify = 'start',
   hasCapsize = false,
   hasStrikethrough = false,
   hasTabularNumbers = false,
@@ -269,7 +270,7 @@ export function XDSText({
             // Text wrap
             textWrap && textWrapStyles[textWrap],
             // Justify (text alignment)
-            justify !== 'left' && justifyStyles[justify],
+            justify !== 'start' && justifyStyles[justify],
             // Capsize
             hasCapsize && capsizeStyles.enabled,
             // Decorations

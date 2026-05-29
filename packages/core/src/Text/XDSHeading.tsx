@@ -142,8 +142,9 @@ export interface XDSHeadingProps extends Omit<
   textWrap?: XDSTextWrap;
 
   /**
-   * Text alignment (justification).
-   * @default 'left'
+   * Text alignment (justification). Uses logical values (start/end)
+   * for i18n/RTL compatibility.
+   * @default 'start'
    */
   justify?: XDSTextJustify;
 
@@ -201,7 +202,7 @@ export function XDSHeading({
   hasTruncateTooltip = true,
   wordBreak,
   textWrap,
-  justify = 'left',
+  justify = 'start',
   hasCapsize = false,
   hasStrikethrough = false,
   xstyle,
@@ -262,7 +263,7 @@ export function XDSHeading({
             // Text wrap
             textWrap && textWrapStyles[textWrap],
             // Justify (text alignment)
-            justify !== 'left' && justifyStyles[justify],
+            justify !== 'start' && justifyStyles[justify],
             // Capsize
             hasCapsize && capsizeStyles.enabled,
             // Decorations

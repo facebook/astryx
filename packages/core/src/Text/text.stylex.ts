@@ -288,14 +288,14 @@ export const tabularNumbersStyle = stylex.create({
 // =============================================================================
 
 export const justifyStyles = stylex.create({
-  left: {
-    textAlign: 'left',
+  start: {
+    textAlign: 'start',
   },
   center: {
     textAlign: 'center',
   },
-  right: {
-    textAlign: 'right',
+  end: {
+    textAlign: 'end',
   },
 });
 
