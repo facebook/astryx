@@ -145,7 +145,7 @@ export default function ComponentsGalleryPage() {
           isLabelHidden
           value={query}
           onChange={setQuery}
-          placeholder="Search components\u2026"
+          placeholder="Search components…"
           startIcon={MagnifyingGlassIcon}
           hasClear
         />
