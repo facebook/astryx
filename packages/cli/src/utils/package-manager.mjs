@@ -15,7 +15,9 @@ import * as path from 'node:path';
  * Walks up from targetDir looking for lockfiles.
  *
  * @param {string} [targetDir=process.cwd()]
- * @returns {'yarn'|'pnpm'|'bun'|'npm'}
+ * @returns {'yarn'|'pnpm'|'bun'|'npm'|'npx'} The package manager name, or
+ *   `'npx'` as a last-resort runner fallback when no lockfile, packageManager
+ *   field, or user-agent hint is available.
  */
 export function detectPackageManager(targetDir = process.cwd()) {
   const KNOWN_PMS = new Set(['yarn', 'pnpm', 'bun', 'npm']);
