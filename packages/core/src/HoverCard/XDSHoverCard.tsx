@@ -127,6 +127,29 @@ export interface XDSHoverCardProps {
    * The hover card is still dismissible — this just opens it initially.
    */
   isDefaultOpen?: boolean;
+
+  /**
+   * StyleX styles created via `stylex.create()`. Applied to the hover card
+   * content container for layout or spacing overrides.
+   *
+   * @example
+   * ```
+   * const overrides = stylex.create({ card: { maxWidth: 320 } });
+   * <XDSHoverCard xstyle={overrides.card} content={...}>...</XDSHoverCard>
+   * ```
+   */
+  xstyle?: import('@stylexjs/stylex').StyleXStyles;
+
+  /**
+   * CSS class name(s) appended to the hover card content container.
+   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
+   */
+  className?: string;
+
+  /**
+   * Inline styles applied to the hover card content container.
+   */
+  style?: React.CSSProperties;
 }
 
 /**
@@ -172,6 +195,9 @@ export function XDSHoverCard({
   hasHoverIndication = 'auto',
   isOpen,
   isDefaultOpen,
+  xstyle,
+  className,
+  style,
 }: XDSHoverCardProps): ReactElement {
   const wrapperRef = useRef<HTMLSpanElement>(null);
   const textOnly = isTextOnly(children);
@@ -238,9 +264,19 @@ export function XDSHoverCard({
     };
   }, [textOnly, hoverCard.ref, hoverCard.describedBy]);
 
+  // Wrap content with consumer style overrides if provided
+  const styledContent =
+    xstyle || className || style ? (
+      <div {...stylex.props(xstyle)} className={className} style={style}>
+        {content}
+      </div>
+    ) : (
+      content
+    );
+
   const renderedHoverCard =
     typeof document !== 'undefined'
-      ? createPortal(hoverCard.renderHoverCard(content), document.body)
+      ? createPortal(hoverCard.renderHoverCard(styledContent), document.body)
       : null;
 
   // For text-only children: use inline span with ref on wrapper
