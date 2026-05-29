@@ -13,6 +13,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {checkForUpdate} from './utils/update-check.mjs';
 import {getRunPrefix} from './utils/package-manager.mjs';
+import {jsonError} from './lib/json.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -34,6 +35,25 @@ program
   .action(() => {
     program.help();
   });
+
+/**
+ * Pre-subcommand hook: validate the global --detail flag for EVERY command
+ * before any action body runs (i.e. before side effects). An invalid value
+ * exits 1 with a clear message rather than silently falling back to 'full'.
+ * --json callers get a typed { error } envelope. Commands that re-validate
+ * --detail locally (component, hook) keep working — this is a strict superset.
+ */
+const VALID_DETAIL_LEVELS = ['full', 'compact', 'brief'];
+program.hook('preSubcommand', () => {
+  const detail = program.opts().detail;
+  if (detail != null && !VALID_DETAIL_LEVELS.includes(detail)) {
+    const msg = `Invalid --detail value "${detail}". Valid levels: ${VALID_DETAIL_LEVELS.join(', ')}`;
+    if (program.opts().json) return jsonError(msg);
+    console.error(`Error: Invalid --detail value "${detail}".`);
+    console.error(`Valid levels: ${VALID_DETAIL_LEVELS.join(', ')}`);
+    process.exit(1);
+  }
+});
 
 /**
  * Fallback hook: if --json was requested but the command didn't call
