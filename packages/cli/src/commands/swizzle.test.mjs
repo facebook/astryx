@@ -223,25 +223,54 @@ describe('createImportRewriter', () => {
 // -------------------------------------------------------------------
 
 describe('swizzle output type-checks (e2e)', () => {
-  // These tests build real swizzled output against the workspace's
-  // packages/core. They depend on packages/core being built (`pnpm build`
-  // in packages/core has been run at least once) so that dist .d.ts
-  // files exist for type resolution. CI runs build before tests.
+  // This suite swizzles the FULL set of components (auto-discovered via
+  // `swizzle --list`, nothing hardcoded) into a single fixture and runs
+  // `tsc --noEmit` ONCE over all of them. This proves the rewriter
+  // produces type-correct output across every component family — form
+  // inputs, overlays/portals, layout, navigation, data display,
+  // date/time, and composite components — not just a hand-picked sample.
+  //
+  // It depends on packages/core being built (`pnpm build`) so that dist
+  // .d.ts files exist for type resolution. CI runs build before tests.
   const repoRoot = path.resolve(import.meta.dirname, '..', '..', '..', '..');
   const corePkgDir = path.join(repoRoot, 'packages', 'core');
   const distExists = fs.existsSync(path.join(corePkgDir, 'dist', 'index.d.ts'));
   const cliBin = path.join(repoRoot, 'packages', 'cli', 'bin', 'xds.mjs');
 
-  // Skip when running without a built core package — `pnpm build` is a
-  // pre-req for this test, and the unit tests above cover the rewriter
-  // logic in isolation.
+  // In CI we MUST run this suite — silently skipping would let a broken
+  // rewriter ship green. `pnpm build` is a documented pre-req, so a
+  // missing dist in CI is a hard error, not a skip. Locally (no CI env),
+  // we skip with a hint when core hasn't been built yet.
+  const isCI = Boolean(process.env.CI);
+  if (isCI && !distExists) {
+    throw new Error(
+      'swizzle e2e: packages/core/dist/index.d.ts is missing in CI. ' +
+        'Run `pnpm build` before the CLI test job — the swizzle e2e ' +
+        'matrix cannot be skipped in CI.',
+    );
+  }
   const conditionalIt = distExists ? it : it.skip;
 
+  // Discover every swizzleable component from the CLI itself. Keeping
+  // this dynamic means new components are covered automatically and the
+  // matrix can never drift out of date.
+  function discoverComponents() {
+    if (!distExists) return [];
+    const out = execFileSync(process.execPath, [cliBin, 'swizzle', '--list', '--json'], {
+      env: {...process.env, FORCE_COLOR: '0'},
+      stdio: 'pipe',
+      encoding: 'utf-8',
+    });
+    const parsed = JSON.parse(out);
+    return Array.isArray(parsed.data) ? parsed.data : [];
+  }
+
   let tmpDir;
+  const components = discoverComponents();
 
   beforeAll(() => {
     if (!distExists) return;
-    // Create the tmp dir INSIDE the workspace so the swizzle command's
+    // Create the fixture INSIDE the workspace so the swizzle command's
     // upward walk (findCoreDir) locates packages/core. Using os.tmpdir()
     // lands outside the repo and findCoreDir's 5-level cap can't reach
     // the workspace packages/core.
@@ -249,10 +278,9 @@ describe('swizzle output type-checks (e2e)', () => {
     fs.mkdirSync(fixturesRoot, {recursive: true});
     tmpDir = fs.mkdtempSync(path.join(fixturesRoot, 'fixture-'));
 
-    // Minimal package + tsconfig that consumes @xds/core via a relative
-    // file: dependency. We DON'T install (no node_modules) — we write a
-    // tsconfig with `paths` so tsc resolves @xds/core directly to the
-    // workspace package's dist + src exports.
+    // Minimal package + tsconfig that consumes @xds/core. We DON'T
+    // install (no node_modules) — we write a tsconfig with `paths` so
+    // tsc resolves @xds/core directly to the workspace package's dist.
     fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({
       name: 'swizzle-e2e-fixture',
       version: '0.0.0',
@@ -279,30 +307,30 @@ describe('swizzle output type-checks (e2e)', () => {
       },
       include: ['components/**/*.ts', 'components/**/*.tsx'],
     }, null, 2));
-  });
 
-  afterAll(() => {
-    if (tmpDir) fs.rmSync(tmpDir, {recursive: true, force: true});
-  });
-
-  // Pick components that exercise each branch of the rewriter:
-  //   Button   — top-level XDSBaseProps, multiple barrel imports
-  //   Card     — deep stylex import (paddingStyles, spacingStepToToken)
-  //   Calendar — same-package subdirectory (hooks/) recursive copy
-  //   Dialog   — deep stylex import + type import
-  //   Avatar   — sibling component context import
-  for (const component of ['Button', 'Card', 'Calendar', 'Dialog', 'Avatar']) {
-    conditionalIt(`swizzled ${component} compiles cleanly`, () => {
-      // Run the swizzle CLI from inside tmpDir so findCoreDir walks up
-      // and locates the workspace packages/core.
+    // Swizzle every component into the single fixture.
+    for (const component of components) {
       execFileSync(process.execPath, [cliBin, 'swizzle', component, '--no-report'], {
         cwd: tmpDir,
         env: {...process.env, FORCE_COLOR: '0'},
         stdio: 'pipe',
       });
+    }
+  }, 120_000);
 
-      // Run tsc using the local node_modules typescript binary from the
-      // workspace root.
+  afterAll(() => {
+    if (tmpDir) fs.rmSync(tmpDir, {recursive: true, force: true});
+  });
+
+  conditionalIt('discovers a non-trivial component matrix', () => {
+    // Guard against a regression where --list returns nothing and the
+    // type-check below silently passes over an empty fixture.
+    expect(components.length).toBeGreaterThan(50);
+  });
+
+  conditionalIt(
+    'every swizzled component compiles cleanly (full matrix)',
+    () => {
       const tscBin = path.join(repoRoot, 'node_modules', '.bin', 'tsc');
       let stdout = '';
       let exitCode = 0;
@@ -318,9 +346,15 @@ describe('swizzle output type-checks (e2e)', () => {
       }
 
       if (exitCode !== 0) {
-        throw new Error(`tsc reported errors for ${component}:\n${stdout}`);
+        // tsc paths include components/xds/<Component>/... so failures
+        // point straight at the offending component.
+        throw new Error(
+          `tsc reported errors across the swizzle matrix ` +
+            `(${components.length} components):\n${stdout}`,
+        );
       }
       expect(exitCode).toBe(0);
-    }, 30_000);
-  }
+    },
+    120_000,
+  );
 });
