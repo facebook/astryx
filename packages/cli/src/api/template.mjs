@@ -390,6 +390,17 @@ export async function getTemplateById(id, options = {}) {
  */
 export async function template(name, options = {}) {
   const {list = false, skeleton = false, show = false, targetPath, type, cwd = process.cwd()} = options;
+
+  // Validate --type up front (before any discovery / side effects) so an
+  // invalid value fails loudly with exit 1 instead of silently returning
+  // an empty list. Only 'page' and 'block' are valid template types.
+  const VALID_TYPES = ['page', 'block'];
+  if (type != null && !VALID_TYPES.includes(type)) {
+    throw new XDSError(
+      `Unknown template type "${type}". Valid types: ${VALID_TYPES.join(', ')}`,
+    );
+  }
+
   const templates = await discoverAll();
 
   if (list || (!name && !skeleton)) {
