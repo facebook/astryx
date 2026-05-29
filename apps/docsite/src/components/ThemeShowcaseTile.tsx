@@ -229,16 +229,19 @@ const styles = stylex.create({
     flexShrink: 0,
   },
 
-  // Action row pinned to the bottom of the right column via
-  // margin-top:auto. Holds the Primary/Secondary button samples —
-  // demos the theme's button chrome. Buttons are passive samples
-  // (the right column carries `inert`), not interactive CTAs:
-  // the entire tile is itself a single link to the theme page.
+  // Action row sits at the end of the right column, after the
+  // banner stack. Holds the Primary / Secondary / Ghost button
+  // samples — demos the theme's button chrome. Buttons are
+  // passive samples (the right column carries `inert`), not
+  // interactive CTAs: the entire tile is itself a single link to
+  // the theme page. No margin-top:auto here — the row hugs the
+  // banner stack at the column's standard 24px inter-group gap so
+  // tall left cards (Butter, Y2K) don't leave a visible band of
+  // empty tile background above the buttons.
   actionRow: {
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
-    marginTop: 'auto',
   },
 
   // Right column: stacked groups of components. Uses a larger
