@@ -182,4 +182,20 @@ describe('subcommand --help shows global flags + Examples', () => {
     expect(stdout).toMatch(/--detail/);
     expect(stdout).toMatch(/Examples:/);
   });
+
+  it('gap-report --help mentions global flags and Examples', () => {
+    const {stdout} = runCli(['gap-report', '--help']);
+    expect(stdout).toMatch(/--json/);
+    expect(stdout).toMatch(/--lang/);
+    expect(stdout).toMatch(/--detail/);
+    expect(stdout).toMatch(/Examples:/);
+  });
+
+  it('gap-report setup --help mentions global flags and Examples', () => {
+    const {stdout} = runCli(['gap-report', 'setup', '--help']);
+    expect(stdout).toMatch(/--json/);
+    expect(stdout).toMatch(/--lang/);
+    expect(stdout).toMatch(/--detail/);
+    expect(stdout).toMatch(/Examples:/);
+  });
 });

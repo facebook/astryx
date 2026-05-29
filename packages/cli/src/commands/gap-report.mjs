@@ -20,6 +20,7 @@ import {
 } from '../utils/github.mjs';
 import {getRunPrefix} from '../utils/package-manager.mjs';
 import {jsonOut, jsonError} from '../lib/json.mjs';
+import {addCommonHelp} from '../utils/help.mjs';
 
 function isCancel(value) {
   if (p.isCancel(value)) {
@@ -75,7 +76,7 @@ export function registerGapReport(program) {
     .description('Report a gap in the XDS design system');
 
   // --- setup subcommand ---
-  gapCmd
+  const setupCmd = gapCmd
     .command('setup')
     .description('Configure where gap reports are sent')
     .action(async () => {
@@ -309,4 +310,15 @@ export function registerGapReport(program) {
 
       p.outro('Thanks for the feedback!');
     });
+
+  addCommonHelp(gapCmd, [
+    'xds gap-report                                     Interactively report a gap',
+    'xds gap-report --component XDSButton --reason "…"  Report a gap non-interactively',
+    'xds gap-report --list-categories                   List valid gap categories',
+    'xds gap-report setup                               Configure where gap reports are sent',
+    'xds gap-report --json                              Structured JSON output for scripting',
+  ]);
+  addCommonHelp(setupCmd, [
+    'xds gap-report setup            Configure gap-report delivery (GitHub / custom / off)',
+  ]);
 }
