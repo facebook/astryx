@@ -2,15 +2,21 @@
 
 'use client';
 
+import {useState, useMemo} from 'react';
 import {usePathname} from 'next/navigation';
+import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {XDSSideNav, XDSSideNavItem, XDSSideNavSection} from '@xds/core/SideNav';
+import {XDSTextInput} from '@xds/core/TextInput';
 import {SharedTopNav} from './SharedTopNav';
 import type {ComponentEntry} from '../generated/componentRegistry';
 import type {PackageMeta} from '../generated/packageRegistry';
 import type {DocTopic} from '../generated/docsRegistry';
 import type {TemplateEntry} from '../generated/templateRegistry';
-import type {ComponentItem} from '../generated/groupedComponentRegistry';
+import type {
+  ComponentItem,
+  GroupedEntry,
+} from '../generated/groupedComponentRegistry';
 import {groupedComponents} from '../generated/groupedComponentRegistry';
 
 interface DocsShellProps {
@@ -59,8 +65,39 @@ export function DocsShell({
   defaultIsMobile,
 }: DocsShellProps) {
   const pathname = usePathname();
+  const [componentQuery, setComponentQuery] = useState('');
 
   const {componentItems, utilities} = buildComponentSidebar();
+
+  const q = componentQuery.trim().toLowerCase();
+
+  // When searching, flatten groups to individual entries so results are
+  // all at the same level with no nesting.
+  const flatSearchResults = useMemo<GroupedEntry[]>(() => {
+    if (!q) {return [];}
+    return componentItems.flatMap(item => {
+      if (item.type === 'entry') {
+        return item.displayName.toLowerCase().includes(q) ? [item] : [];
+      }
+      return item.entries
+        .filter(e => e.displayName.toLowerCase().includes(q))
+        .map(e => ({
+          type: 'entry' as const,
+          name: e.name,
+          displayName: e.displayName,
+          href: e.href,
+          description: '',
+        }));
+    });
+  }, [componentItems, q]);
+
+  const filteredUtilities = useMemo(
+    () =>
+      q
+        ? utilities.filter(u => u.displayName.toLowerCase().includes(q))
+        : utilities,
+    [utilities, q],
+  );
 
   // Classify packages
   const isTheme = (p: PackageMeta) => p.name.includes('theme-');
@@ -192,65 +229,92 @@ export function DocsShell({
             </>
           )}
 
-          {/* Components — rendered as a flat list directly under the section
-              (no redundant "Components" parent wrapper). The first item is
-              an Overview link back to the /components gallery so users on
-              a detail page can return to the index. Sub-grouped items like
-              Avatar / Button keep their own collapsible behavior for their
-              nested entries. */}
-          <XDSSideNavSection title="Components" isHeaderHidden>
-            <XDSSideNavItem
-              label="Overview"
-              href="/components"
-              isSelected={pathname === '/components'}
-            />
-            {componentItems.map(item =>
-              item.type === 'entry' ? (
-                <XDSSideNavItem
-                  key={item.name}
-                  label={item.displayName}
-                  href={item.href}
-                  isSelected={pathname === item.href}
+          {/* Components — only shown on /components routes */}
+          {isOnComponentsRoute && (
+            <>
+              <XDSSideNavSection title="Components" isHeaderHidden>
+                <XDSTextInput
+                  label="Search components"
+                  isLabelHidden
+                  value={componentQuery}
+                  onChange={setComponentQuery}
+                  placeholder="Search components…"
+                  startIcon={MagnifyingGlassIcon}
+                  hasClear
+                  style={{marginBottom: 'var(--spacing-3)'}}
                 />
-              ) : (
-                <XDSSideNavItem
-                  key={item.label}
-                  label={item.displayName}
-                  collapsible={{
-                    defaultIsCollapsed: !item.entries.some(
-                      e => pathname === e.href,
-                    ),
-                  }}>
-                  {item.entries.map(entry => (
-                    <XDSSideNavItem
-                      key={entry.name}
-                      label={entry.displayName}
-                      href={entry.href}
-                      isSelected={pathname === entry.href}
-                    />
-                  ))}
-                </XDSSideNavItem>
-              ),
-            )}
-          </XDSSideNavSection>
-
-          {/* Utilities — secondary list rendered below the main Components
-              section. Always starts collapsed; users can expand on demand. */}
-          {utilities.length > 0 && (
-            <XDSSideNavSection title="Utilities" isHeaderHidden>
-              <XDSSideNavItem
-                label="Utilities"
-                collapsible={{defaultIsCollapsed: true}}>
-                {utilities.map(comp => (
+                {!q && (
                   <XDSSideNavItem
-                    key={comp.name}
-                    label={comp.displayName}
-                    href={comp.href}
-                    isSelected={pathname === comp.href}
+                    label="Overview"
+                    href="/components"
+                    isSelected={pathname === '/components'}
                   />
-                ))}
-              </XDSSideNavItem>
-            </XDSSideNavSection>
+                )}
+                {q
+                  ? flatSearchResults.map(item => (
+                      <XDSSideNavItem
+                        key={item.name}
+                        label={item.displayName}
+                        href={item.href}
+                        isSelected={pathname === item.href}
+                      />
+                    ))
+                  : componentItems.map(item =>
+                      item.type === 'entry' ? (
+                        <XDSSideNavItem
+                          key={item.name}
+                          label={item.displayName}
+                          href={item.href}
+                          isSelected={pathname === item.href}
+                        />
+                      ) : (
+                        <XDSSideNavItem
+                          key={item.label}
+                          label={item.displayName}
+                          collapsible={{
+                            defaultIsCollapsed: !item.entries.some(
+                              e => pathname === e.href,
+                            ),
+                          }}>
+                          {item.entries.map(entry => (
+                            <XDSSideNavItem
+                              key={entry.name}
+                              label={entry.displayName}
+                              href={entry.href}
+                              isSelected={pathname === entry.href}
+                            />
+                          ))}
+                        </XDSSideNavItem>
+                      ),
+                    )}
+                {/* Utilities — secondary list rendered below the main Components
+                    section. Always starts collapsed; users can expand on demand. */}
+                {filteredUtilities.length > 0 &&
+                  (q ? (
+                    filteredUtilities.map(comp => (
+                      <XDSSideNavItem
+                        key={comp.name}
+                        label={comp.displayName}
+                        href={comp.href}
+                        isSelected={pathname === comp.href}
+                      />
+                    ))
+                  ) : (
+                    <XDSSideNavItem
+                      label="Utilities"
+                      collapsible={{defaultIsCollapsed: true}}>
+                      {utilities.map(comp => (
+                        <XDSSideNavItem
+                          key={comp.name}
+                          label={comp.displayName}
+                          href={comp.href}
+                          isSelected={pathname === comp.href}
+                        />
+                      ))}
+                    </XDSSideNavItem>
+                  ))}
+              </XDSSideNavSection>
+            </>
           )}
         </XDSSideNav>
       }>

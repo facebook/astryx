@@ -6,15 +6,13 @@
 
 'use client';
 
-import {useMemo, useState} from 'react';
+import {useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 import {XDSText} from '@xds/core/Text';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSSection} from '@xds/core/Section';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSClickableCard} from '@xds/core/ClickableCard';
-import {XDSTextInput} from '@xds/core/TextInput';
 import {blocks} from '../../../generated/blockRegistry';
 import {ShowcaseThumbnail} from '../../../components/ShowcaseThumbnail';
 
@@ -34,8 +32,6 @@ const styles = stylex.create({
 });
 
 export default function ComponentsGalleryPage() {
-  const [query, setQuery] = useState('');
-
   const items = useMemo(
     () =>
       showcases.map(b => ({
@@ -47,14 +43,6 @@ export default function ComponentsGalleryPage() {
       })),
     [],
   );
-
-  const filteredItems = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) {
-      return items;
-    }
-    return items.filter(item => item.name.toLowerCase().includes(q));
-  }, [items, query]);
 
   return (
     <XDSSection maxWidth="xl" padding={6}>
@@ -69,18 +57,8 @@ export default function ComponentsGalleryPage() {
           </XDSText>
         </XDSVStack>
 
-        <XDSTextInput
-          label="Search components"
-          isLabelHidden
-          value={query}
-          onChange={setQuery}
-          placeholder="Search components…"
-          startIcon={MagnifyingGlassIcon}
-          hasClear
-        />
-
         <XDSGrid columns={{minWidth: 300, repeat: 'fill'}} gap={4} rowGap={6}>
-          {filteredItems.map(item => (
+          {items.map(item => (
             <XDSVStack key={item.slug} gap={2}>
               <XDSClickableCard
                 label={item.name}
