@@ -31,7 +31,7 @@ import {
 } from '@heroicons/react/24/solid';
 
 const meta: Meta<typeof XDSSideNav> = {
-  title: 'Core/Navigation/SideNav',
+  title: 'Core/SideNav',
   component: XDSSideNav,
   tags: ['autodocs'],
   parameters: {

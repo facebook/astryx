@@ -16,7 +16,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSTopNav> = {
-  title: 'Core/Navigation/TopNav',
+  title: 'Core/TopNav',
   component: XDSTopNav,
   tags: ['autodocs'],
   parameters: {

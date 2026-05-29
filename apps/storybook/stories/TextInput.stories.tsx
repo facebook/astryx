@@ -10,7 +10,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSTextInput> = {
-  title: 'Core/Inputs/TextInput',
+  title: 'Core/TextInput',
   component: XDSTextInput,
   tags: ['autodocs'],
   argTypes: {
