@@ -174,11 +174,13 @@ export default function ThemesPage() {
             <XDSHStack gap={2} hAlign="center" wrap="wrap">
               <XDSButton
                 variant="primary"
+                size="lg"
                 label="Build a custom theme"
                 href="/playground"
               />
               <XDSButton
                 variant="secondary"
+                size="lg"
                 label="How theming works"
                 href="/docs/theme"
               />
