@@ -4,11 +4,12 @@
  * Page type: package
  * Adapts based on the package type:
  * - component-pkg (@xds/core): component grid from componentRegistry
- * - theme-pkg (@xds/theme-*): live theme preview with light/dark toggle
+ * - theme-pkg (@xds/theme-*): redirects to the canonical /themes/<name>
+ *   page on the themes side of the site (one URL per theme).
  * - generic (@xds/cli, etc.): README rendered via XDSMarkdown
  */
 
-import {notFound} from 'next/navigation';
+import {notFound, redirect} from 'next/navigation';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSSection} from '@xds/core/Section';
@@ -19,10 +20,7 @@ import {
   groupedComponents,
   type ComponentItem,
 } from '../../../../generated/groupedComponentRegistry';
-import {
-  ThemePackagePage,
-  type InstallStep,
-} from '../../../../components/ThemePackagePage';
+import {type InstallStep} from './PackageHeading';
 import {themeObjects} from '../../../../generated/themeRegistry';
 import {PackageHeading} from './PackageHeading';
 import {PackageStubPage} from './PackageStubPage';
@@ -86,22 +84,14 @@ export default async function PackagePage({
   const isComponentPkg = pkg.name === '@xds/core';
   const grouped = groupedComponents[pkg.name];
 
-  if (isTheme) {
-    const theme = themeObjects[pkg.name];
-    if (theme) {
-      return (
-        <XDSSection maxWidth="lg" padding={6}>
-          <ThemePackagePage
-            name={pkg.name}
-            description={pkg.description}
-            version={pkg.version}
-            readme={pkg.readme}
-            installSteps={getInstallSteps(pkg.name)}
-            theme={theme}
-          />
-        </XDSSection>
-      );
-    }
+  // Theme packages live on /themes/<name> — the canonical surface for
+  // each theme, hosting the full ThemeShowcasePreview alongside the
+  // install affordance and README. Redirect every /packages/theme-*
+  // hit (incoming links, search results, bookmarks) to that page so
+  // there is one URL per theme.
+  if (isTheme && themeObjects[pkg.name]) {
+    const themeSlug = pkg.name.replace('@xds/theme-', '');
+    redirect(`/themes/${themeSlug}`);
   }
 
   if (!isComponentPkg) {
