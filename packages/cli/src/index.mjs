@@ -13,6 +13,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {checkForUpdate} from './utils/update-check.mjs';
 import {getRunPrefix} from './utils/package-manager.mjs';
+import {validateLang} from './lib/lang-global.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -34,6 +35,24 @@ program
   .action(() => {
     program.help();
   });
+
+/**
+ * Global pre-action hook: validate the advertised `--lang` / `--zh` /
+ * `--dense` flags for EVERY command before any side effects run. An
+ * unsupported locale exits 1 (or emits a JSON error) instead of being
+ * silently ignored; a partially-translated locale warns. This makes the
+ * global `--lang` flag honest on write/action commands (init, template,
+ * theme, upgrade, swizzle, build, gap-report) that never translate.
+ */
+program.hook('preAction', () => {
+  const opts = program.opts();
+  validateLang({
+    lang: opts.lang ?? null,
+    zh: Boolean(opts.zh),
+    dense: Boolean(opts.dense),
+    json: Boolean(opts.json),
+  });
+});
 
 /**
  * Fallback hook: if --json was requested but the command didn't call
