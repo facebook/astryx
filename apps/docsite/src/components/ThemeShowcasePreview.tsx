@@ -2,7 +2,6 @@
 
 'use client';
 
-import {useState} from 'react';
 import stylex from '@stylexjs/stylex';
 import {
   MagnifyingGlassIcon,
@@ -19,13 +18,8 @@ import {XDSGrid} from '@xds/core/Grid';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
-import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
-import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSNumberInput} from '@xds/core/NumberInput';
 import type {ThemeImageSet} from './themeImages';
-import {XDSProgressBar} from '@xds/core/ProgressBar';
-import {XDSSwitch} from '@xds/core/Switch';
-import {XDSBanner} from '@xds/core/Banner';
 const styles = stylex.create({
   productImage: {
     width: '100%',

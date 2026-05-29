@@ -79,15 +79,15 @@ export default function ComponentsGalleryPage() {
 
     for (const comp of coreComponents) {
       // Skip components explicitly hidden from overview
-      if (comp.isHiddenFromOverview) continue;
+      if (comp.isHiddenFromOverview) {continue;}
       // Skip hidden components
-      if (comp.hidden) continue;
+      if (comp.hidden) {continue;}
       // Skip hooks (they appear in the Utilities section)
-      if (comp.name.startsWith('use')) continue;
+      if (comp.name.startsWith('use')) {continue;}
       // Skip components without a category
-      if (!comp.category) continue;
+      if (!comp.category) {continue;}
       // Skip utilities group
-      if (comp.group === 'Utilities') continue;
+      if (comp.group === 'Utilities') {continue;}
 
       items.push({
         name: comp.name,
@@ -105,7 +105,7 @@ export default function ComponentsGalleryPage() {
   /** Filtered items based on search query */
   const filteredItems = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return categorizedItems;
+    if (!q) {return categorizedItems;}
     return categorizedItems.filter(
       item =>
         item.name.toLowerCase().includes(q) ||
@@ -122,7 +122,7 @@ export default function ComponentsGalleryPage() {
     }
     for (const item of filteredItems) {
       const list = map.get(item.category);
-      if (list) list.push(item);
+      if (list) {list.push(item);}
     }
     return map;
   }, [filteredItems]);
@@ -152,7 +152,7 @@ export default function ComponentsGalleryPage() {
 
         {CATEGORIES.map(cat => {
           const items = groupedByCategory.get(cat) ?? [];
-          if (items.length === 0) return null;
+          if (items.length === 0) {return null;}
 
           return (
             <XDSVStack key={cat} gap={4} xstyle={styles.categorySection}>

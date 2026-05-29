@@ -542,13 +542,13 @@ export const CollapsibleItems: Story = {
         />
       }>
       <XDSSideNavSection title="Collapsible (no href)">
-        <XDSSideNavItem
-          label="Settings"
-          icon={Cog6ToothIcon}
-          collapsible>
+        <XDSSideNavItem label="Settings" icon={Cog6ToothIcon} collapsible>
           <XDSSideNavItem label="General" href="/settings/general" />
           <XDSSideNavItem label="Security" href="/settings/security" />
-          <XDSSideNavItem label="Notifications" href="/settings/notifications" />
+          <XDSSideNavItem
+            label="Notifications"
+            href="/settings/notifications"
+          />
         </XDSSideNavItem>
         <XDSSideNavItem
           label="Documents"
@@ -566,7 +566,10 @@ export const CollapsibleItems: Story = {
           collapsible>
           <XDSSideNavItem label="General" href="/settings/general" />
           <XDSSideNavItem label="Security" href="/settings/security" />
-          <XDSSideNavItem label="Notifications" href="/settings/notifications" />
+          <XDSSideNavItem
+            label="Notifications"
+            href="/settings/notifications"
+          />
         </XDSSideNavItem>
         <XDSSideNavItem
           label="Documents"
@@ -585,7 +588,10 @@ export const CollapsibleItems: Story = {
           collapsible>
           <XDSSideNavItem label="General" href="/settings/general" />
           <XDSSideNavItem label="Security" href="/settings/security" />
-          <XDSSideNavItem label="Notifications" href="/settings/notifications" />
+          <XDSSideNavItem
+            label="Notifications"
+            href="/settings/notifications"
+          />
         </XDSSideNavItem>
       </XDSSideNavSection>
     </XDSSideNav>
@@ -616,10 +622,7 @@ export const IconlessNestedItems: Story = {
           isSelected
           href="/dashboard"
         />
-        <XDSSideNavItem
-          label="Settings"
-          icon={Cog6ToothIcon}
-          collapsible>
+        <XDSSideNavItem label="Settings" icon={Cog6ToothIcon} collapsible>
           <XDSSideNavItem label="General" href="/settings/general" />
           <XDSSideNavItem label="Security" href="/settings/security" />
           <XDSSideNavItem
@@ -632,7 +635,11 @@ export const IconlessNestedItems: Story = {
           <XDSSideNavItem label="Quarterly" href="/reports/quarterly" />
           <XDSSideNavItem label="Annual" href="/reports/annual" />
         </XDSSideNavItem>
-        <XDSSideNavItem label="Analytics" icon={ChartBarIcon} href="/analytics" />
+        <XDSSideNavItem
+          label="Analytics"
+          icon={ChartBarIcon}
+          href="/analytics"
+        />
       </XDSSideNavSection>
     </XDSSideNav>
   ),

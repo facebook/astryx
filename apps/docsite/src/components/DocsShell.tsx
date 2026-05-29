@@ -74,7 +74,9 @@ export function DocsShell({
   // When searching, flatten groups to individual entries so results are
   // all at the same level with no nesting.
   const flatSearchResults = useMemo<GroupedEntry[]>(() => {
-    if (!q) {return [];}
+    if (!q) {
+      return [];
+    }
     return componentItems.flatMap(item => {
       if (item.type === 'entry') {
         return item.displayName.toLowerCase().includes(q) ? [item] : [];
