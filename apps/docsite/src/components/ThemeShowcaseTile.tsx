@@ -30,7 +30,7 @@ import {
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSBadge} from '@xds/core/Badge';
-import {useXDSLinkComponent} from '@xds/core/Link';
+import {XDSClickableCard} from '@xds/core/ClickableCard';
 
 // Below 800px viewport, the tile's left card + right column stack
 // vertically (instead of side-by-side). The 2-column tile layout
@@ -111,25 +111,15 @@ const styles = stylex.create({
     [TILE_STACK_BREAKPOINT]: {
       flexDirection: 'column',
     },
-    borderRadius: radiusVars['--radius-container'],
-    backgroundColor: colorVars['--color-background-body'],
-    overflow: 'hidden',
+    // Card chrome (radius, background, focus ring) is provided by
+    // the outer XDSClickableCard. We use it instead of a plain
+    // anchor so the tile gets the XDS-standard hover overlay
+    // (5% currentColor ::after on :hover, 10% on :active, gated
+    // by @media (hover: hover)) and a focus-visible outline,
+    // without needing to reimplement any of it here.
     width: '100%',
     height: '100%',
     boxSizing: 'border-box',
-    // Make the entire tile a single link to the theme detail page.
-    // Strip the native <a> chrome (color, underline) so the tile's
-    // own visual identity shows through unchanged; the surrounding
-    // XDSCard already provides the hover/focus affordance for the
-    // gallery cell. Outline restored on :focus-visible so keyboard
-    // users still get a focus indicator on the tile itself.
-    color: 'inherit',
-    textDecoration: 'none',
-    outline: 'none',
-    ':focus-visible': {
-      outline: `2px solid ${colorVars['--color-border-focus']}`,
-      outlineOffset: 2,
-    },
   },
 
   // Left column wraps the theme card. Sized to share the tile width
@@ -432,16 +422,13 @@ export function ThemeShowcaseTile({
   const themeHref = themeName
     ? `/packages/${themeName.replace('@xds/', '')}`
     : undefined;
-  // Resolve the link component from XDSLinkProvider (Next.js Link
-  // here in the docsite) so the whole-tile click stays in-router
-  // instead of doing a full page navigation.
-  const LinkComponent = useXDSLinkComponent();
 
   return (
-    <LinkComponent
+    <XDSClickableCard
+      label={`Open ${label} theme`}
       href={themeHref}
-      aria-label={themeName ? `Open ${label} theme` : undefined}
-      {...stylex.props(styles.tile)}>
+      padding={0}
+      xstyle={styles.tile}>
       {/* Left column: theme card wrapped in XDSCard for a self-
           contained surface (border, background, radius). */}
       <div {...stylex.props(styles.leftColumn)}>
@@ -691,6 +678,6 @@ export function ThemeShowcaseTile({
           <XDSBanner status="error" title="Banner Title" />
         </XDSVStack>
       </div>
-    </LinkComponent>
+    </XDSClickableCard>
   );
 }
