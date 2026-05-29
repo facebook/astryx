@@ -244,15 +244,12 @@ const styles = stylex.create({
     flexShrink: 0,
   },
 
-  // Action row sits at the end of the right column, after the
-  // banner stack. Holds the Primary / Secondary / Ghost button
-  // samples — demos the theme's button chrome. Buttons are
-  // passive samples (the right column carries `inert`), not
-  // interactive CTAs: the entire tile is itself a single link to
-  // the theme page. No margin-top:auto here — the row hugs the
-  // banner stack at the column's standard 24px inter-group gap so
-  // tall left cards (Butter, Y2K) don't leave a visible band of
-  // empty tile background above the buttons.
+  // Action row sits between the form-controls (switch/radio/
+  // checkbox) row and the banner stack in the right column.
+  // Holds the Primary / Secondary / Ghost button samples — demos
+  // the theme's button chrome. Buttons are passive samples (the
+  // right column carries `inert`), not interactive CTAs: the
+  // entire tile is itself a single link to the theme page.
   actionRow: {
     display: 'flex',
     alignItems: 'center',
@@ -672,6 +669,19 @@ export function ThemeShowcaseTile({
           <XDSCheckboxInput label="Checkbox" value={false} size="sm" />
         </XDSHStack>
 
+        {/* Action row — Primary / Secondary / Ghost button samples.
+            Passive demos thanks to the column's inert; the whole
+            tile is a single link to the theme page. Sits above
+            the banners so the demo flows from atomic interactive
+            chrome (buttons) into compound chrome (banner stack). */}
+        <div {...stylex.props(styles.actionRow)}>
+          <XDSHStack gap={2} wrap="wrap">
+            <XDSButton variant="primary" size="sm" label="Primary" />
+            <XDSButton variant="secondary" size="sm" label="Secondary" />
+            <XDSButton variant="ghost" size="sm" label="Ghost" />
+          </XDSHStack>
+        </div>
+
         {/* Four banners stacked — demos the theme's info / success /
             warning / error chrome (icon, surface color, text color). */}
         <XDSVStack gap={2}>
@@ -680,19 +690,6 @@ export function ThemeShowcaseTile({
           <XDSBanner status="warning" title="Banner Title" />
           <XDSBanner status="error" title="Banner Title" />
         </XDSVStack>
-
-        {/* Action row — Primary / Secondary button samples pinned
-            to the bottom of the right column (via marginTop:auto
-            on actionRow). Passive demos thanks to the column's
-            inert; the whole tile is a single link to the theme
-            page. */}
-        <div {...stylex.props(styles.actionRow)}>
-          <XDSHStack gap={2} wrap="wrap">
-            <XDSButton variant="primary" size="sm" label="Primary" />
-            <XDSButton variant="secondary" size="sm" label="Secondary" />
-            <XDSButton variant="ghost" size="sm" label="Ghost" />
-          </XDSHStack>
-        </div>
       </div>
     </LinkComponent>
   );
