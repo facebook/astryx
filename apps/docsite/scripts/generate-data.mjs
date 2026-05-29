@@ -68,6 +68,8 @@ const HIDDEN_RE = /(?:^|\n) {0,4}hidden:\s*true/;
 const NAME_RE = /(?:^|\n) {0,4}name:\s*['"]([^'"]+)['"]/;
 const DISPLAY_NAME_RE = /(?:^|\n) {0,4}displayName:\s*['"]([^'"]+)['"]/;
 const KEYWORDS_RE = /keywords:\s*\[([^\]]*)\]/;
+const CATEGORY_RE = /(?:^|\n) {0,4}category:\s*['"]([^'"]+)['"]/;
+const IS_HIDDEN_FROM_OVERVIEW_RE = /(?:^|\n) {0,4}isHiddenFromOverview:\s*true/;
 
 function readDocMeta(docPath) {
   try {
@@ -81,6 +83,8 @@ function readDocMeta(docPath) {
     const keywords = kwMatch
       ? [...kwMatch[1].matchAll(/['"]([^'"]+)['"]/g)].map(m => m[1])
       : [];
+    const categoryMatch = CATEGORY_RE.exec(content);
+    const isHiddenFromOverview = IS_HIDDEN_FROM_OVERVIEW_RE.test(content);
     return {
       group: groupMatch?.[1] ?? null,
       description: descMatch?.[1] ?? '',
@@ -88,9 +92,11 @@ function readDocMeta(docPath) {
       displayName: displayNameMatch?.[1] ?? null,
       hidden,
       keywords,
+      category: categoryMatch?.[1] ?? null,
+      isHiddenFromOverview,
     };
   } catch {
-    return {group: null, description: '', name: null, displayName: null, hidden: false, keywords: []};
+    return {group: null, description: '', name: null, displayName: null, hidden: false, keywords: [], category: null, isHiddenFromOverview: false};
   }
 }
 
@@ -277,6 +283,8 @@ async function generateComponentRegistry() {
         }
 
         const group = doc.group || null;
+        const category = doc.category || null;
+        const isHiddenFromOverview = doc.isHiddenFromOverview ?? false;
         const keywords = doc.keywords || [];
         const hidden = doc.hidden ?? false;
         const topDescription = doc.usage?.description || doc.description || '';
@@ -288,6 +296,9 @@ async function generateComponentRegistry() {
           for (const sub of doc.components) {
             const subName = (sub.name || '').replace(/^XDS/, '');
             if (!subName) continue;
+            // Sub-entries whose name differs from the doc name are
+            // sub-components — hide them from the overview page.
+            const isSubEntry = subName !== doc.name;
             pendingSubComponents.push({
               name: subName,
               displayName: requireDisplayName(
@@ -297,6 +308,8 @@ async function generateComponentRegistry() {
               moduleName: sub.name || subName,
               directory: entry.name,
               group,
+              category,
+              isHiddenFromOverview: isHiddenFromOverview || isSubEntry,
               description: sub.description || topDescription,
               keywords,
               hidden,
@@ -324,6 +337,8 @@ async function generateComponentRegistry() {
             moduleName: name,
             directory: entry.name,
             group,
+            category,
+            isHiddenFromOverview,
             description: topDescription,
             keywords,
             hidden,
@@ -350,6 +365,8 @@ async function generateComponentRegistry() {
             moduleName: name.startsWith('use') ? name : `XDS${name}`,
             directory: entry.name,
             group,
+            category,
+            isHiddenFromOverview,
             description: topDescription,
             keywords,
             hidden,
@@ -467,6 +484,10 @@ export interface ComponentEntry {
   moduleName: string;
   directory: string;
   group: string | null;
+  /** Functional category for the overview gallery (Actions, Inputs, etc.) */
+  category: string | null;
+  /** Whether this component is hidden from the overview page. */
+  isHiddenFromOverview: boolean;
   description: string;
   keywords: string[];
   hidden: boolean;

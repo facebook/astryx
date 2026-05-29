@@ -7,6 +7,7 @@
 export const docs = {
   name: 'Divider',
   displayName: 'Divider',
+  category: 'Layout',
   keywords: ["divider","separator","hr","rule","line","border","spacer","horizontal rule"],
   props: [
     {

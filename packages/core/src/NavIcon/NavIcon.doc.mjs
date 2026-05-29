@@ -5,6 +5,8 @@
 export const docs = {
   name: 'NavIcon',
   displayName: 'Nav Icon',
+  category: 'Navigation',
+  isHiddenFromOverview: true,
   hidden: false,
   keywords: ["navicon","iconbutton","toolbar icon","appbar icon","nav button"],
   props: [

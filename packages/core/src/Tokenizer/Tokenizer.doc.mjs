@@ -5,6 +5,7 @@
 export const docs = {
   name: 'Tokenizer',
   displayName: 'Tokenizer',
+  category: 'Communications',
   keywords: ["tokenizer","multiselect","multi-select","chips","tags","combobox","autocomplete","taginput","chipinput"],
   props: [
     {

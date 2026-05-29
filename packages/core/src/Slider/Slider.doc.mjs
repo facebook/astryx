@@ -5,6 +5,7 @@
 export const docs = {
   name: 'Slider',
   displayName: 'Slider',
+  category: 'Inputs',
   keywords: ["slider","range","slidebar","trackbar","scrubber","knob","thumb","rangeslider"],
   playground: {
     defaults: {

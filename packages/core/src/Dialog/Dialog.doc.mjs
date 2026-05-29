@@ -6,6 +6,7 @@ export const docs = {
   name: 'Dialog',
   displayName: 'Dialog',
   group: 'Dialog',
+  category: 'Containers',
   keywords: ["dialog","modal","popup","overlay","lightbox","alert","confirm","prompt","backdrop","focus trap","imperative"],
   playground: {
     defaults: {

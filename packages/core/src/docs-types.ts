@@ -413,6 +413,33 @@ interface BaseDoc {
    *  Groups cluster related components that are always used together
    *  or are variants of each other. */
   group?: string;
+  /** Component category for the overview page gallery. Independent of
+   *  `group` (which is for the sidebar). Categories represent the
+   *  component's functional role in a UI.
+   *
+   *  Valid values:
+   *  - `'Actions'` — interactive components like buttons and links
+   *  - `'Communications'` — informational display: tooltips, toasts, badges
+   *  - `'Containers'` — wrappers: cards, dialogs, collapsibles
+   *  - `'Layout'` — structural: grid, stack, center, dividers
+   *  - `'Inputs'` — data entry: text fields, selectors, date pickers
+   *  - `'Lists'` — data display in list/table form
+   *  - `'Navigation'` — wayfinding: tabs, breadcrumbs, sidebars
+   *  - `'Performance'` — progress indication: spinners, skeletons, bars */
+  category?:
+    | 'Actions'
+    | 'Communications'
+    | 'Containers'
+    | 'Layout'
+    | 'Inputs'
+    | 'Lists'
+    | 'Navigation'
+    | 'Performance';
+  /** When true, this component is excluded from the categorized overview
+   *  page but remains in the sidebar and CLI. Use for sub-components that
+   *  only make sense within a parent (e.g. BreadcrumbItem, DialogHeader)
+   *  or internal primitives that shouldn't appear in the gallery. */
+  isHiddenFromOverview?: boolean;
   /** Theming configuration. Documents the stable CSS class names
    *  rendered by this component that themes can target via `@scope`
    *  selectors in `defineTheme`. */

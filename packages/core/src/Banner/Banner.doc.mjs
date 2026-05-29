@@ -5,6 +5,7 @@
 export const docs = {
   name: 'Banner',
   displayName: 'Banner',
+  category: 'Communications',
   keywords: ["banner","alert","notification","callout","notice","status","message","info","warning","error","success","toast"],
   usage: {
     description:

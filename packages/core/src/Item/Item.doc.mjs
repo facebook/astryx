@@ -6,6 +6,7 @@ export const docs = {
   name: 'Item',
   displayName: 'Item',
   group: 'Item',
+  category: 'Lists',
   keywords: ["item","list-item","media-object","row","cell","entity","contact","notification","preview"],
   playground: {
     defaults: {
