@@ -8,7 +8,7 @@
 
 import * as stylex from '@stylexjs/stylex';
 import {XDSText} from '@xds/core/Text';
-import {XDSVStack} from '@xds/core/Layout';
+import {XDSHStack, XDSVStack} from '@xds/core/Layout';
 import {XDSSection} from '@xds/core/Section';
 import {XDSCard} from '@xds/core/Card';
 import {XDSButton} from '@xds/core/Button';
@@ -164,13 +164,25 @@ export default function ThemesPage() {
                 Install one as-is, or use it as a starting point for your own.
               </XDSText>
             </XDSVStack>
-            {/* CTA \u2014 sends users to the Theme System docs for the
-                defineTheme + CLI wizard walkthrough. */}
-            <XDSButton
-              variant="secondary"
-              label="Create your own theme"
-              href="/docs/theme"
-            />
+            {/* Hero CTAs — two paths into authoring a theme. The
+                primary "Open in playground" sends users to the
+                live editor where they can fork any theme and
+                tweak tokens with instant visual feedback; the
+                secondary "Create your own theme" sends users to
+                the Theme System docs for the defineTheme + CLI
+                wizard walkthrough. */}
+            <XDSHStack gap={2} hAlign="center" wrap="wrap">
+              <XDSButton
+                variant="primary"
+                label="Open in playground"
+                href="/playground"
+              />
+              <XDSButton
+                variant="secondary"
+                label="Create your own theme"
+                href="/docs/theme"
+              />
+            </XDSHStack>
           </XDSVStack>
 
           <div {...stylex.props(styles.grid)}>
