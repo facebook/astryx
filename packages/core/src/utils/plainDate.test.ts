@@ -13,11 +13,17 @@ import {
   plainDateDayOfWeek,
   plainDateAddMonths,
   plainDateAddDays,
+  plainDateToInstant,
+  plainDateFromInstant,
   plainDateIsBefore,
   plainDateIsAfter,
   plainDateIsEqual,
+  plainDateMax,
+  plainDateMin,
   plainDateIsInRange,
   plainDateSetFirstOfMonth,
+  plainDateSetStartOfWeek,
+  plainDateSetEndOfWeekExclusive,
   plainDateGetWeekNumber,
   plainDateFormat,
   DATE_FORMAT_WITH_WEEKDAY,
@@ -287,6 +293,38 @@ describe('plainDateAddDays', () => {
   });
 });
 
+describe('plainDateToInstant / plainDateFromInstant', () => {
+  it('converts a PlainDate to midnight in the requested timezone', () => {
+    expect(
+      plainDateToInstant(
+        {year: 2026, month: 5, day: 13},
+        'America/Los_Angeles',
+      ),
+    ).toBe(Date.UTC(2026, 4, 13, 7));
+  });
+
+  it('roundtrips a PlainDate in the requested timezone', () => {
+    const date: PlainDate = {year: 2026, month: 5, day: 13};
+    expect(
+      plainDateFromInstant(
+        plainDateToInstant(date, 'America/Los_Angeles'),
+        'America/Los_Angeles',
+      ),
+    ).toEqual(date);
+  });
+
+  it('supports explicit time components', () => {
+    expect(
+      plainDateToInstant(
+        {year: 2026, month: 5, day: 13},
+        'America/Los_Angeles',
+        9,
+        30,
+      ),
+    ).toBe(Date.UTC(2026, 4, 13, 16, 30));
+  });
+});
+
 describe('plainDateIsBefore / plainDateIsAfter', () => {
   it('returns false for equal dates (isBefore)', () => {
     expect(
@@ -372,6 +410,27 @@ describe('plainDateIsEqual', () => {
   });
 });
 
+describe('plainDateMax / plainDateMin', () => {
+  const earlier: PlainDate = {year: 2026, month: 1, day: 14};
+  const later: PlainDate = {year: 2026, month: 1, day: 15};
+
+  it('returns the later date for max', () => {
+    expect(plainDateMax(earlier, later)).toBe(later);
+    expect(plainDateMax(later, earlier)).toBe(later);
+  });
+
+  it('returns the earlier date for min', () => {
+    expect(plainDateMin(earlier, later)).toBe(earlier);
+    expect(plainDateMin(later, earlier)).toBe(earlier);
+  });
+
+  it('returns the first date when dates are equal', () => {
+    const equal: PlainDate = {year: 2026, month: 1, day: 15};
+    expect(plainDateMax(later, equal)).toBe(later);
+    expect(plainDateMin(later, equal)).toBe(later);
+  });
+});
+
 describe('plainDateIsInRange', () => {
   const start: PlainDate = {year: 2026, month: 1, day: 10};
   const end: PlainDate = {year: 2026, month: 1, day: 20};
@@ -400,6 +459,26 @@ describe('plainDateIsInRange', () => {
     expect(
       plainDateIsInRange({year: 2026, month: 1, day: 21}, [start, end]),
     ).toBe(false);
+  });
+});
+
+describe('plainDateSetStartOfWeek / plainDateSetEndOfWeekExclusive', () => {
+  it('returns the start of the week for a Sunday-start week', () => {
+    expect(plainDateSetStartOfWeek({year: 2026, month: 5, day: 13}, 0)).toEqual(
+      {year: 2026, month: 5, day: 10},
+    );
+  });
+
+  it('returns the start of the week for a Monday-start week', () => {
+    expect(plainDateSetStartOfWeek({year: 2026, month: 5, day: 13}, 1)).toEqual(
+      {year: 2026, month: 5, day: 11},
+    );
+  });
+
+  it('returns the exclusive end of the week', () => {
+    expect(
+      plainDateSetEndOfWeekExclusive({year: 2026, month: 5, day: 13}, 0),
+    ).toEqual({year: 2026, month: 5, day: 17});
   });
 });
 

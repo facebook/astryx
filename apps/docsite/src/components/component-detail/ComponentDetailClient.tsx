@@ -130,7 +130,7 @@ function ComponentDetailInner({
       style={{marginInline: 'auto'}}>
       <XDSVStack gap={4}>
         <XDSVStack gap={2}>
-          <XDSText type="display-1">{comp.name}</XDSText>
+          <XDSText type="display-1">{comp.displayName}</XDSText>
           <XDSText type="supporting" color="secondary">
             {pkg}
             {pkgVersion ? ` v${pkgVersion}` : ''} · {comp.moduleName}

@@ -226,7 +226,7 @@ function jsxSvgToIconDef(
 // =============================================================================
 
 const meta: Meta = {
-  title: 'Lab/SVGIcon/Registry Icons',
+  title: 'Lab/SVGIconRegistry',
 };
 export default meta;
 

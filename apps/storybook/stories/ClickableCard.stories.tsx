@@ -7,7 +7,7 @@ import {XDSButton} from '@xds/core/Button';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 
 const meta: Meta<typeof XDSClickableCard> = {
-  title: 'Card/XDSClickableCard',
+  title: 'Core/ClickableCard',
   component: XDSClickableCard,
   tags: ['autodocs'],
   argTypes: {

@@ -28,7 +28,7 @@ import {
 // =============================================================================
 
 const menuMeta: Meta<typeof XDSTopNavMenu> = {
-  title: 'Core/Navigation/TopNavMenu',
+  title: 'Core/TopNavMenu',
   component: XDSTopNavMenu,
   tags: ['autodocs'],
   parameters: {

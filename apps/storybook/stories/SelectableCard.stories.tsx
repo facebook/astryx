@@ -7,7 +7,7 @@ import {XDSText} from '@xds/core/Text';
 import {XDSHStack, XDSVStack} from '@xds/core/Layout';
 
 const meta: Meta<typeof XDSSelectableCard> = {
-  title: 'Card/XDSSelectableCard',
+  title: 'Core/SelectableCard',
   component: XDSSelectableCard,
   tags: ['autodocs'],
   argTypes: {
