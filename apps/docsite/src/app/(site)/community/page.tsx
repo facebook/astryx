@@ -266,6 +266,114 @@ const styles = stylex.create({
   },
 
   // -------------------------------------------------------------------------
+  // EndBlock — Poliform-style "end of page" block
+  // -------------------------------------------------------------------------
+  // Fuses Channels + References + Legal links into one cohesive
+  // bottom-of-page treatment. Two visual rows: an editorial
+  // header (headline + paragraph on the left, brand-shape
+  // composition on the right) on top, then a 3-column link list
+  // below it (Channels / References / Legal). A big "astryx"
+  // wordmark anchors the bottom-right corner.
+
+  // Outer block — generous vertical padding so the end-of-page
+  // moment reads as a deliberate visual chapter, not just more
+  // content. position:relative so the giant wordmark can be
+  // absolutely positioned in the bottom-right corner.
+  endBlock: {
+    position: 'relative',
+    paddingBlockStart: 'var(--spacing-12)',
+    paddingBlockEnd: 'var(--spacing-12)',
+    overflow: 'hidden',
+  },
+  // Top editorial row — headline + paragraph on the left,
+  // brand-shape composition on the right. 1:1 split at wide
+  // widths; stacks vertically at <760px.
+  endBlockHeader: {
+    display: 'flex',
+    flexDirection: {
+      default: 'row',
+      '@media (max-width: 760px)': 'column',
+    },
+    gap: 'var(--spacing-8)',
+    alignItems: 'center',
+  },
+  endBlockHeaderText: {
+    flex: '1 1 0',
+    minWidth: 0,
+  },
+  // Decorative brand-shape composition on the right of the
+  // header. Square-ish aspect, holds a single big BlobShape.
+  endBlockHeaderArt: {
+    flex: '1 1 0',
+    minWidth: 0,
+    aspectRatio: '4 / 3',
+    backgroundColor: 'var(--color-background-muted)',
+    borderRadius: 'var(--radius-container)',
+    position: 'relative',
+    overflow: 'hidden',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Big floating brand shape inside the art slot. Sized to fill
+  // most of the slot; opacity slightly reduced so it reads as a
+  // backdrop accent rather than a primary subject.
+  endBlockHeaderShape: {
+    width: '60%',
+    height: 'auto',
+    color: 'var(--color-icon-purple)',
+    opacity: 0.85,
+  },
+
+  // 3-column link list below the editorial header. Same auto-
+  // fit pattern as the rest of the page; each column is a small
+  // label header + tight stack of plain text links. No icons,
+  // no decoration — pure typographic hierarchy.
+  endBlockColumns: {
+    display: 'grid',
+    gridTemplateColumns: {
+      default: 'repeat(3, 1fr)',
+      '@media (max-width: 760px)': '1fr',
+    },
+    gap: 'var(--spacing-8)',
+    paddingBlockStart: 'var(--spacing-10)',
+  },
+  // Column label — uppercase small text in primary color, sets
+  // up the column header without competing with link weight.
+  endBlockColumnLabel: {
+    fontSize: 'var(--text-supporting-size, 13px)',
+    fontWeight: 'var(--font-weight-semibold, 600)',
+    color: 'var(--color-text-primary)',
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.05em',
+    paddingBlockEnd: 'var(--spacing-3)',
+  },
+  // Single link row in the column. Tight inter-link spacing
+  // (via parent gap) — Poliform-style "Our Story / Store Locator
+  // / Sustainability" stack.
+  endBlockLinkStack: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 'var(--spacing-2)',
+  },
+
+  // The giant "astryx" wordmark in the bottom-right corner.
+  // pointer-events:none so it doesn't intercept clicks meant
+  // for the link columns above it. Sized as a percentage of
+  // viewport width with a hard cap so it scales gracefully
+  // across narrow + ultrawide layouts.
+  endBlockWordmark: {
+    position: 'absolute',
+    insetInlineEnd: 'var(--spacing-6)',
+    bottom: 'var(--spacing-6)',
+    height: 'auto',
+    width: 'clamp(180px, 25vw, 320px)',
+    opacity: 0.4,
+    pointerEvents: 'none',
+    color: 'var(--color-text-primary)',
+  },
+
+  // -------------------------------------------------------------------------
   // BlockCard — color-blocked contribution-type cards
   // -------------------------------------------------------------------------
   // 4 quadrants of a single grouped block (see blockGrid below).
@@ -1216,76 +1324,102 @@ export default async function CommunityPage() {
             </div>
           </div>
 
-          {/* Channels — where the community actually talks. Three
-            rich cards (Discussions / Issues / Wiki), each with a
-            tinted image zone + decorative blob on top and a
-            title + supporting + arrow CTA in the white footer.
-            The whole card is the click target. Sits AFTER the
-            contributing section because "Where to discuss" is
-            the natural next step after "Here's what to build". */}
-          <XDSVStack gap={4}>
-            <XDSVStack gap={1}>
-              <XDSHeading level={2}>Where we talk</XDSHeading>
-              <XDSText type="body" color="secondary">
-                All public Astryx conversation lives on GitHub today. Pick the
-                channel that fits what you have in mind.
-              </XDSText>
-            </XDSVStack>
-            <XDSGrid columns={{minWidth: 280, repeat: 'fit'}} gap={3}>
-              {CHANNELS.map((channel, index) => (
-                <RichCard
-                  key={channel.name}
-                  label={channel.name}
-                  description={channel.description}
-                  href={channel.href}
-                  tint={channel.tint}
-                  seed={index}
-                />
-              ))}
-            </XDSGrid>
-          </XDSVStack>
+          {/* End-of-page block — Poliform-style unified treatment
+              that fuses Channels + References + Legal into one
+              cohesive bottom-of-page chapter. Editorial header
+              on top (headline + paragraph + brand-shape art);
+              3-column link list below; giant "astryx" wordmark
+              anchors the bottom-right corner. */}
+          <div {...stylex.props(styles.endBlock)}>
+            <div {...stylex.props(styles.endBlockHeader)}>
+              <XDSVStack gap={3} xstyle={styles.endBlockHeaderText}>
+                <XDSHeading level={2} type="display-2">
+                  Engage with us in conversation.
+                </XDSHeading>
+                <XDSText type="body" color="secondary">
+                  In a global community built on shared craft, a system gets
+                  better when its users open up to new perspectives. The
+                  brightest minds shape Astryx together — pick a channel, read
+                  the references, or just say hi.
+                </XDSText>
+              </XDSVStack>
+              <div {...stylex.props(styles.endBlockHeaderArt)}>
+                <svg
+                  {...stylex.props(styles.endBlockHeaderShape)}
+                  viewBox="0 0 40 40"
+                  aria-hidden="true">
+                  <BrandBlob />
+                </svg>
+              </div>
+            </div>
 
-          {/* Resources — long-form references. Rendered as a compact
-            link list (not cards) because they're navigational
-            references, not action paths. Visual weight matches
-            their role. */}
-          <XDSVStack gap={4}>
-            <XDSHeading level={2}>References</XDSHeading>
-            <XDSVStack gap={3}>
-              {RESOURCES.map(resource => (
-                <XDSVStack key={resource.title} gap={0.5}>
+            <div {...stylex.props(styles.endBlockColumns)}>
+              {/* Channels */}
+              <div>
+                <div {...stylex.props(styles.endBlockColumnLabel)}>
+                  Channels
+                </div>
+                <div {...stylex.props(styles.endBlockLinkStack)}>
+                  {CHANNELS.map(channel => (
+                    <XDSLink
+                      key={channel.name}
+                      label={channel.name}
+                      href={channel.href}
+                      isExternalLink>
+                      {channel.name}
+                    </XDSLink>
+                  ))}
+                </div>
+              </div>
+
+              {/* References */}
+              <div>
+                <div {...stylex.props(styles.endBlockColumnLabel)}>
+                  References
+                </div>
+                <div {...stylex.props(styles.endBlockLinkStack)}>
+                  {RESOURCES.map(resource => (
+                    <XDSLink
+                      key={resource.title}
+                      label={resource.title}
+                      href={resource.href}
+                      isExternalLink>
+                      {resource.title}
+                    </XDSLink>
+                  ))}
+                </div>
+              </div>
+
+              {/* Legal */}
+              <div>
+                <div {...stylex.props(styles.endBlockColumnLabel)}>Legal</div>
+                <div {...stylex.props(styles.endBlockLinkStack)}>
                   <XDSLink
-                    label={resource.title}
-                    href={resource.href}
+                    label="Code of Conduct"
+                    href={`${GITHUB_REPO}/blob/main/CODE_OF_CONDUCT.md`}
                     isExternalLink>
-                    {resource.title}
+                    Code of Conduct
                   </XDSLink>
-                  <XDSText type="supporting" color="secondary">
-                    {resource.description}
-                  </XDSText>
-                </XDSVStack>
-              ))}
-            </XDSVStack>
-          </XDSVStack>
+                  <XDSLink
+                    label="MIT License"
+                    href={`${GITHUB_REPO}/blob/main/LICENSE`}
+                    isExternalLink>
+                    MIT License
+                  </XDSLink>
+                </div>
+              </div>
+            </div>
 
-          <XDSDivider />
-
-          {/* Footer row — policy / legal. Small, paired, low weight
-            so they don't compete with contribution paths above. */}
-          <XDSHStack gap={6} wrap="wrap">
-            <XDSLink
-              label="Code of Conduct"
-              href={`${GITHUB_REPO}/blob/main/CODE_OF_CONDUCT.md`}
-              isExternalLink>
-              Code of Conduct
-            </XDSLink>
-            <XDSLink
-              label="MIT License"
-              href={`${GITHUB_REPO}/blob/main/LICENSE`}
-              isExternalLink>
-              MIT License
-            </XDSLink>
-          </XDSHStack>
+            {/* Giant "astryx" wordmark in the bottom-right corner —
+                anchors the block visually, same role as the "Poliform"
+                wordmark in the reference. */}
+            <img
+              src="/astryx-logo.svg"
+              alt=""
+              aria-hidden="true"
+              {...stylex.props(styles.endBlockWordmark)}
+            />
+          </div>
         </XDSVStack>
       </XDSSection>
     </div>
