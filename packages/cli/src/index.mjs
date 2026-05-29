@@ -118,25 +118,39 @@ program
     const run = getRunPrefix();
     const r = `${run} xds`;
     const pad = (s, len) => s + ' '.repeat(Math.max(0, len - s.length));
-    const W = 49; // inner width of the box
-    const line = (s) => `  │ ${pad(s, W)}│`;
+
+    // Build all body lines first, then compute width from the longest.
+    // The previous hard-coded W=49 broke with `pnpm exec`, `bunx`, and
+    // `yarn` prefixes whose lines exceeded the inner width and pushed
+    // the right border out of alignment.
+    const body = [
+      '',
+      '  XDS design system installed!',
+      '',
+      '  Get started:',
+      `    ${r} init          Interactive setup`,
+      `    ${r} --help        See all commands`,
+      '',
+      '  Or run directly:',
+      `    ${r} init           Setup + AI agent docs`,
+      `    ${r} component     Browse component docs`,
+      `    ${r} hook          Browse hook docs`,
+      `    ${r} docs          Design system reference`,
+      `    ${r} swizzle       Customize a component`,
+      `    ${r} template      Add a page template`,
+      '',
+    ];
+
+    // Inner width = longest line, with a sane minimum so the box
+    // doesn't collapse for an empty `r`.
+    const W = Math.max(49, ...body.map(s => s.length));
+    // Body line: `│ ` + content padded to W + ` │`. Border: `╭` + `─` × (W+2) + `╮`.
+    // Total visible width matches across body and border.
+    const line = (s) => `  │ ${pad(s, W)} │`;
+
     console.log(`
   ╭${'─'.repeat(W + 2)}╮
-${line('')}
-${line('  XDS design system installed!')}
-${line('')}
-${line('  Get started:')}
-${line(`    ${r} init          Interactive setup`)}
-${line(`    ${r} --help        See all commands`)}
-${line('')}
-${line('  Or run directly:')}
-${line(`    ${r} init           Setup + AI agent docs`)}
-${line(`    ${r} component     Browse component docs`)}
-${line(`    ${r} hook          Browse hook docs`)}
-${line(`    ${r} docs          Design system reference`)}
-${line(`    ${r} swizzle       Customize a component`)}
-${line(`    ${r} template      Add a page template`)}
-${line('')}
+${body.map(line).join('\n')}
   ╰${'─'.repeat(W + 2)}╯
 `);
   });
