@@ -31,9 +31,29 @@ program
   .option('--detail <level>', 'Output detail level (full, compact, brief)', 'full')
   .option('--json', 'Output as typed JSON (envelope: { type, data })')
   .addHelpCommand('help', 'Show all commands')
-  .action(() => {
+  .showHelpAfterError(true)
+  .action(function () {
+    // If positional args were passed, they didn't match any subcommand —
+    // commander otherwise silently runs this default action. Reject with
+    // a clear error and non-zero exit code instead of printing help with
+    // exit 0.
+    const args = this.args || [];
+    if (args.length > 0) {
+      console.error(`error: unknown command '${args[0]}'`);
+      console.error(`Run \`xds --help\` to see available commands.`);
+      process.exit(1);
+    }
     program.help();
   });
+
+// Backstop: also wire up a `command:*` listener for the case where no
+// default action would run (e.g. if the default is removed in the future).
+program.on('command:*', (operands) => {
+  const unknown = operands[0];
+  console.error(`error: unknown command '${unknown}'`);
+  console.error(`Run \`xds --help\` to see available commands.`);
+  process.exit(1);
+});
 
 /**
  * Fallback hook: if --json was requested but the command didn't call
