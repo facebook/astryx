@@ -44,7 +44,7 @@ export interface XDSStackItemProps extends XDSBaseProps<HTMLElement> {
    * The element type to render.
    * @default 'div'
    */
-  element?: ElementType;
+  as?: ElementType;
 
   /**
    * StyleX styles created via `stylex.create()`. Merged with the component's
@@ -77,7 +77,7 @@ export interface XDSStackItemProps extends XDSBaseProps<HTMLElement> {
 /**
  * Stack item component for controlling individual item behavior within a stack.
  *
- * Supports polymorphic rendering via the `element` prop.
+ * Supports polymorphic rendering via the `as` prop.
  *
  * @example
  * ```
@@ -91,7 +91,7 @@ export interface XDSStackItemProps extends XDSBaseProps<HTMLElement> {
 export function XDSStackItem({
   crossAlignSelf,
   size,
-  element = 'div',
+  as: element = 'div',
   xstyle,
   className,
   style,
