@@ -4,7 +4,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {XDSChartV2Swatch} from '@xds/lab';
 
 const meta: Meta<typeof XDSChartV2Swatch> = {
-  title: 'Lab/XDSChart v2/Primitives/Swatch',
+  title: 'Lab/ChartV2Swatch',
   component: XDSChartV2Swatch,
   argTypes: {
     color: {control: 'color'},

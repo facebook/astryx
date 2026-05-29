@@ -14,7 +14,7 @@ import {XDSStack, XDSText} from '@xds/core';
 import {XDSHeading} from '@xds/core/Text';
 
 const meta: Meta = {
-  title: 'Lab/ChartStreamGL/Performance',
+  title: 'Lab/ChartStreamPerf',
 };
 
 export default meta;

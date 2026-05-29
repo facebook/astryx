@@ -8,7 +8,7 @@ import {XDSButton} from '@xds/core/Button';
 import {PlusIcon, FunnelIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSTabList> = {
-  title: 'Core/Navigation/TabList',
+  title: 'Core/TabList',
   component: XDSTabList,
   tags: ['autodocs'],
   argTypes: {

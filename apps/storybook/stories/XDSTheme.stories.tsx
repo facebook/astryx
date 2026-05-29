@@ -314,7 +314,7 @@ const oceanTheme = defineTheme({
 // =============================================================================
 
 const meta: Meta = {
-  title: 'Core/Theme/Theme',
+  title: 'Core/XDSTheme',
   parameters: {
     docs: {
       description: {
