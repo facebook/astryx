@@ -347,6 +347,9 @@ export function PlaygroundClient() {
   const [previewReady, setPreviewReady] = useState(false);
   const [editorTheme, setEditorTheme] = useState('github-dark');
 
+  // The code the playground was seeded with (a shared/example snippet from the
+  // URL hash, or the default). Reset restores this — not the hardcoded default.
+  const seedCodeRef = useRef(code);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const readyRef = useRef(false);
   const pendingRef = useRef<string | null>(null);
@@ -383,6 +386,8 @@ export function PlaygroundClient() {
     const onHashChange = () => {
       const newCode = getInitialCode();
       if (newCode !== DEFAULT_CODE) {
+        // A new shared/example snippet became the seed — Reset targets it.
+        seedCodeRef.current = newCode;
         setCode(newCode);
       }
     };
@@ -770,7 +775,7 @@ export function PlaygroundClient() {
                 label="Reset"
                 variant="ghost"
                 size="md"
-                onClick={() => setCode(DEFAULT_CODE)}
+                onClick={() => setCode(seedCodeRef.current)}
               />
               <XDSButton
                 label={copied ? '✓ Copied' : 'Share'}
