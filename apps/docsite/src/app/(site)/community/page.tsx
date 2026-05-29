@@ -338,12 +338,13 @@ const styles = stylex.create({
     gap: 'var(--spacing-8)',
     paddingBlockStart: 'var(--spacing-10)',
   },
-  // Column label — uppercase small text in primary color, sets
-  // up the column header without competing with link weight.
+  // Column label override — uppercase + letter-spacing
+  // adjustments applied on top of <XDSText type="supporting"
+  // weight="semibold">. The base XDSText handles typography
+  // scale + weight; this xstyle only adds the small-caps look
+  // and the block-end spacing that separates the label from
+  // the link stack underneath.
   endBlockColumnLabel: {
-    fontSize: 'var(--text-supporting-size, 13px)',
-    fontWeight: 'var(--font-weight-semibold, 600)',
-    color: 'var(--color-text-primary)',
     textTransform: 'uppercase' as const,
     letterSpacing: '0.05em',
     paddingBlockEnd: 'var(--spacing-3)',
@@ -1356,9 +1357,12 @@ export default async function CommunityPage() {
             <div {...stylex.props(styles.endBlockColumns)}>
               {/* Channels */}
               <div>
-                <div {...stylex.props(styles.endBlockColumnLabel)}>
+                <XDSText
+                  type="supporting"
+                  weight="semibold"
+                  xstyle={styles.endBlockColumnLabel}>
                   Channels
-                </div>
+                </XDSText>
                 <div {...stylex.props(styles.endBlockLinkStack)}>
                   {CHANNELS.map(channel => (
                     <XDSLink
@@ -1374,9 +1378,12 @@ export default async function CommunityPage() {
 
               {/* References */}
               <div>
-                <div {...stylex.props(styles.endBlockColumnLabel)}>
+                <XDSText
+                  type="supporting"
+                  weight="semibold"
+                  xstyle={styles.endBlockColumnLabel}>
                   References
-                </div>
+                </XDSText>
                 <div {...stylex.props(styles.endBlockLinkStack)}>
                   {RESOURCES.map(resource => (
                     <XDSLink
@@ -1392,7 +1399,12 @@ export default async function CommunityPage() {
 
               {/* Legal */}
               <div>
-                <div {...stylex.props(styles.endBlockColumnLabel)}>Legal</div>
+                <XDSText
+                  type="supporting"
+                  weight="semibold"
+                  xstyle={styles.endBlockColumnLabel}>
+                  Legal
+                </XDSText>
                 <div {...stylex.props(styles.endBlockLinkStack)}>
                   <XDSLink
                     label="Code of Conduct"
