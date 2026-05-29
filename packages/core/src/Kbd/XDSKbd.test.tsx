@@ -95,4 +95,10 @@ describe('XDSKbd', () => {
     const wrapper = container.firstChild as HTMLElement;
     expect(wrapper.className).toContain('xds-kbd');
   });
+
+  it('renders "plus" as a literal + key', () => {
+    render(<XDSKbd keys="shift+plus" />);
+    expect(screen.getByText('⇧')).toBeInTheDocument();
+    expect(screen.getByText('+')).toBeInTheDocument();
+  });
 });

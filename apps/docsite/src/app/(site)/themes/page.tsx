@@ -18,6 +18,7 @@ import {
   radiusDefaults,
   textSizeDefaults,
 } from '@xds/core/theme/tokens.stylex';
+import {useThemeMode} from '../../providers';
 import {packages} from '../../../generated/packageRegistry';
 import {themeObjects} from '../../../generated/themeRegistry';
 import {ThemeShowcaseTile} from '../../../components/ThemeShowcaseTile';
@@ -58,9 +59,15 @@ const themePackages = packages
     const ai = THEME_ORDER.indexOf(a.name);
     const bi = THEME_ORDER.indexOf(b.name);
     // Unknown themes go to the end, sorted alphabetically among themselves.
-    if (ai === -1 && bi === -1) {return a.name.localeCompare(b.name);}
-    if (ai === -1) {return 1;}
-    if (bi === -1) {return -1;}
+    if (ai === -1 && bi === -1) {
+      return a.name.localeCompare(b.name);
+    }
+    if (ai === -1) {
+      return 1;
+    }
+    if (bi === -1) {
+      return -1;
+    }
     return ai - bi;
   });
 
@@ -140,6 +147,7 @@ const styles = stylex.create({
 });
 
 export default function ThemesPage() {
+  const {mode} = useThemeMode();
   return (
     <div {...stylex.props(styles.galleryWrap)}>
       <XDSSection padding={6}>
@@ -179,7 +187,7 @@ export default function ThemesPage() {
                   xstyle={styles.cardFill}>
                   <div {...stylex.props(styles.previewFrame)}>
                     {theme ? (
-                      <XDSTheme theme={theme}>
+                      <XDSTheme theme={theme} mode={mode}>
                         {/* Re-set structural tokens to XDS defaults
                             (see STRUCTURAL_TOKEN_OVERRIDES above) so
                             every card has identical layout / control
