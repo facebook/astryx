@@ -93,16 +93,20 @@ const styles = stylex.create({
     textAlign: 'center',
     wordBreak: 'break-word',
   },
-  // When the responsive grid can no longer fit the maximum span
-  // any item claims (3 for Chat in top row, 4 for Inventory+Revenue
-  // in bottom row), XDSGridSpan items still claim their original
-  // span count and leave empty tracks beside the smaller cards
-  // (Checkout, Revenue). Forcing `grid-column: 1 / -1` below a
-  // breakpoint makes every card span all available tracks so each
-  // row fills the full viewport edge-to-edge. ~1024px is the
-  // threshold where 4 tracks of 200px + 3 gaps stop fitting (the
-  // bottom row's worst case — top row collapses earlier but the
-  // same breakpoint applies cleanly to both rows).
+  // KNOWN-GAP (XDSGridSpan): when an auto-fit XDSGrid produces
+  // fewer tracks than an XDSGridSpan claims, the span keeps its
+  // original count and leaves empty tracks beside smaller cards
+  // (e.g. Chat claims 2-of-3, but if only 2 tracks fit, Checkout
+  // ends up alone on its row with one empty track beside it).
+  // Forcing every span to `grid-column: 1 / -1` below 1024px (the
+  // threshold where the worst-case 4-track + 3-gap layout stops
+  // fitting) collapses each row to a single column at narrow
+  // widths so cards always reach the row edge.
+  //
+  // Ideally XDSGridSpan would clamp `span N` to the available
+  // track count automatically; until that lands in @xds/core,
+  // this xstyle is the load-bearing workaround for both grid rows
+  // below.
   fullSpanAtNarrow: {
     gridColumn: {
       default: null,

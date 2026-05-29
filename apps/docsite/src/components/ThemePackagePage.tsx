@@ -249,6 +249,11 @@ export function ThemePackagePage({
                   onClick={() => setMode(mode === 'light' ? 'dark' : 'light')}
                 />
                 <XDSButton
+                  label="Customize"
+                  variant="secondary"
+                  href="/playground"
+                />
+                <XDSButton
                   label="Install"
                   variant="primary"
                   onClick={() => setIsInstallOpen(true)}
