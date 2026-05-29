@@ -284,6 +284,22 @@ export const tabularNumbersStyle = stylex.create({
 });
 
 // =============================================================================
+// Justify (Text Alignment) Styles
+// =============================================================================
+
+export const justifyStyles = stylex.create({
+  left: {
+    textAlign: 'left',
+  },
+  center: {
+    textAlign: 'center',
+  },
+  right: {
+    textAlign: 'right',
+  },
+});
+
+// =============================================================================
 // Truncation Tooltip Content Style
 // =============================================================================
 
