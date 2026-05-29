@@ -111,12 +111,23 @@ const styles = stylex.create({
     [TILE_STACK_BREAKPOINT]: {
       flexDirection: 'column',
     },
-    // Card chrome (radius, background, focus ring) is provided by
-    // the outer XDSClickableCard. We use it instead of a plain
-    // anchor so the tile gets the XDS-standard hover overlay
-    // (5% currentColor ::after on :hover, 10% on :active, gated
-    // by @media (hover: hover)) and a focus-visible outline,
-    // without needing to reimplement any of it here.
+    // Hover/active/focus chrome (5% ::after on :hover, 10% on
+    // :active, focus-visible outline) is provided by the outer
+    // XDSClickableCard — no need to reimplement here. But we
+    // still override two pieces of its visual treatment:
+    //
+    // 1. backgroundColor: XDSClickableCard's default variant
+    //    paints --color-background-card (lifted surface tone).
+    //    Theme tiles need to sit on the theme's body color so
+    //    the hero image, banners, and form controls inside the
+    //    tile read as a continuous themed surface (matches what
+    //    a real themed app looks like, where everything sits on
+    //    --color-background-body).
+    // 2. overflow: hidden: without this, the hero image and the
+    //    right-column banners at the card edges paint past the
+    //    rounded corners XDSClickableCard sets via its radius.
+    backgroundColor: colorVars['--color-background-body'],
+    overflow: 'hidden',
     width: '100%',
     height: '100%',
     boxSizing: 'border-box',
