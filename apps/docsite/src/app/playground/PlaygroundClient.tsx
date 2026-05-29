@@ -646,7 +646,7 @@ export function PlaygroundClient() {
             size="md"
             xstyle={s.tabStretch}>
             <XDSTab value="code" label="Code" xstyle={s.tabStretch} />
-            <XDSTab value="property" label="Property" xstyle={s.tabStretch} />
+            <XDSTab value="property" label="Properties" xstyle={s.tabStretch} />
             <XDSTab value="craft" label="Craft" xstyle={s.tabStretch} />
           </XDSTabList>
         </XDSHStack>
