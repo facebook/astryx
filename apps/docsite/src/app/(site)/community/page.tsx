@@ -25,7 +25,12 @@
  * is Astryx.
  */
 
-import {ArrowRightIcon} from '@heroicons/react/24/outline';
+import {
+  ArrowRightIcon,
+  BookOpenIcon,
+  ChatBubbleLeftRightIcon,
+  ExclamationCircleIcon,
+} from '@heroicons/react/24/outline';
 import {NavSurfaceMode} from './NavSurfaceMode';
 import * as stylex from '@stylexjs/stylex';
 import {XDSBadge} from '@xds/core/Badge';
@@ -306,14 +311,87 @@ const styles = stylex.create({
   endBlockHeaderText: {
     flex: '1 1 0',
     minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 'var(--spacing-6)',
+  },
+
+  // Pill-card list under the engage description — each channel
+  // (Discussions / Issues / Wiki) renders as a horizontal pill
+  // with an icon tile on the left, title + one-line description
+  // in the middle, and an arrow chip on the right. The list
+  // stacks vertically so each option reads as a discrete path.
+  channelPillStack: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 'var(--spacing-2)',
+  },
+  // Single pill card — XDSClickableCard root. Painted with the
+  // muted surface tone (a light gray on most themes) and the
+  // default border explicitly transparented out so the pill
+  // reads as a soft chip floating on the page rather than a
+  // bordered card. overflow:hidden keeps the inner row's icon
+  // tile clipped to the pill's rounded corners.
+  channelPill: {
+    overflow: 'hidden',
+    backgroundColor: 'var(--color-background-muted)',
+    borderColor: 'transparent',
+  },
+  channelPillInner: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 'var(--spacing-3)',
+    paddingBlock: 'var(--spacing-3)',
+    paddingInline: 'var(--spacing-3)',
+  },
+  // Circular icon tile on the left of each pill. Painted with
+  // --color-background-card (the lifted-above-body tone, usually
+  // white) so the tile reads as a distinct chip on top of the
+  // pill's muted-gray surface — matches the reference where the
+  // avatar circles are noticeably lighter than the pill body.
+  channelPillIcon: {
+    flexShrink: 0,
+    width: 40,
+    height: 40,
+    borderRadius: 'var(--radius-full)',
+    backgroundColor: 'var(--color-background-card)',
+    color: 'var(--color-text-primary)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  channelPillBody: {
+    flex: '1 1 auto',
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 'var(--spacing-0-5)',
+  },
+  // Arrow chip on the right side of each pill. Painted with
+  // --color-background-card to match the icon tile on the left
+  // — symmetric chip treatment frames the pill body content
+  // between two lighter "endcaps".
+  channelPillArrow: {
+    flexShrink: 0,
+    width: 32,
+    height: 32,
+    borderRadius: 'var(--radius-full)',
+    backgroundColor: 'var(--color-background-card)',
+    color: 'var(--color-text-primary)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   // Decorative brand-shape composition on the right of the
   // header. Square-ish aspect, holds a single big BlobShape.
+  // Painted with --color-background-body so it reads as a
+  // continuation of the page surface rather than a lifted card.
   endBlockHeaderArt: {
     flex: '1 1 0',
     minWidth: 0,
     aspectRatio: '4 / 3',
-    backgroundColor: 'var(--color-background-muted)',
+    backgroundColor: 'var(--color-background-body)',
     borderRadius: 'var(--radius-container)',
     position: 'relative',
     overflow: 'hidden',
@@ -331,14 +409,15 @@ const styles = stylex.create({
     opacity: 0.85,
   },
 
-  // 3-column link list below the editorial header. Same auto-
-  // fit pattern as the rest of the page; each column is a small
-  // label header + tight stack of plain text links. No icons,
-  // no decoration — pure typographic hierarchy.
+  // 2-column link list below the editorial header (References +
+  // Legal). Channels used to live here too, but now sit as pill
+  // cards inside the editorial header above. Each column is a
+  // small label header + tight stack of plain text links. No
+  // icons, no decoration — pure typographic hierarchy.
   endBlockColumns: {
     display: 'grid',
     gridTemplateColumns: {
-      default: 'repeat(3, 1fr)',
+      default: '2fr 1fr',
       '@media (max-width: 760px)': '1fr',
     },
     gap: 'var(--spacing-8)',
@@ -1031,7 +1110,11 @@ interface Channel {
   name: string;
   description: string;
   href: string;
-  tint: CardTint;
+  /** Heroicon component rendered in the pill's left icon tile.
+   * Each channel uses an icon that hints at the destination's
+   * role (chat bubble for discussions, exclamation for issues,
+   * book for wiki). */
+  icon: React.ComponentType<{width?: number; height?: number}>;
 }
 
 const CHANNELS: ReadonlyArray<Channel> = [
@@ -1040,21 +1123,21 @@ const CHANNELS: ReadonlyArray<Channel> = [
     description:
       'Ask questions, share what you built, and talk through ideas with the maintainers.',
     href: `${GITHUB_REPO}/discussions`,
-    tint: TINT_BLUE,
+    icon: ChatBubbleLeftRightIcon,
   },
   {
     name: 'GitHub Issues',
     description:
       'File bugs and feature requests. Triaged weekly with response within a few days.',
     href: `${GITHUB_REPO}/issues`,
-    tint: TINT_ORANGE,
+    icon: ExclamationCircleIcon,
   },
   {
     name: 'Wiki & Decisions',
     description:
       'Architecture decisions, API conventions, and research notes from how Astryx gets built.',
     href: WIKI_BASE,
-    tint: TINT_YELLOW,
+    icon: BookOpenIcon,
   },
 ];
 
@@ -1339,17 +1422,60 @@ export default async function CommunityPage() {
               anchors the bottom-right corner. */}
           <div {...stylex.props(styles.endBlock)}>
             <div {...stylex.props(styles.endBlockHeader)}>
-              <XDSVStack gap={3} xstyle={styles.endBlockHeaderText}>
-                <XDSHeading level={2} type="display-2">
-                  Engage with us in conversation.
-                </XDSHeading>
-                <XDSText type="body" color="secondary">
-                  In a global community built on shared craft, a system gets
-                  better when its users open up to new perspectives. The
-                  brightest minds shape Astryx together — pick a channel, read
-                  the references, or just say hi.
-                </XDSText>
-              </XDSVStack>
+              <div {...stylex.props(styles.endBlockHeaderText)}>
+                <XDSVStack gap={3}>
+                  <XDSHeading level={2} type="display-2">
+                    Engage with us in conversation.
+                  </XDSHeading>
+                  <XDSText type="body" color="secondary">
+                    In a global community built on shared craft, a system gets
+                    better when its users open up to new perspectives. The
+                    brightest minds shape Astryx together — pick a channel, read
+                    the references, or just say hi.
+                  </XDSText>
+                </XDSVStack>
+                {/* Channel pill cards under the description.
+                    Each pill is its own click target (whole-
+                    card link via XDSClickableCard). The arrow
+                    chip on the right is decorative — same
+                    pattern as the RichCard chips elsewhere on
+                    the page. */}
+                <div {...stylex.props(styles.channelPillStack)}>
+                  {CHANNELS.map(channel => {
+                    const Icon = channel.icon;
+                    return (
+                      <XDSClickableCard
+                        key={channel.name}
+                        label={`Open ${channel.name}`}
+                        href={channel.href}
+                        target="_blank"
+                        padding={0}
+                        xstyle={styles.channelPill}>
+                        <div {...stylex.props(styles.channelPillInner)}>
+                          <div
+                            {...stylex.props(styles.channelPillIcon)}
+                            aria-hidden="true">
+                            <Icon width={20} height={20} />
+                          </div>
+                          <div {...stylex.props(styles.channelPillBody)}>
+                            <XDSText type="body" weight="bold">
+                              {channel.name}
+                            </XDSText>
+                            <XDSText type="supporting" color="secondary">
+                              {channel.description}
+                            </XDSText>
+                          </div>
+                          <div
+                            {...stylex.props(styles.channelPillArrow)}
+                            aria-hidden="true">
+                            <ArrowRightIcon width={16} height={16} />
+                          </div>
+                        </div>
+                      </XDSClickableCard>
+                    );
+                  })}
+                </div>
+              </div>
               <div {...stylex.props(styles.endBlockHeaderArt)}>
                 <svg
                   {...stylex.props(styles.endBlockHeaderShape)}
@@ -1361,27 +1487,6 @@ export default async function CommunityPage() {
             </div>
 
             <div {...stylex.props(styles.endBlockColumns)}>
-              {/* Channels */}
-              <div>
-                <XDSText
-                  type="supporting"
-                  weight="semibold"
-                  xstyle={styles.endBlockColumnLabel}>
-                  Channels
-                </XDSText>
-                <div {...stylex.props(styles.endBlockLinkStack)}>
-                  {CHANNELS.map(channel => (
-                    <XDSLink
-                      key={channel.name}
-                      label={channel.name}
-                      href={channel.href}
-                      isExternalLink>
-                      {channel.name}
-                    </XDSLink>
-                  ))}
-                </div>
-              </div>
-
               {/* References */}
               <div>
                 <XDSText
