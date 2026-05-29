@@ -146,6 +146,11 @@ export function registerInit(program) {
     .action(async (options) => {
       const targetDir = process.cwd();
 
+      // Note: the global --json contract (index.mjs preAction hook) rejects
+      // `init --json` BEFORE this action runs — init is not on the
+      // JSON_SUPPORTED allowlist — so we never reach a side effect with
+      // --json set. Do NOT re-check --json here (single source of truth).
+
       // Remove mode
       if (options.removeAgents) {
         removeAgentDocs(targetDir);
@@ -179,6 +184,21 @@ export function registerInit(program) {
       }
 
       // Interactive wizard
+      //
+      // Guard: the wizard blocks on prompts. In a non-interactive context
+      // (CI, piped stdin, no TTY) it would hang forever waiting for input.
+      // Fail fast with actionable guidance instead of blocking.
+      if (!process.stdin.isTTY) {
+        console.error(
+          'Error: `xds init` with no flags is interactive and requires a TTY.',
+        );
+        console.error(
+          `Run non-interactively with: \`${run} xds init --all\` ` +
+            'or `--features agents,theme,template`.',
+        );
+        process.exit(1);
+      }
+
       p.intro('Welcome to XDS');
 
       p.note(
