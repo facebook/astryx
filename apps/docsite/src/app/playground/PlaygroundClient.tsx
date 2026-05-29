@@ -54,7 +54,6 @@ import githubLight from './themes/github-light.json';
 import githubDark from './themes/github-dark.json';
 import {PreviewStage, type Viewport} from './PreviewStage';
 import {PropertyPanel} from './PropertyPanel';
-import {CraftPanel} from './CraftPanel';
 import {annotateInstanceIds} from './babelParser';
 
 import type * as MonacoTypes from 'monaco-editor';
@@ -647,7 +646,6 @@ export function PlaygroundClient() {
             xstyle={s.tabStretch}>
             <XDSTab value="code" label="Code" xstyle={s.tabStretch} />
             <XDSTab value="property" label="Properties" xstyle={s.tabStretch} />
-            <XDSTab value="craft" label="Craft" xstyle={s.tabStretch} />
           </XDSTabList>
         </XDSHStack>
 
@@ -674,7 +672,6 @@ export function PlaygroundClient() {
               onFlashInstance={flashInstance}
             />
           )}
-          {activeTab === 'craft' && <CraftPanel />}
         </div>
       </div>
 
