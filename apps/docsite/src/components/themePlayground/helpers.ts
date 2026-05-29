@@ -71,7 +71,9 @@ export function buildComponentOverrides(
   const components: ComponentStyleMap = {};
   for (const [varName, value] of Object.entries(componentTokens)) {
     const mappings = COMPONENT_VAR_TO_OVERRIDE[varName];
-    if (!mappings) {continue;}
+    if (!mappings) {
+      continue;
+    }
     for (const {component, cssProperty} of mappings) {
       components[component] ??= {};
       components[component].base ??= {};
@@ -144,8 +146,8 @@ export function generateThemeCode(
       for (const [selector, props] of Object.entries(rules)) {
         lines.push(`      '${selector}': {`);
         for (const [prop, val] of Object.entries(props)) {
-          const escapedProp = prop.replace(/'/g, "\\'");
-          const escapedVal = val.replace(/'/g, "\\'");
+          const escapedProp = prop.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+          const escapedVal = val.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
           lines.push(`        '${escapedProp}': '${escapedVal}',`);
         }
         lines.push('      },');
