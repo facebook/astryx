@@ -440,13 +440,40 @@ interface CardTint {
   blob: string;
 }
 
-const TINT_CREAM: CardTint = {surface: '#F8F0DC', blob: '#E8D5A8'};
-const TINT_LAVENDER: CardTint = {surface: '#ECE6F5', blob: '#C9B8E2'};
-const TINT_MINT: CardTint = {surface: '#DFEFE4', blob: '#A8D0B8'};
-const TINT_PEACH: CardTint = {surface: '#F8E2D5', blob: '#E8B89D'};
-const TINT_SKY: CardTint = {surface: '#D8E8F2', blob: '#A8C8E0'};
-const TINT_BUTTER: CardTint = {surface: '#F5EAC8', blob: '#E0C870'};
-const TINT_ROSE: CardTint = {surface: '#F5DDDD', blob: '#E0A8A8'};
+// Each tint pairs the theme's categorical badge backdrop
+// (--color-background-{hue}, ~20% alpha) with its saturated
+// counterpart (--color-icon-{hue}, full opacity) so the SVG blob
+// reads as a deeper-tone accent on top of the pastel fill. Both
+// tokens resolve per-theme, so the channel cards stay theme-
+// respectful instead of being locked to a hardcoded palette.
+const TINT_YELLOW: CardTint = {
+  surface: 'var(--color-background-yellow)',
+  blob: 'var(--color-icon-yellow)',
+};
+const TINT_PURPLE: CardTint = {
+  surface: 'var(--color-background-purple)',
+  blob: 'var(--color-icon-purple)',
+};
+const TINT_GREEN: CardTint = {
+  surface: 'var(--color-background-green)',
+  blob: 'var(--color-icon-green)',
+};
+const TINT_ORANGE: CardTint = {
+  surface: 'var(--color-background-orange)',
+  blob: 'var(--color-icon-orange)',
+};
+const TINT_BLUE: CardTint = {
+  surface: 'var(--color-background-blue)',
+  blob: 'var(--color-icon-blue)',
+};
+const TINT_CYAN: CardTint = {
+  surface: 'var(--color-background-cyan)',
+  blob: 'var(--color-icon-cyan)',
+};
+const TINT_RED: CardTint = {
+  surface: 'var(--color-background-red)',
+  blob: 'var(--color-icon-red)',
+};
 
 // =============================================================================
 // BlobPattern — SVG decorative blobs for the rich card image zone
@@ -622,13 +649,13 @@ function WallCard({contributors}: {contributors: ReadonlyArray<Contributor>}) {
           <br />
           Your name could be next.
         </XDSText>
-        <a
+        <XDSLink
+          label="See contributors"
           href={`${GITHUB_REPO}/graphs/contributors`}
-          target="_blank"
-          rel="noopener noreferrer"
-          {...stylex.props(styles.wallSeeContributors)}>
+          isExternalLink
+          xstyle={styles.wallSeeContributors}>
           See contributors
-        </a>
+        </XDSLink>
       </div>
     </XDSCard>
   );
@@ -898,21 +925,21 @@ const CHANNELS: ReadonlyArray<Channel> = [
     description:
       'Ask questions, share what you built, and talk through ideas with the maintainers.',
     href: `${GITHUB_REPO}/discussions`,
-    tint: TINT_SKY,
+    tint: TINT_BLUE,
   },
   {
     name: 'GitHub Issues',
     description:
       'File bugs and feature requests. Triaged weekly with response within a few days.',
     href: `${GITHUB_REPO}/issues`,
-    tint: TINT_PEACH,
+    tint: TINT_ORANGE,
   },
   {
     name: 'Wiki & Decisions',
     description:
       'Architecture decisions, API conventions, and research notes from how Astryx gets built.',
     href: WIKI_BASE,
-    tint: TINT_CREAM,
+    tint: TINT_YELLOW,
   },
 ];
 
