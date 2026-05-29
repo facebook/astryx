@@ -165,14 +165,17 @@ const styles = stylex.create({
     height: '100%',
   },
 
-  // Image wrapper inside the left card. Fixed ~170px height so the
-  // image reads as a real hero accent (matching the gallery mockup)
-  // while still leaving room for type samples, swatches, and actions
-  // beneath it.
+  // Image wrapper inside the left card. Flex-grows to fill any
+  // vertical space left over after heading + description + type
+  // samples + swatches lay out, while HERO_IMAGE_HEIGHT acts as a
+  // floor so short tiles still get a real hero band. Combined
+  // with `objectFit: cover` on the <img> below, the image just
+  // crops to whatever final height it ends up at.
   imageWrapper: {
     position: 'relative',
     overflow: 'hidden',
-    height: HERO_IMAGE_HEIGHT,
+    flex: '1 1 auto',
+    minHeight: HERO_IMAGE_HEIGHT,
     borderRadius: radiusVars['--radius-element'],
     backgroundColor: colorVars['--color-background-muted'],
   },
@@ -242,6 +245,18 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
+  },
+
+  // Identity group (image + name + description) flex-grows inside
+  // the outer left-card stack so any leftover vertical space
+  // beneath the token-group (typography + swatches) flows up into
+  // this stack — where the imageWrapper picks it up via its own
+  // flex: 1 + objectFit:cover. End result: the hero image
+  // stretches to fill the card on tall tiles (Butter, Y2K)
+  // instead of leaving an empty band at the bottom of the card.
+  identityGroup: {
+    flex: '1 1 auto',
+    minHeight: 0,
   },
 
   // Right column: stacked groups of components. Uses a larger
@@ -439,8 +454,11 @@ export function ThemeShowcaseTile({
                 The three identity elements cluster together at the
                 tighter intra-group gap. Inert so the tile reads as
                 a passive demo (only the Preview/Install action row
-                below is interactive). */}
-            <XDSVStack gap={4} inert>
+                below is interactive). identityGroup flex-grows so
+                the hero image expands to fill leftover card
+                height (see imageWrapper for the matching grow
+                rule). */}
+            <XDSVStack gap={4} inert xstyle={styles.identityGroup}>
               {/* Raw <img> intentionally: XDS provides XDSThumbnail
                   but it's purpose-built for file-attachment UX (square
                   64px default, remove/click affordances, upload-style
@@ -460,7 +478,7 @@ export function ThemeShowcaseTile({
                 )}
               </div>
               <XDSVStack gap={1}>
-                <XDSHeading level={3} color="primary">
+                <XDSHeading level={2} color="primary">
                   {label}
                 </XDSHeading>
                 {description && (
