@@ -10,7 +10,7 @@ const sampleItems = [
 ];
 
 const meta: Meta<typeof XDSChartV2Legend> = {
-  title: 'Lab/XDSChart v2/Primitives/Legend',
+  title: 'Lab/ChartV2Legend',
   component: XDSChartV2Legend,
   argTypes: {
     position: {
