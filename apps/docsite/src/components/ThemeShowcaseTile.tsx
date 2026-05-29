@@ -30,6 +30,7 @@ import {
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSBadge} from '@xds/core/Badge';
+import {useXDSLinkComponent} from '@xds/core/Link';
 
 // Below 800px viewport, the tile's left card + right column stack
 // vertically (instead of side-by-side). The 2-column tile layout
@@ -116,6 +117,19 @@ const styles = stylex.create({
     width: '100%',
     height: '100%',
     boxSizing: 'border-box',
+    // Make the entire tile a single link to the theme detail page.
+    // Strip the native <a> chrome (color, underline) so the tile's
+    // own visual identity shows through unchanged; the surrounding
+    // XDSCard already provides the hover/focus affordance for the
+    // gallery cell. Outline restored on :focus-visible so keyboard
+    // users still get a focus indicator on the tile itself.
+    color: 'inherit',
+    textDecoration: 'none',
+    outline: 'none',
+    ':focus-visible': {
+      outline: `2px solid ${colorVars['--color-border-focus']}`,
+      outlineOffset: 2,
+    },
   },
 
   // Left column wraps the theme card. Sized to share the tile width
@@ -145,9 +159,7 @@ const styles = stylex.create({
 
   // Make XDSCard fill the left column's full width *and* height
   // so the inner card stretches to match the right column instead
-  // of leaving a band of empty tile background below it. The
-  // action-row (Preview/Install buttons) then anchors to the
-  // bottom via margin-top:auto on actionRow.
+  // of leaving a band of empty tile background below it.
   leftCard: {
     width: '100%',
     height: '100%',
@@ -217,9 +229,11 @@ const styles = stylex.create({
     flexShrink: 0,
   },
 
-  // Action row pinned to the bottom of the left card via margin-top:
-  // auto. Preview + Install buttons on the left, dark-mode toggle
-  // icon on the right.
+  // Action row pinned to the bottom of the right column via
+  // margin-top:auto. Holds the Primary/Secondary button samples —
+  // demos the theme's button chrome. Buttons are passive samples
+  // (the right column carries `inert`), not interactive CTAs:
+  // the entire tile is itself a single link to the theme page.
   actionRow: {
     display: 'flex',
     alignItems: 'center',
@@ -403,9 +417,16 @@ export function ThemeShowcaseTile({
   const themeHref = themeName
     ? `/packages/${themeName.replace('@xds/', '')}`
     : undefined;
+  // Resolve the link component from XDSLinkProvider (Next.js Link
+  // here in the docsite) so the whole-tile click stays in-router
+  // instead of doing a full page navigation.
+  const LinkComponent = useXDSLinkComponent();
 
   return (
-    <div {...stylex.props(styles.tile)}>
+    <LinkComponent
+      href={themeHref}
+      aria-label={themeName ? `Open ${label} theme` : undefined}
+      {...stylex.props(styles.tile)}>
       {/* Left column: theme card wrapped in XDSCard for a self-
           contained surface (border, background, radius). */}
       <div {...stylex.props(styles.leftColumn)}>
@@ -531,27 +552,6 @@ export function ThemeShowcaseTile({
               </XDSVStack>
             </XDSVStack>
             {/* end Group 2 */}
-
-            {/* Action row — Preview + Install buttons pinned to the
-                bottom of the left card (via marginTop:auto on
-                actionRow). Both buttons link to the theme's detail
-                page (/packages/theme-name). */}
-            <div {...stylex.props(styles.actionRow)}>
-              <XDSHStack gap={2} wrap="wrap">
-                <XDSButton
-                  variant="primary"
-                  size="sm"
-                  label="Preview"
-                  href={themeHref}
-                />
-                <XDSButton
-                  variant="secondary"
-                  size="sm"
-                  label="Install"
-                  href={themeHref}
-                />
-              </XDSHStack>
-            </div>
           </XDSVStack>
         </XDSCard>
       </div>
@@ -560,10 +560,11 @@ export function ThemeShowcaseTile({
           of related components is wrapped in an XDSVStack at the
           tighter intra-group gap; the column itself uses a larger
           gap between groups for clear visual hierarchy. Inert so
-          all the showcase components (input, progress, table,
-          controls, banners) read as passive samples \u2014 only the
-          Preview / Install buttons on the left card are
-          interactive. */}
+          every showcase component (input, progress, table, form
+          controls, banners, Primary/Secondary button samples)
+          reads as a passive demo — the whole tile is itself a
+          link to the theme page, which is the only interactive
+          surface. */}
       <div {...stylex.props(styles.rightColumn)} inert>
         {/* Group 1 — form-input components (text input + progress
             bar). Both are data-input/feedback elements so they
@@ -649,7 +650,19 @@ export function ThemeShowcaseTile({
           <XDSBanner status="warning" title="Banner Title" />
           <XDSBanner status="error" title="Banner Title" />
         </XDSVStack>
+
+        {/* Action row — Primary / Secondary button samples pinned
+            to the bottom of the right column (via marginTop:auto
+            on actionRow). Passive demos thanks to the column's
+            inert; the whole tile is a single link to the theme
+            page. */}
+        <div {...stylex.props(styles.actionRow)}>
+          <XDSHStack gap={2} wrap="wrap">
+            <XDSButton variant="primary" size="sm" label="Primary" />
+            <XDSButton variant="secondary" size="sm" label="Secondary" />
+          </XDSHStack>
+        </div>
       </div>
-    </div>
+    </LinkComponent>
   );
 }
