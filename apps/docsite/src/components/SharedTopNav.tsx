@@ -63,9 +63,6 @@ export function SharedTopNav() {
     if (pathname.startsWith('/components')) {
       return 'components';
     }
-    if (pathname.startsWith('/playground')) {
-      return 'playground';
-    }
     return undefined;
   };
 
@@ -96,11 +93,7 @@ export function SharedTopNav() {
               href="/themes"
               isSelected={getActiveItem() === 'themes'}
             />
-            <XDSTopNavItem
-              label="Playground"
-              href="/playground"
-              isSelected={getActiveItem() === 'playground'}
-            />
+
           </>
         }
         endContent={
