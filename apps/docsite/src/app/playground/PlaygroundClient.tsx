@@ -1,9 +1,29 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file PlaygroundClient.tsx
+ * @input URL hash (shared code), user edits, knob edits
+ * @output Full-page two-panel playground (editor + live preview)
+ * @position app/playground — the interactive XDS code playground.
+ *
+ * Left panel: back + tabs (Code · Property · Craft).
+ *   - Code: Monaco editor (controlled) with real XDS .d.ts typedefs.
+ *   - Property: component selector + instance picker + knobs that edit the code.
+ *   - Craft: disabled AI chat placeholder.
+ * Right panel: toolbar (theme + dark mode · viewport segmented control ·
+ *   expand · reset · share) over a responsive /playground-preview iframe.
+ *
+ * The preview iframe is driven via postMessage (preview-code / preview-theme);
+ * code lives in React state and is the single source of truth shared by Monaco,
+ * the Property knobs, the URL hash, and the preview.
+ */
+
 'use client';
 
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import dynamic from 'next/dynamic';
+import {loader} from '@monaco-editor/react';
+import {useRouter} from 'next/navigation';
 import * as stylex from '@stylexjs/stylex';
 import {
   compressToEncodedURIComponent,
@@ -14,12 +34,36 @@ import {XDSSelector} from '@xds/core/Selector';
 import {XDSHStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import {XDSStatusDot} from '@xds/core/StatusDot';
-import {XDSDivider} from '@xds/core/Divider';
+import {XDSToolbar} from '@xds/core/Toolbar';
+import {XDSTabList, XDSTab} from '@xds/core/TabList';
+import {
+  XDSSegmentedControl,
+  XDSSegmentedControlItem,
+} from '@xds/core/SegmentedControl';
 import {useXDSResizable, XDSResizeHandle} from '@xds/core/Resizable';
+import {
+  ArrowLeftIcon,
+  MoonIcon,
+  SunIcon,
+  ComputerDesktopIcon,
+  DevicePhoneMobileIcon,
+  ArrowsPointingOutIcon,
+  ArrowPathIcon,
+} from '@heroicons/react/24/outline';
 import githubLight from './themes/github-light.json';
 import githubDark from './themes/github-dark.json';
+import {PreviewStage, type Viewport} from './PreviewStage';
+import {PropertyPanel} from './PropertyPanel';
+import {CraftPanel} from './CraftPanel';
+import {annotateInstanceIds} from './babelParser';
 
 import type * as MonacoTypes from 'monaco-editor';
+
+// Self-host Monaco from public/monaco/vs — corpnet blocks the default
+// jsdelivr CDN. Configure the singleton loader before the editor initializes.
+if (typeof window !== 'undefined') {
+  loader.config({paths: {vs: '/monaco/vs'}});
+}
 
 /** Monaco instance type — the full runtime object passed to onMount */
 type MonacoInstance = typeof MonacoTypes & {
@@ -169,7 +213,6 @@ function configureMonaco(monaco: MonacoInstance) {
   fetch('/playground-types.json')
     .then(r => r.json())
     .then((packages: Record<string, Record<string, string>>) => {
-      // React types
       const reactFiles = packages['react'] ?? {};
       for (const [fileName, content] of Object.entries(reactFiles)) {
         ts.addExtraLib(
@@ -178,7 +221,6 @@ function configureMonaco(monaco: MonacoInstance) {
         );
       }
 
-      // StyleX types
       const stylexFiles = packages['@stylexjs/stylex'] ?? {};
       for (const [fileName, content] of Object.entries(stylexFiles)) {
         ts.addExtraLib(
@@ -187,7 +229,6 @@ function configureMonaco(monaco: MonacoInstance) {
         );
       }
 
-      // XDS core types — register each .d.ts under its dist path AND subpath
       const xdsFiles = packages['@xds/core'] ?? {};
       const submoduleReexports: string[] = [];
 
@@ -197,7 +238,6 @@ function configureMonaco(monaco: MonacoInstance) {
           `file:///node_modules/@xds/core/dist/${relPath}`,
         );
 
-        // Also register as @xds/core/<SubModule>/index.d.ts
         if (relPath.endsWith('/index.d.ts')) {
           const moduleName = relPath.replace('/index.d.ts', '');
           ts.addExtraLib(
@@ -208,7 +248,6 @@ function configureMonaco(monaco: MonacoInstance) {
         }
       }
 
-      // Build @xds/core barrel from submodule re-exports
       const barrelContent = submoduleReexports
         .map(m => `export * from '@xds/core/${m}';`)
         .join('\n');
@@ -217,7 +256,6 @@ function configureMonaco(monaco: MonacoInstance) {
         'file:///node_modules/@xds/core/index.d.ts',
       );
 
-      // Types loaded — enable semantic validation
       ts.setDiagnosticsOptions({
         noSemanticValidation: false,
         noSyntaxValidation: false,
@@ -228,92 +266,113 @@ function configureMonaco(monaco: MonacoInstance) {
     });
 }
 
+type LeftTab = 'code' | 'property' | 'craft';
+type BuildStatus = 'idle' | 'building' | 'finished' | 'error';
+
+const BUILD_STATUS_META: Record<
+  Exclude<BuildStatus, 'idle'>,
+  {variant: 'warning' | 'success' | 'error'; label: string}
+> = {
+  building: {variant: 'warning', label: 'Building…'},
+  finished: {variant: 'success', label: 'Build finished'},
+  error: {variant: 'error', label: 'Build error'},
+};
+
 const s = stylex.create({
   root: {
     display: 'flex',
-    flexDirection: 'column',
     height: '100%',
     overflow: 'hidden',
+    backgroundColor: 'var(--color-background-surface)',
   },
-  toolbar: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingInline: 16,
-    paddingBlock: 6,
+  leftPanel: {
     flexShrink: 0,
-  },
-  main: {
     display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+    minWidth: 0,
+  },
+  panelHeader: {
+    flexShrink: 0,
+    padding: 'var(--spacing-2) var(--spacing-2) 0',
+  },
+  tabStretch: {
+    flex: 1,
+  },
+  tabBody: {
     flex: 1,
     minHeight: 0,
-    flexDirection: {
-      default: 'row',
-      '@media (max-width: 768px)': 'column',
-    },
-  },
-  editorPane: {
     display: 'flex',
     flexDirection: 'column',
-    flexShrink: 0,
-    minWidth: 0,
-    minHeight: {
-      default: 0,
-      '@media (max-width: 768px)': 300,
-    },
+    overflow: 'hidden',
   },
-  previewPane: {
+  codePane: {
+    flex: 1,
+    minHeight: 0,
+    minWidth: 0,
+    marginBlockStart: 'var(--spacing-1)',
+  },
+  hidden: {
+    display: 'none',
+  },
+  rightPanel: {
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
     minWidth: 0,
-    minHeight: {
-      default: 0,
-      '@media (max-width: 768px)': 300,
-    },
+    overflow: 'hidden',
   },
-  iframe: {
-    flex: 1,
-    border: 'none',
-    width: '100%',
-    height: '100%',
-  },
-  previewBar: {
+  buildStatus: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingInline: 12,
-    paddingBlock: 6,
-    flexShrink: 0,
+    gap: 'var(--spacing-2)',
+    transitionProperty: 'opacity',
+    transitionDuration: '0.5s',
+    transitionTimingFunction: 'ease',
   },
 });
 
 export function PlaygroundClient() {
+  const router = useRouter();
   const [code, setCode] = useState(getInitialCode);
-  const [theme, setTheme] = useState('default');
+  const [theme, setTheme] = useState('neutral');
+  const [mode, setMode] = useState<'light' | 'dark'>('light');
+  const [activeTab, setActiveTab] = useState<LeftTab>('code');
+  const [viewport, setViewport] = useState<Viewport>('desktop');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const [buildStatus, setBuildStatus] = useState<BuildStatus>('idle');
+  const [statusFading, setStatusFading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [previewReady, setPreviewReady] = useState(false);
-  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [editorTheme, setEditorTheme] = useState('github-dark');
+
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const readyRef = useRef(false);
   const pendingRef = useRef<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const editorRef = useRef<MonacoTypes.editor.IStandaloneCodeEditor | null>(
+    null,
+  );
+  // Mirror activeTab in a ref so onMount can read the current tab without
+  // re-creating the (stable) mount callback.
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
 
   const editorPanel = useXDSResizable({
-    defaultSize: '50%',
-    minSizePx: 200,
-    collapsible: true,
-    snaps: [400, 600],
-    autoSaveId: 'xds-playground-editor-width',
+    defaultSize: 440,
+    minSizePx: 340,
+    maxSizePx: 760,
+    autoSaveId: 'xds-playground-left-width',
   });
 
-  const [editorTheme, setEditorTheme] = useState('github-dark');
-
-  // Sync editor theme with system preference
+  // Sync editor + initial preview mode with system preference
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const update = () =>
+    const update = () => {
       setEditorTheme(mq.matches ? 'github-dark' : 'github-light');
+      setMode(mq.matches ? 'dark' : 'light');
+    };
     update();
     mq.addEventListener('change', update);
     return () => mq.removeEventListener('change', update);
@@ -342,6 +401,21 @@ export function PlaygroundClient() {
     );
   }, []);
 
+  // Send the preview an instance-annotated copy of the code (markers let the
+  // preview map a selected component to its DOM node for the focus-ring flash).
+  const postCode = useCallback(
+    (c: string) => send(annotateInstanceIds(c)),
+    [send],
+  );
+
+  // Flash a focus ring on the DOM node for a given component instance.
+  const flashInstance = useCallback((component: string, index: number) => {
+    iframeRef.current?.contentWindow?.postMessage(
+      {type: 'preview-highlight', id: `${component}#${index}`},
+      window.location.origin,
+    );
+  }, []);
+
   useEffect(() => {
     const handler = (e: MessageEvent) => {
       if (e.source !== iframeRef.current?.contentWindow) {
@@ -351,20 +425,20 @@ export function PlaygroundClient() {
         readyRef.current = true;
         setPreviewReady(true);
         if (pendingRef.current != null) {
-          send(pendingRef.current);
+          postCode(pendingRef.current);
           pendingRef.current = null;
         }
       }
       if (e.data?.type === 'preview-rendered') {
-        setPreviewError(null);
+        setBuildStatus('finished');
       }
       if (e.data?.type === 'preview-error') {
-        setPreviewError(e.data.message ?? 'Unknown error');
+        setBuildStatus('error');
       }
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [send]);
+  }, [postCode]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -380,15 +454,19 @@ export function PlaygroundClient() {
     return () => clearInterval(interval);
   }, []);
 
+  // Debounced push of code → preview + URL hash
   useEffect(() => {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
     }
     debounceRef.current = setTimeout(() => {
+      if (code) {
+        setBuildStatus('building');
+      }
       if (!readyRef.current) {
         pendingRef.current = code;
       } else {
-        send(code);
+        postCode(code);
       }
       updateURL(code);
     }, 400);
@@ -397,14 +475,68 @@ export function PlaygroundClient() {
         clearTimeout(debounceRef.current);
       }
     };
-  }, [code, send]);
+  }, [code, postCode]);
 
+  // Theme + mode → preview. Also re-sent once the preview signals ready so a
+  // non-default initial theme (e.g. neutral) applies even if this effect first
+  // ran before the iframe was listening.
   useEffect(() => {
     iframeRef.current?.contentWindow?.postMessage(
-      {type: 'preview-theme', theme},
+      {type: 'preview-theme', theme, mode},
       window.location.origin,
     );
-  }, [theme]);
+  }, [theme, mode, previewReady]);
+
+  // While the resize handle is dragged, the cursor can pass over the preview
+  // iframe — a separate document that swallows pointer events and stalls the
+  // drag (the handle listens on window pointermove without pointer capture).
+  // Detect the drag (capture phase, since the handle stops propagation) and
+  // disable iframe pointer events so events keep reaching window during resize.
+  const handleResizeProbe = useCallback((e: React.PointerEvent) => {
+    const el = e.target as HTMLElement | null;
+    if (el?.closest('[role="separator"]')) {
+      setIsResizing(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isResizing) {
+      return;
+    }
+    const stop = () => setIsResizing(false);
+    window.addEventListener('pointerup', stop);
+    window.addEventListener('pointercancel', stop);
+    return () => {
+      window.removeEventListener('pointerup', stop);
+      window.removeEventListener('pointercancel', stop);
+    };
+  }, [isResizing]);
+
+  // "Build finished" lingers for 5s, then fades out (0.5s) and disappears.
+  useEffect(() => {
+    if (buildStatus !== 'finished') {
+      setStatusFading(false);
+      return;
+    }
+    const fade = setTimeout(() => setStatusFading(true), 5000);
+    const hide = setTimeout(() => {
+      setBuildStatus('idle');
+      setStatusFading(false);
+    }, 5500);
+    return () => {
+      clearTimeout(fade);
+      clearTimeout(hide);
+    };
+  }, [buildStatus]);
+
+  const handleRebuild = useCallback(() => {
+    setBuildStatus('building');
+    if (readyRef.current) {
+      postCode(code);
+    } else {
+      pendingRef.current = code;
+    }
+  }, [postCode, code]);
 
   const handleShare = useCallback(() => {
     navigator.clipboard.writeText(window.location.href).then(() => {
@@ -414,24 +546,56 @@ export function PlaygroundClient() {
   }, []);
 
   const handleMonacoBeforeMount = useCallback((monaco: MonacoInstance) => {
-    // Register themes before editor renders so initial theme applies
     monaco.editor.defineTheme('github-light', githubLight);
     monaco.editor.defineTheme('github-dark', githubDark);
   }, []);
 
   const handleMonacoMount = useCallback(
-    (_editor: unknown, monaco: MonacoInstance) => {
+    (
+      editor: MonacoTypes.editor.IStandaloneCodeEditor,
+      monaco: MonacoInstance,
+    ) => {
+      editorRef.current = editor;
       configureMonaco(monaco);
+      // Focus on initial mount if the Code tab is the active one.
+      if (activeTabRef.current === 'code') {
+        editor.focus();
+      }
     },
     [],
   );
 
-  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+  // Focus the editor (blinking cursor) whenever the Code tab becomes active.
+  useEffect(() => {
+    if (activeTab !== 'code') {
+      return;
+    }
+    const id = requestAnimationFrame(() => editorRef.current?.focus());
+    return () => cancelAnimationFrame(id);
+  }, [activeTab]);
+
+  // Jump to a specific source offset in the editor (used by the Property tab's
+  // "set in code" links). Switches to the Code tab, then reveals + selects the
+  // position once Monaco is visible.
+  const revealInCode = useCallback((offset: number) => {
+    setActiveTab('code');
+    requestAnimationFrame(() => {
+      const editor = editorRef.current;
+      const model = editor?.getModel();
+      if (!editor || !model) {
+        return;
+      }
+      const pos = model.getPositionAt(offset);
+      editor.setPosition(pos);
+      editor.revealPositionInCenter(pos);
+      editor.focus();
+    });
+  }, []);
 
   const editorOptions = useMemo(
     () => ({
       minimap: {enabled: false},
-      fontSize: isMobile ? 16 : 13,
+      fontSize: 13,
       lineNumbers: 'on' as const,
       scrollBeyondLastLine: false,
       automaticLayout: true,
@@ -439,107 +603,192 @@ export function PlaygroundClient() {
       wordWrap: 'on' as const,
       padding: {top: 12},
       accessibilitySupport: 'off' as const,
+      // Hide scrollbars (wheel/keyboard scrolling still works) + the right-side
+      // overview ruler, for a cleaner panel.
+      scrollbar: {
+        vertical: 'hidden' as const,
+        horizontal: 'hidden' as const,
+        verticalScrollbarSize: 0,
+        horizontalScrollbarSize: 0,
+        useShadows: false,
+      },
+      overviewRulerLanes: 0,
+      overviewRulerBorder: false,
+      hideCursorInOverviewRuler: true,
     }),
-    [isMobile],
+    [],
   );
 
   return (
-    <div {...stylex.props(s.root)}>
-      <div {...stylex.props(s.toolbar)}>
-        <XDSHStack gap={8} align="center">
-          <XDSStatusDot
-            variant={
-              previewError ? 'error' : previewReady ? 'success' : 'warning'
-            }
-            label={previewError ? 'Error' : previewReady ? 'Ready' : 'Loading'}
-          />
-          <XDSText color="secondary" type="supporting">
-            {previewError ? 'Error' : previewReady ? 'Ready' : 'Loading…'}
-          </XDSText>
-        </XDSHStack>
-        <XDSHStack gap={4} align="center">
-          <XDSSelector
-            label="Theme"
-            isLabelHidden
-            options={THEME_OPTIONS}
-            value={theme}
-            onChange={setTheme}
-            size="sm"
-          />
+    <div {...stylex.props(s.root)} onPointerDownCapture={handleResizeProbe}>
+      {/* Left panel — editor */}
+      <div
+        {...stylex.props(s.leftPanel)}
+        style={{width: editorPanel.size || 440}}>
+        <XDSHStack gap={2} vAlign="center" xstyle={s.panelHeader}>
           <XDSButton
-            label="Reset"
+            label="Back"
+            tooltip="Back"
             variant="ghost"
-            size="sm"
-            onClick={() => setCode(DEFAULT_CODE)}
+            size="md"
+            isIconOnly
+            icon={<ArrowLeftIcon width={20} height={20} />}
+            onClick={() => router.back()}
           />
-          <XDSButton
-            label={copied ? '✓ Copied!' : 'Copy Link'}
-            variant={copied ? 'primary' : 'secondary'}
-            size="sm"
-            onClick={handleShare}
-          />
+          <XDSTabList
+            value={activeTab}
+            onChange={v => setActiveTab(v as LeftTab)}
+            size="md"
+            xstyle={s.tabStretch}>
+            <XDSTab value="code" label="Code" xstyle={s.tabStretch} />
+            <XDSTab value="property" label="Property" xstyle={s.tabStretch} />
+            <XDSTab value="craft" label="Craft" xstyle={s.tabStretch} />
+          </XDSTabList>
         </XDSHStack>
-      </div>
-      <XDSDivider />
-      <div {...stylex.props(s.main)}>
-        <div
-          {...stylex.props(s.editorPane)}
-          style={
-            isMobile ? {height: editorPanel.size} : {width: editorPanel.size}
-          }>
-          <MonacoEditor
-            defaultLanguage="typescript"
-            defaultValue={code}
-            path="playground.tsx"
-            theme={editorTheme}
-            onChange={v => setCode(v ?? '')}
-            beforeMount={handleMonacoBeforeMount}
-            onMount={handleMonacoMount}
-            options={editorOptions}
-          />
+
+        <div {...stylex.props(s.tabBody)}>
+          {/* Code: Monaco stays mounted to preserve typedefs + editor state */}
+          <div {...stylex.props(s.codePane, activeTab !== 'code' && s.hidden)}>
+            <MonacoEditor
+              defaultLanguage="typescript"
+              value={code}
+              path="playground.tsx"
+              theme={editorTheme}
+              onChange={v => setCode(v ?? '')}
+              beforeMount={handleMonacoBeforeMount}
+              onMount={handleMonacoMount}
+              options={editorOptions}
+            />
+          </div>
+
+          {activeTab === 'property' && (
+            <PropertyPanel
+              code={code}
+              onCodeChange={setCode}
+              onRevealInCode={revealInCode}
+              onFlashInstance={flashInstance}
+            />
+          )}
+          {activeTab === 'craft' && <CraftPanel />}
         </div>
-        <XDSResizeHandle
-          label="Resize editor panel"
-          direction={isMobile ? 'vertical' : 'horizontal'}
-          hasDivider
-          pillPlacement={isMobile ? 'end' : 'auto'}
-          resizable={editorPanel.props}
+      </div>
+
+      <XDSResizeHandle
+        label="Resize editor panel"
+        resizable={editorPanel.props}
+        pillPlacement="center"
+      />
+
+      {/* Right panel — preview */}
+      <div {...stylex.props(s.rightPanel)}>
+        <XDSToolbar
+          label="Preview controls"
+          startContent={
+            <XDSHStack gap={2} vAlign="center">
+              <XDSSelector
+                label="Theme"
+                isLabelHidden
+                options={THEME_OPTIONS}
+                value={theme}
+                onChange={setTheme}
+                size="md"
+              />
+              <XDSButton
+                label={mode === 'light' ? 'Switch to dark' : 'Switch to light'}
+                tooltip={mode === 'light' ? 'Dark mode' : 'Light mode'}
+                variant="ghost"
+                size="md"
+                isIconOnly
+                icon={
+                  mode === 'light' ? (
+                    <MoonIcon width={20} height={20} />
+                  ) : (
+                    <SunIcon width={20} height={20} />
+                  )
+                }
+                onClick={() => setMode(m => (m === 'light' ? 'dark' : 'light'))}
+              />
+            </XDSHStack>
+          }
+          centerContent={
+            <XDSSegmentedControl
+              label="Viewport size"
+              size="md"
+              value={viewport}
+              onChange={v => setViewport(v as Viewport)}>
+              <XDSSegmentedControlItem
+                value="desktop"
+                label="Desktop"
+                isLabelHidden
+                icon={<ComputerDesktopIcon width={20} height={20} />}
+              />
+              <XDSSegmentedControlItem
+                value="phone"
+                label="Phone"
+                isLabelHidden
+                icon={<DevicePhoneMobileIcon width={20} height={20} />}
+              />
+            </XDSSegmentedControl>
+          }
+          endContent={
+            <XDSHStack gap={2} vAlign="center">
+              {buildStatus !== 'idle' && (
+                <div
+                  {...stylex.props(s.buildStatus)}
+                  style={{opacity: statusFading ? 0 : 1}}>
+                  <XDSStatusDot
+                    variant={BUILD_STATUS_META[buildStatus].variant}
+                    label={BUILD_STATUS_META[buildStatus].label}
+                    isPulsing={buildStatus === 'building'}
+                  />
+                  <XDSText type="supporting" color="secondary">
+                    {BUILD_STATUS_META[buildStatus].label}
+                  </XDSText>
+                  {buildStatus === 'error' && (
+                    <XDSButton
+                      label="Rebuild"
+                      tooltip="Rebuild"
+                      variant="ghost"
+                      size="sm"
+                      isIconOnly
+                      icon={<ArrowPathIcon width={16} height={16} />}
+                      onClick={handleRebuild}
+                    />
+                  )}
+                </div>
+              )}
+              <XDSButton
+                label="Expand"
+                tooltip="Fullscreen preview"
+                variant="ghost"
+                size="md"
+                isIconOnly
+                icon={<ArrowsPointingOutIcon width={20} height={20} />}
+                onClick={() => setIsFullscreen(true)}
+              />
+              <XDSButton
+                label="Reset"
+                variant="ghost"
+                size="md"
+                onClick={() => setCode(DEFAULT_CODE)}
+              />
+              <XDSButton
+                label={copied ? '✓ Copied' : 'Share'}
+                variant={copied ? 'primary' : 'secondary'}
+                size="md"
+                onClick={handleShare}
+              />
+            </XDSHStack>
+          }
         />
-        <div {...stylex.props(s.previewPane)}>
-          <div {...stylex.props(s.previewBar)}>
-            <XDSText color="secondary" type="supporting">
-              Preview
-            </XDSText>
-            <XDSText color="disabled" type="supporting">
-              {theme.charAt(0).toUpperCase() + theme.slice(1)}
-            </XDSText>
-          </div>
-          <XDSDivider />
-          <iframe
-            ref={iframeRef}
-            src="/playground-preview"
-            sandbox="allow-scripts allow-same-origin"
-            title="Preview"
-            {...stylex.props(s.iframe)}
-          />
-        </div>
+        <PreviewStage
+          viewport={viewport}
+          isFullscreen={isFullscreen}
+          onExitFullscreen={() => setIsFullscreen(false)}
+          iframeRef={iframeRef}
+          isInteractionDisabled={isResizing}
+        />
       </div>
-      {previewError && (
-        <>
-          <XDSDivider />
-          <div style={{padding: '8px 16px', maxHeight: 120, overflow: 'auto'}}>
-            <XDSText type="code" color="inherit">
-              <span
-                style={{
-                  color: 'var(--color-text-error, #ef4444)',
-                  whiteSpace: 'pre-wrap',
-                }}>
-                {previewError}
-              </span>
-            </XDSText>
-          </div>
-        </>
-      )}
     </div>
   );
 }
