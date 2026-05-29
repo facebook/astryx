@@ -660,6 +660,7 @@ export function ThemeShowcaseTile({
           <XDSHStack gap={2} wrap="wrap">
             <XDSButton variant="primary" size="sm" label="Primary" />
             <XDSButton variant="secondary" size="sm" label="Secondary" />
+            <XDSButton variant="ghost" size="sm" label="Ghost" />
           </XDSHStack>
         </div>
       </div>
