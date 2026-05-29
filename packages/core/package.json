@@ -163,6 +163,11 @@
       "types": "./dist/ClickableCard/index.d.ts",
       "default": "./dist/ClickableCard/index.js"
     },
+    "./Code": {
+      "source": "./src/Code/index.ts",
+      "types": "./dist/Code/index.d.ts",
+      "default": "./dist/Code/index.js"
+    },
     "./CodeBlock": {
       "source": "./src/CodeBlock/index.ts",
       "types": "./dist/CodeBlock/index.d.ts",
@@ -237,6 +242,16 @@
       "source": "./src/Grid/index.ts",
       "types": "./dist/Grid/index.d.ts",
       "default": "./dist/Grid/index.js"
+    },
+    "./HStack": {
+      "source": "./src/HStack/index.ts",
+      "types": "./dist/HStack/index.d.ts",
+      "default": "./dist/HStack/index.js"
+    },
+    "./Heading": {
+      "source": "./src/Heading/index.ts",
+      "types": "./dist/Heading/index.d.ts",
+      "default": "./dist/Heading/index.js"
     },
     "./HoverCard": {
       "source": "./src/HoverCard/index.ts",
@@ -522,6 +537,11 @@
       "source": "./src/Typeahead/index.ts",
       "types": "./dist/Typeahead/index.d.ts",
       "default": "./dist/Typeahead/index.js"
+    },
+    "./VStack": {
+      "source": "./src/VStack/index.ts",
+      "types": "./dist/VStack/index.d.ts",
+      "default": "./dist/VStack/index.js"
     },
     "./hooks": {
       "source": "./src/hooks/index.ts",
