@@ -474,8 +474,14 @@ export function ThemeShowcaseTile({
             {/* Group 2 — design tokens: typography samples + color
                 swatches. Both visualize the theme's underlying
                 token system so they cluster together. Inert so
-                the tile reads as a passive demo. */}
-            <XDSVStack gap={4} inert>
+                the tile reads as a passive demo.
+                gap={5} (not gap={4}) between the Aa row and the
+                swatches: the small-glyph supporting labels under
+                each Aa (Display / Heading / Body / Mono) eat some
+                of the visual gap, so a slightly larger spacing
+                value reads as optically even with the rest of the
+                card's intra-group rhythm. */}
+            <XDSVStack gap={5} inert>
               {/* Typography samples — each "Aa" rendered in the theme's
                   display / heading / body / mono font with the role as
                   label. The Display sample uses XDSText type="display-3"
