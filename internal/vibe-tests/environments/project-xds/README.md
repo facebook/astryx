@@ -1,6 +1,6 @@
-# XDS + Tailwind CSS
+# XDS
 
-This project uses XDS components with Tailwind CSS. Use the CLI to look up component props and usage before writing code:
+This project uses XDS components. Use the CLI to look up component props and usage before writing code:
 
 ```bash
 npx xds component --list              # list all available components
@@ -8,10 +8,15 @@ npx xds component Button              # look up props, variants, and usage
 npx xds component IconButton          # each component has its own entry
 ```
 
+If the CLI is not available, install dependencies first:
+
+```bash
+npm install --include=dev
+```
+
 Components use:
 
-- Tailwind CSS utility classes for layout and custom styling
-- XDS Tailwind bridge tokens (`bg-surface`, `text-primary`) for design tokens
+- StyleX (`@stylexjs/stylex`) for styling
 - React 19
 
 ## Import Pattern
