@@ -659,18 +659,22 @@ export function ThemeShowcaseTile({
         </XDSTable>
 
         {/* Three form controls in one horizontal row — demos the
-            theme's switch, radio, and checkbox styling side-by-side. */}
+            theme's switch, radio, and checkbox styling side-by-
+            side. All three render at their default size: XDSSwitch
+            ships at a single fixed size with no `size` variant
+            (passing one is a type error that breaks the build),
+            so the neighboring XDSRadioList + XDSCheckboxInput
+            also use their default sizes to stay visually matched. */}
         <XDSHStack gap={4} wrap="wrap" vAlign="center">
-          <XDSSwitch label="Toggle" value={true} size="sm" />
+          <XDSSwitch label="Toggle" value={true} />
           <XDSRadioList
             label="Radio"
             isLabelHidden
             value="radio"
-            onChange={() => {}}
-            size="sm">
+            onChange={() => {}}>
             <XDSRadioListItem label="Radio Button" value="radio" />
           </XDSRadioList>
-          <XDSCheckboxInput label="Checkbox" value={false} size="sm" />
+          <XDSCheckboxInput label="Checkbox" value={false} />
         </XDSHStack>
 
         {/* Action row — Primary / Secondary / Ghost button samples.
