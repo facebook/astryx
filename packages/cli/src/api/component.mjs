@@ -61,11 +61,17 @@ export async function component(name, options = {}) {
     source = false,
     showcase = false,
     blocks = false,
-    detail = 'full',
+    detail: detailOption,
     lang = null,
     zh = false,
     dense = false,
   } = options;
+
+  // List views (no specific component) default to `brief` (just names) so
+  // `component --list` stays terse; single-component views default to `full`.
+  // This mirrors the CLI's default-detail handling so API and CLI stay in parity.
+  const isListMode = category || list || !name;
+  const detail = detailOption ?? (isListMode ? 'brief' : 'full');
 
   const coreDir = findCoreDir(cwd);
   if (!coreDir) {
