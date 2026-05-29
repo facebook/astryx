@@ -43,6 +43,36 @@ const TOKEN_TO_NUMBER = {
 
 const GAP_PROPS = ['gap', 'rowGap', 'columnGap'];
 
+/**
+ * XDS layout components that accept gap/rowGap/columnGap props.
+ * Scoped narrowly so we don't rewrite gap props on user-authored or
+ * third-party components (e.g. native <div gap="space4"> in unrelated code).
+ */
+const XDS_GAP_ELEMENTS = new Set([
+  'XDSStack',
+  'XDSHStack',
+  'XDSVStack',
+  'XDSGrid',
+  'XDSGridSpan',
+  'XDSStackItem',
+]);
+
+function isXDSGapElement(openingElement) {
+  if (!openingElement || openingElement.type !== 'JSXOpeningElement') {
+    return false;
+  }
+  const name = openingElement.name;
+  // Plain identifier: <XDSStack>
+  if (name.type === 'JSXIdentifier') {
+    return XDS_GAP_ELEMENTS.has(name.name);
+  }
+  // Member expression: <Foo.XDSStack> — check trailing identifier
+  if (name.type === 'JSXMemberExpression' && name.property) {
+    return XDS_GAP_ELEMENTS.has(name.property.name);
+  }
+  return false;
+}
+
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
@@ -51,6 +81,14 @@ export default function transformer(file, api) {
   root.find(j.JSXAttribute).forEach((path) => {
     const attrName = path.node.name.name;
     if (!GAP_PROPS.includes(attrName)) {
+      return;
+    }
+
+    // Scope to known XDS layout elements only. Other component codemods
+    // narrow by element name; this one historically walked every attribute
+    // and rewrote gap on unrelated elements (e.g. <div gap="space4">).
+    const openingElement = path.parent && path.parent.node;
+    if (!isXDSGapElement(openingElement)) {
       return;
     }
 
