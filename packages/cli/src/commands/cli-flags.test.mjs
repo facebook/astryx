@@ -150,4 +150,36 @@ describe('subcommand --help shows global flags + Examples', () => {
     expect(stdout).toMatch(/--lang/);
     expect(stdout).toMatch(/Examples:/);
   });
+
+  it('template --help mentions global flags and Examples', () => {
+    const {stdout} = runCli(['template', '--help']);
+    expect(stdout).toMatch(/--json/);
+    expect(stdout).toMatch(/--lang/);
+    expect(stdout).toMatch(/--detail/);
+    expect(stdout).toMatch(/Examples:/);
+  });
+
+  it('template get --help mentions global flags and Examples', () => {
+    const {stdout} = runCli(['template', 'get', '--help']);
+    expect(stdout).toMatch(/--json/);
+    expect(stdout).toMatch(/--lang/);
+    expect(stdout).toMatch(/--detail/);
+    expect(stdout).toMatch(/Examples:/);
+  });
+
+  it('theme --help mentions global flags and Examples', () => {
+    const {stdout} = runCli(['theme', '--help']);
+    expect(stdout).toMatch(/--json/);
+    expect(stdout).toMatch(/--lang/);
+    expect(stdout).toMatch(/--detail/);
+    expect(stdout).toMatch(/Examples:/);
+  });
+
+  it('theme build --help mentions global flags and Examples', () => {
+    const {stdout} = runCli(['theme', 'build', '--help']);
+    expect(stdout).toMatch(/--json/);
+    expect(stdout).toMatch(/--lang/);
+    expect(stdout).toMatch(/--detail/);
+    expect(stdout).toMatch(/Examples:/);
+  });
 });

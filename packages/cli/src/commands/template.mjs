@@ -8,6 +8,7 @@ import * as path from 'node:path';
 import {CLI_ROOT} from '../utils/paths.mjs';
 import {jsonOut, jsonError} from '../lib/json.mjs';
 import {template as templateApi, getTemplateById} from '../api/template.mjs';
+import {addCommonHelp} from '../utils/help.mjs';
 
 export {discoverTemplates, listTemplates, getTemplateById} from '../api/template.mjs';
 
@@ -89,7 +90,7 @@ export function registerTemplate(program) {
       }
     });
 
-  templateCmd
+  const getCmd = templateCmd
     .command('get')
     .description('Fetch a template by ID via the xds.config.mjs hook')
     .requiredOption('--id <id>', 'Template identifier to fetch')
@@ -109,4 +110,16 @@ export function registerTemplate(program) {
 
       console.log(result.data.source);
     });
+
+  addCommonHelp(templateCmd, [
+    'xds template                          List available templates',
+    'xds template dashboard ./src/app      Inject the "dashboard" template at a path',
+    'xds template --list --type block      List only block templates',
+    'xds template --skeleton               Show layout skeleton with spatial annotations',
+    'xds template --json                   Structured JSON output for scripting',
+  ]);
+  addCommonHelp(getCmd, [
+    'xds template get --id hero            Fetch a template by ID via xds.config.mjs',
+    'xds template get --id hero --json     Structured JSON output for scripting',
+  ]);
 }

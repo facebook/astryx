@@ -19,6 +19,7 @@ import {pathToFileURL, fileURLToPath} from 'node:url';
 import {createJiti} from 'jiti';
 import {getRunPrefix} from '../utils/package-manager.mjs';
 import {jsonOut, jsonError} from '../lib/json.mjs';
+import {addCommonHelp} from '../utils/help.mjs';
 
 // Import shared theme processing from core — ensures build and runtime
 // use the same logic for typography.scale expansion, prose, and component rules.
@@ -975,7 +976,7 @@ export function registerTheme(program) {
     .command('theme')
     .description('Theme tools — build, export, and manage XDS themes');
 
-  theme
+  const buildCmd = theme
     .command('build <file>')
     .description('Compile a defineTheme file to CSS + JS')
     .option('-o, --out <path>', 'Output CSS file path')
@@ -1208,4 +1209,13 @@ Or with a <link> tag:
         console.log('');
       }
     });
+
+  const buildExamples = [
+    'xds theme build ./src/themes/ocean.ts            Compile a theme to CSS + JS',
+    'xds theme build ./themes/ocean.ts -o out.css     Write CSS to a specific path',
+    'xds theme build ./themes/ocean.ts --no-prose     Skip prose (h1, p, code) mappings',
+    'xds theme build ./themes/ocean.ts --json         Structured JSON output for scripting',
+  ];
+  addCommonHelp(theme, buildExamples);
+  addCommonHelp(buildCmd, buildExamples);
 }
