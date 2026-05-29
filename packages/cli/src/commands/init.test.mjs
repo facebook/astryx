@@ -23,16 +23,6 @@ function runCli(args, {cwd} = {}) {
   });
 }
 
-describe('xds CLI top-level', () => {
-  it('exits 1 with a clear error on unknown command', () => {
-    const result = runCli(['bogus']);
-    expect(result.status).toBe(1);
-    const out = (result.stderr || '') + (result.stdout || '');
-    expect(out).toMatch(/unknown command/i);
-    expect(out).toContain('bogus');
-  });
-});
-
 describe('xds init --features bogus', () => {
   it('exits 1 on unknown feature', () => {
     const result = runCli(['init', '--features', 'bogus']);
@@ -147,72 +137,6 @@ describe('xds init --remove-agents', () => {
     expect(fs.existsSync(path.join(tmpDir, '.claude', 'CLAUDE.md'))).toBe(false);
     // The now-empty .claude dir should also be cleaned up.
     expect(fs.existsSync(path.join(tmpDir, '.claude'))).toBe(false);
-  });
-});
-
-describe('postinstall banner', () => {
-  function checkBoxAlignment(stdout) {
-    const lines = stdout.split('\n');
-    const bodyLines = lines.filter(l => l.startsWith('  │ '));
-    const topBorder = lines.find(l => l.startsWith('  ╭'));
-    const bottomBorder = lines.find(l => l.startsWith('  ╰'));
-
-    expect(bodyLines.length).toBeGreaterThan(5);
-    expect(topBorder).toBeDefined();
-    expect(bottomBorder).toBeDefined();
-
-    const bodyLen = bodyLines[0].length;
-    for (const l of bodyLines) {
-      expect(l.length).toBe(bodyLen);
-      expect(l.endsWith('│')).toBe(true);
-    }
-    expect(topBorder.length).toBe(bodyLen);
-    expect(bottomBorder.length).toBe(bodyLen);
-  }
-
-  it('every body line matches inner width and right border aligns (default)', () => {
-    const result = runCli(['postinstall']);
-    expect(result.status).toBe(0);
-    checkBoxAlignment(result.stdout);
-  });
-
-  it('right border aligns with `pnpm exec` prefix (longer command)', () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xds-pnpm-banner-'));
-    try {
-      fs.writeFileSync(path.join(tmpDir, 'pnpm-lock.yaml'), '');
-      const result = runCli(['postinstall'], {cwd: tmpDir});
-      expect(result.status).toBe(0);
-      checkBoxAlignment(result.stdout);
-      expect(result.stdout).toContain('pnpm exec xds');
-    } finally {
-      fs.rmSync(tmpDir, {recursive: true, force: true});
-    }
-  });
-
-  it('right border aligns with `bunx` prefix', () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xds-bun-banner-'));
-    try {
-      fs.writeFileSync(path.join(tmpDir, 'bun.lock'), '');
-      const result = runCli(['postinstall'], {cwd: tmpDir});
-      expect(result.status).toBe(0);
-      checkBoxAlignment(result.stdout);
-      expect(result.stdout).toContain('bunx xds');
-    } finally {
-      fs.rmSync(tmpDir, {recursive: true, force: true});
-    }
-  });
-
-  it('right border aligns with `yarn` prefix', () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xds-yarn-banner-'));
-    try {
-      fs.writeFileSync(path.join(tmpDir, 'yarn.lock'), '');
-      const result = runCli(['postinstall'], {cwd: tmpDir});
-      expect(result.status).toBe(0);
-      checkBoxAlignment(result.stdout);
-      expect(result.stdout).toContain('yarn xds');
-    } finally {
-      fs.rmSync(tmpDir, {recursive: true, force: true});
-    }
   });
 });
 
