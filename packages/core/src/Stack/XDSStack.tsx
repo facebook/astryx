@@ -120,7 +120,7 @@ export interface XDSStackProps extends XDSBaseProps<HTMLElement> {
    * The element type to render.
    * @default 'div'
    */
-  element?: ElementType;
+  as?: ElementType;
 
   /**
    * StyleX styles created via `stylex.create()`. Merged with the component's
@@ -184,7 +184,7 @@ export function XDSStack({
   width,
   height,
   wrap,
-  element = 'div',
+  as: element = 'div',
   xstyle,
   className,
   style,
