@@ -24,7 +24,10 @@ export const astryxTheme = defineTheme({
   // other token at the XDS default.
   tokens: {
     '--color-accent': '#292724',
-    '--color-background-body': '#F8F4ED',
+    // Mode-aware so the page background flips with dark mode. Light keeps the
+    // warm Astryx cream; dark falls back to the XDS default body color
+    // (a flat static value here would freeze the page in light mode).
+    '--color-background-body': 'light-dark(#F8F4ED, #111112)',
     // Astryx display headings render semibold (XDS default is normal weight).
     '--text-display-1-weight': 'var(--font-weight-semibold)',
     '--text-display-2-weight': 'var(--font-weight-semibold)',
