@@ -6,6 +6,7 @@ export const docs = {
   name: 'AlertDialog',
   displayName: 'Alert Dialog',
   group: 'Dialog',
+  category: 'Containers',
   keywords: [
     'alert',
     'alertdialog',

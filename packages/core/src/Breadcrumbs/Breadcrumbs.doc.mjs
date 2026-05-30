@@ -6,6 +6,7 @@ export const docs = {
   name: 'Breadcrumbs',
   displayName: 'Breadcrumbs',
   group: 'Breadcrumbs',
+  category: 'Navigation',
   keywords: ["breadcrumbs","breadcrumb","navigation","nav","crumbs","trail","path","hierarchy","wayfinding","steps"],
   usage: {
     description:

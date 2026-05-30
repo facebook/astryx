@@ -20,7 +20,7 @@ import {XDSCard} from '@xds/core/Card';
 // =============================================================================
 
 const meta: Meta = {
-  title: 'Core/Theme/MediaTheme',
+  title: 'Core/XDSMediaTheme',
   parameters: {
     docs: {
       description: {

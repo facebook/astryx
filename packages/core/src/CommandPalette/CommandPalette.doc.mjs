@@ -5,6 +5,7 @@ export const docs = {
   name: 'CommandPalette',
   displayName: 'Command Palette',
   group: 'CommandPalette',
+  category: 'Actions',
   keywords: [
     'command',
     'spotlight',

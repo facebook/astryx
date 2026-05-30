@@ -5,6 +5,7 @@
 export const docs = {
   name: 'StatusDot',
   displayName: 'Status Dot',
+  category: 'Communications',
   keywords: ["statusdot","dot","indicator","status","signal","presence","availability","online","pip"],
   props: [
     {

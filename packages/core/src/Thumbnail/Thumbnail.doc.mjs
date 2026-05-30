@@ -5,6 +5,7 @@
 export const docs = {
   name: 'Thumbnail',
   displayName: 'Thumbnail',
+  category: 'Communications',
   keywords: ["thumbnail","attachment","preview","image","upload","dismiss","remove","loading"],
   props: [
     {

@@ -5,6 +5,7 @@
 export const docs = {
   name: 'Spinner',
   displayName: 'Spinner',
+  category: 'Performance',
   keywords: ["spinner","loader","loading","circular","progress","spin","activity","busy","indeterminate"],
   props: [
     {

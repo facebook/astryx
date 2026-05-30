@@ -6,6 +6,7 @@ export const docs = {
   name: 'Layout',
   displayName: 'Layout',
   group: 'Layout',
+  category: 'Layout',
   keywords: ["layout","container","content","flex","box","wrapper","scaffold","page","shell"],
   playground: {
     defaults: {

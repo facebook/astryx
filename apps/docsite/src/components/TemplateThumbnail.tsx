@@ -14,6 +14,7 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSSkeleton} from '@xds/core/Skeleton';
 import {XDSTheme} from '@xds/core/theme';
 import {neutralTheme} from '@xds/theme-neutral/built';
+import {useThemeMode} from '../app/providers';
 
 const FIXED_SCALE = 0.5;
 
@@ -189,6 +190,7 @@ const TEMPLATE_COMPONENTS: Record<
 };
 
 export function TemplateThumbnail({slug}: {slug: string}) {
+  const {mode} = useThemeMode();
   const containerRef = useRef<HTMLDivElement>(null);
   const [renderWidth, setRenderWidth] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
@@ -243,7 +245,7 @@ export function TemplateThumbnail({slug}: {slug: string}) {
                 <XDSSkeleton width="100%" height="100%" />
               </div>
             }>
-            <XDSTheme theme={neutralTheme}>
+            <XDSTheme theme={neutralTheme} mode={mode}>
               <Component />
             </XDSTheme>
           </Suspense>

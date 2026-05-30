@@ -17,11 +17,13 @@ import * as p from '@clack/prompts';
 import {findCoreDir, listComponents} from '../utils/paths.mjs';
 import {jsonOut, jsonError} from '../lib/json.mjs';
 import {
+  buildGapReportPreview,
   checkGhCli,
   createGapReport,
   loadGapReportConfig,
   GAP_CATEGORIES,
 } from '../utils/github.mjs';
+import {shouldActuallyFile, formatPreview} from './gap-report.mjs';
 
 /**
  * Rewrite relative imports that point outside the component directory
@@ -63,7 +65,18 @@ export function registerSwizzle(program) {
     .option('--list', 'List available components')
     .option('--gap <reason>', 'File a gap report explaining why you swizzled')
     .option('--gap-category <category>', 'Gap category (for --gap mode)')
-    .option('--no-report', 'Suppress the interactive gap report prompt')
+    .option(
+      '--no-report',
+      'Suppress all gap reporting (interactive prompt AND --gap auto-filing)',
+    )
+    .option(
+      '--dry-run',
+      'For --gap: print the issue that would be filed without contacting GitHub. Default in non-TTY / --json mode.',
+    )
+    .option(
+      '--commit',
+      'For --gap: actually file the issue. Required in non-interactive mode.',
+    )
     .action(async (component, options) => {
       const coreDir = findCoreDir(process.cwd());
       const json = program.opts().json || false;
@@ -134,29 +147,84 @@ export function registerSwizzle(program) {
 
       const gapConfig = loadGapReportConfig();
       let gapReportUrl = null;
+      let gapDryRunPreview = null;
 
-      if (options.gap) {
-        if (gapConfig.enabled && (gapConfig.command || checkGhCli())) {
-          const category = options.gapCategory || 'other';
+      // CRITICAL: --no-report must suppress BOTH the interactive prompt AND
+      // the --gap auto-file path. Previously --gap bypassed --no-report.
+      // commander sets options.report to false for `--no-report`.
+      const reportingSuppressed = options.report === false;
+
+      if (options.gap && !reportingSuppressed && gapConfig.enabled) {
+        const category = options.gapCategory || 'other';
+        const previewArgs = {
+          component: dirName,
+          category,
+          intention: options.gap,
+          source: 'llm-auto',
+        };
+
+        const willFile = shouldActuallyFile({
+          commit: options.commit,
+          dryRun: options.dryRun,
+          json,
+        });
+
+        const preview = buildGapReportPreview(previewArgs);
+
+        if (!willFile) {
+          // Dry-run: do NOT call gh. Surface what would have been filed.
+          gapDryRunPreview = {
+            dryRun: true,
+            wouldFile: preview.mode !== 'disabled',
+            mode: preview.mode,
+            title: preview.title,
+            body: preview.body,
+            repo: preview.repo,
+            command: preview.command || null,
+          };
+        } else if (gapConfig.command || checkGhCli()) {
           try {
-            gapReportUrl = createGapReport({
-              component: dirName,
-              category,
-              intention: options.gap,
-              source: 'llm-auto',
-            });
+            gapReportUrl = createGapReport(previewArgs);
           } catch (err) {
-            if (!json) console.error(`Warning: Could not file gap report: ${err.message}`);
+            if (!json)
+              console.error(`Warning: Could not file gap report: ${err.message}`);
           }
         }
+      }
 
-        if (json) return jsonOut('swizzle.copy', {component: dirName, outputDir: relOutput, filesCopied: copied, files: copiedFiles.map(f => f), gapReport: gapReportUrl});
+      if (options.gap) {
+        if (json)
+          return jsonOut('swizzle.copy', {
+            component: dirName,
+            outputDir: relOutput,
+            filesCopied: copied,
+            files: copiedFiles.map(f => f),
+            gapReport: gapReportUrl,
+            gapReportDryRun: gapDryRunPreview,
+            gapReportSuppressed: reportingSuppressed || !gapConfig.enabled,
+          });
         console.log(`\n✓ Copied ${copied} files to ${relOutput}/\n`);
         console.log('Relative imports have been rewritten to use @xds/core.');
         console.log('You can now customize the component source freely.\n');
-        if (gapReportUrl) console.log(`✓ Gap report filed: ${gapReportUrl}\n`);
-        else if (!gapConfig.enabled) console.log('Gap reporting is disabled via configuration.');
-        else if (!gapConfig.command && !checkGhCli()) console.log('Skipping gap report: gh CLI not available.');
+        if (gapReportUrl) {
+          console.log(`✓ Gap report filed: ${gapReportUrl}\n`);
+        } else if (gapDryRunPreview) {
+          console.log(formatPreview(buildGapReportPreview({
+            component: dirName,
+            category: options.gapCategory || 'other',
+            intention: options.gap,
+            source: 'llm-auto',
+          })));
+          console.log(
+            '\n[dry-run] No gap report was filed. Re-run with --commit to file.',
+          );
+        } else if (reportingSuppressed) {
+          console.log('Gap reporting suppressed by --no-report.');
+        } else if (!gapConfig.enabled) {
+          console.log('Gap reporting is disabled via configuration.');
+        } else if (!gapConfig.command && !checkGhCli()) {
+          console.log('Skipping gap report: gh CLI not available.');
+        }
         return;
       }
 
@@ -166,7 +234,7 @@ export function registerSwizzle(program) {
       console.log('Relative imports have been rewritten to use @xds/core.');
       console.log('You can now customize the component source freely.\n');
 
-      if (!options.report || !gapConfig.enabled) {
+      if (reportingSuppressed || !gapConfig.enabled) {
         return;
       }
 
@@ -210,17 +278,43 @@ export function registerSwizzle(program) {
         }),
       );
 
+      const previewArgs = {
+        component: dirName,
+        category,
+        intention: intention.trim(),
+        detail: detail?.trim() || undefined,
+        source: 'interactive',
+      };
+
+      const preview = buildGapReportPreview(previewArgs);
+
+      p.note(
+        `${preview.mode === 'github' ? `Repo: ${preview.repo}` : `Custom command: ${preview.command}`}\n\n` +
+          `Title:\n  ${preview.title}\n\n` +
+          `Body:\n${preview.body
+            .split('\n')
+            .map(l => `  ${l}`)
+            .join('\n')}`,
+        'Preview — this is exactly what will be filed',
+      );
+
+      const confirmFile = isCancel(
+        await p.confirm({
+          message: 'File this gap report now?',
+          initialValue: false,
+        }),
+      );
+
+      if (!confirmFile) {
+        console.log('Cancelled — nothing was filed.');
+        return;
+      }
+
       const s = p.spinner();
       s.start('Filing gap report');
 
       try {
-        const url = createGapReport({
-          component: dirName,
-          category,
-          intention: intention.trim(),
-          detail: detail?.trim() || undefined,
-          source: 'interactive',
-        });
+        const url = createGapReport(previewArgs);
         s.stop('Gap report filed');
         console.log(`✓ ${url}\n`);
       } catch (err) {

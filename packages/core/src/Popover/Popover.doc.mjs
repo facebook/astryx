@@ -6,6 +6,7 @@ export const docs = {
   name: 'Popover',
   displayName: 'Popover',
   group: 'Popover',
+  category: 'Communications',
   keywords: ["popover","popup","dropdown","tooltip","overlay","flyout","callout","popper","anchor","floating","bubble"],
   components: [
     {

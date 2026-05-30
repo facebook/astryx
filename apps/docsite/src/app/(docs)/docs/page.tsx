@@ -13,8 +13,9 @@ import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSSection} from '@xds/core/Section';
 import {XDSButton} from '@xds/core/Button';
-import {XDSTheme, XDSMediaTheme} from '@xds/core/theme';
+import {XDSMediaTheme} from '@xds/core/theme';
 import {XDSLink} from '@xds/core/Link';
+import {ThemedPreview} from '../../../components/ThemedPreview';
 import {packages} from '../../../generated/packageRegistry';
 import {componentCount} from '../../../generated/componentRegistry';
 import {docTopics} from '../../../generated/docsRegistry';
@@ -248,11 +249,11 @@ export default function HomePage() {
                     href={`/packages/${pkg.name.replace('@xds/', '')}`}
                     {...stylex.props(styles.linkReset)}>
                     {theme ? (
-                      <XDSTheme theme={theme}>
+                      <ThemedPreview theme={theme}>
                         <div {...stylex.props(styles.packageImageWrapper)}>
                           <ThemeShowcaseTile label={pkg.displayName} />
                         </div>
-                      </XDSTheme>
+                      </ThemedPreview>
                     ) : (
                       <div
                         {...stylex.props(styles.packageImageWrapper)}
