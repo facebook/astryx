@@ -2,7 +2,7 @@
 
 'use client';
 
-import {createContext, useContext, useState} from 'react';
+import {createContext, useContext, useEffect, useState} from 'react';
 import Link from 'next/link';
 import {XDSTheme} from '@xds/core/theme';
 import {XDSLinkProvider} from '@xds/core/Link';
@@ -23,9 +23,28 @@ export function useThemeMode() {
 }
 
 export function Providers({children}: {children: React.ReactNode}) {
+  // Default to the OS color scheme. SSR/first paint use a deterministic 'light'
+  // default (so hydration matches); the effect syncs to the real system
+  // preference on mount and tracks live changes — until the user manually
+  // toggles, after which their choice sticks for the rest of the session.
   const [mode, setMode] = useState<ThemeMode>('light');
+  const [isManual, setIsManual] = useState(false);
 
-  const toggleMode = () => setMode(m => (m === 'light' ? 'dark' : 'light'));
+  useEffect(() => {
+    if (isManual) {
+      return;
+    }
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const sync = () => setMode(mq.matches ? 'dark' : 'light');
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, [isManual]);
+
+  const toggleMode = () => {
+    setIsManual(true);
+    setMode(m => (m === 'light' ? 'dark' : 'light'));
+  };
 
   return (
     <ThemeModeContext value={{mode, toggleMode}}>

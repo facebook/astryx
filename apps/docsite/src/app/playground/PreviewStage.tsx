@@ -46,7 +46,15 @@ const s = stylex.create({
     position: 'fixed',
     inset: 0,
     zIndex: 50,
-    padding: 'var(--spacing-4)',
+    padding: 0,
+  },
+  // In fullscreen the card chrome (radius, border, shadow) is stripped so the
+  // preview reads as a bare, edge-to-edge surface. The element stays mounted to
+  // preserve the single iframe + its postMessage channel.
+  cardFullscreen: {
+    borderRadius: 0,
+    borderWidth: 0,
+    boxShadow: 'none',
   },
   card: {
     maxWidth: '100%',
@@ -122,7 +130,10 @@ export function PreviewStage({
           </XDSCard>
         </div>
       )}
-      <XDSCard padding={0} xstyle={s.card} style={{width, height}}>
+      <XDSCard
+        padding={0}
+        xstyle={[s.card, isFullscreen && s.cardFullscreen]}
+        style={{width, height}}>
         <iframe
           ref={iframeRef}
           src="/playground-preview"
