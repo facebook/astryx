@@ -15,6 +15,10 @@ import {XDSSection} from '@xds/core/Section';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSClickableCard} from '@xds/core/ClickableCard';
 import {XDSDivider} from '@xds/core/Divider';
+import {XDSButton} from '@xds/core/Button';
+import {XDSPopover} from '@xds/core/Popover';
+import {XDSCard} from '@xds/core/Card';
+import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {components as componentRegistry} from '../../../generated/componentRegistry';
 import {blocks} from '../../../generated/blockRegistry';
 import {ShowcaseThumbnail} from '../../../components/ShowcaseThumbnail';
@@ -75,15 +79,25 @@ export default function ComponentsGalleryPage() {
 
     for (const comp of coreComponents) {
       // Skip components explicitly hidden from overview
-      if (comp.isHiddenFromOverview) {continue;}
+      if (comp.isHiddenFromOverview) {
+        continue;
+      }
       // Skip hidden components
-      if (comp.hidden) {continue;}
+      if (comp.hidden) {
+        continue;
+      }
       // Skip hooks (they appear in the Utilities section)
-      if (comp.name.startsWith('use')) {continue;}
+      if (comp.name.startsWith('use')) {
+        continue;
+      }
       // Skip components without a category
-      if (!comp.category) {continue;}
+      if (!comp.category) {
+        continue;
+      }
       // Skip utilities group
-      if (comp.group === 'Utilities') {continue;}
+      if (comp.group === 'Utilities') {
+        continue;
+      }
 
       items.push({
         name: comp.name,
@@ -106,7 +120,9 @@ export default function ComponentsGalleryPage() {
     }
     for (const item of categorizedItems) {
       const list = map.get(item.category);
-      if (list) {list.push(item);}
+      if (list) {
+        list.push(item);
+      }
     }
     return map;
   }, [categorizedItems]);
@@ -114,19 +130,59 @@ export default function ComponentsGalleryPage() {
   return (
     <XDSSection maxWidth={1200} padding={6} xstyle={styles.section}>
       <XDSVStack gap={10}>
-        <XDSVStack gap={2} style={{alignItems: 'center'}}>
-          <XDSText type="display-2" xstyle={styles.heroTitle}>
-            Browse the library
-          </XDSText>
-          <XDSText type="body" color="secondary" xstyle={styles.heroTitle}>
-            Every component, with copy-ready examples for every variant, state,
-            and pattern.
-          </XDSText>
+        <XDSVStack gap={4} hAlign="center">
+          <XDSVStack gap={2} style={{alignItems: 'center'}}>
+            <XDSText type="display-2" xstyle={styles.heroTitle}>
+              Browse the library
+            </XDSText>
+            <XDSText type="body" color="secondary" xstyle={styles.heroTitle}>
+              Every component, with copy-ready examples for every variant,
+              state, and pattern.
+            </XDSText>
+          </XDSVStack>
+          <XDSPopover
+            width={360}
+            content={
+              <XDSVStack gap={3}>
+                <XDSVStack gap={1}>
+                  <XDSText type="body" weight="bold">
+                    1. Install the package
+                  </XDSText>
+                  <XDSCard padding={0}>
+                    <XDSCodeBlock
+                      code="npm install @xds/core"
+                      language="bash"
+                      hasCopyButton
+                    />
+                  </XDSCard>
+                </XDSVStack>
+                <XDSVStack gap={1}>
+                  <XDSText type="body" weight="bold">
+                    2. Import a component
+                  </XDSText>
+                  <XDSCard padding={0}>
+                    <XDSCodeBlock
+                      code="import {...} from '@xds/core/ComponentName';"
+                      language="typescript"
+                      hasCopyButton
+                    />
+                  </XDSCard>
+                </XDSVStack>
+              </XDSVStack>
+            }>
+            <XDSButton
+              variant="primary"
+              size="lg"
+              label="Install Core Library"
+            />
+          </XDSPopover>
         </XDSVStack>
 
         {CATEGORIES.map(cat => {
           const items = groupedByCategory.get(cat) ?? [];
-          if (items.length === 0) {return null;}
+          if (items.length === 0) {
+            return null;
+          }
 
           return (
             <Fragment key={cat}>
