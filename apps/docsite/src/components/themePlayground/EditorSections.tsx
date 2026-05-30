@@ -12,6 +12,7 @@ import {XDSSwitch} from '@xds/core/Switch';
 import {XDSToggleButton, XDSToggleButtonGroup} from '@xds/core/ToggleButton';
 import {XDSTooltip} from '@xds/core/Tooltip';
 import {XDSIcon} from '@xds/core/Icon';
+import {expandRadiusScale, expandTypeScale} from '@xds/core/theme';
 import {ColorSwatch} from './ColorSwatch';
 import {XDSSelectableCard} from '@xds/core/SelectableCard';
 import {FONT_OPTIONS, RATIO_OPTIONS, UNIFIED_PRESETS} from './constants';
@@ -86,6 +87,89 @@ export function EditorSections({
     tokenTypeRatio != null
       ? RATIO_OPTIONS.find(o => Math.abs(o.value - tokenTypeRatio) < 0.02)
       : undefined;
+
+  // The scale controls below should only show a value when the seeded theme's
+  // tokens actually follow the generator algorithm. A theme can ship hand-
+  // tuned tokens that don't fit any base — in that case the matching base is
+  // null and the control renders "unset" (no preset highlighted, empty input)
+  // so it never implies a base the theme isn't really using.
+
+  // Type size — matches when the raw font-size ramp follows the geometric
+  // scale for the derived base + nearest standard ratio.
+  const typeSizeMatch = (() => {
+    if (tokenTypeRatio == null || !matchedRatio) {
+      return null;
+    }
+    const expected = expandTypeScale({
+      base: tokenTypeBase,
+      ratio: matchedRatio.value,
+    });
+    const keys = [
+      '--font-size-xs',
+      '--font-size-sm',
+      '--font-size-base',
+      '--font-size-lg',
+      '--font-size-xl',
+      '--font-size-2xl',
+    ];
+    return keys.every(k => tokens[k] === expected[k]) ? tokenTypeBase : null;
+  })();
+
+  // Corner radius — linear scale anchored on --radius-inner (= base).
+  const radiusMatch = (() => {
+    const inner = parseInt(tokens['--radius-inner'] ?? '', 10);
+    if (!Number.isFinite(inner)) {
+      return null;
+    }
+    const expected = expandRadiusScale({base: inner, multiplier: 1});
+    const keys = [
+      '--radius-inner',
+      '--radius-element',
+      '--radius-container',
+      '--radius-page',
+    ];
+    return keys.every(k => tokens[k] === expected[k]) ? inner : null;
+  })();
+
+  // Spacing — linear scale where step N = base × N (base = --spacing-1).
+  const spacingMatch = (() => {
+    const base = parseInt(tokens['--spacing-1'] ?? '', 10);
+    if (!Number.isFinite(base)) {
+      return null;
+    }
+    const steps: Record<string, number> = {
+      '--spacing-0': 0,
+      '--spacing-0-5': 0.5,
+      '--spacing-1': 1,
+      '--spacing-1-5': 1.5,
+      '--spacing-2': 2,
+      '--spacing-3': 3,
+      '--spacing-4': 4,
+      '--spacing-5': 5,
+      '--spacing-6': 6,
+      '--spacing-7': 7,
+      '--spacing-8': 8,
+      '--spacing-9': 9,
+      '--spacing-10': 10,
+      '--spacing-11': 11,
+      '--spacing-12': 12,
+    };
+    const ok = Object.entries(steps).every(
+      ([k, step]) => tokens[k] === `${Math.round(base * step)}px`,
+    );
+    return ok ? base : null;
+  })();
+
+  // Element size — md = base, sm = base − 4, lg = base + 4.
+  const sizeMatch = (() => {
+    const md = parseInt(tokens['--size-element-md'] ?? '', 10);
+    const sm = parseInt(tokens['--size-element-sm'] ?? '', 10);
+    const lg = parseInt(tokens['--size-element-lg'] ?? '', 10);
+    if (!Number.isFinite(md)) {
+      return null;
+    }
+    return sm === md - 4 && lg === md + 4 ? md : null;
+  })();
 
   return (
     <XDSVStack gap={5}>
@@ -325,7 +409,7 @@ export function EditorSections({
                 Type Size
               </XDSText>
               <XDSTooltip
-                content={`Geometric scale: size = round(base × ratio^step). Base = ${typeScaleBase}px, ratio = ${typeScaleRatio.toFixed(3)}.`}>
+                content={`Geometric scale: size = round(base × ratio^step). Base = ${typeSizeMatch ?? typeScaleBase}px, ratio = ${typeScaleRatio.toFixed(3)}.`}>
                 <XDSIcon icon="info" size="sm" color="secondary" />
               </XDSTooltip>
             </XDSHStack>
@@ -334,7 +418,7 @@ export function EditorSections({
                 label="Type size preset"
                 type="single"
                 size="sm"
-                value={String(typeScaleBase)}
+                value={typeSizeMatch != null ? String(typeSizeMatch) : null}
                 onChange={(v: string | null) => {
                   if (v != null) {onApplyTypeScale(Number(v), typeScaleRatio);}
                 }}>
@@ -347,7 +431,8 @@ export function EditorSections({
               <XDSNumberInput
                 label="Type size"
                 isLabelHidden
-                value={typeScaleBase}
+                value={typeSizeMatch ?? null}
+                placeholder="—"
                 onChange={(v: number) => onApplyTypeScale(v, typeScaleRatio)}
                 min={10}
                 max={24}
@@ -369,7 +454,7 @@ export function EditorSections({
                 Corner Radius
               </XDSText>
               <XDSTooltip
-                content={`Linear scale: inner = ${radiusBase}px, element = ${radiusBase * 2}px, container = ${radiusBase * 3}px, page = ${Math.round(radiusBase * 7)}px.`}>
+                content={`Linear scale: inner = ${radiusMatch ?? radiusBase}px, element = ${(radiusMatch ?? radiusBase) * 2}px, container = ${(radiusMatch ?? radiusBase) * 3}px, page = ${Math.round((radiusMatch ?? radiusBase) * 7)}px.`}>
                 <XDSIcon icon="info" size="sm" color="secondary" />
               </XDSTooltip>
             </XDSHStack>
@@ -378,7 +463,7 @@ export function EditorSections({
                 label="Radius preset"
                 type="single"
                 size="sm"
-                value={String(radiusBase)}
+                value={radiusMatch != null ? String(radiusMatch) : null}
                 onChange={(v: string | null) => {
                   if (v != null) {onApplyRadiusScale(Number(v));}
                 }}>
@@ -391,7 +476,8 @@ export function EditorSections({
               <XDSNumberInput
                 label="Radius"
                 isLabelHidden
-                value={radiusBase}
+                value={radiusMatch ?? null}
+                placeholder="—"
                 onChange={(v: number) => onApplyRadiusScale(v)}
                 min={0}
                 max={18}
@@ -407,7 +493,7 @@ export function EditorSections({
                 Spacing
               </XDSText>
               <XDSTooltip
-                content={`Linear scale: step N = ${spacingBase}px × N.`}>
+                content={`Linear scale: step N = ${spacingMatch ?? spacingBase}px × N.`}>
                 <XDSIcon icon="info" size="sm" color="secondary" />
               </XDSTooltip>
             </XDSHStack>
@@ -416,7 +502,7 @@ export function EditorSections({
                 label="Spacing preset"
                 type="single"
                 size="sm"
-                value={String(spacingBase)}
+                value={spacingMatch != null ? String(spacingMatch) : null}
                 onChange={(v: string | null) => {
                   if (v != null) {onApplySpacingScale(Number(v));}
                 }}>
@@ -429,7 +515,8 @@ export function EditorSections({
               <XDSNumberInput
                 label="Spacing"
                 isLabelHidden
-                value={spacingBase}
+                value={spacingMatch ?? null}
+                placeholder="—"
                 onChange={(v: number) => onApplySpacingScale(v)}
                 min={0}
                 max={16}
@@ -445,7 +532,7 @@ export function EditorSections({
                 Element Size
               </XDSText>
               <XDSTooltip
-                content={`sm = ${sizeBase - 4}px, md = ${sizeBase}px, lg = ${sizeBase + 4}px.`}>
+                content={`sm = ${(sizeMatch ?? sizeBase) - 4}px, md = ${sizeMatch ?? sizeBase}px, lg = ${(sizeMatch ?? sizeBase) + 4}px.`}>
                 <XDSIcon icon="info" size="sm" color="secondary" />
               </XDSTooltip>
             </XDSHStack>
@@ -454,7 +541,7 @@ export function EditorSections({
                 label="Element size preset"
                 type="single"
                 size="sm"
-                value={String(sizeBase)}
+                value={sizeMatch != null ? String(sizeMatch) : null}
                 onChange={(v: string | null) => {
                   if (v != null) {onApplySizeScale(Number(v));}
                 }}>
@@ -467,7 +554,8 @@ export function EditorSections({
               <XDSNumberInput
                 label="Element size"
                 isLabelHidden
-                value={sizeBase}
+                value={sizeMatch ?? null}
+                placeholder="—"
                 onChange={(v: number) => onApplySizeScale(v)}
                 min={24}
                 max={56}

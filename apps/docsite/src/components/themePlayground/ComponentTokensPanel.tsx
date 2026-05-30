@@ -13,6 +13,7 @@ import {XDSDivider} from '@xds/core/Divider';
 import {
   COMPONENT_VARS,
   ALL_COMPONENT_NAMES,
+  COMPONENT_VAR_TO_OVERRIDE,
   resolveOptionLabel,
 } from './constants';
 
@@ -21,7 +22,34 @@ const styles = stylex.create({
 });
 
 // Width of the value control column in each component-token row.
-const CONTROL_WIDTH = 240;
+const CONTROL_WIDTH = 180;
+
+/**
+ * Read the value a seeded theme set for a component-token control, by reverse-
+ * mapping the playground var (e.g. `--card-radius`) through
+ * COMPONENT_VAR_TO_OVERRIDE to the component + CSS property it controls, then
+ * looking it up in the theme's `base` overrides. Lets the controls reflect the
+ * selected theme instead of always showing the generic default.
+ */
+function readSeededValue(
+  baseComponents: Record<string, unknown>,
+  varName: string,
+): string | undefined {
+  const mapping = COMPONENT_VAR_TO_OVERRIDE[varName]?.[0];
+  if (!mapping) {
+    return undefined;
+  }
+  const comp = baseComponents[mapping.component];
+  if (!comp || typeof comp !== 'object') {
+    return undefined;
+  }
+  const base = (comp as Record<string, unknown>).base;
+  if (!base || typeof base !== 'object') {
+    return undefined;
+  }
+  const value = (base as Record<string, unknown>)[mapping.cssProperty];
+  return typeof value === 'string' ? value : undefined;
+}
 
 export interface CustomOverride {
   id: string;
@@ -35,6 +63,8 @@ interface ComponentTokensPanelProps {
   onTokenChange: (name: string, value: string) => void;
   customOverrides: CustomOverride[];
   onCustomOverridesChange: (overrides: CustomOverride[]) => void;
+  /** Component overrides from the seeded preset theme (theme.components). */
+  baseComponents: Record<string, unknown>;
 }
 
 export function ComponentTokensPanel({
@@ -42,6 +72,7 @@ export function ComponentTokensPanel({
   onTokenChange,
   customOverrides,
   onCustomOverridesChange,
+  baseComponents,
 }: ComponentTokensPanelProps) {
   const [customVars, setCustomVars] = React.useState<Set<string>>(new Set());
   const [newComponent, setNewComponent] = React.useState('button');
@@ -99,7 +130,10 @@ export function ComponentTokensPanel({
           <XDSHeading level={4}>{comp.label}</XDSHeading>
           <XDSVStack gap={1}>
             {comp.vars.map(v => {
-              const currentValue = tokens[v.name] || '';
+              // Prefer an explicit token edit; otherwise fall back to the
+              // value the seeded theme set for this control (if any).
+              const currentValue =
+                tokens[v.name] || readSeededValue(baseComponents, v.name) || '';
               const isCustom = customVars.has(v.name);
               const isPresetValue =
                 !isCustom &&

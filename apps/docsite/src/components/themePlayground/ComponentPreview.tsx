@@ -112,7 +112,9 @@ export function ComponentPreview() {
 
   useEffect(() => {
     const el = containerRef.current;
-    if (!el) {return;}
+    if (!el) {
+      return;
+    }
     const observer = new ResizeObserver(([entry]) => {
       const w = entry.contentRect.width;
       setColumns(w < 800 ? 1 : w < 1100 ? 2 : 3);
@@ -400,7 +402,7 @@ export function ComponentPreview() {
                   <XDSVStack gap={1}>
                     <XDSHeading level={3}>Advisor Chat</XDSHeading>
                     <XDSHStack gap={2} vAlign="center">
-                      <XDSStatusDot variant="positive" label="Online" />
+                      <XDSStatusDot variant="success" label="Online" />
                       <XDSText type="supporting" color="secondary">
                         Sarah is available
                       </XDSText>
@@ -631,7 +633,7 @@ export function ComponentPreview() {
                     {
                       name: 'Alice Chen',
                       role: 'Engineering Lead',
-                      status: 'positive' as const,
+                      status: 'success' as const,
                     },
                     {
                       name: 'Bob Martinez',
@@ -641,7 +643,7 @@ export function ComponentPreview() {
                     {
                       name: 'Carol Wu',
                       role: 'Backend Engineer',
-                      status: 'negative' as const,
+                      status: 'error' as const,
                     },
                   ].map(member => (
                     <XDSHStack

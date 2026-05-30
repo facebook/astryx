@@ -65,7 +65,7 @@ export const docs = {
           default: "'nowrap'",
         },
         {
-          name: 'element',
+          name: 'as',
           type: 'ElementType',
           description: 'HTML element to render as the stack container.',
           default: "'div'",
@@ -132,7 +132,7 @@ export const docs = {
           default: "'nowrap'",
         },
         {
-          name: 'element',
+          name: 'as',
           type: 'ElementType',
           description: 'HTML element to render as the stack container.',
           default: "'div'",
@@ -164,7 +164,7 @@ export const docs = {
             'Override the cross-axis alignment for this individual item, ignoring the parent stack alignment.',
         },
         {
-          name: 'element',
+          name: 'as',
           type: 'ElementType',
           description: 'HTML element to render as the item wrapper.',
           default: "'div'",
@@ -250,7 +250,7 @@ export const docsZh = {
           default: "'nowrap'",
         },
         {
-          name: 'element',
+          name: 'as',
           type: 'ElementType',
           description: '作为堆叠容器渲染的 HTML 元素。',
           default: "'div'",
@@ -318,7 +318,7 @@ export const docsZh = {
           default: "'nowrap'",
         },
         {
-          name: 'element',
+          name: 'as',
           type: 'ElementType',
           description: '作为堆叠容器渲染的 HTML 元素。',
           default: "'div'",
@@ -350,7 +350,7 @@ export const docsZh = {
             '覆盖此元素的交叉轴对齐方式，忽略父堆叠的对齐设置。',
         },
         {
-          name: 'element',
+          name: 'as',
           type: 'ElementType',
           description: '作为子元素包装器渲染的 HTML 元素。',
           default: "'div'",
@@ -400,7 +400,7 @@ export const docsDense = {
         justify: 'Main-axis alignment alias for hAlign. Mirrors CSS justify-content.',
         align: 'Cross-axis alignment alias for vAlign. Mirrors CSS align-items.',
         wrap: 'Flex wrap behavior.',
-        element: 'HTML element to render as container.',
+        as: 'HTML element to render as container.',
         children: 'Stack content.',
         xstyle: 'StyleX layout styles; must be stylex.create() value.',
       },
@@ -418,7 +418,7 @@ export const docsDense = {
         justify: 'Main-axis alignment alias for vAlign. Mirrors CSS justify-content.',
         align: 'Cross-axis alignment alias for hAlign. Mirrors CSS align-items.',
         wrap: 'Flex wrap behavior.',
-        element: 'HTML element to render as container.',
+        as: 'HTML element to render as container.',
         children: 'Stack content.',
       },
     },
@@ -429,7 +429,7 @@ export const docsDense = {
       propDescriptions: {
         size: 'Flex grow: static=natural size, fill=expand to remaining space.',
         crossAlignSelf: 'Override cross-axis alignment for this item, ignoring parent.',
-        element: 'HTML element to render as wrapper.',
+        as: 'HTML element to render as wrapper.',
         children: 'Item content.',
       },
     },
