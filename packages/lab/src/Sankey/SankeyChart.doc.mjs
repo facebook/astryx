@@ -7,6 +7,7 @@ export const docs = {
   displayName: 'Sankey Chart',
   group: 'Sankey',
   category: 'Data Visualization',
+  isHiddenFromOverview: true,
 
   props: [],
 };

@@ -7,6 +7,7 @@ export const docs = {
   displayName: 'Chart Heatmap GL',
   group: 'Chart',
   category: 'Data Visualization',
+  isHiddenFromOverview: true,
 
   props: [],
 };

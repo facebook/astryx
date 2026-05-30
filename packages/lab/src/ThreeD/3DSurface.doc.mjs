@@ -7,6 +7,7 @@ export const docs = {
   displayName: '3D Surface',
   group: 'ThreeD',
   category: 'Data Visualization',
+  isHiddenFromOverview: true,
 
   props: [],
 };

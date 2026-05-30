@@ -7,6 +7,7 @@ export const docs = {
   displayName: 'Chat Reasoning',
   group: 'Chat',
   category: 'Chat',
+  isHiddenFromOverview: true,
 
   props: [],
 };

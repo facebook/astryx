@@ -7,6 +7,7 @@ export const docs = {
   displayName: 'Code Editor',
   group: 'CodeEditor',
   category: 'Data Input',
+  isHiddenFromOverview: true,
 
   props: [],
 };
