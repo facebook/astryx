@@ -20,6 +20,7 @@ interface PackageHeadingProps {
   description?: string;
   version?: string;
   installSteps?: InstallStep[];
+  cta?: {label: string; href: string};
 }
 
 export function PackageHeading({
@@ -27,6 +28,7 @@ export function PackageHeading({
   description,
   version,
   installSteps,
+  cta,
 }: PackageHeadingProps) {
   const steps = installSteps ?? [
     {label: 'Install the package', code: `npm install ${packageName}`},
@@ -46,28 +48,33 @@ export function PackageHeading({
       )}
       <XDSHStack vAlign="center" hAlign="between">
         <XDSText type="display-1">{packageName}</XDSText>
-        <XDSPopover
-          width={360}
-          content={
-            <XDSVStack gap={3}>
-              {steps.map((step, i) => (
-                <XDSVStack key={i} gap={1}>
-                  <XDSText type="body" weight="bold">
-                    {i + 1}. {step.label}
-                  </XDSText>
-                  <XDSCard padding={0}>
-                    <XDSCodeBlock
-                      code={step.code}
-                      language={step.language ?? 'bash'}
-                      hasCopyButton
-                    />
-                  </XDSCard>
-                </XDSVStack>
-              ))}
-            </XDSVStack>
-          }>
-          <XDSButton label="Install" variant="primary" />
-        </XDSPopover>
+        <XDSHStack gap={2}>
+          {cta && (
+            <XDSButton label={cta.label} href={cta.href} variant="secondary" />
+          )}
+          <XDSPopover
+            width={360}
+            content={
+              <XDSVStack gap={3}>
+                {steps.map((step, i) => (
+                  <XDSVStack key={i} gap={1}>
+                    <XDSText type="body" weight="bold">
+                      {i + 1}. {step.label}
+                    </XDSText>
+                    <XDSCard padding={0}>
+                      <XDSCodeBlock
+                        code={step.code}
+                        language={step.language ?? 'bash'}
+                        hasCopyButton
+                      />
+                    </XDSCard>
+                  </XDSVStack>
+                ))}
+              </XDSVStack>
+            }>
+            <XDSButton label="Install" variant="primary" />
+          </XDSPopover>
+        </XDSHStack>
       </XDSHStack>
       {description && (
         <XDSText type="body" color="secondary">
