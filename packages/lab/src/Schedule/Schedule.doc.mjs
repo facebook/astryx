@@ -8,5 +8,9 @@ export const docs = {
   group: 'Schedule',
   category: 'Data Input',
 
+  usage: {
+    description: '',
+  },
+
   props: [],
 };

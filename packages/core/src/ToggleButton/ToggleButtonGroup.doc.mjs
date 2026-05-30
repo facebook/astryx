@@ -8,5 +8,9 @@ export const docs = {
   group: 'Button',
   category: 'Action',
 
+  usage: {
+    description: '',
+  },
+
   props: [],
 };

@@ -8,5 +8,9 @@ export const docs = {
   group: 'ThreeD',
   category: 'Data Visualization',
 
+  usage: {
+    description: '',
+  },
+
   props: [],
 };

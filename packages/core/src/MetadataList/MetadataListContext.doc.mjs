@@ -9,5 +9,9 @@ export const docs = {
   category: 'Table & List',
   isHiddenFromOverview: true,
 
+  usage: {
+    description: '',
+  },
+
   props: [],
 };

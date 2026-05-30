@@ -8,5 +8,9 @@ export const docs = {
   group: 'Radial',
   category: 'Data Visualization',
 
+  usage: {
+    description: '',
+  },
+
   props: [],
 };

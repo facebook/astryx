@@ -418,23 +418,31 @@ interface BaseDoc {
    *  component's functional role in a UI.
    *
    *  Valid values:
-   *  - `'Actions'` — interactive components like buttons and links
-   *  - `'Communications'` — informational display: tooltips, toasts, badges
-   *  - `'Containers'` — wrappers: cards, dialogs, collapsibles
-   *  - `'Layout'` — structural: grid, stack, center, dividers
-   *  - `'Inputs'` — data entry: text fields, selectors, date pickers
-   *  - `'Lists'` — data display in list/table form
+   *  - `'Action'` — interactive triggers: buttons, links, toggles, menus
+   *  - `'Chat'` — conversational UI: messages, composers, layouts
+   *  - `'Container'` — wrappers: cards, carousels, collapsibles
+   *  - `'Content'` — display: text, icons, avatars, code blocks
+   *  - `'Data Input'` — data entry: text fields, selectors, date pickers
+   *  - `'Data Visualization'` — charts, graphs, 3D visualizations
+   *  - `'Feedback & Status'` — progress indication: spinners, banners, badges
+   *  - `'Layout'` — structural: grid, stack, dividers, app shell
    *  - `'Navigation'` — wayfinding: tabs, breadcrumbs, sidebars
-   *  - `'Performance'` — progress indication: spinners, skeletons, bars */
+   *  - `'Overlay'` — layered UI: dialogs, popovers, tooltips
+   *  - `'Table & List'` — tabular and list data display
+   *  - `'Utility'` — providers and context: themes, link providers */
   category?:
-    | 'Actions'
-    | 'Communications'
-    | 'Containers'
+    | 'Action'
+    | 'Chat'
+    | 'Container'
+    | 'Content'
+    | 'Data Input'
+    | 'Data Visualization'
+    | 'Feedback & Status'
     | 'Layout'
-    | 'Inputs'
-    | 'Lists'
     | 'Navigation'
-    | 'Performance';
+    | 'Overlay'
+    | 'Table & List'
+    | 'Utility';
   /** When true, this component is excluded from the categorized overview
    *  page but remains in the sidebar and CLI. Use for sub-components that
    *  only make sense within a parent (e.g. BreadcrumbItem, DialogHeader)

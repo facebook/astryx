@@ -9,5 +9,9 @@ export const docs = {
   category: 'Data Input',
   isHiddenFromOverview: true,
 
+  usage: {
+    description: '',
+  },
+
   props: [],
 };

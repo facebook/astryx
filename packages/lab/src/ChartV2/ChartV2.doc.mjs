@@ -8,5 +8,9 @@ export const docs = {
   group: 'ChartV2',
   category: 'Data Visualization',
 
+  usage: {
+    description: '',
+  },
+
   props: [],
 };

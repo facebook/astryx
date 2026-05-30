@@ -8,5 +8,9 @@ export const docs = {
   group: 'Typeahead',
   category: 'Data Input',
 
+  usage: {
+    description: '',
+  },
+
   props: [],
 };

@@ -9,5 +9,9 @@ export const docs = {
   category: 'Layout',
   isHiddenFromOverview: true,
 
+  usage: {
+    description: '',
+  },
+
   props: [],
 };

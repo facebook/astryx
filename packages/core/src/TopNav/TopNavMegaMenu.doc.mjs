@@ -8,5 +8,9 @@ export const docs = {
   group: 'TopNav',
   category: 'Navigation',
 
+  usage: {
+    description: '',
+  },
+
   props: [],
 };

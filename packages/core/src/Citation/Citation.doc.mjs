@@ -8,5 +8,9 @@ export const docs = {
   group: 'Citation',
   category: 'Content',
 
+  usage: {
+    description: '',
+  },
+
   props: [],
 };

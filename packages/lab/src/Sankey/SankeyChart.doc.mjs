@@ -8,5 +8,9 @@ export const docs = {
   group: 'Sankey',
   category: 'Data Visualization',
 
+  usage: {
+    description: '',
+  },
+
   props: [],
 };

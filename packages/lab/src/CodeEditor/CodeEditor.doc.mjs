@@ -8,5 +8,9 @@ export const docs = {
   group: 'CodeEditor',
   category: 'Data Input',
 
+  usage: {
+    description: '',
+  },
+
   props: [],
 };

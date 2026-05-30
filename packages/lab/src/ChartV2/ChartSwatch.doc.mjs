@@ -9,5 +9,9 @@ export const docs = {
   category: 'Data Visualization',
   isHiddenFromOverview: true,
 
+  usage: {
+    description: '',
+  },
+
   props: [],
 };

@@ -8,5 +8,9 @@ export const docs = {
   group: 'CodeBlock',
   category: 'Content',
 
+  usage: {
+    description: '',
+  },
+
   props: [],
 };

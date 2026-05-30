@@ -8,5 +8,9 @@ export const docs = {
   group: 'Chat',
   category: 'Chat',
 
+  usage: {
+    description: '',
+  },
+
   props: [],
 };

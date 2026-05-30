@@ -8,5 +8,9 @@ export const docs = {
   group: 'Overlay',
   category: 'Overlay',
 
+  usage: {
+    description: '',
+  },
+
   props: [],
 };

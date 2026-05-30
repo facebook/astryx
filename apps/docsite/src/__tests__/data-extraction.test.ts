@@ -165,20 +165,25 @@ describe('componentRegistry', () => {
 
   it('Chat has many sub-components (standalone docs take priority over compound entries)', () => {
     const core = components['@xds/core'];
-    // Chat compound doc has 14 sub-components, but ChatToolCalls has its own
-    // standalone doc so it appears with parentDoc: null instead of parentDoc: 'Chat'
+    // Chat compound doc has 14 sub-components, but several have their own
+    // standalone docs so they appear with parentDoc: null instead of parentDoc: 'Chat'
     const chatSubs = core.filter(c => c.parentDoc === 'Chat');
-    expect(chatSubs.length).toBeGreaterThanOrEqual(12);
+    expect(chatSubs.length).toBeGreaterThanOrEqual(6);
     const chatNames = chatSubs.map(c => c.name);
-    expect(chatNames).toContain('ChatMessage');
-    expect(chatNames).toContain('ChatComposer');
     expect(chatNames).toContain('ChatSendButton');
 
-    // ChatToolCalls should exist but as a standalone entry
+    // Components with standalone docs should exist as standalone entries
     const toolCalls = core.find(c => c.name === 'ChatToolCalls');
     expect(toolCalls).toBeDefined();
-    // It's standalone (has its own doc.mjs), not a sub-component
     expect(toolCalls!.parentDoc).toBeNull();
+
+    const chatComposer = core.find(c => c.name === 'ChatComposer');
+    expect(chatComposer).toBeDefined();
+    expect(chatComposer!.parentDoc).toBeNull();
+
+    const chatMessage = core.find(c => c.name === 'ChatMessage');
+    expect(chatMessage).toBeDefined();
+    expect(chatMessage!.parentDoc).toBeNull();
   });
 
   it('simple components have null parentDoc', () => {

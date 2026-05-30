@@ -9,5 +9,9 @@ export const docs = {
   category: 'Chat',
   isHiddenFromOverview: true,
 
+  usage: {
+    description: '',
+  },
+
   props: [],
 };

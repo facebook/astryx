@@ -8,5 +8,9 @@ export const docs = {
   group: 'Resizable',
   category: 'Layout',
 
+  usage: {
+    description: '',
+  },
+
   props: [],
 };
