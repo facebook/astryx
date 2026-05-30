@@ -103,7 +103,6 @@ export function DocsShell({
 
   // Classify packages
   const isTheme = (p: PackageMeta) => p.name.includes('theme-');
-  const themePackages = packages.filter(isTheme);
   const libraryPackages = packages.filter(p => !isTheme(p));
 
   // Classify doc topics by category (from data)
@@ -114,19 +113,6 @@ export function DocsShell({
     .filter(d => d.category === 'foundations')
     .sort(foundationsSort);
 
-  // Active state detection. Foundations is its own top-level sidebar
-  // section (split from Guide on main), so isInGuide no longer counts
-  // foundation topics.
-  const isInGuide = guideTopics.some(d => pathname === `/docs/${d.topic}`);
-  const isInFoundations = foundationTopics.some(
-    d => pathname === `/docs/${d.topic}`,
-  );
-  const isInLibraries = libraryPackages.some(
-    p => pathname === `/packages/${p.name.replace('@xds/', '')}`,
-  );
-  const isInThemes = themePackages.some(
-    p => pathname === `/packages/${p.name.replace('@xds/', '')}`,
-  );
   // True for the /components index AND every /components/[name] detail page.
   // On these routes we hide every non-Components section so the sidebar is
   // focused on the component library — the top nav handles cross-area
@@ -165,7 +151,7 @@ export function DocsShell({
               <XDSSideNavSection title="Guide" isHeaderHidden>
                 <XDSSideNavItem
                   label="Guide"
-                  collapsible={{defaultIsCollapsed: !isInGuide}}>
+                  collapsible={{defaultIsCollapsed: false}}>
                   {guideTopics.map(d => (
                     <XDSSideNavItem
                       key={d.topic}
@@ -181,7 +167,7 @@ export function DocsShell({
               <XDSSideNavSection title="Foundations" isHeaderHidden>
                 <XDSSideNavItem
                   label="Foundations"
-                  collapsible={{defaultIsCollapsed: !isInFoundations}}>
+                  collapsible={{defaultIsCollapsed: false}}>
                   {foundationTopics.map(d => (
                     <XDSSideNavItem
                       key={d.topic}
@@ -197,29 +183,11 @@ export function DocsShell({
               <XDSSideNavSection title="Libraries" isHeaderHidden>
                 <XDSSideNavItem
                   label="Libraries"
-                  collapsible={{defaultIsCollapsed: !isInLibraries}}>
+                  collapsible={{defaultIsCollapsed: false}}>
                   {libraryPackages.map(p => (
                     <XDSSideNavItem
                       key={p.name}
                       label={p.name}
-                      href={`/packages/${p.name.replace('@xds/', '')}`}
-                      isSelected={
-                        pathname === `/packages/${p.name.replace('@xds/', '')}`
-                      }
-                    />
-                  ))}
-                </XDSSideNavItem>
-              </XDSSideNavSection>
-
-              {/* Themes */}
-              <XDSSideNavSection title="Themes" isHeaderHidden>
-                <XDSSideNavItem
-                  label="Themes"
-                  collapsible={{defaultIsCollapsed: !isInThemes}}>
-                  {themePackages.map(p => (
-                    <XDSSideNavItem
-                      key={p.name}
-                      label={p.displayName}
                       href={`/packages/${p.name.replace('@xds/', '')}`}
                       isSelected={
                         pathname === `/packages/${p.name.replace('@xds/', '')}`
