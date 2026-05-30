@@ -5,7 +5,7 @@
 export const docs = {
   name: 'Timestamp',
   displayName: 'Timestamp',
-  category: 'Communications',
+  category: 'Content',
   keywords: ['date', 'time', 'datetime', 'relative', 'ago', 'clock', 'format', 'duration'],
   props: [
     {

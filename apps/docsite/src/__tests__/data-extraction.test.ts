@@ -165,8 +165,9 @@ describe('componentRegistry', () => {
 
   it('Chat has many sub-components (standalone docs take priority over compound entries)', () => {
     const core = components['@xds/core'];
-    // Chat compound doc has 14 sub-components, but ChatToolCalls has its own
-    // standalone doc so it appears with parentDoc: null instead of parentDoc: 'Chat'
+    // Chat compound doc has 14 sub-components, but ChatToolCalls and
+    // ChatDictationButton have their own standalone docs so they appear
+    // with parentDoc: null instead of parentDoc: 'Chat'
     const chatSubs = core.filter(c => c.parentDoc === 'Chat');
     expect(chatSubs.length).toBeGreaterThanOrEqual(12);
     const chatNames = chatSubs.map(c => c.name);

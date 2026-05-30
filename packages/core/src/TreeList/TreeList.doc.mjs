@@ -6,7 +6,7 @@ export const docs = {
   name: 'TreeList',
   displayName: 'Tree List',
   group: 'TreeList',
-  category: 'Lists',
+  category: 'Table & List',
   keywords: ['tree', 'hierarchy', 'nested', 'accordion', 'folder', 'expand', 'collapse', 'treeview', 'outline'],
   playground: {
     defaults: {

@@ -6,7 +6,7 @@ export const docs = {
   name: 'MetadataList',
   displayName: 'Metadata List',
   group: 'MetadataList',
-  category: 'Lists',
+  category: 'Table & List',
   keywords: ["metadata","description","definition","keyvalue","properties","details","attributes","summary"],
   theming: {
     targets: [
@@ -71,6 +71,7 @@ export const docs = {
     },
     {
       name: 'XDSMetadataListItem',
+      isHiddenFromOverview: true,
       displayName: 'Metadata List Item',
       description: 'A single labeled metadata value within an XDSMetadataList.',
       props: [
@@ -132,6 +133,7 @@ export const docsZh = {
     },
     {
       name: 'XDSMetadataListItem',
+      isHiddenFromOverview: true,
       displayName: 'Metadata List Item',
       description: 'XDSMetadataList 中的单个带标签元数据值。',
       propDescriptions: {
@@ -195,6 +197,7 @@ export const docsDense = {
     },
     {
       name: 'XDSMetadataListItem',
+      isHiddenFromOverview: true,
       displayName: 'Metadata List Item',
       description: 'single labeled value in XDSMetadataList',
       propDescriptions: {

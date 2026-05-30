@@ -6,6 +6,7 @@ export const docs = {
   name: 'LinkProvider',
   displayName: 'Link Provider',
   group: 'Utilities',
+  category: 'Utility',
   isHiddenFromOverview: true,
   keywords: ['link', 'provider', 'router', 'nextjs', 'client-side-routing'],
   usage: {

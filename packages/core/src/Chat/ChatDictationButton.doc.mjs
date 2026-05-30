@@ -6,7 +6,7 @@ export const docs = {
   name: 'ChatDictationButton',
   displayName: 'Chat Dictation Button',
   group: 'Chat',
-  category: 'Communications',
+  category: 'Chat',
   isHiddenFromOverview: true,
   hidden: false,
 
