@@ -6,7 +6,7 @@ export const docs = {
   name: 'MetadataList',
   displayName: 'Metadata List',
   group: 'MetadataList',
-  category: 'Lists',
+  category: 'Table & List',
   keywords: ["metadata","description","definition","keyvalue","properties","details","attributes","summary"],
   theming: {
     targets: [

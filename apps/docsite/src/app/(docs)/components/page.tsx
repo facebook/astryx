@@ -24,14 +24,18 @@ import {ShowcaseThumbnail} from '../../../components/ShowcaseThumbnail';
  * Sourced from component .doc.mjs `category` fields.
  */
 const CATEGORIES = [
-  'Actions',
-  'Communications',
-  'Containers',
+  'Action',
+  'Chat',
+  'Container',
+  'Content',
+  'Data Input',
+  'Data Visualization',
+  'Feedback & Status',
   'Layout',
-  'Inputs',
-  'Lists',
   'Navigation',
-  'Performance',
+  'Overlay',
+  'Table & List',
+  'Utility',
 ] as const;
 
 /** Map of showcase blocks by component name for thumbnails */

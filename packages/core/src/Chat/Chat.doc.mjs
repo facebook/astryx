@@ -6,7 +6,7 @@ export const docs = {
   name: 'Chat',
   displayName: 'Chat',
   group: 'Chat',
-  category: 'Communications',
+  category: 'Chat',
   keywords: ['chat', 'message', 'bubble', 'conversation', 'ai', 'assistant', 'thread', 'system-message', 'composer', 'mention', 'trigger', 'typeahead', 'token', 'imperative', 'tokenized-text'],
   theming: {
     targets: [
@@ -38,6 +38,12 @@ export const docs = {
     ],
   },
   components: [
+    {
+      name: 'XDSChat',
+      displayName: 'Chat',
+      description: 'Complete chat interface composed from message list, composer, and layout primitives.',
+      props: [],
+    },
     {
       name: 'XDSChatMessageList',
       displayName: 'Chat Message List',

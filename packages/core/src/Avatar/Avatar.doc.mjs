@@ -6,7 +6,7 @@ export const docs = {
   name: 'Avatar',
   displayName: 'Avatar',
   group: 'Avatar',
-  category: 'Communications',
+  category: 'Content',
   keywords: ["avatar","profile","user","photo","thumbnail","initials","gravatar","pfp","userpic"],
   usage: {
     description:

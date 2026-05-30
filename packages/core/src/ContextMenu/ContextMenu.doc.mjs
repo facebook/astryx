@@ -5,7 +5,8 @@ export const docs = {
   name: 'ContextMenu',
   displayName: 'Context Menu',
   group: 'ContextMenu',
-  category: 'Actions',
+  category: 'Action',
+  isHiddenFromOverview: true,
   keywords: ["contextmenu","right-click","menu","popover","actions","context"],
   theming: {
     targets: [

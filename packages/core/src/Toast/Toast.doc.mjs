@@ -6,7 +6,8 @@ export const docs = {
   name: 'Toast',
   displayName: 'Toast',
   group: 'Toast',
-  category: 'Communications',
+  category: 'Overlay',
+  isHiddenFromOverview: true,
   hiddenComponents: ['ToastViewport'],
   keywords: ["toast","notification","snackbar","alert","message","feedback","status"],
 

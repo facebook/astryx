@@ -6,7 +6,8 @@ export const docs = {
   name: 'InputGroup',
   displayName: 'Input Group',
   group: 'Field',
-  category: 'Inputs',
+  category: 'Data Input',
+  isHiddenFromOverview: true,
   keywords: ["inputgroup","addon","prefix","suffix","connected","grouped","input"],
   theming: {
     targets: [

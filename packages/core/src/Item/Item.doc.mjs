@@ -6,7 +6,8 @@ export const docs = {
   name: 'Item',
   displayName: 'Item',
   group: 'Item',
-  category: 'Lists',
+  category: 'Table & List',
+  isHiddenFromOverview: true,
   keywords: ["item","list-item","media-object","row","cell","entity","contact","notification","preview"],
   playground: {
     defaults: {

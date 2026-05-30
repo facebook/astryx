@@ -5,7 +5,8 @@ export const docs = {
   name: 'AvatarGroup',
   displayName: 'Avatar Group',
   group: 'Avatar',
-  category: 'Communications',
+  category: 'Content',
+  isHiddenFromOverview: true,
   keywords: ['avatar', 'group', 'facepile', 'stack', 'overlap', 'participants', 'assignees', 'members', 'team'],
   usage: {
     description:

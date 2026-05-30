@@ -16,6 +16,12 @@ export const docs = {
   },
   components: [
     {
+      name: 'XDSStack',
+      displayName: 'Stack',
+      description: 'Flexible stack layout component for arranging elements with consistent spacing.',
+      props: [],
+    },
+    {
       name: 'XDSHStack',
       displayName: 'XDSH Stack',
       description:

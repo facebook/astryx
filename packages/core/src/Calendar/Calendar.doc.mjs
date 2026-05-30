@@ -5,7 +5,7 @@
 export const docs = {
   name: 'Calendar',
   displayName: 'Calendar',
-  category: 'Inputs',
+  category: 'Data Input',
   keywords: ["calendar","datepicker","date picker","rangepicker","date range","monthview","daypicker"],
   usage: {
     description:

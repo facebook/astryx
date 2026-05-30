@@ -6,7 +6,7 @@ export const docs = {
   name: 'SegmentedControl',
   displayName: 'Segmented Control',
   group: 'SegmentedControl',
-  category: 'Inputs',
+  category: 'Action',
   keywords: ['radio', 'tabs', 'toggle', 'toggle-group', 'pill', 'button-group', 'switch', 'segment', 'control'],
   playground: {
     defaults: {

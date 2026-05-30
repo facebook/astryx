@@ -6,7 +6,7 @@ export const docs = {
   name: 'List',
   displayName: 'List',
   group: 'List',
-  category: 'Lists',
+  category: 'Table & List',
   keywords: ["list","listitem","listbox","menu","collection","items","ul","navlist"],
   theming: {
     targets: [

@@ -6,7 +6,7 @@ export const docs = {
   name: 'Table',
   displayName: 'Table',
   group: 'Table',
-  category: 'Lists',
+  category: 'Table & List',
   keywords: ["table","datatable","datagrid","spreadsheet","sorting","virtualized","columns","rows","selection","pinning"],
   playground: {
     defaults: {

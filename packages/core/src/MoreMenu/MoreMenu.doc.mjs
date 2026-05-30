@@ -5,7 +5,7 @@
 export const docs = {
   name: 'MoreMenu',
   displayName: 'More Menu',
-  category: 'Actions',
+  category: 'Action',
   keywords: ["moremenu","overflow","kebab","dotmenu","threedot","ellipsis","dropdown","contextmenu","actionmenu"],
   props: [
     {

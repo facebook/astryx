@@ -5,7 +5,8 @@
 export const docs = {
   name: 'Lightbox',
   displayName: 'Lightbox',
-  category: 'Containers',
+  category: 'Overlay',
+  isHiddenFromOverview: true,
   keywords: ["lightbox","image","video","viewer","gallery","zoom","fullscreen","media","photo","preview"],
   props: [
     {

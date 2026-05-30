@@ -5,7 +5,7 @@
 export const docs = {
   name: 'Link',
   displayName: 'Link',
-  category: 'Actions',
+  category: 'Action',
   keywords: ["link","anchor","href","hyperlink","navigation","url","external","textlink"],
   playground: {
     defaults: {

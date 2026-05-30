@@ -5,7 +5,7 @@
 export const docs = {
   name: 'TextArea',
   displayName: 'Text Area',
-  category: 'Inputs',
+  category: 'Data Input',
   keywords: ["textarea","textfield","multiline","comment","message","autoresize","autosize","charlimit"],
   props: [
     {
