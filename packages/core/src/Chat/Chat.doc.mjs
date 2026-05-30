@@ -39,12 +39,6 @@ export const docs = {
   },
   components: [
     {
-      name: 'XDSChat',
-      displayName: 'Chat',
-      description: 'Complete chat interface composed from message list, composer, and layout primitives.',
-      props: [],
-    },
-    {
       name: 'XDSChatMessageList',
       displayName: 'Chat Message List',
       description: 'Presentational message container with density context and infinite scroll support. Provides role="log" with aria-live="polite" for accessibility. A flex spacer pushes messages to the bottom when the list isn\'t full.',

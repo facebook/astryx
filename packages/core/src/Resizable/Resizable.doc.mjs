@@ -52,12 +52,6 @@ export const docs = {
   },
   components: [
     {
-      name: 'XDSResizable',
-      displayName: 'Resizable',
-      description: 'Hook-based resizable panel system for creating adjustable split-pane layouts.',
-      props: [],
-    },
-    {
       name: 'useXDSResizable',
       displayName: 'useXDSResizable',
       description:
