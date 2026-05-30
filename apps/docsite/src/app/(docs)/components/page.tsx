@@ -88,11 +88,7 @@ export default function ComponentsGalleryPage() {
       if (comp.hidden) {
         continue;
       }
-<<<<<<< navi/feat/components-install-button
       // Skip hooks (they appear in the Utilities section)
-=======
-      // Skip hooks
->>>>>>> main
       if (comp.name.startsWith('use')) {
         continue;
       }
@@ -100,13 +96,10 @@ export default function ComponentsGalleryPage() {
       if (!comp.category) {
         continue;
       }
-<<<<<<< navi/feat/components-install-button
       // Skip utilities group
       if (comp.group === 'Utilities') {
         continue;
       }
-=======
->>>>>>> main
 
       items.push({
         name: comp.name,
