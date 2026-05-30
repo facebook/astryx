@@ -251,7 +251,7 @@ export function ThemePackagePage({
                 <XDSButton
                   label="Customize"
                   variant="secondary"
-                  href="/playground"
+                  href={`/themes/playground/${theme.name}`}
                 />
                 <XDSButton
                   label="Install"
