@@ -7,7 +7,6 @@ export const docs = {
   displayName: 'Chart Bar',
   group: 'Chart',
   category: 'Data Visualization',
-  isHiddenFromOverview: true,
 
   props: [],
 };

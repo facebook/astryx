@@ -7,7 +7,6 @@ export const docs = {
   displayName: '3D Scatter',
   group: 'ThreeD',
   category: 'Data Visualization',
-  isHiddenFromOverview: true,
 
   props: [],
 };

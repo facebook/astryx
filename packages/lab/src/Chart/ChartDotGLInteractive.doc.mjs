@@ -7,7 +7,6 @@ export const docs = {
   displayName: 'Chart Dot GL Interactive',
   group: 'Chart',
   category: 'Data Visualization',
-  isHiddenFromOverview: true,
 
   props: [],
 };

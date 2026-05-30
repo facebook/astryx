@@ -7,7 +7,6 @@ export const docs = {
   displayName: 'Chart V2',
   group: 'ChartV2',
   category: 'Data Visualization',
-  isHiddenFromOverview: true,
 
   props: [],
 };

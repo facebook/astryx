@@ -7,7 +7,6 @@ export const docs = {
   displayName: 'Chart Candlestick',
   group: 'Chart',
   category: 'Data Visualization',
-  isHiddenFromOverview: true,
 
   props: [],
 };

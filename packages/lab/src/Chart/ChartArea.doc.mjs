@@ -7,7 +7,6 @@ export const docs = {
   displayName: 'Chart Area',
   group: 'Chart',
   category: 'Data Visualization',
-  isHiddenFromOverview: true,
 
   props: [],
 };

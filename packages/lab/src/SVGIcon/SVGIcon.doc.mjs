@@ -7,7 +7,6 @@ export const docs = {
   displayName: 'SVG Icon',
   group: 'SVGIcon',
   category: 'Content',
-  isHiddenFromOverview: true,
 
   props: [],
 };

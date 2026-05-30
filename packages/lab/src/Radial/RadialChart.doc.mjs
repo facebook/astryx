@@ -7,7 +7,6 @@ export const docs = {
   displayName: 'Radial Chart',
   group: 'Radial',
   category: 'Data Visualization',
-  isHiddenFromOverview: true,
 
   props: [],
 };

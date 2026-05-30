@@ -7,7 +7,6 @@ export const docs = {
   displayName: 'Schedule',
   group: 'Schedule',
   category: 'Data Input',
-  isHiddenFromOverview: true,
 
   props: [],
 };
