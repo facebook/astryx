@@ -71,6 +71,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSLayoutHeader',
+      isHiddenFromOverview: true,
       displayName: 'Layout Header',
       description: 'Top bar for page titles, app bars, and toolbars.',
       props: [
@@ -104,6 +105,7 @@ export const docs = {
     },
     {
       name: 'XDSLayoutContent',
+      isHiddenFromOverview: true,
       displayName: 'Layout Content',
       description: 'Scrollable main content area.',
       props: [
@@ -132,6 +134,7 @@ export const docs = {
     },
     {
       name: 'XDSLayoutFooter',
+      isHiddenFromOverview: true,
       displayName: 'Layout Footer',
       description: 'Bottom bar for action bars, pagination, and status bars.',
       props: [
@@ -165,6 +168,7 @@ export const docs = {
     },
     {
       name: 'XDSLayoutPanel',
+      isHiddenFromOverview: true,
       displayName: 'Layout Panel',
       description: 'Sidebar for navigation, settings, or inspector panels.',
       props: [
@@ -199,6 +203,7 @@ export const docs = {
     },
     {
       name: 'XDSLayoutContainer',
+      isHiddenFromOverview: true,
       displayName: 'Layout Container',
       description:
         'Primitive component that sets CSS variables for padding, used as the base for XDSCard and XDSSection.',
@@ -220,18 +225,21 @@ export const docs = {
     },
     {
       name: 'XDSHStack',
+      isHiddenFromOverview: true,
       displayName: 'H Stack',
       description: 'Horizontal stack that arranges children left-to-right.',
       props: [],
     },
     {
       name: 'XDSVStack',
+      isHiddenFromOverview: true,
       displayName: 'V Stack',
       description: 'Vertical stack that arranges children top-to-bottom.',
       props: [],
     },
     {
       name: 'XDSStackItem',
+      isHiddenFromOverview: true,
       displayName: 'Stack Item',
       description:
         'Stack item with fill and alignment control for use inside XDSHStack or XDSVStack.',
@@ -306,6 +314,7 @@ export const docsZh = {
     },
     {
       name: 'XDSLayoutHeader',
+      isHiddenFromOverview: true,
       displayName: 'Layout Header',
       description: '用于页面标题、应用栏和工具栏的顶部栏。',
       props: [
@@ -339,6 +348,7 @@ export const docsZh = {
     },
     {
       name: 'XDSLayoutContent',
+      isHiddenFromOverview: true,
       displayName: 'Layout Content',
       description: '可滚动的主内容区域。',
       props: [
@@ -367,6 +377,7 @@ export const docsZh = {
     },
     {
       name: 'XDSLayoutFooter',
+      isHiddenFromOverview: true,
       displayName: 'Layout Footer',
       description: '用于操作栏、分页和状态栏的底部栏。',
       props: [
@@ -400,6 +411,7 @@ export const docsZh = {
     },
     {
       name: 'XDSLayoutPanel',
+      isHiddenFromOverview: true,
       displayName: 'Layout Panel',
       description: '用于导航、设置或检查器面板的侧边栏。',
       props: [
@@ -434,6 +446,7 @@ export const docsZh = {
     },
     {
       name: 'XDSLayoutContainer',
+      isHiddenFromOverview: true,
       displayName: 'Layout Container',
       description:
         '设置内边距 CSS 变量的基础组件，作为 XDSCard 和 XDSSection 的基础。',
@@ -455,18 +468,21 @@ export const docsZh = {
     },
     {
       name: 'XDSHStack',
+      isHiddenFromOverview: true,
       displayName: 'H Stack',
       description: '将子元素从左到右排列的水平堆叠。',
       props: [],
     },
     {
       name: 'XDSVStack',
+      isHiddenFromOverview: true,
       displayName: 'V Stack',
       description: '将子元素从上到下排列的垂直堆叠。',
       props: [],
     },
     {
       name: 'XDSStackItem',
+      isHiddenFromOverview: true,
       displayName: 'Stack Item',
       description:
         '用于 XDSHStack 或 XDSVStack 内部的堆叠项，支持填充和对齐控制。',
@@ -516,6 +532,7 @@ export const docsDense = {
     },
     {
       name: 'XDSLayoutHeader',
+      isHiddenFromOverview: true,
       displayName: 'Layout Header',
       description: 'Top bar for page titles, app bars, toolbars.',
       propDescriptions: {
@@ -528,6 +545,7 @@ export const docsDense = {
     },
     {
       name: 'XDSLayoutContent',
+      isHiddenFromOverview: true,
       displayName: 'Layout Content',
       description: 'Scrollable main content area.',
       propDescriptions: {
@@ -539,6 +557,7 @@ export const docsDense = {
     },
     {
       name: 'XDSLayoutFooter',
+      isHiddenFromOverview: true,
       displayName: 'Layout Footer',
       description: 'Bottom bar for action bars, pagination, status bars.',
       propDescriptions: {
@@ -551,6 +570,7 @@ export const docsDense = {
     },
     {
       name: 'XDSLayoutPanel',
+      isHiddenFromOverview: true,
       displayName: 'Layout Panel',
       description: 'Sidebar for navigation, settings, inspector panels.',
       propDescriptions: {
@@ -563,6 +583,7 @@ export const docsDense = {
     },
     {
       name: 'XDSLayoutContainer',
+      isHiddenFromOverview: true,
       displayName: 'Layout Container',
       description:
         'Primitive setting CSS padding vars; base for XDSCard + XDSSection.',
@@ -581,16 +602,19 @@ export const docsDense = {
     },
     {
       name: 'XDSHStack',
+      isHiddenFromOverview: true,
       displayName: 'H Stack',
       description: 'Horizontal stack arranging children left-to-right.',
     },
     {
       name: 'XDSVStack',
+      isHiddenFromOverview: true,
       displayName: 'V Stack',
       description: 'Vertical stack arranging children top-to-bottom.',
     },
     {
       name: 'XDSStackItem',
+      isHiddenFromOverview: true,
       displayName: 'Stack Item',
       description:
         'Stack item w/ fill + alignment control inside XDSHStack or XDSVStack.',

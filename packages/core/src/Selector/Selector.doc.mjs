@@ -119,6 +119,7 @@ export const docs = {
     },
     {
       name: 'XDSSelectorOption',
+      isHiddenFromOverview: true,
       displayName: 'Selector Option',
       description:
         'Helper component for custom item rendering inside an XDSSelector children render prop.',
@@ -280,6 +281,7 @@ export const docsZh = {
     },
     {
       name: 'XDSSelectorOption',
+      isHiddenFromOverview: true,
       displayName: 'Selector Option',
       description:
         '用于在 XDSSelector 的 children 渲染函数中自定义选项渲染的辅助组件。',
@@ -378,6 +380,7 @@ export const docsDense = {
     },
     {
       name: 'XDSSelectorOption',
+      isHiddenFromOverview: true,
       displayName: 'Selector Option',
       description:
         'Helper component for custom item rendering inside XDSSelector children render prop.',

@@ -154,6 +154,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSBaseTypeahead',
+      isHiddenFromOverview: true,
       displayName: 'Base Typeahead',
       description:
         'Unstyled combobox engine providing input, search, keyboard navigation, and dropdown. No wrapper div, no border styling, no token rendering. Used by XDSTypeahead and XDSTokenizer for custom compositions.',
@@ -472,6 +473,7 @@ export const docsZh = {
     },
     {
       name: 'XDSBaseTypeahead',
+      isHiddenFromOverview: true,
       displayName: 'Base Typeahead',
       description:
         '无样式的组合框引擎，提供输入、搜索、键盘导航和下拉列表。无包装 div，无边框样式，无标记渲染。由 XDSTypeahead 和 XDSTokenizer 用于自定义组合。',
@@ -686,6 +688,7 @@ export const docsDense = {
     },
     {
       name: 'XDSBaseTypeahead',
+      isHiddenFromOverview: true,
       displayName: 'Base Typeahead',
       description: 'Unstyled combobox engine; input+search+keyboard nav+dropdown. No wrapper/border/token. Used by XDSTypeahead+XDSTokenizer.',
       propDescriptions: {

@@ -61,6 +61,7 @@ export const docs = {
     },
     {
       name: 'XDSListItem',
+      isHiddenFromOverview: true,
       displayName: 'List Item',
       description:
         'List item with label, description, start/end content slots, and interactive patterns.',
@@ -206,6 +207,7 @@ export const docsZh = {
     },
     {
       name: 'XDSListItem',
+      isHiddenFromOverview: true,
       displayName: 'List Item',
       description:
         '列表项，包含标签、描述、起始/结束内容插槽和交互模式。',
@@ -329,6 +331,7 @@ export const docsDense = {
     },
     {
       name: 'XDSListItem',
+      isHiddenFromOverview: true,
       displayName: 'List Item',
       description:
         'List item w/ label, description, start/end content slots, interactive patterns.',

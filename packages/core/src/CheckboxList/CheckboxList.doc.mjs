@@ -12,6 +12,7 @@ export const docs = {
   components: [
     {
       name: 'XDSCheckboxList',
+      isHiddenFromOverview: true,
       displayName: 'Checkbox List',
       description:
         'Checkbox group container with field integration for label, description, and status.',      props: [
@@ -94,6 +95,7 @@ export const docs = {
     },
     {
       name: 'XDSCheckboxListItem',
+      isHiddenFromOverview: true,
       displayName: 'Checkbox List Item',
       description:
         'Individual checkbox item with label, description, and end content slot. Works in collection mode (inside XDSCheckboxList) or standalone mode (inside XDSList).',
@@ -171,6 +173,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSCheckboxList',
+      isHiddenFromOverview: true,
       displayName: 'Checkbox List',
       description: '复选框组容器，集成字段功能，支持标签、描述和状态。',
       props: [
@@ -191,6 +194,7 @@ export const docsZh = {
     },
     {
       name: 'XDSCheckboxListItem',
+      isHiddenFromOverview: true,
       displayName: 'Checkbox List Item',
       description: '单个复选框选项，包含标签、描述和尾部内容插槽。可在集合模式或独立模式下使用。',
       props: [
@@ -223,6 +227,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSCheckboxList',
+      isHiddenFromOverview: true,
       displayName: 'Checkbox List',
       description:
         'Checkbox group container w/ field integration for label, description, status.',
@@ -244,6 +249,7 @@ export const docsDense = {
     },
     {
       name: 'XDSCheckboxListItem',
+      isHiddenFromOverview: true,
       displayName: 'Checkbox List Item',
       description:
         'Individual checkbox item w/ label, description, end content slot.',

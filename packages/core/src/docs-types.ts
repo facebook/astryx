@@ -199,6 +199,8 @@ export interface ComponentEntry {
   props: PropDoc[];
   /** Short code examples rendered by the CLI after the props table. */
   examples?: ExampleDoc[];
+  /** When true, this sub-component is excluded from the overview page. */
+  isHiddenFromOverview?: boolean;
 }
 
 /**
@@ -552,6 +554,8 @@ export interface TranslationDoc {
     description: string;
     /** Prop descriptions keyed by prop name. */
     propDescriptions?: Record<string, string>;
+    /** When true, this sub-component is excluded from the overview page. */
+    isHiddenFromOverview?: boolean;
   }[];
 }
 

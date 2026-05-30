@@ -17,6 +17,7 @@ export const docs = {
   components: [
     {
       name: 'XDSHStack',
+      isHiddenFromOverview: true,
       displayName: 'XDSH Stack',
       description:
         'Horizontal stack for arranging items left-to-right. Supports polymorphic rendering.',
@@ -84,6 +85,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSVStack',
+      isHiddenFromOverview: true,
       displayName: 'XDSV Stack',
       description:
         'Vertical stack for arranging items top-to-bottom. Supports polymorphic rendering.',
@@ -146,6 +148,7 @@ export const docs = {
     },
     {
       name: 'XDSStackItem',
+      isHiddenFromOverview: true,
       displayName: 'Stack Item',
       description:
         'Stack item for controlling individual item behavior within a stack. Supports polymorphic rendering.',
@@ -202,6 +205,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSHStack',
+      isHiddenFromOverview: true,
       displayName: 'XDSH Stack',
       description:
         '水平堆叠组件，将元素从左到右排列。支持多态渲染。',
@@ -270,6 +274,7 @@ export const docsZh = {
     },
     {
       name: 'XDSVStack',
+      isHiddenFromOverview: true,
       displayName: 'XDSV Stack',
       description:
         '垂直堆叠组件，将元素从上到下排列。支持多态渲染。',
@@ -332,6 +337,7 @@ export const docsZh = {
     },
     {
       name: 'XDSStackItem',
+      isHiddenFromOverview: true,
       displayName: 'Stack Item',
       description:
         '堆叠子元素，用于控制堆叠中单个元素的行为。支持多态渲染。',
@@ -389,6 +395,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSHStack',
+      isHiddenFromOverview: true,
       displayName: 'XDSH Stack',
       description: 'Horizontal stack; left-to-right, polymorphic rendering.',
       propDescriptions: {
@@ -407,6 +414,7 @@ export const docsDense = {
     },
     {
       name: 'XDSVStack',
+      isHiddenFromOverview: true,
       displayName: 'XDSV Stack',
       description: 'Vertical stack; top-to-bottom, polymorphic rendering.',
       propDescriptions: {
@@ -424,6 +432,7 @@ export const docsDense = {
     },
     {
       name: 'XDSStackItem',
+      isHiddenFromOverview: true,
       displayName: 'Stack Item',
       description: 'Controls individual item behavior in stack; polymorphic rendering.',
       propDescriptions: {

@@ -36,6 +36,7 @@ export const docs = {
     },
     {
       name: 'XDSInputGroupText',
+      isHiddenFromOverview: true,
       displayName: 'Input Group Text',
       description: 'A prefix or suffix text element rendered inside XDSInputGroup. Displays text or icons.',
       props: [
@@ -98,6 +99,7 @@ export const docsDense = {
     },
     {
       name: 'XDSInputGroupText',
+      isHiddenFromOverview: true,
       displayName: 'Input Group Text',
       description: 'prefix/suffix text/icon element',
       propDescriptions: {

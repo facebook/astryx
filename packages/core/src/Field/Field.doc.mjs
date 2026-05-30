@@ -144,6 +144,7 @@ export const docs = {
     },
     {
       name: 'XDSFieldLabel',
+      isHiddenFromOverview: true,
       displayName: 'Field Label',
       description:
         'Standalone label component with optional/required indicators and tooltip support.',
@@ -198,6 +199,7 @@ export const docs = {
     },
     {
       name: 'XDSFieldStatus',
+      isHiddenFromOverview: true,
       displayName: 'Field Status',
       description:
         'Status message component for form field validation feedback.',
@@ -385,6 +387,7 @@ export const docsZh = {
     },
     {
       name: 'XDSFieldLabel',
+      isHiddenFromOverview: true,
       displayName: 'Field Label',
       description:
         '独立的标签组件，支持可选/必填指示器和工具提示。',
@@ -439,6 +442,7 @@ export const docsZh = {
     },
     {
       name: 'XDSFieldStatus',
+      isHiddenFromOverview: true,
       displayName: 'Field Status',
       description:
         '用于表单字段验证反馈的状态消息组件。',
@@ -521,6 +525,7 @@ export const docsDense = {
     },
     {
       name: 'XDSFieldLabel',
+      isHiddenFromOverview: true,
       displayName: 'Field Label',
       description: 'Standalone label w/ optional/required indicators + tooltip support.',
       propDescriptions: {
@@ -536,6 +541,7 @@ export const docsDense = {
     },
     {
       name: 'XDSFieldStatus',
+      isHiddenFromOverview: true,
       displayName: 'Field Status',
       description: 'Status message for form field validation feedback.',
       propDescriptions: {

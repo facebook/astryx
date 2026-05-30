@@ -309,7 +309,7 @@ async function generateComponentRegistry() {
               directory: entry.name,
               group,
               category,
-              isHiddenFromOverview: isHiddenFromOverview || isSubEntry,
+              isHiddenFromOverview: sub.isHiddenFromOverview ?? isHiddenFromOverview,
               description: sub.description || topDescription,
               keywords,
               hidden,

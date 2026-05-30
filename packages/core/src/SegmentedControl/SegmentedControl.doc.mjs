@@ -86,6 +86,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSSegmentedControlItem',
+      isHiddenFromOverview: true,
       displayName: 'Segmented Control Item',
       description:
         'Individual segment item rendering as a radio button within the segmented control.',
@@ -159,6 +160,7 @@ export const docsZh = {
     },
     {
       name: 'XDSSegmentedControlItem',
+      isHiddenFromOverview: true,
       displayName: 'Segmented Control Item',
       description:
         '单个分段项，在分段控件中渲染为单选按钮。',
@@ -223,6 +225,7 @@ export const docsDense = {
     },
     {
       name: 'XDSSegmentedControlItem',
+      isHiddenFromOverview: true,
       displayName: 'Segmented Control Item',
       description: 'individual segment; renders as radio button in control',
       propDescriptions: {

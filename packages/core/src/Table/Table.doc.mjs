@@ -100,6 +100,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSBaseTable',
+      isHiddenFromOverview: true,
       displayName: 'Base Table',
       description:
         'Unstyled structural table component with a plugin transform pipeline and a components prop for swapping in custom row/cell renderers.',
@@ -149,6 +150,7 @@ export const docs = {
     },
     {
       name: 'XDSTableRow',
+      isHiddenFromOverview: true,
       displayName: 'Table Row',
       description:
         '<tr> wrapper that reads XDSTableContext to apply striped, hover, and divider styles when used inside XDSTable.',
@@ -163,6 +165,7 @@ export const docs = {
     },
     {
       name: 'XDSTableCell',
+      isHiddenFromOverview: true,
       displayName: 'Table Cell',
       description:
         '<td> wrapper that reads XDSTableContext to apply density padding, font size, and divider borders when used inside XDSTable.',
@@ -176,6 +179,7 @@ export const docs = {
     },
     {
       name: 'XDSTableHeaderCell',
+      isHiddenFromOverview: true,
       displayName: 'Table Header Cell',
       description:
         '<th> wrapper that reads XDSTableContext to apply density padding, semibold weight, secondary text color, and divider borders when used inside XDSTable.',
@@ -542,6 +546,7 @@ export const docsZh = {
     },
     {
       name: 'XDSBaseTable',
+      isHiddenFromOverview: true,
       displayName: 'Base Table',
       description:
         '无样式的结构表格组件，配有插件转换管道和 components 属性，用于替换自定义行/单元格渲染器。',
@@ -591,6 +596,7 @@ export const docsZh = {
     },
     {
       name: 'XDSTableRow',
+      isHiddenFromOverview: true,
       displayName: 'Table Row',
       description:
         '<tr> 包装器，读取 XDSTableContext 以在 XDSTable 内部使用时应用条纹、悬停和分隔线样式。',
@@ -605,6 +611,7 @@ export const docsZh = {
     },
     {
       name: 'XDSTableCell',
+      isHiddenFromOverview: true,
       displayName: 'Table Cell',
       description:
         '<td> 包装器，读取 XDSTableContext 以在 XDSTable 内部使用时应用密度内边距、字体大小和分隔线边框。',
@@ -618,6 +625,7 @@ export const docsZh = {
     },
     {
       name: 'XDSTableHeaderCell',
+      isHiddenFromOverview: true,
       displayName: 'Table Header Cell',
       description:
         '<th> 包装器，读取 XDSTableContext 以在 XDSTable 内部使用时应用密度内边距、半粗字重、次要文本颜色和分隔线边框。',
@@ -853,6 +861,7 @@ export const docsDense = {
     },
     {
       name: 'XDSBaseTable',
+      isHiddenFromOverview: true,
       displayName: 'Base Table',
       description: 'Unstyled structural table w/ plugin transform pipeline + components prop for custom row/cell renderers.',
       propDescriptions: {
@@ -867,6 +876,7 @@ export const docsDense = {
     },
     {
       name: 'XDSTableRow',
+      isHiddenFromOverview: true,
       displayName: 'Table Row',
       description: '<tr> wrapper; reads XDSTableContext for striped/hover/divider styles.',
       propDescriptions: {
@@ -875,6 +885,7 @@ export const docsDense = {
     },
     {
       name: 'XDSTableCell',
+      isHiddenFromOverview: true,
       displayName: 'Table Cell',
       description: '<td> wrapper; reads XDSTableContext for density padding, font size, divider borders.',
       propDescriptions: {
@@ -883,6 +894,7 @@ export const docsDense = {
     },
     {
       name: 'XDSTableHeaderCell',
+      isHiddenFromOverview: true,
       displayName: 'Table Header Cell',
       description: '<th> wrapper; reads XDSTableContext for density padding, semibold weight, secondary color, dividers.',
       propDescriptions: {

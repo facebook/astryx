@@ -84,16 +84,12 @@ export default function ComponentsGalleryPage() {
       if (comp.hidden) {
         continue;
       }
-      // Skip hooks (they appear in the Utilities section)
+      // Skip hooks
       if (comp.name.startsWith('use')) {
         continue;
       }
       // Skip components without a category
       if (!comp.category) {
-        continue;
-      }
-      // Skip utilities group
-      if (comp.group === 'Utilities') {
         continue;
       }
 

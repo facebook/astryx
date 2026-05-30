@@ -41,6 +41,7 @@ export const docs = {
   components: [
     {
       name: 'XDSAlertDialog',
+      isHiddenFromOverview: true,
       displayName: 'Alert Dialog',
       description: 'A modal dialog that asks the user to confirm a destructive action.',
       props: [

@@ -101,6 +101,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSDialogHeader',
+      isHiddenFromOverview: true,
       displayName: 'Dialog Header',
       description:
         'Header for dialogs with a title, optional subtitle, close button, and start/end content slots.',
@@ -255,6 +256,7 @@ export const docsZh = {
     },
     {
       name: 'XDSDialogHeader',
+      isHiddenFromOverview: true,
       displayName: 'Dialog Header',
       description:
         '对话框头部，包含标题、可选副标题、关闭按钮以及首尾内容插槽。',
@@ -346,6 +348,7 @@ export const docsDense = {
     },
     {
       name: 'XDSDialogHeader',
+      isHiddenFromOverview: true,
       displayName: 'Dialog Header',
       description: 'dialog header w/ title, optional subtitle, close button, start/end content slots',
       propDescriptions: {
