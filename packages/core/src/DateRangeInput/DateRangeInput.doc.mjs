@@ -7,7 +7,6 @@ export const docs = {
   displayName: 'Date Range Input',
   group: 'DateInput',
   category: 'Data Input',
-  isHiddenFromOverview: true,
   keywords: ["daterangepicker","daterange","range","calendar","filter","analytics","period","schedule"],
   props: [
     { name: 'label', type: 'string', description: 'Label text.', required: true },

@@ -8,7 +8,6 @@ export const docs = {
   name: 'Blockquote',
   displayName: 'Blockquote',
   category: 'Content',
-  isHiddenFromOverview: true,
   keywords: ["blockquote","quote","citation","pullquote","quotation","cite","excerpt"],
   props: [
     {

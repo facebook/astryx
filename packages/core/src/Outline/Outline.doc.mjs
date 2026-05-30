@@ -7,7 +7,6 @@ export const docs = {
   displayName: 'Outline',
   group: 'Outline',
   category: 'Navigation',
-  isHiddenFromOverview: true,
   keywords: [
     'outline',
     'table of contents',
