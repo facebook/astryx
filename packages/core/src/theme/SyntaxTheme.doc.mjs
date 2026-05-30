@@ -6,6 +6,8 @@ export const docs = {
   name: 'SyntaxTheme',
   displayName: 'Syntax Theme',
   group: 'Utilities',
+  category: 'Utility',
+  isHiddenFromOverview: true,
   keywords: ['syntax', 'highlighting', 'code', 'theme', 'codeblock', 'prism', 'shiki'],
   usage: {
     description:

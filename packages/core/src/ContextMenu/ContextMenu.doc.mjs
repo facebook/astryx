@@ -5,7 +5,8 @@ export const docs = {
   name: 'ContextMenu',
   displayName: 'Context Menu',
   group: 'ContextMenu',
-  category: 'Actions',
+  category: 'Action',
+  isHiddenFromOverview: true,
   keywords: ["contextmenu","right-click","menu","popover","actions","context"],
   theming: {
     targets: [
@@ -74,6 +75,7 @@ export const docs = {
     },
     {
       name: 'XDSContextMenuItem',
+      isHiddenFromOverview: true,
       displayName: 'Context Menu Item',
       description:
         'Menu item component for compound mode. Re-exported from XDSDropdownMenuItem for discoverability.',
@@ -189,6 +191,7 @@ export const docsZh = {
     },
     {
       name: 'XDSContextMenuItem',
+      isHiddenFromOverview: true,
       displayName: 'Context Menu Item',
       description:
         '复合模式的菜单项组件。从 XDSDropdownMenuItem 重新导出以便发现。',
@@ -263,6 +266,7 @@ export const docsDense = {
     },
     {
       name: 'XDSContextMenuItem',
+      isHiddenFromOverview: true,
       displayName: 'Context Menu Item',
       description: 're-exported XDSDropdownMenuItem for compound mode',
       propDescriptions: {

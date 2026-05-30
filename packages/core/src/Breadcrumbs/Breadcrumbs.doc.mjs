@@ -77,6 +77,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSBreadcrumbItem',
+      isHiddenFromOverview: true,
       displayName: 'Breadcrumb Item',
       description:
         'Individual breadcrumb item that renders as a link when href is provided, or as plain text for the current page.',
@@ -171,6 +172,7 @@ export const docsZh = {
     },
     {
       name: 'XDSBreadcrumbItem',
+      isHiddenFromOverview: true,
       displayName: 'Breadcrumb Item',
       description: '单个面包屑项，提供 href 时渲染为链接，当前页面渲染为纯文本。',
       props: [
@@ -215,6 +217,7 @@ export const docsDense = {
     },
     {
       name: 'XDSBreadcrumbItem',
+      isHiddenFromOverview: true,
       displayName: 'Breadcrumb Item',
       description: 'individual breadcrumb; link w/ href, plain text for current page',
       propDescriptions: {

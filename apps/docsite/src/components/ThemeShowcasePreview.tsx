@@ -68,6 +68,12 @@ const styles = stylex.create({
     maxWidth: 960,
     marginInline: 'auto',
   },
+  // Fill the full available width instead of capping at 960. Used by the
+  // theme playground where the preview pane is wider than the /themes/<name>
+  // detail card and the grid should stretch edge-to-edge.
+  contentFluid: {
+    maxWidth: 'none',
+  },
 });
 
 // Keys into the active ThemeImageSet, in the same order as PRODUCTS.
@@ -101,9 +107,17 @@ const PRODUCTS = [
 
 interface ThemeShowcasePreviewProps {
   images: ThemeImageSet;
+  /**
+   * When true, the hero + product grid fill the full available width rather
+   * than capping at 960px. Used by the theme playground preview pane.
+   */
+  fluid?: boolean;
 }
 
-export function ThemeShowcasePreview({images}: ThemeShowcasePreviewProps) {
+export function ThemeShowcasePreview({
+  images,
+  fluid = false,
+}: ThemeShowcasePreviewProps) {
   return (
     <div data-theme-preview="true">
       <XDSVStack gap={0}>
@@ -155,7 +169,9 @@ export function ThemeShowcasePreview({images}: ThemeShowcasePreviewProps) {
         />
 
         <XDSSection padding={8} variant="transparent">
-          <XDSVStack gap={10} xstyle={styles.content}>
+          <XDSVStack
+            gap={10}
+            xstyle={fluid ? [styles.content, styles.contentFluid] : styles.content}>
             <XDSCenter>
               <XDSVStack gap={4} hAlign="center" xstyle={styles.heroText}>
                 <XDSText type="display-3">

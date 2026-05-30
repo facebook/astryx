@@ -16,7 +16,8 @@ import type {ThemeMode} from '@xds/core/theme';
 import {defaultTheme} from '@xds/theme-default/built';
 import {neutralTheme} from '@xds/theme-neutral/built';
 import {matchaTheme} from '@xds/theme-matcha/built';
-import {runCode, setBabel} from './runner';
+import {runCode, setTypeScript} from './runner';
+import type * as TS from 'typescript';
 
 const THEME_MAP: Record<string, XDSDefinedTheme> = {
   default: defaultTheme,
@@ -91,7 +92,22 @@ type PreviewMessage =
   | {type: 'preview-ping'}
   | {type: 'preview-code'; code: string}
   | {type: 'preview-clear'}
-  | {type: 'preview-theme'; mode?: string; theme?: string};
+  | {type: 'preview-theme'; mode?: string; theme?: string}
+  | {type: 'preview-highlight'; id: string};
+
+/** Briefly flash a focus ring on the element marked with the given data-pg-id. */
+function flashElement(id: string) {
+  const el = document.querySelector<HTMLElement>(`[data-pg-id="${id}"]`);
+  if (!el) {
+    return;
+  }
+  el.classList.remove('pg-flash');
+  // Force reflow so re-adding the class restarts the animation.
+  void el.offsetWidth;
+  el.classList.add('pg-flash');
+  el.scrollIntoView({block: 'nearest', behavior: 'smooth'});
+  window.setTimeout(() => el.classList.remove('pg-flash'), 1000);
+}
 
 function isPreviewMessage(data: unknown): data is PreviewMessage {
   return (
@@ -108,18 +124,20 @@ export default function PreviewPage() {
   const [themeMode, setThemeMode] = useState<ThemeMode>('system');
   const [themeName, setThemeName] = useState('default');
   const [resetKey, setResetKey] = useState(0);
-  const [babelReady, setBabelReady] = useState(false);
+  const [tsReady, setTsReady] = useState(false);
   const readyRef = useRef(false);
 
-  // Load Babel from CDN — avoids bundling the 5MB package through Next.js
+  // Load the TypeScript compiler from public/vendor — self-hosted because
+  // corpnet blocks external CDNs. The UMD sets window.ts in the browser
+  // (this iframe has no AMD loader, so there's no define() conflict).
   useEffect(() => {
     const script = document.createElement('script');
-    script.src = 'https://unpkg.com/@babel/standalone@7/babel.min.js';
+    script.src = '/vendor/typescript.js';
     script.onload = () => {
-      const w = window as unknown as Record<string, unknown>;
-      if (w.Babel) {
-        setBabel(w.Babel as Parameters<typeof setBabel>[0]);
-        setBabelReady(true);
+      const w = window as unknown as {ts?: typeof TS};
+      if (w.ts) {
+        setTypeScript(w.ts);
+        setTsReady(true);
       }
     };
     document.head.appendChild(script);
@@ -167,7 +185,7 @@ export default function PreviewPage() {
   }, []);
 
   useEffect(() => {
-    if (!babelReady) {
+    if (!tsReady) {
       return;
     }
 
@@ -189,6 +207,9 @@ export default function PreviewPage() {
         case 'preview-theme':
           handleTheme(event.data);
           break;
+        case 'preview-highlight':
+          flashElement(event.data.id);
+          break;
       }
     }
 
@@ -200,7 +221,7 @@ export default function PreviewPage() {
     }
 
     return () => window.removeEventListener('message', onMessage);
-  }, [babelReady, postToParent, handleCode, handleClear, handleTheme]);
+  }, [tsReady, postToParent, handleCode, handleClear, handleTheme]);
 
   const handleBoundaryError = useCallback(
     (err: Error) => {
@@ -215,7 +236,11 @@ export default function PreviewPage() {
 
   return (
     <XDSTheme theme={theme} mode={themeMode}>
-      <div style={{minHeight: '100%', padding: 24}}>
+      <div
+        style={{
+          minHeight: '100%',
+          backgroundColor: 'var(--color-background-body)',
+        }}>
         {error && <ErrorDisplay message={error} />}
         {Component && (
           <ErrorBoundary resetKey={resetKey} onError={handleBoundaryError}>

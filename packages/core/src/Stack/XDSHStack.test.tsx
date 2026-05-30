@@ -31,9 +31,9 @@ describe('XDSHStack', () => {
     expect(element.tagName).toBe('DIV');
   });
 
-  it('renders with polymorphic element prop', () => {
+  it('renders with polymorphic as prop', () => {
     render(
-      <XDSHStack element="nav" data-testid="hstack">
+      <XDSHStack as="nav" data-testid="hstack">
         Content
       </XDSHStack>,
     );
@@ -80,10 +80,10 @@ describe('XDSHStack', () => {
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLElement));
   });
 
-  it('forwards ref with polymorphic element', () => {
+  it('forwards ref with polymorphic as', () => {
     const ref = vi.fn();
     render(
-      <XDSHStack element="section" ref={ref}>
+      <XDSHStack as="section" ref={ref}>
         <div>Test</div>
       </XDSHStack>,
     );

@@ -18,6 +18,10 @@ import renameImperativeRefToHandleRef, {
   meta as renameImperativeRefToHandleRefMeta,
 } from './rename-imperative-ref-to-handleRef.mjs';
 
+import renameStackElementToAs, {
+  meta as renameStackElementToAsMeta,
+} from './rename-stack-element-to-as.mjs';
+
 export default [
   {
     name: 'rename-date-picker-to-input',
@@ -33,5 +37,10 @@ export default [
     name: 'rename-imperative-ref-to-handleRef',
     transform: renameImperativeRefToHandleRef,
     meta: renameImperativeRefToHandleRefMeta,
+  },
+  {
+    name: 'rename-stack-element-to-as',
+    transform: renameStackElementToAs,
+    meta: renameStackElementToAsMeta,
   },
 ];

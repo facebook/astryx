@@ -28,21 +28,23 @@ import {ShowcaseThumbnail} from '../../../components/ShowcaseThumbnail';
  * Sourced from component .doc.mjs `category` fields.
  */
 const CATEGORIES = [
-  'Actions',
-  'Communications',
-  'Containers',
+  'Action',
+  'Chat',
+  'Container',
+  'Content',
+  'Data Input',
+  'Data Visualization',
+  'Feedback & Status',
   'Layout',
-  'Inputs',
-  'Lists',
   'Navigation',
-  'Performance',
+  'Overlay',
+  'Table & List',
+  'Utility',
 ] as const;
 
 /** Map of showcase blocks by component name for thumbnails */
 const showcaseMap = new Map(
-  blocks
-    .filter(b => b.isShowcase)
-    .map(b => [b.componentsUsed[0] || b.exampleFor, b]),
+  blocks.filter(b => b.isShowcase).map(b => [b.exampleFor, b]),
 );
 
 const styles = stylex.create({
@@ -86,7 +88,11 @@ export default function ComponentsGalleryPage() {
       if (comp.hidden) {
         continue;
       }
+<<<<<<< navi/feat/components-install-button
       // Skip hooks (they appear in the Utilities section)
+=======
+      // Skip hooks
+>>>>>>> main
       if (comp.name.startsWith('use')) {
         continue;
       }
@@ -94,10 +100,13 @@ export default function ComponentsGalleryPage() {
       if (!comp.category) {
         continue;
       }
+<<<<<<< navi/feat/components-install-button
       // Skip utilities group
       if (comp.group === 'Utilities') {
         continue;
       }
+=======
+>>>>>>> main
 
       items.push({
         name: comp.name,

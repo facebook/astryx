@@ -5,7 +5,7 @@
 export const docs = {
   name: 'Badge',
   displayName: 'Badge',
-  category: 'Communications',
+  category: 'Feedback & Status',
   keywords: ["badge","tag","chip","label","status","indicator","count","counter","pill","notification","marker"],
   props: [
     {

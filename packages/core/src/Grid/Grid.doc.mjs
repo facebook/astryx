@@ -95,6 +95,7 @@ export const docs = {
     },
     {
       name: 'XDSGridSpan',
+      isHiddenFromOverview: true,
       displayName: 'Grid Span',
       description: 'Grid item that spans multiple columns or rows.',
       props: [
@@ -198,6 +199,7 @@ export const docsZh = {
     },
     {
       name: 'XDSGridSpan',
+      isHiddenFromOverview: true,
       displayName: 'Grid Span',
       description: '可跨越多列或多行的网格项。',
       props: [
@@ -268,6 +270,7 @@ export const docsDense = {
     },
     {
       name: 'XDSGridSpan',
+      isHiddenFromOverview: true,
       displayName: 'Grid Span',
       description: 'Grid item spanning multiple columns/rows.',
       propDescriptions: {
