@@ -83,6 +83,72 @@ export function buildComponentOverrides(
   return components;
 }
 
+/**
+ * Deep-merge any number of component style maps into a fresh object. Later
+ * maps win at the leaf level; nested selector objects (e.g. `variant:ghost`
+ * → `:hover`) are merged recursively rather than replaced wholesale. Used to
+ * layer a preset theme's component overrides under the editor's own token-
+ * and custom-overrides so all three sources compose correctly.
+ */
+export function mergeComponentStyleMaps(
+  ...maps: Array<Record<string, unknown> | undefined>
+): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const map of maps) {
+    if (!map) {
+      continue;
+    }
+    for (const [key, value] of Object.entries(map)) {
+      const existing = result[key];
+      if (
+        value &&
+        typeof value === 'object' &&
+        existing &&
+        typeof existing === 'object'
+      ) {
+        result[key] = mergeComponentStyleMaps(
+          existing as Record<string, unknown>,
+          value as Record<string, unknown>,
+        );
+      } else if (value && typeof value === 'object') {
+        result[key] = mergeComponentStyleMaps(value as Record<string, unknown>);
+      } else {
+        result[key] = value;
+      }
+    }
+  }
+  return result;
+}
+
+/**
+ * Serialize a nested style object to indented `defineTheme`-style source
+ * lines. Handles arbitrary selector nesting (base, `variant:*`, `:hover`,
+ * etc.) so the exported code matches what the live preview renders.
+ */
+function serializeStyleObject(
+  obj: Record<string, unknown>,
+  indentLevel: number,
+): string[] {
+  const pad = '  '.repeat(indentLevel);
+  const lines: string[] = [];
+  for (const [key, value] of Object.entries(obj)) {
+    const escapedKey = key.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    if (value && typeof value === 'object') {
+      lines.push(`${pad}'${escapedKey}': {`);
+      lines.push(
+        ...serializeStyleObject(value as Record<string, unknown>, indentLevel + 1),
+      );
+      lines.push(`${pad}},`);
+    } else {
+      const escapedVal = String(value)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'");
+      lines.push(`${pad}'${escapedKey}': '${escapedVal}',`);
+    }
+  }
+  return lines;
+}
+
 export interface CustomOverrideEntry {
   component: string;
   property: string;
@@ -96,6 +162,7 @@ export function generateThemeCode(
   typeScaleBase: number,
   typeScaleRatio: number,
   customOverrides: CustomOverrideEntry[] = [],
+  baseComponents: Record<string, unknown> = {},
 ): string {
   const changedTokens: Record<string, string> = {};
   const changedComponentTokens: Record<string, string> = {};
@@ -109,12 +176,18 @@ export function generateThemeCode(
     }
   }
 
-  const components = buildComponentOverrides(changedComponentTokens);
+  // Custom overrides are flat (component → base → property). Build them as a
+  // map so they can be merged on top of the preset + token-derived overrides.
+  const customMap: Record<string, {base: Record<string, string>}> = {};
   for (const override of customOverrides) {
-    components[override.component] ??= {};
-    components[override.component].base ??= {};
-    components[override.component].base[override.property] = override.value;
+    customMap[override.component] ??= {base: {}};
+    customMap[override.component].base[override.property] = override.value;
   }
+  const components = mergeComponentStyleMaps(
+    baseComponents,
+    buildComponentOverrides(changedComponentTokens),
+    customMap,
+  );
 
   const lines: string[] = [
     "import {defineTheme} from '@xds/core/theme';",
@@ -141,19 +214,7 @@ export function generateThemeCode(
 
   if (Object.keys(components).length > 0) {
     lines.push('  components: {');
-    for (const [comp, rules] of Object.entries(components)) {
-      lines.push(`    '${comp}': {`);
-      for (const [selector, props] of Object.entries(rules)) {
-        lines.push(`      '${selector}': {`);
-        for (const [prop, val] of Object.entries(props)) {
-          const escapedProp = prop.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-          const escapedVal = val.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-          lines.push(`        '${escapedProp}': '${escapedVal}',`);
-        }
-        lines.push('      },');
-      }
-      lines.push('    },');
-    }
+    lines.push(...serializeStyleObject(components, 2));
     lines.push('  },');
   }
 

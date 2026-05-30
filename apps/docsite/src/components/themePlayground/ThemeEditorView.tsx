@@ -6,7 +6,8 @@ import * as React from 'react';
 import {useRouter} from 'next/navigation';
 import {XDSButton} from '@xds/core/Button';
 import {XDSCard} from '@xds/core/Card';
-import {XDSHStack} from '@xds/core/Stack';
+import {XDSHStack, XDSVStack} from '@xds/core/Stack';
+import {XDSText} from '@xds/core/Text';
 import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 import {
@@ -41,14 +42,20 @@ import {EditorSections} from './EditorSections';
 import {ComponentTokensPanel} from './ComponentTokensPanel';
 import type {CustomOverride} from './ComponentTokensPanel';
 import {RawTokensPanel} from './RawTokensPanel';
-import {ComponentPreview} from './ComponentPreview';
+import {ThemeShowcasePreview} from '../ThemeShowcasePreview';
+import {ThemeCardShowcase} from '../ThemeCardShowcase';
+import {getThemeImages} from '../themeImages';
 import {TokenScalePreview} from './TokenScalePreview';
 import {
   UNIFIED_PRESETS,
   GOOGLE_FONTS_URL,
   COMPONENT_VAR_NAMES,
 } from './constants';
-import {generateThemeCode, buildComponentOverrides} from './helpers';
+import {
+  generateThemeCode,
+  buildComponentOverrides,
+  mergeComponentStyleMaps,
+} from './helpers';
 import {getThemeList} from './themeList';
 import type {ThemeListEntry} from './themeList';
 
@@ -83,6 +90,12 @@ export function ThemeEditorView({
     ...ALL_DEFAULTS,
     ...initialTheme.tokens,
   }));
+  // Component-level overrides from the seeded preset (e.g. button/badge/banner
+  // variant styling). Kept separate from token state so they form the base
+  // layer the editor's token + custom overrides compose on top of.
+  const [baseComponents, setBaseComponents] = React.useState<
+    Record<string, unknown>
+  >(() => initialTheme.components ?? {});
   const [mode, setMode] = React.useState<'light' | 'dark'>('light');
   const [panelTab, setPanelTab] = React.useState<
     'theme' | 'components' | 'tokens'
@@ -126,14 +139,28 @@ export function ThemeEditorView({
         coreTokens[key] = value;
       }
     }
-    const components = buildComponentOverrides(componentTokens);
+    const customMap: Record<string, {base: Record<string, string>}> = {};
     for (const override of customOverrides) {
-      components[override.component] ??= {};
-      components[override.component].base ??= {};
-      components[override.component].base[override.property] = override.value;
+      customMap[override.component] ??= {base: {}};
+      customMap[override.component].base[override.property] = override.value;
     }
+    // Layer order: preset component overrides (base) → token-derived overrides
+    // → freeform custom overrides. Later layers win at the leaf level.
+    const components = mergeComponentStyleMaps(
+      baseComponents,
+      buildComponentOverrides(componentTokens),
+      customMap,
+    ) as XDSDefinedTheme['components'];
     return defineTheme({name: 'custom', tokens: coreTokens, components});
-  }, [tokens, customOverrides]);
+  }, [tokens, customOverrides, baseComponents]);
+
+  // Product imagery for the live preview. Tracks the selected base theme
+  // (falls back to neutral) so the showcase photos match the theme the
+  // user started from, even after they tweak tokens into "Custom".
+  const previewImages = React.useMemo(
+    () => getThemeImages(selectedThemeId),
+    [selectedThemeId],
+  );
 
   const handleTokenChange = React.useCallback((name: string, value: string) => {
     setTokens(prev => ({...prev, [name]: value}));
@@ -167,6 +194,7 @@ export function ThemeEditorView({
   // Reseed the entire editor from a theme preset (in place — no navigation).
   const selectTheme = React.useCallback((entry: ThemeListEntry) => {
     setTokens({...ALL_DEFAULTS, ...entry.theme.tokens});
+    setBaseComponents(entry.theme.components ?? {});
     setSelectedThemeId(entry.name);
     setTypeScaleBase(14);
     setTypeScaleRatio(1.2);
@@ -181,6 +209,8 @@ export function ThemeEditorView({
 
   const handleReset = React.useCallback(() => {
     setTokens({...ALL_DEFAULTS, ...selectedThemeBaseline});
+    const entry = themeList.find(t => t.name === selectedThemeId);
+    setBaseComponents(entry?.theme.components ?? {});
     setTypeScaleBase(14);
     setTypeScaleRatio(1.2);
     setRadiusBase(4);
@@ -190,7 +220,7 @@ export function ThemeEditorView({
     setActivePreset(null);
     setAutoPickColors(false);
     setCustomOverrides([]);
-  }, [selectedThemeBaseline]);
+  }, [selectedThemeBaseline, themeList, selectedThemeId]);
 
   const applyTypeScale = React.useCallback((base: number, ratio: number) => {
     setActivePreset(null);
@@ -342,8 +372,32 @@ export function ThemeEditorView({
         typeScaleBase,
         typeScaleRatio,
         customOverrides,
+        baseComponents,
       ),
-    [themeId, tokens, typeScaleBase, typeScaleRatio, customOverrides],
+    [
+      themeId,
+      tokens,
+      typeScaleBase,
+      typeScaleRatio,
+      customOverrides,
+      baseComponents,
+    ],
+  );
+
+  // Runnable usage snippet shown alongside the exported theme. Mirrors the
+  // theme package README's "wrap your app with XDSTheme" guidance, adapted
+  // for a locally-authored theme file.
+  const usageSnippet = React.useMemo(
+    () =>
+      [
+        "import {XDSTheme} from '@xds/core/theme';",
+        `import {${themeId}Theme} from './${themeId}-theme';`,
+        '',
+        'export function App() {',
+        `  return <XDSTheme theme={${themeId}Theme}>{/* your app */}</XDSTheme>;`,
+        '}',
+      ].join('\n'),
+    [themeId],
   );
 
   return (
@@ -423,6 +477,7 @@ export function ThemeEditorView({
               onTokenChange={handleTokenChange}
               customOverrides={customOverrides}
               onCustomOverridesChange={setCustomOverrides}
+              baseComponents={baseComponents}
             />
           )}
           {panelTab === 'tokens' && (
@@ -499,9 +554,7 @@ export function ThemeEditorView({
               hasAutoFocus={false}
               button={{
                 label:
-                  activePreview === 'tokens'
-                    ? 'Token Preview'
-                    : 'Component Preview',
+                  activePreview === 'tokens' ? 'Token Preview' : 'App Preview',
                 variant: 'ghost',
                 size: 'md',
               }}
@@ -511,7 +564,7 @@ export function ThemeEditorView({
                   onClick: () => setActivePreview('tokens'),
                 },
                 {
-                  label: 'Component Preview',
+                  label: 'App Preview',
                   onClick: () => setActivePreview('preview'),
                 },
               ]}
@@ -559,18 +612,42 @@ export function ThemeEditorView({
               colorScheme: mode,
             }}>
             <XDSTheme theme={currentTheme} mode={mode}>
-              <div
-                style={{
-                  padding: 24,
-                  minHeight: '100%',
-                  backgroundColor: 'var(--color-background-body)',
-                }}>
-                {activePreview === 'tokens' ? (
+              {activePreview === 'tokens' ? (
+                <div
+                  style={{
+                    padding: 24,
+                    minHeight: '100%',
+                    backgroundColor: 'var(--color-background-body)',
+                  }}>
                   <TokenScalePreview tokens={tokens} />
-                ) : (
-                  <ComponentPreview />
-                )}
-              </div>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    minHeight: '100%',
+                    backgroundColor: 'var(--color-background-body)',
+                  }}>
+                  {/* Landing surface — top nav + hero + product grid,
+                      rendered flush so the nav reads as real product
+                      chrome (same component used on /themes/<name>). */}
+                  <ThemeShowcasePreview images={previewImages} fluid />
+                  {/* Real-world card showcase — Checkout + Chat +
+                      Inventory + Revenue. Sits on the lifted surface
+                      tone below the landing, mirroring the theme
+                      detail page composition. */}
+                  <div
+                    style={{
+                      padding: 'var(--spacing-6)',
+                      backgroundColor: 'var(--color-background-surface)',
+                    }}>
+                    <ThemeCardShowcase
+                      theme={currentTheme}
+                      images={previewImages}
+                      mode={mode}
+                    />
+                  </div>
+                </div>
+              )}
             </XDSTheme>
           </XDSCard>
         </div>
@@ -581,14 +658,39 @@ export function ThemeEditorView({
         isOpen={showExportDialog}
         onOpenChange={setShowExportDialog}
         width={720}>
-        <XDSDialogHeader title={`Export ${themeLabel} Theme`} />
+        <XDSDialogHeader title="Exporting a theme" />
         <div
           style={{
             padding: 'var(--spacing-4)',
             overflow: 'auto',
-            maxHeight: '60vh',
+            maxHeight: '70vh',
           }}>
-          <XDSCodeBlock code={themeCode} language="typescript" size="sm" />
+          <XDSVStack gap={5}>
+            <XDSText type="body" color="secondary">
+              Your theme is a plain object — no build step or package install
+              required. Save the code below to a file, then wrap your app with{' '}
+              <code>XDSTheme</code> to apply it.
+            </XDSText>
+
+            <XDSVStack gap={2}>
+              <XDSText type="label">
+                1. Save as a theme file (e.g. {themeId}-theme.ts)
+              </XDSText>
+              <XDSCodeBlock code={themeCode} language="typescript" size="sm" />
+            </XDSVStack>
+
+            <XDSVStack gap={2}>
+              <XDSText type="label">2. Wrap your app with the theme</XDSText>
+              <XDSCodeBlock code={usageSnippet} language="tsx" size="sm" />
+              <XDSText type="supporting" color="secondary">
+                Token and component overrides apply at runtime through{' '}
+                <code>XDSTheme</code>. To consume the theme as a stylesheet
+                instead, build a CSS file with{' '}
+                <code>xds theme build {themeId}-theme.ts -o theme.css</code> and{' '}
+                <code>@import</code> it.
+              </XDSText>
+            </XDSVStack>
+          </XDSVStack>
         </div>
       </XDSDialog>
     </div>
