@@ -5,7 +5,7 @@
 export const docs = {
   name: 'OverflowList',
   displayName: 'Overflow List',
-  category: 'Lists',
+  category: 'Table & List',
   keywords: [
     'overflow',
     'truncate',

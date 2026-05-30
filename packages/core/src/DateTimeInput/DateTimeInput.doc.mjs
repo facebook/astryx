@@ -6,7 +6,7 @@ export const docs = {
   name: 'DateTimeInput',
   displayName: 'Date Time Input',
   group: 'DateInput',
-  category: 'Inputs',
+  category: 'Data Input',
   keywords: ["datetimepicker","datetime","datepicker","timepicker","calendar","schedule","event","deadline","timestamp"],
   props: [
     {

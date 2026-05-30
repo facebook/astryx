@@ -5,7 +5,7 @@
 export const docs = {
   name: 'Carousel',
   displayName: 'Carousel',
-  category: 'Lists',
+  category: 'Container',
   keywords: ['carousel', 'slider', 'scroll', 'gallery', 'filmstrip', 'swiper', 'horizontal', 'overflow', 'snap'],
   usage: {
     description:

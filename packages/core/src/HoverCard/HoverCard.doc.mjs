@@ -6,7 +6,7 @@ export const docs = {
   name: 'HoverCard',
   displayName: 'Hover Card',
   group: 'HoverCard',
-  category: 'Communications',
+  category: 'Overlay',
   keywords: ["hovercard","hover card","popover","tooltip","preview card","flyout","overlay","hover popup"],
   playground: {
     defaults: {

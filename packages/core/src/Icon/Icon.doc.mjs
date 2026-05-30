@@ -5,7 +5,7 @@
 export const docs = {
   name: 'Icon',
   displayName: 'Icon',
-  category: 'Communications',
+  category: 'Content',
   keywords: ["icon","svg","glyph","symbol","pictogram","graphic","vector"],
   props: [
     {

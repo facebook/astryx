@@ -6,7 +6,7 @@ export const docs = {
   name: 'Button',
   displayName: 'Button',
   group: 'Button',
-  category: 'Actions',
+  category: 'Action',
 
   keywords: ["button","btn","cta","submit","action","loading","primary","secondary","ghost","destructive","danger"],
 

@@ -5,7 +5,7 @@
 export const docs = {
   name: 'EmptyState',
   displayName: 'Empty State',
-  category: 'Communications',
+  category: 'Content',
   keywords: ["emptystate","empty","placeholder","nodata","blank","noresults","illustration","blankslate"],
   props: [
     {
