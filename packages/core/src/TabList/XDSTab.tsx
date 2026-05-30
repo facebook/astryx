@@ -129,7 +129,7 @@ const styles = stylex.create({
   },
   indicator: {
     position: 'absolute',
-    bottom: 'var(--_tab-indicator-bottom, -2px)',
+    bottom: 'var(--_tab-indicator-bottom, -1px)',
     left: spacingVars['--spacing-3'],
     right: spacingVars['--spacing-3'],
     height: '2px',
@@ -140,7 +140,7 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   indicatorSelected: {
-    backgroundColor: colorVars['--color-icon-primary'],
+    backgroundColor: colorVars['--color-accent'],
     opacity: 1,
   },
   indicatorUnselected: {

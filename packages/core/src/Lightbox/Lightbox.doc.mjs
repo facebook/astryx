@@ -5,6 +5,7 @@
 export const docs = {
   name: 'Lightbox',
   displayName: 'Lightbox',
+  category: 'Containers',
   keywords: ["lightbox","image","video","viewer","gallery","zoom","fullscreen","media","photo","preview"],
   props: [
     {

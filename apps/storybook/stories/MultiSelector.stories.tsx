@@ -5,7 +5,7 @@ import {useState} from 'react';
 import {XDSMultiSelector} from '@xds/core/MultiSelector';
 
 const meta: Meta<typeof XDSMultiSelector> = {
-  title: 'Core/Inputs/MultiSelector',
+  title: 'Core/MultiSelector',
   component: XDSMultiSelector,
   tags: ['autodocs'],
   parameters: {

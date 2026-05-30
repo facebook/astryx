@@ -5,6 +5,7 @@
 export const docs = {
   name: 'ProgressBar',
   displayName: 'Progress Bar',
+  category: 'Performance',
   keywords: ["progressbar","progress","loader","loading","linear","determinate","indeterminate","meter"],
   props: [
     {

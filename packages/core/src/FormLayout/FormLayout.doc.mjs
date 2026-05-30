@@ -6,6 +6,7 @@ export const docs = {
   name: 'FormLayout',
   displayName: 'Form Layout',
   group: 'Layout',
+  category: 'Layout',
   keywords: ["formlayout","form","fieldset","formgroup","formcontainer","fields","vertical","horizontal"],
   props: [
     {

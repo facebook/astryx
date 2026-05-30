@@ -6,6 +6,7 @@ import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSHeading, XDSText} from '@xds/core/Text';
+import {XDSLink} from '@xds/core/Link';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSDivider} from '@xds/core/Divider';
 import {XDSTheme} from '@xds/core/theme';
@@ -70,6 +71,7 @@ const styles = stylex.create({
 type AboutItem = {
   title: string;
   description: string;
+  link?: ReactNode;
   icon: ReactNode;
 };
 
@@ -125,19 +127,34 @@ const items: AboutItem[] = [
   {
     title: 'Built by the people who use it',
     description:
-      'The system gets sharper when more people can see it, use it, and shape it.',
+      'The system gets sharper when we put it to work in the real world. Using it in context strengthens the whole system for everyone.',
+    link: (
+      <XDSLink type="body" href="/community" hasUnderline>
+        Learn how to contribute
+      </XDSLink>
+    ),
     icon: <BlobIcon />,
   },
   {
-    title: 'The bar keeps moving',
+    title: "Ready for what's next",
     description:
-      "The quality bar isn't fixed – it's accelerating. AI is rewriting how we design, build, and review code, and Astryx is built to evolve with it. Opinionated foundations, flexible patterns, and a system that keeps pace with where craft is going next.",
+      'The quality bar is accelerating. Astryx pairs opinionated foundations with flexible patterns so your system keeps pace — no matter how the craft evolves.',
+    link: (
+      <XDSLink type="body" href="/changelog" hasUnderline>
+        See what&apos;s new
+      </XDSLink>
+    ),
     icon: <SquareIcon />,
   },
   {
     title: 'Designed for speed',
     description:
       'Foundations you can trust, speed you can feel. The system is built so teams stop reinventing the basics and start shipping the ideas that matter.',
+    link: (
+      <XDSLink type="body" href="/docs/getting-started" hasUnderline>
+        Get started in minutes
+      </XDSLink>
+    ),
     icon: <DiamondIcon />,
   },
 ];
@@ -175,9 +192,12 @@ function AboutColumn({item, isFirst}: {item: AboutItem; isFirst: boolean}) {
         <XDSHeading level={3} color="primary">
           {item.title}
         </XDSHeading>
-        <XDSText type="body" color="secondary">
-          {item.description}
-        </XDSText>
+        <XDSVStack gap={1} align="start">
+          <XDSText type="body" color="secondary">
+            {item.description}
+          </XDSText>
+          {item.link}
+        </XDSVStack>
       </XDSVStack>
     </div>
   );

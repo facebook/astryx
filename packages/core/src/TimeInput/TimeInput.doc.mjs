@@ -5,6 +5,7 @@
 export const docs = {
   name: 'TimeInput',
   displayName: 'Time Input',
+  category: 'Inputs',
   keywords: ["timeinput","timepicker","time","clock","hour","minute","ampm","timeselect","timefield","schedule"],
 
   usage: {

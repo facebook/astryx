@@ -6,6 +6,7 @@ export const docs = {
   name: 'Tooltip',
   displayName: 'Tooltip',
   group: 'Tooltip',
+  category: 'Communications',
   playground: {
     defaults: {
       content: 'Helpful tooltip text',

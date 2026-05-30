@@ -5,6 +5,7 @@
 export const docs = {
   name: 'Stepper',
   displayName: 'Stepper',
+  category: 'Navigation',
   group: 'Stepper',
   keywords: ['stepper', 'steps', 'wizard', 'workflow', 'progress', 'multi-step', 'form wizard', 'onboarding'],
   usage: {
