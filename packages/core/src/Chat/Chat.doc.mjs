@@ -151,6 +151,7 @@ export const docs = {
     },
     {
       name: 'XDSChatComposerInput',
+      isHiddenFromOverview: true,
       displayName: 'Chat Composer Input',
       description: 'Rich text input for the chat composer. Supports trigger menus (type @ or / to open a typeahead), inline tokens rendered as badges, message history recall with ArrowUp/Down, paste/drop file handling, and a 16px touch-device font-size floor to prevent iOS input zoom. Pass it to XDSChatComposer\'s input slot when you need more than a plain textarea.',
       props: [
@@ -227,6 +228,7 @@ export const docs = {
     },
     {
       name: 'XDSChatComposerTokenElement',
+      isHiddenFromOverview: true,
       displayName: 'Chat Composer Token Element',
       description: 'Renders a single token chip outside the contentEditable input. Wraps a badge config or custom render function in the correct data-xds-token span so the token serializes properly and stays visually consistent with tokens inside the composer.',
       props: [
@@ -403,6 +405,7 @@ export const docsZh = {
     },
     {
       name: 'XDSChatComposerInput',
+      isHiddenFromOverview: true,
       displayName: 'Chat Composer Input',
       description:
         '聊天编写器的富文本输入。支持触发菜单（输入 @ 或 / 打开 typeahead）、内联标记徽章、ArrowUp/Down 消息历史回溯、粘贴/拖放文件处理，并在触控设备上将字体大小保持至少 16px 以避免 iOS 输入缩放。当需要普通文本区域以外的功能时，传入 XDSChatComposer 的 input 插槽。',
@@ -470,6 +473,7 @@ export const docsZh = {
     },
     {
       name: 'XDSChatComposerTokenElement',
+      isHiddenFromOverview: true,
       displayName: 'Chat Composer Token Element',
       description: '在 contentEditable 外部渲染标记芯片。',
       propDescriptions: {token: '徽章配置或自定义渲染。'},
@@ -606,6 +610,7 @@ export const docsDense = {
     },
     {
       name: 'XDSChatComposerInput',
+      isHiddenFromOverview: true,
       displayName: 'Chat Composer Input',
       description: 'rich input for composer; trigger menus (@/commands), inline tokens, msg history, paste/drop files, 16px touch font-size floor to prevent iOS zoom. Use in XDSChatComposer input slot when you need more than plain textarea.',
       propDescriptions: {
@@ -678,6 +683,7 @@ export const docsDense = {
     },
     {
       name: 'XDSChatComposerTokenElement',
+      isHiddenFromOverview: true,
       displayName: 'Chat Composer Token Element',
       description: 'token chip outside contentEditable; badge config or custom render in data-xds-token span',
       propDescriptions: {token: 'badge config or custom render'},
