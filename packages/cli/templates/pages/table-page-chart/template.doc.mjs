@@ -3,9 +3,11 @@
 /** @type {import('../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'page',
-  name: 'Table Page (Matcha Store)',
-  displayName: 'Table Page (Matcha Store)',
+  name: 'Chart',
+  displayName: 'Chart',
   description:
     'Matcha store sales data table with a revenue area chart and product thumbnails.',
   isReady: true,
+  category: 'Table - Chart',
+  isHiddenFromOverview: true,
 };

@@ -24,11 +24,11 @@ import {colorVars} from '@xds/core/theme/tokens.stylex';
 
 const WHY_US_IMAGES = [
   // illustration-horizontal-3 from xds_oss asset set
-  'https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-3.png',
+  '/template-assets/illustration-horizontal-3.png',
   // illustration-horizontal-4 from xds_oss asset set
-  'https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-4.png',
+  '/template-assets/illustration-horizontal-4.png',
   // illustration-horizontal-5 from xds_oss asset set
-  'https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-5.png',
+  '/template-assets/illustration-horizontal-5.png',
 ];
 
 const CAMPAIGN_GOALS = [
