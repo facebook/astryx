@@ -52,6 +52,11 @@ import {
 } from '@heroicons/react/24/outline';
 import githubLight from './themes/github-light.json';
 import githubDark from './themes/github-dark.json';
+import {useThemeMode} from '../providers';
+import {
+  PLAYGROUND_THEME_OPTIONS,
+  DEFAULT_PLAYGROUND_THEME,
+} from './playgroundThemes';
 import {PreviewStage, type Viewport} from './PreviewStage';
 import {PropertyPanel} from './PropertyPanel';
 import {annotateInstanceIds} from './babelParser';
@@ -157,12 +162,6 @@ function updateURL(code: string) {
   const compressed = compressToEncodedURIComponent(code);
   window.history.replaceState(null, '', `#code=${compressed}`);
 }
-
-const THEME_OPTIONS = [
-  {value: 'default', label: 'Default'},
-  {value: 'neutral', label: 'Neutral'},
-  {value: 'matcha', label: 'Matcha'},
-];
 
 /**
  * Configure Monaco's TypeScript service with real XDS type definitions.
@@ -333,8 +332,12 @@ const s = stylex.create({
 
 export function PlaygroundClient() {
   const router = useRouter();
+  // The editor chrome follows the docsite's own light/dark mode, not the OS
+  // (operator) color-scheme preference.
+  const {mode: siteMode} = useThemeMode();
+  const editorTheme = siteMode === 'dark' ? 'github-dark' : 'github-light';
   const [code, setCode] = useState(getInitialCode);
-  const [theme, setTheme] = useState('neutral');
+  const [theme, setTheme] = useState(DEFAULT_PLAYGROUND_THEME);
   const [mode, setMode] = useState<'light' | 'dark'>('light');
   const [activeTab, setActiveTab] = useState<LeftTab>('code');
   const [viewport, setViewport] = useState<Viewport>('desktop');
@@ -344,7 +347,6 @@ export function PlaygroundClient() {
   const [statusFading, setStatusFading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [previewReady, setPreviewReady] = useState(false);
-  const [editorTheme, setEditorTheme] = useState('github-dark');
 
   // The code the playground was seeded with (a shared/example snippet from the
   // URL hash, or the default). Reset restores this — not the hardcoded default.
@@ -368,16 +370,14 @@ export function PlaygroundClient() {
     autoSaveId: 'xds-playground-left-width',
   });
 
-  // Sync editor + initial preview mode with system preference
+  // Seed the initial preview mode from the docsite's mode so the preview opens
+  // consistent with the rest of the site. (The toolbar toggle can still switch
+  // the preview independently afterward.)
+  // Seed once on mount with the current docsite mode; afterward the preview
+  // toggle owns this state, so siteMode is intentionally read only initially.
+  const initialSiteModeRef = useRef(siteMode);
   useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const update = () => {
-      setEditorTheme(mq.matches ? 'github-dark' : 'github-light');
-      setMode(mq.matches ? 'dark' : 'light');
-    };
-    update();
-    mq.addEventListener('change', update);
-    return () => mq.removeEventListener('change', update);
+    setMode(initialSiteModeRef.current);
   }, []);
 
   // Re-read code from hash on hashchange (e.g. SPA navigation with new code)
@@ -690,7 +690,7 @@ export function PlaygroundClient() {
               <XDSSelector
                 label="Theme"
                 isLabelHidden
-                options={THEME_OPTIONS}
+                options={PLAYGROUND_THEME_OPTIONS}
                 value={theme}
                 onChange={setTheme}
                 size="md"
