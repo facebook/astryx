@@ -7,4 +7,5 @@ export const doc = {
   displayName: 'File Explorer',
   description: 'Column-based file browser inspired by macOS Finder',
   isReady: true,
+  category: 'Tools - File Explorer',
 };

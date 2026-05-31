@@ -3,8 +3,9 @@
 /** @type {import('../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'page',
-  name: 'Contact Form',
-  displayName: 'Contact Form',
+  name: 'Basic',
+  displayName: 'Basic',
   description: 'Marketing lead-capture form with pill toggles, dropdowns, and full-width CTA.',
   isReady: true,
+  category: 'Form - Basic',
 };

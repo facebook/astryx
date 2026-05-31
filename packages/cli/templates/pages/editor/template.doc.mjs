@@ -7,4 +7,5 @@ export const doc = {
   displayName: 'Page Editor',
   description: 'Block-based page builder with sidebar config and live preview',
   isReady: true,
+  category: 'Tools - Page Editor',
 };

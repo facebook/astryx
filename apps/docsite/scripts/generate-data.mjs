@@ -790,6 +790,8 @@ async function generateTemplateRegistry() {
       name: doc.name || dir.name,
       description: doc.description || '',
       isReady: doc.isReady ?? true,
+      category: doc.category || '',
+      isHiddenFromOverview: doc.isHiddenFromOverview ?? false,
       source,
     });
   }
@@ -803,6 +805,11 @@ export interface TemplateEntry {
   name: string;
   description: string;
   isReady: boolean;
+  /** Functional category, e.g. 'Dashboard - Analytics'. Empty when untagged.
+   *  The overview groups by the part before ' - '. */
+  category: string;
+  /** When true, hide from the Templates overview gallery (still CLI-available). */
+  isHiddenFromOverview: boolean;
   source: string;
 }
 
