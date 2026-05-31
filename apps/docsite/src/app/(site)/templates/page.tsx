@@ -59,12 +59,6 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Darken the hover scrim. scrim="dark" reads var(--color-overlay); we override
-  // it (on the overlay root, inherited by the scrim) with a stronger black
-  // derived from the always-black --color-on-light token.
-  darkScrim: {
-    '--color-overlay': 'color-mix(in srgb, var(--color-on-light) 78%, transparent)',
-  },
   overlayInner: {
     display: 'flex',
     flexDirection: 'column' as const,
@@ -114,7 +108,7 @@ const GROUP_LABELS: Record<string, string> = {
  *  Standalone categories without a separator (e.g. 'Settings') are their own
  *  group. Untagged templates fall under 'Other'. */
 function groupOf(category: string): string {
-  if (!category) return OTHER_GROUP;
+  if (!category) {return OTHER_GROUP;}
   const idx = category.indexOf(' - ');
   return idx === -1 ? category : category.slice(0, idx);
 }
@@ -146,13 +140,13 @@ export default function TemplatesPage() {
         source: t.source,
       };
       const list = byGroup.get(group);
-      if (list) list.push(item);
-      else byGroup.set(group, [item]);
+      if (list) {list.push(item);}
+      else {byGroup.set(group, [item]);}
     }
 
     const rank = (g: string) => {
       const i = GROUP_ORDER.indexOf(g);
-      if (i !== -1) return i;
+      if (i !== -1) {return i;}
       return g === OTHER_GROUP ? Number.MAX_SAFE_INTEGER : GROUP_ORDER.length;
     };
 
@@ -161,7 +155,10 @@ export default function TemplatesPage() {
         group,
         items: list.sort((a, b) => a.name.localeCompare(b.name)),
       }))
-      .sort((a, b) => rank(a.group) - rank(b.group) || a.group.localeCompare(b.group));
+      .sort(
+        (a, b) =>
+          rank(a.group) - rank(b.group) || a.group.localeCompare(b.group),
+      );
   }, []);
 
   return (
@@ -182,62 +179,71 @@ export default function TemplatesPage() {
             <div {...stylex.props(styles.gridContainer)}>
               <div {...stylex.props(styles.grid)}>
                 {items.map(item => (
-                <XDSCard key={item.slug} padding={0}>
-                  <XDSOverlay
-                    showOn="hover"
-                    scrim="dark"
-                    xstyle={styles.darkScrim}
-                    content={
-                      <div {...stylex.props(styles.overlayInner)}>
-                        <XDSVStack gap={2}>
-                          <XDSVStack gap={0.5}>
-                            <XDSText
-                              type="body"
-                              weight="bold"
-                              style={{color: '#fff'}}>
-                              {item.name}
-                            </XDSText>
-                            <XDSText
-                              type="supporting"
-                              style={{color: 'rgba(255,255,255,0.7)'}}>
-                              {item.description.slice(0, 80)}
-                              {item.description.length > 80 ? '\u2026' : ''}
-                            </XDSText>
-                          </XDSVStack>
-                          <XDSHStack gap={2}>
-                            <XDSButton
-                              label="Preview"
-                              variant="secondary"
-                              size="sm"
-                              href={item.href}
-                            />
-                            {item.source && (
-                              <XDSButton
-                                label="Open in Playground"
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => {
-                                  window.location.href = buildPlaygroundHref(
-                                    item.source,
-                                  );
-                                }}
-                              />
-                            )}
-                          </XDSHStack>
-                        </XDSVStack>
-                      </div>
-                    }>
-                    {item.isReady ? (
-                      <TemplateThumbnail slug={item.slug} />
-                    ) : (
-                      <div {...stylex.props(styles.cardImage)}>
-                        <div {...stylex.props(styles.comingSoon)}>
-                          <XDSBadge label="Coming Soon" variant="info" />
-                        </div>
-                      </div>
-                    )}
-                  </XDSOverlay>
-                </XDSCard>
+                  <XDSCard key={item.slug} padding={0}>
+                    {/* Inline style overrides --color-overlay for a stronger scrim.
+                      CSS variable overrides in stylex.create hit a type mismatch
+                      with StyleXStyles in TS 6+ / StyleX 0.18+ strict mode. */}
+                    <div
+                      style={
+                        {
+                          '--color-overlay':
+                            'color-mix(in srgb, var(--color-on-light) 78%, transparent)',
+                        } as React.CSSProperties
+                      }>
+                      <XDSOverlay
+                        showOn="hover"
+                        scrim="dark"
+                        content={
+                          <div {...stylex.props(styles.overlayInner)}>
+                            <XDSVStack gap={2}>
+                              <XDSVStack gap={0.5}>
+                                <XDSText
+                                  type="body"
+                                  weight="bold"
+                                  style={{color: '#fff'}}>
+                                  {item.name}
+                                </XDSText>
+                                <XDSText
+                                  type="supporting"
+                                  style={{color: 'rgba(255,255,255,0.7)'}}>
+                                  {item.description.slice(0, 80)}
+                                  {item.description.length > 80 ? '\u2026' : ''}
+                                </XDSText>
+                              </XDSVStack>
+                              <XDSHStack gap={2}>
+                                <XDSButton
+                                  label="Preview"
+                                  variant="secondary"
+                                  size="sm"
+                                  href={item.href}
+                                />
+                                {item.source && (
+                                  <XDSButton
+                                    label="Open in Playground"
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => {
+                                      window.location.href =
+                                        buildPlaygroundHref(item.source);
+                                    }}
+                                  />
+                                )}
+                              </XDSHStack>
+                            </XDSVStack>
+                          </div>
+                        }>
+                        {item.isReady ? (
+                          <TemplateThumbnail slug={item.slug} />
+                        ) : (
+                          <div {...stylex.props(styles.cardImage)}>
+                            <div {...stylex.props(styles.comingSoon)}>
+                              <XDSBadge label="Coming Soon" variant="info" />
+                            </div>
+                          </div>
+                        )}
+                      </XDSOverlay>
+                    </div>
+                  </XDSCard>
                 ))}
               </div>
             </div>
