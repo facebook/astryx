@@ -58,7 +58,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Layout',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/colorful-home-horizontal-1.png',
+      '/template-assets/colorful-home-horizontal-1.png',
   },
   {
     id: '2',
@@ -68,7 +68,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Layout',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-3.jpg',
+      '/template-assets/illustrative-horizontal-3.jpg',
   },
   {
     id: '3',
@@ -78,7 +78,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Layout',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-2.png',
+      '/template-assets/light-working-horizontal-2.png',
   },
   {
     id: '4',
@@ -87,7 +87,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Layout',
     type: 'Utility',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/moody-scene-horizontal-1.png',
+      '/template-assets/moody-scene-horizontal-1.png',
   },
   {
     id: '5',
@@ -96,7 +96,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Layout',
     type: 'Pattern',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/colorful-lifestyle-horizontal-2.png',
+      '/template-assets/colorful-lifestyle-horizontal-2.png',
   },
   {
     id: '6',
@@ -105,7 +105,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Layout',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/light-scene-horizontal-1.png',
+      '/template-assets/light-scene-horizontal-1.png',
   },
   {
     id: '7',
@@ -115,7 +115,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Forms',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/moody-working-horizontal-1.png',
+      '/template-assets/moody-working-horizontal-1.png',
   },
   {
     id: '8',
@@ -124,7 +124,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Forms',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/colorful-working-horizontal-3.png',
+      '/template-assets/colorful-working-horizontal-3.png',
   },
   {
     id: '9',
@@ -133,7 +133,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Forms',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-1.jpg',
+      '/template-assets/illustrative-horizontal-1.jpg',
   },
   {
     id: '10',
@@ -142,7 +142,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Forms',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/light-home-horizontal-1.png',
+      '/template-assets/light-home-horizontal-1.png',
   },
   {
     id: '11',
@@ -151,7 +151,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Forms',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/moody-home-horizontal-2.png',
+      '/template-assets/moody-home-horizontal-2.png',
   },
   {
     id: '12',
@@ -161,7 +161,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Forms',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/colorful-product-1.png',
+      '/template-assets/colorful-product-1.png',
   },
   {
     id: '13',
@@ -171,7 +171,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Navigation',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-5.jpg',
+      '/template-assets/illustrative-horizontal-5.jpg',
   },
   {
     id: '14',
@@ -180,7 +180,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Navigation',
     type: 'Pattern',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-1.png',
+      '/template-assets/light-working-horizontal-1.png',
   },
   {
     id: '15',
@@ -190,7 +190,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Navigation',
     type: 'Pattern',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/moody-lifestyle-horizontal-1.png',
+      '/template-assets/moody-lifestyle-horizontal-1.png',
   },
   {
     id: '16',
@@ -199,7 +199,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Navigation',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/colorful-home-horizontal-2.png',
+      '/template-assets/colorful-home-horizontal-2.png',
   },
   {
     id: '17',
@@ -209,7 +209,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Navigation',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/colorful-working-horizontal-1.png',
+      '/template-assets/colorful-working-horizontal-1.png',
   },
   {
     id: '18',
@@ -219,7 +219,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Navigation',
     type: 'Pattern',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-3.png',
+      '/template-assets/light-working-horizontal-3.png',
   },
   {
     id: '19',
@@ -229,7 +229,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Feedback',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/moody-working-horizontal-2.png',
+      '/template-assets/moody-working-horizontal-2.png',
   },
   {
     id: '20',
@@ -239,7 +239,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Feedback',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-2.jpg',
+      '/template-assets/illustrative-horizontal-2.jpg',
   },
   {
     id: '21',
@@ -248,7 +248,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Feedback',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/colorful-lifestyle-horizontal-1.png',
+      '/template-assets/colorful-lifestyle-horizontal-1.png',
   },
   {
     id: '22',
@@ -257,7 +257,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Feedback',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/light-lifestyle-horizontal-1.png',
+      '/template-assets/light-lifestyle-horizontal-1.png',
   },
   {
     id: '23',
@@ -267,7 +267,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Feedback',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/moody-home-horizontal-1.png',
+      '/template-assets/moody-home-horizontal-1.png',
   },
   {
     id: '24',
@@ -277,7 +277,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Feedback',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/colorful-working-horizontal-2.png',
+      '/template-assets/colorful-working-horizontal-2.png',
   },
   {
     id: '25',
@@ -287,7 +287,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Data',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-4.jpg',
+      '/template-assets/illustrative-horizontal-4.jpg',
   },
   {
     id: '26',
@@ -297,7 +297,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Data',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-4.png',
+      '/template-assets/light-working-horizontal-4.png',
   },
   {
     id: '27',
@@ -307,7 +307,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Data',
     type: 'Utility',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/moody-lifestyle-horizontal-2.png',
+      '/template-assets/moody-lifestyle-horizontal-2.png',
   },
   {
     id: '28',
@@ -316,7 +316,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Data',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/moody-scene-horizontal-2.png',
+      '/template-assets/moody-scene-horizontal-2.png',
   },
   {
     id: '29',
@@ -326,7 +326,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Data',
     type: 'Pattern',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/colorful-product-2.png',
+      '/template-assets/colorful-product-2.png',
   },
   {
     id: '30',
@@ -336,7 +336,7 @@ const ITEMS: LibraryItem[] = [
     category: 'Data',
     type: 'Component',
     imageUrl:
-      'https://lookaside.facebook.com/assets/xds_oss/moody-working-horizontal-3.png',
+      '/template-assets/moody-working-horizontal-3.png',
   },
 ];
 
