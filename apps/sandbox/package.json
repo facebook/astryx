@@ -42,7 +42,7 @@
     "@types/node": "^25.9.1",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
-    "commander": "^12.1.0",
+    "commander": "^15.0.0",
     "typescript": "^6.0.3",
     "@xds/build": "*"
   }
