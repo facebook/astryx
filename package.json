@@ -75,7 +75,8 @@
       "anymatch>picomatch": "^2.3.2",
       "minimatch": "^9.0.7",
       "dompurify": "^3.3.2",
-      "vite": "^6.4.2"
+      "vite": "^6.4.2",
+      "tmp": ">=0.2.6"
     },
     "onlyBuiltDependencies": [
       "esbuild",
