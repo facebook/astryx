@@ -25,6 +25,7 @@ import type {
   XDSTextColor,
   XDSTextWeight,
   XDSTextDisplay,
+  XDSTextJustify,
   XDSWordBreak,
   XDSTextWrap,
 } from '../theme/types';
@@ -34,6 +35,7 @@ import {
   sizeByTypeStyles,
   weightStyles,
   displayStyles,
+  justifyStyles,
   truncationStyles,
   wordBreakStyles,
   textWrapStyles,
@@ -118,6 +120,13 @@ export interface XDSTextProps extends Omit<XDSBaseProps, 'children'> {
   textWrap?: XDSTextWrap;
 
   /**
+   * Text alignment (justification). Uses logical values (start/end)
+   * for i18n/RTL compatibility.
+   * @default 'start'
+   */
+  justify?: XDSTextJustify;
+
+  /**
    * Enable optical alignment (text-box-trim).
    * Forces block display.
    * @default false
@@ -199,6 +208,7 @@ export function XDSText({
   hasTruncateTooltip = true,
   wordBreak,
   textWrap,
+  justify = 'start',
   hasCapsize = false,
   hasStrikethrough = false,
   hasTabularNumbers = false,
@@ -259,6 +269,8 @@ export function XDSText({
             maxLines > 0 && wordBreakStyles[resolvedWordBreak],
             // Text wrap
             textWrap && textWrapStyles[textWrap],
+            // Justify (text alignment)
+            justify !== 'start' && justifyStyles[justify],
             // Capsize
             hasCapsize && capsizeStyles.enabled,
             // Decorations

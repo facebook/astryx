@@ -182,6 +182,12 @@ export type XDSWordBreak = 'break-word' | 'break-all';
 export type XDSTextWrap = 'wrap' | 'nowrap' | 'balance' | 'pretty';
 
 /**
+ * Text alignment (justification). Uses logical properties (start/end)
+ * for i18n/RTL compatibility.
+ */
+export type XDSTextJustify = 'start' | 'center' | 'end';
+
+/**
  * Allowed CSS properties for XDSText/XDSHeading xstyle prop.
  * Constrained to layout-only properties to prevent typography escapes.
  */
