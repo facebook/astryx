@@ -390,18 +390,14 @@ export function XDSMetricTile({
       <div {...stylex.props(styles.titleLine)}>
         {title != null && (
           <span
-            {...mergeProps(
-              undefined,
-              stylex.props(
-                styles.title,
-                numberOfTitleLines === 1 && truncationStyles.singleLine,
-                numberOfTitleLines > 1 && truncationStyles.multiLine,
-              ),
-              undefined,
-              numberOfTitleLines > 1
-                ? {WebkitLineClamp: numberOfTitleLines}
-                : undefined,
-            )}>
+            {...stylex.props(
+              styles.title,
+              numberOfTitleLines === 1 && truncationStyles.singleLine,
+              numberOfTitleLines > 1 && truncationStyles.multiLine,
+            )}
+            {...(numberOfTitleLines > 1
+              ? {style: {WebkitLineClamp: numberOfTitleLines}}
+              : undefined)}>
             {title}
           </span>
         )}
