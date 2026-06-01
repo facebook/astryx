@@ -57,6 +57,7 @@ function generateThemeFile({name, exportName, accent, includeComponentOverrides}
  */
 
 import {defineTheme} from '@xds/core/theme';
+import {humanLog} from '../lib/json.mjs';
 
 export const ${exportName} = defineTheme({
   name: '${name.toLowerCase().replace(/\s+/g, '-')}',
@@ -180,13 +181,13 @@ export function registerTheme(program) {
 
         const themes = discoverThemes(coreDir);
         if (themes.length === 0) {
-          console.log(`\nNo themes found. Run \`${getRunPrefix()} xds theme\` to create one.\n`);
+          humanLog(`\nNo themes found. Run \`${getRunPrefix()} xds theme\` to create one.\n`);
         } else {
-          console.log('\nExisting themes:\n');
+          humanLog('\nExisting themes:\n');
           for (const theme of themes) {
-            console.log(`  ${theme.name} — import { ${theme.exportName} } from '@xds/theme/${theme.name}'`);
+            humanLog(`  ${theme.name} — import { ${theme.exportName} } from '@xds/theme/${theme.name}'`);
           }
-          console.log('');
+          humanLog('');
         }
         return;
       }
@@ -205,7 +206,7 @@ export function registerTheme(program) {
         fs.mkdirSync(path.dirname(outputPath), {recursive: true});
         fs.writeFileSync(outputPath, content);
 
-        console.log(`\n✓ Generated ${path.relative(process.cwd(), outputPath)}\n`);
+        humanLog(`\n✓ Generated ${path.relative(process.cwd(), outputPath)}\n`);
         printSetupInstructions(outputPath, exportName);
         return;
       }
@@ -345,11 +346,11 @@ export function registerTheme(program) {
  */
 function printSetupInstructions(outputPath, exportName) {
   const relPath = path.relative(process.cwd(), outputPath).replace('.stylex.ts', '');
-  console.log('Add to your root layout:\n');
-  console.log(`  import {XDSTheme} from '@xds/core';`);
-  console.log(`  import {${exportName}} from './${relPath}';`);
-  console.log('');
-  console.log(`  <XDSTheme theme={${exportName}}>`);
-  console.log('    <App />');
-  console.log('  </XDSTheme>\n');
+  humanLog('Add to your root layout:\n');
+  humanLog(`  import {XDSTheme} from '@xds/core';`);
+  humanLog(`  import {${exportName}} from './${relPath}';`);
+  humanLog('');
+  humanLog(`  <XDSTheme theme={${exportName}}>`);
+  humanLog('    <App />');
+  humanLog('  </XDSTheme>\n');
 }

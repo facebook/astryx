@@ -15,7 +15,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as p from '@clack/prompts';
 import {findCoreDir, listComponents} from '../utils/paths.mjs';
-import {jsonOut, jsonError} from '../lib/json.mjs';
+import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
 import {
   checkGhCli,
   createGapReport,
@@ -81,13 +81,13 @@ export function registerSwizzle(program) {
 
       if (options.list || !component) {
         if (json) return jsonOut('swizzle.list', components);
-        console.log('\nAvailable components:\n');
+        humanLog('\nAvailable components:\n');
         for (const name of components) {
-          console.log(`  ${name}`);
+          humanLog(`  ${name}`);
         }
-        console.log(`\nUsage: xds swizzle <component>\n`);
-        console.log('Example: xds swizzle Button');
-        console.log('         xds swizzle XDSButton  (XDS prefix also works)\n');
+        humanLog(`\nUsage: xds swizzle <component>\n`);
+        humanLog('Example: xds swizzle Button');
+        humanLog('         xds swizzle XDSButton  (XDS prefix also works)\n');
         return;
       }
 
@@ -151,20 +151,20 @@ export function registerSwizzle(program) {
         }
 
         if (json) return jsonOut('swizzle.copy', {component: dirName, outputDir: relOutput, filesCopied: copied, files: copiedFiles.map(f => f), gapReport: gapReportUrl});
-        console.log(`\n✓ Copied ${copied} files to ${relOutput}/\n`);
-        console.log('Relative imports have been rewritten to use @xds/core.');
-        console.log('You can now customize the component source freely.\n');
-        if (gapReportUrl) console.log(`✓ Gap report filed: ${gapReportUrl}\n`);
-        else if (!gapConfig.enabled) console.log('Gap reporting is disabled via configuration.');
-        else if (!gapConfig.command && !checkGhCli()) console.log('Skipping gap report: gh CLI not available.');
+        humanLog(`\n✓ Copied ${copied} files to ${relOutput}/\n`);
+        humanLog('Relative imports have been rewritten to use @xds/core.');
+        humanLog('You can now customize the component source freely.\n');
+        if (gapReportUrl) humanLog(`✓ Gap report filed: ${gapReportUrl}\n`);
+        else if (!gapConfig.enabled) humanLog('Gap reporting is disabled via configuration.');
+        else if (!gapConfig.command && !checkGhCli()) humanLog('Skipping gap report: gh CLI not available.');
         return;
       }
 
       if (json) return jsonOut('swizzle.copy', {component: dirName, outputDir: relOutput, filesCopied: copied, files: copiedFiles.map(f => f)});
 
-      console.log(`\n✓ Copied ${copied} files to ${relOutput}/\n`);
-      console.log('Relative imports have been rewritten to use @xds/core.');
-      console.log('You can now customize the component source freely.\n');
+      humanLog(`\n✓ Copied ${copied} files to ${relOutput}/\n`);
+      humanLog('Relative imports have been rewritten to use @xds/core.');
+      humanLog('You can now customize the component source freely.\n');
 
       if (!options.report || !gapConfig.enabled) {
         return;
@@ -222,7 +222,7 @@ export function registerSwizzle(program) {
           source: 'interactive',
         });
         s.stop('Gap report filed');
-        console.log(`✓ ${url}\n`);
+        humanLog(`✓ ${url}\n`);
       } catch (err) {
         s.stop('Failed to file gap report');
         console.error(`Warning: Could not file gap report: ${err.message}`);

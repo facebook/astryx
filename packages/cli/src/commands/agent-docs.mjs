@@ -23,6 +23,7 @@ import {findCoreDir, CLI_ROOT} from '../utils/paths.mjs';
 import {getRunPrefix} from '../utils/package-manager.mjs';
 import {discoverComponents} from '../lib/component-discovery.mjs';
 import {discoverHooks} from '../lib/hook-discovery.mjs';
+import {humanLog} from '../lib/json.mjs';
 
 const AGENTS_MD = 'AGENTS.md';
 const CLAUDE_MD = 'CLAUDE.md';
@@ -303,9 +304,9 @@ export function removeAgentDocs(targetDir) {
     const deleteIfEmpty = p === AGENTS_MD || p === CLAUDE_DIR_MD;
     if (removeXdsBlock(filePath, {deleteIfEmpty})) {
       if (!fs.existsSync(filePath)) {
-        console.log(`✓ Removed empty ${p}`);
+        humanLog(`✓ Removed empty ${p}`);
       } else {
-        console.log(`✓ Removed XDS section from ${p}`);
+        humanLog(`✓ Removed XDS section from ${p}`);
       }
     }
   }
@@ -415,9 +416,9 @@ export function registerAgentDocs(program) {
       const lang = program.opts().lang || null;
 
       if (options.remove) {
-        console.log('\n🗑️  Removing XDS agent docs...\n');
+        humanLog('\n🗑️  Removing XDS agent docs...\n');
         removeAgentDocs(targetDir);
-        console.log('\n✅ XDS agent docs removed.\n');
+        humanLog('\n✅ XDS agent docs removed.\n');
         return;
       }
 
@@ -428,7 +429,7 @@ export function registerAgentDocs(program) {
         return;
       }
 
-      console.log(`\n📚 Installing XDS agent docs (v${version})...\n`);
+      humanLog(`\n📚 Installing XDS agent docs (v${version})...\n`);
 
       // Collect explicit paths from --agent-docs-path (commander parses variadic as array or single)
       const explicitPaths = options.agentDocsPath
@@ -448,10 +449,10 @@ export function registerAgentDocs(program) {
       const run = `${runPrefix} xds`;
 
       for (const t of targets) {
-        console.log(`✓ ${t}`);
+        humanLog(`✓ ${t}`);
       }
 
-      console.log(`
+      humanLog(`
 ✅ XDS agent docs installed!
 
 Your AI coding agent will now:

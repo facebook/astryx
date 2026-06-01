@@ -19,7 +19,7 @@ import {
   GAP_CATEGORIES,
 } from '../utils/github.mjs';
 import {getRunPrefix} from '../utils/package-manager.mjs';
-import {jsonOut, jsonError} from '../lib/json.mjs';
+import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
 
 function isCancel(value) {
   if (p.isCancel(value)) {
@@ -180,7 +180,7 @@ export function registerGapReport(program) {
       if (options.listCategories) {
         if (json) return jsonOut('gap-report.categories', GAP_CATEGORIES);
         for (const cat of GAP_CATEGORIES) {
-          console.log(`  ${cat.value.padEnd(20)} ${cat.label}`);
+          humanLog(`  ${cat.value.padEnd(20)} ${cat.label}`);
         }
         return;
       }
@@ -188,7 +188,7 @@ export function registerGapReport(program) {
       const config = loadGapReportConfig();
       if (!config.enabled) {
         if (json) return jsonError('Gap reporting is disabled');
-        console.log(
+        humanLog(
           `Gap reporting is disabled. Run \`${getRunPrefix()} xds gap-report setup\` to configure.`,
         );
         return;
@@ -241,9 +241,9 @@ export function registerGapReport(program) {
               url: url || null,
             });
           if (url) {
-            console.log(`\n✓ Gap report filed: ${url}\n`);
+            humanLog(`\n✓ Gap report filed: ${url}\n`);
           } else {
-            console.log('\nGap reporting is disabled via configuration.\n');
+            humanLog('\nGap reporting is disabled via configuration.\n');
           }
         } catch (err) {
           if (json) return jsonError(err.message);

@@ -12,6 +12,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as p from '@clack/prompts';
 import {getRunPrefix} from '../utils/package-manager.mjs';
+import {humanLog} from '../lib/json.mjs';
 
 // Known corruption patterns that indicate a broken transform.
 // Each entry: [regex, human-readable description]
@@ -158,7 +159,7 @@ export async function runCodemods(versionManifests, {apply, path: srcPath, codem
   const log = silent
     ? {step() {}, info() {}, success() {}, warn() {}, error() {}, message() {}}
     : p.log;
-  const writeBlank = () => { if (!silent) console.log(''); };
+  const writeBlank = () => { if (!silent) humanLog(''); };
 
   const resolvedPath = path.resolve(srcPath);
 

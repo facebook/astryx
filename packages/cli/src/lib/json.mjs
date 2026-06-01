@@ -83,11 +83,16 @@ export function humanWarn(...args) {
  * @template {import('../types/base').CLIResponseType} T
  * @param {T} type
  * @param {import('../types/base').CLIResponseDataMap[T]} data
+ * @param {Record<string, unknown>} [meta] - Optional sidecar metadata (e.g.
+ *   {configured: false}). Emitted as a sibling of data, never merged into it.
  * @returns {void}
  */
-export function jsonOut(type, data) {
+export function jsonOut(type, data, meta) {
   process.__xdsJsonHandled = true;
-  console.log(JSON.stringify({apiVersion: API_VERSION, type, data}, null, 2));
+  /** @type {any} */
+  const envelope = {apiVersion: API_VERSION, type, data};
+  if (meta !== undefined) envelope.meta = meta;
+  console.log(JSON.stringify(envelope, null, 2));
 }
 
 /**
