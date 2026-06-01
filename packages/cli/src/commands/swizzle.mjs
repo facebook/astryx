@@ -15,6 +15,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as p from '@clack/prompts';
 import {findCoreDir, listComponents} from '../utils/paths.mjs';
+import {isInteractive} from '../utils/interactive.mjs';
 import {jsonOut, jsonError} from '../lib/json.mjs';
 import {
   buildGapReportPreview,
@@ -239,6 +240,15 @@ export function registerSwizzle(program) {
       }
 
       // Interactive gap report prompt
+      //
+      // This prompt is OPTIONAL — the swizzle copy already succeeded above.
+      // In a non-interactive context (CI, piped I/O, no TTY) we must not
+      // block on it; skip gracefully rather than hang. Use --gap with
+      // explicit flags for non-interactive gap reporting.
+      if (!isInteractive()) {
+        return;
+      }
+
       if (!gapConfig.command && !checkGhCli()) {
         // Silently skip if gh isn't available and no custom command configured
         return;

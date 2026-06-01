@@ -20,6 +20,7 @@ import {CLI_ROOT} from '../utils/paths.mjs';
 import {getRunPrefix} from '../utils/package-manager.mjs';
 import {installAgentDocs, removeAgentDocs} from './agent-docs.mjs';
 import {listTemplates} from './template.mjs';
+import {requireInteractive} from '../utils/interactive.mjs';
 
 const VALID_FEATURES = ['agents', 'theme', 'template'];
 const run = getRunPrefix();
@@ -179,6 +180,15 @@ export function registerInit(program) {
       }
 
       // Interactive wizard
+      //
+      // Guard: this wizard blocks on prompts. In a non-interactive context
+      // (CI, piped stdin/stdout, no TTY) it would hang forever. Fail fast
+      // with actionable guidance via the shared interactivity contract.
+      requireInteractive({
+        command: 'init',
+        hint: `\`${run} xds init --all\` or \`--features agents,theme,template\``,
+      });
+
       p.intro('Welcome to XDS');
 
       p.note(
