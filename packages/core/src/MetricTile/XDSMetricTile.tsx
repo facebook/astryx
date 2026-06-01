@@ -26,9 +26,8 @@ import {
 } from '../theme/tokens.stylex';
 import {xdsClassName, mergeProps} from '../utils';
 import {XDSText} from '../Text/XDSText';
-import {XDSIcon} from '../Icon/XDSIcon';
+import {truncationStyles} from '../Text/text.stylex';
 import {XDSHoverCard} from '../HoverCard/XDSHoverCard';
-import {XDSIconButton} from '../IconButton/XDSIconButton';
 
 // =============================================================================
 // Styles
@@ -48,27 +47,51 @@ const styles = stylex.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  titleRow: {
-    display: 'flex',
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-  },
-  titleContent: {
+  titleBlock: {
     display: 'flex',
     flexDirection: 'column',
-    flex: 1,
-    minWidth: 0,
+  },
+  titleLine: {
+    display: 'inline',
+  },
+  helpIcon: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    height: 20,
+    marginInlineStart: spacingVars['--spacing-1'],
+  },
+  helpButton: {
+    backgroundColor: 'transparent',
+    border: 'none',
+    outline: 'none',
+    padding: 0,
+    cursor: 'pointer',
+    color: colorVars['--color-icon-secondary'],
   },
   tabularNums: {
     fontVariantNumeric: 'tabular-nums',
+  },
+  title: {
+    fontSize: typeScaleVars['--text-body-size'],
+    lineHeight: 1.2,
+    fontWeight: fontWeightVars['--font-weight-normal'],
+    color: colorVars['--color-text-primary'],
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  subtitle: {
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: 1.2,
+    fontWeight: fontWeightVars['--font-weight-normal'],
+    color: colorVars['--color-text-secondary'],
   },
 });
 
 const gapStyles = stylex.create({
   sm: {gap: spacingVars['--spacing-0-5']},
   md: {gap: spacingVars['--spacing-2']},
-  lg: {gap: spacingVars['--spacing-3']},
+  titleBottom: {gap: 0},
+  titleTop: {gap: spacingVars['--spacing-2']},
 });
 
 const paddingStyles = stylex.create({
@@ -78,23 +101,17 @@ const paddingStyles = stylex.create({
 
 const valueStyles = stylex.create({
   large: {
-    fontSize: typeScaleVars['--text-heading-1-size'],
-    lineHeight: typeScaleVars['--text-heading-1-leading'],
-    fontWeight: fontWeightVars['--font-weight-semibold'],
+    fontSize: '2rem',
+    lineHeight: 1,
+    fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-primary'],
   },
   small: {
-    fontSize: typeScaleVars['--text-heading-2-size'],
-    lineHeight: typeScaleVars['--text-heading-2-leading'],
-    fontWeight: fontWeightVars['--font-weight-semibold'],
+    fontSize: typeScaleVars['--text-heading-1-size'],
+    lineHeight: 1,
+    fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-primary'],
   },
-});
-
-const deltaColorStyles = stylex.create({
-  favorable: {color: colorVars['--color-success']},
-  unfavorable: {color: colorVars['--color-error']},
-  neutral: {color: colorVars['--color-text-secondary']},
 });
 
 const deltaIconColorStyles = stylex.create({
@@ -127,7 +144,7 @@ export interface XDSMetricTileProps extends XDSBaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
   /**
    * The metric value to display.
-   * When null or undefined, displays an em-dash (—).
+   * When null or undefined, displays a double hyphen (--).
    */
   value: number | null | undefined;
   /**
@@ -276,6 +293,10 @@ function TrendArrowSvg({
   );
 }
 
+const deltaGapStyle = stylex.create({
+  root: {gap: spacingVars['--spacing-1']},
+});
+
 function DeltaIndicator({
   trend,
   favorability = 'neutral',
@@ -286,19 +307,14 @@ function DeltaIndicator({
   value?: ReactNode;
 }) {
   return (
-    <div
-      {...stylex.props(
-        styles.row,
-        gapStyles.sm,
-        deltaColorStyles[favorability],
-      )}>
+    <div {...stylex.props(styles.row, deltaGapStyle.root)}>
       {trend != null && (
         <span {...stylex.props(deltaIconColorStyles[favorability])}>
           <TrendArrowSvg direction={trend} width={16} height={16} />
         </span>
       )}
       {typeof value === 'string' ? (
-        <XDSText type="large" color="inherit">
+        <XDSText type="body" color="secondary">
           {value}
         </XDSText>
       ) : (
@@ -309,23 +325,21 @@ function DeltaIndicator({
 }
 
 // =============================================================================
-// Info Icon for Hovercard
+// Info Icon for Hovercard (12px filled info-circle, matching www XDSHelpMessage)
 // =============================================================================
 
-const InfoIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}>
-    <circle cx="12" cy="12" r="10" />
-    <path d="M12 16v-4" />
-    <path d="M12 8h.01" />
-  </svg>
-);
+function InfoCircle12() {
+  return (
+    <svg
+      width={12}
+      height={12}
+      viewBox="0 0 12 12"
+      fill="currentColor"
+      aria-hidden="true">
+      <path d="M6 0a6 6 0 1 0 0 12A6 6 0 0 0 6 0zm.75 9h-1.5V5.25h1.5V9zm0-4.5h-1.5v-1.5h1.5v1.5z" />
+    </svg>
+  );
+}
 
 // =============================================================================
 // Component
@@ -372,31 +386,40 @@ export function XDSMetricTile({
   const formatter = getFormatter(format);
 
   const titleBlock = (title != null || subtitle != null) && (
-    <div {...stylex.props(styles.titleRow)}>
-      <div {...stylex.props(styles.titleContent)}>
+    <div {...stylex.props(styles.titleBlock)}>
+      <div {...stylex.props(styles.titleLine)}>
         {title != null && (
-          <XDSText
-            type="body"
-            color="secondary"
-            maxLines={numberOfTitleLines || undefined}>
+          <span
+            {...mergeProps(
+              undefined,
+              stylex.props(
+                styles.title,
+                numberOfTitleLines === 1 && truncationStyles.singleLine,
+                numberOfTitleLines > 1 && truncationStyles.multiLine,
+              ),
+              undefined,
+              numberOfTitleLines > 1
+                ? {WebkitLineClamp: numberOfTitleLines}
+                : undefined,
+            )}>
             {title}
-          </XDSText>
+          </span>
         )}
-        {subtitle != null && (
-          <XDSText type="supporting" color="secondary">
-            {subtitle}
-          </XDSText>
+        {hovercard != null && (
+          <XDSHoverCard content={hovercard}>
+            <span {...stylex.props(styles.helpIcon)}>
+              <button
+                type="button"
+                aria-label="Help Message"
+                {...stylex.props(styles.helpButton)}>
+                <InfoCircle12 />
+              </button>
+            </span>
+          </XDSHoverCard>
         )}
       </div>
-      {hovercard != null && (
-        <XDSHoverCard content={hovercard}>
-          <XDSIconButton
-            icon={<XDSIcon icon={InfoIcon} size="sm" />}
-            size="sm"
-            variant="ghost"
-            label="More info"
-          />
-        </XDSHoverCard>
+      {subtitle != null && (
+        <span {...stylex.props(styles.subtitle)}>{subtitle}</span>
       )}
     </div>
   );
@@ -411,7 +434,7 @@ export function XDSMetricTile({
         data-testid={
           props['data-testid'] ? `${props['data-testid']}-value` : undefined
         }>
-        {value == null ? '—' : formatter(value)}
+        {value == null ? '--' : formatter(value)}
       </div>
       {(deltaTrend != null || deltaValue != null) && (
         <DeltaIndicator
@@ -431,7 +454,7 @@ export function XDSMetricTile({
         stylex.props(
           styles.root,
           styles.column,
-          titlePosition === 'top' ? gapStyles.lg : gapStyles.md,
+          titlePosition === 'top' ? gapStyles.titleTop : gapStyles.titleBottom,
           hasPadding && paddingStyles[size],
           hasTabularNumbers && styles.tabularNums,
           xstyle,

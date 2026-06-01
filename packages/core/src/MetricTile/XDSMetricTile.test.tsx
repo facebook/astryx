@@ -12,12 +12,12 @@ describe('XDSMetricTile', () => {
 
   it('renders em-dash when value is null', () => {
     render(<XDSMetricTile value={null} data-testid="metric" />);
-    expect(screen.getByTestId('metric')).toHaveTextContent('—');
+    expect(screen.getByTestId('metric')).toHaveTextContent('--');
   });
 
   it('renders em-dash when value is undefined', () => {
     render(<XDSMetricTile value={undefined} data-testid="metric" />);
-    expect(screen.getByTestId('metric')).toHaveTextContent('—');
+    expect(screen.getByTestId('metric')).toHaveTextContent('--');
   });
 
   it('renders title and subtitle', () => {
