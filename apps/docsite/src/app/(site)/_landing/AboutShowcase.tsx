@@ -4,7 +4,9 @@
 
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {XDSVStack} from '@xds/core/Layout';
+import {XDSCard, XDSVStack} from '@xds/core/Layout';
+import {XDSGrid} from '@xds/core/Grid';
+import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSLink} from '@xds/core/Link';
 import {XDSBadge} from '@xds/core/Badge';
@@ -14,49 +16,19 @@ import {neutralTheme} from '@xds/theme-neutral/built';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
 
 const styles = stylex.create({
-  section: {
-    width: '100%',
-    paddingBlock: spacingVars['--spacing-12'],
-    paddingInline: spacingVars['--spacing-6'],
-    backgroundColor: 'var(--color-background-surface)',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-10'],
-  },
   headingBlock: {
     textAlign: 'center',
-    width: '100%',
-    maxWidth: 680,
-  },
-  subhead: {
     width: '100%',
     maxWidth: 680,
   },
   fillWidth: {
     width: '100%',
   },
-  grid: {
+  // Layout glue for the XDSGrid: cap at 1200px. XDSGrid doesn't expose
+  // maxWidth as a prop, so we pass it through xstyle.
+  gridLayout: {
     width: '100%',
     maxWidth: 1200,
-    display: 'grid',
-    gridTemplateColumns: {
-      default: '1fr',
-      '@media (min-width: 720px)': 'repeat(3, 1fr)',
-    },
-  },
-  column: {
-    paddingBlock: spacingVars['--spacing-8'],
-    paddingInline: spacingVars['--spacing-6'],
-    borderLeftWidth: {
-      default: 0,
-      '@media (min-width: 720px)': 1,
-    },
-    borderLeftStyle: 'solid',
-    borderLeftColor: 'var(--color-border)',
-  },
-  firstColumn: {
-    borderLeftWidth: 0,
   },
   topDivider: {
     width: '100%',
@@ -64,7 +36,6 @@ const styles = stylex.create({
   },
   iconSlot: {
     height: 48,
-    marginBottom: spacingVars['--spacing-4'],
   },
 });
 
@@ -125,6 +96,17 @@ function DiamondIcon() {
 
 const items: AboutItem[] = [
   {
+    title: 'Designed for speed',
+    description:
+      'Foundations you can trust, speed you can feel. The system is built so teams stop reinventing the basics and start shipping the ideas that matter.',
+    link: (
+      <XDSLink type="body" href="/docs/getting-started" hasUnderline>
+        Get started in minutes
+      </XDSLink>
+    ),
+    icon: <DiamondIcon />,
+  },
+  {
     title: 'Built by the people who use it',
     description:
       'The system gets sharper when we put it to work in the real world. Using it in context strengthens the whole system for everyone.',
@@ -146,35 +128,20 @@ const items: AboutItem[] = [
     ),
     icon: <SquareIcon />,
   },
-  {
-    title: 'Designed for speed',
-    description:
-      'Foundations you can trust, speed you can feel. The system is built so teams stop reinventing the basics and start shipping the ideas that matter.',
-    link: (
-      <XDSLink type="body" href="/docs/getting-started" hasUnderline>
-        Get started in minutes
-      </XDSLink>
-    ),
-    icon: <DiamondIcon />,
-  },
 ];
 
 function AboutHeading() {
   return (
     <XDSVStack
-      gap={2}
+      gap={4}
       align="center"
       xstyle={styles.headingBlock}
       style={{textAlign: 'center'}}>
       <XDSBadge variant="orange" label="About us" />
-      <XDSHeading
-        level={2}
-        type="display-2"
-        color="primary"
-        xstyle={styles.fillWidth}>
+      <XDSHeading level={2} type="display-2" color="primary">
         Astryx powers over 13,000 apps
       </XDSHeading>
-      <XDSText type="body" color="secondary" xstyle={styles.subhead}>
+      <XDSText type="body" color="secondary" style={{maxWidth: 560}}>
         Astryx has grown inside Meta over the last eight years, shaped by the
         engineers, designers, and product teams who depend on it every day.
       </XDSText>
@@ -182,40 +149,39 @@ function AboutHeading() {
   );
 }
 
-function AboutColumn({item, isFirst}: {item: AboutItem; isFirst: boolean}) {
+function AboutColumn({item}: {item: AboutItem}) {
   return (
-    <div
-      {...stylex.props(styles.column, isFirst && styles.firstColumn)}
-      style={{textAlign: 'left'}}>
-      <div {...stylex.props(styles.iconSlot)}>{item.icon}</div>
-      <XDSVStack gap={2} align="start">
-        <XDSHeading level={3} color="primary">
-          {item.title}
-        </XDSHeading>
+    <XDSCard padding={5}>
+      <XDSVStack gap={4}>
+        <XDSAspectRatio ratio={1} xstyle={styles.iconSlot}>
+          {item.icon}
+        </XDSAspectRatio>
         <XDSVStack gap={1} align="start">
-          <XDSText type="body" color="secondary">
+          <XDSHeading level={3} color="primary" style={{width: '100%'}}>
+            {item.title}
+          </XDSHeading>
+          <XDSText type="body" color="secondary" style={{width: '100%'}}>
             {item.description}
           </XDSText>
-          {item.link}
         </XDSVStack>
+        {item.link}
       </XDSVStack>
-    </div>
+    </XDSCard>
   );
 }
 
 export function AboutShowcase() {
   return (
-    <section {...stylex.props(styles.section)}>
+    <XDSVStack as="section" align="center" gap={10} width="100%">
       <AboutHeading />
-      <XDSTheme theme={neutralTheme} mode="light">
-        <XDSDivider variant="subtle" xstyle={styles.topDivider} />
-        <div {...stylex.props(styles.grid)}>
-          {items.map((item, i) => (
-            <AboutColumn key={item.title} item={item} isFirst={i === 0} />
-          ))}
-        </div>
-        <XDSDivider variant="subtle" xstyle={styles.topDivider} />
-      </XDSTheme>
-    </section>
+      <XDSGrid
+        columns={{minWidth: 280, repeat: 'fit'}}
+        gap={4}
+        xstyle={styles.gridLayout}>
+        {items.map(item => (
+          <AboutColumn key={item.title} item={item} />
+        ))}
+      </XDSGrid>
+    </XDSVStack>
   );
 }

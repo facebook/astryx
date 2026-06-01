@@ -26,16 +26,6 @@ const CORE_COMPONENT_COUNT = (components['@xds/core'] ?? []).filter(
 const CORE_COMPONENT_COUNT_ROUNDED = Math.floor(CORE_COMPONENT_COUNT / 10) * 10;
 
 const styles = stylex.create({
-  section: {
-    width: '100%',
-    paddingBlock: spacingVars['--spacing-12'],
-    paddingInline: spacingVars['--spacing-6'],
-    backgroundColor: 'var(--color-background-surface)',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-10'],
-  },
   headingBlock: {
     textAlign: 'center',
     width: '100%',
@@ -132,23 +122,20 @@ function FeatureCard({feature, isTall}: {feature: Feature; isTall?: boolean}) {
 function FeaturesHeading() {
   return (
     <XDSVStack
-      gap={2}
+      gap={4}
       align="center"
       xstyle={styles.headingBlock}
       style={{textAlign: 'center'}}>
       <XDSBadge variant="blue" label="Key features" />
-      <XDSHeading
-        level={2}
-        type="display-2"
-        color="primary"
-        xstyle={styles.fillWidth}>
-        Start anywhere.
-        <br />
-        Change anything. Ship faster.
+      <XDSHeading level={2} type="display-2" color="primary">
+        Start&nbsp;anywhere. Change&nbsp;anything.&nbsp;Ship&nbsp;faster.
       </XDSHeading>
-      <XDSText type="body" color="secondary" xstyle={styles.fillWidth}>
+      <XDSText
+        display="block"
+        type="body"
+        color="secondary"
+        style={{maxWidth: 420}}>
         A design system that adapts to your workflow, not the other way around.
-        <br />
         Built for speed, clarity, and creative freedom.
       </XDSText>
     </XDSVStack>
@@ -157,22 +144,16 @@ function FeaturesHeading() {
 
 export function FeaturesShowcase() {
   return (
-    <section {...stylex.props(styles.section)}>
+    <XDSVStack as="section" align="center" gap={10} width="100%">
       <FeaturesHeading />
-      <XDSTheme theme={neutralTheme} mode="light">
-        <XDSGrid
-          columns={{minWidth: 280, repeat: 'fit'}}
-          gap={4}
-          xstyle={styles.gridLayout}>
-          {features.map((feature, i) => (
-            <FeatureCard
-              key={feature.title}
-              feature={feature}
-              isTall={i === 0}
-            />
-          ))}
-        </XDSGrid>
-      </XDSTheme>
-    </section>
+      <XDSGrid
+        columns={{minWidth: 320, repeat: 'fit'}}
+        gap={4}
+        xstyle={styles.gridLayout}>
+        {features.map((feature, i) => (
+          <FeatureCard key={feature.title} feature={feature} isTall={i === 0} />
+        ))}
+      </XDSGrid>
+    </XDSVStack>
   );
 }

@@ -10,7 +10,6 @@ import {XDSDivider} from '@xds/core/Divider';
 import {XDSHStack, XDSVStack} from '@xds/core/Layout';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSButton} from '@xds/core/Button';
-import {XDSMediaTheme} from '@xds/core/theme';
 import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import {ThemingShowcase} from './_landing/ThemingShowcase';
 import {FeaturesShowcase} from './_landing/FeaturesShowcase';
@@ -32,32 +31,25 @@ const styles = stylex.create({
     top: 'var(--appshell-header-height, 0px)',
     maxWidth: 680,
     marginInline: 'auto',
-    paddingBlockStart: `calc(${spacingVars['--spacing-12']} * 2.5)`,
-    paddingBlockEnd: `calc(${spacingVars['--spacing-12']} * 3)`,
+    paddingBlock: `calc(${spacingVars['--spacing-12']} * 2)`,
     paddingInline: spacingVars['--spacing-6'],
     textAlign: 'center',
+    gap: spacingVars['--spacing-12'],
   },
-  showcaseOverlay: {
-    position: 'relative',
-    borderTopLeftRadius: 'var(--radius-page)',
-    borderTopRightRadius: 'var(--radius-page)',
-    overflow: 'hidden',
-    backgroundColor: 'var(--color-background-surface)',
-    // Pulls the rounded overlay up so it visually lifts onto the hero.
-    marginTop: `calc(${spacingVars['--spacing-8']} * -1)`,
-  },
-  wordmark: {
+  heroWordmark: {
     display: 'block',
     height: 42,
     width: 'auto',
   },
-  captionDivider: {
-    height: '1.25em',
-  },
-  buttons: {
-    width: '100%',
-    maxWidth: 480,
-    marginInline: 'auto',
+  showcaseOverlay: {
+    position: 'relative',
+    overflow: 'hidden',
+    borderTopLeftRadius: 'var(--radius-page)',
+    borderTopRightRadius: 'var(--radius-page)',
+    backgroundColor: 'var(--color-background-surface)',
+    paddingBlock: spacingVars['--spacing-12'],
+    paddingInline: spacingVars['--spacing-6'],
+    gap: `calc(${spacingVars['--spacing-12']} * 2)`,
   },
 });
 
@@ -104,26 +96,46 @@ export default function HomePage() {
 
   return (
     <div {...stylex.props(styles.heroScope)}>
-      <XDSVStack gap={10} xstyle={styles.heroContent} data-home-page="true">
-        <XDSVStack gap={6}>
-          <img
-            src="/astryx-logo.svg"
-            alt="Astryx"
-            {...stylex.props(styles.wordmark)}
-          />
-          <XDSHeading level={1} type="display-1" color="primary">
-            An open source design system built for collaboration, made for
-            teams, crafted with care
-          </XDSHeading>
-          <XDSHStack gap={4} hAlign="center">
-            <XDSText>
+      <XDSVStack
+        data-home-page="true"
+        align="center"
+        xstyle={styles.heroContent}>
+        <img
+          src="/astryx-logo.svg"
+          alt="Astryx"
+          {...stylex.props(styles.heroWordmark)}
+        />
+        <XDSHeading level={1} type="display-1" color="primary">
+          Fully customizable, no-forking, open source design system
+        </XDSHeading>
+        <XDSVStack gap={6} align="center" width="100%">
+          <XDSGrid columns={2} gap={3} style={{width: '100%', maxWidth: 420}}>
+            <XDSButton
+              variant="primary"
+              size="lg"
+              label="Get started"
+              href="/docs/getting-started"
+            />
+            <XDSButton
+              variant="secondary"
+              size="lg"
+              label="Browse components"
+              href="/components"
+            />
+          </XDSGrid>
+          <XDSHStack gap={4} align="center" hAlign="center">
+            <XDSText display="block">
               Currently in{' '}
-              <XDSText display="inline" weight="bold">
+              <XDSText as="span" weight="bold">
                 Beta
               </XDSText>
             </XDSText>
-            <XDSDivider orientation="vertical" xstyle={styles.captionDivider} />
-            <XDSText>
+            <XDSDivider
+              orientation="vertical"
+              variant="strong"
+              style={{height: '1em'}}
+            />
+            <XDSText display="block">
               Built on{' '}
               <XDSLink
                 type="body"
@@ -147,27 +159,13 @@ export default function HomePage() {
             </XDSText>
           </XDSHStack>
         </XDSVStack>
-        <XDSGrid columns={2} gap={3} xstyle={styles.buttons}>
-          <XDSButton
-            variant="primary"
-            size="lg"
-            label="Get started"
-            href="/docs/getting-started"
-          />
-          <XDSButton
-            variant="secondary"
-            size="lg"
-            label="Browse components"
-            href="/components"
-          />
-        </XDSGrid>
       </XDSVStack>
-      <div ref={showcaseRef} {...stylex.props(styles.showcaseOverlay)}>
+      <XDSVStack ref={showcaseRef} xstyle={styles.showcaseOverlay}>
         <ThemingShowcase />
         <FeaturesShowcase />
         <AboutShowcase />
         <DiscoverShowcase />
-      </div>
+      </XDSVStack>
     </div>
   );
 }
