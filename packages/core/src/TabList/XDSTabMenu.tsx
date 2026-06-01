@@ -6,7 +6,8 @@
  * @file XDSTabMenu.tsx
  * @input Uses React, StyleX, useXDSPopover, XDSTabListContext
  * @output Exports XDSTabMenu component, XDSTabMenuProps type, XDSTabMenuOption type
- * @position Menu trigger button; opens dropdown of overflow menu items
+ * @position Menu trigger button; opens dropdown of overflow menu items and
+ *   mirrors selected tab indicator positioning
  *
  * SYNC: When modified, update:
  * - /packages/core/src/TabList/TabList.doc.mjs
@@ -120,7 +121,7 @@ const styles = stylex.create({
   },
   indicator: {
     position: 'absolute',
-    bottom: '-2px',
+    bottom: '-1px',
     left: spacingVars['--spacing-3'],
     right: spacingVars['--spacing-3'],
     height: '2px',

@@ -6,7 +6,8 @@
  * @file XDSTab.tsx
  * @input Uses React, StyleX, XDSTabListContext
  * @output Exports XDSTab component and XDSTabProps type
- * @position Core tab item; renders as button or anchor in navigation
+ * @position Core tab item; renders as button or anchor in navigation with a
+ *   divider-overlay selected indicator
  *
  * SYNC: When modified, update:
  * - /packages/core/src/TabList/TabList.doc.mjs
@@ -129,7 +130,7 @@ const styles = stylex.create({
   },
   indicator: {
     position: 'absolute',
-    bottom: 'var(--_tab-indicator-bottom, -1px)',
+    bottom: '-1px',
     left: spacingVars['--spacing-3'],
     right: spacingVars['--spacing-3'],
     height: '2px',
