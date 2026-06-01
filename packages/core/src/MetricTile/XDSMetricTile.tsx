@@ -73,6 +73,7 @@ const styles = stylex.create({
   },
   title: {
     fontSize: typeScaleVars['--text-body-size'],
+    // eslint-disable-next-line @xds/no-hardcoded-styles -- tight leading to match www MetricTile spacing (standard body leading creates too much gap below value)
     lineHeight: 1.2,
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-primary'],
@@ -81,6 +82,7 @@ const styles = stylex.create({
   },
   subtitle: {
     fontSize: typeScaleVars['--text-supporting-size'],
+    // eslint-disable-next-line @xds/no-hardcoded-styles -- tight leading to match www MetricTile spacing
     lineHeight: 1.2,
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
@@ -101,13 +103,16 @@ const paddingStyles = stylex.create({
 
 const valueStyles = stylex.create({
   large: {
+    // eslint-disable-next-line @xds/no-hardcoded-styles -- data-viz token: 32px, matches www XdsGlobalConstantsVars.largeDataVizFontSize
     fontSize: '2rem',
+    // eslint-disable-next-line @xds/no-hardcoded-styles -- single-line KPI number, no leading needed
     lineHeight: 1,
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-primary'],
   },
   small: {
     fontSize: typeScaleVars['--text-heading-1-size'],
+    // eslint-disable-next-line @xds/no-hardcoded-styles -- single-line KPI number, no leading needed
     lineHeight: 1,
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-primary'],
