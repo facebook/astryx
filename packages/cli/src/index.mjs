@@ -13,6 +13,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {checkForUpdate} from './utils/update-check.mjs';
 import {getRunPrefix} from './utils/package-manager.mjs';
+import {API_VERSION, setJsonMode} from './lib/json.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -29,7 +30,7 @@ if (
   _argv.includes('--json')
 ) {
   process.__xdsJsonHandled = true;
-  console.log(JSON.stringify({type: 'version', data: {version: pkg.version}}, null, 2));
+  console.log(JSON.stringify({apiVersion: API_VERSION, type: 'version', data: {version: pkg.version}}, null, 2));
   process.exit(0);
 }
 
@@ -44,7 +45,7 @@ export const program = new Command();
  * (e.g. files written, then --json error printed) on commands that don't
  * yet support structured output.
  */
-const JSON_SUPPORTED = new Set([
+export const JSON_SUPPORTED = new Set([
   'component',
   'docs',
   'discover',
@@ -75,6 +76,7 @@ program
       // Emit a JSON help envelope. Treat the bare invocation as supported.
       process.__xdsJsonHandled = true;
       console.log(JSON.stringify({
+        apiVersion: API_VERSION,
         type: 'help',
         data: {
           name: 'xds',
@@ -120,6 +122,9 @@ function fullCommandName(actionCommand) {
  */
 program.hook('preAction', (thisCommand, actionCommand) => {
   if (!program.opts().json) return;
+  // Engage global JSON mode so humanLog()/humanWarn() across commands become
+  // no-ops — stdout now carries only the JSON envelope.
+  setJsonMode(true);
   // The root program's own action (no subcommand) is handled directly in
   // its action handler — let it through. fullCommandName is '' there.
   if (actionCommand === program) return;
@@ -127,6 +132,7 @@ program.hook('preAction', (thisCommand, actionCommand) => {
   if (JSON_SUPPORTED.has(fullName)) return;
   process.__xdsJsonHandled = true;
   console.log(JSON.stringify({
+    apiVersion: API_VERSION,
     error: `JSON output is not supported for the '${fullName}' command`,
   }, null, 2));
   process.exit(1);
@@ -143,6 +149,7 @@ program.hook('postAction', (thisCommand, actionCommand) => {
   if (process.__xdsJsonHandled) return;
   const fullName = fullCommandName(actionCommand);
   console.log(JSON.stringify({
+    apiVersion: API_VERSION,
     error: `Internal: '${fullName}' completed without emitting a JSON envelope`,
   }, null, 2));
   process.exit(1);
