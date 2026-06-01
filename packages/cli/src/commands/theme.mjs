@@ -15,7 +15,6 @@ import * as path from 'node:path';
 import * as p from '@clack/prompts';
 import {findCoreDir} from '../utils/paths.mjs';
 import {getRunPrefix} from '../utils/package-manager.mjs';
-import {requireInteractive} from '../utils/interactive.mjs';
 
 function isCancel(value) {
   if (p.isCancel(value)) {
@@ -214,16 +213,6 @@ export function registerTheme(program) {
       // =====================================================================
       // Interactive mode
       // =====================================================================
-      //
-      // Guard: the scaffold wizard blocks on prompts. In a non-interactive
-      // context (CI, piped stdin/stdout, no TTY) it would hang forever. Fail
-      // fast with actionable guidance instead. Pass a preset name (e.g.
-      // `xds theme default`) to scaffold without prompts.
-      requireInteractive({
-        command: 'theme',
-        hint: `\`${getRunPrefix()} xds theme <preset>\` (e.g. default, neutral) or \`--list\``,
-      });
-
       p.intro('XDS Theme Scaffold');
 
       // Step 1: Choose starting point

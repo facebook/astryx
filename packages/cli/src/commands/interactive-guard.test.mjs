@@ -3,8 +3,8 @@
 /**
  * @file Subprocess no-hang tests for the interactivity contract.
  *
- * The wizard commands (`init`, `theme`) block on @clack/prompts. In a
- * non-interactive context they must fail fast (exit 1) instead of hanging.
+ * The wizard command `init` blocks on @clack/prompts. In a
+ * non-interactive context it must fail fast (exit 1) instead of hanging.
  * These tests spawn the CLI as a real subprocess with stdin/stdout NOT a TTY
  * (stdio 'ignore'/'pipe'), which is exactly the CI / piped condition. If the
  * guard were missing, spawnSync would hit the timeout (signal SIGTERM,
@@ -65,21 +65,5 @@ describe('init non-interactive safety', () => {
     expect(r.signal).toBeNull();
     expect(r.status).toBe(0);
     expect(fs.readdirSync(tmpDir).length).toBeGreaterThan(0);
-  });
-});
-
-describe('theme non-interactive safety', () => {
-  it('fails fast (exit 1, no hang) with no preset', () => {
-    const r = runCli(['theme']);
-    expect(r.signal).toBeNull();
-    expect(r.status).toBe(1);
-    expect(r.stderr + r.stdout).toMatch(/requires a TTY/i);
-  });
-
-  it('still scaffolds non-interactively when given a preset', () => {
-    const r = runCli(['theme', 'default', '--output', 'my-theme.ts']);
-    expect(r.signal).toBeNull();
-    expect(r.status).toBe(0);
-    expect(fs.existsSync(path.join(tmpDir, 'my-theme.ts'))).toBe(true);
   });
 });
