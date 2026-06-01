@@ -114,6 +114,15 @@ const styles = stylex.create({
     width: 'auto',
     marginInline: 16,
   },
+  cardContent: {
+    maxWidth: 560,
+    textAlign: 'center',
+    marginInline: 'auto',
+  },
+  buttonGrid: {
+    width: '100%',
+    maxWidth: 360,
+  },
 });
 
 export function DiscoverShowcase() {
@@ -181,10 +190,7 @@ export function DiscoverShowcase() {
           )}
         />
         <XDSCard variant="blue" padding={0} xstyle={styles.card}>
-          <XDSVStack
-            gap={10}
-            align="center"
-            style={{maxWidth: 560, textAlign: 'center', marginInline: 'auto'}}>
+          <XDSVStack gap={10} align="center" xstyle={styles.cardContent}>
             <XDSVStack gap={4} align="center">
               <XDSHeading level={2} type="display-1" color="primary">
                 Discover the full
@@ -201,7 +207,7 @@ export function DiscoverShowcase() {
                 — pick a starting point and go.
               </XDSText>
             </XDSVStack>
-            <XDSGrid columns={2} gap={3} style={{width: '100%', maxWidth: 360}}>
+            <XDSGrid columns={2} gap={3} xstyle={styles.buttonGrid}>
               <XDSButton
                 variant="primary"
                 size="lg"

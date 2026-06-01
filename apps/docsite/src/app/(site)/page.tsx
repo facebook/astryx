@@ -41,6 +41,10 @@ const styles = stylex.create({
     height: 42,
     width: 'auto',
   },
+  heroButtons: {
+    width: '100%',
+    maxWidth: 420,
+  },
   showcaseOverlay: {
     position: 'relative',
     overflow: 'hidden',
@@ -98,7 +102,7 @@ export default function HomePage() {
     <div {...stylex.props(styles.heroScope)}>
       <XDSVStack
         data-home-page="true"
-        align="center"
+        align="stretch"
         xstyle={styles.heroContent}>
         <img
           src="/astryx-logo.svg"
@@ -108,8 +112,8 @@ export default function HomePage() {
         <XDSHeading level={1} type="display-1" color="primary">
           Fully customizable, no-forking, open source design system
         </XDSHeading>
-        <XDSVStack gap={6} align="center" width="100%">
-          <XDSGrid columns={2} gap={3} style={{width: '100%', maxWidth: 420}}>
+        <XDSVStack gap={6} align="center">
+          <XDSGrid columns={2} gap={3} xstyle={styles.heroButtons}>
             <XDSButton
               variant="primary"
               size="lg"

@@ -24,7 +24,7 @@ const styles = stylex.create({
     maxWidth: 1200,
   },
   iconSlot: {
-    height: 48,
+    height: 40,
   },
 });
 
@@ -137,15 +137,15 @@ function AboutHeading() {
 function AboutColumn({item}: {item: AboutItem}) {
   return (
     <XDSCard padding={5}>
-      <XDSVStack gap={4}>
+      <XDSVStack gap={6}>
         <XDSAspectRatio ratio={1} xstyle={styles.iconSlot}>
           {item.icon}
         </XDSAspectRatio>
-        <XDSVStack gap={1} align="start">
-          <XDSHeading level={3} color="primary" style={{width: '100%'}}>
+        <XDSVStack gap={1} align="stretch">
+          <XDSHeading level={3} color="primary">
             {item.title}
           </XDSHeading>
-          <XDSText type="body" color="secondary" style={{width: '100%'}}>
+          <XDSText type="body" color="secondary">
             {item.description}
           </XDSText>
         </XDSVStack>
