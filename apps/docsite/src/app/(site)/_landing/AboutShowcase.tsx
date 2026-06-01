@@ -10,10 +10,6 @@ import {XDSAspectRatio} from '@xds/core/AspectRatio';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSLink} from '@xds/core/Link';
 import {XDSBadge} from '@xds/core/Badge';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSTheme} from '@xds/core/theme';
-import {neutralTheme} from '@xds/theme-neutral/built';
-import {spacingVars} from '@xds/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   headingBlock: {
@@ -21,16 +17,9 @@ const styles = stylex.create({
     width: '100%',
     maxWidth: 680,
   },
-  fillWidth: {
-    width: '100%',
-  },
   // Layout glue for the XDSGrid: cap at 1200px. XDSGrid doesn't expose
   // maxWidth as a prop, so we pass it through xstyle.
   gridLayout: {
-    width: '100%',
-    maxWidth: 1200,
-  },
-  topDivider: {
     width: '100%',
     maxWidth: 1200,
   },
@@ -132,11 +121,7 @@ const items: AboutItem[] = [
 
 function AboutHeading() {
   return (
-    <XDSVStack
-      gap={4}
-      align="center"
-      xstyle={styles.headingBlock}
-      style={{textAlign: 'center'}}>
+    <XDSVStack gap={4} align="center" xstyle={styles.headingBlock}>
       <XDSBadge variant="orange" label="About us" />
       <XDSHeading level={2} type="display-2" color="primary">
         Astryx powers over 13,000 apps

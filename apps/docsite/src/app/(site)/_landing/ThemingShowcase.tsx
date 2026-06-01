@@ -21,7 +21,6 @@ import {XDSStatusDot} from '@xds/core/StatusDot';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSTheme} from '@xds/core/theme';
 import {neutralTheme} from '@xds/theme-neutral/built';
-import {spacingVars} from '@xds/core/theme/tokens.stylex';
 
 const noop = () => {};
 
@@ -50,13 +49,6 @@ const styles = stylex.create({
   swatch: {
     width: 40,
     height: 40,
-    borderRadius: '50%',
-    boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)',
-    flexShrink: 0,
-  },
-  swatchSm: {
-    width: 32,
-    height: 32,
     borderRadius: '50%',
     boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)',
     flexShrink: 0,
@@ -128,12 +120,6 @@ const styles = stylex.create({
     fontSize: 40,
     lineHeight: 1,
     color: 'var(--color-text-primary)',
-  },
-  dotsWrap: {
-    display: 'flex',
-    gap: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });
 

@@ -107,14 +107,6 @@ const styles = stylex.create({
     right: -32,
     transform: 'rotate(-6deg)',
   },
-  headlineRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
-    columnGap: spacingVars['--spacing-3'],
-    rowGap: spacingVars['--spacing-2'],
-  },
   inlineWordmark: {
     display: 'inline-block',
     verticalAlign: 'baseline',

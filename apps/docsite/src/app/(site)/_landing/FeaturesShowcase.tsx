@@ -9,9 +9,6 @@ import {XDSGrid} from '@xds/core/Grid';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSLink} from '@xds/core/Link';
 import {XDSBadge} from '@xds/core/Badge';
-import {XDSTheme} from '@xds/core/theme';
-import {neutralTheme} from '@xds/theme-neutral/built';
-import {spacingVars} from '@xds/core/theme/tokens.stylex';
 import {components} from '../../../generated/componentRegistry';
 
 // Count of public @xds/core components (excluding hooks and hidden entries).
@@ -30,9 +27,6 @@ const styles = stylex.create({
     textAlign: 'center',
     width: '100%',
     maxWidth: 680,
-  },
-  fillWidth: {
-    width: '100%',
   },
   // Layout glue for the XDSGrid: cap at 1200px and force every row to the
   // same height so the tall first card and the regular cards line up.
@@ -121,11 +115,7 @@ function FeatureCard({feature, isTall}: {feature: Feature; isTall?: boolean}) {
 
 function FeaturesHeading() {
   return (
-    <XDSVStack
-      gap={4}
-      align="center"
-      xstyle={styles.headingBlock}
-      style={{textAlign: 'center'}}>
+    <XDSVStack gap={4} align="center" xstyle={styles.headingBlock}>
       <XDSBadge variant="blue" label="Key features" />
       <XDSHeading level={2} type="display-2" color="primary">
         Start&nbsp;anywhere. Change&nbsp;anything.&nbsp;Ship&nbsp;faster.
