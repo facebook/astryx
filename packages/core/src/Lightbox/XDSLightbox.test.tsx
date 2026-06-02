@@ -3,6 +3,7 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {XDSLightbox} from './XDSLightbox';
+import type {XDSLightboxMedia} from './XDSLightbox';
 
 // Mock showModal/close for jsdom
 beforeEach(() => {
@@ -173,8 +174,8 @@ describe('XDSLightbox', () => {
           index={1}
         />,
       );
-      expect(screen.getByLabelText('Previous image')).toBeInTheDocument();
-      expect(screen.getByLabelText('Next image')).toBeInTheDocument();
+      expect(screen.getByLabelText('Previous')).toBeInTheDocument();
+      expect(screen.getByLabelText('Next')).toBeInTheDocument();
     });
 
     it('hides prev button on first item', () => {
@@ -186,8 +187,8 @@ describe('XDSLightbox', () => {
           index={0}
         />,
       );
-      expect(screen.queryByLabelText('Previous image')).not.toBeInTheDocument();
-      expect(screen.getByLabelText('Next image')).toBeInTheDocument();
+      expect(screen.queryByLabelText('Previous')).not.toBeInTheDocument();
+      expect(screen.getByLabelText('Next')).toBeInTheDocument();
     });
 
     it('hides next button on last item', () => {
@@ -199,8 +200,8 @@ describe('XDSLightbox', () => {
           index={2}
         />,
       );
-      expect(screen.getByLabelText('Previous image')).toBeInTheDocument();
-      expect(screen.queryByLabelText('Next image')).not.toBeInTheDocument();
+      expect(screen.getByLabelText('Previous')).toBeInTheDocument();
+      expect(screen.queryByLabelText('Next')).not.toBeInTheDocument();
     });
 
     it('calls onIndexChange when next is clicked', () => {
@@ -214,7 +215,7 @@ describe('XDSLightbox', () => {
           onIndexChange={onIndexChange}
         />,
       );
-      fireEvent.click(screen.getByLabelText('Next image'));
+      fireEvent.click(screen.getByLabelText('Next'));
       expect(onIndexChange).toHaveBeenCalledWith(1);
     });
 
@@ -229,7 +230,7 @@ describe('XDSLightbox', () => {
           onIndexChange={onIndexChange}
         />,
       );
-      fireEvent.click(screen.getByLabelText('Previous image'));
+      fireEvent.click(screen.getByLabelText('Previous'));
       expect(onIndexChange).toHaveBeenCalledWith(1);
     });
 
@@ -266,5 +267,16 @@ describe('XDSLightbox', () => {
       expect(video).toHaveAttribute('src', '/clip.mp4');
       expect(video).toHaveAttribute('controls');
     });
+  });
+
+  it('does not crash with an empty media array', () => {
+    const {container} = render(
+      <XDSLightbox
+        isOpen={true}
+        onOpenChange={() => {}}
+        media={[]}
+      />,
+    );
+    expect(container.querySelector('dialog')).not.toBeInTheDocument();
   });
 });

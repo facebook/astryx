@@ -166,7 +166,10 @@ const styles = stylex.create({
     objectFit: 'contain',
     pointerEvents: 'none',
     transitionProperty: 'transform',
-    transitionDuration: '200ms',
+    transitionDuration: {
+      default: '200ms',
+      '@media (prefers-reduced-motion: reduce)': '0ms',
+    },
     transitionTimingFunction: 'ease-out',
   },
   imageDragging: {
@@ -304,8 +307,11 @@ export function XDSLightbox({
   // Resolve current media item
   const mediaArray = Array.isArray(media) ? media : [media];
   const isGallery = mediaArray.length > 1;
-  const currentItem = mediaArray[Math.min(index, mediaArray.length - 1)];
-  const currentType = currentItem.type ?? 'image';
+  const currentItem =
+    mediaArray.length > 0
+      ? mediaArray[Math.min(index, mediaArray.length - 1)]
+      : null;
+  const currentType = currentItem?.type ?? 'image';
   const isVideo = currentType === 'video';
   const canPrev = isGallery && index > 0;
   const canNext = isGallery && index < mediaArray.length - 1;
@@ -320,7 +326,7 @@ export function XDSLightbox({
     setZoom(1);
     // eslint-disable-next-line @eslint-react/set-state-in-effect
     setPan({x: 0, y: 0});
-  }, [index, currentItem.src]);
+  }, [index, currentItem?.src]);
 
   // Open/close dialog
   useIsomorphicLayoutEffect(() => {
@@ -453,6 +459,10 @@ export function XDSLightbox({
       ? null
       : `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`;
 
+  if (!currentItem) {
+    return null;
+  }
+
   return (
     <dialog
       ref={mergeRefs(ref, dialogRef)}
@@ -490,7 +500,7 @@ export function XDSLightbox({
           <div {...stylex.props(styles.navButton, styles.navPrev)}>
             <XDSIconButton
               icon={<XDSIcon icon="chevronLeft" size="sm" color="inherit" />}
-              label="Previous image"
+              label="Previous"
               variant="ghost"
               onClick={goToPrev}
               xstyle={styles.controlButton}
@@ -543,7 +553,7 @@ export function XDSLightbox({
           <div {...stylex.props(styles.navButton, styles.navNext)}>
             <XDSIconButton
               icon={<XDSIcon icon="chevronRight" size="sm" color="inherit" />}
-              label="Next image"
+              label="Next"
               variant="ghost"
               onClick={goToNext}
               xstyle={styles.controlButton}
