@@ -35,6 +35,14 @@ export type {XDSLayerProviderProps} from './XDSLayerProvider';
 export {XDSLayerContext, useXDSLayerContext} from './XDSLayerContext';
 export type {XDSLayerContextValue, LayerToastConfig} from './XDSLayerContext';
 
+// Static preview context — suppresses overlay layers in non-interactive previews
+export {
+  XDSStaticPreviewContext,
+  XDSStaticPreviewProvider,
+  useXDSIsStaticPreview,
+} from './XDSStaticPreviewContext';
+export type {XDSStaticPreviewProviderProps} from './XDSStaticPreviewContext';
+
 // Shared entry animation styles for layer-based components
 export {layerAnimations} from './layerAnimations.stylex';
 

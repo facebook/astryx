@@ -14,6 +14,7 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSSkeleton} from '@xds/core/Skeleton';
 import {XDSText} from '@xds/core/Text';
 import {XDSTheme} from '@xds/core/theme';
+import {XDSStaticPreviewProvider} from '@xds/core/Layer';
 import {neutralTheme} from '@xds/theme-neutral/built';
 import {useThemeMode} from '../app/providers';
 
@@ -175,7 +176,9 @@ export function ShowcaseThumbnail({
                 </div>
               }>
               <XDSTheme theme={neutralTheme} mode={mode}>
-                <Component />
+                <XDSStaticPreviewProvider>
+                  <Component />
+                </XDSStaticPreviewProvider>
               </XDSTheme>
             </Suspense>
           </ShowcaseErrorBoundary>

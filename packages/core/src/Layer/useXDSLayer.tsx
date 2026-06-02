@@ -23,6 +23,7 @@ import React, {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
+import {useXDSIsStaticPreview} from './XDSStaticPreviewContext';
 
 // Extend React's HTMLAttributes to include popover API attributes
 declare module 'react' {
@@ -286,6 +287,10 @@ export function useXDSLayer(
   const id = useId();
   const anchorId = `--xds-layer-${id.replace(/:/g, '')}`;
 
+  // In a static preview surface, overlays must not open — their top-layer /
+  // portaled content would escape the preview frame's clipping.
+  const isStaticPreview = useXDSIsStaticPreview();
+
   const [isOpen, setIsOpen] = useState(false);
   const popoverRef = useRef<HTMLElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
@@ -296,13 +301,16 @@ export function useXDSLayer(
   const isOpenRef = useRef(false);
 
   const show = useCallback(() => {
+    if (isStaticPreview) {
+      return;
+    }
     if (popoverRef.current && !isOpenRef.current) {
       popoverRef.current.showPopover();
       isOpenRef.current = true;
       setIsOpen(true);
       onShow?.();
     }
-  }, [onShow]);
+  }, [isStaticPreview, onShow]);
 
   const hide = useCallback(() => {
     if (isOpenRef.current) {

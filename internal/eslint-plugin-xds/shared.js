@@ -30,6 +30,7 @@ export const COMPONENT_RULE_ALLOWED = new Set([
   'XDSToastViewportProps',
   // Provider components — render no DOM element
   'XDSLayerProviderProps',
+  'XDSStaticPreviewProviderProps',
   'XDSLinkProviderProps',
   'XDSMediaThemeProps',
 ]);
