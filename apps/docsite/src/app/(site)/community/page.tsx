@@ -463,13 +463,12 @@ const styles = stylex.create({
   // BlockCard — color-blocked contribution-type cards
   // -------------------------------------------------------------------------
   // 4 quadrants of a single grouped block (see blockGrid below).
-  // Each quadrant has a soft pastel fill, decorative floating
-  // shapes in the upper portion, big heading anchored to bottom-
-  // left, effort badge under the heading, and a small arrow chip
-  // anchored to bottom-right. Each quadrant is still its own
-  // click target via XDSClickableCard, but visually they read as
-  // one grouped object because the outer blockGrid clips to a
-  // single rounded shape with no gap between cells.
+  // Each quadrant has a soft pastel fill, a big heading anchored
+  // to bottom-left, an effort badge under the heading, and a
+  // small arrow chip anchored to bottom-right. Each quadrant is
+  // still its own click target via XDSClickableCard, but visually
+  // they read as one grouped object because the outer blockGrid
+  // clips to a single rounded shape with no gap between cells.
 
   // Outer grid wrapper — fuses the 4 quadrants into one visual
   // block. radius + overflow:hidden on the wrapper means each
@@ -497,19 +496,8 @@ const styles = stylex.create({
     flexDirection: 'column',
     justifyContent: 'flex-end',
   },
-  // Decorative shapes sit absolutely so they don't push the
-  // heading off the bottom. inset:0 fills the card; the SVG
-  // inside positions individual shapes via percentages.
-  blockCardShapes: {
-    position: 'absolute',
-    inset: 0,
-    pointerEvents: 'none',
-  },
-  // Bottom-anchored title + effort badge cluster. Relative so
-  // it sits above the shapes' absolute layer (default stacking
-  // context inside the card).
+  // Bottom-anchored title + effort badge cluster.
   blockCardBottom: {
-    position: 'relative',
     display: 'flex',
     flexDirection: 'column',
     gap: 'var(--spacing-1)',
@@ -856,130 +844,20 @@ function WallCard({contributors}: {contributors: ReadonlyArray<Contributor>}) {
 }
 
 // =============================================================================
-// ShapeDecorations — floating brand shapes for BlockCard
+// BrandBlob — single brand shape used in the end-block art slot
 // =============================================================================
 //
-// Reuses the three brand shapes from AboutShowcase on the home
-// page (Blob / Square / Diamond) so the community page's
-// contribution cards share visual language with the rest of the
-// site. Each shape's path geometry is copied here rather than
-// imported because the home-page shapes hardcode their fill
-// colors via tokens — we need to recolor per card with the
-// slot's own hue (shapeColor) via currentColor. Keep these
-// shape paths in sync with apps/docsite/src/app/(site)/_landing/
-// AboutShowcase.tsx (BlobIcon / SquareIcon / DiamondIcon).
-
-// Brand-shape primitives — each renders inside its native 40×40
-// box with fill=currentColor so the outer <g> in ShapeDecorations
-// can recolor + scale + rotate them per arrangement slot.
+// Copy of the BlobIcon path from the home page's AboutShowcase
+// (apps/docsite/src/app/(site)/_landing/AboutShowcase.tsx).
+// Renders inside its native 40×40 viewBox with fill=currentColor
+// so the parent can recolor it (the end-block art slot wraps
+// this with a 60%-width SVG and a --color-icon-purple tint).
 function BrandBlob() {
   return (
     <path
       d="M17.081 1.19166C18.7027 -0.397219 21.2973 -0.397219 22.919 1.19166C23.9616 2.21324 25.4625 2.61539 26.8763 2.25201C29.0751 1.68683 31.3221 2.98415 31.9321 5.17099C32.3243 6.57703 33.423 7.67574 34.829 8.06792C37.0159 8.67788 38.3132 10.9249 37.748 13.1237C37.3846 14.5375 37.7868 16.0384 38.8083 17.081C40.3972 18.7027 40.3972 21.2973 38.8083 22.919C37.7868 23.9616 37.3846 25.4625 37.748 26.8763C38.3132 29.0751 37.0159 31.3221 34.829 31.9321C33.423 32.3243 32.3243 33.423 31.9321 34.829C31.3221 37.0159 29.0751 38.3132 26.8763 37.748C25.4625 37.3846 23.9616 37.7868 22.919 38.8083C21.2973 40.3972 18.7027 40.3972 17.081 38.8083C16.0384 37.7868 14.5375 37.3846 13.1237 37.748C10.9249 38.3132 8.67788 37.0159 8.06792 34.829C7.67574 33.423 6.57703 32.3243 5.17099 31.9321C2.98415 31.3221 1.68683 29.0751 2.25201 26.8763C2.61539 25.4625 2.21324 23.9616 1.19166 22.919C-0.397219 21.2973 -0.397219 18.7027 1.19166 17.081C2.21324 16.0384 2.61539 14.5375 2.25201 13.1237C1.68683 10.9249 2.98415 8.67788 5.17099 8.06792C6.57703 7.67574 7.67574 6.57703 8.06792 5.17099C8.67788 2.98415 10.9249 1.68683 13.1237 2.25201C14.5375 2.61539 16.0384 2.21324 17.081 1.19166Z"
       fill="currentColor"
     />
-  );
-}
-
-function BrandSquare() {
-  return (
-    <path
-      d="M33.0469 0C36.8869 0.00014921 39.9999 3.11308 40 6.95312C40 9.9458 38.109 12.4963 35.457 13.4766C38.109 14.4568 39.9999 17.0074 40 20C40 22.9927 38.109 25.5431 35.457 26.5234C38.109 27.5037 39.9999 30.0542 40 33.0469C40 36.887 36.887 39.9998 33.0469 40H6.95312C3.113 39.9999 0 36.887 0 33.0469C9.21712e-05 30.0545 1.89042 27.5039 4.54199 26.5234C1.89043 25.5429 0 22.9924 0 20C9.21712e-05 17.0077 1.89042 14.457 4.54199 13.4766C1.89043 12.496 0 9.94549 0 6.95312C0.000107288 3.11307 3.11307 0.000125546 6.95312 0H33.0469Z"
-      fill="currentColor"
-    />
-  );
-}
-
-function BrandDiamond() {
-  return (
-    <rect
-      x={6}
-      y={6}
-      width={28}
-      height={28}
-      rx={6}
-      fill="currentColor"
-      transform="rotate(45 20 20)"
-    />
-  );
-}
-
-const BRAND_SHAPES = [BrandBlob, BrandSquare, BrandDiamond] as const;
-
-// Per-card arrangement of 3 placed brand shapes. Each slot
-// describes which shape (index into BRAND_SHAPES), a translation
-// in the 100×100 viewBox, a scale (relative to the shape's
-// native 40px box), a rotation in degrees, and an opacity.
-// Placements deliberately cluster in the UPPER ~40% of the
-// viewBox so the bottom-anchored title has clear breathing
-// room. Each arrangement uses a different mix of the three
-// shapes so adjacent cards don't look identical.
-interface ShapePlacement {
-  shape: number;
-  x: number;
-  y: number;
-  scale: number;
-  rotate: number;
-  opacity: number;
-}
-
-const SHAPE_ARRANGEMENTS: ReadonlyArray<ReadonlyArray<ShapePlacement>> = [
-  [
-    {shape: 0, x: 18, y: 6, scale: 0.5, rotate: -18, opacity: 0.7},
-    {shape: 1, x: 54, y: 18, scale: 0.4, rotate: 24, opacity: 0.55},
-    {shape: 2, x: 78, y: 4, scale: 0.45, rotate: -10, opacity: 0.6},
-  ],
-  [
-    {shape: 1, x: 10, y: 12, scale: 0.55, rotate: 12, opacity: 0.65},
-    {shape: 0, x: 54, y: 4, scale: 0.4, rotate: -22, opacity: 0.55},
-    {shape: 2, x: 82, y: 24, scale: 0.38, rotate: 18, opacity: 0.6},
-  ],
-  [
-    {shape: 2, x: 20, y: 4, scale: 0.48, rotate: -8, opacity: 0.65},
-    {shape: 0, x: 52, y: 22, scale: 0.45, rotate: 28, opacity: 0.6},
-    {shape: 1, x: 80, y: 4, scale: 0.4, rotate: -18, opacity: 0.55},
-  ],
-  [
-    {shape: 0, x: 12, y: 20, scale: 0.45, rotate: 16, opacity: 0.6},
-    {shape: 2, x: 50, y: 4, scale: 0.42, rotate: -12, opacity: 0.65},
-    {shape: 1, x: 78, y: 16, scale: 0.48, rotate: 20, opacity: 0.6},
-  ],
-];
-
-function ShapeDecorations({
-  seed,
-  shapeColor,
-}: {
-  seed: number;
-  shapeColor: string;
-}) {
-  const arrangement = SHAPE_ARRANGEMENTS[seed % SHAPE_ARRANGEMENTS.length];
-  return (
-    <svg
-      {...stylex.props(styles.blockCardShapes)}
-      viewBox="0 0 100 100"
-      preserveAspectRatio="xMidYMid slice"
-      aria-hidden="true"
-      // currentColor on each <path>/<rect> inside the brand
-      // shapes resolves to this color, so the whole shape set
-      // gets recolored per card without forking the SVGs.
-      style={{color: shapeColor}}>
-      {arrangement.map((p, i) => {
-        const Shape = BRAND_SHAPES[p.shape];
-        // Rotate around the shape's center (size/2) so each
-        // shape spins in place rather than orbiting around its
-        // top-left corner.
-        const size = 40 * p.scale;
-        return (
-          <g
-            key={i}
-            opacity={p.opacity}
-            transform={`translate(${p.x} ${p.y}) rotate(${p.rotate} ${size / 2} ${size / 2}) scale(${p.scale})`}>
-            <Shape />
-          </g>
-        );
-      })}
-    </svg>
   );
 }
 
@@ -993,24 +871,10 @@ interface BlockCardProps {
   href: string;
   /** Soft pastel background (--color-background-{hue}). */
   bgColor: string;
-  /** Saturated counterpart used for decorative SVG shapes
-   * (--color-icon-{hue}) — the deeper version of bgColor's hue
-   * so the shapes show through as accent strokes on top of the
-   * pastel fill. */
-  shapeColor: string;
-  seed: number;
   badge?: string;
 }
 
-function BlockCard({
-  label,
-  description,
-  href,
-  bgColor,
-  shapeColor,
-  seed,
-  badge,
-}: BlockCardProps) {
+function BlockCard({label, description, href, bgColor, badge}: BlockCardProps) {
   return (
     <XDSClickableCard
       label={`Open ${label}`}
@@ -1018,7 +882,6 @@ function BlockCard({
       padding={0}
       xstyle={styles.blockCard}
       style={{backgroundColor: bgColor}}>
-      <ShapeDecorations seed={seed} shapeColor={shapeColor} />
       <div {...stylex.props(styles.blockCardBottom)}>
         <XDSHeading level={3} xstyle={styles.blockCardTitle}>
           {label}
@@ -1190,11 +1053,6 @@ interface StartHerePath {
    * (categorical badge backdrop). Resolves to the hue at ~20%
    * alpha, so the body color shows through. */
   bgColor: string;
-  /** Decorative shape color — the saturated --color-icon-{hue}
-   * (the deeper version of the same hue). Pairs with bgColor
-   * so the shapes read as accent strokes on top of the pastel
-   * fill. */
-  shapeColor: string;
 }
 
 const START_HERE: ReadonlyArray<StartHerePath> = [
@@ -1205,7 +1063,6 @@ const START_HERE: ReadonlyArray<StartHerePath> = [
     href: `${GITHUB_REPO}/issues/new?template=bug.yml`,
     effort: '~2 hours',
     bgColor: 'var(--color-background-blue)',
-    shapeColor: 'var(--color-icon-blue)',
   },
   {
     title: 'Improve the docs',
@@ -1214,7 +1071,6 @@ const START_HERE: ReadonlyArray<StartHerePath> = [
     href: '/docs',
     effort: '~30 min',
     bgColor: 'var(--color-background-orange)',
-    shapeColor: 'var(--color-icon-orange)',
   },
   {
     title: 'Add a template',
@@ -1223,7 +1079,6 @@ const START_HERE: ReadonlyArray<StartHerePath> = [
     href: `${WIKI_BASE}/Contributing-Templates`,
     effort: '~half day',
     bgColor: 'var(--color-background-purple)',
-    shapeColor: 'var(--color-icon-purple)',
   },
   {
     title: 'Build a theme',
@@ -1232,7 +1087,6 @@ const START_HERE: ReadonlyArray<StartHerePath> = [
     href: '/docs/theme',
     effort: '~1 day',
     bgColor: 'var(--color-background-cyan)',
-    shapeColor: 'var(--color-icon-cyan)',
   },
 ];
 
@@ -1398,15 +1252,13 @@ export default async function CommunityPage() {
               one grouped object. */}
             <div {...stylex.props(styles.contribTypes)}>
               <div {...stylex.props(styles.blockGrid)}>
-                {START_HERE.map((path, index) => (
+                {START_HERE.map(path => (
                   <BlockCard
                     key={path.title}
                     label={path.title}
                     description={path.description}
                     href={path.href}
                     bgColor={path.bgColor}
-                    shapeColor={path.shapeColor}
-                    seed={index}
                     badge={path.effort}
                   />
                 ))}
