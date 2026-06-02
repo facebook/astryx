@@ -13,7 +13,7 @@
  */
 
 import {getRunPrefix} from '../utils/package-manager.mjs';
-import {jsonOut, jsonError} from '../lib/json.mjs';
+import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
 import {docs as docsApi} from '../api/docs.mjs';
 
 // ─── Formatting ──────────────────────────────────────────────────────────────
@@ -125,22 +125,22 @@ export function registerDocs(program) {
 
       switch (result.type) {
         case 'docs.list': {
-          console.log('\nAvailable docs:\n');
+          humanLog('\nAvailable docs:\n');
           for (const entry of result.data) {
-            console.log(`  ${entry.topic.padEnd(14)} ${entry.description}`);
+            humanLog(`  ${entry.topic.padEnd(14)} ${entry.description}`);
           }
-          console.log(`\nUsage: ${run} xds docs <topic>`);
-          console.log(`       ${run} xds docs <topic> <section>\n`);
+          humanLog(`\nUsage: ${run} xds docs <topic>`);
+          humanLog(`       ${run} xds docs <topic> <section>\n`);
           break;
         }
 
         case 'docs.detail': {
-          console.log(formatReferenceFull(result.data, detail));
+          humanLog(formatReferenceFull(result.data, detail));
           break;
         }
 
         case 'docs.detail.section': {
-          console.log(formatSection(result.data, detail));
+          humanLog(formatSection(result.data, detail));
           break;
         }
       }

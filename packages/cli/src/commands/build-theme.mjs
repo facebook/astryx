@@ -18,7 +18,7 @@ import {createRequire} from 'node:module';
 import {pathToFileURL, fileURLToPath} from 'node:url';
 import {createJiti} from 'jiti';
 import {getRunPrefix} from '../utils/package-manager.mjs';
-import {jsonOut, jsonError} from '../lib/json.mjs';
+import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
 
 // Import shared theme processing from core — ensures build and runtime
 // use the same logic for typography.scale expansion, prose, and component rules.
@@ -973,7 +973,14 @@ function validatePrivateVars(themeDef) {
 export function registerTheme(program) {
   const theme = program
     .command('theme')
-    .description('Theme tools — build, export, and manage XDS themes');
+    .description('Theme tools — build, export, and manage XDS themes')
+    .action(() => {
+      // Parent group has no default behaviour. When invoked without a
+      // subcommand, the preAction hook (in index.mjs) will reject --json
+      // because 'theme' (parent) is not on the JSON_SUPPORTED allowlist —
+      // only 'theme build' is. For the human path, fall through to help.
+      theme.help();
+    });
 
   theme
     .command('build <file>')
@@ -990,7 +997,7 @@ export function registerTheme(program) {
         process.exit(1);
       }
 
-      if (!json) console.log(`\nBuilding theme from ${path.relative(process.cwd(), filePath)}...`);
+      if (!json) humanLog(`\nBuilding theme from ${path.relative(process.cwd(), filePath)}...`);
 
       // Extract theme definition
       let themeDef;
@@ -1097,7 +1104,7 @@ export function registerTheme(program) {
         const mainCss = generateCSS(themeDef);
         if (mainCss) scopeBlocks.push(mainCss);
         if (scopeBlocks.length === 0) {
-          if (!json) console.log('No overrides found — nothing to build.');
+          if (!json) humanLog('No overrides found — nothing to build.');
           return;
         }
         const joined = scopeBlocks.join('\n\n');
@@ -1126,9 +1133,9 @@ export function registerTheme(program) {
       const size = (Buffer.byteLength(css) / 1024).toFixed(1);
 
       if (!json) {
-        console.log(`\n✓ ${path.relative(process.cwd(), outPath)}`);
-        console.log(`  ${tokenCount} token overrides, ${componentCount} component overrides`);
-        console.log(`  ${size} KB`);
+        humanLog(`\n✓ ${path.relative(process.cwd(), outPath)}`);
+        humanLog(`  ${tokenCount} token overrides, ${componentCount} component overrides`);
+        humanLog(`  ${size} KB`);
       }
 
       // Always generate JS module + types alongside CSS
@@ -1144,8 +1151,8 @@ export function registerTheme(program) {
       fs.writeFileSync(dtsPath, generatedHeader(sourceRelative, 'ts', buildCommand) + generateBuiltTypes(themeDef, iconInfo));
 
       if (!json) {
-        console.log(`✓ ${path.relative(process.cwd(), jsPath)}`);
-        console.log(`✓ ${path.relative(process.cwd(), dtsPath)}`);
+        humanLog(`✓ ${path.relative(process.cwd(), jsPath)}`);
+        humanLog(`✓ ${path.relative(process.cwd(), dtsPath)}`);
       }
 
       // Generate type augmentation .d.ts if theme has custom prop values
@@ -1156,7 +1163,7 @@ export function registerTheme(program) {
         variantDtsPath = path.join(outDir, `${baseName}.variants.d.ts`);
         fs.writeFileSync(variantDtsPath, generatedHeader(sourceRelative, 'ts', buildCommand) + variantDecl);
         const augCount = (variantDecl.match(/': true;/g) || []).length;
-        if (!json) console.log(`✓ ${path.relative(process.cwd(), variantDtsPath)} (${augCount} type augmentations)`);
+        if (!json) humanLog(`✓ ${path.relative(process.cwd(), variantDtsPath)} (${augCount} type augmentations)`);
       }
 
       if (json) {
@@ -1178,7 +1185,7 @@ export function registerTheme(program) {
       // Print install instructions
       const relDir = path.relative(process.cwd(), outDir);
       const exportName = `${toIdentifier(baseName)}Theme`;
-      console.log(`
+      humanLog(`
 Install in your app:
 
   import { ${exportName} } from './${relDir}/${baseName}';
@@ -1200,12 +1207,12 @@ Or with a <link> tag:
 
       // Print font declaration warnings (derived from typography roles)
       if (resolvedTheme && resolvedTheme.fonts && resolvedTheme.fonts.length > 0) {
-        console.log(`\n⚠ Theme "${themeDef.name}" requires fonts not included in the build:`);
+        humanLog(`\n⚠ Theme "${themeDef.name}" requires fonts not included in the build:`);
         for (const font of resolvedTheme.fonts) {
-          console.log(`  ${font.family} — add to your document <head>:`);
-          console.log(`  <link rel="stylesheet" href="${font.url}" />`);
+          humanLog(`  ${font.family} — add to your document <head>:`);
+          humanLog(`  <link rel="stylesheet" href="${font.url}" />`);
         }
-        console.log('');
+        humanLog('');
       }
     });
 }

@@ -224,11 +224,16 @@ export function registerUpgrade(program) {
         }
 
         if (!options.force && semverGte(currentVersion, targetVersion)) {
-          if (!json) {
-            p.log.success('Already up to date — no codemods to run.');
-            p.log.info('Use --force to run codemods anyway, or --from <version> to specify the previous version.');
-            p.outro('Done');
+          if (json) {
+            return jsonOut('upgrade.status', {
+              status: 'up_to_date',
+              from: currentVersion,
+              to: targetVersion,
+            });
           }
+          p.log.success('Already up to date — no codemods to run.');
+          p.log.info('Use --force to run codemods anyway, or --from <version> to specify the previous version.');
+          p.outro('Done');
           return;
         }
       }
@@ -240,10 +245,15 @@ export function registerUpgrade(program) {
       );
 
       if (versionManifests.length === 0) {
-        if (!json) {
-          p.log.success('No codemods available for this version range.');
-          p.outro('Done');
+        if (json) {
+          return jsonOut('upgrade.status', {
+            status: 'no_codemods',
+            from: skipVersionCheck ? null : currentVersion,
+            to: targetVersion,
+          });
         }
+        p.log.success('No codemods available for this version range.');
+        p.outro('Done');
         return;
       }
 
@@ -305,7 +315,7 @@ export function registerUpgrade(program) {
       }
 
       // Ensure jscodeshift is available
-      const ready = await ensureJscodeshift({installDeps: options.installDeps});
+      const ready = await ensureJscodeshift({installDeps: options.installDeps, silent: json});
       if (!ready) {
         if (json) return jsonError('jscodeshift is required but could not be installed.');
         p.outro('Aborted');
@@ -314,10 +324,11 @@ export function registerUpgrade(program) {
       }
 
       // Run codemods
-      await runCodemods(versionManifests, {
+      const codemodResult = await runCodemods(versionManifests, {
         apply: options.apply,
         path: options.path,
         codemod: options.codemod,
+        silent: json,
       });
 
       // Refresh agent docs if any exist (AGENTS.md, CLAUDE.md, .claude/CLAUDE.md, etc.)
@@ -340,7 +351,14 @@ export function registerUpgrade(program) {
         }
       }
 
-      if (json) return jsonOut('upgrade.run', receipt);
+      if (json) {
+        if (codemodResult && typeof codemodResult === 'object') {
+          receipt.filesChanged = codemodResult.totalFilesChanged ?? 0;
+          receipt.transformsApplied = codemodResult.totalTransformsApplied ?? 0;
+          receipt.errors = codemodResult.errors ?? [];
+        }
+        return jsonOut('upgrade.run', receipt);
+      }
       p.outro(options.apply ? 'Upgrade complete' : 'Dry run complete');
     });
 }
