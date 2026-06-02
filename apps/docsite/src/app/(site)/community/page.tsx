@@ -32,6 +32,7 @@ import {XDSCard} from '@xds/core/Card';
 import {XDSClickableCard} from '@xds/core/ClickableCard';
 import {XDSHStack, XDSVStack} from '@xds/core/Layout';
 import {XDSLink} from '@xds/core/Link';
+import {XDSList, XDSListItem} from '@xds/core/List';
 import {XDSSection} from '@xds/core/Section';
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSButton} from '@xds/core/Button';
@@ -357,123 +358,10 @@ const styles = stylex.create({
   channelCardInner: {
     aspectRatio: '4 / 5',
   },
-  // Pill-card list under the engage description — each channel
-  // (Discussions / Issues / Wiki) renders as a horizontal pill
-  // with an icon tile on the left, title + one-line description
-  // in the middle, and an arrow chip on the right. The list
-  // stacks vertically so each option reads as a discrete path.
-  channelPillStack: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 'var(--spacing-2)',
-  },
-  // Single pill card — XDSClickableCard root. Painted with the
-  // muted surface tone (a light gray on most themes) and the
-  // default border explicitly transparented out so the pill
-  // reads as a soft chip floating on the page rather than a
-  // bordered card. overflow:hidden keeps the inner row's icon
-  // tile clipped to the pill's rounded corners.
-  channelPill: {
-    overflow: 'hidden',
-    backgroundColor: 'var(--color-background-muted)',
-    borderColor: 'transparent',
-  },
-  // Ghost variant of the same pill chrome — used by the Resources
-  // section. Drops the muted gray fill so each item reads as a
-  // bare row with just an icon + text + arrow, no chip backdrop.
-  // The icon + arrow chips also turn transparent (paired via the
-  // Pill component's variant prop) so the whole row reads as one
-  // continuous transparent surface against the page body color.
-  //
-  // marginInlineStart + width together extend the pill 22px to
-  // the LEFT of its grid cell while keeping its right edge at
-  // the original column boundary. 22px = pill inner padding
-  // (12px = --spacing-3) + icon tile centering whitespace
-  // ((40px tile - 20px glyph) / 2 = 10px). The visible icon
-  // glyph then optically aligns with the section heading + intro
-  // text above; the hover overlay paints across the FULL pill
-  // bounds (including the negative-margin overflow), giving
-  // each row the same comfortable horizontal hover surface as
-  // the filled channel pills above.
-  channelPillGhost: {
-    overflow: 'hidden',
-    backgroundColor: 'transparent',
-    borderColor: 'transparent',
-    marginInlineStart: -22,
-    width: 'calc(100% + 22px)',
-  },
-  // Ghost icon tile — same 40×40 dimensions as the filled
-  // variant so the layout grid stays consistent, just transparent
-  // background so the body color shows through.
-  channelPillIconGhost: {
-    flexShrink: 0,
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: 'transparent',
-    color: 'var(--color-text-primary)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  channelPillInner: {
-    display: 'flex',
-    flexDirection: 'row',
-    // flex-start (not center) so the icon anchors to the top of
-    // the text block — aligned with the title baseline — rather
-    // than drifting to the middle when the description wraps to
-    // multiple lines. Without this, multi-line items look like
-    // the icon is floating mid-paragraph instead of leading the
-    // row.
-    alignItems: 'flex-start',
-    gap: 'var(--spacing-3)',
-    paddingBlock: 'var(--spacing-3)',
-    paddingInline: 'var(--spacing-3)',
-  },
-  // Ghost variant inner row — keeps the same paddingInline as
-  // the filled variant so the hover backdrop has comfortable
-  // horizontal breathing room around the icon + text. The
-  // optical left-edge alignment with the section heading is
-  // handled at the stack level (see endBlockResourcesGrid's
-  // negative marginInline) — the click/hover target extends
-  // further left than the section's content left edge, while
-  // the icon glyph itself sits flush with the section heading.
-  channelPillInnerGhost: {
-    display: 'flex',
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 'var(--spacing-3)',
-    paddingBlock: 'var(--spacing-3)',
-    paddingInline: 'var(--spacing-3)',
-  },
-  // Rounded-square icon tile on the left of each pill. Painted
-  // with --color-background-card (the lifted-above-body tone,
-  // usually white) so the tile reads as a distinct chip on top
-  // of the pill's muted-gray surface. Corner radius matches the
-  // wall card's scattered avatars + the BlockCard quadrants for
-  // consistent shape language across the page.
-  channelPillIcon: {
-    flexShrink: 0,
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: 'var(--color-background-card)',
-    color: 'var(--color-text-primary)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  channelPillBody: {
-    flex: '1 1 auto',
-    minWidth: 0,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 'var(--spacing-0-5)',
-  },
-  // Resources section below the editorial header — replaces the
-  // earlier 2-column link list with two Pill sub-stacks under one
-  // shared section heading. Sub-stacks lay out side-by-side on
-  // wide widths and reflow to a single column under 760px.
+  // Resources section below the editorial header — two XDSList
+  // groups (Documentation + Legal) side-by-side under one shared
+  // section heading. Sub-stacks reflow to a single column under
+  // 760px.
   endBlockResources: {
     display: 'flex',
     flexDirection: 'column',
@@ -738,80 +626,6 @@ function BlockCard({label, description, href, bgColor, badge}: BlockCardProps) {
             {badge}
           </XDSText>
         )}
-      </div>
-    </XDSClickableCard>
-  );
-}
-
-// =============================================================================
-// Pill — horizontal pill card used for Channels + Resources
-// =============================================================================
-//
-// Shared chrome for the horizontal pill cards that appear in two
-// places on the page:
-//   - Channels list (Discussions / Issues / Wiki) under the end-
-//     block editorial header
-//   - Resources section (Documentation + Legal sub-stacks)
-//     replacing the previous text-link grid
-//
-// Each pill is an XDSClickableCard whose whole body is the click
-// target. Icon tile on the left, bold title + supporting line in
-// the middle, arrow chip on the right. The icon and arrow chips
-// share the same --color-background-card tone so they read as
-// symmetric "endcaps" framing the body text.
-
-interface PillProps {
-  label: string;
-  description: string;
-  href: string;
-  icon: React.ComponentType<{width?: number; height?: number}>;
-  /** Open in a new tab. Channels + Resources all link to GitHub
-   * / wiki destinations off-site, so this is on by default. */
-  openInNewTab?: boolean;
-  /** Visual variant:
-   *   - 'filled' (default): muted-gray pill body with white icon
-   *     and arrow chips — for channels.
-   *   - 'ghost': transparent pill body, icon, and arrow — for the
-   *     Resources section where each item should sit flush on the
-   *     page surface without its own chip backdrop. */
-  variant?: 'filled' | 'ghost';
-}
-
-function Pill({
-  label,
-  description,
-  href,
-  icon: Icon,
-  openInNewTab = true,
-  variant = 'filled',
-}: PillProps) {
-  const isGhost = variant === 'ghost';
-  return (
-    <XDSClickableCard
-      label={`Open ${label}`}
-      href={href}
-      target={openInNewTab ? '_blank' : undefined}
-      padding={0}
-      xstyle={isGhost ? styles.channelPillGhost : styles.channelPill}>
-      <div
-        {...stylex.props(
-          isGhost ? styles.channelPillInnerGhost : styles.channelPillInner,
-        )}>
-        <div
-          {...stylex.props(
-            isGhost ? styles.channelPillIconGhost : styles.channelPillIcon,
-          )}
-          aria-hidden="true">
-          <Icon width={20} height={20} />
-        </div>
-        <div {...stylex.props(styles.channelPillBody)}>
-          <XDSText type="body" weight="bold">
-            {label}
-          </XDSText>
-          <XDSText type="supporting" color="secondary">
-            {description}
-          </XDSText>
-        </div>
       </div>
     </XDSClickableCard>
   );
@@ -1215,30 +1029,36 @@ export default async function CommunityPage() {
                 </XDSText>
               </XDSVStack>
               <div {...stylex.props(styles.endBlockResourcesGrid)}>
-                <div {...stylex.props(styles.channelPillStack)}>
+                {/* Documentation list — uses XDS's canonical
+                    XDSList/XDSListItem pattern for "icon + label
+                    + description + href" rows. startContent
+                    carries the icon, label/description map
+                    directly, href makes the whole row a
+                    navigation link. */}
+                <XDSList>
                   {RESOURCES.map(resource => (
-                    <Pill
+                    <XDSListItem
                       key={resource.title}
                       label={resource.title}
                       description={resource.description}
                       href={resource.href}
-                      icon={DocumentTextIcon}
-                      variant="ghost"
+                      target="_blank"
+                      startContent={<DocumentTextIcon width={20} height={20} />}
                     />
                   ))}
-                </div>
-                <div {...stylex.props(styles.channelPillStack)}>
+                </XDSList>
+                <XDSList>
                   {LEGAL_RESOURCES.map(resource => (
-                    <Pill
+                    <XDSListItem
                       key={resource.title}
                       label={resource.title}
                       description={resource.description}
                       href={resource.href}
-                      icon={ScaleIcon}
-                      variant="ghost"
+                      target="_blank"
+                      startContent={<ScaleIcon width={20} height={20} />}
                     />
                   ))}
-                </div>
+                </XDSList>
               </div>
             </div>
           </div>
