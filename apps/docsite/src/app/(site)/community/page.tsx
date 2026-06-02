@@ -29,7 +29,9 @@ import {
   ArrowRightIcon,
   BookOpenIcon,
   ChatBubbleLeftRightIcon,
+  DocumentTextIcon,
   ExclamationCircleIcon,
+  ScaleIcon,
 } from '@heroicons/react/24/outline';
 import {NavSurfaceMode} from './NavSurfaceMode';
 import * as stylex from '@stylexjs/stylex';
@@ -288,13 +290,16 @@ const styles = stylex.create({
 
   // Outer block — generous vertical padding so the end-of-page
   // moment reads as a deliberate visual chapter, not just more
-  // content. position:relative so the giant wordmark can be
-  // absolutely positioned in the bottom-right corner.
+  // content. position:relative kept in case any descendant needs
+  // a positioning ancestor (e.g. the resource grid extends past
+  // its grid cell left edge via negative marginInline, and we
+  // want that overflow visible — no overflow:hidden here so the
+  // hover backdrop on each resource row paints into the bleed
+  // zone without getting clipped).
   endBlock: {
     position: 'relative',
     paddingBlockStart: 'var(--spacing-12)',
     paddingBlockEnd: 'var(--spacing-12)',
-    overflow: 'hidden',
   },
   // Top editorial row — headline + paragraph on the left,
   // brand-shape composition on the right. 1:1 split at wide
@@ -337,24 +342,96 @@ const styles = stylex.create({
     backgroundColor: 'var(--color-background-muted)',
     borderColor: 'transparent',
   },
+  // Ghost variant of the same pill chrome — used by the Resources
+  // section. Drops the muted gray fill so each item reads as a
+  // bare row with just an icon + text + arrow, no chip backdrop.
+  // The icon + arrow chips also turn transparent (paired via the
+  // Pill component's variant prop) so the whole row reads as one
+  // continuous transparent surface against the page body color.
+  //
+  // marginInlineStart + width together extend the pill 22px to
+  // the LEFT of its grid cell while keeping its right edge at
+  // the original column boundary. 22px = pill inner padding
+  // (12px = --spacing-3) + icon tile centering whitespace
+  // ((40px tile - 20px glyph) / 2 = 10px). The visible icon
+  // glyph then optically aligns with the section heading + intro
+  // text above; the hover overlay paints across the FULL pill
+  // bounds (including the negative-margin overflow), giving
+  // each row the same comfortable horizontal hover surface as
+  // the filled channel pills above.
+  channelPillGhost: {
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
+    borderColor: 'transparent',
+    marginInlineStart: -22,
+    width: 'calc(100% + 22px)',
+  },
+  // Ghost icon tile — same 40×40 dimensions as the filled
+  // variant so the layout grid stays consistent, just transparent
+  // background so the body color shows through.
+  channelPillIconGhost: {
+    flexShrink: 0,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'transparent',
+    color: 'var(--color-text-primary)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  channelPillArrowGhost: {
+    flexShrink: 0,
+    width: 32,
+    height: 32,
+    borderRadius: 'var(--radius-full)',
+    backgroundColor: 'transparent',
+    color: 'var(--color-text-primary)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   channelPillInner: {
     display: 'flex',
     flexDirection: 'row',
-    alignItems: 'center',
+    // flex-start (not center) so the icon anchors to the top of
+    // the text block — aligned with the title baseline — rather
+    // than drifting to the middle when the description wraps to
+    // multiple lines. Without this, multi-line items look like
+    // the icon is floating mid-paragraph instead of leading the
+    // row.
+    alignItems: 'flex-start',
     gap: 'var(--spacing-3)',
     paddingBlock: 'var(--spacing-3)',
     paddingInline: 'var(--spacing-3)',
   },
-  // Circular icon tile on the left of each pill. Painted with
-  // --color-background-card (the lifted-above-body tone, usually
-  // white) so the tile reads as a distinct chip on top of the
-  // pill's muted-gray surface — matches the reference where the
-  // avatar circles are noticeably lighter than the pill body.
+  // Ghost variant inner row — keeps the same paddingInline as
+  // the filled variant so the hover backdrop has comfortable
+  // horizontal breathing room around the icon + text. The
+  // optical left-edge alignment with the section heading is
+  // handled at the stack level (see endBlockResourcesGrid's
+  // negative marginInline) — the click/hover target extends
+  // further left than the section's content left edge, while
+  // the icon glyph itself sits flush with the section heading.
+  channelPillInnerGhost: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 'var(--spacing-3)',
+    paddingBlock: 'var(--spacing-3)',
+    paddingInline: 'var(--spacing-3)',
+  },
+  // Rounded-square icon tile on the left of each pill. Painted
+  // with --color-background-card (the lifted-above-body tone,
+  // usually white) so the tile reads as a distinct chip on top
+  // of the pill's muted-gray surface. Corner radius matches the
+  // wall card's scattered avatars + the BlockCard quadrants for
+  // consistent shape language across the page.
   channelPillIcon: {
     flexShrink: 0,
     width: 40,
     height: 40,
-    borderRadius: 'var(--radius-full)',
+    borderRadius: 12,
     backgroundColor: 'var(--color-background-card)',
     color: 'var(--color-text-primary)',
     display: 'flex',
@@ -383,82 +460,40 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Decorative brand-shape composition on the right of the
-  // header. Square-ish aspect, holds a single big BlobShape.
-  // Painted with --color-background-body so it reads as a
-  // continuation of the page surface rather than a lifted card.
+  // Decorative container on the right of the editorial header.
+  // Used to hold a big BrandBlob; the blob was removed but the
+  // container stays so the editorial header keeps its 1:1 split
+  // (text + channels on the left, balanced negative-space card
+  // on the right). Painted with --color-background-body so it
+  // reads as a continuation of the page surface rather than a
+  // lifted card.
   endBlockHeaderArt: {
     flex: '1 1 0',
     minWidth: 0,
     aspectRatio: '4 / 3',
     backgroundColor: 'var(--color-background-body)',
     borderRadius: 'var(--radius-container)',
-    position: 'relative',
-    overflow: 'hidden',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  // Big floating brand shape inside the art slot. Sized to fill
-  // most of the slot; opacity slightly reduced so it reads as a
-  // backdrop accent rather than a primary subject.
-  endBlockHeaderShape: {
-    width: '60%',
-    height: 'auto',
-    color: 'var(--color-icon-purple)',
-    opacity: 0.85,
   },
 
-  // 2-column link list below the editorial header (References +
-  // Legal). Channels used to live here too, but now sit as pill
-  // cards inside the editorial header above. Each column is a
-  // small label header + tight stack of plain text links. No
-  // icons, no decoration — pure typographic hierarchy.
-  endBlockColumns: {
-    display: 'grid',
-    gridTemplateColumns: {
-      default: '2fr 1fr',
-      '@media (max-width: 760px)': '1fr',
-    },
-    gap: 'var(--spacing-8)',
-    paddingBlockStart: 'var(--spacing-10)',
-  },
-  // Column label override — uppercase + letter-spacing
-  // adjustments applied on top of <XDSText type="supporting"
-  // weight="semibold">. The base XDSText handles typography
-  // scale + weight; this xstyle only adds the small-caps look
-  // and the block-end spacing that separates the label from
-  // the link stack underneath.
-  endBlockColumnLabel: {
-    textTransform: 'uppercase' as const,
-    letterSpacing: '0.05em',
-    paddingBlockEnd: 'var(--spacing-3)',
-  },
-  // Single link row in the column. Tight inter-link spacing
-  // (via parent gap) — Poliform-style "Our Story / Store Locator
-  // / Sustainability" stack.
-  endBlockLinkStack: {
+  // Resources section below the editorial header — replaces the
+  // earlier 2-column link list with two Pill sub-stacks under one
+  // shared section heading. Sub-stacks lay out side-by-side on
+  // wide widths and reflow to a single column under 760px.
+  endBlockResources: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 'var(--spacing-2)',
+    gap: 'var(--spacing-6)',
+    paddingBlockStart: 'var(--spacing-10)',
   },
-
-  // The giant "astryx" wordmark in the bottom-right corner.
-  // pointer-events:none so it doesn't intercept clicks meant
-  // for the link columns above it. Sized as a percentage of
-  // viewport width with a hard cap so it scales gracefully
-  // across narrow + ultrawide layouts.
-  endBlockWordmark: {
-    position: 'absolute',
-    insetInlineEnd: 'var(--spacing-6)',
-    bottom: 'var(--spacing-6)',
-    height: 'auto',
-    width: 'clamp(180px, 25vw, 320px)',
-    opacity: 0.4,
-    pointerEvents: 'none',
-    color: 'var(--color-text-primary)',
+  endBlockResourcesGrid: {
+    display: 'grid',
+    gridTemplateColumns: {
+      default: '1fr 1fr',
+      '@media (max-width: 760px)': '1fr',
+    },
+    gap: 'var(--spacing-6)',
+    alignItems: 'flex-start',
   },
-
   // -------------------------------------------------------------------------
   // BlockCard — color-blocked contribution-type cards
   // -------------------------------------------------------------------------
@@ -844,24 +879,6 @@ function WallCard({contributors}: {contributors: ReadonlyArray<Contributor>}) {
 }
 
 // =============================================================================
-// BrandBlob — single brand shape used in the end-block art slot
-// =============================================================================
-//
-// Copy of the BlobIcon path from the home page's AboutShowcase
-// (apps/docsite/src/app/(site)/_landing/AboutShowcase.tsx).
-// Renders inside its native 40×40 viewBox with fill=currentColor
-// so the parent can recolor it (the end-block art slot wraps
-// this with a 60%-width SVG and a --color-icon-purple tint).
-function BrandBlob() {
-  return (
-    <path
-      d="M17.081 1.19166C18.7027 -0.397219 21.2973 -0.397219 22.919 1.19166C23.9616 2.21324 25.4625 2.61539 26.8763 2.25201C29.0751 1.68683 31.3221 2.98415 31.9321 5.17099C32.3243 6.57703 33.423 7.67574 34.829 8.06792C37.0159 8.67788 38.3132 10.9249 37.748 13.1237C37.3846 14.5375 37.7868 16.0384 38.8083 17.081C40.3972 18.7027 40.3972 21.2973 38.8083 22.919C37.7868 23.9616 37.3846 25.4625 37.748 26.8763C38.3132 29.0751 37.0159 31.3221 34.829 31.9321C33.423 32.3243 32.3243 33.423 31.9321 34.829C31.3221 37.0159 29.0751 38.3132 26.8763 37.748C25.4625 37.3846 23.9616 37.7868 22.919 38.8083C21.2973 40.3972 18.7027 40.3972 17.081 38.8083C16.0384 37.7868 14.5375 37.3846 13.1237 37.748C10.9249 38.3132 8.67788 37.0159 8.06792 34.829C7.67574 33.423 6.57703 32.3243 5.17099 31.9321C2.98415 31.3221 1.68683 29.0751 2.25201 26.8763C2.61539 25.4625 2.21324 23.9616 1.19166 22.919C-0.397219 21.2973 -0.397219 18.7027 1.19166 17.081C2.21324 16.0384 2.61539 14.5375 2.25201 13.1237C1.68683 10.9249 2.98415 8.67788 5.17099 8.06792C6.57703 7.67574 7.67574 6.57703 8.06792 5.17099C8.67788 2.98415 10.9249 1.68683 13.1237 2.25201C14.5375 2.61539 16.0384 2.21324 17.081 1.19166Z"
-      fill="currentColor"
-    />
-  );
-}
-
-// =============================================================================
 // BlockCard — color-blocked contribution-type card
 // =============================================================================
 
@@ -895,8 +912,79 @@ function BlockCard({label, description, href, bgColor, badge}: BlockCardProps) {
           </XDSText>
         )}
       </div>
-      <div {...stylex.props(styles.blockCardArrow)} aria-hidden="true">
-        <ArrowRightIcon width={22} height={22} />
+    </XDSClickableCard>
+  );
+}
+
+// =============================================================================
+// Pill — horizontal pill card used for Channels + Resources
+// =============================================================================
+//
+// Shared chrome for the horizontal pill cards that appear in two
+// places on the page:
+//   - Channels list (Discussions / Issues / Wiki) under the end-
+//     block editorial header
+//   - Resources section (Documentation + Legal sub-stacks)
+//     replacing the previous text-link grid
+//
+// Each pill is an XDSClickableCard whose whole body is the click
+// target. Icon tile on the left, bold title + supporting line in
+// the middle, arrow chip on the right. The icon and arrow chips
+// share the same --color-background-card tone so they read as
+// symmetric "endcaps" framing the body text.
+
+interface PillProps {
+  label: string;
+  description: string;
+  href: string;
+  icon: React.ComponentType<{width?: number; height?: number}>;
+  /** Open in a new tab. Channels + Resources all link to GitHub
+   * / wiki destinations off-site, so this is on by default. */
+  openInNewTab?: boolean;
+  /** Visual variant:
+   *   - 'filled' (default): muted-gray pill body with white icon
+   *     and arrow chips — for channels.
+   *   - 'ghost': transparent pill body, icon, and arrow — for the
+   *     Resources section where each item should sit flush on the
+   *     page surface without its own chip backdrop. */
+  variant?: 'filled' | 'ghost';
+}
+
+function Pill({
+  label,
+  description,
+  href,
+  icon: Icon,
+  openInNewTab = true,
+  variant = 'filled',
+}: PillProps) {
+  const isGhost = variant === 'ghost';
+  return (
+    <XDSClickableCard
+      label={`Open ${label}`}
+      href={href}
+      target={openInNewTab ? '_blank' : undefined}
+      padding={0}
+      xstyle={isGhost ? styles.channelPillGhost : styles.channelPill}>
+      <div
+        {...stylex.props(
+          isGhost ? styles.channelPillInnerGhost : styles.channelPillInner,
+        )}>
+        <div
+          {...stylex.props(
+            isGhost ? styles.channelPillIconGhost : styles.channelPillIcon,
+          )}
+          aria-hidden="true">
+          <Icon width={20} height={20} />
+        </div>
+        <div {...stylex.props(styles.channelPillBody)}>
+          <XDSText type="body" weight="bold">
+            {label}
+          </XDSText>
+          <XDSText type="supporting" color="secondary">
+            {description}
+          </XDSText>
+        </div>
       </div>
     </XDSClickableCard>
   );
@@ -1131,6 +1219,22 @@ const RESOURCES: ReadonlyArray<Resource> = [
   },
 ];
 
+// Legal resources — same Resource shape as documentation above,
+// renders in its own Pill sub-group inside the Resources section.
+const LEGAL_RESOURCES: ReadonlyArray<Resource> = [
+  {
+    title: 'Code of Conduct',
+    description:
+      'Our standards for respectful collaboration and how we handle reports.',
+    href: `${GITHUB_REPO}/blob/main/CODE_OF_CONDUCT.md`,
+  },
+  {
+    title: 'MIT License',
+    description: 'Astryx is open source under the MIT License — free to use.',
+    href: `${GITHUB_REPO}/blob/main/LICENSE`,
+  },
+];
+
 // =============================================================================
 // Live data
 // =============================================================================
@@ -1277,7 +1381,7 @@ export default async function CommunityPage() {
               <div {...stylex.props(styles.endBlockHeaderText)}>
                 <XDSVStack gap={3}>
                   <XDSHeading level={2} type="display-2">
-                    Engage with us in conversation.
+                    Engage with us in conversation
                   </XDSHeading>
                   <XDSText type="body" color="secondary">
                     In a global community built on shared craft, a system gets
@@ -1293,107 +1397,73 @@ export default async function CommunityPage() {
                     pattern as the RichCard chips elsewhere on
                     the page. */}
                 <div {...stylex.props(styles.channelPillStack)}>
-                  {CHANNELS.map(channel => {
-                    const Icon = channel.icon;
-                    return (
-                      <XDSClickableCard
-                        key={channel.name}
-                        label={`Open ${channel.name}`}
-                        href={channel.href}
-                        target="_blank"
-                        padding={0}
-                        xstyle={styles.channelPill}>
-                        <div {...stylex.props(styles.channelPillInner)}>
-                          <div
-                            {...stylex.props(styles.channelPillIcon)}
-                            aria-hidden="true">
-                            <Icon width={20} height={20} />
-                          </div>
-                          <div {...stylex.props(styles.channelPillBody)}>
-                            <XDSText type="body" weight="bold">
-                              {channel.name}
-                            </XDSText>
-                            <XDSText type="supporting" color="secondary">
-                              {channel.description}
-                            </XDSText>
-                          </div>
-                          <div
-                            {...stylex.props(styles.channelPillArrow)}
-                            aria-hidden="true">
-                            <ArrowRightIcon width={16} height={16} />
-                          </div>
-                        </div>
-                      </XDSClickableCard>
-                    );
-                  })}
-                </div>
-              </div>
-              <div {...stylex.props(styles.endBlockHeaderArt)}>
-                <svg
-                  {...stylex.props(styles.endBlockHeaderShape)}
-                  viewBox="0 0 40 40"
-                  aria-hidden="true">
-                  <BrandBlob />
-                </svg>
-              </div>
-            </div>
-
-            <div {...stylex.props(styles.endBlockColumns)}>
-              {/* References */}
-              <div>
-                <XDSText
-                  type="supporting"
-                  weight="semibold"
-                  xstyle={styles.endBlockColumnLabel}>
-                  References
-                </XDSText>
-                <div {...stylex.props(styles.endBlockLinkStack)}>
-                  {RESOURCES.map(resource => (
-                    <XDSLink
-                      key={resource.title}
-                      label={resource.title}
-                      href={resource.href}
-                      isExternalLink>
-                      {resource.title}
-                    </XDSLink>
+                  {CHANNELS.map(channel => (
+                    <Pill
+                      key={channel.name}
+                      label={channel.name}
+                      description={channel.description}
+                      href={channel.href}
+                      icon={channel.icon}
+                    />
                   ))}
                 </div>
               </div>
+              {/* Empty container on the right — same width and
+                  aspect ratio as before, just no decorative
+                  shape inside. Balances the editorial header's
+                  1:1 split visually without competing for
+                  attention. */}
+              <div
+                {...stylex.props(styles.endBlockHeaderArt)}
+                aria-hidden="true"
+              />
+            </div>
 
-              {/* Legal */}
-              <div>
-                <XDSText
-                  type="supporting"
-                  weight="semibold"
-                  xstyle={styles.endBlockColumnLabel}>
-                  Legal
+            {/* Resources — Documentation + Legal as two Pill
+                sub-stacks under one shared section heading. Each
+                pill is the same XDSClickableCard chrome the
+                channels above use, so the whole bottom of the
+                page shares one visual language. Documentation
+                takes the wider column (it has 5 items); Legal
+                sits to the right (2 items). */}
+            <div {...stylex.props(styles.endBlockResources)}>
+              <XDSVStack gap={1}>
+                <XDSHeading level={2} type="display-2">
+                  Resources
+                </XDSHeading>
+                <XDSText type="body" color="secondary">
+                  Long-form guides, conventions, and policies. Skim what's
+                  relevant before sharing a proposal, or come back when you need
+                  to look something up.
                 </XDSText>
-                <div {...stylex.props(styles.endBlockLinkStack)}>
-                  <XDSLink
-                    label="Code of Conduct"
-                    href={`${GITHUB_REPO}/blob/main/CODE_OF_CONDUCT.md`}
-                    isExternalLink>
-                    Code of Conduct
-                  </XDSLink>
-                  <XDSLink
-                    label="MIT License"
-                    href={`${GITHUB_REPO}/blob/main/LICENSE`}
-                    isExternalLink>
-                    MIT License
-                  </XDSLink>
+              </XDSVStack>
+              <div {...stylex.props(styles.endBlockResourcesGrid)}>
+                <div {...stylex.props(styles.channelPillStack)}>
+                  {RESOURCES.map(resource => (
+                    <Pill
+                      key={resource.title}
+                      label={resource.title}
+                      description={resource.description}
+                      href={resource.href}
+                      icon={DocumentTextIcon}
+                      variant="ghost"
+                    />
+                  ))}
+                </div>
+                <div {...stylex.props(styles.channelPillStack)}>
+                  {LEGAL_RESOURCES.map(resource => (
+                    <Pill
+                      key={resource.title}
+                      label={resource.title}
+                      description={resource.description}
+                      href={resource.href}
+                      icon={ScaleIcon}
+                      variant="ghost"
+                    />
+                  ))}
                 </div>
               </div>
             </div>
-
-            {/* Giant "astryx" wordmark in the bottom-right corner —
-                anchors the block visually, same role as the "Poliform"
-                wordmark in the reference. */}
-            <img
-              src="/astryx-logo.svg"
-              alt=""
-              aria-hidden="true"
-              {...stylex.props(styles.endBlockWordmark)}
-            />
           </div>
         </XDSVStack>
       </XDSSection>
