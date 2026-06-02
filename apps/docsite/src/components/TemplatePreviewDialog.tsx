@@ -190,7 +190,6 @@ export function TemplatePreviewDialog({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, index, count]);
 
   // Reset the share-copied state when switching templates.
@@ -286,7 +285,7 @@ export function TemplatePreviewDialog({
                     size="lg"
                     onClick={() => {
                       window.location.href = buildPlaygroundHref(
-                        current.source!,
+                        current.source,
                       );
                     }}
                   />
