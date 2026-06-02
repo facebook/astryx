@@ -5,6 +5,7 @@
 import * as stylex from '@stylexjs/stylex';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSLink} from '@xds/core/Link';
+import {XDSDivider} from '@xds/core/Divider';
 import {XDSHStack, XDSVStack} from '@xds/core/Stack';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSCard} from '@xds/core/Card';
@@ -20,25 +21,14 @@ import {XDSStatusDot} from '@xds/core/StatusDot';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSTheme} from '@xds/core/theme';
 import {neutralTheme} from '@xds/theme-neutral/built';
-import {spacingVars} from '@xds/core/theme/tokens.stylex';
 
 const noop = () => {};
 
 const styles = stylex.create({
-  section: {
-    width: '100%',
-    paddingBlock: spacingVars['--spacing-12'],
-    paddingInline: spacingVars['--spacing-6'],
-    backgroundColor: 'var(--color-background-surface)',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-10'],
-  },
   headingBlock: {
-    textAlign: 'center',
     width: '100%',
     maxWidth: 680,
+    textAlign: 'center',
   },
   fillWidth: {
     width: '100%',
@@ -50,19 +40,15 @@ const styles = stylex.create({
   subTile: {
     width: '100%',
   },
+  captionDivider: {
+    height: '1.125em',
+  },
   swatchRow: {
     flexWrap: 'wrap',
   },
   swatch: {
     width: 40,
     height: 40,
-    borderRadius: '50%',
-    boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)',
-    flexShrink: 0,
-  },
-  swatchSm: {
-    width: 32,
-    height: 32,
     borderRadius: '50%',
     boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)',
     flexShrink: 0,
@@ -135,12 +121,6 @@ const styles = stylex.create({
     lineHeight: 1,
     color: 'var(--color-text-primary)',
   },
-  dotsWrap: {
-    display: 'flex',
-    gap: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });
 
 // =============================================================================
@@ -149,31 +129,29 @@ const styles = stylex.create({
 
 function ShowcaseHeading() {
   return (
-    <XDSVStack
-      gap={1}
-      align="center"
-      xstyle={styles.headingBlock}
-      style={{textAlign: 'center'}}>
+    <XDSVStack gap={4} align="center" xstyle={styles.headingBlock}>
       <XDSHeading
         level={2}
         type="display-2"
         color="primary"
         xstyle={styles.fillWidth}>
-        Every app deserves to look like itself
+        Custom styles as unique as your app
       </XDSHeading>
-      <XDSVStack gap={1} align="center" xstyle={styles.fillWidth}>
-        <XDSText type="body" color="secondary" xstyle={styles.fillWidth}>
-          Astryx makes it effortless. Customize color, typography, radius, and
-          motion at the token level
-          <br />— your brand, no rewrites needed.
+      <XDSVStack gap={4} align="center" xstyle={styles.fillWidth}>
+        <XDSText
+          display="block"
+          type="body"
+          color="secondary"
+          style={{maxWidth: 560}}>
+          Astryx makes it effortless to apply your brand — no rewrites needed.
+          Customize your theme at the token level: color, typography, radius,
+          and motion.
         </XDSText>
-        <XDSHStack gap={2} align="center">
+        <XDSHStack gap={4} align="center">
           <XDSLink type="body" href="/themes" hasUnderline>
             Explore all themes
           </XDSLink>
-          <XDSText type="body" color="secondary" aria-hidden="true">
-            ·
-          </XDSText>
+          <XDSDivider orientation="vertical" xstyle={styles.captionDivider} />
           <XDSLink type="body" href="/docs/theme" hasUnderline>
             Create a custom theme
           </XDSLink>
@@ -528,7 +506,11 @@ function ShowcaseDots() {
 
 export function ThemingShowcase() {
   return (
-    <section {...stylex.props(styles.section)} data-theming-showcase="true">
+    <XDSVStack
+      as="section"
+      gap={10}
+      align="center"
+      data-theming-showcase="true">
       <ShowcaseHeading />
 
       <XDSTheme theme={neutralTheme} mode="light">
@@ -560,6 +542,6 @@ export function ThemingShowcase() {
           <ShowcaseDots />
         </XDSVStack>
       </XDSTheme>
-    </section>
+    </XDSVStack>
   );
 }
