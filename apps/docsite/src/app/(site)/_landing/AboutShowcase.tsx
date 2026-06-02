@@ -89,7 +89,11 @@ const items: AboutItem[] = [
     description:
       'Foundations you can trust, speed you can feel. The system is built so teams stop reinventing the basics and start shipping the ideas that matter.',
     link: (
-      <XDSLink type="body" href="/docs/getting-started" hasUnderline>
+      <XDSLink
+        type="body"
+        color="primary"
+        href="/docs/getting-started"
+        hasUnderline>
         Get started in minutes
       </XDSLink>
     ),
@@ -100,7 +104,7 @@ const items: AboutItem[] = [
     description:
       'The system gets sharper when we put it to work in the real world. Using it in context strengthens the whole system for everyone.',
     link: (
-      <XDSLink type="body" href="/community" hasUnderline>
+      <XDSLink type="body" color="primary" href="/community" hasUnderline>
         Learn how to contribute
       </XDSLink>
     ),
@@ -111,7 +115,7 @@ const items: AboutItem[] = [
     description:
       'The quality bar is accelerating. Astryx pairs opinionated foundations with flexible patterns so your system keeps pace — no matter how the craft evolves.',
     link: (
-      <XDSLink type="body" href="/changelog" hasUnderline>
+      <XDSLink type="body" color="primary" href="/changelog" hasUnderline>
         See what&apos;s new
       </XDSLink>
     ),

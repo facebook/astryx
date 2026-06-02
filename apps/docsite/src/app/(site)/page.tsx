@@ -29,9 +29,9 @@ const styles = stylex.create({
   heroContent: {
     position: 'sticky',
     top: 'var(--appshell-header-height, 0px)',
-    maxWidth: 680,
+    maxWidth: 800,
     marginInline: 'auto',
-    paddingBlock: `calc(${spacingVars['--spacing-12']} * 2)`,
+    paddingBlock: `calc(${spacingVars['--spacing-12']} * 3)`,
     paddingInline: spacingVars['--spacing-6'],
     textAlign: 'center',
     gap: spacingVars['--spacing-12'],
@@ -110,7 +110,22 @@ export default function HomePage() {
           {...stylex.props(styles.heroWordmark)}
         />
         <XDSHeading level={1} type="display-1" color="primary">
-          Fully customizable, no-forking, open source design system
+          An open source design system that's{' '}
+          <XDSLink
+            href="/docs/working-with-ai"
+            type="inherit"
+            color="inherit"
+            hasUnderline>
+            AI native
+          </XDSLink>{' '}
+          and{' '}
+          <XDSLink
+            href="/docs/theme"
+            type="inherit"
+            color="inherit"
+            hasUnderline>
+            fully customizable
+          </XDSLink>
         </XDSHeading>
         <XDSVStack gap={6} align="center">
           <XDSGrid columns={2} gap={3} xstyle={styles.heroButtons}>
