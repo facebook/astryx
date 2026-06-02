@@ -4,6 +4,7 @@
 
 export const docs = {
   name: 'Outline',
+  displayName: 'Outline',
   group: 'Outline',
   keywords: [
     'outline',
@@ -34,6 +35,7 @@ export const docs = {
   components: [
     {
       name: 'XDSOutline',
+      displayName: 'Outline',
       description:
         'Document outline navigation with sliding indicator track. Renders a flat heading list as anchor links with keyboard navigation, size variants, and scroll-spy active state when uncontrolled.',
       props: [
@@ -122,6 +124,7 @@ export const docs = {
 /** @type {import('../docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Outline',
+  displayName: 'Outline',
   group: 'Outline',
   theming: {
     targets: [
@@ -132,6 +135,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSOutline',
+      displayName: 'Outline',
       description:
         '文档大纲导航，带有滑动指示器轨道。将扁平标题列表渲染为锚点链接，支持键盘导航、尺寸变体和非受控模式下的滚动监听。',
       props: [
