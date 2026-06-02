@@ -392,8 +392,8 @@ const styles = stylex.create({
     flexShrink: 0,
     overflow: 'clip',
     position: 'sticky',
-    top: 'var(--_app-shell-header-height, 0px)',
-    height: 'calc(100dvh - var(--_app-shell-header-height, 0px))',
+    top: 'var(--appshell-header-height, 0px)',
+    height: 'calc(100dvh - var(--appshell-header-height, 0px))',
     // Ensure children (XDSLayoutPanel → XDSSideNav) fill the sticky container
     display: 'flex',
     flexDirection: 'column',
@@ -556,7 +556,7 @@ export function XDSAppShell({
 
     const updateHeight = () => {
       const height = headerEl.getBoundingClientRect().height;
-      shellEl.style.setProperty('--_app-shell-header-height', `${height}px`);
+      shellEl.style.setProperty('--appshell-header-height', `${height}px`);
     };
 
     observeResize(headerEl, () => updateHeight());
