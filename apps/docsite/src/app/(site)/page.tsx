@@ -110,7 +110,7 @@ export default function HomePage() {
           {...stylex.props(styles.heroWordmark)}
         />
         <XDSHeading level={1} type="display-1" color="primary">
-          An open source design system that's AI native and fully customizable
+          An open source design system that's fully customizable and agent ready
         </XDSHeading>
         <XDSVStack gap={8} align="center">
           <XDSGrid columns={2} gap={3} xstyle={styles.heroButtons}>
