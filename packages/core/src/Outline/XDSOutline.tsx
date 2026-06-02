@@ -320,30 +320,74 @@ export function XDSOutline({
     height: number;
   } | null>(null);
 
-  // Update indicator position when active item changes.
-  useLayoutEffect(() => {
-    if (!activeId) {
-      // eslint-disable-next-line @eslint-react/set-state-in-effect -- useLayoutEffect is the correct place to sync DOM measurements to state before paint
-      setIndicatorStyle(null);
-      return;
-    }
+  // Keep the active id available to imperative observers without re-subscribing.
+  const activeIdRef = useRef<string | undefined>(activeId);
+  activeIdRef.current = activeId;
 
-    const itemEl = itemMapRef.current.get(activeId);
+  // Measure the active item and sync the sliding indicator's top + height.
+  // Reads the active item's actual rendered box, so it reflects size variant
+  // changes (sm/md) and taller boxes from wrapped labels.
+  const measureIndicator = useCallback(() => {
+    const activeItemId = activeIdRef.current;
+    const itemEl = activeItemId
+      ? itemMapRef.current.get(activeItemId)
+      : undefined;
     const listEl = listContainerRef.current;
-    if (!itemEl || !listEl) {
-      setIndicatorStyle(null);
+
+    if (!activeItemId || !itemEl || !listEl) {
+      setIndicatorStyle(prev => (prev === null ? prev : null));
       return;
     }
 
     const listRect = listEl.getBoundingClientRect();
     const itemRect = itemEl.getBoundingClientRect();
-
-    // eslint-disable-next-line @eslint-react/set-state-in-effect -- useLayoutEffect is the correct place to sync DOM measurements to state before paint
-    setIndicatorStyle({
+    const next = {
       top: itemRect.top - listRect.top,
       height: itemRect.height,
+    };
+
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- syncing DOM measurements to state in a layout effect is intentional; the functional updater no-ops when unchanged
+    setIndicatorStyle(prev =>
+      prev != null && prev.top === next.top && prev.height === next.height
+        ? prev
+        : next,
+    );
+  }, []);
+
+  // Re-measure whenever the active item, item set, or size variant changes.
+  useLayoutEffect(() => {
+    measureIndicator();
+  }, [activeId, items, size, measureIndicator]);
+
+  // Re-measure on reflow: wrapped labels, font loading, or container resize all
+  // change item heights without changing activeId/items/size. A ResizeObserver
+  // on the list (and the active item) catches these so the indicator stays in
+  // sync with the actual rendered item height.
+  useLayoutEffect(() => {
+    if (typeof ResizeObserver === 'undefined') {
+      return;
+    }
+
+    const listEl = listContainerRef.current;
+    const activeItemEl = activeId
+      ? itemMapRef.current.get(activeId)
+      : undefined;
+
+    const observer = new ResizeObserver(() => {
+      measureIndicator();
     });
-  }, [activeId, items]);
+
+    if (listEl) {
+      observer.observe(listEl);
+    }
+    if (activeItemEl) {
+      observer.observe(activeItemEl);
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [activeId, items, size, measureIndicator]);
 
   const handleItemClick = useCallback(
     (id: string, event: React.MouseEvent<HTMLElement>) => {

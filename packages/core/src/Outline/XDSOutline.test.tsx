@@ -42,8 +42,21 @@ class MockMutationObserver {
   }
 }
 
+// Mock ResizeObserver for jsdom
+class MockResizeObserver {
+  callback: ResizeObserverCallback;
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+
+  constructor(callback: ResizeObserverCallback) {
+    this.callback = callback;
+  }
+}
+
 vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
 vi.stubGlobal('MutationObserver', MockMutationObserver);
+vi.stubGlobal('ResizeObserver', MockResizeObserver);
 
 const items: OutlineItem[] = [
   {id: 'intro', label: 'Introduction', level: 2},
@@ -183,6 +196,83 @@ describe('XDSOutline', () => {
     // Track is present as an aria-hidden div
     const track = container.querySelector('[aria-hidden="true"]');
     expect(track).toBeInTheDocument();
+  });
+
+  it('sizes the indicator to the active item height and updates on size change', () => {
+    // jsdom does not lay out, so drive measurement via getBoundingClientRect.
+    // Heights differ by size variant; the active item reports the size-specific
+    // height and the list reports 0 so indicator.top === item.top.
+    const heightForSize = (size: string) => (size === 'sm' ? 28 : 36);
+
+    function mockRects(size: string) {
+      const itemHeight = heightForSize(size);
+      vi.spyOn(
+        HTMLElement.prototype,
+        'getBoundingClientRect',
+      ).mockImplementation(function (this: HTMLElement) {
+        // The list <ul> anchors the coordinate space at the top.
+        if (this.tagName === 'UL') {
+          return {top: 0, left: 0, height: 0, width: 0} as DOMRect;
+        }
+        // Anchor links report the size-specific item height.
+        return {top: 0, left: 0, height: itemHeight, width: 0} as DOMRect;
+      });
+    }
+
+    mockRects('md');
+    const {container, rerender} = render(
+      <XDSOutline items={items} activeId="intro" />,
+    );
+
+    const indicator = container.querySelector('.xds-outline-indicator');
+    expect(indicator).toBeInTheDocument();
+    expect((indicator as HTMLElement).style.height).toBe('36px');
+
+    // Switching to sm shrinks the rendered item; indicator must follow.
+    mockRects('sm');
+    rerender(<XDSOutline items={items} activeId="intro" size="sm" />);
+    expect((indicator as HTMLElement).style.height).toBe('28px');
+
+    vi.restoreAllMocks();
+  });
+
+  it('re-measures the indicator when the active item reflows (ResizeObserver)', () => {
+    let resizeCallback: ResizeObserverCallback | undefined;
+    const observeSpy = vi.fn();
+
+    class CapturingResizeObserver {
+      observe = observeSpy;
+      unobserve = vi.fn();
+      disconnect = vi.fn();
+      constructor(cb: ResizeObserverCallback) {
+        resizeCallback = cb;
+      }
+    }
+    vi.stubGlobal('ResizeObserver', CapturingResizeObserver);
+
+    let currentHeight = 36;
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: HTMLElement) {
+        if (this.tagName === 'UL') {
+          return {top: 0, left: 0, height: 0, width: 0} as DOMRect;
+        }
+        return {top: 0, left: 0, height: currentHeight, width: 0} as DOMRect;
+      },
+    );
+
+    const {container} = render(<XDSOutline items={items} activeId="intro" />);
+    const indicator = container.querySelector('.xds-outline-indicator');
+    expect((indicator as HTMLElement).style.height).toBe('36px');
+
+    // Label wraps → taller box. Fire the ResizeObserver callback.
+    currentHeight = 54;
+    act(() => {
+      resizeCallback?.([], {} as ResizeObserver);
+    });
+    expect((indicator as HTMLElement).style.height).toBe('54px');
+
+    vi.restoreAllMocks();
+    vi.stubGlobal('ResizeObserver', MockResizeObserver);
   });
 
   it('fires onNavigateStart and onNavigateEnd callbacks', async () => {
