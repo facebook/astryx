@@ -887,6 +887,8 @@ export function XDSDateTimeInput({
             placeholder={timePlaceholder}
             disabled={isEffectivelyDisabled}
             aria-label="Time"
+            aria-required={isRequired === true ? 'true' : undefined}
+            aria-invalid={status?.type === 'error' ? 'true' : undefined}
             {...stylex.props(
               styles.input,
               isEffectivelyDisabled && styles.inputDisabled,

@@ -4,6 +4,7 @@ import {headers} from 'next/headers';
 import {XDSAppShell} from '@xds/core/AppShell';
 import {SharedTopNav} from '../../components/SharedTopNav';
 import {SiteFooter} from '../../components/SiteFooter';
+import styles from './layout.module.css';
 
 export default async function MarketingLayout({
   children,
@@ -20,8 +21,10 @@ export default async function MarketingLayout({
       height="auto"
       mobileNav={{defaultIsMobile}}
       topNav={<SharedTopNav />}>
-      {children}
-      <SiteFooter />
+      <div className={styles.shell}>
+        <div className={styles.main}>{children}</div>
+        <SiteFooter />
+      </div>
     </XDSAppShell>
   );
 }

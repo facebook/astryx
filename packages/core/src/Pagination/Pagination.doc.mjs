@@ -5,6 +5,7 @@
 export const docs = {
   name: 'Pagination',
   displayName: 'Pagination',
+  category: 'Navigation',
   keywords: ["pagination","pager","paginator","pagenavigation","paging","paginate","pages","pagecontrol"],
   props: [
     {

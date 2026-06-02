@@ -25,6 +25,7 @@ export type {
   XDSTextColor,
   XDSTextWeight,
   XDSTextDisplay,
+  XDSTextJustify,
   XDSWordBreak,
   XDSTextWrap,
   XDSTextXStyleAllowed,

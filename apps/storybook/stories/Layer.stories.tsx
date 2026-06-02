@@ -73,9 +73,15 @@ function PlacementDemo() {
   const layer = useXDSLayer({mode: 'context', lightDismiss: true});
 
   return (
-    <div style={{display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center'}}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 16,
+        alignItems: 'center',
+      }}>
       <div style={{display: 'flex', gap: 8}}>
-        {(['above', 'below', 'start', 'end'] as const).map((p) => (
+        {(['above', 'below', 'start', 'end'] as const).map(p => (
           <XDSButton
             key={p}
             label={p}
@@ -118,9 +124,12 @@ function FixedModeDemo() {
         borderRadius: 8,
         cursor: 'crosshair',
       }}
-      onClick={(e) => {
+      onClick={e => {
         const rect = e.currentTarget.getBoundingClientRect();
-        setCoords({x: e.clientX - rect.left + rect.left, y: e.clientY - rect.top + rect.top});
+        setCoords({
+          x: e.clientX - rect.left + rect.left,
+          y: e.clientY - rect.top + rect.top,
+        });
         layer.show();
       }}>
       <XDSText type="supporting" style={{padding: 16}}>
@@ -128,7 +137,9 @@ function FixedModeDemo() {
       </XDSText>
       {layer.render(
         <div {...stylex.props(styles.popoverContent)}>
-          <XDSText type="body">Fixed at ({Math.round(coords.x)}, {Math.round(coords.y)})</XDSText>
+          <XDSText type="body">
+            Fixed at ({Math.round(coords.x)}, {Math.round(coords.y)})
+          </XDSText>
         </div>,
         {x: coords.x, y: coords.y},
       )}

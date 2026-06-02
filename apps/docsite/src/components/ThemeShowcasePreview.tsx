@@ -2,8 +2,12 @@
 
 'use client';
 
-import {useState, useEffect, useRef} from 'react';
 import stylex from '@stylexjs/stylex';
+import {
+  MagnifyingGlassIcon,
+  UserIcon,
+  ShoppingBagIcon,
+} from '@heroicons/react/24/outline';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
@@ -12,17 +16,10 @@ import {XDSCenter} from '@xds/core/Center';
 import {XDSSection} from '@xds/core/Section';
 import {XDSGrid} from '@xds/core/Grid';
 import {XDSBadge} from '@xds/core/Badge';
-import {XDSTable, proportional} from '@xds/core/Table';
 import {XDSAspectRatio} from '@xds/core/AspectRatio';
-import {XDSTopNav, XDSTopNavHeading} from '@xds/core/TopNav';
-import {XDSRadioList, XDSRadioListItem} from '@xds/core/RadioList';
-import {XDSList, XDSListItem} from '@xds/core/List';
-import {XDSIcon} from '@xds/core/Icon';
-import {XDSTextInput} from '@xds/core/TextInput';
-import {XDSProgressBar} from '@xds/core/ProgressBar';
-import {XDSSwitch} from '@xds/core/Switch';
-import {XDSBanner} from '@xds/core/Banner';
-
+import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
+import {XDSNumberInput} from '@xds/core/NumberInput';
+import type {ThemeImageSet} from './themeImages';
 const styles = stylex.create({
   productImage: {
     width: '100%',
@@ -31,6 +28,37 @@ const styles = stylex.create({
   },
   cardBody: {
     padding: 'var(--spacing-4)',
+    // Body fills the remaining vertical space below the image so
+    // descriptions of different lengths don't push the "Learn more"
+    // button to different vertical positions across cards.
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column' as const,
+  },
+  cardStack: {
+    // Card content stack fills the card height so cardBody (flex:1)
+    // can stretch — without this the stack collapses to its content
+    // height and the body doesn't have room to grow.
+    height: '100%',
+  },
+  cardDescription: {
+    // Pushes the bottom action row (quantity + Add to cart) to the
+    // bottom of the card by absorbing any extra vertical space, so
+    // every card's action row aligns horizontally regardless of
+    // description length.
+    flex: 1,
+  },
+  // Compact quantity stepper to the left of the Add to cart button.
+  // Capped width keeps the stepper from competing with the button
+  // for the row's horizontal space.
+  quantityInput: {
+    width: 40,
+    flexShrink: 0,
+  },
+  // Cart button grows to fill the remaining row width next to the
+  // quantity stepper so the action stays the dominant target.
+  cartButton: {
+    flex: 1,
   },
   heroText: {
     textAlign: 'center' as const,
@@ -40,33 +68,20 @@ const styles = stylex.create({
     maxWidth: 960,
     marginInline: 'auto',
   },
-  swatch: {
-    width: 32,
-    height: 32,
-    borderRadius: 'var(--radius-element)',
-    flexShrink: 0,
-  },
-  fontCard: {
-    borderColor: 'transparent',
-    minWidth: 0,
-  },
-  fontSample: {
-    height: '100%',
-  },
-  fontSampleInner: {
-    flex: 1,
-  },
-  componentCard: {
-    borderColor: 'transparent',
-    overflow: 'hidden',
-    minWidth: 0,
+  // Fill the full available width instead of capping at 960. Used by the
+  // theme playground where the preview pane is wider than the /themes/<name>
+  // detail card and the grid should stretch edge-to-edge.
+  contentFluid: {
+    maxWidth: 'none',
   },
 });
 
-const PRODUCT_IMAGES = [
-  'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=300&fit=crop',
-  'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=300&fit=crop',
-  'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=300&fit=crop',
+// Keys into the active ThemeImageSet, in the same order as PRODUCTS.
+// The actual URLs are resolved per-theme via the `images` prop.
+const PRODUCT_IMAGE_KEYS: ReadonlyArray<keyof ThemeImageSet> = [
+  'watch',
+  'headphones',
+  'backpack',
 ];
 
 const PRODUCTS = [
@@ -74,340 +89,153 @@ const PRODUCTS = [
     name: 'Minimalist Watch',
     description: 'Clean design meets everyday durability.',
     badge: 'New',
-    badgeVariant: 'info' as const,
+    badgeVariant: 'blue' as const,
   },
   {
     name: 'Wireless Headphones',
     description: 'Immersive sound, all-day comfort.',
     badge: 'Popular',
-    badgeVariant: 'success' as const,
-  },
-  {
-    name: 'Leather Wallet',
-    description: 'Handcrafted from full-grain leather.',
-    badge: 'Limited',
-    badgeVariant: 'warning' as const,
-  },
-];
-
-const TABLE_DATA = [
-  {
-    name: 'Minimalist Watch',
-    description: 'Stainless steel, sapphire crystal',
-    price: '$189',
-    stock: '42',
-  },
-  {
-    name: 'Wireless Headphones',
-    description: 'ANC, 30hr battery',
-    price: '$249',
-    stock: '128',
-  },
-  {
-    name: 'Leather Wallet',
-    description: 'Full-grain, RFID blocking',
-    price: '$79',
-    stock: '15',
+    badgeVariant: 'green' as const,
   },
   {
     name: 'Canvas Backpack',
-    description: 'Water-resistant, 25L',
-    price: '$119',
-    stock: '63',
+    description: 'Water-resistant canvas with a quiet, modern profile.',
+    badge: 'Limited',
+    badgeVariant: 'yellow' as const,
   },
-] as Record<string, unknown>[];
-
-const COLOR_ROWS = [
-  [
-    'var(--color-accent)',
-    'var(--color-accent-muted)',
-    'var(--color-neutral)',
-    'var(--color-background-surface)',
-    'var(--color-background-body)',
-  ],
-  [
-    'var(--color-success)',
-    'var(--color-error)',
-    'var(--color-warning)',
-    'var(--color-text-primary)',
-    'var(--color-text-secondary)',
-  ],
 ];
 
-function ColorSwatches({swatches}: {swatches: string[]}) {
-  return (
-    <XDSHStack gap={1}>
-      {swatches.map(color => (
-        <div
-          key={color}
-          {...stylex.props(styles.swatch)}
-          style={{backgroundColor: color}}
-        />
-      ))}
-    </XDSHStack>
-  );
-}
-
-function FontLabel({cssVar, fallback}: {cssVar: string; fallback: string}) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const [label, setLabel] = useState(fallback);
-
-  useEffect(() => {
-    if (!ref.current) {
-      return;
-    }
-    const computed = getComputedStyle(ref.current)
-      .getPropertyValue(cssVar)
-      .trim();
-    if (computed) {
-      setLabel(computed.split(',')[0].replace(/['"]/g, '').trim());
-    }
-  }, [cssVar]);
-
-  return (
-    <span ref={ref}>
-      <XDSText type="supporting" color="secondary">
-        {label}
-      </XDSText>
-    </span>
-  );
-}
-
 interface ThemeShowcasePreviewProps {
-  mode: 'light' | 'dark';
-  onModeChange: (mode: 'light' | 'dark') => void;
+  images: ThemeImageSet;
+  /**
+   * When true, the hero + product grid fill the full available width rather
+   * than capping at 960px. Used by the theme playground preview pane.
+   */
+  fluid?: boolean;
 }
 
 export function ThemeShowcasePreview({
-  mode,
-  onModeChange,
+  images,
+  fluid = false,
 }: ThemeShowcasePreviewProps) {
   return (
-    <XDSVStack gap={0}>
-      <XDSTopNav
-        label="Theme Preview"
-        heading={<XDSTopNavHeading heading="Theme Preview" />}
-        endContent={
-          <XDSSwitch
-            label={mode === 'dark' ? 'Dark' : 'Light'}
-            value={mode === 'dark'}
-            onChange={v => onModeChange(v ? 'dark' : 'light')}
-          />
-        }
-      />
-
-      <XDSSection padding={8}>
-        <XDSVStack gap={10} xstyle={styles.content}>
-          <XDSCenter>
-            <XDSVStack gap={4} hAlign="center" xstyle={styles.heroText}>
-              <XDSText type="display-3">
-                Little joys,
-                <br />
-                everywhere you go
-              </XDSText>
-              <XDSText type="body" color="secondary">
-                We believe the smallest details are the ones that matter most.
-                Turn an ordinary day into something worth remembering.
-              </XDSText>
-              <XDSHStack gap={3} hAlign="center">
-                <XDSButton label="Get started" variant="primary" href="#" />
-                <XDSButton label="Learn more" variant="secondary" href="#" />
-              </XDSHStack>
-            </XDSVStack>
-          </XDSCenter>
-
-          <XDSGrid columns={{minWidth: 240}} gap={4}>
-            {PRODUCTS.map((p, i) => (
-              <XDSCard key={p.name} padding={0}>
-                <XDSVStack gap={0}>
-                  <XDSAspectRatio ratio={4 / 3}>
-                    <img
-                      src={PRODUCT_IMAGES[i]}
-                      alt={p.name}
-                      {...stylex.props(styles.productImage)}
-                    />
-                  </XDSAspectRatio>
-                  <div {...stylex.props(styles.cardBody)}>
-                    <XDSVStack gap={2}>
-                      <XDSHStack>
-                        <XDSBadge label={p.badge} variant={p.badgeVariant} />
-                      </XDSHStack>
-                      <XDSHeading level={4}>{p.name}</XDSHeading>
-                      <XDSText type="supporting" color="secondary">
-                        {p.description}
-                      </XDSText>
-                      <XDSButton
-                        label="Learn more"
-                        variant="secondary"
-                        href="#"
-                      />
-                    </XDSVStack>
-                  </div>
-                </XDSVStack>
-              </XDSCard>
-            ))}
-          </XDSGrid>
-
-          <XDSTable
-            data={TABLE_DATA}
-            columns={[
-              {key: 'name', header: 'Name', width: proportional(1)},
-              {
-                key: 'description',
-                header: 'Description',
-                width: proportional(2),
-              },
-              {key: 'price', header: 'Price', width: proportional(1)},
-              {key: 'stock', header: 'Stock', width: proportional(1)},
-            ]}
-            density="spacious"
-            dividers="rows"
-            hasHover
-          />
-
-          <ThemeShowcaseDetails />
-        </XDSVStack>
-      </XDSSection>
-    </XDSVStack>
-  );
-}
-
-function ThemeShowcaseDetails() {
-  const [radioValue, setRadioValue] = useState('a');
-
-  return (
-    <XDSVStack gap={4}>
-      <XDSGrid columns={{minWidth: 280}} gap={4}>
-        <XDSCard padding={6} xstyle={styles.fontCard}>
-          <XDSVStack gap={4}>
-            <XDSText type="label" weight="bold">
-              Colors
-            </XDSText>
-            {COLOR_ROWS.map((row, i) => (
-              <ColorSwatches key={i} swatches={row} />
-            ))}
-          </XDSVStack>
-        </XDSCard>
-
-        <XDSCard padding={6} xstyle={styles.fontCard}>
-          <XDSVStack gap={0} xstyle={styles.fontSample}>
-            <XDSText type="label" weight="bold">
-              Fonts
-            </XDSText>
-            <XDSHStack
-              gap={8}
-              hAlign="center"
-              vAlign="center"
-              xstyle={styles.fontSampleInner}>
-              <XDSVStack gap={2} hAlign="center">
-                <XDSText
-                  type="display-1"
-                  style={{fontFamily: 'var(--font-family-body, system-ui)'}}>
-                  Aa
-                </XDSText>
-                <FontLabel cssVar="--font-family-body" fallback="Body" />
-              </XDSVStack>
-              <XDSVStack gap={2} hAlign="center">
-                <XDSText
-                  type="display-1"
-                  style={{fontFamily: 'var(--font-family-code, monospace)'}}>
-                  Aa
-                </XDSText>
-                <FontLabel cssVar="--font-family-code" fallback="Code" />
-              </XDSVStack>
-            </XDSHStack>
-          </XDSVStack>
-        </XDSCard>
-      </XDSGrid>
-
-      <XDSCard padding={6} xstyle={styles.componentCard}>
-        <XDSGrid columns={{minWidth: 240}} gap={8}>
-          <XDSVStack gap={4}>
-            <XDSText type="label" weight="bold">
-              Components
-            </XDSText>
-            <XDSHStack gap={2} wrap="wrap">
-              <XDSButton label="Primary" variant="primary" size="sm" href="#" />
-              <XDSButton
-                label="Secondary"
-                variant="secondary"
-                size="sm"
-                href="#"
-              />
-              <XDSButton label="Ghost" variant="ghost" size="sm" href="#" />
-            </XDSHStack>
-            <XDSHStack gap={2} wrap="wrap">
-              <XDSBadge label="Badge" />
-              <XDSBadge label="Info" variant="info" />
-              <XDSBadge label="Success" variant="success" />
-              <XDSBadge label="Warning" variant="warning" />
-              <XDSBadge label="Error" variant="error" />
-            </XDSHStack>
-            <XDSGrid columns={{minWidth: 180}} gap={4}>
-              <XDSVStack gap={2}>
-                <XDSText type="supporting" weight="bold">
-                  Label
-                </XDSText>
-                <XDSRadioList
-                  label="Options"
-                  value={radioValue}
-                  onChange={setRadioValue}>
-                  <XDSRadioListItem value="a" label="Option A" />
-                  <XDSRadioListItem value="b" label="Option B" />
-                  <XDSRadioListItem value="c" label="Option C" />
-                </XDSRadioList>
-              </XDSVStack>
-              <XDSVStack gap={2}>
-                <XDSText type="supporting" weight="bold">
-                  List Header
-                </XDSText>
-                <XDSList density="compact">
-                  <XDSListItem
-                    label="Notifications"
-                    startContent={<XDSIcon icon="info" size="sm" />}
-                  />
-                  <XDSListItem
-                    label="Privacy"
-                    startContent={<XDSIcon icon="warning" size="sm" />}
-                  />
-                  <XDSListItem
-                    label="Security"
-                    startContent={<XDSIcon icon="check" size="sm" />}
-                  />
-                </XDSList>
-              </XDSVStack>
-            </XDSGrid>
-            <XDSCard padding={4}>
-              <XDSVStack gap={2}>
-                <XDSHeading level={4}>Card Title</XDSHeading>
-                <XDSText type="body" color="secondary">
-                  A flexible surface for grouping related content and actions.
-                </XDSText>
+    <div data-theme-preview="true">
+      <XDSVStack gap={0}>
+        {/* Fake app top nav — sits at the top of the preview so the
+          surface reads like a real product chrome (brand · primary
+          nav · actions) rather than a bare design canvas. The
+          brand wordmark, nav items, and end-content actions stay
+          generic so the same nav makes sense across every theme
+          (neutral, butter, y2k, stone, etc.). */}
+        <XDSTopNav
+          label="Theme preview navigation"
+          heading={<XDSTopNavHeading heading="Studio" />}
+          centerContent={
+            <>
+              <XDSTopNavItem label="Shop" href="#" isSelected />
+              <XDSTopNavItem label="New In" href="#" />
+              <XDSTopNavItem label="Stories" href="#" />
+              <XDSTopNavItem label="Help" href="#" />
+            </>
+          }
+          endContent={
+            <XDSHStack gap={2} vAlign="center">
+              <XDSHStack gap={0.5}>
                 <XDSButton
-                  label="Action"
-                  variant="secondary"
-                  size="sm"
+                  label="Search"
+                  variant="ghost"
+                  isIconOnly
+                  icon={<MagnifyingGlassIcon width={20} height={20} />}
                   href="#"
                 />
-              </XDSVStack>
-            </XDSCard>
-          </XDSVStack>
+                <XDSButton
+                  label="Account"
+                  variant="ghost"
+                  isIconOnly
+                  icon={<UserIcon width={20} height={20} />}
+                  href="#"
+                />
+                <XDSButton
+                  label="Cart"
+                  variant="ghost"
+                  isIconOnly
+                  icon={<ShoppingBagIcon width={20} height={20} />}
+                  href="#"
+                />
+              </XDSHStack>
+              <XDSButton label="Sign in" variant="primary" href="#" />
+            </XDSHStack>
+          }
+        />
 
-          <XDSVStack gap={4}>
-            <XDSTextInput
-              label="Example"
-              placeholder="Type something..."
-              value=""
-              onChange={() => {}}
-            />
-            <XDSProgressBar value={75} label="Progress" />
-            <XDSSwitch label="Toggle" value={true} onChange={() => {}} />
-            <XDSBanner status="success" title="Banner Title" />
-            <XDSBanner status="warning" title="Banner Title" />
-            <XDSBanner status="error" title="Banner Title" />
+        <XDSSection padding={8} variant="transparent">
+          <XDSVStack
+            gap={10}
+            xstyle={fluid ? [styles.content, styles.contentFluid] : styles.content}>
+            <XDSCenter>
+              <XDSVStack gap={4} hAlign="center" xstyle={styles.heroText}>
+                <XDSText type="display-3">
+                  Little joys,
+                  <br />
+                  everywhere you go
+                </XDSText>
+                <XDSText type="body" color="secondary">
+                  We believe the smallest details are the ones that matter most.
+                  Turn an ordinary day into something worth remembering.
+                </XDSText>
+              </XDSVStack>
+            </XDSCenter>
+
+            <XDSGrid columns={{minWidth: 240}} gap={4}>
+              {PRODUCTS.map((p, i) => (
+                <XDSCard key={p.name} padding={0} height="100%">
+                  <XDSVStack gap={0} xstyle={styles.cardStack}>
+                    <XDSAspectRatio ratio={1}>
+                      <img
+                        src={images[PRODUCT_IMAGE_KEYS[i]]}
+                        alt={p.name}
+                        {...stylex.props(styles.productImage)}
+                      />
+                    </XDSAspectRatio>
+                    <div {...stylex.props(styles.cardBody)}>
+                      <XDSVStack gap={2} xstyle={styles.cardStack}>
+                        <XDSHStack>
+                          <XDSBadge label={p.badge} variant={p.badgeVariant} />
+                        </XDSHStack>
+                        <XDSHeading level={2}>{p.name}</XDSHeading>
+                        <XDSText
+                          type="supporting"
+                          color="secondary"
+                          xstyle={styles.cardDescription}>
+                          {p.description}
+                        </XDSText>
+                        <XDSHStack gap={2} vAlign="center">
+                          <XDSNumberInput
+                            label="Quantity"
+                            isLabelHidden
+                            value={1}
+                            onChange={() => {}}
+                            min={1}
+                            max={99}
+                            size="sm"
+                            xstyle={styles.quantityInput}
+                          />
+                          <XDSButton
+                            label="Add to cart"
+                            variant="secondary"
+                            href="#"
+                            xstyle={styles.cartButton}
+                          />
+                        </XDSHStack>
+                      </XDSVStack>
+                    </div>
+                  </XDSVStack>
+                </XDSCard>
+              ))}
+            </XDSGrid>
           </XDSVStack>
-        </XDSGrid>
-      </XDSCard>
-    </XDSVStack>
+        </XDSSection>
+      </XDSVStack>
+    </div>
   );
 }

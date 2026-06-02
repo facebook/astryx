@@ -18,24 +18,28 @@ import {detectPackageManager} from '../utils/package-manager.mjs';
 /**
  * @param {object} [options]
  * @param {boolean} [options.installDeps] - Auto-install without prompting
+ * @param {boolean} [options.silent] - Suppress human-facing output (for --json)
  */
-export async function ensureJscodeshift({installDeps = false} = {}) {
+export async function ensureJscodeshift({installDeps = false, silent = false} = {}) {
+  const log = silent
+    ? {warn() {}, error() {}, step() {}, success() {}}
+    : p.log;
   try {
     await import('jscodeshift');
     return true;
   } catch {
-    p.log.warn('jscodeshift is required for codemods but not installed.');
+    log.warn('jscodeshift is required for codemods but not installed.');
 
     const isInteractive = process.stdout.isTTY && !process.env.CI;
 
     if (installDeps) {
       // Explicit opt-in — install without prompting
-      return installJscodeshift();
+      return installJscodeshift(silent);
     }
 
-    if (!isInteractive) {
-      // Non-interactive environment — fail fast with a helpful message
-      p.log.error(
+    if (!isInteractive || silent) {
+      // Non-interactive environment (or --json) — fail fast with a helpful message
+      log.error(
         'Cannot run codemods without jscodeshift. ' +
           'Use --install-deps to auto-install in non-interactive environments.',
       );
@@ -51,12 +55,15 @@ export async function ensureJscodeshift({installDeps = false} = {}) {
       p.log.error('Cannot run codemods without jscodeshift.');
       return false;
     }
-    return installJscodeshift();
+    return installJscodeshift(silent);
   }
 }
 
 /** @returns {boolean} */
-function installJscodeshift() {
+function installJscodeshift(silent = false) {
+  const log = silent
+    ? {step() {}, success() {}, error() {}}
+    : p.log;
   const pm = detectPackageManager();
   const cmds = {
     yarn: 'yarn add --dev jscodeshift',
@@ -68,12 +75,12 @@ function installJscodeshift() {
   const cmd = cmds[pm] || cmds.npm;
 
   try {
-    p.log.step(`Installing jscodeshift via ${pm}...`);
+    log.step(`Installing jscodeshift via ${pm}...`);
     execSync(cmd, {stdio: 'pipe'});
-    p.log.success('jscodeshift installed.');
+    log.success('jscodeshift installed.');
     return true;
   } catch (err) {
-    p.log.error(`Failed to install jscodeshift: ${err.message}`);
+    log.error(`Failed to install jscodeshift: ${err.message}`);
     return false;
   }
 }

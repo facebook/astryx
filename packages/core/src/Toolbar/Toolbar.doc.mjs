@@ -5,6 +5,7 @@
 export const docs = {
   name: 'Toolbar',
   displayName: 'Toolbar',
+  category: 'Action',
   keywords: ['toolbar', 'nav', 'bar', 'actions', 'buttonbar', 'header', 'footer', 'action-bar', 'control-bar'],
   theming: {
     targets: [

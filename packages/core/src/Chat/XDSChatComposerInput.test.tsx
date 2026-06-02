@@ -131,6 +131,97 @@ describe('XDSChatComposerInput', () => {
     });
   });
 
+  // Controlled-value sync used to overwrite `textContent` on every
+  // distinct render, which (a) collapsed the caret to offset 0
+  // (visible after a slash-command pick like
+  // `setValue('/feedback ')` — the next keystroke landed at the
+  // start of the input) and (b) ran a redundant DOM rebuild on every
+  // echo of our own `onChange` emission. The effect now skips echoes
+  // of its own emission and restores the caret to the end of the new
+  // content when the editable is focused.
+  describe('controlled value sync', () => {
+    it('places caret at end after a programmatic value change while focused', () => {
+      const {rerender} = render(
+        <XDSChatComposerInput value="/" onChange={() => {}} />,
+      );
+      const textbox = screen.getByRole('textbox');
+      textbox.focus();
+
+      rerender(<XDSChatComposerInput value="/feedback " onChange={() => {}} />);
+
+      expect(textbox.textContent).toBe('/feedback ');
+      const selection = window.getSelection();
+      expect(selection).not.toBeNull();
+      expect(selection?.rangeCount).toBe(1);
+      const range = selection!.getRangeAt(0);
+      expect(range.collapsed).toBe(true);
+      // Caret is at the end of the editable's contents — the next
+      // keystroke will append, not prepend.
+      expect(
+        range.endContainer === textbox ||
+          range.endContainer.parentNode === textbox,
+      ).toBe(true);
+      expect(textbox.textContent?.length).toBe(10);
+      expect(range.endOffset).toBe(
+        range.endContainer.nodeType === Node.TEXT_NODE
+          ? (range.endContainer.textContent?.length ?? 0)
+          : textbox.childNodes.length,
+      );
+    });
+
+    it('does not touch the DOM when controlled value echoes our own emission', () => {
+      const onChange = vi.fn();
+      const {rerender} = render(
+        <XDSChatComposerInput value="" onChange={onChange} />,
+      );
+      const textbox = screen.getByRole('textbox');
+      textbox.focus();
+      // User types `hello` — emitted via onChange.
+      textbox.textContent = 'hello';
+      fireEvent.input(textbox);
+      expect(onChange).toHaveBeenLastCalledWith('hello');
+      // Parent commits the echo. The effect must not rebuild the DOM,
+      // otherwise the caret would jump back to offset 0.
+      const textNodeBefore = textbox.firstChild;
+      rerender(<XDSChatComposerInput value="hello" onChange={onChange} />);
+      expect(textbox.firstChild).toBe(textNodeBefore);
+      expect(textbox.textContent).toBe('hello');
+    });
+
+    it('writes textContent on a true external value change while unfocused', () => {
+      const {rerender} = render(
+        <XDSChatComposerInput value="hello" onChange={() => {}} />,
+      );
+      const textbox = screen.getByRole('textbox');
+      expect(textbox.textContent).toBe('hello');
+      // Unfocused programmatic change — still applied, no caret work.
+      rerender(<XDSChatComposerInput value="world" onChange={() => {}} />);
+      expect(textbox.textContent).toBe('world');
+    });
+
+    it('does not stale-cache an emitted value across an external override', () => {
+      // Regression: a permanent cache of "last emitted" would
+      // incorrectly skip a later external set back to the emitted
+      // string. The marker is one-shot — consumed by the first
+      // matching commit or invalidated by any non-echoing update.
+      const onChange = vi.fn();
+      const {rerender} = render(
+        <XDSChatComposerInput value="" onChange={onChange} />,
+      );
+      const textbox = screen.getByRole('textbox');
+      textbox.focus();
+      textbox.textContent = 'hello';
+      fireEvent.input(textbox);
+      // External override — clears the pending echo marker.
+      rerender(<XDSChatComposerInput value="world" onChange={onChange} />);
+      expect(textbox.textContent).toBe('world');
+      // Parent now sets the value back to what we previously emitted.
+      // The effect must apply this — the stale marker is gone.
+      rerender(<XDSChatComposerInput value="hello" onChange={onChange} />);
+      expect(textbox.textContent).toBe('hello');
+    });
+  });
+
   describe('file handling', () => {
     it('calls onFiles on paste with files', () => {
       const onFiles = vi.fn();

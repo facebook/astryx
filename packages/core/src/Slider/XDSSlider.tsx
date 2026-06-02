@@ -373,10 +373,7 @@ export function XDSSlider({ref, ...props}: XDSSliderProps) {
   // Value helpers — guard against undefined value (e.g. playground previews
   // that render the component without providing a value prop).
   const values: number[] = useMemo(
-    () =>
-      isRange
-        ? (value)
-        : [value != null ? (value) : min],
+    () => (isRange ? value : [value != null ? value : min]),
     [isRange, value, min],
   );
 

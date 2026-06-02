@@ -6,7 +6,7 @@ import {useState} from 'react';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 
 export default function DropdownMenuShowcase() {
-  const [isMenuOpen, setIsMenuOpen] = useState(true);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
     <XDSDropdownMenu

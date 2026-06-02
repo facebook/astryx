@@ -5,6 +5,7 @@
 export const docs = {
   name: 'Link',
   displayName: 'Link',
+  category: 'Action',
   keywords: ["link","anchor","href","hyperlink","navigation","url","external","textlink"],
   playground: {
     defaults: {
@@ -95,6 +96,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSLinkProvider',
+      isHiddenFromOverview: true,
       displayName: 'Link Provider',
       description:
         'Provider that sets the default link component for all XDS link-rendering components in the subtree. ' +
@@ -221,6 +223,7 @@ export const docsZh = {
     },
     {
       name: 'XDSLinkProvider',
+      isHiddenFromOverview: true,
       displayName: 'Link Provider',
       description:
         '为子树中所有 XDS 链接组件设置默认链接组件的 Provider。',
@@ -304,6 +307,7 @@ export const docsDense = {
     },
     {
       name: 'XDSLinkProvider',
+      isHiddenFromOverview: true,
       displayName: 'Link Provider',
       description:
         'Provider setting default link component for all XDS links in subtree.',

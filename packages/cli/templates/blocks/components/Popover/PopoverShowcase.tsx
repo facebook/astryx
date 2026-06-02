@@ -10,7 +10,7 @@ import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSDivider} from '@xds/core/Divider';
 
 export default function PopoverShowcase() {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <XDSPopover

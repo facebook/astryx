@@ -13,7 +13,7 @@
 import {loadConfig} from '../lib/config.mjs';
 import {scanAllPackages} from '../lib/package-scanner.mjs';
 import {formatFull, formatBrief, formatCompact} from '../lib/component-format.mjs';
-import {jsonOut, jsonError} from '../lib/json.mjs';
+import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
 import {discover as discoverApi} from '../api/discover.mjs';
 
 export function registerDiscover(program) {
@@ -42,102 +42,107 @@ export function registerDiscover(program) {
         process.exit(1);
       }
 
-      if (json) return jsonOut(result.type, result.data);
+      if (json) {
+        // Forward optional meta (e.g. configured flag for discover.list) as a
+        // sibling of data via jsonOut, so the envelope still carries
+        // apiVersion and goes through the single sanctioned emit path.
+        return jsonOut(result.type, result.data, result.meta);
+      }
 
       switch (result.type) {
         case 'discover.list': {
           if (result.data.length === 0) {
             const config = await loadConfig();
-            console.log('');
+            humanLog('');
             if (config.packages.length === 0) {
-              console.log('No package directories configured.');
-              console.log('');
-              console.log('Add a packages field to xds.config.mjs:');
-              console.log('');
-              console.log('  export default {');
-              console.log("    packages: ['/path/to/your/libs'],");
-              console.log('  };');
+              humanLog('No package directories configured.');
+              humanLog('');
+              humanLog('Add a packages field to xds.config.mjs:');
+              humanLog('');
+              humanLog('  export default {');
+              humanLog("    packages: ['/path/to/your/libs'],");
+              humanLog('  };');
             } else {
-              console.log('No external XDS packages found.');
-              console.log('');
-              console.log('Packages opt in by adding an "xds" field to package.json:');
-              console.log('');
-              console.log('  {');
-              console.log('    "xds": {');
-              console.log('      "docs": "./src",');
-              console.log('      "category": "Common"');
-              console.log('    }');
-              console.log('  }');
+              humanLog('No external XDS packages found.');
+              humanLog('');
+              humanLog('Packages opt in by adding an "xds" field to package.json:');
+              humanLog('');
+              humanLog('  {');
+              humanLog('    "xds": {');
+              humanLog('      "docs": "./src",');
+              humanLog('      "category": "Common"');
+              humanLog('    }');
+              humanLog('  }');
             }
-            console.log('');
+            humanLog('');
           } else {
-            console.log('');
+            humanLog('');
             for (const pkg of result.data) {
               const count = pkg.components.length;
               const label = count === 1 ? 'component' : 'components';
               const heading = pkg.displayName
                 ? pkg.displayName + '  ' + pkg.name + ' (' + count + ' ' + label + ')'
                 : pkg.name + ' (' + count + ' ' + label + ')';
-              console.log(heading);
-              if (pkg.description) console.log('  ' + pkg.description);
+              humanLog(heading);
+              if (pkg.description) humanLog('  ' + pkg.description);
 
               if (options.components) {
-                for (const comp of pkg.components) console.log('  ' + comp);
+                for (const comp of pkg.components) humanLog('  ' + comp);
               } else {
                 const maxShow = 10;
                 const shown = pkg.components.slice(0, maxShow);
                 const remaining = count - maxShow;
                 const list = shown.join(', ');
-                console.log(remaining > 0 ? '  ' + list + ', +' + remaining + ' more' : '  ' + list);
+                humanLog(remaining > 0 ? '  ' + list + ', +' + remaining + ' more' : '  ' + list);
               }
-              console.log('');
+              humanLog('');
             }
-            console.log('Usage:');
-            console.log('  xds discover <package>            Browse a package');
-            console.log('  xds discover <package>/Component  View component docs');
-            console.log('  xds discover <search>             Search all packages');
-            console.log('');
+            humanLog('Usage:');
+            humanLog('  xds discover <package>            Browse a package');
+            humanLog('  xds discover <package>/Component  View component docs');
+            humanLog('  xds discover <search>             Search all packages');
+            humanLog('');
           }
           break;
         }
 
         case 'discover.detail': {
-          console.log('');
+          humanLog('');
           const d = result.data;
           const detailHeading = d.displayName
             ? d.displayName + '  ' + d.name + ' (' + d.components.length + ' components)'
             : d.name + ' (' + d.components.length + ' components)';
-          console.log(detailHeading);
-          if (d.description) console.log('  ' + d.description);
-          console.log('');
-          for (const comp of result.data.components) console.log('  ' + comp);
-          console.log('');
-          console.log('Usage: xds discover ' + result.data.name + '/<ComponentName>');
-          console.log('');
+          humanLog(detailHeading);
+          if (d.description) humanLog('  ' + d.description);
+          humanLog('');
+          for (const comp of result.data.components) humanLog('  ' + comp);
+          humanLog('');
+          humanLog('Usage: xds discover ' + result.data.name + '/<ComponentName>');
+          humanLog('');
           break;
         }
 
         case 'discover.detail.doc': {
           const docs = result.data;
           if (detail === 'brief') {
-            console.log(formatBrief(docs, docs.name, ''));
+            humanLog(formatBrief(docs, docs.name, ''));
           } else if (detail === 'compact') {
-            console.log(formatCompact(docs, docs.name, ''));
+            humanLog(formatCompact(docs, docs.name, ''));
           } else {
-            console.log(formatFull(docs));
+            humanLog(formatFull(docs));
           }
-          console.log('');
+          humanLog('');
           break;
         }
 
         case 'discover.search': {
-          console.log('');
-          console.log('Found ' + result.data.matches.length + ' matches for "' + result.data.query + '":');
-          console.log('');
+          humanLog('');
+          humanLog('Found ' + result.data.matches.length + ' matches for "' + result.data.query + '":');
+          humanLog('');
           for (const m of result.data.matches) {
-            console.log('  xds discover ' + m.package + '/' + m.component);
+            humanLog('  xds discover ' + m.package + '/' + m.component);
           }
-          console.log('');
+          humanLog('');
           break;
         }
       }

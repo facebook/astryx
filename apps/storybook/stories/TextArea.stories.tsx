@@ -501,7 +501,11 @@ export const SizeVariants: Story = {
           gap: '16px',
         }}>
         {(['sm', 'md', 'lg'] as const).map((sz, i) => {
-          const label = {sm: 'Small (28px)', md: 'Medium (32px)', lg: 'Large (36px)'}[sz];
+          const label = {
+            sm: 'Small (28px)',
+            md: 'Medium (32px)',
+            lg: 'Large (36px)',
+          }[sz];
           const [area, setArea] = [
             [smArea, setSmArea],
             [mdArea, setMdArea],

@@ -6,6 +6,8 @@ export const docs = {
   name: 'AlertDialog',
   displayName: 'Alert Dialog',
   group: 'Dialog',
+  category: 'Overlay',
+  isHiddenFromOverview: true,
   keywords: [
     'alert',
     'alertdialog',
@@ -39,6 +41,7 @@ export const docs = {
   components: [
     {
       name: 'XDSAlertDialog',
+      isHiddenFromOverview: true,
       displayName: 'Alert Dialog',
       description: 'A modal dialog that asks the user to confirm a destructive action.',
       props: [

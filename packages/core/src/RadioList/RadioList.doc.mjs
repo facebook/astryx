@@ -6,6 +6,7 @@ export const docs = {
   name: 'RadioList',
   displayName: 'Radio List',
   group: 'Radio',
+  category: 'Data Input',
   keywords: ["radiolist","radio","radiogroup","radiobutton","optionlist","singlechoice","choicelist"],
   theming: {
     targets: [
@@ -109,6 +110,7 @@ export const docs = {
     },
     {
       name: 'XDSRadioListItem',
+      isHiddenFromOverview: true,
       displayName: 'Radio List Item',
       description:
         'Individual radio item with label, description, and content slots.',
@@ -279,6 +281,7 @@ export const docsZh = {
     },
     {
       name: 'XDSRadioListItem',
+      isHiddenFromOverview: true,
       displayName: 'Radio List Item',
       description:
         '单个单选选项，包含标签、描述和内容插槽。',
@@ -384,6 +387,7 @@ export const docsDense = {
     },
     {
       name: 'XDSRadioListItem',
+      isHiddenFromOverview: true,
       displayName: 'Radio List Item',
       description:
         'Individual radio item w/ label, description, content slots.',

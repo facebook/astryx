@@ -21,6 +21,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {
   XDSTextColor,
   XDSTextDisplay,
+  XDSTextJustify,
   XDSWordBreak,
   XDSTextWrap,
 } from '../theme/types';
@@ -30,6 +31,7 @@ import {
   sizeByTypeStyles,
   defaultWeightByTypeStyles,
   displayStyles,
+  justifyStyles,
   truncationStyles,
   wordBreakStyles,
   textWrapStyles,
@@ -140,6 +142,13 @@ export interface XDSHeadingProps extends Omit<
   textWrap?: XDSTextWrap;
 
   /**
+   * Text alignment (justification). Uses logical values (start/end)
+   * for i18n/RTL compatibility.
+   * @default 'start'
+   */
+  justify?: XDSTextJustify;
+
+  /**
    * Enable optical alignment (text-box-trim).
    * Forces block display.
    * @default false
@@ -193,6 +202,7 @@ export function XDSHeading({
   hasTruncateTooltip = true,
   wordBreak,
   textWrap,
+  justify = 'start',
   hasCapsize = false,
   hasStrikethrough = false,
   xstyle,
@@ -252,6 +262,8 @@ export function XDSHeading({
             maxLines > 0 && wordBreakStyles[resolvedWordBreak],
             // Text wrap
             textWrap && textWrapStyles[textWrap],
+            // Justify (text alignment)
+            justify !== 'start' && justifyStyles[justify],
             // Capsize
             hasCapsize && capsizeStyles.enabled,
             // Decorations

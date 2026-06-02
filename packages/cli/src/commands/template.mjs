@@ -9,7 +9,7 @@ import * as fs from 'node:fs';
 import * as p from '@clack/prompts';
 import {CLI_ROOT} from '../utils/paths.mjs';
 import {isNonInteractive} from '../utils/path-safety.mjs';
-import {jsonOut, jsonError} from '../lib/json.mjs';
+import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
 import {template as templateApi, getTemplateById} from '../api/template.mjs';
 
 export {discoverTemplates, listTemplates, getTemplateById} from '../api/template.mjs';
@@ -60,7 +60,7 @@ export function registerTemplate(program) {
             }),
           );
           if (!confirmed) {
-            console.log('Aborted. Re-run with --overwrite to replace the file.');
+            humanLog('Aborted. Re-run with --overwrite to replace the file.');
             return;
           }
         }
@@ -91,44 +91,44 @@ export function registerTemplate(program) {
           const pages = result.data.filter(t => t.type === 'page');
           const blocks = result.data.filter(t => t.type === 'block');
           if (pages.length > 0) {
-            console.log('\nPage Templates:\n');
+            humanLog('\nPage Templates:\n');
             for (const t of pages) {
               const status = t.isReady ? '' : ' (WIP)';
-              console.log(`  ${t.name}${status}`);
-              if (t.description) console.log(`    ${t.description}`);
+              humanLog(`  ${t.name}${status}`);
+              if (t.description) humanLog(`    ${t.description}`);
             }
           }
           if (blocks.length > 0) {
-            console.log('\nBlock Templates:\n');
+            humanLog('\nBlock Templates:\n');
             for (const t of blocks) {
               const status = t.isReady ? '' : ' (WIP)';
-              console.log(`  ${t.name}${status}`);
-              if (t.description) console.log(`    ${t.description}`);
+              humanLog(`  ${t.name}${status}`);
+              if (t.description) humanLog(`    ${t.description}`);
             }
           }
-          console.log('\nUsage:');
-          console.log('  xds template <name> [target-path]   Scaffold page or block');
-          console.log('  xds template <name> --skeleton      Layout reference');
-          console.log('  xds template --list --type block    List only blocks\n');
+          humanLog('\nUsage:');
+          humanLog('  xds template <name> [target-path]   Scaffold page or block');
+          humanLog('  xds template <name> --skeleton      Layout reference');
+          humanLog('  xds template --list --type block    List only blocks\n');
           break;
         }
 
         case 'template.skeleton': {
           const {template: tName, description, components, skeleton} = result.data;
-          console.log(`\n# ${tName}${description ? ' — ' + description : ''}`);
-          console.log(`# Components: ${components.join(', ')}\n`);
-          console.log(skeleton);
-          console.log('');
+          humanLog(`\n# ${tName}${description ? ' — ' + description : ''}`);
+          humanLog(`# Components: ${components.join(', ')}\n`);
+          humanLog(skeleton);
+          humanLog('');
           break;
         }
 
         case 'template.show': {
-          console.log(result.data.source);
+          humanLog(result.data.source);
           break;
         }
 
         case 'template.copy': {
-          console.log(`\n✓ Copied template to ${result.data.outputDir}/${result.data.fileName}\n`);
+          humanLog(`\n✓ Copied template to ${result.data.outputDir}/${result.data.fileName}\n`);
           break;
         }
       }
@@ -152,7 +152,7 @@ export function registerTemplate(program) {
 
       if (json) return jsonOut(result.type, result.data);
 
-      console.log(result.data.source);
+      humanLog(result.data.source);
     });
 }
 

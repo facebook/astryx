@@ -5,6 +5,7 @@ export const docs = {
   name: 'Resizable',
   displayName: 'Resizable',
   group: 'Resizable',
+  category: 'Layout',
   keywords: [
     'resize',
     'resizable',
