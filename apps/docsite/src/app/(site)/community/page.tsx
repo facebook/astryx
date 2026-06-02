@@ -519,23 +519,42 @@ const styles = stylex.create({
     overflow: 'hidden',
   },
 
+  // Outer card — no padding (the inner zones manage their own
+  // spacing). overflow:hidden so the white placeholder's rounded
+  // corners (set via inset spacing on blockCardImage instead of
+  // a radius) clip cleanly to the card's quadrant edge.
   blockCard: {
     position: 'relative',
     overflow: 'hidden',
     borderColor: 'transparent',
     borderRadius: 0,
     color: 'var(--color-text-primary)',
-    padding: 'var(--spacing-5)',
     minHeight: 280,
     display: 'flex',
     flexDirection: 'column',
-    justifyContent: 'flex-end',
   },
-  // Bottom-anchored title + effort badge cluster.
+  // White placeholder image area above the title. Uses
+  // --color-background-card (theme-aware lifted tone, usually
+  // white) so it reads as a distinct content slot against the
+  // card's body-tone fill. Inset slightly from the card edges
+  // (via margin) so it reads as a contained content slot rather
+  // than touching the quadrant seams.
+  blockCardImage: {
+    flex: '1 1 auto',
+    minHeight: 100,
+    backgroundColor: 'var(--color-background-card)',
+    borderRadius: 'var(--radius-container)',
+    margin: 'var(--spacing-5)',
+    marginBottom: 0,
+  },
+  // Bottom-anchored title + effort badge cluster. Padding lives
+  // here (not on the outer card) so the placeholder image above
+  // can be inset independently from the card edges.
   blockCardBottom: {
     display: 'flex',
     flexDirection: 'column',
     gap: 'var(--spacing-1)',
+    padding: 'var(--spacing-5)',
   },
   // Heading uses --color-text-primary — the card backgrounds
   // are alpha-tinted pastels (--color-background-{hue} resolves
@@ -899,6 +918,10 @@ function BlockCard({label, description, href, bgColor, badge}: BlockCardProps) {
       padding={0}
       xstyle={styles.blockCard}
       style={{backgroundColor: bgColor}}>
+      {/* White placeholder image slot above the title — empty for
+          now; later this can hold a real preview image, an
+          illustration, or a contextual screenshot per card. */}
+      <div {...stylex.props(styles.blockCardImage)} aria-hidden="true" />
       <div {...stylex.props(styles.blockCardBottom)}>
         <XDSHeading level={3} xstyle={styles.blockCardTitle}>
           {label}
@@ -1150,7 +1173,7 @@ const START_HERE: ReadonlyArray<StartHerePath> = [
       'Spot something broken? File an issue to confirm it, then submit a change with a clear reproduction.',
     href: `${GITHUB_REPO}/issues/new?template=bug.yml`,
     effort: '~2 hours',
-    bgColor: 'var(--color-background-blue)',
+    bgColor: 'var(--color-background-body)',
   },
   {
     title: 'Improve the docs',
@@ -1158,7 +1181,7 @@ const START_HERE: ReadonlyArray<StartHerePath> = [
       'Fix typos, improve examples, fill gaps. Reviewed for correctness — precision over comprehensiveness.',
     href: '/docs',
     effort: '~30 min',
-    bgColor: 'var(--color-background-orange)',
+    bgColor: 'var(--color-background-body)',
   },
   {
     title: 'Add a template',
@@ -1166,7 +1189,7 @@ const START_HERE: ReadonlyArray<StartHerePath> = [
       'Show components in realistic context. Templates are training signal for both humans and LLMs.',
     href: `${WIKI_BASE}/Contributing-Templates`,
     effort: '~half day',
-    bgColor: 'var(--color-background-purple)',
+    bgColor: 'var(--color-background-body)',
   },
   {
     title: 'Build a theme',
@@ -1174,7 +1197,7 @@ const START_HERE: ReadonlyArray<StartHerePath> = [
       'Full visual control through defineTheme() — tokens, component overrides, and mode switching.',
     href: '/docs/theme',
     effort: '~1 day',
-    bgColor: 'var(--color-background-cyan)',
+    bgColor: 'var(--color-background-body)',
   },
 ];
 
