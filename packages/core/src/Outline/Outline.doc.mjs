@@ -104,6 +104,110 @@ export const docs = {
             'StyleX styles for layout customization. Must be a stylex.create() value.',
         },
       ],
+      examples: [
+        {
+          label: 'Basic',
+          code: `
+import {XDSOutline} from '@xds/core/Outline';
+
+const items = [
+  {id: 'overview', label: 'Overview', level: 2},
+  {id: 'installation', label: 'Installation', level: 2},
+  {id: 'theming', label: 'Theming', level: 2},
+  {id: 'tokens', label: 'Tokens', level: 3},
+  {id: 'accessibility', label: 'Accessibility', level: 2},
+];
+
+// Uncontrolled: built-in scroll-spy tracks the topmost visible heading.
+<XDSOutline items={items} />;
+`,
+        },
+        {
+          label: 'Compact (size="sm")',
+          code: `
+import {XDSOutline} from '@xds/core/Outline';
+
+// Dense sidebars use the small variant; the sliding indicator
+// automatically matches the shorter item height.
+<XDSOutline items={items} size="sm" />;
+`,
+        },
+        {
+          label: 'Controlled active section',
+          code: `
+import {useState} from 'react';
+import {XDSOutline} from '@xds/core/Outline';
+
+function ControlledOutline() {
+  const [activeId, setActiveId] = useState('overview');
+
+  // Providing activeId disables built-in scroll-spy — you own the active state.
+  return (
+    <XDSOutline
+      items={items}
+      activeId={activeId}
+      onActiveIdChange={setActiveId}
+    />
+  );
+}
+`,
+        },
+        {
+          label: 'Inside a scroll container with a fixed header',
+          code: `
+import {useRef} from 'react';
+import {XDSOutline} from '@xds/core/Outline';
+
+function PanelOutline() {
+  const scrollRef = useRef(null);
+
+  return (
+    <div style={{display: 'flex', gap: 24}}>
+      <XDSOutline
+        items={items}
+        scrollContainerRef={scrollRef}
+        offset={64}
+      />
+      <div ref={scrollRef} style={{height: 480, overflowY: 'auto'}}>
+        {/* sections with matching ids: <h2 id="overview">…</h2> */}
+      </div>
+    </div>
+  );
+}
+`,
+        },
+        {
+          label: 'Custom highlight via onNavigateEnd',
+          code: `
+import {XDSOutline} from '@xds/core/Outline';
+
+// Flash the target section once the smooth-scroll settles.
+function HighlightOnArrive() {
+  const handleNavigateEnd = id => {
+    const el = document.getElementById(id);
+    el?.animate(
+      [{backgroundColor: 'var(--color-accent-muted)'}, {backgroundColor: 'transparent'}],
+      {duration: 800, easing: 'ease-out'},
+    );
+  };
+
+  return <XDSOutline items={items} onNavigateEnd={handleNavigateEnd} />;
+}
+`,
+        },
+        {
+          label: 'Generate items from markdown',
+          code: `
+import {XDSOutline, useOutlineFromMarkdown} from '@xds/core/Outline';
+
+function MarkdownOutline({markdown}) {
+  // Derives {id, label, level} items from headings in the source.
+  const items = useOutlineFromMarkdown(markdown);
+  return <XDSOutline items={items} />;
+}
+`,
+        },
+      ],
     },
   ],
   usage: {
