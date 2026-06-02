@@ -25,21 +25,11 @@
  * is Astryx.
  */
 
-import {
-  ArrowRightIcon,
-  BookOpenIcon,
-  ChatBubbleLeftRightIcon,
-  DocumentTextIcon,
-  ExclamationCircleIcon,
-  ScaleIcon,
-} from '@heroicons/react/24/outline';
+import {DocumentTextIcon, ScaleIcon} from '@heroicons/react/24/outline';
 import {NavSurfaceMode} from './NavSurfaceMode';
 import * as stylex from '@stylexjs/stylex';
-import {XDSBadge} from '@xds/core/Badge';
 import {XDSCard} from '@xds/core/Card';
 import {XDSClickableCard} from '@xds/core/ClickableCard';
-import {XDSDivider} from '@xds/core/Divider';
-import {XDSGrid} from '@xds/core/Grid';
 import {XDSHStack, XDSVStack} from '@xds/core/Layout';
 import {XDSLink} from '@xds/core/Link';
 import {XDSSection} from '@xds/core/Section';
@@ -70,6 +60,29 @@ const styles = stylex.create({
     maxWidth: PAGE_MAX_WIDTH,
     marginInline: 'auto',
     width: '100%',
+  },
+  // Vertical stack of top-level page sections. XDSVStack's gap
+  // prop tops out at step 10 (= --spacing-10 = 40px), which is
+  // too tight for this editorial page. Roll our own flex column
+  // with calc(var(--spacing-12) * 2) = 96px — same pattern the
+  // home page uses for its major-section gaps (see
+  // apps/docsite/src/app/(site)/page.tsx showcaseOverlay rule)
+  // so the two pages share consistent editorial pacing.
+  sectionStack: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 'calc(var(--spacing-12) * 2)',
+  },
+  // Hero group — wraps the "Build with us" hero row + the wall
+  // card below it as one unit inside the section stack. Tight
+  // internal gap (spacing-4) so they read as one cohesive
+  // hero/intro chapter rather than two separate sections; the
+  // parent sectionStack's larger 96px gap then separates this
+  // group from the rest of the page.
+  heroGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 'var(--spacing-4)',
   },
 
   // Hero row — title + tagline on the left, two CTAs on the
@@ -119,12 +132,6 @@ const styles = stylex.create({
     },
     gap: 'var(--spacing-6)',
     alignItems: 'flex-start',
-    // Generous internal vertical padding so the contributing
-    // section reads as its own deliberate chapter — matches the
-    // breathing room around the end block at the bottom of the
-    // page.
-    paddingBlockStart: 'var(--spacing-12)',
-    paddingBlockEnd: 'var(--spacing-12)',
   },
   // Left column: process list. flex 1 ratio combined with right
   // column's flex 2 yields the 1:2 split.
@@ -291,36 +298,65 @@ const styles = stylex.create({
   // Outer block — generous vertical padding so the end-of-page
   // moment reads as a deliberate visual chapter, not just more
   // content. position:relative kept in case any descendant needs
-  // a positioning ancestor (e.g. the resource grid extends past
-  // its grid cell left edge via negative marginInline, and we
-  // want that overflow visible — no overflow:hidden here so the
-  // hover backdrop on each resource row paints into the bleed
-  // zone without getting clipped).
+  // a positioning ancestor. No paddingBlock here — vertical
+  // spacing between sections is owned uniformly by the parent
+  // XDSVStack gap, so every section has the same breathing room.
+  // No overflow:hidden so the hover backdrop on each resource
+  // row can paint into its negative-margin bleed zone without
+  // getting clipped.
   endBlock: {
     position: 'relative',
-    paddingBlockStart: 'var(--spacing-12)',
-    paddingBlockEnd: 'var(--spacing-12)',
   },
   // Top editorial row — headline + paragraph on the left,
   // brand-shape composition on the right. 1:1 split at wide
   // widths; stacks vertically at <760px.
+  // Editorial header — centered headline + description on top
+  // (spans full width); the 3-column channel-card grid sits
+  // below it. Centered text contrasts with the rest of the page's
+  // left-aligned section headings and frames the channel grid
+  // like the reference's "Newest Collection" product layout.
   endBlockHeader: {
     display: 'flex',
-    flexDirection: {
-      default: 'row',
-      '@media (max-width: 760px)': 'column',
-    },
-    gap: 'var(--spacing-8)',
+    flexDirection: 'column',
     alignItems: 'center',
+    gap: 'var(--spacing-8)',
   },
   endBlockHeaderText: {
-    flex: '1 1 0',
-    minWidth: 0,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 'var(--spacing-6)',
+    textAlign: 'center' as const,
+    maxWidth: 680,
   },
 
+  // 3-column channel grid below the centered editorial header.
+  // Auto-fit with a generous minWidth so columns stay readable
+  // and reflow gracefully to 2 / 1 columns on narrower viewports.
+  channelGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: 'var(--spacing-6)',
+    width: '100%',
+    '@media (max-width: 760px)': {
+      gridTemplateColumns: '1fr',
+    },
+  },
+
+  // Single channel card — tall pastel-filled block with title
+  // anchored to the top-left and description anchored to the
+  // bottom-left, leaving a generous open middle. The whole card
+  // is the click target via XDSClickableCard with its default
+  // border zeroed (the pastel fill carries the visual identity).
+  channelCard: {
+    overflow: 'hidden',
+    borderColor: 'transparent',
+    // Each card gets its color via inline style based on the
+    // channel data (see CHANNELS.bgColor). Done inline so the
+    // shared style here stays color-agnostic.
+  },
+  // Tall portrait inner stack — XDSVStack handles direction +
+  // gap + vAlign:between (so title pins to top and description
+  // pins to bottom). aspectRatio drives the portrait shape.
+  channelCardInner: {
+    aspectRatio: '4 / 5',
+  },
   // Pill-card list under the engage description — each channel
   // (Discussions / Issues / Wiki) renders as a horizontal pill
   // with an icon tile on the left, title + one-line description
@@ -374,17 +410,6 @@ const styles = stylex.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: 'transparent',
-    color: 'var(--color-text-primary)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  channelPillArrowGhost: {
-    flexShrink: 0,
-    width: 32,
-    height: 32,
-    borderRadius: 'var(--radius-full)',
     backgroundColor: 'transparent',
     color: 'var(--color-text-primary)',
     display: 'flex',
@@ -445,36 +470,6 @@ const styles = stylex.create({
     flexDirection: 'column',
     gap: 'var(--spacing-0-5)',
   },
-  // Arrow chip on the right side of each pill. Painted with
-  // --color-background-card to match the icon tile on the left
-  // — symmetric chip treatment frames the pill body content
-  // between two lighter "endcaps".
-  channelPillArrow: {
-    flexShrink: 0,
-    width: 32,
-    height: 32,
-    borderRadius: 'var(--radius-full)',
-    backgroundColor: 'var(--color-background-card)',
-    color: 'var(--color-text-primary)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  // Decorative container on the right of the editorial header.
-  // Used to hold a big BrandBlob; the blob was removed but the
-  // container stays so the editorial header keeps its 1:1 split
-  // (text + channels on the left, balanced negative-space card
-  // on the right). Painted with --color-background-body so it
-  // reads as a continuation of the page surface rather than a
-  // lifted card.
-  endBlockHeaderArt: {
-    flex: '1 1 0',
-    minWidth: 0,
-    aspectRatio: '4 / 3',
-    backgroundColor: 'var(--color-background-body)',
-    borderRadius: 'var(--radius-container)',
-  },
-
   // Resources section below the editorial header — replaces the
   // earlier 2-column link list with two Pill sub-stacks under one
   // shared section heading. Sub-stacks lay out side-by-side on
@@ -483,7 +478,11 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     gap: 'var(--spacing-6)',
-    paddingBlockStart: 'var(--spacing-10)',
+    // Match the parent sectionStack's calc(var(--spacing-12) * 2)
+    // = 96px so the Engage → Resources gap inside the end block
+    // reads the same as the gaps between all the other top-level
+    // sections on the page.
+    paddingBlockStart: 'calc(var(--spacing-12) * 2)',
   },
   endBlockResourcesGrid: {
     display: 'grid',
@@ -569,202 +568,7 @@ const styles = stylex.create({
     color: 'var(--color-text-secondary)',
     fontSize: 'var(--text-supporting-size, 13px)',
   },
-  // Arrow chip in the bottom-right corner. Pinned absolutely so
-  // it sits at a fixed inset regardless of card height variations.
-  blockCardArrow: {
-    position: 'absolute',
-    bottom: 'var(--spacing-5)',
-    insetInlineEnd: 'var(--spacing-5)',
-    color: 'var(--color-text-primary)',
-    opacity: 0.7,
-  },
-
-  // -------------------------------------------------------------------------
-  // RichCard — channels + start-here treatment
-  // -------------------------------------------------------------------------
-  // Adapts the product-card visual pattern (tinted image zone on
-  // top, white footer on the bottom with title + CTA icon) to the
-  // community page. Each card carries its own per-card tint via
-  // inline style, leaving the structural rules here in stylex.
-
-  // Outer card — XDSClickableCard's default variant ships with
-  // a --color-border-emphasized 1px border, which we let through
-  // here (unlike the theme tiles, which intentionally drop it).
-  // The border lifts the rich cards' tinted image zone visually
-  // off the page background. overflow:hidden so the image zone
-  // and the white footer clip to the rounded corners cleanly.
-  richCard: {
-    overflow: 'hidden',
-  },
-  // Vertical split inside the card: image zone (flex-grow) above
-  // footer (auto-height). Filling 100% height lets the card
-  // stretch to the tallest sibling in its row when XDSGrid
-  // auto-stretches.
-  richCardLayout: {
-    height: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  // Tinted image zone — fixed minimum height so short cards
-  // (3-line footers) still get a real visual block, but
-  // flex-grows on tall siblings to fill the row.
-  richCardImage: {
-    position: 'relative',
-    minHeight: 140,
-    flex: '1 1 auto',
-    overflow: 'hidden',
-  },
-  // The SVG blob layer fills the image zone absolutely so the
-  // blob can extend beyond a normal content box without affecting
-  // the card's measured height.
-  richCardBlob: {
-    position: 'absolute',
-    inset: 0,
-    width: '100%',
-    height: '100%',
-    display: 'block',
-  },
-  // Footer — white surface with title + supporting line + small
-  // arrow CTA on the right. Padding matches the inset commonly
-  // used in product-card UIs.
-  richCardFooter: {
-    backgroundColor: 'var(--color-background-card)',
-    padding: 'var(--spacing-4)',
-    display: 'flex',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 'var(--spacing-3)',
-  },
-  richCardFooterText: {
-    flex: '1 1 auto',
-    minWidth: 0,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 'var(--spacing-0-5)',
-  },
-  // Round arrow chip — visually echoes XDSButton variant
-  // "secondary" chrome (--color-neutral background + primary
-  // text color) so it reads as a familiar XDS affordance
-  // without being a real interactive element. The whole card
-  // is the actual click target; this chip is decorative and
-  // hints at "navigates somewhere".
-  richCardCta: {
-    flexShrink: 0,
-    width: 36,
-    height: 36,
-    borderRadius: 'var(--radius-full)',
-    backgroundColor: 'var(--color-neutral)',
-    color: 'var(--color-text-primary)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });
-
-// =============================================================================
-// Per-card tint palette
-// =============================================================================
-//
-// Astryx-flavored soft pastels. Each entry pairs a card image-zone
-// background with the foreground blob color that paints on top of
-// it. Hardcoded rather than theme-aware because the visual rhythm
-// of the cards is itself part of the page's identity — varying
-// the palette per theme would make the section read inconsistently.
-
-interface CardTint {
-  surface: string;
-  blob: string;
-}
-
-// Each tint pairs the theme's categorical badge backdrop
-// (--color-background-{hue}, ~20% alpha) with its saturated
-// counterpart (--color-icon-{hue}, full opacity) so the SVG blob
-// reads as a deeper-tone accent on top of the pastel fill. Both
-// tokens resolve per-theme, so the channel cards stay theme-
-// respectful instead of being locked to a hardcoded palette.
-const TINT_YELLOW: CardTint = {
-  surface: 'var(--color-background-yellow)',
-  blob: 'var(--color-icon-yellow)',
-};
-const TINT_PURPLE: CardTint = {
-  surface: 'var(--color-background-purple)',
-  blob: 'var(--color-icon-purple)',
-};
-const TINT_GREEN: CardTint = {
-  surface: 'var(--color-background-green)',
-  blob: 'var(--color-icon-green)',
-};
-const TINT_ORANGE: CardTint = {
-  surface: 'var(--color-background-orange)',
-  blob: 'var(--color-icon-orange)',
-};
-const TINT_BLUE: CardTint = {
-  surface: 'var(--color-background-blue)',
-  blob: 'var(--color-icon-blue)',
-};
-const TINT_CYAN: CardTint = {
-  surface: 'var(--color-background-cyan)',
-  blob: 'var(--color-icon-cyan)',
-};
-const TINT_RED: CardTint = {
-  surface: 'var(--color-background-red)',
-  blob: 'var(--color-icon-red)',
-};
-
-// =============================================================================
-// BlobPattern — SVG decorative blobs for the rich card image zone
-// =============================================================================
-//
-// Renders 2-3 soft overlapping rounded shapes in the foreground
-// blob color. Position varies per `seed` so cards in the same row
-// don't look duplicated. Decorative only — pointer-events:none so
-// hover/click pass through to the underlying card.
-
-function BlobPattern({tint, seed}: {tint: CardTint; seed: number}) {
-  // 4 hand-tuned blob arrangements. Seed mod 4 picks one — gives
-  // enough variation across a 6-card grid without composing a
-  // full procedural generator.
-  const arrangements = [
-    [
-      {cx: 30, cy: 40, r: 55, opacity: 0.65},
-      {cx: 75, cy: 80, r: 40, opacity: 0.45},
-    ],
-    [
-      {cx: 80, cy: 35, r: 50, opacity: 0.6},
-      {cx: 25, cy: 75, r: 45, opacity: 0.5},
-      {cx: 60, cy: 55, r: 25, opacity: 0.4},
-    ],
-    [
-      {cx: 50, cy: 50, r: 60, opacity: 0.55},
-      {cx: 90, cy: 90, r: 30, opacity: 0.45},
-    ],
-    [
-      {cx: 20, cy: 30, r: 45, opacity: 0.55},
-      {cx: 70, cy: 70, r: 50, opacity: 0.55},
-    ],
-  ];
-  const blobs = arrangements[seed % arrangements.length];
-
-  return (
-    <svg
-      {...stylex.props(styles.richCardBlob)}
-      viewBox="0 0 100 100"
-      preserveAspectRatio="xMidYMid slice"
-      aria-hidden="true">
-      <rect width="100" height="100" fill={tint.surface} />
-      {blobs.map((b, i) => (
-        <circle
-          key={i}
-          cx={b.cx}
-          cy={b.cy}
-          r={b.r}
-          fill={tint.blob}
-          opacity={b.opacity}
-        />
-      ))}
-    </svg>
-  );
-}
 
 // =============================================================================
 // WallCard — multicolored Astryx wordmark + scattered contributor faces
@@ -1014,65 +818,6 @@ function Pill({
 }
 
 // =============================================================================
-// RichCard — channels + start-here cards
-// =============================================================================
-//
-// Vertically split card: tinted image zone (with decorative blob)
-// on top, white footer (title + supporting + arrow CTA) on the
-// bottom. The whole card is a single click target via
-// XDSClickableCard — the arrow chip in the footer is decorative
-// only (no nested interactive element).
-
-interface RichCardProps {
-  label: string;
-  description: string;
-  href: string;
-  tint: CardTint;
-  seed: number;
-  /** Optional supporting badge (e.g. effort estimate) for the footer */
-  badge?: string;
-}
-
-function RichCard({
-  label,
-  description,
-  href,
-  tint,
-  seed,
-  badge,
-}: RichCardProps) {
-  return (
-    <XDSClickableCard
-      label={`Open ${label}`}
-      href={href}
-      padding={0}
-      xstyle={styles.richCard}>
-      <div {...stylex.props(styles.richCardLayout)}>
-        <div {...stylex.props(styles.richCardImage)}>
-          <BlobPattern tint={tint} seed={seed} />
-        </div>
-        <div {...stylex.props(styles.richCardFooter)}>
-          <div {...stylex.props(styles.richCardFooterText)}>
-            <XDSHStack gap={2} vAlign="center" hAlign="between">
-              <XDSText type="body" weight="bold">
-                {label}
-              </XDSText>
-              {badge && <XDSBadge label={badge} variant="neutral" />}
-            </XDSHStack>
-            <XDSText type="supporting" color="secondary">
-              {description}
-            </XDSText>
-          </div>
-          <div {...stylex.props(styles.richCardCta)} aria-hidden="true">
-            <ArrowRightIcon width={18} height={18} />
-          </div>
-        </div>
-      </div>
-    </XDSClickableCard>
-  );
-}
-
-// =============================================================================
 // Data
 // =============================================================================
 
@@ -1084,11 +829,12 @@ interface Channel {
   name: string;
   description: string;
   href: string;
-  /** Heroicon component rendered in the pill's left icon tile.
-   * Each channel uses an icon that hints at the destination's
-   * role (chat bubble for discussions, exclamation for issues,
-   * book for wiki). */
-  icon: React.ComponentType<{width?: number; height?: number}>;
+  /** XDSClickableCard color variant — uses XDS's built-in
+   * categorical color variants (the XDS-correct way to color a
+   * card; inline `style={{backgroundColor}}` is silently
+   * dropped by XDSClickableCard, which only honors its own
+   * `variant` prop for backgrounds). */
+  variant: 'yellow' | 'green' | 'blue';
 }
 
 const CHANNELS: ReadonlyArray<Channel> = [
@@ -1097,21 +843,21 @@ const CHANNELS: ReadonlyArray<Channel> = [
     description:
       'Ask questions, share what you built, and talk through ideas with the maintainers.',
     href: `${GITHUB_REPO}/discussions`,
-    icon: ChatBubbleLeftRightIcon,
+    variant: 'yellow',
   },
   {
     name: 'GitHub Issues',
     description:
       'File bugs and feature requests. Triaged weekly with response within a few days.',
     href: `${GITHUB_REPO}/issues`,
-    icon: ExclamationCircleIcon,
+    variant: 'green',
   },
   {
     name: 'Wiki & Decisions',
     description:
       'Architecture decisions, API conventions, and research notes from how Astryx gets built.',
     href: WIKI_BASE,
-    icon: BookOpenIcon,
+    variant: 'blue',
   },
 ];
 
@@ -1295,43 +1041,50 @@ export default async function CommunityPage() {
     <div {...stylex.props(styles.pageWrap)}>
       <NavSurfaceMode />
       <XDSSection padding={6}>
-        <XDSVStack gap={10}>
-          {/* Hero row — title + tagline left, two CTAs right, on a
-            single line at wide widths. Drops the home-page wordmark
-            (the wall card below carries the brand mark) and keeps
-            this row tight and action-oriented. */}
-          <div {...stylex.props(styles.heroRow)}>
-            <XDSVStack gap={1} xstyle={styles.heroText}>
-              <XDSHeading level={1} type="display-1" color="primary">
-                Build with us
-              </XDSHeading>
-              <XDSText type="body" size="base" color="secondary">
-                A friendly community of designers and engineers shaping the
-                system together.
-              </XDSText>
-            </XDSVStack>
-            <XDSHStack gap={2} wrap="wrap">
-              <XDSButton
-                variant="secondary"
-                size="md"
-                label="View Discussions"
-                href={`${GITHUB_REPO}/discussions`}
-              />
-              <XDSButton
-                variant="primary"
-                size="md"
-                label="Start Contributing"
-                href={`${WIKI_BASE}/Contributing`}
-              />
-            </XDSHStack>
-          </div>
+        <div {...stylex.props(styles.sectionStack)}>
+          {/* Hero group — "Build with us" header row + the Astryx
+              wall card below it. Wrapped together so they read as
+              one cohesive intro chapter (tight internal gap),
+              while the surrounding sectionStack still gives a
+              large gap between this group and the next page
+              section. */}
+          <div {...stylex.props(styles.heroGroup)}>
+            {/* Hero row — title + tagline left, two CTAs right,
+                on a single line at wide widths. */}
+            <div {...stylex.props(styles.heroRow)}>
+              <XDSVStack gap={1} xstyle={styles.heroText}>
+                <XDSHeading level={1} type="display-1" color="primary">
+                  Build with us
+                </XDSHeading>
+                <XDSText type="body" size="base" color="secondary">
+                  A friendly community of designers and engineers shaping the
+                  system together.
+                </XDSText>
+              </XDSVStack>
+              <XDSHStack gap={2} wrap="wrap">
+                <XDSButton
+                  variant="secondary"
+                  size="md"
+                  label="View Discussions"
+                  href={`${GITHUB_REPO}/discussions`}
+                />
+                <XDSButton
+                  variant="primary"
+                  size="md"
+                  label="Start Contributing"
+                  href={`${WIKI_BASE}/Contributing`}
+                />
+              </XDSHStack>
+            </div>
 
-          {/* Wall card — multicolored Astryx wordmark in the center,
-            scattered contributor avatars overlaid across the rest
-            of the card. Functions as the social-proof centerpiece
-            of the page: shows real people building Astryx without
-            forcing users to scroll to the full contributor grid. */}
-          <WallCard contributors={contributors} />
+            {/* Wall card — multicolored Astryx wordmark in the
+                center, scattered contributor avatars overlaid
+                across the rest of the card. Functions as the
+                social-proof centerpiece of the page: shows real
+                people building Astryx without forcing users to
+                scroll to the full contributor grid. */}
+            <WallCard contributors={contributors} />
+          </div>
 
           {/* How we build together — combined contribution section
             with the section heading + process on the LEFT
@@ -1401,45 +1154,46 @@ export default async function CommunityPage() {
               anchors the bottom-right corner. */}
           <div {...stylex.props(styles.endBlock)}>
             <div {...stylex.props(styles.endBlockHeader)}>
-              <div {...stylex.props(styles.endBlockHeaderText)}>
-                <XDSVStack gap={3}>
-                  <XDSHeading level={2} type="display-2">
-                    Engage with us in conversation
-                  </XDSHeading>
-                  <XDSText type="body" color="secondary">
-                    In a global community built on shared craft, a system gets
-                    better when its users open up to new perspectives. The
-                    brightest minds shape Astryx together — pick a channel, read
-                    the references, or just say hi.
-                  </XDSText>
-                </XDSVStack>
-                {/* Channel pill cards under the description.
-                    Each pill is its own click target (whole-
-                    card link via XDSClickableCard). The arrow
-                    chip on the right is decorative — same
-                    pattern as the RichCard chips elsewhere on
-                    the page. */}
-                <div {...stylex.props(styles.channelPillStack)}>
-                  {CHANNELS.map(channel => (
-                    <Pill
-                      key={channel.name}
-                      label={channel.name}
-                      description={channel.description}
-                      href={channel.href}
-                      icon={channel.icon}
-                    />
-                  ))}
-                </div>
+              <XDSVStack gap={3} xstyle={styles.endBlockHeaderText}>
+                <XDSHeading level={2} type="display-2">
+                  Engage with us in conversation
+                </XDSHeading>
+                <XDSText type="body" color="secondary">
+                  In a global community built on shared craft, a system gets
+                  better when its users open up to new perspectives. The
+                  brightest minds shape Astryx together — pick a channel, read
+                  the references, or just say hi.
+                </XDSText>
+              </XDSVStack>
+
+              {/* 3-column channel grid — tall portrait cards with
+                  a pastel categorical fill, title anchored top-
+                  left, description anchored bottom-left, and a
+                  generous open middle. Whole card is the click
+                  target via XDSClickableCard. */}
+              <div {...stylex.props(styles.channelGrid)}>
+                {CHANNELS.map(channel => (
+                  <XDSClickableCard
+                    key={channel.name}
+                    label={`Open ${channel.name}`}
+                    href={channel.href}
+                    target="_blank"
+                    padding={6}
+                    variant={channel.variant}
+                    xstyle={styles.channelCard}>
+                    <XDSVStack
+                      gap={2}
+                      vAlign="end"
+                      height="100%"
+                      xstyle={styles.channelCardInner}>
+                      <XDSHeading level={3}>{channel.name}</XDSHeading>
+                      <XDSText type="supporting" color="secondary">
+                        {channel.description}
+                      </XDSText>
+                    </XDSVStack>
+                  </XDSClickableCard>
+                ))}
               </div>
-              {/* Empty container on the right — same width and
-                  aspect ratio as before, just no decorative
-                  shape inside. Balances the editorial header's
-                  1:1 split visually without competing for
-                  attention. */}
-              <div
-                {...stylex.props(styles.endBlockHeaderArt)}
-                aria-hidden="true"
-              />
             </div>
 
             {/* Resources — Documentation + Legal as two Pill
@@ -1488,7 +1242,7 @@ export default async function CommunityPage() {
               </div>
             </div>
           </div>
-        </XDSVStack>
+        </div>
       </XDSSection>
     </div>
   );
