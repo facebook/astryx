@@ -199,7 +199,7 @@ export function DiscoverShowcase() {
                   alt="Astryx"
                   {...stylex.props(styles.inlineWordmark)}
                 />
-                design system.
+                design system
               </XDSHeading>
               <XDSText type="body" color="secondary" style={{maxWidth: 480}}>
                 Browse {CORE_COMPONENT_COUNT_ROUNDED}+ components, explore
