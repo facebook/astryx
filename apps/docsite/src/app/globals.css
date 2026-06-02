@@ -37,13 +37,15 @@ body:has([data-home-page]) #xds-app-shell-main {
   padding-top: 0;
 }
 
-/* Translucent top nav — frosted glass effect */
-.xds-layout-header,
-:has(> .xds-layout-header) {
+/* Translucent top nav — frosted glass effect.
+   Scoped to the outermost shell only via :not(.xds-app-shell .xds-app-shell)
+   so nested AppShells in component examples/templates aren't affected. */
+.xds-app-shell:not(.xds-app-shell .xds-app-shell) > .xds-layout .xds-layout-header,
+.xds-app-shell:not(.xds-app-shell .xds-app-shell) > .xds-layout :has(> .xds-layout-header) {
   background: transparent !important;
 }
 
-.xds-top-nav {
+.xds-app-shell:not(.xds-app-shell .xds-app-shell) > .xds-layout .xds-top-nav {
   background: color-mix(in srgb, var(--color-background-surface) 80%, transparent);
   backdrop-filter: blur(12px);
   transition: background 300ms ease;
@@ -53,13 +55,13 @@ body:has([data-home-page]) #xds-app-shell-main {
    Use the solid body color (not a color-mix) so it matches perfectly even
    without anything scrolled behind it. The backdrop-filter blur from the
    .xds-top-nav rule above is preserved. */
-body:has([data-home-page]) .xds-top-nav {
+body:has([data-home-page]) .xds-app-shell:not(.xds-app-shell .xds-app-shell) > .xds-layout .xds-top-nav {
   background: var(--color-background-body);
 }
 
 /* When the home page IntersectionObserver detects the theming showcase has
    reached the top, switch the nav back to a surface-tinted frosted bar. */
-body[data-nav-mode='surface'] .xds-top-nav {
+body[data-nav-mode='surface'] .xds-app-shell:not(.xds-app-shell .xds-app-shell) > .xds-layout .xds-top-nav {
   background: color-mix(in srgb, var(--color-background-surface) 80%, transparent);
 }
 
