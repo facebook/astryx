@@ -217,6 +217,13 @@ function configureMonaco(monaco: MonacoInstance) {
           content,
           `file:///node_modules/@types/react/${fileName}`,
         );
+        // Also register react/jsx-runtime as a resolvable module path
+        if (fileName === 'jsx-runtime.d.ts') {
+          ts.addExtraLib(
+            content,
+            'file:///node_modules/react/jsx-runtime.d.ts',
+          );
+        }
       }
 
       const stylexFiles = packages['@stylexjs/stylex'] ?? {};
