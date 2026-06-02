@@ -4,7 +4,7 @@
 export const docs = {
   name: 'CodeBlock',
   displayName: 'Code Block',
-  category: 'Communications',
+  category: 'Content',
   keywords: [
     'code', 'syntax', 'highlight', 'snippet', 'prism', 'shiki',
     'pre', 'monospace', 'codeblock', 'inline',

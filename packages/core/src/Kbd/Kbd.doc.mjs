@@ -5,7 +5,7 @@
 export const docs = {
   name: 'Kbd',
   displayName: 'Kbd',
-  category: 'Communications',
+  category: 'Content',
   keywords: ["kbd","keyboard","shortcut","hotkey","keybinding","keystroke","keycombo","modifier","accelerator"],
   props: [
     {

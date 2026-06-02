@@ -84,6 +84,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSSideNavHeading',
+      isHiddenFromOverview: true,
       displayName: 'Side Nav Heading',
       description:
         'Product/suite/account heading with smart interaction boundary logic for links and a menu popover.',
@@ -141,6 +142,7 @@ export const docs = {
     },
     {
       name: 'XDSSideNavItem',
+      isHiddenFromOverview: true,
       displayName: 'Side Nav Item',
       description:
         'Navigation item with icon, selected state, optional end content, and nesting support via children.',
@@ -214,6 +216,7 @@ export const docs = {
     },
     {
       name: 'XDSSideNavSection',
+      isHiddenFromOverview: true,
       displayName: 'Side Nav Section',
       description:
         'Section grouping with an optional title, subtitle, and end content.',
@@ -261,6 +264,7 @@ export const docs = {
     },
     {
       name: 'XDSSideNavCollapseButton',
+      isHiddenFromOverview: true,
       displayName: 'Side Nav Collapse Button',
       description:
         'Toggle button for sidenav collapse. Place inside XDSSideNav (reads context automatically) or outside (pass handleRef). Renders as an icon-only ghost button by default.',
@@ -370,6 +374,7 @@ export const docsZh = {
     },
     {
       name: 'XDSSideNavHeading',
+      isHiddenFromOverview: true,
       displayName: 'Side Nav Heading',
       description:
         '产品/套件/账户头部，具有智能交互边界逻辑，支持链接和菜单弹出框。',
@@ -424,6 +429,7 @@ export const docsZh = {
     },
     {
       name: 'XDSSideNavItem',
+      isHiddenFromOverview: true,
       displayName: 'Side Nav Item',
       description:
         '导航项，支持图标、选中状态、可选尾部内容，以及通过 children 实现嵌套。',
@@ -492,6 +498,7 @@ export const docsZh = {
     },
     {
       name: 'XDSSideNavSection',
+      isHiddenFromOverview: true,
       displayName: 'Side Nav Section',
       description:
         '分组，支持可选的标题、副标题和尾部内容。',
@@ -528,6 +535,7 @@ export const docsZh = {
     },
     {
       name: 'XDSSideNavCollapseButton',
+      isHiddenFromOverview: true,
       displayName: 'Side Nav Collapse Button',
       description:
         '侧边栏折叠切换按钮。放置在 XDSSideNav 内部（自动读取上下文）或外部（传入 handleRef）。默认渲染为仅图标的 ghost 按钮。',
@@ -606,6 +614,7 @@ export const docsDense = {
     },
     {
       name: 'XDSSideNavHeading',
+      isHiddenFromOverview: true,
       displayName: 'Side Nav Heading',
       description:
         'Product/suite/account heading w/ smart interaction boundary logic for links + menu popover.',
@@ -623,6 +632,7 @@ export const docsDense = {
     },
     {
       name: 'XDSSideNavItem',
+      isHiddenFromOverview: true,
       displayName: 'Side Nav Item',
       description:
         'Navigation item w/ icon, selected state, optional end content, nesting via children.',
@@ -642,6 +652,7 @@ export const docsDense = {
     },
     {
       name: 'XDSSideNavSection',
+      isHiddenFromOverview: true,
       displayName: 'Side Nav Section',
       description:
         'Section grouping w/ optional title, subtitle, end content.',
@@ -656,6 +667,7 @@ export const docsDense = {
     },
     {
       name: 'XDSSideNavCollapseButton',
+      isHiddenFromOverview: true,
       displayName: 'Side Nav Collapse Button',
       description:
         'Toggle button for sidenav collapse. Place inside XDSSideNav (reads context) or outside (pass handleRef). Icon-only ghost button by default.',

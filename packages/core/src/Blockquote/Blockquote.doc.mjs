@@ -7,7 +7,7 @@
 export const docs = {
   name: 'Blockquote',
   displayName: 'Blockquote',
-  category: 'Communications',
+  category: 'Content',
   keywords: ["blockquote","quote","citation","pullquote","quotation","cite","excerpt"],
   props: [
     {

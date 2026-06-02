@@ -27,7 +27,7 @@ const meta: Meta<typeof XDSNavHeadingMenu> = {
     },
   },
   decorators: [
-    (Story) => (
+    Story => (
       <div style={{padding: 24, maxWidth: 300}}>
         <Story />
       </div>
@@ -56,31 +56,19 @@ export const WithIcons: Story = {
     size: 'md',
     children: (
       <>
-        <XDSNavHeadingMenuItem
-          label="Profile"
-          icon={UserIcon}
-          href="#"
-        />
+        <XDSNavHeadingMenuItem label="Profile" icon={UserIcon} href="#" />
         <XDSNavHeadingMenuItem
           label="Documents"
           icon={DocumentTextIcon}
           href="#"
         />
-        <XDSNavHeadingMenuItem
-          label="Analytics"
-          icon={ChartBarIcon}
-          href="#"
-        />
+        <XDSNavHeadingMenuItem label="Analytics" icon={ChartBarIcon} href="#" />
         <XDSNavHeadingMenuItem
           label="Security"
           icon={ShieldCheckIcon}
           href="#"
         />
-        <XDSNavHeadingMenuItem
-          label="Settings"
-          icon={Cog6ToothIcon}
-          href="#"
-        />
+        <XDSNavHeadingMenuItem label="Settings" icon={Cog6ToothIcon} href="#" />
       </>
     ),
   },

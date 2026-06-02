@@ -7,6 +7,7 @@ export const docs = {
   displayName: 'Center',
   group: 'Layout',
   category: 'Layout',
+  isHiddenFromOverview: true,
   keywords: ["center","centered","centering","align","alignment","justify","flexbox","middle"],
   props: [
     {
