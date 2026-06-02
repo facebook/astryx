@@ -2,16 +2,16 @@
 
 /**
  * Page type: template viewer
- * Preview a template + view its source code.
+ *
+ * Full-bleed live preview of a single page template with a floating
+ * footer pill (back, name/description, Open in Playground, Use).
+ * Layout mirrors the themes preview page. Rendering is delegated to
+ * the TemplatePreviewPage client component.
  */
 
 import {notFound} from 'next/navigation';
-import {XDSHeading, XDSText} from '@xds/core/Text';
-import {XDSVStack} from '@xds/core/Layout';
-import {XDSSection} from '@xds/core/Section';
-import {XDSCodeBlock} from '@xds/core/CodeBlock';
 import {templates} from '../../../../generated/templateRegistry';
-import {PlaygroundButton} from '../../../../components/PlaygroundButton';
+import {TemplatePreviewPage} from '../../../../components/TemplatePreviewPage';
 
 export function generateStaticParams() {
   return templates.map(t => ({slug: t.slug}));
@@ -29,19 +29,11 @@ export default async function TemplatePage({
   }
 
   return (
-    <XDSSection maxWidth="lg" padding={6}>
-      <XDSVStack gap={4}>
-        <XDSHeading level={1}>{template.name}</XDSHeading>
-        <XDSText type="body" color="secondary">
-          {template.description}
-        </XDSText>
-        {template.source && (
-          <>
-            <PlaygroundButton source={template.source} />
-            <XDSCodeBlock code={template.source} language="tsx" hasCopyButton />
-          </>
-        )}
-      </XDSVStack>
-    </XDSSection>
+    <TemplatePreviewPage
+      slug={template.slug}
+      name={template.name}
+      description={template.description}
+      source={template.source}
+    />
   );
 }

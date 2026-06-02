@@ -6,7 +6,8 @@
 
 'use client';
 
-import {useMemo} from 'react';
+import {useCallback, useMemo} from 'react';
+import {useSearchParams, useRouter, usePathname} from 'next/navigation';
 import * as stylex from '@stylexjs/stylex';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {XDSVStack, XDSHStack} from '@xds/core/Layout';
@@ -18,6 +19,11 @@ import {XDSBadge} from '@xds/core/Badge';
 import {templates} from '../../../generated/templateRegistry';
 import {TemplateThumbnail} from '../../../components/TemplateThumbnail';
 import {buildPlaygroundHref} from '../../../components/playgroundLink';
+import {TemplatePreviewDialog} from '../../../components/TemplatePreviewDialog';
+import type {TemplatePreviewItem} from '../../../components/TemplatePreviewDialog';
+
+const GALLERY_MAX_WIDTH = 1600;
+const CARD_MIN_WIDTH = 480;
 
 const styles = stylex.create({
   section: {
@@ -26,25 +32,16 @@ const styles = stylex.create({
   heroTitle: {
     textAlign: 'center' as const,
   },
-  // Establishes a query container so the grid responds to its own available
-  // width (the content area), not the viewport.
-  gridContainer: {
-    containerType: 'inline-size',
+  galleryWrap: {
+    maxWidth: GALLERY_MAX_WIDTH,
+    marginInline: 'auto',
+    width: '100%',
   },
-  // Mobile-first: 1 column by default, 2 columns at >=800px, 3 at >=1200px of
-  // container width. min-width queries are used because StyleX reorders
-  // overlapping max-width queries (the wider one wins), which would prevent
-  // the 1-column case from ever triggering. Uses 1fr tracks so cards always
-  // fill the row width at every column count.
   grid: {
     display: 'grid',
-    columnGap: 'var(--spacing-4)',
-    rowGap: 'var(--spacing-6)',
-    gridTemplateColumns: {
-      default: 'minmax(0, 1fr)',
-      '@container (min-width: 800px)': 'repeat(2, minmax(0, 1fr))',
-      '@container (min-width: 1200px)': 'repeat(3, minmax(0, 1fr))',
-    },
+    gap: 'var(--spacing-4)',
+    justifyContent: 'center',
+    gridTemplateColumns: `repeat(auto-fill, minmax(max(${CARD_MIN_WIDTH}px, calc((100% - var(--spacing-4)) / 2)), 1fr))`,
   },
   cardImage: {
     display: 'block',
@@ -52,6 +49,13 @@ const styles = stylex.create({
     aspectRatio: '16/10',
     backgroundColor: 'var(--color-background-muted)',
     borderRadius: 'var(--radius-container)',
+  },
+  clickableCard: {
+    outline: {
+      default: 'none',
+      ':focus-visible': '2px solid var(--color-accent)',
+    },
+    outlineOffset: '2px',
   },
   comingSoon: {
     height: '100%',
@@ -161,8 +165,60 @@ export default function TemplatesPage() {
       );
   }, []);
 
+  // Flattened display-order list backing the preview dialog's prev/next
+  // navigation, plus a slug -> index lookup for opening at a given card.
+  const flatItems = useMemo<TemplatePreviewItem[]>(
+    () =>
+      groups.flatMap(g =>
+        g.items.map(i => ({
+          slug: i.slug,
+          name: i.name,
+          description: i.description,
+          source: i.source,
+          category: groupOf(i.category),
+        })),
+      ),
+    [groups],
+  );
+  const indexBySlug = useMemo(() => {
+    const m = new Map<string, number>();
+    flatItems.forEach((it, i) => m.set(it.slug, i));
+    return m;
+  }, [flatItems]);
+
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const previewSlug = searchParams.get('preview');
+  const openIndex = previewSlug != null ? (indexBySlug.get(previewSlug) ?? null) : null;
+
+  const setOpenIndex = useCallback(
+    (index: number | null) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (index !== null && flatItems[index]) {
+        params.set('preview', flatItems[index].slug);
+      } else {
+        params.delete('preview');
+      }
+      const qs = params.toString();
+      router.replace(`${pathname}${qs ? `?${qs}` : ''}`, {scroll: false});
+    },
+    [searchParams, flatItems, router, pathname],
+  );
+
+  const openPreview = useCallback(
+    (slug: string) => {
+      const i = indexBySlug.get(slug);
+      if (i !== undefined) {
+        setOpenIndex(i);
+      }
+    },
+    [indexBySlug, setOpenIndex],
+  );
+
   return (
-    <XDSSection maxWidth={2000} padding={6} xstyle={styles.section}>
+    <XDSSection maxWidth={GALLERY_MAX_WIDTH} padding={6} xstyle={styles.section}>
       <XDSVStack gap={8}>
         <XDSVStack gap={2} style={{alignItems: 'center'}}>
           <XDSHeading level={1} type="display-2" xstyle={styles.heroTitle}>
@@ -176,20 +232,30 @@ export default function TemplatesPage() {
         {groups.map(({group, items}) => (
           <XDSVStack key={group} gap={4}>
             <XDSHeading level={2}>{GROUP_LABELS[group] ?? group}</XDSHeading>
-            <div {...stylex.props(styles.gridContainer)}>
+            <div {...stylex.props(styles.galleryWrap)}>
               <div {...stylex.props(styles.grid)}>
                 {items.map(item => (
-                  <XDSCard key={item.slug} padding={0}>
-                    {/* Inline style overrides --color-overlay for a stronger scrim.
-                      CSS variable overrides in stylex.create hit a type mismatch
-                      with StyleXStyles in TS 6+ / StyleX 0.18+ strict mode. */}
-                    <div
-                      style={
-                        {
-                          '--color-overlay':
-                            'color-mix(in srgb, var(--color-on-light) 78%, transparent)',
-                        } as React.CSSProperties
-                      }>
+                  <XDSCard
+                    key={item.slug}
+                    padding={0}
+                    xstyle={styles.clickableCard}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Preview ${item.name}`}
+                    onClick={() => openPreview(item.slug)}
+                    onKeyDown={(e: React.KeyboardEvent) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        openPreview(item.slug);
+                      }
+                    }}
+                    style={
+                      {
+                        '--color-overlay':
+                          'color-mix(in srgb, var(--color-on-light) 78%, transparent)',
+                        cursor: 'pointer',
+                      } as React.CSSProperties
+                    }>
                       <XDSOverlay
                         showOn="hover"
                         scrim="dark"
@@ -197,38 +263,42 @@ export default function TemplatesPage() {
                           <div {...stylex.props(styles.overlayInner)}>
                             <XDSVStack gap={2}>
                               <XDSVStack gap={0.5}>
-                                <XDSText
-                                  type="body"
-                                  weight="bold"
+                                <XDSHeading
+                                  level={3}
                                   style={{color: '#fff'}}>
                                   {item.name}
-                                </XDSText>
+                                </XDSHeading>
                                 <XDSText
-                                  type="supporting"
+                                  type="body"
                                   style={{color: 'rgba(255,255,255,0.7)'}}>
                                   {item.description.slice(0, 80)}
                                   {item.description.length > 80 ? '\u2026' : ''}
                                 </XDSText>
                               </XDSVStack>
-                              <XDSHStack gap={2}>
-                                <XDSButton
-                                  label="Preview"
-                                  variant="secondary"
-                                  size="sm"
-                                  href={item.href}
-                                />
-                                {item.source && (
+                              {/* Stop card-level click/keys from firing for
+                                  the action buttons so each keeps its own
+                                  behavior (the card itself opens the preview). */}
+                              <div
+                                onClick={e => e.stopPropagation()}
+                                onKeyDown={e => e.stopPropagation()}>
+                                <XDSHStack gap={2}>
                                   <XDSButton
-                                    label="Open in Playground"
+                                    label="Preview"
                                     variant="secondary"
-                                    size="sm"
-                                    onClick={() => {
-                                      window.location.href =
-                                        buildPlaygroundHref(item.source);
-                                    }}
+                                    onClick={() => openPreview(item.slug)}
                                   />
-                                )}
-                              </XDSHStack>
+                                  {item.source && (
+                                    <XDSButton
+                                      label="Open in Playground"
+                                      variant="secondary"
+                                      onClick={() => {
+                                        window.location.href =
+                                          buildPlaygroundHref(item.source);
+                                      }}
+                                    />
+                                  )}
+                                </XDSHStack>
+                              </div>
                             </XDSVStack>
                           </div>
                         }>
@@ -242,7 +312,6 @@ export default function TemplatesPage() {
                           </div>
                         )}
                       </XDSOverlay>
-                    </div>
                   </XDSCard>
                 ))}
               </div>
@@ -250,6 +319,18 @@ export default function TemplatesPage() {
           </XDSVStack>
         ))}
       </XDSVStack>
+
+      <TemplatePreviewDialog
+        items={flatItems}
+        index={openIndex ?? 0}
+        isOpen={openIndex !== null}
+        onOpenChange={open => {
+          if (!open) {
+            setOpenIndex(null);
+          }
+        }}
+        onIndexChange={setOpenIndex}
+      />
     </XDSSection>
   );
 }
