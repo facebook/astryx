@@ -73,6 +73,19 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     gap: 'calc(var(--spacing-12) * 2)',
+    // Cap all top-level sections at a centered reading column
+    // so every section (Hero, Wall, How we build, Engage,
+    // Resources) shares one consistent visual column down the
+    // middle of the page instead of each section finding its
+    // own width.
+    maxWidth: 920,
+    width: '100%',
+    marginInline: 'auto',
+    // Add the same section gap as bottom padding so the
+    // Resources → footer break feels like another section gap
+    // (96px) rather than abruptly hitting the footer with only
+    // the XDSSection's 24px padding underneath.
+    paddingBlockEnd: 'calc(var(--spacing-12) * 2)',
   },
   // Hero group — wraps the "Build with us" hero row + the wall
   // card below it as one unit inside the section stack. Tight
@@ -374,12 +387,30 @@ const styles = stylex.create({
   },
   endBlockResourcesGrid: {
     display: 'grid',
+    // minmax(0, 1fr) is load-bearing — without it, columns
+    // refuse to shrink below their content's min-content width
+    // (long resource titles like "How we settle design
+    // disagreements..."), which forces the whole grid to
+    // overflow its parent. minmax(0, 1fr) lets columns shrink
+    // to whatever the parent allows, so the grid stays within
+    // the parent's bounds and descriptions wrap normally.
     gridTemplateColumns: {
-      default: '1fr 1fr',
-      '@media (max-width: 760px)': '1fr',
+      default: 'repeat(3, minmax(0, 1fr))',
+      '@media (max-width: 900px)': 'repeat(2, minmax(0, 1fr))',
+      '@media (max-width: 600px)': '1fr',
     },
-    gap: 'var(--spacing-6)',
+    gap: 'var(--spacing-2)',
     alignItems: 'flex-start',
+    // Optical alignment shift: pull the grid left by the
+    // XDSListItem's internal start padding (~12px = --spacing-3)
+    // so the leading icon glyph of each row optically aligns
+    // with the "Resources" section heading's left edge above.
+    // Same width compensation as the wall-card alignment trick
+    // earlier — content shifts left, total grid width grows by
+    // the same amount on the right so the rightmost column
+    // doesn't lose space.
+    marginInlineStart: 'calc(-1 * var(--spacing-3))',
+    width: 'calc(100% + var(--spacing-3))',
   },
   // -------------------------------------------------------------------------
   // BlockCard — color-blocked contribution-type cards
@@ -580,7 +611,7 @@ function WallCard({contributors}: {contributors: ReadonlyArray<Contributor>}) {
         <XDSLink
           label="See contributors"
           href={`${GITHUB_REPO}/graphs/contributors`}
-          isExternalLink
+          target="_blank"
           xstyle={styles.wallSeeContributors}>
           See contributors
         </XDSLink>
@@ -768,6 +799,10 @@ interface Resource {
   title: string;
   description: string;
   href: string;
+  /** Heroicon component rendered in each resource row's
+   * startContent slot. Docs entries use DocumentTextIcon;
+   * legal/policy entries use ScaleIcon. */
+  icon: React.ComponentType<{width?: number; height?: number}>;
 }
 
 const RESOURCES: ReadonlyArray<Resource> = [
@@ -776,45 +811,53 @@ const RESOURCES: ReadonlyArray<Resource> = [
     description:
       'The full process, what we accept, and how proposals get reviewed.',
     href: `${WIKI_BASE}/Contributing`,
+    icon: DocumentTextIcon,
   },
   {
     title: 'Contributing with AI',
     description:
       'Using AI assistants effectively within Astryx conventions — safe zones and common pitfalls.',
     href: `${WIKI_BASE}/Contributing-with-AI-Assistants`,
+    icon: DocumentTextIcon,
   },
   {
     title: 'API Conventions',
     description:
       'How components in Astryx are named, shaped, and composed. Worth a skim before sharing a proposal.',
     href: `${WIKI_BASE}/API-Conventions`,
+    icon: DocumentTextIcon,
   },
   {
     title: 'API Arbitration',
     description:
       'How we settle design disagreements using vibe testing. Includes a sample prompt you can borrow.',
     href: `${WIKI_BASE}/API-Arbitration`,
+    icon: DocumentTextIcon,
   },
   {
     title: 'Dev Setup',
     description: 'Clone, install, build, and run Storybook locally.',
     href: `${GITHUB_REPO}/blob/main/CONTRIBUTING.md`,
+    icon: DocumentTextIcon,
   },
 ];
 
 // Legal resources — same Resource shape as documentation above,
-// renders in its own Pill sub-group inside the Resources section.
+// just with a different icon to visually distinguish policy
+// entries from long-form guides.
 const LEGAL_RESOURCES: ReadonlyArray<Resource> = [
   {
     title: 'Code of Conduct',
     description:
       'Our standards for respectful collaboration and how we handle reports.',
     href: `${GITHUB_REPO}/blob/main/CODE_OF_CONDUCT.md`,
+    icon: ScaleIcon,
   },
   {
     title: 'MIT License',
     description: 'Astryx is open source under the MIT License — free to use.',
     href: `${GITHUB_REPO}/blob/main/LICENSE`,
+    icon: ScaleIcon,
   },
 ];
 
@@ -829,10 +872,19 @@ interface Contributor {
   html_url: string;
 }
 
+// Public-repo proxy for the real Astryx contributor list. The
+// canonical repo (facebookexperimental/xds) is private, so
+// GitHub's unauthenticated /contributors endpoint returns 404
+// and the wall card falls back to Unsplash placeholders. Until
+// Astryx open-sources, point at facebook/stylex — it's the
+// public foundation Astryx is built on, shares several Meta
+// engineers, and serves as a reasonable proxy for "people
+// shipping the Astryx ecosystem". Swap the URL back to the
+// xds repo once it goes public.
 async function fetchContributors(): Promise<Contributor[]> {
   try {
     const res = await fetch(
-      'https://api.github.com/repos/facebookexperimental/xds/contributors?per_page=50',
+      'https://api.github.com/repos/facebook/stylex/contributors?per_page=50',
       {next: {revalidate: 3600}},
     );
     if (!res.ok) {
@@ -1028,37 +1080,41 @@ export default async function CommunityPage() {
                   to look something up.
                 </XDSText>
               </XDSVStack>
+              {/* All resources (docs + legal) flattened into one
+                  list, then chunked into 3 column-groups so the
+                  7 items flow as a 3 / 3 / 1 layout across the
+                  3-column grid. Each chunk is its own XDSList so
+                  items in a column stack vertically as one
+                  logical list (rather than CSS-columns breaking
+                  description text mid-item). */}
               <div {...stylex.props(styles.endBlockResourcesGrid)}>
-                {/* Documentation list — uses XDS's canonical
-                    XDSList/XDSListItem pattern for "icon + label
-                    + description + href" rows. startContent
-                    carries the icon, label/description map
-                    directly, href makes the whole row a
-                    navigation link. */}
-                <XDSList>
-                  {RESOURCES.map(resource => (
-                    <XDSListItem
-                      key={resource.title}
-                      label={resource.title}
-                      description={resource.description}
-                      href={resource.href}
-                      target="_blank"
-                      startContent={<DocumentTextIcon width={20} height={20} />}
-                    />
-                  ))}
-                </XDSList>
-                <XDSList>
-                  {LEGAL_RESOURCES.map(resource => (
-                    <XDSListItem
-                      key={resource.title}
-                      label={resource.title}
-                      description={resource.description}
-                      href={resource.href}
-                      target="_blank"
-                      startContent={<ScaleIcon width={20} height={20} />}
-                    />
-                  ))}
-                </XDSList>
+                {(() => {
+                  const allResources = [...RESOURCES, ...LEGAL_RESOURCES];
+                  // Split into 3 chunks as evenly as possible.
+                  // ceil(N/3) per chunk fills columns left-to-right.
+                  const chunkSize = Math.ceil(allResources.length / 3);
+                  const chunks: Resource[][] = [];
+                  for (let i = 0; i < allResources.length; i += chunkSize) {
+                    chunks.push(allResources.slice(i, i + chunkSize));
+                  }
+                  return chunks.map((chunk, columnIndex) => (
+                    <XDSList key={columnIndex}>
+                      {chunk.map(resource => {
+                        const Icon = resource.icon;
+                        return (
+                          <XDSListItem
+                            key={resource.title}
+                            label={resource.title}
+                            description={resource.description}
+                            href={resource.href}
+                            target="_blank"
+                            startContent={<Icon width={20} height={20} />}
+                          />
+                        );
+                      })}
+                    </XDSList>
+                  ));
+                })()}
               </div>
             </div>
           </div>
