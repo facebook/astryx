@@ -6,7 +6,7 @@ import {useState} from 'react';
 import {XDSMoreMenu} from '@xds/core/MoreMenu';
 
 export default function MoreMenuShowcase() {
-  const [isMenuOpen, setIsMenuOpen] = useState(true);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
     <XDSMoreMenu
