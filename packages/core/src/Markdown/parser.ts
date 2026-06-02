@@ -416,25 +416,37 @@ function parseInlineImpl(text: string, opts: ResolvedOptions): InlineNode[] {
 // GFM autolink post-pass (opt-in via ParseOptions.autolink === 'gfm')
 // ---------------------------------------------------------------------------
 
-// Bare http(s) URL up to whitespace or `<`. Trailing punctuation / unbalanced
-// `)` is peeled off afterwards by peelTrailingPunctAndParens.
-const URL_LITERAL_RE = /https?:\/\/[^\s<]+/g;
+// Character classes used in autolink patterns.
+const ANY_NON_WHITESPACE_OR_ANGLE = '[^\\s<]+';
+const SCHEME = 'https?:\\/\\/';
+const EMAIL_LOCAL_PART = '[A-Za-z0-9._%+-]+';
+const DOMAIN_LABEL = '[A-Za-z0-9-]+';
+const DOMAIN_WITH_DOT = `${DOMAIN_LABEL}(?:\\.${DOMAIN_LABEL})+`;
+const ANGLE_SCHEME = '[a-zA-Z][a-zA-Z0-9+.-]*';
+const ANGLE_URL_BODY = '[^<>\\s]*';
 
-// Bare www. URL. Same trailing treatment as the http(s) form; the resulting
-// href gets `http://` prepended.
-const WWW_LITERAL_RE = /www\.[^\s<]+/g;
+/** Bare http(s) URL up to whitespace or `<`. Trailing punctuation is peeled afterwards. */
+const URL_LITERAL_RE = new RegExp(`${SCHEME}${ANY_NON_WHITESPACE_OR_ANGLE}`, 'g');
 
-// Bare email per GFM autolink-literal: local part allows alnum/dot/dash/
-// underscore/plus/percent; each domain label is alnum-or-dash; at least one dot.
-const EMAIL_LITERAL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/g;
+/** Bare www. URL. Resulting href gets `http://` prepended. */
+const WWW_LITERAL_RE = new RegExp(`www\\.${ANY_NON_WHITESPACE_OR_ANGLE}`, 'g');
 
-// CommonMark §6.5 angle-bracket autolinks. The URL form requires a scheme;
-// the email form uses the same simple grammar as the literal form.
-const ANGLE_URL_RE = /<([a-zA-Z][a-zA-Z0-9+.-]*:[^<>\s]*)>/g;
-const ANGLE_EMAIL_RE =
-  /<([A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)>/g;
+/** Bare email: local-part@domain (at least one dot in domain). */
+const EMAIL_LITERAL_RE = new RegExp(`${EMAIL_LOCAL_PART}@${DOMAIN_WITH_DOT}`, 'g');
 
-const URL_TRAILING_PUNCT_RE = /[?!.,:*_~]+$/;
+/** Angle-bracket autolink: `<scheme:url>` (CommonMark §6.5). */
+const ANGLE_URL_RE = new RegExp(`<(${ANGLE_SCHEME}:${ANGLE_URL_BODY})>`, 'g');
+
+/** Angle-bracket email: `<user@host.tld>`. */
+const ANGLE_EMAIL_RE = new RegExp(`<(${EMAIL_LOCAL_PART}@${DOMAIN_WITH_DOT})>`, 'g');
+
+/** Characters treated as trailing sentence punctuation per GFM §6.9. */
+const TRAILING_PUNCT_CHARS = new Set('?!.,:*_~');
+
+/** Characters valid in an email local part (used for boundary detection). */
+const EMAIL_LOCAL_CHARS = new Set(
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._%+-@',
+);
 
 interface AutolinkMatch {
   start: number;
@@ -453,9 +465,13 @@ interface AutolinkMatch {
 function peelTrailingPunctAndParens(url: string): string {
   let s = url;
   while (s.length > 0) {
-    const punct = s.match(URL_TRAILING_PUNCT_RE);
-    if (punct) {
-      s = s.slice(0, -punct[0].length);
+    // Peel trailing punctuation characters in one pass.
+    if (TRAILING_PUNCT_CHARS.has(s[s.length - 1])) {
+      let end = s.length - 1;
+      while (end > 0 && TRAILING_PUNCT_CHARS.has(s[end - 1])) {
+        end--;
+      }
+      s = s.slice(0, end);
       continue;
     }
     if (s.endsWith(')')) {
@@ -478,6 +494,11 @@ function peelTrailingPunctAndParens(url: string): string {
   return s;
 }
 
+/** Characters that, when preceding a URL, indicate it's part of a larger token. */
+const URL_CONTINUATION_CHARS = new Set(
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/=',
+);
+
 /**
  * The character immediately before a bare-URL or bare-www match must not
  * make the URL look like the tail of a larger token (`xhttps`, `=https://`,
@@ -487,7 +508,7 @@ function isUrlBoundaryChar(ch: string | undefined): boolean {
   if (ch == null) {
     return true;
   }
-  return !/[A-Za-z0-9/=]/.test(ch);
+  return !URL_CONTINUATION_CHARS.has(ch);
 }
 
 function scanAutolinksInText(text: string): AutolinkMatch[] {
@@ -583,7 +604,7 @@ function scanAutolinksInText(text: string): AutolinkMatch[] {
       // Reject if previous char could be part of the local part or sits in
       // a position that would make this match continuation of something
       // bigger (`name@x.y@host`, `foo+bar@x`, `mailto:user@host`).
-      if (prev != null && /[A-Za-z0-9._%+\-@]/.test(prev)) {
+      if (prev != null && EMAIL_LOCAL_CHARS.has(prev)) {
         continue;
       }
       if (text.slice(Math.max(0, m.index - 7), m.index) === 'mailto:') {

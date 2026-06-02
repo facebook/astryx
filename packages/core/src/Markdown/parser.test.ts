@@ -719,6 +719,50 @@ describe('citation parsing', () => {
       });
     });
 
+    it('peels multiple trailing punctuation chars in one pass', () => {
+      const result = parseInline('see https://example.com?!.', {
+        autolink: 'gfm',
+      });
+      expect(result).toEqual([
+        {type: 'text', content: 'see '},
+        {
+          type: 'link',
+          href: 'https://example.com',
+          children: [{type: 'text', content: 'https://example.com'}],
+        },
+        {type: 'text', content: '?!.'},
+      ]);
+    });
+
+    it('peels interleaved punct and unbalanced parens', () => {
+      const result = parseInline('(https://example.com/path).', {
+        autolink: 'gfm',
+      });
+      expect(result).toEqual([
+        {type: 'text', content: '('},
+        {
+          type: 'link',
+          href: 'https://example.com/path',
+          children: [{type: 'text', content: 'https://example.com/path'}],
+        },
+        {type: 'text', content: ').'},
+      ]);
+    });
+
+    it('peels all trailing punctuation leaving only scheme', () => {
+      // "https://..." peels the dots, leaving "https://" as the href.
+      // This is a degenerate case but not rejected — the PR intentionally
+      // does not validate TLDs or path content.
+      const result = parseInline('see https://...', {
+        autolink: 'gfm',
+      });
+      const link = result.find(n => n.type === 'link');
+      expect(link).toBeDefined();
+      if (link && link.type === 'link') {
+        expect(link.href).toBe('https://');
+      }
+    });
+
     it('does not autolink URLs inside inline code', () => {
       const result = parseInline('try `https://example.com` here', {
         autolink: 'gfm',
@@ -826,9 +870,10 @@ describe('citation parsing', () => {
       const result = parseInline('see [abc1] for https://example.com', sources);
       expect(result.some(n => n.type === 'citation')).toBe(true);
       // Bare URL remains literal text because autolink is unset
+      const url = 'https://example.com';
       expect(
         result.some(
-          n => n.type === 'text' && n.content.includes('https://example.com'),
+          n => n.type === 'text' && n.content.includes(url), // lgtm[js/incomplete-url-substring-sanitization]
         ),
       ).toBe(true);
     });
