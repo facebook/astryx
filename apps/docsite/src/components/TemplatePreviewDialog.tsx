@@ -16,7 +16,13 @@
  * so they sit in the backdrop gutters outside the dialog box.
  */
 
-import {useCallback, useEffect, useDeferredValue, useState, useTransition} from 'react';
+import {
+  useCallback,
+  useEffect,
+  useDeferredValue,
+  useState,
+  useTransition,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSText, XDSHeading} from '@xds/core/Text';
@@ -80,35 +86,10 @@ const styles = stylex.create({
   footerNoPadding: {
     padding: 0,
   },
-  copyPill: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 'var(--spacing-2)',
-    backgroundColor: 'var(--color-background-card)',
-    borderRadius: 'var(--radius-element)',
-    paddingInline: 'var(--spacing-3)',
-    height: 'var(--size-element-lg, 36px)',
-    cursor: 'pointer',
-    borderWidth: 'var(--border-width, 1px)',
-    borderStyle: 'solid',
-    borderColor: 'var(--color-border)',
+  // The install command is a CLI snippet, so render the button label in the
+  // mono font. XDSButton handles the surface, hover, focus ring, and sizing.
+  copyButton: {
     fontFamily: 'var(--font-family-mono, ui-monospace, monospace)',
-    fontSize: 'var(--font-size-sm, 13px)',
-    color: 'var(--color-text-primary)',
-    userSelect: 'none',
-    transitionProperty: 'background-color, border-color',
-    transitionDuration: 'var(--duration-fast-min, 130ms)',
-    transitionTimingFunction: 'var(--ease-standard, cubic-bezier(0.24, 1, 0.4, 1))',
-  },
-  copyPillHover: {
-    backgroundColor: {
-      ':hover': 'var(--color-background-card-hover, var(--color-background-muted))',
-    },
-  },
-  copyPillText: {
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
   },
   skeletonOverlay: {
     position: 'absolute',
@@ -261,20 +242,23 @@ export function TemplatePreviewDialog({
                 )}
               </XDSVStack>
               <XDSHStack gap={2} vAlign="center">
-                <button
-                  type="button"
-                  onClick={handleCopyCmd}
+                <XDSButton
+                  variant="secondary"
+                  size="lg"
+                  label={
+                    cmdCopied ? 'Copied!' : `npx xds template ${current.slug}`
+                  }
                   aria-label="Copy install command"
-                  {...stylex.props(styles.copyPill, styles.copyPillHover)}>
-                  <span {...stylex.props(styles.copyPillText)}>
-                    {cmdCopied ? 'Copied!' : `npx xds template ${current.slug}`}
-                  </span>
-                  <XDSIcon
-                    icon={cmdCopied ? 'check' : 'copy'}
-                    size="sm"
-                    color="inherit"
-                  />
-                </button>
+                  onClick={handleCopyCmd}
+                  endContent={
+                    <XDSIcon
+                      icon={cmdCopied ? 'check' : 'copy'}
+                      size="sm"
+                      color="inherit"
+                    />
+                  }
+                  xstyle={styles.copyButton}
+                />
                 {current.source && (
                   <XDSButton
                     label="Open in Playground"
