@@ -4,7 +4,7 @@
 
 /**
  * @file XDSMetricTile.tsx
- * @input Uses React, XDSText, XDSIcon, XDSHoverCard, theme tokens
+ * @input Uses React, XDSText, XDSHoverCard, theme tokens
  * @output Exports XDSMetricTile component and related types
  * @position Core implementation; consumed by index.ts
  *
@@ -57,7 +57,7 @@ const styles = stylex.create({
   helpIcon: {
     display: 'inline-flex',
     alignItems: 'center',
-    height: 20,
+    height: spacingVars['--spacing-5'],
     marginInlineStart: spacingVars['--spacing-1'],
   },
   helpButton: {
@@ -342,6 +342,35 @@ function InfoCircle12() {
 }
 
 // =============================================================================
+// Title Text (handles truncation + style merging)
+// =============================================================================
+
+function TitleText({
+  numberOfLines,
+  children,
+}: {
+  numberOfLines: number;
+  children: ReactNode;
+}) {
+  const stylexResult = stylex.props(
+    styles.title,
+    numberOfLines === 1 && truncationStyles.singleLine,
+    numberOfLines > 1 && truncationStyles.multiLine,
+  );
+
+  const mergedStyle =
+    numberOfLines > 1
+      ? {...stylexResult.style, WebkitLineClamp: numberOfLines}
+      : stylexResult.style;
+
+  return (
+    <span className={stylexResult.className} style={mergedStyle}>
+      {children}
+    </span>
+  );
+}
+
+// =============================================================================
 // Component
 // =============================================================================
 
@@ -389,17 +418,7 @@ export function XDSMetricTile({
     <div {...stylex.props(styles.titleBlock)}>
       <div {...stylex.props(styles.titleLine)}>
         {title != null && (
-          <span
-            {...stylex.props(
-              styles.title,
-              numberOfTitleLines === 1 && truncationStyles.singleLine,
-              numberOfTitleLines > 1 && truncationStyles.multiLine,
-            )}
-            {...(numberOfTitleLines > 1
-              ? {style: {WebkitLineClamp: numberOfTitleLines}}
-              : undefined)}>
-            {title}
-          </span>
+          <TitleText numberOfLines={numberOfTitleLines}>{title}</TitleText>
         )}
         {hovercard != null && (
           <XDSHoverCard content={hovercard}>
