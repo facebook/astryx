@@ -19,6 +19,7 @@
  * - /packages/core/src/Outline/Outline.doc.mjs
  * - /packages/core/src/Outline/index.ts
  * - /apps/storybook/stories/Outline.stories.tsx
+ * - /packages/cli/templates/blocks/components/Outline/ (showcase blocks)
  */
 
 import {useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react';
