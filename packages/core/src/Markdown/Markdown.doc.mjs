@@ -5,6 +5,7 @@
 export const docs = {
   name: 'Markdown',
   displayName: 'Markdown',
+  category: 'Content',
   keywords: [
     'markdown',
     'rich text',

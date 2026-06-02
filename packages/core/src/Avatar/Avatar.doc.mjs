@@ -6,6 +6,7 @@ export const docs = {
   name: 'Avatar',
   displayName: 'Avatar',
   group: 'Avatar',
+  category: 'Content',
   keywords: ["avatar","profile","user","photo","thumbnail","initials","gravatar","pfp","userpic"],
   usage: {
     description:
@@ -72,6 +73,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSAvatarStatusDot',
+      isHiddenFromOverview: true,
       displayName: 'Avatar Status Dot',
       description:
         'Size-aware status indicator dot that reads avatar size from context and scales proportionally.',
@@ -145,6 +147,7 @@ export const docsZh = {
     },
     {
       name: 'XDSAvatarStatusDot',
+      isHiddenFromOverview: true,
       displayName: 'Avatar Status Dot',
       description: '尺寸感知的状态指示点，从上下文中读取头像尺寸并等比缩放。',
       props: [
@@ -187,6 +190,7 @@ export const docsDense = {
     },
     {
       name: 'XDSAvatarStatusDot',
+      isHiddenFromOverview: true,
       displayName: 'Avatar Status Dot',
       description: 'size-aware status dot, reads avatar size from context + scales proportionally',
       propDescriptions: {

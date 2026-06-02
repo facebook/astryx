@@ -5,6 +5,7 @@
 export const docs = {
   name: 'FileInput',
   displayName: 'File Input',
+  category: 'Data Input',
   keywords: ["fileinput","file","upload","drag","drop","dropzone","attachment","browse"],
   props: [
     {

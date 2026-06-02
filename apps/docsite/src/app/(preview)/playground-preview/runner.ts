@@ -1,28 +1,28 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file runner.ts
+ * @input User TSX source + the in-browser TypeScript compiler
+ * @output A live React component (or a structured error)
+ * @position Playground preview iframe — compiles & evaluates user code.
+ *
+ * Transpiles TSX → CommonJS with the self-hosted TypeScript compiler
+ * (window.ts, served from /vendor/typescript.js — corpnet blocks CDNs), then
+ * evaluates it with a custom `require` mapped to the preview scope plus a
+ * global scope so unimported React hooks / XDS components still resolve.
+ */
+
+import type * as TS from 'typescript';
 import {scope} from './scope';
 
-interface BabelStandalone {
-  transform(code: string, options: Record<string, unknown>): {code: string};
+/** Set by the page after loading /vendor/typescript.js */
+let ts: typeof TS | null = null;
+
+export function setTypeScript(instance: typeof TS) {
+  ts = instance;
 }
 
-/** Set by the page after loading Babel from CDN */
-let Babel: BabelStandalone | null = null;
-
-export function setBabel(instance: BabelStandalone) {
-  Babel = instance;
-}
-
-interface ParsedImport {
-  source: string;
-  specifiers: Array<{
-    local: string;
-    imported: string | null;
-    type: 'default' | 'named' | 'namespace';
-  }>;
-}
-
-type RunPhase = 'babel' | 'import' | 'runtime';
+type RunPhase = 'compile' | 'runtime';
 
 type RunResult =
   | {Component: React.ComponentType; error?: undefined}
@@ -36,156 +36,93 @@ for (const [key, value] of Object.entries(scope)) {
   scopeLookup.set(key.toLowerCase(), value as Record<string, unknown>);
 }
 
-function compileCode(code: string): {
-  compiled: string;
-  imports: ParsedImport[];
-} {
-  const imports: ParsedImport[] = [];
-
-  const importStripper = (): {
-    visitor: Record<
-      string,
-      (path: {node: Record<string, unknown>; remove: () => void}) => void
-    >;
-  } => ({
-    visitor: {
-      ImportDeclaration(path: {
-        node: Record<string, unknown>;
-        remove: () => void;
-      }) {
-        const source = (path.node.source as {value: string}).value;
-        const specifiers: ParsedImport['specifiers'] = [];
-
-        for (const spec of path.node.specifiers as Array<{
-          type: string;
-          local: {name: string};
-          imported?: {name: string};
-        }>) {
-          if (spec.type === 'ImportDefaultSpecifier') {
-            specifiers.push({
-              local: spec.local.name,
-              imported: null,
-              type: 'default',
-            });
-          } else if (spec.type === 'ImportNamespaceSpecifier') {
-            specifiers.push({
-              local: spec.local.name,
-              imported: null,
-              type: 'namespace',
-            });
-          } else if (spec.type === 'ImportSpecifier') {
-            specifiers.push({
-              local: spec.local.name,
-              imported: spec.imported?.name ?? spec.local.name,
-              type: 'named',
-            });
+/** A CommonJS-style require resolving against the preview scope. */
+function makeRequire(): (id: string) => unknown {
+  return (id: string) => {
+    if (ASSET_RE.test(id)) {
+      return {default: '', __esModule: true};
+    }
+    const mod = scopeLookup.get(id.toLowerCase());
+    if (mod) {
+      // Mark as an ES module so TS esModuleInterop uses `.default` correctly.
+      return (mod as {__esModule?: boolean}).__esModule
+        ? mod
+        : {...mod, __esModule: true};
+    }
+    // Unknown module — return placeholders that render nothing.
+    return new Proxy(
+      {__esModule: true},
+      {
+        get(_target, prop) {
+          if (prop === '__esModule') {
+            return true;
           }
-        }
-
-        imports.push({source, specifiers});
-        path.remove();
+          if (typeof prop === 'string') {
+            const placeholder = () => null;
+            (placeholder as {displayName?: string}).displayName =
+              `${id}/${prop}`;
+            return placeholder;
+          }
+          return undefined;
+        },
       },
-      ExpressionStatement(path: {
-        node: Record<string, unknown>;
-        remove: () => void;
-      }) {
-        const expr = path.node.expression as
-          | Record<string, unknown>
-          | undefined;
-        if (
-          expr &&
-          typeof expr === 'object' &&
-          expr.type === 'StringLiteral' &&
-          expr.value === 'use client'
-        ) {
-          path.remove();
-        }
-      },
-    },
-  });
-
-  if (Babel == null) {
-    throw new Error('Babel has not been loaded yet — call setBabel() first');
-  }
-
-  const result = Babel.transform(code, {
-    filename: 'playground.tsx',
-    presets: [
-      ['typescript', {isTSX: true, allExtensions: true}],
-      ['react', {runtime: 'classic'}],
-    ],
-    plugins: [importStripper, 'transform-modules-commonjs'],
-  });
-
-  return {compiled: result.code, imports};
+    );
+  };
 }
 
-function buildScope(imports: ParsedImport[]): Record<string, unknown> {
+/**
+ * Build a scope with ALL named exports from every module so React hooks and
+ * XDS components are available as globals without an explicit import.
+ */
+function buildGlobalScope(): Record<string, unknown> {
   const vars: Record<string, unknown> = {};
-
-  for (const imp of imports) {
-    if (ASSET_RE.test(imp.source)) {
-      for (const spec of imp.specifiers) {
-        vars[spec.local] = '';
-      }
-      continue;
-    }
-
-    const mod = scopeLookup.get(imp.source.toLowerCase());
-
-    if (mod) {
-      for (const spec of imp.specifiers) {
-        if (spec.type === 'default') {
-          vars[spec.local] = mod.default ?? mod;
-        } else if (spec.type === 'namespace') {
-          vars[spec.local] = mod;
-        } else {
-          vars[spec.local] = mod[spec.imported ?? spec.local];
-        }
-      }
-    } else {
-      for (const spec of imp.specifiers) {
-        if (spec.type === 'namespace') {
-          vars[spec.local] = new Proxy(
-            {},
-            {
-              get(_target, prop) {
-                if (typeof prop === 'string') {
-                  const placeholder = () => null;
-                  placeholder.displayName = `${imp.source}.${prop}`;
-                  return placeholder;
-                }
-                return undefined;
-              },
-            },
-          );
-        } else {
-          const placeholder = () => null;
-          placeholder.displayName = `${imp.source}/${spec.local}`;
-          vars[spec.local] = placeholder;
-        }
+  for (const moduleExports of Object.values(scope)) {
+    for (const [name, value] of Object.entries(moduleExports)) {
+      if (name !== 'default' && name !== '__esModule') {
+        vars[name] = value;
       }
     }
   }
-
+  // React global for classic JSX (React.createElement).
+  vars.React = scope['react']?.default ?? scope['react'];
   return vars;
 }
 
-function evaluate(
-  compiledCode: string,
-  scopeVars: Record<string, unknown>,
-): React.ComponentType {
-  const exports: Record<string, unknown> = {};
-  const module = {exports};
+function compile(code: string): string {
+  if (ts == null) {
+    throw new Error(
+      'TypeScript has not been loaded yet — call setTypeScript()',
+    );
+  }
+  const result = ts.transpileModule(code, {
+    fileName: 'playground.tsx',
+    reportDiagnostics: false,
+    compilerOptions: {
+      jsx: ts.JsxEmit.React, // emit React.createElement (classic runtime)
+      target: ts.ScriptTarget.ES2020,
+      module: ts.ModuleKind.CommonJS,
+      esModuleInterop: true,
+      allowJs: true,
+    },
+  });
+  return result.outputText;
+}
 
-  const keys = ['module', 'exports', ...Object.keys(scopeVars)];
-  const values = [module, exports, ...Object.values(scopeVars)];
+function evaluate(compiled: string): React.ComponentType {
+  const exportsObj: Record<string, unknown> = {};
+  const moduleObj = {exports: exportsObj};
+  const requireFn = makeRequire();
+  const globals = buildGlobalScope();
 
-  const fn = new Function(...keys, compiledCode);
+  const keys = ['module', 'exports', 'require', ...Object.keys(globals)];
+  const values = [moduleObj, exportsObj, requireFn, ...Object.values(globals)];
+
+  const fn = new Function(...keys, compiled);
   fn(...values);
 
   const defaultExport =
-    (module.exports as Record<string, unknown>).default ?? exports.default;
+    (moduleObj.exports as Record<string, unknown>).default ??
+    exportsObj.default;
 
   if (typeof defaultExport !== 'function') {
     throw new Error(
@@ -196,54 +133,23 @@ function evaluate(
   return defaultExport as React.ComponentType;
 }
 
-/**
- * Build a scope with ALL exports from every module in the scope map.
- * This makes React hooks and XDS components available as globals
- * without requiring explicit imports.
- */
-function buildGlobalScope(): Record<string, unknown> {
-  const vars: Record<string, unknown> = {};
-  for (const [, moduleExports] of Object.entries(scope)) {
-    for (const [name, value] of Object.entries(moduleExports)) {
-      if (name !== 'default' && name !== '__esModule') {
-        vars[name] = value;
-      }
-    }
-  }
-  // Also add React as a global (needed for JSX classic runtime)
-  vars.React = scope['react']?.default ?? scope['react'];
-  return vars;
-}
-
 export function runCode(code: string): RunResult {
-  if (!Babel) {
-    return {error: 'Babel compiler not loaded yet', phase: 'babel'};
+  if (!ts) {
+    return {error: 'TypeScript compiler not loaded yet', phase: 'compile'};
   }
 
   let compiled: string;
-  let imports: ParsedImport[];
-
   try {
-    ({compiled, imports} = compileCode(code));
+    compiled = compile(code);
   } catch (e: unknown) {
     return {
       error: e instanceof Error ? e.message : String(e),
-      phase: 'babel',
-    };
-  }
-
-  let scopeVars: Record<string, unknown>;
-  try {
-    scopeVars = {...buildGlobalScope(), ...buildScope(imports)};
-  } catch (e: unknown) {
-    return {
-      error: e instanceof Error ? e.message : String(e),
-      phase: 'import',
+      phase: 'compile',
     };
   }
 
   try {
-    const Component = evaluate(compiled, scopeVars);
+    const Component = evaluate(compiled);
     return {Component};
   } catch (e: unknown) {
     return {

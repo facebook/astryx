@@ -3,7 +3,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  exampleFor: 'Card',
+  exampleFor: 'SelectableCard',
   name: 'SelectableCard',
   displayName: 'Selectable Card',
   description:

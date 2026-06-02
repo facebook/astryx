@@ -5,6 +5,7 @@
 export const docs = {
   name: 'Switch',
   displayName: 'Switch',
+  category: 'Data Input',
   keywords: ["switch","toggle","onoff","flipswitch","boolean","toggleswitch"],
   props: [
     {

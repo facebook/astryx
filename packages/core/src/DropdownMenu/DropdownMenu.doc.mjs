@@ -6,6 +6,7 @@ export const docs = {
   name: 'DropdownMenu',
   displayName: 'Dropdown Menu',
   group: 'DropdownMenu',
+  category: 'Action',
   keywords: ["dropdown","menu","popover","select","actions","contextmenu","overflow","kebab","menubutton"],
   theming: {
     targets: [
@@ -83,6 +84,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSDropdownMenuItem',
+      isHiddenFromOverview: true,
       displayName: 'Dropdown Menu Item',
       description:
         'Helper component for custom item rendering with consistent styling.',
@@ -208,6 +210,7 @@ export const docsZh = {
     },
     {
       name: 'XDSDropdownMenuItem',
+      isHiddenFromOverview: true,
       displayName: 'Dropdown Menu Item',
       description:
         '用于自定义项渲染的辅助组件，提供一致的样式。',
@@ -283,6 +286,7 @@ export const docsDense = {
     },
     {
       name: 'XDSDropdownMenuItem',
+      isHiddenFromOverview: true,
       displayName: 'Dropdown Menu Item',
       description: 'helper for custom item rendering w/ consistent styling',
       propDescriptions: {

@@ -6,6 +6,7 @@ export const docs = {
   name: 'TopNav',
   displayName: 'Top Nav',
   group: 'TopNav',
+  category: 'Navigation',
   keywords: ["topnav","navbar","appbar","header","toolbar","navigation","menubar","topbar"],
   playground: {
     defaults: {
@@ -83,6 +84,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSTopNavHeading',
+      isHiddenFromOverview: true,
       displayName: 'Top Nav Heading',
       description:
         'Product/suite/account heading for the XDSTopNav heading slot. Supports smart interaction boundary logic: logo, heading text, superheading/subheading with independent links, and an optional menu popover with automatic chevron indicator.',
@@ -165,6 +167,7 @@ export const docs = {
     },
     {
       name: 'XDSTopNavItem',
+      isHiddenFromOverview: true,
       displayName: 'Top Nav Item',
       description:
         'Navigation link item for use in XDSTopNav startContent — renders as an anchor with hover and selected states.',
@@ -305,6 +308,7 @@ export const docs = {
     },
     {
       name: 'XDSTopNavMegaMenuItem',
+      isHiddenFromOverview: true,
       displayName: 'Top Nav Mega Menu Item',
       description:
         'An individual item inside an XDSTopNavMegaMenu. Renders itself in both desktop (popover grid) and mobile drawer modes via render mode context.',
@@ -474,6 +478,7 @@ export const docsZh = {
     },
     {
       name: 'XDSTopNavHeading',
+      isHiddenFromOverview: true,
       displayName: 'Top Nav Heading',
       description:
         'XDSTopNav 标题插槽的产品/套件/账户标题组件。支持智能交互边界逻辑：标志、标题文本、独立链接的上标题/下标题，以及带自动箭头指示器的可选菜单弹出层。',
@@ -553,6 +558,7 @@ export const docsZh = {
     },
     {
       name: 'XDSTopNavItem',
+      isHiddenFromOverview: true,
       displayName: 'Top Nav Item',
       description:
         '用于 XDSTopNav startContent 的导航链接项 — 渲染为具有悬停和选中状态的锚点。',
@@ -683,6 +689,7 @@ export const docsZh = {
     },
     {
       name: 'XDSTopNavMegaMenuItem',
+      isHiddenFromOverview: true,
       displayName: 'Top Nav Mega Menu Item',
       description:
         '超级菜单中的单个项目。在桌面端（弹出层网格）和移动抽屉模式中都会自行渲染。',
@@ -820,6 +827,7 @@ export const docsDense = {
     },
     {
       name: 'XDSTopNavHeading',
+      isHiddenFromOverview: true,
       displayName: 'Top Nav Heading',
       description: 'Product/suite heading for XDSTopNav; logo+heading text w/ smart interaction boundaries, optional menu popover, superheading/subheading w/ independent links.',
       propDescriptions: {
@@ -839,6 +847,7 @@ export const docsDense = {
     },
     {
       name: 'XDSTopNavItem',
+      isHiddenFromOverview: true,
       displayName: 'Top Nav Item',
       description: 'Nav link for XDSTopNav startContent; renders as anchor w/ hover+selected states.',
       propDescriptions: {
@@ -877,6 +886,7 @@ export const docsDense = {
     },
     {
       name: 'XDSTopNavMegaMenuItem',
+      isHiddenFromOverview: true,
       displayName: 'Top Nav Mega Menu Item',
       description: 'Individual mega menu item. Renders in desktop popover grid + mobile drawer modes via context.',
       propDescriptions: {

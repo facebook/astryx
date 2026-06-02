@@ -6,6 +6,7 @@ export const docs = {
   name: 'ToggleButton',
   displayName: 'Toggle Button',
   group: 'Button',
+  category: 'Action',
   keywords: ["toggle","togglebutton","pressed","toolbar","formatting","segmented","button-group","exclusive","multi-select"],
   playground: {
     defaults: {

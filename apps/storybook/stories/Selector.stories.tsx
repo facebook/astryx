@@ -6,7 +6,7 @@ import {XDSSelector, XDSSelectorOption} from '@xds/core/Selector';
 import {UserIcon, CogIcon, BellIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof XDSSelector> = {
-  title: 'Core/Inputs/Selector',
+  title: 'Core/Selector',
   component: XDSSelector,
   tags: ['autodocs'],
   parameters: {

@@ -6,6 +6,7 @@ export const docs = {
   name: 'Section',
   displayName: 'Section',
   group: 'Layout',
+  category: 'Layout',
   keywords: ["section","panel","container","group","fieldset","region","block"],
   props: [
     {

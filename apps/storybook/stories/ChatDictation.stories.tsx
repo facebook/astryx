@@ -76,7 +76,7 @@ const unsupportedDictation: UseSpeechRecognitionReturn = {
 // =============================================================================
 
 const meta: Meta<typeof XDSChatDictationButton> = {
-  title: 'Core/Chat/DictationButton',
+  title: 'Core/ChatDictation',
   component: XDSChatDictationButton,
   tags: ['autodocs'],
   parameters: {
@@ -218,32 +218,68 @@ export const Interactive: Story = {
 
         {dictation.isListening && (
           <div style={{marginTop: 12}}>
-            <div style={{fontSize: 12, fontWeight: 600, marginBottom: 4}}>Band Debug (raw vs calibrated)</div>
-            <div style={{display: 'flex', gap: 8, fontFamily: 'monospace', fontSize: 11}}>
-              {['170-340', '340-860', '860-1.7k', '1.7-3k', '3k+'].map((label, i) => {
-                const raw = dictation.rawBands[i] ?? 0;
-                const clean = dictation.bands[i] ?? 0;
-                const barH = 40;
-                return (
-                  <div key={label} style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, flex: 1}}>
-                    <div style={{display: 'flex', gap: 2, alignItems: 'flex-end', height: barH}}>
-                      <div style={{
-                        width: 8, backgroundColor: 'rgba(200,200,200,0.5)',
-                        height: Math.min(raw * barH * 5, barH), borderRadius: 2,
-                      }} />
-                      <div style={{
-                        width: 8, backgroundColor: '#3b82f6',
-                        height: Math.min(clean * barH * 5, barH), borderRadius: 2,
-                      }} />
-                    </div>
-                    <span style={{opacity: 0.5, fontSize: 9}}>{label}</span>
-                    <span style={{opacity: 0.4}}>r:{raw.toFixed(3)}</span>
-                    <span style={{color: '#3b82f6'}}>c:{clean.toFixed(3)}</span>
-                  </div>
-                );
-              })}
+            <div style={{fontSize: 12, fontWeight: 600, marginBottom: 4}}>
+              Band Debug (raw vs calibrated)
             </div>
-            <div style={{fontSize: 10, opacity: 0.4, marginTop: 4}}>Gray = raw mic, Blue = after noise floor</div>
+            <div
+              style={{
+                display: 'flex',
+                gap: 8,
+                fontFamily: 'monospace',
+                fontSize: 11,
+              }}>
+              {['170-340', '340-860', '860-1.7k', '1.7-3k', '3k+'].map(
+                (label, i) => {
+                  const raw = dictation.rawBands[i] ?? 0;
+                  const clean = dictation.bands[i] ?? 0;
+                  const barH = 40;
+                  return (
+                    <div
+                      key={label}
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 2,
+                        flex: 1,
+                      }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          gap: 2,
+                          alignItems: 'flex-end',
+                          height: barH,
+                        }}>
+                        <div
+                          style={{
+                            width: 8,
+                            backgroundColor: 'rgba(200,200,200,0.5)',
+                            height: Math.min(raw * barH * 5, barH),
+                            borderRadius: 2,
+                          }}
+                        />
+                        <div
+                          style={{
+                            width: 8,
+                            backgroundColor: '#3b82f6',
+                            height: Math.min(clean * barH * 5, barH),
+                            borderRadius: 2,
+                          }}
+                        />
+                      </div>
+                      <span style={{opacity: 0.5, fontSize: 9}}>{label}</span>
+                      <span style={{opacity: 0.4}}>r:{raw.toFixed(3)}</span>
+                      <span style={{color: '#3b82f6'}}>
+                        c:{clean.toFixed(3)}
+                      </span>
+                    </div>
+                  );
+                },
+              )}
+            </div>
+            <div style={{fontSize: 10, opacity: 0.4, marginTop: 4}}>
+              Gray = raw mic, Blue = after noise floor
+            </div>
           </div>
         )}
 

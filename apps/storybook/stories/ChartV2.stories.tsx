@@ -5,7 +5,7 @@ import {XDSChartV2 as XDSChart, bar, line, area} from '@xds/lab';
 import {XDSChartGrid, XDSChartAxis, currency} from '@xds/lab';
 
 const meta: Meta<typeof XDSChart> = {
-  title: 'Lab/XDSChart v2',
+  title: 'Lab/ChartV2',
   component: XDSChart,
 };
 export default meta;

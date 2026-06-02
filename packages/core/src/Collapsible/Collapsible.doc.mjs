@@ -6,6 +6,7 @@ export const docs = {
   name: 'Collapsible',
   displayName: 'Collapsible',
   group: 'Collapsible',
+  category: 'Container',
   keywords: ["accordion","collapse","expandable","disclosure","toggle","panel","foldable","expander","expand"],
   playground: {
     defaults: {
@@ -62,6 +63,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSCollapsibleGroup',
+      isHiddenFromOverview: true,
       displayName: 'Collapsible Group',
       description:
         'Coordinates multiple XDSCollapsible instances so only one (single mode) or any number (multiple mode) can be open at a time. Renders no wrapper DOM element.',
@@ -156,6 +158,7 @@ export const docsZh = {
     },
     {
       name: 'XDSCollapsibleGroup',
+      isHiddenFromOverview: true,
       displayName: 'Collapsible Group',
       description:
         '协调多个 XDSCollapsible 实例，使同一时间只有一个（single 模式）或任意数量（multiple 模式）可以展开。不渲染包裹 DOM 元素。',
@@ -199,6 +202,7 @@ export const docsDense = {
     },
     {
       name: 'XDSCollapsibleGroup',
+      isHiddenFromOverview: true,
       displayName: 'Collapsible Group',
       description: 'coordinates multiple XDSCollapsible instances; single or multiple open. no wrapper DOM.',
       propDescriptions: {

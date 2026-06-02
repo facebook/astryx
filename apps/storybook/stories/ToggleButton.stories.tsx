@@ -30,7 +30,7 @@ import {XDSIcon} from '@xds/core/Icon';
 const iconSize = {width: 16, height: 16} as const;
 
 const meta: Meta<typeof XDSToggleButton> = {
-  title: 'Core/Buttons/ToggleButton',
+  title: 'Core/ToggleButton',
   component: XDSToggleButton,
   tags: ['autodocs'],
   argTypes: {

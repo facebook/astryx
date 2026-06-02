@@ -31,7 +31,7 @@ import {
 } from '@heroicons/react/24/solid';
 
 const meta: Meta<typeof XDSSideNav> = {
-  title: 'Core/Navigation/SideNav',
+  title: 'Core/SideNav',
   component: XDSSideNav,
   tags: ['autodocs'],
   parameters: {
@@ -542,13 +542,13 @@ export const CollapsibleItems: Story = {
         />
       }>
       <XDSSideNavSection title="Collapsible (no href)">
-        <XDSSideNavItem
-          label="Settings"
-          icon={Cog6ToothIcon}
-          collapsible>
+        <XDSSideNavItem label="Settings" icon={Cog6ToothIcon} collapsible>
           <XDSSideNavItem label="General" href="/settings/general" />
           <XDSSideNavItem label="Security" href="/settings/security" />
-          <XDSSideNavItem label="Notifications" href="/settings/notifications" />
+          <XDSSideNavItem
+            label="Notifications"
+            href="/settings/notifications"
+          />
         </XDSSideNavItem>
         <XDSSideNavItem
           label="Documents"
@@ -566,7 +566,10 @@ export const CollapsibleItems: Story = {
           collapsible>
           <XDSSideNavItem label="General" href="/settings/general" />
           <XDSSideNavItem label="Security" href="/settings/security" />
-          <XDSSideNavItem label="Notifications" href="/settings/notifications" />
+          <XDSSideNavItem
+            label="Notifications"
+            href="/settings/notifications"
+          />
         </XDSSideNavItem>
         <XDSSideNavItem
           label="Documents"
@@ -585,8 +588,88 @@ export const CollapsibleItems: Story = {
           collapsible>
           <XDSSideNavItem label="General" href="/settings/general" />
           <XDSSideNavItem label="Security" href="/settings/security" />
-          <XDSSideNavItem label="Notifications" href="/settings/notifications" />
+          <XDSSideNavItem
+            label="Notifications"
+            href="/settings/notifications"
+          />
         </XDSSideNavItem>
+      </XDSSideNavSection>
+    </XDSSideNav>
+  ),
+};
+
+// =============================================================================
+// Collapsible Sidebar
+// =============================================================================
+
+export const CollapsibleSidebar: Story = {
+  name: 'Collapsible Sidebar',
+  render: () => (
+    <XDSSideNav
+      collapsible
+      header={
+        <XDSSideNavHeading
+          icon={
+            <XDSNavIcon icon={<CubeIcon style={{width: 16, height: 16}} />} />
+          }
+          heading="My App"
+          headingHref="/"
+        />
+      }
+      footerIcons={
+        <>
+          <XDSButton
+            label="Help"
+            icon={<XDSIcon icon={QuestionMarkCircleIcon} size="md" />}
+            variant="ghost"
+            size="sm"
+            isIconOnly
+          />
+          <XDSButton
+            label="Notifications"
+            icon={<XDSIcon icon={BellIcon} size="md" />}
+            variant="ghost"
+            size="sm"
+            isIconOnly
+          />
+        </>
+      }>
+      <XDSSideNavSection title="Main">
+        <XDSSideNavItem
+          label="Dashboard"
+          icon={HomeIcon}
+          selectedIcon={HomeIconSolid}
+          isSelected
+          href="/dashboard"
+        />
+        <XDSSideNavItem
+          label="Projects"
+          icon={FolderIcon}
+          selectedIcon={FolderIconSolid}
+          href="/projects"
+          endContent={<XDSBadge label="3" />}
+        />
+        <XDSSideNavItem
+          label="Analytics"
+          icon={ChartBarIcon}
+          href="/analytics"
+        />
+        <XDSSideNavItem label="Team" icon={UserGroupIcon} href="/team" />
+      </XDSSideNavSection>
+      <XDSSideNavSection title="Settings">
+        <XDSSideNavItem label="Settings" icon={Cog6ToothIcon} collapsible>
+          <XDSSideNavItem label="General" href="/settings/general" />
+          <XDSSideNavItem label="Security" href="/settings/security" />
+          <XDSSideNavItem
+            label="Notifications"
+            href="/settings/notifications"
+          />
+        </XDSSideNavItem>
+        <XDSSideNavItem
+          label="Documents"
+          icon={DocumentTextIcon}
+          href="/documents"
+        />
       </XDSSideNavSection>
     </XDSSideNav>
   ),
@@ -616,10 +699,7 @@ export const IconlessNestedItems: Story = {
           isSelected
           href="/dashboard"
         />
-        <XDSSideNavItem
-          label="Settings"
-          icon={Cog6ToothIcon}
-          collapsible>
+        <XDSSideNavItem label="Settings" icon={Cog6ToothIcon} collapsible>
           <XDSSideNavItem label="General" href="/settings/general" />
           <XDSSideNavItem label="Security" href="/settings/security" />
           <XDSSideNavItem
@@ -632,7 +712,11 @@ export const IconlessNestedItems: Story = {
           <XDSSideNavItem label="Quarterly" href="/reports/quarterly" />
           <XDSSideNavItem label="Annual" href="/reports/annual" />
         </XDSSideNavItem>
-        <XDSSideNavItem label="Analytics" icon={ChartBarIcon} href="/analytics" />
+        <XDSSideNavItem
+          label="Analytics"
+          icon={ChartBarIcon}
+          href="/analytics"
+        />
       </XDSSideNavSection>
     </XDSSideNav>
   ),

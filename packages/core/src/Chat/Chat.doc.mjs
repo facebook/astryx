@@ -6,6 +6,7 @@ export const docs = {
   name: 'Chat',
   displayName: 'Chat',
   group: 'Chat',
+  category: 'Chat',
   keywords: ['chat', 'message', 'bubble', 'conversation', 'ai', 'assistant', 'thread', 'system-message', 'composer', 'mention', 'trigger', 'typeahead', 'token', 'imperative', 'tokenized-text'],
   theming: {
     targets: [
@@ -39,6 +40,7 @@ export const docs = {
   components: [
     {
       name: 'XDSChatMessageList',
+      isHiddenFromOverview: true,
       displayName: 'Chat Message List',
       description: 'Presentational message container with density context and infinite scroll support. Provides role="log" with aria-live="polite" for accessibility. A flex spacer pushes messages to the bottom when the list isn\'t full.',
       props: [
@@ -70,6 +72,7 @@ export const docs = {
     },
     {
       name: 'XDSChatMessageBubble',
+      isHiddenFromOverview: true,
       displayName: 'Chat Message Bubble',
       description: 'Styled content container — the chat “bubble.” Reads sender from parent XDSChatMessage context to auto-style the background. Use filled for standard messages and ghost when content needs alignment without a visible boundary. Supports name/metadata slots aligned with bubble padding, and multi-bubble grouping via the group prop for consecutive messages from the same sender.',
       props: [
@@ -148,6 +151,7 @@ export const docs = {
     },
     {
       name: 'XDSChatComposerInput',
+      isHiddenFromOverview: true,
       displayName: 'Chat Composer Input',
       description: 'Rich text input for the chat composer. Supports trigger menus (type @ or / to open a typeahead), inline tokens rendered as badges, message history recall with ArrowUp/Down, paste/drop file handling, and a 16px touch-device font-size floor to prevent iOS input zoom. Pass it to XDSChatComposer\'s input slot when you need more than a plain textarea.',
       props: [
@@ -168,6 +172,7 @@ export const docs = {
     },
     {
       name: 'XDSChatComposerDrawer',
+      isHiddenFromOverview: true,
       displayName: 'Chat Composer Drawer',
       description: 'Collapsible drawer panel that sits above the chat input inside XDSChatComposer. Pass it to the composer\'s `drawer` slot to show attachments, context chips, or any supplementary content. When `count` is provided the drawer gains a collapse toggle — collapsed state shows a badge and label, expanded state shows all children.',
       props: [
@@ -181,6 +186,7 @@ export const docs = {
     },
     {
       name: 'XDSChatSendButton',
+      isHiddenFromOverview: true,
       displayName: 'Chat Send Button',
       description: 'Circular send/stop toggle button for the chat composer. Place it inside XDSChatComposer where it reads context automatically — no wiring needed. When streaming starts, the button switches from a primary send icon to a secondary stop icon. Override any context value via props for standalone or custom usage.',
       props: [
@@ -212,6 +218,7 @@ export const docs = {
     },
     {
       name: 'XDSChatTokenizedText',
+      isHiddenFromOverview: true,
       displayName: 'Chat Tokenized Text',
       description: 'Renders a text string with token patterns replaced by inline XDSBadge components. Wrap any message body inside XDSChatMessageBubble to turn raw @mentions, #tags, or /commands into styled badges. When no tokens match or none are provided, the text renders as-is — so you can use ChatTokenizedText unconditionally on every message.',
       props: [
@@ -221,6 +228,7 @@ export const docs = {
     },
     {
       name: 'XDSChatComposerTokenElement',
+      isHiddenFromOverview: true,
       displayName: 'Chat Composer Token Element',
       description: 'Renders a single token chip outside the contentEditable input. Wraps a badge config or custom render function in the correct data-xds-token span so the token serializes properly and stays visually consistent with tokens inside the composer.',
       props: [
@@ -281,6 +289,7 @@ docs.components.push(chatLayoutComponent);
 
 const chatLayoutScrollButtonComponent = {
   name: 'XDSChatLayoutScrollButton',
+  isHiddenFromOverview: true,
   displayName: 'Chat Layout Scroll Button',
   description: 'Floating scroll-to-bottom button that appears when the user scrolls away from the latest messages. It fades in as a compact icon button and expands to show a label when new messages arrive. XDSChatLayout renders this by default — pass a custom element to the scrollButton prop to override, or null to hide it entirely.',
   props: [
@@ -321,6 +330,7 @@ export const docsZh = {
   components: [
     {
       name: 'XDSChatMessageList',
+      isHiddenFromOverview: true,
       displayName: 'Chat Message List',
       description: '消息展示容器，支持密度上下文和无限滚动。自动滚动由 XDSChatLayout 管理。',
       propDescriptions: {
@@ -346,6 +356,7 @@ export const docsZh = {
     },
     {
       name: 'XDSChatMessageBubble',
+      isHiddenFromOverview: true,
       displayName: 'Chat Message Bubble',
       description: '样式化的气泡容器，从父上下文读取发送者信息进行自动样式化。支持 name/metadata 插槽、多气泡分组和透明变体。',
       propDescriptions: {
@@ -394,6 +405,7 @@ export const docsZh = {
     },
     {
       name: 'XDSChatComposerInput',
+      isHiddenFromOverview: true,
       displayName: 'Chat Composer Input',
       description:
         '聊天编写器的富文本输入。支持触发菜单（输入 @ 或 / 打开 typeahead）、内联标记徽章、ArrowUp/Down 消息历史回溯、粘贴/拖放文件处理，并在触控设备上将字体大小保持至少 16px 以避免 iOS 输入缩放。当需要普通文本区域以外的功能时，传入 XDSChatComposer 的 input 插槽。',
@@ -415,12 +427,14 @@ export const docsZh = {
     },
     {
       name: 'XDSChatComposerDrawer',
+      isHiddenFromOverview: true,
       displayName: 'Chat Composer Drawer',
       description: '位于聊天输入上方的可折叠抽屉面板。传入 XDSChatComposer 的 `drawer` 插槽，用于显示附件、上下文标签或预览内容。提供 `count` 时启用折叠切换。',
       propDescriptions: {children: '抽屉内渲染的内容——标记、标签、预览或任何 React 元素。', count: '折叠徽章中显示的总数。提供时，抽屉获得折叠/展开切换。', label: '折叠状态下显示在数量旁边的标签。', isCollapsed: '受控折叠状态。与 onCollapsedChange 一起使用。', defaultIsCollapsed: '非受控模式的初始折叠状态。', onCollapsedChange: '用户切换抽屉时触发的回调。'},
     },
     {
       name: 'XDSChatSendButton',
+      isHiddenFromOverview: true,
       displayName: 'Chat Send Button',
       description:
         '编写器的圆形发送/停止切换按钮。默认从 XDSChatComposerContext 读取状态，在 XDSChatComposer 内自动工作。所有上下文值均可通过 props 覆盖以用于独立使用。',
@@ -451,6 +465,7 @@ export const docsZh = {
     },
     {
       name: 'XDSChatTokenizedText',
+      isHiddenFromOverview: true,
       displayName: 'Chat Tokenized Text',
       description:
         '渲染带有标记模式的文本，将匹配的模式替换为内联 XDSBadge 组件。在 XDSChatMessageBubble 内使用，将 @提及、#标签或 /命令显示为样式化徽章。未提供标记时以纯文本渲染，因此可以无条件使用。',
@@ -458,6 +473,7 @@ export const docsZh = {
     },
     {
       name: 'XDSChatComposerTokenElement',
+      isHiddenFromOverview: true,
       displayName: 'Chat Composer Token Element',
       description: '在 contentEditable 外部渲染标记芯片。',
       propDescriptions: {token: '徽章配置或自定义渲染。'},
@@ -476,6 +492,7 @@ export const docsZh = {
     },
     {
       name: 'XDSChatLayoutScrollButton',
+      isHiddenFromOverview: true,
       displayName: 'Chat Layout Scroll Button',
       description: '可组合的滚动到底部按钮。可见时淡入，提供标签时展开。',
       propDescriptions: {isVisible: '按钮是否可见。', label: '可选标签 — 展开按钮（如"新消息"）。', onClick: '点击处理器。'},
@@ -508,6 +525,7 @@ export const docsDense = {
   components: [
     {
       name: 'XDSChatMessageList',
+      isHiddenFromOverview: true,
       displayName: 'Chat Message List',
       description: 'presentational msg container w/ density context + infinite scroll; auto-scroll owned by XDSChatLayout',
       propDescriptions: {
@@ -534,6 +552,7 @@ export const docsDense = {
     },
     {
       name: 'XDSChatMessageBubble',
+      isHiddenFromOverview: true,
       displayName: 'Chat Message Bubble',
       description: 'styled bubble container; reads sender from context; supports name/metadata slots, group corners, ghost variant',
       propDescriptions: {
@@ -591,6 +610,7 @@ export const docsDense = {
     },
     {
       name: 'XDSChatComposerInput',
+      isHiddenFromOverview: true,
       displayName: 'Chat Composer Input',
       description: 'rich input for composer; trigger menus (@/commands), inline tokens, msg history, paste/drop files, 16px touch font-size floor to prevent iOS zoom. Use in XDSChatComposer input slot when you need more than plain textarea.',
       propDescriptions: {
@@ -611,6 +631,7 @@ export const docsDense = {
     },
     {
       name: 'XDSChatComposerDrawer',
+      isHiddenFromOverview: true,
       displayName: 'Chat Composer Drawer',
       description: 'collapsible drawer above chat input; pass to composer `drawer` slot for attachments, context chips, previews. `count` enables collapse toggle',
       propDescriptions: {
@@ -624,6 +645,7 @@ export const docsDense = {
     },
     {
       name: 'XDSChatSendButton',
+      isHiddenFromOverview: true,
       displayName: 'Chat Send Button',
       description: 'circular send/stop toggle btn for composer; reads XDSChatComposerContext; all context vals overridable via props',
       propDescriptions: {
@@ -651,6 +673,7 @@ export const docsDense = {
     },
     {
       name: 'XDSChatTokenizedText',
+      isHiddenFromOverview: true,
       displayName: 'Chat Tokenized Text',
       description: 'renders text w/ token patterns replaced by inline badges; use in bubble for @mentions, #tags, /commands; degrades to plain text when no tokens match',
       propDescriptions: {
@@ -660,6 +683,7 @@ export const docsDense = {
     },
     {
       name: 'XDSChatComposerTokenElement',
+      isHiddenFromOverview: true,
       displayName: 'Chat Composer Token Element',
       description: 'token chip outside contentEditable; badge config or custom render in data-xds-token span',
       propDescriptions: {token: 'badge config or custom render'},
@@ -678,6 +702,7 @@ export const docsDense = {
     },
     {
       name: 'XDSChatLayoutScrollButton',
+      isHiddenFromOverview: true,
       displayName: 'Chat Layout Scroll Button',
       description: 'floating scroll-to-bottom btn; fades in when scrolled up, expands w/ label for new msgs. Default in XDSChatLayout; override via scrollButton prop.',
       propDescriptions: {

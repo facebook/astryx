@@ -6,6 +6,7 @@ export const docs = {
   name: 'Table',
   displayName: 'Table',
   group: 'Table',
+  category: 'Table & List',
   keywords: ["table","datatable","datagrid","spreadsheet","sorting","virtualized","columns","rows","selection","pinning"],
   playground: {
     defaults: {
@@ -99,6 +100,7 @@ export const docs = {
       ],    },
     {
       name: 'XDSBaseTable',
+      isHiddenFromOverview: true,
       displayName: 'Base Table',
       description:
         'Unstyled structural table component with a plugin transform pipeline and a components prop for swapping in custom row/cell renderers.',
@@ -148,6 +150,7 @@ export const docs = {
     },
     {
       name: 'XDSTableRow',
+      isHiddenFromOverview: true,
       displayName: 'Table Row',
       description:
         '<tr> wrapper that reads XDSTableContext to apply striped, hover, and divider styles when used inside XDSTable.',
@@ -162,6 +165,7 @@ export const docs = {
     },
     {
       name: 'XDSTableCell',
+      isHiddenFromOverview: true,
       displayName: 'Table Cell',
       description:
         '<td> wrapper that reads XDSTableContext to apply density padding, font size, and divider borders when used inside XDSTable.',
@@ -175,6 +179,7 @@ export const docs = {
     },
     {
       name: 'XDSTableHeaderCell',
+      isHiddenFromOverview: true,
       displayName: 'Table Header Cell',
       description:
         '<th> wrapper that reads XDSTableContext to apply density padding, semibold weight, secondary text color, and divider borders when used inside XDSTable.',
@@ -434,6 +439,51 @@ export const docs = {
         },
       ],
     },
+    {
+      name: 'useXDSTableFiltering',
+      isHiddenFromOverview: true,
+      displayName: 'useXDSTableFiltering',
+      description:
+        'Table plugin that adds inline column filters with popover or inline controls. Pairs with useXDSTableFilterState for managed state. Supports text, select, multi-select, date, and number filter types via PowerSearch field definitions.',
+      props: [
+        {
+          name: 'filters',
+          type: 'XDSTableFilterState',
+          description:
+            'Current filter state — map from column key to filter value.',
+          required: true,
+        },
+        {
+          name: 'onFilterChange',
+          type: '(columnKey: string, value: XDSTableFilterValue | null) => void',
+          description:
+            'Called when the user changes a filter value. null clears the filter.',
+          required: true,
+        },
+        {
+          name: 'variant',
+          type: "'popover' | 'inline'",
+          description:
+            'Display variant for filter controls.',
+          default: "'popover'",
+        },
+      ],
+    },
+    {
+      name: 'useXDSTableFilterState',
+      isHiddenFromOverview: true,
+      displayName: 'useXDSTableFilterState',
+      description:
+        'Managed state hook for table filtering. Returns the current filter map and an onChange handler. Pass the result directly to useXDSTableFiltering.',
+      props: [
+        {
+          name: 'initialState',
+          type: 'XDSTableFilterState',
+          description:
+            'Optional initial filter state map.',
+        },
+      ],
+    },
   ],
   usage: {
     description:
@@ -541,6 +591,7 @@ export const docsZh = {
     },
     {
       name: 'XDSBaseTable',
+      isHiddenFromOverview: true,
       displayName: 'Base Table',
       description:
         '无样式的结构表格组件，配有插件转换管道和 components 属性，用于替换自定义行/单元格渲染器。',
@@ -590,6 +641,7 @@ export const docsZh = {
     },
     {
       name: 'XDSTableRow',
+      isHiddenFromOverview: true,
       displayName: 'Table Row',
       description:
         '<tr> 包装器，读取 XDSTableContext 以在 XDSTable 内部使用时应用条纹、悬停和分隔线样式。',
@@ -604,6 +656,7 @@ export const docsZh = {
     },
     {
       name: 'XDSTableCell',
+      isHiddenFromOverview: true,
       displayName: 'Table Cell',
       description:
         '<td> 包装器，读取 XDSTableContext 以在 XDSTable 内部使用时应用密度内边距、字体大小和分隔线边框。',
@@ -617,6 +670,7 @@ export const docsZh = {
     },
     {
       name: 'XDSTableHeaderCell',
+      isHiddenFromOverview: true,
       displayName: 'Table Header Cell',
       description:
         '<th> 包装器，读取 XDSTableContext 以在 XDSTable 内部使用时应用密度内边距、半粗字重、次要文本颜色和分隔线边框。',
@@ -790,6 +844,47 @@ export const docsZh = {
         },
       ],
     },
+    {
+      name: 'useXDSTableFiltering',
+      isHiddenFromOverview: true,
+      displayName: 'useXDSTableFiltering',
+      description:
+        '表格筛选插件，添加内联列过滤器（弹出式或内联控件）。与 useXDSTableFilterState 配合使用管理状态。',
+      props: [
+        {
+          name: 'filters',
+          type: 'XDSTableFilterState',
+          description: '当前筛选状态——列键到筛选值的映射。',
+          required: true,
+        },
+        {
+          name: 'onFilterChange',
+          type: '(columnKey: string, value: XDSTableFilterValue | null) => void',
+          description: '用户更改筛选值时调用。null 清除筛选。',
+          required: true,
+        },
+        {
+          name: 'variant',
+          type: "'popover' | 'inline'",
+          description: '筛选控件的显示变体。',
+          default: "'popover'",
+        },
+      ],
+    },
+    {
+      name: 'useXDSTableFilterState',
+      isHiddenFromOverview: true,
+      displayName: 'useXDSTableFilterState',
+      description:
+        '表格筛选的受管状态 hook。返回当前筛选映射和 onChange 处理程序。将结果直接传递给 useXDSTableFiltering。',
+      props: [
+        {
+          name: 'initialState',
+          type: 'XDSTableFilterState',
+          description: '可选的初始筛选状态映射。',
+        },
+      ],
+    },
   ],
   usage: {
     description:
@@ -852,6 +947,7 @@ export const docsDense = {
     },
     {
       name: 'XDSBaseTable',
+      isHiddenFromOverview: true,
       displayName: 'Base Table',
       description: 'Unstyled structural table w/ plugin transform pipeline + components prop for custom row/cell renderers.',
       propDescriptions: {
@@ -866,6 +962,7 @@ export const docsDense = {
     },
     {
       name: 'XDSTableRow',
+      isHiddenFromOverview: true,
       displayName: 'Table Row',
       description: '<tr> wrapper; reads XDSTableContext for striped/hover/divider styles.',
       propDescriptions: {
@@ -874,6 +971,7 @@ export const docsDense = {
     },
     {
       name: 'XDSTableCell',
+      isHiddenFromOverview: true,
       displayName: 'Table Cell',
       description: '<td> wrapper; reads XDSTableContext for density padding, font size, divider borders.',
       propDescriptions: {
@@ -882,6 +980,7 @@ export const docsDense = {
     },
     {
       name: 'XDSTableHeaderCell',
+      isHiddenFromOverview: true,
       displayName: 'Table Header Cell',
       description: '<th> wrapper; reads XDSTableContext for density padding, semibold weight, secondary color, dividers.',
       propDescriptions: {
@@ -935,6 +1034,26 @@ export const docsDense = {
         activeColumnKeys: 'Active column keys in display order.',
         onChangeActiveColumnKeys: 'Called on column toggle/reorder.',
         defaultColumnKeys: 'Default column set for reset. Omit = show all.',
+      },
+    },
+    {
+      name: 'useXDSTableFiltering',
+      isHiddenFromOverview: true,
+      displayName: 'useXDSTableFiltering',
+      description: 'Table filtering plugin — inline column filters (popover/inline). Pairs w/ useXDSTableFilterState.',
+      propDescriptions: {
+        filters: 'Current filter state map (columnKey → value).',
+        onFilterChange: 'Called on filter change. null clears.',
+        variant: 'Filter control display variant.',
+      },
+    },
+    {
+      name: 'useXDSTableFilterState',
+      isHiddenFromOverview: true,
+      displayName: 'useXDSTableFilterState',
+      description: 'Managed filter state hook. Returns filter map + onChange handler for useXDSTableFiltering.',
+      propDescriptions: {
+        initialState: 'Optional initial filter state map.',
       },
     },
   ],

@@ -6,6 +6,7 @@ export const docs = {
   name: 'Card',
   displayName: 'Card',
   group: 'Card',
+  category: 'Container',
   keywords: ["card","surface","panel","container","elevated","shadow","box","paper","tile","well"],
   usage: {
     description:

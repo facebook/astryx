@@ -199,6 +199,8 @@ export interface ComponentEntry {
   props: PropDoc[];
   /** Short code examples rendered by the CLI after the props table. */
   examples?: ExampleDoc[];
+  /** When true, this sub-component is excluded from the overview page. */
+  isHiddenFromOverview?: boolean;
 }
 
 /**
@@ -413,6 +415,41 @@ interface BaseDoc {
    *  Groups cluster related components that are always used together
    *  or are variants of each other. */
   group?: string;
+  /** Component category for the overview page gallery. Independent of
+   *  `group` (which is for the sidebar). Categories represent the
+   *  component's functional role in a UI.
+   *
+   *  Valid values:
+   *  - `'Action'` — interactive triggers: buttons, links, toggles, menus
+   *  - `'Chat'` — conversational UI: messages, composers, layouts
+   *  - `'Container'` — wrappers: cards, carousels, collapsibles
+   *  - `'Content'` — display: text, icons, avatars, code blocks
+   *  - `'Data Input'` — data entry: text fields, selectors, date pickers
+   *  - `'Data Visualization'` — charts, graphs, 3D visualizations
+   *  - `'Feedback & Status'` — progress indication: spinners, banners, badges
+   *  - `'Layout'` — structural: grid, stack, dividers, app shell
+   *  - `'Navigation'` — wayfinding: tabs, breadcrumbs, sidebars
+   *  - `'Overlay'` — layered UI: dialogs, popovers, tooltips
+   *  - `'Table & List'` — tabular and list data display
+   *  - `'Utility'` — providers and context: themes, link providers */
+  category?:
+    | 'Action'
+    | 'Chat'
+    | 'Container'
+    | 'Content'
+    | 'Data Input'
+    | 'Data Visualization'
+    | 'Feedback & Status'
+    | 'Layout'
+    | 'Navigation'
+    | 'Overlay'
+    | 'Table & List'
+    | 'Utility';
+  /** When true, this component is excluded from the categorized overview
+   *  page but remains in the sidebar and CLI. Use for sub-components that
+   *  only make sense within a parent (e.g. BreadcrumbItem, DialogHeader)
+   *  or internal primitives that shouldn't appear in the gallery. */
+  isHiddenFromOverview?: boolean;
   /** Theming configuration. Documents the stable CSS class names
    *  rendered by this component that themes can target via `@scope`
    *  selectors in `defineTheme`. */
@@ -517,6 +554,8 @@ export interface TranslationDoc {
     description: string;
     /** Prop descriptions keyed by prop name. */
     propDescriptions?: Record<string, string>;
+    /** When true, this sub-component is excluded from the overview page. */
+    isHiddenFromOverview?: boolean;
   }[];
 }
 
@@ -667,6 +706,95 @@ export interface ReferenceTranslationDoc {
  *
  * The CLI and sandbox import these for discovery and display.
  */
+
+/**
+ * Functional category for a page template, used to group templates on the
+ * docsite Templates overview gallery. Independent of any sidebar/nav grouping.
+ *
+ * Values follow a `"Group - Variant"` convention (e.g. `"Dashboard - Analytics"`).
+ * The overview page derives the group heading from the text before the `" - "`.
+ * Standalone values without a hyphen (e.g. `"Settings"`) are their own group.
+ *
+ * Not every value maps to an existing template — unused values are reserved
+ * for future templates so authors get autocomplete for the full taxonomy.
+ */
+export type TemplateCategory =
+  // Dashboard
+  | 'Dashboard - Analytics'
+  | 'Dashboard - KPI Summary'
+  | 'Dashboard - Monitoring'
+  | 'Dashboard - Executive Summary'
+  | 'Dashboard - Widget Grid'
+  | 'Dashboard - Split'
+  | 'Dashboard - Tabbed'
+  | 'Dashboard - Filterable'
+  | 'Dashboard - Portfolio'
+  // Table
+  | 'Table - Basic'
+  | 'Table - Grouped'
+  | 'Table - Index/Detail'
+  | 'Table - Split Pane'
+  | 'Table - Bulk Actions'
+  | 'Table - Filtering'
+  | 'Table - Tree/Hierarchical List'
+  | 'Table - Frozen Column'
+  | 'Table - Chart'
+  | 'Table - Heatmap'
+  // Form
+  | 'Form - Basic'
+  | 'Form - Page'
+  | 'Form - Checkout'
+  | 'Form - Two-column'
+  | 'Form - Wizard'
+  | 'Form - Modal Overlay'
+  | 'Form - Side Sheet'
+  | 'Form - Inline Edits'
+  | 'Form - Settings'
+  // Settings
+  | 'Settings'
+  | 'Settings - Dialog'
+  | 'Settings - Sidebar'
+  // Login
+  | 'Login - Basic'
+  | 'Login - Card'
+  | 'Login - SSO'
+  | 'Login - Split'
+  // Tools
+  | 'Tools - File Explorer'
+  | 'Tools - Page Editor'
+  | 'Tools - IDE'
+  | 'Tools - Kanban Board'
+  | 'Tools - Notebook/Report Page'
+  | 'Tools - Diff Compare Viewer'
+  | 'Tools - Search Results Page'
+  // Content
+  | 'Content - Card Grid'
+  | 'Content - Order Detail'
+  | 'Content - Product Detail'
+  | 'Content - Product List'
+  | 'Content - Documentation Catalog'
+  | 'Content - Documentation Design'
+  | 'Content - Documentation Technical'
+  | 'Content - Infinite Scroll Page'
+  | 'Content - Timeline'
+  | 'Content - Profile Page'
+  // AI Chat
+  | 'AI Chat - Conversation'
+  | 'AI Chat - Landing'
+  | 'AI Chat - Artifact Page'
+  // Gallery
+  | 'Gallery - Hero'
+  | 'Gallery - Basic'
+  | 'Gallery - Mixed'
+  | 'Gallery - Side'
+  | 'Gallery - Product'
+  // Shell
+  | 'Shell - Left Sidebar'
+  | 'Shell - Top Nav'
+  | 'Shell - Top Nav + Left Sidebar'
+  | 'Shell - Breadcrumb Driven Layout'
+  | 'Shell - Blank';
+
 interface BaseTemplateDoc {
   /** Identifier name for the template. For block templates this matches
    *  the React component import name (e.g. `"ChatMessageMetadata"`); for
@@ -692,6 +820,18 @@ interface BaseTemplateDoc {
    *  Scaffold templates are available via the CLI but hidden from
    *  browsable template galleries like the craft browser. */
   scaffold?: boolean;
+
+  /** Functional category for the docsite Templates overview gallery.
+   *  Templates are grouped by the part before `" - "` (e.g. `"Dashboard"`).
+   *  Independent of CLI discovery, which uses `name`/`description`. */
+  category?: TemplateCategory;
+
+  /** Boolean opt-out for templates that shouldn't appear on the Templates
+   *  overview gallery. The template stays available via the CLI and
+   *  `xds template <name>` — it's only hidden from the browsable gallery.
+   *  Use for duplicate/experimental variants. Scaffold templates are
+   *  hidden automatically and don't need this flag. */
+  isHiddenFromOverview?: boolean;
 }
 
 export interface PageTemplateDoc extends BaseTemplateDoc {

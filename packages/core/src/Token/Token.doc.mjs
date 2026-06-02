@@ -5,6 +5,7 @@
 export const docs = {
   name: 'Token',
   displayName: 'Token',
+  category: 'Content',
   keywords: ["token","chip","tag","pill","label","removable","dismissible","filter chip","closable"],
   props: [
     {
