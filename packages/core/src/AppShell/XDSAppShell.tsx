@@ -521,7 +521,7 @@ export function XDSAppShell({
   const navHasDividers = variant === 'section';
   const isElevated = variant === 'elevated';
   const navAreaStyle =
-    variant === 'wash'
+    variant === 'wash' || variant === 'elevated'
       ? styles.navAreaWash
       : variant === 'surface'
         ? styles.navAreaSurface
@@ -537,10 +537,8 @@ export function XDSAppShell({
 
   // Background for sticky elements in auto mode — must be opaque so content
   // doesn't show through when scrolling underneath. Uses the nav area bg if
-  // set, otherwise falls back to the shell variant bg (body for elevated,
-  // surface for section).
-  const stickyBgStyle =
-    navAreaStyle ?? (isElevated ? styles.navAreaWash : styles.navAreaSurface);
+  // set, otherwise falls back to the shell variant bg (always surface for section).
+  const stickyBgStyle = navAreaStyle ?? styles.navAreaSurface;
 
   // =========================================================================
   // Header height measurement for sticky sideNav offset (auto mode)
