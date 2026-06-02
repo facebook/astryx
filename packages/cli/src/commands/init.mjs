@@ -17,6 +17,7 @@ import * as p from '@clack/prompts';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import {CLI_ROOT} from '../utils/paths.mjs';
+import {PathSafetyError} from '../utils/path-safety.mjs';
 import {getRunPrefix} from '../utils/package-manager.mjs';
 import {installAgentDocs, removeAgentDocs} from './agent-docs.mjs';
 import {listTemplates} from './template.mjs';
@@ -50,7 +51,20 @@ function runAgents(targetDir, {interactive = true, agent, agentDocsPath} = {}) {
     } else {
       humanLog(`✓ AI agent docs installed → ${summary}`);
     }
-  } catch {
+  } catch (err) {
+    // PathSafetyError carries a precise, user-actionable message —
+    // surface it instead of the generic "could not install" warning so
+    // misconfigured --agent-docs-path values aren't silently swallowed.
+    if (err instanceof PathSafetyError) {
+      const msg = `Error: ${err.message}`;
+      if (interactive) {
+        p.log.error(msg);
+      } else {
+        console.error(msg);
+      }
+      process.exitCode = 1;
+      return;
+    }
     const msg = `Could not install agent docs. Try again with \`${run} xds init --features agents\`.`;
     if (interactive) {
       p.log.warning(msg);

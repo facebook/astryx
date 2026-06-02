@@ -5,11 +5,22 @@
  */
 
 import * as path from 'node:path';
+import * as fs from 'node:fs';
+import * as p from '@clack/prompts';
 import {CLI_ROOT} from '../utils/paths.mjs';
+import {isNonInteractive} from '../utils/path-safety.mjs';
 import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
 import {template as templateApi, getTemplateById} from '../api/template.mjs';
 
 export {discoverTemplates, listTemplates, getTemplateById} from '../api/template.mjs';
+
+function isCancel(value) {
+  if (p.isCancel(value)) {
+    p.cancel('Cancelled.');
+    process.exit(0);
+  }
+  return value;
+}
 
 export function registerTemplate(program) {
   const templateCmd = program
@@ -18,8 +29,42 @@ export function registerTemplate(program) {
     .option('--list', 'List available templates')
     .option('--type <type>', 'Filter by template type: page or block')
     .option('--skeleton', 'Show layout skeleton with spatial annotations (padding, gap, nesting)')
+    .option('-f, --overwrite', 'Overwrite existing files without prompting')
     .action(async (name, targetPath, options) => {
       const json = program.opts().json || false;
+
+      // Pre-flight overwrite check (only when we'd actually copy a file).
+      // The API resolves the destination; we need to mirror its logic
+      // narrowly enough to detect collisions before invoking it.
+      if (
+        name &&
+        targetPath &&
+        !options.list &&
+        !options.skeleton
+      ) {
+        const collision = await detectTemplateCollision(name, targetPath);
+        if (collision && !options.overwrite) {
+          const rel = path.relative(process.cwd(), collision) || collision;
+          if (json || isNonInteractive({json})) {
+            const msg =
+              `Refusing to overwrite existing file ${rel}. ` +
+              `Re-run with --overwrite (or -f) to replace it.`;
+            if (json) return jsonError(msg);
+            console.error(`Error: ${msg}`);
+            process.exit(1);
+          }
+          const confirmed = isCancel(
+            await p.confirm({
+              message: `Overwrite existing file ${rel}?`,
+              initialValue: false,
+            }),
+          );
+          if (!confirmed) {
+            humanLog('Aborted. Re-run with --overwrite to replace the file.');
+            return;
+          }
+        }
+      }
 
       let result;
       try {
@@ -109,4 +154,46 @@ export function registerTemplate(program) {
 
       humanLog(result.data.source);
     });
+}
+
+/**
+ * Mirror the destination-resolution logic in api/template.mjs so we can
+ * detect a clobber before invoking the API.
+ *
+ * Returns the absolute destination file path if it already exists, or
+ * `null` otherwise (template missing, no collision, or list/skeleton mode).
+ *
+ * Path-safety enforcement happens inside the API; here we only need
+ * enough precision to check existence — a false negative just means the
+ * API will catch the issue and abort.
+ */
+async function detectTemplateCollision(name, targetPath) {
+  const {discoverTemplates} = await import('../api/template.mjs');
+  let templates;
+  try {
+    templates = await discoverTemplates();
+  } catch {
+    return null;
+  }
+  const match = templates.find(t => t.dirName === name);
+  if (!match) return null;
+
+  // Resolve target as the API will. We can't call assertWithin here
+  // because the API does it itself; we just need to know "is there a
+  // file at the destination?".
+  const resolved = path.resolve(process.cwd(), targetPath);
+
+  // File-arg branch: targetPath looks like `./foo.tsx`.
+  const {isFilePathArg} = await import('../utils/path-safety.mjs');
+  let dest;
+  if (isFilePathArg(targetPath)) {
+    dest = resolved;
+  } else {
+    const fileName = match.type === 'block'
+      ? path.basename(match.filePath)
+      : 'page.tsx';
+    dest = path.join(resolved, fileName);
+  }
+
+  return fs.existsSync(dest) ? dest : null;
 }

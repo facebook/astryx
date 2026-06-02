@@ -15,6 +15,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as p from '@clack/prompts';
 import {findCoreDir, listComponents} from '../utils/paths.mjs';
+import {assertWithin, PathSafetyError, isNonInteractive} from '../utils/path-safety.mjs';
 import {isInteractive} from '../utils/interactive.mjs';
 import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
 import {
@@ -78,6 +79,7 @@ export function registerSwizzle(program) {
       '--commit',
       'For --gap: actually file the issue. Required in non-interactive mode.',
     )
+    .option('-f, --overwrite', 'Overwrite existing files without prompting')
     .action(async (component, options) => {
       const coreDir = findCoreDir(process.cwd());
       const json = program.opts().json || false;
@@ -115,7 +117,59 @@ export function registerSwizzle(program) {
         process.exit(1);
       }
 
-      const outputDir = path.resolve(process.cwd(), options.output, dirName);
+      // Path-safety: --output must resolve inside cwd. Reject absolute
+      // paths and `..` traversal up front, before any directory is created.
+      let outputBase;
+      try {
+        outputBase = assertWithin(options.output, process.cwd(), {
+          label: 'output directory',
+        });
+      } catch (err) {
+        if (err instanceof PathSafetyError) {
+          if (json) return jsonError(err.message);
+          console.error(`Error: ${err.message}`);
+          process.exit(1);
+        }
+        throw err;
+      }
+      const outputDir = path.join(outputBase, dirName);
+
+      // Pre-flight overwrite check: collect files we'd write and detect
+      // collisions before mkdir/writeFile so we never half-clobber.
+      const sourceFiles = fs.readdirSync(componentDir).filter(file => {
+        if (file.includes('.test.') || file === 'README.md') return false;
+        const stat = fs.statSync(path.join(componentDir, file));
+        return stat.isFile();
+      });
+
+      const existingFiles = sourceFiles.filter(f =>
+        fs.existsSync(path.join(outputDir, f)),
+      );
+
+      if (existingFiles.length > 0 && !options.overwrite) {
+        const relOutputForMsg = path.relative(process.cwd(), outputDir) || '.';
+        if (json || isNonInteractive({json})) {
+          const msg =
+            `Refusing to overwrite ${existingFiles.length} existing file(s) in ${relOutputForMsg}/. ` +
+            `Re-run with --overwrite (or -f) to replace them.`;
+          if (json) return jsonError(msg);
+          console.error(`Error: ${msg}`);
+          process.exit(1);
+        }
+        const confirmed = isCancel(
+          await p.confirm({
+            message:
+              `Overwrite ${existingFiles.length} existing file(s) in ${relOutputForMsg}/? ` +
+              `(${existingFiles.slice(0, 3).join(', ')}${existingFiles.length > 3 ? ', …' : ''})`,
+            initialValue: false,
+          }),
+        );
+        if (!confirmed) {
+          humanLog('Aborted. Re-run with --overwrite to replace files.');
+          return;
+        }
+      }
+
       fs.mkdirSync(outputDir, {recursive: true});
 
       // Copy all non-test, non-README files

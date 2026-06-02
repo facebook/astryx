@@ -18,6 +18,7 @@ import {createRequire} from 'node:module';
 import {pathToFileURL, fileURLToPath} from 'node:url';
 import {createJiti} from 'jiti';
 import {getRunPrefix} from '../utils/package-manager.mjs';
+import {sanitizeName, PathSafetyError} from '../utils/path-safety.mjs';
 import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
 
 // Import shared theme processing from core — ensures build and runtime
@@ -1015,6 +1016,21 @@ export function registerTheme(program) {
         process.exit(1);
       }
 
+      // Path-safety: the theme name is used to derive output filenames
+      // (e.g. `${name}.css`, `${name}.js`). Reject names containing path
+      // separators or traversal markers — `../../escaped` would otherwise
+      // write JS modules outside the input directory.
+      try {
+        sanitizeName(themeDef.name, {label: 'theme name'});
+      } catch (err) {
+        if (err instanceof PathSafetyError) {
+          if (json) return jsonError(err.message);
+          console.error(`Error: ${err.message}`);
+          process.exit(1);
+        }
+        throw err;
+      }
+
       // Validate component overrides
       const warnings = validateComponentOverrides(themeDef);
       const warningMessages = [];
@@ -1123,47 +1139,81 @@ export function registerTheme(program) {
         ? path.resolve(process.cwd(), options.out)
         : filePath.replace(/\.(ts|tsx|js|jsx|mjs)$/, '.css');
 
-      // Write CSS with @generated header
-      fs.mkdirSync(path.dirname(outPath), {recursive: true});
-      fs.writeFileSync(outPath, generatedHeader(sourceRelative, 'css', buildCommand) + css);
-
       const displayTheme = resolvedTheme || themeDef;
       const tokenCount = displayTheme.tokens ? Object.keys(displayTheme.tokens).length : 0;
       const componentCount = displayTheme.components ? Object.keys(displayTheme.components).length : 0;
       const size = (Buffer.byteLength(css) / 1024).toFixed(1);
 
-      if (!json) {
-        humanLog(`\n✓ ${path.relative(process.cwd(), outPath)}`);
-        humanLog(`  ${tokenCount} token overrides, ${componentCount} component overrides`);
-        humanLog(`  ${size} KB`);
-      }
-
-      // Always generate JS module + types alongside CSS
+      // Compute all output paths up front so we can validate them as a
+      // group BEFORE writing anything. Previously the CSS would be written
+      // first; if the JS write failed (e.g. ENOENT, permission), the CSS
+      // was left as orphaned half-built output. Stage-then-commit avoids
+      // that.
       const outDir = path.dirname(outPath);
       const baseName = themeDef.name;
-
       const jsPath = path.join(outDir, `${baseName}.js`);
       const dtsPath = path.join(outDir, `${baseName}.d.ts`);
 
       const iconInfo = extractIconInfo(filePath);
 
-      fs.writeFileSync(jsPath, generatedHeader(sourceRelative, 'js', buildCommand) + generateBuiltModule(resolvedTheme || themeDef, iconInfo));
-      fs.writeFileSync(dtsPath, generatedHeader(sourceRelative, 'ts', buildCommand) + generateBuiltTypes(themeDef, iconInfo));
+      // Generate all file contents in memory first.
+      const cssContent = generatedHeader(sourceRelative, 'css', buildCommand) + css;
+      const jsContent = generatedHeader(sourceRelative, 'js', buildCommand) + generateBuiltModule(resolvedTheme || themeDef, iconInfo);
+      const dtsContent = generatedHeader(sourceRelative, 'ts', buildCommand) + generateBuiltTypes(themeDef, iconInfo);
 
-      if (!json) {
-        humanLog(`✓ ${path.relative(process.cwd(), jsPath)}`);
-        humanLog(`✓ ${path.relative(process.cwd(), dtsPath)}`);
-      }
-
-      // Generate type augmentation .d.ts if theme has custom prop values
+      // Type augmentation .d.ts if theme has custom prop values
       const augmentationSource = resolvedTheme || themeDef;
       const variantDecl = await generateVariantDeclarationsAsync(augmentationSource);
-      let variantDtsPath;
-      if (variantDecl) {
-        variantDtsPath = path.join(outDir, `${baseName}.variants.d.ts`);
-        fs.writeFileSync(variantDtsPath, generatedHeader(sourceRelative, 'ts', buildCommand) + variantDecl);
-        const augCount = (variantDecl.match(/': true;/g) || []).length;
-        if (!json) humanLog(`✓ ${path.relative(process.cwd(), variantDtsPath)} (${augCount} type augmentations)`);
+      const variantDtsPath = variantDecl ? path.join(outDir, `${baseName}.variants.d.ts`) : null;
+      const variantContent = variantDecl
+        ? generatedHeader(sourceRelative, 'ts', buildCommand) + variantDecl
+        : null;
+
+      // Atomic-ish write: stage every file as `<dest>.tmp`, then rename
+      // each into place. If any stage step fails we clean up partials and
+      // exit; if a rename fails mid-way we still have the originals (or
+      // nothing) — never a half-built output set.
+      const writes = [
+        {dest: outPath, content: cssContent},
+        {dest: jsPath, content: jsContent},
+        {dest: dtsPath, content: dtsContent},
+      ];
+      if (variantDtsPath) {
+        writes.push({dest: variantDtsPath, content: variantContent});
+      }
+
+      fs.mkdirSync(outDir, {recursive: true});
+      const staged = [];
+      try {
+        for (const w of writes) {
+          const tmp = `${w.dest}.${process.pid}.tmp`;
+          fs.writeFileSync(tmp, w.content);
+          staged.push({tmp, dest: w.dest});
+        }
+        for (const s of staged) {
+          fs.renameSync(s.tmp, s.dest);
+        }
+      } catch (err) {
+        // Roll back any temp files we managed to create.
+        for (const s of staged) {
+          try { fs.rmSync(s.tmp, {force: true}); } catch { /* best-effort */ }
+        }
+        const msg = `Failed to write theme outputs: ${err.message}`;
+        if (json) return jsonError(msg);
+        console.error(`Error: ${msg}`);
+        process.exit(1);
+      }
+
+      if (!json) {
+        humanLog(`\n✓ ${path.relative(process.cwd(), outPath)}`);
+        humanLog(`  ${tokenCount} token overrides, ${componentCount} component overrides`);
+        humanLog(`  ${size} KB`);
+        humanLog(`✓ ${path.relative(process.cwd(), jsPath)}`);
+        humanLog(`✓ ${path.relative(process.cwd(), dtsPath)}`);
+        if (variantDtsPath) {
+          const augCount = (variantDecl.match(/': true;/g) || []).length;
+          humanLog(`✓ ${path.relative(process.cwd(), variantDtsPath)} (${augCount} type augmentations)`);
+        }
       }
 
       if (json) {

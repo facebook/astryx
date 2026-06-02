@@ -20,6 +20,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {findCoreDir, CLI_ROOT} from '../utils/paths.mjs';
+import {assertWithin, PathSafetyError} from '../utils/path-safety.mjs';
 import {getRunPrefix} from '../utils/package-manager.mjs';
 import {discoverComponents} from '../lib/component-discovery.mjs';
 import {discoverHooks} from '../lib/hook-discovery.mjs';
@@ -338,6 +339,12 @@ export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onl
 
   // Explicit paths override everything
   if (paths && paths.length > 0) {
+    // Path-safety: each --agent-docs-path entry must resolve inside the
+    // target directory. Reject absolute paths (silent re-rooting via
+    // path.join hides intent) and `..` traversal.
+    for (const p of paths) {
+      assertWithin(p, targetDir, {label: 'agent docs path'});
+    }
     for (const p of paths) {
       const filePath = path.join(targetDir, p);
       const dir = path.dirname(filePath);
@@ -438,12 +445,22 @@ export function registerAgentDocs(program) {
           : [options.agentDocsPath]
         : undefined;
 
-      const targets = installAgentDocs(targetDir, {
-        zh,
-        lang,
-        agent: options.agent,
-        paths: explicitPaths,
-      });
+      let targets;
+      try {
+        targets = installAgentDocs(targetDir, {
+          zh,
+          lang,
+          agent: options.agent,
+          paths: explicitPaths,
+        });
+      } catch (err) {
+        if (err instanceof PathSafetyError) {
+          console.error(`Error: ${err.message}`);
+          process.exitCode = 1;
+          return;
+        }
+        throw err;
+      }
 
       const runPrefix = getRunPrefix(targetDir);
       const run = `${runPrefix} xds`;
