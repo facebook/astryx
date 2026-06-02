@@ -9,8 +9,8 @@
  * display order. Arrow keys (←/→) also navigate; Escape closes.
  *
  * The footer surfaces template metadata (category + name, description),
- * the CLI scaffold command inline (no sub-dialog), action buttons
- * (Open in Playground, Share, Close), and a copy-pasteable use command.
+ * a copy-to-clipboard CLI scaffold command, and an Open in Playground
+ * action. A floating close button sits at the top-right corner.
  *
  * The prev/next arrows are position:fixed inside the top-layer <dialog>,
  * so they sit in the backdrop gutters outside the dialog box.
@@ -66,9 +66,6 @@ const styles = stylex.create({
     padding: '16px',
   },
   footerRow: {
-    display: 'flex',
-    alignItems: 'flex-end',
-    gap: 'var(--spacing-4)',
     width: '100%',
     paddingInlineStart: '4px',
     paddingBlockEnd: '4px',
@@ -247,7 +244,7 @@ export function TemplatePreviewDialog({
         }
         footer={
           <XDSLayoutFooter xstyle={styles.footerNoPadding}>
-            <div {...stylex.props(styles.footerRow)}>
+            <XDSHStack gap={4} vAlign="end" xstyle={styles.footerRow}>
               <XDSVStack gap={0.5} xstyle={styles.footerMeta}>
                 <XDSHeading level={2}>
                   {current.category && (
@@ -291,7 +288,7 @@ export function TemplatePreviewDialog({
                   />
                 )}
               </XDSHStack>
-            </div>
+            </XDSHStack>
           </XDSLayoutFooter>
         }
       />

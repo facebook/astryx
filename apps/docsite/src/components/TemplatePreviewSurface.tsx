@@ -7,9 +7,8 @@
  *
  * Renders the template's real page.tsx component (shared
  * TEMPLATE_COMPONENTS map) at true scale inside the framed, internally-
- * scrollable surface (see TemplatePreviewPage.module.css `.frame`). Used
- * by both the full-page preview (TemplatePreviewPage) and the preview
- * dialog (TemplatePreviewDialog) so the rendering stays identical.
+ * scrollable surface (see TemplatePreviewSurface.module.css `.frame`).
+ * Used by the preview dialog (TemplatePreviewDialog).
  */
 
 import {Suspense} from 'react';
@@ -20,7 +19,7 @@ import {XDSTheme} from '@xds/core/theme';
 import {neutralTheme} from '@xds/theme-neutral/built';
 import {useThemeMode} from '../app/providers';
 import {getTemplateComponent} from './templateComponents';
-import css from './TemplatePreviewPage.module.css';
+import css from './TemplatePreviewSurface.module.css';
 
 const styles = stylex.create({
   emptyState: {

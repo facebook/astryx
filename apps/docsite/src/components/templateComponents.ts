@@ -4,9 +4,9 @@
  * Shared lazy-loaded registry of template page components, keyed by slug.
  *
  * Both the templates gallery thumbnails (TemplateThumbnail) and the
- * full-size template preview page (TemplatePreviewPage) render the
- * template's real `page.tsx` component, so the lazy import map lives
- * here to keep a single source of truth.
+ * preview dialog (TemplatePreviewDialog) render the template's real
+ * `page.tsx` component, so the lazy import map lives here to keep a
+ * single source of truth.
  *
  * SYNC: when a page template is added under
  * packages/cli/templates/pages/<slug>/, add a matching entry here.
