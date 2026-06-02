@@ -83,7 +83,7 @@ pnpm -F @xds/core dev
 pnpm -F @xds/sandbox dev
 ```
 
-Best of both worlds — edits trigger incremental dist rebuilds via tsup (a few seconds), and CSS layer ordering is correct. Theming works properly.
+Best of both worlds — edits trigger incremental dist rebuilds via Babel CLI (a few seconds), and CSS layer ordering is correct. Theming works properly.
 
 ## File manifest
 
