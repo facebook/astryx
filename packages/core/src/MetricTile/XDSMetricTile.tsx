@@ -73,18 +73,16 @@ const styles = stylex.create({
   },
   title: {
     fontSize: typeScaleVars['--text-body-size'],
-    // eslint-disable-next-line @xds/no-hardcoded-styles -- tight leading to match www MetricTile spacing (standard body leading creates too much gap below value)
-    lineHeight: 1.2,
-    fontWeight: fontWeightVars['--font-weight-normal'],
+    lineHeight: typeScaleVars['--text-body-leading'],
+    fontWeight: typeScaleVars['--text-body-weight'],
     color: colorVars['--color-text-primary'],
     overflow: 'hidden',
     textOverflow: 'ellipsis',
   },
   subtitle: {
     fontSize: typeScaleVars['--text-supporting-size'],
-    // eslint-disable-next-line @xds/no-hardcoded-styles -- tight leading to match www MetricTile spacing
-    lineHeight: 1.2,
-    fontWeight: fontWeightVars['--font-weight-normal'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    fontWeight: typeScaleVars['--text-supporting-weight'],
     color: colorVars['--color-text-secondary'],
   },
 });
@@ -103,17 +101,14 @@ const paddingStyles = stylex.create({
 
 const valueStyles = stylex.create({
   large: {
-    // eslint-disable-next-line @xds/no-hardcoded-styles -- data-viz token: 32px, matches www XdsGlobalConstantsVars.largeDataVizFontSize
-    fontSize: '2rem',
-    // eslint-disable-next-line @xds/no-hardcoded-styles -- single-line KPI number, no leading needed
-    lineHeight: 1,
-    fontWeight: fontWeightVars['--font-weight-normal'],
+    fontSize: typeScaleVars['--text-display-2-size'],
+    lineHeight: typeScaleVars['--text-display-2-leading'],
+    fontWeight: typeScaleVars['--text-display-2-weight'],
     color: colorVars['--color-text-primary'],
   },
   small: {
     fontSize: typeScaleVars['--text-heading-1-size'],
-    // eslint-disable-next-line @xds/no-hardcoded-styles -- single-line KPI number, no leading needed
-    lineHeight: 1,
+    lineHeight: typeScaleVars['--text-heading-1-leading'],
     fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-primary'],
   },
