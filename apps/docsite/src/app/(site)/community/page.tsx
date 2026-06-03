@@ -176,17 +176,15 @@ const styles = stylex.create({
     gap: 'var(--spacing-3)',
     alignItems: 'flex-start',
   },
-  // Big monospace step number ("01", "02", …) — sized large
-  // enough to anchor the row visually, but kept in the secondary
-  // text color so it reads as metadata, not as a primary number.
+  // Step number column ("01", "02", …) — kept in the secondary
+  // text color via XDSText props; tabular-nums keeps the
+  // two-digit numbers vertically aligned across rows. Min-width
+  // reserves space for two digits + a hairline of breathing room
+  // so the column doesn't shift between "01" and "10".
   processStepNumber: {
     fontVariantNumeric: 'tabular-nums',
-    color: 'var(--color-text-secondary)',
-    fontSize: 'var(--text-body-size, 14px)',
-    fontWeight: 'var(--font-weight-semibold, 600)',
     flexShrink: 0,
     minWidth: 28,
-    paddingTop: 2,
   },
 
   // -------------------------------------------------------------------------
@@ -257,15 +255,12 @@ const styles = stylex.create({
     zIndex: 1,
   },
   // The "See contributors" anchor link below the wordmark.
-  // Plain text styling so the wordmark stays dominant; sits
-  // above the scattered avatars in z-order via zIndex 1.
+  // Only positioning lives here (zIndex:1 keeps the link above
+  // the scattered avatar layer); typography + color come from
+  // the XDSLink type="supporting" + color="secondary" props.
   wallSeeContributors: {
     position: 'relative',
     zIndex: 1,
-    color: 'var(--color-text-secondary)',
-    textDecoration: 'underline',
-    textUnderlineOffset: '4px',
-    fontSize: 'var(--text-supporting-size, 13px)',
   },
   // Description line between the wordmark and the "See
   // contributors" link. Capped at ~440px so the line wraps to
@@ -301,7 +296,7 @@ const styles = stylex.create({
     position: 'absolute',
     width: 48,
     height: 48,
-    borderRadius: 12,
+    borderRadius: 'var(--radius-element)',
     objectFit: 'cover' as const,
     // Rotation is applied per-tile inline (see AVATAR_SLOTS
     // below) so each face has its own slight tilt. Combine
@@ -406,10 +401,6 @@ const styles = stylex.create({
     overflow: 'hidden',
     textOverflow: 'ellipsis',
   },
-  // Style applied to the H4 heading above each resource category.
-  // Plain sentence case (no uppercase transform) so labels read as
-  // calm section titles rather than eyebrow markers.
-  resourceColumnLabel: {},
   // Vertical stack of resource categories. Each category fills
   // the full reading column width with its eyebrow label + list
   // of items, and categories stack one after the other so the
@@ -489,11 +480,6 @@ const styles = stylex.create({
     width: '100%',
     height: 'auto',
     display: 'block',
-  },
-  // Effort badge — a quiet inline pill under the description.
-  blockCardEffort: {
-    color: 'var(--color-text-secondary)',
-    fontSize: 'var(--text-supporting-size, 13px)',
   },
 });
 
@@ -620,6 +606,9 @@ function WallCard({contributors}: {contributors: ReadonlyArray<Contributor>}) {
           label="See contributors"
           href={`${GITHUB_REPO}/graphs/contributors`}
           target="_blank"
+          type="supporting"
+          color="secondary"
+          hasUnderline
           xstyle={styles.wallSeeContributors}>
           See contributors
         </XDSLink>
@@ -661,7 +650,7 @@ function BlockCard({label, description, href, badge, image}: BlockCardProps) {
           {description}
         </XDSText>
         {badge && (
-          <XDSText type="supporting" xstyle={styles.blockCardEffort}>
+          <XDSText type="supporting" color="secondary">
             {badge}
           </XDSText>
         )}
@@ -1061,9 +1050,13 @@ export default async function CommunityPage() {
               </XDSVStack>
               {RFC_STEPS.map(step => (
                 <div key={step.number} {...stylex.props(styles.processStep)}>
-                  <span {...stylex.props(styles.processStepNumber)}>
+                  <XDSText
+                    type="body"
+                    weight="semibold"
+                    color="secondary"
+                    xstyle={styles.processStepNumber}>
                     {step.number}
-                  </span>
+                  </XDSText>
                   <XDSVStack gap={1}>
                     <XDSHeading level={3}>{step.title}</XDSHeading>
                     <XDSText type="supporting" color="secondary">
@@ -1118,10 +1111,7 @@ export default async function CommunityPage() {
                   <div
                     key={category.label}
                     {...stylex.props(styles.resourceColumn)}>
-                    <XDSHeading
-                      level={4}
-                      color="primary"
-                      xstyle={styles.resourceColumnLabel}>
+                    <XDSHeading level={4} color="primary">
                       {category.label}
                     </XDSHeading>
                     <XDSList xstyle={styles.resourceList}>
