@@ -5,6 +5,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {XDSField} from '@xds/core/Field';
 import {XDSTextInput} from '@xds/core/TextInput';
+import {EnvelopeIcon} from '@heroicons/react/24/outline';
 import {
   colorVars,
   spacingVars,
@@ -173,6 +174,23 @@ export const WithTooltip: Story = {
         <NativeInput
           id="api-key-input"
           placeholder="sk-..."
+          value={value}
+          onChange={setValue}
+        />
+      </XDSField>
+    );
+  },
+};
+
+export const WithLabelIcon: Story = {
+  args: {label: 'Email', labelIcon: EnvelopeIcon},
+  render: args => {
+    const [value, setValue] = useState('');
+    return (
+      <XDSField {...args} inputID="email-icon-input">
+        <NativeInput
+          id="email-icon-input"
+          placeholder="you@example.com"
           value={value}
           onChange={setValue}
         />

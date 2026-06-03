@@ -29,7 +29,7 @@ import {XDSDivider} from '@xds/core/Divider';
 import {XDSEmptyState} from '@xds/core/EmptyState';
 import {XDSDropdownMenu} from '@xds/core/DropdownMenu';
 // SegmentedControl removed — targeting selects the exact instance.
-import {ChevronDownIcon} from '@heroicons/react/24/outline';
+import {ChevronDown} from 'lucide-react';
 import {
   coerceDefault,
   parsePropType,
@@ -380,7 +380,7 @@ export function PropertyPanel({
                   variant: 'ghost',
                   size: 'sm',
                   isIconOnly: true,
-                  icon: <ChevronDownIcon width={16} height={16} />,
+                  icon: <ChevronDown size={16} />,
                 }}
                 hasChevron={false}
                 items={menuItems}

@@ -311,6 +311,16 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
   const historyRef = useRef<string[]>([]);
   const historyIndexRef = useRef(-1);
   const currentDraftRef = useRef('');
+  // One-shot marker: when set, holds the value we expect the parent
+  // to echo back as `controlledValue` after our latest `onChange`
+  // emission. We use it to skip a single `useEffect` resync, because
+  // resyncing would (a) collapse the caret to offset 0 and (b)
+  // discard any characters the user typed between the emit and the
+  // resulting commit. Cleared on consumption — either when the echo
+  // arrives or when a non-echoing external update overwrites it — so
+  // a later external set back to the same string is never
+  // incorrectly skipped.
+  const pendingEchoValueRef = useRef<string | undefined>(undefined);
 
   // Stable refs for imperative handle callbacks (avoid re-creating handle on every render)
   const insertTokenRef = useRef<
@@ -337,12 +347,44 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
   useImperativeHandle(handleRef, () => handle);
 
   useEffect(() => {
-    if (controlledValue !== undefined && editableRef.current) {
-      const current = serialize(editableRef.current);
-      if (current !== controlledValue) {
-        editableRef.current.textContent = controlledValue;
-        setIsEmpty(controlledValue.length === 0);
+    if (controlledValue === undefined || !editableRef.current) {
+      return;
+    }
+    // Skip exactly one echo of our most recent `onChange` emission:
+    // the DOM is already authoritative for that value, and the user
+    // may have typed more characters between the emit and this
+    // effect running. Consume the marker so a later external set to
+    // the same string is still applied.
+    if (controlledValue === pendingEchoValueRef.current) {
+      pendingEchoValueRef.current = undefined;
+      return;
+    }
+    const editable = editableRef.current;
+    if (serialize(editable) !== controlledValue) {
+      // Genuine external override — invalidate any stale pending
+      // echo before we rewrite the DOM.
+      pendingEchoValueRef.current = undefined;
+      const wasFocused = document.activeElement === editable;
+      editable.textContent = controlledValue;
+      // Setting `textContent` tears down the existing text node,
+      // which collapses any Selection inside this editable to
+      // offset 0. If the user was focused (e.g. a programmatic
+      // insert from a slash-menu pick), restore the caret to the
+      // end of the new content so the next keystroke appends rather
+      // than prepends.
+      if (wasFocused) {
+        const selection = window.getSelection();
+        if (selection) {
+          const range = document.createRange();
+          range.selectNodeContents(editable);
+          range.collapse(false);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
       }
+      setIsEmpty(controlledValue.length === 0);
+    } else {
+      pendingEchoValueRef.current = undefined;
     }
   }, [controlledValue]);
 
@@ -360,8 +402,10 @@ export function XDSChatComposerInput(props: XDSChatComposerInputProps) {
         '[data-xds-token], [data-xds-dictation-interim]',
       ) != null;
     const trimmedEmpty = text.trim().length === 0 && !hasTokens;
+    const nextValue = trimmedEmpty ? '' : text;
+    pendingEchoValueRef.current = nextValue;
     setIsEmpty(trimmedEmpty);
-    onChange?.(trimmedEmpty ? '' : text);
+    onChange?.(nextValue);
     cleanupPortalsRef.current?.();
   }, [onChange]);
 

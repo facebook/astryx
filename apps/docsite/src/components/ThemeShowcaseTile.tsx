@@ -3,7 +3,7 @@
 'use client';
 
 import {useEffect, useMemo, useRef, useState} from 'react';
-import {PlusIcon} from '@heroicons/react/24/outline';
+import {Plus} from 'lucide-react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -30,7 +30,6 @@ import {
 import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSBadge} from '@xds/core/Badge';
-import {XDSClickableCard} from '@xds/core/ClickableCard';
 
 // Below 800px viewport, the tile's left card + right column stack
 // vertically (instead of side-by-side). The 2-column tile layout
@@ -111,28 +110,28 @@ const styles = stylex.create({
     [TILE_STACK_BREAKPOINT]: {
       flexDirection: 'column',
     },
-    // Hover/active/focus chrome (5% ::after on :hover, 10% on
-    // :active, focus-visible outline) is provided by the outer
-    // XDSClickableCard — no need to reimplement here. But we
-    // still override two pieces of its visual treatment:
+    // The tile is purely presentational — no card-wide click target,
+    // no hover/active overlay. Navigation is handled by the two
+    // XDSButtons inside the hover overlay rendered above this tile
+    // (see /themes/page.tsx). We still override two pieces of the
+    // XDSCard chrome:
     //
-    // 1. backgroundColor: XDSClickableCard's default variant
-    //    paints --color-background-card (lifted surface tone).
-    //    Theme tiles need to sit on the theme's body color so
-    //    the hero image, banners, and form controls inside the
-    //    tile read as a continuous themed surface (matches what
-    //    a real themed app looks like, where everything sits on
-    //    --color-background-body).
+    // 1. backgroundColor: XDSCard's default variant paints
+    //    --color-background-card (lifted surface tone). Theme tiles
+    //    need to sit on the theme's body color so the hero image,
+    //    banners, and form controls inside the tile read as a
+    //    continuous themed surface (matches what a real themed app
+    //    looks like, where everything sits on --color-background-body).
     // 2. overflow: hidden: without this, the hero image and the
     //    right-column banners at the card edges paint past the
-    //    rounded corners XDSClickableCard sets via its radius.
+    //    rounded corners XDSCard sets via its radius.
     backgroundColor: colorVars['--color-background-body'],
     overflow: 'hidden',
     // Drop the XDSCard default variant's --color-border-emphasized
     // border so the tile reads as a continuous themed surface
-    // rather than a bordered card-on-card. The hover/focus
-    // affordance comes from XDSClickableCard's ::after overlay
-    // and focus-visible outline, not from a static border.
+    // rather than a bordered card-on-card. The dark hover scrim
+    // from XDSOverlay (rendered around this tile) is the only
+    // hover affordance — no static border needed.
     borderColor: 'transparent',
     width: '100%',
     height: '100%',
@@ -255,8 +254,9 @@ const styles = stylex.create({
   // checkbox) row and the banner stack in the right column.
   // Holds the Primary / Secondary / Ghost button samples — demos
   // the theme's button chrome. Buttons are passive samples (the
-  // right column carries `inert`), not interactive CTAs: the
-  // entire tile is itself a single link to the theme page.
+  // right column carries `inert`), not interactive CTAs — the
+  // real navigation lives in the hover overlay's Preview / Open
+  // in Playground buttons rendered around this tile.
   actionRow: {
     display: 'flex',
     alignItems: 'center',
@@ -434,18 +434,9 @@ export function ThemeShowcaseTile({
   }, [themeName]);
   const imageSrc = candidates[candidateIndex];
   const showImage = imageSrc !== undefined;
-  // Theme detail page URL. Strip the @xds/ scope from the package
-  // name to match the [name] segment of /packages/[name].
-  const themeHref = themeName
-    ? `/packages/${themeName.replace('@xds/', '')}`
-    : undefined;
 
   return (
-    <XDSClickableCard
-      label={`Open ${label} theme`}
-      href={themeHref}
-      padding={0}
-      xstyle={styles.tile}>
+    <XDSCard padding={0} xstyle={styles.tile}>
       {/* Left column: theme card wrapped in XDSCard for a self-
           contained surface (border, background, radius). */}
       <div {...stylex.props(styles.leftColumn)}>
@@ -593,9 +584,9 @@ export function ThemeShowcaseTile({
           gap between groups for clear visual hierarchy. Inert so
           every showcase component (input, progress, table, form
           controls, banners, Primary/Secondary button samples)
-          reads as a passive demo — the whole tile is itself a
-          link to the theme page, which is the only interactive
-          surface. */}
+          reads as a passive demo — the only interactive surfaces
+          are the two XDSButtons inside the hover overlay
+          rendered around this tile (see /themes/page.tsx). */}
       <div {...stylex.props(styles.rightColumn)} inert>
         {/* Group 1 — form-input components (text input + progress
             bar). Both are data-input/feedback elements so they
@@ -636,7 +627,7 @@ export function ThemeShowcaseTile({
                   size="sm"
                   label="Add"
                   isIconOnly
-                  icon={<PlusIcon />}
+                  icon={<Plus />}
                 />
               </XDSTableCell>
             </XDSTableRow>
@@ -651,7 +642,7 @@ export function ThemeShowcaseTile({
                   size="sm"
                   label="Add"
                   isIconOnly
-                  icon={<PlusIcon />}
+                  icon={<Plus />}
                 />
               </XDSTableCell>
             </XDSTableRow>
@@ -699,6 +690,6 @@ export function ThemeShowcaseTile({
           <XDSBanner status="error" title="Banner Title" />
         </XDSVStack>
       </div>
-    </XDSClickableCard>
+    </XDSCard>
   );
 }

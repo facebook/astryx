@@ -299,7 +299,9 @@ export function ThemeEditorView({
 
   const applyUnifiedPreset = React.useCallback((presetKey: string) => {
     const p = UNIFIED_PRESETS[presetKey as keyof typeof UNIFIED_PRESETS];
-    if (!p) {return;}
+    if (!p) {
+      return;
+    }
     setActivePreset(presetKey);
     setTypeScaleBase(p.typeBase);
     setTypeScaleRatio(p.typeRatio);
@@ -426,6 +428,7 @@ export function ThemeEditorView({
           <XDSHStack gap={2} vAlign="center" style={{padding: '8px 12px 0'}}>
             <XDSButton
               label="Back"
+              tooltip="Back to all themes"
               variant="ghost"
               size="md"
               isIconOnly

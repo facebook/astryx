@@ -12,6 +12,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as p from '@clack/prompts';
 import {getRunPrefix} from '../utils/package-manager.mjs';
+import {humanLog} from '../lib/json.mjs';
 
 // Known corruption patterns that indicate a broken transform.
 // Each entry: [regex, human-readable description]
@@ -77,8 +78,9 @@ function findSourceFiles(dir) {
  * Tries prettier, then biome. Silently skips if none found.
  *
  * @param {string[]} files - Absolute paths to files that were modified
+ * @param {boolean} [silent] - Suppress human-facing output
  */
-async function formatChangedFiles(files) {
+async function formatChangedFiles(files, silent = false) {
   if (files.length === 0) return;
 
   const {execSync} = await import('node:child_process');
@@ -93,7 +95,7 @@ async function formatChangedFiles(files) {
   for (const {name, cmd} of formatters) {
     try {
       execSync(cmd, {stdio: 'pipe', timeout: 30000});
-      p.log.info(`Formatted ${files.length} file${files.length === 1 ? '' : 's'} with ${name}`);
+      if (!silent) p.log.info(`Formatted ${files.length} file${files.length === 1 ? '' : 's'} with ${name}`);
       return;
     } catch {
       // Formatter not available or failed — try next
@@ -149,24 +151,32 @@ export function validateOutput(result, source, j) {
  * @param {boolean} options.apply - Write changes to disk
  * @param {string} options.path - Source directory to scan
  * @param {string|undefined} options.codemod - Run only this specific transform
+ * @param {boolean} [options.silent] - Suppress all human-facing output (for --json)
  */
-export async function runCodemods(versionManifests, {apply, path: srcPath, codemod}) {
+export async function runCodemods(versionManifests, {apply, path: srcPath, codemod, silent = false}) {
+  // No-op stub object so silent mode skips clack stdout entirely without
+  // littering the body with `if (!silent)` guards.
+  const log = silent
+    ? {step() {}, info() {}, success() {}, warn() {}, error() {}, message() {}}
+    : p.log;
+  const writeBlank = () => { if (!silent) humanLog(''); };
+
   const resolvedPath = path.resolve(srcPath);
 
   if (!fs.existsSync(resolvedPath)) {
-    p.log.error(`Source path not found: ${resolvedPath}`);
-    return;
+    log.error(`Source path not found: ${resolvedPath}`);
+    return {ok: false, reason: 'source_path_missing', resolvedPath};
   }
 
-  p.log.step(`Scanning ${resolvedPath} for source files...`);
+  log.step(`Scanning ${resolvedPath} for source files...`);
   const files = findSourceFiles(resolvedPath);
 
   if (files.length === 0) {
-    p.log.warn('No source files found.');
-    return;
+    log.warn('No source files found.');
+    return {ok: true, totalFilesChanged: 0, totalTransformsApplied: 0, errors: [], writtenFiles: [], skippedOptional: []};
   }
 
-  p.log.info(`Found ${files.length} source file${files.length === 1 ? '' : 's'}`);
+  log.info(`Found ${files.length} source file${files.length === 1 ? '' : 's'}`);
 
   // Dynamically import jscodeshift
   const jscodeshift = (await import('jscodeshift')).default;
@@ -179,7 +189,7 @@ export async function runCodemods(versionManifests, {apply, path: srcPath, codem
   const skippedOptional = [];
 
   for (const {version, transforms} of versionManifests) {
-    p.log.step(`Applying v${version} codemods...`);
+    log.step(`Applying v${version} codemods...`);
 
     for (const transformEntry of transforms) {
       // Filter by codemod name if specified
@@ -193,7 +203,7 @@ export async function runCodemods(versionManifests, {apply, path: srcPath, codem
         continue;
       }
 
-      p.log.info(`  ${meta.title}`);
+      log.info(`  ${meta.title}`);
 
       let filesChanged = 0;
 
@@ -223,7 +233,7 @@ export async function runCodemods(versionManifests, {apply, path: srcPath, codem
             const validation = validateOutput(result, source, j);
             if (!validation.valid) {
               totalValidationBlocked++;
-              p.log.error(`    ✗ ${relativePath} — ${validation.reason}`);
+              log.error(`    ✗ ${relativePath} — ${validation.reason}`);
               errors.push({file: relativePath, codemod: name, error: validation.reason});
               continue;
             }
@@ -235,80 +245,80 @@ export async function runCodemods(versionManifests, {apply, path: srcPath, codem
             if (apply) {
               fs.writeFileSync(filePath, result, 'utf-8');
               writtenFiles.push(filePath);
-              p.log.success(`    ✓ ${relativePath}`);
+              log.success(`    ✓ ${relativePath}`);
             } else {
-              p.log.warn(`    ~ ${relativePath} (would change)`);
+              log.warn(`    ~ ${relativePath} (would change)`);
             }
           }
         } catch (err) {
-          p.log.error(`    ✗ ${relativePath} — ${err.message}`);
+          log.error(`    ✗ ${relativePath} — ${err.message}`);
           errors.push({file: relativePath, codemod: name, error: err.message});
         }
       }
 
       if (filesChanged > 0) {
         const verb = apply ? 'Updated' : 'Would update';
-        p.log.info(`  ${verb} ${filesChanged} file${filesChanged === 1 ? '' : 's'}`);
+        log.info(`  ${verb} ${filesChanged} file${filesChanged === 1 ? '' : 's'}`);
       }
     }
   }
 
   // Summary
-  console.log('');
+  writeBlank();
 
   if (errors.length > 0) {
-    p.log.error(
+    log.error(
       `${errors.length} error${errors.length === 1 ? '' : 's'} during codemods:`,
     );
     for (const {file, codemod: cm, error} of errors) {
-      p.log.error(`  ${cm} → ${file}: ${error}`);
+      log.error(`  ${cm} → ${file}: ${error}`);
     }
   }
 
   // Post-codemod formatting: run the project's formatter on changed files
   // so codemods don't introduce style drift (jscodeshift may change quotes, etc.)
   if (apply && writtenFiles.length > 0) {
-    await formatChangedFiles(writtenFiles);
+    await formatChangedFiles(writtenFiles, silent);
   }
 
   if (totalValidationBlocked > 0) {
-    p.log.warn(
+    log.warn(
       `${totalValidationBlocked} file${totalValidationBlocked === 1 ? ' was' : 's were'} blocked by validation — no changes written to ${totalValidationBlocked === 1 ? 'that file' : 'those files'}.`,
     );
-    p.log.info(
+    log.info(
       'This means a codemod produced invalid output. Please report this as a bug.',
     );
   }
 
   if (totalFilesChanged === 0 && errors.length === 0) {
-    p.log.success('No changes needed — your code is already up to date!');
+    log.success('No changes needed — your code is already up to date!');
   } else if (apply) {
-    p.log.success(
+    log.success(
       `Done! Applied ${totalTransformsApplied} change${totalTransformsApplied === 1 ? '' : 's'} across ${totalFilesChanged} file${totalFilesChanged === 1 ? '' : 's'}.`,
     );
     if (errors.length > 0) {
-      p.log.warn('Some files had errors — review them manually.');
+      log.warn('Some files had errors — review them manually.');
     }
-    p.log.info('Run your type checker and tests to verify the changes.');
+    log.info('Run your type checker and tests to verify the changes.');
   } else {
-    p.log.warn(
+    log.warn(
       `Found ${totalTransformsApplied} change${totalTransformsApplied === 1 ? '' : 's'} across ${totalFilesChanged} file${totalFilesChanged === 1 ? '' : 's'}.`,
     );
-    p.log.info('Run with --apply to write changes to disk.');
+    log.info('Run with --apply to write changes to disk.');
   }
 
   // Report skipped optional codemods so the user knows they exist
   if (skippedOptional.length > 0) {
-    console.log('');
-    p.log.message(
+    writeBlank();
+    log.message(
       `${skippedOptional.length} optional codemod${skippedOptional.length === 1 ? '' : 's'} available:`,
     );
     for (const {name, meta} of skippedOptional) {
-      p.log.info(`  ${name} — ${meta.title}`);
+      log.info(`  ${name} — ${meta.title}`);
       if (meta.description) {
-        p.log.info(`    ${meta.description}`);
+        log.info(`    ${meta.description}`);
       }
-      p.log.info(`    Run: xds upgrade --codemod ${name} --path <dir> --apply`);
+      log.info(`    Run: xds upgrade --codemod ${name} --path <dir> --apply`);
     }
   }
 

@@ -19,7 +19,6 @@ export default function HoverCardShowcase() {
   return (
     <XDSHoverCard
       placement="above"
-      isDefaultOpen
       content={
         <XDSStack direction="vertical" gap={2} xstyle={styles.card}>
           <XDSStack direction="horizontal" gap={2} vAlign="center">

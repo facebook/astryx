@@ -20,7 +20,7 @@ import {
   GAP_CATEGORIES,
 } from '../utils/github.mjs';
 import {getRunPrefix} from '../utils/package-manager.mjs';
-import {jsonOut, jsonError} from '../lib/json.mjs';
+import {jsonOut, jsonError, humanLog} from '../lib/json.mjs';
 
 /**
  * Decide whether we're in a context safe to actually file a report.
@@ -245,7 +245,7 @@ export function registerGapReport(program) {
       if (options.listCategories) {
         if (json) return jsonOut('gap-report.categories', GAP_CATEGORIES);
         for (const cat of GAP_CATEGORIES) {
-          console.log(`  ${cat.value.padEnd(20)} ${cat.label}`);
+          humanLog(`  ${cat.value.padEnd(20)} ${cat.label}`);
         }
         return;
       }
@@ -253,7 +253,7 @@ export function registerGapReport(program) {
       const config = loadGapReportConfig();
       if (!config.enabled) {
         if (json) return jsonError('Gap reporting is disabled');
-        console.log(
+        humanLog(
           `Gap reporting is disabled (XDS_GAP_REPORT=off or xds.config.mjs).\n` +
             `Run \`${getRunPrefix()} xds gap-report setup\` to configure.`,
         );
@@ -321,8 +321,8 @@ export function registerGapReport(program) {
                 'Default is dry-run in non-interactive contexts.',
             });
           }
-          console.log(formatPreview(preview));
-          console.log(
+          humanLog(formatPreview(preview));
+          humanLog(
             '\n[dry-run] Nothing was filed. Re-run with --commit to file this report.',
           );
           return;
@@ -341,9 +341,9 @@ export function registerGapReport(program) {
               url: url || null,
             });
           if (url) {
-            console.log(`\n✓ Gap report filed: ${url}\n`);
+            humanLog(`\n✓ Gap report filed: ${url}\n`);
           } else {
-            console.log('\nGap reporting is disabled via configuration.\n');
+            humanLog('\nGap reporting is disabled via configuration.\n');
           }
         } catch (err) {
           if (json) return jsonError(err.message);
@@ -351,6 +351,15 @@ export function registerGapReport(program) {
           process.exit(1);
         }
         return;
+      }
+
+      // --json without --component/--category/--reason can't go interactive —
+      // emit a structured error explaining the required flags.
+      if (json) {
+        return jsonError(
+          'gap-report --json requires --component, --category, and --reason. ' +
+            'Run with --list-categories to see valid categories.',
+        );
       }
 
       // Interactive mode

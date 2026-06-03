@@ -13,7 +13,7 @@ import {XDSSelector} from '@xds/core/Selector';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSIconButton} from '@xds/core/IconButton';
-import {MinusIcon, PlusIcon} from '@heroicons/react/24/outline';
+import {Minus, Plus} from 'lucide-react';
 import {useMediaQuery} from '@xds/core/hooks';
 import type {PropControlDescriptor} from './parsePropType';
 import type {KnobProp} from './InteractivePreview';
@@ -186,7 +186,8 @@ function SlotListControl({
       <XDSHStack gap={1}>
         <XDSIconButton
           label="Remove item"
-          icon={<MinusIcon width={16} height={16} />}
+          tooltip="Remove item"
+          icon={<Minus size={16} />}
           variant="ghost"
           size="sm"
           isDisabled={count === 0}
@@ -194,7 +195,8 @@ function SlotListControl({
         />
         <XDSIconButton
           label="Add item"
-          icon={<PlusIcon width={16} height={16} />}
+          tooltip="Add item"
+          icon={<Plus size={16} />}
           variant="ghost"
           size="sm"
           onClick={addItem}
