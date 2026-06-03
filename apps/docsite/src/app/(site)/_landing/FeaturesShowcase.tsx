@@ -135,13 +135,18 @@ const styles = stylex.create({
   imageWrapBleedBottom: {
     marginBottom: 'calc(var(--spacing-5) * -1)',
   },
-  // Image: full container width, natural height (preserves aspect
-  // ratio without distortion). No object-fit because there's no
-  // forced container height to fit against — the image dictates
-  // its own height via the aspect ratio.
+  // Image: full container width, natural height capped at 120px so
+  // regular cards stay compact. Wide compositions (CLI / Components)
+  // would otherwise render at their full aspect-ratio-derived
+  // height (~280px+ at desktop card widths) and pad the cards out
+  // taller than they need to be. object-fit:contain inside the
+  // capped height keeps each composition undistorted.
   tallImage: {
     width: '100%',
     height: 'auto',
+    maxHeight: 120,
+    objectFit: 'contain',
+    objectPosition: 'bottom left',
     display: 'block',
   },
 });
