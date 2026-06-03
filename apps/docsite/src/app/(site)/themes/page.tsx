@@ -10,8 +10,9 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSText} from '@xds/core/Text';
 import {XDSHStack, XDSVStack} from '@xds/core/Layout';
 import {XDSSection} from '@xds/core/Section';
-import {XDSCard} from '@xds/core/Card';
+import {XDSClickableCard} from '@xds/core/ClickableCard';
 import {XDSButton} from '@xds/core/Button';
+import {XDSOverlay} from '@xds/core/Overlay';
 import {XDSTheme} from '@xds/core/theme';
 import {
   spacingDefaults,
@@ -37,7 +38,7 @@ const STRUCTURAL_TOKEN_OVERRIDES: React.CSSProperties = {
   ...radiusDefaults,
   ...textSizeDefaults,
   height: '100%',
-} as React.CSSProperties;
+};
 
 // Gallery order — themes are sorted by visual closeness, starting
 // from the most restrained / brand-neutral and ending at the most
@@ -137,14 +138,67 @@ const styles = stylex.create({
     overflow: 'hidden',
   },
 
-  // The outer XDSCard sized to fill its grid cell at full height
-  // so every card in a row matches the tallest. Without this, the
-  // XDSCard sizes to content and the grid stretch doesn't reach
+  // The outer XDSClickableCard sized to fill its grid cell at full
+  // height so every card in a row matches the tallest. Without this,
+  // the card sizes to content and the grid stretch doesn't reach
   // the inner tile.
   cardFill: {
     height: '100%',
   },
+  // Wrapper around the XDSOverlay that fills the gallery card cell
+  // at full height so the overlay's scrim covers the entire tile.
+  // The --color-overlay scrim deepening lives as an inline style on
+  // the rendered element (matching the templates page) since
+  // stylex.create rejects raw CSS custom property declarations.
+  overlayHost: {
+    height: '100%',
+    // The clickable card wrapper renders a flex/block parent that
+    // doesn't preserve `height:100%` for nested grandchildren without
+    // an explicit display:flex relay. flex column lets the overlay
+    // child below stretch to fill the host.
+    display: 'flex',
+    flexDirection: 'column' as const,
+  },
+  // XDSOverlay's own container is a plain div with no explicit
+  // height, so without this rule the overlay sizes to its content
+  // and the underlying ThemeShowcaseTile's image flex-grow ends up
+  // producing inconsistent card heights across the row. flex:1 in
+  // the column overlayHost above stretches it to fill, height:100%
+  // makes the relay explicit for any browser that doesn't honor
+  // implicit flex-stretch on this element.
+  overlayFill: {
+    flex: 1,
+    height: '100%',
+  },
+  // Inner overlay content — actions cluster pinned to the bottom-left
+  // of the tile so it reads as a caption rather than blocking the
+  // whole preview.
+  overlayInner: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    justifyContent: 'flex-end',
+    alignItems: 'flex-start',
+    height: '100%',
+    width: '100%',
+    padding: 16,
+  },
+  // White-on-scrim text inside the overlay. The scrim is dark enough
+  // (78% on-light mix) that the standard --color-text-primary token
+  // would be hard to read; explicit white pairs with the scrim.
+  overlayTitle: {
+    color: '#fff',
+  },
+  overlayDescription: {
+    color: 'rgba(255,255,255,0.7)',
+  },
 });
+
+// Strip the `@xds/theme-` prefix from a package name to get the
+// /themes/<slug> + /themes/playground/<slug> route segment.
+// Example: `@xds/theme-stone` → `stone`.
+function themeSlug(packageName: string): string {
+  return packageName.replace(/^@xds\/theme-/, '');
+}
 
 export default function ThemesPage() {
   const {mode} = useThemeMode();
@@ -193,33 +247,108 @@ export default function ThemesPage() {
               const label = pkg.displayName
                 .replace(/^Theme:\s*/, '')
                 .replace(/\s*Theme$/, '');
+              const slug = themeSlug(pkg.name);
               return (
-                <XDSCard
+                <XDSClickableCard
                   key={pkg.name}
+                  label={`Preview ${label} theme`}
+                  href={`/themes/${slug}`}
                   padding={0}
                   variant="transparent"
                   xstyle={styles.cardFill}>
-                  <div {...stylex.props(styles.previewFrame)}>
-                    {theme ? (
-                      <XDSTheme theme={theme} mode={mode}>
-                        {/* Re-set structural tokens to XDS defaults
-                            (see STRUCTURAL_TOKEN_OVERRIDES above) so
-                            every card has identical layout / control
-                            sizes. Colors and font-family slots stay
-                            theme-driven. */}
-                        <div style={STRUCTURAL_TOKEN_OVERRIDES}>
-                          <ThemeShowcaseTile
-                            label={label}
-                            themeName={pkg.name}
-                            description={pkg.description}
-                          />
+                  {/* Hover overlay mirrors the templates gallery: a
+                      dark scrim fades in on hover with a label,
+                      short description, and two CTAs ("Preview" →
+                      /themes/<slug>; "Open in Playground" →
+                      /themes/playground/<slug>). The override of
+                      --color-overlay (see overlayHost) deepens the
+                      default scrim so the white action chrome reads
+                      legibly against light theme previews like
+                      Butter or Stone.
+
+                      The XDSClickableCard wrapper makes the entire
+                      tile a link to /themes/<slug>; the nested
+                      buttons inside the overlay still work
+                      independently because XDSClickableCard scopes
+                      its click handling to the surface, not nested
+                      interactive elements. */}
+                  <div
+                    {...stylex.props(styles.overlayHost)}
+                    style={
+                      {
+                        // Inline override of XDSOverlay's --color-overlay
+                        // scrim variable. Matches the templates page
+                        // pattern: stylex.create can't carry raw CSS
+                        // custom-property declarations, so the deepened
+                        // scrim (so the white action text stays
+                        // legible on light theme previews) goes here.
+                        '--color-overlay':
+                          'color-mix(in srgb, var(--color-on-light) 78%, transparent)',
+                      } as React.CSSProperties
+                    }>
+                    <XDSOverlay
+                      showOn="hover"
+                      scrim="dark"
+                      xstyle={styles.overlayFill}
+                      content={
+                        <div {...stylex.props(styles.overlayInner)}>
+                          <XDSVStack gap={2}>
+                            <XDSVStack gap={0.5}>
+                              <XDSText
+                                type="body"
+                                weight="bold"
+                                xstyle={styles.overlayTitle}>
+                                {label}
+                              </XDSText>
+                              {pkg.description && (
+                                <XDSText
+                                  type="supporting"
+                                  xstyle={styles.overlayDescription}>
+                                  {pkg.description.slice(0, 120)}
+                                  {pkg.description.length > 120 ? '\u2026' : ''}
+                                </XDSText>
+                              )}
+                            </XDSVStack>
+                            <XDSHStack gap={2}>
+                              <XDSButton
+                                label="Preview"
+                                variant="secondary"
+                                size="sm"
+                                href={`/themes/${slug}`}
+                              />
+                              <XDSButton
+                                label="Open in Playground"
+                                variant="secondary"
+                                size="sm"
+                                href={`/themes/playground/${slug}`}
+                              />
+                            </XDSHStack>
+                          </XDSVStack>
                         </div>
-                      </XDSTheme>
-                    ) : (
-                      <div {...stylex.props(styles.cardImage)} />
-                    )}
+                      }>
+                      <div {...stylex.props(styles.previewFrame)}>
+                        {theme ? (
+                          <XDSTheme theme={theme} mode={mode}>
+                            {/* Re-set structural tokens to XDS defaults
+                                (see STRUCTURAL_TOKEN_OVERRIDES above) so
+                                every card has identical layout / control
+                                sizes. Colors and font-family slots stay
+                                theme-driven. */}
+                            <div style={STRUCTURAL_TOKEN_OVERRIDES}>
+                              <ThemeShowcaseTile
+                                label={label}
+                                themeName={pkg.name}
+                                description={pkg.description}
+                              />
+                            </div>
+                          </XDSTheme>
+                        ) : (
+                          <div {...stylex.props(styles.cardImage)} />
+                        )}
+                      </div>
+                    </XDSOverlay>
                   </div>
-                </XDSCard>
+                </XDSClickableCard>
               );
             })}
           </div>
