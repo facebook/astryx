@@ -24,17 +24,17 @@ import {ThemeCardShowcase} from './ThemeCardShowcase';
 import {getThemeImages} from './themeImages';
 
 // Entrance keyframes for the floating footer pill — translates up
-// from a small offset below its resting position while fading in.
-// 8px is enough to read as "rising into place" without feeling
-// dramatic; opacity 0 → 1 keeps the chrome from popping in.
+// from below its resting position into place. Starts fully off-
+// screen (translateY(100% + bottom inset) so the entire pill is
+// hidden during the pre-animation delay) and slides into its
+// final resting position. No opacity transition — the toolbar
+// reads as opaque chrome rising into view rather than fading.
 const floatingFooterEntrance = stylex.keyframes({
   from: {
-    transform: 'translateY(8px)',
-    opacity: 0,
+    transform: 'translateY(calc(100% + var(--spacing-4)))',
   },
   to: {
     transform: 'translateY(0)',
-    opacity: 1,
   },
 });
 
@@ -87,8 +87,8 @@ const styles = stylex.create({
     zIndex: 100,
     pointerEvents: 'none',
     animationName: floatingFooterEntrance,
-    animationDuration: '420ms',
-    animationDelay: '300ms',
+    animationDuration: '520ms',
+    animationDelay: '800ms',
     animationTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
     animationFillMode: 'both',
     '@media (prefers-reduced-motion: reduce)': {
