@@ -6,11 +6,12 @@
 
 'use client';
 
+import {useRouter} from 'next/navigation';
 import * as stylex from '@stylexjs/stylex';
 import {XDSText} from '@xds/core/Text';
 import {XDSHStack, XDSVStack} from '@xds/core/Layout';
 import {XDSSection} from '@xds/core/Section';
-import {XDSClickableCard} from '@xds/core/ClickableCard';
+import {XDSCard} from '@xds/core/Card';
 import {XDSButton} from '@xds/core/Button';
 import {XDSOverlay} from '@xds/core/Overlay';
 import {XDSTheme} from '@xds/core/theme';
@@ -138,10 +139,8 @@ const styles = stylex.create({
     overflow: 'hidden',
   },
 
-  // The outer XDSClickableCard sized to fill its grid cell at full
-  // height so every card in a row matches the tallest. Without this,
-  // the card sizes to content and the grid stretch doesn't reach
-  // the inner tile.
+  // The outer XDSCard sized to fill its grid cell at full height
+  // so every card in a row matches the tallest.
   cardFill: {
     height: '100%',
   },
@@ -172,7 +171,10 @@ const styles = stylex.create({
   },
   // Inner overlay content — actions cluster pinned to the bottom-left
   // of the tile so it reads as a caption rather than blocking the
-  // whole preview.
+  // whole preview. The whole inner area is itself clickable (via
+  // an onClick handler in the JSX below) — clicking on the scrim
+  // background routes to the preview page just like the explicit
+  // Preview button does.
   overlayInner: {
     display: 'flex',
     flexDirection: 'column' as const,
@@ -181,6 +183,7 @@ const styles = stylex.create({
     height: '100%',
     width: '100%',
     padding: 16,
+    cursor: 'pointer',
   },
   // White-on-scrim text inside the overlay. The scrim is dark enough
   // (78% on-light mix) that the standard --color-text-primary token
@@ -202,6 +205,7 @@ function themeSlug(packageName: string): string {
 
 export default function ThemesPage() {
   const {mode} = useThemeMode();
+  const router = useRouter();
   return (
     <div {...stylex.props(styles.galleryWrap)}>
       <XDSSection padding={6}>
@@ -249,10 +253,8 @@ export default function ThemesPage() {
                 .replace(/\s*Theme$/, '');
               const slug = themeSlug(pkg.name);
               return (
-                <XDSClickableCard
+                <XDSCard
                   key={pkg.name}
-                  label={`Preview ${label} theme`}
-                  href={`/themes/${slug}`}
                   padding={0}
                   variant="transparent"
                   xstyle={styles.cardFill}>
@@ -266,12 +268,12 @@ export default function ThemesPage() {
                       legibly against light theme previews like
                       Butter or Stone.
 
-                      The XDSClickableCard wrapper makes the entire
-                      tile a link to /themes/<slug>; the nested
-                      buttons inside the overlay still work
-                      independently because XDSClickableCard scopes
-                      its click handling to the surface, not nested
-                      interactive elements. */}
+                      Card surface is NOT clickable on its own —
+                      navigation happens through the overlay's
+                      explicit CTAs, matching the templates page
+                      pattern. The Preview button is the primary
+                      route (/themes/<slug>); Playground is the
+                      secondary alternate path. */}
                   <div
                     {...stylex.props(styles.overlayHost)}
                     style={
@@ -291,7 +293,18 @@ export default function ThemesPage() {
                       scrim="dark"
                       xstyle={styles.overlayFill}
                       content={
-                        <div {...stylex.props(styles.overlayInner)}>
+                        <div
+                          {...stylex.props(styles.overlayInner)}
+                          role="link"
+                          tabIndex={0}
+                          aria-label={`Preview ${label} theme`}
+                          onClick={() => router.push(`/themes/${slug}`)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              router.push(`/themes/${slug}`);
+                            }
+                          }}>
                           <XDSVStack gap={2}>
                             <XDSVStack gap={0.5}>
                               <XDSText
@@ -315,12 +328,14 @@ export default function ThemesPage() {
                                 variant="secondary"
                                 size="sm"
                                 href={`/themes/${slug}`}
+                                onClick={e => e.stopPropagation()}
                               />
                               <XDSButton
                                 label="Open in Playground"
                                 variant="secondary"
                                 size="sm"
                                 href={`/themes/playground/${slug}`}
+                                onClick={e => e.stopPropagation()}
                               />
                             </XDSHStack>
                           </XDSVStack>
@@ -348,7 +363,7 @@ export default function ThemesPage() {
                       </div>
                     </XDSOverlay>
                   </div>
-                </XDSClickableCard>
+                </XDSCard>
               );
             })}
           </div>
