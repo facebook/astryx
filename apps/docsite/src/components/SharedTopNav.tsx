@@ -72,7 +72,7 @@ export function SharedTopNav() {
   return (
     <>
       <XDSTopNav
-        label="XDS navigation"
+        label="Astryx navigation"
         heading={<XDSTopNavHeading logo={XDS_BRAND_ICON} headingHref="/" />}
         centerContent={
           <>
