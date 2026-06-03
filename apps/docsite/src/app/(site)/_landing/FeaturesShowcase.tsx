@@ -87,25 +87,19 @@ const styles = stylex.create({
   exploreLink: {
     marginTop: 'calc(var(--spacing-3))',
   },
-  // Image at the bottom of the tall card. Object-fit: cover keeps the
-  // composition's most important content (the code block on the left,
-  // the card overlay on the right) visible regardless of tile width;
-  // object-position bottom-left anchors the crop so the code block's
-  // top edge stays visible even when the card stretches very tall.
-  // Aspect-ratio holds a sensible shape on short rows where flex:1
-  // would otherwise collapse the image to a thin strip.
   // Shared image wrapper styles for any feature card with an image.
-  // marginTop:auto pushes the image to the bottom of the card so it
-  // sticks to the bottom regardless of the card's stretched height,
-  // and minHeight gives it a usable floor for short rows. flex:1
-  // was previously here but caused the image to balloon into the
-  // entire leftover vertical space on tall rows, leaving an
-  // unintended chasm between the "Explore →" link and the image.
-  // marginBottom uses negative margin (less 16px) so the image
-  // bleeds toward the card's bottom edge with a 16px gutter.
+  // marginTop:auto pushes the wrapper to the bottom of the card so
+  // every card's image sits on the same baseline regardless of how
+  // much text wraps above it. paddingTop:16 guarantees a 16px gap
+  // between the "Explore →" link and the image even on short cards.
+  // No fixed height — the inner <img> uses height:auto + width:100%
+  // so the wrapper grows to exactly the image's natural rendered
+  // height (preserves each composition's aspect ratio without
+  // distortion or empty padding). The negative marginBottom bleeds
+  // the image toward the card's bottom edge with a 16px gutter.
   imageWrap: {
-    minHeight: 140,
     marginTop: 'auto',
+    paddingTop: 16,
     marginBottom: 'calc(var(--spacing-5) * -1 + 16px)',
     alignSelf: 'stretch',
     overflow: 'hidden',
@@ -113,9 +107,15 @@ const styles = stylex.create({
   // Tall-card variant: image bleeds flush to the right edge of the
   // card (full bleed right) but keeps a 16px inset on the left so
   // the composition reads as anchored to the left padding rim.
+  // marginTop:auto + marginBottom:auto vertically centers the image
+  // in the leftover space below the heading/link content, so the
+  // tall card's empty space splits equally above and below the
+  // composition instead of all collecting at top or bottom.
   imageWrapTall: {
     marginInlineStart: 'calc(var(--spacing-5) * -1 + 16px)',
     marginInlineEnd: 'calc(var(--spacing-5) * -1)',
+    marginTop: 'auto',
+    marginBottom: 'auto',
   },
   // Regular-card variant: 16px inset on BOTH sides so the image
   // sits inside the card text padding minus the outer rim.
@@ -125,24 +125,23 @@ const styles = stylex.create({
   },
   // Bleed-to-corner variant: drops the 16px right + bottom insets
   // so the image runs flush to the card's right and bottom edges.
-  // Used by image compositions that are intentionally designed to
-  // run off the corner (the cascading templates stack).
   imageWrapBleedCorner: {
     marginInlineEnd: 'calc(var(--spacing-5) * -1)',
     marginBottom: 'calc(var(--spacing-5) * -1)',
   },
   // Bleed-bottom variant: drops only the 16px bottom inset so the
   // image runs flush to the bottom edge while keeping the right
-  // inset. Used by full-page mockups that should feel "rooted" at
-  // the card's bottom but still respect the right padding.
+  // inset.
   imageWrapBleedBottom: {
     marginBottom: 'calc(var(--spacing-5) * -1)',
   },
+  // Image: full container width, natural height (preserves aspect
+  // ratio without distortion). No object-fit because there's no
+  // forced container height to fit against — the image dictates
+  // its own height via the aspect ratio.
   tallImage: {
     width: '100%',
-    height: '100%',
-    objectFit: 'contain',
-    objectPosition: 'bottom left',
+    height: 'auto',
     display: 'block',
   },
 });
