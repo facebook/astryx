@@ -242,6 +242,7 @@ export function RawTokensPanel({
             <XDSToggleButton
               key={groupKey}
               label={TOKEN_GROUPS[groupKey].label}
+              tooltip={TOKEN_GROUPS[groupKey].label}
               value={groupKey}
               icon={TOKEN_ICONS[groupKey]}
               isIconOnly={activeGroup !== groupKey}

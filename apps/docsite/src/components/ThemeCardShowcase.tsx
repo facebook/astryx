@@ -596,6 +596,7 @@ function ChatCard() {
             size="sm"
             isIconOnly
             label="Export conversation"
+            tooltip="Export conversation"
             icon={<Download size={16} />}
           />
           <XDSButton
@@ -603,6 +604,7 @@ function ChatCard() {
             size="sm"
             isIconOnly
             label="Close chat"
+            tooltip="Close chat"
             icon={<X size={16} />}
           />
         </XDSHStack>
@@ -725,6 +727,7 @@ function ChatCard() {
               size="md"
               isIconOnly
               label="Attach"
+              tooltip="Attach"
               icon={<Plus size={16} />}
             />
           }
@@ -734,6 +737,7 @@ function ChatCard() {
               size="md"
               isIconOnly
               label="Voice input"
+              tooltip="Voice input"
               icon={<Mic size={16} />}
             />
           }
@@ -1164,6 +1168,7 @@ function InventoryCard({images}: {images: ThemeImageSet}) {
             size="sm"
             isIconOnly
             label="List view"
+            tooltip="List view"
             icon={<List size={18} />}
           />
           <XDSButton
@@ -1171,6 +1176,7 @@ function InventoryCard({images}: {images: ThemeImageSet}) {
             size="sm"
             isIconOnly
             label="Grid view"
+            tooltip="Grid view"
             icon={<LayoutGrid size={18} />}
           />
         </XDSHStack>

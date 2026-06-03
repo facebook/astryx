@@ -210,6 +210,7 @@ export function ThemePackagePage({
                   variant="ghost"
                   size="md"
                   label="Back to all themes"
+                  tooltip="Back to all themes"
                   isIconOnly
                   icon={<ArrowLeft />}
                   href="/themes"
@@ -235,6 +236,11 @@ export function ThemePackagePage({
                   variant="ghost"
                   isIconOnly
                   label={
+                    mode === 'light'
+                      ? 'Switch preview to dark mode'
+                      : 'Switch preview to light mode'
+                  }
+                  tooltip={
                     mode === 'light'
                       ? 'Switch preview to dark mode'
                       : 'Switch preview to light mode'

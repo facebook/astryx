@@ -139,6 +139,7 @@ export function ThemeShowcasePreview({
               <XDSHStack gap={0.5}>
                 <XDSButton
                   label="Search"
+                  tooltip="Search"
                   variant="ghost"
                   isIconOnly
                   icon={<Search size={20} />}
@@ -146,6 +147,7 @@ export function ThemeShowcasePreview({
                 />
                 <XDSButton
                   label="Account"
+                  tooltip="Account"
                   variant="ghost"
                   isIconOnly
                   icon={<User size={20} />}
@@ -153,6 +155,7 @@ export function ThemeShowcasePreview({
                 />
                 <XDSButton
                   label="Cart"
+                  tooltip="Cart"
                   variant="ghost"
                   isIconOnly
                   icon={<ShoppingBag size={20} />}

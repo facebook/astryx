@@ -186,6 +186,7 @@ function SlotListControl({
       <XDSHStack gap={1}>
         <XDSIconButton
           label="Remove item"
+          tooltip="Remove item"
           icon={<Minus size={16} />}
           variant="ghost"
           size="sm"
@@ -194,6 +195,7 @@ function SlotListControl({
         />
         <XDSIconButton
           label="Add item"
+          tooltip="Add item"
           icon={<Plus size={16} />}
           variant="ghost"
           size="sm"
