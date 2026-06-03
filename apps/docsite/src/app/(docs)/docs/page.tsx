@@ -15,7 +15,6 @@ import {XDSSection} from '@xds/core/Section';
 import {XDSButton} from '@xds/core/Button';
 import {XDSMediaTheme} from '@xds/core/theme';
 import {XDSLink} from '@xds/core/Link';
-import {ThemedPreview} from '../../../components/ThemedPreview';
 import {packages} from '../../../generated/packageRegistry';
 import {componentCount} from '../../../generated/componentRegistry';
 import {docTopics} from '../../../generated/docsRegistry';
@@ -249,11 +248,12 @@ export default function HomePage() {
                     href={`/packages/${pkg.name.replace('@xds/', '')}`}
                     {...stylex.props(styles.linkReset)}>
                     {theme ? (
-                      <ThemedPreview theme={theme}>
-                        <div {...stylex.props(styles.packageImageWrapper)}>
-                          <ThemeShowcaseTile label={pkg.displayName} />
-                        </div>
-                      </ThemedPreview>
+                      <div {...stylex.props(styles.packageImageWrapper)}>
+                        <ThemeShowcaseTile
+                          label={pkg.displayName}
+                          theme={theme}
+                        />
+                      </div>
                     ) : (
                       <div
                         {...stylex.props(styles.packageImageWrapper)}

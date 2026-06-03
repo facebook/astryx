@@ -55,11 +55,7 @@ function getInstallSteps(pkgName: string): InstallStep[] {
 }
 
 /** Sections to remove from the @xds/core README on the package page. */
-const CORE_STRIP_SECTIONS = [
-  'Quick Start',
-  'Resources',
-  'XDS CLI',
-];
+const CORE_STRIP_SECTIONS = ['Quick Start', 'Resources', 'XDS CLI'];
 
 /**
  * Rewrite the @xds/core README intro to incorporate the package description
@@ -71,7 +67,7 @@ function rewriteCoreReadme(readme: string | null): string | null {
   }
   return readme.replace(
     /Core UI components, theme system, and utilities for the XDS design system\..*?(?=\n)/,
-    'Accessible, themeable React components with built-in spacing, dark mode, and StyleX styling — the core building blocks of the XDS design system.',
+    'Accessible, themeable React components with built-in spacing, dark mode, and StyleX styling — the core building blocks of the Astryx design system.',
   );
 }
 

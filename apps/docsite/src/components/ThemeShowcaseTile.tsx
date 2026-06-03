@@ -3,6 +3,7 @@
 'use client';
 
 import {useEffect, useMemo, useRef, useState} from 'react';
+import type {ReactNode} from 'react';
 import {PlusIcon} from '@heroicons/react/24/outline';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -31,6 +32,8 @@ import {XDSHeading, XDSText} from '@xds/core/Text';
 import {XDSTextInput} from '@xds/core/TextInput';
 import {XDSBadge} from '@xds/core/Badge';
 import {XDSClickableCard} from '@xds/core/ClickableCard';
+import type {XDSDefinedTheme} from '@xds/core/theme';
+import {ThemedPreview} from './ThemedPreview';
 
 // Below 800px viewport, the tile's left card + right column stack
 // vertically (instead of side-by-side). The 2-column tile layout
@@ -94,46 +97,56 @@ const CATEGORICAL_SWATCH_TOKENS: ReadonlyArray<string> = [
 ];
 
 const styles = stylex.create({
-  // Outer tile: 2-column flex by default (left card + right column
-  // side-by-side). Below 640px viewport, switches to a vertical
-  // stack so neither column gets cramped on small screens.
+  // The XDSClickableCard root. Carries only the card chrome — the
+  // 2-column flex layout and themed background live on `tileSurface`
+  // (rendered by TileBody) so they sit *inside* the theme context and
+  // pick up the showcased theme rather than the ambient site theme.
   //
-  // A 16px gap sits between the two columns. Each column carries
-  // its own outer-edge padding (top/bottom + the outer horizontal
-  // edge) so the tile's overall inset matches what each column
-  // contributes — and the middle channel is exactly one 16px gap
-  // rather than the doubled 32px gutter we'd get from symmetric
-  // padding on both columns.
+  // overflow: hidden — without this, the hero image and the
+  // right-column banners at the surface edges paint past the rounded
+  // corners XDSClickableCard sets via its radius.
+  //
+  // Hover/active/focus chrome (5% ::after on :hover, 10% on :active,
+  // focus-visible outline) is provided by XDSClickableCard itself and
+  // intentionally stays on the ambient site theme. We only drop its
+  // default --color-border-emphasized border (borderColor) so the
+  // tile reads as a continuous surface rather than a bordered
+  // card-on-card.
   tile: {
+    overflow: 'hidden',
+    borderColor: 'transparent',
+    width: '100%',
+    height: '100%',
+    boxSizing: 'border-box',
+  },
+
+  // Themed surface inside the card. Fills the card and carries the
+  // 2-column flex layout: left card + right column side-by-side by
+  // default, stacked vertically below TILE_STACK_BREAKPOINT so
+  // neither column gets cramped on small screens.
+  //
+  // A 16px gap sits between the two columns. Each column carries its
+  // own outer-edge padding (top/bottom + the outer horizontal edge)
+  // so the tile's overall inset matches what each column contributes
+  // — and the middle channel is exactly one 16px gap rather than the
+  // doubled 32px gutter we'd get from symmetric padding on both
+  // columns.
+  //
+  // backgroundColor: theme tiles sit on the theme's body color so the
+  // hero image, banners, and form controls — plus the gaps and
+  // padding this surface shows through between the columns — read as
+  // a continuous themed surface (matches a real themed app, where
+  // everything sits on --color-background-body). Because TileBody
+  // renders this surface inside the XDSTheme wrapper, the color
+  // follows the showcased theme.
+  tileSurface: {
     display: 'flex',
     flexDirection: 'row',
     gap: spacingVars['--spacing-4'],
     [TILE_STACK_BREAKPOINT]: {
       flexDirection: 'column',
     },
-    // Hover/active/focus chrome (5% ::after on :hover, 10% on
-    // :active, focus-visible outline) is provided by the outer
-    // XDSClickableCard — no need to reimplement here. But we
-    // still override two pieces of its visual treatment:
-    //
-    // 1. backgroundColor: XDSClickableCard's default variant
-    //    paints --color-background-card (lifted surface tone).
-    //    Theme tiles need to sit on the theme's body color so
-    //    the hero image, banners, and form controls inside the
-    //    tile read as a continuous themed surface (matches what
-    //    a real themed app looks like, where everything sits on
-    //    --color-background-body).
-    // 2. overflow: hidden: without this, the hero image and the
-    //    right-column banners at the card edges paint past the
-    //    rounded corners XDSClickableCard sets via its radius.
     backgroundColor: colorVars['--color-background-body'],
-    overflow: 'hidden',
-    // Drop the XDSCard default variant's --color-border-emphasized
-    // border so the tile reads as a continuous themed surface
-    // rather than a bordered card-on-card. The hover/focus
-    // affordance comes from XDSClickableCard's ::after overlay
-    // and focus-visible outline, not from a static border.
-    borderColor: 'transparent',
     width: '100%',
     height: '100%',
     boxSizing: 'border-box',
@@ -409,14 +422,42 @@ function ContrastSwatch({
   );
 }
 
+// Applies `theme` to the tile's content only. The surrounding
+// XDSClickableCard chrome (hover/pressed ::after overlay, focus
+// outline) deliberately stays on the ambient site theme so the
+// card's interactive affordance doesn't shift to the showcased
+// theme's accent. The `tileSurface` div carries the themed
+// background and the 2-column flex layout, and is rendered inside the
+// XDSTheme wrapper so its background follows the showcased theme.
+// XDSTheme's wrapper is `display: contents`, so `tileSurface` remains
+// the card's effective child. When no theme is passed the surface
+// renders as-is — themes/page.tsx wraps the whole tile in XDSTheme
+// itself.
+function TileBody({
+  theme,
+  children,
+}: {
+  theme?: XDSDefinedTheme;
+  children: ReactNode;
+}) {
+  const surface = <div {...stylex.props(styles.tileSurface)}>{children}</div>;
+  return theme ? (
+    <ThemedPreview theme={theme}>{surface}</ThemedPreview>
+  ) : (
+    surface
+  );
+}
+
 export function ThemeShowcaseTile({
   label,
   themeName,
   description,
+  theme,
 }: {
   label: string;
   themeName?: string;
   description?: string;
+  theme?: XDSDefinedTheme;
 }) {
   // Step through candidate image URLs on each <img onError>. Each
   // error advances candidateIndex by one; when we run out of
@@ -446,30 +487,31 @@ export function ThemeShowcaseTile({
       href={themeHref}
       padding={0}
       xstyle={styles.tile}>
-      {/* Left column: theme card wrapped in XDSCard for a self-
+      <TileBody theme={theme}>
+        {/* Left column: theme card wrapped in XDSCard for a self-
           contained surface (border, background, radius). */}
-      <div {...stylex.props(styles.leftColumn)}>
-        <XDSCard padding={4} xstyle={styles.leftCard}>
-          <XDSVStack gap={6} width="100%" height="100%">
-            {/* Group 1 — identity: name + description. The hero
+        <div {...stylex.props(styles.leftColumn)}>
+          <XDSCard padding={4} xstyle={styles.leftCard}>
+            <XDSVStack gap={6} width="100%" height="100%">
+              {/* Group 1 — identity: name + description. The hero
                 image used to live in this group at the top of the
                 card; it now sits at the bottom of the card (after
                 Group 2) as a closing brand signature so the card
                 opens with the most identifying information rather
                 than a decorative photo. Inert so the tile reads
                 as a passive demo. */}
-            <XDSVStack gap={1} inert>
-              <XDSHeading level={2} color="primary">
-                {label}
-              </XDSHeading>
-              {description && (
-                <XDSText as="span" type="body" color="secondary">
-                  {description}
-                </XDSText>
-              )}
-            </XDSVStack>
+              <XDSVStack gap={1} inert>
+                <XDSHeading level={2} color="primary">
+                  {label}
+                </XDSHeading>
+                {description && (
+                  <XDSText as="span" type="body" color="secondary">
+                    {description}
+                  </XDSText>
+                )}
+              </XDSVStack>
 
-            {/* Group 2 — design tokens: typography samples + color
+              {/* Group 2 — design tokens: typography samples + color
                 swatches. Both visualize the theme's underlying
                 token system so they cluster together. Inert so
                 the tile reads as a passive demo.
@@ -479,53 +521,54 @@ export function ThemeShowcaseTile({
                 of the visual gap, so a larger spacing value reads
                 as optically even with the rest of the card's
                 inter-group rhythm. */}
-            <XDSVStack gap={6} inert>
-              {/* Typography samples — each "Aa" rendered in the theme's
+              <XDSVStack gap={6} inert>
+                {/* Typography samples — each "Aa" rendered in the theme's
                   display / heading / body / mono font with the role as
                   label. The Display sample uses XDSText type="display-3"
                   so themes that scope a custom display family to the
                   .xds-text.display-3 selector (e.g. Gothic →
                   Manufacturing Consent) flow through cleanly. */}
-              <XDSHStack gap={3}>
-                <XDSVStack gap={0.5} xstyle={styles.typeSample}>
-                  <XDSText
-                    as="span"
-                    type="display-3"
-                    color="primary"
-                    xstyle={styles.typeAa}>
-                    Aa
-                  </XDSText>
-                  <XDSText as="span" type="supporting" color="secondary">
-                    Display
-                  </XDSText>
-                </XDSVStack>
-                <XDSVStack gap={0.5} xstyle={styles.typeSample}>
-                  <span {...stylex.props(styles.typeAa, styles.typeAaHeading)}>
-                    Aa
-                  </span>
-                  <XDSText as="span" type="supporting" color="secondary">
-                    Heading
-                  </XDSText>
-                </XDSVStack>
-                <XDSVStack gap={0.5} xstyle={styles.typeSample}>
-                  <span {...stylex.props(styles.typeAa, styles.typeAaBody)}>
-                    Aa
-                  </span>
-                  <XDSText as="span" type="supporting" color="secondary">
-                    Body
-                  </XDSText>
-                </XDSVStack>
-                <XDSVStack gap={0.5} xstyle={styles.typeSample}>
-                  <span {...stylex.props(styles.typeAa, styles.typeAaMono)}>
-                    Aa
-                  </span>
-                  <XDSText as="span" type="supporting" color="secondary">
-                    Mono
-                  </XDSText>
-                </XDSVStack>
-              </XDSHStack>
+                <XDSHStack gap={3}>
+                  <XDSVStack gap={0.5} xstyle={styles.typeSample}>
+                    <XDSText
+                      as="span"
+                      type="display-3"
+                      color="primary"
+                      xstyle={styles.typeAa}>
+                      Aa
+                    </XDSText>
+                    <XDSText as="span" type="supporting" color="secondary">
+                      Display
+                    </XDSText>
+                  </XDSVStack>
+                  <XDSVStack gap={0.5} xstyle={styles.typeSample}>
+                    <span
+                      {...stylex.props(styles.typeAa, styles.typeAaHeading)}>
+                      Aa
+                    </span>
+                    <XDSText as="span" type="supporting" color="secondary">
+                      Heading
+                    </XDSText>
+                  </XDSVStack>
+                  <XDSVStack gap={0.5} xstyle={styles.typeSample}>
+                    <span {...stylex.props(styles.typeAa, styles.typeAaBody)}>
+                      Aa
+                    </span>
+                    <XDSText as="span" type="supporting" color="secondary">
+                      Body
+                    </XDSText>
+                  </XDSVStack>
+                  <XDSVStack gap={0.5} xstyle={styles.typeSample}>
+                    <span {...stylex.props(styles.typeAa, styles.typeAaMono)}>
+                      Aa
+                    </span>
+                    <XDSText as="span" type="supporting" color="secondary">
+                      Mono
+                    </XDSText>
+                  </XDSVStack>
+                </XDSHStack>
 
-              {/* Color swatch palette — two rows tell two stories.
+                {/* Color swatch palette — two rows tell two stories.
                 Row 1 (brand surface set): accent, accent-muted,
                 background-body, background-surface. Together these
                 define the theme's brand backdrop and primary
@@ -537,30 +580,30 @@ export function ThemeShowcaseTile({
                 Each swatch auto-adds a 1px border when its color
                 blends into the card surface (low WCAG contrast)
                 so light-on-light tokens stay visible. */}
-              <XDSVStack gap={2}>
-                <XDSHStack gap={2} wrap="wrap">
-                  {BRAND_SWATCH_TOKENS.map(token => (
-                    <ContrastSwatch
-                      key={token}
-                      token={token}
-                      swatchStyle={stylex.props(styles.swatch)}
-                    />
-                  ))}
-                </XDSHStack>
-                <XDSHStack gap={2} wrap="wrap">
-                  {CATEGORICAL_SWATCH_TOKENS.map(token => (
-                    <ContrastSwatch
-                      key={token}
-                      token={token}
-                      swatchStyle={stylex.props(styles.swatch)}
-                    />
-                  ))}
-                </XDSHStack>
+                <XDSVStack gap={2}>
+                  <XDSHStack gap={2} wrap="wrap">
+                    {BRAND_SWATCH_TOKENS.map(token => (
+                      <ContrastSwatch
+                        key={token}
+                        token={token}
+                        swatchStyle={stylex.props(styles.swatch)}
+                      />
+                    ))}
+                  </XDSHStack>
+                  <XDSHStack gap={2} wrap="wrap">
+                    {CATEGORICAL_SWATCH_TOKENS.map(token => (
+                      <ContrastSwatch
+                        key={token}
+                        token={token}
+                        swatchStyle={stylex.props(styles.swatch)}
+                      />
+                    ))}
+                  </XDSHStack>
+                </XDSVStack>
               </XDSVStack>
-            </XDSVStack>
-            {/* end Group 2 */}
+              {/* end Group 2 */}
 
-            {/* Hero image — closing brand signature at the bottom
+              {/* Hero image — closing brand signature at the bottom
                 of the left card. Flex-grows to fill any leftover
                 vertical space so tall tiles (Butter, Y2K) don't
                 leave an empty band at the bottom; falls back to a
@@ -571,23 +614,23 @@ export function ThemeShowcaseTile({
                 Tinted gradient fallback covers themes whose
                 preview asset isn't ready yet. Inert so the tile
                 reads as a passive demo. */}
-            <div {...stylex.props(styles.imageWrapper)} inert>
-              {showImage ? (
-                <img
-                  src={imageSrc}
-                  alt=""
-                  {...stylex.props(styles.image)}
-                  onError={() => setCandidateIndex(i => i + 1)}
-                />
-              ) : (
-                <div {...stylex.props(styles.imageFallback)} />
-              )}
-            </div>
-          </XDSVStack>
-        </XDSCard>
-      </div>
+              <div {...stylex.props(styles.imageWrapper)} inert>
+                {showImage ? (
+                  <img
+                    src={imageSrc}
+                    alt=""
+                    {...stylex.props(styles.image)}
+                    onError={() => setCandidateIndex(i => i + 1)}
+                  />
+                ) : (
+                  <div {...stylex.props(styles.imageFallback)} />
+                )}
+              </div>
+            </XDSVStack>
+          </XDSCard>
+        </div>
 
-      {/* Right column — open content, no card chrome. Each group
+        {/* Right column — open content, no card chrome. Each group
           of related components is wrapped in an XDSVStack at the
           tighter intra-group gap; the column itself uses a larger
           gap between groups for clear visual hierarchy. Inert so
@@ -596,109 +639,110 @@ export function ThemeShowcaseTile({
           reads as a passive demo — the whole tile is itself a
           link to the theme page, which is the only interactive
           surface. */}
-      <div {...stylex.props(styles.rightColumn)} inert>
-        {/* Group 1 — form-input components (text input + progress
+        <div {...stylex.props(styles.rightColumn)} inert>
+          {/* Group 1 — form-input components (text input + progress
             bar). Both are data-input/feedback elements so they
             cluster together at the tighter gap. */}
-        <XDSVStack gap={3}>
-          <XDSTextInput
-            label="Input"
-            isLabelHidden
-            size="sm"
-            placeholder="Type something..."
-            value=""
-            onChange={() => {}}
-          />
-          <XDSProgressBar label="Progress" value={75} isLabelHidden />
-        </XDSVStack>
+          <XDSVStack gap={3}>
+            <XDSTextInput
+              label="Input"
+              isLabelHidden
+              size="sm"
+              placeholder="Type something..."
+              value=""
+              onChange={() => {}}
+            />
+            <XDSProgressBar label="Progress" value={75} isLabelHidden />
+          </XDSVStack>
 
-        {/* Compact 3-column table with two example rows — demos the
+          {/* Compact 3-column table with two example rows — demos the
             theme's table chrome (header, row dividers, cell typography),
             a Badge in the Status column, and a ghost icon button in
             the Action column for the icon-button chrome. */}
-        <XDSTable density="compact" dividers="rows">
-          <XDSTableHeader>
-            <XDSTableRow>
-              <XDSTableHeaderCell>Table</XDSTableHeaderCell>
-              <XDSTableHeaderCell>Status</XDSTableHeaderCell>
-              <XDSTableHeaderCell>Action</XDSTableHeaderCell>
-            </XDSTableRow>
-          </XDSTableHeader>
-          <XDSTableBody>
-            <XDSTableRow>
-              <XDSTableCell>Example 1</XDSTableCell>
-              <XDSTableCell>
-                <XDSBadge label="Badge" variant="info" />
-              </XDSTableCell>
-              <XDSTableCell>
-                <XDSButton
-                  variant="ghost"
-                  size="sm"
-                  label="Add"
-                  isIconOnly
-                  icon={<PlusIcon />}
-                />
-              </XDSTableCell>
-            </XDSTableRow>
-            <XDSTableRow>
-              <XDSTableCell>Example 2</XDSTableCell>
-              <XDSTableCell>
-                <XDSBadge label="Badge" variant="success" />
-              </XDSTableCell>
-              <XDSTableCell>
-                <XDSButton
-                  variant="ghost"
-                  size="sm"
-                  label="Add"
-                  isIconOnly
-                  icon={<PlusIcon />}
-                />
-              </XDSTableCell>
-            </XDSTableRow>
-          </XDSTableBody>
-        </XDSTable>
+          <XDSTable density="compact" dividers="rows">
+            <XDSTableHeader>
+              <XDSTableRow>
+                <XDSTableHeaderCell>Table</XDSTableHeaderCell>
+                <XDSTableHeaderCell>Status</XDSTableHeaderCell>
+                <XDSTableHeaderCell>Action</XDSTableHeaderCell>
+              </XDSTableRow>
+            </XDSTableHeader>
+            <XDSTableBody>
+              <XDSTableRow>
+                <XDSTableCell>Example 1</XDSTableCell>
+                <XDSTableCell>
+                  <XDSBadge label="Badge" variant="info" />
+                </XDSTableCell>
+                <XDSTableCell>
+                  <XDSButton
+                    variant="ghost"
+                    size="sm"
+                    label="Add"
+                    isIconOnly
+                    icon={<PlusIcon />}
+                  />
+                </XDSTableCell>
+              </XDSTableRow>
+              <XDSTableRow>
+                <XDSTableCell>Example 2</XDSTableCell>
+                <XDSTableCell>
+                  <XDSBadge label="Badge" variant="success" />
+                </XDSTableCell>
+                <XDSTableCell>
+                  <XDSButton
+                    variant="ghost"
+                    size="sm"
+                    label="Add"
+                    isIconOnly
+                    icon={<PlusIcon />}
+                  />
+                </XDSTableCell>
+              </XDSTableRow>
+            </XDSTableBody>
+          </XDSTable>
 
-        {/* Three form controls in one horizontal row — demos the
+          {/* Three form controls in one horizontal row — demos the
             theme's switch, radio, and checkbox styling side-by-
             side. All three render at their default size: XDSSwitch
             ships at a single fixed size with no `size` variant
             (passing one is a type error that breaks the build),
             so the neighboring XDSRadioList + XDSCheckboxInput
             also use their default sizes to stay visually matched. */}
-        <XDSHStack gap={4} wrap="wrap" vAlign="center">
-          <XDSSwitch label="Toggle" value={true} />
-          <XDSRadioList
-            label="Radio"
-            isLabelHidden
-            value="radio"
-            onChange={() => {}}>
-            <XDSRadioListItem label="Radio Button" value="radio" />
-          </XDSRadioList>
-          <XDSCheckboxInput label="Checkbox" value={false} />
-        </XDSHStack>
+          <XDSHStack gap={4} wrap="wrap" vAlign="center">
+            <XDSSwitch label="Toggle" value={true} />
+            <XDSRadioList
+              label="Radio"
+              isLabelHidden
+              value="radio"
+              onChange={() => {}}>
+              <XDSRadioListItem label="Radio Button" value="radio" />
+            </XDSRadioList>
+            <XDSCheckboxInput label="Checkbox" value={false} />
+          </XDSHStack>
 
-        {/* Action row — Primary / Secondary / Ghost button samples.
+          {/* Action row — Primary / Secondary / Ghost button samples.
             Passive demos thanks to the column's inert; the whole
             tile is a single link to the theme page. Sits above
             the banners so the demo flows from atomic interactive
             chrome (buttons) into compound chrome (banner stack). */}
-        <div {...stylex.props(styles.actionRow)}>
-          <XDSHStack gap={2} wrap="wrap">
-            <XDSButton variant="primary" size="sm" label="Primary" />
-            <XDSButton variant="secondary" size="sm" label="Secondary" />
-            <XDSButton variant="ghost" size="sm" label="Ghost" />
-          </XDSHStack>
-        </div>
+          <div {...stylex.props(styles.actionRow)}>
+            <XDSHStack gap={2} wrap="wrap">
+              <XDSButton variant="primary" size="sm" label="Primary" />
+              <XDSButton variant="secondary" size="sm" label="Secondary" />
+              <XDSButton variant="ghost" size="sm" label="Ghost" />
+            </XDSHStack>
+          </div>
 
-        {/* Four banners stacked — demos the theme's info / success /
+          {/* Four banners stacked — demos the theme's info / success /
             warning / error chrome (icon, surface color, text color). */}
-        <XDSVStack gap={2}>
-          <XDSBanner status="info" title="Banner Title" />
-          <XDSBanner status="success" title="Banner Title" />
-          <XDSBanner status="warning" title="Banner Title" />
-          <XDSBanner status="error" title="Banner Title" />
-        </XDSVStack>
-      </div>
+          <XDSVStack gap={2}>
+            <XDSBanner status="info" title="Banner Title" />
+            <XDSBanner status="success" title="Banner Title" />
+            <XDSBanner status="warning" title="Banner Title" />
+            <XDSBanner status="error" title="Banner Title" />
+          </XDSVStack>
+        </div>
+      </TileBody>
     </XDSClickableCard>
   );
 }

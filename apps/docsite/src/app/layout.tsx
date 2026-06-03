@@ -12,9 +12,9 @@ import {Providers} from './providers';
 // "Good" path from the theming wiki §Font Declarations.
 
 export const metadata: Metadata = {
-  title: 'XDS — Design System',
+  title: 'Astryx Design System',
   description:
-    'Open-source design system for building internal tools and products.',
+    'Open-source design system that is fully customizable and agent ready.',
   icons: {
     icon: '/favicon.svg',
   },
