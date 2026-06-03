@@ -5,7 +5,7 @@
 export const XDS_BRAND_ICON = (
   <img
     src="/brand-icon.svg"
-    alt="XDS"
+    alt="Astryx"
     width={24}
     height={24}
     style={{display: 'block'}}
