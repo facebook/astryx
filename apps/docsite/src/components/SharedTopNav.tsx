@@ -7,7 +7,7 @@ import {usePathname} from 'next/navigation';
 import {XDSTopNav, XDSTopNavHeading, XDSTopNavItem} from '@xds/core/TopNav';
 import {XDSButton} from '@xds/core/Button';
 import {XDSHStack} from '@xds/core/Layout';
-import {Search, Heart, Sun, Moon} from 'lucide-react';
+import {Search, HandHeart, Sun, Moon} from 'lucide-react';
 import {GITHUB_REPO} from '../constants';
 import {XDS_BRAND_ICON} from './XDSWordmark';
 import {SearchPalette} from './SearchPalette';
@@ -123,7 +123,7 @@ export function SharedTopNav() {
                 label="Community"
                 variant="ghost"
                 isIconOnly
-                icon={<Heart size={20} />}
+                icon={<HandHeart size={20} />}
                 href="/community"
               />
               <XDSButton
