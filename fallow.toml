@@ -1,0 +1,15 @@
+# Fallow configuration for XDS monorepo
+# https://github.com/nicolo-ribaudo/fallow
+
+# Entry points: files that are consumed externally but not imported
+# within the project's module graph (docs pipeline, etc.)
+entry = [
+  "**/*.doc.mjs",
+  "e2e/**",
+]
+
+# Ignore patterns: directories/files fallow should skip entirely
+ignorePatterns = [
+  "apps/**",
+  "internal/stylex-capabilities/**",
+]
