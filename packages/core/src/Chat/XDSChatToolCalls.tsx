@@ -208,8 +208,7 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
-    flexShrink: 1,
-    minWidth: '4ch',
+    flexShrink: 0,
   },
   callLabel: {
     fontSize: typeScaleVars['--text-supporting-size'],
