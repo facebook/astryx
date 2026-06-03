@@ -183,7 +183,7 @@ export default function HomePage() {
           <div {...stylex.props(styles.heroContainer)}>
             <XDSMediaTheme mode="light">
               <XDSText type="large" weight="semibold" xstyle={styles.heroTitle}>
-                XDS Open Source
+                Astryx
               </XDSText>
               <XDSText type="display-1" xstyle={styles.heroSubtitle}>
                 Build with AI
@@ -228,7 +228,7 @@ export default function HomePage() {
           {/* Libraries & Packages */}
           <XDSVStack gap={5}>
             <XDSVStack gap={1}>
-              <XDSHeading level={2}>Libraries &amp; Packages</XDSHeading>
+              <XDSHeading level={2}>Libraries &amp; packages</XDSHeading>
               <XDSText type="body" color="secondary">
                 Install what you need. All packages are published under the @xds
                 scope.

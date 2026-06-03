@@ -13,23 +13,19 @@ const styles = stylex.create({
     paddingBlock: spacingVars['--spacing-6'],
     paddingInline: spacingVars['--spacing-4'],
   },
-  verticalDivider: {
-    alignSelf: 'stretch',
-    height: '1em',
-  },
 });
 
 const links = [
   {
-    label: 'Terms of Use',
+    label: 'Terms of use',
     href: 'https://opensource.fb.com/legal/terms',
   },
   {
-    label: 'Privacy Policy',
+    label: 'Privacy policy',
     href: 'https://opensource.fb.com/legal/privacy',
   },
   {
-    label: 'GitHub Pages',
+    label: 'GitHub pages',
     href: 'https://studious-broccoli-o7e61n3.pages.github.io/',
   },
 ];
@@ -47,8 +43,8 @@ export function SiteFooter() {
           <Fragment key={link.href}>
             <XDSDivider
               orientation="vertical"
-              variant="subtle"
-              xstyle={styles.verticalDivider}
+              variant="strong"
+              style={{height: '0.75em'}}
             />
             <XDSLink
               type="supporting"
