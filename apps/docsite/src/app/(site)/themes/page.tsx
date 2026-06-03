@@ -6,6 +6,8 @@
 
 'use client';
 
+import {useCallback, useMemo} from 'react';
+import {useSearchParams, useRouter, usePathname} from 'next/navigation';
 import * as stylex from '@stylexjs/stylex';
 import {XDSText} from '@xds/core/Text';
 import {XDSHStack, XDSVStack} from '@xds/core/Layout';
@@ -22,6 +24,8 @@ import {useThemeMode} from '../../providers';
 import {packages} from '../../../generated/packageRegistry';
 import {themeObjects} from '../../../generated/themeRegistry';
 import {ThemeShowcaseTile} from '../../../components/ThemeShowcaseTile';
+import {ThemePreviewDialog} from '../../../components/ThemePreviewDialog';
+import type {ThemePreviewItem} from '../../../components/ThemePreviewDialog';
 
 // Re-set XDS's structural tokens (spacing, radii, font sizes) back to
 // the defaults exported from @xds/core. Each <XDSTheme> wrapper sets a
@@ -70,6 +74,40 @@ const themePackages = packages
     }
     return ai - bi;
   });
+
+// Derive the vanity display name shown on the card + the preview dialog
+// title: strip a leading "Theme: " prefix and a trailing " Theme" suffix
+// (e.g. "Neutral Theme" -> "Neutral", "Theme: matcha" -> "matcha").
+function themeLabel(displayName: string): string {
+  return (
+    displayName
+      .replace(/^Theme:\s*/, '')
+      .replace(/\s*Theme$/i, '')
+      .trim() || displayName
+  );
+}
+
+// Flattened display-order list backing the preview dialog's prev/next
+// navigation. Built from the same `themePackages` the gallery renders so
+// the dialog order matches the on-screen card order. Only themes with a
+// resolved theme object are included.
+const themeItems: ThemePreviewItem[] = themePackages
+  .map((pkg): ThemePreviewItem | null => {
+    const theme = themeObjects[pkg.name];
+    if (!theme) {
+      return null;
+    }
+    return {
+      slug: theme.name,
+      name: themeLabel(pkg.displayName),
+      description: pkg.description,
+      packageName: pkg.name,
+      version: pkg.version,
+      readme: pkg.readme,
+      theme,
+    };
+  })
+  .filter((item): item is ThemePreviewItem => item !== null);
 
 // Max viewport-px the gallery centers in. Sized for the 2-column grid:
 // at full width that gives ~785px per card after the gap, fitting the
@@ -148,6 +186,50 @@ const styles = stylex.create({
 
 export default function ThemesPage() {
   const {mode} = useThemeMode();
+
+  // Slug -> index lookup so a card click can open the dialog at the
+  // right theme. Order matches `themeItems` (the gallery's render order).
+  const indexBySlug = useMemo(() => {
+    const m = new Map<string, number>();
+    themeItems.forEach((it, i) => m.set(it.slug, i));
+    return m;
+  }, []);
+
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // URL `?preview=<slug>` is the source of truth for which theme dialog
+  // is open, mirroring the templates gallery so previews are deep-linkable
+  // and prev/next navigation updates the address bar.
+  const previewSlug = searchParams.get('preview');
+  const openIndex =
+    previewSlug != null ? (indexBySlug.get(previewSlug) ?? null) : null;
+
+  const setOpenIndex = useCallback(
+    (index: number | null) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (index !== null && themeItems[index]) {
+        params.set('preview', themeItems[index].slug);
+      } else {
+        params.delete('preview');
+      }
+      const qs = params.toString();
+      router.replace(`${pathname}${qs ? `?${qs}` : ''}`, {scroll: false});
+    },
+    [searchParams, router, pathname],
+  );
+
+  const openPreview = useCallback(
+    (slug: string) => {
+      const i = indexBySlug.get(slug);
+      if (i !== undefined) {
+        setOpenIndex(i);
+      }
+    },
+    [indexBySlug, setOpenIndex],
+  );
+
   return (
     <div {...stylex.props(styles.galleryWrap)}>
       <XDSSection padding={6}>
@@ -212,6 +294,7 @@ export default function ThemesPage() {
                             label={label}
                             themeName={pkg.name}
                             description={pkg.description}
+                            onClick={() => openPreview(theme.name)}
                           />
                         </div>
                       </XDSTheme>
@@ -225,6 +308,18 @@ export default function ThemesPage() {
           </div>
         </XDSVStack>
       </XDSSection>
+
+      <ThemePreviewDialog
+        items={themeItems}
+        index={openIndex ?? 0}
+        isOpen={openIndex !== null}
+        onOpenChange={open => {
+          if (!open) {
+            setOpenIndex(null);
+          }
+        }}
+        onIndexChange={setOpenIndex}
+      />
     </div>
   );
 }

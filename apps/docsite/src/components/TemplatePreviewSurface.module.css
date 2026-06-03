@@ -15,8 +15,6 @@
      scroll); auto-height templates that are taller than the frame scroll
      here instead of pushing the document. */
   overflow: auto;
-  border-radius: var(--radius-container);
-  border: var(--border-width) solid var(--color-border);
   /* Read as a real themed app on the theme's body color. */
   background-color: var(--color-background-body);
 }

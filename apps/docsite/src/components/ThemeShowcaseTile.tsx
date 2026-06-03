@@ -413,10 +413,17 @@ export function ThemeShowcaseTile({
   label,
   themeName,
   description,
+  onClick,
 }: {
   label: string;
   themeName?: string;
   description?: string;
+  /**
+   * When provided, clicking the tile fires this handler (used by the
+   * /themes gallery to open the theme preview dialog) instead of
+   * navigating to the dedicated theme page via `themeHref`.
+   */
+  onClick?: () => void;
 }) {
   // Step through candidate image URLs on each <img onError>. Each
   // error advances candidateIndex by one; when we run out of
@@ -435,7 +442,8 @@ export function ThemeShowcaseTile({
   const imageSrc = candidates[candidateIndex];
   const showImage = imageSrc !== undefined;
   // Theme detail page URL. Strip the @xds/ scope from the package
-  // name to match the [name] segment of /packages/[name].
+  // name to match the [name] segment of /packages/[name]. Only used
+  // as a fallback when no onClick handler is supplied.
   const themeHref = themeName
     ? `/packages/${themeName.replace('@xds/', '')}`
     : undefined;
@@ -443,7 +451,8 @@ export function ThemeShowcaseTile({
   return (
     <XDSClickableCard
       label={`Open ${label} theme`}
-      href={themeHref}
+      onClick={onClick}
+      href={onClick ? undefined : themeHref}
       padding={0}
       xstyle={styles.tile}>
       {/* Left column: theme card wrapped in XDSCard for a self-

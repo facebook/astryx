@@ -3,27 +3,24 @@
 'use client';
 
 /**
- * TemplatePreviewDialog — opens a single template's live preview in a
- * large centered modal (instead of navigating to a full page), with
- * prev/next arrows to move quickly between templates in the gallery's
- * display order. Arrow keys (←/→) also navigate; Escape closes.
+ * ThemePreviewDialog — opens a single theme's live preview in a large
+ * centered modal (instead of navigating to the dedicated /themes/<slug>
+ * page), with prev/next arrows to move quickly between themes in the
+ * gallery's display order. Arrow keys (←/→) also navigate; Escape closes.
  *
- * The header surfaces template metadata (category + name, description),
- * a copy-to-clipboard CLI scaffold command, and an Open in Playground
- * action. A floating close button sits at the top-right corner.
+ * This is the themes analog of TemplatePreviewDialog. The body shows the
+ * same content as the theme detail page (ThemePreviewSurface), the header
+ * surfaces the theme name + description, an "Install" action (opens the
+ * package README in a nested dialog), and a "Customize" action (opens the
+ * theme playground). A floating close button sits at the top-right corner.
  *
  * The prev/next arrows are position:fixed inside the top-layer <dialog>,
  * so they sit in the backdrop gutters outside the dialog box.
  */
 
-import {
-  useCallback,
-  useEffect,
-  useDeferredValue,
-  useState,
-  useTransition,
-} from 'react';
+import {useEffect, useDeferredValue, useState, useTransition} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {XDSDefinedTheme} from '@xds/core/theme';
 import {XDSIcon} from '@xds/core/Icon';
 import {XDSText, XDSHeading} from '@xds/core/Text';
 import {
@@ -35,26 +32,32 @@ import {
 } from '@xds/core/Layout';
 import {XDSButton} from '@xds/core/Button';
 import {XDSSkeleton} from '@xds/core/Skeleton';
-import {XDSDialog} from '@xds/core/Dialog';
+import {XDSDialog, XDSDialogHeader} from '@xds/core/Dialog';
+import {XDSMarkdown} from '@xds/core/Markdown';
 import {XDSTooltip} from '@xds/core/Tooltip';
-import {TemplatePreviewSurface} from './TemplatePreviewSurface';
-import {buildPlaygroundHref} from './playgroundLink';
+import {ThemePreviewSurface} from './ThemePreviewSurface';
 
-export interface TemplatePreviewItem {
+export interface ThemePreviewItem {
+  /** Theme slug (matches XDSDefinedTheme.name and /themes/<slug>). */
   slug: string;
+  /** Vanity display name shown as the dialog title (e.g. "Neutral"). */
   name: string;
   description?: string;
-  source?: string;
-  category?: string;
+  /** Full npm package name (e.g. "@xds/theme-neutral"). */
+  packageName: string;
+  version?: string;
+  /** Raw README markdown, rendered inside the Install dialog. */
+  readme: string | null;
+  theme: XDSDefinedTheme;
 }
 
-interface TemplatePreviewDialogProps {
-  items: TemplatePreviewItem[];
-  /** Index into `items` of the template to show. */
+interface ThemePreviewDialogProps {
+  items: ThemePreviewItem[];
+  /** Index into `items` of the theme to show. */
   index: number;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Request a different template (prev/next). */
+  /** Request a different theme (prev/next). */
   onIndexChange: (index: number) => void;
 }
 
@@ -76,15 +79,6 @@ const styles = stylex.create({
   headerMeta: {
     flex: 1,
     minWidth: 0,
-  },
-  categoryPrefix: {
-    color: 'var(--color-text-primary)',
-  },
-  // The install command
-  // The install command is a CLI snippet, so render the button label in the
-  // mono font. XDSButton handles the surface, hover, focus ring, and sizing.
-  copyButton: {
-    fontFamily: 'var(--font-family-mono, ui-monospace, monospace)',
   },
   skeletonOverlay: {
     position: 'absolute',
@@ -121,20 +115,20 @@ const styles = stylex.create({
   },
 });
 
-export function TemplatePreviewDialog({
+export function ThemePreviewDialog({
   items,
   index,
   isOpen,
   onOpenChange,
   onIndexChange,
-}: TemplatePreviewDialogProps) {
-  const [cmdCopied, setCmdCopied] = useState(false);
+}: ThemePreviewDialogProps) {
+  const [isInstallOpen, setIsInstallOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const count = items.length;
   const current = items[index];
   // The deferred index drives the heavy preview surface — it lags behind
-  // the committed index during a transition, keeping the old template
+  // the committed index during a transition, keeping the old theme
   // visible and the dialog interactive while the next one loads.
   const deferredIndex = useDeferredValue(index);
   const deferredCurrent = items[deferredIndex];
@@ -153,6 +147,10 @@ export function TemplatePreviewDialog({
       return;
     }
     const onKey = (e: KeyboardEvent) => {
+      // Don't steal arrow keys while the nested Install dialog is open.
+      if (isInstallOpen) {
+        return;
+      }
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
         go(-1);
@@ -163,25 +161,23 @@ export function TemplatePreviewDialog({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [isOpen, index, count]);
+  }, [isOpen, index, count, isInstallOpen]);
 
-  // Reset the share-copied state when switching templates.
+  // Close the Install dialog when switching themes.
   useEffect(() => {
-    setCmdCopied(false);
+    setIsInstallOpen(false);
   }, [index]);
 
-  if (!current) {
+  if (!current || !deferredCurrent) {
     return null;
   }
 
-  const useCommand = `npx xds template ${current.slug} ./src/app/${current.slug}`;
-
-  const handleCopyCmd = useCallback(() => {
-    navigator.clipboard.writeText(useCommand).then(() => {
-      setCmdCopied(true);
-      setTimeout(() => setCmdCopied(false), 2000);
-    });
-  }, [useCommand]);
+  // Strip the leading "# <title>" so the Install dialog header (which
+  // already shows the title) isn't duplicated by the README's H1.
+  const readmeBody = current.readme
+    ? current.readme.replace(/^# .+\n+/, '')
+    : null;
+  const versionSuffix = current.version ? ` · ${current.version}` : '';
 
   return (
     <XDSDialog
@@ -196,9 +192,9 @@ export function TemplatePreviewDialog({
         content={
           <XDSLayoutContent isScrollable={false} padding={0}>
             <div {...stylex.props(styles.body)}>
-              <TemplatePreviewSurface
+              <ThemePreviewSurface
                 key={deferredCurrent.slug}
-                slug={deferredCurrent.slug}
+                theme={deferredCurrent.theme}
               />
               {isPending && (
                 <div {...stylex.props(styles.skeletonOverlay)}>
@@ -212,14 +208,7 @@ export function TemplatePreviewDialog({
           <XDSLayoutHeader hasDivider>
             <XDSHStack gap={4} vAlign="center" xstyle={styles.headerRow}>
               <XDSVStack gap={0.5} xstyle={styles.headerMeta}>
-                <XDSHeading level={2}>
-                  {current.category && (
-                    <span {...stylex.props(styles.categoryPrefix)}>
-                      {current.category}{' '}
-                    </span>
-                  )}
-                  {current.name}
-                </XDSHeading>
+                <XDSHeading level={2}>{current.name}</XDSHeading>
                 {current.description && (
                   <XDSText type="body" color="primary">
                     {current.description}
@@ -228,40 +217,52 @@ export function TemplatePreviewDialog({
               </XDSVStack>
               <XDSHStack gap={2} vAlign="center">
                 <XDSButton
+                  label="Install"
                   variant="secondary"
                   size="lg"
-                  label={
-                    cmdCopied ? 'Copied!' : `npx xds template ${current.slug}`
-                  }
-                  aria-label="Copy install command"
-                  onClick={handleCopyCmd}
-                  endContent={
-                    <XDSIcon
-                      icon={cmdCopied ? 'check' : 'copy'}
-                      size="sm"
-                      color="inherit"
-                    />
-                  }
-                  xstyle={styles.copyButton}
+                  onClick={() => setIsInstallOpen(true)}
                 />
-                {current.source && (
-                  <XDSButton
-                    label="Open in Playground"
-                    variant="primary"
-                    size="lg"
-                    onClick={() => {
-                      const source = current.source;
-                      if (source) {
-                        window.location.href = buildPlaygroundHref(source);
-                      }
-                    }}
-                  />
-                )}
+                <XDSButton
+                  label="Customize"
+                  variant="primary"
+                  size="lg"
+                  href={`/themes/playground/${current.theme.name}`}
+                />
               </XDSHStack>
             </XDSHStack>
           </XDSLayoutHeader>
         }
       />
+
+      {/* Install dialog — renders the full package README inline, the
+          same surface used on the dedicated /themes/<slug> page. */}
+      <XDSDialog
+        isOpen={isInstallOpen}
+        onOpenChange={setIsInstallOpen}
+        width={720}>
+        <XDSLayout
+          header={
+            <XDSDialogHeader
+              title={`Install ${current.name}`}
+              subtitle={`${current.packageName}${versionSuffix}`}
+              onOpenChange={setIsInstallOpen}
+            />
+          }
+          content={
+            <XDSLayoutContent>
+              {readmeBody ? (
+                <XDSMarkdown headingLevelStart={3} contentWidth={680}>
+                  {readmeBody}
+                </XDSMarkdown>
+              ) : (
+                <XDSText type="body" color="secondary">
+                  No setup documentation is available for this theme yet.
+                </XDSText>
+              )}
+            </XDSLayoutContent>
+          }
+        />
+      </XDSDialog>
 
       <div {...stylex.props(styles.closeButton)}>
         <XDSButton
@@ -284,7 +285,7 @@ export function TemplatePreviewDialog({
                 variant="secondary"
                 size="lg"
                 isIconOnly
-                label="Previous template"
+                label="Previous theme"
                 icon={<XDSIcon icon="chevronLeft" color="inherit" />}
                 onClick={() => go(-1)}
                 xstyle={styles.navArrowButton}
@@ -299,7 +300,7 @@ export function TemplatePreviewDialog({
                 variant="secondary"
                 size="lg"
                 isIconOnly
-                label="Next template"
+                label="Next theme"
                 icon={<XDSIcon icon="chevronRight" color="inherit" />}
                 onClick={() => go(1)}
                 xstyle={styles.navArrowButton}
