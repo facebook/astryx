@@ -140,25 +140,10 @@ export default function HomePage() {
             <XDSBadge label="Beta" variant="blue" />
           </span>
         </div>
+        <XDSHeading level={1} type="display-1" color="primary">
+          An open source design system that's fully customizable and agent ready
+        </XDSHeading>
         <XDSVStack gap={4} align="center">
-          <XDSHeading level={1} type="display-1" color="primary">
-            An open source design system that's fully customizable and agent
-            ready
-          </XDSHeading>
-          <XDSText display="block">
-            Built on{' '}
-            <XDSLink
-              type="body"
-              color="primary"
-              href="https://react.dev"
-              target="_blank"
-              rel="noopener noreferrer"
-              hasUnderline>
-              React
-            </XDSLink>
-          </XDSText>
-        </XDSVStack>
-        <XDSVStack align="center">
           <XDSGrid columns={2} gap={3} xstyle={styles.heroButtons}>
             <XDSButton
               variant="primary"
@@ -173,6 +158,18 @@ export default function HomePage() {
               href="/components"
             />
           </XDSGrid>
+          <XDSText display="block">
+            Built on{' '}
+            <XDSLink
+              type="body"
+              color="primary"
+              href="https://react.dev"
+              target="_blank"
+              rel="noopener noreferrer"
+              hasUnderline>
+              React
+            </XDSLink>
+          </XDSText>
         </XDSVStack>
       </XDSVStack>
       <XDSVStack ref={showcaseRef} xstyle={styles.showcaseOverlay}>
