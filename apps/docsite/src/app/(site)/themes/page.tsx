@@ -10,7 +10,7 @@ import * as stylex from '@stylexjs/stylex';
 import {XDSText} from '@xds/core/Text';
 import {XDSHStack, XDSVStack} from '@xds/core/Layout';
 import {XDSSection} from '@xds/core/Section';
-import {XDSClickableCard} from '@xds/core/ClickableCard';
+import {XDSCard} from '@xds/core/Card';
 import {XDSButton} from '@xds/core/Button';
 import {XDSOverlay} from '@xds/core/Overlay';
 import {XDSTheme} from '@xds/core/theme';
@@ -138,8 +138,10 @@ const styles = stylex.create({
     overflow: 'hidden',
   },
 
-  // The outer XDSClickableCard sized to fill its grid cell at full
-  // height so every card in a row matches the tallest.
+  // The outer XDSCard sized to fill its grid cell at full height so
+  // every card in a row matches the tallest. The whole tile is
+  // presentational — navigation happens only through the two
+  // XDSButtons in the hover overlay ("Preview" / "Open in Playground").
   cardFill: {
     height: '100%',
   },
@@ -168,12 +170,10 @@ const styles = stylex.create({
     flex: 1,
     height: '100%',
   },
-  // Inner overlay content — actions cluster pinned to the bottom-left
-  // of the tile so it reads as a caption rather than blocking the
-  // whole preview. The whole inner area is itself clickable (via
-  // an onClick handler in the JSX below) — clicking on the scrim
-  // background routes to the preview page just like the explicit
-  // Preview button does.
+  // Inner overlay content — caption + actions cluster pinned to the
+  // bottom-left of the tile. The scrim background itself is NOT a
+  // click target (no cursor: pointer, no onClick); navigation is
+  // routed exclusively through the two XDSButtons below.
   overlayInner: {
     display: 'flex',
     flexDirection: 'column' as const,
@@ -182,7 +182,6 @@ const styles = stylex.create({
     height: '100%',
     width: '100%',
     padding: 16,
-    cursor: 'pointer',
   },
   // White-on-scrim text inside the overlay. The scrim is dark enough
   // (78% on-light mix) that the standard --color-text-primary token
@@ -271,36 +270,28 @@ export default function ThemesPage() {
                 .replace(/\s*Theme$/, '');
               const slug = themeSlug(pkg.name);
               return (
-                <XDSClickableCard
+                <XDSCard
                   key={pkg.name}
-                  label={`Preview ${label} theme`}
-                  href={`/themes/${slug}`}
                   padding={0}
                   variant="transparent"
                   xstyle={styles.cardFill}>
-                  {/* Hover overlay mirrors the templates gallery: a
-                      dark scrim fades in on hover with a label,
-                      short description, and two CTAs ("Preview" →
-                      /themes/<slug>; "Open in Playground" →
-                      /themes/playground/<slug>). The override of
-                      --color-overlay (see overlayHost) deepens the
-                      default scrim so the white action chrome reads
-                      legibly against light theme previews like
-                      Butter or Stone.
+                  {/* Tile is fully presentational. Navigation is
+                      handled exclusively by the two XDSButtons inside
+                      the hover overlay ("Preview" → /themes/<slug>;
+                      "Open in Playground" → /themes/playground/<slug>).
+                      No card-wide click target — earlier iterations
+                      wrapped this in XDSClickableCard, but the
+                      overlay scrim's pointer-events: auto combined
+                      with the inner tile's then-clickable card
+                      created nested clickable containers and clicks
+                      ended up navigating nowhere.
 
-                      The whole tile is an XDSClickableCard pointing
-                      at /themes/<slug>, so clicking anywhere on the
-                      surface navigates to the preview. The nested
-                      "Open in Playground" XDSButton routes
-                      independently (XDSClickableCard's
-                      useClickableContainer hook skips clicks whose
-                      target has an interactive ancestor — that
-                      covers the inner buttons automatically, no
-                      stopPropagation needed at the call site). The
-                      "Preview" XDSButton is technically redundant
-                      with the card-wide click target but kept as an
-                      explicit affordance for users who hover the
-                      overlay and look for a button. */}
+                      Hover overlay mirrors the templates gallery: a
+                      dark scrim fades in on hover with a label,
+                      short description, and the two CTA buttons. The
+                      OVERLAY_SCRIM_OVERRIDE inline style deepens
+                      --color-overlay so white action chrome stays
+                      legible on light theme previews. */}
                   <div
                     {...stylex.props(styles.overlayHost)}
                     style={OVERLAY_SCRIM_OVERRIDE}>
@@ -366,7 +357,7 @@ export default function ThemesPage() {
                       </div>
                     </XDSOverlay>
                   </div>
-                </XDSClickableCard>
+                </XDSCard>
               );
             })}
           </div>
