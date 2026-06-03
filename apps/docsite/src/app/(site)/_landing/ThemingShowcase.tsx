@@ -143,6 +143,12 @@ const styles = stylex.create({
   fillWidth: {
     width: '100%',
   },
+  // Caps the section description's line length to ~70 characters
+  // (560px) so it doesn't run uncomfortably wide on desktop. Used
+  // by the description paragraph below the heading.
+  descriptionWidth: {
+    maxWidth: 560,
+  },
   // Cluster on the right of the header row — "Create a custom theme"
   // ghost button + "Explore all themes" secondary button. Strictly
   // the XDSButton docs discourage button-for-navigation, but the
@@ -205,7 +211,6 @@ function ShowcaseHeading() {
         level={2}
         type="display-2"
         color="primary"
-        justify="start"
         xstyle={styles.fillWidth}>
         Custom styles as unique as your app
       </XDSHeading>
@@ -213,7 +218,6 @@ function ShowcaseHeading() {
         display="block"
         type="body"
         color="secondary"
-        justify="start"
         xstyle={styles.descriptionWidth}>
         Astryx makes it effortless to apply your brand — no rewrites needed.
         Customize your theme at the token level: color, typography, radius, and
