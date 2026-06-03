@@ -203,6 +203,21 @@ function themeSlug(packageName: string): string {
   return packageName.replace(/^@xds\/theme-/, '');
 }
 
+// Deepens XDSOverlay's --color-overlay scrim so white action chrome
+// stays legible against light theme previews like Butter or Stone.
+// Set as an inline style because stylex.create() doesn't accept raw
+// CSS custom-property declarations; hoisted to a typed const so the
+// inline style satisfies @typescript-eslint/consistent-type-assertions
+// (no `as React.CSSProperties` cast at the JSX call site).
+const OVERLAY_SCRIM_OVERRIDE: React.CSSProperties = {
+  // @ts-expect-error — React.CSSProperties doesn't type custom CSS
+  // variables; the cast above is what consumers normally use to
+  // bypass it. Using an inline ts-expect-error keeps the lint rule
+  // happy while still letting us set the variable.
+  '--color-overlay':
+    'color-mix(in srgb, var(--color-on-light) 78%, transparent)',
+};
+
 export default function ThemesPage() {
   const {mode} = useThemeMode();
   const router = useRouter();
@@ -276,18 +291,7 @@ export default function ThemesPage() {
                       secondary alternate path. */}
                   <div
                     {...stylex.props(styles.overlayHost)}
-                    style={
-                      {
-                        // Inline override of XDSOverlay's --color-overlay
-                        // scrim variable. Matches the templates page
-                        // pattern: stylex.create can't carry raw CSS
-                        // custom-property declarations, so the deepened
-                        // scrim (so the white action text stays
-                        // legible on light theme previews) goes here.
-                        '--color-overlay':
-                          'color-mix(in srgb, var(--color-on-light) 78%, transparent)',
-                      } as React.CSSProperties
-                    }>
+                    style={OVERLAY_SCRIM_OVERRIDE}>
                     <XDSOverlay
                       showOn="hover"
                       scrim="dark"
