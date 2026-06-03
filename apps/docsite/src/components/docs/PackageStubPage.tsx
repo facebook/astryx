@@ -2,18 +2,11 @@
 
 'use client';
 
-import stylex from '@stylexjs/stylex';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSText} from '@xds/core/Text';
 import {XDSMarkdown} from '@xds/core/Markdown';
-import {PackageHeading, type InstallStep} from './PackageHeading';
-
-const styles = stylex.create({
-  container: {
-    maxWidth: 800,
-    marginInline: 'auto',
-  },
-});
+import {DocPageLayout} from './DocPageLayout';
+import {PackageActions, type InstallStep} from './PackageActions';
 
 interface PackageStubPageProps {
   name: string;
@@ -50,23 +43,24 @@ export function PackageStubPage({
   }
 
   return (
-    <XDSVStack gap={8} xstyle={styles.container}>
-      <PackageHeading
-        packageName={name}
-        version={version}
-        description={description}
-        installSteps={installSteps}
-        cta={cta}
-      />
-      {body ? (
-        <XDSMarkdown headingLevelStart={3} contentWidth={800}>
-          {body}
-        </XDSMarkdown>
-      ) : (
-        <XDSText type="body" color="secondary">
-          No README available.
-        </XDSText>
-      )}
-    </XDSVStack>
+    <DocPageLayout title={name} description={description}>
+      <XDSVStack gap={8}>
+        <PackageActions
+          packageName={name}
+          version={version}
+          installSteps={installSteps}
+          cta={cta}
+        />
+        {body ? (
+          <XDSMarkdown headingLevelStart={3} contentWidth={800}>
+            {body}
+          </XDSMarkdown>
+        ) : (
+          <XDSText type="body" color="secondary">
+            No README available.
+          </XDSText>
+        )}
+      </XDSVStack>
+    </DocPageLayout>
   );
 }

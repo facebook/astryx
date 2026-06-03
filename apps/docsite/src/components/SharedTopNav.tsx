@@ -49,7 +49,6 @@ export function SharedTopNav() {
     if (
       pathname === '/docs' ||
       pathname.startsWith('/docs/') ||
-      pathname.startsWith('/packages/') ||
       pathname.startsWith('/changelog')
     ) {
       return 'docs';

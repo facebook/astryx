@@ -189,9 +189,9 @@ export function DocsShell({
                     <XDSSideNavItem
                       key={p.name}
                       label={p.name}
-                      href={`/packages/${p.name.replace('@xds/', '')}`}
+                      href={`/docs/${p.name.replace('@xds/', '')}`}
                       isSelected={
-                        pathname === `/packages/${p.name.replace('@xds/', '')}`
+                        pathname === `/docs/${p.name.replace('@xds/', '')}`
                       }
                     />
                   ))}

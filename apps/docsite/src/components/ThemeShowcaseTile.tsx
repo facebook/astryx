@@ -475,10 +475,10 @@ export function ThemeShowcaseTile({
   }, [themeName]);
   const imageSrc = candidates[candidateIndex];
   const showImage = imageSrc !== undefined;
-  // Theme detail page URL. Strip the @xds/ scope from the package
-  // name to match the [name] segment of /packages/[name].
+  // Theme detail page lives at /themes/<slug> — the canonical surface
+  // for each theme.
   const themeHref = themeName
-    ? `/packages/${themeName.replace('@xds/', '')}`
+    ? `/themes/${themeName.replace('@xds/theme-', '')}`
     : undefined;
 
   return (

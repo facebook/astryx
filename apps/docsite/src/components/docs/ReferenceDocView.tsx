@@ -2,19 +2,14 @@
 
 'use client';
 
-import * as stylex from '@stylexjs/stylex';
 import {XDSText} from '@xds/core/Text';
 import {XDSVStack} from '@xds/core/Layout';
 import {XDSSection} from '@xds/core/Section';
 import {ContentBlockRenderer} from './ContentBlockRenderer';
 import {BestPracticesBlock} from './BestPracticesBlock';
+import {DocPageLayout} from './DocPageLayout';
 import type {DocSection} from '../../generated/docsRegistry';
 import type {ReactNode} from 'react';
-
-const styles = stylex.create({
-  container: {maxWidth: 1200, marginInline: 'auto'},
-  prose: {maxWidth: 800},
-});
 
 export type SectionOverrides = Record<
   string,
@@ -60,13 +55,7 @@ export function ReferenceDocView({
   sectionOverrides?: SectionOverrides;
 }) {
   return (
-    <XDSVStack gap={8} xstyle={styles.container}>
-      <XDSVStack gap={2}>
-        <XDSText type="display-2">{title}</XDSText>
-        <XDSText type="body" color="secondary" xstyle={styles.prose}>
-          {description}
-        </XDSText>
-      </XDSVStack>
+    <DocPageLayout title={title} description={description}>
       {sections.map(section => {
         const override = sectionOverrides?.[section.title];
         return (
@@ -86,6 +75,6 @@ export function ReferenceDocView({
           </XDSSection>
         );
       })}
-    </XDSVStack>
+    </DocPageLayout>
   );
 }
