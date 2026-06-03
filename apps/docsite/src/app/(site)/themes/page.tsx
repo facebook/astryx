@@ -188,11 +188,16 @@ const styles = stylex.create({
   // White-on-scrim text inside the overlay. The scrim is dark enough
   // (78% on-light mix) that the standard --color-text-primary token
   // would be hard to read; explicit white pairs with the scrim.
+  // Text colors on the dark scrim use the canonical --color-on-dark
+  // token (resolves to white in both modes) so the on-scrim treatment
+  // tracks any future redefinition of the on-dark palette token.
+  // color-mix gives us the 70% opacity variant for the description
+  // line without hardcoding an rgba literal.
   overlayTitle: {
-    color: '#fff',
+    color: 'var(--color-on-dark)',
   },
   overlayDescription: {
-    color: 'rgba(255,255,255,0.7)',
+    color: 'color-mix(in srgb, var(--color-on-dark) 70%, transparent)',
   },
 });
 
